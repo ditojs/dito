@@ -2,7 +2,6 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.register('string', {
-  hideLabel: false
 })
 </script>
 

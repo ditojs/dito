@@ -2,22 +2,10 @@ import Vue from 'vue'
 import _ from 'lodash'
 
 let DitoComponent = Vue.extend({
-  props: ['name', 'options'],
   name: 'DitoComponent',
 
-  render (create) {
-    let ctor = DitoComponent.types[this.options.type]
-    let el = create(ctor, { props: this.$props })
-    if (!ctor.options.hideLabel) {
-      el = create('label', [
-        this.options.label,
-        el
-      ])
-    }
-    return el
-  },
   methods: {
-    log: function(...args) {
+    log (...args) {
       console.log(...args)
     }
   }
@@ -26,11 +14,10 @@ let DitoComponent = Vue.extend({
 DitoComponent.types = []
 
 DitoComponent.register = function(type, options) {
-  let opts = Object.assign({
+  let ctor = DitoComponent.extend(Object.assign({
     name: 'Dito' + _.capitalize(type) + 'Component',
-    render: null
-  }, options)
-  let ctor = DitoComponent.extend(opts)
+    props: ['name', 'desc']
+  }, options))
   DitoComponent.types[type] = ctor
   return ctor
 }

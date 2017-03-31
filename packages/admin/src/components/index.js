@@ -1,1 +1,3 @@
-import './DittoStringComponent'
+import './DitoLabelComponent'
+import './DitoButtonComponent'
+import './DitoStringComponent'
