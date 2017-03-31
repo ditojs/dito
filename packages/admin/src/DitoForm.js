@@ -1,13 +1,15 @@
 import Vue from 'vue'
-import '@/components/index'
-import Component from './Component'
+import './components'
+import DitoComponent from './DitoComponent'
 
 export default Vue.extend({
   props: ['schema'],
-  render: function(create) {
+  name: 'DitoForm',
+
+  render (create) {
     let children = []
     for (let name in this.schema) {
-      children.push(create(Component, {
+      children.push(create(DitoComponent, {
         props: {
           name: name,
           options: this.schema[name]
@@ -26,8 +28,9 @@ export default Vue.extend({
       }
     }, children)
   },
+
   methods: {
-    submit: function(event) {
+    submit (event) {
       console.log('submit')
       event.preventDefault()
     }

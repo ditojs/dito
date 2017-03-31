@@ -10,6 +10,7 @@
     "lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
+    "lodash": "^4.17.4",
     "vue": "^2.2.2",
     "vue-router": "^2.2.0"
   },

@@ -1,7 +1,7 @@
 <script>
-import Component from '@/Component'
+import DitoComponent from '@/DitoComponent'
 
-export default Component.register('string', {
+export default DitoComponent.register('string', {
   hideLabel: false
 })
 </script>

@@ -1,1 +1,1 @@
-import './StringComponent'
+import './DittoStringComponent'
