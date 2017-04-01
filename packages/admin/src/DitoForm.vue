@@ -15,9 +15,11 @@ import DitoComponent from './DitoComponent'
 import './components'
 
 export default DitoComponent.extend({
-  props: ['schema'],
-  name: 'DitoForm',
-  components: DitoComponent.registry,
+  data() {
+    return {
+      schema: this.getMeta()
+    }
+  },
 
   methods: {
     submit (event) {
