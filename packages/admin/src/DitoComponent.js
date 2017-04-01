@@ -1,18 +1,12 @@
 import Vue from 'vue'
 
-function camelize(str) {
-  return str.replace(/(?:^|-)(\w)/g, function(all, chr) {
-    return chr.toUpperCase()
-  })
-}
-
-function toComponentName(type) {
-  return 'Dito' + camelize(type)
-}
+import escape from './utils/escape'
+import toComponentName from './utils/toComponentName'
 
 let registry = []
 
 let DitoComponent = Vue.extend({
+  // Make sure that registered components are present in all DitoComponent.
   components: registry,
 
   beforeCreate() {
@@ -50,12 +44,7 @@ let DitoComponent = Vue.extend({
       console.log(...args)
     },
 
-    escape(html) {
-      return html.replace(/["&<>]/g, function (chr) {
-        return { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[chr]
-      })
-    },
-
+    escape,
     toComponentName
   }
 })
@@ -76,7 +65,5 @@ DitoComponent.register = function(type, options) {
 DitoComponent.get = function(type) {
   return registry[toComponentName(type)]
 }
-
-DitoComponent.registry = registry
 
 export default DitoComponent

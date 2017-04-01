@@ -12,7 +12,6 @@
 
 <script>
 import DitoComponent from './DitoComponent'
-import './components'
 
 export default DitoComponent.extend({
   data() {
