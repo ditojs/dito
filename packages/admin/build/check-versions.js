@@ -19,7 +19,7 @@ var versionRequirements = [
   }
 ]
 
-module.exports = function () {
+module.exports = function() {
   var warnings = []
   for (var i = 0; i < versionRequirements.length; i++) {
     var mod = versionRequirements[i]
