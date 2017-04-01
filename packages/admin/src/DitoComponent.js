@@ -1,11 +1,13 @@
 import Vue from 'vue'
 
-function capitalize(text) {
-  return text[0].toUpperCase() + text.slice(1)
+function camelize(str) {
+  return str.replace(/(?:^|-)(\w)/g, function(all, chr) {
+    return chr.toUpperCase()
+  })
 }
 
 function toComponentName(type) {
-  return 'Dito' + capitalize(type)
+  return 'Dito' + camelize(type)
 }
 
 let registry = []
@@ -46,6 +48,12 @@ let DitoComponent = Vue.extend({
 
     log(...args) {
       console.log(...args)
+    },
+
+    escape(html) {
+      return html.replace(/["&<>]/g, function (chr) {
+        return { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[chr]
+      })
     },
 
     toComponentName

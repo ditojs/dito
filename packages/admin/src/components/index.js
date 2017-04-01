@@ -2,7 +2,8 @@
 // DitoComponent registry and can be retrieved through DitoComponent.registry
 // and DitoComponent.get(name)
 
-import './DitoList'
 import './DitoLabel'
 import './DitoButton'
 import './DitoText'
+import './DitoList'
+import './DitoListItem'

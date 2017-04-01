@@ -9,13 +9,13 @@ Vue.use(Router)
 
 let schemas = {
   Root: {
-    address: {
+    addresses: {
       type: 'list',
       model: 'Address',
       label: 'Addresses'
     },
 
-    user: {
+    users: {
       type: 'list',
       model: 'User',
       label: 'Users'
