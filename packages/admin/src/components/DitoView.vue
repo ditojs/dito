@@ -1,11 +1,11 @@
 <template lang="pug">
-  component(:is="`dito-${desc.type}`", :name="name", :props="desc", :data="data")
+  component(:is="typeToComponent(desc.type)", :name="name", :props="desc", :data="data")
 </template>
 
 <script>
-import DitoComponent from './DitoComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.extend({
+export default DitoComponent.component('dito-view', {
   data() {
     let route = this.getRouteRecord()
     return {

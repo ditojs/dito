@@ -18,10 +18,9 @@
 </style>
 
 <script>
-import DitoComponent from './DitoComponent'
-import './components'
+import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.extend({
+export default DitoComponent.component('dito-root', {
   data() {
     return {
       schema: this.getMeta()

@@ -5,7 +5,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('button', {
+export default DitoComponent.type('button', {
   props: ['name', 'type', 'text']
 })
 </script>

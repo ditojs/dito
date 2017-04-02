@@ -1,12 +1,12 @@
 import Vue from 'vue'
-
 import escape from './utils/escape'
 
-let registry = []
+let components = []
+let types = []
 
 let DitoComponent = Vue.extend({
   // Make sure that registered components are present in all DitoComponent.
-  components: registry,
+  components: components,
 
   beforeCreate() {
     // As a convention, when a DitoComponent instance receives a prop called
@@ -43,23 +43,35 @@ let DitoComponent = Vue.extend({
       return route && route.meta || null
     },
 
-    escape
+    escape,
+
+    typeToComponent(type) {
+      return types[type]
+    }
   }
 })
 
-DitoComponent.register = function(type, options) {
+DitoComponent.component = function(name, options) {
+  let ctor = DitoComponent.extend(Object.assign({
+    name: name
+  }, options))
+  components[name] = ctor
+  return ctor
+}
+
+DitoComponent.type = function(type, options) {
+  let name = `dito-${type}`
+  types[type] = name
   let props = options.props
-  let ctor = DitoComponent.extend(Object.assign({}, options, {
+  return DitoComponent.component(name, Object.assign({}, options, {
     props: Array.isArray(props)
         ? ['props'].concat(props)
         : Object.assign({ props: { type: Object, required: false } }, props)
   }))
-  registry[`dito-${type}`] = ctor
-  return ctor
 }
 
 DitoComponent.get = function(type) {
-  return registry[`dito-${type}`]
+  return components[types[type]]
 }
 
 export default DitoComponent

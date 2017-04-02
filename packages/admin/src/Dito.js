@@ -1,9 +1,11 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import DitoComponent from './DitoComponent'
-import DitoRoot from './DitoRoot'
-import DitoView from './DitoView'
-import DitoForm from './DitoForm'
+import './components'
+import './types'
+import DitoRoot from './components/DitoRoot'
+import DitoView from './components/DitoView'
+import DitoForm from './components/DitoForm'
 
 Vue.config.productionTip = false
 Vue.use(Router)
@@ -81,5 +83,5 @@ export default {
     })
   },
 
-  register: DitoComponent.register
+  register: DitoComponent.type
 }

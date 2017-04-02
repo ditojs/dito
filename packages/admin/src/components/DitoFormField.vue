@@ -8,7 +8,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('form-field', {
+export default DitoComponent.component('dito-form-field', {
   props: ['label']
 })
 </script>

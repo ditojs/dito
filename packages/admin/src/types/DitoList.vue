@@ -8,7 +8,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('list', {
+export default DitoComponent.type('list', {
   props: ['name', 'data']
 })
 </script>

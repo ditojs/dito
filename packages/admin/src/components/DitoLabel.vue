@@ -6,7 +6,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('label', {
+export default DitoComponent.component('dito-label', {
   props: ['name', 'text']
 })
 </script>

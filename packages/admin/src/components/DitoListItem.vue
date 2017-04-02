@@ -5,7 +5,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('list-item', {
+export default DitoComponent.component('dito-list-item', {
   props: ['item']
 })
 </script>
