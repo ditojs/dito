@@ -1,8 +1,7 @@
 <template lang="pug">
   div(:id="name")
     ul
-      template(v-for="item in data")
-        DitoListItem(:key="item.id", :item="item")
+      dito-list-item(v-for="item in data", :key="item.id", :item="item")
     router-link(:to="`${$route.path}/create`") Create
 </template>
 

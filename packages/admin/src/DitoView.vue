@@ -1,5 +1,5 @@
 <template lang="pug">
-  component(:is="toComponentName(desc.type)", :name="name", :props="desc", :data="data")
+  component(:is="`dito-${desc.type}`", :name="name", :props="desc", :data="data")
 </template>
 
 <script>
@@ -7,7 +7,7 @@ import DitoComponent from './DitoComponent'
 
 export default DitoComponent.extend({
   data() {
-    let route = this.getRoute()
+    let route = this.getRouteRecord()
     return {
       name: route.name,
       desc: route.meta,

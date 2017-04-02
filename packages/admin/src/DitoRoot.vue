@@ -1,8 +1,8 @@
 <template lang="pug">
   .dito
     nav
-      template(v-for="(props, name) in schema")
-        router-link(:to="`/${name}`") {{props.label}}
+      router-link(v-for="(desc, name) in schema", :key="name", :to="`/${name}`")
+        | {{desc.label}}
     main
       router-view
 </template>

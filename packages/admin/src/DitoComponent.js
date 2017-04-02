@@ -1,7 +1,6 @@
 import Vue from 'vue'
 
 import escape from './utils/escape'
-import toComponentName from './utils/toComponentName'
 
 let registry = []
 
@@ -25,45 +24,42 @@ let DitoComponent = Vue.extend({
   },
 
   methods: {
-    getRoute() {
-      let matched = this.$route.matched
-      for (let route of matched) {
-        if (route.components.default === this.constructor) {
-          return route
+    getRouteRecord() {
+      // Walks through the matched routes and all components of each route, to
+      // find the route that is associated with this component, and returns it.
+      for (let route of this.$route.matched) {
+        let components = route.components
+        for (let name in components) {
+          if (components[name] === this.constructor) {
+            return route
+          }
         }
       }
       return null
     },
 
     getMeta() {
-      let route = this.getRoute()
+      let route = this.getRouteRecord()
       return route && route.meta || null
     },
 
-    log(...args) {
-      console.log(...args)
-    },
-
-    escape,
-    toComponentName
+    escape
   }
 })
 
 DitoComponent.register = function(type, options) {
-  let name = toComponentName(type)
   let props = options.props
   let ctor = DitoComponent.extend(Object.assign({}, options, {
-    name: name,
     props: Array.isArray(props)
         ? ['props'].concat(props)
         : Object.assign({ props: { type: Object, required: false } }, props)
   }))
-  registry[name] = ctor
+  registry[`dito-${type}`] = ctor
   return ctor
 }
 
 DitoComponent.get = function(type) {
-  return registry[toComponentName(type)]
+  return registry[`dito-${type}`]
 }
 
 export default DitoComponent

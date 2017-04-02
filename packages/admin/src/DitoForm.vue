@@ -1,13 +1,9 @@
 <template lang="pug">
   form(@submit="submit")
     ul
-      li(v-for="(props, name) in schema")
-        template(v-if="props.label")
-          DitoLabel(:text="props.label")
-            component(:is="toComponentName(props.type)", :name="name", :props="props")
-        template(v-else)
-          component(:is="toComponentName(props.type)", :name="name", :props="props")
-    DitoButton(type="submit", text="Submit")
+      dito-form-field(v-for="(desc, name) in schema", :key="name", :label="desc.label")
+        component(:is="`dito-${desc.type}`", :name="name", :props="desc")
+    dito-button(type="submit", text="Submit")
 </template>
 
 <script>
@@ -22,7 +18,7 @@ export default DitoComponent.extend({
 
   methods: {
     submit (event) {
-      this.log('submit')
+      console.log('submit')
       event.preventDefault()
     }
   }
