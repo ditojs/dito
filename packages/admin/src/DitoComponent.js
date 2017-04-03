@@ -24,29 +24,26 @@ let DitoComponent = Vue.extend({
   },
 
   methods: {
-    getRouteRecord() {
+    escape,
+
+    typeToComponent(type) {
+      return types[type]
+    }
+  },
+
+  computed: {
+    $meta() {
       // Walks through the matched routes and all components of each route, to
       // find the route that is associated with this component, and returns it.
       for (let route of this.$route.matched) {
         let components = route.components
         for (let name in components) {
           if (components[name] === this.constructor) {
-            return route
+            return route.meta
           }
         }
       }
       return null
-    },
-
-    getMeta() {
-      let route = this.getRouteRecord()
-      return route && route.meta || null
-    },
-
-    escape,
-
-    typeToComponent(type) {
-      return types[type]
     }
   }
 })

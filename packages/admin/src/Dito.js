@@ -11,24 +11,34 @@ Vue.config.productionTip = false
 Vue.use(Router)
 
 function setup(el, options) {
-  let routes = []
+  let api = options.api
+  let baseUrl = api.baseUrl || ''
   let views = options.views
   let forms = options.forms
+  let routes = []
 
   for (let name in views) {
     let view = views[name]
     routes.push({
       path: name,
-      name: name,
       component: DitoView,
-      meta: view
+      meta: {
+        name,
+        view,
+        url: `${baseUrl}/${view.mountpoint || name}`
+      }
     })
     let form = forms[view.form]
     if (form) {
+      // Install one route per form that handles both /:id and /create:
       routes.push({
         path: `${name}/:param`,
         component: DitoForm,
-        meta: form
+        props: true,
+        meta: {
+          form,
+          url: `${baseUrl}/${view.mountpoint || view.form}`
+        }
       })
     }
   }
@@ -38,7 +48,9 @@ function setup(el, options) {
     routes: [{
       path: '/',
       component: DitoRoot,
-      meta: views,
+      meta: {
+        views
+      },
       children: routes
     }]
   })
