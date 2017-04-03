@@ -28,24 +28,14 @@ let DitoComponent = Vue.extend({
       return types[type]
     },
 
-    escape,
+    request(method, path, callback) {
+      let request = this.$meta.api.request
+      // TODO: Shall we fall back to axios locally imported, if no request
+      // method is defined?
+      return request && request(method, path, callback)
+    },
 
-    load(url, callback) {
-      // TODO: Fetch real data instead
-      let data = /addresses$/.test(url)
-          ? [
-            { id: 1, text: 'Address 1' },
-            { id: 2, text: 'Address 2' }
-          ]
-          : [
-            { id: 1, text: 'User 1' },
-            { id: 2, text: 'User 2' }
-          ]
-      // Fake a loading delay
-      setTimeout(function() {
-        callback(null, data)
-      }, 250)
-    }
+    escape
   },
 
   computed: {

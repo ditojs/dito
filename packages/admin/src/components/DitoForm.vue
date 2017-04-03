@@ -1,6 +1,6 @@
 <template lang="pug">
   form(@submit="submit")
-    | API: {{ $meta.url }}/{{ param }}
+    | API path: {{ $meta.path }}/{{ param }}
     ul
       dito-form-field(v-for="(desc, name) in $meta.form", :key="name", :label="desc.label")
         component(:is="typeToComponent(desc.type)", :name="name", :props="desc")

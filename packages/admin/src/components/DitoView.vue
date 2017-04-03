@@ -1,6 +1,6 @@
 <template lang="pug">
   div
-    | API: {{ $meta.url }}
+    | API path: {{ $meta.path }}
     .loading(v-if="loading")
       | Loading...
     component(:is="typeToComponent($meta.view.type)", :name="$meta.name", :props="$meta.view", :data="data")
@@ -32,7 +32,7 @@ export default DitoComponent.component('dito-view', {
     fetch() {
       this.error = this.data = null
       this.loading = true
-      this.load(this.$meta.url, (err, data) => {
+      this.request('get', this.$meta.path, (err, data) => {
         this.loading = false
         if (err) {
           this.error = err.toString()

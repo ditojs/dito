@@ -12,7 +12,6 @@ Vue.use(Router)
 
 function setup(el, options) {
   let api = options.api
-  let baseUrl = api.baseUrl || ''
   let views = options.views
   let forms = options.forms
   let routes = []
@@ -25,7 +24,8 @@ function setup(el, options) {
       meta: {
         name,
         view,
-        url: `${baseUrl}/${view.mountpoint || name}`
+        path: view.mountpoint || name,
+        api: api
       }
     })
     let form = forms[view.form]
@@ -37,7 +37,8 @@ function setup(el, options) {
         props: true,
         meta: {
           form,
-          url: `${baseUrl}/${view.mountpoint || view.form}`
+          path: view.mountpoint || view.form,
+          api: api
         }
       })
     }
