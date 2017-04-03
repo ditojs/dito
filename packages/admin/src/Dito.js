@@ -10,93 +10,47 @@ import DitoForm from './components/DitoForm'
 Vue.config.productionTip = false
 Vue.use(Router)
 
-let views = {
-  addresses: {
-    // default: ${baseUrl}/${name}
-    // endpoint: '/admin/addresses',
-    type: 'list',
-    form: 'address',
-    label: 'Addresses'
-  },
+function setup(el, options) {
+  let routes = []
+  let views = options.views
+  let forms = options.forms
 
-  users: {
-    type: 'list',
-    form: 'user',
-    label: 'Users'
-  }
-}
-
-let forms = {
-  address: {
-    // default: ${baseUrl}/${name}
-    // endpoint: '/admin/address',
-
-    first_name: {
-      type: 'text',
-      label: 'First Name',
-      value: 'Ditte'
-    },
-
-    last_name: {
-      type: 'text',
-      label: 'Last Name',
-      value: 'Staun'
-    }
-  },
-
-  license_field: {
-    // STI-ish base schema
-    endpoint: '/admin/license_fields'
-  },
-
-  // STI-ish
-  text_field: {
-    base: 'license_field'
-  },
-
-  date_field: {
-    base: 'license_field'
-  }
-}
-
-let routes = []
-
-for (let name in views) {
-  let view = views[name]
-  routes.push({
-    path: name,
-    name: name,
-    component: DitoView,
-    meta: view
-  })
-  let form = forms[view.form]
-  if (form) {
+  for (let name in views) {
+    let view = views[name]
     routes.push({
-      path: `${name}/:param`,
-      component: DitoForm,
-      meta: form
+      path: name,
+      name: name,
+      component: DitoView,
+      meta: view
     })
+    let form = forms[view.form]
+    if (form) {
+      routes.push({
+        path: `${name}/:param`,
+        component: DitoForm,
+        meta: form
+      })
+    }
   }
-}
 
-let router = new Router({
-  mode: 'history',
-  routes: [{
-    path: '/',
-    component: DitoRoot,
-    meta: views,
-    children: routes
-  }]
-})
+  let router = new Router({
+    mode: 'history',
+    routes: [{
+      path: '/',
+      component: DitoRoot,
+      meta: views,
+      children: routes
+    }]
+  })
+
+  new Vue({
+    el: el,
+    router,
+    template: '<router-view/>'
+  })
+}
 
 export default {
-  setup(el, options) {
-    new Vue({
-      el: el,
-      router,
-      template: '<router-view/>'
-    })
-  },
-
+  setup,
   register: DitoComponent.type
 }
