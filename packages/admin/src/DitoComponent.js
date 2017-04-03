@@ -52,6 +52,8 @@ let DitoComponent = Vue.extend({
     $meta() {
       // Walks through the matched routes and all components of each route, to
       // find the route that is associated with this component, and returns it.
+      // NOTE: This needs to be a computed property so that a change in $route
+      // will trigger a recalculated $meta on reused router components.
       for (let route of this.$route.matched) {
         let components = route.components
         for (let name in components) {

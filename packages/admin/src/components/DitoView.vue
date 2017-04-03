@@ -3,7 +3,7 @@
     | API: {{ $meta.url }}
     .loading(v-if="loading")
       | Loading...
-    component(v-if="data", :is="typeToComponent($meta.view.type)", :name="$meta.name", :props="$meta.view", :data="data")
+    component(:is="typeToComponent($meta.view.type)", :name="$meta.name", :props="$meta.view", :data="data")
 </template>
 
 <script>
@@ -18,15 +18,13 @@ export default DitoComponent.component('dito-view', {
     }
   },
 
-  created () {
-    // Fetch the data when the view is created and the data is already being
-    // observed
+  created() {
+    // Fetch data after view was created and the data is already being observed.
     this.fetch()
   },
 
   watch: {
-    // Call the fetch method again when the route changes, to support component
-    // reuse
+    // Call fetch() again when the route changes, to support component reuse.
     '$route': 'fetch'
   },
 
