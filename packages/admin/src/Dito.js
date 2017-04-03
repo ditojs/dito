@@ -10,22 +10,27 @@ import DitoForm from './components/DitoForm'
 Vue.config.productionTip = false
 Vue.use(Router)
 
-let schemas = {
-  Root: {
-    addresses: {
-      type: 'list',
-      model: 'Address',
-      label: 'Addresses'
-    },
-
-    users: {
-      type: 'list',
-      model: 'User',
-      label: 'Users'
-    }
+let views = {
+  addresses: {
+    // default: ${baseUrl}/${name}
+    // endpoint: '/admin/addresses',
+    type: 'list',
+    form: 'address',
+    label: 'Addresses'
   },
 
-  Address: {
+  users: {
+    type: 'list',
+    form: 'user',
+    label: 'Users'
+  }
+}
+
+let forms = {
+  address: {
+    // default: ${baseUrl}/${name}
+    // endpoint: '/admin/address',
+
     first_name: {
       type: 'text',
       label: 'First Name',
@@ -37,29 +42,39 @@ let schemas = {
       label: 'Last Name',
       value: 'Staun'
     }
+  },
+
+  license_field: {
+    // STI-ish base schema
+    endpoint: '/admin/license_fields'
+  },
+
+  // STI-ish
+  text_field: {
+    base: 'license_field'
+  },
+
+  date_field: {
+    base: 'license_field'
   }
 }
 
 let routes = []
 
-for (let name in schemas.Root) {
-  let desc = schemas.Root[name]
+for (let name in views) {
+  let view = views[name]
   routes.push({
     path: name,
     name: name,
     component: DitoView,
-    meta: desc
+    meta: view
   })
-  let schema = schemas[desc.model]
-  if (schema) {
+  let form = forms[view.form]
+  if (form) {
     routes.push({
-      path: `${name}/create`,
+      path: `${name}/:param`,
       component: DitoForm,
-      meta: schema
-    }, {
-      path: `${name}/:id`,
-      component: DitoForm,
-      meta: schema
+      meta: form
     })
   }
 }
@@ -69,13 +84,13 @@ let router = new Router({
   routes: [{
     path: '/',
     component: DitoRoot,
-    meta: schemas.Root,
+    meta: views,
     children: routes
   }]
 })
 
 export default {
-  setup(el) {
+  setup(el, options) {
     new Vue({
       el: el,
       router,

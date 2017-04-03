@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito
     nav
-      router-link(v-for="(desc, name) in schema", :key="name", :to="`/${name}`")
+      router-link(v-for="(desc, name) in views", :key="name", :to="`/${name}`")
         | {{desc.label}}
     main
       router-view
@@ -23,7 +23,7 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.component('dito-root', {
   data() {
     return {
-      schema: this.getMeta()
+      views: this.getMeta()
     }
   }
 })
