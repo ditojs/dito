@@ -1,24 +1,47 @@
 <template lang="pug">
   div
     | API: {{ $meta.url }}
-    component(:is="typeToComponent($meta.view.type)", :name="$meta.name", :props="$meta.view", :data="data")
+    .loading(v-if="loading")
+      | Loading...
+    component(v-if="data", :is="typeToComponent($meta.view.type)", :name="$meta.name", :props="$meta.view", :data="data")
 </template>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-view', {
-  computed: {
-    data() {
-      return this.$meta.name === 'addresses'
-          ? [
-            { id: 1, text: 'Address 1' },
-            { id: 2, text: 'Address 2' }
-          ]
-          : [
-            { id: 1, text: 'User 1' },
-            { id: 2, text: 'User 2' }
-          ]
+  data() {
+    return {
+      loading: false,
+      data: null,
+      error: null
+    }
+  },
+
+  created () {
+    // Fetch the data when the view is created and the data is already being
+    // observed
+    this.fetch()
+  },
+
+  watch: {
+    // Call the fetch method again when the route changes, to support component
+    // reuse
+    '$route': 'fetch'
+  },
+
+  methods: {
+    fetch() {
+      this.error = this.data = null
+      this.loading = true
+      this.load(this.$meta.url, (err, data) => {
+        this.loading = false
+        if (err) {
+          this.error = err.toString()
+        } else {
+          this.data = data
+        }
+      })
     }
   }
 })

@@ -24,10 +24,27 @@ let DitoComponent = Vue.extend({
   },
 
   methods: {
-    escape,
-
     typeToComponent(type) {
       return types[type]
+    },
+
+    escape,
+
+    load(url, callback) {
+      // TODO: Fetch real data instead
+      let data = /addresses$/.test(url)
+          ? [
+            { id: 1, text: 'Address 1' },
+            { id: 2, text: 'Address 2' }
+          ]
+          : [
+            { id: 1, text: 'User 1' },
+            { id: 2, text: 'User 2' }
+          ]
+      // Fake a loading delay
+      setTimeout(function() {
+        callback(null, data)
+      }, 250)
     }
   },
 
