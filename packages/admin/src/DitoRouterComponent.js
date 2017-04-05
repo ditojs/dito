@@ -3,9 +3,9 @@ import DitoComponent from './DitoComponent'
 export default DitoComponent.extend({
   data() {
     return {
-      loading: false,
-      data: null,
-      error: null
+      data: this.$options.emptyData(),
+      error: null,
+      loading: false
     }
   },
 
@@ -51,10 +51,10 @@ export default DitoComponent.extend({
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
       let send = this.$meta.api.send
-      this.error = null
       if (method === 'get') {
-        this.data = null
+        this.data = this.$options.emptyData()
       }
+      this.error = null
       this.loading = !!send
       return send && send(method, path, data, (err, result) => {
         this.loading = false
@@ -63,7 +63,7 @@ export default DitoComponent.extend({
         } else {
           this.data = result
           if (callback) {
-            callback()
+            callback.call(this)
           }
         }
       })

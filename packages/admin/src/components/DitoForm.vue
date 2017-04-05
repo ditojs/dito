@@ -4,7 +4,7 @@
     p.loading(v-if="loading") Loading...
     ul
       dito-form-field(v-for="(desc, name) in $meta.form", :key="name", :label="desc.label")
-        component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :data="data || {}")
+        component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :data="data")
     router-link(tag="button", to="..", append) Cancel
     button(type="submit") {{ $meta.create ? 'Create' : 'Save' }}
 </template>
@@ -14,6 +14,10 @@ import DitoRouterComponent from '@/DitoRouterComponent'
 
 export default DitoRouterComponent.component('dito-form', {
   props: ['id'],
+
+  emptyData() {
+    return {}
+  },
 
   computed: {
     create() {
@@ -32,10 +36,10 @@ export default DitoRouterComponent.component('dito-form', {
 
   methods: {
     submit(event) {
+      event.preventDefault()
       this.send(this.create ? 'post' : 'put', this.path, this.data, () => {
         this.$router.push({ path: '..', append: true })
       })
-      event.preventDefault()
     }
   }
 })

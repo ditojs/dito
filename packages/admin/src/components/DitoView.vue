@@ -9,5 +9,8 @@
 import DitoRouterComponent from '@/DitoRouterComponent'
 
 export default DitoRouterComponent.component('dito-view', {
+  emptyData() {
+    return []
+  }
 })
 </script>
