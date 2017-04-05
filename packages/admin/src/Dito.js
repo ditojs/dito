@@ -18,52 +18,60 @@ function setup(el, options) {
 
   for (let name in views) {
     let view = views[name]
+    let viewPath = view.mountpoint || name
+    let form = forms[view.form]
     routes.push({
-      path: name,
+      path: `/${name}`,
       component: DitoView,
       meta: {
         name,
         view,
-        path: view.mountpoint || name,
-        api: api
+        api,
+        path: viewPath
       }
     })
-    let form = forms[view.form]
     if (form) {
-      // Install one route per form that handles both /:id and /create:
+      let formPath = form.mountpoint || view.form
+      // Install separate routes for 'create' and ':id', as they have different
+      // API paths: 'create' uses the view path, 'get' the one of the form.
       routes.push({
-        path: `${name}/:param`,
+        path: `/${name}/create`,
+        component: DitoForm,
+        meta: {
+          form,
+          api,
+          path: viewPath,
+          create: true
+        }
+      }, {
+        path: `/${name}/:id`,
         component: DitoForm,
         props: true,
         meta: {
           form,
-          path: view.mountpoint || view.form,
-          api: api
+          api,
+          path: formPath
         }
       })
     }
   }
 
-  let router = new Router({
-    mode: 'history',
-    routes: [{
-      path: '/',
-      component: DitoRoot,
-      meta: {
-        views
-      },
-      children: routes
-    }]
-  })
-
   new Vue({
     el: el,
-    router,
-    template: '<router-view/>'
+    router: new Router({
+      mode: 'history',
+      routes
+    }),
+    template: '<dito-root :views="views"/>',
+    components: { DitoRoot },
+    data: { views }
   })
 }
 
 export default {
   setup,
-  register: DitoComponent.type
+
+  register(type, options) {
+    return DitoComponent.type(type, options)
+  }
 }

@@ -1,5 +1,7 @@
 <template lang="pug">
-  li(v-html="item.html || escape(item.text)")
+  li
+    span(v-html="item.html || escape(item.text)")
+    slot
 </template>
 
 <script>

@@ -7,6 +7,6 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-label', {
-  props: ['name', 'text']
+  props: ['text']
 })
 </script>
