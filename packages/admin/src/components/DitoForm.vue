@@ -5,8 +5,8 @@
     ul
       dito-form-field(v-for="(desc, name) in $meta.form", :key="name", :label="desc.label")
         component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :data="data")
-    router-link(tag="button", to="..", append) Cancel
     button(type="submit") {{ $meta.create ? 'Create' : 'Save' }}
+    router-link(tag="button", to="..", append) Cancel
 </template>
 
 <script>
