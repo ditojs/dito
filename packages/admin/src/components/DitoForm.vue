@@ -3,8 +3,8 @@
     p API path: {{ path }}
     p.loading(v-if="loading") Loading...
     ul
-      dito-form-field(v-for="(desc, name) in $meta.form", :key="name", :label="desc.label")
-        component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :data="data")
+      dito-form-field(v-for="(desc, name) in $meta.form", v-if="name != 'endpoint'", :key="name", :label="desc.label")
+        component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :disabled="desc.disabled || loading", :data="data", @remove="remove")
     button(type="submit") {{ $meta.create ? 'Create' : 'Save' }}
     router-link(tag="button", to="..", append) Cancel
 </template>
@@ -13,7 +13,7 @@
 import DitoRouterComponent from '@/DitoRouterComponent'
 
 export default DitoRouterComponent.component('dito-form', {
-  props: ['id'],
+  props: ['param'],
 
   emptyData() {
     return {}
@@ -21,7 +21,7 @@ export default DitoRouterComponent.component('dito-form', {
 
   computed: {
     create() {
-      return this.$meta.create
+      return this.param === 'create'
     },
 
     load() {
@@ -29,8 +29,7 @@ export default DitoRouterComponent.component('dito-form', {
     },
 
     path() {
-      let meta = this.$meta
-      return meta.create ? meta.path : `${meta.path}/${this.id}`
+      return this.create ? this.getViewPath() : this.getFormPath(this.param)
     }
   },
 

@@ -3,6 +3,7 @@
     ul
       dito-list-item(v-for="item in data", :key="item.id", :item="item")
         router-link(tag="button", :to="`${item.id}`", append) Edit
+        button(@click="$emit('remove', item)") Delete
     router-link(tag="button", to="create", append) Create
 </template>
 

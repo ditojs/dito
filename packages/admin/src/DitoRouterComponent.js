@@ -10,13 +10,15 @@ export default DitoComponent.extend({
   },
 
   created() {
-    // Fetch data after view was created and the data is already being observed.
-    this.getData()
+    // Load data after view was created and the data is already being observed.
+    this.loadData(true)
   },
 
   watch: {
-    // Call fetch() again when the route changes, to support component reuse.
-    '$route': 'getData'
+    // Call loadData() again when the route changes, to support component reuse.
+    $route() {
+      this.loadData(true)
+    }
   },
 
   computed: {
@@ -39,10 +41,6 @@ export default DitoComponent.extend({
     load() {
       // This is in computed so it can be overridden in DitoForm
       return true
-    },
-
-    path() {
-      return this.$meta.path
     }
   },
 
@@ -50,28 +48,59 @@ export default DitoComponent.extend({
     send(method, path, data, callback) {
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
-      let send = this.$meta.api.send
-      if (method === 'get') {
-        this.data = this.$options.emptyData()
-      }
       this.error = null
-      this.loading = !!send
-      return send && send(method, path, data, (err, result) => {
-        this.loading = false
-        if (err) {
-          this.error = err.toString()
-        } else {
-          this.data = result
-          if (callback) {
-            callback.call(this)
+      let send = this.$meta.api.send
+      if (send) {
+        this.loading = true
+        send(method, path, data, (err, result) => {
+          this.loading = false
+          if (err) {
+            this.error = err.toString()
           }
-        }
-      })
+          if (callback) {
+            callback.call(this, result)
+          }
+        })
+        return true
+      }
     },
 
-    getData() {
+    loadData(clear) {
       if (this.load) {
-        this.send('get', this.path)
+        if (clear) {
+          this.data = this.$options.emptyData()
+        }
+        this.send('get', this.path, null, (data) => {
+          this.data = data
+        })
+      }
+    },
+
+    getViewPath() {
+      let getViewPath = this.$meta.api.getViewPath
+      let view = this.$meta.view
+      return !view ? null : getViewPath
+          ? getViewPath(view)
+          : view.endpoint
+    },
+
+    getFormPath(id) {
+      let getFormPath = this.$meta.api.getFormPath
+      let form = this.$meta.form
+      return !form ? null : getFormPath
+          ? getFormPath(form, id)
+          : `${form.endpoint}/${id}`
+    },
+
+    remove(item) {
+      if (item && confirm(`Do you really want to remove "${item.text}"?`)) {
+        this.send('delete', this.getFormPath(item.id), null, () => {
+          let index = this.data.indexOf(item)
+          if (index >= 0) {
+            this.data.splice(index, 1)
+          }
+          this.loadData(false)
+        })
       }
     }
   }

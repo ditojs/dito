@@ -2,7 +2,7 @@
   div
     p API path: {{ path }}
     p.loading(v-if="loading") Loading...
-    component(:is="typeToComponent($meta.view.type)", :name="$meta.name", :desc="$meta.view", :data="data")
+    component(v-if="data", :is="typeToComponent($meta.view.type)", :name="$meta.name", :desc="$meta.view", :data="data", @remove="remove")
 </template>
 
 <script>
@@ -11,6 +11,16 @@ import DitoRouterComponent from '@/DitoRouterComponent'
 export default DitoRouterComponent.component('dito-view', {
   emptyData() {
     return []
+  },
+
+  computed: {
+    path() {
+      return this.getViewPath()
+    },
+
+    visible() {
+      return
+    }
   }
 })
 </script>

@@ -31,11 +31,12 @@ DitoComponent.type = function(type, options) {
   let props = options && options.props
   return this.component(name, Object.assign({}, options, {
     props: Array.isArray(props)
-        ? ['name', 'desc', 'data'].concat(props)
+        ? ['name', 'desc', 'data', 'disabled'].concat(props)
         : Object.assign({
           name: { type: String, required: true },
           desc: { type: Object, required: true },
-          data: { type: Object, required: true }
+          data: { type: Object, required: true },
+          disabled: { type: Boolean, required: false }
         }, props)
   }))
 }

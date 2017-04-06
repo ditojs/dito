@@ -18,40 +18,28 @@ function setup(el, options) {
 
   for (let name in views) {
     let view = views[name]
-    let viewPath = view.mountpoint || name
+    view.endpoint = view.endpoint || name
     let form = forms[view.form]
+    let meta = {
+      name,
+      view,
+      form,
+      api
+    }
     routes.push({
       path: `/${name}`,
       component: DitoView,
-      meta: {
-        name,
-        view,
-        api,
-        path: viewPath
-      }
+      meta: meta
     })
     if (form) {
-      let formPath = form.mountpoint || view.form
-      // Install separate routes for 'create' and ':id', as they have different
-      // API paths: 'create' uses the view path, 'get' the one of the form.
+      form.endpoint = form.endpoint || view.form
+      // Use the same route for 'create' and ':id' and have DitoForm handle the
+      // separate cases internally.
       routes.push({
-        path: `/${name}/create`,
-        component: DitoForm,
-        meta: {
-          form,
-          api,
-          path: viewPath,
-          create: true
-        }
-      }, {
-        path: `/${name}/:id`,
+        path: `/${name}/:param`,
         component: DitoForm,
         props: true,
-        meta: {
-          form,
-          api,
-          path: formPath
-        }
+        meta: meta
       })
     }
   }
