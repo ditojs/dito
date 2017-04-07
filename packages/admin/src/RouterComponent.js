@@ -58,7 +58,7 @@ export default BaseComponent.extend({
             this.error = err.toString()
           }
           if (callback) {
-            callback.call(this, result)
+            callback.call(this, err, result)
           }
         })
         return true
@@ -70,8 +70,10 @@ export default BaseComponent.extend({
         if (clear) {
           this.data = this.$options.emptyData()
         }
-        this.send('get', this.endpoint, null, (data) => {
-          this.data = data
+        this.send('get', this.endpoint, null, (err, data) => {
+          if (!err) {
+            this.data = data
+          }
         })
       }
     },
@@ -83,10 +85,12 @@ export default BaseComponent.extend({
 
     remove(item) {
       if (item && confirm(`Do you really want to remove "${item.text}"?`)) {
-        this.send('delete', this.getEndpoint('delete', item.id), null, () => {
-          let index = this.data.indexOf(item)
-          if (index >= 0) {
-            this.data.splice(index, 1)
+        this.send('delete', this.getEndpoint('delete', item.id), null, (err) => {
+          if (!err) {
+            let index = this.data.indexOf(item)
+            if (index >= 0) {
+              this.data.splice(index, 1)
+            }
           }
           this.loadData(false)
         })

@@ -40,8 +40,11 @@ export default RouterComponent.component('dito-form', {
   methods: {
     submit(event) {
       event.preventDefault()
-      this.send(this.method, this.endpoint, this.data, () => {
-        this.$router.push({ path: '..', append: true })
+      this.send(this.method, this.endpoint, this.data, (err) => {
+        if (!err) {
+          // After submitting the form, navigate back to the view
+          this.$router.push({ path: '..', append: true })
+        }
       })
     }
   }
