@@ -1,8 +1,8 @@
-import DitoComponent from './DitoComponent'
+import BaseComponent from './BaseComponent'
 
 let types = []
 
-let DitoType = DitoComponent.extend({
+let TypeComponent = BaseComponent.extend({
   methods: {
     typeToComponent(type) {
       return types[type]
@@ -10,7 +10,7 @@ let DitoType = DitoComponent.extend({
   }
 })
 
-DitoType.register = function(type, options) {
+TypeComponent.register = function(type, options) {
   let name = `dito-${type}`
   types[type] = name
   let props = options && options.props
@@ -26,8 +26,8 @@ DitoType.register = function(type, options) {
   }))
 }
 
-DitoType.get = function(type) {
-  return DitoType.options.components[types[type]]
+TypeComponent.get = function(type) {
+  return TypeComponent.options.components[types[type]]
 }
 
-export default DitoType
+export default TypeComponent

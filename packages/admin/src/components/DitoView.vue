@@ -6,9 +6,9 @@
 </template>
 
 <script>
-import DitoRouterComponent from '@/DitoRouterComponent'
+import RouterComponent from '@/RouterComponent'
 
-export default DitoRouterComponent.component('dito-view', {
+export default RouterComponent.component('dito-view', {
   emptyData() {
     return []
   },

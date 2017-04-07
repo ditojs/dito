@@ -1,6 +1,6 @@
-import DitoComponent from './DitoComponent'
+import BaseComponent from './BaseComponent'
 
-export default DitoComponent.extend({
+export default BaseComponent.extend({
   data() {
     return {
       data: this.$options.emptyData(),

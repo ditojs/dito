@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import BaseComponent from '@/BaseComponent'
 
-export default DitoComponent.type('button')
+export default BaseComponent.type('button')
 </script>

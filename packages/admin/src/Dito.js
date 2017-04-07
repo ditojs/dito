@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import DitoComponent from './DitoComponent'
+import BaseComponent from './BaseComponent'
 import './components'
 import './types'
 import DitoRoot from './components/DitoRoot'
@@ -60,6 +60,6 @@ export default {
   setup,
 
   register(type, options) {
-    return DitoComponent.type(type, options)
+    return BaseComponent.type(type, options)
   }
 }

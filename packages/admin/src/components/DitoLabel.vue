@@ -4,9 +4,9 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import BaseComponent from '@/BaseComponent'
 
-export default DitoComponent.component('dito-label', {
+export default BaseComponent.component('dito-label', {
   props: ['text']
 })
 </script>

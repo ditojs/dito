@@ -8,10 +8,10 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import BaseComponent from '@/BaseComponent'
 import { compile } from '@/utils/template'
 
-export default DitoComponent.type('list', {
+export default BaseComponent.type('list', {
   props: {
     data: { type: Array, required: false }
   },

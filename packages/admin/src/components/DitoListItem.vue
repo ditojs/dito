@@ -5,9 +5,9 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import BaseComponent from '@/BaseComponent'
 
-export default DitoComponent.component('dito-list-item', {
+export default BaseComponent.component('dito-list-item', {
   props: ['item', 'render']
 })
 </script>

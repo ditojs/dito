@@ -19,9 +19,9 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import BaseComponent from '@/BaseComponent'
 
-export default DitoComponent.component('dito-root', {
+export default BaseComponent.component('dito-root', {
   props: ['views']
 })
 </script>

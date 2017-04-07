@@ -4,8 +4,8 @@ import escape from './utils/escape'
 let components = []
 let types = []
 
-let DitoComponent = Vue.extend({
-  // Make sure that registered components are present in all DitoComponent.
+let BaseComponent = Vue.extend({
+  // Make sure that registered components are present in all BaseComponent.
   components: components,
 
   methods: {
@@ -17,7 +17,7 @@ let DitoComponent = Vue.extend({
   }
 })
 
-DitoComponent.component = function(name, options) {
+BaseComponent.component = function(name, options) {
   let ctor = this.extend(Object.assign({
     name: name
   }, options))
@@ -25,7 +25,7 @@ DitoComponent.component = function(name, options) {
   return ctor
 }
 
-DitoComponent.type = function(type, options) {
+BaseComponent.type = function(type, options) {
   let name = `dito-${type}`
   types[type] = name
   let props = options && options.props
@@ -41,8 +41,8 @@ DitoComponent.type = function(type, options) {
   }))
 }
 
-DitoComponent.get = function(type) {
+BaseComponent.get = function(type) {
   return components[types[type]]
 }
 
-export default DitoComponent
+export default BaseComponent

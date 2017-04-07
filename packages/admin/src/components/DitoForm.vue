@@ -10,9 +10,9 @@
 </template>
 
 <script>
-import DitoRouterComponent from '@/DitoRouterComponent'
+import RouterComponent from '@/RouterComponent'
 
-export default DitoRouterComponent.component('dito-form', {
+export default RouterComponent.component('dito-form', {
   props: ['param'],
 
   emptyData() {
