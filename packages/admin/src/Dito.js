@@ -1,8 +1,8 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import BaseComponent from './BaseComponent'
 import './components'
 import './types'
+import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
@@ -20,31 +20,31 @@ function getRenderFunction(value, ...parameters) {
 }
 
 function setup(el, options) {
-  let api = options.api
-  let itemEndpoint = '{{ form.endpoint }}/{{ id }}'
-  let defaultEndpoints = {
+  const api = options.api
+  const itemEndpoint = '{{ form.endpoint }}/{{ id }}'
+  const defaultEndpoints = {
     index: '{{ view.endpoint }}',
     post: '{{ form.endpoint }}',
     get: itemEndpoint,
     put: itemEndpoint,
     delete: itemEndpoint
   }
-  let endpoints = api.endpoints || {}
-  for (var type in defaultEndpoints) {
+  const endpoints = api.endpoints || {}
+  for (let type in defaultEndpoints) {
     endpoints[type] = getRenderFunction(
         endpoints[type] || defaultEndpoints[type], 'view', 'form', 'id')
   }
   api.endpoints = endpoints
 
-  let views = options.views
-  let forms = options.forms
-  let routes = []
+  const views = options.views
+  const forms = options.forms
+  const routes = []
 
   for (let name in views) {
-    let view = views[name]
+    const view = views[name]
     view.endpoint = view.endpoint || name
-    let form = forms[view.form]
-    let meta = {
+    const form = forms[view.form]
+    const meta = {
       name,
       view,
       form,
@@ -82,8 +82,5 @@ function setup(el, options) {
 
 export default {
   setup,
-
-  register(type, options) {
-    return BaseComponent.type(type, options)
-  }
+  register: TypeComponent.register
 }

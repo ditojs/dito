@@ -8,17 +8,17 @@
 </template>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import TypeComponent from '@/TypeComponent'
 import { compile } from '@/utils/template'
 
-export default BaseComponent.type('list', {
+export default TypeComponent.register('list', {
   props: {
     data: { type: Array, required: false }
   },
 
   computed: {
     render() {
-      let desc = this.desc
+      const desc = this.desc
       return desc.render || desc.template && compile(desc.template, 'item')
     }
   }

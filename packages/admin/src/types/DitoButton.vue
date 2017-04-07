@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default BaseComponent.type('button')
+export default TypeComponent.register('button')
 </script>

@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default BaseComponent.type('text')
+export default TypeComponent.register('text')
 </script>

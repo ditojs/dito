@@ -28,7 +28,7 @@ export default BaseComponent.extend({
       // NOTE: This needs to be a computed property so that a change in $route
       // will trigger a recalculated $meta on reused router components.
       for (let route of this.$route.matched) {
-        let components = route.components
+        const components = route.components
         for (let name in components) {
           if (components[name] === this.constructor) {
             return route.meta
@@ -49,7 +49,7 @@ export default BaseComponent.extend({
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
       this.error = null
-      let send = this.$meta.api.send
+      const send = this.$meta.api.send
       if (send) {
         this.loading = true
         send(method, path, data, (err, result) => {
@@ -79,7 +79,7 @@ export default BaseComponent.extend({
     },
 
     getEndpoint(type, id) {
-      let meta = this.$meta
+      const meta = this.$meta
       return meta.api.endpoints[type](meta.view, meta.form, id)
     },
 
@@ -87,7 +87,7 @@ export default BaseComponent.extend({
       if (item && confirm(`Do you really want to remove "${item.text}"?`)) {
         this.send('delete', this.getEndpoint('delete', item.id), null, (err) => {
           if (!err) {
-            let index = this.data.indexOf(item)
+            const index = this.data.indexOf(item)
             if (index >= 0) {
               this.data.splice(index, 1)
             }
