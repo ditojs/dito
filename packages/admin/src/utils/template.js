@@ -19,7 +19,7 @@ export function parse(text) {
     if (lastIndex < text.length) {
       parts.push(JSON.stringify(text.slice(lastIndex)))
     }
-    return parts.join('+')
+    return ['[', parts.join(','), '].join("")']
   }
 }
 
