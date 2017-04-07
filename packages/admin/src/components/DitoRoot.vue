@@ -1,26 +1,31 @@
 <template lang="pug">
   .dito
-    aside
+    nav.dito-menu
       router-link(v-for="(desc, name) in views", :key="name", :to="`/${name}`")
         | {{desc.label}}
-    nav
+    main.dito-page
       dito-breadcrumbs
-    main
-      router-view
+      router-view.dito-view
 </template>
 
 <style lang="sass">
   .dito
-    aside
+    .dito-menu
       float: left
       a
         display: block
-    nav
+    .dito-page
       float: left
-    main
-      margin-left: 1em
+      padding-left: 1em
+    .dito-breadcrumbs,
+    .dito-spinner
       float: left
+    .dito-content,
+    .dito-debug
       clear: left
+      padding: 0.5em 0
+    .dito-debug
+      font-size: 0.75em
 </style>
 
 <script>

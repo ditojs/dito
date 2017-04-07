@@ -1,17 +1,20 @@
 <template lang="pug">
-  ul.breadcrumbs
-    li(v-for="(route, i) in $route.matched")
-      span(v-if="i === $route.matched.length - 1") {{ route.meta.label }}
-      router-link(v-else, :to="getPath(i)") {{ route.meta.label }}
+  nav.dito-breadcrumbs
+    ul
+      li(v-for="(route, i) in $route.matched")
+        span(v-if="i === $route.matched.length - 1") {{ route.meta.label }}
+        router-link(v-else, :to="getPath(i)") {{ route.meta.label }}
 </template>
 
 <style lang="sass">
-  .dito
-    ul.breadcrumbs
-      &, li
-        display: inline
-      li + li:before
-        content: ' > '
+  .dito-breadcrumbs
+    ul, li
+      display: inline
+      margin: 0
+      padding: 0
+
+    li + li::before
+      content: ' > '
 </style>
 
 <script>

@@ -3,7 +3,8 @@ import BaseComponent from './BaseComponent'
 export default BaseComponent.extend({
   data() {
     return {
-      data: this.$options.emptyData(),
+      // We need to start with an empty object for DitoForm, not with null
+      data: {},
       error: null,
       loading: false
     }
@@ -57,6 +58,11 @@ export default BaseComponent.extend({
   },
 
   methods: {
+    getEndpoint(type, id) {
+      const meta = this.meta
+      return meta.api.endpoints[type](meta.view, meta.form, id)
+    },
+
     send(method, path, data, callback) {
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
@@ -81,7 +87,7 @@ export default BaseComponent.extend({
       // Only load data if this component is the last one in the route
       if (this.isLastRoute && this.shouldLoad) {
         if (clear) {
-          this.data = this.$options.emptyData()
+          this.data = {}
         }
         this.send('get', this.endpoint, null, (err, data) => {
           if (!err) {
@@ -89,11 +95,6 @@ export default BaseComponent.extend({
           }
         })
       }
-    },
-
-    getEndpoint(type, id) {
-      const meta = this.meta
-      return meta.api.endpoints[type](meta.view, meta.form, id)
     },
 
     remove(item) {

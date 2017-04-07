@@ -1,12 +1,17 @@
 <template lang="pug">
-  label {{ text }}
-    slot
+  label(:for="name") {{ text }}
 </template>
+
+<style lang="sass">
+  .dito-form
+    label::after
+      content: ': '
+</style>
 
 <script>
 import BaseComponent from '@/BaseComponent'
 
 export default BaseComponent.component('dito-label', {
-  props: ['text']
+  props: ['name', 'text']
 })
 </script>
