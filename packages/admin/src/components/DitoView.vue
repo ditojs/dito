@@ -2,7 +2,8 @@
   div(v-if="isLastRoute")
     dito-spinner.dito-spinner(:loading="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    component.dito-content(v-if="data", :is="typeToComponent(meta.view.type)", :name="meta.name", :desc="meta.view", :data="data", @remove="remove")
+    component.dito-content(v-if="data", :is="typeToComponent(meta.view.type)",
+      :name="meta.name", :desc="meta.view", :data="data", @remove="remove")
   router-view(v-else)
 </template>
 

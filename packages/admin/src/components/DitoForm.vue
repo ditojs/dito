@@ -2,24 +2,27 @@
   form.dito-form(@submit="submit")
     dito-spinner.dito-spinner(:loading="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    ul.dito-content
-      li(v-for="(desc, name) in meta.form", v-if="name != 'endpoint'")
-        dito-label(v-if="desc.label", :name="name", :text="desc.label")
-        component(:is="typeToComponent(desc.type)", :name="name", :desc="desc",
-          :data="data", @remove="remove", :disabled="desc.disabled || loading")
-    .dito-buttons
-      button(type="submit") {{ create ? 'Create' : 'Save' }}
-      router-link(tag="button", to="..", append) Cancel
+    .dito-content
+      ul.dito-list
+        li(v-for="(desc, name) in meta.form", v-if="typeof desc === 'object'")
+          dito-label(v-if="desc.label", :name="name", :text="desc.label")
+          component(:is="typeToComponent(desc.type)", :name="name",
+            :desc="desc", :data="data", @remove="remove",
+            :disabled="desc.disabled || loading")
+      .dito-buttons
+        button(type="submit") {{ create ? 'Create' : 'Save' }}
+        router-link(tag="button", to="..", append) Cancel
 </template>
 
 <style lang="sass">
-  .dito-form
-    ul
-      list-style: none
-    ul, li
-      margin: 0
-      padding: 0.1em 0
-
+  // Move the submit button that needs to appear first in markup in order to
+  // be the default after the Cancel button using floating inside inline-block.
+  .dito-list + .dito-buttons
+    display: inline-block
+    button
+      float: left
+      &[type="submit"]
+        float: right
 </style>
 
 <script>

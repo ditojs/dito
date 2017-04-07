@@ -1,7 +1,8 @@
 <template lang="pug">
-  .dito-list(:id="name")
-    ul
-      dito-list-item(v-for="item in data", :key="item.id", :item="item", :render="render")
+  div
+    ul.dito-list
+      dito-list-item(v-for="item in data", :key="item.id", :item="item",
+        :render="render")
         .dito-buttons
           router-link(tag="button", :to="`${item.id}`", append) Edit
           button(@click="$emit('remove', item)") Delete
@@ -10,17 +11,18 @@
 </template>
 
 <style lang="sass">
-  .dito-list
-    ul
-      display: table
-      border-spacing: 0.2em
+  // Used both by DitoList and DitoForm
+  ul.dito-list
+    display: table
+    border-spacing: 0.2em
+    margin: 0
+    padding: 0.5em 0
     li
       display: table-row
-      > *
-        display: table-cell
-    ul, li
       margin: 0
       padding: 0
+      > *
+        display: table-cell
 </style>
 
 <script>

@@ -9,24 +9,29 @@
 </template>
 
 <style lang="sass">
-  .dito
-    .dito-menu
-      float: left
-      a
-        display: block
-    .dito-page
-      float: left
-      padding-left: 1em
-    .dito-breadcrumbs,
-    .dito-spinner
-      padding: 0 0 0 0.25em
-      float: left
-    .dito-content,
-    .dito-debug
-      clear: left
-      padding: 0.5em 0
-    .dito-debug
-      font-size: 0.75em
+  .dito-menu
+    float: left
+    a
+      display: block
+    .router-link-active
+      font-weight: bold
+  .dito-page
+    float: left
+    padding-left: 1em
+  .dito-breadcrumbs,
+  .dito-spinner
+    padding-left: 0.25em
+    float: left
+  .dito-breadcrumbs
+    font-weight: bold
+  .dito-content
+    clear: left
+  .dito-debug
+    // display: none
+    clear: left
+    padding-top: 0.5em
+    font-size: 0.8em
+    color: #999
 </style>
 
 <script>
