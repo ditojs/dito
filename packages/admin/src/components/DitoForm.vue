@@ -1,6 +1,6 @@
 <template lang="pug">
   form.dito-form(@submit="submit")
-    dito-spinner(v-if="loading")
+    dito-spinner.dito-spinner(:loading="loading")
     .dito-debug API endpoint: {{ endpoint }}
     ul.dito-content
       li(v-for="(desc, name) in meta.form", v-if="name != 'endpoint'")

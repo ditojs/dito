@@ -83,9 +83,12 @@ function setup(el, options) {
       mode: 'history',
       routes
     }),
-    template: '<dito-root :views="views"/>',
+    template: '<dito-root :views="views" :settings="settings" />',
     components: { DitoRoot },
-    data: { views }
+    data: {
+      views,
+      settings: options.settings
+    }
   })
 }
 

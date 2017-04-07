@@ -19,6 +19,7 @@
       padding-left: 1em
     .dito-breadcrumbs,
     .dito-spinner
+      padding: 0 0 0 0.25em
       float: left
     .dito-content,
     .dito-debug
@@ -31,7 +32,20 @@
 <script>
 import BaseComponent from '@/BaseComponent'
 
+import DitoSpinner from 'vue-spinner/src/PulseLoader'
+BaseComponent.component('dito-spinner', DitoSpinner)
+
 export default BaseComponent.component('dito-root', {
-  props: ['views']
+  props: ['views', 'settings'],
+
+  created() {
+    const settings = this.settings
+    const spinner = settings && settings.spinner
+    if (spinner) {
+      const props = DitoSpinner.props
+      props.size.default = spinner.size || '6px'
+      props.color.default = spinner.color || '#999'
+    }
+  }
 })
 </script>
