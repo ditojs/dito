@@ -22,23 +22,35 @@ export default BaseComponent.extend({
   },
 
   computed: {
-    $meta() {
+    routeRecord() {
       // Walks through the matched routes and all components of each route, to
       // find the route that is associated with this component, and returns it.
       // NOTE: This needs to be a computed property so that a change in $route
-      // will trigger a recalculated $meta on reused router components.
+      // will trigger a recalculated meta on reused router components.
       for (let route of this.$route.matched) {
         const components = route.components
         for (let name in components) {
           if (components[name] === this.constructor) {
-            return route.meta
+            return route
           }
         }
       }
       return null
     },
 
-    load() {
+    meta() {
+      const record = this.routeRecord
+      return record ? record.meta : null
+    },
+
+    isLastRoute() {
+      // Returns true when this router component is the last one in the route.
+      const record = this.routeRecord
+      const matched = this.$route.matched
+      return record === matched[matched.length - 1]
+    },
+
+    shouldLoad() {
       // This is in computed so it can be overridden in DitoForm
       return true
     }
@@ -49,7 +61,7 @@ export default BaseComponent.extend({
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
       this.error = null
-      const send = this.$meta.api.send
+      const send = this.meta.api.send
       if (send) {
         this.loading = true
         send(method, path, data, (err, result) => {
@@ -66,7 +78,8 @@ export default BaseComponent.extend({
     },
 
     loadData(clear) {
-      if (this.load) {
+      // Only load data if this component is the last one in the route
+      if (this.isLastRoute && this.shouldLoad) {
         if (clear) {
           this.data = this.$options.emptyData()
         }
@@ -79,7 +92,7 @@ export default BaseComponent.extend({
     },
 
     getEndpoint(type, id) {
-      const meta = this.$meta
+      const meta = this.meta
       return meta.api.endpoints[type](meta.view, meta.form, id)
     },
 

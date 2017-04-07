@@ -44,26 +44,35 @@ function setup(el, options) {
     const view = views[name]
     view.endpoint = view.endpoint || name
     const form = forms[view.form]
-    const meta = {
-      name,
-      view,
-      form,
-      api
-    }
+    const children = []
+    const meta = { view, form, api }
     routes.push({
       path: `/${name}`,
       component: DitoView,
-      meta: meta
+      children,
+      meta: Object.assign({
+        name,
+        label: view.label || name // TODO: Capitalize
+      }, meta)
     })
     if (form) {
       form.endpoint = form.endpoint || view.form
       // Use the same route for 'create' and ':id' and have DitoForm handle the
       // separate cases internally.
-      routes.push({
-        path: `/${name}/:param`,
+      children.push({
+        path: 'create',
+        component: DitoForm,
+        meta: Object.assign({
+          create: true,
+          label: 'Create'
+        }, meta)
+      }, {
+        path: ':id',
         component: DitoForm,
         props: true,
-        meta: meta
+        meta: Object.assign({
+          label: 'Edit'
+        }, meta)
       })
     }
   }

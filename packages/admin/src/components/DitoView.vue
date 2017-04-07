@@ -1,8 +1,9 @@
 <template lang="pug">
-  div
+  div(v-if="isLastRoute")
     p API endpoint: {{ endpoint }}
     p.loading(v-if="loading") Loading...
-    component(v-if="data", :is="typeToComponent($meta.view.type)", :name="$meta.name", :desc="$meta.view", :data="data", @remove="remove")
+    component(v-if="data", :is="typeToComponent(meta.view.type)", :name="meta.name", :desc="meta.view", :data="data", @remove="remove")
+  router-view(v-else)
 </template>
 
 <script>
