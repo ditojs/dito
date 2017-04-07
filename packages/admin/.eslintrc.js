@@ -26,6 +26,7 @@ module.exports = {
     'no-debugger': isProduction ? 2 : 0,
     'no-unused-vars': isProduction ? 2 : 0,
     'no-new': 0,
+    'no-new-func': 0,
     'space-before-function-paren': 0
   }
 }

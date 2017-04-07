@@ -1,6 +1,6 @@
 <template lang="pug">
   li
-    span(v-html="item.html || escape(item.text)")
+    span(v-html="render && render(item) || item.html || escape(item.text)")
     slot
 </template>
 
@@ -8,6 +8,6 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-list-item', {
-  props: ['item']
+  props: ['item', 'render']
 })
 </script>
