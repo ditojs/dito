@@ -24,16 +24,28 @@
 <script>
 import RouterComponent from '@/RouterComponent'
 
+// Recursively sets up a new data object that has keys with null-values for all
+// form fields, so they can be correctly watched for changes.
+function setupData(descriptions, data) {
+  for (let name in descriptions) {
+    let desc = descriptions[name]
+    if (typeof desc === 'object') {
+      if (desc.type === 'tab') {
+        setupData(desc, data)
+      } else {
+        data[name] = null
+      }
+    }
+  }
+  return data
+}
+
 export default RouterComponent.component('dito-form', {
   props: ['id'],
 
   computed: {
     create() {
       return !!this.meta.create
-    },
-
-    shouldLoad() {
-      return !this.create
     },
 
     method() {
@@ -46,6 +58,14 @@ export default RouterComponent.component('dito-form', {
   },
 
   methods: {
+    setupData() {
+      if (this.create) {
+        this.data = setupData(this.meta.form, {})
+      } else {
+        this.loadData(true)
+      }
+    },
+
     submit(event) {
       event.preventDefault()
       this.send(this.method, this.endpoint, this.data, (err) => {

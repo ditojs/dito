@@ -11,14 +11,14 @@ export default BaseComponent.extend({
   },
 
   created() {
-    // Load data after view was created and the data is already being observed.
-    this.loadData(true)
+    // Setup data after view was created and the data is already being observed.
+    this.setupData()
   },
 
   watch: {
-    // Call loadData() again when the route changes, to support component reuse.
+    // Call setupData() again when the route changes to support component reuse.
     $route() {
-      this.loadData(true)
+      this.setupData()
     }
   },
 
@@ -49,11 +49,6 @@ export default BaseComponent.extend({
       const record = this.routeRecord
       const matched = this.$route.matched
       return record === matched[matched.length - 1]
-    },
-
-    shouldLoad() {
-      // This is in computed so it can be overridden in DitoForm
-      return true
     }
   },
 
@@ -85,7 +80,7 @@ export default BaseComponent.extend({
 
     loadData(clear) {
       // Only load data if this component is the last one in the route
-      if (this.isLastRoute && this.shouldLoad) {
+      if (this.isLastRoute) {
         if (clear) {
           this.data = {}
         }
@@ -95,6 +90,10 @@ export default BaseComponent.extend({
           }
         })
       }
+    },
+
+    setupData() {
+      this.loadData(true)
     },
 
     remove(item) {

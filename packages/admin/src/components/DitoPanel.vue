@@ -73,7 +73,7 @@ import BaseComponent from '@/BaseComponent'
 
 function collect(descriptions, tabs) {
   let res = null
-  for (var name in descriptions) {
+  for (let name in descriptions) {
     let desc = descriptions[name]
     if (typeof desc === 'object' && desc.type !== 'tab' ^ tabs) {
       res = res || {}
