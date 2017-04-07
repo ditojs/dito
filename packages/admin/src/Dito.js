@@ -21,10 +21,20 @@ function getRenderFunction(value, ...parameters) {
 
 function setup(el, options) {
   let api = options.api
-  api.getIndexEndpoint = getRenderFunction(
-      api.indexEndpoint || '{{ view.endpoint }}', 'view')
-  api.getItemEndpoint = getRenderFunction(
-      api.itemEndpoint || '{{ form.endpoint }}/{{ id }}', 'form', 'id')
+  let itemEndpoint = '{{ form.endpoint }}/{{ id }}'
+  let defaultEndpoints = {
+    index: '{{ view.endpoint }}',
+    post: '{{ form.endpoint }}',
+    get: itemEndpoint,
+    put: itemEndpoint,
+    delete: itemEndpoint
+  }
+  let endpoints = api.endpoints || {}
+  for (var type in defaultEndpoints) {
+    endpoints[type] = getRenderFunction(
+        endpoints[type] || defaultEndpoints[type], 'view', 'form', 'id')
+  }
+  api.endpoints = endpoints
 
   let views = options.views
   let forms = options.forms

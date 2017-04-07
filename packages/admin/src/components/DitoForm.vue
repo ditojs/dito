@@ -5,7 +5,7 @@
     ul
       dito-form-field(v-for="(desc, name) in $meta.form", v-if="name != 'endpoint'", :key="name", :label="desc.label")
         component(:is="typeToComponent(desc.type)", :name="name", :desc="desc", :disabled="desc.disabled || loading", :data="data", @remove="remove")
-    button(type="submit") {{ $meta.create ? 'Create' : 'Save' }}
+    button(type="submit") {{ create ? 'Create' : 'Save' }}
     router-link(tag="button", to="..", append) Cancel
 </template>
 
@@ -24,21 +24,23 @@ export default RouterComponent.component('dito-form', {
       return this.param === 'create'
     },
 
+    method() {
+      return this.create ? 'post' : 'put'
+    },
+
     load() {
       return !this.create
     },
 
     endpoint() {
-      return this.create
-          ? this.getIndexEndpoint()
-          : this.getItemEndpoint(this.param)
+      return this.getEndpoint(this.method, this.param)
     }
   },
 
   methods: {
     submit(event) {
       event.preventDefault()
-      this.send(this.create ? 'post' : 'put', this.endpoint, this.data, () => {
+      this.send(this.method, this.endpoint, this.data, () => {
         this.$router.push({ path: '..', append: true })
       })
     }

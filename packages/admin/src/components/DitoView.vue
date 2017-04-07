@@ -15,11 +15,7 @@ export default RouterComponent.component('dito-view', {
 
   computed: {
     endpoint() {
-      return this.getIndexEndpoint()
-    },
-
-    visible() {
-      return
+      return this.getEndpoint('index')
     }
   }
 })

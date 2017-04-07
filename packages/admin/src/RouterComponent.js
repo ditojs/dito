@@ -76,19 +76,14 @@ export default BaseComponent.extend({
       }
     },
 
-    getIndexEndpoint() {
+    getEndpoint(type, id) {
       let meta = this.$meta
-      return meta.api.getIndexEndpoint(meta.view)
-    },
-
-    getItemEndpoint(id) {
-      let meta = this.$meta
-      return meta.api.getItemEndpoint(meta.form, id)
+      return meta.api.endpoints[type](meta.view, meta.form, id)
     },
 
     remove(item) {
       if (item && confirm(`Do you really want to remove "${item.text}"?`)) {
-        this.send('delete', this.getItemEndpoint(item.id), null, () => {
+        this.send('delete', this.getEndpoint('delete', item.id), null, () => {
           let index = this.data.indexOf(item)
           if (index >= 0) {
             this.data.splice(index, 1)
