@@ -1,6 +1,6 @@
 <template lang="pug">
   div
-    p API path: {{ path }}
+    p API endpoint: {{ endpoint }}
     p.loading(v-if="loading") Loading...
     component(v-if="data", :is="typeToComponent($meta.view.type)", :name="$meta.name", :desc="$meta.view", :data="data", @remove="remove")
 </template>
@@ -14,8 +14,8 @@ export default RouterComponent.component('dito-view', {
   },
 
   computed: {
-    path() {
-      return this.getViewPath()
+    endpoint() {
+      return this.getIndexEndpoint()
     },
 
     visible() {

@@ -1,6 +1,6 @@
 <template lang="pug">
   form(@submit="submit")
-    p API path: {{ path }}
+    p API endpoint: {{ endpoint }}
     p.loading(v-if="loading") Loading...
     ul
       dito-form-field(v-for="(desc, name) in $meta.form", v-if="name != 'endpoint'", :key="name", :label="desc.label")
@@ -28,15 +28,17 @@ export default RouterComponent.component('dito-form', {
       return !this.create
     },
 
-    path() {
-      return this.create ? this.getViewPath() : this.getFormPath(this.param)
+    endpoint() {
+      return this.create
+          ? this.getIndexEndpoint()
+          : this.getItemEndpoint(this.param)
     }
   },
 
   methods: {
     submit(event) {
       event.preventDefault()
-      this.send(this.create ? 'post' : 'put', this.path, this.data, () => {
+      this.send(this.create ? 'post' : 'put', this.endpoint, this.data, () => {
         this.$router.push({ path: '..', append: true })
       })
     }

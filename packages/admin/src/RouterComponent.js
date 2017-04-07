@@ -70,31 +70,25 @@ export default BaseComponent.extend({
         if (clear) {
           this.data = this.$options.emptyData()
         }
-        this.send('get', this.path, null, (data) => {
+        this.send('get', this.endpoint, null, (data) => {
           this.data = data
         })
       }
     },
 
-    getViewPath() {
-      let getViewPath = this.$meta.api.getViewPath
-      let view = this.$meta.view
-      return !view ? null : getViewPath
-          ? getViewPath(view)
-          : view.endpoint
+    getIndexEndpoint() {
+      let meta = this.$meta
+      return meta.api.getIndexEndpoint(meta.view)
     },
 
-    getFormPath(id) {
-      let getFormPath = this.$meta.api.getFormPath
-      let form = this.$meta.form
-      return !form ? null : getFormPath
-          ? getFormPath(form, id)
-          : `${form.endpoint}/${id}`
+    getItemEndpoint(id) {
+      let meta = this.$meta
+      return meta.api.getItemEndpoint(meta.form, id)
     },
 
     remove(item) {
       if (item && confirm(`Do you really want to remove "${item.text}"?`)) {
-        this.send('delete', this.getFormPath(item.id), null, () => {
+        this.send('delete', this.getItemEndpoint(item.id), null, () => {
           let index = this.data.indexOf(item)
           if (index >= 0) {
             this.data.splice(index, 1)

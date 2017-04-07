@@ -6,12 +6,26 @@ import './types'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
+import { compile } from '@/utils/template'
 
 Vue.config.productionTip = false
 Vue.use(Router)
 
+function getRenderFunction(value, ...parameters) {
+  return value == null
+      ? null
+      : typeof value === 'function'
+        ? value
+        : compile(value, ...parameters)
+}
+
 function setup(el, options) {
   let api = options.api
+  api.getIndexEndpoint = getRenderFunction(
+      api.indexEndpoint || '{{ view.endpoint }}', 'view')
+  api.getItemEndpoint = getRenderFunction(
+      api.itemEndpoint || '{{ form.endpoint }}/{{ id }}', 'form', 'id')
+
   let views = options.views
   let forms = options.forms
   let routes = []
