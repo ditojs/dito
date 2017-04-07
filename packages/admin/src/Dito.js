@@ -56,6 +56,7 @@ function setup(el, options) {
       }, meta)
     })
     if (form) {
+      meta.name = view.form
       form.endpoint = form.endpoint || view.form
       // Use the same route for 'create' and ':id' and have DitoForm handle the
       // separate cases internally.

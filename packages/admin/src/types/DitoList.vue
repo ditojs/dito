@@ -11,16 +11,15 @@
 </template>
 
 <style lang="sass">
-  // Used both by DitoList and DitoForm
+  // Used both by DitoList and DitoPane
   ul.dito-list
     display: table
     border-spacing: 0.2em
-    margin: 0
-    padding: 0.5em 0
+    margin: 0.5em 0
+    padding: 0
     li
       display: table-row
       margin: 0
-      padding: 0
       > *
         display: table-cell
 </style>

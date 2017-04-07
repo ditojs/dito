@@ -1,5 +1,5 @@
 <template lang="pug">
-  button(:type="desc.type") {{ desc.text }}
+  button(:id="name", :type="desc.type") {{ desc.text }}
 </template>
 
 <script>

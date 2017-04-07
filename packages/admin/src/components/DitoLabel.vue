@@ -1,11 +1,10 @@
 <template lang="pug">
-  label(:for="name") {{ text }}
+  label.dito-label(:for="name") {{ text }}
 </template>
 
 <style lang="sass">
-  .dito-form
-    label::after
-      content: ': '
+  .dito-label::after
+    content: ': '
 </style>
 
 <script>
