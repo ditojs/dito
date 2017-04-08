@@ -4,7 +4,6 @@
 import './DitoBreadcrumbs'
 import './DitoForm'
 import './DitoLabel'
-import './DitoListItem'
 import './DitoPanel'
 import './DitoRoot'
 import './DitoView'

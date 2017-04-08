@@ -1,8 +1,8 @@
 <template lang="pug">
   div
     ul.dito-list
-      dito-list-item(v-for="item in data", :key="item.id", :item="item",
-        :render="render")
+      li(v-for="item in data", :key="item.id")
+        span(v-html="render && render(item) || item.html || escape(item.text)")
         .dito-buttons
           router-link(tag="button", :to="`${item.id}`", append) Edit
           button(@click="$emit('remove', item)") Delete
