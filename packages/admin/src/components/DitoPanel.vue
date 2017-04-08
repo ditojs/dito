@@ -17,7 +17,7 @@
 .dito-tabs
   display: flex
   flex-wrap: wrap
-  margin: 0.5em 0
+  padding: 0.5em 0 0
   &::after
     // Force width
     content: ''
@@ -25,7 +25,7 @@
 
   > .dito-panel
     display: none
-    padding: 0.25em 0.5em
+    padding: 0 0.5em 0.5em
     background: #fff
     border: 1px solid #ccc
     z-index: 1

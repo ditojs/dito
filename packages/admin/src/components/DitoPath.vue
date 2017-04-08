@@ -21,9 +21,15 @@
 import BaseComponent from '@/BaseComponent'
 
 export default BaseComponent.component('dito-path', {
+  computed: {
+    parts() {
+      return this.$route.path.split('/')
+    }
+  },
+
   methods: {
     getPath(level) {
-      return this.$route.path.split('/').slice(0, level - 1).join('/')
+      return this.parts.slice(0, level - 1).join('/')
     }
   }
 })

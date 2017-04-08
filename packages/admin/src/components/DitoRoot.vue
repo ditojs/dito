@@ -9,28 +9,44 @@
 </template>
 
 <style lang="sass">
+  .dito
+    &,
+    input,
+    button
+      font-family: system-ui
+      font-size: 12px
+
+  .dito-menu,
+  .dito-path
+    font-size: 14px
+
+
   .dito-menu
     float: left
     a
       display: block
     .router-link-active
       font-weight: bold
+
   .dito-page
     float: left
     padding-left: 1em
+
   .dito-path,
   .dito-spinner
     padding-left: 0.25em
     float: left
+
   .dito-path
     font-weight: bold
+
   .dito-content
     clear: left
+
   .dito-debug
-    // display: none
+    display: none
     clear: left
     padding-top: 0.5em
-    font-size: 0.8em
     color: #999
 </style>
 

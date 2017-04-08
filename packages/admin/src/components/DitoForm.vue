@@ -14,6 +14,7 @@
   // Move the submit button that needs to appear first in markup in order to
   // be the default after the Cancel button using floating inside inline-block.
   .dito-panel + .dito-buttons
+    padding: 0.5em 0 0
     display: inline-block
     button
       float: left

@@ -5,7 +5,7 @@ const TypeComponent = BaseComponent.extend()
 const types = BaseComponent.types
 
 TypeComponent.register = function(type, options) {
-  const name = `type-${type}`
+  const name = `dito-${type}`
   types[type] = name
   const props = options && options.props
   return TypeComponent.component(name, Object.assign({}, options, {
