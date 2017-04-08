@@ -20,7 +20,6 @@
   .dito-path
     font-size: 14px
 
-
   .dito-menu
     float: left
     a
@@ -37,6 +36,14 @@
     padding-left: 0.25em
     float: left
 
+  .dito-spinner
+    display: inline
+    padding-top: 0.15em
+
+  .dito-view
+    // To make the floating spinner alyways go up to the path
+    display: inline
+
   .dito-path
     font-weight: bold
 
@@ -44,7 +51,7 @@
     clear: left
 
   .dito-debug
-    display: none
+    // display: none
     clear: left
     padding-top: 0.5em
     color: #999

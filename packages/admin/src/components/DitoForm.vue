@@ -1,6 +1,7 @@
 <template lang="pug">
   form.dito-form(@submit="submit")
-    dito-spinner.dito-spinner(:loading="loading")
+    .dito-spinner
+      dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
       dito-panel(:descriptions="meta.form", :name="meta.name", :data="data",
