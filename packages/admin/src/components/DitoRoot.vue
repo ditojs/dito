@@ -4,7 +4,7 @@
       router-link(v-for="(desc, name) in views", :key="name", :to="`/${name}`")
         | {{desc.label}}
     main.dito-page
-      dito-breadcrumbs
+      dito-path
       router-view.dito-view
 </template>
 
@@ -18,11 +18,11 @@
   .dito-page
     float: left
     padding-left: 1em
-  .dito-breadcrumbs,
+  .dito-path,
   .dito-spinner
     padding-left: 0.25em
     float: left
-  .dito-breadcrumbs
+  .dito-path
     font-weight: bold
   .dito-content
     clear: left

@@ -1,5 +1,5 @@
 <template lang="pug">
-  nav.dito-breadcrumbs
+  nav.dito-path
     ul
       li(v-for="(route, i) in $route.matched")
         span(v-if="i === $route.matched.length - 1") {{ route.meta.label }}
@@ -7,7 +7,7 @@
 </template>
 
 <style lang="sass">
-  .dito-breadcrumbs
+  .dito-path
     ul, li
       display: inline
       margin: 0
@@ -20,7 +20,7 @@
 <script>
 import BaseComponent from '@/BaseComponent'
 
-export default BaseComponent.component('dito-breadcrumbs', {
+export default BaseComponent.component('dito-path', {
   methods: {
     getPath(level) {
       return this.$route.path.split('/').slice(0, level - 1).join('/')
