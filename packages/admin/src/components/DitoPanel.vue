@@ -14,56 +14,72 @@
 
 <style lang="sass">
 // CSS-only tabs, based on: https://kyusuf.com/post/completely-css-tabs
+$tab-radius: 3px
+$tab-padding-hor: 6px
+$tab-padding-ver: 4px
+$tab-border-color: #bfbfbf
+$tab-border-width: 1px
+$tab-border: $tab-border-width solid $tab-border-color
+
+$tab-color-background: #fff
+$tab-color-inactive: #eee
+$tab-color-active: #ccc
+$tab-color-hover: #ddd
+
 .dito-tabs
   display: flex
   flex-wrap: wrap
   padding: 0.5em 0 0
   &::after
-    // Force width
+    // Force width to make small .dito-panel elements appear below tabs
     content: ''
     width: 100%
 
   > .dito-panel
     display: none
     padding: 0 0.5em 0.5em
-    background: #fff
-    border: 1px solid #ccc
+    background: $tab-color-background
+    border: $tab-border
+    border-radius: $tab-radius
+    box-shadow: 0 1px 1px 0 rgba(33,33,33,0.1)
     z-index: 1
     // Visually move panels below all tabs
     order: 100
 
+    &:first-of-type
+      border-top-left-radius: 0
+
   > label
-    padding: 0.3em 0.5em
-    background: #eee
-    border: 1px solid #ccc
+    padding: $tab-padding-ver $tab-padding-hor ($tab-padding-ver + $tab-radius)
+    background: $tab-color-inactive
+    border: $tab-border
     // Overlap right and bottom borders
-    margin: 0 -1px -1px 0
+    margin: 0 (-$tab-border-width) (-$tab-radius) 0
     cursor: pointer
     user-select: none
-    z-index: 2
+    border-top-left-radius: $tab-radius
+    border-top-right-radius: $tab-radius
     &:hover
-      background: #ddd
+      background: $tab-color-hover
     &:active
-      background: #ccc
+      background: $tab-color-active
 
   > input
     width: 0
     border: 0
-    opacity: 0
     margin: 0
+    opacity: 0
     @-moz-document url-prefix()
       // On Firefox, we can't use `display: absolute` along with `opacity> 0` to
       // hide the input, as that would break flex layout. And setting width and
       // border to 0 still produces a 2px border, so we have to offset by 2px
       margin: 0 -2px
-    &:focus + label
-      border: 0
-      margin: 1px 0 0 1px
-      box-shadow: 0 0 1px 1px ActiveBorder, inset 0 0 1px 1px ActiveBorder
-      z-index: 3
     &:checked + label
-      background: #fff
+      z-index: 2
+      background: $tab-color-background
       border-bottom: none
+      padding-bottom: $tab-padding-ver
+      margin-bottom: -$tab-border-width
       & + .dito-panel
         display: block
 </style>

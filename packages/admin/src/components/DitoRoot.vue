@@ -13,7 +13,7 @@
     &,
     input,
     button
-      font-family: system-ui
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
       font-size: 12px
 
   .dito-menu,
