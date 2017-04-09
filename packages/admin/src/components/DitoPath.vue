@@ -8,10 +8,11 @@
 
 <style lang="sass">
   .dito-path
-    ul, li
-      display: inline
+    ul
       margin: 0
       padding: 0
+    li
+      display: inline
 
     li + li::before
       content: ' > '

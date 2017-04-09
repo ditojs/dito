@@ -1,8 +1,9 @@
 <template lang="pug">
   .dito
     nav.dito-menu
-      router-link(v-for="(desc, name) in views", :key="name", :to="`/${name}`")
-        | {{desc.label}}
+      ul
+        li(v-for="(desc, name) in views")
+          router-link(:to="`/${name}`") {{desc.label}}
     main.dito-page
       dito-path
       router-view.dito-view
@@ -15,37 +16,54 @@
     button
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
       font-size: 12px
+    input,
+    button
+      margin: 0
+    a
+      color: #000
+      text-decoration: none
+    .dito-buttons
+      // Can't use button + button with margin-left, due to reordering (submit)
+      margin: 0 -1px
+      button
+        margin: 0 1px
 
   .dito-menu,
   .dito-path
-    font-size: 14px
+    font-size: 1.2em
 
   .dito-menu
     float: left
+    ul
+      list-style: none
+      margin: 0
+      padding: 0
+      li
+        margin: 0 0 0.3em
     a
-      display: block
-    .router-link-active
       font-weight: bold
+      &.router-link-active
+        color: #f00
+
+  .dito-path
+    font-weight: bold
+    margin-bottom: 0.5em
 
   .dito-page
     float: left
-    padding-left: 1em
+    padding-left: 2em
 
   .dito-path,
   .dito-spinner
-    padding-left: 0.25em
     float: left
 
   .dito-spinner
     display: inline
-    padding-top: 0.15em
+    padding: 0.15em 0 0 0.25em
 
   .dito-view
     // To make the floating spinner alyways go up to the path
     display: inline
-
-  .dito-path
-    font-weight: bold
 
   .dito-content
     clear: left
@@ -53,7 +71,7 @@
   .dito-debug
     // display: none
     clear: left
-    padding-top: 0.5em
+    padding-bottom: 0.5em
     color: #999
 </style>
 

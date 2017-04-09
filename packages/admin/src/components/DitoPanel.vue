@@ -29,7 +29,7 @@ $tab-color-hover: #ddd
 .dito-tabs
   display: flex
   flex-wrap: wrap
-  padding: 0.5em 0 0
+  padding: 0 0 0.5em
   &::after
     // Force width to make small .dito-panel elements appear below tabs
     content: ''
@@ -37,7 +37,7 @@ $tab-color-hover: #ddd
 
   > .dito-panel
     display: none
-    padding: 0 0.5em 0.5em
+    padding: 0.5em 0.5em 0
     background: $tab-color-background
     border: $tab-border
     border-radius: $tab-radius

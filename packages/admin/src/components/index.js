@@ -1,9 +1,10 @@
 // NOTE: index.js exports nothing, but dito components will be registered in
 // BaseComponent.component and can be rendered through their tag-names
-
-import './DitoForm'
-import './DitoLabel'
-import './DitoPanel'
-import './DitoPath'
+// NOTE: Sequence is meaningful for reasons of CSS declaration sequence. The
+// convention is in order of encountered hierarchy in the DOM.
 import './DitoRoot'
+import './DitoPath'
 import './DitoView'
+import './DitoForm'
+import './DitoPanel'
+import './DitoLabel'

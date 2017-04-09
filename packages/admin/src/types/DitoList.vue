@@ -15,7 +15,7 @@
   ul.dito-list
     display: table
     border-spacing: 0.2em
-    padding: 0.5em 0 0
+    padding: 0 0 0.5em
     margin: 0
     li
       display: table-row
