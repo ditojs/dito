@@ -2,10 +2,10 @@
   div
     ul.dito-list
       li(v-for="item in data", :key="item.id")
-        span(v-html="render && render(item) || item.html || escape(item.text)")
+        span(v-html="render(item)")
         .dito-buttons
           router-link(tag="button", :to="`${item.id}`", append) Edit
-          button(@click="$emit('remove', item)") Delete
+          button(@click="remove(item)") Delete
     .dito-buttons
       router-link(tag="button", to="create", append) Create
 </template>
@@ -36,7 +36,17 @@ export default TypeComponent.register('list', {
   computed: {
     render() {
       const desc = this.desc
-      return desc.render || desc.template && compile(desc.template, 'item')
+      return desc.render ||
+          desc.template && compile(desc.template, 'item') ||
+          function(item) {
+            return item.html || this.escapeHtml(item.text)
+          }
+    }
+  },
+
+  methods: {
+    remove(item) {
+      this.$emit('remove', item, this.render(item))
     }
   }
 })

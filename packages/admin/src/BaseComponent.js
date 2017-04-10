@@ -1,8 +1,8 @@
 import Vue from 'vue'
-import escape from './utils/escape'
+import escapeHtml from './utils/escapeHtml'
 
-const components = []
-const types = []
+const components = {}
+const types = {}
 
 const BaseComponent = Vue.extend({
   // Make sure that registered components are present in all BaseComponent.
@@ -13,7 +13,7 @@ const BaseComponent = Vue.extend({
       return types[type]
     },
 
-    escape
+    escapeHtml
   }
 })
 
