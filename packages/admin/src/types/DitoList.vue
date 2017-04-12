@@ -3,10 +3,10 @@
     ul.dito-list
       li(v-for="item in data", :key="item.id")
         span(v-html="render(item)")
-        .dito-buttons
-          router-link(tag="button", :to="`${item.id}`", append) Edit
-          button(@click="remove(item)") Delete
-    .dito-buttons
+        .dito-buttons(v-if="desc.editable || desc.deletable",)
+          router-link(v-if="desc.editable", tag="button", :to="`${item.id}`", append) Edit
+          button(v-if="desc.deletable", @click="remove(item)") Delete
+    .dito-buttons(v-if="desc.creatable")
       router-link(tag="button", to="create", append) Create
 </template>
 
