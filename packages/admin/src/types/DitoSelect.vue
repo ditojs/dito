@@ -1,9 +1,8 @@
 <template lang="pug">
   select(:id="name", v-model="value")
-    option(v-for="option in desc.options", :value="option.value")
-      | {{ option.text }}
+    option(v-for="option in desc.options", :value="option.value || option")
+      | {{ option.text || option }}
 </template>
-
 
 <script>
 import TypeComponent from '@/TypeComponent'
