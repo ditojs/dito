@@ -39,6 +39,7 @@
       z-index: 1
       // Visually move panels below all tabs
       order: 100
+      width: 320px
 
       &:first-of-type
         border-top-left-radius: 0
