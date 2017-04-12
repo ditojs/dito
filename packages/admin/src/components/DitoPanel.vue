@@ -1,15 +1,15 @@
 <template lang="pug">
   .dito-panel
-    .dito-tabs(v-if="tabs")
-      template(v-for="(desc, key) in tabs")
+    .dito-tabs(v-if="desc.tabs")
+      template(v-for="(tab, key) in desc.tabs")
         input(type="radio", :id="key", :name="name", :checked="key === selectedTab")
-        label(:for="key") {{ desc.label }}
-        dito-panel(:descriptions="desc", :data="data", :disabled="disabled")
-    ul.dito-list(v-if="components")
-      li(v-for="(desc, key) in components")
-        dito-label(v-if="desc.label", :name="key", :text="desc.label")
-        component(:is="typeToComponent(desc.type)", :name="key",
-          :desc="desc", :data="data", :disabled="desc.disabled || disabled")
+        label(:for="key") {{ tab.label }}
+        dito-panel(:desc="tab", :data="data", :disabled="disabled")
+    ul.dito-list(v-if="desc.components")
+      li(v-for="(comp, key) in desc.components")
+        dito-label(v-if="comp.label", :name="key", :text="comp.label")
+        component(:is="typeToComponent(comp.type)", :name="key",
+          :desc="comp", :data="data", :disabled="comp.disabled || disabled")
 </template>
 
 <style lang="sass">
@@ -87,33 +87,13 @@ $tab-color-hover: #ddd
 <script>
 import BaseComponent from '@/BaseComponent'
 
-function collect(descriptions, tabs) {
-  let res = null
-  for (let name in descriptions) {
-    let desc = descriptions[name]
-    if (typeof desc === 'object' && desc.type !== 'tab' ^ tabs) {
-      res = res || {}
-      res[name] = desc
-    }
-  }
-  return res
-}
-
 export default BaseComponent.component('dito-panel', {
-  props: ['name', 'descriptions', 'data', 'disabled'],
+  props: ['name', 'desc', 'data', 'disabled'],
 
   computed: {
-    components() {
-      return collect(this.descriptions, false)
-    },
-
-    tabs() {
-      return collect(this.descriptions, true)
-    },
-
     selectedTab() {
       // Return the first key from the tabs object
-      return this.tabs && Object.keys(this.tabs)[0]
+      return this.desc.tabs && Object.keys(this.desc.tabs)[0]
     }
   }
 })

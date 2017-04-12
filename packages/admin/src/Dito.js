@@ -29,7 +29,7 @@ function setup(el, options) {
   for (let method of ['post', 'get', 'put', 'delete']) {
     const entry = endpoints[method]
     const functions = endpoints[method] = {}
-    for (let type of ['collection', 'member']) {
+    for (let type in defaultEndpoints) {
       functions[type] = getRenderFunction(
           entry && entry[type] || defaultEndpoints[type],
           'view', 'form', 'id')

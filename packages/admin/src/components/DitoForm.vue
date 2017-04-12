@@ -4,7 +4,7 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
-      dito-panel(:descriptions="meta.form", :name="meta.name", :data="data",
+      dito-panel(:desc="meta.form", :name="meta.name", :data="data",
         :disabled="loading")
       .dito-buttons
         button(type="submit") {{ create ? 'Create' : 'Save' }}
