@@ -4,8 +4,8 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
-      dito-panel(:desc="meta.form", :name="meta.name", :data="data",
-        :disabled="loading")
+      dito-tabs(:name="meta.name", :tabs="meta.form.tabs", :data="data", :disabled="loading")
+      dito-panel(:desc="meta.form", :data="data", )
       .dito-buttons
         button(type="submit") {{ create ? 'Create' : 'Save' }}
         router-link(tag="button", to="..", append) Cancel
@@ -25,18 +25,14 @@
 <script>
 import RouterComponent from '@/RouterComponent'
 
-// Recursively sets up a new data object that has keys with null-values for all
-// form fields, so they can be correctly watched for changes.
-function setupData(descriptions, data) {
-  for (let name in descriptions) {
-    let desc = descriptions[name]
-    if (typeof desc === 'object') {
-      if (desc.type === 'tab') {
-        setupData(desc, data)
-      } else {
-        data[name] = null
-      }
-    }
+// Sets up a new data object that has keys with null-values for all form fields,
+// so they can be correctly watched for changes.
+function setupData(desc, data) {
+  for (let key in desc.tabs) {
+    setupData(desc.tabs[key], data)
+  }
+  for (let key in desc.components) {
+    data[key] = null
   }
   return data
 }
