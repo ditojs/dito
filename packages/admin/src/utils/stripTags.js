@@ -1,3 +1,3 @@
 export default function stripTags(html) {
-  return html.replace(/<[^>]+>/g, '')
+  return html ? html.replace(/<[^>]+>/g, '') : ''
 }

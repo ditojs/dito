@@ -1,5 +1,5 @@
 <template lang="pug">
-  select(:id="name", v-model="data[name]")
+  select(:id="name", v-model="value")
     option(v-for="option in desc.options", :value="option.value")
       | {{ option.text }}
 </template>

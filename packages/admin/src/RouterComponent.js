@@ -87,10 +87,14 @@ export default BaseComponent.extend({
         }
         this.send('get', this.endpoint, null, (err, data) => {
           if (!err) {
-            this.data = data
+            this.setData(data)
           }
         })
       }
+    },
+
+    setData(data) {
+      this.data = data
     },
 
     setupData() {

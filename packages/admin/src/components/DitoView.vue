@@ -16,6 +16,14 @@ export default RouterComponent.component('dito-view', {
     endpoint() {
       return this.getEndpoint('get', 'collection')
     }
+  },
+
+  methods: {
+    setData(data) {
+      // See TypeComponent value() computed property to understand why we need
+      // set up the data as a named property here:
+      this.data = { [this.meta.name]: data }
+    }
   }
 })
 </script>

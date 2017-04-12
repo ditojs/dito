@@ -5,7 +5,7 @@
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
       dito-tabs(:name="meta.name", :tabs="meta.form.tabs", :data="data", :disabled="loading")
-      dito-panel(:desc="meta.form", :data="data", )
+      dito-panel(:desc="meta.form", :data="data")
       .dito-buttons
         button(type="submit") {{ create ? 'Create' : 'Save' }}
         router-link(tag="button", to="..", append) Cancel

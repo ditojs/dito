@@ -79,9 +79,9 @@
 </style>
 
 <script>
-import RouterComponent from '@/RouterComponent'
+import BaseComponent from '@/BaseComponent'
 
-export default RouterComponent.component('dito-tabs', {
+export default BaseComponent.component('dito-tabs', {
   props: ['name', 'tabs', 'data', 'disabled'],
   computed: {
     selectedTab() {
