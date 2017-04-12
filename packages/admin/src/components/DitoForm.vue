@@ -54,7 +54,7 @@ export default RouterComponent.component('dito-form', {
     },
 
     endpoint() {
-      return this.getEndpoint(this.method, this.id)
+      return this.getEndpoint(this.method, 'member', this.id)
     }
   },
 

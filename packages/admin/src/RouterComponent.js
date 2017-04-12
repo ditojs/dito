@@ -54,9 +54,9 @@ export default BaseComponent.extend({
   },
 
   methods: {
-    getEndpoint(type, id) {
+    getEndpoint(method, type, id) {
       const meta = this.meta
-      return meta.api.endpoints[type](meta.view, meta.form, id)
+      return meta.api.endpoints[method][type](meta.view, meta.form, id)
     },
 
     send(method, path, data, callback) {
@@ -99,15 +99,17 @@ export default BaseComponent.extend({
 
     remove(item, text) {
       if (item && confirm(`Do you really want to remove "${stripTags(text)}"?`)) {
-        this.send('delete', this.getEndpoint('delete', item.id), null, (err) => {
-          if (!err) {
-            const index = this.data.indexOf(item)
-            if (index >= 0) {
-              this.data.splice(index, 1)
+        this.send('delete', this.getEndpoint('delete', 'member', item.id), null,
+          (err) => {
+            if (!err) {
+              const index = this.data.indexOf(item)
+              if (index >= 0) {
+                this.data.splice(index, 1)
+              }
             }
+            this.loadData(false)
           }
-          this.loadData(false)
-        })
+        )
       }
     }
   }

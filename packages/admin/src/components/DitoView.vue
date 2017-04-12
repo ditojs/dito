@@ -14,7 +14,7 @@ import RouterComponent from '@/RouterComponent'
 export default RouterComponent.component('dito-view', {
   computed: {
     endpoint() {
-      return this.getEndpoint('index')
+      return this.getEndpoint('get', 'collection')
     }
   }
 })
