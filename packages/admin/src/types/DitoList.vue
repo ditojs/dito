@@ -1,7 +1,7 @@
 <template lang="pug">
   div
     ul.dito-list
-      li(v-for="item in value", :key="item.id")
+      li(v-for="item in data[name]", :key="item.id")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable",)
           router-link(v-if="desc.editable", tag="button", :to="`${item.id}`", append) Edit

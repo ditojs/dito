@@ -1,5 +1,5 @@
 <template lang="pug">
-  input(:id="name", type="number", v-model="value", :disabled="disabled", :step="step", :min="min", :max="max", :readonly="readonly", :placeholder="placeholder")
+  input(:id="name", type="number", v-model="data[name]", :disabled="disabled", :step="step", :min="min", :max="max", :readonly="readonly", :placeholder="placeholder")
 </template>
 
 <script>

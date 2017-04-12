@@ -20,8 +20,11 @@ export default RouterComponent.component('dito-view', {
 
   methods: {
     setData(data) {
-      // See TypeComponent value() computed property to understand why we need
-      // set up the data as a named property here:
+      // In order to set up proper bindings between form components and member
+      // items, we need to access the attribute values through data[name].
+      // Passing the values as a prop to the component wouldn't work, since the
+      // binding needs to happen through a lookup on data. For views, we need
+      // to set up data so that the lookup by name works too:
       this.data = { [this.meta.name]: data }
     }
   }
