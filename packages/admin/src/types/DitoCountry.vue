@@ -1,13 +1,11 @@
 <template lang="pug">
   multiselect.dito-country(
-    v-model="selectedCountries",
+    v-model="value",
     placeholder="Select Country",
     :options="options",
     :searchable="true",
-    :loading="isLoading",
     :internal-search="false",
-    :close-on-select="true",
-    :options-limit="300",
+    :close-on-select="true"
   )
 </template>
 
@@ -27,22 +25,17 @@ export default TypeComponent.register('country', {
   data () {
     return {
       value: '',
-      selectedCountries: [],
-      options: [],
-      countries: [],
-      isLoading: false
+      options: []
     }
   },
   created () {
-    let options = this.options
-    let loading = this.isLoading
+    const options = this.options
     axios.get('https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json')
       .then(function (response) {
-        let countries = response.data
+        const countries = response.data
         for (let country of countries) {
           options.push(country.name)
         }
-        loading = false
       })
       .catch(function (error) {
         console.log(error)
