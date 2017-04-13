@@ -75,7 +75,7 @@ import BaseComponent from '@/BaseComponent'
 export default BaseComponent.component('dito-tabs', {
   props: {
     name: { type: String, required: true },
-    tabs: { type: Object, required: true },
+    tabs: { type: Object, required: false },
     data: { type: Object, required: true },
     user: { type: Object, required: true },
     disabled: { type: Boolean, required: true }

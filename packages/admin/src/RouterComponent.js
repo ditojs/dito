@@ -40,6 +40,13 @@ export default BaseComponent.extend({
       return null
     },
 
+    isLastRoute() {
+      // Returns true when this router component is the last one in the route.
+      const record = this.routeRecord
+      const matched = this.$route.matched
+      return record === matched[matched.length - 1]
+    },
+
     meta() {
       const record = this.routeRecord
       return record ? record.meta : null
@@ -50,14 +57,7 @@ export default BaseComponent.extend({
     view() { return this.meta.view },
     form() { return this.meta.form },
     user() { return this.meta.user },
-    api() { return this.meta.api },
-
-    isLastRoute() {
-      // Returns true when this router component is the last one in the route.
-      const record = this.routeRecord
-      const matched = this.$route.matched
-      return record === matched[matched.length - 1]
-    }
+    api() { return this.meta.api }
   },
 
   methods: {
