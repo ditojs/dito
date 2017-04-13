@@ -4,8 +4,9 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
-      dito-tabs(:name="meta.name", :tabs="meta.form.tabs", :data="data", :disabled="loading")
-      dito-panel(:desc="meta.form", :data="data")
+      dito-tabs(:name="name", :tabs="form.tabs", :data="data", :user="user",
+        :disabled="loading")
+      dito-panel(:desc="form", :data="data", :user="user", :disabled="loading")
       .dito-buttons
         button(type="submit") {{ create ? 'Create' : 'Save' }}
         router-link(tag="button", to="..", append) Cancel
@@ -38,7 +39,9 @@ function setupData(desc, data) {
 }
 
 export default RouterComponent.component('dito-form', {
-  props: ['id'],
+  props: {
+    id: { type: String, required: false }
+  },
 
   computed: {
     create() {
@@ -57,7 +60,7 @@ export default RouterComponent.component('dito-form', {
   methods: {
     setupData() {
       if (this.create) {
-        this.data = setupData(this.meta.form, {})
+        this.data = setupData(this.form, {})
       } else {
         this.loadData(true)
       }

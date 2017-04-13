@@ -66,7 +66,10 @@ import DitoSpinner from 'vue-spinner/src/PulseLoader'
 BaseComponent.component('dito-spinner', DitoSpinner)
 
 export default BaseComponent.component('dito-root', {
-  props: ['views', 'settings'],
+  props: {
+    views: { type: Object, required: true },
+    settings: { type: Object, required: true }
+  },
 
   created() {
     const settings = this.settings

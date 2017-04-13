@@ -3,8 +3,9 @@
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    component.dito-content(v-if="data", :is="typeToComponent(meta.view.type)",
-      :name="meta.name", :desc="meta.view", :data="data", @remove="remove")
+    component.dito-content(v-if="data", :is="typeToComponent(view.type)",
+      :name="name", :desc="view", :data="data", :user="user",
+      @remove="remove")
   router-view(v-else)
 </template>
 
@@ -25,7 +26,7 @@ export default RouterComponent.component('dito-view', {
       // Passing the values as a prop to the component wouldn't work, since the
       // binding needs to happen through a lookup on data. For views, we need
       // to set up data so that the lookup by name works too:
-      this.data = { [this.meta.name]: data }
+      this.data = { [this.name]: data }
     }
   }
 })

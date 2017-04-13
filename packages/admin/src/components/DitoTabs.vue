@@ -3,7 +3,7 @@
     template(v-for="(tab, key) in tabs")
       input(type="radio", :id="key", :name="`${name}-tabs`", :checked="key === selectedTab")
       label(:for="key") {{ tab.label }}
-      dito-panel(:desc="tab", :data="data", :disabled="disabled")
+      dito-panel(:desc="tab", :data="data", :user="user", :disabled="disabled")
 </template>
 
 <style lang="sass">
@@ -73,7 +73,13 @@
 import BaseComponent from '@/BaseComponent'
 
 export default BaseComponent.component('dito-tabs', {
-  props: ['name', 'tabs', 'data', 'disabled'],
+  props: {
+    name: { type: String, required: true },
+    tabs: { type: Object, required: true },
+    data: { type: Object, required: true },
+    user: { type: Object, required: true },
+    disabled: { type: Boolean, required: true }
+  },
   computed: {
     selectedTab() {
       // Return the first key from the tabs object

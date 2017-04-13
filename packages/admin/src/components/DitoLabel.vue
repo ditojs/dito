@@ -11,6 +11,9 @@
 import BaseComponent from '@/BaseComponent'
 
 export default BaseComponent.component('dito-label', {
-  props: ['name', 'text']
+  props: {
+    name: { type: String, required: true },
+    text: { type: String, required: true }
+  }
 })
 </script>

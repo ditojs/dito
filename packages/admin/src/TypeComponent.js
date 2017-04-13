@@ -5,6 +5,7 @@ const TypeComponent = BaseComponent.extend({
     name: { type: String, required: true },
     desc: { type: Object, required: true },
     data: { type: Object, required: true },
+    user: { type: Object, required: true },
     disabled: { type: Boolean, required: false }
   },
   computed: {

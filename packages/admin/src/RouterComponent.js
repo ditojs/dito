@@ -45,6 +45,13 @@ export default BaseComponent.extend({
       return record ? record.meta : null
     },
 
+    // Short-cuts to meta properties:
+    name() { return this.meta.name },
+    view() { return this.meta.view },
+    form() { return this.meta.form },
+    user() { return this.meta.user },
+    api() { return this.meta.api },
+
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
       const record = this.routeRecord
@@ -55,15 +62,14 @@ export default BaseComponent.extend({
 
   methods: {
     getEndpoint(method, type, id) {
-      const meta = this.meta
-      return meta.api.endpoints[method][type](meta.view, meta.form, id)
+      return this.api.endpoints[method][type](this.view, this.form, id)
     },
 
     send(method, path, data, callback) {
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
       this.error = null
-      const send = this.meta.api.send
+      const send = this.api.send
       if (send) {
         this.loading = true
         send(method, path, data, (err, result) => {

@@ -19,6 +19,10 @@ function getRenderFunction(value, ...parameters) {
         : compile(value, ...parameters)
 }
 
+const user = {
+  role: 'admin' // TODO
+}
+
 function setup(el, options) {
   const api = options.api
   const defaultEndpoints = {
@@ -46,7 +50,7 @@ function setup(el, options) {
     view.endpoint = view.endpoint || name
     const form = forms[view.form]
     const children = []
-    const meta = { view, form, api }
+    const meta = { view, form, api, user }
     routes.push({
       path: `/${name}`,
       component: DitoView,
