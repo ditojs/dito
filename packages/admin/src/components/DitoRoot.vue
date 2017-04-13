@@ -10,23 +10,7 @@
 </template>
 
 <style lang="sass">
-  .dito
-    &,
-    input,
-    button
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
-      font-size: 12px
-    input,
-    button
-      margin: 0
-    a
-      color: #000
-      text-decoration: none
-    .dito-buttons
-      // Can't use button + button with margin-left, due to reordering (submit)
-      margin: 0 -1px
-      button
-        margin: 0 1px
+  @import "dito"
 
   .dito-menu,
   .dito-path

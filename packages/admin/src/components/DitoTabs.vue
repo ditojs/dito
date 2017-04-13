@@ -8,17 +8,7 @@
 
 <style lang="sass">
   // CSS-only tabs, based on: https://kyusuf.com/post/completely-css-tabs
-  $tab-radius: 3px
-  $tab-padding-hor: 6px
-  $tab-padding-ver: 4px
-  $tab-border-color: #bfbfbf
-  $tab-border-width: 1px
   $tab-border: $tab-border-width solid $tab-border-color
-
-  $tab-color-background: #fff
-  $tab-color-inactive: #eee
-  $tab-color-active: #ccc
-  $tab-color-hover: #ddd
 
   .dito-tabs
     display: flex
