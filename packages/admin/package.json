@@ -11,7 +11,9 @@
     "precommit": "yarn run lint"
   },
   "dependencies": {
+    "axios": "^0.16.1",
     "vue": "^2.2.2",
+    "vue-multiselect": "next",
     "vue-router": "^2.2.0",
     "vue-spinner": "^1.0.2"
   },

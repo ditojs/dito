@@ -3,6 +3,7 @@
 // TypeComponent.get(type) and rendered through their tag-names (e.g. type-list)
 
 import './DitoButton'
+import './DitoCountry'
 import './DitoList'
 import './DitoNumber'
 import './DitoPulldown'
