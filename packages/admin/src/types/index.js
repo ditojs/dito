@@ -5,5 +5,5 @@
 import './DitoButton'
 import './DitoList'
 import './DitoNumber'
-import './DitoSelect'
+import './DitoPulldown'
 import './DitoText'

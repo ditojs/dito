@@ -7,5 +7,5 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('select')
+export default TypeComponent.register('pulldown')
 </script>
