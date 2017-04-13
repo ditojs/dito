@@ -4,8 +4,9 @@
     placeholder="Select Country",
     :options="options",
     :searchable="true",
-    :internal-search="false",
-    :close-on-select="true"
+    :internal-search="true",
+    :close-on-select="true",
+    :loading="loading",
   )
 </template>
 
@@ -22,22 +23,25 @@ import axios from 'axios'
 
 export default TypeComponent.register('country', {
   components: { Multiselect },
-  data () {
+  data() {
     return {
       value: '',
-      options: []
+      options: [],
+      loading: false
     }
   },
   created () {
-    const options = this.options
+    this.loading = true
     axios.get('https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json')
-      .then(function (response) {
-        const countries = response.data
-        for (let country of countries) {
+      .then((response) => {
+        this.loading = false
+        let options = []
+        for (let country of response.data) {
           options.push(country.name)
         }
+        this.options = options
       })
-      .catch(function (error) {
+      .catch((error) => {
         console.log(error)
       })
   }
