@@ -30,9 +30,9 @@ export default BaseComponent.extend({
       // NOTE: This needs to be a computed property so that a change in $route
       // will trigger a recalculated meta on reused router components.
       for (let route of this.$route.matched) {
-        const components = route.components
-        for (let name in components) {
-          if (components[name] === this.constructor) {
+        const instances = route.instances
+        for (let name in instances) {
+          if (instances[name] === this) {
             return route
           }
         }
@@ -42,9 +42,8 @@ export default BaseComponent.extend({
 
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
-      const record = this.routeRecord
       const matched = this.$route.matched
-      return record === matched[matched.length - 1]
+      return this.routeRecord === matched[matched.length - 1]
     },
 
     meta() {
@@ -110,7 +109,7 @@ export default BaseComponent.extend({
     remove(item, text) {
       if (item && confirm(`Do you really want to remove "${stripTags(text)}"?`)) {
         this.send('delete', this.getEndpoint('delete', 'member', item.id), null,
-          (err) => {
+          err => {
             if (!err) {
               const index = this.data.indexOf(item)
               if (index >= 0) {

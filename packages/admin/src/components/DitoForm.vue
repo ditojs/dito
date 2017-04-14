@@ -1,5 +1,5 @@
 <template lang="pug">
-  form.dito-form(@submit="submit")
+  form.dito-form(v-if="isLastRoute", @submit="submit")
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
@@ -10,6 +10,7 @@
       .dito-buttons
         button(type="submit") {{ create ? 'Create' : 'Save' }}
         router-link(tag="button", to="..", append) Cancel
+  router-view(v-else)
 </template>
 
 <style lang="sass">
@@ -53,7 +54,9 @@ export default RouterComponent.component('dito-form', {
     },
 
     endpoint() {
-      return this.getEndpoint(this.method, 'member', this.id)
+      return this.getEndpoint(this.method,
+          this.create ? 'collection' : 'member',
+          this.id)
     }
   },
 
@@ -68,7 +71,7 @@ export default RouterComponent.component('dito-form', {
 
     submit(event) {
       event.preventDefault()
-      this.send(this.method, this.endpoint, this.data, (err) => {
+      this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
           // After submitting the form, navigate back to the view
           this.$router.push({ path: '..', append: true })

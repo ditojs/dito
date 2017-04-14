@@ -7,7 +7,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { compile } from '@/utils/template'
+import { compile } from './utils/template'
 
 Vue.config.productionTip = false
 Vue.use(Router)
@@ -23,6 +23,52 @@ function getRenderFunction(value, ...parameters) {
 
 const user = {
   role: 'admin' // TODO
+}
+
+function addFormRoutes(routes, routeName, form, formName, forms, meta) {
+  form.endpoint = form.endpoint || formName
+  const children = []
+  const tabs = form.tabs
+  for (let name in tabs) {
+    addComponentsRoutes(children, tabs[name].components, forms, meta)
+  }
+  addComponentsRoutes(children, form.components, forms, meta)
+  // Use the same route for 'create' and ':id' and have DitoForm handle the
+  // separate cases internally.
+  routes.push({
+    path: routeName ? `${routeName}/create` : 'create',
+    component: DitoForm,
+    meta: Object.assign({
+      name: formName,
+      label: 'Create',
+      create: true,
+      form
+    }, meta)
+  }, {
+    path: routeName ? `${routeName}/:id` : ':id',
+    component: DitoForm,
+    props: true,
+    children,
+    meta: Object.assign({
+      name: formName,
+      label: 'Edit',
+      form
+    }, meta)
+  })
+  return routes
+}
+
+function addComponentsRoutes(routes, components, forms, meta) {
+  for (let name in components) {
+    const desc = components[name]
+    const formName = desc.form
+    if (formName && !desc.inline) {
+      const form = forms[formName]
+      if (form) {
+        addFormRoutes(routes, name, form, formName, forms, meta)
+      }
+    }
+  }
 }
 
 function setup(el, options) {
@@ -51,38 +97,17 @@ function setup(el, options) {
     const view = views[name]
     view.endpoint = view.endpoint || name
     const form = forms[view.form]
-    const children = []
-    const meta = { view, form, api, user }
+    const meta = { view, api, user }
     routes.push({
       path: `/${name}`,
       component: DitoView,
-      children,
+      children: form && addFormRoutes([], null, form, view.form, forms, meta),
       meta: Object.assign({
         name,
-        label: view.label || name // TODO: Capitalize
+        label: view.label || name, // TODO: Capitalize
+        form
       }, meta)
     })
-    if (form) {
-      meta.name = view.form
-      form.endpoint = form.endpoint || view.form
-      // Use the same route for 'create' and ':id' and have DitoForm handle the
-      // separate cases internally.
-      children.push({
-        path: 'create',
-        component: DitoForm,
-        meta: Object.assign({
-          create: true,
-          label: 'Create'
-        }, meta)
-      }, {
-        path: ':id',
-        component: DitoForm,
-        props: true,
-        meta: Object.assign({
-          label: 'Edit'
-        }, meta)
-      })
-    }
   }
 
   new Vue({

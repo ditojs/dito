@@ -4,7 +4,7 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     component.dito-content(v-if="data", :is="typeToComponent(view.type)",
-      :name="name", :desc="view", :data="data", :user="user",
+      :name="name", :desc="view", :data="data", :user="user", :root="true",
       @remove="remove")
   router-view(v-else)
 </template>

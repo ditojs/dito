@@ -1,13 +1,14 @@
 <template lang="pug">
   div
     ul.dito-list
-      li(v-for="item in data[name]", :key="item.id")
+      li(v-for="item in data[name]", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable",)
-          router-link(v-if="desc.editable", tag="button", :to="`${item.id}`", append) Edit
+          router-link(v-if="desc.editable", tag="button",
+            :to="`${route}/${item.id}`", append) Edit
           button(v-if="desc.deletable", @click="remove(item)") Delete
     .dito-buttons(v-if="desc.creatable")
-      router-link(tag="button", to="create", append) Create
+      router-link(tag="button", :to="`${route}/create`", append) Create
 </template>
 
 <style lang="sass">
@@ -41,6 +42,10 @@ export default TypeComponent.register('list', {
           function(item) {
             return item.html || this.escapeHtml(item.text)
           }
+    },
+
+    route() {
+      return this.root ? `/${this.name}` : this.name
     }
   },
 
