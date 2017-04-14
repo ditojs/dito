@@ -13,13 +13,13 @@ export default BaseComponent.extend({
 
   created() {
     // Setup data after view was created and the data is already being observed.
-    this.setupData()
+    this.initData()
   },
 
   watch: {
-    // Call setupData() again when the route changes to support component reuse.
+    // Call initData() again when the route changes to support component reuse.
     $route() {
-      this.setupData()
+      this.initData()
     }
   },
 
@@ -102,12 +102,13 @@ export default BaseComponent.extend({
       this.data = data
     },
 
-    setupData() {
+    initData() {
       this.loadData(true)
     },
 
     remove(item, text) {
-      if (item && confirm(`Do you really want to remove "${stripTags(text)}"?`)) {
+      if (item &&
+          confirm(`Do you really want to remove "${stripTags(text)}"?`)) {
         this.send('delete', this.getEndpoint('delete', 'member', item.id), null,
           err => {
             if (!err) {

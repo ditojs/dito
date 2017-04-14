@@ -29,9 +29,9 @@ import RouterComponent from '@/RouterComponent'
 
 // Sets up a new data object that has keys with null-values for all form fields,
 // so they can be correctly watched for changes.
-function setupData(desc, data) {
+function initData(desc, data) {
   for (let key in desc.tabs) {
-    setupData(desc.tabs[key], data)
+    initData(desc.tabs[key], data)
   }
   for (let key in desc.components) {
     data[key] = null
@@ -61,9 +61,9 @@ export default RouterComponent.component('dito-form', {
   },
 
   methods: {
-    setupData() {
+    initData() {
       if (this.create) {
-        this.data = setupData(this.form, {})
+        this.data = initData(this.form, {})
       } else {
         this.loadData(true)
       }

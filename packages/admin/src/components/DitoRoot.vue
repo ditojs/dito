@@ -3,7 +3,7 @@
     nav.dito-menu
       ul
         li(v-for="(desc, name) in views")
-          router-link(:to="`/${name}`") {{desc.label}}
+          router-link(:to="`/${name}`") {{ renderLabel(desc, name) }}
     main.dito-page
       dito-path
       router-view.dito-view

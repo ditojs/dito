@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import escapeHtml from './utils/escapeHtml'
+import renderLabel from './utils/renderLabel'
 
 const components = {}
 const types = {}
@@ -13,6 +14,7 @@ const BaseComponent = Vue.extend({
       return types[type]
     },
 
+    renderLabel,
     escapeHtml
   }
 })

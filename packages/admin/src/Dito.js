@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import Router from 'vue-router'
+import VueRouter from 'vue-router'
 import VueResource from 'vue-resource'
 import './components'
 import './types'
@@ -8,9 +8,10 @@ import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
 import { compile } from './utils/template'
+import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
-Vue.use(Router)
+Vue.use(VueRouter)
 Vue.use(VueResource)
 
 function getRenderFunction(value, ...parameters) {
@@ -35,12 +36,13 @@ function addFormRoutes(routes, routeName, form, formName, forms, meta) {
   addComponentsRoutes(children, form.components, forms, meta)
   // Use the same route for 'create' and ':id' and have DitoForm handle the
   // separate cases internally.
+  const label = renderLabel(form, formName)
   routes.push({
     path: routeName ? `${routeName}/create` : 'create',
     component: DitoForm,
     meta: Object.assign({
       name: formName,
-      label: 'Create',
+      label: `Create ${label}`,
       create: true,
       form
     }, meta)
@@ -51,7 +53,7 @@ function addFormRoutes(routes, routeName, form, formName, forms, meta) {
     children,
     meta: Object.assign({
       name: formName,
-      label: 'Edit',
+      label: `Edit ${label}`,
       form
     }, meta)
   })
@@ -104,7 +106,7 @@ function setup(el, options) {
       children: form && addFormRoutes([], null, form, view.form, forms, meta),
       meta: Object.assign({
         name,
-        label: view.label || name, // TODO: Capitalize
+        label: renderLabel(view, name),
         form
       }, meta)
     })
@@ -112,7 +114,7 @@ function setup(el, options) {
 
   new Vue({
     el: el,
-    router: new Router({
+    router: new VueRouter({
       mode: 'history',
       routes
     }),
