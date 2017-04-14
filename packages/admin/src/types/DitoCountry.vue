@@ -19,7 +19,6 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import Multiselect from 'vue-multiselect'
-import axios from 'axios'
 
 export default TypeComponent.register('country', {
   components: { Multiselect },
@@ -32,18 +31,17 @@ export default TypeComponent.register('country', {
   },
   created () {
     this.loading = true
-    axios.get('https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json')
-      .then((response) => {
-        this.loading = false
-        let options = []
-        for (let country of response.data) {
-          options.push(country.name)
-        }
-        this.options = options
-      })
-      .catch((error) => {
-        console.log(error)
-      })
+    this.$http.get(`https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json`
+    ).then(response => {
+      this.loading = false
+      let options = []
+      for (let country of response.data) {
+        options.push(country.name)
+      }
+      this.options = options
+    }, response => {
+      console.log('error')
+    })
   }
 })
 </script>

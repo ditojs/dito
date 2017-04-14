@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+import VueResource from 'vue-resource'
 import './components'
 import './types'
 import TypeComponent from './TypeComponent'
@@ -10,6 +11,7 @@ import { compile } from '@/utils/template'
 
 Vue.config.productionTip = false
 Vue.use(Router)
+Vue.use(VueResource)
 
 function getRenderFunction(value, ...parameters) {
   return value == null
