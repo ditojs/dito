@@ -19,9 +19,9 @@
 </style>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default BaseComponent.component('dito-path', {
+export default DitoComponent.component('dito-path', {
   computed: {
     // Maps the route's actual path to the matched routes by counting its parts
     // separated by '/', splitting the path into the mapped parts containing

@@ -1,7 +1,8 @@
-import BaseComponent from './BaseComponent'
 import stripTags from '@/utils/stripTags'
 
-export default BaseComponent.extend({
+// Assumes: Component has this.api
+
+export default {
   data() {
     return {
       // We need to start with an empty object for DitoForm, not with null
@@ -14,49 +15,6 @@ export default BaseComponent.extend({
   created() {
     // Setup data after view was created and the data is already being observed.
     this.initData()
-  },
-
-  watch: {
-    // Call initData() again when the route changes to support component reuse.
-    $route() {
-      this.initData()
-    }
-  },
-
-  computed: {
-    routeRecord() {
-      // Walks through the matched routes and all components of each route, to
-      // find the route that is associated with this component, and returns it.
-      // NOTE: This needs to be a computed property so that a change in $route
-      // will trigger a recalculated meta on reused router components.
-      for (let route of this.$route.matched) {
-        const instances = route.instances
-        for (let name in instances) {
-          if (instances[name] === this) {
-            return route
-          }
-        }
-      }
-      return null
-    },
-
-    isLastRoute() {
-      // Returns true when this router component is the last one in the route.
-      const matched = this.$route.matched
-      return this.routeRecord === matched[matched.length - 1]
-    },
-
-    meta() {
-      const record = this.routeRecord
-      return record ? record.meta : null
-    },
-
-    // Short-cuts to meta properties:
-    name() { return this.meta.name },
-    view() { return this.meta.view },
-    form() { return this.meta.form },
-    user() { return this.meta.user },
-    api() { return this.meta.api }
   },
 
   methods: {
@@ -88,8 +46,7 @@ export default BaseComponent.extend({
     },
 
     loadData(clear) {
-      // Only load data if this component is the last one in the route
-      if (this.isLastRoute) {
+      if (this.shouldLoad) {
         if (clear) {
           this.data = {}
         }
@@ -130,4 +87,4 @@ export default BaseComponent.extend({
       }
     }
   }
-})
+}

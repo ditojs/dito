@@ -9,9 +9,9 @@
 </template>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default BaseComponent.component('dito-panel', {
+export default DitoComponent.component('dito-panel', {
   props: {
     desc: { type: Object, required: true },
     data: { type: Object, required: true },

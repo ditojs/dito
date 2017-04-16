@@ -3,7 +3,7 @@ import VueRouter from 'vue-router'
 import VueResource from 'vue-resource'
 import './components'
 import './types'
-import TypeComponent from './TypeComponent'
+import DitoComponent from './DitoComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
@@ -145,5 +145,5 @@ function setup(el, options) {
 
 export default {
   setup,
-  register: TypeComponent.register
+  register: DitoComponent.register
 }

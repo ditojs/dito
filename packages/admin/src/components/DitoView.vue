@@ -10,9 +10,13 @@
 </template>
 
 <script>
-import RouterComponent from '@/RouterComponent'
+import DitoComponent from '@/DitoComponent'
+import RouteMixin from '@/mixins/RouteMixin'
+import DataMixin from '@/mixins/DataMixin'
 
-export default RouterComponent.component('dito-view', {
+export default DitoComponent.component('dito-view', {
+  mixins: [RouteMixin, DataMixin],
+
   computed: {
     endpoint() {
       return this.getEndpoint('get', 'collection')

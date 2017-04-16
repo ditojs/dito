@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default TypeComponent.register('select')
+export default DitoComponent.register('select')
 </script>

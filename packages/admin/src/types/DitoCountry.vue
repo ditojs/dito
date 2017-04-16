@@ -17,10 +17,10 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
 import Multiselect from 'vue-multiselect'
 
-export default TypeComponent.register('country', {
+export default DitoComponent.register('country', {
   components: { Multiselect },
   data() {
     return {

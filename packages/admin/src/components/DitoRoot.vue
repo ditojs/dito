@@ -63,12 +63,12 @@
 </style>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import DitoComponent from '@/DitoComponent'
 
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
-BaseComponent.component('dito-spinner', DitoSpinner)
+DitoComponent.component('dito-spinner', DitoSpinner)
 
-export default BaseComponent.component('dito-root', {
+export default DitoComponent.component('dito-root', {
   props: {
     views: { type: Object, required: true },
     settings: { type: Object, required: true }

@@ -70,9 +70,9 @@
 </style>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default BaseComponent.component('dito-tabs', {
+export default DitoComponent.component('dito-tabs', {
   props: {
     name: { type: String, required: true },
     tabs: { type: Object, required: false },

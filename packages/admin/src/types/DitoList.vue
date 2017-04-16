@@ -26,10 +26,10 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
 import { compile } from '@/utils/template'
 
-export default TypeComponent.register('list', {
+export default DitoComponent.register('list', {
   props: {
     data: { type: [Array, Object], required: false }
   },

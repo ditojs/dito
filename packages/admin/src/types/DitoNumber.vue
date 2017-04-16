@@ -14,7 +14,7 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default TypeComponent.register('number')
+export default DitoComponent.register('number')
 </script>

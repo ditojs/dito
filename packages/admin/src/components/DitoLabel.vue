@@ -8,9 +8,9 @@
 </style>
 
 <script>
-import BaseComponent from '@/BaseComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default BaseComponent.component('dito-label', {
+export default DitoComponent.component('dito-label', {
   props: {
     name: { type: String, required: true },
     text: { type: String, required: true }

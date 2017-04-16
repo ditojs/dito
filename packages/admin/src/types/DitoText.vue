@@ -4,7 +4,7 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
 
-export default TypeComponent.register('text')
+export default DitoComponent.register('text')
 </script>

@@ -27,7 +27,9 @@
 </style>
 
 <script>
-import RouterComponent from '@/RouterComponent'
+import DitoComponent from '@/DitoComponent'
+import RouteMixin from '@/mixins/RouteMixin'
+import DataMixin from '@/mixins/DataMixin'
 
 // Sets up a new data object that has keys with null-values for all form fields,
 // so they can be correctly watched for changes.
@@ -41,7 +43,9 @@ function initData(desc, data) {
   return data
 }
 
-export default RouterComponent.component('dito-form', {
+export default DitoComponent.component('dito-form', {
+  mixins: [RouteMixin, DataMixin],
+
   props: {
     id: { type: String, required: false }
   },
