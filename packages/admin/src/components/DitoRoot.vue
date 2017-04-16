@@ -57,6 +57,9 @@
     clear: left
     padding-bottom: 0.5em
     color: #999
+
+  .dito-error
+    color: #f30
 </style>
 
 <script>

@@ -73,6 +73,9 @@ export default BaseComponent.extend({
         this.loading = true
         send(method, path, data, (err, result) => {
           this.loading = false
+          if (!result) {
+            err = 'Unable to load data.'
+          }
           if (err) {
             this.error = err.toString()
           }
@@ -92,7 +95,10 @@ export default BaseComponent.extend({
         }
         this.send('get', this.endpoint, null, (err, data) => {
           if (!err) {
-            this.setData(data)
+            this.setData(data || {})
+            if (!data) {
+              // this.$router.push('..')
+            }
           }
         })
       }
@@ -112,9 +118,10 @@ export default BaseComponent.extend({
         this.send('delete', this.getEndpoint('delete', 'member', item.id), null,
           err => {
             if (!err) {
-              const index = this.data.indexOf(item)
+              const data = this.data[this.name]
+              const index = data && data.indexOf(item)
               if (index >= 0) {
-                this.data.splice(index, 1)
+                data.splice(index, 1)
               }
             }
             this.loadData(false)

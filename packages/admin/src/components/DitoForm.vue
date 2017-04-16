@@ -4,11 +4,13 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     .dito-content
-      dito-tabs(:name="name", :tabs="form.tabs", :data="data", :user="user",
-        :disabled="loading")
-      dito-panel(:desc="form", :data="data", :user="user", :disabled="loading")
+      .dito-error(v-if="error") {{ error }}
+      template(v-else)
+        dito-tabs(:name="name", :tabs="form.tabs", :data="data", :user="user",
+          :disabled="loading")
+        dito-panel(:desc="form", :data="data", :user="user", :disabled="loading")
       .dito-buttons
-        button(type="submit") {{ create ? 'Create' : 'Save' }}
+        button(type="submit", v-if="!error") {{ create ? 'Create' : 'Save' }}
         router-link(tag="button", to="..", append) Cancel
   router-view(v-else)
 </template>
@@ -73,7 +75,7 @@ export default RouterComponent.component('dito-form', {
       event.preventDefault()
       this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
-          // After submitting the form, navigate back to the view
+          // After submitting the form, navigate back to the view.
           this.$router.push({ path: '..', append: true })
         }
       })

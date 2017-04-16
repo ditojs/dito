@@ -26,51 +26,82 @@ const user = {
   role: 'admin' // TODO
 }
 
-function addFormRoutes(routes, routeName, form, formName, forms, meta) {
+function addViewRoute(routes, view, viewName, options, root) {
+  view.endpoint = view.endpoint || viewName
+  view.label = renderLabel(view, viewName)
+  const formName = view.form
+  const form = formName && options.forms[formName]
+  if (form) {
+    const meta = {
+      view,
+      form,
+      user,
+      api: options.api
+    }
+    // Root views have their own routes and entries in the breadcrumbs, and the
+    // form routes are children of the view route. Nested lists in forms don't
+    // have views and routes, so their form routes need the viewName prefixed.
+    const formRoutes = getFormRoutes(root ? '' : `${viewName}/`,
+        form, formName, options, meta)
+    routes.push(root
+      ? {
+        path: `/${viewName}`,
+        children: formRoutes,
+        component: DitoView,
+        meta: Object.assign({
+          name: viewName,
+          label: view.label
+        }, meta)
+      }
+      // Just redirect back to the form if the user enters a nested list route.
+      : {
+        path: viewName,
+        redirect: '.'
+      },
+      // Include the prefixed formRoutes for nested lists.
+      ...(!root && formRoutes)
+    )
+  }
+}
+
+function getFormRoutes(routePrefix, form, formName, options, meta) {
   form.endpoint = form.endpoint || formName
+  form.label = renderLabel(form, formName)
   const children = []
   const tabs = form.tabs
-  for (let name in tabs) {
-    addComponentsRoutes(children, tabs[name].components, forms, meta)
+
+  function addRoutes(components) {
+    for (let name in components) {
+      const desc = components[name]
+      if (desc.form && !desc.inline) {
+        addViewRoute(children, desc, name, options, false)
+      }
+    }
   }
-  addComponentsRoutes(children, form.components, forms, meta)
-  // Use the same route for 'create' and ':id' and have DitoForm handle the
-  // separate cases internally.
-  const label = renderLabel(form, formName)
-  routes.push({
-    path: routeName ? `${routeName}/create` : 'create',
+
+  for (let name in tabs) {
+    addRoutes(tabs[name].components)
+  }
+  addRoutes(form.components)
+
+  return [{
+    path: `${routePrefix}create`,
     component: DitoForm,
     meta: Object.assign({
       name: formName,
-      label: `Create ${label}`,
-      create: true,
-      form
+      label: `Create ${form.label}`,
+      create: true
     }, meta)
   }, {
-    path: routeName ? `${routeName}/:id` : ':id',
+    path: `${routePrefix}:id`,
     component: DitoForm,
     props: true,
     children,
     meta: Object.assign({
       name: formName,
-      label: `Edit ${label}`,
-      form
+      label: `Edit ${form.label}`
     }, meta)
-  })
-  return routes
-}
-
-function addComponentsRoutes(routes, components, forms, meta) {
-  for (let name in components) {
-    const desc = components[name]
-    const formName = desc.form
-    if (formName && !desc.inline) {
-      const form = forms[formName]
-      if (form) {
-        addFormRoutes(routes, name, form, formName, forms, meta)
-      }
-    }
-  }
+  }]
 }
 
 function setup(el, options) {
@@ -92,24 +123,9 @@ function setup(el, options) {
   api.endpoints = endpoints
 
   const views = options.views
-  const forms = options.forms
   const routes = []
-
   for (let name in views) {
-    const view = views[name]
-    view.endpoint = view.endpoint || name
-    const form = forms[view.form]
-    const meta = { view, api, user }
-    routes.push({
-      path: `/${name}`,
-      component: DitoView,
-      children: form && addFormRoutes([], null, form, view.form, forms, meta),
-      meta: Object.assign({
-        name,
-        label: renderLabel(view, name),
-        form
-      }, meta)
-    })
+    addViewRoute(routes, views[name], name, options, true)
   }
 
   new Vue({

@@ -45,7 +45,7 @@ export default TypeComponent.register('list', {
     },
 
     route() {
-      return this.root ? `/${this.name}` : this.name
+      return `${this.root ? '/' : ''}${this.name}`
     }
   },
 
