@@ -94,7 +94,6 @@ function getFormRoutes(routePrefix, form, formName, options, meta) {
   }, {
     path: `${routePrefix}:id`,
     component: DitoForm,
-    props: true,
     children,
     meta: Object.assign({
       name: formName,

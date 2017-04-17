@@ -40,10 +40,6 @@ export default DitoComponent.component('dito-form', {
     }
   },
 
-  props: {
-    id: { type: String, required: false }
-  },
-
   computed: {
     data() {
       return this.emptyData || this.loadedData || this.parentData

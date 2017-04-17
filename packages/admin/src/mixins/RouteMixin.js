@@ -16,6 +16,17 @@ export default {
       return null
     },
 
+    id() {
+      // Workaround for vue-router not being able to map multiple url parameters
+      // with the same name to multiple compnonents, see:
+      // https://github.com/vuejs/vue-router/issues/1345
+      const path = this.routeRecord.path.split('/')
+      const last = path.length - 1
+      return path[last] === ':id'
+          ? this.$route.path.split('/')[last]
+          : null
+    },
+
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
       const matched = this.$route.matched
