@@ -1,5 +1,5 @@
 <template lang="pug">
-  form.dito-form(v-if="isLastRoute", @submit="submit")
+  form.dito-form(v-if="isLastRoute", @submit.prevent="submit")
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
@@ -11,7 +11,7 @@
         :disabled="loading")
     .dito-buttons
       button(type="submit", v-if="!error") {{ create ? 'Create' : 'Save' }}
-      router-link(tag="button", to="..", append) Cancel
+      button(@click.prevent="cancel") Cancel
   router-view(v-else)
 </template>
 
@@ -30,27 +30,41 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
+import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
 
   data() {
     return {
-      emptyData: null
+      emptyData: null,
+      resetData: null
     }
   },
 
   computed: {
     data() {
-      return this.emptyData || this.loadedData || this.parentData
+      return this.emptyData || this.loadedData || this.parentEntry
     },
 
-    parentData() {
-      // See if we can find entry by id in parent data. Possible parents are
-      // DitoForm for nested forms, or DitoView for root lists.
+    parentList() {
+      // Possible parents are DitoForm for nested forms, or DitoView for root
+      // lists. Both have a data property which abstracts away loading and
+      // inheriting of data.
       const parentData = this.$parent.data
-      const data = parentData && parentData[this.view.name]
-      return data && data.find(entry => entry.id + '' === this.id)
+      return parentData && parentData[this.view.name]
+    },
+
+    parentEntry() {
+      // See if we can find entry by id in the parent list.
+      const list = this.parentList
+      const entry = list && list.find(entry => entry.id + '' === this.id)
+      // If we found the entry in the parent list and there is no resetData
+      // object already, store a clone of the entry for restoring on cancel.
+      if (entry && !this.resetData) {
+        this.resetData = clone(entry)
+      }
+      return entry
     },
 
     create() {
@@ -70,7 +84,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
-      return this.isLastRoute && !this.parentData
+      return this.isLastRoute && !this.parentEntry
     }
   },
 
@@ -94,14 +108,26 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    submit(event) {
-      event.preventDefault()
+    submit() {
       this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
           // After submitting the form, navigate back to the view.
           this.$router.push({ path: '..', append: true })
         }
       })
+    },
+
+    cancel() {
+      // If we have resetData, see if we can reset the entry in the parent list
+      // to its original state again.
+      if (this.resetData && this.parentEntry) {
+        const index = this.parentList.indexOf(this.parentEntry)
+        if (index >= 0) {
+          this.parentList[index] = this.resetData
+        }
+        this.resetData = null
+      }
+      this.$router.push({ path: '..', append: true })
     }
   }
 })
