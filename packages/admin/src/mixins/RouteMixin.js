@@ -1,12 +1,4 @@
 export default {
-  watch: {
-    $route() {
-      if (this.initData) {
-        this.initData()
-      }
-    }
-  },
-
   computed: {
     routeRecord() {
       // Walks through the matched routes and all components of each route, to
@@ -33,18 +25,6 @@ export default {
     meta() {
       const record = this.routeRecord
       return record ? record.meta : null
-    },
-
-    // Short-cuts to meta properties:
-    name() { return this.meta.name },
-    view() { return this.meta.view },
-    form() { return this.meta.form },
-    user() { return this.meta.user },
-    api() { return this.meta.api },
-
-    shouldLoad() {
-      // Only load data if this component is the last one in the route
-      return this.isLastRoute
     }
   }
 }

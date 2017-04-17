@@ -1,7 +1,7 @@
 <template lang="pug">
   nav.dito-path
     ul
-      li(v-for="(route, i) in $route.matched", v-if="route.meta.label")
+      li(v-for="(route, i) in $route.matched")
         template(v-if="i === $route.matched.length - 1") {{ route.meta.label }}
         router-link(v-else, :to="getPath(i)") {{ route.meta.label }}
 </template>

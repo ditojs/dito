@@ -27,44 +27,43 @@ const user = {
 }
 
 function addViewRoute(routes, view, viewName, options, root) {
+  view.name = viewName
   view.endpoint = view.endpoint || viewName
   view.label = renderLabel(view, viewName)
   const formName = view.form
-  const form = formName && options.forms[formName]
-  if (form) {
-    const meta = {
-      view,
-      form,
-      user,
-      api: options.api
-    }
-    // Root views have their own routes and entries in the breadcrumbs, and the
-    // form routes are children of the view route. Nested lists in forms don't
-    // have views and routes, so their form routes need the viewName prefixed.
-    const formRoutes = getFormRoutes(root ? '' : `${viewName}/`,
-        form, formName, options, meta)
-    routes.push(root
-      ? {
-        path: `/${viewName}`,
-        children: formRoutes,
-        component: DitoView,
-        meta: Object.assign({
-          name: viewName,
-          label: view.label
-        }, meta)
-      }
-      // Just redirect back to the form if the user enters a nested list route.
-      : {
-        path: viewName,
-        redirect: '.'
-      },
-      // Include the prefixed formRoutes for nested lists.
-      ...(!root && formRoutes)
-    )
+  const form = view.form = formName && options.forms[formName]
+  const meta = {
+    view,
+    user,
+    api: options.api
   }
+  // Root views have their own routes and entries in the breadcrumbs, and the
+  // form routes are children of the view route. Nested lists in forms don't
+  // have views and routes, so their form routes need the viewName prefixed.
+  const formRoutes = form && getFormRoutes(root ? '' : `${viewName}/`,
+      form, formName, options, meta)
+  routes.push(root
+    ? {
+      path: `/${viewName}`,
+      children: formRoutes,
+      component: DitoView,
+      meta: Object.assign({
+        name: viewName,
+        label: view.label
+      }, meta)
+    }
+    // Just redirect back to the form if the user enters a nested list route.
+    : {
+      path: viewName,
+      redirect: '.'
+    },
+    // Include the prefixed formRoutes for nested lists.
+    ...(!root && formRoutes)
+  )
 }
 
 function getFormRoutes(routePrefix, form, formName, options, meta) {
+  form.name = formName
   form.endpoint = form.endpoint || formName
   form.label = renderLabel(form, formName)
   const children = []

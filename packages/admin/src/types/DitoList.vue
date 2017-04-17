@@ -1,7 +1,7 @@
 <template lang="pug">
   div
     ul.dito-list
-      li(v-for="item in data[name]", :key="`${name}-${item.id}`")
+      li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable",)
           router-link(v-if="desc.editable", tag="button",
@@ -27,31 +27,23 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { compile } from '@/utils/template'
+import ListMixin from '@/mixins/ListMixin'
 
 export default DitoComponent.register('list', {
-  props: {
-    data: { type: [Array, Object], required: false }
-  },
+  mixins: [ListMixin],
 
   computed: {
     render() {
       const desc = this.desc
       return desc.render ||
-          desc.template && compile(desc.template, 'item') ||
-          function(item) {
-            return item.html || this.escapeHtml(item.text)
-          }
-    },
-
-    route() {
-      return `${this.root ? '/' : ''}${this.name}`
+          desc.template && this.compileTemplate(desc.template, 'item') ||
+          (item => item.html || this.escapeHtml(item.text))
     }
   },
 
   methods: {
-    remove(item) {
-      this.$emit('remove', item, this.render(item))
+    getTitle(item) {
+      return this.stripTags(this.render(item))
     }
   }
 })

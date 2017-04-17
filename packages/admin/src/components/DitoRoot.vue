@@ -49,9 +49,6 @@
     // To make the floating spinner alyways go up to the path
     display: inline
 
-  .dito-content
-    clear: left
-
   .dito-debug
     // display: none
     clear: left

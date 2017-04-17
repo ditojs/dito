@@ -18,7 +18,7 @@ const DitoComponent = Vue.extend({
 })
 
 DitoComponent.component = function(name, options) {
-  const ctor = this.extend(options)
+  const ctor = DitoComponent.extend(options)
   components[name] = ctor
   return ctor
 }
@@ -26,14 +26,8 @@ DitoComponent.component = function(name, options) {
 DitoComponent.register = function(type, options) {
   const name = `dito-${type}`
   types[type] = name
-  const defaultProps = TypeMixin.props
-  const props = options && options.props
-  return this.component(name, Object.assign({}, options, {
-    // TODO: Doesn't mixin handle this?
-    mixins: [TypeMixin],
-    props: Array.isArray(props)
-        ? Object.keys(defaultProps).concat(props)
-        : Object.assign(defaultProps, props)
+  return DitoComponent.component(name, Object.assign({}, options, {
+    mixins: [TypeMixin].concat(options && options.mixins || [])
   }))
 }
 

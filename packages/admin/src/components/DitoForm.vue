@@ -3,15 +3,15 @@
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    .dito-content
-      .dito-error(v-if="error") {{ error }}
-      template(v-else)
-        dito-tabs(:name="name", :tabs="form.tabs", :data="data", :user="user",
-          :disabled="loading")
-        dito-panel(:desc="form", :data="data", :user="user", :disabled="loading")
-      .dito-buttons
-        button(type="submit", v-if="!error") {{ create ? 'Create' : 'Save' }}
-        router-link(tag="button", to="..", append) Cancel
+    .dito-error(v-if="error") {{ error }}
+    template(v-else)
+      dito-tabs(:name="meta.name", :tabs="form.tabs", :data="data || {}",
+        :meta="meta", :disabled="loading")
+      dito-panel(:desc="form", :data="data || {}", :meta="meta",
+        :disabled="loading")
+    .dito-buttons
+      button(type="submit", v-if="!error") {{ create ? 'Create' : 'Save' }}
+      router-link(tag="button", to="..", append) Cancel
   router-view(v-else)
 </template>
 
@@ -31,26 +31,32 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 
-// Sets up a new data object that has keys with null-values for all form fields,
-// so they can be correctly watched for changes.
-function initData(desc, data) {
-  for (let key in desc.tabs) {
-    initData(desc.tabs[key], data)
-  }
-  for (let key in desc.components) {
-    data[key] = null
-  }
-  return data
-}
-
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
+
+  data() {
+    return {
+      emptyData: null
+    }
+  },
 
   props: {
     id: { type: String, required: false }
   },
 
   computed: {
+    data() {
+      return this.emptyData || this.loadedData || this.parentData
+    },
+
+    parentData() {
+      // See if we can find entry by id in parent data. Possible parents are
+      // DitoForm for nested forms, or DitoView for root lists.
+      const parentData = this.$parent.data
+      const data = parentData && parentData[this.view.name]
+      return data && data.find(entry => entry.id + '' === this.id)
+    },
+
     create() {
       return !!this.meta.create
     },
@@ -63,13 +69,30 @@ export default DitoComponent.component('dito-form', {
       return this.getEndpoint(this.method,
           this.create ? 'collection' : 'member',
           this.id)
+    },
+
+    shouldLoad() {
+      // Only load data if this component is the last one in the route and we
+      // can't get the data from the parent already.
+      return this.isLastRoute && !this.parentData
     }
   },
 
   methods: {
-    initData() {
+    initData() { // overrides DataMixin.initData()
+      function initData(desc, data) {
+        // Sets up an emptyData object that has keys with null-values for all
+        // form fields, so they can be correctly watched for changes.
+        for (let key in desc.tabs) {
+          initData(desc.tabs[key], data)
+        }
+        for (let key in desc.components) {
+          data[key] = null
+        }
+        return data
+      }
       if (this.create) {
-        this.data = initData(this.form, {})
+        this.emptyData = initData(this.form, {})
       } else {
         this.loadData(true)
       }
