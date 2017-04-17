@@ -26,7 +26,7 @@ const user = {
   role: 'admin' // TODO
 }
 
-function addViewRoute(routes, view, viewName, options, root) {
+function addViewRoute(routes, view, viewName, options, level) {
   view.name = viewName
   view.endpoint = view.endpoint || viewName
   view.label = renderLabel(view, viewName)
@@ -37,11 +37,12 @@ function addViewRoute(routes, view, viewName, options, root) {
     user,
     api: options.api
   }
+  const root = level === 0
   // Root views have their own routes and entries in the breadcrumbs, and the
   // form routes are children of the view route. Nested lists in forms don't
   // have views and routes, so their form routes need the viewName prefixed.
   const formRoutes = form && getFormRoutes(root ? '' : `${viewName}/`,
-      form, formName, options, meta)
+      form, formName, options, meta, level)
   routes.push(root
     ? {
       path: `/${viewName}`,
@@ -62,7 +63,7 @@ function addViewRoute(routes, view, viewName, options, root) {
   )
 }
 
-function getFormRoutes(routePrefix, form, formName, options, meta) {
+function getFormRoutes(routePrefix, form, formName, options, meta, level) {
   form.name = formName
   form.endpoint = form.endpoint || formName
   form.label = renderLabel(form, formName)
@@ -73,7 +74,7 @@ function getFormRoutes(routePrefix, form, formName, options, meta) {
     for (let name in components) {
       const desc = components[name]
       if (desc.form && !desc.inline) {
-        addViewRoute(children, desc, name, options, false)
+        addViewRoute(children, desc, name, options, level + 1)
       }
     }
   }
@@ -83,6 +84,9 @@ function getFormRoutes(routePrefix, form, formName, options, meta) {
   }
   addRoutes(form.components)
 
+  // We need to use differently named url parameters on each nested level for id
+  // as otherwise they would clash and override each other inside $route.params
+  const param = `id${level + 1}`
   return [{
     path: `${routePrefix}create`,
     component: DitoForm,
@@ -92,11 +96,12 @@ function getFormRoutes(routePrefix, form, formName, options, meta) {
       create: true
     }, meta)
   }, {
-    path: `${routePrefix}:id`,
+    path: `${routePrefix}:${param}`,
     component: DitoForm,
     children,
     meta: Object.assign({
       name: formName,
+      param,
       label: `Edit ${form.label}`
     }, meta)
   }]
@@ -123,7 +128,7 @@ function setup(el, options) {
   const views = options.views
   const routes = []
   for (let name in views) {
-    addViewRoute(routes, views[name], name, options, true)
+    addViewRoute(routes, views[name], name, options, 0)
   }
 
   new Vue({
