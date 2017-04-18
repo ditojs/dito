@@ -11,10 +11,9 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
-import DataMixin from '@/mixins/DataMixin'
 
 export default DitoComponent.component('dito-view', {
-  mixins: [RouteMixin, DataMixin],
+  mixins: [RouteMixin],
 
   computed: {
     data() {

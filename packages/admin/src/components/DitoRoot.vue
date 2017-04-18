@@ -61,14 +61,19 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
+import renderLabel from '@/utils/renderLabel'
+
 DitoComponent.component('dito-spinner', DitoSpinner)
 
 export default DitoComponent.component('dito-root', {
   props: {
     views: { type: Object, required: true },
     settings: { type: Object, required: true }
+  },
+
+  methods: {
+    renderLabel
   },
 
   created() {

@@ -7,20 +7,11 @@ import DitoComponent from './DitoComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { compile } from './utils/template'
 import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
 Vue.use(VueResource)
-
-function getRenderFunction(value, ...parameters) {
-  return value == null
-      ? null
-      : typeof value === 'function'
-        ? value
-        : compile(value, ...parameters)
-}
 
 const user = {
   role: 'admin' // TODO
@@ -28,7 +19,6 @@ const user = {
 
 function addViewRoute(routes, view, viewName, options, level) {
   view.name = viewName
-  view.endpoint = view.endpoint || viewName
   view.label = renderLabel(view, viewName)
   const formName = view.form
   const form = view.form = formName && options.forms[formName]
@@ -65,7 +55,6 @@ function addViewRoute(routes, view, viewName, options, level) {
 
 function getFormRoutes(routePrefix, form, formName, options, meta, level) {
   form.name = formName
-  form.endpoint = form.endpoint || formName
   form.label = renderLabel(form, formName)
   const children = []
   const tabs = form.tabs
@@ -101,29 +90,35 @@ function getFormRoutes(routePrefix, form, formName, options, meta, level) {
     children,
     meta: Object.assign({
       name: formName,
-      param,
-      label: `Edit ${form.label}`
+      label: `Edit ${form.label}`,
+      param
     }, meta)
   }]
 }
 
-function setup(el, options) {
-  const api = options.api
+function getEndpoints(endpoints) {
   const defaultEndpoints = {
-    collection: '{{ view.endpoint }}',
-    member: '{{ form.endpoint }}/{{ id }}'
-  }
-  const endpoints = api.endpoints || {}
-  for (let method of ['post', 'get', 'put', 'delete']) {
-    const entry = endpoints[method]
-    const functions = endpoints[method] = {}
-    for (let type in defaultEndpoints) {
-      functions[type] = getRenderFunction(
-          entry && entry[type] || defaultEndpoints[type],
-          'view', 'form', 'id')
+    member(view, form, id) {
+      return `${form.name}/${id}`
+    },
+    collection(view, form, parent) {
+      return parent ? `${parent.form.name}/${parent.id}/${view.name}` : view.name
     }
   }
-  api.endpoints = endpoints
+  const results = {}
+  for (let method of ['get', 'post', 'put', 'delete']) {
+    const entry = endpoints && endpoints[method]
+    const functions = results[method] = {}
+    for (let type in defaultEndpoints) {
+      functions[type] = entry && entry[type] || defaultEndpoints[type]
+    }
+  }
+  return results
+}
+
+function setup(el, options) {
+  const api = options.api
+  api.endpoints = getEndpoints(api.endpoints)
 
   const views = options.views
   const routes = []

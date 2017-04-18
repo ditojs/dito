@@ -29,16 +29,16 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
-import DataMixin from '@/mixins/DataMixin'
 import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, DataMixin],
+  mixins: [RouteMixin],
 
   data() {
     return {
       emptyData: null,
-      resetData: null
+      resetData: null,
+      isForm: true
     }
   },
 
@@ -51,7 +51,7 @@ export default DitoComponent.component('dito-form', {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
-      const parentData = this.$parent.data
+      const parentData = this.parentRouteComponent.data
       return parentData && parentData[this.view.name]
     },
 
@@ -111,7 +111,7 @@ export default DitoComponent.component('dito-form', {
     submit() {
       this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
-          // After submitting the form, navigate back to the view.
+          // After submitting the form navigate back to the parent form or view.
           this.$router.push({ path: '..', append: true })
         }
       })

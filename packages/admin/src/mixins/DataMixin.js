@@ -22,6 +22,7 @@ export default {
   },
 
   computed: {
+    // To be overridden by components using this mixin.
     shouldLoad() {
       return true
     }
@@ -29,7 +30,13 @@ export default {
 
   methods: {
     getEndpoint(method, type, id) {
-      return this.api.endpoints[method][type](this.view, this.form, id)
+      return this.api.endpoints[method][type](this.view, this.form,
+          type === 'collection' ? this.parentForm : id)
+    },
+
+    setLoading(loading) {
+      // Only display loading progress on route components
+      this.routeComponent.loading = loading
     },
 
     send(method, path, payload, callback) {
@@ -38,9 +45,9 @@ export default {
       this.error = null
       const send = this.api.send
       if (send) {
-        this.loading = true
+        this.setLoading(true)
         send(method, path, payload, (err, result) => {
-          this.loading = false
+          this.setLoading(false)
           if (err) {
             this.error = err.toString()
           }

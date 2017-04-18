@@ -1,4 +1,8 @@
+import DataMixin from '@/mixins/DataMixin'
+
 export default {
+  mixins: [DataMixin],
+
   props: {
     data: { type: Object, required: false }
   },
@@ -12,8 +16,6 @@ export default {
       return !this.listData
     },
 
-    // Override meta.view passed down from the route so that getEndpoint()
-    // can do the right thing.
     view() {
       // The view description of a list is the list's description itself.
       return this.desc

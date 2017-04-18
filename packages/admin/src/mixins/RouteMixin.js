@@ -1,4 +1,14 @@
+import DataMixin from '@/mixins/DataMixin'
+
 export default {
+  mixins: [DataMixin],
+
+  data() {
+    return {
+      isRoute: true
+    }
+  },
+
   computed: {
     routeRecord() {
       // Walks through the matched routes and all components of each route, to
