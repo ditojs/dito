@@ -17,10 +17,20 @@ export default {
       // will trigger a recalculated meta on reused router components.
       for (let route of this.$route.matched) {
         const instances = route.instances
+        let empty = true
         for (let name in instances) {
           if (instances[name] === this) {
             return route
           }
+          empty = false
+        }
+        // If this route contains no instance, then we're hitting this issue:
+        // https://github.com/vuejs/vue-router/issues/1338
+        // Lucky for Dito, we can assume in those situations that this component
+        // is the default instance of the route, and patch the record:
+        if (empty) {
+          instances.default = this
+          return route
         }
       }
       return null
