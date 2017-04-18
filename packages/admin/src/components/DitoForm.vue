@@ -10,8 +10,9 @@
       dito-panel(:desc="form", :data="data || {}", :meta="meta",
         :disabled="loading")
     .dito-buttons
-      button(type="submit", v-if="!error") {{ create ? 'Create' : 'Save' }}
-      button(@click.prevent="cancel") Cancel
+      button(v-if="!error", type="submit",
+        :class="`dito-button-${create ? 'create' : 'save'}`")
+      button(type="button", class="dito-button-cancel", @click.prevent="cancel")
   router-view(v-else)
 </template>
 
@@ -29,6 +30,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
+import DataMixin from '@/mixins/DataMixin'
 import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
@@ -84,12 +86,12 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
-      return this.isLastRoute && !this.parentEntry
+      return !this.parentEntry
     }
   },
 
   methods: {
-    initData() { // overrides DataMixin.initData()
+    setupData(initialize, reload) { // overrides DataMixin.setupData()
       function initData(desc, data) {
         // Sets up an emptyData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
@@ -101,10 +103,31 @@ export default DitoComponent.component('dito-form', {
         }
         return data
       }
-      if (this.create) {
+
+      if (!this.create) {
+        // super.setupData(initialize, reload)
+        DataMixin.methods.setupData.call(this, initialize, reload)
+      } else if (initialize) {
         this.emptyData = initData(this.form, {})
-      } else if (this.shouldLoad) {
-        this.loadData(true)
+      }
+    },
+
+    setParentEntry(data) {
+      if (this.parentEntry) {
+        const index = this.parentList.indexOf(this.parentEntry)
+        if (index >= 0) {
+          this.parentList[index] = data
+          return true
+        }
+      }
+      return false
+    },
+
+    setData(data, ignoreLoaded) {
+      // setData() is called after submit when data has changed. Try to modify
+      // the parentEntry first to keep data persistant across editing hierarchy.
+      if (!this.setParentEntry(data)) {
+        this.loadedData = data
       }
     },
 
@@ -112,7 +135,7 @@ export default DitoComponent.component('dito-form', {
       this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
           // After submitting the form navigate back to the parent form or view.
-          this.$router.push({ path: '..', append: true })
+          this.goBack('submit')
         }
       })
     },
@@ -120,14 +143,11 @@ export default DitoComponent.component('dito-form', {
     cancel() {
       // If we have resetData, see if we can reset the entry in the parent list
       // to its original state again.
-      if (this.resetData && this.parentEntry) {
-        const index = this.parentList.indexOf(this.parentEntry)
-        if (index >= 0) {
-          this.parentList[index] = this.resetData
-        }
+      if (this.resetData) {
+        this.setParentEntry(this.resetData)
         this.resetData = null
       }
-      this.$router.push({ path: '..', append: true })
+      this.goBack('cancel')
     }
   }
 })

@@ -24,12 +24,22 @@ export default DitoComponent.component('dito-view', {
       }
     },
 
-    shouldLoad() {
-      return this.isLastRoute
-    },
-
     endpoint() {
       return this.getEndpoint('get', 'collection')
+    }
+  },
+
+  watch: {
+    $route(to, from) {
+      // Only erase loadedData if the routes changes completely.
+      let path1 = to.path
+      let path2 = from.path
+      if (path2.length < path1.length) {
+        [path1, path2] = [path2, path1]
+      }
+      if (path2.indexOf(path1) !== 0) {
+        this.loadedData = null
+      }
     }
   }
 })

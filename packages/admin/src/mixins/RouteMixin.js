@@ -40,7 +40,8 @@ export default {
       // Workaround for vue-router not being able to map multiple url parameters
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
-      return this.$route.params[this.meta.param]
+      const param = this.$route.params[this.meta.param]
+      return param !== 'create' ? param : null
     },
 
     isLastRoute() {
@@ -51,7 +52,9 @@ export default {
 
     meta() {
       const record = this.routeRecord
-      return record ? record.meta : null
+      // Return an empty meta object if no route record was found, to prevent
+      // full-on crashes elsewhere.
+      return record ? record.meta : {}
     }
   }
 }

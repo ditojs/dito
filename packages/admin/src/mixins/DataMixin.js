@@ -12,23 +12,41 @@ export default {
   created() {
     // Initialize data after component was created and the data is already being
     // observed.
-    this.initData()
-  },
-
-  watch: {
-    $route() {
-      this.initData()
+    if (this.isLastRoute) {
+      this.setupData(true, false)
     }
   },
 
   computed: {
-    // To be overridden by components using this mixin.
     shouldLoad() {
-      return true
+      return !this.loadedData
+    }
+  },
+
+  watch: {
+    $route() {
+      if (this.isLastRoute) {
+        // See goBack() for the value of this.meta.mode
+        const mode = this.meta.mode
+        this.meta.mode = null
+        // Only initialize if we're not going back in the route through cancel
+        // or submit, and reload if the child form was submitting new data.
+        // Execute in next tick so implementing components can also watch $route
+        // and handle changes that affect setupData(), e.g. in DitoView.
+        this.$nextTick(function() {
+          this.setupData(!mode, mode === 'submit')
+        })
+      }
     }
   },
 
   methods: {
+    goBack(mode) {
+      // Tell watch $route() of the parent route component what the user did.
+      this.parentRouteComponent.meta.mode = mode
+      this.$router.push({ path: '..', append: true })
+    },
+
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](this.view, this.form,
           type === 'collection' ? this.parentForm : id)
@@ -65,14 +83,18 @@ export default {
       }
       this.send('get', this.endpoint, null, (err, data) => {
         if (!err) {
-          this.loadedData = data
+          this.setData(data)
         }
       })
     },
 
-    initData() {
-      if (this.shouldLoad) {
-        this.loadData(true)
+    setData(data) {
+      this.loadedData = data
+    },
+
+    setupData(initialize, reload) {
+      if (reload || this.shouldLoad) {
+        this.loadData(initialize)
       }
     }
   }
