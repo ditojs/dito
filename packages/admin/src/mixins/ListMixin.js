@@ -3,13 +3,9 @@ import DataMixin from '@/mixins/DataMixin'
 export default {
   mixins: [DataMixin],
 
-  props: {
-    data: { type: Object, required: false }
-  },
-
   computed: {
     listData() {
-      return this.data && this.data[this.name] || this.loadedData
+      return this.data[this.name]
     },
 
     shouldLoad() {
@@ -31,6 +27,10 @@ export default {
   },
 
   methods: {
+    setData(data) {
+      this.$set(this.data, this.name, data)
+    },
+
     remove(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {
@@ -43,7 +43,7 @@ export default {
                 data.splice(index, 1)
               }
             }
-            this.loadData(false)
+            this.reloadData()
           }
         )
       }

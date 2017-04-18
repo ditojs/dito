@@ -14,9 +14,14 @@ export default {
       return this.getRouteComponent(this.$parent)
     },
 
-    parentForm() {
-      let parent = this.parentRouteComponent
-      return parent && parent.isForm ? parent : null
+    formComponent() {
+      let comp = this.routeComponent
+      return comp && comp.isForm ? comp : null
+    },
+
+    parentFormComponent() {
+      let comp = this.parentRouteComponent
+      return comp && comp.isForm ? comp : null
     }
   },
 

@@ -13,7 +13,7 @@ export default {
     // Initialize data after component was created and the data is already being
     // observed.
     if (this.isLastRoute) {
-      this.setupData(true, false)
+      this.initData()
     }
   },
 
@@ -32,9 +32,13 @@ export default {
         // Only initialize if we're not going back in the route through cancel
         // or submit, and reload if the child form was submitting new data.
         // Execute in next tick so implementing components can also watch $route
-        // and handle changes that affect setupData(), e.g. in DitoView.
+        // and handle changes that affect reloadData(), e.g. in DitoView.
         this.$nextTick(function() {
-          this.setupData(!mode, mode === 'submit')
+          if (mode === 'submit') {
+            this.reloadData()
+          } else if (this.shouldLoad) {
+            this.initData()
+          }
         })
       }
     }
@@ -49,7 +53,32 @@ export default {
 
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](this.view, this.form,
-          type === 'collection' ? this.parentForm : id)
+          type === 'collection' ? this.parentFormComponent : id)
+    },
+
+    setData(data) {
+      this.loadedData = data
+    },
+
+    initData() {
+      if (this.shouldLoad) {
+        this.loadData(true)
+      }
+    },
+
+    reloadData() {
+      this.loadData(false)
+    },
+
+    loadData(clear) {
+      if (clear) {
+        this.loadedData = null
+      }
+      this.send('get', this.endpoint, null, (err, data) => {
+        if (!err) {
+          this.setData(data)
+        }
+      })
     },
 
     setLoading(loading) {
@@ -74,27 +103,6 @@ export default {
           }
         })
         return true
-      }
-    },
-
-    loadData(clear) {
-      if (clear) {
-        this.loadedData = null
-      }
-      this.send('get', this.endpoint, null, (err, data) => {
-        if (!err) {
-          this.setData(data)
-        }
-      })
-    },
-
-    setData(data) {
-      this.loadedData = data
-    },
-
-    setupData(initialize, reload) {
-      if (reload || this.shouldLoad) {
-        this.loadData(initialize)
       }
     }
   }

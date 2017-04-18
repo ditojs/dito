@@ -8,6 +8,14 @@ export default {
     disabled: { type: Boolean, required: false }
   },
 
+  created() {
+    // Register all type components on the form they belong to, for easy lookup.
+    let form = this.formComponent
+    if (form) {
+      form.components[this.name] = this
+    }
+  },
+
   computed: {
     readonly() {
       return this.desc.readonly

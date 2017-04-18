@@ -40,7 +40,8 @@ export default DitoComponent.component('dito-form', {
     return {
       emptyData: null,
       resetData: null,
-      isForm: true
+      isForm: true,
+      components: {}
     }
   },
 
@@ -60,7 +61,8 @@ export default DitoComponent.component('dito-form', {
     parentEntry() {
       // See if we can find entry by id in the parent list.
       const list = this.parentList
-      const entry = list && list.find(entry => entry.id + '' === this.id)
+      const entry = list && this.id && list.find(
+          entry => entry.id + '' === this.id)
       // If we found the entry in the parent list and there is no resetData
       // object already, store a clone of the entry for restoring on cancel.
       if (entry && !this.resetData) {
@@ -86,12 +88,12 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
-      return !this.parentEntry
+      return !this.create && !this.parentEntry
     }
   },
 
   methods: {
-    setupData(initialize, reload) { // overrides DataMixin.setupData()
+    initData() { // overrides DataMixin.initData()
       function initData(desc, data) {
         // Sets up an emptyData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
@@ -104,11 +106,20 @@ export default DitoComponent.component('dito-form', {
         return data
       }
 
-      if (!this.create) {
-        // super.setupData(initialize, reload)
-        DataMixin.methods.setupData.call(this, initialize, reload)
-      } else if (initialize) {
+      if (this.create) {
         this.emptyData = initData(this.form, {})
+      } else {
+        // super.initData()
+        DataMixin.methods.initData.call(this)
+      }
+    },
+
+    reloadData() {
+      if (this.create) {
+        // Nothing
+      } else {
+        // super.reloadData()
+        DataMixin.methods.reloadData.call(this)
       }
     },
 
@@ -116,14 +127,34 @@ export default DitoComponent.component('dito-form', {
       if (this.parentEntry) {
         const index = this.parentList.indexOf(this.parentEntry)
         if (index >= 0) {
-          this.parentList[index] = data
+          this.$set(this.parentList, index,
+              Object.assign({}, this.parentEntry, data))
           return true
         }
       }
       return false
     },
 
-    setData(data, ignoreLoaded) {
+    filterData(data) {
+      // Deletes arrays that aren't considered nested data, as those are already
+      // taking care of themselves (e.g. insertion, deletion) and shouldn't be
+      // set again. This also handles canceling (resetData) nicely even when
+      // children were already edited.
+      let copy = {}
+      for (let key in data) {
+        const value = data[key]
+        if (Array.isArray(value)) {
+          const comp = this.components[key]
+          if (comp && !comp.desc.nested) {
+            continue
+          }
+        }
+        copy[key] = value
+      }
+      return copy
+    },
+
+    setData(data) {
       // setData() is called after submit when data has changed. Try to modify
       // the parentEntry first to keep data persistant across editing hierarchy.
       if (!this.setParentEntry(data)) {
@@ -144,7 +175,7 @@ export default DitoComponent.component('dito-form', {
       // If we have resetData, see if we can reset the entry in the parent list
       // to its original state again.
       if (this.resetData) {
-        this.setParentEntry(this.resetData)
+        this.setParentEntry(this.filterData(this.resetData))
         this.resetData = null
       }
       this.goBack('cancel')
