@@ -60,20 +60,20 @@ export default {
     },
 
     loadData(clear) {
-      if (this.shouldLoad) {
-        if (clear) {
-          this.loadedData = null
-        }
-        this.send('get', this.endpoint, null, (err, data) => {
-          if (!err) {
-            this.loadedData = data
-          }
-        })
+      if (clear) {
+        this.loadedData = null
       }
+      this.send('get', this.endpoint, null, (err, data) => {
+        if (!err) {
+          this.loadedData = data
+        }
+      })
     },
 
     initData() {
-      this.loadData(true)
+      if (this.shouldLoad) {
+        this.loadData(true)
+      }
     }
   }
 }

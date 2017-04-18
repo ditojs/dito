@@ -13,7 +13,7 @@ export default {
     },
 
     shouldLoad() {
-      return !this.listData
+      return this.desc.load && !this.listData
     },
 
     view() {

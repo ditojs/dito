@@ -103,7 +103,7 @@ export default DitoComponent.component('dito-form', {
       }
       if (this.create) {
         this.emptyData = initData(this.form, {})
-      } else {
+      } else if (this.shouldLoad) {
         this.loadData(true)
       }
     },
