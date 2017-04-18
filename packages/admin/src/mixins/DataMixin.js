@@ -26,17 +26,10 @@ export default {
   watch: {
     $route() {
       if (this.isLastRoute) {
-        // See goBack() for the value of this.meta.mode
-        const mode = this.meta.mode
-        this.meta.mode = null
-        // Only initialize if we're not going back in the route through cancel
-        // or submit, and reload if the child form was submitting new data.
         // Execute in next tick so implementing components can also watch $route
-        // and handle changes that affect reloadData(), e.g. in DitoView.
+        // and handle changes that affect initData(), e.g. in DitoView.
         this.$nextTick(function() {
-          if (mode === 'submit') {
-            this.reloadData()
-          } else if (this.shouldLoad) {
+          if (this.shouldLoad) {
             this.initData()
           }
         })
@@ -45,10 +38,13 @@ export default {
   },
 
   methods: {
-    goBack(mode) {
-      // Tell watch $route() of the parent route component what the user did.
-      this.parentRouteComponent.meta.mode = mode
+    goBack(reload) {
       this.$router.push({ path: '..', append: true })
+      // Tell the parent to reload its data if this was a submit()
+      const parent = this.parentRouteComponent
+      if (reload && parent) {
+        parent.reloadData()
+      }
     },
 
     getEndpoint(method, type, id) {

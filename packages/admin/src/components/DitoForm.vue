@@ -166,7 +166,7 @@ export default DitoComponent.component('dito-form', {
       this.send(this.method, this.endpoint, this.data, err => {
         if (!err) {
           // After submitting the form navigate back to the parent form or view.
-          this.goBack('submit')
+          this.goBack(true)
         }
       })
     },
@@ -178,7 +178,7 @@ export default DitoComponent.component('dito-form', {
         this.setParentEntry(this.filterData(this.resetData))
         this.resetData = null
       }
-      this.goBack('cancel')
+      this.goBack(false)
     }
   }
 })
