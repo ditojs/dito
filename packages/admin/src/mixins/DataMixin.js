@@ -12,14 +12,12 @@ export default {
   created() {
     // Initialize data after component was created and the data is already being
     // observed.
-    if (this.isLastRoute) {
-      this.initData()
-    }
+    this.initData()
   },
 
   computed: {
     shouldLoad() {
-      return !this.loadedData
+      return true
     }
   },
 
@@ -29,9 +27,7 @@ export default {
         // Execute in next tick so implementing components can also watch $route
         // and handle changes that affect initData(), e.g. in DitoView.
         this.$nextTick(function() {
-          if (this.shouldLoad) {
-            this.initData()
-          }
+          this.initData()
         })
       }
     }
@@ -52,6 +48,10 @@ export default {
           type === 'collection' ? this.parentFormComponent : id)
     },
 
+    isTransient(item) {
+      return item && /^_/.test(item.id)
+    },
+
     setData(data) {
       this.loadedData = data
     },
@@ -67,14 +67,16 @@ export default {
     },
 
     loadData(clear) {
-      if (clear) {
-        this.loadedData = null
-      }
-      this.send('get', this.endpoint, null, (err, data) => {
-        if (!err) {
-          this.setData(data)
+      if (this.endpoint) {
+        if (clear) {
+          this.loadedData = null
         }
-      })
+        this.send('get', this.endpoint, null, (err, data) => {
+          if (!err) {
+            this.setData(data)
+          }
+        })
+      }
     },
 
     setLoading(loading) {

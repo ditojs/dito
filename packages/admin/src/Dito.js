@@ -75,22 +75,15 @@ function getFormRoutes(routePrefix, form, formName, options, meta, level) {
 
   // We need to use differently named url parameters on each nested level for id
   // as otherwise they would clash and override each other inside $route.params
+  // See: https://github.com/vuejs/vue-router/issues/1345
   const param = `id${level + 1}`
   return [{
-    path: `${routePrefix}create`,
-    component: DitoForm,
-    meta: Object.assign({
-      name: formName,
-      label: `Create ${form.label}`,
-      create: true
-    }, meta)
-  }, {
     path: `${routePrefix}:${param}`,
     component: DitoForm,
     children,
     meta: Object.assign({
       name: formName,
-      label: `Edit ${form.label}`,
+      label: form.label,
       param
     }, meta)
   }]
@@ -106,7 +99,7 @@ function getEndpoints(endpoints) {
     }
   }
   const results = {}
-  for (let method of ['get', 'post', 'put', 'delete']) {
+  for (let method of ['get', 'post', 'put', 'patch', 'delete']) {
     const entry = endpoints && endpoints[method]
     const functions = results[method] = {}
     for (let type in defaultEndpoints) {

@@ -2,8 +2,8 @@
   nav.dito-path
     ul
       li(v-for="(route, i) in $route.matched")
-        template(v-if="i === $route.matched.length - 1") {{ route.meta.label }}
-        router-link(v-else, :to="getPath(i)") {{ route.meta.label }}
+        template(v-if="i === $route.matched.length - 1") {{ getLabel(route) }}
+        router-link(v-else, :to="getPath(i)") {{ getLabel(route) }}
 </template>
 
 <style lang="sass">
@@ -43,6 +43,12 @@ export default DitoComponent.component('dito-path', {
   methods: {
     getPath(level) {
       return this.matched.slice(0, level + 1).join('/')
+    },
+
+    getLabel(route) {
+      const param = this.$route.params[route.meta.param]
+      const prefix = param ? param === 'create' ? 'Create ' : 'Edit ' : ''
+      return prefix + route.meta.label
     }
   }
 })

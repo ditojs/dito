@@ -1,5 +1,5 @@
 <template lang="pug">
-  form.dito-form(v-if="isLastRoute", @submit.prevent="submit")
+  form.dito-form(v-if="isLastRoute", @submit.prevent="store")
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
@@ -38,7 +38,7 @@ export default DitoComponent.component('dito-form', {
 
   data() {
     return {
-      emptyData: null,
+      createData: null,
       resetData: null,
       isForm: true,
       components: {}
@@ -47,14 +47,18 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     data() {
-      return this.emptyData || this.loadedData || this.parentEntry
+      return this.createData || this.loadedData || this.parentEntry
+    },
+
+    parentData() {
+      return this.parentRouteComponent.data
     },
 
     parentList() {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
-      const parentData = this.parentRouteComponent.data
+      const parentData = this.parentData
       return parentData && parentData[this.view.name]
     },
 
@@ -72,30 +76,38 @@ export default DitoComponent.component('dito-form', {
     },
 
     create() {
-      return !!this.meta.create
+      // this.param is inherited from RouteMixin
+      return this.param === 'create'
+    },
+
+    id() {
+      return this.create ? null : this.param
     },
 
     method() {
-      return this.create ? 'post' : 'put'
+      return this.create ? 'post' : 'patch'
     },
 
     endpoint() {
-      return this.getEndpoint(this.method,
-          this.create ? 'collection' : 'member',
-          this.id)
+      const parent = this.parentFormComponent
+      return !(parent && parent.create)
+          ? this.getEndpoint(this.method,
+              this.create ? 'collection' : 'member',
+              this.id)
+          : null
     },
 
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
-      return !this.create && !this.parentEntry
+      return this.isLastRoute && !this.create && !this.parentEntry
     }
   },
 
   methods: {
     initData() { // overrides DataMixin.initData()
       function initData(desc, data) {
-        // Sets up an emptyData object that has keys with null-values for all
+        // Sets up an createData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
         for (let key in desc.tabs) {
           initData(desc.tabs[key], data)
@@ -107,7 +119,9 @@ export default DitoComponent.component('dito-form', {
       }
 
       if (this.create) {
-        this.emptyData = initData(this.form, {})
+        if (!this.createData) {
+          this.createData = initData(this.form, {})
+        }
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)
@@ -162,13 +176,39 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    submit() {
-      this.send(this.method, this.endpoint, this.data, err => {
-        if (!err) {
-          // After submitting the form navigate back to the parent form or view.
-          this.goBack(true)
+    store() {
+      if (this.endpoint) {
+        this.send(this.method, this.endpoint, this.data, err => {
+          if (!err) {
+            // After submitting the form navigate back to the parent form or view.
+            this.goBack(true)
+          }
+        })
+      } else {
+        let ok = true
+        if (this.create) {
+          // Creating into a parent form that's also creating.
+          const data = this.data
+          const parentList = this.parentList
+          if (parentList) {
+            let id = 0
+            for (let entry of parentList) {
+              id = Math.max(+(entry.id + '').substring(1) || 0, id)
+            }
+            data.id = `_${id + 1}`
+            parentList.push(data)
+          } else if (this.parentData) {
+            data.id = '_0'
+            this.$set(this.parentData, this.view.name, [data])
+          } else {
+            ok = false
+            this.error = 'Unable to create item.'
+          }
         }
-      })
+        if (ok) {
+          this.goBack(false)
+        }
+      }
     },
 
     cancel() {

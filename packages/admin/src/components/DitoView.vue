@@ -32,6 +32,10 @@ export default DitoComponent.component('dito-view', {
 
     endpoint() {
       return this.getEndpoint('get', 'collection')
+    },
+
+    shouldLoad() {
+      return this.isLastRoute && !this.loadedData
     }
   },
 
