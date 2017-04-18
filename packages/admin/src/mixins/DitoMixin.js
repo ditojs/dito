@@ -7,11 +7,17 @@ export default {
     api() { return this.meta.api },
 
     routeComponent() {
-      return this.getRouteComponent(this)
+      // Loop through all non-route components (e.g. DitoPanel, DitoTab) until
+      // the closest component that is in the route is found.
+      let comp = this
+      while (comp && !comp.isRoute) {
+        comp = comp.$parent
+      }
+      return comp
     },
 
     parentRouteComponent() {
-      return this.getRouteComponent(this.$parent)
+      return this.$parent.routeComponent
     },
 
     formComponent() {
@@ -20,19 +26,7 @@ export default {
     },
 
     parentFormComponent() {
-      let comp = this.parentRouteComponent
-      return comp && comp.isForm ? comp : null
-    }
-  },
-
-  methods: {
-    getRouteComponent(comp) {
-      // Loop through all non-route components (e.g. DitoPanel, DitoTab) until
-      // the closest component that is in the route is found.
-      while (comp && !comp.isRoute) {
-        comp = comp.$parent
-      }
-      return comp
+      return this.$parent.formComponent
     }
   }
 }
