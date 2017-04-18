@@ -4,8 +4,7 @@
       li(v-for="(comp, key) in desc.components")
         dito-label(v-if="comp.label", :name="key", :text="comp.label")
         component(:is="typeToComponent(comp.type)", :name="key", :desc="comp",
-          :data="data", :meta="meta", :root="false",
-          :disabled="comp.disabled || disabled")
+          :data="data", :meta="meta", :disabled="comp.disabled || disabled")
 </template>
 
 <script>

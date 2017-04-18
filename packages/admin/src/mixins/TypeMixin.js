@@ -4,7 +4,6 @@ export default {
     desc: { type: Object, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
-    root: { type: Boolean, required: true },
     disabled: { type: Boolean, required: false }
   },
 

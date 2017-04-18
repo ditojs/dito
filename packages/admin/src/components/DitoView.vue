@@ -4,7 +4,7 @@
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     component(:is="typeToComponent(view.type)", :name="meta.name", :desc="view",
-      :data="data", :meta="meta", :root="true")
+      :data="data", :meta="meta")
   router-view(v-else)
 </template>
 
@@ -14,6 +14,12 @@ import RouteMixin from '@/mixins/RouteMixin'
 
 export default DitoComponent.component('dito-view', {
   mixins: [RouteMixin],
+
+  data() {
+    return {
+      isView: true
+    }
+  },
 
   computed: {
     data() {

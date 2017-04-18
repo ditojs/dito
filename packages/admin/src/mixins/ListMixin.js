@@ -22,7 +22,7 @@ export default {
     },
 
     route() {
-      return `${this.root ? '/' : ''}${this.name}`
+      return this.routeComponent.isView ? '' : `${this.name}/`
     }
   },
 

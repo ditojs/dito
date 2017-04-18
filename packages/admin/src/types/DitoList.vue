@@ -5,12 +5,12 @@
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable",)
-          router-link(v-if="desc.editable", :to="`${route}/${item.id}`", append,
+          router-link(v-if="desc.editable", :to="`${route}${item.id}`", append,
             tag="button", type="button", class="dito-button-edit")
           button(v-if="desc.deletable", @click.prevent="remove(item)",
             type="button", class="dito-button-delete")
     .dito-buttons(v-if="desc.creatable")
-      router-link(:to="`${route}/create`", append,
+      router-link(:to="`${route}create`", append,
         tag="button", type="button", class="dito-button-create")
 </template>
 
