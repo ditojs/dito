@@ -59,7 +59,9 @@ export default DitoComponent.component('dito-form', {
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
       const parentData = this.parentData
-      return parentData && parentData[this.view.name]
+      const name = this.view.name
+      // If there is parentData but no list, create and return it on the fly.
+      return parentData && (parentData[name] || this.$set(parentData, name, []))
     },
 
     parentEntry() {
@@ -88,13 +90,17 @@ export default DitoComponent.component('dito-form', {
       return this.create ? 'post' : 'patch'
     },
 
-    endpoint() {
+    transient() {
       const parent = this.parentFormComponent
-      return !(parent && parent.create)
-          ? this.getEndpoint(this.method,
+      return parent && (parent.transient || parent.create)
+    },
+
+    endpoint() {
+      return this.transient
+          ? '_transient_'
+          : this.getEndpoint(this.method,
               this.create ? 'collection' : 'member',
               this.id)
-          : null
     },
 
     shouldLoad() {
@@ -177,7 +183,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     store() {
-      if (this.endpoint) {
+      if (!this.transient) {
         this.send(this.method, this.endpoint, this.data, err => {
           if (!err) {
             // After submitting the form navigate back to the parent form or view.
@@ -185,21 +191,23 @@ export default DitoComponent.component('dito-form', {
           }
         })
       } else {
+        // We're dealing with a create form with nested forms, so have to deal
+        // with transient objects. When editing nested transient, nothing needs
+        // to be done as it just works, but when creaing, we need to add to /
+        // create the parent list.
         let ok = true
         if (this.create) {
-          // Creating into a parent form that's also creating.
-          const data = this.data
           const parentList = this.parentList
           if (parentList) {
+            // Determine a unique id for the new entry, prefixed with '_' so we
+            // can identify transient objects, see isTransient()
             let id = 0
             for (let entry of parentList) {
               id = Math.max(+(entry.id + '').substring(1) || 0, id)
             }
+            const data = this.data
             data.id = `_${id + 1}`
             parentList.push(data)
-          } else if (this.parentData) {
-            data.id = '_0'
-            this.$set(this.parentData, this.view.name, [data])
           } else {
             ok = false
             this.error = 'Unable to create item.'
