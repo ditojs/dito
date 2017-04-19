@@ -36,13 +36,6 @@ export default {
       return null
     },
 
-    param() {
-      // Workaround for vue-router not being able to map multiple url parameters
-      // with the same name to multiple components, see:
-      // https://github.com/vuejs/vue-router/issues/1345
-      return this.$route.params[this.meta.param]
-    },
-
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
       const matched = this.$route.matched
@@ -54,6 +47,13 @@ export default {
       // Return an empty meta object if no route record was found, to prevent
       // full-on crashes elsewhere.
       return record ? record.meta : {}
+    },
+
+    param() {
+      // Workaround for vue-router not being able to map multiple url parameters
+      // with the same name to multiple components, see:
+      // https://github.com/vuejs/vue-router/issues/1345
+      return this.$route.params[this.meta.param]
     }
   }
 }

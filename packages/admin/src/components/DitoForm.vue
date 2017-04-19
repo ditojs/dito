@@ -106,7 +106,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
-      return this.isLastRoute && !this.create && !this.parentEntry
+      return this.isLastRoute && !this.create && !this.data
     }
   },
 
@@ -135,9 +135,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     reloadData() {
-      if (this.create) {
-        // Nothing
-      } else {
+      if (!this.create) {
         // super.reloadData()
         DataMixin.methods.reloadData.call(this)
       }
