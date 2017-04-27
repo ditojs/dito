@@ -47,8 +47,8 @@ export default DitoComponent.register('multiselect', {
       ).then(response => {
         this.loading = false
         let options = []
-        for (let country of response.data) {
-          options.push(country.name)
+        for (let option of response.data) {
+          options.push(option.name)
         }
         this.options = options
       }, response => {
