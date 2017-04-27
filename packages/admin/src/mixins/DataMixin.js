@@ -87,8 +87,15 @@ export default {
     send(method, path, payload, callback) {
       // TODO: Shall we fall back to axios locally imported, if no send method
       // is defined?
+      // COMMENT WILM: It might be good to just implement send here completely?
+      // The 'fakeDb' flag is just used for dev right now, should go in the future
+
       this.error = null
-      const send = this.api.send
+
+      const send = this.api.fakeDb
+        ? this.api.send
+        : this.request
+
       if (send) {
         this.setLoading(true)
         send(method, path, payload, (err, result) => {
@@ -101,6 +108,22 @@ export default {
           }
         })
         return true
+      }
+    },
+
+    request(method, path, payload, callback) {
+      const url = this.api.baseUrl + path
+
+      if (method === 'get') {
+        let item
+        let err
+        this.$http.get(url).then(response => {
+          item = response.data
+        }, response => {
+          err = 'Unable to load data: '
+          item = response.data
+        })
+        callback(err, item)
       }
     }
   }
