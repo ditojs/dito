@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import VueResource from 'vue-resource'
 import './components'
 import './types'
 import DitoComponent from './DitoComponent'
@@ -11,7 +10,6 @@ import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
-Vue.use(VueResource)
 
 const user = {
   role: 'admin' // TODO

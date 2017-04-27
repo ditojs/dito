@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 // Assumes: Component defines this.api
 
 export default {
@@ -117,12 +119,13 @@ export default {
       if (method === 'get') {
         let item
         let err
-        this.$http.get(url).then(response => {
-          item = response.data
-        }, response => {
-          err = 'Unable to load data: '
-          item = response.data
-        })
+        axios.get(url)
+          .then(response => {
+            item = response.data
+          })
+          .catch(error => {
+            err = error
+          })
         callback(err, item)
       }
     }

@@ -29,6 +29,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import Multiselect from 'vue-multiselect'
+import axios from 'axios'
 
 export default DitoComponent.register('multiselect', {
   components: { Multiselect },
@@ -43,17 +44,18 @@ export default DitoComponent.register('multiselect', {
     const desc = this.desc
     if (desc.ajax) {
       this.loading = true
-      this.$http.get(desc.optionsUrl
-      ).then(response => {
-        this.loading = false
-        let options = []
-        for (let option of response.data) {
-          options.push(option.name)
-        }
-        this.options = options
-      }, response => {
-        console.log(response)
-      })
+      axios.get(desc.optionsUrl)
+        .then(response => {
+          this.loading = false
+          let options = []
+          for (let option of response.data) {
+            options.push(option.name)
+          }
+          this.options = options
+        })
+        .catch(error => {
+          console.log(error)
+        })
     } else {
       this.options = desc.options
     }
