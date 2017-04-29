@@ -115,18 +115,50 @@ export default {
 
     request(method, path, payload, callback) {
       const url = this.api.baseUrl + path
+      let error
 
       if (method === 'get') {
-        let item
-        let err
+        // TODO: implement pass through of query strings / params
+        // params: params
         axios.get(url)
           .then(response => {
-            item = response.data
+            console.log(response.status)
+            callback(error, response.data)
           })
           .catch(error => {
-            err = error
+            callback(error)
           })
-        callback(err, item)
+      }
+      if (method === 'post') {
+        axios.post(url, JSON.stringify(payload))
+          .then(response => {
+            console.log(response.status)
+            callback(error, response.data)
+          })
+          .catch(error => {
+            callback(error)
+          })
+      }
+      if (method === 'patch') {
+        axios.patch(url, JSON.stringify(payload))
+          .then(response => {
+            console.log(response.status)
+            callback(error, response.data)
+          })
+          .catch(error => {
+            callback(error)
+          })
+      }
+      if (method === 'delete') {
+        // TODO: Pass ID in url
+        axios.delete(url)
+          .then(response => {
+            console.log(response.status)
+            callback(error, response.data)
+          })
+          .catch(error => {
+            callback(error)
+          })
       }
     }
   }
