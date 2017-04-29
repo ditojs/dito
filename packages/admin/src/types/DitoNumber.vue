@@ -16,5 +16,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('number')
+export default DitoComponent.register('number', {
+  validations: this.validations
+})
 </script>

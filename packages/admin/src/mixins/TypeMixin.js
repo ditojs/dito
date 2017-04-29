@@ -1,3 +1,5 @@
+import { required, between, numeric } from 'vuelidate/lib/validators'
+
 export default {
   props: {
     name: { type: String, required: true },
@@ -36,6 +38,20 @@ export default {
     max() {
       const desc = this.desc
       return desc.range ? desc.range[1] : desc.max
+    },
+
+    validations() {
+      const validation = {}
+      if (this.desc.required) {
+        validation.required = required
+      }
+      if (this.desc.type === 'number') {
+        validation.numeric = numeric
+      }
+      if (this.desc.range) {
+        validation.between = between(this.min, this.max)
+      }
+      return validation
     }
   }
 }
