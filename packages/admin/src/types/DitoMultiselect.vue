@@ -16,14 +16,33 @@
 <style lang="sass">
   .dito-multiselect
     width: unset
+
+    .multiselect__option--selected
+      background: Highlight
+      color: HighlightText
+      font-weight: normal
+
+    .multiselect__tags,
+    .multiselect__content
+      border: $border-style
+      border-radius: $border-radius
+
+    &.multiselect--above .multiselect__content
+      border-bottom: none
+      border-bottom-left-radius: 0
+      border-bottom-right-radius: 0
+
     .multiselect__tag,
     .multiselect__option--highlight
-      background: #444
+      background: ActiveBorder
+      color: MenuText
+
     .multiselect__tag-icon
+      background: none
       &::after
-        color: #fff
-      &:hover
-        background: #f00
+        color: MenuText
+      &:hover::after
+        color: ActiveCaption
 </style>
 
 <script>

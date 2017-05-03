@@ -10,8 +10,6 @@
 
 <style lang="sass">
   // CSS-only tabs, based on: https://kyusuf.com/post/completely-css-tabs
-  $tab-border: $tab-border-width solid $tab-border-color
-
   .dito-tabs
     display: flex
     flex-wrap: wrap
@@ -25,9 +23,9 @@
       display: none
       padding: 0.5em 0.5em 0
       background: $tab-color-background
-      border: $tab-border
-      border-radius: $tab-radius
-      box-shadow: 0 1px 1px 0 rgba(33,33,33,0.1)
+      border: $border-style
+      border-radius: $border-radius
+      box-shadow: $border-shadow
       z-index: 1
       // Visually move panels below all tabs
       order: 100
@@ -37,15 +35,15 @@
         border-top-left-radius: 0
 
     > label
-      padding: $tab-padding-ver $tab-padding-hor ($tab-padding-ver + $tab-radius)
+      padding: $tab-padding-ver $tab-padding-hor ($tab-padding-ver + $border-radius)
       background: $tab-color-inactive
-      border: $tab-border
+      border: $border-style
       // Overlap right and bottom borders
-      margin: 0 (-$tab-border-width) (-$tab-radius) 0
+      margin: 0 (-$border-width) (-$border-radius) 0
       cursor: pointer
       user-select: none
-      border-top-left-radius: $tab-radius
-      border-top-right-radius: $tab-radius
+      border-top-left-radius: $border-radius
+      border-top-right-radius: $border-radius
       &:hover
         background: $tab-color-hover
       &:active
@@ -66,7 +64,7 @@
         background: $tab-color-background
         border-bottom: none
         padding-bottom: $tab-padding-ver
-        margin-bottom: -$tab-border-width
+        margin-bottom: -$border-width
         & + .dito-panel
           display: block
 </style>
