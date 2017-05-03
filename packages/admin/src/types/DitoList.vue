@@ -4,7 +4,7 @@
     ul.dito-list
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
-        .dito-buttons(v-if="desc.editable || desc.deletable",)
+        .dito-buttons(v-if="desc.editable || desc.deletable")
           router-link(v-if="desc.editable", :to="`${route}${item.id}`", append,
             tag="button", type="button", class="dito-button-edit")
           button(v-if="desc.deletable", @click="remove(item)",
@@ -21,7 +21,8 @@
     border-spacing: 0.2em
     padding: 0 0 0.5em
     margin: 0
-    li
+    > li
+      list-style: none
       display: table-row
       margin: 0
       > *

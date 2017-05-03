@@ -1,5 +1,5 @@
 <template lang="pug">
-  multiselect.dito-multiselect(
+  VueMultiselect.dito-multiselect(
     v-model="data[name]",
     :show-labels="false",
     :placeholder="desc.placeholder",
@@ -16,22 +16,22 @@
 <style lang="sass">
   .dito-multiselect
     width: unset
+    .multiselect__tag,
     .multiselect__option--highlight
-      background-color: rgb(70,70,70)
-    .multiselect__tag-icon:after
-      color: #FFF
-    .multiselect__tag
-      background-color: rgb(70,70,70)
-    .multiselect__tag-icon:hover
-      background-color: #f00
+      background: #444
+    .multiselect__tag-icon
+      &::after
+        color: #fff
+      &:hover
+        background: #f00
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import Multiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect'
 
 export default DitoComponent.register('multiselect', {
-  components: { Multiselect },
+  components: { VueMultiselect },
   data() {
     return {
       value: '',
@@ -46,7 +46,7 @@ export default DitoComponent.register('multiselect', {
       this.$http.get(desc.optionsUrl
       ).then(response => {
         this.loading = false
-        let options = []
+        const options = []
         for (let option of response.data) {
           options.push(option.name)
         }
