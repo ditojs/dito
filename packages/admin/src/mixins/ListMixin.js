@@ -12,7 +12,7 @@ export default {
       return this.desc.load && !this.listData
     },
 
-    view() {
+    viewDesc() {
       // The view description of a list is the list's description itself.
       return this.desc
     },

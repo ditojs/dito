@@ -7,7 +7,7 @@
         .dito-buttons(v-if="desc.editable || desc.deletable",)
           router-link(v-if="desc.editable", :to="`${route}${item.id}`", append,
             tag="button", type="button", class="dito-button-edit")
-          button(v-if="desc.deletable", @click.prevent="remove(item)",
+          button(v-if="desc.deletable", @click="remove(item)",
             type="button", class="dito-button-delete")
     .dito-buttons(v-if="desc.creatable")
       router-link(:to="`${route}create`", append,

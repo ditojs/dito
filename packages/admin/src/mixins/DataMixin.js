@@ -44,7 +44,7 @@ export default {
     },
 
     getEndpoint(method, type, id) {
-      return this.api.endpoints[method][type](this.view, this.form,
+      return this.api.endpoints[method][type](this.viewDesc, this.formDesc,
           type === 'collection' ? this.parentFormComponent : id)
     },
 
