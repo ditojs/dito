@@ -7,6 +7,8 @@
     :options="options",
     :label="desc.options.labelKey",
     :track-by="desc.options.valueKey",
+    :group-label="desc.options.groupBy && 'name'",
+    :group-values="desc.options.groupBy && 'options'",
     :searchable="desc.searchable",
     :multiple="desc.multiple",
     :internal-search="true",
@@ -112,7 +114,24 @@ export default DitoComponent.register('multiselect', {
         axios.get(options.url)
           .then(response => {
             this.loading = false
-            this.options = [...response.data]
+            if (options.groupBy) {
+              const grouped = {}
+              this.options = response.data.reduce(function(results, option) {
+                const name = option[options.groupBy]
+                let entry = grouped[name]
+                if (!entry) {
+                  entry = grouped[name] = {
+                    name: name, // :group-label
+                    options: [] // :group-values
+                  }
+                  results.push(entry)
+                }
+                entry.options.push(option)
+                return results
+              }, [])
+            } else {
+              this.options = [...response.data]
+            }
           })
           .catch(error => {
             // TODO: Handle and display error
