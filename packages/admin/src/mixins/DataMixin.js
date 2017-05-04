@@ -73,7 +73,7 @@ export default {
         if (clear) {
           this.loadedData = null
         }
-        this.send('get', this.endpoint, null, (err, data) => {
+        this.request('get', this.endpoint, null, (err, data) => {
           if (!err) {
             this.setData(data)
           }
@@ -86,80 +86,33 @@ export default {
       this.routeComponent.loading = loading
     },
 
-    send(method, path, payload, callback) {
-      // TODO: Shall we fall back to axios locally imported, if no send method
-      // is defined?
-      // COMMENT WILM: It might be good to just implement send here completely?
-      // The 'fakeDb' flag is just used for dev right now, should go in the future
-
+    request(method, path, payload, callback) {
+      const request = this.api.request || this.requestAxios
       this.error = null
-
-      const send = this.api.fakeDb
-        ? this.api.send
-        : this.request
-
-      if (send) {
-        this.setLoading(true)
-        send(method, path, payload, (err, result) => {
-          this.setLoading(false)
-          if (err) {
-            this.error = err.toString()
-          }
-          if (callback) {
-            callback.call(this, err, result)
-          }
-        })
-        return true
-      }
+      this.setLoading(true)
+      request(method, path, payload, (err, result) => {
+        this.setLoading(false)
+        if (err) {
+          this.error = err.toString()
+        }
+        if (callback) {
+          callback.call(this, err, result)
+        }
+      })
     },
 
-    request(method, path, payload, callback) {
-      const url = this.api.baseUrl + path
-      let error
-
-      if (method === 'get') {
-        // TODO: implement pass through of query strings / params
-        // params: params
-        axios.get(url)
-          .then(response => {
-            console.log(response.status)
-            callback(error, response.data)
-          })
-          .catch(error => {
-            callback(error)
-          })
-      }
-      if (method === 'post') {
-        axios.post(url, JSON.stringify(payload))
-          .then(response => {
-            console.log(response.status)
-            callback(error, response.data)
-          })
-          .catch(error => {
-            callback(error)
-          })
-      }
-      if (method === 'patch') {
-        axios.patch(url, JSON.stringify(payload))
-          .then(response => {
-            console.log(response.status)
-            callback(error, response.data)
-          })
-          .catch(error => {
-            callback(error)
-          })
-      }
-      if (method === 'delete') {
-        // TODO: Pass ID in url
-        axios.delete(url)
-          .then(response => {
-            console.log(response.status)
-            callback(error, response.data)
-          })
-          .catch(error => {
-            callback(error)
-          })
-      }
+    requestAxios(method, path, payload, callback) {
+      // TODO: implement pass through of query strings / params
+      // params: params
+      axios[method](this.api.baseUrl + path, payload && JSON.stringify(payload))
+        .then(response => {
+          // TODO: Deal with status!
+          console.log(response.status)
+          callback(null, response.data)
+        })
+        .catch(error => {
+          callback(error)
+        })
     }
   }
 }

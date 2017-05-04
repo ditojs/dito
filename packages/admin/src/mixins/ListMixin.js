@@ -53,7 +53,7 @@ export default {
         if (this.isTransient(item)) {
           this.removeItem(item)
         } else {
-          this.send('delete', this.getEndpoint('delete', 'member', item.id),
+          this.request('delete', this.getEndpoint('delete', 'member', item.id),
             null,
             err => {
               if (!err) {

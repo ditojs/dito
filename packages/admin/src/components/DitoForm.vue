@@ -188,7 +188,7 @@ export default DitoComponent.component('dito-form', {
 
     store() {
       if (!this.transient) {
-        this.send(this.method, this.endpoint, this.data, err => {
+        this.request(this.method, this.endpoint, this.data, err => {
           if (!err) {
             // After submitting, navigate back to the parent form or view.
             this.goBack(true)
