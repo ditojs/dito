@@ -3,6 +3,12 @@ import DataMixin from '@/mixins/DataMixin'
 export default {
   mixins: [DataMixin],
 
+  data() {
+    return {
+      isList: true
+    }
+  },
+
   computed: {
     listData() {
       return this.data[this.name]
