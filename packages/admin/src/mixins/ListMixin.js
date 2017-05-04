@@ -3,6 +3,12 @@ import DataMixin from '@/mixins/DataMixin'
 export default {
   mixins: [DataMixin],
 
+  data() {
+    return {
+      isList: true
+    }
+  },
+
   computed: {
     listData() {
       return this.data[this.name]
@@ -12,7 +18,7 @@ export default {
       return this.desc.load && !this.listData
     },
 
-    view() {
+    viewDesc() {
       // The view description of a list is the list's description itself.
       return this.desc
     },

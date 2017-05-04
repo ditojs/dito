@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import VeeValidate from 'vee-validate'
 import './components'
 import './types'
 import DitoComponent from './DitoComponent'
@@ -10,18 +11,19 @@ import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
+Vue.use(VeeValidate)
 
 const user = {
   role: 'admin' // TODO
 }
 
-function addViewRoute(routes, view, viewName, options, level) {
-  view.name = viewName
-  view.label = renderLabel(view, viewName)
-  const formName = view.form
-  const form = view.form = formName && options.forms[formName]
+function addViewRoute(routes, viewDesc, viewName, options, level) {
+  viewDesc.name = viewName
+  viewDesc.label = renderLabel(viewDesc, viewName)
+  const formName = viewDesc.form
+  const formDesc = viewDesc.formDesc = formName && options.forms[formName]
   const meta = {
-    view,
+    viewDesc,
     user,
     api: options.api
   }
@@ -29,16 +31,15 @@ function addViewRoute(routes, view, viewName, options, level) {
   // Root views have their own routes and entries in the breadcrumbs, and the
   // form routes are children of the view route. Nested lists in forms don't
   // have views and routes, so their form routes need the viewName prefixed.
-  const formRoutes = form && getFormRoutes(root ? '' : `${viewName}/`,
-      form, formName, options, meta, level)
+  const formRoutes = formDesc && getFormRoutes(root ? '' : `${viewName}/`,
+      formDesc, formName, options, meta, level)
   routes.push(root
     ? {
       path: `/${viewName}`,
       children: formRoutes,
       component: DitoView,
       meta: Object.assign({
-        name: viewName,
-        label: view.label
+        label: viewDesc.label
       }, meta)
     }
     // Just redirect back to the form if the user enters a nested list route.
@@ -51,11 +52,11 @@ function addViewRoute(routes, view, viewName, options, level) {
   )
 }
 
-function getFormRoutes(routePrefix, form, formName, options, meta, level) {
-  form.name = formName
-  form.label = renderLabel(form, formName)
+function getFormRoutes(routePrefix, formDesc, formName, options, meta, level) {
+  formDesc.name = formName
+  formDesc.label = renderLabel(formDesc, formName)
   const children = []
-  const tabs = form.tabs
+  const tabs = formDesc.tabs
 
   function addRoutes(components) {
     for (let name in components) {
@@ -69,7 +70,7 @@ function getFormRoutes(routePrefix, form, formName, options, meta, level) {
   for (let name in tabs) {
     addRoutes(tabs[name].components)
   }
-  addRoutes(form.components)
+  addRoutes(formDesc.components)
 
   // We need to use differently named url parameters on each nested level for id
   // as otherwise they would clash and override each other inside $route.params
@@ -80,8 +81,7 @@ function getFormRoutes(routePrefix, form, formName, options, meta, level) {
     component: DitoForm,
     children,
     meta: Object.assign({
-      name: formName,
-      label: form.label,
+      label: formDesc.label,
       param
     }, meta)
   }]
@@ -89,11 +89,14 @@ function getFormRoutes(routePrefix, form, formName, options, meta, level) {
 
 function getEndpoints(endpoints) {
   const defaultEndpoints = {
-    member(view, form, id) {
-      return `${form.name}/${id}`
+    member(viewDesc, formDesc, id) {
+      return `${formDesc.name}/${id}`
     },
-    collection(view, form, parent) {
-      return parent ? `${parent.form.name}/${parent.id}/${view.name}` : view.name
+
+    collection(viewDesc, formDesc, parentForm) {
+      return parentForm
+          ? `${parentForm.name}/${parentForm.id}/${viewDesc.name}`
+          : viewDesc.name
     }
   }
   const results = {}

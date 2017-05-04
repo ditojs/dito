@@ -4,7 +4,7 @@
 
 import './DitoButton'
 import './DitoList'
-import './DitoNumber'
 import './DitoMultiselect'
+import './DitoNumber'
 import './DitoSelect'
 import './DitoText'

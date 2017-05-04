@@ -1,6 +1,18 @@
 <template lang="pug">
-  input(:id="name", type="text", v-model="data[name]", :disabled="disabled",
-    :readonly="readonly", :placeholder="placeholder")
+  p(:class={ 'control': true })
+    input(
+      :id="name",
+      :class="{ 'input': true, 'is-danger': errors.has(name) }",
+      type="text",
+      :data-vv-name="name",
+      v-model="data[name]",
+      v-validate="validations",
+      :disabled="disabled",
+      :readonly="readonly",
+      :placeholder="placeholder"
+    )
+    span(v-show="errors.has(name)",  class="help is-danger")
+      | Errors: {{ errors.collect() }}
 </template>
 
 <script>

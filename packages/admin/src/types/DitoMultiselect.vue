@@ -1,9 +1,12 @@
 <template lang="pug">
-  multiselect.dito-multiselect(
-    v-model="data[name]",
+  VueMultiselect.dito-multiselect(
+    :value="value",
+    @input="onChanged",
     :show-labels="false",
     :placeholder="desc.placeholder",
     :options="options",
+    :label="desc.options.labelKey",
+    :track-by="desc.options.valueKey",
     :searchable="desc.searchable",
     :multiple="desc.multiple",
     :internal-search="true",
@@ -16,48 +19,102 @@
 <style lang="sass">
   .dito-multiselect
     width: unset
+
+    .multiselect__option--selected
+      background: Highlight
+      color: HighlightText
+      font-weight: normal
+
+    .multiselect__tags,
+    .multiselect__content
+      border: $border-style
+      border-radius: $border-radius
+
+    &.multiselect--above .multiselect__content
+      border-bottom: none
+      border-bottom-left-radius: 0
+      border-bottom-right-radius: 0
+
+    .multiselect__tag,
     .multiselect__option--highlight
-      background-color: rgb(70,70,70)
-    .multiselect__tag-icon:after
-      color: #FFF
-    .multiselect__tag
-      background-color: rgb(70,70,70)
-    .multiselect__tag-icon:hover
-      background-color: #f00
+      background: ActiveBorder
+      color: MenuText
+
+    .multiselect__tag-icon
+      background: none
+      &::after
+        color: MenuText
+      &:hover::after
+        color: ActiveCaption
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import Multiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect'
+import isObject from 'isobject'
 import axios from 'axios'
 
 export default DitoComponent.register('multiselect', {
-  components: { Multiselect },
+  components: { VueMultiselect },
+
   data() {
     return {
-      value: '',
       options: [],
       loading: false
     }
   },
+
   created () {
-    const desc = this.desc
-    if (desc.ajax) {
-      this.loading = true
-      axios.get(desc.optionsUrl)
-        .then(response => {
-          this.loading = false
-          let options = []
-          for (let option of response.data) {
-            options.push(option.name)
+    const options = this.desc.options
+    if (isObject(options)) {
+      if (options.url) {
+        this.loading = true
+        // TODO: Use axios instead vue-resources
+        axios.get(options.url)
+          .then(response => {
+            this.loading = false
+            this.options = [...response.data]
+          })
+          .catch(error => {
+            // TODO: Handle and display error
+            console.error(error)
+            this.options = null
+          })
+      } else {
+        // Whenw providing options.labelKey & options.valueKey, options.values
+        // can be used to provide the data instead of options.url
+        this.options = options.values
+      }
+    } else if (Array.isArray(options)) {
+      // Use an array of strings to provide the values be shown and selected.
+      this.options = options
+    }
+  },
+
+  computed: {
+    value() {
+      // Convert value to options object, since vue-multiselect can't map that
+      // itself unfortunately. `track-by` is only used for :key mapping I think.
+      let value = this.data[this.name]
+      const valueKey = this.desc.options.valueKey
+      if (valueKey) {
+        // Search for the option object with the given value and return the
+        // whole object.
+        for (let option of this.options) {
+          if (value === option[valueKey]) {
+            return option
           }
-          this.options = options
-        })
-        .catch(error => {
-          console.log(error)
-        })
-    } else {
-      this.options = desc.options
+        }
+      }
+      return value
+    }
+  },
+
+  methods: {
+    onChanged(value) {
+      // When changes happend store the mapped value instead of the full object.
+      const valueKey = this.desc.options.valueKey
+      this.data[this.name] = valueKey ? value[valueKey] : value
     }
   }
 })

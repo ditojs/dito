@@ -1,8 +1,8 @@
 export default {
   computed: {
     // Short-cuts to meta properties:
-    view() { return this.meta.view },
-    form() { return this.view.form },
+    viewDesc() { return this.meta.viewDesc },
+    formDesc() { return this.viewDesc.formDesc },
     user() { return this.meta.user },
     api() { return this.meta.api },
 

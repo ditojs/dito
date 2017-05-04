@@ -1,7 +1,18 @@
 <template lang="pug">
-  input(:id="name", type="number", v-model="data[name]", :disabled="disabled",
-    :readonly="readonly", :placeholder="placeholder",
-    :step="step", :min="min", :max="max")
+  p(:class={ 'control': true })
+    input(
+      :id="name",
+      :class="{ 'input': true, 'is-danger': errors.has(name) }"
+      type="number",
+      :data-vv-name="name",
+      v-model="data[name]",
+      v-validate="validations",
+      :placeholder="placeholder",
+      :disabled="disabled",
+      :step="step"
+    )
+    span(v-show="errors.has(name)",  class="help is-danger")
+      | Errors: {{ errors.collect() }}
 </template>
 
 <style lang="sass">
@@ -16,7 +27,5 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('number', {
-  validations: this.validations
-})
+export default DitoComponent.register('number')
 </script>

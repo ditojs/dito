@@ -5,9 +5,9 @@
     .dito-debug API endpoint: {{ endpoint }}
     .dito-error(v-if="error") {{ error }}
     template(v-else)
-      dito-tabs(:name="meta.name", :tabs="form.tabs", :data="data || {}",
+      dito-tabs(:name="name", :tabs="formDesc.tabs", :data="data || {}",
         :meta="meta", :disabled="loading")
-      dito-panel(:desc="form", :data="data || {}", :meta="meta",
+      dito-panel(:desc="formDesc", :data="data || {}", :meta="meta",
         :disabled="loading")
     .dito-buttons
       button(v-if="!error", type="submit",
@@ -46,35 +46,8 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
-    data() {
-      return this.createData || this.loadedData || this.parentEntry
-    },
-
-    parentData() {
-      return this.parentRouteComponent.data
-    },
-
-    parentList() {
-      // Possible parents are DitoForm for nested forms, or DitoView for root
-      // lists. Both have a data property which abstracts away loading and
-      // inheriting of data.
-      const parentData = this.parentData
-      const name = this.view.name
-      // If there is parentData but no list, create and return it on the fly.
-      return parentData && (parentData[name] || this.$set(parentData, name, []))
-    },
-
-    parentEntry() {
-      // See if we can find entry by id in the parent list.
-      const list = this.parentList
-      const entry = list && this.id && list.find(
-          entry => entry.id + '' === this.id)
-      // If we found the entry in the parent list and there is no resetData
-      // object already, store a clone of the entry for restoring on cancel.
-      if (entry && !this.resetData) {
-        this.resetData = clone(entry)
-      }
-      return entry
+    name() {
+      return this.formDesc.name
     },
 
     create() {
@@ -103,6 +76,37 @@ export default DitoComponent.component('dito-form', {
               this.id)
     },
 
+    data() {
+      return this.createData || this.loadedData || this.parentEntry
+    },
+
+    parentData() {
+      return this.parentRouteComponent.data
+    },
+
+    parentList() {
+      // Possible parents are DitoForm for nested forms, or DitoView for root
+      // lists. Both have a data property which abstracts away loading and
+      // inheriting of data.
+      const parentData = this.parentData
+      const name = this.viewDesc.name
+      // If there is parentData but no list, create and return it on the fly.
+      return parentData && (parentData[name] || this.$set(parentData, name, []))
+    },
+
+    parentEntry() {
+      // See if we can find entry by id in the parent list.
+      const list = this.parentList
+      const entry = list && this.id && list.find(
+          entry => entry.id + '' === this.id)
+      // If we found the entry in the parent list and there is no resetData
+      // object already, store a clone of the entry for restoring on cancel.
+      if (entry && !this.resetData) {
+        this.resetData = clone(entry)
+      }
+      return entry
+    },
+
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't get the data from the parent already.
@@ -126,7 +130,7 @@ export default DitoComponent.component('dito-form', {
 
       if (this.create) {
         if (!this.createData) {
-          this.createData = initData(this.form, {})
+          this.createData = initData(this.formDesc, {})
         }
       } else {
         // super.initData()
@@ -163,7 +167,9 @@ export default DitoComponent.component('dito-form', {
         const value = data[key]
         if (Array.isArray(value)) {
           const comp = this.components[key]
-          if (comp && !comp.desc.nested) {
+          // Only check for nested on list items that actuall load data, since
+          // other components can have array values too.
+          if (comp && comp.isList && !comp.desc.nested) {
             continue
           }
         }
@@ -184,7 +190,7 @@ export default DitoComponent.component('dito-form', {
       if (!this.transient) {
         this.send(this.method, this.endpoint, this.data, err => {
           if (!err) {
-            // After submitting the form navigate back to the parent form or view.
+            // After submitting, navigate back to the parent form or view.
             this.goBack(true)
           }
         })
