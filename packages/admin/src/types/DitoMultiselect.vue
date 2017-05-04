@@ -154,17 +154,25 @@ export default DitoComponent.register('multiselect', {
       // Convert value to options object, since vue-multiselect can't map that
       // itself unfortunately. `track-by` is only used for :key mapping I think.
       let value = this.data[this.name]
-      const valueKey = this.desc.options.valueKey
-      if (valueKey) {
+      const options = this.desc.options
+      const valueKey = options.valueKey
+
+      function findOption(options, groupBy) {
         // Search for the option object with the given value and return the
         // whole object.
-        for (let option of this.options) {
-          if (value === option[valueKey]) {
+        for (let option of options) {
+          if (groupBy) {
+            const found = findOption(option.options, false)
+            if (found) {
+              return found
+            }
+          } else if (value === option[valueKey]) {
             return option
           }
         }
       }
-      return value
+
+      return valueKey ? findOption(this.options, options.groupBy) : value
     }
   },
 
