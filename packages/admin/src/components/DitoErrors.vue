@@ -9,7 +9,7 @@
   .dito-errors
     ul
       margin: 0.5em 0
-      color: #f30
+      color: #ff3860
 </style>
 
 <script>

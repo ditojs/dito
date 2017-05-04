@@ -14,7 +14,7 @@
           :data="data",
           :meta="meta",
           :disabled="comp.disabled || disabled",
-          :class="{ 'dito-errors': errors.has(key) }"
+          :class="{ 'dito-has-errors': errors.has(key) }"
         )
         dito-errors(
           v-if="errors.has(key)",
