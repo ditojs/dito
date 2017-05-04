@@ -27,6 +27,9 @@
       margin: 0
       > *
         display: table-cell
+      > .dito-row
+        display: table-row
+
 </style>
 
 <script>

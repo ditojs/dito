@@ -15,6 +15,12 @@ export default {
     }
   },
 
+  mounted() {
+    // Type components are going to use validation, so call init() here. See:
+    // https://github.com/logaretm/vee-validate/issues/468#issuecomment-299171029
+    this.$validator.init()
+  },
+
   computed: {
     readonly() {
       return this.desc.readonly

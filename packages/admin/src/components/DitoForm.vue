@@ -31,10 +31,11 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin],
+  mixins: [RouteMixin, ValidatorMixin],
 
   data() {
     return {

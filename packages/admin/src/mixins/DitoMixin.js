@@ -6,6 +6,12 @@ export default {
     user() { return this.meta.user },
     api() { return this.meta.api },
 
+    $validator() {
+      // By default when requested to provide a $validator ask the $parent. See:
+      // https://github.com/logaretm/vee-validate/issues/468#issuecomment-299171029
+      return this.$parent.$validator
+    },
+
     routeComponent() {
       // Loop through all non-route components (e.g. DitoPanel, DitoTab) until
       // the closest component that is in the route is found.
