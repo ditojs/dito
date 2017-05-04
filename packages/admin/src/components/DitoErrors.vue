@@ -1,0 +1,23 @@
+<template lang="pug">
+  .dito-errors
+    ul
+      li(v-for="error in errors.collect(name)")
+        | {{ error }}
+</template>
+
+<style lang="sass">
+  .dito-errors
+    ul
+      margin: 0.5em 0
+      color: #f30
+</style>
+
+<script>
+import DitoComponent from '@/DitoComponent'
+
+export default DitoComponent.component('dito-errors', {
+  props: {
+    name: { type: String, required: true }
+  }
+})
+</script>

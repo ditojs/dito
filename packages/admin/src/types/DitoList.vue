@@ -1,17 +1,33 @@
 <template lang="pug">
-  .dito-error(v-if="error") {{ error }}
+  dito-errors(
+    v-if="errors.has('dito-data')",
+    name="dito-data"
+  )
   div(v-else)
     ul.dito-list
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable")
-          router-link(v-if="desc.editable", :to="`${route}${item.id}`", append,
-            tag="button", type="button", class="dito-button-edit")
-          button(v-if="desc.deletable", @click="remove(item)",
-            type="button", class="dito-button-delete")
+          router-link(
+            v-if="desc.editable",
+            :to="`${route}${item.id}`", append,
+            tag="button",
+            type="button",
+            class="dito-button-edit"
+          )
+          button(
+            v-if="desc.deletable",
+            type="button",
+            @click="remove(item)",
+            class="dito-button-delete"
+          )
     .dito-buttons(v-if="desc.creatable")
-      router-link(:to="`${route}create`", append,
-        tag="button", type="button", class="dito-button-create")
+      router-link(
+        :to="`${route}create`", append,
+        tag="button",
+        type="button",
+        class="dito-button-create"
+      )
 </template>
 
 <style lang="sass">
@@ -19,15 +35,12 @@
   ul.dito-list
     display: table
     border-spacing: 0.2em
-    padding: 0 0 0.5em
-    margin: 0
+    padding-bottom: 0.5em
     > li
-      list-style: none
       display: table-row
-      margin: 0
       > *
         display: table-cell
-      > .dito-row
+      > .dito-errors
         display: table-row
 
 </style>

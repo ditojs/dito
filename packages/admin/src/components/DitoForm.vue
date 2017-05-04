@@ -3,16 +3,35 @@
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    .dito-error(v-if="error") {{ error }}
+    dito-errors(
+      v-if="errors.has('dito-data')",
+      name="dito-data"
+    )
     template(v-else)
-      dito-tabs(:name="name", :tabs="formDesc.tabs", :data="data || {}",
-        :meta="meta", :disabled="loading")
-      dito-panel(:desc="formDesc", :data="data || {}", :meta="meta",
-        :disabled="loading")
+      dito-tabs(
+        :name="name",
+        :tabs="formDesc.tabs",
+        :data="data || {}",
+        :meta="meta",
+        :disabled="loading"
+      )
+      dito-panel(
+        :desc="formDesc",
+        :data="data || {}",
+        :meta="meta",
+        :disabled="loading"
+      )
     .dito-buttons
-      button(v-if="!error", type="submit",
-        :class="`dito-button-${create ? 'create' : 'save'}`")
-      button(type="button", class="dito-button-cancel", @click.prevent="cancel")
+      button(
+        v-if="!errors.has('dito-data')",
+        type="submit",
+        :class="`dito-button-${create ? 'create' : 'save'}`"
+      )
+      button(
+        type="button",
+        class="dito-button-cancel",
+        @click.prevent="cancel"
+      )
   router-view(v-else)
 </template>
 
@@ -31,11 +50,10 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
-import ValidatorMixin from '@/mixins/ValidatorMixin'
 import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, ValidatorMixin],
+  mixins: [RouteMixin],
 
   data() {
     return {
@@ -215,7 +233,7 @@ export default DitoComponent.component('dito-form', {
             parentList.push(data)
           } else {
             ok = false
-            this.error = 'Unable to create item.'
+            this.errors.add('dito-data', 'Unable to create item.')
           }
         }
         if (ok) {

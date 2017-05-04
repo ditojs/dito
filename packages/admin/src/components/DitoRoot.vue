@@ -18,12 +18,8 @@
 
   .dito-menu
     float: left
-    ul
-      list-style: none
-      margin: 0
-      padding: 0
-      li
-        margin: 0 0 0.3em
+    ul li
+        margin-bottom: 0.3em
     a
       font-weight: bold
       &.router-link-active
@@ -48,15 +44,6 @@
   .dito-view
     // To make the floating spinner alyways go up to the path
     display: inline
-
-  .dito-debug
-    // display: none
-    clear: left
-    padding-bottom: 0.5em
-    color: #999
-
-  .dito-error
-    color: #f30
 </style>
 
 <script>

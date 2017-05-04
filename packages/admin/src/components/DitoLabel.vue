@@ -3,8 +3,10 @@
 </template>
 
 <style lang="sass">
-  .dito-label::after
-    content: ': '
+  .dito-label
+    white-space: nowrap
+    &::after
+      content: ': '
 </style>
 
 <script>

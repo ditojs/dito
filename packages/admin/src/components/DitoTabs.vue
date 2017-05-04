@@ -1,11 +1,19 @@
 <template lang="pug">
   .dito-tabs(v-if="tabs")
     template(v-for="(tab, key) in tabs")
-      input(type="radio", :id="key", :name="`${name}-tabs`",
-        :checked="key === selectedTab")
+      input(
+        type="radio",
+        :id="key",
+        :name="`${name}-tabs`",
+        :checked="key === selectedTab"
+      )
       label(:for="key") {{ tab.label }}
-      dito-panel(:desc="tab", :data="data", :meta="meta",
-        :disabled="disabled")
+      dito-panel(
+        :desc="tab",
+        :data="data",
+        :meta="meta",
+        :disabled="disabled"
+      )
 </template>
 
 <style lang="sass">

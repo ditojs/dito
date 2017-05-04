@@ -1,10 +1,12 @@
 import DataMixin from '@/mixins/DataMixin'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 
 export default {
-  mixins: [DataMixin],
+  mixins: [DataMixin, ValidatorMixin],
 
   data() {
     return {
+      loading: false, // See DataMixin
       isRoute: true
     }
   },

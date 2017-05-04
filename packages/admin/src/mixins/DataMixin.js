@@ -5,8 +5,6 @@ import axios from 'axios'
 export default {
   data() {
     return {
-      error: null,
-      loading: false,
       loadedData: null
     }
   },
@@ -82,18 +80,18 @@ export default {
     },
 
     setLoading(loading) {
-      // Only display loading progress on route components
+      // Only display loading progress on route components.
       this.routeComponent.loading = loading
     },
 
     request(method, path, payload, callback) {
       const request = this.api.request || this.requestAxios
-      this.error = null
+      this.errors.remove('dito-data')
       this.setLoading(true)
       request(method, path, payload, (err, result) => {
         this.setLoading(false)
         if (err) {
-          this.error = err.toString()
+          this.errors.add('dito-data', err.toString())
         }
         if (callback) {
           callback.call(this, err, result)

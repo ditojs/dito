@@ -3,8 +3,13 @@
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
-    component(:is="typeToComponent(viewDesc.type)", :name="name",
-      :desc="viewDesc", :data="data", :meta="meta")
+    component(
+      :is="typeToComponent(viewDesc.type)",
+      :name="name",
+      :desc="viewDesc",
+      :data="data",
+      :meta="meta"
+    )
   router-view(v-else)
 </template>
 
