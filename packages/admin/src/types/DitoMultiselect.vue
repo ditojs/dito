@@ -1,9 +1,12 @@
 <template lang="pug">
   VueMultiselect.dito-multiselect(
-    v-model="data[name]",
+    :value="value",
+    @input="onChanged",
     :show-labels="false",
     :placeholder="desc.placeholder",
     :options="options",
+    :label="desc.options.labelKey",
+    :track-by="desc.options.valueKey",
     :searchable="desc.searchable",
     :multiple="desc.multiple",
     :internal-search="true",
@@ -48,33 +51,67 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import VueMultiselect from 'vue-multiselect'
+import isObject from 'isobject'
 
 export default DitoComponent.register('multiselect', {
   components: { VueMultiselect },
+
   data() {
     return {
-      value: '',
       options: [],
       loading: false
     }
   },
+
   created () {
-    const desc = this.desc
-    if (desc.ajax) {
-      this.loading = true
-      this.$http.get(desc.optionsUrl
-      ).then(response => {
-        this.loading = false
-        const options = []
-        for (let option of response.data) {
-          options.push(option.name)
-        }
-        this.options = options
-      }, response => {
-        console.log(response)
-      })
+    const options = this.desc.options
+    if (isObject(options)) {
+      if (options.url) {
+        this.loading = true
+        // TODO: Use axios instead vue-resources
+        this.$http.get(options.url).then(
+          response => {
+            this.loading = false
+            this.options = [...response.data]
+          },
+          response => {
+            // TODO: Handle and display error
+            console.error(response)
+            this.options = null
+          }
+        )
+      } else {
+        this.options = options.value
+      }
     } else {
-      this.options = desc.options
+      this.options = options
+    }
+  },
+
+  computed: {
+    value() {
+      // Convert value to options object, since vue-multiselect can't map that
+      // itself unfortunately. `track-by` is only used for :key mapping I think.
+      let value = this.data[this.name]
+      const valueKey = this.desc.options.valueKey
+      if (valueKey) {
+        // Search for the option object with the given value and return the
+        // whole object.
+        for (let option of this.options) {
+          if (value === option[valueKey]) {
+            return option
+          }
+        }
+      }
+      return value
+    }
+  },
+
+  methods: {
+    onChanged(value) {
+      // When changes happend store the mapped value instead of the full object.
+      const valueKey = this.desc.options.valueKey
+      this.data[this.name] = valueKey ? value[valueKey] : value
     }
   }
 })
