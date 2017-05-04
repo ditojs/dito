@@ -81,9 +81,12 @@ export default DitoComponent.register('multiselect', {
           }
         )
       } else {
-        this.options = options.value
+        // Whenw providing options.labelKey & options.valueKey, options.values
+        // can be used to provide the data instead of options.url
+        this.options = options.values
       }
-    } else {
+    } else if (Array.isArray(options)) {
+      // Use an array of strings to provide the values be shown and selected.
       this.options = options
     }
   },
