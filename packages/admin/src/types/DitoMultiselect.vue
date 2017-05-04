@@ -19,6 +19,27 @@
 <style lang="sass">
   .dito-multiselect
     width: unset
+    font-size: inherit
+    min-height: inherit
+
+    .multiselect__tags
+      min-height: inherit
+      padding: 0.5em
+      padding-right: 3em
+
+    .multiselect__select
+      width: 3em
+      padding: 0
+      height: 100%
+      &::before
+        top: 60%
+
+    .multiselect__option
+      min-height: inherit
+      padding: 0.5em
+
+    .multiselect__tag
+      margin: 0 0.5em 0 0
 
     .multiselect__option--selected
       background: Highlight
@@ -30,13 +51,31 @@
       border: $border-style
       border-radius: $border-radius
 
-    &.multiselect--above .multiselect__content
-      border-bottom: none
-      border-bottom-left-radius: 0
-      border-bottom-right-radius: 0
+    &.multiselect--active
+      .multiselect__tags
+        border-bottom-left-radius: 0
+        border-bottom-right-radius: 0
+      .multiselect__content
+        border: $border-style
+        border-top: none
+        border-top-left-radius: 0
+        border-top-right-radius: 0
+
+    &.multiselect--above
+      .multiselect__tags
+        border-radius: $border-radius
+        border-top-left-radius: 0
+        border-top-right-radius: 0
+      .multiselect__content
+        border: $border-style
+        border-bottom: none
+        border-radius: $border-radius
+        border-bottom-left-radius: 0
+        border-bottom-right-radius: 0
 
     .multiselect__tag,
     .multiselect__option--highlight
+      line-height: inherit
       background: ActiveBorder
       color: MenuText
 
