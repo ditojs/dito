@@ -4,6 +4,7 @@
 
 <style lang="sass">
   .dito-label
+    vertical-align: middle
     white-space: nowrap
     &::after
       content: ': '

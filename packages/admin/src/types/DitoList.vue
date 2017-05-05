@@ -40,8 +40,6 @@
       display: table-row
       > *
         display: table-cell
-      > .dito-errors
-        display: table-row
 
 </style>
 

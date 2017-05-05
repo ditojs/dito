@@ -23,7 +23,7 @@
     a
       font-weight: bold
       &.router-link-active
-        color: #f00
+        color: $color-active
 
   .dito-path
     font-weight: bold

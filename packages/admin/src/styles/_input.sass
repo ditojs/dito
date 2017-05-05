@@ -1,15 +1,24 @@
 input.dito-component,
-textarea.dito-component
+textarea.dito-component,
+    box-shadow: inset $border-shadow
+
+input.dito-component,
+textarea.dito-component,
+.dito-select select
     appearance: none
     border: $border-style
-    border-radius: 3px
+    border-radius: $border-radius
     line-height: 1.5
     padding: 0.2em 0.4em
-    vertical-align: top
     background: white
-    box-shadow: inset $border-shadow
-    // max-width: 100%
-    // width: 100%
-
+    &:focus
+      outline: none
+      border-color: $color-active
     &.dito-has-errors
       border-color: $color-error
+
+.dito-select
+  display: inline-block
+  position: relative
+  select
+    padding-right: 3em

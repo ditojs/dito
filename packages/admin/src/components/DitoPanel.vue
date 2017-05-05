@@ -7,19 +7,20 @@
           :name="key",
           :text="comp.label"
         )
-        component.dito-component(
-          :is="typeToComponent(comp.type)",
-          :name="key",
-          :desc="comp",
-          :data="data",
-          :meta="meta",
-          :disabled="comp.disabled || disabled",
-          :class="{ 'dito-has-errors': errors.has(key) }"
-        )
-        dito-errors(
-          v-if="errors.has(key)",
-          :name="key"
-        )
+        .dito-container
+          component.dito-component(
+            :is="typeToComponent(comp.type)",
+            :name="key",
+            :desc="comp",
+            :data="data",
+            :meta="meta",
+            :disabled="comp.disabled || disabled",
+            :class="{ 'dito-has-errors': errors.has(key) }"
+          )
+          dito-errors(
+            v-if="errors.has(key)",
+            :name="key"
+          )
 </template>
 
 <script>

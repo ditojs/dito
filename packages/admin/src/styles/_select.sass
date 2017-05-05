@@ -1,0 +1,18 @@
+.dito-select::after,
+.dito-multiselect .multiselect__select::before
+  border: 1px solid $color-active
+  border-right: 0
+  border-top: 0
+  content: " "
+  display: block
+  width: $select-arrow-size
+  height: $select-arrow-size
+  pointer-events: none
+  position: absolute
+  transform: rotate(-45deg)
+  margin: auto
+  top: 0
+  bottom: 2px
+
+.dito-select::after
+  right: $select-right-margin

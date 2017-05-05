@@ -4,7 +4,7 @@
     @input="onChanged",
     :show-labels="false",
     :placeholder="desc.placeholder",
-    :options="options",
+    :options="options || []",
     :label="desc.options.labelKey",
     :track-by="desc.options.valueKey",
     :group-label="desc.options.groupBy && 'name'",
@@ -19,6 +19,8 @@
 
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
+  $spinner-size: 1.5em
+
   .dito-multiselect
     width: unset
     font-size: inherit
@@ -27,14 +29,40 @@
     .multiselect__tags
       min-height: inherit
       padding: 0.5em
-      padding-right: 3em
+      padding-right: $spinner-size + $select-right-margin
+
+    &.dito-has-errors
+      .multiselect__tags
+        border-color: $color-error
+
+    .multiselect__select,
+    .multiselect__spinner
+      padding: 0
+      // 2px to prevent masking border with .multiselect__spinner
+      top: 2px
+      right: 2px
+      bottom: 2px
+      height: inherit
 
     .multiselect__select
-      width: 3em
-      padding: 0
-      height: 100%
+      width: inherit
+      margin-right: $select-right-margin + $select-arrow-size / 2
       &::before
-        top: 60%
+        right: -$select-arrow-size / 2
+
+    .multiselect__spinner
+      width: $spinner-size + $select-right-margin
+      &::before,
+      &::after
+        width: $spinner-size
+        height: $spinner-size
+        border-width: 3px
+        border-top-color: $color-active
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+        margin: auto
 
     .multiselect__option
       min-height: inherit
@@ -44,8 +72,8 @@
       margin: 0 0.5em 0 0
 
     .multiselect__option--selected
-      background: Highlight
-      color: HighlightText
+      background: $color-highlight
+      color: $color-text
       font-weight: normal
 
     .multiselect__tags,
@@ -55,38 +83,42 @@
 
     &.multiselect--active
       .multiselect__tags
+        border-color: $color-active
         border-bottom-left-radius: 0
         border-bottom-right-radius: 0
       .multiselect__content
-        border: $border-style
-        border-top: none
+        border: $border-width solid $color-active
+        border-top-color: $border-color
+        margin-top: -1px
         border-top-left-radius: 0
         border-top-right-radius: 0
 
-    &.multiselect--above
-      .multiselect__tags
-        border-radius: $border-radius
-        border-top-left-radius: 0
-        border-top-right-radius: 0
-      .multiselect__content
-        border: $border-style
-        border-bottom: none
-        border-radius: $border-radius
-        border-bottom-left-radius: 0
-        border-bottom-right-radius: 0
+      &.multiselect--above
+        .multiselect__tags
+          border-radius: $border-radius
+          border-top-left-radius: 0
+          border-top-right-radius: 0
+        .multiselect__content
+          border: $border-width solid $color-active
+          border-bottom-color: $border-color
+          margin-bottom: -1px
+          border-radius: $border-radius
+          border-bottom-left-radius: 0
+          border-bottom-right-radius: 0
 
     .multiselect__tag,
     .multiselect__option--highlight
       line-height: inherit
-      background: ActiveBorder
-      color: MenuText
+      background: $color-active
+      color: $color-text-inverted
 
     .multiselect__tag-icon
       background: none
       &::after
-        color: MenuText
+        color: $color-text-inverted
       &:hover::after
-        color: ActiveCaption
+        color: $color-text
+
 </style>
 
 <script>
@@ -133,9 +165,10 @@ export default DitoComponent.register('multiselect', {
             }
           })
           .catch(error => {
-            // TODO: Handle and display error
-            console.error(error)
+            this.errors.add(this.name,
+                error.response && error.response.data || error.message)
             this.options = null
+            this.loading = false
           })
       } else {
         // Whenw providing options.labelKey & options.valueKey, options.values
@@ -159,14 +192,16 @@ export default DitoComponent.register('multiselect', {
       function findOption(options, groupBy) {
         // Search for the option object with the given value and return the
         // whole object.
-        for (let option of options) {
-          if (groupBy) {
-            const found = findOption(option.options, false)
-            if (found) {
-              return found
+        if (options) {
+          for (let option of options) {
+            if (groupBy) {
+              const found = findOption(option.options, false)
+              if (found) {
+                return found
+              }
+            } else if (value === option[valueKey]) {
+              return option
             }
-          } else if (value === option[valueKey]) {
-            return option
           }
         }
       }
@@ -179,7 +214,7 @@ export default DitoComponent.register('multiselect', {
     onChanged(value) {
       // When changes happend store the mapped value instead of the full object.
       const valueKey = this.desc.options.valueKey
-      this.data[this.name] = valueKey ? value[valueKey] : value
+      this.data[this.name] = valueKey ? value && value[valueKey] : value
     }
   }
 })
