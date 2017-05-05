@@ -1,5 +1,5 @@
 <template lang="pug">
-  form.dito-form(v-if="isLastRoute", @submit.prevent="store")
+  form.dito-form(v-if="isLastRoute", @submit.prevent="submit")
     .dito-spinner
       dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
@@ -203,6 +203,13 @@ export default DitoComponent.component('dito-form', {
       if (!this.setParentEntry(data)) {
         this.loadedData = data
       }
+    },
+
+    submit() {
+      this.$validator.validateAll()
+        .then(() => this.store())
+        // TODO: Implement nicer dialogs and info / error flashes...
+        .catch(() => alert('Please correct the validation errors.'))
     },
 
     store() {

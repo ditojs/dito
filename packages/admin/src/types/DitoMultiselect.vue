@@ -110,7 +110,6 @@ export default DitoComponent.register('multiselect', {
     if (isObject(options)) {
       if (options.url) {
         this.loading = true
-        // TODO: Use axios instead vue-resources
         axios.get(options.url)
           .then(response => {
             this.loading = false
