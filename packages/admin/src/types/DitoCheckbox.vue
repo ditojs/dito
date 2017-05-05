@@ -20,12 +20,11 @@
     display: table
     border-spacing: 0.2em
     padding-bottom: 0.5em
+    display: table-row
     > li
-      display: table-row
-      > *
-        display: table-cell
+      display: table-cell
       > label
-          padding-left: 0.5em
+        padding-left: 0.5em
 </style>
 
 <script>
