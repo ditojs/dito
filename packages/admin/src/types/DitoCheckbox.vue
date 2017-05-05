@@ -1,14 +1,13 @@
 <template lang="pug">
-  ul.dito-radio
+  ul.dito-checkbox
     li(v-for="option in desc.options")
       input(
         :id="name",
         :name="name",
-        type="radio",
+        type="checkbox",
         v-model="data[name]",
         v-validate="validations",
         :disabled="disabled",
-        :readonly="readonly",
         :value="option.value || option"
       )
       label
@@ -17,7 +16,7 @@
 
 <style lang="sass">
   // Used both by DitoList and DitoPane
-  ul.dito-radio
+  ul.dito-checkbox
     display: table
     border-spacing: 0.2em
     padding-bottom: 0.5em
@@ -26,11 +25,11 @@
       > *
         display: table-cell
       > label
-        padding-left: 0.5em
+          padding-left: 0.5em
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('radio')
+export default DitoComponent.register('checkbox')
 </script>

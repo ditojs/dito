@@ -3,6 +3,7 @@
 // rendered through their tag-names (e.g. type-list).
 
 import './DitoButton'
+import './DitoCheckbox'
 import './DitoList'
 import './DitoMultiselect'
 import './DitoNumber'
