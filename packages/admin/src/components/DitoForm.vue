@@ -23,28 +23,17 @@
       )
     .dito-buttons
       button(
-        v-if="!errors.has('dito-data')",
-        type="submit",
-        :class="`dito-button-${create ? 'create' : 'save'}`"
-      )
-      button(
         type="button",
         class="dito-button-cancel",
         @click.prevent="cancel"
       )
+      button(
+        v-if="!errors.has('dito-data')",
+        type="submit",
+        :class="`dito-button-${create ? 'create' : 'save'}`"
+      )
   router-view(v-else)
 </template>
-
-<style lang="sass">
-  // Move the submit button that needs to appear first in markup in order to
-  // be the default after the Cancel button using floating inside inline-block.
-  .dito-panel + .dito-buttons
-    display: inline-block
-    button
-      float: left
-      &[type="submit"]
-        float: right
-</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
