@@ -19,6 +19,7 @@
 
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
+.dito
   $spinner-size: 1.5em
   $tag-icon-size: 1.8em
 

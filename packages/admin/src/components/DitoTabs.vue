@@ -17,6 +17,7 @@
 </template>
 
 <style lang="sass">
+.dito
   // CSS-only tabs, based on: https://kyusuf.com/post/completely-css-tabs
   .dito-tabs
     display: flex
@@ -29,7 +30,7 @@
 
     > .dito-panel
       display: none
-      padding: 0.5em
+      padding: 0.5em 1em
       background: $tab-color-background
       border: $border-style
       border-radius: $border-radius

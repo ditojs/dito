@@ -6,6 +6,7 @@
 </template>
 
 <style lang="sass">
+.dito
   .dito-errors
     ul
       margin: 0.5em 0

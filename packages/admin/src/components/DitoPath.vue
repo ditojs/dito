@@ -7,6 +7,7 @@
 </template>
 
 <style lang="sass">
+.dito
   .dito-path
     ul
       margin: 0

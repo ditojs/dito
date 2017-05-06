@@ -23,6 +23,7 @@
 </template>
 
 <style lang="sass">
+.dito
   ul.dito-panel
     border-spacing: 0 0.5em
     padding-bottom: 0.5em

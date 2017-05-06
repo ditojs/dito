@@ -13,6 +13,7 @@
 </template>
 
 <style lang="sass">
+.dito
   // Only show spin buttons if the number component defines a step size.
   input[type="number"]:not([step])
     &::-webkit-inner-spin-button,

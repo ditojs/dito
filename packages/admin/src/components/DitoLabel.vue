@@ -3,6 +3,7 @@
 </template>
 
 <style lang="sass">
+.dito
   .dito-label
     vertical-align: middle
     white-space: nowrap

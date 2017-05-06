@@ -1,31 +1,23 @@
 <template lang="pug">
-  ul.dito-radio
+  ul.dito-radio.dito-inline(:id="name")
     li(v-for="option in desc.options")
-      input(
-        :id="name",
-        :name="name",
-        type="radio",
-        v-model="data[name]",
-        v-validate="validations",
-        :disabled="disabled",
-        :readonly="readonly",
-        :value="option.value || option"
-      )
       label
+        input(
+          :name="name",
+          type="radio",
+          v-model="data[name]",
+          v-validate="validations",
+          :disabled="disabled",
+          :value="option"
+        )
         | {{option}}
 </template>
 
 <style lang="sass">
-  // Used both by DitoList and DitoPane
-  ul.dito-radio
-    display: table
-    border-spacing: 0.2em
-    padding-bottom: 0.5em
-    display: table-row
-    > li
-      display: table-cell
-      > label
-        padding-left: 0.5em
+.dito
+  .dito-radio
+    input
+      margin-right: 0.5em
 </style>
 
 <script>

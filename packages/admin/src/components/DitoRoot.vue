@@ -10,6 +10,8 @@
 </template>
 
 <style lang="sass">
+.dito
+  // Import everything name-spaced in .dito
   @import "dito"
 
   .dito-menu,

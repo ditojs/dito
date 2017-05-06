@@ -31,6 +31,7 @@
 </template>
 
 <style lang="sass">
+.dito
   .dito-list
     border-spacing: 0.2em
     padding-bottom: 0.5em
