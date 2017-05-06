@@ -4,6 +4,7 @@
 
 import './DitoButton'
 import './DitoCheckbox'
+import './DitoCheckboxes'
 import './DitoList'
 import './DitoMultiselect'
 import './DitoNumber'
