@@ -1,5 +1,5 @@
 <template lang="pug">
-  button(:id="name", :type="desc.type") {{ desc.text }}
+  button.dito-button(:id="name", :type="desc.type") {{ desc.text }}
 </template>
 
 <script>

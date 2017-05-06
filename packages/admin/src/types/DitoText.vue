@@ -1,5 +1,5 @@
 <template lang="pug">
-  input(
+  input.dito-text.dito-input(
     :id="name",
     :name="name",
     type="text",

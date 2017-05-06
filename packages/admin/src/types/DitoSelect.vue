@@ -1,4 +1,5 @@
 <template lang="pug">
+  // In order to make an arrow appear over the select item, we need nesting:
   .dito-select
     select(:id="name", v-model="data[name]")
       template(v-for="option in options")

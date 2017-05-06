@@ -5,7 +5,7 @@
   )
     li(v-for="option in options")
       label
-        input(
+        input.dito-checkbox(
           :name="name",
           type="checkbox",
           v-model="data[name]",
@@ -19,7 +19,7 @@
 <style lang="sass">
 .dito
   .dito-checkboxes
-    input
+    .dito-checkbox
       margin-right: 0.5em
 </style>
 

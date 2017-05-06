@@ -1,11 +1,11 @@
 <template lang="pug">
-  ul.dito-radio(
+  ul.dito-radio-buttons(
     :id="name",
     :class="`dito-${desc.horizontal ? 'horizontal' : 'table'}`"
   )
     li(v-for="option in options")
       label
-        input(
+        input.dito-radio-button(
           :name="name",
           type="radio",
           v-model="data[name]",
@@ -18,8 +18,8 @@
 
 <style lang="sass">
 .dito
-  .dito-radio
-    input
+  .dito-radio-buttons
+    .dito-radio-button
       margin-right: 0.5em
 </style>
 
