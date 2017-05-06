@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import VeeValidate from 'vee-validate'
 import './components'
 import './types'
 import DitoComponent from './DitoComponent'
@@ -11,13 +10,6 @@ import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
-Vue.use(VeeValidate)
-// Remove the VeeValidate beforeCreate() and mounted() hooks again that create
-// and assume $validator objects for every component:
-// TODO: Get this fixed properly, see:
-// https://github.com/logaretm/vee-validate/issues/468
-Vue.options.beforeCreate.pop()
-Vue.options.mounted.pop()
 
 const user = {
   role: 'admin' // TODO

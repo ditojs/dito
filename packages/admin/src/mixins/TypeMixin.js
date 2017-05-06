@@ -1,4 +1,6 @@
 export default {
+  inject: ['$validator'],
+
   props: {
     name: { type: String, required: true },
     desc: { type: Object, required: true },
