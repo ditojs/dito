@@ -7,7 +7,8 @@
     vertical-align: middle
     white-space: nowrap
     &::after
-      content: ': '
+      content: ':'
+      margin-right: 0.35em
 </style>
 
 <script>

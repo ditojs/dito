@@ -4,7 +4,7 @@
     name="dito-data"
   )
   div(v-else)
-    ul.dito-list
+    ul.dito-list.dito-table
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
         .dito-buttons(v-if="desc.editable || desc.deletable")
@@ -31,16 +31,9 @@
 </template>
 
 <style lang="sass">
-  // Used both by DitoList and DitoPane
-  ul.dito-list
-    display: table
+  .dito-list
     border-spacing: 0.2em
     padding-bottom: 0.5em
-    > li
-      display: table-row
-      > *
-        display: table-cell
-
 </style>
 
 <script>

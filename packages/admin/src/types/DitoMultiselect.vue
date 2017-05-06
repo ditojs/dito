@@ -20,16 +20,20 @@
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
   $spinner-size: 1.5em
+  $tag-icon-size: 1.8em
 
   .dito-multiselect
-    width: unset
+    display: inline-block
     font-size: inherit
     min-height: inherit
 
+    .multiselect__input
+      padding: $input-padding
+      line-height: $line-height
+
     .multiselect__tags
       min-height: inherit
-      padding: 0.5em
-      padding-right: $spinner-size + $select-right-margin
+      padding: 0 ($spinner-size + $select-right-margin) 0 0
 
     &.dito-has-errors
       .multiselect__tags
@@ -45,7 +49,7 @@
       height: inherit
 
     .multiselect__select
-      width: inherit
+      width: 0
       margin-right: $select-right-margin + $select-arrow-size / 2
       &::before
         right: -$select-arrow-size / 2
@@ -65,11 +69,34 @@
         margin: auto
 
     .multiselect__option
-      min-height: inherit
-      padding: 0.5em
+      min-height: unset
+      padding: $input-padding
+      line-height: inherit
 
     .multiselect__tag
-      margin: 0 0.5em 0 0
+      margin: 2px 0 0 2px
+      border-radius: 1em
+      padding: 0.2em $tag-icon-size 0.2em 0.8em
+
+    .multiselect__tag-icon
+      background: none
+      border-radius: 1em
+      font-weight: inherit
+      top: inherit
+      bottom: inherit
+      width: $tag-icon-size
+      line-height: 1em
+      &::after
+        color: $color-text-inverted
+        font-size: 1.3em
+      &:hover::after
+        color: $color-text
+
+    .multiselect__tag,
+    .multiselect__option--highlight
+      line-height: inherit
+      background: $color-active
+      color: $color-text-inverted
 
     .multiselect__option--selected
       background: $color-highlight
@@ -105,19 +132,6 @@
           border-radius: $border-radius
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
-
-    .multiselect__tag,
-    .multiselect__option--highlight
-      line-height: inherit
-      background: $color-active
-      color: $color-text-inverted
-
-    .multiselect__tag-icon
-      background: none
-      &::after
-        color: $color-text-inverted
-      &:hover::after
-        color: $color-text
 
 </style>
 
