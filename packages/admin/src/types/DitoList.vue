@@ -7,6 +7,8 @@
     ul.dito-list.dito-table
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
+        // TODO: move buttons into render() so v-html can be called on li
+        // since that would allow for easier styling with table-cell
         .dito-buttons(v-if="desc.editable || desc.deletable")
           router-link(
             v-if="desc.editable",
