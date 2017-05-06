@@ -3,7 +3,7 @@
     :id="name",
     :class="`dito-${desc.horizontal ? 'horizontal' : 'table'}`"
   )
-    li(v-for="option in desc.options")
+    li(v-for="option in options")
       label
         input(
           :name="name",
@@ -11,9 +11,9 @@
           v-model="data[name]",
           v-validate="validations",
           :disabled="disabled",
-          :value="option"
+          :value="getValue(option)"
         )
-        | {{option}}
+        | {{ getLabel(option) }}
 </template>
 
 <style lang="sass">
@@ -25,6 +25,9 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import OptionsMixin from '@/mixins/OptionsMixin'
 
-export default DitoComponent.register('radio')
+export default DitoComponent.register('radio', {
+  mixins: [OptionsMixin]
+})
 </script>

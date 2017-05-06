@@ -133,7 +133,7 @@ function setup(el, options) {
       routes
     }),
     template: '<dito-root :views="views" :settings="settings" />',
-    components: { DitoRoot },
+    components: {DitoRoot},
     data: {
       views,
       settings: options.settings

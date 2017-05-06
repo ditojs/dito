@@ -5,10 +5,10 @@
     :show-labels="false",
     :placeholder="desc.placeholder",
     :options="options || []",
-    :label="desc.options.labelKey",
-    :track-by="desc.options.valueKey",
-    :group-label="desc.options.groupBy && 'name'",
-    :group-values="desc.options.groupBy && 'options'",
+    :label="labelKey",
+    :track-by="valueKey",
+    :group-label="groupLabelKey",
+    :group-values="groupOptionsKey",
     :searchable="desc.searchable",
     :multiple="desc.multiple",
     :internal-search="true",
@@ -20,7 +20,8 @@
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
 .dito
-  $spinner-size: 1.5em
+  $spinner-size: 1.3em
+  $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
   $tag-icon-size: 1.8em
 
   .dito-multiselect
@@ -31,10 +32,11 @@
     .multiselect__input
       padding: $input-padding
       line-height: $line-height
+      background: none
 
     .multiselect__tags
       min-height: inherit
-      padding: 0 ($spinner-size + $select-right-margin) 0 0
+      padding: 0 $spinner-width 0 0
 
     &.dito-has-errors
       .multiselect__tags
@@ -51,12 +53,12 @@
 
     .multiselect__select
       width: 0
-      margin-right: $select-right-margin + $select-arrow-size / 2
+      margin-right: $select-right-margin
       &::before
         right: -$select-arrow-size / 2
 
     .multiselect__spinner
-      width: $spinner-size + $select-right-margin
+      width: $spinner-width
       &::before,
       &::after
         width: $spinner-size
@@ -138,98 +140,30 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
-import isObject from 'isobject'
-import axios from 'axios'
 
 export default DitoComponent.register('multiselect', {
-  components: { VueMultiselect },
-
-  data() {
-    return {
-      options: [],
-      loading: false
-    }
-  },
-
-  created () {
-    const options = this.desc.options
-    if (isObject(options)) {
-      if (options.url) {
-        this.loading = true
-        axios.get(options.url)
-          .then(response => {
-            this.loading = false
-            if (options.groupBy) {
-              const grouped = {}
-              this.options = response.data.reduce(function(results, option) {
-                const name = option[options.groupBy]
-                let entry = grouped[name]
-                if (!entry) {
-                  entry = grouped[name] = {
-                    name: name, // :group-label
-                    options: [] // :group-values
-                  }
-                  results.push(entry)
-                }
-                entry.options.push(option)
-                return results
-              }, [])
-            } else {
-              this.options = [...response.data]
-            }
-          })
-          .catch(error => {
-            this.errors.add(this.name,
-                error.response && error.response.data || error.message)
-            this.options = null
-            this.loading = false
-          })
-      } else {
-        // Whenw providing options.labelKey & options.valueKey, options.values
-        // can be used to provide the data instead of options.url
-        this.options = options.values
-      }
-    } else if (Array.isArray(options)) {
-      // Use an array of strings to provide the values be shown and selected.
-      this.options = options
-    }
-  },
+  mixins: [OptionsMixin],
+  components: {VueMultiselect},
 
   computed: {
     value() {
       // Convert value to options object, since vue-multiselect can't map that
       // itself unfortunately. `track-by` is only used for :key mapping I think.
       let value = this.data[this.name]
-      const options = this.desc.options
-      const valueKey = options.valueKey
-
-      function findOption(options, groupBy) {
-        // Search for the option object with the given value and return the
-        // whole object.
-        if (options) {
-          for (let option of options) {
-            if (groupBy) {
-              const found = findOption(option.options, false)
-              if (found) {
-                return found
-              }
-            } else if (value === option[valueKey]) {
-              return option
-            }
-          }
-        }
-      }
-
-      return valueKey ? findOption(this.options, options.groupBy) : value
+      return this.valueKey
+          ? this.findOption(this.options, value, this.desc.options.groupBy)
+          : value
     }
   },
 
   methods: {
     onChanged(value) {
       // When changes happend store the mapped value instead of the full object.
-      const valueKey = this.desc.options.valueKey
-      this.data[this.name] = valueKey ? value && value[valueKey] : value
+      this.data[this.name] = this.valueKey
+          ? value && value[this.valueKey]
+          : value
     }
   }
 })
