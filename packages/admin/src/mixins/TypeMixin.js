@@ -45,12 +45,10 @@ export default {
     },
 
     required() {
-      const desc = this.desc
-      return desc.required ? desc.required : true
+      return !!this.desc.required
     },
 
     validations() {
-      const desc = this.desc
       const rules = {}
       if (this.required) {
         rules.required = this.required
@@ -64,9 +62,6 @@ export default {
       if (this.step) {
         const d = this.step.toString().split('.')[1].length
         rules.decimal = d
-      }
-      if (desc.type === 'text') {
-        rules.alpha_num = true
       }
 
       return { rules: rules }
