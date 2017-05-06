@@ -1,9 +1,12 @@
-input.dito-component,
-textarea.dito-component,
+$text-types: text, number, url, tel, email, date, time
+$text-inputs: 'textarea.dito-component'
+@each $type in $text-types
+  $text-inputs: '#{$text-inputs}, input.dito-component[type=#{$type}]'
+
+#{$text-inputs}
   box-shadow: inset $border-shadow
 
-input.dito-component,
-textarea.dito-component,
+#{$text-inputs},
 .dito-select select
     appearance: none
     border: $border-style
@@ -17,9 +20,3 @@ textarea.dito-component,
       border-color: $color-active
     &.dito-has-errors
       border-color: $color-error
-
-.dito-select
-  display: inline-block
-  position: relative
-  select
-    padding-right: 3em
