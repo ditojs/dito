@@ -1,5 +1,8 @@
 <template lang="pug">
-  ul.dito-checkboxes.dito-inline(:id="name")
+  ul.dito-checkboxes(
+    :id="name",
+    :class="`dito-${desc.horizontal ? 'horizontal' : 'table'}`"
+  )
     li(v-for="option in desc.options")
       label
         input(

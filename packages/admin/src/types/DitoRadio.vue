@@ -1,5 +1,8 @@
 <template lang="pug">
-  ul.dito-radio.dito-inline(:id="name")
+  ul.dito-radio(
+    :id="name",
+    :class="`dito-${desc.horizontal ? 'horizontal' : 'table'}`"
+  )
     li(v-for="option in desc.options")
       label
         input(
