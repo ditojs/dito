@@ -14,6 +14,15 @@ export default {
       return this.data[this.name]
     },
 
+    listLabels() {
+      const components = this.formDesc.components
+      let labels = []
+      for (let key in components) {
+        labels.push(components[key].label)
+      }
+      return labels
+    },
+
     shouldLoad() {
       return this.desc.load && !this.listData
     },
