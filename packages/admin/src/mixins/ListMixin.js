@@ -60,6 +60,25 @@ export default {
       }
     },
 
+    filterByScope(params) {
+      const data = this.listData
+      this.request('get', this.endpoint,
+        {params: params}, null,
+        (err, result) => {
+          if (!err) {
+            // reloading data and re-rendering
+            // this could maybe be optimized
+            while (data.length) {
+              data.pop()
+            }
+            for (let item of result) {
+              data.push(item)
+            }
+          }
+        }
+      )
+    },
+
     remove(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {
@@ -67,7 +86,7 @@ export default {
           this.removeItem(item)
         } else {
           this.request('delete', this.getEndpoint('delete', 'member', item.id),
-            null,
+            null, null,
             err => {
               if (!err) {
                 this.removeItem(item)

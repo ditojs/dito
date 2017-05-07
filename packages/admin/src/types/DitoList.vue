@@ -5,7 +5,7 @@
   )
   div(v-else)
     .dito-scope
-      button(v-for="scope in scopes", v-on:click="reloadData({scope: scope.toLowerCase()})")
+      button(v-for="scope in scopes", @click="filterByScope({scope: scope.toLowerCase()})")
         | {{ scope }}
     ul.dito-list.dito-table
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")

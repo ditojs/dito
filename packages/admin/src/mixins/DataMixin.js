@@ -88,7 +88,7 @@ export default {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
       this.setLoading(true)
-      request(method, path, payload, (err, result) => {
+      request(method, path, params, payload, (err, result) => {
         this.setLoading(false)
         if (err) {
           this.errors.add('dito-data', err.toString())
@@ -100,8 +100,6 @@ export default {
     },
 
     requestAxios(method, path, params, payload, callback) {
-      // TODO: implement pass through of query strings / params
-      // params: params
       axios[method](this.api.baseUrl + path, params, payload && JSON.stringify(payload))
         .then(response => {
           // TODO: Deal with status!
