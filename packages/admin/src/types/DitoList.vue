@@ -5,7 +5,11 @@
   )
   div(v-else)
     .dito-scope
-      button(v-for="scope in scopes", @click="filterByScope({scope: scope.toLowerCase()})")
+      button(
+        v-for="scope in desc.scopes",
+        type="button",
+        @click="filterByScope({ scope: scope.toLowerCase() })"
+      )
         | {{ scope }}
     ul.dito-list.dito-table
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")

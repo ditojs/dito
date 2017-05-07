@@ -71,7 +71,7 @@ export default {
         if (clear) {
           this.loadedData = null
         }
-        this.request('get', this.endpoint, { params: params }, null, (err, data) => {
+        this.request('get', this.endpoint, params, null, (err, data) => {
           if (!err) {
             this.setData(data)
           }
@@ -100,7 +100,9 @@ export default {
     },
 
     requestAxios(method, path, params, payload, callback) {
-      axios[method](this.api.baseUrl + path, params, payload && JSON.stringify(payload))
+      // TODO: move params into config and pass after payload
+      axios[method](this.api.baseUrl + path, params,
+          payload && JSON.stringify(payload))
         .then(response => {
           // TODO: Deal with status!
           console.log(response.status)

@@ -22,7 +22,8 @@ export default DitoComponent.component('dito-view', {
 
   data() {
     return {
-      isView: true
+      isView: true,
+      viewData: {}
     }
   },
 
@@ -32,11 +33,12 @@ export default DitoComponent.component('dito-view', {
     },
 
     data() {
-      // Set up the data so we can pass it on to the nested component which
+      // Set up viewData so we can pass it on to the nested component which
       // will look up its own data under its name, e.g. see listData().
-      return {
-        [this.name]: this.loadedData || []
-      }
+      // NOTE: We need to reuse an object defined in data(), so that child
+      // components can modify its content, see DitoList#setData()
+      this.$set(this.viewData, this.name, this.loadedData || [])
+      return this.viewData
     },
 
     endpoint() {

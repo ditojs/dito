@@ -14,10 +14,6 @@ export default {
       return this.data[this.name]
     },
 
-    scopes() {
-      return this.desc.scopes
-    },
-
     listLabels() {
       const components = this.formDesc.components
       let labels = []
@@ -61,22 +57,7 @@ export default {
     },
 
     filterByScope(params) {
-      const data = this.listData
-      this.request('get', this.endpoint,
-        {params: params}, null,
-        (err, result) => {
-          if (!err) {
-            // reloading data and re-rendering
-            // this could maybe be optimized
-            while (data.length) {
-              data.pop()
-            }
-            for (let item of result) {
-              data.push(item)
-            }
-          }
-        }
-      )
+      this.loadData(false, params)
     },
 
     remove(item) {
