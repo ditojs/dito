@@ -4,6 +4,9 @@
     name="dito-data"
   )
   div(v-else)
+    .dito-scope
+      button(v-for="scope in scopes", v-on:click="reloadData({scope: scope.toLowerCase()})")
+        | {{ scope }}
     ul.dito-list.dito-table
       li(v-for="item in listData || []", :key="`${name}-${item.id}`")
         span(v-html="render(item)")
@@ -37,6 +40,20 @@
   .dito-list
     border-spacing: 0.2em
     padding-bottom: 0.5em
+  .dito-scope
+    padding-bottom: 0.5em
+    button
+      cursor: pointer
+      margin-right: 1em
+      padding: 0 0.5em 0 0.5em
+      border-spacing: 0.2em
+      border: $border-style
+      border-radius: $border-radius
+      background-color: #eee
+      &:hover
+        background: $tab-color-hover
+      &:active
+        background: $tab-color-active
 </style>
 
 <script>

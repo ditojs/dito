@@ -14,6 +14,10 @@ export default {
       return this.data[this.name]
     },
 
+    scopes() {
+      return this.desc.scopes
+    },
+
     listLabels() {
       const components = this.formDesc.components
       let labels = []

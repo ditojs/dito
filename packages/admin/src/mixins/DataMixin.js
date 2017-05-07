@@ -62,16 +62,16 @@ export default {
       }
     },
 
-    reloadData() {
-      this.loadData(false)
+    reloadData(params) {
+      this.loadData(false, params)
     },
 
-    loadData(clear) {
+    loadData(clear, params) {
       if (this.endpoint) {
         if (clear) {
           this.loadedData = null
         }
-        this.request('get', this.endpoint, null, (err, data) => {
+        this.request('get', this.endpoint, { params: params }, null, (err, data) => {
           if (!err) {
             this.setData(data)
           }
@@ -84,7 +84,7 @@ export default {
       this.routeComponent.loading = loading
     },
 
-    request(method, path, payload, callback) {
+    request(method, path, params, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
       this.setLoading(true)
@@ -99,10 +99,10 @@ export default {
       })
     },
 
-    requestAxios(method, path, payload, callback) {
+    requestAxios(method, path, params, payload, callback) {
       // TODO: implement pass through of query strings / params
       // params: params
-      axios[method](this.api.baseUrl + path, payload && JSON.stringify(payload))
+      axios[method](this.api.baseUrl + path, params, payload && JSON.stringify(payload))
         .then(response => {
           // TODO: Deal with status!
           console.log(response.status)
