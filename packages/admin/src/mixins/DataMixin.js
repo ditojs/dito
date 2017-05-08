@@ -34,15 +34,6 @@ export default {
   },
 
   methods: {
-    goBack(reload) {
-      this.$router.push({ path: '..', append: true })
-      // Tell the parent to reload its data if this was a submit()
-      const parent = this.parentRouteComponent
-      if (reload && parent) {
-        parent.reloadData()
-      }
-    },
-
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](this.viewDesc, this.formDesc,
           type === 'collection' ? this.parentFormComponent : id)

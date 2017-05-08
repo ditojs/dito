@@ -85,6 +85,13 @@ export default DitoComponent.component('dito-form', {
     },
 
     data() {
+      // Return differnent data "containers" based on different scenarios:
+      // 1. createData, if we're in a form for a newly created object.
+      // 2. loadedData, if the form itself is the root of the data (e.g. when
+      //    directly loading an editing root).
+      // 3. The data inherited from the parent, which itself may be either a
+      //    view that loaded the data, or a form that either loaded the data, or
+      //    also inherited it from its parent.
       return this.createData || this.loadedData || this.parentEntry
     },
 
@@ -117,8 +124,12 @@ export default DitoComponent.component('dito-form', {
 
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
-      // can't get the data from the parent already.
+      // can't inherit the data from the parent already, see data():
       return this.isLastRoute && !this.create && !this.data
+    },
+
+    isDirty() {
+      return Object.keys(this.fields).some(key => this.fields[key].dirty)
     }
   },
 
@@ -194,6 +205,18 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    goBack(reload, checkDirty) {
+      if (!checkDirty || (!this.isDirty || confirm(
+          'You have unsaved changed. Do you really want to go back?'))) {
+        this.$router.push({ path: '..', append: true })
+        // Tell the parent to reload its data if this was a submit()
+        const parent = this.parentRouteComponent
+        if (reload && parent) {
+          parent.reloadData()
+        }
+      }
+    },
+
     submit() {
       this.$validator.validateAll()
         .then(() => this.store())
@@ -206,7 +229,7 @@ export default DitoComponent.component('dito-form', {
         this.request(this.method, this.endpoint, null, this.data, err => {
           if (!err) {
             // After submitting, navigate back to the parent form or view.
-            this.goBack(true)
+            this.goBack(true, false)
           }
         })
       } else {
@@ -233,7 +256,7 @@ export default DitoComponent.component('dito-form', {
           }
         }
         if (ok) {
-          this.goBack(false)
+          this.goBack(false, false)
         }
       }
     },
@@ -245,7 +268,7 @@ export default DitoComponent.component('dito-form', {
         this.setParentEntry(this.filterData(this.resetData))
         this.resetData = null
       }
-      this.goBack(false)
+      this.goBack(false, true)
     }
   }
 })
