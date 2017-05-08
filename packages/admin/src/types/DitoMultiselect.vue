@@ -106,6 +106,8 @@
       background: $color-highlight
       color: $color-text
       font-weight: normal
+      &.multiselect__option--highlight
+        color: $color-text-inverted
 
     .multiselect__tags,
     .multiselect__content

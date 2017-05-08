@@ -22,12 +22,11 @@
         :disabled="loading"
       )
     .dito-buttons
-      button(
+      button.dito-button.dito-button-cancel(
         type="button",
-        class="dito-button-cancel",
         @click.prevent="cancel"
       )
-      button(
+      button.dito-button(
         v-if="!errors.has('dito-data')",
         type="submit",
         :class="`dito-button-${create ? 'create' : 'save'}`"

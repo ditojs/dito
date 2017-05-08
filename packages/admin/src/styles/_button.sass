@@ -1,3 +1,22 @@
+.dito-button
+  background: $color-button
+  position: relative
+  border: 1px solid transparent
+  border-radius: $border-radius
+  padding: 0.3em 0.6em
+  text-align: center
+  white-space: nowrap
+  cursor: pointer
+  &:hover
+    background-color: darken($color-button, 2.5%)
+  &:focus
+    outline: none
+    border-color: $color-active
+  &:active
+    background: darken($color-button, 5%)
+    border-color: $border-color
+    box-shadow: inset $shadow-settings rgba($color-shadow, 0.2)
+
 .dito-buttons
   // Can't use button + button with margin-left, due to reordering (submit)
   margin: 0 -1px

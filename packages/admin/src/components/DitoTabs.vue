@@ -17,6 +17,11 @@
 </template>
 
 <style lang="sass">
+$tab-color-background: $color-white
+$tab-color-inactive: $color-button
+$tab-color-hover: lighten($tab-color-inactive, 5%)
+$tab-color-active: $tab-color-inactive
+
 .dito
   // CSS-only tabs, based on: https://kyusuf.com/post/completely-css-tabs
   .dito-tabs
@@ -34,7 +39,7 @@
       background: $tab-color-background
       border: $border-style
       border-radius: $border-radius
-      box-shadow: $border-shadow
+      box-shadow: $shadow-settings rgba($color-shadow, 0.2)
       z-index: 1
       // Visually move panels below all tabs
       order: 100
@@ -46,7 +51,7 @@
     > label
       padding: $tab-padding-ver $tab-padding-hor ($tab-padding-ver + $border-radius)
       background: $tab-color-inactive
-      border: $border-style
+      border: $border-width solid $tab-color-inactive
       // Overlap right and bottom borders
       margin: 0 (-$border-width) (-$border-radius) 0
       cursor: pointer
@@ -55,8 +60,10 @@
       border-top-right-radius: $border-radius
       &:hover
         background: $tab-color-hover
+        border-color: $border-color
       &:active
         background: $tab-color-active
+        border-color: $border-color
 
     > input
       width: 0
@@ -71,6 +78,7 @@
       &:checked + label
         z-index: 2
         background: $tab-color-background
+        border-color: $border-color
         border-bottom: none
         padding-bottom: $tab-padding-ver
         margin-bottom: -$border-width

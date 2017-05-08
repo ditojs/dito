@@ -4,8 +4,8 @@
     name="dito-data"
   )
   div(v-else)
-    .dito-scope
-      button(
+    .dito-scopes
+      button.dito-button(
         v-for="scope in desc.scopes",
         type="button",
         @click="filterByScope({ scope: scope.toLowerCase() })"
@@ -22,20 +22,19 @@
             :to="`${route}${item.id}`", append,
             tag="button",
             type="button",
-            class="dito-button-edit"
+            class="dito-button dito-button-edit"
           )
-          button(
+          button.dito-button.dito-button-delete(
             v-if="desc.deletable",
             type="button",
-            @click="remove(item)",
-            class="dito-button-delete"
+            @click="remove(item)"
           )
     .dito-buttons(v-if="desc.creatable")
       router-link(
         :to="`${route}create`", append,
         tag="button",
         type="button",
-        class="dito-button-create"
+        class="dito-button dito-button-create"
       )
 </template>
 
@@ -44,20 +43,22 @@
   .dito-list
     border-spacing: 0.2em
     padding-bottom: 0.5em
-  .dito-scope
+  .dito-scopes
     padding-bottom: 0.5em
-    button
-      cursor: pointer
-      margin-right: 1em
-      padding: 0 0.5em 0 0.5em
-      border-spacing: 0.2em
-      border: $border-style
-      border-radius: $border-radius
-      background-color: #eee
-      &:hover
-        background: $tab-color-hover
-      &:active
-        background: $tab-color-active
+    font-size: 0.9em
+    .dito-button
+      border-radius: 0
+      border-top-left-radius: 1em
+      border-bottom-left-radius: 1em
+      padding-left: 1em
+      padding-right: 1em
+      & + .dito-button
+        border-radius: 0
+        border-top-right-radius: 1em
+        border-bottom-right-radius: 1em
+        border-left: 1px solid $border-color
+        &:focus
+          border-left-color: $color-active
 </style>
 
 <script>
