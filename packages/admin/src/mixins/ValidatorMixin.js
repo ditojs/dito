@@ -12,13 +12,16 @@ Vue.options.mounted.pop()
 // to use the ValidatorMixin. For more information, see:
 // https://github.com/logaretm/vee-validate/issues/468#issuecomment-299171029
 export default {
-  provide() {
+  beforeCreate() {
     const validator = this.$validator = new VeeValidate.Validator(null,
         { init: false })
     Vue.util.defineReactive(validator, 'errorBag', validator.errorBag)
     Vue.util.defineReactive(validator, 'fieldBag', validator.fieldBag)
+  },
+
+  provide() {
     return {
-      $validator: validator
+      $validator: this.$validator
     }
   }
 }
