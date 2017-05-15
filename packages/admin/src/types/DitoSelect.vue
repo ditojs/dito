@@ -3,6 +3,7 @@
   .dito-select
     select(
       :id="name",
+      :name="name",
       v-model="data[name]",
       v-validate="validations"
     )

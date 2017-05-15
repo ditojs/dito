@@ -4876,9 +4876,9 @@ vary@~1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.1.tgz#67535ebb694c1d52257457984665323f587e8d37"
 
-vee-validate@^2.0.0-beta.25:
+"vee-validate@https://github.com/logaretm/vee-validate/tarball/fc88f2a65d4424fb985f391817b36a125d9d33e4":
   version "2.0.0-rc.3"
-  resolved "https://registry.yarnpkg.com/vee-validate/-/vee-validate-2.0.0-rc.3.tgz#2ae889c203d0fcaca787a16070027ef36e5b1f6d"
+  resolved "https://github.com/logaretm/vee-validate/tarball/fc88f2a65d4424fb985f391817b36a125d9d33e4#c37bf5535265d8e5e62f1f99b1d9b227d9bbe8dc"
 
 vendors@^1.0.0:
   version "1.0.1"

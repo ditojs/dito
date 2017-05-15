@@ -1,8 +1,10 @@
 import DataMixin from '@/mixins/DataMixin'
-import ValidatorMixin from '@/mixins/ValidatorMixin'
 
 export default {
-  mixins: [DataMixin, ValidatorMixin],
+  mixins: [DataMixin],
+  // Each route-component shall provide a vee-validation root-object.
+  // See: https://github.com/logaretm/vee-validate/issues/468
+  $validates: true,
 
   data() {
     return {

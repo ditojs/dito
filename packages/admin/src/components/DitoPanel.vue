@@ -33,8 +33,6 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-panel', {
-  inject: ['$validator'],
-
   props: {
     desc: { type: Object, required: true },
     data: { type: Object, required: true },

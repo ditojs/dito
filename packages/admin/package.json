@@ -13,7 +13,7 @@
   "dependencies": {
     "axios": "^0.16.1",
     "isobject": "^3.0.0",
-    "vee-validate": "^2.0.0-beta.25",
+    "vee-validate": "https://github.com/logaretm/vee-validate/tarball/fc88f2a65d4424fb985f391817b36a125d9d33e4",
     "vue": "^2.3.2",
     "vue-multiselect": "next",
     "vue-resource": "^1.3.1",

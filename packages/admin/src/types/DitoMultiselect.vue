@@ -2,6 +2,7 @@
   VueMultiselect.dito-multiselect(
     :value="value",
     @input="onChanged",
+    :data-vv-name="name",
     v-validate="validations",
     :show-labels="false",
     :placeholder="desc.placeholder",

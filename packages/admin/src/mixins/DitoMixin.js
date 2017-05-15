@@ -1,4 +1,8 @@
 export default {
+  // Inherit the $validator from the parent.
+  // See: https://github.com/logaretm/vee-validate/issues/468
+  inject: ['$validator'],
+
   computed: {
     // Short-cuts to meta properties:
     viewDesc() { return this.meta.viewDesc },

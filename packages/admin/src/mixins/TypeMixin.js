@@ -1,6 +1,4 @@
 export default {
-  inject: ['$validator'],
-
   props: {
     name: { type: String, required: true },
     desc: { type: Object, required: true },
@@ -15,12 +13,6 @@ export default {
     if (form) {
       form.components[this.name] = this
     }
-  },
-
-  mounted() {
-    // Type components are going to use validation, so call init() here. See:
-    // https://github.com/logaretm/vee-validate/issues/468#issuecomment-299171029
-    this.$validator.init()
   },
 
   computed: {

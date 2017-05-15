@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import VeeValidate from 'vee-validate'
 import './components'
 import './types'
 import DitoComponent from './DitoComponent'
@@ -10,6 +11,10 @@ import renderLabel from './utils/renderLabel'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
+Vue.use(VeeValidate, {
+  // See: https://github.com/logaretm/vee-validate/issues/468
+  inject: false
+})
 
 const user = {
   role: 'admin' // TODO
