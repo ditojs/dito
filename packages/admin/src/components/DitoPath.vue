@@ -4,19 +4,34 @@
       li(v-for="(route, i) in $route.matched")
         template(v-if="i === $route.matched.length - 1") {{ getLabel(route) }}
         router-link(v-else, :to="getPath(i)") {{ getLabel(route) }}
+    dito-spinner.dito-spinner(v-show="appState.loading")
 </template>
 
 <style lang="sass">
 .dito
   .dito-path
+    position: fixed
+    top: 0
+    width: 100%
+    z-index: 1000
+    padding: 1em
+    background: hsl(0, 0%, 85%)
+    font-weight: bold
+    margin-bottom: 0.5em
     ul
       margin: 0
       padding: 0
     li
       display: inline
-
     li + li::before
       content: ' > '
+    ul,
+    .dito-spinner
+      float: left
+    .dito-spinner
+      margin-left: 0.5em
+      &::before
+        content: ''
 </style>
 
 <script>

@@ -70,17 +70,12 @@ export default {
       }
     },
 
-    setLoading(loading) {
-      // Only display loading progress on route components.
-      this.routeComponent.loading = loading
-    },
-
     request(method, path, params, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
-      this.setLoading(true)
+      this.appState.loading = true
       request(method, path, params, payload, (err, result) => {
-        this.setLoading(false)
+        this.appState.loading = false
         if (err) {
           this.errors.add('dito-data', err.toString())
         }

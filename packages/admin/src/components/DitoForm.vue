@@ -1,37 +1,36 @@
 <template lang="pug">
-  form.dito-form(v-if="isLastRoute", @submit.prevent="submit")
-    .dito-spinner
-      dito-spinner(v-if="loading")
-    .dito-debug API endpoint: {{ endpoint }}
-    dito-errors(
-      v-if="errors.has('dito-data')",
-      name="dito-data"
-    )
-    template(v-else)
-      dito-tabs(
-        :name="name",
-        :tabs="formDesc.tabs",
-        :data="data || {}",
-        :meta="meta",
-        :disabled="loading"
+  div
+    form.dito-form(v-show="isLastRoute", @submit.prevent="submit")
+      .dito-debug API endpoint: {{ endpoint }}
+      dito-errors(
+        v-if="errors.has('dito-data')",
+        name="dito-data"
       )
-      dito-panel(
-        :desc="formDesc",
-        :data="data || {}",
-        :meta="meta",
-        :disabled="loading"
-      )
-    .dito-buttons
-      button.dito-button.dito-button-cancel(
-        type="button",
-        @click.prevent="cancel"
-      )
-      button.dito-button(
-        v-if="!errors.has('dito-data')",
-        type="submit",
-        :class="`dito-button-${create ? 'create' : 'save'}`"
-      )
-  router-view(v-else)
+      template(v-else)
+        dito-tabs(
+          :name="name",
+          :tabs="formDesc.tabs",
+          :data="data || {}",
+          :meta="meta",
+          :disabled="loading"
+        )
+        dito-panel(
+          :desc="formDesc",
+          :data="data || {}",
+          :meta="meta",
+          :disabled="loading"
+        )
+      .dito-buttons
+        button.dito-button.dito-button-cancel(
+          type="button",
+          @click.prevent="cancel"
+        )
+        button.dito-button(
+          v-if="!errors.has('dito-data')",
+          type="submit",
+          :class="`dito-button-${create ? 'create' : 'save'}`"
+        )
+    router-view(v-if="!isLastRoute")
 </template>
 
 <script>

@@ -1,7 +1,5 @@
 <template lang="pug">
   div(v-if="isLastRoute")
-    .dito-spinner
-      dito-spinner(v-if="loading")
     .dito-debug API endpoint: {{ endpoint }}
     component(
       :is="typeToComponent(viewDesc.type)",

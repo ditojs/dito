@@ -1,9 +1,6 @@
 <template lang="pug">
   .dito
-    nav.dito-menu
-      ul
-        li(v-for="(desc, name) in views")
-          router-link(:to="`/${name}`") {{ renderLabel(desc, name) }}
+    dito-menu(:views="views")
     main.dito-page
       dito-path
       router-view.dito-view
@@ -14,44 +11,27 @@
   // Import everything name-spaced in .dito
   @import "dito"
 
+  height: 100%
+  display: flex
+  flex-flow: row wrap
+  align-content: stretch
+
+  .dito-page
+    flex: 1 1
+    overflow-y: scroll
+
   .dito-menu,
   .dito-path
     font-size: 1.2em
 
-  .dito-menu
-    float: left
-    ul li
-        margin-bottom: 0.3em
-    a
-      font-weight: bold
-      &.router-link-active
-        color: $color-active
-
-  .dito-path
-    font-weight: bold
-    margin-bottom: 0.5em
-
-  .dito-page
-    float: left
-    padding-left: 2em
-
-  .dito-path,
-  .dito-spinner
-    float: left
-
-  .dito-spinner
-    display: inline
-    padding: 0.15em 0 0 0.25em
-
   .dito-view
-    // To make the floating spinner alyways go up to the path
-    display: inline
+    padding: 1em
+    margin-top: 4em
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
-import renderLabel from '@/utils/renderLabel'
 
 DitoComponent.component('dito-spinner', DitoSpinner)
 
@@ -59,10 +39,6 @@ export default DitoComponent.component('dito-root', {
   props: {
     views: { type: Object, required: true },
     settings: { type: Object, required: true }
-  },
-
-  methods: {
-    renderLabel
   },
 
   created() {

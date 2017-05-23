@@ -4,6 +4,7 @@
 // convention is in order of encountered hierarchy in the DOM.
 
 import './DitoRoot'
+import './DitoMenu'
 import './DitoPath'
 import './DitoView'
 import './DitoForm'
