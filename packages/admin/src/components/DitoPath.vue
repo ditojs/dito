@@ -13,9 +13,10 @@
     position: fixed
     top: 0
     width: 100%
-    z-index: 1000
+    z-index: $menu-z-index
     padding: 1em
     background: hsl(0, 0%, 85%)
+    font-size: $menu-font-size
     font-weight: bold
     margin-bottom: 0.5em
     ul

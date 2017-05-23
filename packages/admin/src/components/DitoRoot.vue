@@ -3,7 +3,7 @@
     dito-menu(:views="views")
     main.dito-page
       dito-path
-      router-view.dito-view
+      router-view
 </template>
 
 <style lang="sass">
@@ -19,14 +19,6 @@
   .dito-page
     flex: 1 1
     overflow-y: scroll
-
-  .dito-menu,
-  .dito-path
-    font-size: 1.2em
-
-  .dito-view
-    padding: 1em
-    margin-top: 4em
 </style>
 
 <script>

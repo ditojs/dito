@@ -13,6 +13,7 @@
     ul li
       margin-bottom: 0.3em
     a
+      font-size: $menu-font-size
       font-weight: bold
       &.router-link-active
         color: $color-white

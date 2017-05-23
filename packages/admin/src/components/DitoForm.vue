@@ -1,6 +1,6 @@
 <template lang="pug">
-  div
-    form.dito-form(v-show="isLastRoute", @submit.prevent="submit")
+  .dito-form
+    form(v-show="isLastRoute", @submit.prevent="submit")
       .dito-debug API endpoint: {{ endpoint }}
       dito-errors(
         v-if="errors.has('dito-data')",

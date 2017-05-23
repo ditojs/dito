@@ -1,15 +1,23 @@
 <template lang="pug">
-  div(v-if="isLastRoute")
-    .dito-debug API endpoint: {{ endpoint }}
-    component(
-      :is="typeToComponent(viewDesc.type)",
-      :name="name",
-      :desc="viewDesc",
-      :data="data",
-      :meta="meta"
-    )
-  router-view(v-else)
+  .dito-view
+    div(v-show="isLastRoute")
+      .dito-debug API endpoint: {{ endpoint }}
+      component(
+        :is="typeToComponent(viewDesc.type)",
+        :name="name",
+        :desc="viewDesc",
+        :data="data",
+        :meta="meta"
+      )
+    router-view(v-if="!isLastRoute")
 </template>
+
+<style lang="sass">
+.dito
+  .dito-view
+    padding: 1em
+    margin-top: 4em
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
