@@ -4,7 +4,7 @@
     name="dito-data"
   )
   div(v-else)
-    .dito-scopes
+    .dito-scopes(v-if="desc.scopes")
       button.dito-button(
         v-for="scope in desc.scopes",
         type="button",

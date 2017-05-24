@@ -15,8 +15,8 @@
 <style lang="sass">
 .dito
   .dito-view
-    padding: 1em
-    margin-top: 4em
+    padding: $menu-padding
+    margin-top: 2 * $menu-padding-ver + $menu-font-size * $menu-line-height
 </style>
 
 <script>

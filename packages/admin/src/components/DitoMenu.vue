@@ -1,5 +1,6 @@
 <template lang="pug">
   nav.dito-menu
+    h1 Dito Admin
     ul
       li(v-for="(desc, name) in views")
         router-link(:to="`/${name}`") {{ renderLabel(desc, name) }}
@@ -8,15 +9,22 @@
 <style lang="sass">
 .dito
   .dito-menu
-    background: hsl(0, 0%, 66%)
-    padding: 1em
-    ul li
-      margin-bottom: 0.3em
-    a
-      font-size: $menu-font-size
+    background: $color-background
+    font-size: $menu-font-size
+    a,
+    h1
+      display: block
+    h1
+      padding: $menu-padding
       font-weight: bold
+      background: $color-black
+      color: $color-white
+      line-height: $menu-line-height
+    a
+      padding: 0.2em $menu-padding-hor
       &.router-link-active
         color: $color-white
+        background: $color-active
 </style>
 
 <script>

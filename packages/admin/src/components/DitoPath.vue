@@ -2,8 +2,10 @@
   nav.dito-path
     ul
       li(v-for="(route, i) in $route.matched")
-        template(v-if="i === $route.matched.length - 1") {{ getLabel(route) }}
-        router-link(v-else, :to="getPath(i)") {{ getLabel(route) }}
+        template(v-if="i === $route.matched.length - 1")
+          span {{ getLabel(route) }}
+        router-link(v-else, :to="getPath(i)")
+          span {{ getLabel(route) }}
     dito-spinner.dito-spinner(v-show="appState.loading")
 </template>
 
@@ -14,25 +16,44 @@
     top: 0
     width: 100%
     z-index: $menu-z-index
-    padding: 1em
-    background: hsl(0, 0%, 85%)
+    background: $color-black
     font-size: $menu-font-size
-    font-weight: bold
-    margin-bottom: 0.5em
-    ul
-      margin: 0
-      padding: 0
+    overflow: hidden
+    line-height: $menu-line-height
     li
-      display: inline
-    li + li::before
-      content: ' > '
-    ul,
-    .dito-spinner
       float: left
-    .dito-spinner
-      margin-left: 0.5em
+      & > *
+        position: relative
+        color: $color-white
+    span
+      display: block
+      padding: $menu-padding
+    a
+      display: block
+      padding-right: 0.4em
+      $angle: 33deg
+      &:hover
+        color: #999
+      &::after,
       &::before
+        position: absolute
         content: ''
+        width: 1px
+        height: 1.2em
+        right: -1px
+        background: $color-dark
+      &::before
+        top: 50%
+        transform: rotate($angle)
+        transform-origin: top
+      &::after
+        bottom: 50%
+        transform: rotate(-$angle)
+        transform-origin: bottom
+    .dito-spinner
+      margin: $menu-padding-ver 0 0 $menu-padding-hor
+
+  .breadcrumb-link
 </style>
 
 <script>

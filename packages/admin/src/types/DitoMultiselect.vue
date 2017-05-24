@@ -76,7 +76,7 @@
     .multiselect__option
       min-height: unset
       padding: $input-padding
-      line-height: inherit
+      line-height: normal
 
     .multiselect__tag
       margin: 2px 0 0 2px
@@ -99,7 +99,7 @@
 
     .multiselect__tag,
     .multiselect__option--highlight
-      line-height: inherit
+      line-height: normal
       background: $color-active
       color: $color-text-inverted
 
