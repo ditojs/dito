@@ -16,6 +16,8 @@ $tab-color-active: $tab-color-inactive
 
 .dito
   .dito-tabs
+    position: absolute
+    width: 100%
     max-width: $content-width
     box-sizing: border-box
     padding: 0 $menu-padding-hor

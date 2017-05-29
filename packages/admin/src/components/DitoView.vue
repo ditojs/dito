@@ -16,6 +16,8 @@
 .dito
   .dito-view
     position: relative
+    display: flex
+    flex-flow: column
 </style>
 
 <script>

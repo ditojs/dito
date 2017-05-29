@@ -42,13 +42,11 @@
 <style lang="sass">
 .dito
   .dito-form
-    form
-      display: flex
-      flex-flow: column wrap
     &,
     form
       // To make vertical scrolling in .dito-scroll work
-      height: 100%
+      display: flex
+      flex-flow: column
     .dito-content
       margin: -$form-spacing 0
       > .dito-buttons

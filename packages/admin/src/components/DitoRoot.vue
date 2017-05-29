@@ -16,7 +16,7 @@
   .dito-page
     flex: 1
     display: flex
-    flex-direction: column
+    flex-flow: column
     .dito-view
       flex: 1
       min-height: 0
