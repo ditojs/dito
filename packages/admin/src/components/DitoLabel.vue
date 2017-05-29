@@ -6,6 +6,7 @@
 .dito
   .dito-label
     white-space: nowrap
+    width: 1%
     &::after
       content: ':'
       margin-right: 0.35em

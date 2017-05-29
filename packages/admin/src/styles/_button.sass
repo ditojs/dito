@@ -18,10 +18,9 @@
     box-shadow: inset $shadow-settings rgba($color-shadow, 0.2)
 
 .dito-buttons
-  // Can't use button + button with margin-left, due to reordering (submit)
-  margin: 0 -1px
-  button
-    margin: 0 1px
+  white-space: nowrap
+  button + button
+    margin-left: 2px
 
 .dito-button-create::before
     content: 'Create'

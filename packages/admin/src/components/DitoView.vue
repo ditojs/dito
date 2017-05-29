@@ -1,8 +1,8 @@
 <template lang="pug">
   .dito-view
-    div(v-show="isLastRoute")
+    div.dito-scroll(v-show="isLastRoute")
       .dito-debug API endpoint: {{ endpoint }}
-      component(
+      component.dito-component.dito-content(
         :is="typeToComponent(viewDesc.type)",
         :name="name",
         :desc="viewDesc",
@@ -15,8 +15,7 @@
 <style lang="sass">
 .dito
   .dito-view
-    padding: $menu-padding
-    margin-top: 2 * $menu-padding-ver + $menu-font-size * $menu-line-height
+    position: relative
 </style>
 
 <script>

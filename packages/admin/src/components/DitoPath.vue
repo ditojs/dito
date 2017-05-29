@@ -6,15 +6,12 @@
           span {{ getLabel(route) }}
         router-link(v-else, :to="getPath(i)")
           span {{ getLabel(route) }}
-    dito-spinner.dito-spinner(v-show="appState.loading")
+    dito-spinner.dito-spinner(v-if="appState.loading")
 </template>
 
 <style lang="sass">
 .dito
   .dito-path
-    position: fixed
-    top: 0
-    width: 100%
     z-index: $menu-z-index
     background: $color-black
     font-size: $menu-font-size

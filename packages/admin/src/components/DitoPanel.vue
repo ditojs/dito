@@ -25,8 +25,10 @@
 <style lang="sass">
 .dito
   ul.dito-panel
-    border-spacing: 0 0.5em
-    padding-bottom: 0.5em
+    border-spacing: 0 $form-spacing
+    border-bottom: $border-style
+    padding-bottom: $form-margin - $form-spacing
+    margin-bottom: $form-margin - $form-spacing
 </style>
 
 <script>

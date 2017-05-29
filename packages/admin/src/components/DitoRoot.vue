@@ -13,12 +13,13 @@
 
   height: 100%
   display: flex
-  flex-flow: row wrap
-  align-content: stretch
-
   .dito-page
-    flex: 1 1
-    overflow-y: scroll
+    flex: 1
+    display: flex
+    flex-direction: column
+    .dito-view
+      flex: 1
+      min-height: 0
 </style>
 
 <script>

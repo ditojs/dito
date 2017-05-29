@@ -20,7 +20,7 @@
 .dito
   .dito-radio-buttons
     .dito-radio-button
-      margin-right: 0.5em
+      margin-right: $form-spacing
 </style>
 
 <script>

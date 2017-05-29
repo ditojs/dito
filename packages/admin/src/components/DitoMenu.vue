@@ -9,7 +9,7 @@
 <style lang="sass">
 .dito
   .dito-menu
-    background: $color-background
+    background: $color-lightest
     font-size: $menu-font-size
     a,
     h1
@@ -17,7 +17,7 @@
     h1
       padding: $menu-padding
       font-weight: bold
-      background: $color-black
+      background: $color-darker
       color: $color-white
       line-height: $menu-line-height
     a

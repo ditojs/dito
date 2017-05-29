@@ -6,32 +6,55 @@
         v-if="errors.has('dito-data')",
         name="dito-data"
       )
-      template(v-else)
-        dito-tabs(
-          :name="name",
-          :tabs="formDesc.tabs",
-          :data="data || {}",
-          :meta="meta",
-          :disabled="loading"
-        )
-        dito-panel(
-          :desc="formDesc",
-          :data="data || {}",
-          :meta="meta",
-          :disabled="loading"
-        )
-      .dito-buttons
-        button.dito-button.dito-button-cancel(
-          type="button",
-          @click.prevent="cancel"
-        )
-        button.dito-button(
-          v-if="!errors.has('dito-data')",
-          type="submit",
-          :class="`dito-button-${create ? 'create' : 'save'}`"
-        )
+      dito-tabs(
+        :tabs="tabs",
+        :selectedTab="selectedTab"
+      )
+      .dito-scroll
+        .dito-content
+          template(v-for="(tabDesc, key) in tabs")
+            dito-panel(
+              v-show="selectedTab === key",
+              :desc="tabDesc",
+              :data="data || {}",
+              :meta="meta",
+              :disabled="loading"
+            )
+          dito-panel(
+            :desc="formDesc",
+            :data="data || {}",
+            :meta="meta",
+            :disabled="loading"
+          )
+          .dito-buttons
+            button.dito-button.dito-button-cancel(
+              type="button",
+              @click.prevent="cancel"
+            )
+            button.dito-button(
+              v-if="!errors.has('dito-data')",
+              type="submit",
+              :class="`dito-button-${create ? 'create' : 'save'}`"
+            )
     router-view(v-if="!isLastRoute")
 </template>
+
+<style lang="sass">
+.dito
+  .dito-form
+    form
+      display: flex
+      flex-flow: column wrap
+    &,
+    form
+      // To make vertical scrolling in .dito-scroll work
+      height: 100%
+    .dito-content
+      margin: -$form-spacing 0
+    .dito-buttons
+      margin-top: $form-margin
+      text-align: right
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
@@ -80,6 +103,16 @@ export default DitoComponent.component('dito-form', {
           : this.getEndpoint(this.method,
               this.create ? 'collection' : 'member',
               this.id)
+    },
+
+    tabs() {
+      return this.formDesc.tabs
+    },
+
+    selectedTab() {
+      let hash = this.$route.hash
+      return hash && hash.substring(1) ||
+          this.tabs && Object.keys(this.tabs)[0] || ''
     },
 
     data() {

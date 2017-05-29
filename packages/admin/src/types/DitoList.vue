@@ -1,9 +1,9 @@
 <template lang="pug">
-  dito-errors(
-    v-if="errors.has('dito-data')",
-    name="dito-data"
-  )
-  div(v-else)
+  div
+    dito-errors(
+      v-if="errors.has('dito-data')",
+      name="dito-data"
+    )
     .dito-scopes(v-if="desc.scopes")
       button.dito-button(
         v-for="scope in desc.scopes",
@@ -29,22 +29,47 @@
             type="button",
             @click="remove(item)"
           )
-    .dito-buttons(v-if="desc.creatable")
-      router-link(
-        :to="`${route}create`", append,
-        tag="button",
-        type="button",
-        class="dito-button dito-button-create"
-      )
+      li(v-if="desc.creatable")
+        span
+        .dito-buttons
+          router-link(
+            :to="`${route}create`", append,
+            tag="button",
+            type="button",
+            class="dito-button dito-button-create"
+          )
 </template>
 
 <style lang="sass">
+$list-spacing: 0.3em
+
 .dito
   .dito-list
-    border-spacing: 0.2em
-    padding-bottom: 0.5em
+    width: 100%
+    padding-bottom: $form-spacing
+    border-spacing: 0 $list-spacing
+    margin: -$list-spacing 0
+    > li
+      > *
+        background: $color-lightest
+        padding: $list-spacing 0
+        padding-left: $form-spacing
+        &:first-child
+          border-top-left-radius: $border-radius
+          border-bottom-left-radius: $border-radius
+        &:last-child
+          border-top-right-radius: $border-radius
+          border-bottom-right-radius: $border-radius
+          padding-right: $list-spacing
+    .dito-table
+      > li
+        > * + *
+          padding-left: $form-spacing
+    .dito-buttons
+      width: 1%
+      text-align: right
   .dito-scopes
-    padding-bottom: 0.5em
+    padding-bottom: $menu-padding-ver
     font-size: 0.9em
     .dito-button
       border-radius: 0

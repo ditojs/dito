@@ -9,7 +9,7 @@
 .dito
   .dito-errors
     ul
-      margin: 0.5em 0
+      margin: $form-spacing 0
       color: #ff3860
 </style>
 
