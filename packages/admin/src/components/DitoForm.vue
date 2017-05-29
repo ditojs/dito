@@ -51,9 +51,13 @@
       height: 100%
     .dito-content
       margin: -$form-spacing 0
-    .dito-buttons
-      margin-top: $form-margin
-      text-align: right
+      > .dito-buttons
+        margin-top: $form-margin
+        text-align: center
+        font-size: $menu-font-size
+        button
+          border-radius: 2em
+          padding: 0.4em 0.9em
 </style>
 
 <script>

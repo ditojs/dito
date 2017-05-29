@@ -6,7 +6,7 @@
         :name="key",
         :text="comp.label"
       )
-      .dito-container
+      .dito-pane
         component.dito-component(
           :is="typeToComponent(comp.type)",
           :name="key",
@@ -24,7 +24,8 @@
 
 <style lang="sass">
 .dito
-  ul.dito-panel
+  .dito-panel
+    width: 100%
     border-spacing: 0 $form-spacing
     border-bottom: $border-style
     padding-bottom: $form-margin - $form-spacing

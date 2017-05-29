@@ -25,11 +25,13 @@
   $spinner-size: 1.3em
   $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
   $tag-icon-size: 1.8em
+  $tag-padding: 3px
 
   .dito-multiselect
     display: inline-block
     font-size: inherit
     min-height: inherit
+    width: auto
 
     .multiselect__input
       padding: $input-padding
@@ -76,12 +78,11 @@
     .multiselect__option
       min-height: unset
       padding: $input-padding
-      line-height: normal
 
     .multiselect__tag
       margin: 2px 0 0 2px
       border-radius: 1em
-      padding: 0.2em $tag-icon-size 0.2em 0.8em
+      padding: $tag-padding $tag-icon-size $tag-padding 0.8em
 
     .multiselect__tag-icon
       background: none
@@ -89,17 +90,17 @@
       font-weight: inherit
       top: inherit
       bottom: inherit
+      line-height: inherit
       width: $tag-icon-size
-      line-height: 1em
       &::after
         color: $color-text-inverted
-        font-size: 1.3em
+        font-size: 1.2em
       &:hover::after
         color: $color-text
 
     .multiselect__tag,
     .multiselect__option--highlight
-      line-height: normal
+      line-height: 1.2em
       background: $color-active
       color: $color-text-inverted
 
