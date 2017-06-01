@@ -50,7 +50,10 @@ $list-spacing: 3px
     .dito-table
       width: 100%
       border-spacing: 0 $list-spacing
-      margin: -$list-spacing 0
+      &:not(:empty)
+        margin: -$list-spacing 0
+        & + .dito-buttons
+          margin-top: $list-spacing
       > li
         > *
           background: $color-lightest
@@ -75,7 +78,6 @@ $list-spacing: 3px
     .dito-buttons
       text-align: right
       padding: $list-spacing
-      margin-top: $list-spacing
       background: $color-lightest
       border-radius: $border-radius
     .dito-scopes
