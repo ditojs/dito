@@ -45,9 +45,7 @@ exports.cssLoaders = function (options) {
   }
 
   var sassOptions = {
-    includePaths: [
-      path.resolve('./src/styles')
-    ],
+    includePaths: [ './src/styles' ],
     data: '@import "_settings";'
   }
 

@@ -11,6 +11,7 @@
   .dito-menu
     background: $color-lightest
     font-size: $menu-font-size
+    white-space: nowrap
     a,
     h1
       display: block

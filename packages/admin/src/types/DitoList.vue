@@ -17,7 +17,14 @@
           v-for="header, index in headers",
           :colspan="hasButtons && index === headers.length - 1 ? 2 : null"
         )
-          | {{ header }}
+          a(
+            v-if="isObject(header)",
+            href="#",
+            @click.prevent=""
+          )
+            .dito-arrows
+            .dito-header {{ header.label }}
+          .dito-header(v-else) {{ header }}
       tr(
         v-for="item in listData || []",
         :key="`${name}-${item.id}`"
@@ -49,6 +56,8 @@
 </template>
 
 <style lang="sass">
+@import 'mixins/arrow'
+
 $list-spacing: 3px
 
 .dito
@@ -62,10 +71,8 @@ $list-spacing: 3px
           margin-top: $list-spacing
       tr
         vertical-align: baseline
-      td,
-      th
-        padding: $list-spacing 0
-        padding-left: $form-spacing
+      th,
+      td
         &:first-child
           border-top-left-radius: $border-radius
           border-bottom-left-radius: $border-radius
@@ -79,7 +86,30 @@ $list-spacing: 3px
         text-align: left
         & + th
           border-left: 1px solid $border-color
+        .dito-header
+          padding: $list-spacing 0
+          padding-left: $form-spacing
+        a
+          display: block
+          position: relative
+          &:hover
+            background-color: darken($color-lighter, 2.5%)
+          .dito-header,
+          .dito-arrows
+            display: inline-block
+          .dito-arrows
+            width: round($header-arrow-size * $math-sqrt2)
+            padding-left: $form-spacing
+            $arrow-offset: $header-arrow-size / 2 + 1px
+            &::before
+              +arrow($header-arrow-size, true)
+              bottom: $arrow-offset
+            &::after
+              +arrow($header-arrow-size, false)
+              top: $arrow-offset
       td
+        padding: $list-spacing 0
+        padding-left: $form-spacing
         background: $color-lightest
       // Support simple nested table styling
       table
@@ -116,6 +146,7 @@ import DitoComponent from '@/DitoComponent'
 import ListMixin from '@/mixins/ListMixin'
 import escapeHtml from '@/utils/escapeHtml'
 import stripTags from '@/utils/stripTags'
+import isObject from 'isobject'
 
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
@@ -142,7 +173,9 @@ export default DitoComponent.register('list', {
   methods: {
     getTitle(item) {
       return stripTags(this.renderCells(item)[0])
-    }
+    },
+
+    isObject
   }
 })
 </script>
