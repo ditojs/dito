@@ -12,6 +12,12 @@
       )
         | {{ scope }}
     table
+      tr(v-if="headers")
+        th(
+          v-for="header, index in headers",
+          :colspan="hasButtons && index === headers.length - 1 ? 2 : null"
+        )
+          | {{ header }}
       tr(
         v-for="item in listData || []",
         :key="`${name}-${item.id}`"
@@ -20,7 +26,7 @@
           v-for="html in renderCells(item)",
           v-html="html"
         )
-        td.dito-buttons(v-if="desc.editable || desc.deletable")
+        td.dito-buttons(v-if="hasButtons")
           router-link(
             v-if="desc.editable",
             :to="`${route}${item.id}`", append,
@@ -56,8 +62,8 @@ $list-spacing: 3px
           margin-top: $list-spacing
       tr
         vertical-align: baseline
-      td
-        background: $color-lightest
+      td,
+      th
         padding: $list-spacing 0
         padding-left: $form-spacing
         &:first-child
@@ -67,6 +73,14 @@ $list-spacing: 3px
           border-top-right-radius: $border-radius
           border-bottom-right-radius: $border-radius
           padding-right: $list-spacing
+      th
+        background: $color-lighter
+        font-weight: normal
+        text-align: left
+        & + th
+          border-left: 1px solid $border-color
+      td
+        background: $color-lightest
       // Support simple nested table styling
       table
         border-spacing: 0
@@ -114,6 +128,14 @@ export default DitoComponent.register('list', {
         const res = render && render(item) || item.html || escapeHtml(item.text)
         return Array.isArray(res) ? res : [res]
       }
+    },
+
+    hasButtons() {
+      return this.desc.editable || this.desc.deletable
+    },
+
+    headers() {
+      return this.desc.headers
     }
   },
 
