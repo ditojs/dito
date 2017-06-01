@@ -1,7 +1,7 @@
 <template lang="pug">
   ul.dito-checkboxes(
     :id="name",
-    :class="`dito-${desc.horizontal ? 'horizontal' : 'table'}`"
+    :class="`dito-layout-${desc.layout || 'vertical'}`"
   )
     li(v-for="option in options")
       label

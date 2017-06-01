@@ -11,16 +11,16 @@
         @click="filterByScope({ scope: scope.toLowerCase() })"
       )
         | {{ scope }}
-    ul.dito-table
-      li(
+    table
+      tr(
         v-for="item in listData || []",
         :key="`${name}-${item.id}`"
       )
-        span(
-          v-for="html in render(item)",
+        td(
+          v-for="html in renderCells(item)",
           v-html="html"
         )
-        .dito-buttons(v-if="desc.editable || desc.deletable")
+        td.dito-buttons(v-if="desc.editable || desc.deletable")
           router-link(
             v-if="desc.editable",
             :to="`${route}${item.id}`", append,
@@ -47,34 +47,33 @@ $list-spacing: 3px
 
 .dito
   .dito-list
-    .dito-table
+    table
       width: 100%
       border-spacing: 0 $list-spacing
       &:not(:empty)
         margin: -$list-spacing 0
         & + .dito-buttons
           margin-top: $list-spacing
-      > li
-        > *
-          background: $color-lightest
-          padding: $list-spacing 0
-          padding-left: $form-spacing
-          &:first-child
-            border-top-left-radius: $border-radius
-            border-bottom-left-radius: $border-radius
-          &:last-child
-            border-top-right-radius: $border-radius
-            border-bottom-right-radius: $border-radius
-            padding-right: $list-spacing
-    // Support simple nested tables
-    table
-      border-spacing: 0
-      tbody
-        vertical-align: inherit
+      tr
+        vertical-align: baseline
       td
-        padding: 0
-        & + td
-          padding-left: $form-spacing
+        background: $color-lightest
+        padding: $list-spacing 0
+        padding-left: $form-spacing
+        &:first-child
+          border-top-left-radius: $border-radius
+          border-bottom-left-radius: $border-radius
+        &:last-child
+          border-top-right-radius: $border-radius
+          border-bottom-right-radius: $border-radius
+          padding-right: $list-spacing
+      // Support simple nested table styling
+      table
+        border-spacing: 0
+        td
+          padding: 0
+          & + td
+            padding-left: $form-spacing
     .dito-buttons
       text-align: right
       padding: $list-spacing
@@ -108,7 +107,7 @@ export default DitoComponent.register('list', {
   mixins: [ListMixin],
 
   computed: {
-    render() {
+    renderCells() {
       const desc = this.desc
       const render = desc.render
       return function(item) {
@@ -120,8 +119,7 @@ export default DitoComponent.register('list', {
 
   methods: {
     getTitle(item) {
-      const res = this.render(item)
-      return stripTags(Array.isArray(res) ? res[0] : res)
+      return stripTags(this.renderCells(item)[0])
     }
   }
 })

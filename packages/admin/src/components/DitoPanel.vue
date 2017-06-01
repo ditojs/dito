@@ -1,5 +1,5 @@
 <template lang="pug">
-  ul.dito-panel.dito-table(v-if="desc.components")
+  ul.dito-panel.dito-layout-vertical(v-if="desc.components")
     li(v-for="(comp, key) in desc.components")
       dito-label(
         v-if="comp.label",
