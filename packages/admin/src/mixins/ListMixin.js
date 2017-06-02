@@ -56,10 +56,6 @@ export default {
       }
     },
 
-    filterByScope(params) {
-      this.loadData(false, params)
-    },
-
     remove(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {

@@ -4,13 +4,14 @@
       v-if="errors.has('dito-data')",
       name="dito-data"
     )
-    .dito-scopes(v-if="desc.scopes")
+    .dito-scopes(v-if="scopes")
       button.dito-button(
-        v-for="scope in desc.scopes",
+        v-for="scope in scopes",
         type="button",
-        @click="filterByScope({ scope: scope.toLowerCase() })"
+          :class="{ 'dito-active': scope.name === filterScope }",
+        @click="filterByScope(scope.name || scope.label.toLowerCase())"
       )
-        | {{ scope }}
+        | {{ scope.label }}
     table
       tr(v-if="columns")
         th(
@@ -19,8 +20,9 @@
         )
           button.dito-button(
             v-if="column.sortable",
-            @click="sortBy(column.name)"
-            :class="getSortClass(column.name)"
+            type="button",
+            :class="getSortClass(column.name)",
+            @click="sortByColumn(column.name)"
           )
             .dito-arrows
             .dito-column
@@ -116,18 +118,16 @@ $list-spacing: 3px
             &::after
               +arrow($column-arrow-size, false)
               top: $arrow-offset
-          &.dito-active
-            background: $button-color-active
-            &.dito-order-asc .dito-arrows
-              &::before
-                bottom: 0
-              &::after
-                display: none
-            &.dito-order-desc .dito-arrows
-              &::before
-                display: none
-              &::after
-                top: 0
+          &.dito-order-asc .dito-arrows
+            &::before
+              bottom: 0
+            &::after
+              display: none
+          &.dito-order-desc .dito-arrows
+            &::before
+              display: none
+            &::after
+              top: 0
       // Add rounded corners in first & last cells / headers
       td,
       th,
@@ -148,7 +148,7 @@ $list-spacing: 3px
       border-radius: $border-radius
     .dito-scopes
       padding-bottom: $menu-padding-ver
-      font-size: 0.9em
+      // font-size: 0.9em
       .dito-button
         border-radius: 0
         border-top-left-radius: 1em
@@ -176,6 +176,7 @@ export default DitoComponent.register('list', {
 
   data() {
     return {
+      filterScope: null,
       sortKey: null,
       sortOrder: 1
     }
@@ -183,16 +184,11 @@ export default DitoComponent.register('list', {
 
   computed: {
     columns() {
-      const columns = this.desc.columns
-      return Array.isArray(columns)
-        ? columns.map(value => (
-          isObject(value) ? value : { label: value }
-        ))
-        : isObject(columns)
-          ? Object.entries(columns).map(([name, value]) => (
-            isObject(value) ? { ...value, name } : { label: value, name }
-          ))
-          : null
+      return this.getNamedDescriptions(this.desc.columns)
+    },
+
+    scopes() {
+      return this.getNamedDescriptions(this.desc.scopes)
     },
 
     renderCells() {
@@ -232,7 +228,24 @@ export default DitoComponent.register('list', {
       return stripTags(this.renderCells(item)[0])
     },
 
-    sortBy(name) {
+    getNamedDescriptions(descs) {
+      return Array.isArray(descs)
+        ? descs.map(value => (
+          isObject(value) ? value : { label: value }
+        ))
+        : isObject(descs)
+          ? Object.entries(descs).map(([name, value]) => (
+            isObject(value) ? { ...value, name } : { label: value, name }
+          ))
+          : null
+    },
+
+    filterByScope(name) {
+      this.filterScope = name
+      this.loadData(false, { scope: name })
+    },
+
+    sortByColumn(name) {
       if (this.sortKey !== name) {
         this.sortKey = name
         this.sortOrder = 1
