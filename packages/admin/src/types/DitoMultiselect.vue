@@ -1,5 +1,5 @@
 <template lang="pug">
-  VueMultiselect.dito-multiselect(
+  vue-multiselect.dito-multiselect(
     :value="value",
     @input="onChanged",
     :data-vv-name="name",

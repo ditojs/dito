@@ -13,43 +13,49 @@
       )
         | {{ scope.label }}
     table
-      tr(v-if="columns")
-        th(
-          v-for="(column, index) in columns",
-          :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
-        )
-          button.dito-button(
-            v-if="column.sortable",
-            type="button",
-            :class="getSortClass(column.name)",
-            @click="sortByColumn(column.name)"
+      thead
+        tr(v-if="columns")
+          th(
+            v-for="(column, index) in columns",
+            :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
           )
-            .dito-arrows
-            .dito-column
+            button.dito-button(
+              v-if="column.sortable",
+              type="button",
+              :class="getSortClass(column.name)",
+              @click="sortByColumn(column.name)"
+            )
+              .dito-arrows
+              .dito-column
+                | {{ column.label }}
+            .dito-column(v-else)
               | {{ column.label }}
-          .dito-column(v-else)
-            | {{ column.label }}
-      tr(
-        v-for="item in listData || []",
-        :key="`${name}-${item.id}`"
+      vue-draggable(
+        element="tbody",
+        :list="listData",
+        :options="dragOptions"
       )
-        td(
-          v-for="html in renderCells(item)",
-          v-html="html"
+        tr(
+          v-for="item in listData || []",
+          :key="`${name}-${item.id}`"
         )
-        td.dito-buttons(v-if="hasButtons")
-          router-link(
-            v-if="desc.editable",
-            :to="`${route}${item.id}`", append,
-            tag="button",
-            type="button",
-            class="dito-button dito-button-edit"
+          td(
+            v-for="html in renderCells(item)",
+            v-html="html"
           )
-          button.dito-button.dito-button-delete(
-            v-if="desc.deletable",
-            type="button",
-            @click="remove(item)"
-          )
+          td.dito-buttons(v-if="hasButtons")
+            router-link(
+              v-if="desc.editable",
+              :to="`${route}${item.id}`", append,
+              tag="button",
+              type="button",
+              class="dito-button dito-button-edit"
+            )
+            button.dito-button.dito-button-delete(
+              v-if="desc.deletable",
+              type="button",
+              @click="remove(item)"
+            )
     .dito-buttons(v-if="desc.creatable")
       router-link(
         :to="`${route}create`", append,
@@ -141,6 +147,8 @@ $list-spacing: 3px
           button
             border-top-right-radius: $border-radius
             border-bottom-right-radius: $border-radius
+    .dito-drag-ghost
+      opacity: 0
     .dito-buttons
       text-align: right
       padding: $list-spacing
@@ -162,10 +170,13 @@ $list-spacing: 3px
           border-left: $border-style
           &:focus
             border-left-color: $color-active
+          &:active
+            border-left-color: $border-color
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import VueDraggable from 'vuedraggable'
 import ListMixin from '@/mixins/ListMixin'
 import escapeHtml from '@/utils/escapeHtml'
 import stripTags from '@/utils/stripTags'
@@ -173,6 +184,7 @@ import isObject from 'isobject'
 
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
+  components: {VueDraggable},
 
   data() {
     return {
@@ -220,6 +232,14 @@ export default DitoComponent.register('list', {
 
     hasButtons() {
       return this.desc.editable || this.desc.deletable
+    },
+
+    dragOptions() {
+      return {
+        animation: 150,
+        disabled: !this.desc.draggable,
+        ghostClass: 'dito-drag-ghost'
+      }
     }
   },
 
