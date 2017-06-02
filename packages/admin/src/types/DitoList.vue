@@ -12,19 +12,21 @@
       )
         | {{ scope }}
     table
-      tr(v-if="headers")
+      tr(v-if="columns")
         th(
-          v-for="header, index in headers",
-          :colspan="hasButtons && index === headers.length - 1 ? 2 : null"
+          v-for="(column, index) in columns",
+          :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
         )
           a(
-            v-if="isObject(header)",
+            v-if="column.sortable",
             href="#",
             @click.prevent=""
           )
             .dito-arrows
-            .dito-header {{ header.label }}
-          .dito-header(v-else) {{ header }}
+            .dito-column
+              | {{ column.label }}
+          .dito-column(v-else)
+            | {{ column.label }}
       tr(
         v-for="item in listData || []",
         :key="`${name}-${item.id}`"
@@ -71,22 +73,28 @@ $list-spacing: 3px
           margin-top: $list-spacing
       tr
         vertical-align: baseline
+      td,
       th,
-      td
+      th a,
+        padding: 0
         &:first-child
           border-top-left-radius: $border-radius
           border-bottom-left-radius: $border-radius
         &:last-child
           border-top-right-radius: $border-radius
           border-bottom-right-radius: $border-radius
-          padding-right: $list-spacing
+      td
+        padding: $list-spacing 0
+        padding-left: $form-spacing
+        background: $color-lightest
       th
         background: $color-lighter
         font-weight: normal
         text-align: left
+        padding-left: $border-width
         & + th
-          border-left: 1px solid $border-color
-        .dito-header
+          border-left: $border-style
+        .dito-column
           padding: $list-spacing 0
           padding-left: $form-spacing
         a
@@ -94,23 +102,19 @@ $list-spacing: 3px
           position: relative
           &:hover
             background-color: darken($color-lighter, 2.5%)
-          .dito-header,
+          .dito-column,
           .dito-arrows
             display: inline-block
           .dito-arrows
-            width: round($header-arrow-size * $math-sqrt2)
+            width: round($column-arrow-size * $math-sqrt2)
             padding-left: $form-spacing
-            $arrow-offset: $header-arrow-size / 2 + 1px
+            $arrow-offset: $column-arrow-size / 2 + 1px
             &::before
-              +arrow($header-arrow-size, true)
+              +arrow($column-arrow-size, true)
               bottom: $arrow-offset
             &::after
-              +arrow($header-arrow-size, false)
+              +arrow($column-arrow-size, false)
               top: $arrow-offset
-      td
-        padding: $list-spacing 0
-        padding-left: $form-spacing
-        background: $color-lightest
       // Support simple nested table styling
       table
         border-spacing: 0
@@ -136,7 +140,7 @@ $list-spacing: 3px
           border-radius: 0
           border-top-right-radius: 1em
           border-bottom-right-radius: 1em
-          border-left: 1px solid $border-color
+          border-left: $border-style
           &:focus
             border-left-color: $color-active
 </style>
@@ -152,21 +156,48 @@ export default DitoComponent.register('list', {
   mixins: [ListMixin],
 
   computed: {
+    columns() {
+      const columns = this.desc.columns
+      return Array.isArray(columns)
+        ? columns.map(value => (
+          isObject(value) ? value : { label: value }
+        ))
+        : isObject(columns)
+          ? Object.entries(columns).map(([name, value]) => (
+            isObject(value) ? { ...value, name } : { label: value, name }
+          ))
+          : null
+    },
+
     renderCells() {
-      const desc = this.desc
-      const render = desc.render
-      return function(item) {
-        const res = render && render(item) || item.html || escapeHtml(item.text)
-        return Array.isArray(res) ? res : [res]
-      }
+      const render = this.desc.render
+      const columns = this.columns
+      const firstColumn = columns && columns[0]
+      return !render && firstColumn && firstColumn.name
+        // If we have named columns, map their names to item attributes, with
+        // optional per-column render() functions:
+        ? item => {
+          return columns.map(column => {
+            const value = item[column.name]
+            return column.render
+              ? column.render.call(item, value)
+              : value
+          })
+        }
+        : item => {
+          const res = render && render(item) ||
+            item.html || escapeHtml(item.text)
+          const cells = Array.isArray(res) ? res : [res]
+          // Make sure we have the right amount of cells for the table
+          if (columns) {
+            cells.length = columns.length
+          }
+          return cells
+        }
     },
 
     hasButtons() {
       return this.desc.editable || this.desc.deletable
-    },
-
-    headers() {
-      return this.desc.headers
     }
   },
 
