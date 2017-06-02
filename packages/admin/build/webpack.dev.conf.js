@@ -15,8 +15,10 @@ module.exports = merge(baseWebpackConfig, {
   module: {
     rules: utils.styleLoaders({ sourceMap: config.dev.cssSourceMap })
   },
-  // cheap-module-eval-source-map is faster for development
-  devtool: '#cheap-module-eval-source-map',
+  // '#cheap-module-eval-source-map' doesn't seem to be working for Chrome at
+  // the moment, see:
+  // https://github.com/webpack/webpack/issues/2145#issuecomment-294361203
+  devtool: '#cheap-module-source-map',
   plugins: [
     new webpack.DefinePlugin({
       'process.env': config.dev.env
