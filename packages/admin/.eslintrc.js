@@ -28,6 +28,7 @@ module.exports = {
     'no-constant-condition': isProduction ? 2 : 0,
     'no-new': 0,
     'no-new-func': 0,
+    'no-mixed-operators': 0,
     'space-before-function-paren': 0
   }
 }
