@@ -45,6 +45,7 @@
     &,
     form
       // To make vertical scrolling in .dito-scroll work
+      flex: 1
       display: flex
       flex-flow: column
     .dito-content
