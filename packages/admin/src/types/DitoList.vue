@@ -17,10 +17,10 @@
           v-for="(column, index) in columns",
           :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
         )
-          a(
+          button.dito-button(
             v-if="column.sortable",
-            href="#",
-            @click.prevent=""
+            @click="sortBy(column.name)"
+            :class="getSortClass(column.name)"
           )
             .dito-arrows
             .dito-column
@@ -73,48 +73,9 @@ $list-spacing: 3px
           margin-top: $list-spacing
       tr
         vertical-align: baseline
-      td,
-      th,
-      th a,
-        padding: 0
-        &:first-child
-          border-top-left-radius: $border-radius
-          border-bottom-left-radius: $border-radius
-        &:last-child
-          border-top-right-radius: $border-radius
-          border-bottom-right-radius: $border-radius
       td
-        padding: $list-spacing 0
-        padding-left: $form-spacing
+        padding: $list-spacing 0 $list-spacing $form-spacing
         background: $color-lightest
-      th
-        background: $color-lighter
-        font-weight: normal
-        text-align: left
-        padding-left: $border-width
-        & + th
-          border-left: $border-style
-        .dito-column
-          padding: $list-spacing 0
-          padding-left: $form-spacing
-        a
-          display: block
-          position: relative
-          &:hover
-            background-color: darken($color-lighter, 2.5%)
-          .dito-column,
-          .dito-arrows
-            display: inline-block
-          .dito-arrows
-            width: round($column-arrow-size * $math-sqrt2)
-            padding-left: $form-spacing
-            $arrow-offset: $column-arrow-size / 2 + 1px
-            &::before
-              +arrow($column-arrow-size, true)
-              bottom: $arrow-offset
-            &::after
-              +arrow($column-arrow-size, false)
-              top: $arrow-offset
       // Support simple nested table styling
       table
         border-spacing: 0
@@ -122,6 +83,64 @@ $list-spacing: 3px
           padding: 0
           & + td
             padding-left: $form-spacing
+      th
+        padding: 0
+        background: $color-lighter
+        font-weight: normal
+        text-align: left
+        & + th
+          border-left: $border-style
+        .dito-column
+          padding: $button-padding-ver 0
+          margin-left: $form-spacing
+          // When there's no sort-button, add a 1px border to get same height
+          &:first-child
+            border: 1px solid transparent
+        button
+          padding: 0
+          width: 100%
+          text-align: inherit
+          border-radius: 0
+          &:hover
+            background: $button-color-hover
+          .dito-column,
+          .dito-arrows
+            display: inline-block
+          .dito-arrows
+            width: round($column-arrow-size * $math-sqrt2)
+            padding-left: $form-spacing + $border-width
+            $arrow-offset: $column-arrow-size / 2 + $border-width
+            &::before
+              +arrow($column-arrow-size, true)
+              bottom: $arrow-offset
+            &::after
+              +arrow($column-arrow-size, false)
+              top: $arrow-offset
+          &.dito-active
+            background: $button-color-active
+            &.dito-order-asc .dito-arrows
+              &::before
+                bottom: 0
+              &::after
+                display: none
+            &.dito-order-desc .dito-arrows
+              &::before
+                display: none
+              &::after
+                top: 0
+      // Add rounded corners in first & last cells / headers
+      td,
+      th,
+        &:first-child
+          &,
+          button
+            border-top-left-radius: $border-radius
+            border-bottom-left-radius: $border-radius
+        &:last-child
+          &,
+          button
+            border-top-right-radius: $border-radius
+            border-bottom-right-radius: $border-radius
     .dito-buttons
       text-align: right
       padding: $list-spacing
@@ -154,6 +173,13 @@ import isObject from 'isobject'
 
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
+
+  data() {
+    return {
+      sortKey: null,
+      sortOrder: 1
+    }
+  },
 
   computed: {
     columns() {
@@ -204,6 +230,21 @@ export default DitoComponent.register('list', {
   methods: {
     getTitle(item) {
       return stripTags(this.renderCells(item)[0])
+    },
+
+    sortBy(name) {
+      if (this.sortKey !== name) {
+        this.sortKey = name
+        this.sortOrder = 1
+      } else {
+        this.sortOrder *= -1
+      }
+    },
+
+    getSortClass(name) {
+      return this.sortKey === name
+        ? `dito-active dito-order-${this.sortOrder > 0 ? 'asc' : 'desc'}`
+        : null
     },
 
     isObject

@@ -55,7 +55,7 @@
         font-size: $menu-font-size
         button
           border-radius: 2em
-          padding: 0.4em 0.9em
+          padding: 0.3em 0.9em
 </style>
 
 <script>

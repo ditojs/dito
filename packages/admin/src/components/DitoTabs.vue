@@ -10,7 +10,7 @@
 
 <style lang="sass">
 $tab-color-background: $color-white
-$tab-color-inactive: $color-button
+$tab-color-inactive: $button-color
 $tab-color-hover: lighten($tab-color-inactive, 5%)
 $tab-color-active: $tab-color-inactive
 
