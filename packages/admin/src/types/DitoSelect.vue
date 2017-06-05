@@ -15,6 +15,22 @@
           | {{ getLabel(option) }}
 </template>
 
+<style lang="sass">
+@import 'mixins/arrow'
+
+.dito
+  .dito-select
+    display: inline-block
+    position: relative
+    select
+      padding-right: 2.5em
+    &::after
+      +arrow($select-arrow-size)
+      bottom: 2px
+      right: $select-right-margin
+
+</style>
+
 <script>
 import DitoComponent from '@/DitoComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'

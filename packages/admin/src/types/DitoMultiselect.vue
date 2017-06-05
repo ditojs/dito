@@ -21,6 +21,8 @@
 
 <style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
+@import 'mixins/arrow'
+
 .dito
   $spinner-size: 1.3em
   $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
@@ -59,6 +61,8 @@
       width: 0
       margin-right: $select-right-margin
       &::before
+        +arrow($select-arrow-size)
+        bottom: 2px
         right: -$select-arrow-size / 2
 
     .multiselect__spinner
