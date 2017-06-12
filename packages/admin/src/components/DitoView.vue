@@ -3,10 +3,10 @@
     div.dito-scroll(v-show="isLastRoute")
       .dito-debug API endpoint: {{ endpoint }}
       component.dito-component.dito-content(
-        :is="typeToComponent(viewDesc.type)",
-        :name="name",
-        :desc="viewDesc",
-        :data="data",
+        :is="typeToComponent(viewDesc.type)"
+        :name="name"
+        :desc="viewDesc"
+        :data="data"
         :meta="meta"
       )
     router-view(v-if="!isLastRoute")

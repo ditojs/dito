@@ -2,21 +2,21 @@
   ul.dito-panel.dito-layout-vertical(v-if="desc.components")
     li(v-for="(comp, key) in desc.components")
       dito-label(
-        v-if="comp.label",
-        :name="key",
+        v-if="comp.label"
+        :name="key"
         :text="comp.label"
       )
       component.dito-component(
-        :is="typeToComponent(comp.type)",
-        :name="key",
-        :desc="comp",
-        :data="data",
-        :meta="meta",
-        :disabled="comp.disabled || disabled",
+        :is="typeToComponent(comp.type)"
+        :name="key"
+        :desc="comp"
+        :data="data"
+        :meta="meta"
+        :disabled="comp.disabled || disabled"
         :class="{ 'dito-has-errors': errors.has(key) }"
       )
       dito-errors(
-        v-if="errors.has(key)",
+        v-if="errors.has(key)"
         :name="key"
       )
 </template>

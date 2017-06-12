@@ -1,12 +1,12 @@
 <template lang="pug">
   textarea.dito-textarea.dito-input(
-    :id="name",
-    :name="name",
-    v-model="data[name]",
-    v-validate="validations",
-    :rows="desc.lines || 4",
-    :placeholder="placeholder",
-    :disabled="disabled",
+    :id="name"
+    :name="name"
+    v-model="data[name]"
+    v-validate="validations"
+    :rows="desc.lines || 4"
+    :placeholder="placeholder"
+    :disabled="disabled"
     :readonly="readonly"
   )
 </template>

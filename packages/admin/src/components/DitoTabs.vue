@@ -2,7 +2,7 @@
   .dito-tabs(v-if="tabs")
     template(v-for="(tabDesc, key) in tabs")
       a(
-        :href="`#${key}`",
+        :href="`#${key}`"
         :class="{ selected: selectedTab === key }"
       )
         | {{ tabDesc.label }}

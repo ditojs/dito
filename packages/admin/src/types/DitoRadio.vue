@@ -1,16 +1,16 @@
 <template lang="pug">
   ul.dito-radio-buttons(
-    :id="name",
+    :id="name"
     :class="`dito-layout-${desc.layout || 'vertical'}`"
   )
     li(v-for="option in options")
       label
         input.dito-radio-button(
-          :name="name",
-          type="radio",
-          v-model="data[name]",
-          v-validate="validations",
-          :disabled="disabled",
+          :name="name"
+          type="radio"
+          v-model="data[name]"
+          v-validate="validations"
+          :disabled="disabled"
           :value="getValue(option)"
         )
         | {{ getLabel(option) }}

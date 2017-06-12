@@ -1,20 +1,20 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
-    :value="value",
-    @input="onChanged",
-    :data-vv-name="name",
-    v-validate="validations",
-    :show-labels="false",
-    :placeholder="desc.placeholder",
-    :options="options || []",
-    :label="labelKey",
-    :track-by="valueKey",
-    :group-label="groupLabelKey",
-    :group-values="groupOptionsKey",
-    :searchable="desc.searchable",
-    :multiple="desc.multiple",
-    :internal-search="true",
-    :close-on-select="true",
+    :value="value"
+    @input="onChanged"
+    :data-vv-name="name"
+    v-validate="validations"
+    :show-labels="false"
+    :placeholder="desc.placeholder"
+    :options="options || []"
+    :label="labelKey"
+    :track-by="valueKey"
+    :group-label="groupLabelKey"
+    :group-values="groupOptionsKey"
+    :searchable="desc.searchable"
+    :multiple="desc.multiple"
+    :internal-search="true"
+    :close-on-select="true"
     :loading="loading"
   )
 </template>

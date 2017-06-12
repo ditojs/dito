@@ -1,14 +1,14 @@
 <template lang="pug">
   .dito-list
     dito-errors(
-      v-if="errors.has('dito-data')",
+      v-if="errors.has('dito-data')"
       name="dito-data"
     )
     .dito-scopes(v-if="scopes")
       button.dito-button(
-        v-for="scope in scopes",
-        type="button",
-          :class="{ 'dito-active': scope.name === filterScope }",
+        v-for="scope in scopes"
+        type="button"
+          :class="{ 'dito-active': scope.name === filterScope }"
         @click="filterByScope(scope.name || scope.label.toLowerCase())"
       )
         | {{ scope.label }}
@@ -16,13 +16,13 @@
       thead
         tr(v-if="columns")
           th(
-            v-for="(column, index) in columns",
+            v-for="(column, index) in columns"
             :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
           )
             button.dito-button(
-              v-if="column.sortable",
-              type="button",
-              :class="getSortClass(column.name)",
+              v-if="column.sortable"
+              type="button"
+              :class="getSortClass(column.name)"
               @click="sortByColumn(column.name)"
             )
               .dito-arrows
@@ -31,36 +31,36 @@
             .dito-column(v-else)
               | {{ column.label }}
       vue-draggable(
-        element="tbody",
-        :list="listData",
+        element="tbody"
+        :list="listData"
         :options="dragOptions"
       )
         tr(
-          v-for="item in listData || []",
+          v-for="item in listData || []"
           :key="`${name}-${item.id}`"
         )
           td(
-            v-for="html in renderCells(item)",
+            v-for="html in renderCells(item)"
             v-html="html"
           )
           td.dito-buttons(v-if="hasButtons")
             router-link(
-              v-if="desc.editable",
-              :to="`${route}${item.id}`", append,
-              tag="button",
-              type="button",
+              v-if="desc.editable"
+              :to="`${route}${item.id}`" append
+              tag="button"
+              type="button"
               class="dito-button dito-button-edit"
             )
             button.dito-button.dito-button-delete(
-              v-if="desc.deletable",
-              type="button",
+              v-if="desc.deletable"
+              type="button"
               @click="remove(item)"
             )
     .dito-buttons(v-if="desc.creatable")
       router-link(
-        :to="`${route}create`", append,
-        tag="button",
-        type="button",
+        :to="`${route}create`" append
+        tag="button"
+        type="button"
         class="dito-button dito-button-create"
       )
 </template>

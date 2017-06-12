@@ -1,13 +1,13 @@
 <template lang="pug">
   input.dito-number.dito-input(
-    :id="name",
-    :name="name",
-    type="number",
-    v-model="data[name]",
-    v-validate="validations",
-    :placeholder="placeholder",
-    :disabled="disabled",
-    :readonly="readonly",
+    :id="name"
+    :name="name"
+    type="number"
+    v-model="data[name]"
+    v-validate="validations"
+    :placeholder="placeholder"
+    :disabled="disabled"
+    :readonly="readonly"
     :step="step"
   )
 </template>

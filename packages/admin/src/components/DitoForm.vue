@@ -1,39 +1,39 @@
 <template lang="pug">
   .dito-form
-    form(v-show="isLastRoute", @submit.prevent="submit")
+    form(v-show="isLastRoute" @submit.prevent="submit")
       .dito-debug API endpoint: {{ endpoint }}
       dito-errors(
-        v-if="errors.has('dito-data')",
+        v-if="errors.has('dito-data')"
         name="dito-data"
       )
       dito-tabs(
-        :tabs="tabs",
+        :tabs="tabs"
         :selectedTab="selectedTab"
       )
       .dito-scroll
         .dito-content
           template(v-for="(tabDesc, key) in tabs")
             dito-panel(
-              v-show="selectedTab === key",
-              :desc="tabDesc",
-              :data="data || {}",
-              :meta="meta",
+              v-show="selectedTab === key"
+              :desc="tabDesc"
+              :data="data || {}"
+              :meta="meta"
               :disabled="loading"
             )
           dito-panel(
-            :desc="formDesc",
-            :data="data || {}",
-            :meta="meta",
+            :desc="formDesc"
+            :data="data || {}"
+            :meta="meta"
             :disabled="loading"
           )
           .dito-buttons
             button.dito-button.dito-button-cancel(
-              type="button",
+              type="button"
               @click.prevent="cancel"
             )
             button.dito-button(
-              v-if="!errors.has('dito-data')",
-              type="submit",
+              v-if="!errors.has('dito-data')"
+              type="submit"
               :class="`dito-button-${create ? 'create' : 'save'}`"
             )
     router-view(v-if="!isLastRoute")
