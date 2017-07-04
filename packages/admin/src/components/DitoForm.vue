@@ -102,10 +102,12 @@ export default DitoComponent.component('dito-form', {
 
     endpoint() {
       return this.transient
-          ? '_transient_'
-          : this.getEndpoint(this.method,
-              this.create ? 'collection' : 'member',
-              this.id)
+        ? '_transient_'
+        : this.getEndpoint(
+          this.method,
+          this.create ? 'collection' : 'member',
+          this.id
+        )
     },
 
     tabs() {
@@ -147,7 +149,8 @@ export default DitoComponent.component('dito-form', {
       // See if we can find entry by id in the parent list.
       const list = this.parentList
       const entry = list && this.id && list.find(
-          entry => entry.id + '' === this.id)
+        entry => entry.id + '' === this.id
+      )
       // If we found the entry in the parent list and there is no resetData
       // object already, store a clone of the entry for restoring on cancel.
       if (entry && !this.resetData) {
@@ -203,7 +206,7 @@ export default DitoComponent.component('dito-form', {
         const index = this.parentList.indexOf(this.parentEntry)
         if (index >= 0) {
           this.$set(this.parentList, index,
-              Object.assign({}, this.parentEntry, data))
+            Object.assign({}, this.parentEntry, data))
           return true
         }
       }
@@ -241,7 +244,8 @@ export default DitoComponent.component('dito-form', {
 
     goBack(reload, checkDirty) {
       if (!checkDirty || (!this.isDirty || confirm(
-          'You have unsaved changed. Do you really want to go back?'))) {
+        'You have unsaved changed. Do you really want to go back?'))
+      ) {
         this.$router.push({ path: '..', append: true })
         // Tell the parent to reload its data if this was a submit()
         const parent = this.parentRouteComponent

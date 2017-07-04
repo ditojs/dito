@@ -37,7 +37,7 @@ export default {
   methods: {
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](this.viewDesc, this.formDesc,
-          type === 'collection' ? this.parentFormComponent : id)
+        type === 'collection' ? this.parentFormComponent : id)
     },
 
     isTransient(item) {
@@ -92,8 +92,11 @@ export default {
 
     requestAxios(method, path, params, payload, callback) {
       // TODO: move params into config and pass after payload
-      axios[method](this.api.baseUrl + path, params,
-          payload && JSON.stringify(payload))
+      axios[method](
+        this.api.baseUrl + path,
+        params,
+        payload && JSON.stringify(payload)
+      )
         .then(response => {
           // TODO: Deal with status!
           console.log(response.status)

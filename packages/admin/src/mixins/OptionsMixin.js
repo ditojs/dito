@@ -19,12 +19,12 @@ export default {
           .then(response => {
             this.loading = false
             this.options = options.groupBy
-                ? this.groupBy(response.data, options.groupBy)
-                : response.data
+              ? this.groupBy(response.data, options.groupBy)
+              : response.data
           })
           .catch(error => {
             this.errors.add(this.name,
-                error.response && error.response.data || error.message)
+              error.response && error.response.data || error.message)
             this.options = null
             this.loading = false
           })

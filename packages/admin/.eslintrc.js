@@ -29,6 +29,9 @@ module.exports = {
     'no-new': 0,
     'no-new-func': 0,
     'no-mixed-operators': 0,
-    'space-before-function-paren': 0
+    'space-before-function-paren': 0,
+    'indent': ["error", 2, {
+      "flatTernaryExpressions": true
+    }]
   }
 }

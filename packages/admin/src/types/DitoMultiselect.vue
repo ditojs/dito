@@ -162,8 +162,8 @@ export default DitoComponent.register('multiselect', {
       // itself unfortunately. `track-by` is only used for :key mapping I think.
       let value = this.data[this.name]
       return this.valueKey
-          ? this.findOption(this.options, value, this.desc.options.groupBy)
-          : value
+        ? this.findOption(this.options, value, this.desc.options.groupBy)
+        : value
     }
   },
 
@@ -171,8 +171,8 @@ export default DitoComponent.register('multiselect', {
     onChanged(value) {
       // When changes happend store the mapped value instead of the full object.
       this.data[this.name] = this.valueKey
-          ? value && value[this.valueKey]
-          : value
+        ? value && value[this.valueKey]
+        : value
     }
   }
 })

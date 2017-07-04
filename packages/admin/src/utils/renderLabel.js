@@ -5,8 +5,8 @@ export default function renderLabel(desc, name) {
     /([-_]|^)(\w)|([a-z])([A-Z])/g,
     function(all, hyphen, hyphenated, camelLeft, camelRight) {
       return hyphenated
-          ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
-          : `${camelLeft} ${camelRight}`
+        ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
+        : `${camelLeft} ${camelRight}`
     }
   )
 }

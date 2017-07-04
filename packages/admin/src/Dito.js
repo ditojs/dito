@@ -34,22 +34,26 @@ function addViewRoute(routes, viewDesc, viewName, options, level) {
   // Root views have their own routes and entries in the breadcrumbs, and the
   // form routes are children of the view route. Nested lists in forms don't
   // have views and routes, so their form routes need the viewName prefixed.
-  const formRoutes = formDesc && getFormRoutes(root ? '' : `${viewName}/`,
-      formDesc, formName, options, meta, level)
-  routes.push(root
-    ? {
-      path: `/${viewName}`,
-      children: formRoutes,
-      component: DitoView,
-      meta: Object.assign({
-        label: viewDesc.label
-      }, meta)
-    }
-    // Just redirect back to the form if the user enters a nested list route.
-    : {
-      path: viewName,
-      redirect: '.'
-    },
+  const formRoutes = formDesc && getFormRoutes(
+    root ? '' : `${viewName}/`,
+    formDesc, formName, options, meta, level
+  )
+
+  routes.push(
+    root
+      ? {
+        path: `/${viewName}`,
+        children: formRoutes,
+        component: DitoView,
+        meta: Object.assign({
+          label: viewDesc.label
+        }, meta)
+      }
+      // Just redirect back to the form if the user enters a nested list route.
+      : {
+        path: viewName,
+        redirect: '.'
+      },
     // Include the prefixed formRoutes for nested lists.
     ...(!root && formRoutes)
   )
@@ -98,8 +102,8 @@ function getEndpoints(endpoints) {
 
     collection(viewDesc, formDesc, parentForm) {
       return parentForm
-          ? `${parentForm.name}/${parentForm.id}/${viewDesc.name}`
-          : viewDesc.name
+        ? `${parentForm.name}/${parentForm.id}/${viewDesc.name}`
+        : viewDesc.name
     }
   }
   const results = {}
