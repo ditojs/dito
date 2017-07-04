@@ -7,7 +7,7 @@ import DitoComponent from './DitoComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import renderLabel from './utils/renderLabel'
+import { hyphenate } from './utils/string'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -20,111 +20,116 @@ const user = {
   role: 'admin' // TODO
 }
 
-function addViewRoute(routes, viewDesc, viewName, options, level) {
-  viewDesc.name = viewName
-  viewDesc.label = renderLabel(viewDesc, viewName)
-  const formName = viewDesc.form
-  const formDesc = viewDesc.formDesc = formName && options.forms[formName]
-  const meta = {
-    viewDesc,
-    user,
-    api: options.api
+export function setup(el, options) {
+  const api = options.api
+  api.normalize = api.normalize || hyphenate
+
+  function addViewRoute(routes, viewDesc, viewName, level) {
+    const path = api.normalize(viewName)
+    viewDesc.path = path
+    viewDesc.name = viewName
+    const formName = viewDesc.form
+    const formDesc = viewDesc.formDesc = formName && options.forms[formName]
+    const meta = {
+      viewDesc,
+      user,
+      api
+    }
+    const root = level === 0
+    // Root views have their own routes and entries in the breadcrumbs, and the
+    // form routes are children of the view route. Nested lists in forms don't
+    // have views and routes, so their form routes need the viewName prefixed.
+    const formRoutes = formDesc && getFormRoutes(
+      root ? '' : `${path}/`,
+      formDesc, formName, meta, level
+    )
+
+    routes.push(
+      root
+        ? {
+          path: `/${path}`,
+          children: formRoutes,
+          component: DitoView,
+          meta: Object.assign({
+            labelDesc: viewDesc
+          }, meta)
+        }
+        // Just redirect back to the form if the user enters a nested list route.
+        : {
+          path: path,
+          redirect: '.'
+        },
+      // Include the prefixed formRoutes for nested lists.
+      ...(!root && formRoutes)
+    )
   }
-  const root = level === 0
-  // Root views have their own routes and entries in the breadcrumbs, and the
-  // form routes are children of the view route. Nested lists in forms don't
-  // have views and routes, so their form routes need the viewName prefixed.
-  const formRoutes = formDesc && getFormRoutes(
-    root ? '' : `${viewName}/`,
-    formDesc, formName, options, meta, level
-  )
 
-  routes.push(
-    root
-      ? {
-        path: `/${viewName}`,
-        children: formRoutes,
-        component: DitoView,
-        meta: Object.assign({
-          label: viewDesc.label
-        }, meta)
-      }
-      // Just redirect back to the form if the user enters a nested list route.
-      : {
-        path: viewName,
-        redirect: '.'
-      },
-    // Include the prefixed formRoutes for nested lists.
-    ...(!root && formRoutes)
-  )
-}
-
-function getFormRoutes(routePrefix, formDesc, formName, options, meta, level) {
-  formDesc.name = formName
-  formDesc.label = renderLabel(formDesc, formName)
-  const children = []
-  const tabs = formDesc.tabs
-
-  function addRoutes(components) {
+  function addViewRoutes(routes, components, level) {
     for (let name in components) {
       const desc = components[name]
       if (desc.form && !desc.inline) {
-        addViewRoute(children, desc, name, options, level + 1)
+        addViewRoute(routes, desc, name, level)
       }
     }
   }
 
-  for (let name in tabs) {
-    addRoutes(tabs[name].components)
-  }
-  addRoutes(formDesc.components)
-
-  // We need to use differently named url parameters on each nested level for id
-  // as otherwise they would clash and override each other inside $route.params
-  // See: https://github.com/vuejs/vue-router/issues/1345
-  const param = `id${level + 1}`
-  return [{
-    path: `${routePrefix}:${param}`,
-    component: DitoForm,
-    children,
-    meta: Object.assign({
-      label: formDesc.label,
-      param
-    }, meta)
-  }]
-}
-
-function getEndpoints(endpoints) {
-  const defaultEndpoints = {
-    member(viewDesc, formDesc, id) {
-      return `${formDesc.name}/${id}`
-    },
-
-    collection(viewDesc, formDesc, parentForm) {
-      return parentForm
-        ? `${parentForm.name}/${parentForm.id}/${viewDesc.name}`
-        : viewDesc.name
+  function getFormRoutes(pathPrefix, formDesc, formName, meta, level) {
+    const path = api.normalize(formName)
+    formDesc.path = path
+    formDesc.name = formName
+    const children = []
+    const tabs = formDesc.tabs
+    for (let name in tabs) {
+      addViewRoutes(children, tabs[name].components, level + 1)
     }
-  }
-  const results = {}
-  for (let method of ['get', 'post', 'put', 'patch', 'delete']) {
-    const entry = endpoints && endpoints[method]
-    const functions = results[method] = {}
-    for (let type in defaultEndpoints) {
-      functions[type] = entry && entry[type] || defaultEndpoints[type]
-    }
-  }
-  return results
-}
+    addViewRoutes(children, formDesc.components, level + 1)
 
-function setup(el, options) {
-  const api = options.api
+    // Use differently named url parameters on each nested level for id as
+    // otherwise they would clash and override each other inside $route.params
+    // See: https://github.com/vuejs/vue-router/issues/1345
+    const param = `id${level + 1}`
+    return [{
+      path: `${pathPrefix}:${param}`,
+      component: DitoForm,
+      children,
+      meta: Object.assign({
+        labelDesc: formDesc,
+        param
+      }, meta)
+    }]
+  }
+
+  function getEndpoints(endpoints) {
+    const defaultEndpoints = {
+      member(viewDesc, formDesc, itemId) {
+        return `${viewDesc.path}/${itemId}`
+      },
+
+      collection(viewDesc, formDesc, parentForm) {
+        return parentForm
+          ? `${parentForm.viewDesc.path}/${parentForm.itemId}/${viewDesc.path}`
+          : viewDesc.path
+      }
+    }
+    const results = {}
+    for (let method of ['get', 'post', 'put', 'patch', 'delete']) {
+      const entry = endpoints && endpoints[method]
+      const functions = results[method] = {}
+      for (let type in defaultEndpoints) {
+        functions[type] = entry && entry[type] || defaultEndpoints[type]
+      }
+    }
+    return results
+  }
+
   api.endpoints = getEndpoints(api.endpoints)
 
   const views = options.views
+  const settings = options.settings
   const routes = []
+
   for (let name in views) {
-    addViewRoute(routes, views[name], name, options, 0)
+    addViewRoute(routes, views[name], name, 0)
   }
 
   new Vue({
@@ -137,12 +142,14 @@ function setup(el, options) {
     components: {DitoRoot},
     data: {
       views,
-      settings: options.settings
+      settings
     }
   })
 }
 
+export const register = DitoComponent.register
+
 export default {
   setup,
-  register: DitoComponent.register
+  register
 }

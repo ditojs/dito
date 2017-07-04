@@ -66,8 +66,8 @@ export default DitoComponent.component('dito-path', {
       const parts = this.$route.path.split('/')
       const matched = []
       let index = 0
-      for (let match of this.$route.matched) {
-        let end = match.path.split('/').length
+      for (let record of this.$route.matched) {
+        let end = record.path.split('/').length
         matched.push(parts.slice(index, end).join('/'))
         index = end
       }
@@ -83,7 +83,7 @@ export default DitoComponent.component('dito-path', {
     getLabel(route) {
       const param = this.$route.params[route.meta.param]
       const prefix = param ? param === 'create' ? 'Create ' : 'Edit ' : ''
-      return prefix + route.meta.label
+      return prefix + this.renderLabel(route.meta.labelDesc)
     }
   }
 })

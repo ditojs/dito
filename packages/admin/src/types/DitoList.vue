@@ -36,7 +36,7 @@
         :options="dragOptions"
       )
         tr(
-          v-for="item in listData || []"
+          v-for="item, index in listData || []"
           :key="`${name}-${item.id}`"
         )
           td(
@@ -46,7 +46,7 @@
           td.dito-buttons(v-if="hasButtons")
             router-link(
               v-if="desc.editable"
-              :to="`${route}${item.id}`" append
+              :to="`${path}${getItemId(item, index)}`" append
               tag="button"
               type="button"
               class="dito-button dito-button-edit"
@@ -58,7 +58,7 @@
             )
     .dito-buttons(v-if="desc.creatable")
       router-link(
-        :to="`${route}create`" append
+        :to="`${path}create`" append
         tag="button"
         type="button"
         class="dito-button dito-button-create"
@@ -178,8 +178,7 @@ $list-spacing: 3px
 import DitoComponent from '@/DitoComponent'
 import VueDraggable from 'vuedraggable'
 import ListMixin from '@/mixins/ListMixin'
-import escapeHtml from '@/utils/escapeHtml'
-import stripTags from '@/utils/stripTags'
+import {escapeHtml, stripTags} from '@/utils/html'
 import isObject from 'isobject'
 
 export default DitoComponent.register('list', {

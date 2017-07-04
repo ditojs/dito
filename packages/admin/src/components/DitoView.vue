@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-view
-    div.dito-scroll(v-show="isLastRoute")
+    div.dito-scroll(v-if="isLastRoute")
       .dito-debug API endpoint: {{ endpoint }}
       component.dito-component.dito-content(
         :is="typeToComponent(viewDesc.type)"
@@ -9,7 +9,7 @@
         :data="data"
         :meta="meta"
       )
-    router-view(v-if="!isLastRoute")
+    router-view(v-else)
 </template>
 
 <style lang="sass">
@@ -53,7 +53,7 @@ export default DitoComponent.component('dito-view', {
     },
 
     shouldLoad() {
-      return this.isLastRoute && !this.loadedData
+      return this.isLastDataRoute && !this.loadedData
     }
   },
 

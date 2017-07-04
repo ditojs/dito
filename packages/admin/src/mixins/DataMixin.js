@@ -24,7 +24,7 @@ export default {
 
   watch: {
     $route() {
-      if (this.isLastRoute) {
+      if (this.isLastDataRoute) {
         // Execute in next tick so implementing components can also watch $route
         // and handle changes that affect initData(), e.g. in DitoView.
         this.$nextTick(function() {
@@ -42,6 +42,10 @@ export default {
 
     isTransient(item) {
       return item && /^_/.test(item.id)
+    },
+
+    getItemId(item, index) {
+      return String(this.viewDesc.embedded ? index : item.id)
     },
 
     setData(data) {
@@ -75,7 +79,7 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
-    request(method, path, params, payload, callback) {
+    async request(method, path, params, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
       this.setLoading(true)
@@ -90,21 +94,25 @@ export default {
       })
     },
 
-    requestAxios(method, path, params, payload, callback) {
-      // TODO: move params into config and pass after payload
-      axios[method](
-        this.api.baseUrl + path,
-        params,
-        payload && JSON.stringify(payload)
-      )
-        .then(response => {
-          // TODO: Deal with status!
-          console.log(response.status)
-          callback(null, response.data)
-        })
-        .catch(error => {
-          callback(error)
-        })
+    async requestAxios(method, path, params, payload, callback) {
+      const config = {
+        baseURL: this.api.baseURL,
+        headers: this.api.headers || {
+          'Content-Type': 'application/json'
+        },
+        params
+      }
+
+      try {
+        const response = /^(post|put|patch)$/.test(method)
+          ? await axios[method](path, JSON.stringify(payload), config)
+          : await axios[method](path, config)
+        // TODO: Deal with / pass on status!
+        console.log(response.status, response.data)
+        callback(null, response.data)
+      } catch (err) {
+        callback(err)
+      }
     }
   }
 }

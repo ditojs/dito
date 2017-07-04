@@ -2,8 +2,8 @@
   nav.dito-menu
     h1 Dito Admin
     ul
-      li(v-for="(desc, name) in views")
-        router-link(:to="`/${name}`") {{ renderLabel(desc, name) }}
+      li(v-for="desc in views")
+        router-link(:to="`/${desc.path}`") {{ renderLabel(desc) }}
 </template>
 
 <style lang="sass">
@@ -30,15 +30,10 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import renderLabel from '@/utils/renderLabel'
 
 export default DitoComponent.component('dito-menu', {
   props: {
     views: { type: Object, required: true }
-  },
-
-  methods: {
-    renderLabel
   }
 })
 </script>

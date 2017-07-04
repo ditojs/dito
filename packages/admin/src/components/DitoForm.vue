@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-form
-    form(v-show="isLastRoute" @submit.prevent="submit")
+    form(v-if="isLastRoute" @submit.prevent="submit")
       .dito-debug API endpoint: {{ endpoint }}
       dito-errors(
         v-if="errors.has('dito-data')"
@@ -36,7 +36,7 @@
               type="submit"
               :class="`dito-button-${create ? 'create' : 'save'}`"
             )
-    router-view(v-if="!isLastRoute")
+    router-view(v-else)
 </template>
 
 <style lang="sass">
@@ -70,8 +70,9 @@ export default DitoComponent.component('dito-form', {
 
   data() {
     return {
-      createData: null,
-      resetData: null,
+      createdData: null,
+      clonedData: undefined,
+      clonedId: null,
       isForm: true,
       components: {}
     }
@@ -87,7 +88,7 @@ export default DitoComponent.component('dito-form', {
       return this.param === 'create'
     },
 
-    id() {
+    itemId() {
       return this.create ? null : this.param
     },
 
@@ -100,14 +101,20 @@ export default DitoComponent.component('dito-form', {
       return parent && (parent.transient || parent.create)
     },
 
+    embedded() {
+      return !!this.viewDesc.embedded
+    },
+
     endpoint() {
-      return this.transient
-        ? '_transient_'
-        : this.getEndpoint(
-          this.method,
-          this.create ? 'collection' : 'member',
-          this.id
-        )
+      return this.embedded
+        ? '_embedded_'
+        : this.transient
+          ? '_transient_'
+          : this.getEndpoint(
+            this.method,
+            this.create ? 'collection' : 'member',
+            this.itemId
+          )
     },
 
     tabs() {
@@ -122,47 +129,46 @@ export default DitoComponent.component('dito-form', {
 
     data() {
       // Return differnent data "containers" based on different scenarios:
-      // 1. createData, if we're in a form for a newly created object.
+      // 1. createdData, if we're in a form for a newly created object.
       // 2. loadedData, if the form itself is the root of the data (e.g. when
       //    directly loading an editing root).
       // 3. The data inherited from the parent, which itself may be either a
       //    view that loaded the data, or a form that either loaded the data, or
-      //    also inherited it from its parent.
-      return this.createData || this.loadedData || this.parentEntry
-    },
-
-    parentData() {
-      return this.parentRouteComponent.data
+      //    also inherited it from its parent. Note that we use a clone of it,
+      //    so, data changes aren't inherited until setInheritedData() is called.
+      return this.createdData || this.loadedData || this.inheritedData
     },
 
     parentList() {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
-      const parentData = this.parentData
+      const parentData = this.parentRouteComponent.data
       const name = this.viewDesc.name
       // If there is parentData but no list, create and return it on the fly.
       return parentData && (parentData[name] || this.$set(parentData, name, []))
     },
 
-    parentEntry() {
-      // See if we can find entry by id in the parent list.
+    inheritedData() {
       const list = this.parentList
-      const entry = list && this.id && list.find(
-        entry => entry.id + '' === this.id
-      )
-      // If we found the entry in the parent list and there is no resetData
-      // object already, store a clone of the entry for restoring on cancel.
-      if (entry && !this.resetData) {
-        this.resetData = clone(entry)
+      // Use a trick to store the cloned inherited data in clonedData, to make
+      // it reactive as well as to make sure that we're not cloning twice.
+      if (this.clonedData === undefined && list) {
+        // See if we can find item by id in the parent list.
+        const index = this.clonedIndex = list.findIndex(
+          (item, index) => this.getItemId(item, index) === this.itemId
+        )
+        if (index >= 0) {
+          this.clonedData = clone(list[index])
+        }
       }
-      return entry
+      return this.clonedData
     },
 
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
-      return this.isLastRoute && !this.create && !this.data
+      return this.isLastDataRoute && !this.create && !this.data
     },
 
     isDirty() {
@@ -173,7 +179,7 @@ export default DitoComponent.component('dito-form', {
   methods: {
     initData() { // overrides DataMixin.initData()
       function initData(desc, data) {
-        // Sets up an createData object that has keys with null-values for all
+        // Sets up an createdData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
         for (let key in desc.tabs) {
           initData(desc.tabs[key], data)
@@ -185,8 +191,8 @@ export default DitoComponent.component('dito-form', {
       }
 
       if (this.create) {
-        if (!this.createData) {
-          this.createData = initData(this.formDesc, {})
+        if (!this.createdData) {
+          this.createdData = initData(this.formDesc, {})
         }
       } else {
         // super.initData()
@@ -201,31 +207,28 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    setParentEntry(data) {
-      if (this.parentEntry) {
-        const index = this.parentList.indexOf(this.parentEntry)
-        if (index >= 0) {
-          this.$set(this.parentList, index,
-            Object.assign({}, this.parentEntry, data))
-          return true
-        }
+    setInheritedData(data) {
+      const clonedData = this.clonedData
+      const index = this.clonedIndex
+      if (clonedData && index >= 0) {
+        this.$set(this.parentList, index,
+          Object.assign({}, clonedData, this.filterData(data)))
+        return true
       }
       return false
     },
 
     filterData(data) {
-      // Deletes arrays that aren't considered nested data, as those are already
-      // taking care of themselves (e.g. insertion, deletion) and shouldn't be
-      // set again. This also handles canceling (resetData) nicely even when
-      // children were already edited.
+      // Deletes arrays that aren't considered embedded data, as those are
+      // already taking care of themselves (e.g. insertion, deletion) and
+      // shouldn't be set again.
       let copy = {}
-      for (let key in data) {
-        const value = data[key]
+      for (let [key, value] of Object.entries(data)) {
         if (Array.isArray(value)) {
           const comp = this.components[key]
-          // Only check for nested on list items that actuall load data, since
+          // Only check for embedded on list items that actuall load data, since
           // other components can have array values too.
-          if (comp && comp.isList && !comp.desc.nested) {
+          if (comp && comp.isList && !comp.viewDesc.embedded) {
             continue
           }
         }
@@ -236,8 +239,8 @@ export default DitoComponent.component('dito-form', {
 
     setData(data) {
       // setData() is called after submit when data has changed. Try to modify
-      // the parentEntry first to keep data persistant across editing hierarchy.
-      if (!this.setParentEntry(data)) {
+      // inheritedData first to keep data persistant across editing hierarchy.
+      if (!this.setInheritedData(data)) {
         this.loadedData = data
       }
     },
@@ -263,14 +266,8 @@ export default DitoComponent.component('dito-form', {
     },
 
     store() {
-      if (!this.transient) {
-        this.request(this.method, this.endpoint, null, this.data, err => {
-          if (!err) {
-            // After submitting, navigate back to the parent form or view.
-            this.goBack(true, false)
-          }
-        })
-      } else {
+      const data = this.data
+      if (this.transient || this.embedded) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
         // to be done as it just works, but when creaing, we need to add to /
@@ -279,33 +276,37 @@ export default DitoComponent.component('dito-form', {
         if (this.create) {
           const parentList = this.parentList
           if (parentList) {
-            // Determine a unique id for the new entry, prefixed with '_' so we
-            // can identify transient objects, see isTransient()
-            let id = 0
-            for (let entry of parentList) {
-              id = Math.max(+(entry.id + '').substring(1) || 0, id)
+            if (this.transient) {
+              // Determine a unique id for the new item, prefixed with '_' so
+              // we can identify transient objects, see isTransient()
+              let id = 0
+              for (let item of parentList) {
+                id = Math.max(+item.id.substring(1) || 0, id)
+              }
+              data.id = `_${id + 1}`
             }
-            const data = this.data
-            data.id = `_${id + 1}`
             parentList.push(data)
           } else {
             ok = false
             this.errors.add('dito-data', 'Unable to create item.')
           }
+        } else {
+          this.setInheritedData(data)
         }
         if (ok) {
           this.goBack(false, false)
         }
+      } else {
+        this.request(this.method, this.endpoint, null, data, err => {
+          if (!err) {
+            // After submitting, navigate back to the parent form or view.
+            this.goBack(true, false)
+          }
+        })
       }
     },
 
     cancel() {
-      // If we have resetData, see if we can reset the entry in the parent list
-      // to its original state again.
-      if (this.resetData) {
-        this.setParentEntry(this.filterData(this.resetData))
-        this.resetData = null
-      }
       this.goBack(false, true)
     }
   }

@@ -24,7 +24,7 @@ export default {
     },
 
     shouldLoad() {
-      return this.desc.load && !this.listData
+      return !this.desc.embedded && !this.listData
     },
 
     viewDesc() {
@@ -36,8 +36,8 @@ export default {
       return this.getEndpoint('get', 'collection')
     },
 
-    route() {
-      return this.routeComponent.isView ? '' : `${this.name}/`
+    path() {
+      return this.routeComponent.isView ? '' : `${this.api.normalize(this.name)}/`
     }
   },
 
