@@ -19,6 +19,31 @@ export default {
   computed: {
     shouldLoad() {
       return true
+    },
+
+    isTransient() {
+      const parent = this.parentFormComponent
+      return parent && (parent.isTransient || parent.create)
+    },
+
+    isEmbedded() {
+      return !!this.viewDesc.embedded
+    },
+
+    isNested() {
+      return this.isTransient || this.isEmbedded
+    },
+
+    buttonCreate() {
+      return `dito-button-${this.isNested ? 'add' : 'create'}`
+    },
+
+    buttonSave() {
+      return `dito-button-${this.isNested ? 'apply' : 'save'}`
+    },
+
+    buttonDelete() {
+      return `dito-button-${this.isNested ? 'remove' : 'delete'}`
     }
   },
 
@@ -38,10 +63,6 @@ export default {
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](this.viewDesc, this.formDesc,
         type === 'collection' ? this.parentFormComponent : id)
-    },
-
-    isTransient(item) {
-      return item && /^_/.test(item.id)
     },
 
     getItemId(item, index) {

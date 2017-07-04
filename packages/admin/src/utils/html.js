@@ -4,6 +4,6 @@ export function escapeHtml(html) {
   }) : ''
 }
 
-export default function stripTags(html) {
+export function stripTags(html) {
   return html ? html.replace(/<[^>]+>/g, '') : ''
 }

@@ -34,7 +34,7 @@
             button.dito-button(
               v-if="!errors.has('dito-data')"
               type="submit"
-              :class="`dito-button-${create ? 'create' : 'save'}`"
+              :class="create ? buttonCreate : buttonSave"
             )
     router-view(v-else)
 </template>
@@ -96,19 +96,10 @@ export default DitoComponent.component('dito-form', {
       return this.create ? 'post' : 'patch'
     },
 
-    transient() {
-      const parent = this.parentFormComponent
-      return parent && (parent.transient || parent.create)
-    },
-
-    embedded() {
-      return !!this.viewDesc.embedded
-    },
-
     endpoint() {
-      return this.embedded
+      return this.isEmbedded
         ? '_embedded_'
-        : this.transient
+        : this.isTransient
           ? '_transient_'
           : this.getEndpoint(
             this.method,
@@ -267,7 +258,7 @@ export default DitoComponent.component('dito-form', {
 
     store() {
       const data = this.data
-      if (this.transient || this.embedded) {
+      if (this.isNested) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
         // to be done as it just works, but when creaing, we need to add to /
@@ -276,7 +267,7 @@ export default DitoComponent.component('dito-form', {
         if (this.create) {
           const parentList = this.parentList
           if (parentList) {
-            if (this.transient) {
+            if (this.isTransient) {
               // Determine a unique id for the new item, prefixed with '_' so
               // we can identify transient objects, see isTransient()
               let id = 0

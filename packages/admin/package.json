@@ -8,7 +8,7 @@
     "dev": "node build/dev-server.js",
     "build": "node build/build.js",
     "lint": "NODE_ENV=production eslint --ext .js,.vue src",
-    "precommit": "yarn run lint"
+    "precommit": "yarn lint"
   },
   "dependencies": {
     "axios": "^0.16.2",

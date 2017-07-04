@@ -44,24 +44,25 @@
             v-html="html"
           )
           td.dito-buttons(v-if="hasButtons")
-            router-link(
+            router-link.dito-button(
               v-if="desc.editable"
               :to="`${path}${getItemId(item, index)}`" append
               tag="button"
               type="button"
-              class="dito-button dito-button-edit"
+              class="dito-button-edit"
             )
-            button.dito-button.dito-button-delete(
+            button.dito-button(
               v-if="desc.deletable"
               type="button"
-              @click="remove(item)"
+              @click="deleteItem(item)"
+              :class="buttonDelete"
             )
     .dito-buttons(v-if="desc.creatable")
-      router-link(
+      router-link.dito-button(
         :to="`${path}create`" append
         tag="button"
         type="button"
-        class="dito-button dito-button-create"
+        :class="buttonCreate"
       )
 </template>
 
@@ -194,12 +195,12 @@ export default DitoComponent.register('list', {
   },
 
   computed: {
-    columns() {
-      return this.getNamedDescriptions(this.desc.columns)
-    },
-
     scopes() {
       return this.getNamedDescriptions(this.desc.scopes)
+    },
+
+    columns() {
+      return this.getNamedDescriptions(this.desc.columns)
     },
 
     renderCells() {

@@ -56,10 +56,10 @@ export default {
       }
     },
 
-    remove(item) {
+    deleteItem(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {
-        if (this.isTransient(item)) {
+        if (this.isNested) {
           this.removeItem(item)
         } else {
           this.request('delete', this.getEndpoint('delete', 'member', item.id),
