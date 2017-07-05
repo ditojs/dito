@@ -8,7 +8,7 @@ export default {
     }
   },
 
-  created() {
+  mounted() {
     // Initialize data after component was created and the data is already being
     // observed.
     this.initData()

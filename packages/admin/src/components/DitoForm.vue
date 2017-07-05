@@ -169,14 +169,15 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     initData() { // overrides DataMixin.initData()
-      function initData(desc, data) {
+      const initData = (desc, data) => {
         // Sets up an createdData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
         for (let key in desc.tabs) {
           initData(desc.tabs[key], data)
         }
         for (let key in desc.components) {
-          data[key] = null
+          const initValue = this.components[key].initValue
+          data[key] = initValue !== undefined ? initValue : null
         }
         return data
       }

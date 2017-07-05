@@ -28,6 +28,12 @@ import DitoComponent from '@/DitoComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
 export default DitoComponent.register('checkboxes', {
-  mixins: [OptionsMixin]
+  mixins: [OptionsMixin],
+
+  data() {
+    return {
+      initValue: []
+    }
+  }
 })
 </script>
