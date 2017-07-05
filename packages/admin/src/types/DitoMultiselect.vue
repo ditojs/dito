@@ -26,6 +26,7 @@
   $spinner-size: 1.3em
   $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
   $tag-icon-size: 1.8em
+  $tag-margin: 2px
   $tag-padding: 3px
 
   .dito-multiselect
@@ -83,9 +84,13 @@
       padding: $input-padding
 
     .multiselect__tag
-      margin: 2px 0 0 2px
+      margin: 0 $tag-margin $tag-margin 0
       border-radius: 1em
       padding: $tag-padding $tag-icon-size $tag-padding 0.8em
+
+    .multiselect__tags-wrap
+      display: block
+      margin: $tag-margin 0 0 $tag-margin
 
     .multiselect__tag-icon
       background: none
@@ -115,7 +120,7 @@
         color: $color-text-inverted
 
     .multiselect__tags,
-    .multiselect__content
+    .multiselect__content-wrapper
       border: $border-style
       border-radius: $border-radius
 
@@ -124,7 +129,7 @@
         border-color: $color-active
         border-bottom-left-radius: 0
         border-bottom-right-radius: 0
-      .multiselect__content
+      .multiselect__content-wrapper
         border: $border-width solid $color-active
         border-top-color: $border-color
         margin-top: -1px
@@ -136,7 +141,7 @@
           border-radius: $border-radius
           border-top-left-radius: 0
           border-top-right-radius: 0
-        .multiselect__content
+        .multiselect__content-wrapper
           border: $border-width solid $color-active
           border-bottom-color: $border-color
           margin-bottom: -1px
