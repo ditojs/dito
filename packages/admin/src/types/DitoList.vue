@@ -67,8 +67,6 @@
 </template>
 
 <style lang="sass">
-@import 'mixins/arrow'
-
 $list-spacing: 3px
 
 .dito

@@ -19,9 +19,8 @@
   )
 </template>
 
-<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 <style lang="sass">
-@import 'mixins/arrow'
+@import '~vue-multiselect/dist/vue-multiselect.min.css'
 
 .dito
   $spinner-size: 1.3em
@@ -144,7 +143,6 @@
           border-radius: $border-radius
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
-
 </style>
 
 <script>

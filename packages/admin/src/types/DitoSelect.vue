@@ -27,8 +27,6 @@
 </template>
 
 <style lang="sass">
-@import 'mixins/arrow'
-
 .dito
   .dito-select
     display: inline-block
@@ -39,7 +37,6 @@
       +arrow($select-arrow-size)
       bottom: 2px
       right: $select-right-margin
-
 </style>
 
 <script>
