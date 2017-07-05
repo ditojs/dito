@@ -34,7 +34,7 @@
             button.dito-button(
               v-if="!errors.has('dito-data')"
               type="submit"
-              :class="create ? buttonCreate : buttonSave"
+              :class="`dito-button-${create ? verbCreate : verbSave}`"
             )
     router-view(v-else)
 </template>
@@ -72,7 +72,7 @@ export default DitoComponent.component('dito-form', {
     return {
       createdData: null,
       clonedData: undefined,
-      clonedId: null,
+      parentIndex: null,
       isForm: true,
       components: {}
     }
@@ -126,7 +126,7 @@ export default DitoComponent.component('dito-form', {
       // 3. The data inherited from the parent, which itself may be either a
       //    view that loaded the data, or a form that either loaded the data, or
       //    also inherited it from its parent. Note that we use a clone of it,
-      //    so, data changes aren't inherited until setInheritedData() is called.
+      //    so, data changes aren't applied until setParentData() is called.
       return this.createdData || this.loadedData || this.inheritedData
     },
 
@@ -141,16 +141,18 @@ export default DitoComponent.component('dito-form', {
     },
 
     inheritedData() {
-      const list = this.parentList
+      // Data inherited from parent, and cloned to protect against reactive
+      // changes until changes are applied through setParentData()
+      const parentList = this.parentList
       // Use a trick to store the cloned inherited data in clonedData, to make
       // it reactive as well as to make sure that we're not cloning twice.
-      if (this.clonedData === undefined && list) {
+      if (!this.isPersistable && this.clonedData === undefined && parentList) {
         // See if we can find item by id in the parent list.
-        const index = this.clonedIndex = list.findIndex(
+        const parentIndex = this.parentIndex = parentList.findIndex(
           (item, index) => this.getItemId(item, index) === this.itemId
         )
-        if (index >= 0) {
-          this.clonedData = clone(list[index])
+        if (parentIndex >= 0) {
+          this.clonedData = clone(parentList[parentIndex])
         }
       }
       return this.clonedData
@@ -198,9 +200,9 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    setInheritedData(data) {
+    setParentData(data) {
       const clonedData = this.clonedData
-      const index = this.clonedIndex
+      const index = this.parentIndex
       if (clonedData && index >= 0) {
         this.$set(this.parentList, index,
           Object.assign({}, clonedData, this.filterData(data)))
@@ -210,9 +212,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     filterData(data) {
-      // Deletes arrays that aren't considered embedded data, as those are
-      // already taking care of themselves (e.g. insertion, deletion) and
-      // shouldn't be set again.
+      // Filters out arrays that aren't considered embedded data, as those are
+      // already taking care of themselves through their own end-points and
+      // shouldn't be set.
       let copy = {}
       for (let [key, value] of Object.entries(data)) {
         if (Array.isArray(value)) {
@@ -230,8 +232,9 @@ export default DitoComponent.component('dito-form', {
 
     setData(data) {
       // setData() is called after submit when data has changed. Try to modify
-      // inheritedData first to keep data persistant across editing hierarchy.
-      if (!this.setInheritedData(data)) {
+      // this.parentList first, for components with embedded or transient data
+      // (!isPersistable)
+      if (!this.setParentData(data)) {
         this.loadedData = data
       }
     },
@@ -258,42 +261,33 @@ export default DitoComponent.component('dito-form', {
 
     store() {
       const data = this.data
-      if (this.isNested) {
+      if (this.isPersistable) {
+        this.request(this.method, this.endpoint, null, data, error => {
+          if (!error) {
+            // After submitting, navigate back to the parent form or view.
+            this.goBack(true, false)
+          }
+        })
+      } else {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
-        // to be done as it just works, but when creaing, we need to add to /
+        // to be done as it just works, but when creating, we need to add to /
         // create the parent list.
         let ok = true
         if (this.create) {
           const parentList = this.parentList
           if (parentList) {
-            if (this.isTransient) {
-              // Determine a unique id for the new item, prefixed with '_' so
-              // we can identify transient objects, see isTransient()
-              let id = 0
-              for (let item of parentList) {
-                id = Math.max(+item.id.substring(1) || 0, id)
-              }
-              data.id = `_${id + 1}`
-            }
             parentList.push(data)
           } else {
             ok = false
             this.errors.add('dito-data', 'Unable to create item.')
           }
         } else {
-          this.setInheritedData(data)
+          this.setParentData(data)
         }
         if (ok) {
           this.goBack(false, false)
         }
-      } else {
-        this.request(this.method, this.endpoint, null, data, err => {
-          if (!err) {
-            // After submitting, navigate back to the parent form or view.
-            this.goBack(true, false)
-          }
-        })
       }
     },
 

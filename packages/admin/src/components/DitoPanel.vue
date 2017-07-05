@@ -1,18 +1,21 @@
 <template lang="pug">
   ul.dito-panel.dito-layout-vertical(v-if="desc.components")
-    li(v-for="(comp, key) in desc.components")
+    li(
+      v-for="(compDesc, key) in desc.components"
+      v-show="getValue(compDesc, 'visible', true)"
+    )
       dito-label(
-        v-if="comp.label"
+        v-if="compDesc.label"
         :name="key"
-        :text="comp.label"
+        :text="compDesc.label"
       )
       component.dito-component(
-        :is="typeToComponent(comp.type)"
+        :is="typeToComponent(compDesc.type)"
         :name="key"
-        :desc="comp"
+        :desc="compDesc"
         :data="data"
         :meta="meta"
-        :disabled="comp.disabled || disabled"
+        :disabled="getValue(compDesc, 'disabled', false) || disabled"
         :class="{ 'dito-has-errors': errors.has(key) }"
       )
       dito-errors(
@@ -40,6 +43,21 @@ export default DitoComponent.component('dito-panel', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
+  },
+
+  methods: {
+    isDisabled(desc) {
+
+    },
+
+    getValue(desc, name, defaultValue) {
+      const value = desc[name]
+      return value === undefined
+        ? defaultValue
+        : typeof value === 'function'
+          ? value(this.data)
+          : value
+    }
   }
 })
 </script>

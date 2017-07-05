@@ -1,7 +1,5 @@
 import axios from 'axios'
 
-// Assumes: Component defines this.api
-
 export default {
   data() {
     return {
@@ -17,10 +15,6 @@ export default {
   },
 
   computed: {
-    shouldLoad() {
-      return true
-    },
-
     isTransient() {
       const parent = this.parentFormComponent
       return parent && (parent.isTransient || parent.create)
@@ -30,20 +24,28 @@ export default {
       return !!this.viewDesc.embedded
     },
 
-    isNested() {
-      return this.isTransient || this.isEmbedded
+    isPersistable() {
+      return !(this.isTransient || this.isEmbedded)
     },
 
-    buttonCreate() {
-      return `dito-button-${this.isNested ? 'add' : 'create'}`
+    shouldLoad() {
+      return this.isPersistable
     },
 
-    buttonSave() {
-      return `dito-button-${this.isNested ? 'apply' : 'save'}`
+    verbCreate() {
+      return this.isPersistable ? 'create' : 'add'
     },
 
-    buttonDelete() {
-      return `dito-button-${this.isNested ? 'remove' : 'delete'}`
+    verbEdit() {
+      return 'edit'
+    },
+
+    verbSave() {
+      return this.isPersistable ? 'save' : 'apply'
+    },
+
+    verbDelete() {
+      return this.isPersistable ? 'delete' : 'remove'
     }
   },
 
@@ -61,8 +63,11 @@ export default {
 
   methods: {
     getEndpoint(method, type, id) {
-      return this.api.endpoints[method][type](this.viewDesc, this.formDesc,
-        type === 'collection' ? this.parentFormComponent : id)
+      return this.api.endpoints[method][type](
+        this.viewDesc,
+        this.formDesc,
+        type === 'collection' ? this.parentFormComponent : id
+      )
     },
 
     getItemId(item, index) {
@@ -88,8 +93,8 @@ export default {
         if (clear) {
           this.loadedData = null
         }
-        this.request('get', this.endpoint, params, null, (err, data) => {
-          if (!err) {
+        this.request('get', this.endpoint, params, null, (error, data) => {
+          if (!error) {
             this.setData(data)
           }
         })
@@ -100,22 +105,26 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
-    async request(method, path, params, payload, callback) {
+    request(method, path, params, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
       this.setLoading(true)
-      request(method, path, params, payload, (err, result) => {
+      request(method, path, params, payload, (error, response) => {
         this.setLoading(false)
-        if (err) {
-          this.errors.add('dito-data', err.toString())
+        if (error) {
+          this.errors.add('dito-data', error.toString())
+        }
+        if (response) {
+          // TODO: Deal with / pass on status!
+          console.log(response.status, response.data)
         }
         if (callback) {
-          callback.call(this, err, result)
+          callback(error, response && response.data)
         }
       })
     },
 
-    async requestAxios(method, path, params, payload, callback) {
+    requestAxios(method, path, params, payload, callback) {
       const config = {
         baseURL: this.api.baseURL,
         headers: this.api.headers || {
@@ -123,17 +132,12 @@ export default {
         },
         params
       }
-
-      try {
-        const response = /^(post|put|patch)$/.test(method)
-          ? await axios[method](path, JSON.stringify(payload), config)
-          : await axios[method](path, config)
-        // TODO: Deal with / pass on status!
-        console.log(response.status, response.data)
-        callback(null, response.data)
-      } catch (err) {
-        callback(err)
-      }
+      const promise = /^(post|put|patch)$/.test(method)
+        ? axios[method](path, JSON.stringify(payload), config)
+        : axios[method](path, config)
+      promise
+        .then(response => callback(null, response))
+        .catch(error => callback(error))
     }
   }
 }

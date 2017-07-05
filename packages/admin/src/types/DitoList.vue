@@ -49,20 +49,20 @@
               :to="`${path}${getItemId(item, index)}`" append
               tag="button"
               type="button"
-              class="dito-button-edit"
+              :class="`dito-button-${verbEdit}`"
             )
             button.dito-button(
               v-if="desc.deletable"
               type="button"
               @click="deleteItem(item)"
-              :class="buttonDelete"
+              :class="`dito-button-${verbDelete}`"
             )
     .dito-buttons(v-if="desc.creatable")
       router-link.dito-button(
         :to="`${path}create`" append
         tag="button"
         type="button"
-        :class="buttonCreate"
+        :class="`dito-button-${verbCreate}`"
       )
 </template>
 
@@ -179,57 +179,12 @@ $list-spacing: 3px
 import DitoComponent from '@/DitoComponent'
 import VueDraggable from 'vuedraggable'
 import ListMixin from '@/mixins/ListMixin'
-import {escapeHtml, stripTags} from '@/utils/html'
-import isObject from 'isobject'
 
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
   components: {VueDraggable},
 
-  data() {
-    return {
-      filterScope: null,
-      sortKey: null,
-      sortOrder: 1
-    }
-  },
-
   computed: {
-    scopes() {
-      return this.getNamedDescriptions(this.desc.scopes)
-    },
-
-    columns() {
-      return this.getNamedDescriptions(this.desc.columns)
-    },
-
-    renderCells() {
-      const render = this.desc.render
-      const columns = this.columns
-      const firstColumn = columns && columns[0]
-      return !render && firstColumn && firstColumn.name
-        // If we have named columns, map their names to item attributes, with
-        // optional per-column render() functions:
-        ? item => {
-          return columns.map(column => {
-            const value = item[column.name]
-            return column.render
-              ? column.render.call(item, value)
-              : value
-          })
-        }
-        : item => {
-          const res = render && render(item) ||
-            item.html || escapeHtml(item.text)
-          const cells = Array.isArray(res) ? res : [res]
-          // Make sure we have the right amount of cells for the table
-          if (columns) {
-            cells.length = columns.length
-          }
-          return cells
-        }
-    },
-
     hasButtons() {
       return this.desc.editable || this.desc.deletable
     },
@@ -244,43 +199,11 @@ export default DitoComponent.register('list', {
   },
 
   methods: {
-    getTitle(item) {
-      return stripTags(this.renderCells(item)[0])
-    },
-
-    getNamedDescriptions(descs) {
-      return Array.isArray(descs)
-        ? descs.map(value => (
-          isObject(value) ? value : { label: value }
-        ))
-        : isObject(descs)
-          ? Object.entries(descs).map(([name, value]) => (
-            isObject(value) ? { ...value, name } : { label: value, name }
-          ))
-          : null
-    },
-
-    filterByScope(name) {
-      this.filterScope = name
-      this.loadData(false, { scope: name })
-    },
-
-    sortByColumn(name) {
-      if (this.sortKey !== name) {
-        this.sortKey = name
-        this.sortOrder = 1
-      } else {
-        this.sortOrder *= -1
-      }
-    },
-
     getSortClass(name) {
       return this.sortKey === name
         ? `dito-active dito-order-${this.sortOrder > 0 ? 'asc' : 'desc'}`
         : null
-    },
-
-    isObject
+    }
   }
 })
 </script>

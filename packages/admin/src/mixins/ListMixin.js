@@ -1,11 +1,16 @@
 import DataMixin from '@/mixins/DataMixin'
+import {escapeHtml, stripTags} from '@/utils/html'
+import isObject from 'isobject'
 
 export default {
   mixins: [DataMixin],
 
   data() {
     return {
-      isList: true
+      isList: true,
+      filterScope: null,
+      sortKey: null,
+      sortOrder: 1
     }
   },
 
@@ -24,7 +29,7 @@ export default {
     },
 
     shouldLoad() {
-      return !this.desc.embedded && !this.listData
+      return this.isPersistable && !this.listData
     },
 
     viewDesc() {
@@ -37,11 +42,78 @@ export default {
     },
 
     path() {
-      return this.routeComponent.isView ? '' : `${this.api.normalize(this.name)}/`
+      return this.routeComponent.isView ? '' : `${this.desc.path}/`
+    },
+
+    scopes() {
+      return this.getNamedDescriptions(this.desc.scopes)
+    },
+
+    columns() {
+      return this.getNamedDescriptions(this.desc.columns)
+    },
+
+    renderCells() {
+      // Returns a function to render the cells with, supporting different
+      // formats of desc:
+      const render = this.desc.render
+      const columns = this.columns
+      const firstColumn = columns && columns[0]
+      return !render && firstColumn && firstColumn.name
+        // If we have named columns, map their names to item attributes, with
+        // optional per-column render() functions:
+        ? item => {
+          return columns.map(column => {
+            const value = item[column.name]
+            return column.render
+              ? column.render.call(item, value)
+              : value
+          })
+        }
+        : item => {
+          const res = render && render(item) ||
+            item.html || escapeHtml(item.text)
+          const cells = Array.isArray(res) ? res : [res]
+          // Make sure we have the right amount of cells for the table
+          if (columns) {
+            cells.length = columns.length
+          }
+          return cells
+        }
     }
   },
 
   methods: {
+    getTitle(item) {
+      return stripTags(this.renderCells(item)[0])
+    },
+
+    getNamedDescriptions(descs) {
+      return Array.isArray(descs)
+        ? descs.map(value => (
+          isObject(value) ? value : { label: value }
+        ))
+        : isObject(descs)
+          ? Object.entries(descs).map(([name, value]) => (
+            isObject(value) ? { ...value, name } : { label: value, name }
+          ))
+          : null
+    },
+
+    filterByScope(name) {
+      this.filterScope = name
+      this.loadData(false, { scope: name })
+    },
+
+    sortByColumn(name) {
+      if (this.sortKey !== name) {
+        this.sortKey = name
+        this.sortOrder = 1
+      } else {
+        this.sortOrder *= -1
+      }
+    },
+
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
@@ -59,18 +131,18 @@ export default {
     deleteItem(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {
-        if (this.isNested) {
-          this.removeItem(item)
-        } else {
+        if (this.isPersistable) {
           this.request('delete', this.getEndpoint('delete', 'member', item.id),
             null, null,
-            err => {
-              if (!err) {
+            error => {
+              if (!error) {
                 this.removeItem(item)
               }
               this.reloadData()
             }
           )
+        } else {
+          this.removeItem(item)
         }
       }
     }

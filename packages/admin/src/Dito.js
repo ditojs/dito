@@ -22,10 +22,10 @@ const user = {
 
 export function setup(el, options) {
   const api = options.api
-  api.normalize = api.normalize || hyphenate
+  const normalize = api.normalize || hyphenate
 
   function addViewRoute(routes, viewDesc, viewName, level) {
-    const path = api.normalize(viewName)
+    const path = normalize(viewName)
     viewDesc.path = path
     viewDesc.name = viewName
     const formName = viewDesc.form
@@ -74,8 +74,7 @@ export function setup(el, options) {
   }
 
   function getFormRoutes(pathPrefix, formDesc, formName, meta, level) {
-    const path = api.normalize(formName)
-    formDesc.path = path
+    formDesc.path = normalize(formName)
     formDesc.name = formName
     const children = []
     const tabs = formDesc.tabs

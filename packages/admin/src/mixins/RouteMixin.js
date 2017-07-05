@@ -39,7 +39,7 @@ export default {
       // Returns true if this is the last router component that is supposed
       // to load data, meaning any component beyond this one uses embedded data.
       const next = this.$route.matched[this.routeIndex + 1]
-      return !this.viewDesc.embedded && (!next || !!next.meta.viewDesc.embedded)
+      return this.isPersistable && (!next || !!next.meta.viewDesc.embedded)
     },
 
     param() {
