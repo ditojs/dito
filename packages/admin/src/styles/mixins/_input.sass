@@ -1,0 +1,15 @@
+%input
+  box-shadow: inset $shadow-settings rgba($color-shadow, 0.1)
+  appearance: none
+  border: $border-style
+  border-radius: $border-radius
+  box-sizing: border-box
+  line-height: $line-height
+  margin: 0
+  padding: $input-padding
+  background: white
+  &:focus
+    outline: none
+    border-color: $color-active
+  &.dito-has-errors
+    border-color: $color-error

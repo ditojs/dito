@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "codeflask": "https://github.com/lehni/CodeFlask.js/tarball/f02c5bbc25743086b0e1227b1c944916d87b701b",
     "isobject": "^3.0.1",
+    "prismjs": "^1.6.0",
     "vee-validate": "^2.0.0-rc.6",
     "vue": "^2.3.4",
     "vue-multiselect": "^2.0.2",

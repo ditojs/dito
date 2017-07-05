@@ -1,5 +1,6 @@
 // Typography
-$font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif
+$font-family-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif
+$font-family-mono: 'Menlo', 'Consolas', 'Monaco', 'Vera Mono', 'Andale Mono', 'Ubuntu Mono', monospace
 $font-size: 13px
 $line-height: 1.5
 
@@ -31,7 +32,9 @@ $border-width: 1px
 $border-style: $border-width solid $border-color
 
 // Input
-$input-padding: 3px 6px
+$input-padding-ver: 3px
+$input-padding-hor: 6px
+$input-padding: $input-padding-ver $input-padding-hor
 
 // Select
 $select-arrow-size: 0.5em
@@ -54,7 +57,7 @@ $menu-padding-hor: 12px
 $menu-padding: $menu-padding-ver $menu-padding-hor
 
 // Content
-$content-width: 800px
+$content-width: 1000px
 
 // Form
 $form-spacing: 6px
