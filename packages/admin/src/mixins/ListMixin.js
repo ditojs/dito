@@ -15,10 +15,6 @@ export default {
   },
 
   computed: {
-    listData() {
-      return this.data[this.name]
-    },
-
     listLabels() {
       const components = this.formDesc.components
       let labels = []
@@ -29,7 +25,7 @@ export default {
     },
 
     shouldLoad() {
-      return !this.isTransient && !this.listData
+      return !this.isTransient && !this.value
     },
 
     viewDesc() {
@@ -117,14 +113,14 @@ export default {
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
-      this.$set(this.data, this.name, data)
+      this.value = data
     },
 
     removeItem(item) {
-      const data = this.listData
-      const index = data && data.indexOf(item)
+      const list = this.value
+      const index = list && list.indexOf(item)
       if (index >= 0) {
-        data.splice(index, 1)
+        list.splice(index, 1)
       }
     },
 

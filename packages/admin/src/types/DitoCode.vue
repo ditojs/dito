@@ -1,5 +1,6 @@
 <template lang="pug">
   .dito-code(ref="code" :style="`height: ${ 1.5 * (desc.lines || 3)}em`")
+    | {{ value }}
 </template>
 
 <style lang="sass">
@@ -39,12 +40,8 @@ export default DitoComponent.register('code', {
     flask.run(this.$refs.code, {
       language: this.desc.language || 'javascript'
     })
-    this.$watch(`data.${this.name}`, function(value) {
-      flask.update(value)
-    })
-    flask.onUpdate(value => {
-      this.data[this.name] = value
-    })
+    flask.onUpdate(value => { this.value = value })
+    this.$watch('value', value => { flask.update(value) })
   }
 })
 </script>

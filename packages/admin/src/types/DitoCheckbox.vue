@@ -3,7 +3,7 @@
     :id="name"
     :name="name"
     type="checkbox"
-    v-model="data[name]"
+    v-model="value"
     v-validate="validations"
     :disabled="disabled"
   )

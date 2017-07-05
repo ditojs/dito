@@ -8,10 +8,10 @@
         input.dito-checkbox(
           :name="name"
           type="checkbox"
-          v-model="data[name]"
+          :value="getValue(option)"
+          v-model="value"
           v-validate="validations"
           :disabled="disabled"
-          :value="getValue(option)"
         )
         | {{ getLabel(option) }}
 </template>

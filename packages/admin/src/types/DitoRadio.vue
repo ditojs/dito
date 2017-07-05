@@ -8,10 +8,10 @@
         input.dito-radio-button(
           :name="name"
           type="radio"
-          v-model="data[name]"
+          :value="getValue(option)"
+          v-model="value"
           v-validate="validations"
           :disabled="disabled"
-          :value="getValue(option)"
         )
         | {{ getLabel(option) }}
 </template>

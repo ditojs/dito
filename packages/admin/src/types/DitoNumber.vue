@@ -3,7 +3,7 @@
     :id="name"
     :name="name"
     type="number"
-    v-model="data[name]"
+    v-model="value"
     v-validate="validations"
     :placeholder="placeholder"
     :disabled="disabled"

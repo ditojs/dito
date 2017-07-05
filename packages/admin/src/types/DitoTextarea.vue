@@ -2,7 +2,7 @@
   textarea.dito-textarea.dito-input(
     :id="name"
     :name="name"
-    v-model="data[name]"
+    v-model="value"
     v-validate="validations"
     :rows="desc.lines || 4"
     :placeholder="placeholder"

@@ -16,6 +16,16 @@ export default {
   },
 
   computed: {
+    value: {
+      get() {
+        return this.data[this.name]
+      },
+
+      set(value) {
+        this.data[this.name] = value
+      }
+    },
+
     readonly() {
       return this.desc.readonly
     },

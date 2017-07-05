@@ -1,7 +1,6 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
-    :value="value"
-    @input="onChanged"
+    v-model="selectValue"
     :data-vv-name="name"
     v-validate="validations"
     :show-labels="false"
@@ -160,22 +159,22 @@ export default DitoComponent.register('multiselect', {
   components: {VueMultiselect},
 
   computed: {
-    value() {
-      // Convert value to options object, since vue-multiselect can't map that
-      // itself unfortunately. `track-by` is only used for :key mapping I think.
-      let value = this.data[this.name]
-      return this.valueKey
-        ? this.findOption(this.options, value, this.desc.options.groupBy)
-        : value
-    }
-  },
+    selectValue: {
+      get() {
+        // Convert value to options object, since vue-multiselect can't map that
+        // itself unfortunately. `track-by` is used for :key mapping it seems.
+        const value = this.value
+        return this.valueKey
+          ? this.findOption(this.options, value, this.desc.options.groupBy)
+          : value
+      },
 
-  methods: {
-    onChanged(value) {
-      // When changes happend store the mapped value instead of the full object.
-      this.data[this.name] = this.valueKey
-        ? value && value[this.valueKey]
-        : value
+      set(value) {
+        // When changes happend, store the mapped value instead of full object.
+        this.value = this.valueKey
+          ? value && value[this.valueKey]
+          : value
+      }
     }
   }
 })

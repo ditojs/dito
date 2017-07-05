@@ -41,7 +41,7 @@ export default DitoComponent.component('dito-view', {
 
     data() {
       // Set up viewData so we can pass it on to the nested component which
-      // will look up its own data under its name, e.g. see listData().
+      // will look up its own data under its name, e.g. see this.value
       // NOTE: We need to reuse an object defined in data(), so that child
       // components can modify its content, see DitoList#setData()
       this.$set(this.viewData, this.name, this.loadedData || [])

@@ -32,11 +32,11 @@
               | {{ column.label }}
       vue-draggable(
         element="tbody"
-        :list="listData"
+        :list="value"
         :options="dragOptions"
       )
         tr(
-          v-for="item, index in listData || []"
+          v-for="item, index in value || []"
           :key="`${name}-${item.id}`"
         )
           td(
