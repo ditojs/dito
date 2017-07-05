@@ -97,15 +97,13 @@ export default DitoComponent.component('dito-form', {
     },
 
     endpoint() {
-      return this.isEmbedded
-        ? '_embedded_'
-        : this.isTransient
-          ? '_transient_'
-          : this.getEndpoint(
-            this.method,
-            this.create ? 'collection' : 'member',
-            this.itemId
-          )
+      return this.isTransient
+        ? '_transient_'
+        : this.getEndpoint(
+          this.method,
+          this.create ? 'collection' : 'member',
+          this.itemId
+        )
     },
 
     tabs() {
@@ -146,7 +144,7 @@ export default DitoComponent.component('dito-form', {
       const parentList = this.parentList
       // Use a trick to store the cloned inherited data in clonedData, to make
       // it reactive as well as to make sure that we're not cloning twice.
-      if (!this.isPersistable && this.clonedData === undefined && parentList) {
+      if (this.isTransient && this.clonedData === undefined && parentList) {
         // See if we can find item by id in the parent list.
         const parentIndex = this.parentIndex = parentList.findIndex(
           (item, index) => this.getItemId(item, index) === this.itemId
@@ -232,8 +230,7 @@ export default DitoComponent.component('dito-form', {
 
     setData(data) {
       // setData() is called after submit when data has changed. Try to modify
-      // this.parentList first, for components with embedded or transient data
-      // (!isPersistable)
+      // this.parentList first, for components with transient data.
       if (!this.setParentData(data)) {
         this.loadedData = data
       }
@@ -261,14 +258,7 @@ export default DitoComponent.component('dito-form', {
 
     store() {
       const data = this.data
-      if (this.isPersistable) {
-        this.request(this.method, this.endpoint, null, data, error => {
-          if (!error) {
-            // After submitting, navigate back to the parent form or view.
-            this.goBack(true, false)
-          }
-        })
-      } else {
+      if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
         // to be done as it just works, but when creating, we need to add to /
@@ -288,6 +278,13 @@ export default DitoComponent.component('dito-form', {
         if (ok) {
           this.goBack(false, false)
         }
+      } else {
+        this.request(this.method, this.endpoint, null, data, error => {
+          if (!error) {
+            // After submitting, navigate back to the parent form or view.
+            this.goBack(true, false)
+          }
+        })
       }
     },
 

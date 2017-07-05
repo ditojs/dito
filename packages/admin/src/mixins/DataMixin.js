@@ -15,37 +15,37 @@ export default {
   },
 
   computed: {
-    isTransient() {
-      const parent = this.parentFormComponent
-      return parent && (parent.isTransient || parent.create)
-    },
-
     isEmbedded() {
       return !!this.viewDesc.embedded
     },
 
-    isPersistable() {
-      return !(this.isTransient || this.isEmbedded)
+    isTransient() {
+      let transient = this.isEmbedded
+      if (!transient) {
+        const parent = this.parentFormComponent
+        transient = parent && (parent.isTransient || parent.create)
+      }
+      return transient
     },
 
     shouldLoad() {
-      return this.isPersistable
+      return !this.isTransient
     },
 
     verbCreate() {
-      return this.isPersistable ? 'create' : 'add'
+      return this.isTransient ? 'add' : 'create'
+    },
+
+    verbSave() {
+      return this.isTransient ? 'apply' : 'save'
+    },
+
+    verbDelete() {
+      return this.isTransient ? 'remove' : 'delete'
     },
 
     verbEdit() {
       return 'edit'
-    },
-
-    verbSave() {
-      return this.isPersistable ? 'save' : 'apply'
-    },
-
-    verbDelete() {
-      return this.isPersistable ? 'delete' : 'remove'
     }
   },
 

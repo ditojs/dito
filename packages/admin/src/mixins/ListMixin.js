@@ -29,7 +29,7 @@ export default {
     },
 
     shouldLoad() {
-      return this.isPersistable && !this.listData
+      return !this.isTransient && !this.listData
     },
 
     viewDesc() {
@@ -131,7 +131,9 @@ export default {
     deleteItem(item) {
       if (item &&
           confirm(`Do you really want to remove "${this.getTitle(item)}"?`)) {
-        if (this.isPersistable) {
+        if (this.isTransient) {
+          this.removeItem(item)
+        } else {
           this.request('delete', this.getEndpoint('delete', 'member', item.id),
             null, null,
             error => {
@@ -141,8 +143,6 @@ export default {
               this.reloadData()
             }
           )
-        } else {
-          this.removeItem(item)
         }
       }
     }
