@@ -15,12 +15,12 @@ export default {
   },
 
   computed: {
-    isEmbedded() {
-      return !!this.viewDesc.embedded
+    isNested() {
+      return !!this.viewDesc.nested
     },
 
     isTransient() {
-      let transient = this.isEmbedded
+      let transient = this.isNested
       if (!transient) {
         const parent = this.parentFormComponent
         transient = parent && (parent.isTransient || parent.create)
@@ -71,7 +71,7 @@ export default {
     },
 
     getItemId(item, index) {
-      return String(this.viewDesc.embedded ? index : item.id)
+      return String(this.viewDesc.nested ? index : item.id)
     },
 
     setData(data) {

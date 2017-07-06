@@ -37,9 +37,9 @@ export default {
 
     isLastDataRoute() {
       // Returns true if this is the last router component that is supposed
-      // to load data, meaning any component beyond this one uses embedded data.
+      // to load data, meaning any component beyond this one uses nested data.
       const next = this.$route.matched[this.routeIndex + 1]
-      return !this.isTransient && (!next || !!next.meta.viewDesc.embedded)
+      return !this.isTransient && (!next || !!next.meta.viewDesc.nested)
     },
 
     param() {

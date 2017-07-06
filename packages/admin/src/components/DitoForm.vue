@@ -212,16 +212,16 @@ export default DitoComponent.component('dito-form', {
     },
 
     filterData(data) {
-      // Filters out arrays that aren't considered embedded data, as those are
+      // Filters out arrays that aren't considered nested data, as those are
       // already taking care of themselves through their own end-points and
       // shouldn't be set.
       let copy = {}
       for (let [key, value] of Object.entries(data)) {
         if (Array.isArray(value)) {
           const comp = this.components[key]
-          // Only check for embedded on list items that actuall load data, since
+          // Only check for nested on list items that actuall load data, since
           // other components can have array values too.
-          if (comp && comp.isList && !comp.viewDesc.embedded) {
+          if (comp && comp.isList && !comp.viewDesc.nested) {
             continue
           }
         }
