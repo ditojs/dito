@@ -175,9 +175,10 @@ export default DitoComponent.component('dito-form', {
         for (let key in desc.tabs) {
           initData(desc.tabs[key], data)
         }
-        for (let key in desc.components) {
-          const initValue = this.components[key].initValue
-          data[key] = initValue !== undefined ? initValue : null
+        for (let [key, compDesc] of Object.entries(desc.components)) {
+          const comp = DitoComponent.get(compDesc.type)
+          const initValue = comp && comp.options.methods.initValue
+          data[key] = initValue ? initValue() : null
         }
         return data
       }

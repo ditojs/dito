@@ -30,9 +30,9 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 export default DitoComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
-  data() {
-    return {
-      initValue: []
+  methods: {
+    initValue() {
+      return []
     }
   }
 })

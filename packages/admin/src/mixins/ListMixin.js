@@ -80,6 +80,10 @@ export default {
   },
 
   methods: {
+    initValue() {
+      return []
+    },
+
     getTitle(item) {
       return stripTags(this.renderCells(item)[0])
     },
