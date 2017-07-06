@@ -4,7 +4,8 @@ export default {
   data() {
     return {
       loadedData: null,
-      loading: false
+      loading: false,
+      filter: {}
     }
   },
 
@@ -84,16 +85,18 @@ export default {
       }
     },
 
-    reloadData(params) {
-      this.loadData(false, params)
+    reloadData() {
+      this.loadData(false)
     },
 
-    loadData(clear, params) {
+    loadData(clear) {
       if (this.endpoint) {
         if (clear) {
           this.loadedData = null
         }
-        this.request('get', this.endpoint, params, null, (error, data) => {
+        // Only pass on the filter if it actually contains any keys
+        const filter = Object.keys(this.filter).length && this.filter
+        this.request('get', this.endpoint, filter, null, (error, data) => {
           if (!error) {
             this.setData(data)
           }
@@ -105,11 +108,11 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
-    request(method, path, params, payload, callback) {
+    request(method, path, filter, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-data')
       this.setLoading(true)
-      request(method, path, params, payload, (error, response) => {
+      request(method, path, filter, payload, (error, response) => {
         this.setLoading(false)
         if (error) {
           this.errors.add('dito-data', error.toString())
@@ -124,7 +127,8 @@ export default {
       })
     },
 
-    requestAxios(method, path, params, payload, callback) {
+    requestAxios(method, path, filter, payload, callback) {
+      const params = filter && { filter }
       const config = {
         baseURL: this.api.baseURL,
         headers: this.api.headers || {

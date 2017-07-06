@@ -8,7 +8,6 @@ export default {
   data() {
     return {
       isList: true,
-      filterScope: null,
       sortKey: null,
       sortOrder: 1
     }
@@ -90,9 +89,10 @@ export default {
 
     getNamedDescriptions(descs) {
       return Array.isArray(descs)
-        ? descs.map(value => (
-          isObject(value) ? value : { label: value }
-        ))
+        ? descs.map(value => {
+          const name = value.toLowerCase()
+          return isObject(value) ? { ...value, name } : { label: value, name }
+        })
         : isObject(descs)
           ? Object.entries(descs).map(([name, value]) => (
             isObject(value) ? { ...value, name } : { label: value, name }
@@ -101,8 +101,8 @@ export default {
     },
 
     filterByScope(name) {
-      this.filterScope = name
-      this.loadData(false, { scope: name })
+      this.filter.scope = name
+      this.loadData(false)
     },
 
     sortByColumn(name) {
