@@ -1,9 +1,11 @@
 import axios from 'axios'
+import {isObject} from '@/utils'
 
 export default {
   data() {
     return {
       loadedData: null,
+      loadedCount: 0,
       loading: false,
       filter: {}
     }
@@ -63,7 +65,8 @@ export default {
   },
 
   methods: {
-    getEndpoint(method, type, id) {
+    getEndpointPath(method, endpoint) {
+      const { type, id } = endpoint
       return this.api.endpoints[method][type](
         this.viewSchema,
         this.formSchema,
@@ -93,9 +96,10 @@ export default {
     },
 
     loadData(clear) {
-      if (this.endpoint) {
+      if (!this.isTransient) {
         if (clear) {
           this.loadedData = null
+          this.loadedCount = 0
         }
         // LoopBack specific filters / query parameters:
         const paginate = this.viewSchema.paginate
@@ -108,8 +112,13 @@ export default {
           filter,
           count: paginate > 0
         }
-        this.request('get', this.endpoint, params, null, (error, data) => {
-          if (!error) {
+
+        this.request('get', { params }, (err, data) => {
+          if (!err) {
+            if (this.endpoint.type === 'collection' && isObject(data)) {
+              this.loadedCount = data.count
+              data = data.data
+            }
             this.setData(data)
           }
         })
@@ -120,22 +129,24 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
-    request(method, path, params, payload, callback) {
+    request(method, options, callback) {
       const request = this.api.request || this.requestAxios
+      const { endpoint, params, payload } = options
+      const path = this.getEndpointPath(method, endpoint || this.endpoint)
       this.errors.remove('dito-request')
       this.setLoading(true)
-      request(method, path, params, payload, (error, response) => {
+      request(method, path, params, payload, (err, response) => {
         setTimeout(() => {
           this.setLoading(false)
-          if (error) {
-            this.errors.add('dito-request', error.toString())
+          if (err) {
+            this.errors.add('dito-request', err.toString())
           }
           if (response) {
             // TODO: Deal with / pass on status!
             console.log(response.status, response.data)
           }
           if (callback) {
-            callback(error, response && response.data)
+            callback(err, response && response.data)
           }
         }, 0)
       })

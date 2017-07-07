@@ -11,10 +11,10 @@
         :scopes="scopes"
       )
       dito-pagination(
-        v-if="schema.paginate"
+        v-if="loadedCount && schema.paginate"
         :filter="filter"
         :paginate="schema.paginate"
-        :count="count"
+        :count="loadedCount"
       )
     table
       dito-headers(

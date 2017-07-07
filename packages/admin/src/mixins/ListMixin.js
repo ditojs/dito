@@ -6,8 +6,7 @@ export default {
 
   data() {
     return {
-      isList: true,
-      count: 0
+      isList: true
     }
   },
 
@@ -53,7 +52,7 @@ export default {
     },
 
     endpoint() {
-      return this.getEndpoint('get', 'collection')
+      return { type: 'collection' }
     },
 
     path() {
@@ -134,12 +133,7 @@ export default {
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
-      if (isObject(data)) {
-        this.count = data.count
-        this.value = data.data
-      } else {
-        this.value = data
-      }
+      this.value = data
     },
 
     removeItem(item) {
@@ -156,15 +150,13 @@ export default {
         if (this.isTransient) {
           this.removeItem(item)
         } else {
-          this.request('delete', this.getEndpoint('delete', 'member', item.id),
-            null, null,
-            error => {
-              if (!error) {
-                this.removeItem(item)
-              }
-              this.reloadData()
+          const endpoint = { type: 'member', id: item.id }
+          this.request('delete', { endpoint }, err => {
+            if (!err) {
+              this.removeItem(item)
             }
-          )
+            this.reloadData()
+          })
         }
       }
     }

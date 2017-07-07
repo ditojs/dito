@@ -96,13 +96,10 @@ export default DitoComponent.component('dito-form', {
     },
 
     endpoint() {
-      return this.isTransient
-        ? '_transient_'
-        : this.getEndpoint(
-          this.method,
-          this.create ? 'collection' : 'member',
-          this.itemId
-        )
+      return {
+        type: this.create ? 'collection' : 'member',
+        id: this.itemId
+      }
     },
 
     tabs() {
@@ -250,7 +247,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     store() {
-      const data = this.data
+      const payload = this.data
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -260,20 +257,20 @@ export default DitoComponent.component('dito-form', {
         if (this.create) {
           const parentList = this.parentList
           if (parentList) {
-            parentList.push(data)
+            parentList.push(payload)
           } else {
             ok = false
             this.errors.add('dito-request', 'Unable to create item.')
           }
         } else {
-          this.setParentData(data)
+          this.setParentData(payload)
         }
         if (ok) {
           this.goBack(false, false)
         }
       } else {
-        this.request(this.method, this.endpoint, null, data, error => {
-          if (!error) {
+        this.request(this.method, { payload }, err => {
+          if (!err) {
             // After submitting, navigate back to the parent form or view.
             this.goBack(true, false)
           }

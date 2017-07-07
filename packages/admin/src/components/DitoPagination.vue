@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-pagination
-    | {{ offset + 1 }} … {{ offset + limit }} of {{ count }}
+    | {{ first }} … {{ last }} of {{ count }}
     router-link.dito-button(
       v-for="page in pages"
       :to="{ query: getQuery(page) }"
@@ -37,6 +37,14 @@ export default DitoComponent.component('dito-pagination', {
 
     limit() {
       return +this.filter.limit || this.paginate
+    },
+
+    first() {
+      return this.offset + 1
+    },
+
+    last() {
+      return Math.min(this.offset + this.limit, this.count)
     },
 
     pages() {
