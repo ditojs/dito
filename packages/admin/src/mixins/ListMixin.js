@@ -1,13 +1,13 @@
 import DataMixin from '@/mixins/DataMixin'
-import {escapeHtml, stripTags} from '@/utils'
-import isObject from 'isobject'
+import {isObject, escapeHtml, stripTags} from '@/utils'
 
 export default {
   mixins: [DataMixin],
 
   data() {
     return {
-      isList: true
+      isList: true,
+      count: 0
     }
   },
 
@@ -148,7 +148,12 @@ export default {
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
-      this.value = data
+      if (isObject(data)) {
+        this.count = data.count
+        this.value = data.data
+      } else {
+        this.value = data
+      }
     },
 
     removeItem(item) {

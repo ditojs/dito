@@ -97,9 +97,18 @@ export default {
         if (clear) {
           this.loadedData = null
         }
-        // Only pass on the filter if it actually contains any keys
-        const filter = Object.keys(this.filter).length && this.filter
-        this.request('get', this.endpoint, filter, null, (error, data) => {
+        // LoopBack specific filters / query parameters:
+        const paginate = this.schema.paginate
+        const filter = {
+          ...this.filter,
+          limit: paginate
+        }
+        // Only pass on params and filter if it actually contains any keys
+        const params = (paginate || Object.keys(filter).length) && {
+          filter,
+          count: paginate > 0
+        }
+        this.request('get', this.endpoint, params, null, (error, data) => {
           if (!error) {
             this.setData(data)
           }
@@ -111,11 +120,11 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
-    request(method, path, filter, payload, callback) {
+    request(method, path, params, payload, callback) {
       const request = this.api.request || this.requestAxios
       this.errors.remove('dito-request')
       this.setLoading(true)
-      request(method, path, filter, payload, (error, response) => {
+      request(method, path, params, payload, (error, response) => {
         setTimeout(() => {
           this.setLoading(false)
           if (error) {
@@ -132,8 +141,7 @@ export default {
       })
     },
 
-    requestAxios(method, path, filter, payload, callback) {
-      const params = filter && { filter }
+    requestAxios(method, path, params, payload, callback) {
       const config = {
         baseURL: this.api.baseURL,
         headers: this.api.headers || {

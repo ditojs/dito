@@ -22,7 +22,7 @@ const user = {
 
 export function setup(el, options) {
   const api = options.api
-  const normalize = api.normalize || hyphenate
+  const normalize = api.normalizePath ? hyphenate : val => val
 
   function addViewRoute(routes, viewSchema, viewName, level) {
     const formName = viewSchema.form

@@ -1,5 +1,5 @@
-import isObject from 'isobject'
 import axios from 'axios'
+import {isObject} from '@/utils'
 
 export default {
   data() {

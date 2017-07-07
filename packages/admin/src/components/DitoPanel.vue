@@ -36,6 +36,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import {isFunction} from '@/utils'
 
 export default DitoComponent.component('dito-panel', {
   props: {
@@ -54,7 +55,7 @@ export default DitoComponent.component('dito-panel', {
       const value = schema[name]
       return value === undefined
         ? defaultValue
-        : typeof value === 'function'
+        : isFunction(value)
           ? value(this.data)
           : value
     }
