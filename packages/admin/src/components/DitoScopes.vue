@@ -44,7 +44,11 @@ export default DitoComponent.component('dito-scopes', {
 
   methods: {
     getQuery(scope) {
-      return { ...this.filter, scope: scope.name }
+      const query = { ...this.filter, scope: scope.name }
+      if (query.offset) {
+        query.offset = 0
+      }
+      return query
     }
   }
 })

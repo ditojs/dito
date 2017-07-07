@@ -15,6 +15,7 @@
         :name="key"
         :data="data"
         :meta="meta"
+        :store="getStore(key)"
         :disabled="getValue(compSchema, 'disabled', false) || disabled"
         :class="{ 'dito-has-errors': errors.has(key) }"
       )
@@ -43,12 +44,18 @@ export default DitoComponent.component('dito-panel', {
     schema: { type: Object, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
+    store: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
   },
 
   methods: {
     isDisabled(schema) {
 
+    },
+
+    getStore(key) {
+      let store = this.store[key]
+      return store || this.$set(this.store, key, {})
     },
 
     getValue(schema, name, defaultValue) {

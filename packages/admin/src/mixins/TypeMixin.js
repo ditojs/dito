@@ -4,6 +4,7 @@ export default {
     name: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
+    store: { type: Object, required: true },
     disabled: { type: Boolean, required: false }
   },
 
@@ -20,7 +21,6 @@ export default {
       get() {
         return this.data[this.name]
       },
-
       set(value) {
         this.data[this.name] = value
       }

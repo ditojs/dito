@@ -97,14 +97,12 @@ export default {
     }
   },
 
-  methods: {
-    initData() {
-      // Make sure filters are set correctly before initData() triggers request.
-      this.setFilter(this.$route.query)
-      // super.initData()
-      DataMixin.methods.initData.call(this)
-    },
+  created() {
+    // Make sure filters are set correctly before initData() triggers request.
+    this.setFilter(this.store.filter || this.$route.query)
+  },
 
+  methods: {
     defaultValue() {
       return []
     },
@@ -127,7 +125,7 @@ export default {
     },
 
     setFilter(filter) {
-      this.filter = {...this.filter, ...filter}
+      this.filter = this.store.filter = {...this.filter, ...filter}
     },
 
     setData(data) {

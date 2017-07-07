@@ -7,7 +7,11 @@ export default {
   data() {
     return {
       isRoute: true,
-      reload: false
+      reload: false,
+      // Each route-component defines a store that gets passed on to its
+      // child components, so they can store values in them that live beyond
+      // their life-cycle. See: DitoPanel, ListMixin
+      store: {}
     }
   },
 

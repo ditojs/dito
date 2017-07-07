@@ -51,9 +51,10 @@ export function setup(el, options) {
           path: `/${path}`,
           children: formRoutes,
           component: DitoView,
-          meta: Object.assign({
+          meta: {
+            ...meta,
             labelSchema: viewSchema
-          }, meta)
+          }
         }
         // Just redirect back to the form if the user enters a nested list route.
         : {
@@ -92,10 +93,11 @@ export function setup(el, options) {
       path: `${pathPrefix}:${param}`,
       component: DitoForm,
       children,
-      meta: Object.assign({
+      meta: {
+        ...meta,
         labelSchema: formSchema,
         param
-      }, meta)
+      }
     }]
   }
 

@@ -33,7 +33,6 @@ export default DitoComponent.register('number', {
       get() {
         return +this.value
       },
-
       set(value) {
         this.value = value
       }

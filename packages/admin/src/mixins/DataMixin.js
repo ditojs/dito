@@ -5,20 +5,21 @@ export default {
   data() {
     return {
       loadedData: null,
-      loadedCount: 0,
       loading: false,
       filter: {}
     }
   },
 
   created() {
-    // Initialize data after component was created and the data is already being
-    // observed.
-    if (this.shouldReload) {
-      this.reloadData()
-    } else {
-      this.initData()
-    }
+    // Give other mixins the change to receive created() events first, e.g.
+    // ListMixin to set up filters:
+    this.$nextTick(() => {
+      if (this.shouldReload) {
+        this.reloadData()
+      } else {
+        this.initData()
+      }
+    })
   },
 
   computed: {
@@ -99,7 +100,7 @@ export default {
       if (!this.isTransient) {
         if (clear) {
           this.loadedData = null
-          this.loadedCount = 0
+          this.store.count = 0
         }
         // LoopBack specific filters / query parameters:
         const paginate = this.viewSchema.paginate
@@ -116,7 +117,7 @@ export default {
         this.request('get', { params }, (err, data) => {
           if (!err) {
             if (this.endpoint.type === 'collection' && isObject(data)) {
-              this.loadedCount = data.count
+              this.store.count = data.count
               data = data.data
             }
             this.setData(data)

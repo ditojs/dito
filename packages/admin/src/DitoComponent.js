@@ -26,9 +26,8 @@ DitoComponent.component = function(name, options) {
 DitoComponent.register = function(type, options) {
   const name = `dito-${type}`
   types[type] = name
-  return DitoComponent.component(name, Object.assign({}, options, {
-    mixins: [TypeMixin].concat(options && options.mixins || [])
-  }))
+  const mixins = [TypeMixin].concat(options && options.mixins || [])
+  return DitoComponent.component(name, { ...options, mixins })
 }
 
 DitoComponent.get = function(type) {

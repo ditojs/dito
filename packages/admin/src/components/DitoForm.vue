@@ -17,12 +17,14 @@
               :schema="tabSchema"
               :data="data || {}"
               :meta="meta"
+              :store="store"
               :disabled="loading"
             )
           dito-panel(
             :schema="formSchema"
             :data="data || {}"
             :meta="meta"
+            :store="store"
             :disabled="loading"
           )
           .dito-buttons
@@ -192,7 +194,7 @@ export default DitoComponent.component('dito-form', {
       const index = this.parentIndex
       if (clonedData && index >= 0) {
         this.$set(this.parentList, index,
-          Object.assign({}, clonedData, this.filterData(data)))
+          { ...clonedData, ...this.filterData(data) })
         return true
       }
       return false
@@ -233,7 +235,7 @@ export default DitoComponent.component('dito-form', {
         // Tell the parent to reload its data if this was a submit()
         // See DataMixin.shouldReload:
         const parent = this.parentRouteComponent
-        if (!parent.isTransient) {
+        if (reload && !parent.isTransient) {
           parent.reload = true
         }
       }
@@ -241,12 +243,12 @@ export default DitoComponent.component('dito-form', {
 
     submit() {
       this.$validator.validateAll()
-        .then(() => this.store())
+        .then(() => this.storeData())
         // TODO: Implement nicer dialogs and info / error flashes...
         .catch(() => alert('Please correct the validation errors.'))
     },
 
-    store() {
+    storeData() {
       const payload = this.data
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal

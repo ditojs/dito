@@ -168,7 +168,6 @@ export default DitoComponent.register('multiselect', {
           ? this.findOption(this.options, value, this.schema.options.groupBy)
           : value
       },
-
       set(value) {
         // When changes happend, store the mapped value instead of full object.
         this.value = this.valueKey
