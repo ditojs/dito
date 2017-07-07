@@ -12,7 +12,11 @@ export default {
   created() {
     // Initialize data after component was created and the data is already being
     // observed.
-    this.initData()
+    if (this.shouldReload) {
+      this.reloadData()
+    } else {
+      this.initData()
+    }
   },
 
   computed: {
@@ -33,6 +37,14 @@ export default {
       return !this.isTransient
     },
 
+    shouldReload() {
+      // NOTE: Not all route components have the DataMixin (DitoView delegates
+      // loading to DitoList), so we can't directly force a reload on
+      // this.parentRouteComponent in DitoForm.goBack(). Instead, we use a
+      // reload flag on the closest routeComponent and respect it in created()
+      return !this.isTransient && this.routeComponent.reload
+    },
+
     verbCreate() {
       return this.isTransient ? 'add' : 'create'
     },
@@ -47,18 +59,6 @@ export default {
 
     verbEdit() {
       return 'edit'
-    }
-  },
-
-  watch: {
-    $route() {
-      if (this.isLastDataRoute) {
-        // Execute in next tick so implementing components can also watch $route
-        // and handle changes that affect initData(), e.g. in DitoView.
-        this.$nextTick(function() {
-          this.initData()
-        })
-      }
     }
   },
 
@@ -86,7 +86,10 @@ export default {
     },
 
     reloadData() {
-      this.loadData(false)
+      if (!this.isTransient) {
+        this.loadData(false)
+      }
+      this.routeComponent.reload = false
     },
 
     loadData(clear) {
@@ -110,20 +113,22 @@ export default {
 
     request(method, path, filter, payload, callback) {
       const request = this.api.request || this.requestAxios
-      this.errors.remove('dito-data')
+      this.errors.remove('dito-request')
       this.setLoading(true)
       request(method, path, filter, payload, (error, response) => {
-        this.setLoading(false)
-        if (error) {
-          this.errors.add('dito-data', error.toString())
-        }
-        if (response) {
-          // TODO: Deal with / pass on status!
-          console.log(response.status, response.data)
-        }
-        if (callback) {
-          callback(error, response && response.data)
-        }
+        setTimeout(() => {
+          this.setLoading(false)
+          if (error) {
+            this.errors.add('dito-request', error.toString())
+          }
+          if (response) {
+            // TODO: Deal with / pass on status!
+            console.log(response.status, response.data)
+          }
+          if (callback) {
+            callback(error, response && response.data)
+          }
+        }, 0)
       })
     },
 

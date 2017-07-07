@@ -11,8 +11,8 @@
       )
       component.dito-component(
         :is="typeToComponent(compDesc.type)"
-        :name="key"
         :desc="compDesc"
+        :name="key"
         :data="data"
         :meta="meta"
         :disabled="getValue(compDesc, 'disabled', false) || disabled"

@@ -1,29 +1,32 @@
 <template lang="pug">
   .dito-list
     dito-errors(
-      v-if="errors.has('dito-data')"
-      name="dito-data"
+      v-if="errors.has('dito-request')"
+      name="dito-request"
     )
     .dito-scopes(v-if="scopes")
-      button.dito-button(
+      router-link.dito-button(
         v-for="scope in scopes"
+        :to="{ query: getFilter({ scope: scope.name }) }"
+        :key="scope.name"
+        tag="button"
         type="button"
-          :class="{ 'dito-active': scope.name === filterScope }"
-        @click="filterByScope(scope.name || scope.label.toLowerCase())"
+        :class="{ 'dito-active': scope.name === filter.scope }"
       )
         | {{ scope.label }}
     table
-      thead
-        tr(v-if="columns")
+      thead(v-if="columns")
+        tr
           th(
             v-for="(column, index) in columns"
             :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
           )
-            button.dito-button(
+            router-link.dito-button(
               v-if="column.sortable"
+              :to="{ query: getFilter({ order: getSortOrder(column.name) }) }"
+              tag="button"
               type="button"
               :class="getSortClass(column.name)"
-              @click="sortByColumn(column.name)"
             )
               .dito-arrows
               .dito-column
@@ -198,8 +201,9 @@ export default DitoComponent.register('list', {
 
   methods: {
     getSortClass(name) {
-      return this.sortKey === name
-        ? `dito-active dito-order-${this.sortOrder > 0 ? 'asc' : 'desc'}`
+      const [sortName, sortOrder] = this.getSortParams()
+      return sortName === name
+        ? `dito-active dito-order-${sortOrder}`
         : null
     }
   }

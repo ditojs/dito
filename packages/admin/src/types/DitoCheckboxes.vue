@@ -31,7 +31,7 @@ export default DitoComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
   methods: {
-    initValue() {
+    defaultValue() {
       return []
     }
   }

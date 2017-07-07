@@ -1,11 +1,10 @@
 <template lang="pug">
   .dito-view
     div.dito-scroll(v-if="isLastRoute")
-      .dito-debug API endpoint: {{ endpoint }}
       component.dito-component.dito-content(
         :is="typeToComponent(viewDesc.type)"
-        :name="name"
         :desc="viewDesc"
+        :name="name"
         :data="data"
         :meta="meta"
       )
@@ -40,34 +39,17 @@ export default DitoComponent.component('dito-view', {
     },
 
     data() {
-      // Set up viewData so we can pass it on to the nested component which
-      // will look up its own data under its name, e.g. see this.value
-      // NOTE: We need to reuse an object defined in data(), so that child
-      // components can modify its content, see DitoList#setData()
-      this.$set(this.viewData, this.name, this.loadedData || [])
+      if (!(this.name in this.viewData)) {
+        // Set up viewData so we can pass it on to the nested component which
+        // will look up its own data under its name, see this.value
+        // NOTE: DitoView isn't doing any actual data loading. Only DitoList and
+        // DitoForm use the DitoMixin and are capable of requesting and mutating
+        // data, but they inherit the data container from DitoView.
+        this.viewData = {
+          [this.name]: null
+        }
+      }
       return this.viewData
-    },
-
-    endpoint() {
-      return this.getEndpoint('get', 'collection')
-    },
-
-    shouldLoad() {
-      return this.isLastDataRoute && !this.loadedData
-    }
-  },
-
-  watch: {
-    $route(to, from) {
-      // Only erase loadedData if the routes changes completely.
-      let path1 = to.path
-      let path2 = from.path
-      if (path2.length < path1.length) {
-        [path1, path2] = [path2, path1]
-      }
-      if (path2.indexOf(path1) !== 0) {
-        this.loadedData = null
-      }
     }
   }
 })

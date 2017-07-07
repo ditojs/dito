@@ -1,10 +1,9 @@
 <template lang="pug">
   .dito-form
     form(v-if="isLastRoute" @submit.prevent="submit")
-      .dito-debug API endpoint: {{ endpoint }}
       dito-errors(
-        v-if="errors.has('dito-data')"
-        name="dito-data"
+        v-if="errors.has('dito-request')"
+        name="dito-request"
       )
       dito-tabs(
         :tabs="tabs"
@@ -32,7 +31,7 @@
               @click.prevent="cancel"
             )
             button.dito-button(
-              v-if="!errors.has('dito-data')"
+              v-if="!errors.has('dito-request')"
               type="submit"
               :class="`dito-button-${create ? verbCreate : verbSave}`"
             )
@@ -61,12 +60,12 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
+import RouteMixin from '@/mixins/RouteMixin'
 import clone from '@/utils/clone'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin],
+  mixins: [RouteMixin, DataMixin],
 
   data() {
     return {
@@ -133,9 +132,7 @@ export default DitoComponent.component('dito-form', {
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
       const parentData = this.parentRouteComponent.data
-      const name = this.viewDesc.name
-      // If there is parentData but no list, create and return it on the fly.
-      return parentData && (parentData[name] || this.$set(parentData, name, []))
+      return parentData && parentData[this.viewDesc.name]
     },
 
     inheritedData() {
@@ -159,7 +156,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
-      return this.isLastDataRoute && !this.create && !this.data
+      return !this.isTransient && !this.data
     },
 
     isDirty() {
@@ -177,8 +174,8 @@ export default DitoComponent.component('dito-form', {
         }
         for (let [key, compDesc] of Object.entries(desc.components)) {
           const comp = DitoComponent.get(compDesc.type)
-          const initValue = comp && comp.options.methods.initValue
-          data[key] = initValue ? initValue() : null
+          const defaultValue = comp && comp.options.methods.defaultValue
+          data[key] = defaultValue ? defaultValue() : null
         }
         return data
       }
@@ -190,13 +187,6 @@ export default DitoComponent.component('dito-form', {
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)
-      }
-    },
-
-    reloadData() {
-      if (!this.create) {
-        // super.reloadData()
-        DataMixin.methods.reloadData.call(this)
       }
     },
 
@@ -244,9 +234,10 @@ export default DitoComponent.component('dito-form', {
       ) {
         this.$router.push({ path: '..', append: true })
         // Tell the parent to reload its data if this was a submit()
+        // See DataMixin.shouldReload:
         const parent = this.parentRouteComponent
-        if (reload && parent) {
-          parent.reloadData()
+        if (!parent.isTransient) {
+          parent.reload = true
         }
       }
     },
@@ -272,7 +263,7 @@ export default DitoComponent.component('dito-form', {
             parentList.push(data)
           } else {
             ok = false
-            this.errors.add('dito-data', 'Unable to create item.')
+            this.errors.add('dito-request', 'Unable to create item.')
           }
         } else {
           this.setParentData(data)

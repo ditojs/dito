@@ -1,7 +1,4 @@
-import DataMixin from '@/mixins/DataMixin'
-
 export default {
-  mixins: [DataMixin],
   // Each route-component shall provide a vee-validate $validator object,
   // to be shared along all its children.
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -9,20 +6,16 @@ export default {
 
   data() {
     return {
-      loading: false, // See DataMixin
-      isRoute: true
+      isRoute: true,
+      reload: false
     }
   },
 
   computed: {
-    routeIndex() {
-      return this.$vnode.data.routerViewDepth
-    },
-
     routeRecord() {
       // Retrieve the route-record to which this component was mapped to:
       // https://github.com/vuejs/vue-router/issues/1338#issuecomment-296381459
-      return this.$route.matched[this.routeIndex]
+      return this.$route.matched[this.$vnode.data.routerViewDepth]
     },
 
     meta() {
@@ -33,13 +26,6 @@ export default {
       // Returns true when this router component is the last one in the route.
       const matched = this.$route.matched
       return this.routeRecord === matched[matched.length - 1]
-    },
-
-    isLastDataRoute() {
-      // Returns true if this is the last router component that is supposed
-      // to load data, meaning any component beyond this one uses nested data.
-      const next = this.$route.matched[this.routeIndex + 1]
-      return !this.isTransient && (!next || !!next.meta.viewDesc.nested)
     },
 
     param() {

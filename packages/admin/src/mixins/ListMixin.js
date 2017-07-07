@@ -7,9 +7,29 @@ export default {
 
   data() {
     return {
-      isList: true,
-      sortKey: null,
-      sortOrder: 1
+      isList: true
+    }
+  },
+
+  watch: {
+    $route(to, from) {
+      let path1 = from.path
+      let path2 = to.path
+      if (path2.length < path1.length) {
+        [path1, path2] = [path2, path1]
+      }
+      // See if the routes changes completely.
+      if (path2.indexOf(path1) !== 0) {
+        // Complete change from one view to the next but DitoList is reused,
+        // so clear the filters and load data with clearing.
+        this.filter = {}
+        this.loadData(true)
+      } else if (path1 === path2 && from.hash === to.hash) {
+        // Paths and hashes remain the same, so only queries have changed.
+        // Update filter and reload data without clearing.
+        this.setFilter(to.query)
+        this.loadData(false)
+      }
     }
   },
 
@@ -79,7 +99,14 @@ export default {
   },
 
   methods: {
-    initValue() {
+    initData() {
+      // Make sure filters are set correctly before initData() triggers request.
+      this.setFilter(this.$route.query)
+      // super.initData()
+      DataMixin.methods.initData.call(this)
+    },
+
+    defaultValue() {
       return []
     },
 
@@ -100,18 +127,22 @@ export default {
           : null
     },
 
-    filterByScope(name) {
-      this.filter.scope = name
-      this.loadData(false)
+    getFilter(filter) {
+      return Object.assign({}, this.filter, filter)
     },
 
-    sortByColumn(name) {
-      if (this.sortKey !== name) {
-        this.sortKey = name
-        this.sortOrder = 1
-      } else {
-        this.sortOrder *= -1
-      }
+    setFilter(filter) {
+      this.filter = Object.assign({}, this.filter, filter)
+    },
+
+    getSortParams() {
+      return (this.filter.order || '').split(' ')
+    },
+
+    getSortOrder(name) {
+      let [sortName, sortOrder] = this.getSortParams()
+      const order = sortName === name && sortOrder === 'asc' ? 'desc' : 'asc'
+      return `${name} ${order}`
     },
 
     setData(data) {
