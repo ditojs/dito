@@ -26,7 +26,12 @@
       opacity: 1
 
     .CodeFlask__pre
+      border: $border-width solid transparent // align with .CodeFlask__textarea
       bottom: 0 // for scroll to work!
+      .CodeFlask__code,
+      .token
+        background: transparent
+        text-shadow: none
 </style>
 
 <script>
