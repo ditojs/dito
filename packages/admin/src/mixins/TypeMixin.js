@@ -1,4 +1,10 @@
 export default {
+  // Inherit the $validator from the parent.
+  // See: https://github.com/logaretm/vee-validate/issues/468
+  // NOTE: We can't do this in DitoMixin for all components, as it would
+  // override the $validates: true` setting there.
+  inject: ['$validator'],
+
   props: {
     schema: { type: Object, required: true },
     name: { type: String, required: true },

@@ -1,10 +1,6 @@
 import appState from '@/appState'
 
 export default {
-  // Inherit the $validator from the parent.
-  // See: https://github.com/logaretm/vee-validate/issues/468
-  inject: ['$validator'],
-
   data() {
     return {
       appState

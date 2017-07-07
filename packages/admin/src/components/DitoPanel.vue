@@ -40,6 +40,8 @@ import DitoComponent from '@/DitoComponent'
 import {isFunction} from '@/utils'
 
 export default DitoComponent.component('dito-panel', {
+  inject: ['$validator'],
+
   props: {
     schema: { type: Object, required: true },
     data: { type: Object, required: true },

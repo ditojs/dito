@@ -17,6 +17,8 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-errors', {
+  inject: ['$validator'],
+
   props: {
     name: { type: String, required: true }
   }
