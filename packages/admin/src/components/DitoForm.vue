@@ -241,11 +241,13 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    submit() {
-      this.$validator.validateAll()
-        .then(() => this.storeData())
+    async submit() {
+      if (await this.$validator.validateAll()) {
+        this.storeData()
+      } else {
         // TODO: Implement nicer dialogs and info / error flashes...
-        .catch(() => alert('Please correct the validation errors.'))
+        alert('Please correct the validation errors.')
+      }
     },
 
     storeData() {
