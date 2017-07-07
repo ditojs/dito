@@ -31,7 +31,8 @@ export default DitoComponent.register('number', {
     // converting computed property to make sure we're dealing with numbers.
     numberValue: {
       get() {
-        return +this.value
+        const value = this.value
+        return value != null ? +value : value
       },
       set(value) {
         this.value = value
