@@ -1,6 +1,12 @@
 <template lang="pug">
   .dito-pagination
-    | {{ first }} … {{ last }} of {{ count }}
+    .dito-pages {{ first }} – {{ last }} / {{ count }}
+    router-link.dito-button(
+      v-if="current > 1"
+      :to="{ query: getQuery(current - 1) }"
+      tag="button"
+      type="button"
+    ) ︎◀
     router-link.dito-button(
       v-for="page in pages"
       :to="{ query: getQuery(page) }"
@@ -8,16 +14,26 @@
       tag="button"
       type="button"
       :class="{ 'dito-active': page === current }"
-    )
-      | {{ page }}
+    ) {{ page }}
+    router-link.dito-button(
+      v-if="current < pages"
+      :to="{ query: getQuery(current + 1) }"
+      tag="button"
+      type="button"
+    ) ▶︎
 </template>
 
 <style lang="sass">
 .dito
   .dito-pagination
+    .dito-pages
+      display: inline-block
+      margin-right: 0.5em
     .dito-button
+      width: 2em
       margin-left: 0.35em
       border-radius: 1em
+      text-align: center
 </style>
 
 <script>
