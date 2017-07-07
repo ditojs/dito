@@ -72,7 +72,7 @@ export default {
     },
 
     getItemId(item, index) {
-      return String(this.viewSchema.nested ? index : item.id)
+      return String(this.isTransient ? index : item.id)
     },
 
     setData(data) {
@@ -98,7 +98,7 @@ export default {
           this.loadedData = null
         }
         // LoopBack specific filters / query parameters:
-        const paginate = this.schema.paginate
+        const paginate = this.viewSchema.paginate
         const filter = {
           ...this.filter,
           limit: paginate

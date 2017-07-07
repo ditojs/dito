@@ -53,9 +53,8 @@ export default {
     },
 
     validations() {
-      const rules = {}
-      if (this.required) {
-        rules.required = this.required
+      const rules = {
+        required: this.required
       }
       if (this.min) {
         rules.min_value = this.min
@@ -64,11 +63,9 @@ export default {
         rules.max_value = this.max
       }
       if (this.step) {
-        const d = this.step.toString().split('.')[1].length
-        rules.decimal = d
+        rules.decimal = `${this.step}`.split('.')[1].length
       }
-
-      return { rules: rules }
+      return { rules }
     }
   }
 }

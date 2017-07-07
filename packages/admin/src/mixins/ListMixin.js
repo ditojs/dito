@@ -127,22 +127,8 @@ export default {
           : null
     },
 
-    getFilter(filter) {
-      return Object.assign({}, this.filter, filter)
-    },
-
     setFilter(filter) {
-      this.filter = Object.assign({}, this.filter, filter)
-    },
-
-    getSortParams() {
-      return (this.filter.order || '').split(' ')
-    },
-
-    getSortOrder(name) {
-      let [sortName, sortOrder] = this.getSortParams()
-      const order = sortName === name && sortOrder === 'asc' ? 'desc' : 'asc'
-      return `${name} ${order}`
+      this.filter = {...this.filter, ...filter}
     },
 
     setData(data) {
