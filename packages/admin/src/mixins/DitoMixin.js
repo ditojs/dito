@@ -13,8 +13,8 @@ export default {
 
   computed: {
     // Short-cuts to meta properties:
-    viewDesc() { return this.meta.viewDesc },
-    formDesc() { return this.viewDesc.formDesc },
+    viewSchema() { return this.meta.viewSchema },
+    formSchema() { return this.viewSchema.formSchema },
     user() { return this.meta.user },
     api() { return this.meta.api },
 
@@ -43,13 +43,13 @@ export default {
   },
 
   methods: {
-    renderLabel(desc) {
+    renderLabel(schema) {
       // Handle hyphenated, underscored and camel-cased property names and
       // expand them to title cased labels if no label was provided:
       // console.log(this.renderLabel({ name: 'some-hyphenated-label' }))
       // console.log(this.renderLabel({ name: 'one_underscored_label' }))
       // console.log(this.renderLabel({ name: 'MyCamelcasedLabel' }))
-      return desc.label || desc.name.replace(
+      return schema.label || schema.name.replace(
         /([-_]|^)(\w)|([a-z])([A-Z])/g,
         function(all, hyphen, hyphenated, camelLeft, camelRight) {
           return hyphenated

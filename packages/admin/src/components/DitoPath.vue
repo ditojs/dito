@@ -83,7 +83,7 @@ export default DitoComponent.component('dito-path', {
     getLabel(route) {
       const param = this.$route.params[route.meta.param]
       const prefix = param ? param === 'create' ? 'Create ' : 'Edit ' : ''
-      return prefix + this.renderLabel(route.meta.labelDesc)
+      return prefix + this.renderLabel(route.meta.labelSchema)
     }
   }
 })

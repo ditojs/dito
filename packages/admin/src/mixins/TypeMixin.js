@@ -1,7 +1,7 @@
 export default {
   props: {
+    schema: { type: Object, required: true },
     name: { type: String, required: true },
-    desc: { type: Object, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     disabled: { type: Boolean, required: false }
@@ -27,29 +27,29 @@ export default {
     },
 
     readonly() {
-      return this.desc.readonly
+      return this.schema.readonly
     },
 
     placeholder() {
-      return this.desc.placeholder
+      return this.schema.placeholder
     },
 
     step() {
-      return this.desc.step
+      return this.schema.step
     },
 
     min() {
-      const desc = this.desc
-      return desc.range ? desc.range[0] : desc.min
+      const schema = this.schema
+      return schema.range ? schema.range[0] : schema.min
     },
 
     max() {
-      const desc = this.desc
-      return desc.range ? desc.range[1] : desc.max
+      const schema = this.schema
+      return schema.range ? schema.range[1] : schema.max
     },
 
     required() {
-      return !!this.desc.required
+      return !!this.schema.required
     },
 
     validations() {

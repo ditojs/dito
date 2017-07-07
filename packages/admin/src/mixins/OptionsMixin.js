@@ -11,7 +11,7 @@ export default {
   },
 
   created() {
-    const options = this.desc.options
+    const options = this.schema.options
     if (isObject(options)) {
       if (options.url) {
         this.loading = true
@@ -43,23 +43,23 @@ export default {
     labelKey() {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
-      return this.desc.options.labelKey ||
+      return this.schema.options.labelKey ||
           this.options && isObject(this.options[0]) && 'label' || null
     },
 
     valueKey() {
       // If no valueKey was provided but the options are objects, assume a
       // default value of 'value':
-      return this.desc.options.valueKey ||
+      return this.schema.options.valueKey ||
           this.options && isObject(this.options[0]) && 'value' || null
     },
 
     groupLabelKey() {
-      return this.desc.options.groupBy && 'name' || null
+      return this.schema.options.groupBy && 'name' || null
     },
 
     groupOptionsKey() {
-      return this.desc.options.groupBy && 'options' || null
+      return this.schema.options.groupBy && 'options' || null
     }
   },
 

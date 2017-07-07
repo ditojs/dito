@@ -1,21 +1,21 @@
 <template lang="pug">
-  ul.dito-panel.dito-layout-vertical(v-if="desc.components")
+  ul.dito-panel.dito-layout-vertical(v-if="schema.components")
     li(
-      v-for="(compDesc, key) in desc.components"
-      v-show="getValue(compDesc, 'visible', true)"
+      v-for="(compSchema, key) in schema.components"
+      v-show="getValue(compSchema, 'visible', true)"
     )
       dito-label(
-        v-if="compDesc.label"
+        v-if="compSchema.label"
         :name="key"
-        :text="compDesc.label"
+        :text="compSchema.label"
       )
       component.dito-component(
-        :is="typeToComponent(compDesc.type)"
-        :desc="compDesc"
+        :is="typeToComponent(compSchema.type)"
+        :schema="compSchema"
         :name="key"
         :data="data"
         :meta="meta"
-        :disabled="getValue(compDesc, 'disabled', false) || disabled"
+        :disabled="getValue(compSchema, 'disabled', false) || disabled"
         :class="{ 'dito-has-errors': errors.has(key) }"
       )
       dito-errors(
@@ -39,19 +39,19 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-panel', {
   props: {
-    desc: { type: Object, required: true },
+    schema: { type: Object, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
   },
 
   methods: {
-    isDisabled(desc) {
+    isDisabled(schema) {
 
     },
 
-    getValue(desc, name, defaultValue) {
-      const value = desc[name]
+    getValue(schema, name, defaultValue) {
+      const value = schema[name]
       return value === undefined
         ? defaultValue
         : typeof value === 'function'

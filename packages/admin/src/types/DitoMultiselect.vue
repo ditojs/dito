@@ -4,14 +4,14 @@
     :data-vv-name="name"
     v-validate="validations"
     :show-labels="false"
-    :placeholder="desc.placeholder"
+    :placeholder="schema.placeholder"
     :options="options || []"
     :label="labelKey"
     :track-by="valueKey"
     :group-label="groupLabelKey"
     :group-values="groupOptionsKey"
-    :searchable="desc.searchable"
-    :multiple="desc.multiple"
+    :searchable="schema.searchable"
+    :multiple="schema.multiple"
     :internal-search="true"
     :close-on-select="true"
     :loading="loading"
@@ -165,7 +165,7 @@ export default DitoComponent.register('multiselect', {
         // itself unfortunately. `track-by` is used for :key mapping it seems.
         const value = this.value
         return this.valueKey
-          ? this.findOption(this.options, value, this.desc.options.groupBy)
+          ? this.findOption(this.options, value, this.schema.options.groupBy)
           : value
       },
 

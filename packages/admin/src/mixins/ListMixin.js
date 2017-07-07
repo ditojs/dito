@@ -1,5 +1,5 @@
 import DataMixin from '@/mixins/DataMixin'
-import {escapeHtml, stripTags} from '@/utils/html'
+import {escapeHtml, stripTags} from '@/utils'
 import isObject from 'isobject'
 
 export default {
@@ -35,7 +35,7 @@ export default {
 
   computed: {
     listLabels() {
-      const components = this.formDesc.components
+      const components = this.formSchema.components
       let labels = []
       for (let key in components) {
         labels.push(components[key].label)
@@ -47,9 +47,9 @@ export default {
       return !this.isTransient && !this.value
     },
 
-    viewDesc() {
+    viewSchema() {
       // The view description of a list is the list's description itself.
-      return this.desc
+      return this.schema
     },
 
     endpoint() {
@@ -57,21 +57,21 @@ export default {
     },
 
     path() {
-      return this.routeComponent.isView ? '' : `${this.desc.path}/`
+      return this.routeComponent.isView ? '' : `${this.schema.path}/`
     },
 
     scopes() {
-      return this.getNamedDescriptions(this.desc.scopes)
+      return this.getNamedSchemas(this.schema.scopes)
     },
 
     columns() {
-      return this.getNamedDescriptions(this.desc.columns)
+      return this.getNamedSchemas(this.schema.columns)
     },
 
     renderCells() {
       // Returns a function to render the cells with, supporting different
-      // formats of desc:
-      const render = this.desc.render
+      // schema formats:
+      const render = this.schema.render
       const columns = this.columns
       const firstColumn = columns && columns[0]
       return !render && firstColumn && firstColumn.name
@@ -114,7 +114,7 @@ export default {
       return stripTags(this.renderCells(item)[0])
     },
 
-    getNamedDescriptions(descs) {
+    getNamedSchemas(descs) {
       return Array.isArray(descs)
         ? descs.map(value => {
           const name = value.toLowerCase()

@@ -7,7 +7,7 @@ import DitoComponent from './DitoComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { hyphenate } from './utils/string'
+import { hyphenate } from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -24,14 +24,15 @@ export function setup(el, options) {
   const api = options.api
   const normalize = api.normalize || hyphenate
 
-  function addViewRoute(routes, viewDesc, viewName, level) {
+  function addViewRoute(routes, viewSchema, viewName, level) {
+    const formName = viewSchema.form
+    const formSchema = formName && options.forms[formName]
     const path = normalize(viewName)
-    viewDesc.path = path
-    viewDesc.name = viewName
-    const formName = viewDesc.form
-    const formDesc = viewDesc.formDesc = formName && options.forms[formName]
+    viewSchema.path = path
+    viewSchema.name = viewName
+    viewSchema.formSchema = formSchema
     const meta = {
-      viewDesc,
+      viewSchema,
       user,
       api
     }
@@ -39,9 +40,9 @@ export function setup(el, options) {
     // Root views have their own routes and entries in the breadcrumbs, and the
     // form routes are children of the view route. Nested lists in forms don't
     // have views and routes, so their form routes need the viewName prefixed.
-    const formRoutes = formDesc && getFormRoutes(
+    const formRoutes = formSchema && getFormRoutes(
       root ? '' : `${path}/`,
-      formDesc, formName, meta, level
+      formSchema, formName, meta, level
     )
 
     routes.push(
@@ -51,7 +52,7 @@ export function setup(el, options) {
           children: formRoutes,
           component: DitoView,
           meta: Object.assign({
-            labelDesc: viewDesc
+            labelSchema: viewSchema
           }, meta)
         }
         // Just redirect back to the form if the user enters a nested list route.
@@ -66,22 +67,22 @@ export function setup(el, options) {
 
   function addViewRoutes(routes, components, level) {
     for (let name in components) {
-      const desc = components[name]
-      if (desc.form && !desc.inline) {
-        addViewRoute(routes, desc, name, level)
+      const schema = components[name]
+      if (schema.form && !schema.inline) {
+        addViewRoute(routes, schema, name, level)
       }
     }
   }
 
-  function getFormRoutes(pathPrefix, formDesc, formName, meta, level) {
-    formDesc.path = normalize(formName)
-    formDesc.name = formName
+  function getFormRoutes(pathPrefix, formSchema, formName, meta, level) {
+    formSchema.path = normalize(formName)
+    formSchema.name = formName
     const children = []
-    const tabs = formDesc.tabs
+    const tabs = formSchema.tabs
     for (let name in tabs) {
       addViewRoutes(children, tabs[name].components, level + 1)
     }
-    addViewRoutes(children, formDesc.components, level + 1)
+    addViewRoutes(children, formSchema.components, level + 1)
 
     // Use differently named url parameters on each nested level for id as
     // otherwise they would clash and override each other inside $route.params
@@ -92,7 +93,7 @@ export function setup(el, options) {
       component: DitoForm,
       children,
       meta: Object.assign({
-        labelDesc: formDesc,
+        labelSchema: formSchema,
         param
       }, meta)
     }]
@@ -100,14 +101,14 @@ export function setup(el, options) {
 
   function getEndpoints(endpoints) {
     const defaultEndpoints = {
-      member(viewDesc, formDesc, itemId) {
-        return `${viewDesc.path}/${itemId}`
+      member(viewSchema, formSchema, itemId) {
+        return `${viewSchema.path}/${itemId}`
       },
 
-      collection(viewDesc, formDesc, parentForm) {
+      collection(viewSchema, formSchema, parentForm) {
         return parentForm
-          ? `${parentForm.viewDesc.path}/${parentForm.itemId}/${viewDesc.path}`
-          : viewDesc.path
+          ? `${parentForm.viewSchema.path}/${parentForm.itemId}/${viewSchema.path}`
+          : viewSchema.path
       }
     }
     const results = {}

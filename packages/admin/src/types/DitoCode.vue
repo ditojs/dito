@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-code(ref="code" :style="`height: ${ 1.5 * (desc.lines || 3)}em`")
+  .dito-code(ref="code" :style="`height: ${ 1.5 * (schema.lines || 3)}em`")
     | {{ value }}
 </template>
 
@@ -35,10 +35,10 @@ import CodeFlask from 'codeflask'
 
 export default DitoComponent.register('code', {
   mounted() {
-    const indent = new Array((this.desc.indentSize || 2) + 1).join(' ')
+    const indent = new Array((this.schema.indentSize || 2) + 1).join(' ')
     const flask = new CodeFlask(indent)
     flask.run(this.$refs.code, {
-      language: this.desc.language || 'javascript'
+      language: this.schema.language || 'javascript'
     })
     flask.onUpdate(value => { this.value = value })
     this.$watch('value', value => { flask.update(value) })

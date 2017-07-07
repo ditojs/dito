@@ -1,11 +1,11 @@
 <template lang="pug">
   .dito-tabs(v-if="tabs")
-    template(v-for="(tabDesc, key) in tabs")
+    template(v-for="(tabSchema, key) in tabs")
       a(
         :href="`#${key}`"
         :class="{ selected: selectedTab === key }"
       )
-        | {{ tabDesc.label }}
+        | {{ tabSchema.label }}
 </template>
 
 <style lang="sass">

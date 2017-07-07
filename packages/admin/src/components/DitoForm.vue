@@ -11,16 +11,16 @@
       )
       .dito-scroll
         .dito-content
-          template(v-for="(tabDesc, key) in tabs")
+          template(v-for="(tabSchema, key) in tabs")
             dito-panel(
               v-show="selectedTab === key"
-              :desc="tabDesc"
+              :schema="tabSchema"
               :data="data || {}"
               :meta="meta"
               :disabled="loading"
             )
           dito-panel(
-            :desc="formDesc"
+            :schema="formSchema"
             :data="data || {}"
             :meta="meta"
             :disabled="loading"
@@ -62,7 +62,7 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import clone from '@/utils/clone'
+import {clone} from '@/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
@@ -79,7 +79,7 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     name() {
-      return this.formDesc.name
+      return this.formSchema.name
     },
 
     create() {
@@ -106,7 +106,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     tabs() {
-      return this.formDesc.tabs
+      return this.formSchema.tabs
     },
 
     selectedTab() {
@@ -132,7 +132,7 @@ export default DitoComponent.component('dito-form', {
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
       const parentData = this.parentRouteComponent.data
-      return parentData && parentData[this.viewDesc.name]
+      return parentData && parentData[this.viewSchema.name]
     },
 
     inheritedData() {
@@ -166,14 +166,14 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     initData() { // overrides DataMixin.initData()
-      const initData = (desc, data) => {
+      const initData = (schema, data) => {
         // Sets up an createdData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
-        for (let key in desc.tabs) {
-          initData(desc.tabs[key], data)
+        for (let key in schema.tabs) {
+          initData(schema.tabs[key], data)
         }
-        for (let [key, compDesc] of Object.entries(desc.components)) {
-          const comp = DitoComponent.get(compDesc.type)
+        for (let [key, compSchema] of Object.entries(schema.components)) {
+          const comp = DitoComponent.get(compSchema.type)
           const defaultValue = comp && comp.options.methods.defaultValue
           data[key] = defaultValue ? defaultValue() : null
         }
@@ -182,7 +182,7 @@ export default DitoComponent.component('dito-form', {
 
       if (this.create) {
         if (!this.createdData) {
-          this.createdData = initData(this.formDesc, {})
+          this.createdData = initData(this.formSchema, {})
         }
       } else {
         // super.initData()
@@ -211,7 +211,7 @@ export default DitoComponent.component('dito-form', {
           const comp = this.components[key]
           // Only check for nested on list items that actuall load data, since
           // other components can have array values too.
-          if (comp && comp.isList && !comp.viewDesc.nested) {
+          if (comp && comp.isList && !comp.viewSchema.nested) {
             continue
           }
         }

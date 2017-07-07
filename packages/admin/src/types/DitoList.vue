@@ -48,19 +48,19 @@
           )
           td.dito-buttons(v-if="hasButtons")
             router-link.dito-button(
-              v-if="desc.editable"
+              v-if="schema.editable"
               :to="`${path}${getItemId(item, index)}`" append
               tag="button"
               type="button"
               :class="`dito-button-${verbEdit}`"
             )
             button.dito-button(
-              v-if="desc.deletable"
+              v-if="schema.deletable"
               type="button"
               @click="deleteItem(item)"
               :class="`dito-button-${verbDelete}`"
             )
-    .dito-buttons(v-if="desc.creatable")
+    .dito-buttons(v-if="schema.creatable")
       router-link.dito-button(
         :to="`${path}create`" append
         tag="button"
@@ -187,13 +187,13 @@ export default DitoComponent.register('list', {
 
   computed: {
     hasButtons() {
-      return this.desc.editable || this.desc.deletable
+      return this.schema.editable || this.schema.deletable
     },
 
     dragOptions() {
       return {
         animation: 150,
-        disabled: !this.desc.draggable,
+        disabled: !this.schema.draggable,
         ghostClass: 'dito-drag-ghost'
       }
     }

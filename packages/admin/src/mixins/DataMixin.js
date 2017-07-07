@@ -21,7 +21,7 @@ export default {
 
   computed: {
     isNested() {
-      return !!this.viewDesc.nested
+      return !!this.viewSchema.nested
     },
 
     isTransient() {
@@ -65,14 +65,14 @@ export default {
   methods: {
     getEndpoint(method, type, id) {
       return this.api.endpoints[method][type](
-        this.viewDesc,
-        this.formDesc,
+        this.viewSchema,
+        this.formSchema,
         type === 'collection' ? this.parentFormComponent : id
       )
     },
 
     getItemId(item, index) {
-      return String(this.viewDesc.nested ? index : item.id)
+      return String(this.viewSchema.nested ? index : item.id)
     },
 
     setData(data) {

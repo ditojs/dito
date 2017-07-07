@@ -4,7 +4,7 @@
     :name="name"
     v-model="value"
     v-validate="validations"
-    :rows="desc.lines || 4"
+    :rows="schema.lines || 4"
     :placeholder="placeholder"
     :disabled="disabled"
     :readonly="readonly"

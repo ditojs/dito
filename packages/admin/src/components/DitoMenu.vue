@@ -2,8 +2,8 @@
   nav.dito-menu
     h1 Dito Admin
     ul
-      li(v-for="desc in views")
-        router-link(:to="`/${desc.path}`") {{ renderLabel(desc) }}
+      li(v-for="schema in views")
+        router-link(:to="`/${schema.path}`") {{ renderLabel(schema) }}
 </template>
 
 <style lang="sass">
