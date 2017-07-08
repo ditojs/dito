@@ -14,7 +14,6 @@
 <style lang="sass">
 .dito
   .dito-scopes
-    padding-bottom: $menu-padding-ver
     // font-size: 0.9em
     .dito-button
       border-radius: 0

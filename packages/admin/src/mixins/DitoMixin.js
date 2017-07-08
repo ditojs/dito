@@ -39,6 +39,22 @@ export default {
   },
 
   methods: {
+    // The state of components is only available during the life-cycle of a
+    // component. Some information we need available longer than that, e.g.
+    // `filter` & `count` on DitoList, so that when the user navigates back from
+    // editing an item in the list, the state of the list is still the same.
+    // We can't store this in `data`, as this is already the pure data from the
+    // API server. That's what the `store` is for: Memory that's available as
+    // long as the current editing path is still valid. For type components,
+    // this memory is provided by the parent, see RouteMixin and DitoPanel.
+    getStore(key) {
+      return this.store[key] || this.setStore(key, {})
+    },
+
+    setStore(key, value) {
+      return this.$set(this.store, key, value)
+    },
+
     renderLabel(schema) {
       // Handle hyphenated, underscored and camel-cased property names and
       // expand them to title cased labels if no label was provided:

@@ -10,6 +10,11 @@ export default {
     }
   },
 
+  created() {
+    // Make sure filters are set correctly before initData() triggers request.
+    this.addFilter(this.$route.query)
+  },
+
   watch: {
     $route(to, from) {
       let path1 = from.path
@@ -21,12 +26,12 @@ export default {
       if (path2.indexOf(path1) !== 0) {
         // Complete change from one view to the next but DitoList is reused,
         // so clear the filters and load data with clearing.
-        this.filter = {}
+        this.setFilter({})
         this.loadData(true)
       } else if (path1 === path2 && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
-        this.setFilter(to.query)
+        this.addFilter(to.query)
         this.loadData(false)
       }
     }
@@ -57,6 +62,14 @@ export default {
 
     path() {
       return this.routeComponent.isView ? '' : `${this.schema.path}/`
+    },
+
+    filter() {
+      return this.store.filter
+    },
+
+    count() {
+      return this.store.count
     },
 
     scopes() {
@@ -97,11 +110,6 @@ export default {
     }
   },
 
-  created() {
-    // Make sure filters are set correctly before initData() triggers request.
-    this.setFilter(this.store.filter || this.$route.query)
-  },
-
   methods: {
     defaultValue() {
       return []
@@ -125,7 +133,11 @@ export default {
     },
 
     setFilter(filter) {
-      this.filter = this.store.filter = {...this.filter, ...filter}
+      this.setStore('filter', filter)
+    },
+
+    addFilter(filter) {
+      this.setFilter({...this.filter, ...filter})
     },
 
     setData(data) {

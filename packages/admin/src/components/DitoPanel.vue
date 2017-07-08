@@ -51,15 +51,6 @@ export default DitoComponent.component('dito-panel', {
   },
 
   methods: {
-    isDisabled(schema) {
-
-    },
-
-    getStore(key) {
-      let store = this.store[key]
-      return store || this.$set(this.store, key, {})
-    },
-
     getValue(schema, name, defaultValue) {
       const value = schema[name]
       return value === undefined

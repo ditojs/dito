@@ -5,8 +5,7 @@ export default {
   data() {
     return {
       loadedData: null,
-      loading: false,
-      filter: {}
+      loading: false
     }
   },
 
@@ -100,7 +99,8 @@ export default {
       if (!this.isTransient) {
         if (clear) {
           this.loadedData = null
-          this.store.count = 0
+          // See DitoMixin for an explanation of `store.count` & co.
+          this.setStore('count', 0)
         }
         // LoopBack specific filters / query parameters:
         const paginate = this.viewSchema.paginate
@@ -117,7 +117,7 @@ export default {
         this.request('get', { params }, (err, data) => {
           if (!err) {
             if (this.endpoint.type === 'collection' && isObject(data)) {
-              this.store.count = data.count
+              this.setStore('count', data.count)
               data = data.data
             }
             this.setData(data)

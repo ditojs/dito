@@ -4,17 +4,17 @@
       v-if="errors.has('dito-request')"
       name="dito-request"
     )
-    .dito-header
+    .dito-header(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"
         :filter="filter"
         :scopes="scopes"
       )
       dito-pagination(
-        v-if="store.count && schema.paginate"
+        v-if="paginate"
         :filter="filter"
-        :paginate="schema.paginate"
-        :count="store.count"
+        :paginate="paginate"
+        :count="count"
       )
     table
       dito-headers(
@@ -65,6 +65,8 @@ $list-spacing: 3px
 .dito
   .dito-list
     .dito-header
+      overflow: auto
+      padding-bottom: $menu-padding-ver
       .dito-scopes
         float: left
       .dito-pagination
@@ -120,6 +122,10 @@ export default DitoComponent.register('list', {
   components: {VueDraggable},
 
   computed: {
+    paginate() {
+      return this.count && this.schema.paginate
+    },
+
     hasButtons() {
       return this.schema.editable || this.schema.deletable
     },
