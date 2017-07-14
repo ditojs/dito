@@ -1,5 +1,6 @@
 .dito-button
   background: $button-color
+  color: $color-text
   position: relative
   border: 1px solid transparent
   border-radius: $border-radius
@@ -7,16 +8,17 @@
   text-align: center
   white-space: nowrap
   cursor: pointer
-  &:hover
-    background: $button-color-hover
   &:focus
     outline: none
     border-color: $color-active
-  &:active,
+  &:hover
+    background: $button-color-hover
   &.dito-active
     background: $button-color-active
+    &:hover
+      background: $button-color-active-hover
   &:active
-    border-color: $border-color
+    background: $button-color-active-hover
     box-shadow: inset $shadow-settings rgba($color-shadow, 0.2)
 
 .dito-buttons

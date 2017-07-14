@@ -42,8 +42,10 @@ $select-right-margin: 1em
 
 // Button
 $button-color: $color-lighter
-$button-color-hover: darken($button-color, 2.5%)
-$button-color-active: darken($button-color, 5%)
+$button-color-hover: darken($button-color, 5%)
+$button-color-active: darken($button-color, 10%)
+$button-color-active-hover: mix($button-color-hover, $button-color-active)
+
 $button-padding-ver: 0.2em
 $button-padding-hor: 0.6em
 $button-padding: $button-padding-ver $button-padding-hor
@@ -64,7 +66,7 @@ $form-spacing: 6px
 $form-margin: 12px
 
 // Lists
-$column-arrow-size: 4px
+$list-spacing: 3px
 
 // Tabs
 $tab-margin: 6px

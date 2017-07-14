@@ -1,14 +1,15 @@
-=arrow($size: $select-arrow-size, $up: false)
-  display: block
+$angles: (up: 135deg, down: -45deg, left: 45deg, right: -135deg)
+
+=arrow($size: $select-arrow-size, $direction: 'down')
   position: absolute
-  border: 1px solid $color-active
+  border: $border-width solid $color-active
   border-right: 0
   border-top: 0
-  content: ' '
+  content: ''
   width: $size
   height: $size
   pointer-events: none
-  transform: rotate(if($up, 135deg, -45deg))
+  transform: rotate(map_get($angles, $direction))
   margin: auto
   top: 0
   bottom: 0

@@ -60,13 +60,12 @@
 </template>
 
 <style lang="sass">
-$list-spacing: 3px
 
 .dito
   .dito-list
     .dito-header
       overflow: auto
-      padding-bottom: $menu-padding-ver
+      padding-bottom: $menu-padding-ver / 2
       .dito-scopes
         float: left
       .dito-pagination

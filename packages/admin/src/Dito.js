@@ -7,7 +7,7 @@ import DitoComponent from './DitoComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { hyphenate } from './utils'
+import {hyphenate} from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)

@@ -1,39 +1,58 @@
 <template lang="pug">
   .dito-pagination
     .dito-pages {{ first }} – {{ last }} / {{ count }}
-    router-link.dito-button(
-      v-if="current > 1"
-      :to="{ query: getQuery(current - 1) }"
-      tag="button"
-      type="button"
-    ) ︎◀
-    router-link.dito-button(
-      v-for="page in pages"
-      :to="{ query: getQuery(page) }"
-      :key="`page_{page}`"
-      tag="button"
-      type="button"
-      :class="{ 'dito-active': page === current }"
-    ) {{ page }}
-    router-link.dito-button(
-      v-if="current < pages"
-      :to="{ query: getQuery(current + 1) }"
-      tag="button"
-      type="button"
-    ) ▶︎
+    template(v-if="pages > 1")
+      router-link.dito-button.dito-previous(
+        v-if="current > 1"
+        :to="{ query: getQuery(current - 1) }"
+        tag="button"
+        type="button"
+      )
+        | &nbsp;
+        .dito-arrow
+      router-link.dito-button.dito-next(
+        v-if="current < pages"
+        :to="{ query: getQuery(current + 1) }"
+        tag="button"
+        type="button"
+      )
+        | &nbsp;
+        .dito-arrow
+      router-link.dito-button(
+        v-for="page in pages"
+        :to="{ query: getQuery(page) }"
+        :key="`page_{page}`"
+        tag="button"
+        type="button"
+        :class="{ 'dito-active': page === current }"
+      ) {{ page }}
 </template>
 
 <style lang="sass">
+$arrow-size: 6px
+
 .dito
   .dito-pagination
     .dito-pages
       display: inline-block
       margin-right: 0.5em
     .dito-button
+      display: inline-block
       width: 2em
       margin-left: 0.35em
       border-radius: 1em
       text-align: center
+      &.dito-previous .dito-arrow
+        +arrow($arrow-size, 'left')
+        border-color: $color-text
+        margin-left: 2px
+      &.dito-next .dito-arrow
+        +arrow($arrow-size, 'right')
+        border-color: $color-text
+        margin-right: 2px
+    // display: inline
+    // line-height: 0
+    // font-size: 1.3em
 </style>
 
 <script>

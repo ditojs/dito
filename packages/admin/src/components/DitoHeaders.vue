@@ -20,6 +20,8 @@
 </template>
 
 <style lang="sass">
+$arrow-size: 4px
+
 .dito
   .dito-header
     th
@@ -40,20 +42,18 @@
         width: 100%
         text-align: inherit
         border-radius: 0
-        &:hover
-          background: $button-color-hover
         .dito-column,
         .dito-arrows
           display: inline-block
         .dito-arrows
-          width: round($column-arrow-size * $math-sqrt2)
+          width: round($arrow-size * $math-sqrt2)
           padding-left: $form-spacing + $border-width
-          $arrow-offset: $column-arrow-size / 2 + $border-width
+          $arrow-offset: $arrow-size / 2 + $border-width
           &::before
-            +arrow($column-arrow-size, true)
+            +arrow($arrow-size, 'up')
             bottom: $arrow-offset
           &::after
-            +arrow($column-arrow-size, false)
+            +arrow($arrow-size, 'down')
             top: $arrow-offset
         &.dito-order-asc .dito-arrows
           &::before
