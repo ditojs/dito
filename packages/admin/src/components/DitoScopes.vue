@@ -29,7 +29,7 @@
         &:focus
           border-left-color: $color-active
         &:active
-          border-left-color: $border-color
+          border-left-color: $button-color-active-border
 </style>
 
 <script>
