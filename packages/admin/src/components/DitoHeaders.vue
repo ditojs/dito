@@ -1,5 +1,5 @@
 <template lang="pug">
-  thead.dito-header
+  thead.dito-headers
     tr
       th(
         v-for="(column, index) in columns"
@@ -23,7 +23,8 @@
 $arrow-size: 4px
 
 .dito
-  .dito-header
+  .dito-headers
+    +user-select(none)
     th
       padding: 0
       background: $color-lighter

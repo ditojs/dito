@@ -26,6 +26,7 @@ $tab-color-active: $tab-color-inactive
     display: flex
     justify-content: flex-end
     pointer-events: none
+    +user-select(none)
     > *
       pointer-events: auto
     a

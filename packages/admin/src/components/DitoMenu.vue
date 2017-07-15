@@ -12,6 +12,7 @@
     background: $color-lightest
     font-size: $menu-font-size
     white-space: nowrap
+    +user-select(none)
     a,
     h1
       display: block

@@ -17,6 +17,7 @@
     font-size: $menu-font-size
     overflow: hidden
     line-height: $menu-line-height
+    +user-select(none)
     li
       float: left
       & > *

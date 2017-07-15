@@ -4,7 +4,7 @@
       v-if="errors.has('dito-request')"
       name="dito-request"
     )
-    .dito-header(v-if="scopes || paginate")
+    .dito-filters(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"
         :filter="filter"
@@ -63,9 +63,10 @@
 
 .dito
   .dito-list
-    .dito-header
+    .dito-filters
       overflow: auto
       padding-bottom: $menu-padding-ver / 2
+      +user-select(none)
       .dito-scopes
         float: left
       .dito-pagination

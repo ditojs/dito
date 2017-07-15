@@ -7,6 +7,7 @@
   .dito-label
     white-space: nowrap
     width: 25%
+    +user-select(none)
     &::after
       content: ':'
       margin-right: 0.35em
