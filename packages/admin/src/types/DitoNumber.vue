@@ -3,11 +3,13 @@
     :id="name"
     :name="name"
     type="number"
-    v-model="numberValue"
+    v-model.number="value"
     v-validate="validations"
     :placeholder="placeholder"
     :disabled="disabled"
     :readonly="readonly"
+    :min="min"
+    :max="max"
     :step="step"
   )
 </template>
@@ -25,19 +27,5 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('number', {
-  computed: {
-    // As StrongLoop sents strings instead of numbers for decimals, use a
-    // converting computed property to make sure we're dealing with numbers.
-    numberValue: {
-      get() {
-        const value = this.value
-        return value != null ? +value : value
-      },
-      set(value) {
-        this.value = value
-      }
-    }
-  }
-})
+export default DitoComponent.register('number')
 </script>

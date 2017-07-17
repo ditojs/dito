@@ -6,6 +6,10 @@ export function isFunction(val) {
   return typeof val === 'function'
 }
 
+export function asArray(obj) {
+  return Array.isArray(obj) ? obj : [obj]
+}
+
 export function clone(obj) {
   return obj != null ? JSON.parse(JSON.stringify(obj)) : null
 }

@@ -40,7 +40,7 @@ import CodeFlask from 'codeflask'
 
 export default DitoComponent.register('code', {
   mounted() {
-    const indent = new Array((this.schema.indentSize || 2) + 1).join(' ')
+    const indent = Array((this.schema.indentSize || 2) + 1).join(' ')
     const flask = new CodeFlask(indent)
     flask.run(this.$refs.code, {
       language: this.schema.language || 'javascript'

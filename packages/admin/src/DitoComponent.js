@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
+import {asArray} from './utils'
 
 const components = {}
 const types = {}
@@ -25,7 +26,9 @@ DitoComponent.component = function(name, options) {
 
 DitoComponent.register = function(type, options) {
   const name = `dito-${type}`
-  types[type] = name
+  for (var t of asArray(type)) {
+    types[t] = name
+  }
   const mixins = [TypeMixin].concat(options && options.mixins || [])
   return DitoComponent.component(name, { ...options, mixins })
 }

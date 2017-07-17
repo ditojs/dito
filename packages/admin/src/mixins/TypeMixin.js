@@ -32,6 +32,10 @@ export default {
       }
     },
 
+    type() {
+      return this.schema.type
+    },
+
     readonly() {
       return this.schema.readonly
     },
