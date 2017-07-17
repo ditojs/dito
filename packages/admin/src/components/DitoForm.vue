@@ -33,7 +33,6 @@
               @click.prevent="cancel"
             )
             button.dito-button(
-              v-if="!errors.has('dito-request')"
               type="submit"
               :class="`dito-button-${create ? verbCreate : verbSave}`"
             )
@@ -273,10 +272,26 @@ export default DitoComponent.component('dito-form', {
           this.goBack(false, false)
         }
       } else {
-        this.request(this.method, { payload }, err => {
+        this.request(this.method, { payload }, (err, response) => {
           if (!err) {
             // After submitting, navigate back to the parent form or view.
             this.goBack(true, false)
+          } else if (response.status === 422) {
+            // LoopBack validation error!
+            // TODO: Handle in backend agnostic, modular way
+            const {
+              error: {
+                details: { messages }
+              } = {
+                details: {}
+              }
+            } = response.data || {}
+            for (let [path, errors] of Object.entries(messages)) {
+              // TODO: Handle nested paths
+              for (let error of errors) {
+                this.errors.add(path, error)
+              }
+            }
           }
         })
       }

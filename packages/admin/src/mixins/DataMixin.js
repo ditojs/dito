@@ -114,8 +114,9 @@ export default {
           count: paginate > 0
         }
 
-        this.request('get', { params }, (err, data) => {
+        this.request('get', { params }, (err, response) => {
           if (!err) {
+            let {data} = response
             if (this.endpoint.type === 'collection' && isObject(data)) {
               this.setStore('count', data.count)
               data = data.data
@@ -139,15 +140,12 @@ export default {
       request(method, path, params, payload, (err, response) => {
         setTimeout(() => {
           this.setLoading(false)
-          if (err) {
+          // Do not report validation errors as dito-request errors
+          if (err && !(callback && response && response.status === 422)) {
             this.errors.add('dito-request', err.toString())
           }
-          if (response) {
-            // TODO: Deal with / pass on status!
-            console.log(response.status, response.data)
-          }
           if (callback) {
-            callback(err, response && response.data)
+            callback(err, response)
           }
         }, 0)
       })
@@ -166,7 +164,7 @@ export default {
         : axios[method](path, config)
       promise
         .then(response => callback(null, response))
-        .catch(error => callback(error))
+        .catch(error => callback(error, error.response))
     }
   }
 }
