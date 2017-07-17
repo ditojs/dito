@@ -2,8 +2,9 @@
   input.dito-text.dito-input(
     :id="name"
     :name="name"
-    type="text"
-    v-model="value"
+    :type="type"
+    :value="value"
+    @input="onInput"
     v-validate="validations"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -14,5 +15,11 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register('text')
+export default DitoComponent.register(['text', 'email', 'url', 'tel'], {
+  methods: {
+    onInput(event) {
+      this.value = event.target.value
+    }
+  }
+})
 </script>

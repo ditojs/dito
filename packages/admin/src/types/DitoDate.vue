@@ -2,7 +2,7 @@
   input.dito-date.dito-input(
     :id="name"
     :name="name"
-    :type="hasTime ? 'datetime-local' : 'date'"
+    :type="type === 'datetime' ? 'datetime-local' : type"
     ref="input"
     @input="onInput"
     v-validate="validations"
@@ -18,7 +18,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.register(['date', 'datetime'], {
+export default DitoComponent.register(['date', 'datetime', 'time'], {
   watch: {
     value(value) {
       const input = this.$refs.input
@@ -32,8 +32,12 @@ export default DitoComponent.register(['date', 'datetime'], {
   },
 
   computed: {
+    hasDate() {
+      return /^date/.test(this.type)
+    },
+
     hasTime() {
-      return this.type === 'datetime'
+      return /time$/.test(this.type)
     }
   },
 
@@ -50,22 +54,26 @@ export default DitoComponent.register(['date', 'datetime'], {
         return pad.substring(0, (length || 2) - str.length) + str
       }
 
-      const date = new Date(value)
-      const Y = date.getFullYear()
-      const M = date.getMonth() + 1
-      const D = date.getDate()
-      let str = `${pad(Y, 4)}-${pad(M)}-${pad(D)}`
+      const d = new Date(value)
+      let date = ''
+      if (this.hasDate) {
+        const Y = d.getFullYear()
+        const M = d.getMonth() + 1
+        const D = d.getDate()
+        date = `${pad(Y, 4)}-${pad(M)}-${pad(D)}`
+      }
+      let time = ''
       if (this.hasTime) {
-        const h = date.getHours()
-        const m = date.getMinutes()
-        const s = date.getSeconds()
-        str = `${str}T${pad(h)}:${pad(m)}`
+        const h = d.getHours()
+        const m = d.getMinutes()
+        const s = d.getSeconds()
+        time = `${pad(h)}:${pad(m)}`
         // Only add seconds if they're not zero to reflect chrome behavior
         if (this.schema.seconds && s) {
-          str = `${str}:${pad(s)}`
+          time = `${time}:${pad(s)}`
         }
       }
-      return str
+      return date ? time ? `${date}T${time}` : date : time
     }
   }
 })

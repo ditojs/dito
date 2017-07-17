@@ -5,9 +5,8 @@
       v-show="getValue(compSchema, 'visible', true)"
     )
       dito-label(
-        v-if="compSchema.label"
         :name="key"
-        :text="compSchema.label"
+        :text="renderLabel(compSchema, key)"
       )
       component.dito-component(
         :is="typeToComponent(compSchema.type)"
