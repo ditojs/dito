@@ -3,6 +3,7 @@
     :id="name"
     :name="name"
     type="number"
+    :title="label"
     v-model.number="value"
     v-validate="validations"
     :placeholder="placeholder"

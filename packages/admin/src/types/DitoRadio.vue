@@ -8,6 +8,7 @@
         input.dito-radio-button(
           :name="name"
           type="radio"
+          :title="label"
           :value="getValue(option)"
           v-model="value"
           v-validate="validations"

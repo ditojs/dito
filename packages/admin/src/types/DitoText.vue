@@ -3,6 +3,7 @@
     :id="name"
     :name="name"
     :type="type"
+    :title="label"
     :value="value"
     @input="onInput"
     v-validate="validations"

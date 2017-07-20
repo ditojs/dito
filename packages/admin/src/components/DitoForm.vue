@@ -78,6 +78,22 @@ export default DitoComponent.component('dito-form', {
     }
   },
 
+  created() {
+    // Errors can get passed on throgh the meta object, so add them now.
+    // See TypeMixin.showErrors()
+    const meta = this.meta
+    const {focus, errors} = meta
+    if (focus || errors) {
+      delete meta.errors
+      delete meta.focus
+      // Add the errors after initialzation of $validator
+      this.$nextTick(() => {
+        this.addErrors(errors)
+        this.focus(focus)
+      })
+    }
+  },
+
   computed: {
     name() {
       return this.formSchema.name
@@ -226,6 +242,24 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    addErrors(errors) {
+      for (let [name, errs] of Object.entries(errors || {})) {
+        const component = this.components[name]
+        if (component) {
+          component.addErrors(errs)
+        } else {
+          throw new Error(`Cannot add errors for field ${name}: ${errors}`)
+        }
+      }
+    },
+
+    focus(name) {
+      const component = this.components[name]
+      if (component) {
+        component.focus()
+      }
+    },
+
     goBack(reload, checkDirty) {
       if (!checkDirty || (!this.isDirty || confirm(
         'You have unsaved changed. Do you really want to go back?'))
@@ -233,6 +267,7 @@ export default DitoComponent.component('dito-form', {
         this.$router.push({ path: '..', append: true })
         // Tell the parent to reload its data if this was a submit()
         // See DataMixin.shouldReload:
+        // TODO: Use onComplete instead?
         const parent = this.parentRouteComponent
         if (reload && !parent.isTransient) {
           parent.reload = true
@@ -286,10 +321,15 @@ export default DitoComponent.component('dito-form', {
                 details: {}
               }
             } = response.data || {}
-            for (let [path, errors] of Object.entries(messages)) {
-              // TODO: Handle nested paths
-              for (let error of errors) {
-                this.errors.add(path, error)
+            for (let [key, errors] of Object.entries(messages)) {
+              const path = key.split('/')
+              const field = path[0]
+              const component = this.components[field]
+              if (component) {
+                component.showErrors(path, errors)
+              } else {
+                throw new Error(
+                  `Cannot find component for field ${field}, errors: ${errors}`)
               }
             }
           }

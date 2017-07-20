@@ -4,7 +4,8 @@
     select(
       :id="name"
       :name="name"
-      v-model="value"
+     :title="label"
+     v-model="value"
       v-validate="validations"
     )
       template(

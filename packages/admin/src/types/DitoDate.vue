@@ -3,6 +3,7 @@
     :id="name"
     :name="name"
     :type="type === 'datetime' ? 'datetime-local' : type"
+    :title="label"
     ref="input"
     @input="onInput"
     v-validate="validations"

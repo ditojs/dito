@@ -69,6 +69,18 @@ export default {
             : `${camelLeft} ${camelRight}`
         }
       )
+    },
+
+    getElement(selector) {
+      const proto = Element.prototype
+      const matches = proto.matches ||
+        proto.matchesSelector ||
+        proto.webkitMatchesSelector ||
+        proto.mozMatchesSelector ||
+        proto.msMatchesSelector ||
+        proto.oMatchesSelector
+      const el = this.$el
+      return matches.call(el, selector) ? el : el.querySelector(selector)
     }
   }
 }

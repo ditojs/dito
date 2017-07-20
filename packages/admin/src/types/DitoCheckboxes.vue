@@ -8,6 +8,7 @@
         input.dito-checkbox(
           :name="name"
           type="checkbox"
+          :title="label"
           :value="getValue(option)"
           v-model="value"
           v-validate="validations"

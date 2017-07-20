@@ -36,6 +36,10 @@ export default {
       return this.schema.type
     },
 
+    label() {
+      return this.schema.label
+    },
+
     readonly() {
       return this.schema.readonly
     },
@@ -76,6 +80,44 @@ export default {
         rules.decimal = `${this.step}`.split('.')[1].length
       }
       return { rules }
+    }
+  },
+
+  methods: {
+    addErrors(errors) {
+      for (let error of errors) {
+        // Convert to the same sentence structure as vee-validate:
+        const prefix = `The ${this.label} field`
+        this.errors.add(this.name,
+          error.indexOf(prefix) === 0 ? error : `${prefix} ${error}.`)
+      }
+    },
+
+    showErrors(path, errors) {
+      if (path.length > 1) {
+        const navigate = this.navigateToComponent
+        if (navigate) {
+          navigate.call(this, path, route => {
+            // Pass on the errors to the instance through the meta object.
+            // See DitoForm.created()
+            route.matched[route.matched.length - 1].meta.errors = {
+              [path[path.length - 1]]: errors
+            }
+          })
+        } else {
+          throw new Error(
+            `Cannot show errors for field ${path.join('/')}: ${errors}`)
+        }
+      } else {
+        this.addErrors(errors)
+      }
+    },
+
+    focus() {
+      const input = this.getElement('input')
+      if (input) {
+        input.focus()
+      }
     }
   }
 }

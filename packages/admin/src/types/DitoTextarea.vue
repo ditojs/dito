@@ -2,6 +2,7 @@
   textarea.dito-textarea.dito-input(
     :id="name"
     :name="name"
+    :title="label"
     v-model="value"
     v-validate="validations"
     :rows="schema.lines || 4"

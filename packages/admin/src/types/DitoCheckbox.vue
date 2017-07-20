@@ -3,6 +3,7 @@
     :id="name"
     :name="name"
     type="checkbox"
+    :title="label"
     v-model="value"
     v-validate="validations"
     :disabled="disabled"
