@@ -1,4 +1,5 @@
 import appState from '@/appState'
+import {label} from '@/utils'
 
 export default {
   data() {
@@ -56,19 +57,7 @@ export default {
     },
 
     renderLabel(schema, name) {
-      // Handle hyphenated, underscored and camel-cased property names and
-      // expand them to title cased labels if no label was provided:
-      // console.log(this.renderLabel({ name: 'some-hyphenated-label' }))
-      // console.log(this.renderLabel({ name: 'one_underscored_label' }))
-      // console.log(this.renderLabel({ name: 'MyCamelcasedLabel' }))
-      return schema.label || (schema.name || name).replace(
-        /([-_]|^)(\w)|([a-z])([A-Z])/g,
-        function(all, hyphen, hyphenated, camelLeft, camelRight) {
-          return hyphenated
-            ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
-            : `${camelLeft} ${camelRight}`
-        }
-      )
+      return schema.label || label(schema.name || name)
     },
 
     getElement(selector) {

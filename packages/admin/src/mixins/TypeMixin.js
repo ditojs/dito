@@ -37,7 +37,7 @@ export default {
     },
 
     label() {
-      return this.schema.label
+      return this.renderLabel(this.schema, this.name)
     },
 
     readonly() {

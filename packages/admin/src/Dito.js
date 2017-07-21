@@ -24,7 +24,7 @@ export function setup(el, options) {
   const api = options.api
   const normalize = api.normalizePath ? hyphenate : val => val
 
-  function addViewRoute(routes, viewSchema, viewName, level) {
+  function processView(viewSchema, viewName, routes, level) {
     const formName = viewSchema.form
     const formSchema = formName && options.forms[formName]
     const path = normalize(viewName)
@@ -40,16 +40,16 @@ export function setup(el, options) {
     // Root views have their own routes and entries in the breadcrumbs, and the
     // form routes are children of the view route. Nested lists in forms don't
     // have views and routes, so their form routes need the viewName prefixed.
-    const formRoutes = formSchema && getFormRoutes(
-      root ? '' : `${path}/`,
-      formSchema, formName, meta, level
-    )
+    const formRoutes = formSchema &&
+      processForm(root ? '' : `${path}/`, formSchema, formName, meta, level)
 
     routes.push(
       root
         ? {
           path: `/${path}`,
-          children: formRoutes,
+          ...formRoutes.length > 0 && {
+            children: formRoutes
+          },
           component: DitoView,
           meta: {
             ...meta,
@@ -66,24 +66,24 @@ export function setup(el, options) {
     )
   }
 
-  function addViewRoutes(routes, components, level) {
+  function processComponents(components, routes, level) {
     for (let name in components) {
       const schema = components[name]
       if (schema.form && !schema.inline) {
-        addViewRoute(routes, schema, name, level)
+        processView(schema, name, routes, level)
       }
     }
   }
 
-  function getFormRoutes(pathPrefix, formSchema, formName, meta, level) {
+  function processForm(pathPrefix, formSchema, formName, meta, level) {
     formSchema.path = normalize(formName)
     formSchema.name = formName
     const children = []
     const tabs = formSchema.tabs
     for (let name in tabs) {
-      addViewRoutes(children, tabs[name].components, level + 1)
+      processComponents(tabs[name].components, children, level + 1)
     }
-    addViewRoutes(children, formSchema.components, level + 1)
+    processComponents(formSchema.components, children, level + 1)
 
     // Use differently named url parameters on each nested level for id as
     // otherwise they would clash and override each other inside $route.params
@@ -131,7 +131,7 @@ export function setup(el, options) {
   const routes = []
 
   for (let name in views) {
-    addViewRoute(routes, views[name], name, 0)
+    processView(views[name], name, routes, 0)
   }
 
   new Vue({
