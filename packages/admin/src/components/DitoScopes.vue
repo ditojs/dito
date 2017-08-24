@@ -17,12 +17,12 @@
     // font-size: 0.9em
     .dito-button
       border-radius: 0
-      border-top-left-radius: 1em
-      border-bottom-left-radius: 1em
-      padding-left: 1em
-      padding-right: 1em
-      & + .dito-button
-        border-radius: 0
+      &:first-child
+        border-top-left-radius: 1em
+        border-bottom-left-radius: 1em
+        padding-left: 1em
+        padding-right: 1em
+      &:last-child
         border-top-right-radius: 1em
         border-bottom-right-radius: 1em
         border-left: $border-style

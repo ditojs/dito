@@ -1,5 +1,5 @@
 import appState from '@/appState'
-import {label} from '@/utils'
+import {labelize} from '@/utils'
 
 export default {
   data() {
@@ -57,7 +57,7 @@ export default {
     },
 
     renderLabel(schema, name) {
-      return schema.label || label(schema.name || name)
+      return schema.label || labelize(schema.name || name)
     },
 
     getElement(selector) {

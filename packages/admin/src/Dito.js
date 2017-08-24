@@ -27,6 +27,9 @@ export function setup(el, options) {
   function processView(viewSchema, viewName, routes, level) {
     const formName = viewSchema.form
     const formSchema = formName && options.forms[formName]
+    if (!formSchema) {
+      throw new Error(`Form '${formName}' is not defined`)
+    }
     const path = normalize(viewName)
     viewSchema.path = path
     viewSchema.name = viewName
