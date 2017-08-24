@@ -19,19 +19,29 @@ module.exports = {
   // add your custom rules here
   'rules': {
     // allow paren-less arrow functions
-    'arrow-parens': 0,
+    'arrow-parens': ['error', 'as-needed'],
     // allow async-await
     'generator-star-spacing': 0,
     // allow debugger during development
     'no-debugger': isProduction ? 2 : 0,
     'no-unused-vars': isProduction ? 2 : 0,
     'no-constant-condition': isProduction ? 2 : 0,
+    'max-len': ['error', 80, 2, {
+      'ignoreUrls': true,
+      'ignoreTemplateLiterals': true,
+      'ignoreRegExpLiterals': true
+    }],
+    'no-cond-assign': 'error',
     'no-new': 0,
     'no-new-func': 0,
     'no-mixed-operators': 0,
-    'space-before-function-paren': 0,
-    'indent': ["error", 2, {
-      "flatTernaryExpressions": true
+    'space-before-function-paren': ['error', {
+      'anonymous': 'always',
+      'named': 'never',
+      'asyncArrow': 'always'
+    }],
+    'indent': ['error', 2, {
+      'flatTernaryExpressions': true
     }]
   }
 }

@@ -27,7 +27,7 @@ export function label(str) {
   return str
     ? str.replace(
       /([-_]|^)(\w)|([a-z])([A-Z])/g,
-      function(all, hyphen, hyphenated, camelLeft, camelRight) {
+      function (all, hyphen, hyphenated, camelLeft, camelRight) {
         return hyphenated
           ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
           : `${camelLeft} ${camelRight}`

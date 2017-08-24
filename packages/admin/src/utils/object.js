@@ -1,3 +1,5 @@
+export const isArray = Array.isArray
+
 export function isObject(val) {
   return val != null && typeof val === 'object' && Array.isArray(val) === false
 }
@@ -11,5 +13,5 @@ export function asArray(obj) {
 }
 
 export function clone(obj) {
-  return obj != null ? JSON.parse(JSON.stringify(obj)) : null
+  return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
 }

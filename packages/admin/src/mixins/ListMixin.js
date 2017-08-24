@@ -174,7 +174,7 @@ export default {
     navigateToComponent(path, onComplete) {
       const route = [...path]
       const rest = path.length & 1 ? route.pop() : null
-      this.$router.push({ path: route.join('/'), append: true }, (route) => {
+      this.$router.push({ path: route.join('/'), append: true }, route => {
         if (onComplete) {
           if (rest) {
             // Tell DitoForm to focus component

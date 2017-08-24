@@ -18,13 +18,13 @@ const DitoComponent = Vue.extend({
   }
 })
 
-DitoComponent.component = function(name, options) {
+DitoComponent.component = function (name, options) {
   const ctor = DitoComponent.extend(options)
   components[name] = ctor
   return ctor
 }
 
-DitoComponent.register = function(type, options) {
+DitoComponent.register = function (type, options) {
   const name = `dito-${type}`
   for (var t of asArray(type)) {
     types[t] = name
@@ -33,7 +33,7 @@ DitoComponent.register = function(type, options) {
   return DitoComponent.component(name, { ...options, mixins })
 }
 
-DitoComponent.get = function(type) {
+DitoComponent.get = function (type) {
   return components[types[type]]
 }
 

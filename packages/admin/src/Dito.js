@@ -56,7 +56,7 @@ export function setup(el, options) {
             labelSchema: viewSchema
           }
         }
-        // Just redirect back to the form if the user enters a nested list route.
+        // Just redirect back to the form if the user enters a nested list route
         : {
           path: path,
           redirect: '.'
