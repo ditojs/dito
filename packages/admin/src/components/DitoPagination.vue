@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-pagination
+  .dito-pagination.dito-buttons-round
     .dito-pages {{ first }} – {{ last }} / {{ count }}
     template(v-if="pages > 1")
       router-link.dito-button.dito-previous(
@@ -8,7 +8,6 @@
         tag="button"
         type="button"
       )
-        | &nbsp;
         .dito-arrow
       router-link.dito-button.dito-next(
         v-if="current < pages"
@@ -16,7 +15,6 @@
         tag="button"
         type="button"
       )
-        | &nbsp;
         .dito-arrow
       router-link.dito-button(
         v-for="page in pages"
@@ -37,22 +35,13 @@ $arrow-size: 6px
       display: inline-block
       margin-right: 0.5em
     .dito-button
-      display: inline-block
-      width: 2em
       margin-left: 0.35em
-      border-radius: 1em
-      text-align: center
       &.dito-previous .dito-arrow
-        +arrow($arrow-size, 'left')
+        +arrow($arrow-size, 'left', static)
         border-color: $color-text
-        margin-left: 2px
       &.dito-next .dito-arrow
-        +arrow($arrow-size, 'right')
+        +arrow($arrow-size, 'right', static)
         border-color: $color-text
-        margin-right: 2px
-    // display: inline
-    // line-height: 0
-    // font-size: 1.3em
 </style>
 
 <script>

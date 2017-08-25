@@ -36,7 +36,7 @@
             v-for="html in renderCells(item)"
             v-html="html"
           )
-          td.dito-buttons(v-if="hasButtons")
+          td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             router-link.dito-button(
               v-if="schema.editable"
               :to="`${path}${getItemId(item, index)}`" append
@@ -50,7 +50,7 @@
               @click="deleteItem(item)"
               :class="`dito-button-${verbDelete}`"
             )
-    .dito-buttons(v-if="schema.creatable")
+    .dito-buttons.dito-buttons-round(v-if="schema.creatable")
       router-link.dito-button(
         :to="`${path}create`" append
         tag="button"
@@ -81,33 +81,30 @@
       tr
         vertical-align: baseline
       td
-        padding: $list-spacing 0 $list-spacing $form-spacing
+        border-left: 1px solid white
+        padding: $list-padding 0 $list-padding $form-spacing
         background: $color-lightest
-      // Support simple nested table styling
+        // Support simple nested table styling
+        &:first-child
+          border-top-left-radius: $border-radius
+          border-bottom-left-radius: $border-radius
+        &:last-child
+          border-top-right-radius: $border-radius
+          border-bottom-right-radius: $border-radius
       table
         border-spacing: 0
         td
           padding: 0
           & + td
             padding-left: $form-spacing
-      // Add rounded corners in first & last cells / headers
-      td,
-      th,
-        &:first-child
-          &,
-          button
-            border-top-left-radius: $border-radius
-            border-bottom-left-radius: $border-radius
-        &:last-child
-          &,
-          button
-            border-top-right-radius: $border-radius
-            border-bottom-right-radius: $border-radius
+      // Add rounded corners in first & last headers
+      .dito-buttons
+        width: 1%
     .dito-drag-ghost
       opacity: 0
     .dito-buttons
       text-align: right
-      padding: $list-spacing
+      padding: $list-padding
       background: $color-lightest
       border-radius: $border-radius
 </style>

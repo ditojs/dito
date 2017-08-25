@@ -28,19 +28,38 @@
   button + button
     margin-left: 2px
 
+.dito-button-add::before
+    content: 'Add'
 .dito-button-create::before
     content: 'Create'
+.dito-button-delete::before
+    content: 'Delete'
+.dito-button-remove::before
+    content: 'Remove'
 .dito-button-edit::before
     content: 'Edit'
 .dito-button-save::before
     content: 'Save'
 .dito-button-apply::before
     content: 'Apply'
-.dito-button-add::before
-    content: 'Add'
-.dito-button-delete::before
-    content: 'Delete'
-.dito-button-remove::before
-    content: 'Remove'
 .dito-button-cancel::before
     content: 'Cancel'
+
+.dito-buttons-round
+  .dito-button
+    display: inline-block
+    width: 2em
+    border-radius: 1em
+    text-align: center
+    padding-left: 0
+    padding-right: 0
+    &::before
+      content: ''
+  .dito-button-add::before,
+  .dito-button-create::before
+    content: '＋'
+  .dito-button-delete::before,
+  .dito-button-remove::before
+    content: '–'
+  .dito-button-edit::before
+    content: '✎'

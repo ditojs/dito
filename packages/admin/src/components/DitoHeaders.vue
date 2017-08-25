@@ -3,7 +3,6 @@
     tr
       th(
         v-for="(column, index) in columns"
-        :colspan="hasButtons && index === columns.length - 1 ? 2 : null"
       )
         router-link.dito-button(
           v-if="column.sortable"
@@ -17,6 +16,7 @@
             | {{ column.label }}
         .dito-column(v-else)
           | {{ column.label }}
+      th(v-if="hasButtons")
 </template>
 
 <style lang="sass">
@@ -38,6 +38,16 @@ $arrow-size: 4px
         // When there's no sort-button, add a 1px border to get same height
         &:first-child
           border: 1px solid transparent
+      &:first-child
+        &,
+        button
+          border-top-left-radius: $border-radius
+          border-bottom-left-radius: $border-radius
+      &:last-child
+        &,
+        button
+          border-top-right-radius: $border-radius
+          border-bottom-right-radius: $border-radius
       button
         padding: 0
         width: 100%
