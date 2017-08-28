@@ -81,7 +81,6 @@
       tr
         vertical-align: baseline
       td
-        border-left: 1px solid white
         padding: $list-padding 0 $list-padding $form-spacing
         background: $color-lightest
         // Support simple nested table styling
@@ -91,6 +90,8 @@
         &:last-child
           border-top-right-radius: $border-radius
           border-bottom-right-radius: $border-radius
+        & + td
+          border-left: 1px solid white
       table
         border-spacing: 0
         td

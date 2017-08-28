@@ -48,18 +48,27 @@
 .dito-buttons-round
   .dito-button
     display: inline-block
+    white-space: nowrap
     width: 2em
+    height: 2em
     border-radius: 1em
     text-align: center
     padding-left: 0
     padding-right: 0
     &::before
+      width: 1em
+      position: absolute
+      top: 0
+      left: 0
+      right: 0
+      bottom: 0
+      margin: auto
       content: ''
   .dito-button-add::before,
   .dito-button-create::before
-    content: '＋'
+    +icon-add
   .dito-button-delete::before,
   .dito-button-remove::before
-    content: '–'
+    +icon-remove
   .dito-button-edit::before
-    content: '✎'
+    +icon-edit

@@ -1,0 +1,25 @@
+$plus-size: 16
+$arrow-size: 8
+$arrow-left: 10 - 2
+
+=icon-search($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('circle', (cx: 10, cy: 10, r: 7))
+    +svg('line', (x1: 15, y1: 15, x2: 19, y2: 19))
+
+=icon-add($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('line', (x1: 10, y1: 10 - $plus-size / 2, x2: 10, y2: 10 + $plus-size / 2))
+    +svg('line', (x1: 10 - $plus-size / 2, y1: 10, x2: 10 + $plus-size / 2, y2: 10))
+
+=icon-remove($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('line', (x1: 10 - $plus-size / 2, y1: 10, x2: 10 + $plus-size / 2, y2: 10))
+
+=icon-arrow($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('polyline', (points: '#{$arrow-left},#{10 - $arrow-size} #{$arrow-left + $arrow-size},10 #{$arrow-left},#{10 + $arrow-size}'))
+
+=icon-edit($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('polyline', (points: '14 2 18 6 7 17 3 17 3 13 14 2'))
