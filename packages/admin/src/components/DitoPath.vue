@@ -67,8 +67,8 @@ export default DitoComponent.component('dito-path', {
       const parts = this.$route.path.split('/')
       const matched = []
       let index = 0
-      for (let record of this.$route.matched) {
-        let end = record.path.split('/').length
+      for (const record of this.$route.matched) {
+        const end = record.path.split('/').length
         matched.push(parts.slice(index, end).join('/'))
         index = end
       }

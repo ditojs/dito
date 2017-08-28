@@ -93,7 +93,7 @@ export default {
       // Search for the option object with the given value and return the
       // whole object.
       if (options) {
-        for (let option of options) {
+        for (const option of options) {
           if (groupBy) {
             const found = this.findOption(option.options, value, false)
             if (found) {

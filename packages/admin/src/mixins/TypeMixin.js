@@ -16,7 +16,7 @@ export default {
 
   created() {
     // Register all type components on the form they belong to, for easy lookup.
-    let form = this.formComponent
+    const form = this.formComponent
     if (form) {
       form.components[this.name] = this
     }
@@ -85,7 +85,7 @@ export default {
 
   methods: {
     addErrors(errors) {
-      for (let error of errors) {
+      for (const error of errors) {
         // Convert to the same sentence structure as vee-validate:
         const prefix = `The ${this.label} field`
         this.errors.add(this.name,

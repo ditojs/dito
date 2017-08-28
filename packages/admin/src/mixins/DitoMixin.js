@@ -30,7 +30,7 @@ export default {
     },
 
     formComponent() {
-      let comp = this.routeComponent
+      const comp = this.routeComponent
       return comp && comp.isForm ? comp : null
     },
 

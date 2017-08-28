@@ -101,7 +101,7 @@ export default DitoComponent.component('dito-headers', {
     },
 
     getSortQuery(name) {
-      let [sortName, sortOrder] = this.getSortParams()
+      const [sortName, sortOrder] = this.getSortParams()
       // Toggle order if we're clicking the same column
       const order = sortName === name && sortOrder === 'asc' ? 'desc' : 'asc'
       return { ...this.filter, order: `${name} ${order}` }

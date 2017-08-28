@@ -124,7 +124,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     selectedTab() {
-      let hash = this.$route.hash
+      const hash = this.$route.hash
       return hash && hash.substring(1) ||
           this.tabs && Object.keys(this.tabs)[0] || ''
     },
@@ -183,10 +183,10 @@ export default DitoComponent.component('dito-form', {
       const initData = (schema, data) => {
         // Sets up an createdData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
-        for (let key in schema.tabs) {
+        for (const key in schema.tabs) {
           initData(schema.tabs[key], data)
         }
-        for (let [key, compSchema] of Object.entries(schema.components)) {
+        for (const [key, compSchema] of Object.entries(schema.components)) {
           const comp = DitoComponent.get(compSchema.type)
           const defaultValue = comp && comp.options.methods.defaultValue
           data[key] = defaultValue ? defaultValue() : null
@@ -219,8 +219,8 @@ export default DitoComponent.component('dito-form', {
       // Filters out arrays that aren't considered nested data, as those are
       // already taking care of themselves through their own end-points and
       // shouldn't be set.
-      let copy = {}
-      for (let [key, value] of Object.entries(data)) {
+      const copy = {}
+      for (const [key, value] of Object.entries(data)) {
         if (Array.isArray(value)) {
           const comp = this.components[key]
           // Only check for nested on list items that actuall load data, since
@@ -243,7 +243,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     addErrors(errors) {
-      for (let [name, errs] of Object.entries(errors || {})) {
+      for (const [name, errs] of Object.entries(errors || {})) {
         const component = this.components[name]
         if (component) {
           component.addErrors(errs)
@@ -321,7 +321,7 @@ export default DitoComponent.component('dito-form', {
                 details: {}
               }
             } = response.data || {}
-            for (let [key, errors] of Object.entries(messages)) {
+            for (const [key, errors] of Object.entries(messages)) {
               const path = key.split('/')
               const field = path[0]
               const component = this.components[field]

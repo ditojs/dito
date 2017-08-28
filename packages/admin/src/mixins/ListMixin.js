@@ -40,8 +40,8 @@ export default {
   computed: {
     listLabels() {
       const components = this.formSchema.components
-      let labels = []
-      for (let key in components) {
+      const labels = []
+      for (const key in components) {
         labels.push(components[key].label)
       }
       return labels

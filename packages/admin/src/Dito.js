@@ -70,7 +70,7 @@ export function setup(el, options) {
   }
 
   function processComponents(components, routes, level) {
-    for (let name in components) {
+    for (const name in components) {
       const schema = components[name]
       if (schema.form && !schema.inline) {
         processView(schema, name, routes, level)
@@ -83,7 +83,7 @@ export function setup(el, options) {
     formSchema.name = formName
     const children = []
     const tabs = formSchema.tabs
-    for (let name in tabs) {
+    for (const name in tabs) {
       processComponents(tabs[name].components, children, level + 1)
     }
     processComponents(formSchema.components, children, level + 1)
@@ -117,10 +117,10 @@ export function setup(el, options) {
       }
     }
     const results = {}
-    for (let method of ['get', 'post', 'put', 'patch', 'delete']) {
+    for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
       const entry = endpoints && endpoints[method]
       const functions = results[method] = {}
-      for (let type in defaultEndpoints) {
+      for (const type in defaultEndpoints) {
         functions[type] = entry && entry[type] || defaultEndpoints[type]
       }
     }
@@ -133,7 +133,7 @@ export function setup(el, options) {
   const settings = options.settings
   const routes = []
 
-  for (let name in views) {
+  for (const name in views) {
     processView(views[name], name, routes, 0)
   }
 
