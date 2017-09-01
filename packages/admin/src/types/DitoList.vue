@@ -27,9 +27,6 @@
         element="tbody"
         :list="value"
         :options="dragOptions"
-        @start="dragging = true"
-        @end="dragging = false"
-        :class="{'dito-dragging': dragging}"
       )
         tr(
           v-for="item, index in value || []"
@@ -109,9 +106,6 @@
       // Add rounded corners in first & last headers
       .dito-buttons
         width: 1%
-    .dito-dragging
-      .dito-drag-ghost
-        opacity: 0
     .dito-buttons
       text-align: right
       padding: $list-padding
@@ -131,12 +125,6 @@ import ListMixin from '@/mixins/ListMixin'
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
   components: {VueDraggable},
-
-  data() {
-    return {
-      dragging: false
-    }
-  },
 
   computed: {
     paginate() {
