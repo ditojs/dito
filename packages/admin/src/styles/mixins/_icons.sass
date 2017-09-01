@@ -1,25 +1,23 @@
-$plus-size: 16
-$arrow-size: 8
-$arrow-left: 10 - 2
 
-=icon-search($color: $color-black, $background: transparent)
-  +svg-icon($color, $background)
-    +svg('circle', (cx: 10, cy: 10, r: 7))
-    +svg('line', (x1: 15, y1: 15, x2: 19, y2: 19))
+$plus-size: 20
+$arrow-size: 10
+$arrow-left: 10
 
 =icon-add($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
-    +svg('line', (x1: 10, y1: 10 - $plus-size / 2, x2: 10, y2: 10 + $plus-size / 2))
-    +svg('line', (x1: 10 - $plus-size / 2, y1: 10, x2: 10 + $plus-size / 2, y2: 10))
+    +svg('line', (x1: 12, y1: 12 - $plus-size / 2, x2: 12, y2: 12 + $plus-size / 2))
+    +svg('line', (x1: 12 - $plus-size / 2, y1: 12, x2: 12 + $plus-size / 2, y2: 12))
 
 =icon-remove($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
-    +svg('line', (x1: 10 - $plus-size / 2, y1: 10, x2: 10 + $plus-size / 2, y2: 10))
+    +svg('line', (x1: 12 - $plus-size / 2, y1: 12, x2: 12 + $plus-size / 2, y2: 12))
 
 =icon-arrow($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
-    +svg('polyline', (points: '#{$arrow-left},#{10 - $arrow-size} #{$arrow-left + $arrow-size},10 #{$arrow-left},#{10 + $arrow-size}'))
+    +svg('polyline', (points: '#{$arrow-left},#{12 - $arrow-size} #{$arrow-left + $arrow-size},12 #{$arrow-left},#{12 + $arrow-size}'))
 
 =icon-edit($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
-    +svg('polyline', (points: '14 2 18 6 7 17 3 17 3 13 14 2'))
+    +svg('polyline', (points: '2,16 16,2 20,6 6,20'))
+    +svg('polyline', (points: '14,4 18,8'))
+    +svg('polygon', (points: '6,20 2,20 2,16', style: "fill:#{$color}"))

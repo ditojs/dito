@@ -5,17 +5,17 @@
     .dito-pages {{ first }} – {{ last }} / {{ count }}
     template(v-if="pages > 1")
       router-link.dito-button.dito-previous(
-        v-if="current > 1"
         :to="{ query: getQuery(current - 1) }"
         tag="button"
         type="button"
+        :class="{ 'dito-hide': current === 1 }"
       )
         +nbsp
       router-link.dito-button.dito-next(
-        v-if="current < pages"
         :to="{ query: getQuery(current + 1) }"
         tag="button"
         type="button"
+        :class="{ 'dito-hide': current === pages }"
       )
         +nbsp
       router-link.dito-button(
@@ -41,6 +41,8 @@
         transform: scaleX(-1)
       &.dito-next::before
         +icon-arrow
+      &.dito-hide
+        visibility: hidden
 </style>
 
 <script>
@@ -81,6 +83,7 @@ export default DitoComponent.component('dito-pagination', {
 
   methods: {
     getQuery(page) {
+      page = Math.min(Math.max(page, 1), this.pages)
       return { ...this.filter, offset: (page - 1) * this.limit }
     }
   }

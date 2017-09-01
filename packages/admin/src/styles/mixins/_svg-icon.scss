@@ -2,9 +2,9 @@
   background: $background no-repeat left;
   background-origin: content-box;
   @include svg((
-    viewBox: "0 0 20 20",
+    viewBox: "0 0 24 24",
     preserveAspectRatio: "xMinYMid",
-    style: "fill:none;stroke:#{$color};stroke-width:1.5"
+    style: "fill:none;stroke:#{$color};stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"
   )) {
     @content;
   }
