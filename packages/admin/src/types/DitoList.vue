@@ -27,6 +27,9 @@
         element="tbody"
         :list="value"
         :options="dragOptions"
+        @start="dragging = true"
+        @end="dragging = false"
+        :class="{'dito-dragging': dragging}"
       )
         tr(
           v-for="item, index in value || []"
@@ -37,6 +40,11 @@
             v-html="html"
           )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
+            button.dito-button(
+              v-if="schema.draggable"
+              type="button"
+              class="dito-button-drag"
+            )
             router-link.dito-button(
               v-if="schema.editable"
               :to="`${path}${getItemId(item, index)}`" append
@@ -101,13 +109,18 @@
       // Add rounded corners in first & last headers
       .dito-buttons
         width: 1%
-    .dito-drag-ghost
-      opacity: 0
+    .dito-dragging
+      .dito-drag-ghost
+        opacity: 0
     .dito-buttons
       text-align: right
       padding: $list-padding
       background: $color-lightest
       border-radius: $border-radius
+      .dito-button-drag
+        cursor: grab
+        &:active,
+          cursor: grabbing
 </style>
 
 <script>
@@ -118,6 +131,12 @@ import ListMixin from '@/mixins/ListMixin'
 export default DitoComponent.register('list', {
   mixins: [ListMixin],
   components: {VueDraggable},
+
+  data() {
+    return {
+      dragging: false
+    }
+  },
 
   computed: {
     paginate() {
@@ -132,6 +151,7 @@ export default DitoComponent.register('list', {
       return {
         animation: 150,
         disabled: !this.schema.draggable,
+        handle: '.dito-button-drag',
         ghostClass: 'dito-drag-ghost'
       }
     }

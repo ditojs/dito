@@ -1,5 +1,5 @@
 <template lang="pug">
-  mixin nbsp()
+  mixin nbsp
     | !{' '}
   .dito-pagination.dito-buttons-round
     .dito-pages {{ first }} – {{ last }} / {{ count }}

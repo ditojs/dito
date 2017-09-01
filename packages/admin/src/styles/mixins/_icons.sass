@@ -1,4 +1,3 @@
-
 $plus-size: 20
 $arrow-size: 10
 $arrow-left: 10
@@ -21,3 +20,9 @@ $arrow-left: 10
     +svg('polyline', (points: '2,16 16,2 20,6 6,20'))
     +svg('polyline', (points: '14,4 18,8'))
     +svg('polygon', (points: '6,20 2,20 2,16', style: "fill:#{$color}"))
+
+=icon-drag($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('polyline', (points: '0,8, 24,8'))
+    +svg('polyline', (points: '0,12, 24,12'))
+    +svg('polyline', (points: '0,16, 24,16'))
