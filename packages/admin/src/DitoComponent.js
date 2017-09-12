@@ -26,7 +26,7 @@ DitoComponent.component = function (name, options) {
 
 DitoComponent.register = function (type, options) {
   const name = `dito-${type}`
-  for (var t of asArray(type)) {
+  for (const t of asArray(type)) {
     types[t] = name
   }
   const mixins = [TypeMixin].concat(options && options.mixins || [])

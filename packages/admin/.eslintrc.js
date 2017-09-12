@@ -35,7 +35,8 @@ module.exports = {
     'no-new': 'off',
     'no-new-func': 'off',
     'no-mixed-operators': 'off',
-    "no-return-assign": 'error',
+    'no-return-assign': 'error',
+    'no-var': 'error',
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
