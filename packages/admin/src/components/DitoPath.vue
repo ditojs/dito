@@ -1,11 +1,11 @@
 <template lang="pug">
   nav.dito-path
     ul
-      li(v-for="(route, i) in $route.matched")
-        template(v-if="i === $route.matched.length - 1")
-          span {{ getLabel(route) }}
-        router-link(v-else, :to="getPath(i)")
-          span {{ getLabel(route) }}
+      li(v-for="(route, level) in $route.matched")
+        template(v-if="level === $route.matched.length - 1")
+          span {{ getRouteLabel(route) }}
+        router-link(v-else, :to="getPathUpTo(level)")
+          span {{ getRouteLabel(route) }}
     dito-spinner.dito-spinner(v-if="appState.loading")
 </template>
 
@@ -61,7 +61,7 @@ export default DitoComponent.component('dito-path', {
   computed: {
     // Maps the route's actual path to the matched routes by counting its parts
     // separated by '/', splitting the path into the mapped parts containing
-    // actual parameters. This is then used in getPath() to generate
+    // actual parameters. This is then used in getPathUpTo() to generate
     // hierarchical breadcrumb links that map to routes.
     matched() {
       const parts = this.$route.path.split('/')
@@ -77,14 +77,14 @@ export default DitoComponent.component('dito-path', {
   },
 
   methods: {
-    getPath(level) {
+    getPathUpTo(level) {
       return this.matched.slice(0, level + 1).join('/')
     },
 
-    getLabel(route) {
+    getRouteLabel(route) {
       const param = this.$route.params[route.meta.param]
       const prefix = param ? param === 'create' ? 'Create ' : 'Edit ' : ''
-      return prefix + this.renderLabel(route.meta.labelSchema)
+      return prefix + this.getLabel(route.meta.labelSchema)
     }
   }
 })

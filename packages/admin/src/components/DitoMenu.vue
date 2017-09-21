@@ -3,7 +3,7 @@
     h1 Dito Admin
     ul
       li(v-for="schema in views")
-        router-link(:to="`/${schema.path}`") {{ renderLabel(schema) }}
+        router-link(:to="`/${schema.path}`") {{ getLabel(schema) }}
 </template>
 
 <style lang="sass">

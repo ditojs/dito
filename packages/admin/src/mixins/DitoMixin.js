@@ -56,8 +56,14 @@ export default {
       return this.$set(this.store, key, value)
     },
 
-    renderLabel(schema, name) {
+    getLabel(schema, name) {
       return schema.label || labelize(schema.name || name)
+    },
+
+    getItemTitle(item) {
+      const {formSchema} = this
+      const {getTitle, name} = formSchema
+      return getTitle ? getTitle(item) : `${name} (id:${item.id})`
     },
 
     getElement(selector) {

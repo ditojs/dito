@@ -64,12 +64,14 @@ export default {
   },
 
   methods: {
-    getValue(option) {
-      return this.valueKey ? option[this.valueKey] : option
+    getOptionValue(option) {
+      const {valueKey} = this
+      return valueKey ? option[valueKey] : option
     },
 
-    getLabel(option) {
-      return this.labelKey ? option[this.labelKey] : option
+    getOptionLabel(option) {
+      const {labelKey} = this
+      return labelKey ? option[labelKey] : option
     },
 
     groupBy(options, groupBy) {

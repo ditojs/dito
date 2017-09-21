@@ -33,9 +33,30 @@
           :key="`${name}-${item.id}`"
         )
           td(
-            v-for="html in renderCells(item)"
-            v-html="html"
+            v-if="columns"
+            v-for="column in columns"
           )
+            component(
+              v-if="column.component"
+              :is="column.component"
+              :item="item"
+            )
+            span(
+              v-else
+              v-html="renderColumn(column, item)"
+            )
+          td(
+            v-else
+          )
+            component(
+              v-if="schema.component"
+              :is="schema.component"
+              :item="item"
+            )
+            span(
+              v-else-if="schema.render"
+              v-html="schema.render(item)"
+            )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
               v-if="schema.draggable"

@@ -6,7 +6,7 @@
     )
       dito-label(
         :name="key"
-        :text="renderLabel(compSchema, key)"
+        :text="getLabel(compSchema, key)"
       )
       component.dito-component(
         :is="typeToComponent(compSchema.type)"

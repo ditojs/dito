@@ -9,12 +9,12 @@
           :name="name"
           type="radio"
           :title="label"
-          :value="getValue(option)"
+          :value="getOptionValue(option)"
           v-model="value"
           v-validate="validations"
           :disabled="disabled"
         )
-        | {{ getLabel(option) }}
+        | {{ getOptionLabel(option) }}
 </template>
 
 <style lang="sass">

@@ -1,5 +1,5 @@
 import DataMixin from '@/mixins/DataMixin'
-import {isObject, escapeHtml, stripTags, labelize} from '@/utils'
+import {isObject, escapeHtml, camelize, labelize} from '@/utils'
 
 export default {
   mixins: [DataMixin],
@@ -38,15 +38,6 @@ export default {
   },
 
   computed: {
-    listLabels() {
-      const {components} = this.formSchema
-      const labels = []
-      for (const key in components) {
-        labels.push(components[key].label)
-      }
-      return labels
-    },
-
     shouldLoad() {
       return !this.isTransient && !this.value
     },
@@ -78,35 +69,6 @@ export default {
 
     columns() {
       return this.getNamedSchemas(this.schema.columns)
-    },
-
-    renderCells() {
-      // Returns a function to render the cells with, supporting different
-      // schema formats:
-      const {render} = this.schema
-      const {columns} = this
-      const firstColumn = columns && columns[0]
-      return !render && firstColumn && firstColumn.name
-        // If we have named columns, map their names to item attributes, with
-        // optional per-column render() functions:
-        ? item => {
-          return columns.map(column => {
-            const value = item[column.name]
-            return column.render
-              ? column.render.call(item, value)
-              : value
-          })
-        }
-        : item => {
-          const res = render && render(item) ||
-            item.html || escapeHtml(item.text)
-          const cells = Array.isArray(res) ? res : [res]
-          // Make sure we have the right amount of cells for the table
-          if (columns) {
-            cells.length = columns.length
-          }
-          return cells
-        }
     }
   },
 
@@ -115,20 +77,25 @@ export default {
       return []
     },
 
-    getTitle(item) {
-      return stripTags(this.renderCells(item)[0])
-    },
-
     getNamedSchemas(descs) {
       return Array.isArray(descs)
         ? descs.map(value => (
-          isObject(value) ? value : { label: labelize(value), name: value }
+          isObject(value) ? value : {
+            name: camelize(value, false),
+            label: labelize(value)
+          }
         ))
         : isObject(descs)
           ? Object.entries(descs).map(([name, value]) => (
-            isObject(value) ? { ...value, name } : { label: value, name }
+            isObject(value) ? { name, ...value } : { name, label: value }
           ))
           : null
+    },
+
+    renderColumn(column, item) {
+      const {name, render} = column
+      const value = item[name]
+      return render ? render(value, item) : escapeHtml(value)
     },
 
     setFilter(filter) {
@@ -155,7 +122,8 @@ export default {
 
     deleteItem(item) {
       if (item && confirm(
-        `Do you really want to ${this.verbDelete} "${this.getTitle(item)}"?`)) {
+        `Do you really want to ${this.verbDelete} "${this.getItemTitle(item)}"?`
+      )) {
         if (this.isTransient) {
           this.removeItem(item)
         } else {

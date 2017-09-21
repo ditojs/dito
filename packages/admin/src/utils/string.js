@@ -1,6 +1,8 @@
-export function camelize(str) {
+export function camelize(str, upper = true) {
   return str
-    ? str.replace(/(?:^|[-_])(\w)/g, (all, chr) => chr.toUpperCase())
+    ? str.replace(/(^|[-_\s]+)(\w)/g, (all, sep, chr) => {
+      return upper || sep ? chr.toUpperCase() : chr.toLowerCase()
+    })
     : ''
 }
 

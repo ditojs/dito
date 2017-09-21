@@ -28,9 +28,9 @@ module.exports = {
       ignoreRegExpLiterals: true
     }],
     // Allow debugger during development.
-    'no-debugger': isProduction ? 'error' : 'off',
-    'no-constant-condition': isProduction ? 'error' : 'off',
-    'no-unused-vars': isProduction ? 'error' : 'off',
+    'no-debugger': isProduction ? 'error' : 'warn',
+    'no-constant-condition': isProduction ? 'error' : 'warn',
+    'no-unused-vars': isProduction ? 'error' : 'warn',
     'no-cond-assign': 'error',
     'no-new': 'off',
     'no-new-func': 'off',
