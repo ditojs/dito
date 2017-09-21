@@ -109,7 +109,6 @@
       td
         padding: $list-padding 0 $list-padding $form-spacing
         background: $color-lightest
-        // Support simple nested table styling
         &:first-child
           border-top-left-radius: $border-radius
           border-bottom-left-radius: $border-radius
@@ -118,10 +117,12 @@
           border-bottom-right-radius: $border-radius
         & + td
           border-left: 1px solid white
+      // Support simple nested table styling
       table
         border-spacing: 0
         td
           padding: 0
+          border: 0
           & + td
             padding-left: $form-spacing
       // Add rounded corners in first & last headers
