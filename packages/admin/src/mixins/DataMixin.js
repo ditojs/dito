@@ -103,7 +103,7 @@ export default {
           this.setStore('count', 0)
         }
         // LoopBack specific filters / query parameters:
-        const paginate = this.viewSchema.paginate
+        const {paginate} = this.viewSchema
         const filter = {
           ...this.filter,
           limit: paginate

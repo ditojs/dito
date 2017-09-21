@@ -21,12 +21,12 @@ const user = {
 }
 
 export function setup(el, options) {
-  const api = options.api
+  const {views, forms, settings, api} = options
   const normalize = api.normalizePath ? hyphenate : val => val
 
   function processView(viewSchema, viewName, routes, level) {
     const formName = viewSchema.form
-    const formSchema = formName && options.forms[formName]
+    const formSchema = formName && forms[formName]
     if (!formSchema) {
       throw new Error(`Form '${formName}' is not defined`)
     }
@@ -82,7 +82,7 @@ export function setup(el, options) {
     formSchema.path = normalize(formName)
     formSchema.name = formName
     const children = []
-    const tabs = formSchema.tabs
+    const {tabs} = formSchema
     for (const name in tabs) {
       processComponents(tabs[name].components, children, level + 1)
     }
@@ -129,8 +129,6 @@ export function setup(el, options) {
 
   api.endpoints = getEndpoints(api.endpoints)
 
-  const views = options.views
-  const settings = options.settings
   const routes = []
 
   for (const name in views) {
@@ -152,7 +150,7 @@ export function setup(el, options) {
   })
 }
 
-export const register = DitoComponent.register
+export const {register} = DitoComponent
 
 export default {
   setup,

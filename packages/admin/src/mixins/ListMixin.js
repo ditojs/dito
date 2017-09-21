@@ -39,7 +39,7 @@ export default {
 
   computed: {
     listLabels() {
-      const components = this.formSchema.components
+      const {components} = this.formSchema
       const labels = []
       for (const key in components) {
         labels.push(components[key].label)
@@ -83,8 +83,8 @@ export default {
     renderCells() {
       // Returns a function to render the cells with, supporting different
       // schema formats:
-      const render = this.schema.render
-      const columns = this.columns
+      const {render} = this.schema
+      const {columns} = this
       const firstColumn = columns && columns[0]
       return !render && firstColumn && firstColumn.name
         // If we have named columns, map their names to item attributes, with

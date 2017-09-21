@@ -22,7 +22,7 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.register(['date', 'datetime', 'time'], {
   watch: {
     value(value) {
-      const input = this.$refs.input
+      const {input} = this.$refs
       value = value ? this.toLocalDate(value) : value
       // Only set native value again in case it changed, to prevent resetting
       // input sequence in native date / datetime-local input fields.
@@ -44,7 +44,7 @@ export default DitoComponent.register(['date', 'datetime', 'time'], {
 
   methods: {
     onInput(event) {
-      const value = event.target.value
+      const {value} = event.target
       this.value = value ? new Date(value) : value
     },
 

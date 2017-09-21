@@ -53,12 +53,12 @@ export default {
     },
 
     min() {
-      const schema = this.schema
+      const {schema} = this
       return schema.range ? schema.range[0] : schema.min
     },
 
     max() {
-      const schema = this.schema
+      const {schema} = this
       return schema.range ? schema.range[1] : schema.max
     },
 
@@ -79,7 +79,7 @@ export default {
       if (this.step) {
         rules.decimal = `${this.step}`.split('.')[1].length
       }
-      return { rules }
+      return {rules}
     }
   },
 

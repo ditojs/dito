@@ -35,10 +35,9 @@ export default DitoComponent.component('dito-root', {
   },
 
   created() {
-    const settings = this.settings
-    const spinner = settings && settings.spinner
+    const {spinner} = this.settings || {}
     if (spinner) {
-      const props = DitoSpinner.props
+      const {props} = DitoSpinner
       props.size.default = spinner.size || '6px'
       props.color.default = spinner.color || '#999'
     }

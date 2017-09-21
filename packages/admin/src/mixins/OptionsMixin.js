@@ -11,7 +11,7 @@ export default {
   },
 
   created() {
-    const options = this.schema.options
+    const {options} = this.schema
     if (isObject(options)) {
       if (options.url) {
         this.loading = true

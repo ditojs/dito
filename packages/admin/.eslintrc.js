@@ -40,6 +40,12 @@ module.exports = {
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
+    'prefer-destructuring': ['error', {
+      VariableDeclarator: {
+        object: true,
+        array: false
+      }
+    }],
     'space-before-function-paren': ['error', {
       anonymous: 'always',
       named: 'never',

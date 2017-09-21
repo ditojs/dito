@@ -81,7 +81,7 @@ export default DitoComponent.component('dito-form', {
   created() {
     // Errors can get passed on throgh the meta object, so add them now.
     // See TypeMixin.showErrors()
-    const meta = this.meta
+    const {meta} = this
     const {focus, errors} = meta
     if (focus || errors) {
       delete meta.errors
@@ -124,7 +124,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     selectedTab() {
-      const hash = this.$route.hash
+      const {hash} = this.$route
       return hash && hash.substring(1) ||
           this.tabs && Object.keys(this.tabs)[0] || ''
     },
@@ -152,7 +152,7 @@ export default DitoComponent.component('dito-form', {
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
       // changes until changes are applied through setParentData()
-      const parentList = this.parentList
+      const {parentList} = this
       // Use a trick to store the cloned inherited data in clonedData, to make
       // it reactive as well as to make sure that we're not cloning twice.
       if (this.isTransient && this.clonedData === undefined && parentList) {
@@ -205,10 +205,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     setParentData(data) {
-      const clonedData = this.clonedData
-      const index = this.parentIndex
-      if (clonedData && index >= 0) {
-        this.$set(this.parentList, index,
+      const {clonedData, parentIndex} = this
+      if (clonedData && parentIndex >= 0) {
+        this.$set(this.parentList, parentIndex,
           { ...clonedData, ...this.filterData(data) })
         return true
       }
@@ -293,7 +292,7 @@ export default DitoComponent.component('dito-form', {
         // create the parent list.
         let ok = true
         if (this.create) {
-          const parentList = this.parentList
+          const {parentList} = this
           if (parentList) {
             parentList.push(payload)
           } else {

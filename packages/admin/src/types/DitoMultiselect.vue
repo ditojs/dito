@@ -163,7 +163,7 @@ export default DitoComponent.register('multiselect', {
       get() {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
-        const value = this.value
+        const {value} = this
         return this.valueKey
           ? this.findOption(this.options, value, this.schema.options.groupBy)
           : value
