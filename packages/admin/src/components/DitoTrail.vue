@@ -1,5 +1,5 @@
 <template lang="pug">
-  nav.dito-path
+  nav.dito-trail
     ul
       li(v-for="(route, level) in $route.matched")
         template(v-if="level === $route.matched.length - 1")
@@ -11,7 +11,7 @@
 
 <style lang="sass">
 .dito
-  .dito-path
+  .dito-trail
     z-index: $menu-z-index
     background: $color-black
     font-size: $menu-font-size
@@ -50,14 +50,12 @@
         transform-origin: bottom
     .dito-spinner
       margin: $menu-padding-ver 0 0 $menu-padding-hor
-
-  .breadcrumb-link
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.component('dito-path', {
+export default DitoComponent.component('dito-trail', {
   computed: {
     // Maps the route's actual path to the matched routes by counting its parts
     // separated by '/', splitting the path into the mapped parts containing
@@ -82,9 +80,15 @@ export default DitoComponent.component('dito-path', {
     },
 
     getRouteLabel(route) {
-      const param = this.$route.params[route.meta.param]
-      const prefix = param ? param === 'create' ? 'Create ' : 'Edit ' : ''
-      return prefix + this.getLabel(route.meta.labelSchema)
+      const {meta} = route
+      const {labelSchema} = meta
+      let {breadcrumb} = labelSchema
+      if (!breadcrumb) {
+        const param = this.$route.params[meta.param]
+        const prefix = param ? param === 'create' ? 'Create' : 'Edit' : ''
+        breadcrumb = `${prefix} ${this.getLabel(labelSchema)}`
+      }
+      return breadcrumb
     }
   }
 })

@@ -2,7 +2,10 @@
   mixin nbsp
     | !{' '}
   .dito-pagination.dito-buttons-round
-    .dito-pages {{ first }} – {{ last }} / {{ count }}
+    .dito-pages
+      template(v-if="count > 0") {{ first }} – {{ last }}
+      template(v-else) 0
+      |  / {{ count }}
     template(v-if="pages > 1")
       router-link.dito-button.dito-previous(
         :to="{ query: getQuery(current - 1) }"
@@ -31,10 +34,12 @@
 <style lang="sass">
 .dito
   .dito-pagination
+    line-height: 2em
     .dito-pages
       display: inline-block
       margin-right: 0.5em
     .dito-button
+      line-height: normal
       margin-left: 0.35em
       &.dito-previous::before
         +icon-arrow

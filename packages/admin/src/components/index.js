@@ -5,7 +5,7 @@
 
 import './DitoRoot'
 import './DitoMenu'
-import './DitoPath'
+import './DitoTrail'
 import './DitoView'
 import './DitoForm'
 import './DitoTabs'

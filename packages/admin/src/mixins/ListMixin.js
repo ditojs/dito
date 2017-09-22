@@ -122,8 +122,8 @@ export default {
 
     deleteItem(item) {
       if (item && confirm(
-        `Do you really want to ${this.verbDelete} "${this.getItemTitle(item)}"?`
-      )) {
+        `Do you really want to ${this.verbDelete} ${this.getItemTitle(item)}?`)
+      ) {
         if (this.isTransient) {
           this.removeItem(item)
         } else {

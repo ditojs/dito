@@ -2,7 +2,7 @@
   .dito
     dito-menu(:views="views")
     main.dito-page
-      dito-path
+      dito-trail
       router-view
 </template>
 

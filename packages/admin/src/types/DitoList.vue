@@ -14,7 +14,7 @@
         v-if="paginate"
         :filter="filter"
         :paginate="paginate"
-        :count="count"
+        :count="count || 0"
       )
     table
       dito-headers(
@@ -150,11 +150,13 @@ export default DitoComponent.register('list', {
 
   computed: {
     paginate() {
-      return this.count && this.schema.paginate
+      return this.schema.paginate
     },
 
     hasButtons() {
-      return this.schema.editable || this.schema.deletable
+      const {value, schema} = this
+      return !!(value && value.length > 0 &&
+        (schema.editable || schema.deletable || schema.draggable))
     },
 
     dragOptions() {
