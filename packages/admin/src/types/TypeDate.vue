@@ -17,9 +17,9 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default DitoComponent.register(['date', 'datetime', 'time'], {
+export default TypeComponent.register(['date', 'datetime', 'time'], {
   watch: {
     value(value) {
       const {input} = this.$refs

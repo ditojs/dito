@@ -3,7 +3,7 @@ import VueRouter from 'vue-router'
 import VeeValidate from 'vee-validate'
 import './components'
 import './types'
-import DitoComponent from './DitoComponent'
+import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
@@ -150,7 +150,7 @@ export function setup(el, options) {
   })
 }
 
-export const {register} = DitoComponent
+export const {register} = TypeComponent
 
 export default {
   setup,

@@ -35,10 +35,10 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import CodeFlask from 'codeflask'
 
-export default DitoComponent.register('code', {
+export default TypeComponent.register('code', {
   mounted() {
     const indent = Array((this.schema.indentSize || 2) + 1).join(' ')
     const flask = new CodeFlask(indent)

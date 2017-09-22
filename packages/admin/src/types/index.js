@@ -1,16 +1,16 @@
 // NOTE: index.js exports nothing, but type components will be registered in
-// DitoComponent and can be retrieved through DitoComponent.get(type) and
+// DitoComponent and can be retrieved through TypeComponent.get(type) and
 // rendered through their tag-names (e.g. type-list).
 
-import './DitoButton'
-import './DitoCheckbox'
-import './DitoCheckboxes'
-import './DitoCode'
-import './DitoDate'
-import './DitoList'
-import './DitoMultiselect'
-import './DitoNumber'
-import './DitoRadio'
-import './DitoSelect'
-import './DitoText'
-import './DitoTextarea'
+import './TypeButton'
+import './TypeCheckbox'
+import './TypeCheckboxes'
+import './TypeCode'
+import './TypeDate'
+import './TypeList'
+import './TypeMultiselect'
+import './TypeNumber'
+import './TypeRadio'
+import './TypeSelect'
+import './TypeText'
+import './TypeTextarea'

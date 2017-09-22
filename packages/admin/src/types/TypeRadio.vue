@@ -25,10 +25,10 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
-export default DitoComponent.register('radio', {
+export default TypeComponent.register('radio', {
   mixins: [OptionsMixin]
 })
 </script>

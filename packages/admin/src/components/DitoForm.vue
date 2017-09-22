@@ -61,6 +61,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import {clone} from '@/utils'
@@ -187,7 +188,7 @@ export default DitoComponent.component('dito-form', {
           initData(schema.tabs[key], data)
         }
         for (const [key, compSchema] of Object.entries(schema.components)) {
-          const comp = DitoComponent.get(compSchema.type)
+          const comp = TypeComponent.get(compSchema.type)
           const defaultValue = comp && comp.options.methods.defaultValue
           data[key] = defaultValue ? defaultValue() : null
         }

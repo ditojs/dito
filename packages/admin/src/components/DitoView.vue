@@ -1,8 +1,8 @@
 <template lang="pug">
   .dito-view
     div.dito-scroll(v-if="isLastRoute")
-      component.dito-component.dito-content(
-        :is="typeToComponent(viewSchema.type)"
+      component.dito-content(
+        :is="getTypeComponent(viewSchema.type)"
         :schema="viewSchema"
         :name="name"
         :data="data"

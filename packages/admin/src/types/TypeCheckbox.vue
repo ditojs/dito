@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default DitoComponent.register('checkbox')
+export default TypeComponent.register('checkbox')
 </script>

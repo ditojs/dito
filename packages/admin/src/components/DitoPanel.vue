@@ -8,8 +8,8 @@
         :name="key"
         :text="getLabel(compSchema, key)"
       )
-      component.dito-component(
-        :is="typeToComponent(compSchema.type)"
+      component(
+        :is="getTypeComponent(compSchema.type)"
         :schema="compSchema"
         :name="key"
         :data="data"

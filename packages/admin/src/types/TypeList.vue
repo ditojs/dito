@@ -140,11 +140,11 @@ $buttons-padding: 2px
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import VueDraggable from 'vuedraggable'
 import ListMixin from '@/mixins/ListMixin'
 
-export default DitoComponent.register('list', {
+export default TypeComponent.register('list', {
   mixins: [ListMixin],
   components: {VueDraggable},
 

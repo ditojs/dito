@@ -41,10 +41,10 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
-export default DitoComponent.register('select', {
+export default TypeComponent.register('select', {
   mixins: [OptionsMixin]
 })
 </script>

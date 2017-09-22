@@ -20,7 +20,7 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default DitoComponent.register('textarea')
+export default TypeComponent.register('textarea')
 </script>

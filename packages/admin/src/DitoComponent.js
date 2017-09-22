@@ -1,40 +1,27 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
-import TypeMixin from './mixins/TypeMixin'
-import {asArray} from './utils'
 
 const components = {}
-const types = {}
+const typeComponents = {}
 
 const DitoComponent = Vue.extend({
   mixins: [DitoMixin],
   // Make sure that registered components are present in all DitoComponent.
-  components: components,
+  components,
 
   methods: {
-    typeToComponent(type) {
-      return types[type]
+    getTypeComponent(type) {
+      return typeComponents[type] || null
     }
   }
 })
 
+DitoComponent.typeComponents = typeComponents
+
 DitoComponent.component = function (name, options) {
-  const ctor = DitoComponent.extend(options)
+  const ctor = this.extend(options)
   components[name] = ctor
   return ctor
-}
-
-DitoComponent.register = function (type, options) {
-  const name = `dito-${type}`
-  for (const t of asArray(type)) {
-    types[t] = name
-  }
-  const mixins = [TypeMixin].concat(options && options.mixins || [])
-  return DitoComponent.component(name, { ...options, mixins })
-}
-
-DitoComponent.get = function (type) {
-  return components[types[type]]
 }
 
 export default DitoComponent

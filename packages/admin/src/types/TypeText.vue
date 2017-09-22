@@ -14,9 +14,9 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default DitoComponent.register(['text', 'email', 'url', 'tel'], {
+export default TypeComponent.register(['text', 'email', 'url', 'tel'], {
   methods: {
     onInput(event) {
       this.value = event.target.value

@@ -150,11 +150,11 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
 
-export default DitoComponent.register('multiselect', {
+export default TypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
   components: {VueMultiselect},
 
