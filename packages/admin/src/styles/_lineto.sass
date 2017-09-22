@@ -1,0 +1,42 @@
+// TODO: Move to lineto-admin once we split things
+
+$color-active:    hsl(211, 100%, 61%)
+$color-info:      hsl(171, 100%, 41%)
+$color-success:   hsl(141, 71%, 48%)
+$color-warning:   hsl(48, 100%, 67%)
+$color-error:     hsl(348, 100%, 61%)
+$color-black:     hsl(0, 0%, 4%)
+$color-white:     hsl(0, 0%, 100%)
+$color-grey:      hsl(0, 0%, 50%)
+$color-light:     hsl(0, 0%, 80%)
+$color-lighter:   hsl(0, 0%, 88%)
+$color-lightest:  hsl(0, 0%, 96%)
+
+.badges
+  $margin: 4px
+  margin: (-$margin) 0 0 (-$margin)
+  .badge
+    display: inline-block
+    background: $color-lighter
+    color: $color-black
+    padding: 1px 4px
+    border-radius: 4px
+    margin: $margin 0 0 $margin
+    &.active
+      background: $color-active
+      color: $color-white
+    &.info
+      background: $color-info
+      color: $color-white
+    &.success
+      background: $color-success
+      color: $color-white
+    &.warning
+      background: $color-warning
+      color: $color-white
+    &.error
+      background: $color-error
+      color: $color-white
+
+.nowrap
+  white-space: nowrap

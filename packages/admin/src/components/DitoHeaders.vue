@@ -34,7 +34,7 @@ $arrow-size: 4px
         border-left: $border-style
       .dito-column
         padding: $button-padding-ver 0
-        margin-left: $form-spacing
+        margin: 0 $form-spacing
         // When there's no sort-button, add a 1px border to get same height
         &:first-child
           border: 1px solid transparent

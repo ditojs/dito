@@ -76,7 +76,7 @@ export default {
 
     groupBy(options, groupBy) {
       const grouped = {}
-      return options.reduce(function (results, option) {
+      return options.reduce((results, option) => {
         const name = option[groupBy]
         let entry = grouped[name]
         if (!entry) {

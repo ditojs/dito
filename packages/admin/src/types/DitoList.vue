@@ -35,6 +35,8 @@
           td(
             v-if="columns"
             v-for="column in columns"
+            :class="column.class"
+            :style="column.style"
           )
             component(
               v-if="column.component"
@@ -86,6 +88,8 @@
 </template>
 
 <style lang="sass">
+$list-spacing: 1px
+$buttons-padding: 2px
 
 .dito
   .dito-list
@@ -97,40 +101,36 @@
         float: left
       .dito-pagination
         float: right
-    table
+    > table
       width: 100%
       border-spacing: 0 $list-spacing
       &:not(:empty)
         margin: -$list-spacing 0
         & + .dito-buttons
           margin-top: $list-spacing
-      tr
-        vertical-align: baseline
-      td
-        padding: $list-padding 0 $list-padding $form-spacing
-        background: $color-lightest
-        &:first-child
-          border-top-left-radius: $border-radius
-          border-bottom-left-radius: $border-radius
-        &:last-child
-          border-top-right-radius: $border-radius
-          border-bottom-right-radius: $border-radius
-        & + td
-          border-left: 1px solid white
-      // Support simple nested table styling
-      table
-        border-spacing: 0
-        td
-          padding: 0
-          border: 0
-          & + td
-            padding-left: $form-spacing
-      // Add rounded corners in first & last headers
-      .dito-buttons
-        width: 1%
+      > thead,
+      > tbody
+        > tr
+          vertical-align: baseline
+          > td
+            padding: $form-spacing
+            background: $color-lightest
+            // Add rounded corners in first & last headers
+            &:first-child
+              border-top-left-radius: $border-radius
+              border-bottom-left-radius: $border-radius
+            &:last-child
+              border-top-right-radius: $border-radius
+              border-bottom-right-radius: $border-radius
+            & + td
+              border-left: 1px solid white
+            &.dito-buttons
+              width: 1%
+              padding: $buttons-padding
     .dito-buttons
+      vertical-align: top
       text-align: right
-      padding: $list-padding
+      padding: $buttons-padding
       background: $color-lightest
       border-radius: $border-radius
       .dito-button-drag
