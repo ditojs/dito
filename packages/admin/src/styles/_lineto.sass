@@ -1,4 +1,5 @@
 // TODO: Move to lineto-admin once we split things
+@import '~hint.css/hint.base'
 
 $color-active:    hsl(211, 100%, 61%)
 $color-info:      hsl(171, 100%, 41%)
@@ -40,3 +41,8 @@ $color-lightest:  hsl(0, 0%, 96%)
 
 .nowrap
   white-space: nowrap
+
+[class*="hint--"]
+  &:after
+    border-radius: 4px
+    white-space: pre
