@@ -2087,9 +2087,9 @@ eslint-scope@^3.7.1:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
-eslint@^4.7.1:
-  version "4.7.1"
-  resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.7.1.tgz#849804136953ebe366782f9f8611e2cbd1b54681"
+eslint@^4.7.2:
+  version "4.7.2"
+  resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.7.2.tgz#ff6f5f5193848a27ee9b627be3e73fb9cb5e662e"
   dependencies:
     ajv "^5.2.0"
     babel-code-frame "^6.22.0"
@@ -4873,9 +4873,9 @@ sass-loader@^6.0.6:
     lodash.tail "^4.1.1"
     pify "^3.0.0"
 
-"sass-svg@https://github.com/lehni/sass-svg/tarball/a0cbe098198bacffa3770f9d6fe65b441222f617":
-  version "1.0.0"
-  resolved "https://github.com/lehni/sass-svg/tarball/a0cbe098198bacffa3770f9d6fe65b441222f617#d484bb02e3709feab632e594b7c9c244f91c9dc3"
+sass-svg@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/sass-svg/-/sass-svg-1.1.0.tgz#5d8438aa09f9374558399314009836771e26ed27"
   dependencies:
     sassdash "^0.8.0"
 
