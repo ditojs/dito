@@ -81,7 +81,7 @@ export default {
         let entry = grouped[name]
         if (!entry) {
           entry = grouped[name] = {
-            name: name, // :group-label, see groupLabelKey()
+            name, // :group-label, see groupLabelKey()
             options: [] // :group-values, see groupOptionsKey()
           }
           results.push(entry)

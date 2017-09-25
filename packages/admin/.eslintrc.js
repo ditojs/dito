@@ -37,6 +37,7 @@ module.exports = {
     'no-mixed-operators': 'off',
     'no-return-assign': 'error',
     'no-var': 'error',
+    'object-shorthand': 'error',
     'prefer-const': ['error', {
       destructuring: 'all'
     }],

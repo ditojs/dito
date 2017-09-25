@@ -61,7 +61,7 @@ export function setup(el, options) {
         }
         // Just redirect back to the form if the user enters a nested list route
         : {
-          path: path,
+          path,
           redirect: '.'
         },
       // Include the prefixed formRoutes for nested lists.
@@ -136,7 +136,7 @@ export function setup(el, options) {
   }
 
   new Vue({
-    el: el,
+    el,
     router: new VueRouter({
       mode: 'history',
       routes
