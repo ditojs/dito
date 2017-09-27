@@ -26,10 +26,10 @@ $tab-color-active: $tab-color-inactive
     display: flex
     justify-content: flex-end
     pointer-events: none
-    +user-select(none)
     > *
       pointer-events: auto
     a
+      +user-select(none)
       line-height: $menu-line-height
       font-size: $menu-font-size
       padding: $tab-padding-ver $tab-padding-hor

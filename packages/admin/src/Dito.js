@@ -7,7 +7,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import {hyphenate} from './utils'
+import {isFunction, hyphenate, camelize} from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -22,15 +22,22 @@ const user = {
 
 export function setup(el, options) {
   const {views, forms, settings, api} = options
-  const normalize = api.normalizePath ? hyphenate : val => val
+  const normalizePath = getNormalizer('path', hyphenate)
+  const normalizeName = getNormalizer('name', val => camelize(val, false))
+
+  function getNormalizer(name, defaultFn) {
+    const {normalize} = api
+    const value = normalize && (name in normalize) ? normalize[name] : normalize
+    return isFunction(value) ? value : value === true ? defaultFn : val => val
+  }
 
   function processView(viewSchema, viewName, routes, level) {
     const formName = viewSchema.form
-    const formSchema = formName && forms[formName]
+    const formSchema = formName && forms[normalizeName(formName)]
     if (!formSchema) {
       throw new Error(`Form '${formName}' is not defined`)
     }
-    const path = normalize(viewName)
+    const path = normalizePath(viewName)
     viewSchema.path = path
     viewSchema.name = viewName
     viewSchema.formSchema = formSchema
@@ -79,7 +86,7 @@ export function setup(el, options) {
   }
 
   function processForm(pathPrefix, formSchema, formName, meta, level) {
-    formSchema.path = normalize(formName)
+    formSchema.path = normalizePath(formName)
     formSchema.name = formName
     const children = []
     const {tabs} = formSchema
