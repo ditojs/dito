@@ -267,7 +267,6 @@ export default DitoComponent.component('dito-form', {
         this.$router.push({ path: '..', append: true })
         // Tell the parent to reload its data if this was a submit()
         // See DataMixin.shouldReload:
-        // TODO: Use onComplete instead?
         const parent = this.parentRouteComponent
         if (reload && !parent.isTransient) {
           parent.reload = true

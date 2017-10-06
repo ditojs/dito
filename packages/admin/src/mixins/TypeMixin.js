@@ -97,11 +97,16 @@ export default {
       if (path.length > 1) {
         const navigate = this.navigateToComponent
         if (navigate) {
-          navigate.call(this, path, route => {
+          navigate.call(this, path, (route, property) => {
+            const {matched} = route
+            const {meta} = matched[matched.length - 1]
             // Pass on the errors to the instance through the meta object.
-            // See DitoForm.created()
-            route.matched[route.matched.length - 1].meta.errors = {
-              [path[path.length - 1]]: errors
+            // and tell DitoForm to focus component. See DitoForm.created(),
+            if (property) {
+              meta.errors = {
+                [property]: errors
+              }
+              meta.focus = property
             }
           })
         } else {

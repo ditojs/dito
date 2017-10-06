@@ -140,14 +140,12 @@ export default {
 
     navigateToComponent(path, onComplete) {
       const route = [...path]
-      const rest = path.length & 1 ? route.pop() : null
+      // Put collection/id pairs (even numbers) into route, and what's left
+      // identifies the property to focus.
+      const property = route.length & 1 ? route.pop() : null
       this.$router.push({ path: route.join('/'), append: true }, route => {
         if (onComplete) {
-          if (rest) {
-            // Tell DitoForm to focus component
-            route.matched[route.matched.length - 1].meta.focus = rest
-          }
-          onComplete(route)
+          onComplete(route, property)
         }
       })
     }
