@@ -111,9 +111,9 @@ export function setup(el, options) {
     }]
   }
 
-  function getEndpoints(endpoints) {
-    const defaultEndpoints = {
-      member(viewSchema, formSchema, itemId) {
+  function getResources(resources) {
+    const defaultResources = {
+      member(viewSchema, formSchema, parentForm, itemId) {
         return `${viewSchema.path}/${itemId}`
       },
 
@@ -125,16 +125,16 @@ export function setup(el, options) {
     }
     const results = {}
     for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
-      const entry = endpoints && endpoints[method]
+      const entry = resources && resources[method]
       const functions = results[method] = {}
-      for (const type in defaultEndpoints) {
-        functions[type] = entry && entry[type] || defaultEndpoints[type]
+      for (const type in defaultResources) {
+        functions[type] = entry && entry[type] || defaultResources[type]
       }
     }
     return results
   }
 
-  api.endpoints = getEndpoints(api.endpoints)
+  api.resources = getResources(api.resources)
 
   const routes = []
 

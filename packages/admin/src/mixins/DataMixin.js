@@ -65,12 +65,13 @@ export default {
   },
 
   methods: {
-    getEndpointPath(method, endpoint) {
-      const { type, id } = endpoint
-      return this.api.endpoints[method][type](
+    getResourcePath(method, resource) {
+      const {type, id} = resource
+      return this.api.resources[method][type](
         this.viewSchema,
         this.formSchema,
-        type === 'collection' ? this.parentFormComponent : id
+        this.parentFormComponent,
+        id
       )
     },
 
@@ -114,10 +115,10 @@ export default {
           count: paginate > 0
         }
 
-        this.request('get', { params }, (err, response) => {
+        this.request('get', {params}, (err, response) => {
           if (!err) {
             let {data} = response
-            if (this.endpoint.type === 'collection' && isObject(data)) {
+            if (this.resource.type === 'collection' && isObject(data)) {
               this.setStore('count', data.count)
               data = data.data
             }
@@ -133,8 +134,8 @@ export default {
 
     request(method, options, callback) {
       const request = this.api.request || this.requestAxios
-      const { endpoint, params, payload } = options
-      const path = this.getEndpointPath(method, endpoint || this.endpoint)
+      const {resource, params, payload} = options
+      const path = this.getResourcePath(method, resource || this.resource)
       this.errors.remove('dito-request')
       this.setLoading(true)
       request(method, path, params, payload, (err, response) => {

@@ -47,7 +47,7 @@ export default {
       return this.schema
     },
 
-    endpoint() {
+    resource() {
       return { type: 'collection' }
     },
 
@@ -127,8 +127,8 @@ export default {
         if (this.isTransient) {
           this.removeItem(item)
         } else {
-          const endpoint = { type: 'member', id: item.id }
-          this.request('delete', { endpoint }, err => {
+          const resource = { type: 'member', id: item.id }
+          this.request('delete', {resource}, err => {
             if (!err) {
               this.removeItem(item)
             }

@@ -113,7 +113,7 @@ export default DitoComponent.component('dito-form', {
       return this.create ? 'post' : 'patch'
     },
 
-    endpoint() {
+    resource() {
       return {
         type: this.create ? 'collection' : 'member',
         id: this.itemId
@@ -307,7 +307,7 @@ export default DitoComponent.component('dito-form', {
           this.goBack(false, false)
         }
       } else {
-        this.request(this.method, { payload }, (err, response) => {
+        this.request(this.method, {payload}, (err, response) => {
           if (!err) {
             // After submitting, navigate back to the parent form or view.
             this.goBack(true, false)
@@ -316,7 +316,7 @@ export default DitoComponent.component('dito-form', {
             // TODO: Handle in backend agnostic, modular way
             const {
               error: {
-                details: { messages }
+                details: {messages}
               } = {
                 details: {}
               }
