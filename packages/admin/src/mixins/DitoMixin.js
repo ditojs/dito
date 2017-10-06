@@ -25,17 +25,19 @@ export default {
       return comp
     },
 
-    parentRouteComponent() {
-      return this.$parent.routeComponent
-    },
-
     formComponent() {
       const comp = this.routeComponent
       return comp && comp.isForm ? comp : null
     },
 
+    parentRouteComponent() {
+      const {routeComponent} = this
+      return routeComponent ? routeComponent.$parent.routeComponent : null
+    },
+
     parentFormComponent() {
-      return this.$parent.formComponent
+      const {formComponent} = this
+      return formComponent ? formComponent.$parent.formComponent : null
     }
   },
 
