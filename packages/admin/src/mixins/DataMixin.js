@@ -65,14 +65,12 @@ export default {
   },
 
   methods: {
-    getResourcePath(method, resource) {
-      const {type, id} = resource
-      return this.api.resources[method][type](
-        this.viewSchema,
-        this.formSchema,
-        this.parentFormComponent,
-        id
-      )
+    getResourcePath(resource) {
+      const {type, id, path} = resource
+      const url = this.api.resources[type](this, id)
+      return path
+        ? /^\//.test(path) ? path : `${url}/${path}`
+        : url
     },
 
     getItemId(item, index) {
@@ -135,7 +133,7 @@ export default {
     request(method, options, callback) {
       const request = this.api.request || this.requestAxios
       const {resource, params, payload} = options
-      const path = this.getResourcePath(method, resource || this.resource)
+      const path = this.getResourcePath(resource || this.resource)
       this.errors.remove('dito-request')
       this.setLoading(true)
       request(method, path, params, payload, (err, response) => {

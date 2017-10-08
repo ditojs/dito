@@ -111,30 +111,19 @@ export function setup(el, options) {
     }]
   }
 
-  function getResources(resources) {
-    const defaultResources = {
-      member(viewSchema, formSchema, parentForm, itemId) {
-        return `${viewSchema.path}/${itemId}`
-      },
+  api.resources = {
+    member(component, itemId) {
+      return `${component.viewSchema.path}/${itemId}`
+    },
 
-      collection(viewSchema, formSchema, parentForm) {
-        return parentForm
-          ? `${parentForm.viewSchema.path}/${parentForm.itemId}/${viewSchema.path}`
-          : viewSchema.path
-      }
-    }
-    const results = {}
-    for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
-      const entry = resources && resources[method]
-      const functions = results[method] = {}
-      for (const type in defaultResources) {
-        functions[type] = entry && entry[type] || defaultResources[type]
-      }
-    }
-    return results
+    collection(component) {
+      const { parentFormComponent: parentForm, viewSchema } = component
+      return parentForm
+        ? `${parentForm.viewSchema.path}/${parentForm.itemId}/${viewSchema.path}`
+        : viewSchema.path
+    },
+    ...api.resources
   }
-
-  api.resources = getResources(api.resources)
 
   const routes = []
 

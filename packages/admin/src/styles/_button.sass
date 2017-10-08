@@ -28,21 +28,21 @@
   button + button
     margin-left: 2px
 
-.dito-button-add::before
+.dito-button-add:empty::before
     content: 'Add'
-.dito-button-create::before
+.dito-button-create:empty::before
     content: 'Create'
-.dito-button-delete::before
+.dito-button-delete:empty::before
     content: 'Delete'
-.dito-button-remove::before
+.dito-button-remove:empty::before
     content: 'Remove'
-.dito-button-edit::before
+.dito-button-edit:empty::before
     content: 'Edit'
-.dito-button-save::before
+.dito-button-save:empty::before
     content: 'Save'
-.dito-button-apply::before
+.dito-button-apply:empty::before
     content: 'Apply'
-.dito-button-cancel::before
+.dito-button-cancel:empty::before
     content: 'Cancel'
 
 .dito-buttons-round
@@ -64,13 +64,13 @@
       bottom: 0
       margin: auto
       content: ''
-  .dito-button-add::before,
-  .dito-button-create::before
+  .dito-button-add:empty::before,
+  .dito-button-create:empty::before
     +icon-add
-  .dito-button-delete::before,
-  .dito-button-remove::before
+  .dito-button-delete:empty::before,
+  .dito-button-remove:empty::before
     +icon-remove
-  .dito-button-edit::before
+  .dito-button-edit:empty::before
     +icon-edit
-  .dito-button-drag::before
+  .dito-button-drag:empty::before
     +icon-drag

@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-form
-    form(v-if="isLastRoute" @submit.prevent="submit")
+    form(v-if="isLastRoute" @submit.prevent="submit()")
       dito-errors(
         v-if="errors.has('dito-request')"
         name="dito-request"
@@ -31,11 +31,18 @@
             button.dito-button.dito-button-cancel(
               type="button"
               @click.prevent="cancel"
-            )
+            ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
               type="submit"
               :class="`dito-button-${create ? verbCreate : verbSave}`"
-            )
+            ) {{ buttons.submit && buttons.submit.label }}
+            button.dito-button(
+              v-for="(button, key) in buttons"
+              v-if="key !== 'submit' && key !== 'cancel'"
+              type="submit"
+              @click.prevent="submit(button)"
+              :class="`dito-button-${key}`"
+            ) {{ button.label }}
     router-view(v-else)
 </template>
 
@@ -118,6 +125,10 @@ export default DitoComponent.component('dito-form', {
         type: this.create ? 'collection' : 'member',
         id: this.itemId
       }
+    },
+
+    buttons() {
+      return this.formSchema.buttons || {}
     },
 
     tabs() {
@@ -274,16 +285,17 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    async submit() {
+    async submit(button) {
       if (await this.$validator.validateAll()) {
-        this.storeData()
+        // Default button is submit:
+        this.submitData(button || this.buttons.submit)
       } else {
         // TODO: Implement nicer dialogs and info / error flashes...
         alert('Please correct the validation errors.')
       }
     },
 
-    storeData() {
+    submitData(button = {}) {
       const payload = this.data
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
@@ -306,10 +318,25 @@ export default DitoComponent.component('dito-form', {
           this.goBack(false, false)
         }
       } else {
-        this.request(this.method, {payload}, (err, response) => {
+        let {method, resource} = this
+        // Allow buttons to override both method and resource path:
+        method = button.method || method
+        const {path} = button
+        if (path) {
+          resource = { ...resource, path }
+        }
+        this.request(method, {payload, resource}, (err, response) => {
           if (!err) {
-            // After submitting, navigate back to the parent form or view.
-            this.goBack(true, false)
+            // After submitting, navigate back to the parent form or view,
+            // except if a button turns it off:
+            if (button.back === false) {
+              const {data} = response
+              if (data) {
+                this.setData(data)
+              }
+            } else {
+              this.goBack(true, false)
+            }
           } else if (response.status === 422) {
             // LoopBack validation error!
             // TODO: Handle in backend agnostic, modular way
