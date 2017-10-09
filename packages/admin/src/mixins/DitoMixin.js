@@ -62,14 +62,6 @@ export default {
       return schema.label || labelize(schema.name || name)
     },
 
-    getItemTitle(item, schema) {
-      schema = schema || this.formSchema
-      const {getTitle} = schema
-      const label = this.getLabel(schema)
-      const title = getTitle ? getTitle(item) : item.name
-      return `${label} ${title ? `"${title}"` : `(id:${item.id})`}`
-    },
-
     getElement(selector) {
       const proto = Element.prototype
       const matches = proto.matches ||

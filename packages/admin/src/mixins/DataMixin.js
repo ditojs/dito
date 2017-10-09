@@ -74,7 +74,16 @@ export default {
     },
 
     getItemId(item, index) {
-      return String(this.isTransient ? index : item.id)
+      const { idName = 'id' } = this.formSchema
+      return String(this.isTransient ? index : item[idName])
+    },
+
+    getItemTitle(item, schema) {
+      schema = schema || this.formSchema
+      const {getTitle} = schema
+      const label = this.getLabel(schema)
+      const title = getTitle ? getTitle(item) : item.name
+      return `${label} ${title ? `"${title}"` : `(id:${this.getItemId(item)})`}`
     },
 
     setData(data) {

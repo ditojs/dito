@@ -127,7 +127,7 @@ export default {
         if (this.isTransient) {
           this.removeItem(item)
         } else {
-          const resource = { type: 'member', id: item.id }
+          const resource = { type: 'member', id: this.getItemId(item) }
           this.request('delete', {resource}, err => {
             if (!err) {
               this.removeItem(item)

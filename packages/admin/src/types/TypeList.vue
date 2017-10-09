@@ -30,7 +30,7 @@
       )
         tr(
           v-for="item, index in value || []"
-          :key="`${name}-${item.id}`"
+          :key="`${name}-${getItemId(item)}`"
         )
           td(
             v-if="columns"
