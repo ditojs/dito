@@ -1,0 +1,58 @@
+{
+  "name": "lineto-koa",
+  "version": "1.0.0",
+  "description": "API backend for Lineto.com, based on Koa2 and Objection.js",
+  "main": "index.js",
+  "repository": "https://github.com/lineto/lineto-koa",
+  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 8.0.0",
+    "npm": ">= 5.0.0"
+  },
+  "module": "src/index.js",
+  "jsnext:main": "src/index.js",
+  "scripts": {
+    "migrate": "knex migrate:latest",
+    "seed": "babel-node src/seeds",
+    "start": "babel-node src",
+    "dev": "nodemon --watch src --exec 'yarn start'",
+    "build": "babel src -d dist --copy-files --source-maps",
+    "serve": "node dist"
+  },
+  "dependencies": {
+    "@koa/cors": "^2.2.1",
+    "faker": "^4.1.0",
+    "fs-extra": "^4.0.2",
+    "knex": "^0.13.0",
+    "koa": "^2.3.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-compose": "^4.0.0",
+    "koa-helmet": "^3.2.0",
+    "koa-logger": "^3.1.0",
+    "koa-mount": "^3.0.0",
+    "koa-router": "^7.2.1",
+    "koa-static": "^4.0.1",
+    "objection": "^0.8.9",
+    "objection-rest": "^0.5.0",
+    "sqlite3": "^3.1.13",
+    "winston": "^2.4.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.0.0",
+    "babel-plugin-dynamic-import-node": "^1.0.2",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-promise-to-bluebird": "^1.1.1",
+    "eslint": "^4.8.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.3.0",
+    "eslint-plugin-node": "^5.2.0",
+    "eslint-plugin-promise": "^3.4.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "nodemon": "^1.12.1"
+  }
+}
