@@ -8,7 +8,7 @@ const router = new Router()
 
 const rest = ObjectionRest(objection)
   .routePrefix('/api')
-  .logger(console.log.bind(console))
+  .logger(console.log)
   .adapter((router, method, route, callback) => {
     // Express app has a routing method for each HTTP verb. Call the correct
     // routing method and pass the route as a parameter.
