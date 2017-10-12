@@ -1,7 +1,10 @@
 import {AjvValidator} from 'objection'
+import setupMergePatch from 'ajv-merge-patch'
+import validators from './validators'
 
 const validator = new AjvValidator({
   onCreateAjv: ajv => {
+    setupMergePatch(ajv)
     ajv.addFormat('required', {
       validate: value => !!value,
       message: 'is required'
@@ -24,6 +27,7 @@ const validator = new AjvValidator({
       }
     })
   },
+
   options: {
     allErrors: true,
     validateSchema: false,
@@ -34,5 +38,13 @@ const validator = new AjvValidator({
     format: 'full'
   }
 })
+
+validator.getKeyword = function (keyword) {
+  return this.ajv.getKeyword(keyword)
+}
+
+validator.isKeyword = function (keyword) {
+  return !!this.getKeyword(keyword)
+}
 
 export default validator

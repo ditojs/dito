@@ -35,6 +35,13 @@ ajv-keywords@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-2.1.0.tgz#a296e17f7bfae7c1ce4f7e0de53d29cb32162df0"
 
+ajv-merge-patch@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/ajv-merge-patch/-/ajv-merge-patch-3.0.0.tgz#76f071e391f419fe9fe3fea7e920a1ad824b2b61"
+  dependencies:
+    fast-json-patch "^1.0.0"
+    json-merge-patch "^0.2.3"
+
 ajv@^4.9.1:
   version "4.11.8"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-4.11.8.tgz#82ffb02b29e662ae53bdc20af15947706739c536"
@@ -474,7 +481,7 @@ block-stream@*:
   dependencies:
     inherits "~2.0.0"
 
-bluebird@^3, bluebird@^3.4.6, bluebird@^3.5.0:
+bluebird@^3, bluebird@^3.4.6, bluebird@^3.5.0, bluebird@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.1.tgz#d9551f9de98f1fcda1e683d17ee91a0602ee2eb9"
 
@@ -631,7 +638,7 @@ colors@1.0.x:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/colors/-/colors-1.0.3.tgz#0433f44d809680fdeb60ed260f1b0c262e82a40b"
 
-colors@^1:
+colors@^1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/colors/-/colors-1.1.2.tgz#168a4701756b6a7f51a12ce0c97bfa28c084ed63"
 
@@ -776,7 +783,7 @@ debug@2.6.9, debug@^2.1.3, debug@^2.2.0, debug@^2.6.1, debug@^2.6.3, debug@^2.6.
   dependencies:
     ms "2.0.0"
 
-deep-equal@~1.0.1:
+deep-equal@^1.0.0, deep-equal@~1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/deep-equal/-/deep-equal-1.0.1.tgz#f5d260292b660e084eff4cdbc9f08ad3247448b5"
 
@@ -1110,6 +1117,10 @@ faker@^4.1.0:
 fast-deep-equal@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-1.0.0.tgz#96256a3bc975595eb36d82e9929d060d893439ff"
+
+fast-json-patch@^1.0.0:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/fast-json-patch/-/fast-json-patch-1.2.2.tgz#d377d97c6911dbdd2a1c80bfacda048a4f83bbf9"
 
 fast-levenshtein@~2.0.4:
   version "2.0.6"
@@ -1786,6 +1797,12 @@ jsesc@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-1.3.0.tgz#46c3fec8c1892b12b0833db9bc7622176dbab34b"
 
+json-merge-patch@^0.2.3:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/json-merge-patch/-/json-merge-patch-0.2.3.tgz#fa2c6b5af87da77bae2966a589d52e23ed81fe40"
+  dependencies:
+    deep-equal "^1.0.0"
+
 json-schema-traverse@^0.3.0:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/json-schema-traverse/-/json-schema-traverse-0.3.1.tgz#349a6d44c53a51de89b40805c5d5e59b417d3340"
@@ -2303,25 +2320,16 @@ object.omit@^2.0.0:
     for-own "^0.1.4"
     is-extendable "^0.1.1"
 
-objection-find@^0.5.0:
+objection-find@^0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/objection-find/-/objection-find-0.5.1.tgz#95b996822bdb3fa8b4e19ccd3e676ea85230f727"
   dependencies:
     bluebird "^3"
     lodash "^4"
 
-objection-rest@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/objection-rest/-/objection-rest-0.5.0.tgz#4000ad38c6c339abcc3a89648506113e327d5945"
-  dependencies:
-    bluebird "^3"
-    colors "^1"
-    lodash "^4"
-    objection-find "^0.5.0"
-
-objection@^0.8.9:
-  version "0.8.9"
-  resolved "https://registry.yarnpkg.com/objection/-/objection-0.8.9.tgz#490bc3ad84fbad1f79830814b8b593d03034a102"
+"objection@https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213":
+  version "0.9.0"
+  resolved "https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213#fa51336d887633880a2f97c34d04431ebff0a891"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"

@@ -1,29 +1,46 @@
 import Koa from 'koa'
 import Router from 'koa-router'
-import objection from 'objection'
-import ObjectionRest from 'objection-rest'
+import ApiGenerator from './ApiGenerator'
 import models from '../models'
+import {isObject} from '../utils'
 
 const router = new Router()
 
-const rest = ObjectionRest(objection)
-  .routePrefix('/api')
-  .logger(console.log)
-  .adapter((router, method, route, callback) => {
-    // Express app has a routing method for each HTTP verb. Call the correct
-    // routing method and pass the route as a parameter.
-    router[method.toLowerCase()](route, async function (ctx, next) {
-      // objection-rest only needs the `params`, `query` and `body` attributes
-      // of the express request.
-      ctx.body = await callback(ctx)
-    })
+function adapter({verb, route, access}, callback) {
+  router[verb](route, async function (ctx, next) {
+    console.log('access', access)
+    ctx.body = await callback(ctx)
   })
-
-for (const model of Object.values(models)) {
-  rest.addModel(model)
 }
 
-rest.generate(router)
+const rest = new ApiGenerator({
+  prefix: '/api',
+  logger: console.log,
+  adapter
+})
+
+function getAccess(verb, options) {
+  return isObject(options) ? options[verb] : options
+}
+
+for (const modelClass of Object.values(models)) {
+  const {routes} = modelClass
+  const {collection, member, relations} = routes || {}
+  rest.addModel(modelClass, {
+    access: {
+      collection: verb => getAccess(verb, collection),
+      member: verb => getAccess(verb, member),
+      relation: (verb, {name}) => {
+        const relation = relations[name]
+        return getAccess(verb, relation && relation.relation || relation)
+      },
+      relatedMember: (verb, {name}) => {
+        const relation = relations[name]
+        return getAccess(verb, relation && relation.member || relation)
+      }
+    }
+  })
+}
 
 const api = new Koa()
 api
