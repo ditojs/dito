@@ -10,9 +10,13 @@ export default {
     },
     verb: 'get'
   },
+
   somethingStatic: {
     static: true,
-    verb: 'post',
+    return: {
+      type: 'string'
+    },
+    verb: 'get',
     path: 'something'
   }
 }
