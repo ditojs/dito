@@ -1,4 +1,4 @@
-import Model from '../../Model'
+import Model from '../../core/Model'
 import properties from './properties'
 import methods from './methods'
 import routes from './routes'

@@ -1,22 +1,21 @@
 import objection from 'objection'
-import Ajv from 'ajv'
 import colors from 'colors/safe'
 import findQuery from 'objection-find'
 import pluralize from 'pluralize'
-import {hyphenate, isObject, keyItemsBy} from '../utils'
+import { hyphenate, isObject, keyItemsBy } from '../utils'
+import { convertSchema } from '../core/schema'
 
 export default class RestGenerator {
-  constructor({adapter, prefix, logger} = {}) {
+  constructor({ adapter, prefix, logger } = {}) {
     this.adapter = adapter || (() => {})
     this.logger = logger
     this.prefix = /\/$/.test(prefix) ? prefix : `${prefix}/`
     this.models = Object.create(null)
     this.findQueries = Object.create(null)
-    this.ajv = new Ajv({ coerceTypes: true })
   }
 
   getFindQuery(modelClass) {
-    const {name} = modelClass
+    const { name } = modelClass
     let query = this.findQueries[name]
     if (!query) {
       query = this.findQueries[name] = findQuery(modelClass)
@@ -26,7 +25,7 @@ export default class RestGenerator {
 
   addModelRoutes(modelClass) {
     this.log(`${colors.green(modelClass.name)}${colors.white(':')}`)
-    const {collection, member, relations} = modelClass.routes || {}
+    const { collection, member, relations } = modelClass.routes || {}
     this.addRoutes(modelClass, 'collection', collection, 1)
     // Install static methods before ids, as they wouldn't match otherwise
     this.addMethods(modelClass, 'collectionMethod', 1)
@@ -56,7 +55,7 @@ export default class RestGenerator {
         handler = handler.handler
       }
       const route = this.getRoutePath(type, target)
-      this.adapter({verb, route, access},
+      this.adapter({ verb, route, access },
         ctx => handler.call(this, target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
         indent)
@@ -75,30 +74,15 @@ export default class RestGenerator {
         const access = true
         const handler = methodHandlers[type]
         const validate = {
-          arguments: this.getArgumentsValidator(method.arguments),
-          return: this.getArgumentsValidator([method.return])
+          arguments: createArgumentsValidator(modelClass, method.arguments),
+          return: createArgumentsValidator(modelClass, [method.return])
         }
-        this.adapter({verb, route, access},
+        this.adapter({ verb, route, access },
           ctx => handler.call(this, modelClass, name, method, validate, ctx))
         this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
           indent)
       }
     }
-  }
-
-  getArgumentsValidator(_arguments) {
-    const properties = {}
-    // TODO: Support required!
-    for (const arg of _arguments || []) {
-      if (arg) {
-        const {name, type} = arg
-        properties[name || 'data'] = {type}
-      }
-    }
-    return this.ajv.compile({
-      type: 'object',
-      properties
-    })
   }
 
   log(str, indent = 0) {
@@ -142,16 +126,15 @@ function getAccess(verb, options) {
 }
 
 const accessHandlers = {
-  collection: (verb, collection) => getAccess(verb, collection),
+  collection: getAccess,
+  member: getAccess,
 
-  member: (verb, member) => getAccess(verb, member),
-
-  relation: (verb, relations, {name}) => {
+  relation: (verb, relations, { name }) => {
     const relation = relations[name]
     return getAccess(verb, relation && relation.relation || relation)
   },
 
-  relationMember: (verb, relations, {name}) => {
+  relationMember: (verb, relations, { name }) => {
     const relation = relations[name]
     return getAccess(verb, relation && relation.member || relation)
   }
@@ -160,28 +143,42 @@ const accessHandlers = {
 /**
  * Remote Methods
  */
+function createArgumentsValidator(modelClass, args = []) {
+  const validator = modelClass.getValidator()
+  if (args.length > 0) {
+    const properties = {}
+    for (const arg of args) {
+      if (arg) {
+        const { name, type, ...rest } = arg
+        properties[name || 'root'] = { type, ...rest }
+      }
+    }
+    const schema = convertSchema(properties, validator)
+    return validator.compileWithCoercing(schema)
+  }
+  return () => true
+}
 
 function getArguments(method, validate, query) {
   if (!validate(query)) {
-    const err = new Error(`Invalid query data: ${query}`)
-    err.statusCode = 500 // TODO: What's a correct error?
-    throw err
+    throw new ValidationError(validate.errors,
+      `The provided data is not valid: ${JSON.stringify(query)}`)
   }
   const args = []
-  for (const {name, type} of method.arguments || []) {
+  for (const { name } of method.arguments || []) {
     args.push(name ? query[name] : query)
   }
   return args
 }
 
 function getReturn(method, validate, value) {
-  const {name, type} = method.return || {}
+  const { name } = method.return || {}
   return Promise.resolve(value).then(value => {
-    const data = { [name || 'data']: value }
+    // Use 'root' if no name is given, see createArgumentsValidator()
+    const data = { [name || 'root']: value }
     if (!validate(data)) {
-      const err = new Error(`Invalid result of remote method: ${value}`)
-      err.statusCode = 500 // TODO: What's a correct error?
-      throw err
+      throw new ValidationError(validate.errors,
+        `Invalid result of remote method: ${value}`)
     }
     return name ? data : value
   })
@@ -255,7 +252,7 @@ const restHandlers = {
       return this.getFindQuery(modelClass)
         .build(ctx.query, modelClass.query())
         .patch(ctx.body)
-        .then(total => ({total}))
+        .then(total => ({ total }))
     },
 
     // delete collection
@@ -263,14 +260,14 @@ const restHandlers = {
       return this.getFindQuery(modelClass)
         .build(ctx.query, modelClass.query())
         .delete()
-        .then(total => ({total}))
+        .then(total => ({ total }))
     }
   },
 
   member: {
     // get collection
     get(modelClass, ctx) {
-      const {id} = ctx.params
+      const { id } = ctx.params
       const builder = modelClass.query()
       return builder
         .allowEager(this.getFindQuery(modelClass).allowEager())
@@ -282,7 +279,7 @@ const restHandlers = {
 
     // put collection
     put(modelClass, ctx) {
-      const {id} = ctx.params
+      const { id } = ctx.params
       const builder = modelClass.query()
       return builder
         .update(ctx.body)
@@ -300,7 +297,7 @@ const restHandlers = {
 
     // patch collection
     patch(modelClass, ctx) {
-      const {id} = ctx.params
+      const { id } = ctx.params
       const builder = modelClass.query()
       return builder
         .patch(ctx.body)
@@ -318,7 +315,7 @@ const restHandlers = {
 
     // delete collection
     delete(modelClass, ctx) {
-      const {id} = ctx.params
+      const { id } = ctx.params
       return objection.transaction(modelClass, modelClass => {
         const builder = modelClass.query()
         return builder
@@ -331,8 +328,8 @@ const restHandlers = {
   relation: {
     // post relation
     post(relation, ctx) {
-      const {id} = ctx.params
-      const {ownerModelClass} = relation
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
         return builder
@@ -352,8 +349,8 @@ const restHandlers = {
 
     // get relation
     get(relation, ctx) {
-      const {id} = ctx.params
-      const {ownerModelClass} = relation
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
       const builder = ownerModelClass.query()
       return builder
         .where(builder.fullIdColumnFor(ownerModelClass), id)
@@ -370,8 +367,8 @@ const restHandlers = {
 
     // delete relation
     delete(relation, ctx) {
-      const {id} = ctx.params
-      const {ownerModelClass} = relation
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
         return builder
@@ -390,8 +387,8 @@ const restHandlers = {
         return relation instanceof objection.BelongsToOneRelation
       },
       handler(relation, ctx) {
-        const {id} = ctx.params
-        const {ownerModelClass, relatedModelClass} = relation
+        const { id } = ctx.params
+        const { ownerModelClass, relatedModelClass } = relation
         let model
         return objection.transaction(ownerModelClass, relatedModelClass,
           (ownerModelClass, relatedModelClass) => {
@@ -449,8 +446,8 @@ const restHandlers = {
         return relation instanceof objection.ManyToManyRelation
       },
       handler(relation, ctx) {
-        const {id, relatedId, eager} = ctx.params
-        const {ownerModelClass, relatedModelClass} = relation
+        const { id, relatedId } = ctx.params
+        const { ownerModelClass, relatedModelClass } = relation
         return objection.transaction(ownerModelClass, relatedModelClass,
           (ownerModelClass, relatedModelClass) => {
             const builder = ownerModelClass.query()
@@ -476,5 +473,22 @@ const restHandlers = {
         )
       }
     }
+  }
+}
+
+class ValidationError extends Error {
+  constructor(errors, statusCode = 400, message) {
+    const errorHash = {}
+    let index = 0
+    for (const { message, keyword, params, dataPath } of errors) {
+      const key = dataPath.substring(1) ||
+        params && (params.missingProperty || params.additionalProperty) ||
+        (index++).toString()
+      errorHash[key] = [{ message, keyword, params }]
+    }
+    const details = JSON.stringify(errorHash, null, 2)
+    super(message ? `${message}. Details: ${details}` : details)
+    this.data = errorHash
+    this.statusCode = statusCode
   }
 }

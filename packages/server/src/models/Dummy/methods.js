@@ -2,7 +2,8 @@ export default {
   hello: {
     arguments: [{
       name: 'msg',
-      type: 'string'
+      type: 'string',
+      required: true
     }],
     return: {
       name: 'greeting',
