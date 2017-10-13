@@ -5,15 +5,13 @@ import findQuery from 'objection-find'
 import pluralize from 'pluralize'
 import {hyphenate, isObject, keyItemsBy} from '../utils'
 
-export default class ApiGenerator {
+export default class RestGenerator {
   constructor({adapter, prefix, logger} = {}) {
     this.adapter = adapter || (() => {})
     this.logger = logger
     this.prefix = /\/$/.test(prefix) ? prefix : `${prefix}/`
     this.models = Object.create(null)
     this.findQueries = Object.create(null)
-    // TODO: Implement valudation and value coercion for remote method arguments
-    // and return value through Ajv.
     this.ajv = new Ajv({ coerceTypes: true })
   }
 
@@ -29,10 +27,11 @@ export default class ApiGenerator {
   addModelRoutes(modelClass) {
     this.log(`${colors.green(modelClass.name)}${colors.white(':')}`)
     const {collection, member, relations} = modelClass.routes || {}
-    // Install methods before ids, as they wouldn't match otherwise
-    this.addModelMethods(modelClass, 1)
     this.addRoutes(modelClass, 'collection', collection, 1)
+    // Install static methods before ids, as they wouldn't match otherwise
+    this.addMethods(modelClass, 'collectionMethod', 1)
     this.addRoutes(modelClass, 'member', member, 1)
+    this.addMethods(modelClass, 'memberMethod', 1)
     for (const relation of Object.values(modelClass.getRelations())) {
       this.log(`${colors.blue(relation.name)}${colors.white(':')}`, 1)
       this.addRoutes(relation, 'relation', relations, 2)
@@ -64,25 +63,42 @@ export default class ApiGenerator {
     }
   }
 
-  addModelMethods(modelClass, indent) {
+  addMethods(modelClass, type, indent) {
     for (const [name, method] of Object.entries(modelClass.methods || {})) {
-      const {
-        arguments: _arguments,
-        return: _return,
-        static: _static,
-        verb = 'get',
-        path = name
-      } = method
-      const type = `${_static ? 'collection' : 'member'}Method`
-      const route = this.getRoutePath(type, modelClass, path)
-      // TODO: Access control for methods
-      const access = true
-      const handler = methodHandlers[type]
-      this.adapter({verb, route, access},
-        ctx => handler.call(this, modelClass, name, _arguments, _return, ctx))
-      this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
-        indent)
+      if (type === 'memberMethod' ^ !!method.static) {
+        const {
+          verb = 'get',
+          path = name
+        } = method
+        const route = this.getRoutePath(type, modelClass, path)
+        // TODO: Access control for methods
+        const access = true
+        const handler = methodHandlers[type]
+        const validate = {
+          arguments: this.getArgumentsValidator(method.arguments),
+          return: this.getArgumentsValidator([method.return])
+        }
+        this.adapter({verb, route, access},
+          ctx => handler.call(this, modelClass, name, method, validate, ctx))
+        this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
+          indent)
+      }
     }
+  }
+
+  getArgumentsValidator(_arguments) {
+    const properties = {}
+    // TODO: Support required!
+    for (const arg of _arguments || []) {
+      if (arg) {
+        const {name, type} = arg
+        properties[name || 'data'] = {type}
+      }
+    }
+    return this.ajv.compile({
+      type: 'object',
+      properties
+    })
   }
 
   log(str, indent = 0) {
@@ -145,17 +161,29 @@ const accessHandlers = {
  * Remote Methods
  */
 
-function getArguments($arguments, query) {
+function getArguments(method, validate, query) {
+  if (!validate(query)) {
+    const err = new Error(`Invalid query data: ${query}`)
+    err.statusCode = 500 // TODO: What's a correct error?
+    throw err
+  }
   const args = []
-  for (const {name, type} of $arguments || []) {
-    args.push(query[name])
+  for (const {name, type} of method.arguments || []) {
+    args.push(name ? query[name] : query)
   }
   return args
 }
 
-function getReturn({name, type} = {}, value) {
+function getReturn(method, validate, value) {
+  const {name, type} = method.return || {}
   return Promise.resolve(value).then(value => {
-    return name ? { [name]: value } : value
+    const data = { [name || 'data']: value }
+    if (!validate(data)) {
+      const err = new Error(`Invalid result of remote method: ${value}`)
+      err.statusCode = 500 // TODO: What's a correct error?
+      throw err
+    }
+    return name ? data : value
   })
 }
 
@@ -171,18 +199,20 @@ function checkMethod(method, modelClass, name, _static, statusCode = 404) {
 }
 
 const methodHandlers = {
-  collectionMethod(modelClass, name, _arguments, _return, ctx) {
-    const method = checkMethod(modelClass[name], modelClass, name, true)
-    const value = method.call(modelClass, getArguments(_arguments, ctx.query))
-    return getReturn(_return, value)
+  collectionMethod(modelClass, name, method, validate, ctx) {
+    const func = checkMethod(modelClass[name], modelClass, name, true)
+    const args = getArguments(method, validate.arguments, ctx.query)
+    const value = func.call(modelClass, args)
+    return getReturn(method, validate.return, value)
   },
 
-  memberMethod(modelClass, name, _arguments, _return, ctx) {
+  memberMethod(modelClass, name, method, validate, ctx) {
     return restHandlers.member.get.call(this, modelClass, ctx)
       .then(model => {
-        const method = checkMethod(model[name], modelClass, name, false)
-        const value = method.call(model, getArguments(_arguments, ctx.query))
-        return getReturn(_return, value)
+        const func = checkMethod(model[name], modelClass, name, false)
+        const args = getArguments(method, validate.arguments, ctx.query)
+        const value = func.call(model, args)
+        return getReturn(method, validate.return, value)
       })
   }
 }
