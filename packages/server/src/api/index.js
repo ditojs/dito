@@ -5,10 +5,19 @@ import models from '../models'
 
 const router = new Router()
 
-function adapter({ verb, route, settings }, callback) {
+function adapter({ target, type, verb, route, settings }, callback) {
+  // Freeze settings object so we can pass the same one but no middleware
+  // can alter it and affect future requests.
+  settings = Object.freeze(settings)
   router[verb](route, async function (ctx, next) {
-    console.log('settings', settings)
+    Object.defineProperty(ctx, 'settings', {
+      value: settings,
+      writable: false
+    })
+    const event = `${verb}:${type}`
+    target.emit(`before:${event}`, ctx)
     ctx.body = await callback(ctx)
+    target.emit(`after:${event}`, ctx)
   })
 }
 

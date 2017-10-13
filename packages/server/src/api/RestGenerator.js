@@ -42,10 +42,7 @@ export default class RestGenerator {
     const handlers = restHandlers[type]
     const getSettings = settingsHandlers[type]
     for (let [verb, handler] of Object.entries(getSettings ? handlers : {})) {
-      // Freeze settings object so we can pass the same one but no middleware
-      // can alter it and affect future requests.
-      const settings = Object.freeze(
-        getSettings(verb, handlers, routesSettings, target))
+      const settings = getSettings(verb, handlers, routesSettings, target)
       if (!settings) {
         continue
       }
@@ -56,7 +53,7 @@ export default class RestGenerator {
         handler = handler.handler
       }
       const route = this.getRoutePath(type, target)
-      this.adapter({ verb, route, settings },
+      this.adapter({ target, type, verb, route, settings },
         ctx => handler.call(this, target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
         indent)
@@ -78,7 +75,7 @@ export default class RestGenerator {
           arguments: createArgumentsValidator(modelClass, method.arguments),
           return: createArgumentsValidator(modelClass, [method.return])
         }
-        this.adapter({ verb, route, access },
+        this.adapter({ target: modelClass, type, verb, route, access },
           ctx => handler.call(this, modelClass, name, method, validate, ctx))
         this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
           indent)

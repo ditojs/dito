@@ -32,6 +32,7 @@
     "ajv-merge-patch": "^3.0.0",
     "bluebird": "^3.5.1",
     "colors": "^1.1.2",
+    "eventemitter2": "^4.1.2",
     "faker": "^4.1.0",
     "fs-extra": "^4.0.2",
     "knex": "^0.13.0",

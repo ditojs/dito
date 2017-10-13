@@ -4,6 +4,10 @@ import methods from './methods'
 import routes from './routes'
 
 export default class Dummy extends Model {
+  static properties = properties
+  static methods = methods
+  static routes = routes
+
   get fullName() {
     return `${this.firstName} ${this.lastName}`
   }
@@ -18,8 +22,4 @@ export default class Dummy extends Model {
     await Promise.delay(1000)
     return 'One second has passed.'
   }
-
-  static properties = properties
-  static methods = methods
-  static routes = routes
 }
