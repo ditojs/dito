@@ -35,7 +35,7 @@ export default class RestGenerator {
     for (const relation of Object.values(modelClass.getRelations())) {
       this.log(`${colors.blue(relation.name)}${colors.white(':')}`, 1)
       this.addRoutes(relation, 'relation', relations, 2)
-      this.addRoutes(relation, 'relatedMember', relations, 2)
+      this.addRoutes(relation, 'relationMember', relations, 2)
     }
   }
 
@@ -116,20 +116,20 @@ const routePath = {
   collection(modelClass) {
     return hyphenate(pluralize(modelClass.name))
   },
+  collectionMethod(modelClass, path) {
+    return `${routePath.collection(modelClass)}/${path}`
+  },
   member(modelClass) {
     return `${routePath.collection(modelClass)}/:id`
+  },
+  memberMethod(modelClass, path) {
+    return `${routePath.member(modelClass)}/${path}`
   },
   relation(relation) {
     return `${routePath.member(relation.ownerModelClass)}/${relation.name}`
   },
-  relatedMember(relation) {
+  relationMember(relation) {
     return `${routePath.relation(relation)}/:relatedId`
-  },
-  collectionMethod(modelClass, path) {
-    return `${routePath.collection(modelClass)}/${path}`
-  },
-  memberMethod(modelClass, path) {
-    return `${routePath.member(modelClass)}/${path}`
   }
 }
 
@@ -151,7 +151,7 @@ const accessHandlers = {
     return getAccess(verb, relation && relation.relation || relation)
   },
 
-  relatedMember: (verb, relations, {name}) => {
+  relationMember: (verb, relations, {name}) => {
     const relation = relations[name]
     return getAccess(verb, relation && relation.member || relation)
   }
@@ -439,11 +439,11 @@ const restHandlers = {
     }
   },
 
-  relatedMember: {
+  relationMember: {
     // TODO: HasManyRelation, BelongsToOneRelation, HasOneThroughRelation,
     // ManyToManyRelation?
 
-    // post relatedMember = "generateRelationRelate" ??
+    // post relationMember = "generateRelationRelate" ??
     post: {
       isValid(relation) {
         return relation instanceof objection.ManyToManyRelation
