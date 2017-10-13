@@ -1,8 +1,10 @@
 import objection from 'objection'
 import { convertSchema } from './schema'
 import Validator from './Validator'
+import ValidationError from './ValidationError'
+import * as validators from '../validators' // TODO: Move to app!
 
-const validator = new Validator()
+const validator = new Validator({ validators })
 
 export default class Model extends objection.Model {
   static get tableName() {
@@ -99,4 +101,6 @@ export default class Model extends objection.Model {
       return _jsonSchema
     }
   }
+
+  static ValidationError = ValidationError
 }

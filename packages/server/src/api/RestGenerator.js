@@ -159,9 +159,9 @@ function createArgumentsValidator(modelClass, args = []) {
   return () => true
 }
 
-function getArguments(method, validate, query) {
+function getArguments(modelClass, method, validate, query) {
   if (!validate(query)) {
-    throw new ValidationError(validate.errors,
+    throw new modelClass.ValidationError(validate.errors,
       `The provided data is not valid: ${JSON.stringify(query)}`)
   }
   const args = []
@@ -171,13 +171,13 @@ function getArguments(method, validate, query) {
   return args
 }
 
-function getReturn(method, validate, value) {
+function getReturn(modelClass, method, validate, value) {
   const { name } = method.return || {}
   return Promise.resolve(value).then(value => {
     // Use 'root' if no name is given, see createArgumentsValidator()
     const data = { [name || 'root']: value }
     if (!validate(data)) {
-      throw new ValidationError(validate.errors,
+      throw new modelClass.ValidationError(validate.errors,
         `Invalid result of remote method: ${value}`)
     }
     return name ? data : value
@@ -198,18 +198,19 @@ function checkMethod(method, modelClass, name, _static, statusCode = 404) {
 const methodHandlers = {
   collectionMethod(modelClass, name, method, validate, ctx) {
     const func = checkMethod(modelClass[name], modelClass, name, true)
-    const args = getArguments(method, validate.arguments, ctx.query)
+    const args = getArguments(modelClass, method, validate.arguments, ctx.query)
     const value = func.call(modelClass, args)
-    return getReturn(method, validate.return, value)
+    return getReturn(modelClass, method, validate.return, value)
   },
 
   memberMethod(modelClass, name, method, validate, ctx) {
     return restHandlers.member.get.call(this, modelClass, ctx)
       .then(model => {
         const func = checkMethod(model[name], modelClass, name, false)
-        const args = getArguments(method, validate.arguments, ctx.query)
+        const args = getArguments(modelClass, method, validate.arguments,
+          ctx.query)
         const value = func.call(model, args)
-        return getReturn(method, validate.return, value)
+        return getReturn(modelClass, method, validate.return, value)
       })
   }
 }
@@ -476,19 +477,3 @@ const restHandlers = {
   }
 }
 
-class ValidationError extends Error {
-  constructor(errors, statusCode = 400, message) {
-    const errorHash = {}
-    let index = 0
-    for (const { message, keyword, params, dataPath } of errors) {
-      const key = dataPath.substring(1) ||
-        params && (params.missingProperty || params.additionalProperty) ||
-        (index++).toString()
-      errorHash[key] = [{ message, keyword, params }]
-    }
-    const details = JSON.stringify(errorHash, null, 2)
-    super(message ? `${message}. Details: ${details}` : details)
-    this.data = errorHash
-    this.statusCode = statusCode
-  }
-}
