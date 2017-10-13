@@ -1,4 +1,4 @@
-import {isAsync} from './object'
+import { isAsync } from './object'
 
 export function mapValues(obj, fn) {
   return Object.entries(obj).reduce(function (newObj, [key, value]) {
@@ -38,8 +38,8 @@ export function groupItems(items, properties, process) {
   }, {})
   const groups = Object.values(grouping)
   if (process) {
-    const iter = ({values, items}) => process(...values, items)
+    const iter = ({ values, items }) => process(...values, items)
     return isAsync(process) ? Promise.map(groups, iter) : groups.map(iter)
   }
-  return groups.map(({items}) => items)
+  return groups.map(({ items }) => items)
 }

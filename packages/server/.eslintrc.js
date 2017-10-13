@@ -24,9 +24,9 @@ module.exports = {
       ignoreRegExpLiterals: true
     }],
     // Allow debugger during development.
-    'no-debugger': isProduction ? 'error' : 'off',
-    'no-constant-condition': isProduction ? 'error' : 'off',
-    'no-unused-vars': isProduction ? 'error' : 'off',
+    'no-debugger': isProduction ? 'error' : 'warn',
+    'no-constant-condition': isProduction ? 'error' : 'warn',
+    'no-unused-vars': isProduction ? 'error' : 'warn',
     'no-cond-assign': 'error',
     'no-new': 'off',
     'no-new-func': 'off',
@@ -34,6 +34,8 @@ module.exports = {
     'no-return-assign': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
+    'object-curly-spacing': ['error', 'always'],
+    'standard/object-curly-even-spacing': ['off'],
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
@@ -48,6 +50,7 @@ module.exports = {
       named: 'never',
       asyncArrow: 'always'
     }],
+    'space-in-parens': ['error', 'never'],
     'indent': ['error', 2, {
       flatTernaryExpressions: true
     }]

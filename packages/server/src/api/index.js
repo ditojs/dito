@@ -2,11 +2,10 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import RestGenerator from './RestGenerator'
 import models from '../models'
-import {isObject} from '../utils'
 
 const router = new Router()
 
-function adapter({verb, route, access}, callback) {
+function adapter({ verb, route, access }, callback) {
   router[verb](route, async function (ctx, next) {
     console.log('access', access)
     ctx.body = await callback(ctx)

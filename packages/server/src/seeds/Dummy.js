@@ -1,4 +1,4 @@
-import {address, date, internet, lorem, name, random} from 'faker'
+import { address, date, internet, lorem, name, random } from 'faker'
 
 const dummies = []
 const dogs = ['Trudel', 'Barry', 'Josef', 'Sabine']

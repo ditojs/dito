@@ -12,7 +12,7 @@ app.use(mount(api))
 app.use(serve('static'))
 
 app.start = function () {
-  const { environment, server: {host, port} } = config
+  const { environment, server: { host, port } } = config
   app.server = app.listen(port, host, () => {
     // TODO: logging?
     console.log(
