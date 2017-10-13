@@ -5,9 +5,9 @@ import models from '../models'
 
 const router = new Router()
 
-function adapter({ verb, route, access }, callback) {
+function adapter({ verb, route, settings }, callback) {
   router[verb](route, async function (ctx, next) {
-    console.log('access', access)
+    console.log('settings', settings)
     ctx.body = await callback(ctx)
   })
 }

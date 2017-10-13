@@ -38,14 +38,15 @@ export default class RestGenerator {
     }
   }
 
-  addRoutes(target, type, accessOptions = {}, indent) {
+  addRoutes(target, type, routesSettings = {}, indent) {
     const handlers = restHandlers[type]
-    const getAccess = accessHandlers[type]
-    for (let [verb, handler] of Object.entries(getAccess ? handlers : {})) {
-      // Freeze access object so we can pass the same one but no middleware
+    const getSettings = settingsHandlers[type]
+    for (let [verb, handler] of Object.entries(getSettings ? handlers : {})) {
+      // Freeze settings object so we can pass the same one but no middleware
       // can alter it and affect future requests.
-      const access = Object.freeze(getAccess(verb, accessOptions, target))
-      if (!access) {
+      const settings = Object.freeze(
+        getSettings(verb, handlers, routesSettings, target))
+      if (!settings) {
         continue
       }
       if (isObject(handler)) {
@@ -55,7 +56,7 @@ export default class RestGenerator {
         handler = handler.handler
       }
       const route = this.getRoutePath(type, target)
-      this.adapter({ verb, route, access },
+      this.adapter({ verb, route, settings },
         ctx => handler.call(this, target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
         indent)
@@ -96,9 +97,14 @@ export default class RestGenerator {
   }
 }
 
+// TODO: Add normalization Options!
+function normalize(name) {
+  return hyphenate(pluralize(name))
+}
+
 const routePath = {
   collection(modelClass) {
-    return hyphenate(pluralize(modelClass.name))
+    return normalize(modelClass.name)
   },
   collectionMethod(modelClass, path) {
     return `${routePath.collection(modelClass)}/${path}`
@@ -110,7 +116,7 @@ const routePath = {
     return `${routePath.member(modelClass)}/${path}`
   },
   relation(relation) {
-    return `${routePath.member(relation.ownerModelClass)}/${relation.name}`
+    return `${routePath.member(relation.ownerModelClass)}/${normalize(relation.name)}`
   },
   relationMember(relation) {
     return `${routePath.relation(relation)}/:relatedId`
@@ -118,25 +124,42 @@ const routePath = {
 }
 
 /**
- * Access Handling
+ * Route Settings Handling
  */
 
-function getAccess(verb, options) {
-  return isObject(options) ? options[verb] : options
+function getSettings(verb, handlers, settings) {
+  // Only use `settings[verb]` as the settings for this handler, if `settings`
+  // contains any of the verbs defined in handlers. If not, then `settings`
+  // is a shared object to be used for all verbs:
+  let obj = isObject(settings) &&
+    Object.keys(handlers).find(verb => settings[verb])
+    ? settings[verb]
+    : settings
+  if (!isObject(obj) || !('access' in obj)) {
+    // TODO: Improve check by looking for any route settings properties in
+    // Object.keys(obj), and only wrap with `access: obj` if obj doesn't contain
+    // any of these keys.
+    obj = {
+      access: obj
+    }
+  }
+  return obj
 }
 
-const accessHandlers = {
-  collection: getAccess,
-  member: getAccess,
+const settingsHandlers = {
+  collection: getSettings,
+  member: getSettings,
 
-  relation: (verb, relations, { name }) => {
-    const relation = relations[name]
-    return getAccess(verb, relation && relation.relation || relation)
+  relation: (verb, handlers, settings, { name }) => {
+    const relSettings = settings[name]
+    return getSettings(verb, handlers,
+      relSettings && relSettings.relation || relSettings)
   },
 
-  relationMember: (verb, relations, { name }) => {
-    const relation = relations[name]
-    return getAccess(verb, relation && relation.member || relation)
+  relationMember: (verb, handlers, settings, { name }) => {
+    const relSettings = settings[name]
+    return getSettings(verb, handlers,
+      relSettings && relSettings.member || relSettings)
   }
 }
 
@@ -184,9 +207,9 @@ function getReturn(modelClass, method, validate, value) {
   })
 }
 
-function checkMethod(method, modelClass, name, _static, statusCode = 404) {
+function checkMethod(method, modelClass, name, isStatic, statusCode = 404) {
   if (!method) {
-    const prefix = _static ? 'Static remote' : 'remote'
+    const prefix = isStatic ? 'Static remote' : 'Remote'
     const err = new Error(
       `${prefix} method ${name} not found on Model ${modelClass.name}`)
     err.statusCode = statusCode
@@ -230,19 +253,6 @@ function checkModel(model, modelClass, id, statusCode = 404) {
 
 const restHandlers = {
   collection: {
-    // post collection
-    post(modelClass, ctx) {
-      // TODO: Support multiples?, name it generatePostAll()?
-      return objection.transaction(modelClass, modelClass => {
-        return modelClass
-          .query()
-          .allowEager(this.getFindQuery(modelClass).allowEager())
-          .eager(ctx.query.eager)
-          .insert(ctx.body)
-          .then(model => model.$query().first())
-      })
-    },
-
     // get collection
     get(modelClass, ctx) {
       return this.getFindQuery(modelClass).build(ctx.query, modelClass.query())
@@ -250,18 +260,30 @@ const restHandlers = {
 
     // patch collection
     patch(modelClass, ctx) {
-      return this.getFindQuery(modelClass)
-        .build(ctx.query, modelClass.query())
+      return restHandlers.collection.get(modelClass, ctx)
         .patch(ctx.body)
         .then(total => ({ total }))
     },
 
     // delete collection
     delete(modelClass, ctx) {
-      return this.getFindQuery(modelClass)
-        .build(ctx.query, modelClass.query())
+      return restHandlers.collection.get(modelClass, ctx)
         .delete()
         .then(total => ({ total }))
+    },
+
+    // post collection
+    post(modelClass, ctx) {
+      // TODO: Support multiples?, name it generatePostAll()?
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass
+          .query()
+          // TODO: eager needed here?
+          .allowEager(this.getFindQuery(modelClass).allowEager())
+          .eager(ctx.query.eager)
+          .insert(ctx.body)
+          .then(model => model.$query().first())
+      })
     }
   },
 
@@ -280,48 +302,35 @@ const restHandlers = {
 
     // put collection
     put(modelClass, ctx) {
-      const { id } = ctx.params
       const builder = modelClass.query()
       return builder
         .update(ctx.body)
-        .where(builder.fullIdColumnFor(modelClass), id)
+        .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
         .then(model => {
-          return modelClass
-            .query()
-            .allowEager(this.getFindQuery(modelClass).allowEager())
-            .eager(ctx.query.eager)
-            .where(builder.fullIdColumnFor(modelClass), id)
-            .first()
+          // TODO: Can't we return model instead?
+          return restHandlers.member.get(modelClass, ctx)
         })
-        .then(model => checkModel(model, modelClass, id))
     },
 
     // patch collection
     patch(modelClass, ctx) {
-      const { id } = ctx.params
       const builder = modelClass.query()
       return builder
         .patch(ctx.body)
-        .where(builder.fullIdColumnFor(modelClass), id)
-        .then(() => {
-          return modelClass
-            .query()
-            .allowEager(this.getFindQuery(modelClass).allowEager())
-            .eager(ctx.query.eager)
-            .where(builder.fullIdColumnFor(modelClass), id)
-            .first()
+        .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
+        .then(model => {
+          // TODO: Can't we return model instead?
+          return restHandlers.member.get(modelClass, ctx)
         })
-        .then(model => checkModel(model, modelClass, id))
     },
 
     // delete collection
     delete(modelClass, ctx) {
-      const { id } = ctx.params
       return objection.transaction(modelClass, modelClass => {
         const builder = modelClass.query()
         return builder
           .delete()
-          .where(builder.fullIdColumnFor(modelClass), id)
+          .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
       }).then(() => ({})) // TODO: What does LB do here?
     }
   },
@@ -476,4 +485,3 @@ const restHandlers = {
     }
   }
 }
-
