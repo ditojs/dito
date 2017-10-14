@@ -7,6 +7,6 @@ export default {
   knex: knex[environment],
   server: {
     host: process.env.NODE_HOST || process.env.HOST || '0.0.0.0',
-    port: process.env.NODE_PORT || process.env.PORT || 3000
+    port: process.env.NODE_PORT || process.env.PORT || 4040
   }
 }

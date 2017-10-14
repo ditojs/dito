@@ -1,9 +1,9 @@
 import objection from 'objection'
 import colors from 'colors/safe'
-import findQuery from 'objection-find'
 import pluralize from 'pluralize'
 import { isObject, keyItemsBy, hyphenate } from '../utils'
 import { convertSchema } from '../core/schema'
+import NotFoundError from './NotFoundError'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
@@ -14,15 +14,6 @@ export default class RestGenerator {
     this.findQueries = Object.create(null)
   }
 
-  getFindQuery(modelClass) {
-    const { name } = modelClass
-    let query = this.findQueries[name]
-    if (!query) {
-      query = this.findQueries[name] = findQuery(modelClass)
-    }
-    return query
-  }
-
   addModelRoutes(modelClass) {
     this.log(`${colors.green(modelClass.name)}${colors.white(':')}`)
     const { collection, instance, relations } = modelClass.routes || {}
@@ -31,12 +22,14 @@ export default class RestGenerator {
     this.addMethods(modelClass, 'collectionMethod', 1)
     this.addRoutes(modelClass, null, 'instance', instance, 1)
     this.addMethods(modelClass, 'instanceMethod', 1)
-    for (const relation of Object.values(modelClass.getRelations())) {
-      const { name } = relation
-      this.log(`${colors.blue(name)}${colors.white(':')}`, 1)
-      const settings = relations[name]
-      this.addRoutes(modelClass, relation, 'relation', settings, 2)
-      this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
+    if (relations) {
+      for (const relation of Object.values(modelClass.getRelations())) {
+        const { name } = relation
+        this.log(`${colors.blue(name)}${colors.white(':')}`, 1)
+        const settings = relations[name]
+        this.addRoutes(modelClass, relation, 'relation', settings, 2)
+        this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
+      }
     }
   }
 
@@ -58,7 +51,7 @@ export default class RestGenerator {
       const target = relation || modelClass
       this.adapter.addRoute(
         { modelClass, relation, type, verb, route, settings },
-        ctx => handler.call(this, target, ctx))
+        ctx => handler(target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
         indent)
     }
@@ -86,7 +79,7 @@ export default class RestGenerator {
         }
         this.adapter.addRoute(
           { modelClass, method, type, verb, route, settings },
-          ctx => handler.call(this, modelClass, method, validate, ctx))
+          ctx => handler(modelClass, method, validate, ctx))
         this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
           indent)
       }
@@ -218,7 +211,7 @@ function getReturn(modelClass, method, validate, value) {
 function checkMethod(func, modelClass, name, isStatic, statusCode = 404) {
   if (!func) {
     const prefix = isStatic ? 'Static remote' : 'Remote'
-    const err = new Error(
+    const err = new NotFoundError(
       `${prefix} method ${name} not found on Model ${modelClass.name}`)
     err.statusCode = statusCode
     throw err
@@ -236,7 +229,7 @@ const methodHandlers = {
   },
 
   instanceMethod(modelClass, method, validate, ctx) {
-    return restHandlers.instance.get.call(this, modelClass, ctx)
+    return restHandlers.instance.get(modelClass, ctx)
       .then(model => {
         const { name } = method
         const func = checkMethod(model[name], modelClass, name, false)
@@ -254,7 +247,8 @@ const methodHandlers = {
 
 function checkModel(model, modelClass, id, statusCode = 404) {
   if (!model) {
-    const err = new Error(`Cannot find ${modelClass.name} model with id ${id}`)
+    const err = new NotFoundError(
+      `Cannot find ${modelClass.name} model with id ${id}`)
     err.statusCode = statusCode
     throw err
   }
@@ -265,34 +259,40 @@ const restHandlers = {
   collection: {
     // get collection
     get(modelClass, ctx) {
-      return this.getFindQuery(modelClass).build(ctx.query, modelClass.query())
-    },
-
-    // patch collection
-    patch(modelClass, ctx) {
-      return restHandlers.collection.get(modelClass, ctx)
-        .patch(ctx.request.body)
-        .then(total => ({ total }))
+      return modelClass.getFindQuery().build(ctx.query, modelClass.query())
     },
 
     // delete collection
     delete(modelClass, ctx) {
       return restHandlers.collection.get(modelClass, ctx)
         .delete()
-        .then(total => ({ total }))
+        .then(count => ({ count }))
     },
 
     // post collection
     post(modelClass, ctx) {
-      // TODO: Support multiples?, name it generatePostAll()?
+      // TODO: Do graph methods need wrapping in transactions?
       return objection.transaction(modelClass, modelClass => {
-        return modelClass
-          .query()
-          // TODO: eager needed here?
-          .allowEager(this.getFindQuery(modelClass).allowEager())
-          .eager(ctx.query.eager)
-          .insert(ctx.request.body)
-          .then(model => model.$query().first())
+        return modelClass.query()
+          .insertGraph(ctx.request.body)
+      })
+    },
+
+    // put collection
+    put(modelClass, ctx) {
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.query()
+          // TODO: upsertGraphAndFetch()!
+          .upsertGraph(ctx.request.body)
+      })
+    },
+
+    // patch collection
+    patch(modelClass, ctx) {
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.query()
+          // TODO: updateGraphAndFetch()!
+          .upsertGraph(ctx.request.body)
       })
     }
   },
@@ -303,58 +303,47 @@ const restHandlers = {
       const { id } = ctx.params
       const builder = modelClass.query()
       return builder
-        .allowEager(this.getFindQuery(modelClass).allowEager())
+        .allowEager(modelClass.getFindQuery().allowEager())
         .eager(ctx.query.eager)
-        .where(builder.fullIdColumnFor(modelClass), id)
-        .first()
+        .findById(id)
         .then(model => checkModel(model, modelClass, id))
-    },
-
-    // put collection
-    put(modelClass, ctx) {
-      const builder = modelClass.query()
-      return builder
-        .update(ctx.request.body)
-        .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
-        .then(model => {
-          // TODO: Can't we return model instead?
-          return restHandlers.instance.get(modelClass, ctx)
-        })
-    },
-
-    // patch collection
-    patch(modelClass, ctx) {
-      const builder = modelClass.query()
-      return builder
-        .patch(ctx.request.body)
-        .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
-        .then(model => {
-          // TODO: Can't we return model instead?
-          return restHandlers.instance.get(modelClass, ctx)
-        })
     },
 
     // delete collection
     delete(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass => {
-        const builder = modelClass.query()
-        return builder
-          .delete()
-          .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
-      }).then(() => ({})) // TODO: What does LB do here?
+      return modelClass.query()
+        .deleteById(ctx.params.id)
+        .then(count => ({ count }))
+    },
+
+    // put collection
+    put(modelClass, ctx) {
+      const { id } = ctx.params
+      return modelClass.query()
+        .updateAndFetchById(id, ctx.request.body)
+        .then(model => checkModel(model, modelClass, id))
+    },
+
+    // patch collection
+    patch(modelClass, ctx) {
+      const { id } = ctx.params
+      return modelClass.query()
+        .patchAndFetchById(id, ctx.request.body)
+        .then(model => checkModel(model, modelClass, id))
     }
   },
 
   relation: {
     // post relation
     post(relation, ctx) {
+      // TODO: What's the expected behavior in a toOne relation?
       const { id } = ctx.params
       const { body } = ctx.request
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
         return builder
-          .where(builder.fullIdColumnFor(ownerModelClass), id)
+          .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
           .first()
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -368,26 +357,25 @@ const restHandlers = {
       const { ownerModelClass } = relation
       const builder = ownerModelClass.query()
       return builder
-        .where(builder.fullIdColumnFor(ownerModelClass), id)
+        .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
         .first()
         .then(model => {
           checkModel(model, ownerModelClass, id)
-          const query = this.getFindQuery(relation.relatedModelClass)
+          const query = relation.relatedModelClass.getFindQuery()
             .build(ctx.query, model.$relatedQuery(relation.name))
-          return relation instanceof objection.BelongsToOneRelation
-            ? query.first()
-            : query
+          return relation.isOneToOne() ? query.first() : query
         })
     },
 
     // delete relation
     delete(relation, ctx) {
+      // TODO: What's the expected behavior in a toOne relation?
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
         return builder
-          .where(builder.fullIdColumnFor(ownerModelClass), id)
+          .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
           .first()
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -398,8 +386,9 @@ const restHandlers = {
 
     // put relation
     put: {
+      // TODO: What's the expected behavior in a toOne relation?
       isValid(relation) {
-        return relation instanceof objection.BelongsToOneRelation
+        return !(relation.isOneToOne())
       },
       handler(relation, ctx) {
         const { id } = ctx.params
@@ -409,7 +398,7 @@ const restHandlers = {
           (ownerModelClass, relatedModelClass) => {
             const builder = ownerModelClass.query()
             return builder
-              .where(builder.fullIdColumnFor(ownerModelClass), id)
+              .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
               .first()
               .eager(relation.name)
               .then(mod => {
@@ -441,7 +430,7 @@ const restHandlers = {
                 return model
                   .$relatedQuery(relation.name)
                   .delete()
-                  .whereIn(builder.fullIdColumnFor(relatedModelClass),
+                  .whereInComposite(builder.fullIdColumnFor(relatedModelClass),
                     deleteModels.map(model => model.$id()))
                   .then(() => Promise.all(insertAndUpdateQueries))
               })
@@ -468,7 +457,7 @@ const restHandlers = {
           (ownerModelClass, relatedModelClass) => {
             const builder = ownerModelClass.query()
             return builder
-              .where(builder.fullIdColumnFor(ownerModelClass), id)
+              .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
               .first()
               .then(model => {
                 return checkModel(model, ownerModelClass, id)
@@ -477,12 +466,12 @@ const restHandlers = {
               })
               .then(() => {
                 return relatedModelClass
-                  .where(builder.fullIdColumnFor(relation.relatedModelClass),
+                  .whereComposite(
+                    builder.fullIdColumnFor(relation.relatedModelClass),
                     relatedId)
                   .allowEager(
-                    this.getFindQuery(relation.relatedModelClass).allowEager())
-                  // TODO: Shouldn't this be ctx.query.eager?
-                  .eager(ctx.params.eager)
+                    relation.relatedModelClass.getFindQuery().allowEager())
+                  .eager(ctx.query.eager)
                   .first()
               })
           }

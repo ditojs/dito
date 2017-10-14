@@ -1,4 +1,5 @@
 import objection from 'objection'
+import findQuery from 'objection-find'
 import { convertSchema, convertRelations } from './schema'
 import Validator from './Validator'
 import ValidationError from './ValidationError'
@@ -34,7 +35,7 @@ export default class Model extends objection.Model {
     return this.find(filter).first()
   }
 
-  static create(data) {
+  static insert(data) {
     return this.query().insert(data)
   }
 
@@ -46,6 +47,14 @@ export default class Model extends objection.Model {
   async $update(attributes) {
     const updated = await this.$query().updateAndFetch(attributes)
     return this.$set(updated)
+  }
+
+  static getFindQuery() {
+    let { _findQuery } = this
+    if (!_findQuery) {
+      _findQuery = this._findQuery = findQuery(this)
+    }
+    return _findQuery
   }
 
   static getDateProperties() {
@@ -75,12 +84,26 @@ export default class Model extends objection.Model {
     return validator
   }
 
+  static createValidationError(errors) {
+    return new this.ValidationError(errors,
+      `The provided data for the ${this.name} instance is not valid`)
+  }
+
   static get jsonSchema() {
     let { _jsonSchema, properties } = this
     if (!_jsonSchema && properties) {
       const base = Object.getPrototypeOf(this)
       const inherit = base !== Model
       const jsonObject = convertSchema(properties, this.getValidator())
+      // Temporarily set _jsonSchema to an empty object so that we can call
+      // getIdProperty() without causing an endless recursion:
+      this._jsonSchema = {}
+      const idProp = this.getIdProperty()
+      if (!(idProp in jsonObject.properties)) {
+        jsonObject.properties[idProp] = {
+          type: 'integer'
+        }
+      }
       _jsonSchema = this._jsonSchema = {
         id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',

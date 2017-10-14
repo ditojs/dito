@@ -1,5 +1,12 @@
-import objection from 'objection'
 import { isObject, isArray, isString, isFunction } from '../utils'
+import {
+  Relation,
+  BelongsToOneRelation,
+  HasOneRelation,
+  HasOneThroughRelation,
+  HasManyRelation,
+  ManyToManyRelation
+} from 'objection'
 
 export function convertSchema(schema, validator,
   { isRoot, isItems } = { isRoot: true }) {
@@ -103,26 +110,36 @@ const jsonTypes = {
   array: true
 }
 
+const relationLookup = {
+  // oneToOne:
+  belongsToOne: BelongsToOneRelation,
+  hasOne: HasOneRelation,
+  hasOneThrough: HasOneThroughRelation,
+  // toMany:
+  hasMany: HasManyRelation,
+  manyToMany: ManyToManyRelation
+}
+
 const relationClasses = {
-  hasOne: objection.HasOneRelation,
-  hasMany: objection.HasManyRelation,
-  belongsToOne: objection.BelongsToOneRelation,
-  hasOneThrough: objection.HasOneThroughRelation,
-  manyToMany: objection.ManyToManyRelation
+  BelongsToOneRelation,
+  HasOneRelation,
+  HasOneThroughRelation,
+  HasManyRelation,
+  ManyToManyRelation
 }
 
 export function convertRelations(ownerModelClass, schema, models) {
   const relations = {}
   for (const [name, relationSchema] of Object.entries(schema)) {
     const { relation, modelClass, ...rest } = relationSchema
-    const relationClass = relationClasses[relation]
-    if (relationClass) {
+    const relationClass = relationLookup[relation] ||
+      relationClasses[relation] || relation
+    if (relationClass && relationClass.prototype instanceof Relation) {
       relations[name] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
         ...rest
       }
-      // console.log(relations[name])
     } else {
       throw new Error(
         `${ownerModelClass.name}.relations.${name}: Unrecognized relation`)
