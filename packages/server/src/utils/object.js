@@ -41,3 +41,21 @@ export function copyProperties(dest, src) {
 export function clone(obj) {
   return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
 }
+
+export function deepFreeze(obj) {
+  Object.freeze(obj)
+  for (const key of Object.getOwnPropertyNames(obj)) {
+    const value = obj[key]
+    if (isObject(value) && !Object.isFrozen(value)) {
+      deepFreeze(value)
+    }
+  }
+  return obj
+}
+
+export function defineReadOnly(object, name, value) {
+  Object.defineProperty(object, name, {
+    value,
+    writable: false
+  })
+}

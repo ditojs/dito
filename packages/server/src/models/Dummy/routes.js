@@ -4,20 +4,22 @@ export default {
   },
   // Could also be `collection: false` to turn everything off
 
-  member: {
-    get: true,
+  instance: {
+    get: ['admin', 'editor'], // true,
     put: ['admin', 'editor'],
     post: 'admin',
-    delete: 'admin'
+    delete: {
+      access: 'admin'
+    }
   },
 
   relations: {
     /*
-    hasMany: {
+    someHasManyRelation: {
       relation: ...
-      member: ...
+      instance: ...
     }
-    hasOne: ...
+    someHasOneRelation: ...
     */
   }
 }

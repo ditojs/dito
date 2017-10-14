@@ -17,8 +17,6 @@ export default class Dummy extends Model {
   }
 
   static async somethingStatic() {
-    // NOTE: This will be present as a static member method:
-    // Dummy.someStaticMethod()
     await Promise.delay(1000)
     return 'One second has passed.'
   }

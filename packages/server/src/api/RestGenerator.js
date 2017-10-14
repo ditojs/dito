@@ -25,35 +25,37 @@ export default class RestGenerator {
 
   addModelRoutes(modelClass) {
     this.log(`${colors.green(modelClass.name)}${colors.white(':')}`)
-    const { collection, member, relations } = modelClass.routes || {}
-    this.addRoutes(modelClass, 'collection', collection, 1)
+    const { collection, instance, relations } = modelClass.routes || {}
+    this.addRoutes(modelClass, null, 'collection', collection, 1)
     // Install static methods before ids, as they wouldn't match otherwise
     this.addMethods(modelClass, 'collectionMethod', 1)
-    this.addRoutes(modelClass, 'member', member, 1)
-    this.addMethods(modelClass, 'memberMethod', 1)
+    this.addRoutes(modelClass, null, 'instance', instance, 1)
+    this.addMethods(modelClass, 'instanceMethod', 1)
     for (const relation of Object.values(modelClass.getRelations())) {
       this.log(`${colors.blue(relation.name)}${colors.white(':')}`, 1)
-      this.addRoutes(relation, 'relation', relations, 2)
-      this.addRoutes(relation, 'relationMember', relations, 2)
+      this.addRoutes(modelClass, relation, 'relation', relations, 2)
+      this.addRoutes(modelClass, relation, 'relationInstance', relations, 2)
     }
   }
 
-  addRoutes(target, type, routesSettings = {}, indent) {
+  addRoutes(modelClass, relation, type, routesSettings = {}, indent) {
     const handlers = restHandlers[type]
     const getSettings = settingsHandlers[type]
     for (let [verb, handler] of Object.entries(getSettings ? handlers : {})) {
-      const settings = getSettings(verb, handlers, routesSettings, target)
+      const settings = getSettings(verb, handlers, routesSettings, relation)
       if (!settings) {
         continue
       }
       if (isObject(handler)) {
-        if (handler.isValid && !handler.isValid(target)) {
+        if (relation && handler.isValid && !handler.isValid(relation)) {
           continue
         }
         handler = handler.handler
       }
-      const route = this.getRoutePath(type, target)
-      this.adapter({ target, type, verb, route, settings },
+      const route = this.getRoutePath(type, modelClass, relation)
+      const target = relation || modelClass
+      this.adapter(
+        { modelClass, relation, type, verb, route, settings },
         ctx => handler.call(this, target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
         indent)
@@ -61,22 +63,28 @@ export default class RestGenerator {
   }
 
   addMethods(modelClass, type, indent) {
-    for (const [name, method] of Object.entries(modelClass.methods || {})) {
-      if (type === 'memberMethod' ^ !!method.static) {
-        const {
-          verb = 'get',
-          path = name
-        } = method
+    for (const [name, schema] of Object.entries(modelClass.methods || {})) {
+      if (type === 'instanceMethod' ^ !!schema.static) {
+        const method = {
+          name,
+          verb: 'get',
+          path: name,
+          ...schema
+        }
+        const { verb, path, access } = method
+        const settings = {
+          access: access != null ? access : true,
+          verb
+        }
         const route = this.getRoutePath(type, modelClass, path)
-        // TODO: Access control for methods
-        const access = true
         const handler = methodHandlers[type]
         const validate = {
           arguments: createArgumentsValidator(modelClass, method.arguments),
           return: createArgumentsValidator(modelClass, [method.return])
         }
-        this.adapter({ target: modelClass, type, verb, route, access },
-          ctx => handler.call(this, modelClass, name, method, validate, ctx))
+        this.adapter(
+          { modelClass, method, type, verb, route, settings },
+          ctx => handler.call(this, modelClass, method, validate, ctx))
         this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
           indent)
       }
@@ -89,33 +97,33 @@ export default class RestGenerator {
     }
   }
 
-  getRoutePath(type, target, param) {
-    return `${this.prefix}${routePath[type](target, param)}`
+  getRoutePath(type, modelClass, param) {
+    return `${this.prefix}${routePath[type](modelClass, param)}`
   }
 }
 
 // TODO: Add normalization Options!
-function normalize(name) {
-  return hyphenate(pluralize(name))
+function normalize(name, plural = false) {
+  return hyphenate(plural ? pluralize(name) : name)
 }
 
 const routePath = {
   collection(modelClass) {
-    return normalize(modelClass.name)
+    return normalize(modelClass.name, true)
   },
   collectionMethod(modelClass, path) {
-    return `${routePath.collection(modelClass)}/${path}`
+    return `${routePath.collection(modelClass)}/${normalize(path)}`
   },
-  member(modelClass) {
+  instance(modelClass) {
     return `${routePath.collection(modelClass)}/:id`
   },
-  memberMethod(modelClass, path) {
-    return `${routePath.member(modelClass)}/${path}`
+  instanceMethod(modelClass, path) {
+    return `${routePath.instance(modelClass)}/${normalize(path)}`
   },
-  relation(relation) {
-    return `${routePath.member(relation.ownerModelClass)}/${normalize(relation.name)}`
+  relation(modelClass, relation) {
+    return `${routePath.instance(modelClass)}/${normalize(relation.name)}`
   },
-  relationMember(relation) {
+  relationInstance(modelClass, relation) {
     return `${routePath.relation(relation)}/:relatedId`
   }
 }
@@ -137,7 +145,8 @@ function getSettings(verb, handlers, settings) {
     // Object.keys(obj), and only wrap with `access: obj` if obj doesn't contain
     // any of these keys.
     obj = {
-      access: obj
+      access: obj,
+      verb
     }
   }
   return obj
@@ -145,7 +154,7 @@ function getSettings(verb, handlers, settings) {
 
 const settingsHandlers = {
   collection: getSettings,
-  member: getSettings,
+  instance: getSettings,
 
   relation: (verb, handlers, settings, { name }) => {
     const relSettings = settings[name]
@@ -153,10 +162,10 @@ const settingsHandlers = {
       relSettings && relSettings.relation || relSettings)
   },
 
-  relationMember: (verb, handlers, settings, { name }) => {
+  relationInstance: (verb, handlers, settings, { name }) => {
     const relSettings = settings[name]
     return getSettings(verb, handlers,
-      relSettings && relSettings.member || relSettings)
+      relSettings && relSettings.instance || relSettings)
   }
 }
 
@@ -204,28 +213,30 @@ function getReturn(modelClass, method, validate, value) {
   })
 }
 
-function checkMethod(method, modelClass, name, isStatic, statusCode = 404) {
-  if (!method) {
+function checkMethod(func, modelClass, name, isStatic, statusCode = 404) {
+  if (!func) {
     const prefix = isStatic ? 'Static remote' : 'Remote'
     const err = new Error(
       `${prefix} method ${name} not found on Model ${modelClass.name}`)
     err.statusCode = statusCode
     throw err
   }
-  return method
+  return func
 }
 
 const methodHandlers = {
-  collectionMethod(modelClass, name, method, validate, ctx) {
+  collectionMethod(modelClass, method, validate, ctx) {
+    const { name } = method
     const func = checkMethod(modelClass[name], modelClass, name, true)
     const args = getArguments(modelClass, method, validate.arguments, ctx.query)
     const value = func.call(modelClass, args)
     return getReturn(modelClass, method, validate.return, value)
   },
 
-  memberMethod(modelClass, name, method, validate, ctx) {
-    return restHandlers.member.get.call(this, modelClass, ctx)
+  instanceMethod(modelClass, method, validate, ctx) {
+    return restHandlers.instance.get.call(this, modelClass, ctx)
       .then(model => {
+        const { name } = method
         const func = checkMethod(model[name], modelClass, name, false)
         const args = getArguments(modelClass, method, validate.arguments,
           ctx.query)
@@ -284,7 +295,7 @@ const restHandlers = {
     }
   },
 
-  member: {
+  instance: {
     // get collection
     get(modelClass, ctx) {
       const { id } = ctx.params
@@ -305,7 +316,7 @@ const restHandlers = {
         .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
         .then(model => {
           // TODO: Can't we return model instead?
-          return restHandlers.member.get(modelClass, ctx)
+          return restHandlers.instance.get(modelClass, ctx)
         })
     },
 
@@ -317,7 +328,7 @@ const restHandlers = {
         .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
         .then(model => {
           // TODO: Can't we return model instead?
-          return restHandlers.member.get(modelClass, ctx)
+          return restHandlers.instance.get(modelClass, ctx)
         })
     },
 
@@ -443,11 +454,11 @@ const restHandlers = {
     }
   },
 
-  relationMember: {
+  relationInstance: {
     // TODO: HasManyRelation, BelongsToOneRelation, HasOneThroughRelation,
     // ManyToManyRelation?
 
-    // post relationMember = "generateRelationRelate" ??
+    // post relationInstance = "generateRelationRelate" ??
     post: {
       isValid(relation) {
         return relation instanceof objection.ManyToManyRelation
