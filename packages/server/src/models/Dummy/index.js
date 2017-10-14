@@ -1,10 +1,12 @@
 import Model from '../../core/Model'
 import properties from './properties'
+import relations from './relations'
 import methods from './methods'
 import routes from './routes'
 
 export default class Dummy extends Model {
   static properties = properties
+  static relations = relations
   static methods = methods
   static routes = routes
 

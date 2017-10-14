@@ -1,7 +1,7 @@
 import Dummy from './Dummy'
+import Message from './Message'
 
-const models = {
-  Dummy
+export default {
+  Dummy,
+  Message
 }
-
-export default models

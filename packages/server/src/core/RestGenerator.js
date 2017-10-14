@@ -2,12 +2,12 @@ import objection from 'objection'
 import colors from 'colors/safe'
 import findQuery from 'objection-find'
 import pluralize from 'pluralize'
-import { hyphenate, isObject, keyItemsBy } from '../utils'
+import { isObject, keyItemsBy, hyphenate } from '../utils'
 import { convertSchema } from '../core/schema'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
-    this.adapter = adapter || (() => {})
+    this.adapter = adapter
     this.logger = logger
     this.prefix = /\/$/.test(prefix) ? prefix : `${prefix}/`
     this.models = Object.create(null)
@@ -32,9 +32,11 @@ export default class RestGenerator {
     this.addRoutes(modelClass, null, 'instance', instance, 1)
     this.addMethods(modelClass, 'instanceMethod', 1)
     for (const relation of Object.values(modelClass.getRelations())) {
-      this.log(`${colors.blue(relation.name)}${colors.white(':')}`, 1)
-      this.addRoutes(modelClass, relation, 'relation', relations, 2)
-      this.addRoutes(modelClass, relation, 'relationInstance', relations, 2)
+      const { name } = relation
+      this.log(`${colors.blue(name)}${colors.white(':')}`, 1)
+      const settings = relations[name]
+      this.addRoutes(modelClass, relation, 'relation', settings, 2)
+      this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
     }
   }
 
@@ -42,8 +44,8 @@ export default class RestGenerator {
     const handlers = restHandlers[type]
     const getSettings = settingsHandlers[type]
     for (let [verb, handler] of Object.entries(getSettings ? handlers : {})) {
-      const settings = getSettings(verb, handlers, routesSettings, relation)
-      if (!settings) {
+      const settings = getSettings(verb, handlers, routesSettings)
+      if (!settings || !settings.access) {
         continue
       }
       if (isObject(handler)) {
@@ -54,7 +56,7 @@ export default class RestGenerator {
       }
       const route = this.getRoutePath(type, modelClass, relation)
       const target = relation || modelClass
-      this.adapter(
+      this.adapter.addRoute(
         { modelClass, relation, type, verb, route, settings },
         ctx => handler.call(this, target, ctx))
       this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
@@ -82,7 +84,7 @@ export default class RestGenerator {
           arguments: createArgumentsValidator(modelClass, method.arguments),
           return: createArgumentsValidator(modelClass, [method.return])
         }
-        this.adapter(
+        this.adapter.addRoute(
           { modelClass, method, type, verb, route, settings },
           ctx => handler.call(this, modelClass, method, validate, ctx))
         this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
@@ -124,7 +126,7 @@ const routePath = {
     return `${routePath.instance(modelClass)}/${normalize(relation.name)}`
   },
   relationInstance(modelClass, relation) {
-    return `${routePath.relation(relation)}/:relatedId`
+    return `${routePath.relation(modelClass, relation)}/:relatedId`
   }
 }
 
@@ -156,16 +158,16 @@ const settingsHandlers = {
   collection: getSettings,
   instance: getSettings,
 
-  relation: (verb, handlers, settings, { name }) => {
-    const relSettings = settings[name]
+  relation: (verb, handlers, settings) => {
+    const relation = settings && settings.relation
     return getSettings(verb, handlers,
-      relSettings && relSettings.relation || relSettings)
+      relation !== undefined ? relation : settings)
   },
 
-  relationInstance: (verb, handlers, settings, { name }) => {
-    const relSettings = settings[name]
+  relationInstance: (verb, handlers, settings) => {
+    const instance = settings && settings.relation
     return getSettings(verb, handlers,
-      relSettings && relSettings.instance || relSettings)
+      instance !== undefined ? instance : settings)
   }
 }
 
@@ -269,7 +271,7 @@ const restHandlers = {
     // patch collection
     patch(modelClass, ctx) {
       return restHandlers.collection.get(modelClass, ctx)
-        .patch(ctx.body)
+        .patch(ctx.request.body)
         .then(total => ({ total }))
     },
 
@@ -289,7 +291,7 @@ const restHandlers = {
           // TODO: eager needed here?
           .allowEager(this.getFindQuery(modelClass).allowEager())
           .eager(ctx.query.eager)
-          .insert(ctx.body)
+          .insert(ctx.request.body)
           .then(model => model.$query().first())
       })
     }
@@ -312,7 +314,7 @@ const restHandlers = {
     put(modelClass, ctx) {
       const builder = modelClass.query()
       return builder
-        .update(ctx.body)
+        .update(ctx.request.body)
         .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
         .then(model => {
           // TODO: Can't we return model instead?
@@ -324,7 +326,7 @@ const restHandlers = {
     patch(modelClass, ctx) {
       const builder = modelClass.query()
       return builder
-        .patch(ctx.body)
+        .patch(ctx.request.body)
         .where(builder.fullIdColumnFor(modelClass), ctx.params.id)
         .then(model => {
           // TODO: Can't we return model instead?
@@ -347,6 +349,7 @@ const restHandlers = {
     // post relation
     post(relation, ctx) {
       const { id } = ctx.params
+      const { body } = ctx.request
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
@@ -355,13 +358,7 @@ const restHandlers = {
           .first()
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            .insert(ctx.body))
-          .then(model => model
-            .$query()
-            .first()
-            .allowEager(
-              this.getFindQuery(relation.relatedModelClass).allowEager())
-            .eager(ctx.query.eager))
+            .insertGraph(body))
       })
     },
 
@@ -420,7 +417,8 @@ const restHandlers = {
                 const current = model[relation.name]
                 const idKey = relatedModelClass.getIdProperty()
                 const currentById = keyItemsBy(current, idKey)
-                const inputModels = relatedModelClass.ensureModelArray(ctx.body)
+                const inputModels = relatedModelClass.ensureModelArray(
+                  ctx.request.body)
                 const inputModelsById = keyItemsBy(inputModels, idKey)
 
                 function isNew(model) {

@@ -14,6 +14,10 @@ export default {
   },
 
   relations: {
+    messages: {
+      relation: true,
+      instance: false
+    }
     /*
     someHasManyRelation: {
       relation: ...

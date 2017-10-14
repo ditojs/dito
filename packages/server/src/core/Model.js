@@ -1,5 +1,5 @@
 import objection from 'objection'
-import { convertSchema } from './schema'
+import { convertSchema, convertRelations } from './schema'
 import Validator from './Validator'
 import ValidationError from './ValidationError'
 import * as validators from '../validators' // TODO: Move to app!
@@ -52,8 +52,8 @@ export default class Model extends objection.Model {
     let keys = this._dateProperties
     if (!keys) {
       keys = this._dateProperties = []
-      const { properties } = this.getJsonSchema()
-      for (const [key, { format }] of Object.entries(properties)) {
+      const { properties } = this.getJsonSchema() || {}
+      for (const [key, { format }] of Object.entries(properties || {})) {
         if (format === 'date' || format === 'date-time') {
           keys.push(key)
         }
@@ -97,8 +97,18 @@ export default class Model extends objection.Model {
           }
         )
       }
-      console.log(_jsonSchema)
+      // console.log(_jsonSchema)
       return _jsonSchema
+    }
+  }
+
+  static get relationMappings() {
+    let { _relationMappings, relations } = this
+    if (!_relationMappings && relations) {
+      _relationMappings = this._relationMappings = convertRelations(this,
+        relations, this.app.models)
+      // console.log(_relationMappings)
+      return _relationMappings
     }
   }
 

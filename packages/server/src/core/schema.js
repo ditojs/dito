@@ -1,3 +1,4 @@
+import objection from 'objection'
 import { isObject, isArray, isString, isFunction } from '../utils'
 
 export function convertSchema(schema, validator,
@@ -100,4 +101,32 @@ const jsonTypes = {
   boolean: true,
   object: true,
   array: true
+}
+
+const relationClasses = {
+  hasOne: objection.HasOneRelation,
+  hasMany: objection.HasManyRelation,
+  belongsToOne: objection.BelongsToOneRelation,
+  hasOneThrough: objection.HasOneThroughRelation,
+  manyToMany: objection.ManyToManyRelation
+}
+
+export function convertRelations(ownerModelClass, schema, models) {
+  const relations = {}
+  for (const [name, relationSchema] of Object.entries(schema)) {
+    const { relation, modelClass, ...rest } = relationSchema
+    const relationClass = relationClasses[relation]
+    if (relationClass) {
+      relations[name] = {
+        relation: relationClass,
+        modelClass: models[modelClass] || modelClass,
+        ...rest
+      }
+      // console.log(relations[name])
+    } else {
+      throw new Error(
+        `${ownerModelClass.name}.relations.${name}: Unrecognized relation`)
+    }
+  }
+  return relations
 }

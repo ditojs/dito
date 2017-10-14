@@ -7,7 +7,13 @@ export default class App extends Koa {
     super()
     this.config = config
     this.knex = Knex(config.knex)
-    this.models = []
+    this.models = {}
+    if (models) {
+      this.addModels(models)
+    }
+  }
+
+  addModels(models) {
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
@@ -22,11 +28,18 @@ export default class App extends Koa {
       newListener: false,
       maxListeners: 0
     })
+    this.models[modelClass.name] = modelClass
+    modelClass.app = this
     modelClass.knex(this.knex)
     modelClass.onAny((event, ctx) => {
       console.log(event, ctx.rest)
     })
-    this.models.push(modelClass)
+  }
+
+  build() {
+    this.use(this.router.routes())
+    this.use(this.router.allowedMethods())
+    return this
   }
 
   start() {
