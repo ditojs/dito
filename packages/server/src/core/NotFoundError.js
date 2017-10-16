@@ -1,5 +1,5 @@
 export default class NotFoundError extends Error {
-  constructor(message, statusCode = 400) {
+  constructor(message, statusCode = 404) {
     super(JSON.stringify({
       error: message
     }, null, 2))
