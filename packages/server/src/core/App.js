@@ -41,7 +41,7 @@ export default class App extends Koa {
       server: { host, port },
       environment
     } = this.config
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       this.server = this.listen(port, host, () => {
         // TODO: logging?
         console.log(

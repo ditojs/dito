@@ -7,16 +7,6 @@ export function mapValues(obj, fn) {
   }, {})
 }
 
-export function keyItemsBy(array, key) {
-  const result = {}
-  for (const object of array) {
-    if (object) {
-      result[object[key]] = object
-    }
-  }
-  return result
-}
-
 export function pickKeys(obj, keys) {
   return keys.reduce((picked, key) => {
     if (key in obj) {

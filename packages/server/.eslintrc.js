@@ -26,7 +26,11 @@ module.exports = {
     // Allow debugger during development.
     'no-debugger': isProduction ? 'error' : 'warn',
     'no-constant-condition': isProduction ? 'error' : 'warn',
-    'no-unused-vars': isProduction ? 'error' : 'warn',
+    'no-unused-vars': [isProduction ? 'error' : 'warn', {
+      args: 'after-used',
+      argsIgnorePattern: '^_',
+      ignoreRestSiblings: true
+    }],
     'no-cond-assign': 'error',
     'no-new': 'off',
     'no-new-func': 'off',
@@ -34,8 +38,8 @@ module.exports = {
     'no-return-assign': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
-    'object-curly-spacing': ['error', 'always'],
     'standard/object-curly-even-spacing': ['off'],
+    'object-curly-spacing': ['error', 'always'],
     'prefer-const': ['error', {
       destructuring: 'all'
     }],

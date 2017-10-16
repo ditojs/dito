@@ -47,7 +47,7 @@ export default class RestApi extends Koa {
     // Create and freeze rest object so we can pass the same one but no
     // middleware can alter it and affect future requests.
     const rest = deepFreeze({ ...settings, namespace })
-    this.router[verb](route, async function (ctx, next) {
+    this.router[verb](route, async ctx => {
       defineReadOnly(ctx, 'rest', rest)
       await modelClass.emit(before, ctx)
       ctx.body = await handler(ctx)

@@ -1,7 +1,7 @@
 import objection from 'objection'
 import colors from 'colors/safe'
 import pluralize from 'pluralize'
-import { isObject, keyItemsBy, hyphenate } from '../utils'
+import { isObject, hyphenate } from '../utils'
 import { convertSchema } from '../core/schema'
 import NotFoundError from './NotFoundError'
 
