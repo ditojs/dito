@@ -22,16 +22,13 @@ export function convertSchema(schema, validator,
           schema.items = convertSchema(items, validator, { isItems: true })
         }
       }
-    } else if (type === 'date') {
+    } else if (type === 'date' || type === 'datetime') {
       // date properties can be submitted both as a string or a Date object.
       // Provide validation through date-time format, which in AJV appears
       // to handle both types correctly.
       schema.type = ['string', 'object']
-      if (!schema.format) {
-        schema.format = 'date-time'
-      }
+      addFormat(schema, 'date-time')
     } else {
-      console.log('$ref', type)
       // A reference to another model as nested JSON data, use $ref instead
       // of type, but append '_required' to use the version of the schema
       // that has the 'required' keyword defined.
@@ -61,13 +58,7 @@ export function convertSchema(schema, validator,
     const { required } = schema
     if (required !== undefined) {
       if (required) {
-        // Support multiple `format` keywords through `allOf`:
-        const { format, allOf } = schema
-        if (format || allOf) {
-          (allOf || (schema.allOf = [])).push({ format: 'required' })
-        } else {
-          schema.format = 'required'
-        }
+        addFormat(schema, 'required')
       }
       delete schema.required
     }
@@ -83,11 +74,6 @@ export function convertSchema(schema, validator,
       }
     }
   }
-  // Expand multi-line array descriptions into one string.
-  const { description } = schema
-  if (description && isArray(description)) {
-    schema.description = description.join(' ')
-  }
   // Remove all keywords that aren't valid JSON keywords.
   for (const key of Object.keys(schema)) {
     if (!validator.isKeyword(key)) {
@@ -95,6 +81,16 @@ export function convertSchema(schema, validator,
     }
   }
   return schema
+}
+
+function addFormat(schema, format) {
+  // Support multiple `format` keywords through `allOf`:
+  const { allOf } = schema
+  if (schema.format || allOf) {
+    (allOf || (schema.allOf = [])).push({ format })
+  } else {
+    schema.format = format
+  }
 }
 
 // JSON types, used to determine when to use `$ref` instead of `type`.
