@@ -1,6 +1,13 @@
 import Model from '../core/Model'
 
 export default class Message extends Model {
+  static properties = {
+    text: {
+      type: 'string',
+      required: true
+    }
+  }
+
   static relations = {
     dummy: {
       relation: 'hasOne',

@@ -23,18 +23,24 @@ export default {
     type: 'string',
     format: 'email'
   },
-  dogs: [
-    'string'
-  ],
+  dogs: {
+    type: 'array',
+    items: {
+      type: 'string'
+    }
+  },
   age: 'integer',
   factor: {
     type: 'number',
     range: [0, 50],
     required: true
   },
-  colors: [
-    'string'
-  ],
+  colors: {
+    type: 'array',
+    items: {
+      type: 'string'
+    }
+  },
   verified: 'boolean',
   comments: 'string'
 }

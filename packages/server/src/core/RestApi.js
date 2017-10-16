@@ -49,9 +49,9 @@ export default class RestApi extends Koa {
     const rest = deepFreeze({ ...settings, namespace })
     this.router[verb](route, async function (ctx, next) {
       defineReadOnly(ctx, 'rest', rest)
-      await modelClass.emitAsync(before, ctx)
+      await modelClass.emit(before, ctx)
       ctx.body = await handler(ctx)
-      await modelClass.emitAsync(after, ctx)
+      await modelClass.emit(after, ctx)
     })
   }
 }

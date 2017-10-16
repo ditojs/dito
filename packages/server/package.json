@@ -14,8 +14,10 @@
   "jsnext:main": "src/index.js",
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
-    "migrate": "yarn knex migrate:latest",
-    "seed": "babel-node src/seeds",
+    "db:create_migration": "babel-node src/scripts/migration",
+    "db:migrate": "yarn knex migrate:latest",
+    "db:rollback": "yarn knex migrate:rollback",
+    "db:seed": "babel-node src/scripts/seed",
     "start": "babel-node src",
     "dev": "nodemon --watch src --exec 'yarn start'",
     "debug": "DEBUG=* yarn start",

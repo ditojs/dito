@@ -8,11 +8,11 @@ import models from '../models'
 const app = new App(config, models)
 
 async function seed() {
-  const seedDir = __dirname
+  const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
   for (const file of files) {
     const desc = path.parse(file)
-    if (file !== 'index.js' && /^\.(js|json)$/.test(desc.ext)) {
+    if (/^\.(js|json)$/.test(desc.ext)) {
       const object = await import(path.resolve(seedDir, file))
       const seed = object.default || object
       const model = app.models[desc.name]
@@ -27,15 +27,14 @@ async function seed() {
     }
   }
 }
-export default seed
 
-// TODO: Move elsewhere once we're not running babel-node src/seeds directly
-// from package.json
-;(async function () {
+async function seedAndExit() {
   try {
     await seed()
-  } catch (e) {
-    console.error(e)
+  } catch (err) {
+    console.error(err)
   }
   process.exit()
-})()
+}
+
+seedAndExit()

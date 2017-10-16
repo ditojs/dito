@@ -1,4 +1,4 @@
-import { isObject, isArray, isString, isFunction } from '../utils'
+import { isObject, isArray, isString } from '../utils'
 import {
   Relation,
   BelongsToOneRelation,
@@ -12,20 +12,17 @@ export function convertSchema(schema, validator,
   { isRoot, isItems } = { isRoot: true }) {
   // Shallow clone so we can modify and return:
   schema = { ...schema }
-  const typeValue = schema.type
-  const type = isFunction(typeValue) ? typeValue.name : typeValue
-  if (isArray(type)) {
-    // Convert schema array notation to JSON schema
-    schema.type = 'array'
-    const arrayType = type[0]
-    const items = isObject(arrayType) ? arrayType : { type: arrayType }
-    schema.items = convertSchema(items, validator, { isItems: true })
-  } else if (isString(type)) {
+  const { type } = schema
+  if (isString(type)) {
     // Convert schema property notation to JSON schema
-    const typeLower = type.toLowerCase()
-    if (jsonTypes[typeLower]) {
-      schema.type = typeLower
-    } else if (typeLower === 'date') {
+    if (jsonTypes[type]) {
+      if (type === 'array') {
+        const { items } = schema
+        if (items) {
+          schema.items = convertSchema(items, validator, { isItems: true })
+        }
+      }
+    } else if (type === 'date') {
       // date properties can be submitted both as a string or a Date object.
       // Provide validation through date-time format, which in AJV appears
       // to handle both types correctly.

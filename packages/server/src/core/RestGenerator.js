@@ -28,24 +28,24 @@ export default class RestGenerator {
         this.log(`${colors.blue(name)}${colors.white(':')}`, 1)
         const settings = relations[name]
         this.addRoutes(modelClass, relation, 'relation', settings, 2)
-        this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
+        if (!relation.isOneToOne()) {
+          // TODO: Shouldn't OneToOne relations also offer a way to unrelated /
+          // relate instead of directly manipulate the related object? Should
+          // we make the distinction between relation and instance here too, and
+          // if so, do we go by Id as well?
+          this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
+        }
       }
     }
   }
 
-  addRoutes(modelClass, relation, type, routesSettings = {}, indent) {
+  addRoutes(modelClass, relation, type, routesSettings, indent) {
     const handlers = restHandlers[type]
     const getSettings = settingsHandlers[type]
-    for (let [verb, handler] of Object.entries(getSettings ? handlers : {})) {
+    for (const [verb, handler] of Object.entries(getSettings ? handlers : {})) {
       const settings = getSettings(verb, handlers, routesSettings)
       if (!settings || !settings.access) {
         continue
-      }
-      if (isObject(handler)) {
-        if (relation && handler.isValid && !handler.isValid(relation)) {
-          continue
-        }
-        handler = handler.handler
       }
       const route = this.getRoutePath(type, modelClass, relation)
       const target = relation || modelClass
@@ -134,7 +134,7 @@ function getSettings(verb, handlers, settings) {
   let obj = isObject(settings) &&
     Object.keys(handlers).find(verb => settings[verb])
     ? settings[verb]
-    : settings
+    : settings || false
   if (!isObject(obj) || !('access' in obj)) {
     // TODO: Improve check by looking for any route settings properties in
     // Object.keys(obj), and only wrap with `access: obj` if obj doesn't contain
@@ -282,7 +282,8 @@ const restHandlers = {
     put(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          // TODO: upsertGraphAndFetch()!
+          // TODO: upsertGraphAndFetch()
+          // https://github.com/Vincit/objection.js/issues/556
           .upsertGraph(ctx.request.body)
       })
     },
@@ -291,7 +292,8 @@ const restHandlers = {
     patch(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          // TODO: updateGraphAndFetch()!
+          // TODO: patchGraphAndFetch()!
+          // https://github.com/Vincit/objection.js/issues/557
           .upsertGraph(ctx.request.body)
       })
     }
@@ -303,9 +305,9 @@ const restHandlers = {
       const { id } = ctx.params
       const builder = modelClass.query()
       return builder
+        .findById(id)
         .allowEager(modelClass.getFindQuery().allowEager())
         .eager(ctx.query.eager)
-        .findById(id)
         .then(model => checkModel(model, modelClass, id))
     },
 
@@ -320,6 +322,8 @@ const restHandlers = {
     put(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
+        // TODO: upsertGraphAndFetch()
+        // https://github.com/Vincit/objection.js/issues/556
         .updateAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     },
@@ -328,37 +332,21 @@ const restHandlers = {
     patch(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
+        // TODO: patchGraphAndFetch()!
+        // https://github.com/Vincit/objection.js/issues/557
         .patchAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     }
   },
 
   relation: {
-    // post relation
-    post(relation, ctx) {
-      // TODO: What's the expected behavior in a toOne relation?
-      const { id } = ctx.params
-      const { body } = ctx.request
-      const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass => {
-        const builder = ownerModelClass.query()
-        return builder
-          .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
-          .first()
-          .then(model => checkModel(model, ownerModelClass, id)
-            .$relatedQuery(relation.name)
-            .insertGraph(body))
-      })
-    },
-
     // get relation
     get(relation, ctx) {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       const builder = ownerModelClass.query()
       return builder
-        .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
-        .first()
+        .findById(id)
         .then(model => {
           checkModel(model, ownerModelClass, id)
           const query = relation.relatedModelClass.getFindQuery()
@@ -370,113 +358,78 @@ const restHandlers = {
     // delete relation
     delete(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
+      // Currently it deletes the object itself, but shouldn't it unrelate
+      // instead?
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
         const builder = ownerModelClass.query()
         return builder
-          .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
-          .first()
+          .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             .delete())
-          .then(() => ({})) // TODO: What does LB do here?
+          .then(count => ({ count }))
+      })
+    },
+
+    // post relation
+    post(relation, ctx) {
+      // TODO: What's the expected behavior in a toOne relation?
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
+      return objection.transaction(ownerModelClass, ownerModelClass => {
+        const builder = ownerModelClass.query()
+        return builder
+          .findById(id)
+          .then(model => checkModel(model, ownerModelClass, id)
+            .$relatedQuery(relation.name)
+            .insertGraph(ctx.request.body))
       })
     },
 
     // put relation
-    put: {
+    put(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
-      isValid(relation) {
-        return !(relation.isOneToOne())
-      },
-      handler(relation, ctx) {
-        const { id } = ctx.params
-        const { ownerModelClass, relatedModelClass } = relation
-        let model
-        return objection.transaction(ownerModelClass, relatedModelClass,
-          (ownerModelClass, relatedModelClass) => {
-            const builder = ownerModelClass.query()
-            return builder
-              .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
-              .first()
-              .eager(relation.name)
-              .then(mod => {
-                model = checkModel(mod, ownerModelClass, id)
-                const current = model[relation.name]
-                const idKey = relatedModelClass.getIdProperty()
-                const currentById = keyItemsBy(current, idKey)
-                const inputModels = relatedModelClass.ensureModelArray(
-                  ctx.request.body)
-                const inputModelsById = keyItemsBy(inputModels, idKey)
-
-                function isNew(model) {
-                  return !model.$id() || !currentById[model.$id()]
-                }
-
-                const insertModels = inputModels.filter(isNew)
-                const updateModels = inputModels.filter(m => !isNew(m))
-                const deleteModels = current.filter(
-                  model => !inputModelsById[model.$id()])
-
-                const insertAndUpdateQueries = [
-                  ...updateModels.map(update => update.$query().patch()),
-                  ...insertModels.map(insert => {
-                    delete insert[relatedModelClass.getIdProperty()]
-                    return model.$relatedQuery(relation.name).insert(insert)
-                  })
-                ]
-
-                return model
-                  .$relatedQuery(relation.name)
-                  .delete()
-                  .whereInComposite(builder.fullIdColumnFor(relatedModelClass),
-                    deleteModels.map(model => model.$id()))
-                  .then(() => Promise.all(insertAndUpdateQueries))
-              })
-              .then(() => model.$relatedQuery(relation.name))
-          }
-        )
-      }
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
+      return objection.transaction(ownerModelClass, ownerModelClass => {
+        const builder = ownerModelClass.query()
+        return builder
+          .findById(id)
+          .then(model => checkModel(model, ownerModelClass, id)
+            .$relatedQuery(relation.name)
+            // TODO: upsertGraphAndFetch()
+            // https://github.com/Vincit/objection.js/issues/556
+            .upsertGraph(ctx.request.body))
+      })
     }
   },
 
   relationInstance: {
-    // TODO: HasManyRelation, BelongsToOneRelation, HasOneThroughRelation,
-    // ManyToManyRelation?
-
-    // post relationInstance = "generateRelationRelate" ??
-    post: {
-      isValid(relation) {
-        return relation instanceof objection.ManyToManyRelation
-      },
-      handler(relation, ctx) {
-        const { id, relatedId } = ctx.params
-        const { ownerModelClass, relatedModelClass } = relation
-        return objection.transaction(ownerModelClass, relatedModelClass,
-          (ownerModelClass, relatedModelClass) => {
-            const builder = ownerModelClass.query()
-            return builder
-              .whereComposite(builder.fullIdColumnFor(ownerModelClass), id)
-              .first()
-              .then(model => {
-                return checkModel(model, ownerModelClass, id)
-                  .$relatedQuery(relation.name)
-                  .relate(relatedId)
-              })
-              .then(() => {
-                return relatedModelClass
-                  .whereComposite(
-                    builder.fullIdColumnFor(relation.relatedModelClass),
-                    relatedId)
-                  .allowEager(
-                    relation.relatedModelClass.getFindQuery().allowEager())
-                  .eager(ctx.query.eager)
-                  .first()
-              })
-          }
-        )
-      }
+    post(relation, ctx) {
+      const { id, relatedId } = ctx.params
+      const { ownerModelClass, relatedModelClass } = relation
+      return objection.transaction(ownerModelClass, relatedModelClass,
+        (ownerModelClass, relatedModelClass) => {
+          const builder = ownerModelClass.query()
+          return builder
+            .findById(id)
+            .then(model => {
+              return checkModel(model, ownerModelClass, id)
+                .$relatedQuery(relation.name)
+                .relate(relatedId)
+            })
+            .then(related => {
+              console.log(related) // TODO: inspect and decide what to do next
+              return relatedModelClass
+                .findById(relatedId)
+                .allowEager(
+                  relation.relatedModelClass.getFindQuery().allowEager())
+                .eager(ctx.query.eager)
+            })
+        }
+      )
     }
   }
 }

@@ -1,5 +1,6 @@
 import objection from 'objection'
 import findQuery from 'objection-find'
+import util from 'util'
 import { convertSchema, convertRelations } from './schema'
 import Validator from './Validator'
 import ValidationError from './ValidationError'
@@ -95,13 +96,14 @@ export default class Model extends objection.Model {
       const base = Object.getPrototypeOf(this)
       const inherit = base !== Model
       const jsonObject = convertSchema(properties, this.getValidator())
+      const jsonProperties = jsonObject.properties
       // Temporarily set _jsonSchema to an empty object so that we can call
       // getIdProperty() without causing an endless recursion:
       this._jsonSchema = {}
-      const idProp = this.getIdProperty()
-      if (!(idProp in jsonObject.properties)) {
-        jsonObject.properties[idProp] = {
-          type: 'integer'
+      ensureProperty(jsonProperties, this.getIdProperty())
+      for (const relation of Object.values(this.getRelations())) {
+        for (const property of relation.ownerProp.props) {
+          ensureProperty(jsonProperties, property)
         }
       }
       _jsonSchema = this._jsonSchema = {
@@ -120,9 +122,22 @@ export default class Model extends objection.Model {
           }
         )
       }
-      // console.log(_jsonSchema)
-      return _jsonSchema
+      console.log(util.inspect(_jsonSchema, { depth: 3 }))
     }
+    return _jsonSchema
+  }
+
+  static get jsonSchemaObject() {
+    // Easy access to main JSON schema object, that sometimes is nested when
+    // inheritance is used
+    const { jsonSchema } = this
+    const $merge = jsonSchema && jsonSchema.$merge
+    return $merge ? $merge.with : (jsonSchema || null)
+  }
+
+  static get jsonSchemaProperties() {
+    const { jsonSchemaObject } = this
+    return jsonSchemaObject && jsonSchemaObject.properties || null
   }
 
   static get relationMappings() {
@@ -130,10 +145,32 @@ export default class Model extends objection.Model {
     if (!_relationMappings && relations) {
       _relationMappings = this._relationMappings = convertRelations(this,
         relations, this.app.models)
-      // console.log(_relationMappings)
-      return _relationMappings
+    }
+    return _relationMappings
+  }
+
+  static checkSchema() {
+    for (const relation of Object.values(this.getRelations())) {
+      const { relatedModelClass } = relation
+      const relatedProperties = relatedModelClass.jsonSchemaProperties
+      for (const property of relation.relatedProp.props) {
+        if (!(property in relatedProperties)) {
+          throw new Error(
+            `\`${relatedModelClass.name}\` is missing back-reference for ` +
+            `relation \`${this.name}.${relation.name}\``
+          )
+        }
+      }
     }
   }
 
   static ValidationError = ValidationError
+}
+
+function ensureProperty(properties, property, type = 'integer') {
+  const exists = property in properties
+  if (!exists) {
+    properties[property] = { type }
+  }
+  return exists
 }

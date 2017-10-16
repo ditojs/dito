@@ -1,6 +1,6 @@
 import Knex from 'knex'
 import Koa from 'koa'
-import EventEmitter from 'eventemitter2'
+import EventEmitterMixin from './EventEmitterMixin'
 
 export default class App extends Koa {
   constructor(config, models) {
@@ -17,17 +17,11 @@ export default class App extends Koa {
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
+    this.checkSchemas()
   }
 
   addModel(modelClass) {
-    // Add EventEmitter to the model
-    Object.assign(modelClass, EventEmitter.prototype)
-    EventEmitter.call(modelClass, {
-      delimiter: ':',
-      wildcard: true,
-      newListener: false,
-      maxListeners: 0
-    })
+    EventEmitterMixin(modelClass)
     this.models[modelClass.name] = modelClass
     modelClass.app = this
     modelClass.knex(this.knex)
@@ -36,10 +30,10 @@ export default class App extends Koa {
     })
   }
 
-  build() {
-    this.use(this.router.routes())
-    this.use(this.router.allowedMethods())
-    return this
+  checkSchemas() {
+    for (const modelClass of Object.values(this.models)) {
+      modelClass.checkSchema()
+    }
   }
 
   start() {
