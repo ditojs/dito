@@ -1,11 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
-import App from '../core/App'
 import { isFunction } from '../utils'
-import config from '../config'
-import models from '../models'
-
-const app = new App(config, models)
+import app from '../app'
 
 async function seed() {
   const seedDir = path.join(process.cwd(), 'seeds')
@@ -19,7 +15,7 @@ async function seed() {
       if (model) {
         await model.query().truncate()
         if (isFunction(seed)) {
-          await seed(model, models)
+          await seed(model, app.models)
         } else {
           await model.query().insertGraph(seed)
         }
