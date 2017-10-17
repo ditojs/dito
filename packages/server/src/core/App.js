@@ -1,13 +1,15 @@
 import Knex from 'knex'
 import Koa from 'koa'
+import Validator from './Validator'
 import EventEmitterMixin from './EventEmitterMixin'
 
 export default class App extends Koa {
-  constructor(config, models) {
+  constructor(config, { validator, models }) {
     super()
     this.config = config
     this.knex = Knex(config.knex)
     this.models = {}
+    this.validator = validator || new Validator()
     if (models) {
       this.addModels(models)
     }
@@ -22,8 +24,8 @@ export default class App extends Koa {
 
   addModel(modelClass) {
     EventEmitterMixin(modelClass)
-    this.models[modelClass.name] = modelClass
     modelClass.app = this
+    this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
     modelClass.onAny((event, ctx) => {
       console.log(event, ctx.rest)

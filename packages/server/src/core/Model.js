@@ -2,11 +2,7 @@ import objection from 'objection'
 import findQuery from 'objection-find'
 import util from 'util'
 import { convertSchema, convertRelations } from './schema'
-import Validator from './Validator'
 import ValidationError from './ValidationError'
-import * as validators from '../validators' // TODO: Move to app!
-
-const validator = new Validator({ validators })
 
 export default class Model extends objection.Model {
   static get tableName() {
@@ -82,7 +78,8 @@ export default class Model extends objection.Model {
   }
 
   static createValidator() {
-    return validator
+    // Use a shared validator per app, so model schemas can reference each other
+    return this.app.validator
   }
 
   static createValidationError(errors) {
