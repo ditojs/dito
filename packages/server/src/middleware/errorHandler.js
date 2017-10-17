@@ -1,4 +1,4 @@
-export default function () {
+export default function errorHandler() {
   return async (ctx, next) => {
     try {
       await next()

@@ -1,4 +1,6 @@
-yarn db:migrate
-yarn db:rollback
-yarn db:create_migration ModelName
-yarn db:seed
+# Dito Framework
+
+Dito is a minimal and modern object oriented REST API server framework, based on
+Koa2 and Objection.js
+
+More documentation to come soon.

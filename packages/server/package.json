@@ -44,7 +44,7 @@
     "koa-mount": "^3.0.0",
     "koa-router": "^7.2.1",
     "koa-static": "^4.0.1",
-    "objection": "https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213",
+    "objection": "github:lehni/objection.js#8536ca138a269aabe215901c7157bc498cfbd213",
     "objection-find": "^0.5.1",
     "pluralize": "^7.0.0"
   },

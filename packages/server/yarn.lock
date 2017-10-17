@@ -2010,9 +2010,9 @@ objection-find@^0.5.1:
     bluebird "^3"
     lodash "^4"
 
-"objection@https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213":
+"objection@github:lehni/objection.js#8536ca138a269aabe215901c7157bc498cfbd213":
   version "0.9.0"
-  resolved "https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213#fa51336d887633880a2f97c34d04431ebff0a891"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/8536ca138a269aabe215901c7157bc498cfbd213"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"
