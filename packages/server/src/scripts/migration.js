@@ -9,26 +9,25 @@ const typeToKnex = {
   object: 'json'
 }
 
+const migrationDir = path.join(process.cwd(), 'migrations')
+
 async function createMigration(modelName) {
-  // TODO: Property name VS column name. At the moment, this assumes the same
-  // naming convention in both. Support different conventions here!
   const modelClass = app.models[modelName]
   if (!modelClass) {
     throw new Error(`Model class with name '${modelName}' does not exist`)
   }
-  const filename = `${yyyymmddhhmmss()}_${modelName}.js`
-  const migrationDir = path.join(process.cwd(), 'migrations')
-  const file = path.join(migrationDir, filename)
   const { tableName, properties, relations } = modelClass
-  const idProperty = modelClass.getIdProperty()
-  const statements = [`table.increments('${idProperty}').primary()`]
+  // TODO: Support multiple id columns? Does this even occur?
+  const idColumn = modelClass.getIdColumnArray()[0]
+  const statements = [`table.increments('${idColumn}').primary()`]
   if (properties) {
     for (const [name, property] of Object.entries(properties)) {
-      if (name !== idProperty) {
+      const column = modelClass.propertyNameToColumnName(name)
+      if (column !== idColumn) {
         const { type, computed } = getSchema(property)
         const knexType = typeToKnex[type] || type
         if (!computed) {
-          statements.push(`table.${knexType}('${name}')`)
+          statements.push(`table.${knexType}('${column}')`)
         }
       }
     }
@@ -38,12 +37,14 @@ async function createMigration(modelName) {
       const { join: { from, to } } = relation
       const [, fromColumn] = from && from.split('.') || []
       const [toTable, toColumn] = to && to.split('.') || []
-      if (fromColumn && toColumn && !(properties && properties[fromColumn])) {
+      if (fromColumn && toColumn && fromColumn !== idColumn &&
+        !(properties && properties[fromColumn])) {
         statements.push(`table.integer('${fromColumn}').unsigned()
         .references('${toColumn}').inTable('${toTable}')`)
       }
     }
   }
+  const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
   await fs.writeFile(file, `export function up(knex) {
   return knex.schema
     .createTable('${tableName}', table => {

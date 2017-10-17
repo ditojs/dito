@@ -7,6 +7,7 @@ export default class App extends Koa {
   constructor(config, { validator, models }) {
     super()
     this.config = config
+    this.normalizeDbNames = config.normalizeDbNames
     this.knex = Knex(config.knex)
     this.models = {}
     this.validator = validator || new Validator()

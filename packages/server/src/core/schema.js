@@ -1,4 +1,4 @@
-import { isObject, isArray, isString } from '../utils'
+import { isObject, isArray, isString, asArray } from '../utils'
 import {
   Relation,
   BelongsToOneRelation,
@@ -122,15 +122,28 @@ const relationClasses = {
 }
 
 export function convertRelations(ownerModelClass, schema, models) {
+  function convertReference(reference) {
+    const [modelName, propertyName] = reference.split('.')
+    const modelClass = models[modelName]
+    if (modelClass) {
+      const columnName = modelClass.propertyNameToColumnName(propertyName)
+      return `${modelClass.tableName}.${columnName}`
+    }
+    return reference
+  }
+
   const relations = {}
   for (const [name, relationSchema] of Object.entries(schema)) {
-    const { relation, modelClass, ...rest } = relationSchema
+    let { relation, modelClass, join: { from, to }, ...rest } = relationSchema
     const relationClass = relationLookup[relation] ||
       relationClasses[relation] || relation
     if (relationClass && relationClass.prototype instanceof Relation) {
+      from = asArray(from).map(convertReference)
+      to = asArray(to).map(convertReference)
       relations[name] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
+        join: { from, to },
         ...rest
       }
     } else {

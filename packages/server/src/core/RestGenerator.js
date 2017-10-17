@@ -1,7 +1,7 @@
 import objection from 'objection'
 import colors from 'colors/safe'
 import pluralize from 'pluralize'
-import { isObject, hyphenate } from '../utils'
+import { isObject, kebabCase } from '../utils'
 import { convertSchema } from '../core/schema'
 import NotFoundError from './NotFoundError'
 
@@ -99,7 +99,7 @@ export default class RestGenerator {
 
 // TODO: Add normalization Options!
 function normalize(name, plural = false) {
-  return hyphenate(plural ? pluralize(name) : name)
+  return kebabCase(plural ? pluralize(name) : name)
 }
 
 const routePath = {

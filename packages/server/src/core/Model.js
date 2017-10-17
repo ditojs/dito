@@ -1,15 +1,11 @@
 import objection from 'objection'
 import findQuery from 'objection-find'
 import util from 'util'
+import { snakeCase, camelCase } from '../utils'
 import { convertSchema, convertRelations } from './schema'
 import ValidationError from './ValidationError'
 
 export default class Model extends objection.Model {
-  static get tableName() {
-    // Simple convention: Use the constructor name as the tableName
-    return this.name
-  }
-
   static find(filter = {}) {
     const builder = this.query()
     // TODO: eager, limit, offset, omit
@@ -46,6 +42,51 @@ export default class Model extends objection.Model {
     return this.$set(updated)
   }
 
+  get $app() {
+    return this.constructor.app
+  }
+
+  $formatDatabaseJson(json) {
+    for (const key of this.constructor.getDateProperties()) {
+      const date = json[key]
+      if (date !== undefined) {
+        json[key] = date && date.toISOString ? date.toISOString() : date
+      }
+    }
+    if (this.constructor.app.normalizeDbNames) {
+      json = translateProperties(json, snakeCase)
+    }
+    return super.$formatDatabaseJson(json)
+  }
+
+  $parseDatabaseJson(json) {
+    json = super.$parseDatabaseJson(json)
+    if (this.constructor.app.normalizeDbNames) {
+      json = translateProperties(json, camelCase)
+    }
+    for (const key of this.constructor.getDateProperties()) {
+      const date = json[key]
+      if (date !== undefined) {
+        json[key] = date ? new Date(date) : date
+      }
+    }
+    return json
+  }
+
+  static getDateProperties() {
+    let { _dateProperties } = this
+    if (!_dateProperties) {
+      _dateProperties = this._dateProperties = []
+      const properties = this.getJsonSchemaProperties()
+      for (const [key, { format }] of Object.entries(properties || {})) {
+        if (format === 'date' || format === 'date-time') {
+          _dateProperties.push(key)
+        }
+      }
+    }
+    return _dateProperties
+  }
+
   static getFindQuery() {
     let { _findQuery } = this
     if (!_findQuery) {
@@ -54,37 +95,9 @@ export default class Model extends objection.Model {
     return _findQuery
   }
 
-  static getDateProperties() {
-    let keys = this._dateProperties
-    if (!keys) {
-      keys = this._dateProperties = []
-      const { properties } = this.getJsonSchema() || {}
-      for (const [key, { format }] of Object.entries(properties || {})) {
-        if (format === 'date' || format === 'date-time') {
-          keys.push(key)
-        }
-      }
-    }
-    return keys
-  }
-
-  $parseDatabaseJson(json) {
-    json = super.$parseDatabaseJson(json)
-    for (const key of this.constructor.getDateProperties()) {
-      const date = json[key]
-      json[key] = date ? new Date(date) : date
-    }
-    return json
-  }
-
-  static createValidator() {
-    // Use a shared validator per app, so model schemas can reference each other
-    return this.app.validator
-  }
-
-  static createValidationError(errors) {
-    return new this.ValidationError(errors,
-      `The provided data for the ${this.name} instance is not valid`)
+  static get tableName() {
+    // Convention: Use the class name as the tableName, plus normalization:
+    return this.app.normalizeDbNames ? snakeCase(this.name) : this.name
   }
 
   static get jsonSchema() {
@@ -124,19 +137,6 @@ export default class Model extends objection.Model {
     return _jsonSchema
   }
 
-  static get jsonSchemaObject() {
-    // Easy access to main JSON schema object, that sometimes is nested when
-    // inheritance is used
-    const { jsonSchema } = this
-    const $merge = jsonSchema && jsonSchema.$merge
-    return $merge ? $merge.with : (jsonSchema || null)
-  }
-
-  static get jsonSchemaProperties() {
-    const { jsonSchemaObject } = this
-    return jsonSchemaObject && jsonSchemaObject.properties || null
-  }
-
   static get relationMappings() {
     let { _relationMappings, relations } = this
     if (!_relationMappings && relations) {
@@ -146,10 +146,23 @@ export default class Model extends objection.Model {
     return _relationMappings
   }
 
+  static getJsonSchemaObject() {
+    // Easy access to main JSON schema object, that sometimes is nested when
+    // inheritance is used
+    const schema = this.getJsonSchema()
+    const $merge = schema && schema.$merge
+    return $merge ? $merge.with : (schema || null)
+  }
+
+  static getJsonSchemaProperties() {
+    const object = this.getJsonSchemaObject()
+    return object && object.properties || null
+  }
+
   static checkSchema() {
     for (const relation of Object.values(this.getRelations())) {
       const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.jsonSchemaProperties
+      const relatedProperties = relatedModelClass.getJsonSchemaProperties()
       for (const property of relation.relatedProp.props) {
         if (!(property in relatedProperties)) {
           throw new Error(
@@ -161,6 +174,16 @@ export default class Model extends objection.Model {
     }
   }
 
+  static createValidator() {
+    // Use a shared validator per app, so model schemas can reference each other
+    return this.app.validator
+  }
+
+  static createValidationError(errors) {
+    return new this.ValidationError(errors,
+      `The provided data for the ${this.name} instance is not valid`)
+  }
+
   static ValidationError = ValidationError
 }
 
@@ -170,4 +193,12 @@ function ensureProperty(properties, property, type = 'integer') {
     properties[property] = { type }
   }
   return exists
+}
+
+function translateProperties(object, translate) {
+  const converted = {}
+  for (const key in object) {
+    converted[translate(key)] = object[key]
+  }
+  return converted
 }

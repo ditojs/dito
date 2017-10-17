@@ -1,19 +1,21 @@
-export function camelize(str) {
+export function camelCase(str, upper = false) {
   return str
-    ? str.replace(/(?:^|[-_])(\w)/g, (all, chr) => chr.toUpperCase())
+    ? str.replace(/(^|[-_\s]+)(\w)/g, (all, sep, chr) => (
+      upper || sep ? chr.toUpperCase() : chr.toLowerCase()
+    ))
     : ''
 }
 
-export function decamelize(str, sep) {
+export function lowerCase(str, sep = ' ') {
   return str
-    ? str.replace(/([a-z\d])([A-Z])/g, `$1${sep || ''}$2`).toLowerCase()
+    ? str.replace(/([a-z\d])([A-Z])/g, `$1${sep}$2`).toLowerCase()
     : ''
 }
 
-export function hyphenate(str) {
-  return decamelize(str, '-')
+export function kebabCase(str) {
+  return lowerCase(str, '-')
 }
 
-export function underscore(str) {
-  return decamelize(str, '_')
+export function snakeCase(str) {
+  return lowerCase(str, '_')
 }

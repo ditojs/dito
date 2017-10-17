@@ -1,12 +1,12 @@
 export function up(knex) {
   return knex.schema
-    .createTable('Dummy', table => {
+    .createTable('dummy', table => {
       table.increments('id').primary()
-      table.string('firstName')
-      table.string('lastName')
+      table.string('first_name')
+      table.string('last_name')
       table.string('prefix')
       table.string('country')
-      table.date('dateOfBirth')
+      table.date('date_of_birth')
       table.string('email')
       table.integer('age')
       table.double('factor')
@@ -19,5 +19,5 @@ export function up(knex) {
 
 export function down(knex) {
   return knex.schema
-    .dropTableIfExists('Dummy')
+    .dropTableIfExists('dummy')
 }
