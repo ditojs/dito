@@ -14,6 +14,8 @@ export function up(knex) {
       table.json('colors')
       table.boolean('verified')
       table.string('comments')
+      table.timestamp('created_at').defaultTo(knex.raw('CURRENT_TIMESTAMP'))
+      table.timestamp('updated_at').defaultTo(knex.raw('CURRENT_TIMESTAMP'))
     })
 }
 

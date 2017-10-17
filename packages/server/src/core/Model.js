@@ -28,6 +28,10 @@ export default class Model extends objection.Model {
     return this.find(filter).first()
   }
 
+  static findById(id) {
+    return this.query().findById(id)
+  }
+
   static insert(data) {
     return this.query().insert(data)
   }
@@ -54,7 +58,7 @@ export default class Model extends objection.Model {
       }
     }
     if (this.constructor.app.normalizeDbNames) {
-      json = translateProperties(json, snakeCase)
+      json = normalizeProperties(json, snakeCase)
     }
     return super.$formatDatabaseJson(json)
   }
@@ -62,7 +66,7 @@ export default class Model extends objection.Model {
   $parseDatabaseJson(json) {
     json = super.$parseDatabaseJson(json)
     if (this.constructor.app.normalizeDbNames) {
-      json = translateProperties(json, camelCase)
+      json = normalizeProperties(json, camelCase)
     }
     for (const key of this.constructor.getDateProperties()) {
       const date = json[key]
@@ -71,6 +75,18 @@ export default class Model extends objection.Model {
       }
     }
     return json
+  }
+
+  $beforeInsert() {
+    if (this.constructor.timestamps) {
+      this.createdAt = this.updatedAt = new Date()
+    }
+  }
+
+  $beforeUpdate() {
+    if (this.constructor.timestamps) {
+      this.updatedAt = new Date()
+    }
   }
 
   static getDateProperties() {
@@ -103,38 +119,49 @@ export default class Model extends objection.Model {
   static get jsonSchema() {
     let { _jsonSchema, properties } = this
     if (!_jsonSchema && properties) {
-      const base = Object.getPrototypeOf(this)
-      const inherit = base !== Model
-      const jsonObject = convertSchema(properties, this.getValidator())
-      const jsonProperties = jsonObject.properties
-      // Temporarily set _jsonSchema to an empty object so that we can call
-      // getIdProperty() without causing an endless recursion:
+      // Temporarily set _jsonSchema to an empty object so convertSchema() can
+      // call getIdProperty() without causing an endless recursion:
       this._jsonSchema = {}
-      ensureProperty(jsonProperties, this.getIdProperty())
-      for (const relation of Object.values(this.getRelations())) {
-        for (const property of relation.ownerProp.props) {
-          ensureProperty(jsonProperties, property)
-        }
-      }
-      _jsonSchema = this._jsonSchema = {
-        id: this.name,
-        $schema: 'http://json-schema.org/draft-06/schema#',
-        ...(inherit
-          ? {
-            $merge: {
-              source: { $ref: base.name },
-              with: jsonObject
-            }
-          }
-          : {
-            ...jsonObject,
-            additionalProperties: false
-          }
-        )
-      }
+      _jsonSchema = this._jsonSchema = this.convertSchema(properties)
       console.log(util.inspect(_jsonSchema, { depth: 3 }))
     }
     return _jsonSchema
+  }
+
+  static convertSchema(properties) {
+    const base = Object.getPrototypeOf(this)
+    const inherit = base !== Model
+    if (this.timestamps) {
+      properties = {
+        ...properties,
+        createdAt: 'timestamp',
+        updatedAt: 'timestamp'
+      }
+    }
+    const jsonObject = convertSchema(properties, this.getValidator())
+    const jsonProperties = jsonObject.properties
+    ensureProperty(jsonProperties, this.getIdProperty())
+    for (const relation of Object.values(this.getRelations())) {
+      for (const property of relation.ownerProp.props) {
+        ensureProperty(jsonProperties, property)
+      }
+    }
+    return {
+      id: this.name,
+      $schema: 'http://json-schema.org/draft-06/schema#',
+      ...(inherit
+        ? {
+          $merge: {
+            source: { $ref: base.name },
+            with: jsonObject
+          }
+        }
+        : {
+          ...jsonObject,
+          additionalProperties: false
+        }
+      )
+    }
   }
 
   static get relationMappings() {
@@ -195,7 +222,7 @@ function ensureProperty(properties, property, type = 'integer') {
   return exists
 }
 
-function translateProperties(object, translate) {
+function normalizeProperties(object, translate) {
   const converted = {}
   for (const key in object) {
     converted[translate(key)] = object[key]

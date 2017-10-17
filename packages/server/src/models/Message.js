@@ -1,6 +1,7 @@
 import Model from '../core/Model'
 
 export default class Message extends Model {
+  static timestamps = true
   static properties = {
     text: {
       type: 'string',

@@ -5,6 +5,7 @@ import methods from './methods'
 import routes from './routes'
 
 export default class Dummy extends Model {
+  static timestamps = true
   static properties = properties
   static relations = relations
   static methods = methods

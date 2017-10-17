@@ -22,7 +22,7 @@ export function convertSchema(schema, validator,
           schema.items = convertSchema(items, validator, { isItems: true })
         }
       }
-    } else if (type === 'date' || type === 'datetime') {
+    } else if (['date', 'datetime', 'timestamp'].includes(type)) {
       // date properties can be submitted both as a string or a Date object.
       // Provide validation through date-time format, which in AJV appears
       // to handle both types correctly.

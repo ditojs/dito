@@ -1,11 +1,11 @@
 export const { isArray } = Array
 
 export function isObject(val) {
-  return val != null && typeof val === 'object' && isArray(val) === false
+  return val && typeof val === 'object' && isArray(val) === false
 }
 
 export function isPlainObject(val) {
-  return val != null && val.constructor === Object
+  return val && val.constructor === Object
 }
 
 export function isFunction(val) {
@@ -22,6 +22,10 @@ export function isBoolean(val) {
 
 export function isAsync(fun) {
   return fun && fun[Symbol.toStringTag] === 'AsyncFunction'
+}
+
+export function isPromise(obj) {
+  return isObject(obj) && isFunction(obj.then)
 }
 
 export function asArray(obj) {

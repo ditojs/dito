@@ -17,9 +17,9 @@ for (const [key, method] of Object.entries({
   }
 }
 
-export default function (object) {
-  Object.defineProperties(object, properties)
-  EventEmitter.call(object, {
+export default function (modelClass) {
+  Object.defineProperties(modelClass, properties)
+  EventEmitter.call(modelClass, {
     delimiter: ':',
     wildcard: true,
     newListener: false,

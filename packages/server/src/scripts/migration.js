@@ -12,14 +12,34 @@ const typeToKnex = {
 const migrationDir = path.join(process.cwd(), 'migrations')
 
 async function createMigration(modelName) {
-  const modelClass = app.models[modelName]
-  if (!modelClass) {
-    throw new Error(`Model class with name '${modelName}' does not exist`)
+  function getModel(modelName) {
+    const modelClass = app.models[modelName]
+    if (!modelClass) {
+      throw new Error(`Model class with name '${modelName}' does not exist`)
+    }
+    return modelClass
   }
-  const { tableName, properties, relations } = modelClass
+
+  const modelClass = getModel(modelName)
+  const { tableName, relations, properties, timestamps } = modelClass
   // TODO: Support multiple id columns? Does this even occur?
   const idColumn = modelClass.getIdColumnArray()[0]
   const statements = [`table.increments('${idColumn}').primary()`]
+  if (relations) {
+    for (const relation of Object.values(relations)) {
+      const { join: { from, to } } = relation
+      const [, fromProperty] = from && from.split('.') || []
+      const [toModelName, toProperty] = to && to.split('.') || []
+      if (fromProperty && toProperty && fromProperty !== idColumn &&
+        !(properties && properties[fromProperty])) {
+        const toModelClass = getModel(toModelName)
+        const fromColumn = modelClass.propertyNameToColumnName(fromProperty)
+        const toColumn = modelClass.propertyNameToColumnName(toProperty)
+        statements.push(`table.integer('${fromColumn}').unsigned()
+        .references('${toColumn}').inTable('${toModelClass.tableName}')`)
+      }
+    }
+  }
   if (properties) {
     for (const [name, property] of Object.entries(properties)) {
       const column = modelClass.propertyNameToColumnName(name)
@@ -27,22 +47,24 @@ async function createMigration(modelName) {
         const { type, computed } = getSchema(property)
         const knexType = typeToKnex[type] || type
         if (!computed) {
-          statements.push(`table.${knexType}('${column}')`)
+          let statement = `table.${knexType}('${column}')`
+          if (knexType === 'timestamp') {
+            statement = `${statement}.defaultTo(knex.raw('CURRENT_TIMESTAMP'))`
+          }
+          statements.push(statement)
         }
       }
     }
   }
-  if (relations) {
-    for (const relation of Object.values(relations)) {
-      const { join: { from, to } } = relation
-      const [, fromColumn] = from && from.split('.') || []
-      const [toTable, toColumn] = to && to.split('.') || []
-      if (fromColumn && toColumn && fromColumn !== idColumn &&
-        !(properties && properties[fromColumn])) {
-        statements.push(`table.integer('${fromColumn}').unsigned()
-        .references('${toColumn}').inTable('${toTable}')`)
-      }
-    }
+  if (timestamps) {
+    const createdAt = modelClass.propertyNameToColumnName('createdAt')
+    const updatedAt = modelClass.propertyNameToColumnName('updatedAt')
+    statements.push(
+      `table.timestamp('${createdAt}').defaultTo(knex.raw('CURRENT_TIMESTAMP'))`
+    )
+    statements.push(
+      `table.timestamp('${updatedAt}').defaultTo(knex.raw('CURRENT_TIMESTAMP'))`
+    )
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
   await fs.writeFile(file, `export function up(knex) {
