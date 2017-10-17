@@ -2,7 +2,6 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import mount from 'koa-mount'
 import RestGenerator from './RestGenerator'
-import { deepFreeze, defineReadOnly } from '../utils'
 
 export default class RestApi extends Koa {
   constructor(prefix) {
@@ -44,11 +43,9 @@ export default class RestApi extends Koa {
         : type
     const before = `before:${verb}:${namespace}`
     const after = `after:${verb}:${namespace}`
-    // Create and freeze rest object so we can pass the same one but no
-    // middleware can alter it and affect future requests.
-    const rest = deepFreeze({ ...settings, namespace })
+    const state = { ...settings, namespace }
     this.router[verb](route, async ctx => {
-      defineReadOnly(ctx, 'rest', rest)
+      Object.assign(ctx.state, state)
       await modelClass.emit(before, ctx)
       ctx.body = await handler(ctx)
       await modelClass.emit(after, ctx)

@@ -68,8 +68,7 @@ export default class RestGenerator {
         }
         const { verb, path, access } = method
         const settings = {
-          access: access != null ? access : true,
-          verb
+          access: access != null ? access : true
         }
         const route = this.getRoutePath(type, modelClass, path)
         const handler = methodHandlers[type]
@@ -139,10 +138,7 @@ function getSettings(verb, handlers, settings) {
     // TODO: Improve check by looking for any route settings properties in
     // Object.keys(obj), and only wrap with `access: obj` if obj doesn't contain
     // any of these keys.
-    obj = {
-      access: obj,
-      verb
-    }
+    obj = { access: obj }
   }
   return obj
 }
@@ -271,7 +267,6 @@ const restHandlers = {
 
     // post collection
     post(modelClass, ctx) {
-      // TODO: Do graph methods need wrapping in transactions?
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
           .insertGraph(ctx.request.body)
@@ -292,7 +287,7 @@ const restHandlers = {
     patch(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          // TODO: patchGraphAndFetch()!
+          // TODO: patchGraphAndFetch()
           // https://github.com/Vincit/objection.js/issues/557
           .upsertGraph(ctx.request.body)
       })
@@ -332,7 +327,7 @@ const restHandlers = {
     patch(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        // TODO: patchGraphAndFetch()!
+        // TODO: patchGraphAndFetch()
         // https://github.com/Vincit/objection.js/issues/557
         .patchAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))

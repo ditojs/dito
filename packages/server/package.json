@@ -3,23 +3,22 @@
   "version": "0.1.0",
   "description": "Dito is a minimal and modern object oriented REST API server framework, based on Koa2 and Objection.js",
   "main": "lib/index.js",
+  "module": "src/index.js",
+  "jsnext:main": "src/index.js",
   "repository": "https://github.com/lineto/dito-framework",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
-  "jsnext:main": "src/index.js",
-  "module": "src/index.js",
   "files": [
     "src/",
     "lib/"
   ],
   "engines": {
-    "node": ">= 8.0.0",
-    "npm": ">= 5.0.0"
+    "node": ">= 8.0.0"
   },
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
     "build": "babel src -d lib --copy-files --source-maps",
-    "prepare": "npm run build",
+    "prepare": "yarn run build",
     "posttest": "yarn lint && nsp check",
     "lint": "NODE_ENV=production eslint src",
     "lint:fix": "eslint --fix src",

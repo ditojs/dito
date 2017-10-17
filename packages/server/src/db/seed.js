@@ -10,13 +10,13 @@ export async function seed(app) {
     if (/^\.(js|json)$/.test(desc.ext)) {
       const object = await import(path.resolve(seedDir, file))
       const seed = object.default || object
-      const model = app.models[desc.name]
-      if (model) {
-        await model.query().truncate()
+      const modelClass = app.models[desc.name]
+      if (modelClass) {
+        await modelClass.query().truncate()
         if (isFunction(seed)) {
-          await seed(model, app.models)
+          await seed(modelClass, app.models)
         } else {
-          await model.query().insertGraph(seed)
+          await modelClass.query().insertGraph(seed)
         }
       }
     }

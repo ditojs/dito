@@ -29,7 +29,7 @@ export default class App extends Koa {
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
     modelClass.onAny((event, ctx) => {
-      console.log(event, ctx.rest)
+      console.log(event, 'state:', ctx.state)
     })
   }
 

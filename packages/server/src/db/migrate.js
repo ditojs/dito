@@ -8,7 +8,7 @@ export function migrate(config) {
         resolve(chalk.cyan('Already up to date'))
       }
       resolve(
-        chalk.green(`Batch ${batchNo} run: ${log.length} migrations \n`) +
+        chalk.green(`Batch ${batchNo} run: ${log.length} migrations\n`) +
         chalk.cyan(log.join('\n'))
       )
     }).catch(reject)
