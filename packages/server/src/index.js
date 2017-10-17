@@ -1,11 +1,4 @@
-import serve from 'koa-static'
-import RestApi from './core/RestApi'
-import middleware from './middleware'
-import app from './app'
-
-const api = new RestApi('/api')
-app.use(middleware())
-app.use(api.build(app.models))
-app.use(serve('static'))
-
-app.start()
+export { default as App } from './App'
+export * from './model'
+export * from './middleware'
+export * from './api'

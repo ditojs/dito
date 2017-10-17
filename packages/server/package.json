@@ -1,43 +1,41 @@
 {
-  "name": "lineto-koa",
-  "version": "1.0.0",
-  "description": "API backend for Lineto.com, based on Koa2 and Objection.js",
-  "main": "index.js",
-  "repository": "https://github.com/lineto/lineto-koa",
+  "name": "dito-framework",
+  "version": "0.1.0",
+  "description": "Dito is a minimal and modern object oriented REST API server framework, based on Koa2 and Objection.js",
+  "main": "lib/index.js",
+  "repository": "https://github.com/lineto/dito-framework",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
+  "jsnext:main": "src/index.js",
+  "module": "src/index.js",
+  "files": [
+    "src/",
+    "lib/"
+  ],
   "engines": {
     "node": ">= 8.0.0",
     "npm": ">= 5.0.0"
   },
-  "module": "src/index.js",
-  "jsnext:main": "src/index.js",
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
-    "db:create_migration": "babel-node src/scripts/migration",
-    "db:migrate": "yarn knex migrate:latest",
-    "db:rollback": "yarn knex migrate:rollback",
-    "db:seed": "babel-node src/scripts/seed",
-    "start": "babel-node src",
-    "dev": "nodemon --watch src --exec 'yarn start'",
-    "debug": "DEBUG=* yarn start",
-    "inspect": "DEBUG=* babel-node --inspect --debug-brk src",
-    "build": "babel src -d dist --copy-files --source-maps",
-    "serve": "node dist",
+    "build": "babel src -d lib --copy-files --source-maps",
+    "prepare": "npm run build",
     "posttest": "yarn lint && nsp check",
     "lint": "NODE_ENV=production eslint src",
     "lint:fix": "eslint --fix src",
     "precommit": "yarn lint"
   },
+  "bin": {
+    "dito": "./bin/dito.js"
+  },
   "dependencies": {
     "@koa/cors": "^2.2.1",
+    "ajv": "^5.2.2",
     "ajv-merge-patch": "^3.0.0",
     "bluebird": "^3.5.1",
-    "colors": "^1.1.2",
+    "chalk": "^2.1.0",
     "eventemitter2": "^4.1.2",
-    "faker": "^4.1.0",
     "fs-extra": "^4.0.2",
-    "knex": "^0.13.0",
     "koa": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
     "koa-compose": "^4.0.0",
@@ -48,9 +46,10 @@
     "koa-static": "^4.0.1",
     "objection": "https://github.com/lehni/objection.js/tarball/8536ca138a269aabe215901c7157bc498cfbd213",
     "objection-find": "^0.5.1",
-    "pluralize": "^7.0.0",
-    "sqlite3": "^3.1.13",
-    "winston": "^2.4.0"
+    "pluralize": "^7.0.0"
+  },
+  "peerDependencies": {
+    "knex": "^0.13.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -67,6 +66,7 @@
     "eslint-plugin-node": "^5.2.0",
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
-    "nodemon": "^1.12.1"
+    "knex": "^0.13.0",
+    "sqlite3": "^3.1.13"
   }
 }

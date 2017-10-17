@@ -1,9 +1,8 @@
 import path from 'path'
 import fs from 'fs-extra'
 import { isFunction } from '../utils'
-import app from '../app'
 
-async function seed() {
+export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
   for (const file of files) {
@@ -23,14 +22,3 @@ async function seed() {
     }
   }
 }
-
-async function seedAndExit() {
-  try {
-    await seed()
-  } catch (err) {
-    console.error(err)
-  }
-  process.exit()
-}
-
-seedAndExit()

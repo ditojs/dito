@@ -4,10 +4,6 @@ export function isObject(val) {
   return val && typeof val === 'object' && isArray(val) === false
 }
 
-export function isPlainObject(val) {
-  return val && val.constructor === Object
-}
-
 export function isFunction(val) {
   return typeof val === 'function'
 }
@@ -30,20 +26,6 @@ export function isPromise(obj) {
 
 export function asArray(obj) {
   return isArray(obj) ? obj : [obj]
-}
-
-export function copyProperty(dest, src, name) {
-  return src ? Object.defineProperty(dest, name,
-    Object.getOwnPropertyDescriptor(src, name)) : dest
-}
-
-export function copyProperties(dest, src) {
-  return src ? Object.defineProperties(dest,
-    Object.getOwnPropertyDescriptors(src)) : dest
-}
-
-export function clone(obj) {
-  return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
 }
 
 export function deepFreeze(obj) {

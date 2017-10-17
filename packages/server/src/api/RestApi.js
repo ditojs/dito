@@ -15,8 +15,8 @@ export default class RestApi extends Koa {
     this.router = new Router()
   }
 
-  build(models) {
-    for (const modelClass of Object.values(models)) {
+  build(app) {
+    for (const modelClass of Object.values(app.models)) {
       this.generator.addModelRoutes(modelClass)
     }
     this.use(this.router.routes())

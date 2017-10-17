@@ -1,3 +1,4 @@
-yarn knex migrate:rollback
-yarn knex migrate:latest
-yarn knex migrate:make ModelName
+yarn db:migrate
+yarn db:rollback
+yarn db:create_migration ModelName
+yarn db:seed

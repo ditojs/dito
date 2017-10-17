@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
 import { isObject } from '../utils'
-import app from '../app'
 
 const typeToKnex = {
   number: 'double',
@@ -11,7 +10,7 @@ const typeToKnex = {
 
 const migrationDir = path.join(process.cwd(), 'migrations')
 
-async function createMigration(modelName) {
+export async function createMigration(app, modelName) {
   function getModel(modelName) {
     const modelClass = app.models[modelName]
     if (!modelClass) {
@@ -102,5 +101,3 @@ function yyyymmddhhmmss() {
     padDate(d.getMinutes()) +
     padDate(d.getSeconds())
 }
-
-createMigration(process.argv[2])

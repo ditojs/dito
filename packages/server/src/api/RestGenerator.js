@@ -1,9 +1,9 @@
 import objection from 'objection'
-import colors from 'colors/safe'
+import chalk from 'chalk'
 import pluralize from 'pluralize'
 import { isObject, kebabCase } from '../utils'
-import { convertSchema } from '../core/schema'
-import NotFoundError from './NotFoundError'
+import { convertSchema } from '../model/schema'
+import NotFoundError from '../model/NotFoundError'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
@@ -15,7 +15,7 @@ export default class RestGenerator {
   }
 
   addModelRoutes(modelClass) {
-    this.log(`${colors.green(modelClass.name)}${colors.white(':')}`)
+    this.log(`${chalk.green(modelClass.name)}${chalk.white(':')}`)
     const { collection, instance, relations } = modelClass.routes || {}
     this.addRoutes(modelClass, null, 'collection', collection, 1)
     // Install static methods before ids, as they wouldn't match otherwise
@@ -25,7 +25,7 @@ export default class RestGenerator {
     if (relations) {
       for (const relation of Object.values(modelClass.getRelations())) {
         const { name } = relation
-        this.log(`${colors.blue(name)}${colors.white(':')}`, 1)
+        this.log(`${chalk.blue(name)}${chalk.white(':')}`, 1)
         const settings = relations[name]
         this.addRoutes(modelClass, relation, 'relation', settings, 2)
         if (!relation.isOneToOne()) {
@@ -52,7 +52,7 @@ export default class RestGenerator {
       this.adapter.addRoute(
         { modelClass, relation, type, verb, route, settings },
         ctx => handler(target, ctx))
-      this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
+      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
         indent)
     }
   }
@@ -80,7 +80,7 @@ export default class RestGenerator {
         this.adapter.addRoute(
           { modelClass, method, type, verb, route, settings },
           ctx => handler(modelClass, method, validate, ctx))
-        this.log(`${colors.magenta(verb.toUpperCase())} ${colors.white(route)}`,
+        this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
           indent)
       }
     }
