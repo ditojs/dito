@@ -1,7 +1,7 @@
 import objection from 'objection'
 import findQuery from 'objection-find'
 import util from 'util'
-import { snakeCase, camelCase } from '../utils'
+import { snakeCase, camelCase } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
 import ValidationError from './ValidationError'
 

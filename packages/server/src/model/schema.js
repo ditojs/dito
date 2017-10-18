@@ -1,4 +1,4 @@
-import { isObject, isArray, isString, asArray } from '../utils'
+import { isObject, isArray, isString, asArray } from '@/utils'
 import {
   Relation,
   BelongsToOneRelation,

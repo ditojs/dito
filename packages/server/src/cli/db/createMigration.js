@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isObject } from '../utils'
+import { isObject } from '@/utils'
 
 const typeToKnex = {
   number: 'double',

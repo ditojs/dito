@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isFunction } from '../utils'
+import { isFunction } from '@/utils'
 
 export default async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')

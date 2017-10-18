@@ -1,4 +1,4 @@
-import { isArray } from '../utils'
+import { isArray } from '@/utils'
 
 export default class ValidationError extends Error {
   constructor(errors, message, statusCode = 400) {

@@ -1,11 +1,18 @@
 {
   "plugins": [
+    "dynamic-import-node",
+    ["module-resolver", {
+      "cwd": "babelrc",
+      "alias": {
+        "~": ".",
+        "@": "./src"
+      }
+    }],
     "transform-class-properties",
     "transform-es2015-modules-commonjs",
     "transform-promise-to-bluebird",
     ["transform-object-rest-spread", {
       "useBuiltIns": true
-    }],
-    "dynamic-import-node"
+    }]
   ]
 }

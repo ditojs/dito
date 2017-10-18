@@ -1,9 +1,9 @@
 import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
-import { isObject, kebabCase } from '../utils'
-import { convertSchema } from '../model/schema'
-import NotFoundError from '../model/NotFoundError'
+import { isObject, kebabCase } from '@/utils'
+import { convertSchema } from '@/model/schema'
+import NotFoundError from '@/model/NotFoundError'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
