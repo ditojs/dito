@@ -10,7 +10,7 @@ const typeToKnex = {
 
 const migrationDir = path.join(process.cwd(), 'migrations')
 
-export async function createMigration(app, modelName) {
+export default async function createMigration(app, modelName) {
   function getModel(modelName) {
     const modelClass = app.models[modelName]
     if (!modelClass) {

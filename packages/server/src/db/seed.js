@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import { isFunction } from '../utils'
 
-export async function seed(app) {
+export default async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
   for (const file of files) {
