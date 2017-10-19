@@ -1,27 +1,13 @@
 import objection from 'objection'
-import findQuery from 'objection-find'
 import util from 'util'
-import { snakeCase, camelCase } from '@/utils'
+import { underscore, camelize } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
 import ValidationError from './ValidationError'
+import QueryBuilder from './QueryBuilder'
 
 export default class Model extends objection.Model {
-  static find(filter = {}) {
-    const builder = this.query()
-    // TODO: eager, limit, offset, omit
-    const { where/*, eager, limit, offset, omit */ } = filter
-    if (where) {
-      let first = true
-      for (const [key, value] of Object.entries(where)) {
-        if (first) {
-          builder.where(key, value)
-          first = false
-        } else {
-          builder.andWhere(key, value)
-        }
-      }
-    }
-    return builder
+  static find(params = {}, builder = this.query()) {
+    return builder.params(params)
   }
 
   static findOne(filter) {
@@ -58,7 +44,7 @@ export default class Model extends objection.Model {
       }
     }
     if (this.constructor.app.normalizeDbNames) {
-      json = normalizeProperties(json, snakeCase)
+      json = normalizeProperties(json, underscore)
     }
     return super.$formatDatabaseJson(json)
   }
@@ -66,7 +52,7 @@ export default class Model extends objection.Model {
   $parseDatabaseJson(json) {
     json = super.$parseDatabaseJson(json)
     if (this.constructor.app.normalizeDbNames) {
-      json = normalizeProperties(json, camelCase)
+      json = normalizeProperties(json, camelize)
     }
     for (const key of this.constructor.getDateProperties()) {
       const date = json[key]
@@ -103,17 +89,9 @@ export default class Model extends objection.Model {
     return _dateProperties
   }
 
-  static getFindQuery() {
-    let { _findQuery } = this
-    if (!_findQuery) {
-      _findQuery = this._findQuery = findQuery(this)
-    }
-    return _findQuery
-  }
-
   static get tableName() {
     // Convention: Use the class name as the tableName, plus normalization:
-    return this.app.normalizeDbNames ? snakeCase(this.name) : this.name
+    return this.app.normalizeDbNames ? underscore(this.name) : this.name
   }
 
   static get jsonSchema() {
@@ -212,6 +190,7 @@ export default class Model extends objection.Model {
   }
 
   static ValidationError = ValidationError
+  static QueryBuilder = QueryBuilder
 }
 
 function ensureProperty(properties, property, type = 'integer') {

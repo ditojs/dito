@@ -1,10 +1,12 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isFunction } from '@/utils'
+import chalk from 'chalk'
+import { isFunction, isArray } from '@/utils'
 
 export default async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
+  let total = 0
   for (const file of files) {
     const desc = path.parse(file)
     if (/^\.(js|json)$/.test(desc.ext)) {
@@ -16,9 +18,13 @@ export default async function seed(app) {
         if (isFunction(seed)) {
           await seed(modelClass, app.models)
         } else {
-          await modelClass.query().insertGraph(seed)
+          const res = await modelClass.query().insertGraph(seed)
+          if (isArray(res)) {
+            total += res.length
+          }
         }
       }
     }
   }
+  return chalk.green(`Seed: ${total} seed records created`)
 }

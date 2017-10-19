@@ -1,5 +1,5 @@
 import path from 'path'
-import { isFunction, camelCase } from '@/utils'
+import { isFunction, camelize } from '@/utils'
 import db from './db'
 
 const commands = { db }
@@ -7,7 +7,7 @@ const commands = { db }
 function getCommand(commands, parts) {
   const part = parts.shift()
   return commands && part
-    ? getCommand(commands[camelCase(part)], parts)
+    ? getCommand(commands[camelize(part)], parts)
     : commands
 }
 
@@ -20,7 +20,10 @@ export default async function execute() {
       throw new Error(`Unknown command: ${command}`)
     }
     const arg = (await import(path.resolve(importPath))).default
-    console.log(await execute(arg, ...args))
+    const res = await execute(arg, ...args)
+    if (res) {
+      console.log(res)
+    }
   } catch (err) {
     console.error(err)
   }

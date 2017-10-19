@@ -1,9 +1,7 @@
-export default class NotFoundError extends Error {
+import ResponseError from '@/ResponseError'
+
+export default class NotFoundError extends ResponseError {
   constructor(message, statusCode = 404) {
-    super(JSON.stringify({
-      error: message
-    }, null, 2))
-    this.name = 'NotFoundError'
-    this.statusCode = statusCode
+    super(message, statusCode)
   }
 }

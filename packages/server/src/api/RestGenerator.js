@@ -1,7 +1,8 @@
 import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
-import { isObject, kebabCase } from '@/utils'
+// import findQuery from 'objection-find'
+import { isObject, hyphenate } from '@/utils'
 import { convertSchema } from '@/model/schema'
 import NotFoundError from '@/model/NotFoundError'
 
@@ -98,7 +99,7 @@ export default class RestGenerator {
 
 // TODO: Add normalization Options!
 function normalize(name, plural = false) {
-  return kebabCase(plural ? pluralize(name) : name)
+  return hyphenate(plural ? pluralize(name) : name)
 }
 
 const routePath = {
@@ -255,7 +256,8 @@ const restHandlers = {
   collection: {
     // get collection
     get(modelClass, ctx) {
-      return modelClass.getFindQuery().build(ctx.query, modelClass.query())
+      // return findQuery(modelClass).build(ctx.query)
+      return modelClass.query().find(ctx.query)
     },
 
     // delete collection
@@ -298,10 +300,9 @@ const restHandlers = {
     // get collection
     get(modelClass, ctx) {
       const { id } = ctx.params
-      const builder = modelClass.query()
-      return builder
+      return modelClass.query()
         .findById(id)
-        .allowEager(modelClass.getFindQuery().allowEager())
+        // TODO: .allowEager(modelClass.getFindQueryBuilder().allowEager())
         .eager(ctx.query.eager)
         .then(model => checkModel(model, modelClass, id))
     },
@@ -339,13 +340,11 @@ const restHandlers = {
     get(relation, ctx) {
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      const builder = ownerModelClass.query()
-      return builder
+      return ownerModelClass.query()
         .findById(id)
         .then(model => {
           checkModel(model, ownerModelClass, id)
-          const query = relation.relatedModelClass.getFindQuery()
-            .build(ctx.query, model.$relatedQuery(relation.name))
+          const query = model.$relatedQuery(relation.name).find(ctx.query)
           return relation.isOneToOne() ? query.first() : query
         })
     },
@@ -358,8 +357,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        const builder = ownerModelClass.query()
-        return builder
+        return ownerModelClass.query()
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -374,8 +372,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        const builder = ownerModelClass.query()
-        return builder
+        return ownerModelClass.query()
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -389,8 +386,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        const builder = ownerModelClass.query()
-        return builder
+        return ownerModelClass.query()
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -407,8 +403,7 @@ const restHandlers = {
       const { ownerModelClass, relatedModelClass } = relation
       return objection.transaction(ownerModelClass, relatedModelClass,
         (ownerModelClass, relatedModelClass) => {
-          const builder = ownerModelClass.query()
-          return builder
+          return ownerModelClass.query()
             .findById(id)
             .then(model => {
               return checkModel(model, ownerModelClass, id)
@@ -416,11 +411,13 @@ const restHandlers = {
                 .relate(relatedId)
             })
             .then(related => {
-              console.log(related) // TODO: inspect and decide what to do next
+              // TODO: inspect and decide what to do next
+              console.log('related', related)
               return relatedModelClass
                 .findById(relatedId)
-                .allowEager(
-                  relation.relatedModelClass.getFindQuery().allowEager())
+                // TODO:
+                // .allowEager(relation.relatedModelClass.getFindQueryBuilder()
+                //   .allowEager())
                 .eager(ctx.query.eager)
             })
         }

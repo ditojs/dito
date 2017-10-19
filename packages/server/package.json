@@ -17,8 +17,8 @@
   },
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
-    "build": "babel src --out-dir lib --copy-files --source-maps",
-    "watch": "babel src --out-dir lib --watch --copy-files --source-maps",
+    "build": "babel src --out-dir lib --copy-files --source-maps inline",
+    "watch": "babel src --out-dir lib --watch --copy-files --source-maps inline",
     "prepare": "yarn run build",
     "posttest": "yarn lint && nsp check",
     "lint": "NODE_ENV=production eslint src",

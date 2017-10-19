@@ -1,6 +1,7 @@
+import ResponseError from '@/ResponseError'
 import { isArray } from '@/utils'
 
-export default class ValidationError extends Error {
+export default class ValidationError extends ResponseError {
   constructor(errors, message, statusCode = 400) {
     let index = 0
     if (isArray(errors)) {
@@ -14,13 +15,11 @@ export default class ValidationError extends Error {
       }
       errors = errorHash
     }
-    const error = {
+    super({
       error: message,
       details: errors
-    }
-    super(JSON.stringify(error, null, 2))
-    this.name = 'ValidationError'
+    }, statusCode)
+    // TODO: Name this `details` here too?
     this.errors = errors
-    this.statusCode = statusCode
   }
 }
