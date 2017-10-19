@@ -30,7 +30,7 @@ export default function knexLogger(knex) {
     const logQueries = () => {
       for (const query of queries) {
         console.log('  %s %s %s %s',
-          chalk.yellow.bold('knex:query'),
+          chalk.yellow.bold('knex:sql'),
           chalk.cyan(query.sql),
           chalk.gray('{' + query.bindings.join(', ') + '}'),
           chalk.magenta(query.duration + 'ms')

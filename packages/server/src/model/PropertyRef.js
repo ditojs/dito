@@ -25,18 +25,18 @@ export default class PropertyRef {
         this.relation = modelClass.getRelation(relationName)
       } catch (err) {
         throw new QueryError(
-          `PropertyRef: unknown relation "${relationName}"`)
+          `PropertyRef: Unknown relation "${relationName}"`)
       }
       this.propertyName = parts[1]
       this.modelClass = this.relation.relatedModelClass
     } else {
       throw new QueryError(
-        `PropertyRef: only one level of relations is supported`)
+        `PropertyRef: Only one level of relations is supported`)
     }
     this.columnName = this.modelClass.propertyNameToColumnName(
       this.propertyName)
     if (!this.columnName) {
-      throw new QueryError(`PropertyRef: unknown property "${this.key}"`)
+      throw new QueryError(`PropertyRef: Unknown property "${this.key}"`)
     }
   }
 
@@ -49,6 +49,7 @@ export default class PropertyRef {
     const { method, args } = filter(builder, this, value, this.modelClass)
     const whereMethod = boolOp ? `${boolOp}${capitalize(method)}` : method
     const { relation } = this
+    // TODO: Figure out all relations
     if (relation /* && !relation.isOneToOne() */) {
       const subQuery = relation.findQuery(relation.relatedModelClass.query(), {
         ownerIds: relation.ownerProp.refs(builder)

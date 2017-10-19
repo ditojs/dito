@@ -6,12 +6,12 @@ import { ValidationError } from '@/errors'
 import QueryBuilder from './QueryBuilder'
 
 export default class Model extends objection.Model {
-  static find(params = {}, builder = this.query()) {
-    return builder.params(params)
+  static find(params) {
+    return this.query().find(params)
   }
 
-  static findOne(filter) {
-    return this.find(filter).first()
+  static findOne(params) {
+    return this.find(params).first()
   }
 
   static findById(id) {

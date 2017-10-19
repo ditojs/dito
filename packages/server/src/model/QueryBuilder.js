@@ -26,7 +26,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
   }
 
-  find(params) {
+  find(params = {}) {
     // TODO: omit
     const relationsToJoin = {}
     for (const [key, value] of Object.entries(params)) {
@@ -35,18 +35,12 @@ export default class QueryBuilder extends objection.QueryBuilder {
         handler(this, key, value)
       } else {
         const parts = key.split(/\s*:\s*/)
-        let filter
-        if (parts.length === 1) {
-          filter = filters.eq
-        } else if (parts.length === 2) {
-          filter = filters[parts[1]]
-        } else {
-          throw new QueryError(
-            `QueryBuilder: invalid query parameter "${key}=${value}"`)
-        }
+        const filter = parts.length === 1 ? filters.eq
+          : parts.length === 2 ? filters[parts[1]]
+          : null
         if (!filter) {
           throw new QueryError(
-            `QueryBuilder: invalid filter in "${key}=${value}"`)
+            `QueryBuilder: Invalid filter in "${key}=${value}"`)
         }
         const propertyRefs = this.getPropertyRefs(parts[0])
         for (const ref of propertyRefs) {
@@ -150,41 +144,78 @@ const handlers = {
 }
 
 const filters = {
-  in(builder, propertyRef, value) {
-    return {
-      method: 'whereIn',
-      args: [propertyRef.fullColumnName(builder), value.split(',')]
-    }
+  in(builder, ref, value) {
+    return where(builder, ref, null, value.split(','), 'whereIn')
   },
 
-  null(builder, propertyRef) {
-    return where(builder, propertyRef, 'is', null)
+  notIn(builder, ref, value) {
+    return where(builder, ref, null, value.split(','), 'whereNotIn')
   },
 
-  notNull(builder, propertyRef) {
-    return where(builder, propertyRef, 'is not', null)
+  between(builder, ref, value) {
+    return where(builder, ref, null, value.split(','), 'whereBetween')
+  },
+
+  notBetween(builder, ref, value) {
+    return where(builder, ref, null, value.split(','), 'whereNotBetween')
+  },
+
+  null(builder, ref) {
+    return where(builder, ref, null, null, 'whereNull')
+  },
+
+  notNull(builder, ref) {
+    return where(builder, ref, null, null, 'whereNotNull')
+  },
+
+  empty(builder, ref) {
+    return where(builder, ref, '=', '')
+  },
+
+  notEmpty(builder, ref) {
+    // TODO:
+    return where(builder, ref, '!=', '')
   }
 }
 
+// TODO: ?
+// [Op.regexp]: '^[h|a|t]'    // REGEXP/~ '^[h|a|t]' (MySQL/PG only)
+// [Op.notRegexp]: '^[h|a|t]' // NOT REGEXP/!~ '^[h|a|t]' (MySQL/PG only)
+// [Op.iRegexp]: '^[h|a|t]'    // ~* '^[h|a|t]' (PG only)
+// [Op.notIRegexp]: '^[h|a|t]' // !~* '^[h|a|t]' (PG only)
+// [Op.like]: { [Op.any]: ['cat', 'hat']}
+// LIKE ANY ARRAY['cat', 'hat'] - also works for iLike and notLike
+// [Op.overlap]: [1, 2]       // && [1, 2] (PG array overlap operator)
+// [Op.contains]: [1, 2]      // @> [1, 2] (PG array contains operator)
+// [Op.contained]: [1, 2]     // <@ [1, 2] (PG array contained by operator)
+// [Op.any]: [2,3]            // ANY ARRAY[2, 3]::INTEGER (PG only)
+
 const operators = {
   eq: '=',
+  ne: '!=',
+  not: 'is not',
   lt: '<',
   lte: '<=',
   gt: '>',
   gte: '>=',
+  between: 'between',
+  notBetween: 'not between',
   like: 'like',
-  ilike: 'ilike'
+  noteLike: 'not like',
+  iLike: 'ilike',
+  notILike: 'not ilike'
 }
 
 for (const [key, operator] of Object.entries(operators)) {
-  filters[key] = (builder, propertyRef, value) => (
-    where(builder, propertyRef, operator, value)
+  filters[key] = (builder, ref, value) => (
+    where(builder, ref, operator, value)
   )
 }
 
-function where(builder, propertyRef, operator, value) {
+function where(builder, ref, operator, value, method = 'where') {
+  const columnName = ref.fullColumnName(builder)
   return {
-    method: 'where',
-    args: [propertyRef.fullColumnName(builder), operator, value]
+    method,
+    args: operator ? [columnName, operator, value] : [columnName, value]
   }
 }
