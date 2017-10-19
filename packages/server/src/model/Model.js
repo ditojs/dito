@@ -2,7 +2,7 @@ import objection from 'objection'
 import util from 'util'
 import { underscore, camelize } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
-import ValidationError from './ValidationError'
+import { ValidationError } from '@/errors'
 import QueryBuilder from './QueryBuilder'
 
 export default class Model extends objection.Model {

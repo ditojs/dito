@@ -1,4 +1,4 @@
-import QueryError from './QueryError'
+import { QueryError } from '@/errors'
 import { capitalize } from '@/utils'
 
 export default class PropertyRef {

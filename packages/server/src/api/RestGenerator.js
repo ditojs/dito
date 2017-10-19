@@ -4,7 +4,7 @@ import pluralize from 'pluralize'
 // import findQuery from 'objection-find'
 import { isObject, hyphenate } from '@/utils'
 import { convertSchema } from '@/model/schema'
-import NotFoundError from '@/model/NotFoundError'
+import { NotFoundError } from '@/errors'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {

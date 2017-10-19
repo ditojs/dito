@@ -1,6 +1,6 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
-import QueryError from './QueryError'
+import { QueryError } from '@/errors'
 import { isString, capitalize } from '@/utils'
 
 // This code is based on objection-find, and simplified.

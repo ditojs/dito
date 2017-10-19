@@ -1,4 +1,4 @@
-import ResponseError from '@/ResponseError'
+import ResponseError from './ResponseError'
 
 export default class QueryError extends ResponseError {
   constructor(message, statusCode = 400) {

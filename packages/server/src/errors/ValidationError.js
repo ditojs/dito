@@ -1,4 +1,4 @@
-import ResponseError from '@/ResponseError'
+import ResponseError from './ResponseError'
 import { isArray } from '@/utils'
 
 export default class ValidationError extends ResponseError {
