@@ -5,8 +5,9 @@ export default function errorHandler() {
     } catch (err) {
       // TODO: logging?
       console.error(err)
-      ctx.status = err.status || 500
+      ctx.status = err.statusCode || err.status || 500
       ctx.body = err.message || 'An error has occurred.'
+      // TODO: Needed?
       ctx.app.emit('error', err, ctx)
     }
   }

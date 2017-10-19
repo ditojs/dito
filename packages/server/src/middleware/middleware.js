@@ -4,10 +4,12 @@ import cors from '@koa/cors'
 import helmet from 'koa-helmet'
 import logger from 'koa-logger'
 import errorHandler from './errorHandler'
+import knexLogger from './knexLogger'
 
 export default function middleware(app) {
   return compose([
     app.config.environment === 'development' && logger(),
+    app.config.environment === 'development' && knexLogger(app.knex),
     helmet(),
     cors(),
     bodyParser(),
