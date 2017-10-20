@@ -1,6 +1,5 @@
 import { AjvValidator } from 'objection'
 import Ajv from 'ajv'
-import setupMergePatch from 'ajv-merge-patch'
 import * as coreValidators from './validators'
 
 class Validator extends AjvValidator {
@@ -28,7 +27,6 @@ class Validator extends AjvValidator {
     }))
 
     function onCreateAjv(ajv) {
-      setupMergePatch(ajv)
       for (const { keyword, format, ...schema } of Object.values(validators)) {
         if (keyword) {
           ajv.addKeyword(keyword, schema)
@@ -53,14 +51,6 @@ class Validator extends AjvValidator {
 
   compileWithCoercing(schema) {
     return this.ajvCoerceTypes.compile(schema)
-  }
-
-  getKeyword(keyword) {
-    return this.ajv.getKeyword(keyword)
-  }
-
-  isKeyword(keyword) {
-    return !!this.getKeyword(keyword)
   }
 }
 

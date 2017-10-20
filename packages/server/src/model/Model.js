@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { underscore, camelize } from '@/utils'
+import { isObject, underscore, camelize } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
 import { ValidationError } from '@/errors'
 import QueryBuilder from './QueryBuilder'
@@ -64,18 +64,6 @@ export default class Model extends objection.Model {
     return json
   }
 
-  $beforeInsert() {
-    if (this.constructor.timestamps) {
-      this.createdAt = this.updatedAt = new Date()
-    }
-  }
-
-  $beforeUpdate() {
-    if (this.constructor.timestamps) {
-      this.updatedAt = new Date()
-    }
-  }
-
   static getDateProperties() {
     let { _dateProperties } = this
     if (!_dateProperties) {
@@ -95,30 +83,79 @@ export default class Model extends objection.Model {
     return this.app.normalizeDbNames ? underscore(this.name) : this.name
   }
 
-  static get jsonSchema() {
-    let { _jsonSchema, properties } = this
-    if (!_jsonSchema && properties) {
-      // Temporarily set _jsonSchema to an empty object so convertSchema() can
-      // call getIdProperty() without causing an endless recursion:
-      this._jsonSchema = {}
-      _jsonSchema = this._jsonSchema = this.convertSchema(properties)
-      console.log(util.inspect(_jsonSchema, { depth: 3 }))
+  static getCached(name, calculate) {
+    const _cached = this._cached || (this._cached = {})
+    let cached = _cached[name]
+    if (cached === undefined) {
+      _cached[name] = cached = calculate()
     }
-    return _jsonSchema
+    return cached
+  }
+
+  static setCached(name, value) {
+    const _cached = this._cached || (this._cached = {})
+    _cached[name] = value
+  }
+
+  static getMerged(name) {
+    // Merges all properties objects up the inheritance chain to one object.
+    return this.getCached(name, () => {
+      let merged = null
+      let modelClass = this
+      while (modelClass !== objection.Model) {
+        const object = modelClass[name]
+        if (isObject(object)) {
+          merged = Object.assign(merged || {}, object)
+        }
+        modelClass = Object.getPrototypeOf(modelClass)
+      }
+      return merged
+    })
+  }
+
+  static getMergedProperties() {
+    return this.getMerged('properties')
+  }
+
+  static getMergedRelations() {
+    return this.getMerged('relations')
+  }
+
+  static getMergedMethods() {
+    return this.getMerged('methods')
+  }
+
+  static getMergedRoutes() {
+    return this.getMerged('routes')
+  }
+
+  static get jsonSchema() {
+    return this.getCached('jsonSchema', () => {
+      const properties = this.getMergedProperties()
+      let schema = null
+      if (properties) {
+        // Temporarily set the jsonSchema cache to an empty object so that
+        // convertSchema() can call getIdProperty() without an endless recursion
+        this.setCached('jsonSchema', {})
+        schema = this.convertSchema(properties)
+      }
+      console.log(util.inspect(schema, { depth: 10 }))
+      return schema
+    })
+  }
+
+  static get relationMappings() {
+    return this.getCached('relationMappings', () => {
+      const relations = this.getMergedRelations()
+      return relations
+        ? convertRelations(this, relations, this.app.models)
+        : null
+    })
   }
 
   static convertSchema(properties) {
-    const base = Object.getPrototypeOf(this)
-    const inherit = base !== Model
-    if (this.timestamps) {
-      properties = {
-        ...properties,
-        createdAt: 'timestamp',
-        updatedAt: 'timestamp'
-      }
-    }
-    const jsonObject = convertSchema(properties, this.getValidator())
-    const jsonProperties = jsonObject.properties
+    const jsonSchema = convertSchema(properties)
+    const jsonProperties = jsonSchema.properties
     ensureProperty(jsonProperties, this.getIdProperty())
     for (const relation of Object.values(this.getRelations())) {
       for (const property of relation.ownerProp.props) {
@@ -128,41 +165,14 @@ export default class Model extends objection.Model {
     return {
       id: this.name,
       $schema: 'http://json-schema.org/draft-06/schema#',
-      ...(inherit
-        ? {
-          $merge: {
-            source: { $ref: base.name },
-            with: jsonObject
-          }
-        }
-        : {
-          ...jsonObject,
-          additionalProperties: false
-        }
-      )
+      ...jsonSchema,
+      additionalProperties: false
     }
-  }
-
-  static get relationMappings() {
-    let { _relationMappings, relations } = this
-    if (!_relationMappings && relations) {
-      _relationMappings = this._relationMappings = convertRelations(this,
-        relations, this.app.models)
-    }
-    return _relationMappings
-  }
-
-  static getJsonSchemaObject() {
-    // Easy access to main JSON schema object, that sometimes is nested when
-    // inheritance is used
-    const schema = this.getJsonSchema()
-    const $merge = schema && schema.$merge
-    return $merge ? $merge.with : (schema || null)
   }
 
   static getJsonSchemaProperties() {
-    const object = this.getJsonSchemaObject()
-    return object && object.properties || null
+    const schema = this.getJsonSchema()
+    return schema && schema.properties || null
   }
 
   static checkSchema() {

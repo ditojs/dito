@@ -31,7 +31,6 @@
   "dependencies": {
     "@koa/cors": "^2.2.1",
     "ajv": "^5.2.2",
-    "ajv-merge-patch": "^3.0.0",
     "bluebird": "^3.5.1",
     "chalk": "^2.1.0",
     "eventemitter2": "^4.1.2",

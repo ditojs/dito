@@ -8,8 +8,7 @@ import {
   ManyToManyRelation
 } from 'objection'
 
-export function convertSchema(schema, validator,
-  { isRoot, isItems } = { isRoot: true }) {
+export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
   // Shallow clone so we can modify and return:
   schema = { ...schema }
   const { type } = schema
@@ -19,7 +18,7 @@ export function convertSchema(schema, validator,
       if (type === 'array') {
         const { items } = schema
         if (items) {
-          schema.items = convertSchema(items, validator, { isItems: true })
+          schema.items = convertSchema(items, { isItems: true })
         }
       }
     } else if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -44,7 +43,7 @@ export function convertSchema(schema, validator,
       if (property.required) {
         required.push(key)
       }
-      properties[key] = convertSchema(property, validator, {})
+      properties[key] = convertSchema(property, {})
     }
     schema = {
       type: 'object',
@@ -55,29 +54,19 @@ export function convertSchema(schema, validator,
   if (!isRoot) {
     // Our 'required' is not the same as JSON Schema's: Use the 'required'
     // format instead that only validates if required string is not empty.
-    const { required } = schema
-    if (required !== undefined) {
-      if (required) {
-        addFormat(schema, 'required')
+    const { required, default: _default, ...rest } = schema
+    if (required) {
+      schema = addFormat(rest, 'required')
+    } else if (!isItems) {
+      // If not required, add 'null' to the allowed types through `anyOf`.
+      schema = {
+        anyOf: [rest, { type: 'null' }]
       }
-      delete schema.required
+    } else {
+      schema = rest
     }
-    if (!required && !isItems) {
-      // If not required, add 'null' to the allowed types
-      const { type, $ref } = schema
-      if (type) {
-        schema.type = [...(isArray(type) ? type : [type]), 'null']
-      } else if ($ref) {
-        schema = {
-          anyOf: [schema, { type: 'null' }]
-        }
-      }
-    }
-  }
-  // Remove all keywords that aren't valid JSON keywords.
-  for (const key of Object.keys(schema)) {
-    if (!validator.isKeyword(key)) {
-      delete schema[key]
+    if (_default && !excludeDefaults[_default]) {
+      schema.default = _default
     }
   }
   return schema
@@ -91,6 +80,7 @@ function addFormat(schema, format) {
   } else {
     schema.format = format
   }
+  return schema
 }
 
 // JSON types, used to determine when to use `$ref` instead of `type`.
@@ -101,6 +91,10 @@ const jsonTypes = {
   boolean: true,
   object: true,
   array: true
+}
+
+const excludeDefaults = {
+  'now()': true
 }
 
 const relationLookup = {
