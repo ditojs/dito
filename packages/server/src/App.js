@@ -20,11 +20,10 @@ export default class App extends Koa {
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
-    this.checkSchemas()
+    this.prepareModels()
   }
 
   addModel(modelClass) {
-    EventEmitterMixin(modelClass)
     modelClass.app = this
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
@@ -33,9 +32,9 @@ export default class App extends Koa {
     })
   }
 
-  checkSchemas() {
+  prepareModels() {
     for (const modelClass of Object.values(this.models)) {
-      modelClass.checkSchema()
+      modelClass.prepareModel()
     }
   }
 

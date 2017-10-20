@@ -25,4 +25,5 @@ export default function (modelClass) {
     newListener: false,
     maxListeners: 0
   })
+  return modelClass
 }

@@ -41,6 +41,22 @@ class Validator extends AjvValidator {
     }
   }
 
+  precompileModel(modelClass) {
+    const jsonSchema = modelClass.getJsonSchema()
+    // We need to make sure that the model is visible in all different Ajv
+    // instances, the added ajvCoerceTypes included!
+    this.getValidator(modelClass, jsonSchema, true)
+    this.getValidator(modelClass, jsonSchema, false)
+    let required
+    try {
+      required = jsonSchema.required
+      jsonSchema.required = []
+      this.ajvCoerceTypes.compile(jsonSchema)
+    } finally {
+      jsonSchema.required = required
+    }
+  }
+
   compileWithDefaults(schema) {
     return this.ajv.compile(schema)
   }

@@ -49,6 +49,7 @@ module.exports = {
         array: false
       }
     }],
+    'quote-props': ['error', 'consistent-as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'always',
       named: 'never',

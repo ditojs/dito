@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isObject } from '@/utils'
+import { isArray, isObject } from '@/utils'
 
 const typeToKnex = {
   number: 'double',
@@ -51,7 +51,9 @@ export async function createMigration(app, modelName) {
       let { type, computed, default: _default, required } = getSchema(property)
       const knexType = typeToKnex[type] || type
       if (!computed) {
-        _default = _default && defaultValues[_default] || _default
+        _default = _default && defaultValues[_default] ||
+          isArray(_default) && `[${_default.join(', ')}]` ||
+          _default
         const statement = [`table.${knexType}('${column}')`]
         if (required) statement.push('notNullable()')
         if (_default) statement.push(`defaultTo(${_default})`)

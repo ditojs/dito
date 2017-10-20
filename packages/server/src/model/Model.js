@@ -4,6 +4,7 @@ import { isObject, underscore, camelize } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
 import { ValidationError } from '@/errors'
 import QueryBuilder from './QueryBuilder'
+import EventEmitterMixin from './EventEmitterMixin'
 
 export default class Model extends objection.Model {
   static find(params) {
@@ -129,6 +130,10 @@ export default class Model extends objection.Model {
     return this.getMerged('routes')
   }
 
+  static getMergedEvents() {
+    return this.getMerged('events')
+  }
+
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
       const properties = this.getMergedProperties()
@@ -175,7 +180,8 @@ export default class Model extends objection.Model {
     return schema && schema.properties || null
   }
 
-  static checkSchema() {
+  static prepareModel() {
+    // Make sure all relations are defined correctly, with back-references.
     for (const relation of Object.values(this.getRelations())) {
       const { relatedModelClass } = relation
       const relatedProperties = relatedModelClass.getJsonSchemaProperties()
@@ -187,6 +193,12 @@ export default class Model extends objection.Model {
           )
         }
       }
+    }
+    this.getValidator().precompileModel(this)
+    // Install all events listed in the static events object.
+    const events = this.getMergedEvents()
+    for (const [event, handler] of Object.entries(events || {})) {
+      this.on(event, handler)
     }
   }
 
@@ -219,3 +231,5 @@ function normalizeProperties(object, translate) {
   }
   return converted
 }
+
+EventEmitterMixin(Model)
