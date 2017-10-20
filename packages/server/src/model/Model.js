@@ -7,6 +7,7 @@ import QueryBuilder from './QueryBuilder'
 
 export default class Model extends objection.Model {
   static find(params) {
+    // NOTE: All the parsing magic happens through our extended QueryBuilder:
     return this.query().find(params)
   }
 

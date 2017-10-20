@@ -1,23 +1,11 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
 import { QueryError } from '@/errors'
-import { isString, capitalize } from '@/utils'
+import { isObject, isString, capitalize } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
 // integrate with Objection.js
-
-// TODO: support more JS-like params for `where` and `range`, e.g:
-// const test = {
-//   eager: '[pets, children.[pets, children]]',
-//   where: {
-//     text: {
-//       like: '%alias%'
-//     }
-//   },
-//   range: [10, 20],
-//   order: 'firstName ASC'
-// }
 
 export default class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
@@ -27,49 +15,18 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   find(params = {}) {
-    // TODO: omit
-    const relationsToJoin = {}
+    // TODO: Add support for omit
+    this._relationsToJoin = {}
     for (const [key, value] of Object.entries(params)) {
       const handler = handlers[key]
       if (handler) {
         handler(this, key, value)
       } else {
-        const parts = key.split(/\s*:\s*/)
-        const filter = parts.length === 1 ? filters.eq
-          : parts.length === 2 ? filters[parts[1]]
-          : null
-        if (!filter) {
-          throw new QueryError(
-            `QueryBuilder: Invalid filter in "${key}=${value}"`)
-        }
-        const propertyRefs = this.getPropertyRefs(parts[0])
-        for (const ref of propertyRefs) {
-          // Check that we only have allowed property references in the query
-          // parameters.
-          if (this._allow && !this._allow[ref.key]) {
-            throw new QueryError(
-              `QueryBuilder: Property reference "${ref.key}" not allowed`)
-          }
-          const { relation } = ref
-          if (relation && relation.isOneToOne()) {
-            relationsToJoin[relation.name] = relation
-          }
-        }
-        if (propertyRefs.length === 1) {
-          propertyRefs[0].applyFilter(this, this, filter, value)
-        } else {
-          // If there are multiple property refs, they are combined with an `OR`
-          // operator.
-          this.where(builder => {
-            for (const ref of propertyRefs) {
-              ref.applyFilter(this, builder, filter, value, 'or')
-            }
-          })
-        }
+        this.parseFilter(key, value)
       }
     }
     // TODO: Is this really needed? Looks like it works without it also...
-    for (const relation of Object.values(relationsToJoin)) {
+    for (const relation of Object.values(this._relationsToJoin)) {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
     return this
@@ -94,6 +51,41 @@ export default class QueryBuilder extends objection.QueryBuilder {
       (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDir)))
   }
 
+  parseFilter(key, value) {
+    const parts = key.split(/\s*:\s*/)
+    const filter = parts.length === 1 ? filters.eq
+      : parts.length === 2 ? filters[parts[1]]
+      : null
+    if (!filter) {
+      throw new QueryError(
+        `QueryBuilder: Invalid filter in "${key}=${value}"`)
+    }
+    const propertyRefs = this.getPropertyRefs(parts[0])
+    for (const ref of propertyRefs) {
+      // Check that we only have allowed property references in the query
+      // parameters.
+      if (this._allow && !this._allow[ref.key]) {
+        throw new QueryError(
+          `QueryBuilder: Property reference "${ref.key}" not allowed`)
+      }
+      const { relation } = ref
+      if (relation && relation.isOneToOne()) {
+        this._relationsToJoin[relation.name] = relation
+      }
+    }
+    if (propertyRefs.length === 1) {
+      propertyRefs[0].applyFilter(this, this, filter, value)
+    } else {
+      // If there are multiple property refs, they are combined with an `OR`
+      // operator.
+      this.where(builder => {
+        for (const ref of propertyRefs) {
+          ref.applyFilter(this, builder, filter, value, 'or')
+        }
+      })
+    }
+  }
+
   static registerHandler(key, handler) {
     handlers[key] = handler
   }
@@ -112,9 +104,9 @@ const handlers = {
 
   range(builder, key, value) {
     if (value) {
-      const [start, end] = value.split(/\s*,s*/)
+      const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
       if (isNaN(start) || isNaN(end) || end < start) {
-        throw new QueryError(`Invalid range [${start}, ${end}]`)
+        throw new QueryError(`QueryBuilder: Invalid range: [${start}, ${end}]`)
       }
       builder.range(start, end)
     }
@@ -140,6 +132,40 @@ const handlers = {
         }
       }
     }
+  },
+
+  where(builder, key, value) {
+    // Recursively translate object based filters to string based ones for
+    // standardized processing in PropertyRef.
+    // So this...
+    //   where: {
+    //     firstName: { like: 'Jo%' },
+    //     lastName: '%oe',
+    //     messages: {
+    //       text: { like: '% and %' },
+    //       unread: true
+    //     }
+    //   }
+    // ...becomes that:
+    //   { key: 'firstName:like', value: 'Jo%' }
+    //   { key: 'lastName', value: '%oe' }
+    //   { key: 'messages.text:like', value: '% and %' }
+    //   { key: 'messages.unread', value: true }
+    function processPropertyRefs(key, value, parts) {
+      if (isObject(value)) {
+        for (const [subKey, subValue] of Object.entries(value)) {
+          // NOTE: We need to clone `parts` for branching:
+          processPropertyRefs(subKey, subValue, parts ? [...parts, key] : [])
+        }
+      } else if (parts) {
+        const filter = key in filters && key
+        if (!filter) parts.push(key)
+        const ref = `${parts.join('.')}${filter ? `:${filter}` : ''}`
+        builder.parseFilter(ref, value)
+      }
+    }
+
+    processPropertyRefs(null, value)
   }
 }
 
@@ -173,8 +199,8 @@ const filters = {
   },
 
   notEmpty(builder, ref) {
-    // TODO:
-    return where(builder, ref, '!=', '')
+    // https://stackoverflow.com/a/42723975/1163708
+    return where(builder, ref, '>', '')
   }
 }
 
