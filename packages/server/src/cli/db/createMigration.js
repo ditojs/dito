@@ -14,7 +14,7 @@ const defaultValues = {
 
 const migrationDir = path.join(process.cwd(), 'migrations')
 
-export default async function createMigration(app, modelName) {
+export async function createMigration(app, modelName) {
   function getModel(modelName) {
     const modelClass = app.models[modelName]
     if (!modelClass) {

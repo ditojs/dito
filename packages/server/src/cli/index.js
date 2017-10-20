@@ -1,6 +1,6 @@
 import path from 'path'
 import { isFunction, camelize } from '@/utils'
-import db from './db'
+import * as db from './db'
 
 const commands = { db }
 

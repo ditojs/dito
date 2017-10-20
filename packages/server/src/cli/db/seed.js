@@ -3,7 +3,7 @@ import fs from 'fs-extra'
 import chalk from 'chalk'
 import { isFunction, isArray } from '@/utils'
 
-export default async function seed(app) {
+export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
   let total = 0

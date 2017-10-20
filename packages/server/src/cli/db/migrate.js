@@ -1,7 +1,7 @@
 import Knex from 'knex'
 import chalk from 'chalk'
 
-export default function migrate(config) {
+export function migrate(config) {
   return new Promise((resolve, reject) => {
     Knex(config.knex).migrate.latest().spread((batchNo, log) => {
       if (log.length === 0) {
