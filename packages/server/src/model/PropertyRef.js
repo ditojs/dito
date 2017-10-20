@@ -2,7 +2,7 @@ import { QueryError } from '@/errors'
 import { capitalize } from '@/utils'
 
 export default class PropertyRef {
-  constructor(str, modelClass, parseDir) {
+  constructor(str, modelClass, parseDir, checkAllow) {
     if (parseDir) {
       // Support direction for order statements
       const [key, dir] = str.trim().split(/\s+/)
@@ -13,6 +13,10 @@ export default class PropertyRef {
       this.dir = dir
     } else {
       this.key = str.trim()
+    }
+    if (checkAllow && !checkAllow[this.key]) {
+      throw new QueryError(
+        `PropertyRef: Property reference "${this.key}" not allowed`)
     }
     const parts = this.key.split('.')
     if (parts.length === 1) {

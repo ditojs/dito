@@ -35,7 +35,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   allow(refs) {
     if (refs) {
       this._allow = this._allow || {}
-      for (const { key } of this.getPropertyRefs(refs)) {
+      for (const { key } of this.getPropertyRefs(refs, { checkAllow: false })) {
         this._allow[key] = true
       }
     } else {
@@ -44,11 +44,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  getPropertyRefs(refs, parseDir = false) {
+  getPropertyRefs(refs, { parseDir = false, checkAllow = true } = {}) {
     refs = isString(refs) ? refs.split(/\s*\|\s*/) : refs
     const cache = this._propertyRefsCache
+    // Pass on _allow to make sure there are only allowed properties in the
+    // query parameters.
     return refs.map(ref => cache[ref] ||
-      (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDir)))
+      (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDir,
+        checkAllow && this._allow)))
   }
 
   parseFilter(key, value) {
@@ -62,12 +65,6 @@ export default class QueryBuilder extends objection.QueryBuilder {
     }
     const propertyRefs = this.getPropertyRefs(parts[0])
     for (const ref of propertyRefs) {
-      // Check that we only have allowed property references in the query
-      // parameters.
-      if (this._allow && !this._allow[ref.key]) {
-        throw new QueryError(
-          `QueryBuilder: Property reference "${ref.key}" not allowed`)
-      }
       const { relation } = ref
       if (relation && relation.isOneToOne()) {
         this._relationsToJoin[relation.name] = relation
@@ -114,7 +111,7 @@ const handlers = {
 
   order(builder, key, value) {
     if (value) {
-      for (const ref of builder.getPropertyRefs(value, true)) {
+      for (const ref of builder.getPropertyRefs(value, { parseDir: true })) {
         const { dir = 'asc', relation } = ref
         const columnName = ref.fullColumnName(builder)
         if (relation) {
