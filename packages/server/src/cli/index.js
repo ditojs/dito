@@ -19,11 +19,11 @@ export default async function execute() {
     if (!isFunction(execute)) {
       throw new Error(`Unknown command: ${command}`)
     }
-    const arg = (await import(path.resolve(importPath))).default
-    const res = await execute(arg, ...args)
-    if (res) {
-      console.log(res)
+    let arg = (await import(path.resolve(importPath))).default
+    if (isFunction(arg)) {
+      arg = await arg()
     }
+    await execute(arg, ...args)
   } catch (err) {
     console.error(err)
   }

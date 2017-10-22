@@ -1,7 +1,6 @@
 import Knex from 'knex'
 import Koa from 'koa'
 import Validator from '@/model/Validator'
-import EventEmitterMixin from '@/model/EventEmitterMixin'
 
 export default class App extends Koa {
   constructor(config, { validator, models }) {

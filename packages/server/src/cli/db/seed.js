@@ -26,5 +26,5 @@ export async function seed(app) {
       }
     }
   }
-  return chalk.green(`Seed: ${total} seed records created`)
+  console.log(chalk.green(`Seed: ${total} seed records created`))
 }

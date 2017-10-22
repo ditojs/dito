@@ -74,7 +74,6 @@ export function down(knex) {
     .dropTableIfExists('${tableName}')
 }
 `)
-  process.exit()
 }
 
 function getSchema(schema) {

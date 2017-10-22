@@ -1,16 +1,10 @@
 import Knex from 'knex'
 import chalk from 'chalk'
 
-export function rollback(config) {
-  return new Promise((resolve, reject) => {
-    Knex(config.knex).migrate.rollback().spread((batchNo, log) => {
-      if (log.length === 0) {
-        resolve(chalk.cyan('Already up to date'))
-      }
-      resolve(
-        chalk.green(`Batch ${batchNo} rolled back: ${log.length} migrations\n`) +
-        chalk.cyan(log.join('\n'))
-      )
-    }).catch(reject)
-  })
+export async function rollback(config) {
+  const [batch, log] = await Knex(config.knex).migrate.rollback()
+  console.log(log.length === 0
+    ? chalk.cyan('Already at the base migration')
+    : chalk.green(`Batch ${batch} rolled back: ${log.length} migrations\n`) +
+      chalk.cyan(log.join('\n')))
 }
