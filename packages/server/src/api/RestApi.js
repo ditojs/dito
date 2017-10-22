@@ -28,18 +28,18 @@ export default class RestApi extends Koa {
     // Translate type to namespaced event names, to produce such events as:
     //
     // before:get:collection
-    // before:get:instance
+    // before:get:member
     //
     // before:get:collection:hello:method
-    // before:get:instance:hello:method
+    // before:get:member:hello:method
     //
-    // before:get:instance:users:relation
-    // before:get:instance:users:instance
+    // before:get:member:users:relation
+    // before:get:member:users:member
     const namespace = method
       ? `${type.match(/^(.*)Method$/)[1]}:${method.name}:method`
       : relation
-        ? `instance:${relation.name}:${type === 'relationInstance'
-          ? 'instance' : 'relation'}`
+        ? `member:${relation.name}:${type === 'relationInstance'
+          ? 'member' : 'relation'}`
         : type
     const before = `before:${verb}:${namespace}`
     const after = `after:${verb}:${namespace}`

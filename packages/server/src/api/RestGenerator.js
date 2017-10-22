@@ -17,23 +17,22 @@ export default class RestGenerator {
 
   addModelRoutes(modelClass) {
     this.log(`${chalk.green(modelClass.name)}${chalk.white(':')}`)
-    const { routes } = modelClass.definition
-    const { collection, instance, relations } = routes || {}
-    this.addRoutes(modelClass, null, 'collection', collection, 1)
+    const { routes = {}, methods = {} } = modelClass.definition
+    this.addRoutes(modelClass, null, 'collection', routes.collection, 1)
     // Install static methods before ids, as they wouldn't match otherwise
-    this.addMethods(modelClass, 'collectionMethod', 1)
-    this.addRoutes(modelClass, null, 'instance', instance, 1)
-    this.addMethods(modelClass, 'instanceMethod', 1)
-    if (relations) {
+    this.addMethods(modelClass, 'collectionMethod', methods.collection, 1)
+    this.addRoutes(modelClass, null, 'member', routes.member, 1)
+    this.addMethods(modelClass, 'memberMethod', methods.member, 1)
+    if (routes.relations) {
       for (const relation of Object.values(modelClass.getRelations())) {
         const { name } = relation
         this.log(`${chalk.blue(name)}${chalk.white(':')}`, 1)
-        const settings = relations[name]
+        const settings = routes.relations[name]
         this.addRoutes(modelClass, relation, 'relation', settings, 2)
         if (!relation.isOneToOne()) {
           // TODO: Shouldn't OneToOne relations also offer a way to unrelated /
           // relate instead of directly manipulate the related object? Should
-          // we make the distinction between relation and instance here too, and
+          // we make the distinction between relation and member here too, and
           // if so, do we go by Id as well?
           this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
         }
@@ -59,32 +58,29 @@ export default class RestGenerator {
     }
   }
 
-  addMethods(modelClass, type, indent) {
-    const { methods } = modelClass.definition
-    for (const [name, schema] of Object.entries(methods || {})) {
-      if (type === 'instanceMethod' ^ !!schema.static) {
-        const method = {
-          name,
-          verb: 'get',
-          path: name,
-          ...schema
-        }
-        const { verb, path, access } = method
-        const settings = {
-          access: access != null ? access : true
-        }
-        const route = this.getRoutePath(type, modelClass, path)
-        const handler = methodHandlers[type]
-        const validate = {
-          arguments: createArgumentsValidator(modelClass, method.arguments),
-          return: createArgumentsValidator(modelClass, [method.return])
-        }
-        this.adapter.addRoute(
-          { modelClass, method, type, verb, route, settings },
-          ctx => handler(modelClass, method, validate, ctx))
-        this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
-          indent)
+  addMethods(modelClass, type, methodsSettings, indent) {
+    for (const [name, schema] of Object.entries(methodsSettings || {})) {
+      const method = {
+        name,
+        verb: 'get',
+        path: name,
+        ...schema
       }
+      const { verb, path, access } = method
+      const settings = {
+        access: access != null ? access : true
+      }
+      const route = this.getRoutePath(type, modelClass, path)
+      const handler = methodHandlers[type]
+      const validate = {
+        arguments: createArgumentsValidator(modelClass, method.arguments),
+        return: createArgumentsValidator(modelClass, [method.return])
+      }
+      this.adapter.addRoute(
+        { modelClass, method, type, verb, route, settings },
+        ctx => handler(modelClass, method, validate, ctx))
+      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
+        indent)
     }
   }
 
@@ -111,14 +107,14 @@ const routePath = {
   collectionMethod(modelClass, path) {
     return `${routePath.collection(modelClass)}/${normalize(path)}`
   },
-  instance(modelClass) {
+  member(modelClass) {
     return `${routePath.collection(modelClass)}/:id`
   },
-  instanceMethod(modelClass, path) {
-    return `${routePath.instance(modelClass)}/${normalize(path)}`
+  memberMethod(modelClass, path) {
+    return `${routePath.member(modelClass)}/${normalize(path)}`
   },
   relation(modelClass, relation) {
-    return `${routePath.instance(modelClass)}/${normalize(relation.name)}`
+    return `${routePath.member(modelClass)}/${normalize(relation.name)}`
   },
   relationInstance(modelClass, relation) {
     return `${routePath.relation(modelClass, relation)}/:relatedId`
@@ -148,7 +144,7 @@ function getSettings(verb, handlers, settings) {
 
 const settingsHandlers = {
   collection: getSettings,
-  instance: getSettings,
+  member: getSettings,
 
   relation: (verb, handlers, settings) => {
     const relation = settings && settings.relation
@@ -157,9 +153,9 @@ const settingsHandlers = {
   },
 
   relationInstance: (verb, handlers, settings) => {
-    const instance = settings && settings.relation
+    const member = settings && settings.relation
     return getSettings(verb, handlers,
-      instance !== undefined ? instance : settings)
+      member !== undefined ? member : settings)
   }
 }
 
@@ -206,11 +202,10 @@ function getReturn(modelClass, method, validate, value) {
   })
 }
 
-function checkMethod(func, modelClass, name, isStatic, statusCode = 404) {
+function checkMethod(func, modelClass, name, prefix, statusCode = 404) {
   if (!func) {
-    const prefix = isStatic ? 'Static remote' : 'Remote'
     const err = new NotFoundError(
-      `${prefix} method ${name} not found on Model ${modelClass.name}`)
+      `${prefix} method '${name}' not found on Model '${modelClass.name}'`)
     err.statusCode = statusCode
     throw err
   }
@@ -220,17 +215,18 @@ function checkMethod(func, modelClass, name, isStatic, statusCode = 404) {
 const methodHandlers = {
   collectionMethod(modelClass, method, validate, ctx) {
     const { name } = method
-    const func = checkMethod(modelClass[name], modelClass, name, true)
+    const func = checkMethod(modelClass[name], modelClass, name, 'Collection')
     const args = getArguments(modelClass, method, validate.arguments, ctx.query)
     const value = func.call(modelClass, args)
     return getReturn(modelClass, method, validate.return, value)
   },
 
-  instanceMethod(modelClass, method, validate, ctx) {
-    return restHandlers.instance.get(modelClass, ctx)
+  memberMethod(modelClass, method, validate, ctx) {
+    return restHandlers.member.get(modelClass, ctx)
       .then(model => {
         const { name } = method
-        const func = checkMethod(model[name], modelClass, name, false)
+        console.log(model)
+        const func = checkMethod(model[name], modelClass, name, 'Member')
         const args = getArguments(modelClass, method, validate.arguments,
           ctx.query)
         const value = func.call(model, args)
@@ -246,7 +242,7 @@ const methodHandlers = {
 function checkModel(model, modelClass, id, statusCode = 404) {
   if (!model) {
     const err = new NotFoundError(
-      `Cannot find ${modelClass.name} model with id ${id}`)
+      `Cannot find '${modelClass.name}' model with id ${id}`)
     err.statusCode = statusCode
     throw err
   }
@@ -297,7 +293,7 @@ const restHandlers = {
     }
   },
 
-  instance: {
+  member: {
     // get collection
     get(modelClass, ctx) {
       const { id } = ctx.params

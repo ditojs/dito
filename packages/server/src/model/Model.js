@@ -21,7 +21,7 @@ export default class Model extends objection.Model {
     // merge definitions up the inheritance chain and store the merged result
     // in `modelClass.definition[name]` for further caching.
     const getDefinition = name => {
-      let merged = null
+      let merged
       let modelClass = this
       const { each, final } = definitionHandlers[name]
       while (modelClass !== objection.Model) {
@@ -33,13 +33,18 @@ export default class Model extends objection.Model {
         modelClass = Object.getPrototypeOf(modelClass)
       }
       // Once calculated, override definition getter with merged value
-      if (final) {
+      if (final && merged) {
         // Override definition before calling final(), to prevent endless
         // recursion with interdependent definition related calls...
         setDefinition(name, { value: merged }, true)
         merged = final.call(this, merged) || merged
+        // NOTE: Now that it changed, setDefinition() is called once more below.
       }
-      setDefinition(name, { value: merged }, false)
+      if (merged) {
+        setDefinition(name, { value: merged }, false)
+      } else {
+        delete definition[name]
+      }
       return merged
     }
 
@@ -105,9 +110,9 @@ export default class Model extends objection.Model {
   }
 
   static get idColumn() {
-    const { properties } = this.definition
+    const { properties = {} } = this.definition
     const ids = []
-    for (const [name, property] of Object.entries(properties || {})) {
+    for (const [name, property] of Object.entries(properties)) {
       if (property.id) {
         ids.push(this.propertyNameToColumnName(name))
       }
@@ -118,8 +123,8 @@ export default class Model extends objection.Model {
 
   static getAttributesWithTypes(types) {
     const attributes = []
-    const { properties } = this.definition
-    for (const [name, property] of Object.entries(properties || {})) {
+    const { properties = {} } = this.definition
+    for (const [name, property] of Object.entries(properties)) {
       if (types.includes(property.type)) {
         attributes.push(name)
       }
@@ -179,7 +184,7 @@ export default class Model extends objection.Model {
     // Make sure all relations are defined correctly, with back-references.
     for (const relation of Object.values(this.getRelations())) {
       const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.definition.properties
+      const relatedProperties = relatedModelClass.definition.properties || {}
       for (const property of relation.relatedProp.props) {
         if (!(property in relatedProperties)) {
           throw new Error(
@@ -192,8 +197,8 @@ export default class Model extends objection.Model {
     }
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
-    const { events } = this.definition
-    for (const [event, handler] of Object.entries(events || {})) {
+    const { events = {} } = this.definition
+    for (const [event, handler] of Object.entries(events)) {
       this.on(event, handler)
     }
   }

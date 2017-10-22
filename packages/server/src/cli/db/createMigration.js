@@ -25,11 +25,11 @@ export async function createMigration(app, modelName) {
 
   const modelClass = getModel(modelName)
   const { tableName } = modelClass
-  const { relations, properties } = modelClass.definition
+  const { relations = {}, properties = {} } = modelClass.definition
   // TODO: Support multiple id columns? Does this even occur?
   const idColumn = modelClass.getIdColumnArray()[0]
   const statements = [`table.increments('${idColumn}').primary()`]
-  for (const relation of Object.values(relations || {})) {
+  for (const relation of Object.values(relations)) {
     const { join: { from, to } } = relation
     const [, fromProperty] = from && from.split('.') || []
     const [toModelName, toProperty] = to && to.split('.') || []
@@ -44,7 +44,7 @@ export async function createMigration(app, modelName) {
       )
     }
   }
-  for (const [name, property] of Object.entries(properties || {})) {
+  for (const [name, property] of Object.entries(properties)) {
     const column = modelClass.propertyNameToColumnName(name)
     if (column !== idColumn) {
       let { type, computed, default: _default, required } = property
