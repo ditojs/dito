@@ -14,6 +14,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
   }
 
+  upsertGraph(modelsOrObjects, opt) {
+    return super.upsertGraph(modelsOrObjects, {
+      // Invert default setting of insertMissing for Dito:
+      insertMissing: true,
+      ...opt
+    })
+  }
+
   find(params = {}) {
     // TODO: Add support for omit
     this._relationsToJoin = {}
@@ -30,6 +38,10 @@ export default class QueryBuilder extends objection.QueryBuilder {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
     return this
+  }
+
+  findOne(params) {
+    return this.find(params).first()
   }
 
   allow(refs) {
