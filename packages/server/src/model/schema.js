@@ -1,3 +1,4 @@
+import util from 'util'
 import { isObject, isArray, isString, asArray } from '@/utils'
 import {
   Relation,
@@ -57,17 +58,10 @@ export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
       // format instead that only validates if required string is not empty.
       const { required, default: _default, ...rest } = schema
-      if (required) {
-        schema = addFormat(rest, 'required')
-      } else if (!isItems) {
-        // If not required, add 'null' to the allowed types through `anyOf`.
-        schema = rest
-        schema = {
-          anyOf: [rest, { type: 'null' }]
-        }
-      } else {
-        schema = rest
-      }
+      schema = required ? addFormat(rest, 'required')
+        // If not required, allow null type:
+        : !isItems ? addNull(rest)
+        : rest
       if (_default && !excludeDefaults[_default]) {
         schema.default = _default
       }
@@ -81,6 +75,9 @@ export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
       items: convertSchema({ type: schema }, { isItems: true })
     }
   }
+  if (isRoot) {
+    console.log(util.inspect(schema, { depth: 10 }))
+  }
   return schema
 }
 
@@ -93,6 +90,19 @@ function addFormat(schema, format) {
     schema.format = format
   }
   return schema
+}
+
+function addNull(schema) {
+  // Add 'null' to the allowed types through `anyOf`.
+  // Move format along with type, and also support $ref:
+  const { type, $ref, format, ...rest } = schema
+  return {
+    anyOf: [
+      $ref ? { $ref } : format ? { type, format } : { type },
+      { type: 'null' }
+    ],
+    ...rest
+  }
 }
 
 // JSON types, used to determine when to use `$ref` instead of `type`.

@@ -1,5 +1,4 @@
 import objection from 'objection'
-import util from 'util'
 import { isObject, underscore, camelize } from '@/utils'
 import { convertSchema, convertRelations } from './schema'
 import { ValidationError } from '@/errors'
@@ -116,9 +115,12 @@ export default class Model extends objection.Model {
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
       const { properties } = this.definition
-      const schema = properties ? this.convertSchema(properties) : null
-      console.log(util.inspect(schema, { depth: 10 }))
-      return schema
+      return properties ? {
+        id: this.name,
+        $schema: 'http://json-schema.org/draft-06/schema#',
+        ...convertSchema(properties),
+        additionalProperties: false
+      } : null
     })
   }
 
@@ -141,16 +143,6 @@ export default class Model extends objection.Model {
     return this.getCached('dateAttributes', () => (
       this.getAttributesWithTypes(['date', 'datetime', 'timestamp'])
     ), [])
-  }
-
-  static convertSchema(properties) {
-    const jsonSchema = convertSchema(properties)
-    return {
-      id: this.name,
-      $schema: 'http://json-schema.org/draft-06/schema#',
-      ...jsonSchema,
-      additionalProperties: false
-    }
   }
 
   static prepareModel() {
