@@ -1,6 +1,16 @@
 import { QueryError } from '@/errors'
 import { capitalize } from '@/utils'
 
+// TODO:
+// Make this work with objection.ref():
+// https://github.com/Vincit/objection.js/blob/master/doc/includes/API.md#global-query-building-helpers
+// So that query references can works with JSON attributes as well. See if this
+// also works with eager query data, nested relationships, etc?
+// TODO: semi-colon is currently used for operators. Use a different string
+// to mark operators instead, e.g. 'jsonColumn:details.name::like=%bla%'
+// TODO: Implement proper OR queries through where objects rather than the
+// current '|' approach that only works with one operator for multiple fields.
+// See: https://flask-restless.readthedocs.io/en/stable/searchformat.html
 export default class PropertyRef {
   constructor(str, modelClass, parseDir, checkAllow) {
     if (parseDir) {

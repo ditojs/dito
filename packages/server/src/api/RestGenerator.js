@@ -17,8 +17,8 @@ export default class RestGenerator {
 
   addModelRoutes(modelClass) {
     this.log(`${chalk.green(modelClass.name)}${chalk.white(':')}`)
-    const routes = modelClass.getMergedRoutes() || {}
-    const { collection, instance, relations } = routes
+    const { routes } = modelClass.definition
+    const { collection, instance, relations } = routes || {}
     this.addRoutes(modelClass, null, 'collection', collection, 1)
     // Install static methods before ids, as they wouldn't match otherwise
     this.addMethods(modelClass, 'collectionMethod', 1)
@@ -60,8 +60,8 @@ export default class RestGenerator {
   }
 
   addMethods(modelClass, type, indent) {
-    const methods = modelClass.getMergedMethods() || {}
-    for (const [name, schema] of Object.entries(methods)) {
+    const { methods } = modelClass.definition
+    for (const [name, schema] of Object.entries(methods || {})) {
       if (type === 'instanceMethod' ^ !!schema.static) {
         const method = {
           name,
@@ -176,7 +176,7 @@ function createArgumentsValidator(modelClass, args = []) {
       }
     }
     const schema = convertSchema(properties)
-    return modelClass.getValidator().compileWithCoercing(schema)
+    return modelClass.getValidator().compileValidator(schema)
   }
   return () => true
 }

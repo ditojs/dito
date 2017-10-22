@@ -7,26 +7,38 @@ import QueryBuilder from './QueryBuilder'
 import EventEmitterMixin from './EventEmitterMixin'
 
 export default class Model extends objection.Model {
-  static find(params) {
-    // NOTE: All the parsing magic happens through our extended QueryBuilder:
-    return this.query().find(params)
-  }
+  static get definition() {
+    const definition = {}
 
-  static findOne(params) {
-    return this.find(params).first()
-  }
+    // Merge definitions up the inheritance chain and reflect the merged result
+    // in `modelClass.definition[name]`:
+    const getDefinition = name => {
+      let merged = null
+      let modelClass = this
+      while (modelClass !== objection.Model) {
+        const object = definitionHandlers[name](modelClass[name])
+        if (isObject(object)) {
+          merged = Object.assign(merged || {}, object)
+        }
+        modelClass = Object.getPrototypeOf(modelClass)
+      }
+      // Once calculated, override definition getter with merged value
+      Object.defineProperty(definition, name, {
+        value: merged,
+        enumerable: true
+      })
+      return merged
+    }
 
-  static findById(id) {
-    return this.query().findById(id)
-  }
+    for (const name in definitionHandlers) {
+      Object.defineProperty(definition, name, {
+        get: () => getDefinition(name),
+        configurable: true,
+        enumerable: true
+      })
+    }
 
-  static insert(data) {
-    return this.query().insert(data)
-  }
-
-  async $patch(attributes) {
-    const patched = await this.$query().patchAndFetch(attributes)
-    return this.$set(patched)
+    return definition
   }
 
   async $update(attributes) {
@@ -34,12 +46,17 @@ export default class Model extends objection.Model {
     return this.$set(updated)
   }
 
+  async $patch(attributes) {
+    const patched = await this.$query().patchAndFetch(attributes)
+    return this.$set(patched)
+  }
+
   get $app() {
     return this.constructor.app
   }
 
   $formatDatabaseJson(json) {
-    for (const key of this.constructor.getDateProperties()) {
+    for (const key of this.constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date && date.toISOString ? date.toISOString() : date
@@ -56,7 +73,7 @@ export default class Model extends objection.Model {
     if (this.constructor.app.normalizeDbNames) {
       json = normalizeProperties(json, camelize)
     }
-    for (const key of this.constructor.getDateProperties()) {
+    for (const key of this.constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date ? new Date(date) : date
@@ -65,23 +82,20 @@ export default class Model extends objection.Model {
     return json
   }
 
-  static getDateProperties() {
-    let { _dateProperties } = this
-    if (!_dateProperties) {
-      _dateProperties = this._dateProperties = []
-      const properties = this.getJsonSchemaProperties()
-      for (const [key, { format }] of Object.entries(properties || {})) {
-        if (format === 'date' || format === 'date-time') {
-          _dateProperties.push(key)
-        }
-      }
-    }
-    return _dateProperties
-  }
-
   static get tableName() {
     // Convention: Use the class name as the tableName, plus normalization:
     return this.app.normalizeDbNames ? underscore(this.name) : this.name
+  }
+
+  static getAttributesWithTypes(types) {
+    const attributes = []
+    const { properties } = this.definition
+    for (const [name, property] of Object.entries(properties || {})) {
+      if (types.includes(property.type)) {
+        attributes.push(name)
+      }
+    }
+    return attributes
   }
 
   static getCached(name, calculate) {
@@ -98,46 +112,10 @@ export default class Model extends objection.Model {
     _cached[name] = value
   }
 
-  static getMerged(name) {
-    // Merges all properties objects up the inheritance chain to one object.
-    return this.getCached(name, () => {
-      let merged = null
-      let modelClass = this
-      while (modelClass !== objection.Model) {
-        const object = modelClass[name]
-        if (isObject(object)) {
-          merged = Object.assign(merged || {}, object)
-        }
-        modelClass = Object.getPrototypeOf(modelClass)
-      }
-      return merged
-    })
-  }
-
-  static getMergedProperties() {
-    return this.getMerged('properties')
-  }
-
-  static getMergedRelations() {
-    return this.getMerged('relations')
-  }
-
-  static getMergedMethods() {
-    return this.getMerged('methods')
-  }
-
-  static getMergedRoutes() {
-    return this.getMerged('routes')
-  }
-
-  static getMergedEvents() {
-    return this.getMerged('events')
-  }
-
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
-      const properties = this.getMergedProperties()
       let schema = null
+      const { properties } = this.definition
       if (properties) {
         // Temporarily set the jsonSchema cache to an empty object so that
         // convertSchema() can call getIdProperty() without an endless recursion
@@ -151,11 +129,23 @@ export default class Model extends objection.Model {
 
   static get relationMappings() {
     return this.getCached('relationMappings', () => {
-      const relations = this.getMergedRelations()
+      const { relations } = this.definition
       return relations
         ? convertRelations(this, relations, this.app.models)
         : null
     })
+  }
+
+  static get jsonAttributes() {
+    return this.getCached('jsonAttributes', () => (
+      this.getAttributesWithTypes(['object', 'array'])
+    ))
+  }
+
+  static get dateAttributes() {
+    return this.getCached('dateAttributes', () => (
+      this.getAttributesWithTypes(['date', 'datetime', 'timestamp'])
+    ))
   }
 
   static convertSchema(properties) {
@@ -175,16 +165,11 @@ export default class Model extends objection.Model {
     }
   }
 
-  static getJsonSchemaProperties() {
-    const schema = this.getJsonSchema()
-    return schema && schema.properties || null
-  }
-
   static prepareModel() {
     // Make sure all relations are defined correctly, with back-references.
     for (const relation of Object.values(this.getRelations())) {
       const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.getJsonSchemaProperties()
+      const relatedProperties = relatedModelClass.definition.properties
       for (const property of relation.relatedProp.props) {
         if (!(property in relatedProperties)) {
           throw new Error(
@@ -196,7 +181,7 @@ export default class Model extends objection.Model {
     }
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
-    const events = this.getMergedEvents()
+    const { events } = this.definition
     for (const [event, handler] of Object.entries(events || {})) {
       this.on(event, handler)
     }
@@ -216,10 +201,10 @@ export default class Model extends objection.Model {
   static QueryBuilder = QueryBuilder
 }
 
-function ensureProperty(properties, property, type = 'integer') {
-  const exists = property in properties
+function ensureProperty(properties, name, type = 'integer') {
+  const exists = name in properties
   if (!exists) {
-    properties[property] = { type }
+    properties[name] = { type }
   }
   return exists
 }
@@ -233,3 +218,21 @@ function normalizeProperties(object, translate) {
 }
 
 EventEmitterMixin(Model)
+
+const definitionHandlers = {
+  properties: properties => {
+    if (properties) {
+      const converted = {}
+      // Convert short-form `name: type` to `name: { type }`.
+      for (const [name, property] of Object.entries(properties)) {
+        converted[name] = isObject(property) ? property : { type: property }
+      }
+      return converted
+    }
+  },
+
+  relations: relations => relations,
+  methods: methods => methods,
+  routes: routes => routes,
+  events: events => events
+}

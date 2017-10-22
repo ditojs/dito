@@ -202,6 +202,7 @@ const filters = {
 }
 
 // TODO: ?
+// http://docs.sequelizejs.com/manual/tutorial/querying.html
 // [Op.regexp]: '^[h|a|t]'    // REGEXP/~ '^[h|a|t]' (MySQL/PG only)
 // [Op.notRegexp]: '^[h|a|t]' // NOT REGEXP/!~ '^[h|a|t]' (MySQL/PG only)
 // [Op.iRegexp]: '^[h|a|t]'    // ~* '^[h|a|t]' (PG only)

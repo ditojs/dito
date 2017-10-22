@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isArray, isObject } from '@/utils'
+import { isArray } from '@/utils'
 
 const typeToKnex = {
   number: 'double',
@@ -25,8 +25,7 @@ export async function createMigration(app, modelName) {
 
   const modelClass = getModel(modelName)
   const { tableName } = modelClass
-  const relations = modelClass.getMergedRelations()
-  const properties = modelClass.getMergedProperties()
+  const { relations, properties } = modelClass.definition
   // TODO: Support multiple id columns? Does this even occur?
   const idColumn = modelClass.getIdColumnArray()[0]
   const statements = [`table.increments('${idColumn}').primary()`]
@@ -48,15 +47,16 @@ export async function createMigration(app, modelName) {
   for (const [name, property] of Object.entries(properties || {})) {
     const column = modelClass.propertyNameToColumnName(name)
     if (column !== idColumn) {
-      let { type, computed, default: _default, required } = getSchema(property)
+      let { type, computed, default: _default, required } = property
       const knexType = typeToKnex[type] || type
       if (!computed) {
-        _default = _default && defaultValues[_default] ||
-          isArray(_default) && `[${_default.join(', ')}]` ||
-          _default
         const statement = [`table.${knexType}('${column}')`]
-        if (required) statement.push('notNullable()')
-        if (_default) statement.push(`defaultTo(${_default})`)
+        statement.push(required ? 'notNullable()' : 'nullable()')
+        if (_default) {
+          _default = defaultValues[_default] || _default
+          _default = isArray(_default) ? `[${_default.join(', ')}]` : _default
+          statement.push(`defaultTo(${_default})`)
+        }
         statements.push(statement.join('.'))
       }
     }
@@ -74,10 +74,6 @@ export function down(knex) {
     .dropTableIfExists('${tableName}')
 }
 `)
-}
-
-function getSchema(schema) {
-  return isObject(schema) ? schema : { type: schema }
 }
 
 // Ensure that we have 2 places for each of the date segments.
