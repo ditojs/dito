@@ -5,41 +5,56 @@ import { ValidationError } from '@/errors'
 import QueryBuilder from './QueryBuilder'
 import EventEmitterMixin from './EventEmitterMixin'
 
+const definitionMap = new WeakMap()
+const cacheMap = new WeakMap()
+
 export default class Model extends objection.Model {
   static get definition() {
-    const definition = {}
-    const noop = val => val
-    // Merge definitions up the inheritance chain and reflect the merged result
-    // in `modelClass.definition[name]`:
+    // Check if we already have a definition object for this class and return it
+    let definition = definitionMap.get(this)
+    if (definition) {
+      return definition
+    }
+
+    // If no definition object was defined yet, create one with accessors for
+    // each entry in `definitionHandlers`. Each of these getters when called
+    // merge definitions up the inheritance chain and store the merged result
+    // in `modelClass.definition[name]` for further caching.
     const getDefinition = name => {
       let merged = null
       let modelClass = this
-      const { each = noop, final = noop } = definitionHandlers[name]
+      const { each, final } = definitionHandlers[name]
       while (modelClass !== objection.Model) {
         let object = modelClass[name]
-        object = object && each.call(this, object) || object
         if (isObject(object)) {
+          object = each && each.call(this, object) || object
           merged = Object.assign(merged || {}, object)
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
-      merged = merged && final.call(this, merged) || merged
       // Once calculated, override definition getter with merged value
-      Object.defineProperty(definition, name, {
-        value: merged,
-        enumerable: true
-      })
+      if (final) {
+        // Override definition before calling final(), to prevent endless
+        // recursion with interdependent definition related calls...
+        setDefinition(name, { value: merged }, true)
+        merged = final.call(this, merged) || merged
+      }
+      setDefinition(name, { value: merged }, false)
       return merged
     }
 
-    for (const name in definitionHandlers) {
+    const setDefinition = (name, property, configurable) => {
       Object.defineProperty(definition, name, {
-        get: () => getDefinition(name),
-        configurable: true,
+        ...property,
+        configurable,
         enumerable: true
       })
     }
 
+    definitionMap.set(this, definition = {})
+    for (const name in definitionHandlers) {
+      setDefinition(name, { get: () => getDefinition(name) }, true)
+    }
     return definition
   }
 
@@ -89,6 +104,18 @@ export default class Model extends objection.Model {
     return this.app.normalizeDbNames ? underscore(this.name) : this.name
   }
 
+  static get idColumn() {
+    const { properties } = this.definition
+    const ids = []
+    for (const [name, property] of Object.entries(properties || {})) {
+      if (property.id) {
+        ids.push(this.propertyNameToColumnName(name))
+      }
+    }
+    const { length } = ids
+    return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
+  }
+
   static getAttributesWithTypes(types) {
     const attributes = []
     const { properties } = this.definition
@@ -101,13 +128,16 @@ export default class Model extends objection.Model {
   }
 
   static getCached(name, calculate, empty = {}) {
-    const _cached = this._cached || (this._cached = {})
-    let cached = _cached[name]
+    if (!cacheMap.has(this)) {
+      cacheMap.set(this, {})
+    }
+    const cache = cacheMap.get(this)
+    let cached = cache[name]
     if (cached === undefined) {
       // Temporarily set cache to an empty object to prevent endless recursion
       // with interdependent jsonSchema related calls...
-      _cached[name] = empty
-      _cached[name] = cached = calculate()
+      cache[name] = empty
+      cache[name] = cached = calculate()
     }
     return cached
   }

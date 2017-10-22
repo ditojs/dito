@@ -1,2 +1,2 @@
-export * from './required'
 export * from './range'
+export * from './required'

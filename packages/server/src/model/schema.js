@@ -9,7 +9,7 @@ import {
   ManyToManyRelation
 } from 'objection'
 
-export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
+export function convertSchema(schema, isRoot = true) {
   if (isObject(schema)) {
     // Shallow clone so we can modify and return:
     schema = { ...schema }
@@ -20,7 +20,10 @@ export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
         if (type === 'array') {
           const { items } = schema
           if (items) {
-            schema.items = convertSchema(items, { isItems: true })
+            // Expand `{ items: type }` to `{ items: { type } }`, and if type
+            // is a $ref, then further to `{ items: { $ref: type } }`:
+            schema.items = convertSchema(
+              isString(items) ? { type: items } : items, false)
           }
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -45,7 +48,7 @@ export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
           required.push(key)
         }
         properties[key] = isObject(property)
-          ? convertSchema(property, {})
+          ? convertSchema(property, false)
           : property
       }
       schema = {
@@ -55,25 +58,27 @@ export function convertSchema(schema, { isRoot, isItems } = { isRoot: true }) {
       }
     }
     if (!isRoot) {
-      // Our 'required' is not the same as JSON Schema's: Use the 'required'
-      // format instead that only validates if required string is not empty.
-      const { required, default: _default, ...rest } = schema
-      schema = required ? addFormat(rest, 'required')
-        // If not required, allow null type:
-        : !isItems ? addNull(rest)
-        : rest
+      const {
+        required, nullable, default: _default,
+        // Remove properties that have no meaning in JSON schema.
+        id, computed,
+        ...rest
+      } = schema
+      schema = rest
+      if (required) {
+        // Our 'required' is not the same as JSON Schema's: Use the 'required'
+        // format instead that only validates if required string is not empty.
+        schema = addFormat(schema, 'required')
+      }
+      if (nullable) {
+        schema = makeNullable(schema)
+      }
       if (_default && !excludeDefaults[_default]) {
         schema.default = _default
       }
     }
   } else if (isArray(schema)) {
-    schema = schema.map(entry => convertSchema(entry))
-  } else if (isItems && isString(schema)) {
-    schema = {
-      // Expand `{ items: type }` to `{ items: { type } }`, and if type is a
-      // $ref, then further to `{ items: { $ref: type } }`:
-      items: convertSchema({ type: schema }, { isItems: true })
-    }
+    schema = schema.map(entry => convertSchema(entry, false))
   }
   if (isRoot) {
     console.log(util.inspect(schema, { depth: 10 }))
@@ -92,9 +97,10 @@ function addFormat(schema, format) {
   return schema
 }
 
-function addNull(schema) {
+function makeNullable(schema) {
   // Add 'null' to the allowed types through `anyOf`.
   // Move format along with type, and also support $ref:
+  // TODO: Check that it doesn't already specify `type: null`!
   const { type, $ref, format, ...rest } = schema
   return {
     anyOf: [
@@ -148,6 +154,10 @@ export function convertRelations(ownerModelClass, schema, models) {
     return reference
   }
 
+  function convertReferences(references) {
+    return asArray(references).map(convertReference)
+  }
+
   const relations = {}
   for (const [name, relationSchema] of Object.entries(schema)) {
     let {
@@ -163,8 +173,28 @@ export function convertRelations(ownerModelClass, schema, models) {
     const relationClass = relationLookup[relation] ||
       relationClasses[relation] || relation
     if (relationClass && relationClass.prototype instanceof Relation) {
-      from = asArray(from).map(convertReference)
-      to = asArray(to).map(convertReference)
+      from = convertReferences(from)
+      to = convertReferences(to)
+      if (relationClass === ManyToManyRelation) {
+        // TODO: ...!
+        if (!through) {
+        } else {
+          let { modelClass: throughModelClass } = through
+          throughModelClass = models[throughModelClass] || throughModelClass
+          through = {
+            from: convertReferences(through.from),
+            to: convertReferences(through.to)
+          }
+          if (throughModelClass) {
+            throughModelClass.modelClass = throughModelClass
+          }
+        }
+      } else if (through) {
+        throw new Error(
+          `${ownerModelClass.name}.relations.${name}: ` +
+          `Unsupported through relation: ${relation}`)
+      }
+      // TODO: parse / auto-create through based on relationClass!
       relations[name] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
