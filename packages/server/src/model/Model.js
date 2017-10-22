@@ -9,19 +9,22 @@ import EventEmitterMixin from './EventEmitterMixin'
 export default class Model extends objection.Model {
   static get definition() {
     const definition = {}
-
+    const noop = val => val
     // Merge definitions up the inheritance chain and reflect the merged result
     // in `modelClass.definition[name]`:
     const getDefinition = name => {
       let merged = null
       let modelClass = this
+      const { each = noop, final = noop } = definitionHandlers[name]
       while (modelClass !== objection.Model) {
-        const object = definitionHandlers[name](modelClass[name])
+        let object = modelClass[name]
+        object = object && each.call(this, object) || object
         if (isObject(object)) {
           merged = Object.assign(merged || {}, object)
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
+      merged = merged && final.call(this, merged) || merged
       // Once calculated, override definition getter with merged value
       Object.defineProperty(definition, name, {
         value: merged,
@@ -98,30 +101,22 @@ export default class Model extends objection.Model {
     return attributes
   }
 
-  static getCached(name, calculate) {
+  static getCached(name, calculate, empty = {}) {
     const _cached = this._cached || (this._cached = {})
     let cached = _cached[name]
     if (cached === undefined) {
+      // Temporarily set cache to an empty object to prevent endless recursion
+      // with interdependent jsonSchema related calls...
+      _cached[name] = empty
       _cached[name] = cached = calculate()
     }
     return cached
   }
 
-  static setCached(name, value) {
-    const _cached = this._cached || (this._cached = {})
-    _cached[name] = value
-  }
-
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
-      let schema = null
       const { properties } = this.definition
-      if (properties) {
-        // Temporarily set the jsonSchema cache to an empty object so that
-        // convertSchema() can call getIdProperty() without an endless recursion
-        this.setCached('jsonSchema', {})
-        schema = this.convertSchema(properties)
-      }
+      const schema = properties ? this.convertSchema(properties) : null
       console.log(util.inspect(schema, { depth: 10 }))
       return schema
     })
@@ -139,24 +134,17 @@ export default class Model extends objection.Model {
   static get jsonAttributes() {
     return this.getCached('jsonAttributes', () => (
       this.getAttributesWithTypes(['object', 'array'])
-    ))
+    ), [])
   }
 
   static get dateAttributes() {
     return this.getCached('dateAttributes', () => (
       this.getAttributesWithTypes(['date', 'datetime', 'timestamp'])
-    ))
+    ), [])
   }
 
   static convertSchema(properties) {
     const jsonSchema = convertSchema(properties)
-    const jsonProperties = jsonSchema.properties
-    ensureProperty(jsonProperties, this.getIdProperty())
-    for (const relation of Object.values(this.getRelations())) {
-      for (const property of relation.ownerProp.props) {
-        ensureProperty(jsonProperties, property)
-      }
-    }
     return {
       id: this.name,
       $schema: 'http://json-schema.org/draft-06/schema#',
@@ -178,6 +166,7 @@ export default class Model extends objection.Model {
           )
         }
       }
+      // TODO: Check `through` settings also
     }
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
@@ -201,12 +190,45 @@ export default class Model extends objection.Model {
   static QueryBuilder = QueryBuilder
 }
 
-function ensureProperty(properties, name, type = 'integer') {
-  const exists = name in properties
-  if (!exists) {
-    properties[name] = { type }
-  }
-  return exists
+EventEmitterMixin(Model)
+
+const definitionHandlers = {
+  properties: {
+    each(properties) {
+      const converted = {}
+      // Convert short-form `name: type` to `name: { type }`.
+      for (const [name, property] of Object.entries(properties)) {
+        converted[name] = isObject(property) ? property : { type: property }
+      }
+      return converted
+    },
+
+    final(properties) {
+      // Include auto-generated 'id' properties for models and relations.
+      const missing = {}
+      function includeProperty(name, type = 'integer') {
+        if (!(name in properties)) {
+          missing[name] = { type }
+        }
+      }
+
+      includeProperty(this.getIdProperty())
+      for (const relation of Object.values(this.getRelations())) {
+        for (const property of relation.ownerProp.props) {
+          includeProperty(property)
+        }
+      }
+      return {
+        ...missing,
+        ...properties
+      }
+    }
+  },
+
+  relations: {},
+  methods: {},
+  routes: {},
+  events: {}
 }
 
 function normalizeProperties(object, translate) {
@@ -215,24 +237,4 @@ function normalizeProperties(object, translate) {
     converted[translate(key)] = object[key]
   }
   return converted
-}
-
-EventEmitterMixin(Model)
-
-const definitionHandlers = {
-  properties: properties => {
-    if (properties) {
-      const converted = {}
-      // Convert short-form `name: type` to `name: { type }`.
-      for (const [name, property] of Object.entries(properties)) {
-        converted[name] = isObject(property) ? property : { type: property }
-      }
-      return converted
-    }
-  },
-
-  relations: relations => relations,
-  methods: methods => methods,
-  routes: routes => routes,
-  events: events => events
 }

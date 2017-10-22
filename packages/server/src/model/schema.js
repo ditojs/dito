@@ -129,7 +129,7 @@ const relationClasses = {
 
 export function convertRelations(ownerModelClass, schema, models) {
   function convertReference(reference) {
-    const [modelName, propertyName] = reference.split('.')
+    const [modelName, propertyName] = reference && reference.split('.') || []
     const modelClass = models[modelName]
     if (modelClass) {
       const columnName = modelClass.propertyNameToColumnName(propertyName)
@@ -140,7 +140,16 @@ export function convertRelations(ownerModelClass, schema, models) {
 
   const relations = {}
   for (const [name, relationSchema] of Object.entries(schema)) {
-    let { relation, modelClass, join: { from, to }, ...rest } = relationSchema
+    let {
+      relation,
+      modelClass,
+      join: {
+        from,
+        through,
+        to
+      } = {},
+      ...rest
+    } = relationSchema || {}
     const relationClass = relationLookup[relation] ||
       relationClasses[relation] || relation
     if (relationClass && relationClass.prototype instanceof Relation) {
@@ -149,12 +158,13 @@ export function convertRelations(ownerModelClass, schema, models) {
       relations[name] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
-        join: { from, to },
+        join: { from, through, to },
         ...rest
       }
     } else {
       throw new Error(
-        `${ownerModelClass.name}.relations.${name}: Unrecognized relation`)
+        `${ownerModelClass.name}.relations.${name}: ` +
+        `Unrecognized relation: ${relation}`)
     }
   }
   return relations

@@ -1371,8 +1371,8 @@ ienoopen@1.0.0:
   resolved "https://registry.yarnpkg.com/ienoopen/-/ienoopen-1.0.0.tgz#346a428f474aac8f50cf3784ea2d0f16f62bda6b"
 
 ignore@^3.3.3:
-  version "3.3.5"
-  resolved "https://registry.yarnpkg.com/ignore/-/ignore-3.3.5.tgz#c4e715455f6073a8d7e5dae72d2fc9d71663dba6"
+  version "3.3.6"
+  resolved "https://registry.yarnpkg.com/ignore/-/ignore-3.3.6.tgz#b6f3196b38ed92f0c86e52f6f79b7fc4c8266c8d"
 
 imurmurhash@^0.1.4:
   version "0.1.4"
@@ -1976,9 +1976,9 @@ objection-find@^0.5.1:
     bluebird "^3"
     lodash "^4"
 
-"objection@github:lehni/objection.js#fixes":
+"objection@github:lehni/objection.js#dito-framework":
   version "0.9.0"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/25834b2851a6370c11249301e8e304a403bb2db3"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/3d0b5bec303f80736d2f047d4bae7b610db4c040"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"
@@ -2479,8 +2479,8 @@ sshpk@^1.7.0:
     tweetnacl "~0.14.0"
 
 "statuses@>= 1.3.1 < 2", statuses@^1.2.0:
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.3.1.tgz#faf51b9eb74aaef3b3acf4ad5f61abf24cb7b93e"
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.4.0.tgz#bb73d446da2796106efcc1b601a253d6c46bd087"
 
 string-width@^1.0.1, string-width@^1.0.2:
   version "1.0.2"

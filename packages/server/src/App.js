@@ -16,10 +16,14 @@ export default class App extends Koa {
   }
 
   addModels(models) {
+    // First add all models then call prepareModel() for each in a another loop,
+    // since they may be referencing each other in relations.
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
-    this.prepareModels()
+    for (const modelClass of Object.values(models)) {
+      modelClass.prepareModel()
+    }
   }
 
   addModel(modelClass) {
@@ -29,12 +33,6 @@ export default class App extends Koa {
     modelClass.onAny((event, ctx) => {
       console.log(event, 'state:', ctx.state)
     })
-  }
-
-  prepareModels() {
-    for (const modelClass of Object.values(this.models)) {
-      modelClass.prepareModel()
-    }
   }
 
   start() {
