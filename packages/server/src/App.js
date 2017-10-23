@@ -1,5 +1,6 @@
 import Knex from 'knex'
 import Koa from 'koa'
+import { underscore } from '@/utils'
 import Validator from '@/model/Validator'
 
 export default class App extends Koa {
@@ -7,7 +8,29 @@ export default class App extends Koa {
     super()
     this.config = config
     this.normalizeDbNames = config.normalizeDbNames
-    this.knex = Knex(config.knex)
+    let knexConfig = config.knex
+    if (this.normalizeDbNames) {
+      // Always convert Knex identifiers to underscored versions.
+      // TODO: wrapIdentifier will only work in Knex 0.14.0 onwards.
+      // Until then, use the _wrapString() hack below instead.
+      knexConfig = {
+        ...knexConfig,
+        wrapIdentifier(value, wrapIdentifier) {
+          return wrapIdentifier(underscore(value))
+        }
+      }
+    }
+    this.knex = Knex(knexConfig)
+    if (this.normalizeDbNames) {
+      // HACK: See above about replacing this with standardized wrapIdentifier()
+      const { prototype } = this.knex.client.formatter().constructor
+      const { _wrapString } = prototype
+      if (_wrapString) {
+        prototype._wrapString = function (value) {
+          return knexConfig.wrapIdentifier(value, _wrapString.bind(this))
+        }
+      }
+    }
     this.models = {}
     this.validator = validator || new Validator()
     if (models) {
