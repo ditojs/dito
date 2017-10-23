@@ -215,25 +215,21 @@ function checkMethod(func, modelClass, name, prefix, statusCode = 404) {
 }
 
 const methodHandlers = {
-  collectionMethod(modelClass, method, validate, ctx) {
+  async collectionMethod(modelClass, method, validate, ctx) {
     const { name } = method
     const func = checkMethod(modelClass[name], modelClass, name, 'Collection')
     const args = getArguments(modelClass, method, validate.arguments, ctx.query)
-    const value = func.call(modelClass, args)
+    const value = await func.call(modelClass, args)
     return getReturn(modelClass, method, validate.return, value)
   },
 
-  memberMethod(modelClass, method, validate, ctx) {
-    return restHandlers.member.get(modelClass, ctx)
-      .then(model => {
-        const { name } = method
-        console.log(model)
-        const func = checkMethod(model[name], modelClass, name, 'Member')
-        const args = getArguments(modelClass, method, validate.arguments,
-          ctx.query)
-        const value = func.call(model, args)
-        return getReturn(modelClass, method, validate.return, value)
-      })
+  async memberMethod(modelClass, method, validate, ctx) {
+    const model = await restHandlers.member.get(modelClass, ctx)
+    const { name } = method
+    const func = checkMethod(model[name], modelClass, name, 'Member')
+    const args = getArguments(modelClass, method, validate.arguments, ctx.query)
+    const value = await func.call(model, args)
+    return getReturn(modelClass, method, validate.return, value)
   }
 }
 
