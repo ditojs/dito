@@ -1,7 +1,8 @@
 import objection from 'objection'
 import { isObject, underscore, camelize } from '@/utils'
-import { convertSchema, convertRelations } from './schema'
 import { ValidationError } from '@/errors'
+import convertSchema from './convertSchema'
+import convertRelations from './convertRelations'
 import QueryBuilder from './QueryBuilder'
 import EventEmitterMixin from './EventEmitterMixin'
 
