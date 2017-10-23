@@ -25,39 +25,43 @@ export async function createMigration(app, modelName) {
 
   const modelClass = getModel(modelName)
   const { tableName } = modelClass
-  const { relations = {}, properties = {} } = modelClass.definition
-  // TODO: Support multiple id columns? Does this even occur?
-  const idColumn = modelClass.getIdColumnArray()[0]
-  const statements = [`table.increments('${idColumn}').primary()`]
-  for (const relation of Object.values(relations)) {
-    const { join: { from, to } } = relation
-    const [, fromProperty] = from && from.split('.') || []
-    const [toModelName, toProperty] = to && to.split('.') || []
-    if (fromProperty && toProperty && fromProperty !== idColumn &&
-      !(properties && properties[fromProperty])) {
-      const toModelClass = getModel(toModelName)
-      const fromColumn = modelClass.propertyNameToColumnName(fromProperty)
-      const toColumn = modelClass.propertyNameToColumnName(toProperty)
-      statements.push(
-        `table.integer('${fromColumn}').unsigned()`,
-        `  .references('${toColumn}').inTable('${toModelClass.tableName}')`
-      )
-    }
-  }
+  const { properties = {}, relations = {} } = modelClass.definition
+  const statements = []
   for (const [name, property] of Object.entries(properties)) {
     const column = modelClass.propertyNameToColumnName(name)
-    if (column !== idColumn) {
-      let { type, computed, default: _default, required } = property
-      const knexType = typeToKnex[type] || type
-      if (!computed) {
-        const statement = [`table.${knexType}('${column}')`]
-        statement.push(required ? 'notNullable()' : 'nullable()')
-        if (_default) {
-          _default = defaultValues[_default] || _default
-          _default = isArray(_default) ? `[${_default.join(', ')}]` : _default
-          statement.push(`defaultTo(${_default})`)
-        }
-        statements.push(statement.join('.'))
+    let {
+      type, computed, default: _default, primary, required, nullable
+    } = property
+    const knexType = typeToKnex[type] || type
+    if (!computed) {
+      const statement = primary
+        ? [`table.increments('${column}').primary()`]
+        : [`table.${knexType}('${column}')`]
+      if (required) {
+        statement.push('notNullable()')
+      } else if (nullable) {
+        statement.push('nullable()')
+      }
+      if (_default) {
+        _default = defaultValues[_default] || _default
+        _default = isArray(_default) ? `[${_default.join(', ')}]` : _default
+        statement.push(`defaultTo(${_default})`)
+      }
+      statements.push(statement.join('.'))
+    }
+    for (const relation of Object.values(relations)) {
+      const { join: { from, to } } = relation
+      const [, fromProperty] = from && from.split('.') || []
+      const [toModelName, toProperty] = to && to.split('.') || []
+      if (fromProperty && toProperty &&
+        !(properties && properties[fromProperty])) {
+        const toModelClass = getModel(toModelName)
+        const fromColumn = modelClass.propertyNameToColumnName(fromProperty)
+        const toColumn = modelClass.propertyNameToColumnName(toProperty)
+        statements.push(
+          `table.integer('${fromColumn}').unsigned()`,
+          `  .references('${toColumn}').inTable('${toModelClass.tableName}')`
+        )
       }
     }
   }

@@ -1,4 +1,3 @@
-import util from 'util'
 import { isObject, isArray, isString } from '@/utils'
 
 export default function convertSchema(schema, isRoot = true) {
@@ -51,9 +50,8 @@ export default function convertSchema(schema, isRoot = true) {
     }
     if (!isRoot) {
       const {
-        required, nullable, default: _default,
-        // Remove properties that have no meaning in JSON schema.
-        id, computed,
+        required,
+        default: _default,
         ...rest
       } = schema
       schema = rest
@@ -62,7 +60,7 @@ export default function convertSchema(schema, isRoot = true) {
         // format instead that only validates if required string is not empty.
         schema = addFormat(schema, 'required')
       }
-      if (nullable) {
+      if (schema.nullable) {
         schema = makeNullable(schema)
       }
       if (_default && !excludeDefaults[_default]) {
@@ -71,9 +69,6 @@ export default function convertSchema(schema, isRoot = true) {
     }
   } else if (isArray(schema)) {
     schema = schema.map(entry => convertSchema(entry, false))
-  }
-  if (isRoot) {
-    console.log(util.inspect(schema, { depth: 10 }))
   }
   return schema
 }

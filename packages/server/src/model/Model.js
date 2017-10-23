@@ -1,4 +1,5 @@
 import objection from 'objection'
+import util from 'util'
 import { isObject, underscore, camelize } from '@/utils'
 import { ValidationError } from '@/errors'
 import convertSchema from './convertSchema'
@@ -26,10 +27,18 @@ export default class Model extends objection.Model {
       let modelClass = this
       const { each, final } = definitionHandlers[name]
       while (modelClass !== objection.Model) {
-        let object = modelClass[name]
-        if (isObject(object)) {
-          object = each && each.call(this, object) || object
-          merged = Object.assign(merged || {}, object)
+        if (name in modelClass) {
+          // Use reflection through getOwnPropertyDescriptor() to be able to
+          // call the getter on `this` rather than on `modelClass`. This can be
+          // used to provide abstract base-classes and have them create their
+          // relations for `this` inside `get relations`.
+          const { get, value } = Object.getOwnPropertyDescriptor(
+            modelClass, name) || {}
+          let object = get ? get.call(this) : value
+          if (isObject(object)) {
+            object = each && each.call(this, object) || object
+            merged = Object.assign(merged || {}, object)
+          }
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
@@ -79,10 +88,19 @@ export default class Model extends objection.Model {
   }
 
   $formatDatabaseJson(json) {
-    for (const key of this.constructor.dateAttributes) {
+    const { dateAttributes, booleanAttributes } = this.constructor
+    for (const key of dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date && date.toISOString ? date.toISOString() : date
+      }
+    }
+    // TODO: SQLLite needs boolean conversion, other adapters may not actually
+    // need this. Make it dependent on a connector config option?
+    for (const key of booleanAttributes) {
+      const bool = json[key]
+      if (bool !== undefined) {
+        json[key] = bool ? 1 : 0
       }
     }
     if (this.constructor.app.normalizeDbNames) {
@@ -96,10 +114,19 @@ export default class Model extends objection.Model {
     if (this.constructor.app.normalizeDbNames) {
       json = normalizeProperties(json, camelize)
     }
-    for (const key of this.constructor.dateAttributes) {
+    const { dateAttributes, booleanAttributes } = this.constructor
+    for (const key of dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date ? new Date(date) : date
+      }
+    }
+    // TODO: SQLLite needs boolean conversion, other adapters may not actually
+    // need this. Make it dependent on a connector config option?
+    for (const key of booleanAttributes) {
+      const bool = json[key]
+      if (bool !== undefined) {
+        json[key] = !!bool
       }
     }
     return json
@@ -114,7 +141,7 @@ export default class Model extends objection.Model {
     const { properties = {} } = this.definition
     const ids = []
     for (const [name, property] of Object.entries(properties)) {
-      if (property.id) {
+      if (property.primary) {
         ids.push(this.propertyNameToColumnName(name))
       }
     }
@@ -151,12 +178,14 @@ export default class Model extends objection.Model {
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
       const { properties } = this.definition
-      return properties ? {
+      const schema = properties ? {
         id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
         ...convertSchema(properties),
         additionalProperties: false
       } : null
+      console.log(util.inspect(schema, { depth: 10 }))
+      return schema
     })
   }
 
@@ -178,6 +207,12 @@ export default class Model extends objection.Model {
   static get dateAttributes() {
     return this.getCached('dateAttributes', () => (
       this.getAttributesWithTypes(['date', 'datetime', 'timestamp'])
+    ), [])
+  }
+
+  static get booleanAttributes() {
+    return this.getCached('booleanAttributes', () => (
+      this.getAttributesWithTypes(['boolean'])
     ), [])
   }
 
@@ -250,16 +285,17 @@ const definitionHandlers = {
     final(properties) {
       // Include auto-generated 'id' properties for models and relations.
       const missing = {}
-      function includeProperty(name, type = 'integer') {
-        if (!(name in properties)) {
-          missing[name] = { type }
+      function addIdProperty(name, primary) {
+        if (!(name in properties || name in missing)) {
+          const type = 'integer'
+          missing[name] = primary ? { type, primary } : { type }
         }
       }
 
-      includeProperty(this.getIdProperty())
+      addIdProperty(this.getIdProperty(), true)
       for (const relation of Object.values(this.getRelations())) {
         for (const property of relation.ownerProp.props) {
-          includeProperty(property)
+          addIdProperty(property)
         }
       }
       return {
