@@ -7,6 +7,13 @@ import { isObject, isString, capitalize } from '@/utils'
 // Instead of a separate class, we extend objection.QueryBuilder to better
 // integrate with Objection.js
 
+// Invert default setting of insertMissing for dito:
+const upsertOptions = {
+  relate: true,
+  unrelate: true,
+  insertMissing: true
+}
+
 export default class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
@@ -16,16 +23,30 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   upsertGraph(modelsOrObjects, opt) {
     return super.upsertGraph(modelsOrObjects, {
-      // Invert default setting of insertMissing for dito:
-      insertMissing: true,
+      ...upsertOptions,
       ...opt
     })
   }
 
   upsertGraphAndFetch(modelsOrObjects, opt) {
     return super.upsertGraphAndFetch(modelsOrObjects, {
-      // Invert default setting of insertMissing for dito:
-      insertMissing: true,
+      ...upsertOptions,
+      ...opt
+    })
+  }
+
+  patchGraph(modelsOrObjects, opt) {
+    // TODO: Implement patch option in Objection.js!
+    // https://github.com/Vincit/objection.js/issues/557
+    return this.upsertGraph(modelsOrObjects, {
+      patch: true,
+      ...opt
+    })
+  }
+
+  patchGraphAndFetch(modelsOrObjects, opt) {
+    return this.upsertGraphAndFetch(modelsOrObjects, {
+      patch: true,
       ...opt
     })
   }
