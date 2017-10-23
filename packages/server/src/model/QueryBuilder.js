@@ -16,7 +16,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   upsertGraph(modelsOrObjects, opt) {
     return super.upsertGraph(modelsOrObjects, {
-      // Invert default setting of insertMissing for Dito:
+      // Invert default setting of insertMissing for dito:
+      insertMissing: true,
+      ...opt
+    })
+  }
+
+  upsertGraphAndFetch(modelsOrObjects, opt) {
+    return super.upsertGraphAndFetch(modelsOrObjects, {
+      // Invert default setting of insertMissing for dito:
       insertMissing: true,
       ...opt
     })

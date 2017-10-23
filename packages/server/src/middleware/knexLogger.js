@@ -3,17 +3,14 @@ import chalk from 'chalk'
 export default function knexLogger(knex) {
   return async (ctx, next) => {
     const queries = []
+    const responses = {}
+    const errors = {}
 
     const captureQueries = builder => {
       const startTime = process.hrtime()
       const group = []
 
-      builder.on('query', query => {
-        group.push(query)
-        queries.push(query)
-      })
-
-      builder.on('end', () => {
+      const end = () => {
         // all queries are completed at this point.
         // in the future, it'd be good to separate out each individual query,
         // but for now, this isn't something that knex supports. see the
@@ -24,16 +21,39 @@ export default function knexLogger(knex) {
         group.forEach(query => {
           query.duration = ms.toFixed(3)
         })
+      }
+
+      builder.on('query', query => {
+        group.push(query)
+        queries.push(query)
+      })
+
+      builder.on('query-response', (response, query) => {
+        responses[query.__knexQueryUid] = response
+        end()
+      })
+
+      builder.on('query-error', (error, query) => {
+        errors[query.__knexQueryUid] = error
+        end()
       })
     }
 
     const logQueries = () => {
       for (const query of queries) {
-        console.log('  %s %s %s %s',
+        const uid = query.__knexQueryUid
+        const response = responses[uid]
+        const error = errors[uid]
+        console.log('  %s %s %s %s\n%s',
           chalk.yellow.bold('knex:sql'),
           chalk.cyan(query.sql),
           chalk.gray('{' + query.bindings.join(', ') + '}'),
-          chalk.magenta(query.duration + 'ms')
+          chalk.magenta(query.duration + 'ms'),
+          response
+            ? chalk.green(JSON.stringify(response))
+            : error
+              ? chalk.red(JSON.stringify(error))
+              : ''
         )
       }
     }

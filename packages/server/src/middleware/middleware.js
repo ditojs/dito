@@ -2,20 +2,20 @@ import compose from 'koa-compose'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import helmet from 'koa-helmet'
-import logger from 'koa-logger'
-import errorHandler from './errorHandler'
+import koaLogger from 'koa-logger'
 import knexLogger from './knexLogger'
+import errorHandler from './errorHandler'
 
 export default function middleware(app) {
   const dev = app.config.environment === 'development'
   const {
     log: {
-      requests = dev,
+      server = dev,
       sql = dev
     } = {}
   } = app.config
   return compose([
-    requests && logger(),
+    server && koaLogger(),
     sql && knexLogger(app.knex),
     helmet(),
     cors(),
