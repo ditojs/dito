@@ -141,6 +141,9 @@ export default class Model extends objection.Model {
     return json
   }
 
+  // Only pick properties for database JSON that is mentioned in the schema.
+  static pickJsonSchemaProperties = true
+
   static get tableName() {
     // Convention: Use the class name as the tableName, plus normalization:
     return this.app.normalizeDbNames ? underscore(this.name) : this.name
@@ -194,8 +197,7 @@ export default class Model extends objection.Model {
       const schema = properties ? {
         id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
-        ...convertSchema(properties),
-        additionalProperties: false
+        ...convertSchema(properties)
       } : null
       console.log(util.inspect(schema, { depth: 10 }))
       return schema
