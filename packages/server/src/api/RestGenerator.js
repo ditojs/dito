@@ -2,9 +2,9 @@ import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
 // import findQuery from 'objection-find'
-import { isObject, hyphenate } from '@/utils'
-import { convertSchema } from '@/model/schema'
+import { isObject, isFunction, hyphenate } from '@/utils'
 import { NotFoundError } from '@/errors'
+import convertSchema from '@/model/convertSchema'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
@@ -97,6 +97,8 @@ export default class RestGenerator {
 
 // TODO: Add normalization Options!
 function normalize(name, plural = false) {
+  // Remove '$' from member method paths
+  name = name.replace(/\$/g, '')
   return hyphenate(plural ? pluralize(name) : name)
 }
 
@@ -203,7 +205,7 @@ function getReturn(modelClass, method, validate, value) {
 }
 
 function checkMethod(func, modelClass, name, prefix, statusCode = 404) {
-  if (!func) {
+  if (!isFunction(func)) {
     const err = new NotFoundError(
       `${prefix} method '${name}' not found on Model '${modelClass.name}'`)
     err.statusCode = statusCode
