@@ -132,6 +132,15 @@ export default class Model extends objection.Model {
     return json
   }
 
+  $formatJson(json) {
+    json = super.$formatJson(json)
+    const { computedAttributes } = this.constructor
+    for (const key of computedAttributes) {
+      json[key] = this[key]
+    }
+    return json
+  }
+
   static get tableName() {
     // Convention: Use the class name as the tableName, plus normalization:
     return this.app.normalizeDbNames ? underscore(this.name) : this.name
@@ -149,15 +158,19 @@ export default class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static getAttributesWithTypes(types) {
+  static getAttributes(filter) {
     const attributes = []
     const { properties = {} } = this.definition
     for (const [name, property] of Object.entries(properties)) {
-      if (types.includes(property.type)) {
+      if (!filter || filter(property)) {
         attributes.push(name)
       }
     }
     return attributes
+  }
+
+  static getAttributesWithType(types) {
+    return this.getAttributes(({ type }) => types.includes(type))
   }
 
   static getCached(name, calculate, empty = {}) {
@@ -200,19 +213,25 @@ export default class Model extends objection.Model {
 
   static get jsonAttributes() {
     return this.getCached('jsonAttributes', () => (
-      this.getAttributesWithTypes(['object', 'array'])
+      this.getAttributesWithType(['object', 'array'])
     ), [])
   }
 
   static get dateAttributes() {
     return this.getCached('dateAttributes', () => (
-      this.getAttributesWithTypes(['date', 'datetime', 'timestamp'])
+      this.getAttributesWithType(['date', 'datetime', 'timestamp'])
     ), [])
   }
 
   static get booleanAttributes() {
     return this.getCached('booleanAttributes', () => (
-      this.getAttributesWithTypes(['boolean'])
+      this.getAttributesWithType(['boolean'])
+    ), [])
+  }
+
+  static get computedAttributes() {
+    return this.getCached('computedAttributes', () => (
+      this.getAttributes(({ computed }) => computed)
     ), [])
   }
 
