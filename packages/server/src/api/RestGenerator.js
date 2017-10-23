@@ -273,9 +273,10 @@ const restHandlers = {
     put(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          // TODO: upsertGraphAndFetch()
-          // https://github.com/Vincit/objection.js/issues/556
-          .upsertGraph(ctx.request.body)
+          .upsertGraphAndFetch(ctx.request.body, {
+            insertMissing: true,
+            patch: false
+          })
       })
     },
 
@@ -285,13 +286,16 @@ const restHandlers = {
         return modelClass.query()
           // TODO: patchGraphAndFetch()
           // https://github.com/Vincit/objection.js/issues/557
-          .upsertGraph(ctx.request.body)
+          .upsertGraphAndFetch(ctx.request.body, {
+            insertMissing: true,
+            patch: true
+          })
       })
     }
   },
 
   member: {
-    // get collection
+    // get member
     get(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
@@ -301,30 +305,38 @@ const restHandlers = {
         .then(model => checkModel(model, modelClass, id))
     },
 
-    // delete collection
+    // delete member
     delete(modelClass, ctx) {
       return modelClass.query()
         .deleteById(ctx.params.id)
         .then(count => ({ count }))
     },
 
-    // put collection
+    // put member
     put(modelClass, ctx) {
       const { id } = ctx.params
+      // TODO: Test upsertGraphAndFetch() and see if it works with findById()
       return modelClass.query()
-        // TODO: upsertGraphAndFetch()
-        // https://github.com/Vincit/objection.js/issues/556
-        .updateAndFetchById(id, ctx.request.body)
+        .findById(id)
+        .upsertGraphAndFetch(ctx.request.body, {
+          insertMissing: true,
+          patch: false
+        })
         .then(model => checkModel(model, modelClass, id))
     },
 
-    // patch collection
+    // patch member
     patch(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
+        .patchAndFetchById(id, ctx.request.body)
         // TODO: patchGraphAndFetch()
         // https://github.com/Vincit/objection.js/issues/557
-        .patchAndFetchById(id, ctx.request.body)
+        // .findById(id)
+        // .upsertGraphAndFetch(ctx.request.body, {
+        //   insertMissing: true,
+        //   patch: true
+        // })
         .then(model => checkModel(model, modelClass, id))
     }
   },
