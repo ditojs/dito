@@ -27,3 +27,11 @@ export function isPromise(obj) {
 export function asArray(obj) {
   return isArray(obj) ? obj : [obj]
 }
+
+export function pick(...args) {
+  for (const arg of args) {
+    if (arg !== undefined) {
+      return arg
+    }
+  }
+}

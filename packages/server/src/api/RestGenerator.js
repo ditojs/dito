@@ -2,7 +2,7 @@ import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
 // import findQuery from 'objection-find'
-import { isObject, isFunction, hyphenate } from '@/utils'
+import { isObject, isFunction, pick, hyphenate } from '@/utils'
 import { NotFoundError } from '@/errors'
 import convertSchema from '@/model/convertSchema'
 
@@ -23,11 +23,12 @@ export default class RestGenerator {
     this.addMethods(modelClass, 'collectionMethod', methods.collection, 1)
     this.addRoutes(modelClass, null, 'member', routes.member, 1)
     this.addMethods(modelClass, 'memberMethod', methods.member, 1)
-    if (routes.relations) {
+    const { relations } = routes
+    if (relations) {
       for (const relation of Object.values(modelClass.getRelations())) {
         const { name } = relation
         this.log(`${chalk.blue(name)}${chalk.white(':')}`, 1)
-        const settings = routes.relations[name]
+        const settings = pick(relations[name], relations)
         this.addRoutes(modelClass, relation, 'relation', settings, 2)
         if (!relation.isOneToOne()) {
           // TODO: Shouldn't OneToOne relations also offer a way to unrelated /
@@ -149,15 +150,13 @@ const settingsHandlers = {
   member: getSettings,
 
   relation: (verb, handlers, settings) => {
-    const relation = settings && settings.relation
     return getSettings(verb, handlers,
-      relation !== undefined ? relation : settings)
+      settings && pick(settings.relation, settings))
   },
 
   relationInstance: (verb, handlers, settings) => {
-    const member = settings && settings.relation
     return getSettings(verb, handlers,
-      member !== undefined ? member : settings)
+      settings && pick(settings.relation, settings))
   }
 }
 
