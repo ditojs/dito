@@ -182,8 +182,24 @@ export default class Model extends objection.Model {
   }
 
   static prepareModel() {
-    // Make sure all relations are defined correctly, with back-references.
-    for (const relation of Object.values(this.getRelations())) {
+    const exposeRelated = (name, accessor) => {
+      if (!(accessor in this.prototype)) {
+        Object.defineProperty(this.prototype, accessor, {
+          get() {
+            return this.$relatedQuery(name)
+          },
+          configurable: false,
+          enumerable: false
+        })
+      }
+    }
+
+    for (const [name, relation] of Object.entries(this.getRelations())) {
+      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
+      // in case $name clashes with a function:
+      exposeRelated(name, `$${name}`)
+      exposeRelated(name, `$$${name}`)
+      // Make sure all relations are defined correctly, with back-references.
       const { relatedModelClass } = relation
       const relatedProperties = relatedModelClass.definition.properties || {}
       for (const property of relation.relatedProp.props) {
