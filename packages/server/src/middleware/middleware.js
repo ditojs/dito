@@ -7,9 +7,16 @@ import errorHandler from './errorHandler'
 import knexLogger from './knexLogger'
 
 export default function middleware(app) {
+  const dev = app.config.environment === 'development'
+  const {
+    log: {
+      requests = dev,
+      sql = dev
+    } = {}
+  } = app.config
   return compose([
-    app.config.environment === 'development' && logger(),
-    app.config.environment === 'development' && knexLogger(app.knex),
+    requests && logger(),
+    sql && knexLogger(app.knex),
     helmet(),
     cors(),
     bodyParser(),
