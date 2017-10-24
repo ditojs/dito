@@ -1,16 +1,241 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, underscore, camelize } from '@/utils'
+import { isObject } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import convertSchema from './convertSchema'
 import convertRelations from './convertRelations'
 import EventEmitterMixin from './EventEmitterMixin'
 
-const definitionMap = new WeakMap()
-const cacheMap = new WeakMap()
-
 export default class Model extends objection.Model {
+  static async count(...args) {
+    const res = await this.query().count(...args).first()
+    return res && +res[Object.keys(res)[0]] || 0
+  }
+
+  async $update(attributes) {
+    const updated = await this.$query().updateAndFetch(attributes)
+    return this.$set(updated)
+  }
+
+  async $patch(attributes) {
+    const patched = await this.$query().patchAndFetch(attributes)
+    return this.$set(patched)
+  }
+
+  get $app() {
+    return this.constructor.app
+  }
+
+  static get tableName() {
+    const knex = this.knex()
+    return knex.normalizeIdentifier
+      ? knex.normalizeIdentifier(this.name)
+      : this.name
+  }
+
+  static get idColumn() {
+    const { properties = {} } = this.definition
+    const ids = []
+    for (const [name, property] of Object.entries(properties)) {
+      if (property.primary) {
+        ids.push(this.propertyNameToColumnName(name))
+      }
+    }
+    const { length } = ids
+    return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
+  }
+
+  $formatDatabaseJson(json) {
+    const { constructor } = this
+    const knex = constructor.knex()
+    for (const key of constructor.dateAttributes) {
+      const date = json[key]
+      if (date !== undefined) {
+        json[key] = date && date.toISOString ? date.toISOString() : date
+      }
+    }
+    if (knex.isSQLite) {
+      //  SQLite needs boolean conversion...
+      for (const key of constructor.booleanAttributes) {
+        const bool = json[key]
+        if (bool !== undefined) {
+          json[key] = bool ? 1 : 0
+        }
+      }
+    }
+    // NOTE: No need to normalize the identifiers in the JSON in case of
+    // normalizeDbNames, as this already happens through
+    // knex.config.wrapIdentifier(), see App.js
+    return super.$formatDatabaseJson(json)
+  }
+
+  $parseDatabaseJson(json) {
+    json = super.$parseDatabaseJson(json)
+    const { constructor } = this
+    const knex = constructor.knex()
+    // NOTE: Demoralization of identifiers is still our own business:
+    json = knex.denormalizeIdentifiers
+      ? knex.denormalizeIdentifiers(json)
+      : json
+    for (const key of constructor.dateAttributes) {
+      const date = json[key]
+      if (date !== undefined) {
+        json[key] = date ? new Date(date) : date
+      }
+    }
+    if (knex.isSQLite) {
+      //  SQLite needs boolean conversion...
+      for (const key of constructor.booleanAttributes) {
+        const bool = json[key]
+        if (bool !== undefined) {
+          json[key] = !!bool
+        }
+      }
+    }
+    return json
+  }
+
+  $formatJson(json) {
+    json = super.$formatJson(json)
+    const { computedAttributes } = this.constructor
+    for (const key of computedAttributes) {
+      json[key] = this[key]
+    }
+    return json
+  }
+
+  static get jsonSchema() {
+    return this.getCached('jsonSchema', () => {
+      const { properties } = this.definition
+      const schema = properties ? {
+        id: this.name,
+        $schema: 'http://json-schema.org/draft-06/schema#',
+        ...convertSchema(properties)
+      } : null
+      console.log(util.inspect(schema, { depth: 10 }))
+      return schema
+    })
+  }
+
+  static get relationMappings() {
+    return this.getCached('relationMappings', () => {
+      const { relations } = this.definition
+      return relations
+        ? convertRelations(this, relations, this.app.models)
+        : null
+    })
+  }
+
+  static get jsonAttributes() {
+    return this.getCached('jsonAttributes', () => (
+      this.getAttributesWithType(['object', 'array'])
+    ), [])
+  }
+
+  static get dateAttributes() {
+    return this.getCached('dateAttributes', () => (
+      this.getAttributesWithType(['date', 'datetime', 'timestamp'])
+    ), [])
+  }
+
+  static get booleanAttributes() {
+    return this.getCached('booleanAttributes', () => (
+      this.getAttributesWithType(['boolean'])
+    ), [])
+  }
+
+  static get computedAttributes() {
+    return this.getCached('computedAttributes', () => (
+      this.getAttributes(({ computed }) => computed)
+    ), [])
+  }
+
+  static getAttributes(filter) {
+    const attributes = []
+    const { properties = {} } = this.definition
+    for (const [name, property] of Object.entries(properties)) {
+      if (!filter || filter(property)) {
+        attributes.push(name)
+      }
+    }
+    return attributes
+  }
+
+  static getAttributesWithType(types) {
+    return this.getAttributes(({ type }) => types.includes(type))
+  }
+
+  static getCached(name, calculate, empty = {}) {
+    if (!cacheMap.has(this)) {
+      cacheMap.set(this, {})
+    }
+    const cache = cacheMap.get(this)
+    let cached = cache[name]
+    if (cached === undefined) {
+      // Temporarily set cache to an empty object to prevent endless recursion
+      // with interdependent jsonSchema related calls...
+      cache[name] = empty
+      cache[name] = cached = calculate()
+    }
+    return cached
+  }
+
+  static prepareModel() {
+    const exposeRelated = (name, accessor) => {
+      if (!(accessor in this.prototype)) {
+        Object.defineProperty(this.prototype, accessor, {
+          get() {
+            return this.$relatedQuery(name)
+          },
+          configurable: false,
+          enumerable: false
+        })
+      }
+    }
+
+    for (const [name, relation] of Object.entries(this.getRelations())) {
+      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
+      // in case $name clashes with a function:
+      exposeRelated(name, `$${name}`)
+      exposeRelated(name, `$$${name}`)
+      // Make sure all relations are defined correctly, with back-references.
+      const { relatedModelClass } = relation
+      const relatedProperties = relatedModelClass.definition.properties || {}
+      for (const property of relation.relatedProp.props) {
+        if (!(property in relatedProperties)) {
+          throw new Error(
+            `\`${relatedModelClass.name}\` is missing back-reference for ` +
+            `relation \`${this.name}.${relation.name}\``
+          )
+        }
+      }
+      // TODO: Check `through` settings also
+    }
+    this.getValidator().precompileModel(this)
+    // Install all events listed in the static events object.
+    const { events = {} } = this.definition
+    for (const [event, handler] of Object.entries(events)) {
+      this.on(event, handler)
+    }
+  }
+
+  static createValidator() {
+    // Use a shared validator per app, so model schemas can reference each other
+    return this.app.validator
+  }
+
+  static createValidationError(errors) {
+    return new this.ValidationError(errors,
+      `The provided data for the ${this.name} instance is not valid`)
+  }
+
+  static ValidationError = ValidationError
+  static QueryBuilder = QueryBuilder
+
+  // Only pick properties for database JSON that is mentioned in the schema.
+  static pickJsonSchemaProperties = true
+
   static get definition() {
     // Check if we already have a definition object for this class and return it
     let definition = definitionMap.get(this)
@@ -72,230 +297,12 @@ export default class Model extends objection.Model {
     }
     return definition
   }
-
-  static async count(...args) {
-    const res = await this.query().count(...args).first()
-    return res && +res[Object.keys(res)[0]] || 0
-  }
-
-  async $update(attributes) {
-    const updated = await this.$query().updateAndFetch(attributes)
-    return this.$set(updated)
-  }
-
-  async $patch(attributes) {
-    const patched = await this.$query().patchAndFetch(attributes)
-    return this.$set(patched)
-  }
-
-  get $app() {
-    return this.constructor.app
-  }
-
-  $formatDatabaseJson(json) {
-    const { dateAttributes, booleanAttributes } = this.constructor
-    for (const key of dateAttributes) {
-      const date = json[key]
-      if (date !== undefined) {
-        json[key] = date && date.toISOString ? date.toISOString() : date
-      }
-    }
-    // TODO: SQLLite needs boolean conversion, other adapters may not actually
-    // need this. Make it dependent on a connector config option?
-    for (const key of booleanAttributes) {
-      const bool = json[key]
-      if (bool !== undefined) {
-        json[key] = bool ? 1 : 0
-      }
-    }
-    if (this.constructor.app.normalizeDbNames) {
-      json = normalizeProperties(json, underscore)
-    }
-    return super.$formatDatabaseJson(json)
-  }
-
-  $parseDatabaseJson(json) {
-    json = super.$parseDatabaseJson(json)
-    if (this.constructor.app.normalizeDbNames) {
-      json = normalizeProperties(json, camelize)
-    }
-    const { dateAttributes, booleanAttributes } = this.constructor
-    for (const key of dateAttributes) {
-      const date = json[key]
-      if (date !== undefined) {
-        json[key] = date ? new Date(date) : date
-      }
-    }
-    // TODO: SQLLite needs boolean conversion, other adapters may not actually
-    // need this. Make it dependent on a connector config option?
-    for (const key of booleanAttributes) {
-      const bool = json[key]
-      if (bool !== undefined) {
-        json[key] = !!bool
-      }
-    }
-    return json
-  }
-
-  $formatJson(json) {
-    json = super.$formatJson(json)
-    const { computedAttributes } = this.constructor
-    for (const key of computedAttributes) {
-      json[key] = this[key]
-    }
-    return json
-  }
-
-  // Only pick properties for database JSON that is mentioned in the schema.
-  static pickJsonSchemaProperties = true
-
-  static get tableName() {
-    // Convention: Use the class name as the tableName, plus normalization:
-    return this.app.normalizeDbNames ? underscore(this.name) : this.name
-  }
-
-  static get idColumn() {
-    const { properties = {} } = this.definition
-    const ids = []
-    for (const [name, property] of Object.entries(properties)) {
-      if (property.primary) {
-        ids.push(this.propertyNameToColumnName(name))
-      }
-    }
-    const { length } = ids
-    return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
-  }
-
-  static getAttributes(filter) {
-    const attributes = []
-    const { properties = {} } = this.definition
-    for (const [name, property] of Object.entries(properties)) {
-      if (!filter || filter(property)) {
-        attributes.push(name)
-      }
-    }
-    return attributes
-  }
-
-  static getAttributesWithType(types) {
-    return this.getAttributes(({ type }) => types.includes(type))
-  }
-
-  static getCached(name, calculate, empty = {}) {
-    if (!cacheMap.has(this)) {
-      cacheMap.set(this, {})
-    }
-    const cache = cacheMap.get(this)
-    let cached = cache[name]
-    if (cached === undefined) {
-      // Temporarily set cache to an empty object to prevent endless recursion
-      // with interdependent jsonSchema related calls...
-      cache[name] = empty
-      cache[name] = cached = calculate()
-    }
-    return cached
-  }
-
-  static get jsonSchema() {
-    return this.getCached('jsonSchema', () => {
-      const { properties } = this.definition
-      const schema = properties ? {
-        id: this.name,
-        $schema: 'http://json-schema.org/draft-06/schema#',
-        ...convertSchema(properties)
-      } : null
-      console.log(util.inspect(schema, { depth: 10 }))
-      return schema
-    })
-  }
-
-  static get relationMappings() {
-    return this.getCached('relationMappings', () => {
-      const { relations } = this.definition
-      return relations
-        ? convertRelations(this, relations, this.app.models)
-        : null
-    })
-  }
-
-  static get jsonAttributes() {
-    return this.getCached('jsonAttributes', () => (
-      this.getAttributesWithType(['object', 'array'])
-    ), [])
-  }
-
-  static get dateAttributes() {
-    return this.getCached('dateAttributes', () => (
-      this.getAttributesWithType(['date', 'datetime', 'timestamp'])
-    ), [])
-  }
-
-  static get booleanAttributes() {
-    return this.getCached('booleanAttributes', () => (
-      this.getAttributesWithType(['boolean'])
-    ), [])
-  }
-
-  static get computedAttributes() {
-    return this.getCached('computedAttributes', () => (
-      this.getAttributes(({ computed }) => computed)
-    ), [])
-  }
-
-  static prepareModel() {
-    const exposeRelated = (name, accessor) => {
-      if (!(accessor in this.prototype)) {
-        Object.defineProperty(this.prototype, accessor, {
-          get() {
-            return this.$relatedQuery(name)
-          },
-          configurable: false,
-          enumerable: false
-        })
-      }
-    }
-
-    for (const [name, relation] of Object.entries(this.getRelations())) {
-      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
-      // in case $name clashes with a function:
-      exposeRelated(name, `$${name}`)
-      exposeRelated(name, `$$${name}`)
-      // Make sure all relations are defined correctly, with back-references.
-      const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.definition.properties || {}
-      for (const property of relation.relatedProp.props) {
-        if (!(property in relatedProperties)) {
-          throw new Error(
-            `\`${relatedModelClass.name}\` is missing back-reference for ` +
-            `relation \`${this.name}.${relation.name}\``
-          )
-        }
-      }
-      // TODO: Check `through` settings also
-    }
-    this.getValidator().precompileModel(this)
-    // Install all events listed in the static events object.
-    const { events = {} } = this.definition
-    for (const [event, handler] of Object.entries(events)) {
-      this.on(event, handler)
-    }
-  }
-
-  static createValidator() {
-    // Use a shared validator per app, so model schemas can reference each other
-    return this.app.validator
-  }
-
-  static createValidationError(errors) {
-    return new this.ValidationError(errors,
-      `The provided data for the ${this.name} instance is not valid`)
-  }
-
-  static ValidationError = ValidationError
-  static QueryBuilder = QueryBuilder
 }
 
 EventEmitterMixin(Model)
+
+const definitionMap = new WeakMap()
+const cacheMap = new WeakMap()
 
 const definitionHandlers = {
   properties: {
@@ -335,12 +342,4 @@ const definitionHandlers = {
   methods: {},
   routes: {},
   events: {}
-}
-
-function normalizeProperties(object, translate) {
-  const converted = {}
-  for (const key in object) {
-    converted[translate(key)] = object[key]
-  }
-  return converted
 }

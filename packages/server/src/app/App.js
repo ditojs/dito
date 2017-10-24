@@ -1,6 +1,6 @@
 import Knex from 'knex'
 import Koa from 'koa'
-import { underscore } from '@/utils'
+import { underscore, camelize } from '@/utils'
 import Validator from '@/model/Validator'
 import KnexMixin from './KnexMixin'
 
@@ -8,21 +8,39 @@ export default class App extends Koa {
   constructor(config, { validator, models }) {
     super()
     this.config = config
-    this.normalizeDbNames = config.normalizeDbNames
-    let knexConfig = config.knex
-    if (this.normalizeDbNames) {
+    let { knex: knexConfig, normalizeDbNames } = config
+    if (normalizeDbNames) {
+      const normalizeIdentifier = name => underscore(name)
+      const denormalizeIdentifier = name => camelize(name)
+
       // Always convert Knex identifiers to underscored versions.
       // TODO: wrapIdentifier will only work in Knex 0.14.0 onwards.
       // Until then, use the _wrapString() hack below instead.
       knexConfig = {
         ...knexConfig,
+
+        // These are our own add-ons and used by our Model to convert
+        // identifiers back and forth, see KnexMixin.js
+        normalizeIdentifier,
+        denormalizeIdentifier,
+
+        denormalizeIdentifiers(data) {
+          const converted = {}
+          for (const key in data) {
+            converted[denormalizeIdentifier(key)] = data[key]
+          }
+          return converted
+        },
+
+        // This is Knex' standard hook into processing identifiers.
+        // We add the call to our own normalizeIdentifier() to it:
         wrapIdentifier(value, wrapIdentifier) {
-          return wrapIdentifier(underscore(value))
+          return wrapIdentifier(normalizeIdentifier(value))
         }
       }
     }
     this.knex = KnexMixin(Knex(knexConfig))
-    if (this.normalizeDbNames) {
+    if (normalizeDbNames) {
       // HACK: See above about replacing this with standardized wrapIdentifier()
       const { prototype } = this.knex.client.formatter().constructor
       const { _wrapString } = prototype

@@ -1,24 +1,39 @@
 // Methods to be added to the Dito knex instance (app.knex):
 
 const properties = Object.getOwnPropertyDescriptors({
-  getDialect() {
+  normalizeIdentifier(name) {
+    const { normalizeIdentifier } = this.client.config
+    return normalizeIdentifier ? normalizeIdentifier(name) : name
+  },
+
+  denormalizeIdentifier(name) {
+    const { denormalizeIdentifier } = this.client.config
+    return denormalizeIdentifier ? denormalizeIdentifier(name) : name
+  },
+
+  denormalizeIdentifiers(json) {
+    const { denormalizeIdentifiers } = this.client.config
+    return denormalizeIdentifiers ? denormalizeIdentifiers(json) : json
+  },
+
+  get dialect() {
     return this.client && this.client.dialect || null
   },
 
-  isPostgres() {
-    return this.getDialect() === 'postgresql'
+  get isPostgres() {
+    return this.dialect === 'postgresql'
   },
 
-  isMySql() {
-    return this.getDialect() === 'mysql'
+  get isMySQL() {
+    return this.dialect === 'mysql'
   },
 
-  isSqlite() {
-    return this.getDialect() === 'sqlite3'
+  get isSQLite() {
+    return this.dialect === 'sqlite3'
   },
 
-  isMsSql() {
-    return this.getDialect() === 'mssql'
+  get isMsSQL() {
+    return this.dialect === 'mssql'
   }
 })
 
