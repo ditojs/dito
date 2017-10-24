@@ -21,6 +21,37 @@ export default class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
   }
 
+  static forClass(modelClass) {
+    const builder = new this(modelClass)
+    const { eager } = modelClass
+    if (eager) {
+      builder.eager(eager)
+    }
+    return builder
+  }
+
+  unscoped() {
+    return this
+      .internalOptions({ unscoped: true })
+      .clearEager()
+  }
+
+  eager(exp, filters) {
+    const { eager } = this.modelClass()
+    const { unscoped } = this.internalOptions()
+    // eager() is also used internally by upsertGraph() & co, but when it is
+    // called by these methods, `exp` is a `RelationExpression`. To avoid
+    // interfering with these methods, only support preserving the default
+    // eager settings when working with string expressions:
+    if (!unscoped && eager && isString(exp)) {
+      super.eager(eager)
+      this.mergeEager(exp, filters)
+    } else {
+      super.eager(exp, filters)
+    }
+    return this
+  }
+
   insert(data, ...args) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
@@ -42,34 +73,6 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return isString(first)
       ? this.filter(first, ...args)
       : super.modify(first, ...args)
-  }
-
-  unscoped() {
-    return this.clearEager()
-  }
-
-  static forClass(modelClass) {
-    const builder = new this(modelClass)
-    const { eager } = modelClass
-    if (eager) {
-      builder.eager(eager)
-    }
-    return builder
-  }
-
-  eager(exp, filters) {
-    const { eager } = this.modelClass()
-    // eager() is also used internally by upsertGraph() & co, but when it is
-    // called by these methods, `exp` is a `RelationExpression`. To avoid
-    // interfering with these methods, only support preserving the default
-    // eager settings when working with string expressions:
-    if (eager && isString(exp)) {
-      super.eager(eager)
-      this.mergeEager(exp, filters)
-    } else {
-      super.eager(exp, filters)
-    }
-    return this
   }
 
   upsertGraph(modelsOrObjects, opt) {
