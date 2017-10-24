@@ -2,6 +2,7 @@ import Knex from 'knex'
 import Koa from 'koa'
 import { underscore } from '@/utils'
 import Validator from '@/model/Validator'
+import KnexMixin from './KnexMixin'
 
 export default class App extends Koa {
   constructor(config, { validator, models }) {
@@ -20,7 +21,7 @@ export default class App extends Koa {
         }
       }
     }
-    this.knex = Knex(knexConfig)
+    this.knex = KnexMixin(Knex(knexConfig))
     if (this.normalizeDbNames) {
       // HACK: See above about replacing this with standardized wrapIdentifier()
       const { prototype } = this.knex.client.formatter().constructor
