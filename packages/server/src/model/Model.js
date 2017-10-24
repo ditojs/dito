@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isArray, isObject } from '@/utils'
+import { isObject, isString } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import convertSchema from './convertSchema'
@@ -44,6 +44,32 @@ export default class Model extends objection.Model {
     }
     const { length } = ids
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
+  }
+
+  static get namedFilters() {
+    return this.definition.scopes
+  }
+
+  static get relationMappings() {
+    return this.getCached('relationMappings', () => {
+      const { relations } = this.definition
+      return relations
+        ? convertRelations(this, relations, this.app.models)
+        : null
+    })
+  }
+
+  static get jsonSchema() {
+    return this.getCached('jsonSchema', () => {
+      const { properties } = this.definition
+      const schema = properties ? {
+        id: this.name,
+        $schema: 'http://json-schema.org/draft-06/schema#',
+        ...convertSchema(properties)
+      } : null
+      console.log(util.inspect(schema, { depth: 10 }))
+      return schema
+    })
   }
 
   $formatDatabaseJson(json) {
@@ -103,28 +129,6 @@ export default class Model extends objection.Model {
       json[key] = this[key]
     }
     return json
-  }
-
-  static get jsonSchema() {
-    return this.getCached('jsonSchema', () => {
-      const { properties } = this.definition
-      const schema = properties ? {
-        id: this.name,
-        $schema: 'http://json-schema.org/draft-06/schema#',
-        ...convertSchema(properties)
-      } : null
-      console.log(util.inspect(schema, { depth: 10 }))
-      return schema
-    })
-  }
-
-  static get relationMappings() {
-    return this.getCached('relationMappings', () => {
-      const { relations } = this.definition
-      return relations
-        ? convertRelations(this, relations, this.app.models)
-        : null
-    })
   }
 
   static get jsonAttributes() {
@@ -250,7 +254,7 @@ export default class Model extends objection.Model {
     const getDefinition = name => {
       let merged
       let modelClass = this
-      const { each, final } = definitionHandlers[name]
+      const handler = definitionHandlers[name]
       while (modelClass !== objection.Model) {
         if (name in modelClass) {
           // Use reflection through getOwnPropertyDescriptor() to be able to
@@ -259,20 +263,19 @@ export default class Model extends objection.Model {
           // relations for `this` inside `get relations`.
           const { get, value } = Object.getOwnPropertyDescriptor(
             modelClass, name) || {}
-          let object = get ? get.call(this) : value
+          const object = get ? get.call(this) : value
           if (isObject(object)) {
-            object = each && each.call(this, object) || object
             merged = Object.assign(merged || {}, object)
           }
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
       // Once calculated, override definition getter with merged value
-      if (final && merged) {
-        // Override definition before calling final(), to prevent endless
+      if (handler && merged) {
+        // Override definition before calling handler(), to prevent endless
         // recursion with interdependent definition related calls...
         setDefinition(name, { value: merged }, true)
-        merged = final.call(this, merged) || merged
+        merged = handler.call(this, merged) || merged
         // NOTE: Now that it changed, setDefinition() is called once more below.
       }
       if (merged) {
@@ -305,43 +308,48 @@ const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()
 
 const definitionHandlers = {
-  properties: {
-    each(properties) {
-      const converted = {}
-      // Convert short-form `name: type` to `name: { type }`.
-      for (const [name, property] of Object.entries(properties)) {
-        converted[name] = isObject(property) ? property : { type: property }
+  properties(properties) {
+    // Convert short-form `name: type` to `name: { type }`.
+    for (const [name, property] of Object.entries(properties)) {
+      if (isString(property)) {
+        properties[name] = { type: property }
       }
-      return converted
-    },
+    }
+    // Include auto-generated 'id' properties for models and relations.
+    const missing = {}
+    function addIdProperty(name, primary) {
+      if (!(name in properties || name in missing)) {
+        const type = 'integer'
+        missing[name] = primary ? { type, primary } : { type }
+      }
+    }
 
-    final(properties) {
-      // Include auto-generated 'id' properties for models and relations.
-      const missing = {}
-      function addIdProperty(name, primary) {
-        if (!(name in properties || name in missing)) {
-          const type = 'integer'
-          missing[name] = primary ? { type, primary } : { type }
-        }
+    addIdProperty(this.getIdProperty(), true)
+    for (const relation of Object.values(this.getRelations())) {
+      for (const property of relation.ownerProp.props) {
+        addIdProperty(property)
       }
+    }
+    return {
+      ...missing,
+      ...properties
+    }
+  },
 
-      addIdProperty(this.getIdProperty(), true)
-      for (const relation of Object.values(this.getRelations())) {
-        for (const property of relation.ownerProp.props) {
-          addIdProperty(property)
-        }
-      }
-      return {
-        ...missing,
-        ...properties
+  scopes(scopes) {
+    for (const [name, scope] of Object.entries(scopes)) {
+      if (isObject(scope)) {
+        // Convert find()-style filter object to filter function,
+        // see QueryBuilder#find()
+        scopes[name] = builder => builder.find(scope)
       }
     }
   },
 
-  relations: {},
-  methods: {},
-  routes: {},
-  events: {}
+  relations: null,
+  methods: null,
+  routes: null,
+  events: null
 }
 
 // Expose a selection of QueryBuilder methods directly on the model
@@ -350,6 +358,7 @@ for (const name of [
   'first',
   'find',
   'findOne',
+  'unscoped',
   'select',
   'insert',
   'update',

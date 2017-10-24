@@ -293,7 +293,7 @@ const restHandlers = {
       return modelClass.query()
         .findById(id)
         // TODO: .allowEager(modelClass.getFindQueryBuilder().allowEager())
-        .eager(ctx.query.eager)
+        .mergeEager(ctx.query.eager)
         .then(model => checkModel(model, modelClass, id))
     },
 
@@ -411,7 +411,7 @@ const restHandlers = {
                 // TODO:
                 // .allowEager(relation.relatedModelClass.getFindQueryBuilder()
                 //   .allowEager())
-                .eager(ctx.query.eager)
+                .mergeEager(ctx.query.eager)
             })
         }
       )

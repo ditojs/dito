@@ -47,10 +47,11 @@ export default function convertRelations(ownerModelClass, schema, models) {
       relation,
       modelClass,
       join: {
-        from,
-        through,
-        to
+        from, through, to
       } = {},
+      scope,
+      modify,
+      filter,
       ...rest
     } = relationSchema || {}
     const relationClass = relationLookup[relation] ||
@@ -82,6 +83,7 @@ export default function convertRelations(ownerModelClass, schema, models) {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
         join: { from, through, to },
+        modify: scope || modify || filter,
         ...rest
       }
     } else {

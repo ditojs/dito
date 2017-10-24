@@ -29,6 +29,49 @@ export default class QueryBuilder extends objection.QueryBuilder {
       : super.insert(data, ...args)
   }
 
+  filter(...args) {
+    const { namedFilters } = this.modelClass()
+    for (const name of args) {
+      const filter = namedFilters[name]
+      filter(this)
+    }
+    return this
+  }
+
+  modify(first, ...args) {
+    return isString(first)
+      ? this.filter(first, ...args)
+      : super.modify(first, ...args)
+  }
+
+  unscoped() {
+    return this.clearEager()
+  }
+
+  static forClass(modelClass) {
+    const builder = new this(modelClass)
+    const { eager } = modelClass
+    if (eager) {
+      builder.eager(eager)
+    }
+    return builder
+  }
+
+  eager(exp, filters) {
+    const { eager } = this.modelClass()
+    // eager() is also used internally by upsertGraph() & co, but when it is
+    // called by these methods, `exp` is a `RelationExpression`. To avoid
+    // interfering with these methods, only support preserving the default
+    // eager settings when working with string expressions:
+    if (eager && isString(exp)) {
+      super.eager(eager)
+      this.mergeEager(exp, filters)
+    } else {
+      super.eager(exp, filters)
+    }
+    return this
+  }
+
   upsertGraph(modelsOrObjects, opt) {
     return super.upsertGraph(modelsOrObjects, {
       ...upsertOptions,
@@ -59,10 +102,10 @@ export default class QueryBuilder extends objection.QueryBuilder {
     })
   }
 
-  find(params = {}) {
+  find(filter = {}) {
     // TODO: Add support for omit
     this._relationsToJoin = {}
-    for (const [key, value] of Object.entries(params)) {
+    for (const [key, value] of Object.entries(filter)) {
       const handler = handlers[key]
       if (handler) {
         handler(this, key, value)
@@ -77,8 +120,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(params) {
-    return this.find(params).first()
+  findOne(filter) {
+    return this.find(filter).first()
   }
 
   allow(refs) {
@@ -144,7 +187,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
 const handlers = {
   eager(builder, key, value) {
     if (value) {
-      builder.eager(value)
+      builder.mergeEager(value)
     }
   },
 
