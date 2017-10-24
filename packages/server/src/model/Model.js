@@ -2,9 +2,9 @@ import objection from 'objection'
 import util from 'util'
 import { isObject, underscore, camelize } from '@/utils'
 import { ValidationError } from '@/errors'
+import { QueryBuilder } from '@/query'
 import convertSchema from './convertSchema'
 import convertRelations from './convertRelations'
-import QueryBuilder from './QueryBuilder'
 import EventEmitterMixin from './EventEmitterMixin'
 
 const definitionMap = new WeakMap()
@@ -71,6 +71,11 @@ export default class Model extends objection.Model {
       setDefinition(name, { get: () => getDefinition(name) }, true)
     }
     return definition
+  }
+
+  static async count(...args) {
+    const res = await this.query().count(...args).first()
+    return res && +res[Object.keys(res)[0]] || 0
   }
 
   async $update(attributes) {
