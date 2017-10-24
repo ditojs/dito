@@ -20,7 +20,7 @@ const properties = Object.getOwnPropertyDescriptors({
     return this.client && this.client.dialect || null
   },
 
-  get isPostgres() {
+  get isPostgreSQL() {
     return this.dialect === 'postgresql'
   },
 

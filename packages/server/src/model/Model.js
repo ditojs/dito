@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject } from '@/utils'
+import { isArray, isObject } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import convertSchema from './convertSchema'
@@ -188,7 +188,7 @@ export default class Model extends objection.Model {
           get() {
             return this.$relatedQuery(name)
           },
-          configurable: false,
+          configurable: true,
           enumerable: false
         })
       }
@@ -342,4 +342,64 @@ const definitionHandlers = {
   methods: {},
   routes: {},
   events: {}
+}
+
+// Expose a selection of QueryBuilder methods directly on the model
+
+for (const name of [
+  'first',
+  'find',
+  'findOne',
+  'select',
+  'insert',
+  'update',
+  'patch',
+  'delete',
+  'truncate',
+  'insertAndFetch',
+  'updateAndFetch',
+  'patchAndFetch',
+  'updateAndFetchById',
+  'patchAndFetchById',
+  'insertGraph',
+  'upsertGraph',
+  'patchGraph',
+  'insertGraphAndFetch',
+  'upsertGraphAndFetch',
+  'patchGraphAndFetch',
+  'where',
+  'whereNot',
+  'whereRaw',
+  'whereWrapped',
+  'whereExists',
+  'whereNotExists',
+  'whereIn',
+  'whereNotIn',
+  'whereNull',
+  'whereNotNull',
+  'whereBetween',
+  'whereNotBetween',
+  'whereJsonEquals',
+  'whereJsonNotEquals',
+  'whereJsonSupersetOf',
+  'whereJsonNotSupersetOf',
+  'whereJsonSubsetOf',
+  'whereJsonNotSubsetOf',
+  'whereJsonHasAny',
+  'whereJsonHasAll',
+  'whereJsonField',
+  'whereJsonIsArray',
+  'whereJsonIsObject'
+]) {
+  if (name in Model) {
+    console.warn(`There is already a prototype property named '${name}'`)
+  } else {
+    Object.defineProperty(Model, name, {
+      value(...args) {
+        return this.query()[name](...args)
+      },
+      configurable: true,
+      enumerable: false
+    })
+  }
 }

@@ -1,7 +1,7 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
 import { QueryError } from '@/errors'
-import { isObject, isString, capitalize } from '@/utils'
+import { isArray, isObject, isString, capitalize } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -19,6 +19,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._allow = null
     this._propertyRefsCache = {}
+  }
+
+  insert(data, ...args) {
+    // Only PostgreSQL is able to insert multiple entries at once it seems,
+    // all others have to fall back on insertGraph() to do so for now:
+    return !this.knex().isPostgreSQL && isArray(data) && data.length > 1
+      ? this.insertGraph(data)
+      : super.insert(data, ...args)
   }
 
   upsertGraph(modelsOrObjects, opt) {
