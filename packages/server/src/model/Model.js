@@ -62,14 +62,126 @@ export default class Model extends objection.Model {
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
       const { properties } = this.definition
-      const schema = properties ? {
+      return properties ? {
         id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
         ...convertSchema(properties)
       } : null
-      console.log(util.inspect(schema, { depth: 10 }))
-      return schema
     })
+  }
+
+  static get jsonAttributes() {
+    return this.getCached('jsonSchema:jsonAttributes', () => (
+      this.getAttributes(({ type, computed }) =>
+        !computed && ['object', 'array'].includes(type))
+    ), [])
+  }
+
+  static get booleanAttributes() {
+    return this.getCached('jsonSchema:booleanAttributes', () => (
+      this.getAttributes(({ type, computed }) =>
+        !computed && type === 'boolean')
+    ), [])
+  }
+
+  static get dateAttributes() {
+    return this.getCached('jsonSchema:dateAttributes', () => (
+      this.getAttributes(({ format, computed }) =>
+        !computed && format === 'date-time')
+    ), [])
+  }
+
+  static get computedAttributes() {
+    return this.getCached('jsonSchema:computedAttributes', () => (
+      this.getAttributes(({ computed }) => computed)
+    ), [])
+  }
+
+  static getAttributes(filter) {
+    const attributes = []
+    const { properties = {} } = this.getJsonSchema()
+    // console.log(`${this.name}.getAttributes()`, new Error().stack)
+    for (const [name, property] of Object.entries(properties)) {
+      if (filter(property)) {
+        attributes.push(name)
+      }
+    }
+    return attributes
+  }
+
+  static getCached(identifier, calculate, empty = {}) {
+    if (!cacheMap.has(this)) {
+      cacheMap.set(this, {})
+    }
+    let cache = cacheMap.get(this)
+    // Use a simple dependency tracking mechanism with cache identifiers that
+    // can be children of other cached values, e.g.:
+    // 'jsonSchema:jsonAttributes' as a child of 'jsonSchema', so that whenever
+    // 'jsonSchema' changes, all cached child values  are invalidated.
+    let entry
+    for (const part of identifier.split(':')) {
+      entry = cache[part] = cache[part] || {
+        cache: {},
+        value: undefined
+      }
+      cache = entry.cache
+    }
+    if (entry && entry.value === undefined) {
+      // Temporarily set cache to an empty object to prevent endless
+      // recursion with interdependent jsonSchema related calls...
+      entry.value = empty
+      entry.value = calculate()
+      // Clear child dependencies once parent value has changed:
+      entry.cache = {}
+    }
+    return entry && entry.value
+  }
+
+  static prepareModel() {
+    const exposeRelated = (name, accessor) => {
+      if (!(accessor in this.prototype)) {
+        Object.defineProperty(this.prototype, accessor, {
+          get() {
+            return this.$relatedQuery(name)
+          },
+          configurable: true,
+          enumerable: false
+        })
+      }
+    }
+
+    for (const [name, relation] of Object.entries(this.getRelations())) {
+      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
+      // in case $name clashes with a function:
+      exposeRelated(name, `$${name}`)
+      exposeRelated(name, `$$${name}`)
+      // Make sure all relations are defined correctly, with back-references.
+      const { relatedModelClass } = relation
+      const relatedProperties = relatedModelClass.definition.properties || {}
+      for (const property of relation.relatedProp.props) {
+        if (!(property in relatedProperties)) {
+          throw new Error(
+            `\`${relatedModelClass.name}\` is missing back-reference for ` +
+            `relation \`${this.name}.${relation.name}\``
+          )
+        }
+      }
+      // TODO: Check `through` settings also
+    }
+    this.getValidator().precompileModel(this)
+    // Install all events listed in the static events object.
+    const { events = {} } = this.definition
+    for (const [event, handler] of Object.entries(events)) {
+      this.on(event, handler)
+    }
+    console.log(this.name,
+      util.inspect({
+        jsonSchema: this.jsonSchema,
+        jsonAttributes: this.jsonAttributes,
+        dateAttributes: this.dateAttributes,
+        booleanAttributes: this.booleanAttributes,
+        computedAttributes: this.computedAttributes
+      }, { depth: 16 }))
   }
 
   $formatDatabaseJson(json) {
@@ -129,99 +241,6 @@ export default class Model extends objection.Model {
       json[key] = this[key]
     }
     return json
-  }
-
-  static get jsonAttributes() {
-    return this.getCached('jsonAttributes', () => (
-      this.getAttributesWithType(['object', 'array'])
-    ), [])
-  }
-
-  static get dateAttributes() {
-    return this.getCached('dateAttributes', () => (
-      this.getAttributesWithType(['date', 'datetime', 'timestamp'])
-    ), [])
-  }
-
-  static get booleanAttributes() {
-    return this.getCached('booleanAttributes', () => (
-      this.getAttributesWithType(['boolean'])
-    ), [])
-  }
-
-  static get computedAttributes() {
-    return this.getCached('computedAttributes', () => (
-      this.getAttributes(({ computed }) => computed)
-    ), [])
-  }
-
-  static getAttributes(filter) {
-    const attributes = []
-    const { properties = {} } = this.definition
-    for (const [name, property] of Object.entries(properties)) {
-      if (!filter || filter(property)) {
-        attributes.push(name)
-      }
-    }
-    return attributes
-  }
-
-  static getAttributesWithType(types) {
-    return this.getAttributes(({ type }) => types.includes(type))
-  }
-
-  static getCached(name, calculate, empty = {}) {
-    if (!cacheMap.has(this)) {
-      cacheMap.set(this, {})
-    }
-    const cache = cacheMap.get(this)
-    let cached = cache[name]
-    if (cached === undefined) {
-      // Temporarily set cache to an empty object to prevent endless recursion
-      // with interdependent jsonSchema related calls...
-      cache[name] = empty
-      cache[name] = cached = calculate()
-    }
-    return cached
-  }
-
-  static prepareModel() {
-    const exposeRelated = (name, accessor) => {
-      if (!(accessor in this.prototype)) {
-        Object.defineProperty(this.prototype, accessor, {
-          get() {
-            return this.$relatedQuery(name)
-          },
-          configurable: true,
-          enumerable: false
-        })
-      }
-    }
-
-    for (const [name, relation] of Object.entries(this.getRelations())) {
-      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
-      // in case $name clashes with a function:
-      exposeRelated(name, `$${name}`)
-      exposeRelated(name, `$$${name}`)
-      // Make sure all relations are defined correctly, with back-references.
-      const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.definition.properties || {}
-      for (const property of relation.relatedProp.props) {
-        if (!(property in relatedProperties)) {
-          throw new Error(
-            `\`${relatedModelClass.name}\` is missing back-reference for ` +
-            `relation \`${this.name}.${relation.name}\``
-          )
-        }
-      }
-      // TODO: Check `through` settings also
-    }
-    this.getValidator().precompileModel(this)
-    // Install all events listed in the static events object.
-    const { events = {} } = this.definition
-    for (const [event, handler] of Object.entries(events)) {
-      this.on(event, handler)
-    }
   }
 
   static createValidator() {

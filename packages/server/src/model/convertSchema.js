@@ -1,6 +1,6 @@
 import { isObject, isArray, isString } from '@/utils'
 
-export default function convertSchema(schema, isRoot = true) {
+export default function convertSchema(schema) {
   if (isObject(schema)) {
     // Shallow clone so we can modify and return:
     schema = { ...schema }
@@ -14,7 +14,7 @@ export default function convertSchema(schema, isRoot = true) {
             // Expand `{ items: type }` to `{ items: { type } }`, and if type
             // is a $ref, then further to `{ items: { $ref: type } }`:
             schema.items = convertSchema(
-              isString(items) ? { type: items } : items, false)
+              isString(items) ? { type: items } : items)
           }
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -34,12 +34,17 @@ export default function convertSchema(schema, isRoot = true) {
       // Root properties schema or nested objects
       const properties = schema
       const required = []
-      for (const [key, property] of Object.entries(schema)) {
-        if (property.required) {
+      for (let [key, property] of Object.entries(schema)) {
+        if (isArray(property)) {
+          property = {
+            type: 'array',
+            items: property.length > 1 ? property : property[0]
+          }
+        } else if (property && property.required) {
           required.push(key)
         }
         properties[key] = isObject(property)
-          ? convertSchema(property, false)
+          ? convertSchema(property)
           : property
       }
       schema = {
@@ -48,7 +53,7 @@ export default function convertSchema(schema, isRoot = true) {
         ...(required.length > 0 && { required })
       }
     }
-    if (!isRoot) {
+    if (schema.type !== 'object') {
       const {
         required,
         default: _default,
@@ -68,18 +73,19 @@ export default function convertSchema(schema, isRoot = true) {
       }
     }
   } else if (isArray(schema)) {
-    schema = schema.map(entry => convertSchema(entry, false))
+    schema = schema.map(entry => convertSchema(entry))
   }
   return schema
 }
 
-function addFormat(schema, format) {
+function addFormat(schema, newFormat) {
   // Support multiple `format` keywords through `allOf`:
-  const { allOf } = schema
-  if (schema.format || allOf) {
-    (allOf || (schema.allOf = [])).push({ format })
+  const { allOf, format, ...rest } = schema
+  if (format || allOf) {
+    schema = { ...rest, allOf: allOf || [] }
+    schema.allOf.push({ format }, { format: newFormat })
   } else {
-    schema.format = format
+    schema.format = newFormat
   }
   return schema
 }
