@@ -73,6 +73,7 @@ export default class App extends Koa {
     } = this.config
     return new Promise(resolve => {
       this.server = this.listen(port, host, () => {
+        const { port } = this.server.address()
         // TODO: logging?
         console.log(
           `${environment} server started at http://${host}:${port}`
