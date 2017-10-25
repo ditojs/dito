@@ -1995,7 +1995,7 @@ objection-find@^0.5.1:
 
 "objection@github:lehni/objection.js#dito-framework":
   version "0.9.0"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/77af416cc135f3577eafda7dd0ea136aa8c408d0"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/e000a6bec51c42d0b857e8b2978707695fc22c76"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"

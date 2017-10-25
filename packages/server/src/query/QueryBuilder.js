@@ -1,7 +1,7 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
 import { QueryError } from '@/errors'
-import { isArray, isObject, isString, capitalize } from '@/utils'
+import { isArray, isObject, isString, asArray, capitalize } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -100,50 +100,58 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, true)
   }
 
-  // TODO: https://gitter.im/Vincit/objection.js?at=59f01c8ad6c36fca3192f499
-  applyFilter(...args) {
-    const { namedFilters } = this.modelClass()
-    for (const name of args) {
-      const filter = namedFilters[name]
-      filter(this)
+  upsertGraph(data, opt) {
+    return super.upsertGraph(data, {
+      ...upsertOptions,
+      ...opt
+    })
+  }
+
+  upsertGraphAndFetch(data, opt) {
+    return super.upsertGraphAndFetch(data, {
+      ...upsertOptions,
+      ...opt
+    })
+  }
+
+  upsertGraphAndFetchById(id, data, opt) {
+    return this.upsertGraphAndFetch({
+      ...this.getIdObject(id),
+      ...data
+    }, opt)
+  }
+
+  // TODO: Implement update option in Objection.js!
+  // https://github.com/Vincit/objection.js/issues/557
+  updateGraph(data, opt) {
+    return this.upsertGraph(data, {
+      update: true,
+      ...opt
+    })
+  }
+
+  updateGraphAndFetch(data, opt) {
+    return this.upsertGraphAndFetch(data, {
+      update: true,
+      ...opt
+    })
+  }
+
+  updateGraphAndFetchById(id, data, opt) {
+    return this.updateGraphAndFetch({
+      ...this.getIdObject(id),
+      ...data
+    }, opt)
+  }
+
+  getIdObject(id) {
+    const modelClass = this.modelClass()
+    const fullId = {}
+    const ids = asArray(id)
+    for (const [index, column] of asArray(modelClass.idColumn).entries()) {
+      fullId[modelClass.columnNameToPropertyName(column)] = ids[index]
     }
-    return this
-  }
-
-  modify(first, ...args) {
-    return isString(first)
-      ? this.applyFilter(first, ...args)
-      : super.modify(first, ...args)
-  }
-
-  upsertGraph(modelsOrObjects, opt) {
-    return super.upsertGraph(modelsOrObjects, {
-      ...upsertOptions,
-      ...opt
-    })
-  }
-
-  upsertGraphAndFetch(modelsOrObjects, opt) {
-    return super.upsertGraphAndFetch(modelsOrObjects, {
-      ...upsertOptions,
-      ...opt
-    })
-  }
-
-  patchGraph(modelsOrObjects, opt) {
-    // TODO: Implement patch option in Objection.js!
-    // https://github.com/Vincit/objection.js/issues/557
-    return this.upsertGraph(modelsOrObjects, {
-      patch: true,
-      ...opt
-    })
-  }
-
-  patchGraphAndFetch(modelsOrObjects, opt) {
-    return this.upsertGraphAndFetch(modelsOrObjects, {
-      patch: true,
-      ...opt
-    })
+    return fullId
   }
 
   find(filter = {}) {

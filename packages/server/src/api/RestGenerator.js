@@ -264,6 +264,7 @@ const restHandlers = {
     // post collection
     post(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
+        // TODO: insertGraphAndFetch()?
         return modelClass.query()
           .insertGraph(ctx.request.body)
       })
@@ -273,7 +274,7 @@ const restHandlers = {
     put(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          .upsertGraphAndFetch(ctx.request.body)
+          .updateGraphAndFetch(ctx.request.body)
       })
     },
 
@@ -281,7 +282,7 @@ const restHandlers = {
     patch(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         return modelClass.query()
-          .patchGraphAndFetch(ctx.request.body)
+          .upsertGraphAndFetch(ctx.request.body)
       })
     }
   },
@@ -308,10 +309,7 @@ const restHandlers = {
     put(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        .updateAndFetchById(id, ctx.request.body)
-        // TODO: upsertGraphAndFetch() does not seem to work with findById() yet
-        // .findById(id)
-        // .upsertGraphAndFetch(ctx.request.body)
+        .updateGraphAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     },
 
@@ -319,11 +317,7 @@ const restHandlers = {
     patch(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        .patchAndFetchById(id, ctx.request.body)
-        // TODO: patchGraphAndFetch()
-        // https://github.com/Vincit/objection.js/issues/557
-        // .findById(id)
-        // .patchGraphAndFetch(ctx.request.body)
+        .upsertGraphAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     }
   },
@@ -369,7 +363,7 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            .insertGraph(ctx.request.body))
+            .insertGraphAndFetch(ctx.request.body))
       })
     },
 
@@ -383,9 +377,21 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            // TODO: upsertGraphAndFetch()
-            // https://github.com/Vincit/objection.js/issues/556
-            .upsertGraph(ctx.request.body))
+            .updateGraphAndFetch(ctx.request.body))
+      })
+    },
+
+    // patch relation
+    patch(relation, ctx) {
+      // TODO: What's the expected behavior in a toOne relation?
+      const { id } = ctx.params
+      const { ownerModelClass } = relation
+      return objection.transaction(ownerModelClass, ownerModelClass => {
+        return ownerModelClass.query()
+          .findById(id)
+          .then(model => checkModel(model, ownerModelClass, id)
+            .$relatedQuery(relation.name)
+            .upsertGraphAndFetch(ctx.request.body))
       })
     }
   },
@@ -398,11 +404,9 @@ const restHandlers = {
         (ownerModelClass, relatedModelClass) => {
           return ownerModelClass.query()
             .findById(id)
-            .then(model => {
-              return checkModel(model, ownerModelClass, id)
-                .$relatedQuery(relation.name)
-                .relate(relatedId)
-            })
+            .then(model => checkModel(model, ownerModelClass, id)
+              .$relatedQuery(relation.name)
+              .relate(relatedId))
             .then(related => {
               // TODO: inspect and decide what to do next
               console.log('related', related)
