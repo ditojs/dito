@@ -52,15 +52,56 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  insert(data, ...args) {
+  insert(data, returning) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
     return !this.knex().isPostgreSQL && isArray(data) && data.length > 1
       ? this.insertGraph(data)
-      : super.insert(data, ...args)
+      : super.insert(data, returning)
   }
 
-  filter(...args) {
+  // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
+  upsert(data, _fetch = false) {
+    const modelClass = this.modelClass()
+    let whereQuery
+    return this
+      .runBefore((result, builder) => {
+        if (!builder.context().isWhereQuery) {
+          // At this point the builder should only contain a bunch of `where*`
+          // operations. Store the `where` query for later use in the `runAfter`
+          // method. Also mark the query with `isWhereQuery: true` so we can
+          // skip all this when this function is called for the `whereQuery`.
+          whereQuery = builder.clone().context({ isWhereQuery: true })
+          // Call the `update` method on the original query turning it into an
+          // update operation.
+          builder.update(data)
+        }
+        return result
+      })
+      .runAfter((result, builder) => {
+        if (!builder.context().isWhereQuery) {
+          if (result === 0) {
+            const insert = _fetch ? 'insertAndFetch' : 'insert'
+            return modelClass.query()[insert](data)
+          } else {
+            // Now we can use the `where` query we saved in the `runBefore`
+            // method to fetch the inserted results. It is noteworthy that this
+            // query will return the wrong results if the update changed any
+            // of the columns the where operates with. This also returns all
+            // updated models.
+            return whereQuery.first()
+          }
+        }
+        return result
+      })
+  }
+
+  upsertAndFetch(data) {
+    return this.upsert(data, true)
+  }
+
+  // TODO: https://gitter.im/Vincit/objection.js?at=59f01c8ad6c36fca3192f499
+  applyFilter(...args) {
     const { namedFilters } = this.modelClass()
     for (const name of args) {
       const filter = namedFilters[name]
@@ -71,7 +112,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   modify(first, ...args) {
     return isString(first)
-      ? this.filter(first, ...args)
+      ? this.applyFilter(first, ...args)
       : super.modify(first, ...args)
   }
 
