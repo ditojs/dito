@@ -11,11 +11,6 @@ const properties = Object.getOwnPropertyDescriptors({
     return denormalizeIdentifier ? denormalizeIdentifier(name) : name
   },
 
-  denormalizeIdentifiers(json) {
-    const { denormalizeIdentifiers } = this.client.config
-    return denormalizeIdentifiers ? denormalizeIdentifiers(json) : json
-  },
-
   get dialect() {
     return this.client && this.client.dialect || null
   },

@@ -29,7 +29,7 @@ export default class Model extends objection.Model {
 
   static get tableName() {
     const knex = this.knex()
-    return knex.normalizeIdentifier
+    return knex && knex.normalizeIdentifier
       ? knex.normalizeIdentifier(this.name)
       : this.name
   }
@@ -161,8 +161,8 @@ export default class Model extends objection.Model {
       for (const property of relation.relatedProp.props) {
         if (!(property in relatedProperties)) {
           throw new Error(
-            `\`${relatedModelClass.name}\` is missing back-reference for ` +
-            `relation \`${this.name}.${relation.name}\``
+            `"${relatedModelClass.name}" is missing back-reference ` +
+            `"${property}" for relation "${this.name}.${relation.name}"`
           )
         }
       }
@@ -184,6 +184,30 @@ export default class Model extends objection.Model {
       }, { depth: 16 }))
   }
 
+  // Override propertyNameToColumnName() / columnNameToPropertyName() to not
+  // rely on $formatDatabaseJson() /  $parseDatabaseJson() do detect naming
+  // conventions but instead rely directly on our added infrastructure in
+  // normalizeIdentifier() / denormalizeIdentifier().
+  // This is only necessary to avoid problems of circular referencing when
+  // handling definitions, because $formatDatabaseJson accesses dateAttributes,
+  // booleanAttributes and co, which in turn access jsonSchema, which in turn
+  // access getRelations(), which my trigger calls to propertyNameToColumnName()
+  // on other model classes when resolving references.
+
+  static propertyNameToColumnName(propertyName) {
+    const knex = this.knex()
+    return knex && knex.normalizeIdentifier
+      ? knex.normalizeIdentifier(propertyName)
+      : propertyName
+  }
+
+  static columnNameToPropertyName(columnName) {
+    const knex = this.knex()
+    return knex && knex.denormalizeIdentifier
+      ? knex.denormalizeIdentifier(columnName)
+      : columnName
+  }
+
   $formatDatabaseJson(json) {
     const { constructor } = this
     const knex = constructor.knex()
@@ -193,7 +217,7 @@ export default class Model extends objection.Model {
         json[key] = date && date.toISOString ? date.toISOString() : date
       }
     }
-    if (knex.isSQLite) {
+    if (knex && knex.isSQLite) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
@@ -213,16 +237,20 @@ export default class Model extends objection.Model {
     const { constructor } = this
     const knex = constructor.knex()
     // NOTE: Demoralization of identifiers is still our own business:
-    json = knex.denormalizeIdentifiers
-      ? knex.denormalizeIdentifiers(json)
-      : json
+    if (knex && knex.denormalizeIdentifier) {
+      const converted = {}
+      for (const key in json) {
+        converted[knex.denormalizeIdentifier(key)] = json[key]
+      }
+      json = converted
+    }
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date ? new Date(date) : date
       }
     }
-    if (knex.isSQLite) {
+    if (knex && knex.isSQLite) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]

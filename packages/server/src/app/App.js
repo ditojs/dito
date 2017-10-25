@@ -24,14 +24,6 @@ export default class App extends Koa {
         normalizeIdentifier,
         denormalizeIdentifier,
 
-        denormalizeIdentifiers(data) {
-          const converted = {}
-          for (const key in data) {
-            converted[denormalizeIdentifier(key)] = data[key]
-          }
-          return converted
-        },
-
         // This is Knex' standard hook into processing identifiers.
         // We add the call to our own normalizeIdentifier() to it:
         wrapIdentifier(value, wrapIdentifier) {
