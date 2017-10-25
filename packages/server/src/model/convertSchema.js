@@ -1,4 +1,4 @@
-import { isObject, isArray, isString } from '@/utils'
+import { isObject, isArray, asArray, isString } from '@/utils'
 
 export default function convertSchema(schema) {
   if (isObject(schema)) {
@@ -93,15 +93,21 @@ function addFormat(schema, newFormat) {
 function makeNullable(schema) {
   // Add 'null' to the allowed types through `anyOf`.
   // Move format along with type, and also support $ref:
-  // TODO: Check that it doesn't already specify `type: null`!
   const { type, $ref, format, ...rest } = schema
-  return {
-    anyOf: [
-      $ref ? { $ref } : format ? { type, format } : { type },
-      { type: 'null' }
-    ],
-    ...rest
-  }
+  return isArray(type) && type.includes('null')
+    ? schema
+    : $ref || format
+      ? {
+        anyOf: [
+          $ref ? { $ref } : { type, format },
+          { type: 'null' }
+        ],
+        ...rest
+      }
+      : {
+        type: [...asArray(type), 'null'],
+        ...rest
+      }
 }
 
 // JSON types, used to determine when to use `$ref` instead of `type`.

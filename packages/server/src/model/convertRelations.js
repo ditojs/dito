@@ -78,7 +78,7 @@ export default function convertRelations(ownerModelClass, schema, models) {
           `${ownerModelClass.name}.relations.${name}: ` +
           `Unsupported through relation: ${relation}`)
       }
-      // TODO: parse / auto-create through based on relationClass!
+      // TODO: parse / auto-create `through` based on relationClass!
       relations[name] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
