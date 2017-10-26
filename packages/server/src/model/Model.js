@@ -262,20 +262,30 @@ export default class Model extends objection.Model {
         }
       }
     }
+    return this.$parseJson(json)
+  }
+
+  $parseJson(json) {
+    // Remove the computed properties so they don't get set.
+    for (const key of this.constructor.computedAttributes) {
+      delete json[key]
+    }
     return json
   }
 
   $formatJson(json) {
     json = super.$formatJson(json)
-    const { computedAttributes } = this.constructor
-    for (const key of computedAttributes) {
+    // Calculate and set the computed properties.
+    for (const key of this.constructor.computedAttributes) {
       json[key] = this[key]
     }
     return json
   }
 
+  $toDatabaseJson
+
   static createValidator() {
-    // Use a shared validator per app, so model schemas can reference each other
+    // Use a shared validator per app, so model schema can reference each other.
     return this.app.validator
   }
 
