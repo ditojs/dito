@@ -14,6 +14,7 @@ module.exports = {
   // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: 'standard',
   rules: {
+    'array-bracket-spacing': ['error', 'never'],
     // Allow paren-less arrow functions.
     'arrow-parens': ['error', 'as-needed'],
     // Allow async-await.

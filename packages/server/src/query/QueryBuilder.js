@@ -155,14 +155,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   find(query = {}) {
-    // TODO: Add support for omit
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
       const queryHandler = queryHandlers[key]
       if (queryHandler) {
         queryHandler(this, key, value)
       } else {
-        this.parseQueryFilter(key, value)
+        throw new QueryError(
+          `QueryBuilder: Invalid query parameter '${key}' in '${key}=${value}'.`
+        )
       }
     }
     // TODO: Is this really needed? Looks like it works without it also...
@@ -205,7 +206,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
       : null
     if (!queryFilter) {
       throw new QueryError(
-        `QueryBuilder: Invalid filter in "${key}=${value}"`)
+        `QueryBuilder: Invalid filter in '${key}=${value}'.`)
     }
     const propertyRefs = this.getPropertyRefs(parts[0])
     for (const ref of propertyRefs) {
@@ -237,43 +238,6 @@ export default class QueryBuilder extends objection.QueryBuilder {
 }
 
 const queryHandlers = {
-  eager(builder, key, value) {
-    if (value) {
-      builder.mergeEager(value)
-    }
-  },
-
-  range(builder, key, value) {
-    if (value) {
-      const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
-      if (isNaN(start) || isNaN(end) || end < start) {
-        throw new QueryError(`QueryBuilder: Invalid range: [${start}, ${end}]`)
-      }
-      builder.range(start, end)
-    }
-  },
-
-  order(builder, key, value) {
-    if (value) {
-      for (const ref of builder.getPropertyRefs(value, { parseDir: true })) {
-        const { dir = 'asc', relation } = ref
-        const columnName = ref.fullColumnName(builder)
-        if (relation) {
-          if (!relation.isOneToOne()) {
-            throw new QueryError(
-              `QueryBuilder: Can only order by model's own properties ` +
-              `and by one-to-one relations' properties`)
-          }
-          // TODO: Is alias required here?
-          const alias = `${relation.name}${capitalize(ref.propertyName)}`
-          builder.select(`${columnName} as ${alias}`)
-          builder.orderBy(alias, dir)
-        } else {
-          builder.orderBy(columnName, dir).skipUndefined()
-        }
-      }
-    }
-  },
 
   where(builder, key, value) {
     // Recursively translate object based filters to string based ones for
@@ -294,19 +258,95 @@ const queryHandlers = {
     //   { key: 'messages.unread', value: true }
     function processPropertyRefs(key, value, parts) {
       if (isObject(value)) {
+        // TODO: figure out and implement a better convention for handling
+        // AND / OR queries in object notation.
         for (const [subKey, subValue] of Object.entries(value)) {
           // NOTE: We need to clone `parts` for branching:
           processPropertyRefs(subKey, subValue, parts ? [...parts, key] : [])
         }
       } else if (parts) {
+        // Recursive call in object parsing
         const filterName = key in queryFilters && key
         if (!filterName) parts.push(key)
         const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
         builder.parseQueryFilter(ref, value)
+      } else if (isString(value)) {
+        // TODO: Figure out and implement better parsing of string
+        // "?where=..."" queries, including AND / OR.
+        // e.g.
+        // /api/dummies?where=firstName=Joe&where=lastName=Doe
+        // /api/dummies?where=firstName=Joe|where=lastName=Doe
+        // NOTE: The 2nd notation will end up as a string containing
+        // "firstName=Joe|where=lastName=Doe", and will have to be further
+        // parsed.
+        const [ref, val] = value.split('=')
+        builder.parseQueryFilter(ref, val)
+      } else if (isArray(value)) {
+        for (const entry of value) {
+          processPropertyRefs(null, entry)
+        }
+      } else {
+        throw new QueryError(
+          `QueryBuilder: Unsupported 'where' query: '${value}'.`)
       }
     }
 
     processPropertyRefs(null, value)
+  },
+
+  // TODO: Add support for omit?
+  eager(builder, key, value) {
+    if (value) {
+      builder.mergeEager(value)
+    }
+  },
+
+  range(builder, key, value) {
+    if (value) {
+      const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
+      if (isNaN(start) || isNaN(end) || end < start) {
+        throw new QueryError(`QueryBuilder: Invalid range: [${start}, ${end}].`)
+      }
+      builder.range(start, end)
+    }
+  },
+
+  limit(builder, key, value) {
+    builder.limit(value)
+  },
+
+  offset(builder, key, value) {
+    builder.offset(value)
+  },
+
+  order(builder, key, value) {
+    if (value) {
+      for (const ref of builder.getPropertyRefs(value, { parseDir: true })) {
+        const { dir = 'asc', relation } = ref
+        const columnName = ref.fullColumnName(builder)
+        if (relation) {
+          if (!relation.isOneToOne()) {
+            throw new QueryError(
+              `QueryBuilder: Can only order by model's own properties ` +
+              `and by one-to-one relations' properties.`)
+          }
+          // TODO: Is alias required here?
+          const alias = `${relation.name}${capitalize(ref.propertyName)}`
+          builder.select(`${columnName} as ${alias}`)
+          builder.orderBy(alias, dir)
+        } else {
+          builder.orderBy(columnName, dir).skipUndefined()
+        }
+      }
+    }
+  },
+
+  scope(builder, key, value) {
+    const filters = builder.modelClass().namedFilters || {}
+    if (!(value in filters)) {
+      throw new QueryError(`QueryBuilder: Unkown scope: '${value}'.`)
+    }
+    builder.applyFilter(value)
   }
 }
 
