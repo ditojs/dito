@@ -7,19 +7,19 @@
     .dito-filters(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"
-        :filter="filter"
+        :query="query"
         :scopes="scopes"
       )
       dito-pagination(
         v-if="paginate"
-        :filter="filter"
-        :paginate="paginate"
-        :count="count || 0"
+        :query="query"
+        :limit="paginate"
+        :total="total || 0"
       )
     table
       dito-headers(
         v-if="columns"
-        :filter="filter"
+        :query="query"
         :columns="columns"
         :has-buttons="hasButtons"
       )
@@ -146,7 +146,7 @@ import ListMixin from '@/mixins/ListMixin'
 
 export default TypeComponent.register('list', {
   mixins: [ListMixin],
-  components: {VueDraggable},
+  components: { VueDraggable },
 
   computed: {
     paginate() {
@@ -154,7 +154,7 @@ export default TypeComponent.register('list', {
     },
 
     hasButtons() {
-      const {value, schema} = this
+      const { value, schema } = this
       return !!(value && value.length > 0 &&
         (schema.editable || schema.deletable || schema.draggable))
     },

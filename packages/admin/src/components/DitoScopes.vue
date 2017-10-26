@@ -6,7 +6,7 @@
       :key="scope.name"
       tag="button"
       type="button"
-      :class="{ 'dito-active': scope.name === filter.scope }"
+      :class="{ 'dito-active': scope.name === query.scope }"
     )
       | {{ scope.label }}
 </template>
@@ -37,15 +37,15 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-scopes', {
   props: {
-    filter: { type: Object, required: true },
+    query: { type: Object, required: true },
     scopes: { type: Array, required: true }
   },
 
   methods: {
     getQuery(scope) {
-      const query = { ...this.filter, scope: scope.name }
-      if (query.offset) {
-        query.offset = 0
+      const query = { ...this.query, scope: scope.name }
+      if (query.page) {
+        query.page = 0
       }
       return query
     }

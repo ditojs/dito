@@ -83,14 +83,14 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-headers', {
   props: {
-    filter: { type: Object, required: true },
+    query: { type: Object, required: true },
     columns: { type: Array, required: true },
     hasButtons: { type: Boolean, required: true }
   },
 
   methods: {
     getSortParams() {
-      return (this.filter.order || '').split(' ')
+      return (this.query.order || '').split(/\s+/)
     },
 
     getSortClass(name) {
@@ -104,7 +104,7 @@ export default DitoComponent.component('dito-headers', {
       const [sortName, sortOrder] = this.getSortParams()
       // Toggle order if we're clicking the same column
       const order = sortName === name && sortOrder === 'asc' ? 'desc' : 'asc'
-      return { ...this.filter, order: `${name} ${order}` }
+      return { ...this.query, order: `${name} ${order}` }
     }
   }
 })

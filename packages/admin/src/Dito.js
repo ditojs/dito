@@ -7,7 +7,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import {isFunction, hyphenate, camelize} from './utils'
+import { isFunction, hyphenate, camelize } from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -21,12 +21,12 @@ const user = {
 }
 
 export function setup(el, options) {
-  const {views, forms, settings, api} = options
+  const { views, forms, settings, api } = options
   const normalizePath = getNormalizer('path', hyphenate)
   const normalizeName = getNormalizer('name', val => camelize(val, false))
 
   function getNormalizer(name, defaultFn) {
-    const {normalize} = api
+    const { normalize } = api
     const value = normalize && (name in normalize) ? normalize[name] : normalize
     return isFunction(value) ? value : value === true ? defaultFn : val => val
   }
@@ -89,7 +89,7 @@ export function setup(el, options) {
     formSchema.path = normalizePath(formName)
     formSchema.name = formName
     const children = []
-    const {tabs} = formSchema
+    const { tabs } = formSchema
     for (const name in tabs) {
       processComponents(tabs[name].components, children, level + 1)
     }
@@ -138,7 +138,7 @@ export function setup(el, options) {
       routes
     }),
     template: '<dito-root :views="views" :settings="settings" />',
-    components: {DitoRoot},
+    components: { DitoRoot },
     data: {
       views,
       settings
@@ -146,7 +146,7 @@ export function setup(el, options) {
   })
 }
 
-export const {register} = TypeComponent
+export const { register } = TypeComponent
 
 export default {
   setup,

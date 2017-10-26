@@ -71,7 +71,7 @@ import DitoComponent from '@/DitoComponent'
 import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import {clone} from '@/utils'
+import { clone } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
@@ -89,8 +89,8 @@ export default DitoComponent.component('dito-form', {
   created() {
     // Errors can get passed on throgh the meta object, so add them now.
     // See TypeMixin.showErrors()
-    const {meta} = this
-    const {focus, errors} = meta
+    const { meta } = this
+    const { focus, errors } = meta
     if (focus || errors) {
       delete meta.errors
       delete meta.focus
@@ -136,7 +136,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     selectedTab() {
-      const {hash} = this.$route
+      const { hash } = this.$route
       return hash && hash.substring(1) ||
           this.tabs && Object.keys(this.tabs)[0] || ''
     },
@@ -164,7 +164,7 @@ export default DitoComponent.component('dito-form', {
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
       // changes until changes are applied through setParentData()
-      const {parentList} = this
+      const { parentList } = this
       // Use a trick to store the cloned inherited data in clonedData, to make
       // it reactive as well as to make sure that we're not cloning twice.
       if (this.isTransient && this.clonedData === undefined && parentList) {
@@ -217,7 +217,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     setParentData(data) {
-      const {clonedData, parentIndex} = this
+      const { clonedData, parentIndex } = this
       if (clonedData && parentIndex >= 0) {
         this.$set(this.parentList, parentIndex,
           { ...clonedData, ...this.filterData(data) })
@@ -304,7 +304,7 @@ export default DitoComponent.component('dito-form', {
         // create the parent list.
         let ok = true
         if (this.create) {
-          const {parentList} = this
+          const { parentList } = this
           if (parentList) {
             parentList.push(payload)
           } else {
@@ -318,19 +318,19 @@ export default DitoComponent.component('dito-form', {
           this.goBack(false, false)
         }
       } else {
-        let {method, resource} = this
+        let { method, resource } = this
         // Allow buttons to override both method and resource path:
         method = button.method || method
-        const {path} = button
+        const { path } = button
         if (path) {
           resource = { ...resource, path }
         }
-        this.request(method, {payload, resource}, (err, response) => {
+        this.request(method, { payload, resource }, (err, response) => {
           if (!err) {
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
             if (button.back === false) {
-              const {data} = response
+              const { data } = response
               if (data) {
                 this.setData(data)
               }
@@ -342,7 +342,7 @@ export default DitoComponent.component('dito-form', {
             // TODO: Handle in backend agnostic, modular way
             const {
               error: {
-                details: {messages}
+                details: { messages }
               } = {
                 details: {}
               }

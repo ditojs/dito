@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {isObject} from '@/utils'
+import { isObject } from '@/utils'
 
 export default {
   data() {
@@ -11,7 +11,7 @@ export default {
   },
 
   created() {
-    const {options} = this.schema
+    const { options } = this.schema
     if (isObject(options)) {
       if (options.url) {
         this.loading = true
@@ -65,12 +65,12 @@ export default {
 
   methods: {
     getOptionValue(option) {
-      const {valueKey} = this
+      const { valueKey } = this
       return valueKey ? option[valueKey] : option
     },
 
     getOptionLabel(option) {
-      const {labelKey} = this
+      const { labelKey } = this
       return labelKey ? option[labelKey] : option
     },
 

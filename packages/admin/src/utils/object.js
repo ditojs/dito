@@ -1,4 +1,4 @@
-export const {isArray} = Array
+export const { isArray } = Array
 
 export function isObject(val) {
   return val != null && typeof val === 'object' && Array.isArray(val) === false

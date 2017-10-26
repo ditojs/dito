@@ -1,5 +1,5 @@
 import DataMixin from '@/mixins/DataMixin'
-import {isObject, escapeHtml, camelize, labelize} from '@/utils'
+import { isObject, escapeHtml, camelize, labelize } from '@/utils'
 
 export default {
   mixins: [DataMixin],
@@ -12,7 +12,7 @@ export default {
 
   created() {
     // Make sure filters are set correctly before initData() triggers request.
-    this.addFilter(this.$route.query)
+    this.addQuery(this.$route.query)
   },
 
   watch: {
@@ -26,12 +26,12 @@ export default {
       if (path2.indexOf(path1) !== 0) {
         // Complete change from one view to the next but DitoList is reused,
         // so clear the filters and load data with clearing.
-        this.setFilter({})
+        this.setQuery({})
         this.loadData(true)
       } else if (path1 === path2 && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
-        this.addFilter(to.query)
+        this.addQuery(to.query)
         this.loadData(false)
       }
     }
@@ -55,12 +55,12 @@ export default {
       return this.routeComponent.isView ? '' : `${this.schema.path}/`
     },
 
-    filter() {
-      return this.store.filter
+    query() {
+      return this.store.query
     },
 
-    count() {
-      return this.store.count
+    total() {
+      return this.store.total
     },
 
     scopes() {
@@ -93,17 +93,17 @@ export default {
     },
 
     renderColumn(column, item) {
-      const {name, render} = column
+      const { name, render } = column
       const value = item[name]
       return render ? render(value, item) : escapeHtml(value)
     },
 
-    setFilter(filter) {
-      this.setStore('filter', filter)
+    setQuery(query) {
+      this.setStore('query', query)
     },
 
-    addFilter(filter) {
-      this.setFilter({...this.filter, ...filter})
+    addQuery(query) {
+      this.setQuery({ ...this.query, ...query })
     },
 
     setData(data) {
@@ -128,7 +128,7 @@ export default {
           this.removeItem(item)
         } else {
           const resource = { type: 'member', id: this.getItemId(item) }
-          this.request('delete', {resource}, err => {
+          this.request('delete', { resource }, err => {
             if (!err) {
               this.removeItem(item)
             }

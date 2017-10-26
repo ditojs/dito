@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {isObject} from '@/utils'
+import { isObject } from '@/utils'
 
 export default {
   data() {
@@ -11,7 +11,7 @@ export default {
 
   created() {
     // Give other mixins the change to receive created() events first, e.g.
-    // ListMixin to set up filters:
+    // ListMixin to set up query:
     this.$nextTick(() => {
       if (this.shouldReload) {
         this.reloadData()
@@ -66,7 +66,7 @@ export default {
 
   methods: {
     getResourcePath(resource) {
-      const {type, id, path} = resource
+      const { type, id, path } = resource
       const url = this.api.resources[type](this, id)
       return path
         ? /^\//.test(path) ? path : `${url}/${path}`
@@ -80,7 +80,7 @@ export default {
 
     getItemTitle(item, schema) {
       schema = schema || this.formSchema
-      const {getTitle} = schema
+      const { getTitle } = schema
       const label = this.getLabel(schema)
       const title = getTitle ? getTitle(item) : item.name
       return `${label} ${title ? `"${title}"` : `(id:${this.getItemId(item)})`}`
@@ -107,27 +107,26 @@ export default {
       if (!this.isTransient) {
         if (clear) {
           this.loadedData = null
-          // See DitoMixin for an explanation of `store.count` & co.
-          this.setStore('count', 0)
+          // See DitoMixin for an explanation of `store.total` & co.
+          this.setStore('total', 0)
         }
-        // LoopBack specific filters / query parameters:
-        const {paginate} = this.viewSchema
-        const filter = {
-          ...this.filter,
-          limit: paginate
+        // Dito specific query parameters:
+        // Convert offset/limit to range so that we get entry counting
+        const { paginate: limit } = this.viewSchema
+        const { page = 0, ...query } = this.query || {}
+        const offset = page * limit
+        const params = {
+          ...query,
+          ...(limit && {
+            range: `${offset},${offset + limit - 1}`
+          })
         }
-        // Only pass on params and filter if it actually contains any keys
-        const params = (paginate || Object.keys(filter).length) && {
-          filter,
-          count: paginate > 0
-        }
-
-        this.request('get', {params}, (err, response) => {
+        this.request('get', { params }, (err, response) => {
           if (!err) {
-            let {data} = response
+            let { data } = response
             if (this.resource.type === 'collection' && isObject(data)) {
-              this.setStore('count', data.count)
-              data = data.data
+              this.setStore('total', data.total)
+              data = data.results
             }
             this.setData(data)
           }
@@ -141,7 +140,7 @@ export default {
 
     request(method, options, callback) {
       const request = this.api.request || this.requestAxios
-      const {resource, params, payload} = options
+      const { resource, params, payload } = options
       const path = this.getResourcePath(resource || this.resource)
       this.errors.remove('dito-request')
       this.setLoading(true)

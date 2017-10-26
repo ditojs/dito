@@ -22,7 +22,7 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register(['date', 'datetime', 'time'], {
   watch: {
     value(value) {
-      const {input} = this.$refs
+      const { input } = this.$refs
       value = value ? this.toLocalDate(value) : value
       // Only set native value again in case it changed, to prevent resetting
       // input sequence in native date / datetime-local input fields.
@@ -44,7 +44,7 @@ export default TypeComponent.register(['date', 'datetime', 'time'], {
 
   methods: {
     onInput(event) {
-      const {value} = event.target
+      const { value } = event.target
       this.value = value ? new Date(value) : value
     },
 

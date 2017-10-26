@@ -53,12 +53,12 @@ export default {
     },
 
     min() {
-      const {schema} = this
+      const { schema } = this
       return schema.range ? schema.range[0] : schema.min
     },
 
     max() {
-      const {schema} = this
+      const { schema } = this
       return schema.range ? schema.range[1] : schema.max
     },
 
@@ -79,7 +79,7 @@ export default {
       if (this.step) {
         rules.decimal = `${this.step}`.split('.')[1].length
       }
-      return {rules}
+      return { rules }
     }
   },
 
@@ -98,8 +98,8 @@ export default {
         const navigate = this.navigateToComponent
         if (navigate) {
           navigate.call(this, path, (route, property) => {
-            const {matched} = route
-            const {meta} = matched[matched.length - 1]
+            const { matched } = route
+            const { meta } = matched[matched.length - 1]
             // Pass on the errors to the instance through the meta object.
             // and tell DitoForm to focus component. See DitoForm.created(),
             if (property) {

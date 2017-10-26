@@ -156,14 +156,14 @@ import VueMultiselect from 'vue-multiselect'
 
 export default TypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
-  components: {VueMultiselect},
+  components: { VueMultiselect },
 
   computed: {
     selectValue: {
       get() {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
-        const {value} = this
+        const { value } = this
         return this.valueKey
           ? this.findOption(this.options, value, this.schema.options.groupBy)
           : value

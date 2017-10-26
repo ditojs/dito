@@ -28,7 +28,7 @@ export default {
 
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
-      const {matched} = this.$route
+      const { matched } = this.$route
       return this.routeRecord === matched[matched.length - 1]
     },
 

@@ -3,10 +3,10 @@
     | !{' '}
   .dito-pagination.dito-buttons-round
     .dito-pages
-      template(v-if="count > 0") {{ first }} – {{ last }}
+      template(v-if="total > 0") {{ first }} – {{ last }}
       template(v-else) 0
-      |  / {{ count }}
-    template(v-if="pages > 1")
+      |  / {{ total }}
+    template(v-if="numPages > 1")
       router-link.dito-button.dito-previous(
         :to="{ query: getQuery(current - 1) }"
         tag="button"
@@ -18,11 +18,11 @@
         :to="{ query: getQuery(current + 1) }"
         tag="button"
         type="button"
-        :class="{ 'dito-hide': current === pages }"
+        :class="{ 'dito-hide': current === numPages }"
       )
         +nbsp
       router-link.dito-button(
-        v-for="page in pages"
+        v-for="page in numPages"
         :to="{ query: getQuery(page) }"
         :key="`page_{page}`"
         tag="button"
@@ -55,41 +55,33 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-pagination', {
   props: {
-    filter: { type: Object, required: true },
-    paginate: { type: Number, required: true },
-    count: { type: Number, required: true }
+    query: { type: Object, required: true },
+    limit: { type: Number, required: true },
+    total: { type: Number, required: true }
   },
 
   computed: {
-    offset() {
-      return +this.filter.offset || 0
-    },
-
-    limit() {
-      return +this.filter.limit || this.paginate
+    current() {
+      return (+this.query.page || 0) + 1
     },
 
     first() {
-      return this.offset + 1
+      return (this.current - 1) * this.limit + 1
     },
 
     last() {
-      return Math.min(this.offset + this.limit, this.count)
+      return Math.min(this.first + this.limit - 1, this.total)
     },
 
-    pages() {
-      return Math.ceil(this.count / this.limit)
-    },
-
-    current() {
-      return Math.floor(this.offset / this.limit) + 1
+    numPages() {
+      return Math.ceil(this.total / this.limit)
     }
   },
 
   methods: {
     getQuery(page) {
-      page = Math.min(Math.max(page, 1), this.pages)
-      return { ...this.filter, offset: (page - 1) * this.limit }
+      page = Math.min(Math.max(page, 1), this.numPages)
+      return { ...this.query, page: (page - 1) }
     }
   }
 })
