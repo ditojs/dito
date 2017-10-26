@@ -1,12 +1,17 @@
 import Knex from 'knex'
 import Koa from 'koa'
 import { underscore, camelize } from '@/utils'
+import { mixinEventEmitter } from '@/events'
 import Validator from '@/model/Validator'
 import KnexMixin from './KnexMixin'
 
 export default class App extends Koa {
   constructor(config, { validator, models }) {
     super()
+    // Override Koa's events with our own EventEmitter that adds support for
+    // asynchronous events.
+    // TODO: Test if Koa's internal events still behave the same (they should!)
+    mixinEventEmitter(this)
     this.config = config
     let { knex: knexConfig, normalizeDbNames } = config
     if (normalizeDbNames) {
@@ -66,12 +71,13 @@ export default class App extends Koa {
     modelClass.knex(this.knex)
   }
 
-  start() {
+  async start() {
     const {
       server: { host, port },
       environment
     } = this.config
-    return new Promise(resolve => {
+    await this.emit('before:start')
+    await new Promise(resolve => {
       this.server = this.listen(port, host, () => {
         const { port } = this.server.address()
         // TODO: logging?
@@ -84,10 +90,12 @@ export default class App extends Koa {
         resolve(new Error(`Unable to start server at http://${host}:${port}`))
       }
     })
+    await this.emit('after:start')
   }
 
-  stop() {
-    return new Promise((resolve, reject) => {
+  async stop() {
+    await this.emit('before:stop')
+    await new Promise((resolve, reject) => {
       if (this.server) {
         this.server.close(err => {
           this.server = null
@@ -101,5 +109,15 @@ export default class App extends Koa {
         reject(new Error('Server is not running'))
       }
     })
+    await this.emit('after:stop')
+  }
+
+  async startOrExit() {
+    try {
+      await this.start()
+    } catch (err) {
+      console.error(err)
+      process.exit(-1)
+    }
   }
 }

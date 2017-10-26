@@ -3,9 +3,9 @@ import util from 'util'
 import { isObject, isString } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
+import { mixinDeferredEventEmitter } from '@/events'
 import convertSchema from './convertSchema'
 import convertRelations from './convertRelations'
-import EventEmitterMixin from './EventEmitterMixin'
 
 export default class Model extends objection.Model {
   static async count(...args) {
@@ -354,7 +354,7 @@ export default class Model extends objection.Model {
   }
 }
 
-EventEmitterMixin(Model)
+mixinDeferredEventEmitter(Model)
 
 const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()

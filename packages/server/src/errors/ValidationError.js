@@ -3,10 +3,10 @@ import { isArray } from '@/utils'
 
 export default class ValidationError extends ResponseError {
   constructor(data, statusCode = 400) {
-    let index = 0
     if (isArray(data.errors)) {
       // Convert from Ajv errors array to hash
       const errors = {}
+      let index = 0
       for (const { message, keyword, params, dataPath } of data.errors) {
         const key = dataPath.substring(1) ||
           params && (params.missingProperty || params.additionalProperty) ||
@@ -16,6 +16,5 @@ export default class ValidationError extends ResponseError {
       data.errors = errors
     }
     super(data, statusCode)
-    this.data = data
   }
 }

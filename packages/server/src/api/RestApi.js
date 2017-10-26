@@ -2,6 +2,7 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import mount from 'koa-mount'
 import RestGenerator from './RestGenerator'
+import { ResponseError, RestError } from '@/errors'
 
 export default class RestApi extends Koa {
   constructor(prefix) {
@@ -46,9 +47,13 @@ export default class RestApi extends Koa {
     const state = { ...settings, namespace }
     this.router[verb](route, async ctx => {
       Object.assign(ctx.state, state)
-      await modelClass.emit(before, ctx)
-      ctx.body = await handler(ctx)
-      await modelClass.emit(after, ctx)
+      try {
+        await modelClass.emit(before, ctx)
+        ctx.body = await handler(ctx)
+        await modelClass.emit(after, ctx)
+      } catch (err) {
+        throw err instanceof ResponseError ? err : new RestError(err)
+      }
     })
   }
 }
