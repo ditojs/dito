@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isString } from '@/utils'
+import { isObject, isArray, isString } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { DeferredEventEmitter } from '@/events'
@@ -86,8 +86,8 @@ export default class Model extends objection.Model {
 
   static get dateAttributes() {
     return this.getCached('jsonSchema:dateAttributes', () => (
-      this.getAttributes(({ format, computed }) =>
-        !computed && format === 'date-time')
+      this.getAttributes(({ type, computed }) =>
+        !computed && ['date', 'datetime', 'timestamp'].includes(type))
     ), [])
   }
 
@@ -99,8 +99,7 @@ export default class Model extends objection.Model {
 
   static getAttributes(filter) {
     const attributes = []
-    const { properties = {} } = this.getJsonSchema()
-    // console.log(`${this.name}.getAttributes()`, new Error().stack)
+    const { properties = {} } = this.definition
     for (const [name, property] of Object.entries(properties)) {
       if (filter(property)) {
         attributes.push(name)
@@ -361,10 +360,19 @@ const cacheMap = new WeakMap()
 
 const definitionHandlers = {
   properties(properties) {
-    // Convert short-form `name: type` to `name: { type }`.
+    // Convert root-level short-forms, for easier properties handling in
+    // getAttributes() and createMigration():
+    // - `name: type` to `name: { type }`
+    // - `name: [...items]` to `name: { type: 'array', items }
+    // NOTE: Substitutions on all other levels happen in convertSchema()
     for (const [name, property] of Object.entries(properties)) {
       if (isString(property)) {
         properties[name] = { type: property }
+      } else if (isArray(property)) {
+        properties[name] = {
+          type: 'array',
+          items: property.length > 1 ? property : property[0]
+        }
       }
     }
     // Include auto-generated 'id' properties for models and relations.
