@@ -181,7 +181,7 @@ function createArgumentsValidator(modelClass, args = []) {
 
 function getArguments(modelClass, method, validate, query) {
   if (!validate(query)) {
-    throw new modelClass.ValidationError(validate.errors,
+    throw modelClass.createValidationError(validate.errors,
       `The provided data is not valid: ${JSON.stringify(query)}`)
   }
   const args = []
@@ -197,7 +197,7 @@ function getReturn(modelClass, method, validate, value) {
     // Use 'root' if no name is given, see createArgumentsValidator()
     const data = { [name || 'root']: value }
     if (!validate(data)) {
-      throw new modelClass.ValidationError(validate.errors,
+      throw modelClass.createValidationError(validate.errors,
         `Invalid result of remote method: ${value}`)
     }
     return name ? data : value
