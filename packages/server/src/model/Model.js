@@ -276,9 +276,13 @@ export default class Model extends objection.Model {
     return this.app.validator
   }
 
-  static createValidationError(errors) {
+  static compileValidator(jsonSchema, skipRequired) {
+    return this.getValidator().compileValidator(jsonSchema, skipRequired)
+  }
+
+  static createValidationError(errors, message = null, data = null) {
     return new this.ValidationError(errors,
-      `The provided data for the ${this.name} instance is not valid`)
+      message || `The provided data for the ${this.name} instance is not valid`)
   }
 
   static ValidationError = ValidationError

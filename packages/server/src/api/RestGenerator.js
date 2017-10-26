@@ -219,7 +219,7 @@ const methodHandlers = {
     const { name } = method
     const func = checkMethod(modelClass[name], modelClass, name, 'Collection')
     const args = getArguments(modelClass, method, validate.arguments, ctx.query)
-    const value = await func.call(modelClass, args)
+    const value = await func.apply(modelClass, args)
     return getReturn(modelClass, method, validate.return, value)
   },
 
@@ -228,7 +228,7 @@ const methodHandlers = {
     const { name } = method
     const func = checkMethod(model[name], modelClass, name, 'Member')
     const args = getArguments(modelClass, method, validate.arguments, ctx.query)
-    const value = await func.call(model, args)
+    const value = await func.apply(model, args)
     return getReturn(modelClass, method, validate.return, value)
   }
 }
