@@ -154,15 +154,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return fullId
   }
 
-  find(filter = {}) {
+  find(query = {}) {
     // TODO: Add support for omit
     this._relationsToJoin = {}
-    for (const [key, value] of Object.entries(filter)) {
-      const handler = handlers[key]
-      if (handler) {
-        handler(this, key, value)
+    for (const [key, value] of Object.entries(query)) {
+      const queryHandler = queryHandlers[key]
+      if (queryHandler) {
+        queryHandler(this, key, value)
       } else {
-        this.parseFilter(key, value)
+        this.parseQueryFilter(key, value)
       }
     }
     // TODO: Is this really needed? Looks like it works without it also...
@@ -172,8 +172,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(filter) {
-    return this.find(filter).first()
+  findOne(query) {
+    return this.find(query).first()
   }
 
   allow(refs) {
@@ -198,12 +198,12 @@ export default class QueryBuilder extends objection.QueryBuilder {
         checkAllow && this._allow)))
   }
 
-  parseFilter(key, value) {
+  parseQueryFilter(key, value) {
     const parts = key.split(/\s*:\s*/)
-    const filter = parts.length === 1 ? filters.eq
-      : parts.length === 2 ? filters[parts[1]]
+    const queryFilter = parts.length === 1 ? queryFilters.eq
+      : parts.length === 2 ? queryFilters[parts[1]]
       : null
-    if (!filter) {
+    if (!queryFilter) {
       throw new QueryError(
         `QueryBuilder: Invalid filter in "${key}=${value}"`)
     }
@@ -215,28 +215,28 @@ export default class QueryBuilder extends objection.QueryBuilder {
       }
     }
     if (propertyRefs.length === 1) {
-      propertyRefs[0].applyFilter(this, this, filter, value)
+      propertyRefs[0].applyQueryFilter(this, this, queryFilter, value)
     } else {
       // If there are multiple property refs, they are combined with an `OR`
       // operator.
       this.where(builder => {
         for (const ref of propertyRefs) {
-          ref.applyFilter(this, builder, filter, value, 'or')
+          ref.applyQueryFilter(this, builder, queryFilter, value, 'or')
         }
       })
     }
   }
 
-  static registerHandler(key, handler) {
-    handlers[key] = handler
+  static registerQueryHandler(key, handler) {
+    queryHandlers[key] = handler
   }
 
-  static registerFilter(key, handler) {
-    filters[key] = handler
+  static registerQueryFilter(key, handler) {
+    queryFilters[key] = handler
   }
 }
 
-const handlers = {
+const queryHandlers = {
   eager(builder, key, value) {
     if (value) {
       builder.mergeEager(value)
@@ -299,10 +299,10 @@ const handlers = {
           processPropertyRefs(subKey, subValue, parts ? [...parts, key] : [])
         }
       } else if (parts) {
-        const filter = key in filters && key
-        if (!filter) parts.push(key)
-        const ref = `${parts.join('.')}${filter ? `:${filter}` : ''}`
-        builder.parseFilter(ref, value)
+        const filterName = key in queryFilters && key
+        if (!filterName) parts.push(key)
+        const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
+        builder.parseQueryFilter(ref, value)
       }
     }
 
@@ -310,7 +310,7 @@ const handlers = {
   }
 }
 
-const filters = {
+const queryFilters = {
   in(builder, ref, value) {
     return where(builder, ref, null, value.split(','), 'whereIn')
   },
@@ -375,7 +375,7 @@ const operators = {
 }
 
 for (const [key, operator] of Object.entries(operators)) {
-  filters[key] = (builder, ref, value) => (
+  queryFilters[key] = (builder, ref, value) => (
     where(builder, ref, operator, value)
   )
 }

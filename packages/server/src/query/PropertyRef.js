@@ -47,11 +47,12 @@ export default class PropertyRef {
       throw new QueryError(
         `PropertyRef: Only one level of relations is supported`)
     }
-    this.columnName = this.modelClass.propertyNameToColumnName(
-      this.propertyName)
-    if (!this.columnName) {
+    const { properties } = this.modelClass.getJsonSchema() || {}
+    if (properties && !(properties[this.propertyName])) {
       throw new QueryError(`PropertyRef: Unknown property "${this.key}"`)
     }
+    this.columnName = this.modelClass.propertyNameToColumnName(
+      this.propertyName)
   }
 
   fullColumnName(builder) {
@@ -59,8 +60,8 @@ export default class PropertyRef {
     return `${tableRef}.${this.columnName}`
   }
 
-  applyFilter(builder, query, filter, value, boolOp) {
-    const { method, args } = filter(builder, this, value, this.modelClass)
+  applyQueryFilter(builder, query, queryFilter, value, boolOp) {
+    const { method, args } = queryFilter(builder, this, value, this.modelClass)
     const whereMethod = boolOp ? `${boolOp}${capitalize(method)}` : method
     const { relation } = this
     // TODO: Figure out all relations
