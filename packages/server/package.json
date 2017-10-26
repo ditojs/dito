@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@koa/cors": "^2.2.1",
-    "ajv": "^5.2.5",
+    "ajv": "^5.3.0",
     "bluebird": "^3.5.1",
     "chalk": "^2.3.0",
     "eventemitter2": "^4.1.2",

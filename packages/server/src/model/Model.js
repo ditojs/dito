@@ -173,14 +173,18 @@ export default class Model extends objection.Model {
     for (const [event, handler] of Object.entries(events)) {
       this.on(event, handler)
     }
-    console.log(this.name,
+    console.log(`${this.name}:\n`,
       util.inspect({
         jsonSchema: this.jsonSchema,
         jsonAttributes: this.jsonAttributes,
         dateAttributes: this.dateAttributes,
         booleanAttributes: this.booleanAttributes,
         computedAttributes: this.computedAttributes
-      }, { depth: 16 }))
+      }, {
+        colors: true,
+        depth: null,
+        maxArrayLength: null
+      }))
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
