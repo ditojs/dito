@@ -2,7 +2,7 @@ import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
 // import findQuery from 'objection-find'
-import { isObject, isFunction, pick, hyphenate } from '@/utils'
+import { isObject, isFunction, isString, pick, hyphenate } from '@/utils'
 import { NotFoundError } from '@/errors'
 import convertSchema from '@/model/convertSchema'
 
@@ -168,7 +168,8 @@ function createArgumentsValidator(modelClass, args = []) {
     const properties = {}
     for (const arg of args) {
       if (arg) {
-        const { name, type, ...rest } = arg
+        const property = isString(arg) ? { type: arg } : arg
+        const { name, type, ...rest } = property
         properties[name || 'root'] = { type, ...rest }
       }
     }

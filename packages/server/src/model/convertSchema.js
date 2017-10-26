@@ -1,6 +1,11 @@
 import { isObject, isArray, asArray, isString } from '@/utils'
 
 export default function convertSchema(schema) {
+  if (isString(schema)) {
+    schema = { type: schema }
+  } else if (isArray(schema)) {
+    schema = schema.map(entry => convertSchema(entry))
+  }
   if (isObject(schema)) {
     // Shallow clone so we can modify and return:
     schema = { ...schema }
@@ -11,10 +16,7 @@ export default function convertSchema(schema) {
         if (type === 'array') {
           const { items } = schema
           if (items) {
-            // Expand `{ items: type }` to `{ items: { type } }`, and if type
-            // is a $ref, then further to `{ items: { $ref: type } }`:
-            schema.items = convertSchema(
-              isString(items) ? { type: items } : items)
+            schema.items = convertSchema(items)
           }
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -22,7 +24,7 @@ export default function convertSchema(schema) {
         // Provide validation through date-time format, which in AJV appears
         // to handle both types correctly.
         schema.type = ['string', 'object']
-        addFormat(schema, 'date-time')
+        schema = addFormat(schema, 'date-time')
       } else {
         // A reference to another model as nested JSON data, use $ref instead
         // of type, but append '_required' to use the version of the schema
@@ -72,18 +74,19 @@ export default function convertSchema(schema) {
         schema.default = _default
       }
     }
-  } else if (isArray(schema)) {
-    schema = schema.map(entry => convertSchema(entry))
   }
   return schema
 }
 
 function addFormat(schema, newFormat) {
   // Support multiple `format` keywords through `allOf`:
-  const { allOf, format, ...rest } = schema
+  let { allOf, format, ...rest } = schema
   if (format || allOf) {
-    schema = { ...rest, allOf: allOf || [] }
-    schema.allOf.push({ format }, { format: newFormat })
+    allOf = allOf || []
+    if (!allOf.find(({ format }) => format === newFormat)) {
+      allOf.push({ format }, { format: newFormat })
+      schema = { ...rest, allOf }
+    }
   } else {
     schema.format = newFormat
   }
