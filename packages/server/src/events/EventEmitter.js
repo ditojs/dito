@@ -1,4 +1,4 @@
-import EventEmitter from 'eventemitter2'
+import EventEmitter2 from 'eventemitter2'
 
 /* eslint object-property-newline: "off" */
 // Expose only some of the EventEmitter methods and behavior on the model:
@@ -6,7 +6,7 @@ const {
   emitAsync: emit, on, off, once, onAny, offAny,
   removeListener, listeners,
   _on, _onAny, _once
-} = EventEmitter.prototype
+} = EventEmitter2.prototype
 
 const methods = {
   emit, on, off, once, onAny, offAny,
@@ -24,9 +24,9 @@ for (const [key, method] of Object.entries(methods)) {
   }
 }
 
-export function mixinEventEmitter(target) {
+export function EventEmitter(target) {
   Object.defineProperties(target, properties)
-  EventEmitter.call(target, {
+  EventEmitter2.call(target, {
     delimiter: ':',
     wildcard: true,
     newListener: false,
@@ -35,7 +35,7 @@ export function mixinEventEmitter(target) {
   return target
 }
 
-export function mixinDeferredEventEmitter(target) {
+export function DeferredEventEmitter(target) {
   // Installs all public-facing methods except `emit()` as triggers that when
   // first called fully install the EventEmitter functionality, by which they
   // get replaced.
@@ -48,7 +48,7 @@ export function mixinDeferredEventEmitter(target) {
         // Install the real EventEmitter functions on `this` instead of target,
         // to support inheritance, and call the newly installed function on it
         // again right after.
-        return mixinEventEmitter(this)[key](...args)
+        return EventEmitter(this)[key](...args)
       }
     }
   }
