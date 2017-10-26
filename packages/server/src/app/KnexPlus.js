@@ -1,3 +1,5 @@
+import Knex from 'knex'
+
 // Methods to be added to the Dito knex instance (app.knex):
 
 const properties = Object.getOwnPropertyDescriptors({
@@ -32,6 +34,6 @@ const properties = Object.getOwnPropertyDescriptors({
   }
 })
 
-export default function KnexMixin(knex) {
-  return Object.defineProperties(knex, properties)
+export default function KnexPlus(config) {
+  return Object.defineProperties(Knex(config), properties)
 }

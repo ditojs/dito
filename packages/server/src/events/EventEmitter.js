@@ -1,6 +1,5 @@
 import EventEmitter2 from 'eventemitter2'
 
-/* eslint object-property-newline: "off" */
 // Expose only some of the EventEmitter methods and behavior on the model:
 const {
   emitAsync: emit, on, off, once, onAny, offAny,
@@ -9,6 +8,7 @@ const {
 } = EventEmitter2.prototype
 
 const methods = {
+  /* eslint object-property-newline: "off" */
   emit, on, off, once, onAny, offAny,
   removeListener, listeners,
   _on, _onAny, _once

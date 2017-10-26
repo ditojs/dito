@@ -30,13 +30,16 @@ export async function createMigration(app, modelName) {
   for (const [name, property] of Object.entries(properties)) {
     const column = modelClass.propertyNameToColumnName(name)
     let {
-      type, computed, default: _default, primary, required, nullable
+      type, computed, default: _default, primary, unique, required, nullable
     } = property
     const knexType = typeToKnex[type] || type
     if (!computed) {
       const statement = primary
         ? [`table.increments('${column}').primary()`]
         : [`table.${knexType}('${column}')`]
+      if (unique) {
+        statement.push('unique()')
+      }
       if (required) {
         statement.push('notNullable()')
       } else if (nullable) {

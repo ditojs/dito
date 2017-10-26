@@ -1,5 +1,5 @@
 import { AjvValidator } from 'objection'
-import * as coreValidators from './validators'
+import * as coreValidators from '../validators'
 
 class Validator extends AjvValidator {
   constructor({ options, validators } = {}) {
