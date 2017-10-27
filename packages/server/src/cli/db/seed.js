@@ -6,7 +6,6 @@ import { isFunction, isArray } from '@/utils'
 export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
-  let total = 0
   for (const file of files) {
     const desc = path.parse(file)
     if (/^\.(js|json)$/.test(desc.ext)) {
@@ -15,16 +14,17 @@ export async function seed(app) {
       const modelClass = app.models[desc.name]
       if (modelClass) {
         await modelClass.query().truncate()
-        if (isFunction(seed)) {
-          await seed(modelClass, app.models)
+        const res = isFunction(seed)
+          ? await seed(modelClass, app.models)
+          : await modelClass.query().insertGraph(seed)
+        if (isArray(res)) {
+          console.log(chalk.green(
+            `${modelClass.name}: ${res.length} seed records created.`))
         } else {
-          const res = await modelClass.query().insertGraph(seed)
-          if (isArray(res)) {
-            total += res.length
-          }
+          console.log(chalk.red(
+            `${modelClass.name}: No seed records created.`))
         }
       }
     }
   }
-  console.log(chalk.green(`Seed: ${total} seed records created`))
 }

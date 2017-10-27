@@ -70,7 +70,7 @@ export function convertRelations(ownerModelClass, schema, models) {
   function throwError(relationName, message) {
     throw new Error(
       `${ownerModelClass.name}.relations.${relationName}: ` + message)
-}
+  }
 
   const relations = {}
   for (const [relationName, relationSchema] of Object.entries(schema)) {
@@ -102,7 +102,7 @@ export function convertRelations(ownerModelClass, schema, models) {
           // - The to property is called:
           //   `${camelize(toModelName)}${camelize(toProp, true)}`
           if (from.length !== to.length) {
-            throwError(relationName, `Unable to create through join for `
+            throwError(relationName, `Unable to create through join for ` +
               `composite keys from '${from}' to '${to}'`)
           }
           through = { from: [], to: [] }
