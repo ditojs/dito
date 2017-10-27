@@ -10,7 +10,7 @@ import {
 
 const relationLookup = {
   // one:
-  belongsToOne: BelongsToOneRelation,
+  belongsTo: BelongsToOneRelation,
   hasOne: HasOneRelation,
   hasOneThrough: HasOneThroughRelation,
   // many:
