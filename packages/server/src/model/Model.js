@@ -3,7 +3,7 @@ import util from 'util'
 import { isObject, isArray, isString } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
-import { DeferredEventEmitter } from '@/events'
+import { EventEmitter } from '@/events'
 import { convertSchema, convertRelations } from '@/schema'
 import ModelRelation from './ModelRelation'
 
@@ -362,7 +362,7 @@ export default class Model extends objection.Model {
   }
 }
 
-DeferredEventEmitter(Model)
+EventEmitter.deferred(Model)
 
 const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()

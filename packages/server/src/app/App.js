@@ -1,7 +1,7 @@
 import Koa from 'koa'
 import { underscore, camelize } from '@/utils'
 import { EventEmitter } from '@/events'
-import Validator from '@/model/Validator'
+import { Validator } from '@/model'
 import KnexPlus from './KnexPlus'
 
 export default class App extends Koa {
@@ -10,7 +10,7 @@ export default class App extends Koa {
     // Override Koa's events with our own EventEmitter that adds support for
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
-    EventEmitter(this)
+    EventEmitter.mixin(this)
     this.config = config
     let { knex: knexConfig, normalizeDbNames } = config
     if (normalizeDbNames) {
