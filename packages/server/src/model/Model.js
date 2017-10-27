@@ -5,6 +5,7 @@ import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { DeferredEventEmitter } from '@/events'
 import { convertSchema, convertRelations } from '@/schema'
+import ModelRelation from './ModelRelation'
 
 export default class Model extends objection.Model {
   static async count(...args) {
@@ -136,32 +137,35 @@ export default class Model extends objection.Model {
   }
 
   static prepareModel() {
-    const exposeRelated = (name, accessor) => {
-      if (!(accessor in this.prototype)) {
-        Object.defineProperty(this.prototype, accessor, {
-          get() {
-            return this.$relatedQuery(name)
-          },
-          configurable: true,
-          enumerable: false
-        })
-      }
-    }
-
     for (const [name, relation] of Object.entries(this.getRelations())) {
-      // Expose $relatedQuery(name) under short-cut $name, and also $$name,
-      // in case $name clashes with a function:
-      exposeRelated(name, `$${name}`)
-      exposeRelated(name, `$$${name}`)
+      // Expose ModelRelation instances for each relation under short-cut $name,
+      // for access to relations and implicit calls to $relatedQuery(name).
+      const accessor = `$${name}`
+      if (accessor in this.prototype) {
+        throw new Error(
+          `Model "${this.name}" already defines a property with name ` +
+          `"${accessor}" that clashes with the relation accessor.`)
+      }
+      Object.defineProperty(this.prototype, accessor, {
+        get() {
+          if (!relationsMap.has(this)) {
+            relationsMap.set(this, {})
+          }
+          const relations = relationsMap.get(this)
+          return relations[name] ||
+            (relations[name] = new ModelRelation(this, relation))
+        },
+        configurable: true,
+        enumerable: false
+      })
       // Make sure all relations are defined correctly, with back-references.
       const { relatedModelClass } = relation
       const relatedProperties = relatedModelClass.definition.properties || {}
       for (const property of relation.relatedProp.props) {
         if (!(property in relatedProperties)) {
           throw new Error(
-            `"${relatedModelClass.name}" is missing back-reference ` +
-            `"${property}" for relation "${this.name}.${relation.name}"`
-          )
+            `Model "${relatedModelClass.name}" is missing back-reference ` +
+            `"${property}" for relation "${this.name}.${relation.name}"`)
         }
       }
       // TODO: Check `through` settings also
@@ -281,8 +285,6 @@ export default class Model extends objection.Model {
     return json
   }
 
-  $toDatabaseJson
-
   static createValidator() {
     // Use a shared validator per app, so model schema can reference each other.
     return this.app.validator
@@ -370,6 +372,7 @@ DeferredEventEmitter(Model)
 
 const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()
+const relationsMap = new WeakMap()
 
 const definitionHandlers = {
   properties(properties) {
@@ -425,64 +428,5 @@ const definitionHandlers = {
   events: null
 }
 
-// Expose a selection of QueryBuilder methods directly on the model
-
-for (const name of [
-  'first',
-  'find',
-  'findOne',
-  'unscoped',
-  'select',
-  'insert',
-  'update',
-  'patch',
-  'upsert',
-  'delete',
-  'truncate',
-  'insertAndFetch',
-  'updateAndFetch',
-  'upsertAndFetch',
-  'updateAndFetchById',
-  'patchAndFetchById',
-  'insertGraph',
-  'updateGraph',
-  'upsertGraph',
-  'insertGraphAndFetch',
-  'updateGraphAndFetch',
-  'upsertGraphAndFetch',
-  'where',
-  'whereNot',
-  'whereRaw',
-  'whereWrapped',
-  'whereExists',
-  'whereNotExists',
-  'whereIn',
-  'whereNotIn',
-  'whereNull',
-  'whereNotNull',
-  'whereBetween',
-  'whereNotBetween',
-  'whereJsonEquals',
-  'whereJsonNotEquals',
-  'whereJsonSupersetOf',
-  'whereJsonNotSupersetOf',
-  'whereJsonSubsetOf',
-  'whereJsonNotSubsetOf',
-  'whereJsonHasAny',
-  'whereJsonHasAll',
-  'whereJsonField',
-  'whereJsonIsArray',
-  'whereJsonIsObject'
-]) {
-  if (name in Model) {
-    console.warn(`There is already a prototype property named '${name}'`)
-  } else {
-    Object.defineProperty(Model, name, {
-      value(...args) {
-        return this.query()[name](...args)
-      },
-      configurable: true,
-      enumerable: false
-    })
-  }
-}
+// Expose a selection of QueryBuilder methods as static methods on model classes
+QueryBuilder.mixin(Model)

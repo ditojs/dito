@@ -2,7 +2,7 @@ import { AjvValidator } from 'objection'
 import { mapValues } from '@/utils'
 import * as schema from '../schema'
 
-class Validator extends AjvValidator {
+export default class Validator extends AjvValidator {
   constructor({ options, keywords, formats } = {}) {
     super({
       options: {
@@ -66,5 +66,3 @@ function addFormats(ajv, formats = {}) {
     }
   }
 }
-
-export default Validator

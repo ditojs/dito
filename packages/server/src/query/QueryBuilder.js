@@ -235,10 +235,28 @@ export default class QueryBuilder extends objection.QueryBuilder {
   static registerQueryFilter(key, handler) {
     queryFilters[key] = handler
   }
+
+  static mixin(target) {
+    // Expose a selection of QueryBuilder methods directly on the target,
+    // redirecting the calls to `this.query()[method](...)`
+    for (const method of mixinMethods) {
+      if (method in target) {
+        console.warn(
+          `There is already a property named '${method}' on '$(target)'`)
+      } else {
+        Object.defineProperty(target, method, {
+          value(...args) {
+            return this.query()[method](...args)
+          },
+          configurable: true,
+          enumerable: false
+        })
+      }
+    }
+  }
 }
 
 const queryHandlers = {
-
   where(builder, key, value) {
     // Recursively translate object based filters to string based ones for
     // standardized processing in PropertyRef.
@@ -427,3 +445,51 @@ function where(builder, ref, operator, value, method = 'where') {
     args: operator ? [columnName, operator, value] : [columnName, value]
   }
 }
+
+const mixinMethods = [
+  'first',
+  'find',
+  'findOne',
+  'unscoped',
+  'select',
+  'insert',
+  'update',
+  'patch',
+  'upsert',
+  'delete',
+  'truncate',
+  'insertAndFetch',
+  'updateAndFetch',
+  'upsertAndFetch',
+  'updateAndFetchById',
+  'patchAndFetchById',
+  'insertGraph',
+  'updateGraph',
+  'upsertGraph',
+  'insertGraphAndFetch',
+  'updateGraphAndFetch',
+  'upsertGraphAndFetch',
+  'where',
+  'whereNot',
+  'whereRaw',
+  'whereWrapped',
+  'whereExists',
+  'whereNotExists',
+  'whereIn',
+  'whereNotIn',
+  'whereNull',
+  'whereNotNull',
+  'whereBetween',
+  'whereNotBetween',
+  'whereJsonEquals',
+  'whereJsonNotEquals',
+  'whereJsonSupersetOf',
+  'whereJsonNotSupersetOf',
+  'whereJsonSubsetOf',
+  'whereJsonNotSubsetOf',
+  'whereJsonHasAny',
+  'whereJsonHasAll',
+  'whereJsonField',
+  'whereJsonIsArray',
+  'whereJsonIsObject'
+]
