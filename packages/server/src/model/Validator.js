@@ -1,8 +1,8 @@
 import { AjvValidator } from 'objection'
-import * as coreValidators from '../validators'
+import * as schema from '../schema'
 
 class Validator extends AjvValidator {
-  constructor({ options, validators } = {}) {
+  constructor({ options, keywords, formats } = {}) {
     super({
       options: {
         allErrors: true,
@@ -19,20 +19,8 @@ class Validator extends AjvValidator {
       },
 
       onCreateAjv(ajv) {
-        for (const { keyword, format, ...schema } of Object.values({
-          ...coreValidators,
-          ...validators
-        })) {
-          if (keyword) {
-            ajv.addKeyword(keyword, schema)
-          } else if (format) {
-            ajv.addFormat(format, schema)
-          } else if (Object.keys(schema).length) {
-            console.warn(
-              `Unable to register validator: ${JSON.stringify(schema)}`)
-          }
-        }
-        return ajv
+        addKeywords(ajv, { ...schema.keywords, ...keywords })
+        addFormats(ajv, { ...schema.formats, ...formats })
       }
     })
   }
@@ -43,6 +31,20 @@ class Validator extends AjvValidator {
     // forcing compilation and caching right away.
     this.getValidator(modelClass, jsonSchema, true)
     this.getValidator(modelClass, jsonSchema, false)
+  }
+}
+
+function addKeywords(ajv, keywords = {}) {
+  for (const [keyword, schema] of Object.entries(keywords)) {
+    // Ajv appears to not copy the schema before modifying it,
+    // so let's make shallow clones here.
+    ajv.addKeyword(keyword, { ...schema })
+  }
+}
+
+function addFormats(ajv, formats = {}) {
+  for (const [format, schema] of Object.entries(formats)) {
+    ajv.addFormat(format, { ...schema })
   }
 }
 

@@ -26,7 +26,7 @@ const relationClasses = {
   ManyToManyRelation
 }
 
-export default function convertRelations(ownerModelClass, schema, models) {
+export function convertRelations(ownerModelClass, schema, models) {
   function convertReference(reference) {
     const [modelName, propertyName] = reference && reference.split('.') || []
     const modelClass = models[modelName]

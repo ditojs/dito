@@ -1,5 +1,4 @@
 export const range = {
-  keyword: 'range',
   type: ['number', 'integer'],
   metaSchema: {
     type: 'array',

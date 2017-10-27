@@ -4,8 +4,7 @@ import { isObject, isArray, isString } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { DeferredEventEmitter } from '@/events'
-import convertSchema from './convertSchema'
-import convertRelations from './convertRelations'
+import { convertSchema, convertRelations } from '@/schema'
 
 export default class Model extends objection.Model {
   static async count(...args) {

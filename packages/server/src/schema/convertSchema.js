@@ -1,6 +1,6 @@
 import { isObject, isArray, asArray, isString } from '@/utils'
 
-export default function convertSchema(schema) {
+export function convertSchema(schema) {
   if (isString(schema)) {
     schema = { type: schema }
   } else if (isArray(schema)) {

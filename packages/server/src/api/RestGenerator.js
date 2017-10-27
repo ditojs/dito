@@ -2,9 +2,9 @@ import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
 // import findQuery from 'objection-find'
-import { isObject, isFunction, isString, pick, hyphenate } from '@/utils'
+import { convertSchema } from '@/schema'
 import { NotFoundError } from '@/errors'
-import convertSchema from '@/model/convertSchema'
+import { isObject, isFunction, isString, pick, hyphenate } from '@/utils'
 
 export default class RestGenerator {
   constructor({ adapter, prefix, logger } = {}) {
