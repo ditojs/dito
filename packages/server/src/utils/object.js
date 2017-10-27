@@ -35,3 +35,10 @@ export function pick(...args) {
     }
   }
 }
+
+export function mapValues(obj, callback) {
+  return Object.entries(obj).reduce((res, [key, value]) => {
+    res[key] = callback(value, key)
+    return res
+  }, {})
+}

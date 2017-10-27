@@ -1,4 +1,5 @@
 import { AjvValidator } from 'objection'
+import { mapValues } from '@/utils'
 import * as schema from '../schema'
 
 class Validator extends AjvValidator {
@@ -19,8 +20,10 @@ class Validator extends AjvValidator {
       },
 
       onCreateAjv(ajv) {
-        addKeywords(ajv, { ...schema.keywords, ...keywords })
-        addFormats(ajv, { ...schema.formats, ...formats })
+        addKeywords(ajv, clearOverrides(schema.keywords, keywords))
+        addFormats(ajv, clearOverrides(schema.formats, formats))
+        addKeywords(ajv, keywords)
+        addFormats(ajv, formats)
       }
     })
   }
@@ -34,17 +37,33 @@ class Validator extends AjvValidator {
   }
 }
 
+function clearOverrides(defaults, overrides) {
+  // Create a new version of `defaults` where all values defined in `overrides`
+  // are set to null, so they can be redefined after without caussing errors.
+  // This allows apps to override default keywords and formats with their own
+  // definitions, while still use the not-touched default formats and keywords
+  // in their metaSchema definitions.
+  return {
+    ...defaults,
+    ...mapValues(overrides, () => null)
+  }
+}
+
 function addKeywords(ajv, keywords = {}) {
   for (const [keyword, schema] of Object.entries(keywords)) {
-    // Ajv appears to not copy the schema before modifying it,
-    // so let's make shallow clones here.
-    ajv.addKeyword(keyword, { ...schema })
+    if (schema) {
+      // Ajv appears to not copy the schema before modifying it,
+      // so let's make shallow clones here.
+      ajv.addKeyword(keyword, { ...schema })
+    }
   }
 }
 
 function addFormats(ajv, formats = {}) {
   for (const [format, schema] of Object.entries(formats)) {
-    ajv.addFormat(format, { ...schema })
+    if (schema) {
+      ajv.addFormat(format, { ...schema })
+    }
   }
 }
 
