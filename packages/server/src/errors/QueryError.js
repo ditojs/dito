@@ -1,7 +1,7 @@
-import ResponseError from './ResponseError'
+import { ResponseError } from './ResponseError'
 
-export default class QueryError extends ResponseError {
-  constructor(message, statusCode = 400) {
-    super(message, statusCode)
+export class QueryError extends ResponseError {
+  constructor(message, status = 400) {
+    super(message, status)
   }
 }

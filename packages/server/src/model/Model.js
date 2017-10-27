@@ -177,13 +177,7 @@ export default class Model extends objection.Model {
       this.on(event, handler)
     }
     console.log(`${this.name}:\n`,
-      util.inspect({
-        jsonSchema: this.jsonSchema,
-        jsonAttributes: this.jsonAttributes,
-        dateAttributes: this.dateAttributes,
-        booleanAttributes: this.booleanAttributes,
-        computedAttributes: this.computedAttributes
-      }, {
+      util.inspect(this.jsonSchema, {
         colors: true,
         depth: null,
         maxArrayLength: null

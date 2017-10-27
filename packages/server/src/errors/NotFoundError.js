@@ -1,7 +1,7 @@
-import ResponseError from './ResponseError'
+import { ResponseError } from './ResponseError'
 
-export default class NotFoundError extends ResponseError {
-  constructor(message, statusCode = 404) {
-    super(message, statusCode)
+export class NotFoundError extends ResponseError {
+  constructor(message, status = 404) {
+    super(message, status)
   }
 }

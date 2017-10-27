@@ -1,11 +1,11 @@
-import ResponseError from './ResponseError'
+import { ResponseError } from './ResponseError'
 
-export default class WrappedError extends ResponseError {
-  constructor(error, statusCode = 400) {
+export class WrappedError extends ResponseError {
+  constructor(error, status = 400) {
     super({
       message: error.message,
       ...error
-    }, statusCode)
+    }, status)
     this.stack = error.stack
   }
 }

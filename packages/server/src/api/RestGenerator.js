@@ -204,12 +204,10 @@ function getReturn(modelClass, method, validate, value) {
   })
 }
 
-function checkMethod(func, modelClass, name, prefix, statusCode = 404) {
+function checkMethod(func, modelClass, name, prefix) {
   if (!isFunction(func)) {
-    const err = new NotFoundError(
+    throw new NotFoundError(
       `${prefix} method '${name}' not found on Model '${modelClass.name}'`)
-    err.statusCode = statusCode
-    throw err
   }
   return func
 }
@@ -237,12 +235,10 @@ const methodHandlers = {
  * Rest Routes
  */
 
-function checkModel(model, modelClass, id, statusCode = 404) {
+function checkModel(model, modelClass, id) {
   if (!model) {
-    const err = new NotFoundError(
+    throw new NotFoundError(
       `Cannot find '${modelClass.name}' model with id ${id}`)
-    err.statusCode = statusCode
-    throw err
   }
   return model
 }

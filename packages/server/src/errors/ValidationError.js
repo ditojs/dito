@@ -1,8 +1,8 @@
-import ResponseError from './ResponseError'
+import { ResponseError } from './ResponseError'
 import { isArray } from '@/utils'
 
-export default class ValidationError extends ResponseError {
-  constructor(data, statusCode = 400) {
+export class ValidationError extends ResponseError {
+  constructor(data, status = 400) {
     if (isArray(data.errors)) {
       // Convert from Ajv errors array to hash
       const errors = {}
@@ -15,6 +15,6 @@ export default class ValidationError extends ResponseError {
       }
       data.errors = errors
     }
-    super(data, statusCode)
+    super(data, status)
   }
 }

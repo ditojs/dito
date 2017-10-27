@@ -1,12 +1,15 @@
-import { isObject } from '@/utils'
+import { isObject, isString } from '@/utils'
 
-export default class ResponseError extends Error {
-  constructor(data, statusCode = 400) {
-    super(JSON.stringify(isObject(data) ? data : {
-      data
-    }, null, 2))
+export class ResponseError extends Error {
+  constructor(error, status = 400) {
+    const data = isObject(error)
+      ? error
+      : isString(error)
+        ? { message: error }
+        : { error }
+    super(JSON.stringify(data, null, 2))
     this.name = this.constructor.name
-    this.statusCode = statusCode
+    this.status = status
     this.data = data
   }
 }
