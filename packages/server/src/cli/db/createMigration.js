@@ -66,6 +66,8 @@ export async function createMigration(app, modelName) {
           `  .references('${toColumn}').inTable('${toModelClass.tableName}')`
         )
       }
+      // TODO: Detect relations that need through joins but don't provide them,
+      // and auto-create the trough table in those cases.
     }
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
