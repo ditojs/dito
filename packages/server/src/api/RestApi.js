@@ -2,7 +2,7 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import mount from 'koa-mount'
 import RestGenerator from './RestGenerator'
-import { ResponseError, RestError } from '@/errors'
+import { ResponseError, WrappedError } from '@/errors'
 
 export default class RestApi extends Koa {
   constructor(prefix) {
@@ -52,7 +52,7 @@ export default class RestApi extends Koa {
         ctx.body = await handler(ctx)
         await modelClass.emit(after, ctx)
       } catch (err) {
-        throw err instanceof ResponseError ? err : new RestError(err)
+        throw err instanceof ResponseError ? err : new WrappedError(err)
       }
     })
   }
