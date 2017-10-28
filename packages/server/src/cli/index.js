@@ -1,8 +1,9 @@
 import path from 'path'
 import { isFunction, camelize } from '@/utils'
 import * as db from './db'
+import startConsole from './console'
 
-const commands = { db }
+const commands = { db, console: startConsole }
 
 function getCommand(commands, parts) {
   const part = parts.shift()
@@ -12,6 +13,7 @@ function getCommand(commands, parts) {
 }
 
 export default async function execute() {
+  let res
   try {
     // Dynamically load app or config from the path provided package.json script
     const [,, command, importPath, ...args] = process.argv
@@ -23,9 +25,11 @@ export default async function execute() {
     if (isFunction(arg)) {
       arg = await arg()
     }
-    await execute(arg, ...args)
+    res = await execute(arg, ...args)
   } catch (err) {
     console.error(err)
   }
-  process.exit()
+  if (!res) {
+    process.exit()
+  }
 }
