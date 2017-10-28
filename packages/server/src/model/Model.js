@@ -146,14 +146,18 @@ export default class Model extends objection.Model {
           `Model "${this.name}" already defines a property with name ` +
           `"${accessor}" that clashes with the relation accessor.`)
       }
+      // Define an accessor that when first called creates the modelRelation
+      // and defines another accessor on the instance that then just returns
+      // the same modelRelation afterwards.
       Object.defineProperty(this.prototype, accessor, {
         get() {
-          if (!relationsMap.has(this)) {
-            relationsMap.set(this, {})
-          }
-          const relations = relationsMap.get(this)
-          return relations[name] ||
-            (relations[name] = new ModelRelation(this, relation))
+          const modelRelation = new ModelRelation(this, relation)
+          Object.defineProperty(this, accessor, {
+            value: modelRelation,
+            configurable: true,
+            enumerable: false
+          })
+          return modelRelation
         },
         configurable: true,
         enumerable: false
@@ -303,9 +307,8 @@ export default class Model extends objection.Model {
   static get definition() {
     // Check if we already have a definition object for this class and return it
     let definition = definitionMap.get(this)
-    if (definition) {
-      return definition
-    }
+    if (definition) return definition
+    definitionMap.set(this, definition = {})
 
     // If no definition object was defined yet, create one with accessors for
     // each entry in `definitionHandlers`. Each of these getters when called
@@ -354,7 +357,6 @@ export default class Model extends objection.Model {
       })
     }
 
-    definitionMap.set(this, definition = {})
     for (const name in definitionHandlers) {
       setDefinition(name, { get: () => getDefinition(name) }, true)
     }
@@ -363,10 +365,11 @@ export default class Model extends objection.Model {
 }
 
 EventEmitter.deferred(Model)
+// Expose a selection of QueryBuilder methods as static methods on model classes
+QueryBuilder.mixin(Model)
 
 const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()
-const relationsMap = new WeakMap()
 
 const definitionHandlers = {
   properties(properties) {
@@ -421,6 +424,3 @@ const definitionHandlers = {
   routes: null,
   events: null
 }
-
-// Expose a selection of QueryBuilder methods as static methods on model classes
-QueryBuilder.mixin(Model)
