@@ -1,3 +1,5 @@
+#!/usr/bin/env babel-node
+
 import path from 'path'
 import { isFunction, camelize } from '@/utils'
 import * as db from './db'
@@ -12,7 +14,7 @@ function getCommand(commands, parts) {
     : commands
 }
 
-export default async function execute() {
+async function execute() {
   try {
     // Dynamically load app or config from the path provided package.json script
     const [,, command, importPath, ...args] = process.argv
@@ -32,3 +34,10 @@ export default async function execute() {
     console.error(err)
   }
 }
+
+// Start the CLI if `$ node lib/cli`
+if (require.main === module) {
+  execute()
+}
+
+export default execute

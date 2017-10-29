@@ -1,4 +1,6 @@
 export * from '@/app'
 export * from '@/model'
-export * from '@/middleware'
+export * from '@/query'
+export * from '@/errors'
 export * from '@/api'
+export * from '@/middleware'
