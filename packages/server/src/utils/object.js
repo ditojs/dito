@@ -42,3 +42,27 @@ export function mapValues(obj, callback) {
     return res
   }, {})
 }
+
+export function deepMerge(target, ...sources) {
+  if (target && sources.length) {
+    for (const source of sources) {
+      if (isObject(source) && isObject(target)) {
+        for (const key in source) {
+          const value = source[key]
+          target[key] = deepMerge(
+            target[key] || (
+              isArray(value) && [] ||
+              isObject(value) && {}
+            ), value) || value
+        }
+      } else if (isArray(source) && isArray(target)) {
+        for (const value of source) {
+          if (!target.includes(value)) {
+            target.push(value)
+          }
+        }
+      }
+    }
+  }
+  return target
+}

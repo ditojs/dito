@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isArray, isString } from '@/utils'
+import { isObject, isArray, isString, deepMerge } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter } from '@/events'
@@ -136,7 +136,7 @@ export default class Model extends objection.Model {
     return entry && entry.value
   }
 
-  static prepareModel() {
+  static initialize() {
     for (const [name, relation] of Object.entries(this.getRelations())) {
       // Expose ModelRelation instances for each relation under short-cut $name,
       // for access to relations and implicit calls to $relatedQuery(name).
@@ -276,9 +276,13 @@ export default class Model extends objection.Model {
 
   $formatJson(json) {
     json = super.$formatJson(json)
+    const { constructor } = this
     // Calculate and set the computed properties.
-    for (const key of this.constructor.computedAttributes) {
+    for (const key of constructor.computedAttributes) {
       json[key] = this[key]
+    }
+    for (const key of constructor.definition.hidden || []) {
+      delete json[key]
     }
     return json
   }
@@ -318,20 +322,26 @@ export default class Model extends objection.Model {
       let merged
       let modelClass = this
       const handler = definitionHandlers[name]
+      // Collect ancestors in reverse sequence for correct inheritance.
+      const sequence = []
       while (modelClass !== objection.Model) {
+        // Only consider model classes that actually define `name` property.
         if (name in modelClass) {
-          // Use reflection through getOwnPropertyDescriptor() to be able to
-          // call the getter on `this` rather than on `modelClass`. This can be
-          // used to provide abstract base-classes and have them create their
-          // relations for `this` inside `get relations`.
-          const { get, value } = Object.getOwnPropertyDescriptor(
-            modelClass, name) || {}
-          const object = get ? get.call(this) : value
-          if (isObject(object)) {
-            merged = Object.assign(merged || {}, object)
-          }
+          sequence.unshift(modelClass)
         }
         modelClass = Object.getPrototypeOf(modelClass)
+      }
+      for (const modelClass of sequence) {
+        // Use reflection through getOwnPropertyDescriptor() to be able to
+        // call the getter on `this` rather than on `modelClass`. This can be
+        // used to provide abstract base-classes and have them create their
+        // relations for `this` inside `get relations`.
+        const { get, value } = Object.getOwnPropertyDescriptor(
+          modelClass, name) || {}
+        const val = get ? get.call(this) : value
+        if (val) {
+          merged = deepMerge(merged || (name === 'hidden' ? [] : {}), val)
+        }
       }
       // Once calculated, override definition getter with merged value
       if (handler && merged) {
@@ -421,6 +431,7 @@ const definitionHandlers = {
 
   relations: null,
   methods: null,
+  hidden: null,
   routes: null,
   events: null
 }

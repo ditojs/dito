@@ -54,13 +54,13 @@ export default class App extends Koa {
   }
 
   addModels(models) {
-    // First add all models then call prepareModel() for each in a another loop,
+    // First add all models then call initialize() for each in a second loop,
     // since they may be referencing each other in relations.
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
     for (const modelClass of Object.values(models)) {
-      modelClass.prepareModel()
+      modelClass.initialize()
     }
   }
 
