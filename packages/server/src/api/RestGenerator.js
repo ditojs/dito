@@ -165,28 +165,33 @@ const settingsHandlers = {
  */
 function createArgumentsValidator(modelClass, args = []) {
   if (args.length > 0) {
-    const properties = {}
+    let properties = null
     for (const arg of args) {
       if (arg) {
         const property = isString(arg) ? { type: arg } : arg
         const { name, type, ...rest } = property
-        properties[name || 'root'] = { type, ...rest }
+        properties = properties || {}
+        properties[name || 'root'] = type ? { type, ...rest } : rest
       }
     }
-    const schema = convertSchema(properties)
-    return modelClass.getValidator().compileValidator(schema)
+    if (properties) {
+      const schema = convertSchema(properties)
+      return modelClass.getValidator().compileValidator(schema)
+    }
   }
   return () => true
 }
 
-function getArguments(modelClass, method, validate, query) {
+function getArguments(modelClass, method, validate, ctx) {
+  const { query } = ctx
   if (!validate(query)) {
     throw modelClass.createValidationError(validate.errors,
       `The provided data is not valid: ${JSON.stringify(query)}`)
   }
   const args = []
-  for (const { name } of method.arguments || []) {
-    args.push(name ? query[name] : query)
+  // If no arguments are provided, pass the full ctx object to the method
+  for (const { key, value } of method.arguments || [{ value: ctx }]) {
+    args.push(key ? query[key] : value || query)
   }
   return args
 }
@@ -216,7 +221,7 @@ const methodHandlers = {
   async collectionMethod(modelClass, method, validate, ctx) {
     const { name } = method
     const func = checkMethod(modelClass[name], modelClass, name, 'Collection')
-    const args = getArguments(modelClass, method, validate.arguments, ctx.query)
+    const args = getArguments(modelClass, method, validate.arguments, ctx)
     const value = await func.apply(modelClass, args)
     return getReturn(modelClass, method, validate.return, value)
   },
@@ -225,7 +230,7 @@ const methodHandlers = {
     const model = await restHandlers.member.get(modelClass, ctx)
     const { name } = method
     const func = checkMethod(model[name], modelClass, name, 'Member')
-    const args = getArguments(modelClass, method, validate.arguments, ctx.query)
+    const args = getArguments(modelClass, method, validate.arguments, ctx)
     const value = await func.apply(model, args)
     return getReturn(modelClass, method, validate.return, value)
   }

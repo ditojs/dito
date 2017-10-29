@@ -450,6 +450,7 @@ const mixinMethods = [
   'first',
   'find',
   'findOne',
+  'findById',
   'unscoped',
   'select',
   'insert',
