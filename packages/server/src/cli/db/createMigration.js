@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import dedent from 'dedent'
-import { isArray } from '@/utils'
+import { isArray, deindent } from '@/utils'
 
 const typeToKnex = {
   number: 'double',
@@ -72,12 +71,12 @@ export async function createMigration(app, modelName) {
     }
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
-  await fs.writeFile(file, dedent`
+  await fs.writeFile(file, deindent`
     export function up(knex) {
-    return knex.schema
-      .createTable('${tableName}', table => {
-        ${statements.join('\n      ')}
-      })
+      return knex.schema
+        .createTable('${tableName}', table => {
+          ${statements.join('\n')}
+        })
     }
 
     export function down(knex) {

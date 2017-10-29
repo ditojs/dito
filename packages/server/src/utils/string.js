@@ -1,3 +1,6 @@
+import { asArray } from './object'
+import os from 'os'
+
 export function camelize(str, upper = false) {
   return str
     ? str.replace(/(^|[-_\s]+)(\w)/g, (all, sep, chr) => (
@@ -43,4 +46,49 @@ export function labelize(str) {
           : `${camelLeft} ${camelRight}`
       })
     : ''
+}
+
+// ES6 string tag that strips indentation from multi-line strings
+// Based on, and further improved from https://github.com/dmnd/dedent
+export function deindent(strings, ...values) {
+  strings = asArray(strings)
+  // First, perform interpolation
+  let result = ''
+  for (let i = 0; i < strings.length; i++) {
+    result += strings[i]
+      // Join lines when there is a suppressed newline
+      .replace(/\\\n[ \t]*/g, '')
+      // Handle escaped backticks
+      .replace(/\\`/g, '`')
+    if (i < values.length) {
+      // See if the value itself contains multiple lines, and if so, indent
+      // each of them by the whitespace that preceeds it except the first.
+      const value = `${values[i]}`
+      const lines = value.split(/\r\n|\n|\r/)
+      if (lines.length > 1) {
+        // Determine indent by finding preceeding white-space up to the previous
+        // line-break or beginning of the string.
+        const indent = (result.match(/(?:^|[\n\r])(\s*)$/) || [])[1] || ''
+        result += lines.join(`${os.EOL}${indent}`)
+      } else {
+        result += value
+      }
+    }
+  }
+  const lines = result.split(/\r\n|\n|\r/)
+  // Remove the first line-break at the begnning of the result, to allow this:
+  // const value = `
+  //   content...
+  //   ` // line break at the end remains
+  if (!lines[0]) lines.shift()
+  let indent = Infinity
+  for (const line of lines) {
+    const match = line.match(/^(\s*)\S+/)
+    if (match) {
+      indent = Math.min(indent, match[1].length)
+    }
+  }
+  return indent > 0
+    ? lines.map(line => line.slice(indent)).join(os.EOL)
+    : result
 }

@@ -35,7 +35,7 @@ async function execute() {
   }
 }
 
-// Start the CLI if `$ node lib/cli`
+// Start the console if `./lib/cli/index.js`
 if (require.main === module) {
   execute()
 }

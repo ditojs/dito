@@ -2,8 +2,7 @@ import repl from 'repl'
 import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
-import dedent from 'dedent'
-import { isFunction } from '@/utils'
+import { isFunction, deindent } from '@/utils'
 
 let started = false
 let server = null
@@ -57,7 +56,7 @@ export default async function startConsole(app, config) {
       .filter(line => line.trim())
       .map(line => server.history.push(line))
   } catch (e) {
-    console.log(dedent`
+    console.log(deindent`
       Unable to REPL history file at ${historyFile}.
       A history file will be created on shutdown`)
   }
@@ -92,7 +91,8 @@ export default async function startConsole(app, config) {
 
 function displayUsage(app, config, details) {
   const modelHandleNames = Object.keys(app.models)
-  console.log(dedent`
+  console.log(deindent`
+
     ------------------------------------------------------------
     Dito Console
 
@@ -105,7 +105,7 @@ function displayUsage(app, config, details) {
         }` : ''
     }`)
   if (details) {
-    console.log(dedent`
+    console.log(deindent`
       Examples:
 
       ${config.prompt} user = User.where({ lastName: 'Doe' }).first()
