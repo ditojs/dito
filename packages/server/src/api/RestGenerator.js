@@ -35,7 +35,7 @@ export default class RestGenerator {
           // relate instead of directly manipulate the related object? Should
           // we make the distinction between relation and member here too, and
           // if so, do we go by Id as well?
-          this.addRoutes(modelClass, relation, 'relationInstance', settings, 2)
+          this.addRoutes(modelClass, relation, 'relationMember', settings, 2)
         }
       }
     }
@@ -49,12 +49,12 @@ export default class RestGenerator {
       if (!settings || !settings.access) {
         continue
       }
-      const route = this.getRoutePath(type, modelClass, relation)
+      const path = this.getRoutePath(type, modelClass, relation)
       const target = relation || modelClass
       this.adapter.addRoute(
-        { modelClass, relation, type, verb, route, settings },
+        { modelClass, relation, type, verb, path, settings },
         ctx => handler(target, ctx))
-      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
+      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
     }
   }
@@ -67,20 +67,20 @@ export default class RestGenerator {
         path: name,
         ...schema
       }
-      const { verb, path, access } = method
+      const { verb, access } = method
       const settings = {
         access: access != null ? access : true
       }
-      const route = this.getRoutePath(type, modelClass, path)
+      const path = this.getRoutePath(type, modelClass, method.path)
       const handler = methodHandlers[type]
       const validate = {
         arguments: createArgumentsValidator(modelClass, method.arguments),
         return: createArgumentsValidator(modelClass, [method.return])
       }
       this.adapter.addRoute(
-        { modelClass, method, type, verb, route, settings },
+        { modelClass, method, type, verb, path, settings },
         ctx => handler(modelClass, method, validate, ctx))
-      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(route)}`,
+      this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
     }
   }
@@ -119,7 +119,7 @@ const routePath = {
   relation(modelClass, relation) {
     return `${routePath.member(modelClass)}/${normalize(relation.name)}`
   },
-  relationInstance(modelClass, relation) {
+  relationMember(modelClass, relation) {
     return `${routePath.relation(modelClass, relation)}/:relatedId`
   }
 }
@@ -154,7 +154,7 @@ const settingsHandlers = {
       settings && pick(settings.relation, settings))
   },
 
-  relationInstance: (verb, handlers, settings) => {
+  relationMember: (verb, handlers, settings) => {
     return getSettings(verb, handlers,
       settings && pick(settings.relation, settings))
   }
@@ -393,7 +393,7 @@ const restHandlers = {
     }
   },
 
-  relationInstance: {
+  relationMember: {
     post(relation, ctx) {
       const { id, relatedId } = ctx.params
       const { ownerModelClass, relatedModelClass } = relation

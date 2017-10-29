@@ -24,29 +24,29 @@ export default class RestApi extends Koa {
     return mount(this)
   }
 
-  addRoute({ modelClass, relation, method, type, verb, route, settings },
+  addRoute({ modelClass, relation, method, type, verb, path, settings },
     handler) {
     // Translate type to namespaced event names, to produce such events as:
     //
     // before:get:collection
     // before:get:member
     //
-    // before:get:collection:hello:method
-    // before:get:member:hello:method
+    // before:get:collection:method:hello
+    // before:get:member:method:$hello
     //
-    // before:get:member:users:relation
-    // before:get:member:users:member
+    // before:get:relation:users
+    // before:get:relation:users:member
     const namespace = method
-      ? `${type.match(/^(.*)Method$/)[1]}:${method.name}:method`
+      ? `${type.match(/^(.*)Method$/)[1]}:method:${method.name}`
       : relation
-        ? `member:${relation.name}:${type === 'relationInstance'
-          ? 'member' : 'relation'}`
+        ? `relation:${relation.name}${
+          type === 'relationMember' ? ':member' : ''}`
         : type
     const before = `before:${verb}:${namespace}`
     const after = `after:${verb}:${namespace}`
-    const state = { ...settings, namespace }
-    this.router[verb](route, async ctx => {
-      Object.assign(ctx.state, state)
+    const route = { ...settings, namespace }
+    this.router[verb](path, async ctx => {
+      ctx.route = route
       try {
         await modelClass.emit(before, ctx)
         ctx.body = await handler(ctx)
