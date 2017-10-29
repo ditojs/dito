@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
+import dedent from 'dedent'
 import { isArray } from '@/utils'
 
 const typeToKnex = {
@@ -71,18 +72,19 @@ export async function createMigration(app, modelName) {
     }
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
-  await fs.writeFile(file, `export function up(knex) {
-  return knex.schema
-    .createTable('${tableName}', table => {
-      ${statements.join('\n      ')}
-    })
-}
+  await fs.writeFile(file, dedent`
+    export function up(knex) {
+    return knex.schema
+      .createTable('${tableName}', table => {
+        ${statements.join('\n      ')}
+      })
+    }
 
-export function down(knex) {
-  return knex.schema
-    .dropTableIfExists('${tableName}')
-}
-`)
+    export function down(knex) {
+      return knex.schema
+        .dropTableIfExists('${tableName}')
+    }
+  `)
 }
 
 // Ensure that we have 2 places for each of the date segments.

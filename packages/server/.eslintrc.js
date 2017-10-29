@@ -58,7 +58,8 @@ module.exports = {
     }],
     'space-in-parens': ['error', 'never'],
     'indent': ['error', 2, {
-      flatTernaryExpressions: true
+      flatTernaryExpressions: true,
+      ignoresNodes: ['TemplateLiteral', 'TaggedTemplateExpression']
     }]
   }
 }

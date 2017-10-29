@@ -146,21 +146,21 @@ export default class Model extends objection.Model {
           `Model "${this.name}" already defines a property with name ` +
           `"${accessor}" that clashes with the relation accessor.`)
       }
-      // Define an accessor that when first called creates the modelRelation
-      // and defines another accessor on the instance that then just returns
-      // the same modelRelation afterwards.
+      // Define an accessor on the prototype that when first called creates the
+      // modelRelation and defines another accessor on the instance that then
+      // just returns the same modelRelation afterwards.
       Object.defineProperty(this.prototype, accessor, {
         get() {
           const modelRelation = new ModelRelation(this, relation)
           Object.defineProperty(this, accessor, {
             value: modelRelation,
             configurable: true,
-            enumerable: false
+            enumerable: true
           })
           return modelRelation
         },
         configurable: true,
-        enumerable: false
+        enumerable: true
       })
       // Make sure all relations are defined correctly, with back-references.
       const { relatedModelClass } = relation
