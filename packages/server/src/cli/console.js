@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
 import dedent from 'dedent'
+import { isFunction } from '@/utils'
 
 let started = false
 let server = null
@@ -20,10 +21,6 @@ export default async function startConsole(app, config) {
     return server
   }
   started = true
-
-  if (!config.quiet) {
-    displayUsage(app, config)
-  }
 
   server = repl.start({ ...config, prompt: '' })
   server.pause()
@@ -44,7 +41,7 @@ export default async function startConsole(app, config) {
   server.defineCommand('models', {
     help: 'Display available Dito models',
     action() {
-      console.log(Object.keys(app.models).join(', ') + '\n')
+      console.log(Object.keys(app.models).join(', '))
       this.displayPrompt()
     }
   })
@@ -68,8 +65,8 @@ export default async function startConsole(app, config) {
   server.once('exit', async () => {
     try {
       await app.stop()
-    } catch (e) {
-      console.error(e)
+    } catch (err) {
+      logError(err)
     }
     try {
       const lines = (server.history || [])
@@ -77,13 +74,16 @@ export default async function startConsole(app, config) {
         .filter(line => line.trim())
         .join('\n')
       await fs.writeFile(historyFile, lines)
-    } catch (e) {
-      console.error(e)
+    } catch (err) {
+      logError(err)
     }
     process.exit()
   })
 
   await app.start()
+  if (!config.quiet) {
+    displayUsage(app, config)
+  }
   server.setPrompt(config.prompt)
   server.resume()
   server.write('', { name: 'return' })
@@ -118,31 +118,28 @@ function displayUsage(app, config, details) {
 
 // Wrap the default eval with a handler that resolves promises
 function wrapEval({ eval: defaultEval }) {
-  return function (code, context, file, cb) {
-    return defaultEval.call(this, code, context, file, (err, result) => {
-      if (!result || !result.then) {
+  return async function (code, context, file, cb) {
+    return defaultEval.call(this, code, context, file, async (err, result) => {
+      if (err || !(result && isFunction(result.then))) {
         return cb(err, result)
       }
-
-      result.then(resolved => {
-        resolvePromises(result, resolved)
-        cb(null, resolved)
-      }).catch(err => {
-        resolvePromises(result, err)
-        this.outputStream.write('\x1b[31m' + err + '\x1b[0m')
-        // Application errors are not REPL errors
-        cb()
-      })
-    })
-
-    function resolvePromises(promise, resolved) {
-      Object.keys(context).forEach(key => {
-        // Replace any promise handles in the REPL context with the resolved
-        // promise
-        if (context[key] === promise) {
-          context[key] = resolved
+      try {
+        const resolved = await result
+        // Replace any promises in the REPL context with the resolved romise.
+        for (const key in context) {
+          if (context[key] === result) {
+            context[key] = resolved
+          }
         }
-      })
-    }
+        cb(null, resolved)
+      } catch (error) {
+        logError(error)
+        cb() // Application errors are not REPL errors
+      }
+    })
   }
+}
+
+function logError(error) {
+  console.log(`\x1b[31m${error}\x1b[0m`)
 }

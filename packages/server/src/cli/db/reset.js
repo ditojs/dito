@@ -17,5 +17,6 @@ export async function reset(config) {
     : chalk.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
       `rolled back: ${migrations.length} migrations\n`) +
       chalk.cyan(migrations.join('\n')))
-  return migrate(config)
+  await migrate(config)
+  return true // done
 }

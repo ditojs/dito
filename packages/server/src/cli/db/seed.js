@@ -27,4 +27,5 @@ export async function seed(app) {
       }
     }
   }
+  return true // done
 }

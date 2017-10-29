@@ -7,4 +7,5 @@ export async function migrate(config) {
     ? chalk.cyan('Already up to date')
     : chalk.green(`Batch ${batch} run: ${log.length} migrations\n`) +
       chalk.cyan(log.join('\n')))
+  return true // done
 }

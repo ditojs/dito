@@ -7,4 +7,5 @@ export async function rollback(config) {
     ? chalk.cyan('Already at the base migration')
     : chalk.green(`Batch ${batch} rolled back: ${log.length} migrations\n`) +
       chalk.cyan(log.join('\n')))
+  return true // done
 }

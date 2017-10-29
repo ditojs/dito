@@ -85,6 +85,7 @@ export async function createMigration(app, modelName) {
         .dropTableIfExists('${tableName}')
     }
   `)
+  return true // done
 }
 
 // Ensure that we have 2 places for each of the date segments.

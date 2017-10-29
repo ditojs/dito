@@ -13,7 +13,6 @@ function getCommand(commands, parts) {
 }
 
 export default async function execute() {
-  let res
   try {
     // Dynamically load app or config from the path provided package.json script
     const [,, command, importPath, ...args] = process.argv
@@ -25,11 +24,11 @@ export default async function execute() {
     if (isFunction(arg)) {
       arg = await arg()
     }
-    res = await execute(arg, ...args)
+    const res = await execute(arg, ...args)
+    if (res === true) {
+      process.exit()
+    }
   } catch (err) {
     console.error(err)
-  }
-  if (!res) {
-    process.exit()
   }
 }
