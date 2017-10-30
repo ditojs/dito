@@ -43,11 +43,7 @@ export async function createMigration(app, modelName) {
       if (unique) {
         statement.push('unique()')
       }
-      if (required) {
-        statement.push('notNullable()')
-      } else if (nullable) {
-        statement.push('nullable()')
-      }
+      statement.push((required || !nullable) ? 'notNullable()' : 'nullable()')
       if (_default) {
         _default = defaultValues[_default] || _default
         _default = isArray(_default) ? `[${_default.join(', ')}]` : _default

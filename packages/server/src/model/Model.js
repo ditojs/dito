@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isArray, isString, deepMerge } from '@/utils'
+import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
 import { ValidationError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter } from '@/events'
@@ -333,27 +333,26 @@ export default class Model extends objection.Model {
       let merged
       let modelClass = this
       const handler = definitionHandlers[name]
-      // Collect ancestors in reverse sequence for correct inheritance.
-      const sequence = []
+      // Collect sources values from ancestors in reverse sequence for correct
+      // inheritance.
+      const sources = []
       while (modelClass !== objection.Model) {
         // Only consider model classes that actually define `name` property.
         if (name in modelClass) {
-          sequence.unshift(modelClass)
+          // Use reflection through getOwnPropertyDescriptor() to be able to
+          // call the getter on `this` rather than on `modelClass`. This can be
+          // used to provide abstract base-classes and have them create their
+          // relations for `this` inside `get relations`.
+          const { get, value } = Object.getOwnPropertyDescriptor(
+            modelClass, name) || {}
+          const source = get ? get.call(this) : value
+          if (source) {
+            sources.unshift(source)
+          }
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
-      for (const modelClass of sequence) {
-        // Use reflection through getOwnPropertyDescriptor() to be able to
-        // call the getter on `this` rather than on `modelClass`. This can be
-        // used to provide abstract base-classes and have them create their
-        // relations for `this` inside `get relations`.
-        const { get, value } = Object.getOwnPropertyDescriptor(
-          modelClass, name) || {}
-        const val = get ? get.call(this) : value
-        if (val) {
-          merged = deepMerge(merged || (name === 'hidden' ? [] : {}), val)
-        }
-      }
+      merged = deepMergeUnshift(name === 'hidden' ? [] : {}, ...sources)
       // Once calculated, override definition getter with merged value
       if (handler && merged) {
         // Override definition before calling handler(), to prevent endless
@@ -394,40 +393,54 @@ const cacheMap = new WeakMap()
 
 const definitionHandlers = {
   properties(properties) {
+    // Include auto-generated 'id' properties for models and relations.
+    function addIdProperty(name, schema) {
+      if (!(name in properties)) {
+        properties[name] = {
+          type: 'integer',
+          ...schema
+        }
+      }
+    }
+
+    addIdProperty(this.getIdProperty(), { primary: true })
+    for (const relation of Object.values(this.getRelations())) {
+      for (const property of relation.ownerProp.props) {
+        addIdProperty(property, { foreign: true })
+      }
+    }
+
     // Convert root-level short-forms, for easier properties handling in
     // getAttributes() and createMigration():
     // - `name: type` to `name: { type }`
     // - `name: [...items]` to `name: { type: 'array', items }
     // NOTE: Substitutions on all other levels happen in convertSchema()
-    for (const [name, property] of Object.entries(properties)) {
+    const ids = []
+    const rest = []
+    for (let [name, property] of Object.entries(properties)) {
       if (isString(property)) {
-        properties[name] = { type: property }
+        property = { type: property }
       } else if (isArray(property)) {
-        properties[name] = {
+        property = {
           type: 'array',
           items: property.length > 1 ? property : property[0]
         }
       }
-    }
-    // Include auto-generated 'id' properties for models and relations.
-    const missing = {}
-    function addIdProperty(name, primary) {
-      if (!(name in properties || name in missing)) {
-        const type = 'integer'
-        missing[name] = primary ? { type, primary } : { type }
+      // Also sort properties by kind: primary id > foreign id > rest:
+      const entry = [name, property]
+      if (property.primary) {
+        ids.unshift(entry)
+      } else if (property.foreign) {
+        ids.push(entry)
+      } else {
+        rest.push(entry)
       }
     }
-
-    addIdProperty(this.getIdProperty(), true)
-    for (const relation of Object.values(this.getRelations())) {
-      for (const property of relation.ownerProp.props) {
-        addIdProperty(property)
-      }
-    }
-    return {
-      ...missing,
-      ...properties
-    }
+    // Finally recompile a new properties object out of the sorted properties.
+    return [...ids, ...rest].reduce((merged, [name, property]) => {
+      merged[name] = property
+      return merged
+    }, {})
   },
 
   scopes(scopes) {

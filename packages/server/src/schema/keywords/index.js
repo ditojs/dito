@@ -1,5 +1,6 @@
 export * from './computed'
 export * from './nullable'
 export * from './primary'
-export * from './range'
+export * from './foreign'
 export * from './unique'
+export * from './range'

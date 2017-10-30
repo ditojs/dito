@@ -43,10 +43,11 @@ export function mapValues(obj, callback) {
   }, {})
 }
 
-export function deepMerge(target, ...sources) {
+function deepMergeWithDirection(unshift, target, sources) {
   if (target && sources.length) {
     for (const source of sources) {
       if (isObject(source) && isObject(target)) {
+        const before = unshift && { ...target }
         for (const key in source) {
           const value = source[key]
           target[key] = deepMerge(
@@ -55,14 +56,34 @@ export function deepMerge(target, ...sources) {
               isObject(value) && {}
             ), value) || value
         }
+        if (unshift) {
+          // "unshift the added fields by deleting the fields that were there
+          // before and inserting them again at the end.
+          for (const key in before) {
+            delete target[key]
+            target[key] = before[key]
+          }
+        }
       } else if (isArray(source) && isArray(target)) {
+        const dest = unshift ? [] : target
         for (const value of source) {
           if (!target.includes(value)) {
-            target.push(value)
+            dest.push(value)
           }
+        }
+        if (unshift) {
+          target.unshift(...dest)
         }
       }
     }
   }
   return target
+}
+
+export function deepMerge(target, ...sources) {
+  return deepMergeWithDirection(false, target, sources)
+}
+
+export function deepMergeUnshift(target, ...sources) {
+  return deepMergeWithDirection(true, target, sources)
 }
