@@ -7,11 +7,15 @@ import { isArray, isObject, isString, asArray, capitalize } from '@/utils'
 // Instead of a separate class, we extend objection.QueryBuilder to better
 // integrate with Objection.js
 
-// Invert default setting of insertMissing for dito:
-const upsertOptions = {
+// Change the defaults of upsertGraph and insertGraph
+const upsertGraphOptions = {
   relate: true,
   unrelate: true,
   insertMissing: true
+}
+
+const insertGraphOptions = {
+  relate: true
 }
 
 export default class QueryBuilder extends objection.QueryBuilder {
@@ -122,16 +126,30 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, true)
   }
 
+  insertGraph(data, opt) {
+    return super.insertGraph(data, {
+      ...insertGraphOptions,
+      ...opt
+    })
+  }
+
+  insertGraphAndFetch(data, opt) {
+    return super.insertGraphAndFetch(data, {
+      ...insertGraphOptions,
+      ...opt
+    })
+  }
+
   upsertGraph(data, opt) {
     return super.upsertGraph(data, {
-      ...upsertOptions,
+      ...upsertGraphOptions,
       ...opt
     })
   }
 
   upsertGraphAndFetch(data, opt) {
     return super.upsertGraphAndFetch(data, {
-      ...upsertOptions,
+      ...upsertGraphOptions,
       ...opt
     })
   }
