@@ -14,13 +14,47 @@ export default class Model extends objection.Model {
   }
 
   async $update(attributes) {
-    const updated = await this.$query().updateAndFetch(attributes)
-    return this.$set(updated)
+    const updated = await this.$query().update(attributes)
+    // Clear the changes for the attributes that were just persisted and set.
+    return clearChanges(this.$set(updated, true), updated)
   }
 
   async $patch(attributes) {
-    const patched = await this.$query().patchAndFetch(attributes)
-    return this.$set(patched)
+    const patched = await this.$query().patch(attributes)
+    // Clear the changes for the attributes that were just persisted and set.
+    return clearChanges(this.$set(patched, true), patched)
+  }
+
+  $setDatabaseJson(json) {
+    // Clear all changes when setting data directly from the database.
+    return clearChanges(super.$setDatabaseJson(json))
+  }
+
+  $getChanges() {
+    const instance = instanceMap.get(this)
+    return instance && Object.keys(instance.changes)
+  }
+
+  $isModified() {
+    const changes = this.$getChanges()
+    return changes ? changes.length > 0 : false
+  }
+
+  async $store() {
+    const instance = instanceMap.get(this)
+    const changes = instance && instance.changes
+    if (changes) {
+      // Collect all changed values in a patch object.
+      const attributes = {}
+      for (const name in changes) {
+        attributes[name] = instance.values[name]
+      }
+      if (await this.$query().patch(attributes)) {
+        instance.changes = {} // clear changes
+        return true
+      }
+    }
+    return false
   }
 
   get $app() {
@@ -32,6 +66,13 @@ export default class Model extends objection.Model {
       this.checkRelation(relation)
       this.addRelationAccessor(relation)
     }
+    // Install accessors with change-tracking for all database properties.
+    const { properties } = this.definition
+    for (const [name, { computed }] of Object.entries(properties)) {
+      if (!computed) {
+        this.addPropertyAccessor(name)
+      }
+    }
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
     this.installEvents(this.definition.events)
@@ -41,6 +82,76 @@ export default class Model extends objection.Model {
         depth: null,
         maxArrayLength: null
       }))
+  }
+
+  static addPropertyAccessor(name) {
+    function get() {
+      const instance = instanceMap.get(this)
+      return instance && instance.values[name]
+    }
+
+    function set(value) {
+      // We only need to create an instance object once actual values are
+      // getting set. Until then, returning undefined is the expected behavior.
+      let instance = instanceMap.get(this)
+      if (!instance) {
+        // Set up an instance object for this model, keeping track of values
+        // as well as changes for this instance.
+        instanceMap.set(this, instance = {
+          values: {},
+          changes: {}
+        })
+      }
+      // Store the value and keep track of what changed.
+      instance.values[name] = value
+      instance.changes[name] = true
+    }
+
+    // At first, the accessor is defined on the prototype, so al instances
+    // inherit them automatically. But once a value gets set, we need to set
+    // the enumerable accessor property directly on the instance, so that its
+    // value will get picked by the internal mechanisms.
+    Object.defineProperty(this.prototype, name, {
+      get() {}, // It isn't set, so no need to return anything yet
+      set(value) {
+        set.call(this, value)
+        Object.defineProperty(this, name, {
+          get,
+          set,
+          configurable: true,
+          enumerable: true
+        })
+      },
+      configurable: true,
+      enumerable: true
+    })
+  }
+
+  static addRelationAccessor(relation) {
+    // Expose ModelRelation instances for each relation under short-cut $name,
+    // for access to relations and implicit calls to $relatedQuery(name).
+    const accessor = `$${relation.name}`
+    if (accessor in this.prototype) {
+      throw new Error(
+        `Model "${this.name}" already defines a property with name ` +
+        `"${accessor}" that clashes with the relation accessor.`)
+    }
+    // Define an accessor on the prototype that when first called creates the
+    // modelRelation and defines another accessor on the instance that then
+    // just returns the same modelRelation afterwards.
+    Object.defineProperty(this.prototype, accessor, {
+      get() {
+        const modelRelation = new ModelRelation(this, relation)
+        Object.defineProperty(this, accessor, {
+          value: modelRelation,
+          configurable: true,
+          enumerable: true
+        })
+        return modelRelation
+      },
+      configurable: true,
+      enumerable: true
+    })
   }
 
   static installEvents(events = {}) {
@@ -170,33 +281,6 @@ export default class Model extends objection.Model {
       }
     }
     // TODO: Check `through` settings also
-  }
-
-  static addRelationAccessor(relation) {
-    // Expose ModelRelation instances for each relation under short-cut $name,
-    // for access to relations and implicit calls to $relatedQuery(name).
-    const accessor = `$${relation.name}`
-    if (accessor in this.prototype) {
-      throw new Error(
-        `Model "${this.name}" already defines a property with name ` +
-        `"${accessor}" that clashes with the relation accessor.`)
-    }
-    // Define an accessor on the prototype that when first called creates the
-    // modelRelation and defines another accessor on the instance that then
-    // just returns the same modelRelation afterwards.
-    Object.defineProperty(this.prototype, accessor, {
-      get() {
-        const modelRelation = new ModelRelation(this, relation)
-        Object.defineProperty(this, accessor, {
-          value: modelRelation,
-          configurable: true,
-          enumerable: true
-        })
-        return modelRelation
-      },
-      configurable: true,
-      enumerable: true
-    })
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
@@ -390,7 +474,23 @@ EventEmitter.deferred(Model)
 QueryBuilder.mixin(Model)
 
 const definitionMap = new WeakMap()
+const instanceMap = new WeakMap()
 const cacheMap = new WeakMap()
+
+function clearChanges(model, changes) {
+  const instance = instanceMap.get(model)
+  if (instance) {
+    if (changes) {
+      for (const name in changes) {
+        delete instance.changes[name]
+      }
+    } else {
+      // clear all changes
+      instance.changes = {}
+    }
+  }
+  return model
+}
 
 const definitionHandlers = {
   properties(properties) {
