@@ -27,6 +27,28 @@ export default class Model extends objection.Model {
     return this.constructor.app
   }
 
+  static initialize() {
+    for (const relation of Object.values(this.getRelations())) {
+      this.checkRelation(relation)
+      this.addRelationAccessor(relation)
+    }
+    this.getValidator().precompileModel(this)
+    // Install all events listed in the static events object.
+    this.installEvents(this.definition.events)
+    console.log(`${this.name}:\n`,
+      util.inspect(this.jsonSchema, {
+        colors: true,
+        depth: null,
+        maxArrayLength: null
+      }))
+  }
+
+  static installEvents(events = {}) {
+    for (const [event, handler] of Object.entries(events)) {
+      this.on(event, handler)
+    }
+  }
+
   static get tableName() {
     const knex = this.knex()
     return knex && knex.normalizeIdentifier
@@ -136,56 +158,45 @@ export default class Model extends objection.Model {
     return entry && entry.value
   }
 
-  static initialize() {
-    for (const [name, relation] of Object.entries(this.getRelations())) {
-      // Expose ModelRelation instances for each relation under short-cut $name,
-      // for access to relations and implicit calls to $relatedQuery(name).
-      const accessor = `$${name}`
-      if (accessor in this.prototype) {
+  static checkRelation(relation) {
+    // Make sure all relations are defined correctly, with back-references.
+    const { relatedModelClass } = relation
+    const relatedProperties = relatedModelClass.definition.properties || {}
+    for (const property of relation.relatedProp.props) {
+      if (!(property in relatedProperties)) {
         throw new Error(
-          `Model "${this.name}" already defines a property with name ` +
-          `"${accessor}" that clashes with the relation accessor.`)
+          `Model "${relatedModelClass.name}" is missing back-reference ` +
+          `"${property}" for relation "${this.name}.${relation.name}"`)
       }
-      // Define an accessor on the prototype that when first called creates the
-      // modelRelation and defines another accessor on the instance that then
-      // just returns the same modelRelation afterwards.
-      Object.defineProperty(this.prototype, accessor, {
-        get() {
-          const modelRelation = new ModelRelation(this, relation)
-          Object.defineProperty(this, accessor, {
-            value: modelRelation,
-            configurable: true,
-            enumerable: true
-          })
-          return modelRelation
-        },
-        configurable: true,
-        enumerable: true
-      })
-      // Make sure all relations are defined correctly, with back-references.
-      const { relatedModelClass } = relation
-      const relatedProperties = relatedModelClass.definition.properties || {}
-      for (const property of relation.relatedProp.props) {
-        if (!(property in relatedProperties)) {
-          throw new Error(
-            `Model "${relatedModelClass.name}" is missing back-reference ` +
-            `"${property}" for relation "${this.name}.${relation.name}"`)
-        }
-      }
-      // TODO: Check `through` settings also
     }
-    this.getValidator().precompileModel(this)
-    // Install all events listed in the static events object.
-    const { events = {} } = this.definition
-    for (const [event, handler] of Object.entries(events)) {
-      this.on(event, handler)
+    // TODO: Check `through` settings also
+  }
+
+  static addRelationAccessor(relation) {
+    // Expose ModelRelation instances for each relation under short-cut $name,
+    // for access to relations and implicit calls to $relatedQuery(name).
+    const accessor = `$${relation.name}`
+    if (accessor in this.prototype) {
+      throw new Error(
+        `Model "${this.name}" already defines a property with name ` +
+        `"${accessor}" that clashes with the relation accessor.`)
     }
-    console.log(`${this.name}:\n`,
-      util.inspect(this.jsonSchema, {
-        colors: true,
-        depth: null,
-        maxArrayLength: null
-      }))
+    // Define an accessor on the prototype that when first called creates the
+    // modelRelation and defines another accessor on the instance that then
+    // just returns the same modelRelation afterwards.
+    Object.defineProperty(this.prototype, accessor, {
+      get() {
+        const modelRelation = new ModelRelation(this, relation)
+        Object.defineProperty(this, accessor, {
+          value: modelRelation,
+          configurable: true,
+          enumerable: true
+        })
+        return modelRelation
+      },
+      configurable: true,
+      enumerable: true
+    })
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
