@@ -1,8 +1,8 @@
 import Koa from 'koa'
-import { underscore, camelize } from '@/utils'
-import { EventEmitter } from '@/events'
-import { Validator } from '@/model'
 import KnexPlus from './KnexPlus'
+import { Validator } from '@/model'
+import { EventEmitter } from '@/events'
+import { underscore, camelize } from '@/utils'
 
 export default class App extends Koa {
   constructor(config, { validator, models }) {
@@ -12,16 +12,27 @@ export default class App extends Koa {
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
     this.config = config
-    let { knex: knexConfig, normalizeDbNames } = config
-    if (normalizeDbNames) {
+    this.knex = this.createKnex(config.knex, config.normalizeDbNames)
+    if (config.log.sql) {
+      this.knex.setupLogging()
+    }
+    this.models = {}
+    this.validator = validator || new Validator()
+    if (models) {
+      this.addModels(models)
+    }
+  }
+
+  createKnex(config, normalizeNames) {
+    if (normalizeNames) {
       const normalizeIdentifier = name => underscore(name)
       const denormalizeIdentifier = name => camelize(name)
 
       // Always convert Knex identifiers to underscored versions.
       // TODO: wrapIdentifier will only work in Knex 0.14.0 onwards.
       // Until then, use the _wrapString() hack below instead.
-      knexConfig = {
-        ...knexConfig,
+      config = {
+        ...config,
 
         // These are our own add-ons and used by our Model to convert
         // identifiers back and forth, see KnexMixin.js
@@ -35,22 +46,7 @@ export default class App extends Koa {
         }
       }
     }
-    this.knex = KnexPlus(knexConfig)
-    if (normalizeDbNames) {
-      // HACK: See above about replacing this with standardized wrapIdentifier()
-      const { prototype } = this.knex.client.formatter().constructor
-      const { _wrapString } = prototype
-      if (_wrapString) {
-        prototype._wrapString = function (value) {
-          return knexConfig.wrapIdentifier(value, _wrapString.bind(this))
-        }
-      }
-    }
-    this.models = {}
-    this.validator = validator || new Validator()
-    if (models) {
-      this.addModels(models)
-    }
+    return KnexPlus(config)
   }
 
   addModels(models) {

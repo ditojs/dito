@@ -53,6 +53,27 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
+  count() {
+    // TODO: We can only count `unscoped()` currently, because eager queries
+    // interfere with the postgreSQL otherwise and fail, see:
+    // https://gitter.im/Vincit/objection.js?at=59f739f0b20c64242966e861
+    return super.count.call(this.unscoped())
+  }
+
+  raw(...args) {
+    return this.knex().raw(...args)
+  }
+
+  truncate() {
+    if (this.knex().isPostgreSQL) {
+      // Include `cascade` in truncate queries.
+      return this.raw('truncate table ?? restart identity cascade',
+        this.modelClass().tableName)
+    } else {
+      return super.truncate()
+    }
+  }
+
   insert(data, returning) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:

@@ -27,6 +27,9 @@ export async function createMigration(app, modelName) {
   const { tableName } = modelClass
   const { properties = {}, relations = {} } = modelClass.definition
   const statements = []
+  // TODO: Instead of looping through properties first and relations after,
+  // merge both so that foreign key properties can have `unique()`, `nullable()`
+  // and still profit from the generation of `references().inTable()`.
   for (const [name, property] of Object.entries(properties)) {
     const column = modelClass.propertyNameToColumnName(name)
     let {
@@ -62,7 +65,7 @@ export async function createMigration(app, modelName) {
         const fromColumn = modelClass.propertyNameToColumnName(fromProperty)
         const toColumn = modelClass.propertyNameToColumnName(toProperty)
         statements.push(
-          `table.integer('${fromColumn}').unsigned()`,
+          `table.integer('${fromColumn}').unsigned().index()`,
           `  .references('${toColumn}').inTable('${toModelClass.tableName}')`
         )
       }
