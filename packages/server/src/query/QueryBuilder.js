@@ -22,7 +22,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   static forClass(modelClass) {
-    const builder = new this(modelClass)
+    // Override super.forClass() to add support for `eager` static property.
+    const builder = super.forClass(modelClass)
     const { eager } = modelClass
     if (eager) {
       builder.eager(eager)
@@ -154,7 +155,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return fullId
   }
 
-  find(query = {}) {
+  find(query = {}, first = false) {
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
       const queryHandler = queryHandlers[key]
@@ -170,11 +171,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
     for (const relation of Object.values(this._relationsToJoin)) {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
-    return this
+    return first ? this.first() : this
   }
 
   findOne(query) {
-    return this.find(query).first()
+    return this.find(query, true)
   }
 
   allow(refs) {

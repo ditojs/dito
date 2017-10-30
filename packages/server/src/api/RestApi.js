@@ -49,7 +49,10 @@ export default class RestApi extends Koa {
       ctx.route = route
       try {
         await modelClass.emit(before, ctx)
-        ctx.body = await handler(ctx)
+        const res = await handler(ctx)
+        if (res !== undefined) {
+          ctx.body = res
+        }
         await modelClass.emit(after, ctx)
       } catch (err) {
         throw err instanceof ResponseError ? err : new WrappedError(err)

@@ -327,15 +327,15 @@ const restHandlers = {
   relation: {
     // get relation
     get(relation, ctx) {
+      // NOTE: id = the id of the member to which this relation belongs.
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return ownerModelClass.query()
         .findById(id)
-        .then(model => {
-          checkModel(model, ownerModelClass, id)
-          const query = model.$relatedQuery(relation.name).find(ctx.query)
-          return relation.isOneToOne() ? query.first() : query
-        })
+        .then(model => checkModel(model, ownerModelClass, id)
+          .$relatedQuery(relation.name)
+          .find(ctx.query, relation.isOneToOne())
+          .then(result => result || null))
     },
 
     // delete relation
