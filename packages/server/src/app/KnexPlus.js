@@ -1,5 +1,6 @@
 import Knex from 'knex'
 import chalk from 'chalk'
+import { underscore, camelize } from '@/utils'
 
 // Methods to be added to the Dito knex instance (app.knex):
 
@@ -69,14 +70,35 @@ const properties = Object.getOwnPropertyDescriptors({
 })
 
 export default function KnexPlus(config) {
+  if (config.normalizeIdentifiers) {
+    config = {
+      ...config,
+      normalizeIdentifier: name => underscore(name),
+      denormalizeIdentifier: name => camelize(name)
+    }
+  }
+  // NOTE: `normalizeIdentifier` is not the same as the plural
+  // `normalizeIdentifiers` setting above, which sets up the most common
+  // `normalizeIdentifier` and `denormalizeIdentifier` pair for us.
+  const { normalizeIdentifier } = config
+  if (normalizeIdentifier) {
+    // This is Knex' standard hook into processing identifiers.
+    // We add the call to our own normalizeIdentifier() to it:
+    // TODO: wrapIdentifier will only work in Knex 0.14.0 onwards.
+    // Until then, use the _wrapString() hack below instead.
+    config.wrapIdentifier = function (value, wrapIdentifier) {
+      return wrapIdentifier(normalizeIdentifier(value))
+    }
+  }
   const knex = Object.defineProperties(Knex(config), properties)
-  if (config.wrapIdentifier) {
+  const { wrapIdentifier } = config
+  if (wrapIdentifier) {
     // HACK: See above about replacing this with standardized wrapIdentifier()
     const { prototype } = knex.client.formatter().constructor
     const { _wrapString } = prototype
     if (_wrapString) {
       prototype._wrapString = function (value) {
-        return config.wrapIdentifier(value, _wrapString.bind(this))
+        return wrapIdentifier(value, _wrapString.bind(this))
       }
     }
   }

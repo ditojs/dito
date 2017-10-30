@@ -2,7 +2,6 @@ import Koa from 'koa'
 import KnexPlus from './KnexPlus'
 import { Validator } from '@/model'
 import { EventEmitter } from '@/events'
-import { underscore, camelize } from '@/utils'
 
 export default class App extends Koa {
   constructor(config, { validator, models }) {
@@ -12,7 +11,7 @@ export default class App extends Koa {
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
     this.config = config
-    this.knex = this.createKnex(config.knex, config.normalizeDbNames)
+    this.knex = KnexPlus(config.knex)
     if (config.log.sql) {
       this.knex.setupLogging()
     }
@@ -21,32 +20,6 @@ export default class App extends Koa {
     if (models) {
       this.addModels(models)
     }
-  }
-
-  createKnex(config, normalizeNames) {
-    if (normalizeNames) {
-      const normalizeIdentifier = name => underscore(name)
-      const denormalizeIdentifier = name => camelize(name)
-
-      // Always convert Knex identifiers to underscored versions.
-      // TODO: wrapIdentifier will only work in Knex 0.14.0 onwards.
-      // Until then, use the _wrapString() hack below instead.
-      config = {
-        ...config,
-
-        // These are our own add-ons and used by our Model to convert
-        // identifiers back and forth, see KnexMixin.js
-        normalizeIdentifier,
-        denormalizeIdentifier,
-
-        // This is Knex' standard hook into processing identifiers.
-        // We add the call to our own normalizeIdentifier() to it:
-        wrapIdentifier(value, wrapIdentifier) {
-          return wrapIdentifier(normalizeIdentifier(value))
-        }
-      }
-    }
-    return KnexPlus(config)
   }
 
   addModels(models) {
