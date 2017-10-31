@@ -402,7 +402,7 @@ const queryHandlers = {
   scope(builder, key, value) {
     const filters = builder.modelClass().namedFilters || {}
     if (!(value in filters)) {
-      throw new QueryError(`QueryBuilder: Unkown scope: '${value}'.`)
+      throw new QueryError(`QueryBuilder: Unknown scope: '${value}'.`)
     }
     builder.applyFilter(value)
   }

@@ -39,7 +39,7 @@ export default class Validator extends AjvValidator {
 
 function clearOverrides(defaults, overrides) {
   // Create a new version of `defaults` where all values defined in `overrides`
-  // are set to null, so they can be redefined after without caussing errors.
+  // are set to null, so they can be redefined after without causing errors.
   // This allows apps to override default keywords and formats with their own
   // definitions, while still use the not-touched default formats and keywords
   // in their metaSchema definitions.

@@ -58,15 +58,15 @@ export function deindent(strings, ...values) {
     result += strings[i]
       // Join lines when there is a suppressed newline
       .replace(/\\\n[ \t]*/g, '')
-      // Handle escaped backticks
+      // Handle escaped back-ticks
       .replace(/\\`/g, '`')
     if (i < values.length) {
       // See if the value itself contains multiple lines, and if so, indent
-      // each of them by the whitespace that preceeds it except the first.
+      // each of them by the whitespace that precedes it except the first.
       const value = `${values[i]}`
       const lines = value.split(/\r\n|\n|\r/)
       if (lines.length > 1) {
-        // Determine indent by finding preceeding white-space up to the previous
+        // Determine indent by finding preceding white-space up to the previous
         // line-break or beginning of the string.
         const indent = (result.match(/(?:^|[\n\r])(\s*)$/) || [])[1] || ''
         result += lines.join(`${os.EOL}${indent}`)
@@ -76,7 +76,7 @@ export function deindent(strings, ...values) {
     }
   }
   const lines = result.split(/\r\n|\n|\r/)
-  // Remove the first line-break at the begnning of the result, to allow this:
+  // Remove the first line-break at the beginning of the result, to allow this:
   // const value = `
   //   content...
   //   ` // line break at the end remains

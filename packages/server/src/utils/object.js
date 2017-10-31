@@ -57,7 +57,7 @@ function deepMergeWithDirection(unshift, target, sources) {
             ), value) || value
         }
         if (unshift) {
-          // "unshift the added fields by deleting the fields that were there
+          // "unshift" the added fields by deleting the fields that were there
           // before and inserting them again at the end.
           for (const key in before) {
             delete target[key]

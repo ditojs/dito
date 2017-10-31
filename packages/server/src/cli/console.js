@@ -125,7 +125,7 @@ function wrapEval({ eval: defaultEval }) {
       }
       try {
         const resolved = await result
-        // Replace any promises in the REPL context with the resolved romise.
+        // Replace any promises in the REPL context with the resolved promise.
         for (const key in context) {
           if (context[key] === result) {
             context[key] = resolved
