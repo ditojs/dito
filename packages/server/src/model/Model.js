@@ -1,7 +1,7 @@
 import objection from 'objection'
 import util from 'util'
 import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
-import { ValidationError } from '@/errors'
+import { ValidationError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter } from '@/events'
 import { convertSchema, convertRelations } from '@/schema'
@@ -28,9 +28,15 @@ export default class Model extends objection.Model {
   }
 
   static initialize() {
-    for (const relation of Object.values(this.getRelations())) {
-      this.checkRelation(relation)
-      this.addRelationAccessor(relation)
+    try {
+      for (const relation of Object.values(this.getRelations())) {
+        this.checkRelation(relation)
+        this.addRelationAccessor(relation)
+      }
+    } catch (error) {
+      // Adjust objection.js error messages to point to the right property.
+      throw new WrappedError(error,
+        str => str.replace(/\brelationMappings\b/g, 'relations'))
     }
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.

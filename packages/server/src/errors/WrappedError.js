@@ -1,11 +1,11 @@
 import { ResponseError } from './ResponseError'
 
 export class WrappedError extends ResponseError {
-  constructor(error, status = 400) {
+  constructor(error, process = str => str, status = 400) {
     super({
-      message: error.message,
+      message: process(error.message),
       ...error
     }, status)
-    this.stack = error.stack
+    this.stack = process(error.stack)
   }
 }
