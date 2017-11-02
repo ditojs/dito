@@ -94,16 +94,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
   upsert(data, _fetch = false) {
-    const modelClass = this.modelClass()
-    let whereQuery
+    let query
     return this
       .runBefore((result, builder) => {
-        if (!builder.context().isWhereQuery) {
+        if (!builder.context().isQuery) {
           // At this point the builder should only contain a bunch of `where*`
           // operations. Store the `where` query for later use in the `runAfter`
           // method. Also mark the query with `isWhereQuery: true` so we can
           // skip all this when this function is called for the `whereQuery`.
-          whereQuery = builder.clone().context({ isWhereQuery: true })
+          query = builder.clone().context({ isQuery: true })
           // Call the `update` method on the original query turning it into an
           // update operation.
           builder.update(data)
@@ -111,17 +110,17 @@ export default class QueryBuilder extends objection.QueryBuilder {
         return result
       })
       .runAfter((result, builder) => {
-        if (!builder.context().isWhereQuery) {
+        if (!builder.context().isQuery) {
           if (result === 0) {
             const insert = _fetch ? 'insertAndFetch' : 'insert'
-            return modelClass.query()[insert](data)
+            return query[insert](data)
           } else {
             // Now we can use the `where` query we saved in the `runBefore`
             // method to fetch the inserted results. It is noteworthy that this
             // query will return the wrong results if the update changed any
             // of the columns the where operates with. This also returns all
             // updated models.
-            return whereQuery.first()
+            return query.first()
           }
         }
         return result
