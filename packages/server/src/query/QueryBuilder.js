@@ -293,6 +293,35 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 }
 
+// Add conversion of identifiers to all `where` statements, by detecting use of
+// model properties and expanding them to `${modelClass.name}.${propertyName}`,
+// for unambiguous identification of used properties in complex statements.
+for (const key of [
+  'where', 'whereNot', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull',
+  'whereBetween', 'whereNotBetween'
+]) {
+  const method = QueryBuilder.prototype[key]
+  QueryBuilder.prototype[key] = function (arg, ...args) {
+    const modelClass = this.modelClass()
+    const { properties } = modelClass.definition
+
+    const convertIdentifier = identifier => identifier in properties
+      ? `${modelClass.name}.${identifier}`
+      : identifier
+
+    if (isString(arg)) {
+      arg = convertIdentifier(arg)
+    } else if (isObject(arg)) {
+      const converted = {}
+      for (const key in arg) {
+        converted[convertIdentifier(key)] = arg[key]
+      }
+      arg = converted
+    }
+    return method.call(this, arg, ...args)
+  }
+}
+
 const queryHandlers = {
   where(builder, key, value) {
     // Recursively translate object based filters to string based ones for
