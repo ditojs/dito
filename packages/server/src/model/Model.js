@@ -42,7 +42,10 @@ export default class Model extends objection.Model {
     // Install all events listed in the static events object.
     this.installEvents(this.definition.events)
     console.log(`${this.name}:\n`,
-      util.inspect(this.jsonSchema, {
+      util.inspect({
+        jsonSchema: this.jsonSchema,
+        jsonAttributes: this.jsonAttributes
+      }, {
         colors: true,
         depth: null,
         maxArrayLength: null
@@ -53,6 +56,10 @@ export default class Model extends objection.Model {
     for (const [event, handler] of Object.entries(events)) {
       this.on(event, handler)
     }
+  }
+
+  static relatedQuery(relationName, trx) {
+    return this.getRelation(relationName).relatedModelClass.query(trx)
   }
 
   static get tableName() {
@@ -254,10 +261,10 @@ export default class Model extends objection.Model {
   }
 
   $parseDatabaseJson(json) {
-    json = super.$parseDatabaseJson(json)
     const { constructor } = this
     const knex = constructor.knex()
-    // NOTE: Demoralization of identifiers is still our own business:
+    // NOTE: Demoralization of identifiers is still our own business, and needs
+    // to happen before super.$parseDatabaseJson(json)
     if (knex && knex.denormalizeIdentifier) {
       const converted = {}
       for (const key in json) {
@@ -265,6 +272,7 @@ export default class Model extends objection.Model {
       }
       json = converted
     }
+    json = super.$parseDatabaseJson(json)
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
@@ -280,6 +288,7 @@ export default class Model extends objection.Model {
         }
       }
     }
+    // Now call $parseJson() to remove potential computed properties.
     return this.$parseJson(json)
   }
 
