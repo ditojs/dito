@@ -25,43 +25,49 @@ export default class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
   }
 
-  static forClass(modelClass) {
-    // Override super.forClass() to add support for `eager` static property.
-    const builder = super.forClass(modelClass)
-    const { eager } = modelClass
-    if (eager) {
-      builder.eager(eager)
+  execute() {
+    const { $unscoped, $scope, $eager } = this.internalOptions()
+    if (!$unscoped) {
+      const { defaultEager, defaultScope } = this.modelClass()
+      if (defaultEager || defaultScope) {
+        if (defaultEager && !$eager) {
+          // NOTE: `defaultEager` is only applied if no other eager statement
+          // is chosen before, or if `mergeEager()` is used.
+          this.mergeEager(defaultEager)
+        }
+        if (defaultScope && !$scope) {
+          // NOTE: `defaultScope` is only applied if no other scope is
+          // chosen before, or if `mergeScope()` is used.
+          this.mergeScope(defaultScope)
+        }
+      }
     }
-    return builder
+    return super.execute()
   }
 
   unscoped() {
-    return this
-      .internalOptions({ unscoped: true })
-      .clearEager()
+    return this.internalOptions({ $unscoped: true })
+  }
+
+  scope(...args) {
+    return this.internalOptions({ $scope: true }).applyFilter(...args)
+  }
+
+  mergeScope(...args) {
+    return this.applyFilter(...args)
   }
 
   eager(exp, filters) {
-    const { eager } = this.modelClass()
-    const { unscoped } = this.internalOptions()
-    // eager() is also used internally by upsertGraph() & co, but when it is
-    // called by these methods, `exp` is a `RelationExpression`. To avoid
-    // interfering with these methods, only support preserving the default
-    // eager settings when working with string expressions:
-    if (!unscoped && eager && isString(exp)) {
-      super.eager(eager)
-      this.mergeEager(exp, filters)
-    } else {
-      super.eager(exp, filters)
-    }
-    return this
+    this.internalOptions({ $eager: true })
+    return super.eager(exp, filters)
   }
 
-  count() {
+  count(...args) {
+    return super.count(...args)
     // TODO: We can only count `unscoped()` currently, because eager queries
     // interfere with the postgreSQL otherwise and fail, see:
     // https://gitter.im/Vincit/objection.js?at=59f739f0b20c64242966e861
-    return super.count.call(this.unscoped())
+    // return super.count.call(this .unscoped(), ...args)
   }
 
   raw(...args) {
@@ -314,10 +320,21 @@ const queryHandlers = {
     //   { key: 'lastName', value: '%oe' }
     //   { key: 'messages.text:like', value: '% and %' }
     //   { key: 'messages.unread', value: true }
+    // TODO: figure out and implement a better convention for handling
+    // AND / OR queries in object notation.
+    // TODO: Support / figure out object literal notation for null filters
+    //    latest: builder => builder.whereNull('nextId')
+    // -> Compare with LoopBack and others
+    // TODO: Figure out and implement better parsing of string
+    // "?where=..."" queries, including AND / OR.
+    // e.g.
+    // /api/dummies?where=firstName=Joe&where=lastName=Doe
+    // /api/dummies?where=firstName=Joe|where=lastName=Doe
+    // NOTE: The 2nd notation will end up as a string containing
+    // "firstName=Joe|where=lastName=Doe", and will have to be further
+    // parsed.
     function processPropertyRefs(key, value, parts) {
       if (isObject(value)) {
-        // TODO: figure out and implement a better convention for handling
-        // AND / OR queries in object notation.
         for (const [subKey, subValue] of Object.entries(value)) {
           // NOTE: We need to clone `parts` for branching:
           processPropertyRefs(subKey, subValue, parts ? [...parts, key] : [])
@@ -329,14 +346,6 @@ const queryHandlers = {
         const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
         builder.parseQueryFilter(ref, value)
       } else if (isString(value)) {
-        // TODO: Figure out and implement better parsing of string
-        // "?where=..."" queries, including AND / OR.
-        // e.g.
-        // /api/dummies?where=firstName=Joe&where=lastName=Doe
-        // /api/dummies?where=firstName=Joe|where=lastName=Doe
-        // NOTE: The 2nd notation will end up as a string containing
-        // "firstName=Joe|where=lastName=Doe", and will have to be further
-        // parsed.
         const [ref, val] = value.split('=')
         builder.parseQueryFilter(ref, val)
       } else if (isArray(value)) {
@@ -492,6 +501,8 @@ const mixinMethods = [
   'findOne',
   'findById',
   'unscoped',
+  'eager',
+  'scope',
   'select',
   'insert',
   'update',
