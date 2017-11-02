@@ -1,4 +1,4 @@
-import { asArray, camelize } from '@/utils'
+import { isObject, asArray, camelize } from '@/utils'
 import {
   Relation,
   BelongsToOneRelation,
@@ -137,11 +137,17 @@ export function convertRelations(ownerModelClass, schema, models) {
       } else if (through) {
         throwError(relationName, 'Unsupported through join')
       }
+      modify = scope || modify || filter
+      if (isObject(modify)) {
+        // Convert a find-filter object to a filter function, same as in the
+        // handling of definition.scopes, see Model.js
+        modify = builder => builder.find(modify)
+      }
       relations[relationName] = {
         relation: relationClass,
         modelClass: models[modelClass] || modelClass,
         join: { from, through, to },
-        modify: scope || modify || filter,
+        modify,
         ...rest
       }
     } else {
