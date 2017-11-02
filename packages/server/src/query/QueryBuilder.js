@@ -50,24 +50,16 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   scope(...args) {
-    return this.internalOptions({ $scope: true }).applyFilter(...args)
+    return this.internalOptions({ $scope: true }).mergeScope(...args)
   }
 
   mergeScope(...args) {
-    return this.applyFilter(...args)
+    return this.applyFilter(...args.filter(scope => scope))
   }
 
   eager(exp, filters) {
     this.internalOptions({ $eager: true })
     return super.eager(exp, filters)
-  }
-
-  count(...args) {
-    return super.count(...args)
-    // TODO: We can only count `unscoped()` currently, because eager queries
-    // interfere with the postgreSQL otherwise and fail, see:
-    // https://gitter.im/Vincit/objection.js?at=59f739f0b20c64242966e861
-    // return super.count.call(this .unscoped(), ...args)
   }
 
   raw(...args) {

@@ -295,7 +295,9 @@ const restHandlers = {
       const { id } = ctx.params
       return modelClass.query()
         .findById(id)
+        // TODO: findById(id, query) with support for ctx.query!
         // TODO: .allowEager(modelClass.getFindQueryBuilder().allowEager())
+        .mergeScope(ctx.query.scope)
         .mergeEager(ctx.query.eager)
         .then(model => checkModel(model, modelClass, id))
     },
