@@ -203,12 +203,12 @@ export default class Model extends objection.Model {
         Object.defineProperty(this, accessor, {
           value: modelRelation,
           configurable: true,
-          enumerable: true
+          enumerable: false
         })
         return modelRelation
       },
       configurable: true,
-      enumerable: true
+      enumerable: false
     })
   }
 
