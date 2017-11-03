@@ -191,7 +191,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return fullId
   }
 
-  find(query = {}, first = false) {
+  find(query = {}) {
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
       const queryHandler = queryHandlers[key]
@@ -207,11 +207,19 @@ export default class QueryBuilder extends objection.QueryBuilder {
     for (const relation of Object.values(this._relationsToJoin)) {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
-    return first ? this.first() : this
+    return this
   }
 
   findOne(query) {
-    return this.find(query, true)
+    // TODO: This clashes with objection's own definition of findOne, decide
+    // if that's ok?
+    return this.find(query).first()
+  }
+
+  findById(id, query) {
+    // Add support for optional query to findById()
+    return this.find(query).first()
+      .whereComposite(this.fullIdColumnFor(this.modelClass()), id)
   }
 
   allow(refs) {

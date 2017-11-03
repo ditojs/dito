@@ -294,18 +294,15 @@ const restHandlers = {
     get(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        .findById(id)
-        // TODO: findById(id, query) with support for ctx.query!
-        // TODO: .allowEager(modelClass.getFindQueryBuilder().allowEager())
-        .mergeScope(ctx.query.scope)
-        .mergeEager(ctx.query.eager)
+        .findById(id, ctx.query)
         .then(model => checkModel(model, modelClass, id))
     },
 
     // delete member
     delete(modelClass, ctx) {
+      const { id } = ctx.params
       return modelClass.query()
-        .deleteById(ctx.params.id)
+        .deleteById(id)
         .then(count => ({ count }))
     },
 
@@ -334,10 +331,13 @@ const restHandlers = {
       const { ownerModelClass } = relation
       return ownerModelClass.query()
         .findById(id)
-        .then(model => checkModel(model, ownerModelClass, id)
-          .$relatedQuery(relation.name)
-          .find(ctx.query, relation.isOneToOne())
-          .then(result => result || null))
+        .then(model => {
+          const query = checkModel(model, ownerModelClass, id)
+            .$relatedQuery(relation.name)
+            .find(ctx.query)
+          return relation.isOneToOne() ? query.first() : query
+        })
+        .then(result => result || null)
     },
 
     // delete relation
@@ -352,6 +352,7 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
+            .find(ctx.query) // TODO: Test if filter works for delete
             .delete())
           .then(count => ({ count }))
       })
@@ -381,6 +382,7 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
+            // TODO: .find(ctx.query) // Should this be supported? Does it work?
             .updateGraphAndFetch(ctx.request.body))
       })
     },
@@ -395,6 +397,7 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
+            // TODO: .find(ctx.query) // Should this be supported? Does it work?
             .upsertGraphAndFetch(ctx.request.body))
       })
     }
@@ -415,11 +418,7 @@ const restHandlers = {
               // TODO: inspect and decide what to do next
               console.log('related', related)
               return relatedModelClass
-                .findById(relatedId)
-                // TODO:
-                // .allowEager(relation.relatedModelClass.getFindQueryBuilder()
-                //   .allowEager())
-                .mergeEager(ctx.query.eager)
+                .findById(relatedId, ctx.query)
             })
         }
       )
