@@ -71,7 +71,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
         } else if (isFunction(scope)) {
           func = scope
         } else {
-          throw new QueryError(`QueryBuilder: Invalid scope: '${scope}'.`)
+          throw new QueryError(`Invalid scope: '${scope}'.`)
         }
         $scopes.push(func)
       })
@@ -208,16 +208,19 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return fullId
   }
 
-  find(query = {}) {
+  find(query = {}, allowed) {
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
-      const queryHandler = queryHandlers[key]
-      if (queryHandler) {
-        queryHandler(this, key, value)
+      if (!allowed || allowed[key]) {
+        const queryHandler = queryHandlers[key]
+        if (queryHandler) {
+          queryHandler(this, key, value)
+        } else {
+          throw new QueryError(
+            `Invalid query parameter '${key}' in '${key}=${value}'.`)
+        }
       } else {
-        throw new QueryError(
-          `QueryBuilder: Invalid query parameter '${key}' in '${key}=${value}'.`
-        )
+        throw new QueryError(`Query parameter '${key}' is not allowed.`)
       }
     }
     // TODO: Is this really needed? Looks like it works without it also...
@@ -230,13 +233,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
   findOne(query) {
     // TODO: This clashes with objection's own definition of findOne, decide
     // if that's ok?
-    return this.find(query).first()
+    // Only allow where, eager and scope query filters on single queries.
+    return this.find(query, { where: true, eager: true, scope: true }).first()
   }
 
   findById(id, query) {
     // Add support for optional query to findById()
     super.findById(id)
-    return query ? this.find(query) : this
+    return query ? this.findOne(query) : this
   }
 
   allow(refs) {
@@ -271,8 +275,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
         ? queryFilters[parts[1]]
         : null
     if (!queryFilter) {
-      throw new QueryError(
-        `QueryBuilder: Invalid filter in '${key}=${value}'.`)
+      throw new QueryError(`Invalid filter in '${key}=${value}'.`)
     }
     const propertyRefs = this.getPropertyRefs(parts[0])
     for (const ref of propertyRefs) {
@@ -402,8 +405,7 @@ const queryHandlers = {
           processPropertyRefs(null, entry)
         }
       } else {
-        throw new QueryError(
-          `QueryBuilder: Unsupported 'where' query: '${value}'.`)
+        throw new QueryError(`Unsupported 'where' query: '${value}'.`)
       }
     }
 
@@ -417,11 +419,15 @@ const queryHandlers = {
     }
   },
 
+  scope(builder, key, value) {
+    builder.mergeScope(value)
+  },
+
   range(builder, key, value) {
     if (value) {
       const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
       if (isNaN(start) || isNaN(end) || end < start) {
-        throw new QueryError(`QueryBuilder: Invalid range: [${start}, ${end}].`)
+        throw new QueryError(`Invalid range: [${start}, ${end}].`)
       }
       builder.range(start, end)
     }
@@ -442,8 +448,7 @@ const queryHandlers = {
         const columnName = ref.fullColumnName(builder)
         if (relation) {
           if (!relation.isOneToOne()) {
-            throw new QueryError(
-              `QueryBuilder: Can only order by model's own properties ` +
+            throw new QueryError(`Can only order by model's own properties ` +
               `and by one-to-one relations' properties.`)
           }
           // TODO: Is alias required here?
@@ -455,10 +460,6 @@ const queryHandlers = {
         }
       }
     }
-  },
-
-  scope(builder, key, value) {
-    builder.mergeScope(value)
   },
 
   join(builder, key, value) {

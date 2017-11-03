@@ -352,7 +352,8 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            .find(ctx.query) // TODO: Test if filter works for delete
+            // TODO: Test if filter works for delete
+            .find(ctx.query)
             .delete())
           .then(count => ({ count }))
       })
@@ -382,7 +383,8 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            // TODO: .find(ctx.query) // Should this be supported? Does it work?
+            // TODO: Should this be supported? Does it work?
+            // .find(ctx.query)
             .updateGraphAndFetch(ctx.request.body))
       })
     },
@@ -397,7 +399,8 @@ const restHandlers = {
           .findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
-            // TODO: .find(ctx.query) // Should this be supported? Does it work?
+            // TODO: Should this be supported? Does it work?
+            // .find(ctx.query)
             .upsertGraphAndFetch(ctx.request.body))
       })
     }

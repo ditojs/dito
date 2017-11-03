@@ -17,7 +17,7 @@ export default class PropertyRef {
       // Support direction for order statements
       const [key, dir] = str.trim().split(/\s+/)
       if (dir && !/^(asc|desc)$/i.test(dir)) {
-        throw new QueryError(`PropertyRef: Invalid order direction: '${dir}'.`)
+        throw new QueryError(`Invalid order direction: '${dir}'.`)
       }
       this.key = key
       this.dir = dir
@@ -26,7 +26,7 @@ export default class PropertyRef {
     }
     if (checkAllow && !checkAllow[this.key]) {
       throw new QueryError(
-        `PropertyRef: Property reference '${this.key}' not allowed.`)
+        `Property reference '${this.key}' not allowed.`)
     }
     const parts = this.key.split('.')
     if (parts.length === 1) {
@@ -39,17 +39,17 @@ export default class PropertyRef {
         this.relation = modelClass.getRelation(relationName)
       } catch (err) {
         throw new QueryError(
-          `PropertyRef: Unknown relation '${relationName}'.`)
+          `Unknown relation '${relationName}'.`)
       }
       this.propertyName = parts[1]
       this.modelClass = this.relation.relatedModelClass
     } else {
       throw new QueryError(
-        `PropertyRef: Only one level of relations is supported.`)
+        `Only one level of relations is supported.`)
     }
     const { properties } = this.modelClass.getJsonSchema() || {}
     if (properties && !(this.propertyName in properties)) {
-      throw new QueryError(`PropertyRef: Unknown property '${this.key}'.`)
+      throw new QueryError(`Unknown property '${this.key}'.`)
     }
     this.columnName = this.modelClass.propertyNameToColumnName(
       this.propertyName)
