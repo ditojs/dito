@@ -56,19 +56,25 @@ export default class PropertyRef {
   }
 
   fullColumnName(builder) {
-    const tableRef = builder.tableRefFor(this.modelClass)
-    return `${tableRef}.${this.columnName}`
+    // Use the full name for the relation identifiers, to always be unambiguous.
+    const ref = this.relation
+      ? this.relation.name
+      : builder.tableRefFor(this.modelClass)
+    return `${ref}.${this.columnName}`
   }
 
   applyQueryFilter(builder, query, queryFilter, value, boolOp) {
     const { method, args } = queryFilter(builder, this, value, this.modelClass)
     const whereMethod = boolOp ? `${boolOp}${capitalize(method)}` : method
     const { relation } = this
-    // TODO: Figure out all relations
-    if (relation /* && !relation.isOneToOne() */) {
-      const subQuery = relation.findQuery(relation.relatedModelClass.query(), {
-        ownerIds: relation.ownerProp.refs(builder)
-      })
+    // TODO: Figure out if all relations work, since we're using full relation
+    // ids for relations (see fullColumnName())
+    if (relation && !relation.isOneToOne()) {
+      const subQuery = relation.findQuery(
+        relation.relatedModelClass.query(), {
+          ownerIds: relation.ownerProp.refs(builder)
+        }
+      )
       subQuery[whereMethod](...args)
       query.whereExists(subQuery)
     } else {

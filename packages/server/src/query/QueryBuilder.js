@@ -263,9 +263,13 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   parseQueryFilter(key, value) {
     const parts = key.split(/\s*:\s*/)
-    const queryFilter = parts.length === 1 ? queryFilters.eq
-      : parts.length === 2 ? queryFilters[parts[1]]
-      : null
+    const queryFilter = parts.length === 1
+      ? value === null
+        ? queryFilters.null
+        : queryFilters.eq
+      : parts.length === 2
+        ? queryFilters[parts[1]]
+        : null
     if (!queryFilter) {
       throw new QueryError(
         `QueryBuilder: Invalid filter in '${key}=${value}'.`)
@@ -455,6 +459,26 @@ const queryHandlers = {
 
   scope(builder, key, value) {
     builder.mergeScope(value)
+  },
+
+  join(builder, key, value) {
+    // TODO: Parse value to see if it starts with a relation name or [ for
+    // relation expression, and fall back a normal join otherwise.
+    builder.joinRelation(value)
+  }
+}
+
+// Install queryHandlers for all types of joins:
+for (const join of [
+  'join', 'innerJoin', 'outerJoin', 'leftJoin', 'leftOuterJoin', 'rightJoin',
+  'rightOuterJoin', 'fullOuterJoin'
+]) {
+  queryHandlers[join] = function (builder, key, value) {
+    // Parse value to see if it starts with a relation name or `[` for valid
+    // relation expressions, and fall back a normal join otherwise.
+    const identifier = (`${value}`.match(/\[?(\w*)/) || [])[1]
+    const relation = builder.modelClass().getRelation(identifier)
+    builder[relation ? `${join}Relation` : join](value)
   }
 }
 
@@ -476,11 +500,11 @@ const queryFilters = {
   },
 
   null(builder, ref) {
-    return where(builder, ref, null, null, 'whereNull')
+    return where(builder, ref, null, undefined, 'whereNull')
   },
 
   notNull(builder, ref) {
-    return where(builder, ref, null, null, 'whereNotNull')
+    return where(builder, ref, null, undefined, 'whereNotNull')
   },
 
   empty(builder, ref) {
@@ -532,7 +556,11 @@ function where(builder, ref, operator, value, method = 'where') {
   const columnName = ref.fullColumnName(builder)
   return {
     method,
-    args: operator ? [columnName, operator, value] : [columnName, value]
+    args: operator
+      ? [columnName, operator, value]
+      : value !== undefined
+        ? [columnName, value]
+        : [columnName]
   }
 }
 
