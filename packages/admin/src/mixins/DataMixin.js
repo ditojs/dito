@@ -112,8 +112,9 @@ export default {
         }
         // Dito specific query parameters:
         // Convert offset/limit to range so that we get entry counting
-        const { paginate: limit } = this.viewSchema
+        const { paginate } = this.viewSchema
         const { page = 0, ...query } = this.query || {}
+        const limit = this.isList && paginate // Only use range on lists
         const offset = page * limit
         const params = {
           ...query,
