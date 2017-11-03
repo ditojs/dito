@@ -26,7 +26,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   execute() {
-    const { $unscoped, $scope, $eager } = this.internalOptions()
+    const { $unscoped, $scope, $eager } = this.context()
     if (!$unscoped) {
       const { defaultEager, defaultScope } = this.modelClass()
       if (defaultEager || defaultScope) {
@@ -46,11 +46,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   unscoped() {
-    return this.internalOptions({ $unscoped: true })
+    return this.mergeContext({ $unscoped: true })
   }
 
   scope(...args) {
-    return this.internalOptions({ $scope: true }).mergeScope(...args)
+    return this.mergeContext({ $scope: true }).mergeScope(...args)
   }
 
   mergeScope(...args) {
@@ -58,7 +58,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   eager(exp, filters) {
-    this.internalOptions({ $eager: true })
+    this.mergeContext({ $eager: true })
     return super.eager(exp, filters)
   }
 
@@ -85,16 +85,16 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
-  upsert(data, _fetch = false) {
-    let query
+  upsert(data, opt = {}) {
+    let mainQuery
     return this
       .runBefore((result, builder) => {
-        if (!builder.context().isQuery) {
+        if (!builder.context().isMainQuery) {
           // At this point the builder should only contain a bunch of `where*`
           // operations. Store the `where` query for later use in the `runAfter`
-          // method. Also mark the query with `isWhereQuery: true` so we can
-          // skip all this when this function is called for the `whereQuery`.
-          query = builder.clone().context({ isQuery: true })
+          // method. Also mark the query with `isMainQuery: true` so we can
+          // skip all this when this function is called for the `mainQuery`.
+          mainQuery = builder.clone().context({ isMainQuery: true })
           // Call the `update` method on the original query turning it into an
           // update operation.
           builder.update(data)
@@ -102,17 +102,17 @@ export default class QueryBuilder extends objection.QueryBuilder {
         return result
       })
       .runAfter((result, builder) => {
-        if (!builder.context().isQuery) {
+        if (!builder.context().isMainQuery) {
           if (result === 0) {
-            const insert = _fetch ? 'insertAndFetch' : 'insert'
-            return query[insert](data)
+            const insert = opt.fetch ? 'insertAndFetch' : 'insert'
+            return mainQuery[insert](data)
           } else {
             // Now we can use the `where` query we saved in the `runBefore`
             // method to fetch the inserted results. It is noteworthy that this
             // query will return the wrong results if the update changed any
             // of the columns the where operates with. This also returns all
             // updated models.
-            return query.first()
+            return mainQuery.first()
           }
         }
         return result
@@ -120,7 +120,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertAndFetch(data) {
-    return this.upsert(data, true)
+    return this.upsert(data, { fetch: true })
   }
 
   insertGraph(data, opt) {
@@ -158,8 +158,6 @@ export default class QueryBuilder extends objection.QueryBuilder {
     }, opt)
   }
 
-  // TODO: Implement update option in Objection.js!
-  // https://github.com/Vincit/objection.js/issues/557
   updateGraph(data, opt) {
     return this.upsertGraph(data, {
       update: true,
@@ -218,8 +216,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   findById(id, query) {
     // Add support for optional query to findById()
-    return this.find(query).first()
-      .whereComposite(this.fullIdColumnFor(this.modelClass()), id)
+    super.findById(id)
+    return query ? this.find(query) : this
   }
 
   allow(refs) {
