@@ -1,7 +1,9 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
 import { QueryError } from '@/errors'
-import { isArray, isObject, isString, asArray, capitalize } from '@/utils'
+import {
+  isArray, isObject, isString, isFunction, asArray, capitalize
+} from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -26,39 +28,59 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   execute() {
-    const { $unscoped, $scope, $eager } = this.context()
-    if (!$unscoped) {
-      const { defaultEager, defaultScope } = this.modelClass()
-      if (defaultEager || defaultScope) {
-        if (defaultEager && !$eager) {
-          // NOTE: `defaultEager` is only applied if no other eager statement
-          // is chosen before, or if `mergeEager()` is used.
-          this.mergeEager(defaultEager)
-        }
-        if (defaultScope && !$scope) {
-          // NOTE: `defaultScope` is only applied if no other scope is
-          // chosen before, or if `mergeScope()` is used.
-          this.mergeScope(defaultScope)
-        }
+    const { $scopes, $ignoreDefaultEager } = this.internalOptions()
+    if (!$ignoreDefaultEager) {
+      const { defaultEager } = this.modelClass()
+      if (defaultEager) {
+        // Use mergeEager() instead of eager(), in case mergeEager() was already
+        // called before.
+        this.mergeEager(defaultEager)
+      }
+    }
+    // Now finally apply the scopes.
+    if (isArray($scopes)) {
+      for (const scope of $scopes) {
+        scope(this)
       }
     }
     return super.execute()
   }
 
   unscoped() {
-    return this.mergeContext({ $unscoped: true })
+    return this.internalOptions({ $scopes: null })
   }
 
-  scope(...args) {
-    return this.mergeContext({ $scope: true }).mergeScope(...args)
+  scope(...scopes) {
+    return this.unscoped().mergeScope(...scopes)
   }
 
-  mergeScope(...args) {
-    return this.applyFilter(...args.filter(scope => scope))
+  mergeScope(...scopes) {
+    if (scopes.length) {
+      let { $scopes } = this.internalOptions()
+      if (!$scopes) {
+        $scopes = []
+        this.internalOptions({ $scopes })
+      }
+      const { namedFilters } = this.modelClass()
+      scopes.forEach(scope => {
+        let func
+        if (isString(scope) && namedFilters && scope in namedFilters) {
+          func = builder => builder.applyFilter(scope)
+        } else if (isObject(scope)) {
+          func = builder => builder.find(scope)
+        } else if (isFunction(scope)) {
+          func = scope
+        } else {
+          throw new QueryError(`QueryBuilder: Invalid scope: '${scope}'.`)
+        }
+        $scopes.push(func)
+      })
+    }
+    return this
   }
 
   eager(exp, filters) {
-    this.mergeContext({ $eager: true })
+    this.internalOptions({ $ignoreDefaultEager: true })
     return super.eager(exp, filters)
   }
 
@@ -103,17 +125,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
       })
       .runAfter((result, builder) => {
         if (!builder.context().isMainQuery) {
-          if (result === 0) {
-            const insert = opt.fetch ? 'insertAndFetch' : 'insert'
-            return mainQuery[insert](data)
-          } else {
-            // Now we can use the `where` query we saved in the `runBefore`
+          return result === 0
+            ? mainQuery[opt.fetch ? 'insertAndFetch' : 'insert'](data)
+            // We can use the `mainWhere` query we saved in the `runBefore`
             // method to fetch the inserted results. It is noteworthy that this
             // query will return the wrong results if the update changed any
             // of the columns the where operates with. This also returns all
             // updated models.
-            return mainQuery.first()
-          }
+            : mainQuery.first()
         }
         return result
       })
@@ -435,11 +454,7 @@ const queryHandlers = {
   },
 
   scope(builder, key, value) {
-    const filters = builder.modelClass().namedFilters || {}
-    if (!(value in filters)) {
-      throw new QueryError(`QueryBuilder: Unknown scope: '${value}'.`)
-    }
-    builder.applyFilter(value)
+    builder.mergeScope(value)
   }
 }
 
