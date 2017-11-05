@@ -245,7 +245,7 @@ export default class Model extends objection.Model {
         json[key] = date && date.toISOString ? date.toISOString() : date
       }
     }
-    if (knex && knex.isSQLite) {
+    if (knex && knex.isSQLite()) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
@@ -279,7 +279,7 @@ export default class Model extends objection.Model {
         json[key] = date ? new Date(date) : date
       }
     }
-    if (knex && knex.isSQLite) {
+    if (knex && knex.isSQLite()) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]

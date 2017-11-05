@@ -15,24 +15,24 @@ const properties = Object.getOwnPropertyDescriptors({
     return denormalizeIdentifier ? denormalizeIdentifier(name) : name
   },
 
-  get dialect() {
+  getDialect() {
     return this.client && this.client.dialect || null
   },
 
-  get isPostgreSQL() {
-    return this.dialect === 'postgresql'
+  isPostgreSQL() {
+    return this.getDialect() === 'postgresql'
   },
 
-  get isMySQL() {
-    return this.dialect === 'mysql'
+  isMySQL() {
+    return this.getDialect() === 'mysql'
   },
 
-  get isSQLite() {
-    return this.dialect === 'sqlite3'
+  isSQLite() {
+    return this.getDialect() === 'sqlite3'
   },
 
-  get isMsSQL() {
-    return this.dialect === 'mssql'
+  isMsSQL() {
+    return this.getDialect() === 'mssql'
   },
 
   setupLogging() {

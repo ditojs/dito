@@ -93,7 +93,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   truncate() {
-    if (this.knex().isPostgreSQL) {
+    if (this.knex().isPostgreSQL()) {
       // Include `cascade` in truncate queries.
       return this.raw('truncate table ?? restart identity cascade',
         this.modelClass().tableName)
@@ -105,7 +105,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   insert(data, returning) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
-    return !this.knex().isPostgreSQL && isArray(data) && data.length > 1
+    return !this.knex().isPostgreSQL() && isArray(data) && data.length > 1
       ? this.insertGraph(data)
       : super.insert(data, returning)
   }
