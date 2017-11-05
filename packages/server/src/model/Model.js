@@ -325,7 +325,7 @@ export default class Model extends objection.Model {
   static createValidationError(errors,
     message = `The provided data for the ${this.name} instance is not valid`
   ) {
-    return new this.ValidationError({ message, errors })
+    return new this.ValidationError(this, { message, errors })
   }
 
   static ValidationError = ValidationError
