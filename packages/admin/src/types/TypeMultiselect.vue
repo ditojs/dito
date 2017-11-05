@@ -90,6 +90,7 @@
     .multiselect__tags-wrap
       display: block
       margin: $tag-margin 0 0 $tag-margin
+      line-height: 0
 
     .multiselect__tag-icon
       background: none

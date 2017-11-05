@@ -139,6 +139,10 @@ export default {
       this.appState.loading = this.loading = loading
     },
 
+    hasValidationError(response) {
+      return response && response.status === 400
+    },
+
     request(method, options, callback) {
       const request = this.api.request || this.requestAxios
       const { resource, params, payload } = options
@@ -149,7 +153,7 @@ export default {
         setTimeout(() => {
           this.setLoading(false)
           // Do not report validation errors as dito-request errors
-          if (err && !(callback && response && response.status === 422)) {
+          if (err && !(callback && this.hasValidationError(response))) {
             this.errors.add('dito-request', err.toString())
           }
           if (callback) {

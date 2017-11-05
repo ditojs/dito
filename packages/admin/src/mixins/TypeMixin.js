@@ -85,11 +85,11 @@ export default {
 
   methods: {
     addErrors(errors) {
-      for (const error of errors) {
+      for (const { message } of errors) {
         // Convert to the same sentence structure as vee-validate:
         const prefix = `The ${this.label} field`
         this.errors.add(this.name,
-          error.indexOf(prefix) === 0 ? error : `${prefix} ${error}.`)
+          message.indexOf(prefix) === 0 ? message : `${prefix} ${message}.`)
       }
     },
 

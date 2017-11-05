@@ -337,25 +337,18 @@ export default DitoComponent.component('dito-form', {
             } else {
               this.goBack(true, false)
             }
-          } else if (response.status === 422) {
-            // LoopBack validation error!
-            // TODO: Handle in backend agnostic, modular way
-            const {
-              error: {
-                details: { messages }
-              } = {
-                details: {}
-              }
-            } = response.data || {}
-            for (const [key, errors] of Object.entries(messages)) {
+          } else if (this.hasValidationError(response)) {
+            // Dito validation error!
+            const { errors } = response.data || {}
+            for (const [key, errs] of Object.entries(errors)) {
               const path = key.split('/')
               const field = path[0]
               const component = this.components[field]
               if (component) {
-                component.showErrors(path, errors)
+                component.showErrors(path, errs)
               } else {
                 throw new Error(
-                  `Cannot find component for field ${field}, errors: ${errors}`)
+                  `Cannot find component for field ${field}, errors: ${errs}`)
               }
             }
           }
