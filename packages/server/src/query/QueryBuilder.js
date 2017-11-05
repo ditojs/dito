@@ -25,29 +25,38 @@ export default class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._allow = null
     this._propertyRefsCache = {}
+    this._mergeDefaultEager = true
+    this._scopes = []
+  }
+
+  clone() {
+    const clone = super.clone()
+    clone._allow = this._allow
+    clone._propertyRefsCache = this._propertyRefsCache
+    clone._mergeDefaultEager = this._mergeDefaultEager
+    clone._scopes = this._scopes
+    return clone
   }
 
   execute() {
-    const { $scopes, $ignoreDefaultEager } = this.internalOptions()
-    if (!$ignoreDefaultEager) {
+    if (this._mergeDefaultEager) {
       const { defaultEager } = this.modelClass()
       if (defaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
-        // called before.
+        // called before (using eager() sets `_mergeDefaultEager` to false).
         this.mergeEager(defaultEager)
       }
     }
     // Now finally apply the scopes.
-    if (isArray($scopes)) {
-      for (const scope of $scopes) {
-        scope(this)
-      }
+    for (const scope of this._scopes) {
+      scope(this)
     }
     return super.execute()
   }
 
   unscoped() {
-    return this.internalOptions({ $scopes: null })
+    this._scopes = []
+    return this
   }
 
   scope(...scopes) {
@@ -56,13 +65,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   mergeScope(...scopes) {
     if (scopes.length) {
-      let { $scopes } = this.internalOptions()
-      if (!$scopes) {
-        $scopes = []
-        this.internalOptions({ $scopes })
-      }
       const { namedFilters } = this.modelClass()
-      scopes.forEach(scope => {
+      for (const scope of scopes) {
         let func
         if (isString(scope) && namedFilters && scope in namedFilters) {
           func = builder => builder.applyFilter(scope)
@@ -73,14 +77,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
         } else {
           throw new QueryError(`Invalid scope: '${scope}'.`)
         }
-        $scopes.push(func)
-      })
+        this._scopes.push(func)
+      }
     }
     return this
   }
 
   eager(exp, filters) {
-    this.internalOptions({ $ignoreDefaultEager: true })
+    this._mergeDefaultEager = false
     return super.eager(exp, filters)
   }
 
