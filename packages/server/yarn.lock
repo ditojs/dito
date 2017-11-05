@@ -764,6 +764,10 @@ detect-indent@^4.0.0:
   dependencies:
     repeating "^2.0.0"
 
+detect-libc@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/detect-libc/-/detect-libc-1.0.2.tgz#71ad5d204bf17a6a6ca8f450c61454066ef461e1"
+
 dns-prefetch-control@0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/dns-prefetch-control/-/dns-prefetch-control-0.1.0.tgz#60ddb457774e178f1f9415f0cabb0e85b0b300b2"
@@ -1220,8 +1224,8 @@ global-prefix@^0.1.4:
     which "^1.2.12"
 
 globals@^10.0.0:
-  version "10.2.0"
-  resolved "https://registry.yarnpkg.com/globals/-/globals-10.2.0.tgz#69490789091fcaa7f7d512c668c8eb73894a4ef2"
+  version "10.3.0"
+  resolved "https://registry.yarnpkg.com/globals/-/globals-10.3.0.tgz#716aba93657b56630b5a0e77de5ea8ac6215afaa"
 
 globals@^9.17.0, globals@^9.18.0:
   version "9.18.0"
@@ -1917,9 +1921,10 @@ nocache@2.0.0:
   resolved "https://registry.yarnpkg.com/nocache/-/nocache-2.0.0.tgz#202b48021a0c4cbde2df80de15a17443c8b43980"
 
 node-pre-gyp@^0.6.36, node-pre-gyp@~0.6.38:
-  version "0.6.38"
-  resolved "https://registry.yarnpkg.com/node-pre-gyp/-/node-pre-gyp-0.6.38.tgz#e92a20f83416415bb4086f6d1fb78b3da73d113d"
+  version "0.6.39"
+  resolved "https://registry.yarnpkg.com/node-pre-gyp/-/node-pre-gyp-0.6.39.tgz#c00e96860b23c0e1420ac7befc5044e1d78d8649"
   dependencies:
+    detect-libc "^1.0.2"
     hawk "3.1.3"
     mkdirp "^0.5.1"
     nopt "^4.0.1"
@@ -1988,9 +1993,9 @@ objection-find@^0.5.1:
     bluebird "^3"
     lodash "^4"
 
-"objection@github:lehni/objection.js#dito-framework":
+"objection@github:lehni/objection.js#master":
   version "0.9.0"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/e000a6bec51c42d0b857e8b2978707695fc22c76"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/552d57558c97b66c3338ff97d5f2fe1a2cade2a7"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"
@@ -2149,8 +2154,8 @@ pg-types@~1.12.1:
     postgres-interval "^1.1.0"
 
 pg@^7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/pg/-/pg-7.3.0.tgz#275e27466e54a645f6b4a16f6acadf6b849ad83b"
+  version "7.4.0"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-7.4.0.tgz#e256061d2c52723c3c858defb97f1159ca660f83"
   dependencies:
     buffer-writer "1.0.1"
     js-string-escape "1.0.1"
