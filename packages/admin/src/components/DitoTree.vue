@@ -22,8 +22,9 @@
 <style lang="sass">
 .dito
   .dito-tree
-    font-family: monospace
-    margin-left: 18px
+    .dito-tree-children
+      .dito-tree
+        margin-left: 18px
 
     .dito-tree-item
       cursor: pointer
