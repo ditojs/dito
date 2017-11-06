@@ -41,15 +41,15 @@ export default class Model extends objection.Model {
     this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
     this.installEvents(this.definition.events)
-    console.log(`${this.name}:\n`,
-      util.inspect({
-        jsonSchema: this.jsonSchema,
-        jsonAttributes: this.jsonAttributes
-      }, {
-        colors: true,
-        depth: null,
-        maxArrayLength: null
-      }))
+    if (this.app.config.log.schema) {
+      console.log(`${this.name}:\n`,
+        util.inspect(this.jsonSchema, {
+          colors: true,
+          depth: null,
+          maxArrayLength: null
+        })
+      )
+    }
   }
 
   static installEvents(events = {}) {
@@ -245,7 +245,7 @@ export default class Model extends objection.Model {
         json[key] = date && date.toISOString ? date.toISOString() : date
       }
     }
-    if (knex && knex.isSQLite()) {
+    if (knex && knex.isSQLite) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
@@ -279,7 +279,7 @@ export default class Model extends objection.Model {
         json[key] = date ? new Date(date) : date
       }
     }
-    if (knex && knex.isSQLite()) {
+    if (knex && knex.isSQLite) {
       //  SQLite needs boolean conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]

@@ -7,12 +7,11 @@ import { NotFoundError } from '@/errors'
 import { isObject, isFunction, isString, pick, hyphenate } from '@/utils'
 
 export default class RestGenerator {
-  constructor({ adapter, prefix, logger } = {}) {
+  constructor({ adapter, logging, prefix } = {}) {
     this.adapter = adapter
-    this.logger = logger
+    this.logging = logging
     this.prefix = /\/$/.test(prefix) ? prefix : `${prefix}/`
     this.models = Object.create(null)
-    this.findQueries = Object.create(null)
   }
 
   addModelRoutes(modelClass) {
@@ -51,8 +50,7 @@ export default class RestGenerator {
       }
       const path = this.getRoutePath(type, modelClass, relation)
       const target = relation || modelClass
-      this.adapter.addRoute(
-        { modelClass, relation, type, verb, path, settings },
+      this.adapter({ modelClass, relation, type, verb, path, settings },
         ctx => handler(target, ctx))
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -77,8 +75,7 @@ export default class RestGenerator {
         arguments: createArgumentsValidator(modelClass, method.arguments),
         return: createArgumentsValidator(modelClass, [method.return])
       }
-      this.adapter.addRoute(
-        { modelClass, method, type, verb, path, settings },
+      this.adapter({ modelClass, method, type, verb, path, settings },
         ctx => handler(modelClass, method, validate, ctx))
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -86,8 +83,8 @@ export default class RestGenerator {
   }
 
   log(str, indent = 0) {
-    if (this.logger) {
-      this.logger(`${'  '.repeat(indent)}${str}`)
+    if (this.logging) {
+      console.log(`${'  '.repeat(indent)}${str}`)
     }
   }
 
@@ -294,7 +291,7 @@ const restHandlers = {
     get(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        .findById(id, ctx.query)
+        .findById(id) // ctx.query)
         .then(model => checkModel(model, modelClass, id))
     },
 
