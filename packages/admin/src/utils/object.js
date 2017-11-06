@@ -1,7 +1,7 @@
 export const { isArray } = Array
 
 export function isObject(val) {
-  return val != null && typeof val === 'object' && Array.isArray(val) === false
+  return val && typeof val === 'object' && !isArray(val)
 }
 
 export function isString(val) {
@@ -29,7 +29,7 @@ export function isPromise(obj) {
 }
 
 export function asArray(obj) {
-  return Array.isArray(obj) ? obj : [obj]
+  return isArray(obj) ? obj : [obj]
 }
 
 export function pick(...args) {
