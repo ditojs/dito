@@ -1,11 +1,7 @@
 export const { isArray } = Array
 
 export function isObject(val) {
-  return val && typeof val === 'object' && isArray(val) === false
-}
-
-export function isFunction(val) {
-  return typeof val === 'function'
+  return val && typeof val === 'object' && !isArray(val)
 }
 
 export function isString(val) {
@@ -14,6 +10,14 @@ export function isString(val) {
 
 export function isBoolean(val) {
   return typeof val === 'boolean'
+}
+
+export function isNumber(val) {
+  return typeof val === 'number'
+}
+
+export function isFunction(val) {
+  return typeof val === 'function'
 }
 
 export function isAsync(fun) {
@@ -34,6 +38,10 @@ export function pick(...args) {
       return arg
     }
   }
+}
+
+export function clone(obj) {
+  return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
 }
 
 export function mapValues(obj, callback) {
