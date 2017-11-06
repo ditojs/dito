@@ -92,14 +92,14 @@ export function convertRelations(ownerModelClass, schema, models) {
       to = convertReferences(to)
       const throughRelation = throughRelationClasses[relationClass.name]
       if (throughRelation) {
-        if (!through) {
-          // If no through settings are provided on relations that required it,
-          // auto-generate it based on simple conventions:
-          // - The through table is called:
-          //   `${fromTable}_${toTable}`
-          // - The from property is called:
+        if (through === true) {
+          // If the through setting is set to`true` on relations that required a
+          // proper `through` configuration, auto-generate it based on simple
+          // conventions:
+          // - The through table is called: `${fromTable}_${toTable}`
+          // - The `from` property is called:
           //   `${camelize(fromModelName)}${camelize(fromProp, true)}`
-          // - The to property is called:
+          // - The `to` property is called:
           //   `${camelize(toModelName)}${camelize(toProp, true)}`
           if (from.length !== to.length) {
             throwError(relationName, `Unable to create through join for ` +
@@ -124,6 +124,11 @@ export function convertRelations(ownerModelClass, schema, models) {
                 `Unable to create through join from '${from[i]}' to '${to[i]}'`)
             }
           }
+        }
+        if (!through) {
+          throwError(relationName,
+            'Relation needs a through definition or a `through: true` setting' +
+            ' to auto-generate it')
         }
         let { modelClass: throughModelClass } = through
         throughModelClass = models[throughModelClass] || throughModelClass
