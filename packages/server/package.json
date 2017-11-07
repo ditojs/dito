@@ -41,6 +41,7 @@
     "koa-compose": "^4.0.0",
     "koa-helmet": "^3.2.0",
     "koa-logger": "^3.1.0",
+    "koa-pino-logger": "^2.1.1",
     "koa-router": "^7.2.1",
     "objection": "github:lehni/objection.js#dito-framework",
     "pluralize": "^7.0.0",
