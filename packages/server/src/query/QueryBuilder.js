@@ -215,12 +215,21 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   find(query = {}, allowed) {
     this._relationsToJoin = {}
+    // Convert allowed array to object lookup for quicker access.
+    const allowedLookup = allowed && allowed.reduce((lookup, name) => {
+      lookup[name] = true
+      return lookup
+    }, {})
     for (const [key, value] of Object.entries(query)) {
-      if (!allowed || allowed[key]) {
+      const inAllowed = allowed && allowedLookup[key]
+      if (!allowed || inAllowed) {
         const queryHandler = queryHandlers[key]
         if (queryHandler) {
           queryHandler(this, key, value)
-        } else {
+        } else if (!inAllowed) {
+          // Only complain if the key isn't explicitly listed in allowed even
+          // if we don't recognize it here, so RrestGenerator can add the
+          // remote method arguments to the allowed list and let them pass.
           throw new QueryError(
             `Invalid query parameter '${key}' in '${key}=${value}'.`)
         }
@@ -235,17 +244,18 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(query) {
-    // TODO: This clashes with objection's own definition of findOne, decide
-    // if that's ok?
+  findOne(query, allowed) {
+    // TODO: This clashes with and overrides objection's own definition of
+    // findOne(), decide if that's ok?
     // Only allow where, eager and scope query filters on single queries.
-    return this.find(query, { where: true, eager: true, scope: true }).first()
+    allowed = ['where', 'eager', 'scope', ...allowed || []]
+    return this.find(query, allowed).first()
   }
 
-  findById(id, query) {
+  findById(id, query, allowed) {
     // Add support for optional query to findById()
     super.findById(id)
-    return query ? this.findOne(query) : this
+    return query ? this.findOne(query, allowed) : this
   }
 
   allow(refs) {
@@ -598,6 +608,8 @@ const mixinMethods = [
   'insertGraphAndFetch',
   'updateGraphAndFetch',
   'upsertGraphAndFetch',
+  'updateGraphAndFetchById',
+  'upsertGraphAndFetchById',
   'where',
   'whereNot',
   'whereRaw',

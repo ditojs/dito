@@ -189,8 +189,8 @@ function getArguments(modelClass, method, validate, ctx) {
   }
   const args = []
   // If no arguments are provided, pass the full ctx object to the method
-  for (const { key, value } of method.arguments || [{ value: ctx }]) {
-    args.push(key ? query[key] : value || query)
+  for (const { name, value } of method.arguments || [{ value: ctx }]) {
+    args.push(name ? query[name] : value || query)
   }
   return args
 }
@@ -226,10 +226,24 @@ const methodHandlers = {
   },
 
   async memberMethod(modelClass, method, validate, ctx) {
-    const model = await restHandlers.member.get(modelClass, ctx)
+    const { id } = ctx.params
+    const args = getArguments(modelClass, method, validate.arguments, ctx)
+    // Now determine a list of allowed query parameter names, based on the
+    // method definition and the result of its processing in getArguments():
+    const { query } = ctx
+    const allowed = args[0] === query
+      // The full query object is expected, let all parameters pass
+      ? Object.keys(query)
+      // Build a list of allowed parameter names
+      : method.arguments
+        ? method.arguments.map(arg => arg.name)
+        : null
+    // Now pas son the list of allowed parameters to findById which will only
+    // let those through and complain about additional ones.
+    const model = await modelClass.findById(id, query, allowed)
+    checkModel(model, modelClass, id)
     const { name } = method
     const func = checkMethod(model[name], modelClass, name, 'Member')
-    const args = getArguments(modelClass, method, validate.arguments, ctx)
     const value = await func.apply(model, args)
     return getReturn(modelClass, method, validate.return, value)
   }
@@ -252,7 +266,7 @@ const restHandlers = {
     // get collection
     get(modelClass, ctx) {
       // return findQuery(modelClass).build(ctx.query)
-      return modelClass.query().find(ctx.query)
+      return modelClass.find(ctx.query)
     },
 
     // delete collection
@@ -266,24 +280,21 @@ const restHandlers = {
     post(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
         // TODO: insertGraphAndFetch()?
-        return modelClass.query()
-          .insertGraph(ctx.request.body)
+        return modelClass.insertGraph(ctx.request.body)
       })
     },
 
     // put collection
     put(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
-        return modelClass.query()
-          .updateGraphAndFetch(ctx.request.body)
+        return modelClass.updateGraphAndFetch(ctx.request.body)
       })
     },
 
     // patch collection
     patch(modelClass, ctx) {
       return objection.transaction(modelClass, modelClass => {
-        return modelClass.query()
-          .upsertGraphAndFetch(ctx.request.body)
+        return modelClass.upsertGraphAndFetch(ctx.request.body)
       })
     }
   },
@@ -292,32 +303,28 @@ const restHandlers = {
     // get member
     get(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.query()
-        .findById(id, ctx.query)
+      return modelClass.findById(id, ctx.query)
         .then(model => checkModel(model, modelClass, id))
     },
 
     // delete member
     delete(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.query()
-        .deleteById(id)
+      return modelClass.deleteById(id)
         .then(count => ({ count }))
     },
 
     // put member
     put(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.query()
-        .updateGraphAndFetchById(id, ctx.request.body)
+      return modelClass.updateGraphAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     },
 
     // patch member
     patch(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.query()
-        .upsertGraphAndFetchById(id, ctx.request.body)
+      return modelClass.upsertGraphAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     }
   },
@@ -328,8 +335,7 @@ const restHandlers = {
       // NOTE: id = the id of the member to which this relation belongs.
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return ownerModelClass.query()
-        .findById(id)
+      return ownerModelClass.findById(id)
         .then(model => {
           const query = checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
@@ -347,8 +353,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.query()
-          .findById(id)
+        return ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Test if filter works for delete
@@ -364,8 +369,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.query()
-          .findById(id)
+        return ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             .insertGraphAndFetch(ctx.request.body))
@@ -378,8 +382,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.query()
-          .findById(id)
+        return ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Should this be supported? Does it work?
@@ -394,8 +397,7 @@ const restHandlers = {
       const { id } = ctx.params
       const { ownerModelClass } = relation
       return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.query()
-          .findById(id)
+        return ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Should this be supported? Does it work?
@@ -411,8 +413,7 @@ const restHandlers = {
       const { ownerModelClass, relatedModelClass } = relation
       return objection.transaction(ownerModelClass, relatedModelClass,
         (ownerModelClass, relatedModelClass) => {
-          return ownerModelClass.query()
-            .findById(id)
+          return ownerModelClass.findById(id)
             .then(model => checkModel(model, ownerModelClass, id)
               .$relatedQuery(relation.name)
               .relate(relatedId))
