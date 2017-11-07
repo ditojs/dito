@@ -22,7 +22,7 @@
     "watch": "babel src --out-dir lib --watch --copy-files --source-maps inline",
     "prepare": "yarn run build",
     "posttest": "yarn lint && nsp check",
-    "lint": "NODE_ENV=production eslint src",
+    "lint": "cross-env NODE_ENV=production eslint src",
     "lint:fix": "eslint --fix src",
     "precommit": "yarn lint"
   },
@@ -59,6 +59,7 @@
     "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-promise-to-bluebird": "^1.1.1",
+    "cross-env": "^5.1.1",
     "eslint": "^4.8.0",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-import": "^2.7.0",
