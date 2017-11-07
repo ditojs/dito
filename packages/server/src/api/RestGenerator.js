@@ -1,7 +1,6 @@
 import objection from 'objection'
 import chalk from 'chalk'
 import pluralize from 'pluralize'
-// import findQuery from 'objection-find'
 import { convertSchema } from '@/schema'
 import { NotFoundError } from '@/errors'
 import { isObject, isFunction, isString, pick, hyphenate } from '@/utils'
@@ -263,65 +262,47 @@ function checkModel(model, modelClass, id) {
 
 const restHandlers = {
   collection: {
-    // get collection
     get(modelClass, ctx) {
-      // return findQuery(modelClass).build(ctx.query)
       return modelClass.find(ctx.query)
     },
-
-    // delete collection
     delete(modelClass, ctx) {
-      return restHandlers.collection.get(modelClass, ctx)
+      return modelClass.find(ctx.query)
         .delete()
         .then(count => ({ count }))
     },
-
-    // post collection
     post(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass => {
-        // TODO: insertGraphAndFetch()?
-        return modelClass.insertGraph(ctx.request.body)
-      })
+      return objection.transaction(modelClass, modelClass =>
+        modelClass.insertGraphAndFetch(ctx.request.body)
+      )
     },
-
-    // put collection
     put(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass => {
-        return modelClass.updateGraphAndFetch(ctx.request.body)
-      })
+      return objection.transaction(modelClass, modelClass =>
+        modelClass.updateGraphAndFetch(ctx.request.body)
+      )
     },
-
-    // patch collection
     patch(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass => {
-        return modelClass.upsertGraphAndFetch(ctx.request.body)
-      })
+      return objection.transaction(modelClass, modelClass =>
+        modelClass.upsertGraphAndFetch(ctx.request.body)
+      )
     }
   },
 
   member: {
-    // get member
     get(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.findById(id, ctx.query)
         .then(model => checkModel(model, modelClass, id))
     },
-
-    // delete member
     delete(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.deleteById(id)
         .then(count => ({ count }))
     },
-
-    // put member
     put(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.updateGraphAndFetchById(id, ctx.request.body)
         .then(model => checkModel(model, modelClass, id))
     },
-
-    // patch member
     patch(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.upsertGraphAndFetchById(id, ctx.request.body)
@@ -330,80 +311,69 @@ const restHandlers = {
   },
 
   relation: {
-    // get relation
     get(relation, ctx) {
-      // NOTE: id = the id of the member to which this relation belongs.
+      // NOTE: `id` is the id of the member to which this relation belongs,
+      // taken from the route parameters, to the `ctx.query` object.
       const { id } = ctx.params
       const { ownerModelClass } = relation
+      const find = relation.isOneToOne() ? 'findOne' : 'find'
       return ownerModelClass.findById(id)
-        .then(model => {
-          const query = checkModel(model, ownerModelClass, id)
-            .$relatedQuery(relation.name)
-            .find(ctx.query)
-          return relation.isOneToOne() ? query.first() : query
-        })
+        .then(model => checkModel(model, ownerModelClass, id)
+          .$relatedQuery(relation.name)[find](ctx.query))
         .then(result => result || null)
     },
-
-    // delete relation
     delete(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
       // Currently it deletes the object itself, but shouldn't it unrelate
       // instead?
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.findById(id)
+      return objection.transaction(ownerModelClass, ownerModelClass =>
+        ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Test if filter works for delete
             .find(ctx.query)
             .delete())
           .then(count => ({ count }))
-      })
+      )
     },
-
-    // post relation
     post(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.findById(id)
+      return objection.transaction(ownerModelClass, ownerModelClass =>
+        ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             .insertGraphAndFetch(ctx.request.body))
-      })
+      )
     },
-
-    // put relation
     put(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.findById(id)
+      return objection.transaction(ownerModelClass, ownerModelClass =>
+        ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Should this be supported? Does it work?
             // .find(ctx.query)
             .updateGraphAndFetch(ctx.request.body))
-      })
+      )
     },
-
-    // patch relation
     patch(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass => {
-        return ownerModelClass.findById(id)
+      return objection.transaction(ownerModelClass, ownerModelClass =>
+        ownerModelClass.findById(id)
           .then(model => checkModel(model, ownerModelClass, id)
             .$relatedQuery(relation.name)
             // TODO: Should this be supported? Does it work?
             // .find(ctx.query)
             .upsertGraphAndFetch(ctx.request.body))
-      })
+      )
     }
   },
 
@@ -412,18 +382,17 @@ const restHandlers = {
       const { id, relatedId } = ctx.params
       const { ownerModelClass, relatedModelClass } = relation
       return objection.transaction(ownerModelClass, relatedModelClass,
-        (ownerModelClass, relatedModelClass) => {
-          return ownerModelClass.findById(id)
-            .then(model => checkModel(model, ownerModelClass, id)
-              .$relatedQuery(relation.name)
-              .relate(relatedId))
-            .then(related => {
-              // TODO: inspect and decide what to do next
-              console.log('related', related)
-              return relatedModelClass
-                .findById(relatedId, ctx.query)
-            })
-        }
+        (ownerModelClass, relatedModelClass) => ownerModelClass
+          .findById(id)
+          .then(model => checkModel(model, ownerModelClass, id)
+            .$relatedQuery(relation.name)
+            .relate(relatedId))
+          .then(related => {
+            // TODO: inspect and decide what to do next
+            console.log('related', related)
+            return relatedModelClass
+              .findById(relatedId, ctx.query)
+          })
       )
     }
   }
