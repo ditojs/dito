@@ -1,19 +1,43 @@
 import Koa from 'koa'
-import KnexPlus from './KnexPlus'
+import Knex from 'knex'
+import chalk from 'chalk'
 import { Validator } from '@/model'
-import { EventEmitter } from '@/events'
+import { EventEmitter } from '@/mixins'
+import { underscore, camelize } from '@/utils'
 
 export default class App extends Koa {
-  constructor(config, { validator, models }) {
+  constructor(config = {}, { validator, models }) {
     super()
     // Override Koa's events with our own EventEmitter that adds support for
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
+    if (config.normalizeDbNames) {
+      // The `normalizeDbNames` option (plural) sets up the most common pair of
+      // the `normalizeDbName` and `denormalizeDbName` options for us:
+      config = {
+        ...config,
+        normalizeDbName: name => underscore(name),
+        denormalizeDbName: name => camelize(name)
+      }
+    }
     this.config = config
-    this.knex = KnexPlus(config.knex)
+    let knexConfig = config.knex
+    const { normalizeDbName } = config
+    if (normalizeDbName) {
+      knexConfig = {
+        ...knexConfig,
+        // This is Knex' standard hook into processing identifiers.
+        // We add the call to our own normalizeDbName() to it:
+        // Note: wrapIdentifier only works in Knex ^0.14.0
+        wrapIdentifier(value, wrapIdentifier) {
+          return wrapIdentifier(normalizeDbName(value))
+        }
+      }
+    }
+    this.knex = Knex(knexConfig)
     if (config.log.sql) {
-      this.knex.setupLogging()
+      this.setupKnexLogging()
     }
     this.models = {}
     this.validator = validator || new Validator()
@@ -37,6 +61,49 @@ export default class App extends Koa {
     modelClass.app = this
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
+  }
+
+  normalizeDbName(name) {
+    const { normalizeDbName } = this.config
+    return normalizeDbName ? normalizeDbName(name) : name
+  }
+
+  denormalizeDbName(name) {
+    const { denormalizeDbName } = this.config
+    return denormalizeDbName ? denormalizeDbName(name) : name
+  }
+
+  setupKnexLogging() {
+    const startTimes = {}
+
+    function end(query, { response, error }) {
+      const id = query.__knexQueryUid
+      const duration = process.hrtime(startTimes[id])
+      delete startTimes[id]
+      console.log('  %s %s %s %s\n%s',
+        chalk.yellow.bold('knex:sql'),
+        chalk.cyan(query.sql),
+        chalk.gray('{' + query.bindings.join(', ') + '}'),
+        chalk.magenta(duration + 'ms'),
+        response
+          ? chalk.green(JSON.stringify(response))
+          : error
+            ? chalk.red(JSON.stringify(error))
+            : ''
+      )
+    }
+
+    this.knex.on('query', query => {
+      startTimes[query.__knexQueryUid] = process.hrtime()
+    })
+
+    this.knex.on('query-response', (response, query) => {
+      end(query, { response })
+    })
+
+    this.knex.on('query-error', (error, query) => {
+      end(query, { error })
+    })
   }
 
   async start() {

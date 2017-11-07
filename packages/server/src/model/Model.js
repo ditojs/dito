@@ -3,30 +3,11 @@ import util from 'util'
 import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
 import { ValidationError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
-import { EventEmitter } from '@/events'
+import { EventEmitter, KnexHelper } from '@/mixins'
 import { convertSchema, convertRelations } from '@/schema'
 import ModelRelation from './ModelRelation'
 
 export default class Model extends objection.Model {
-  static async count(...args) {
-    const res = await this.query().count(...args).first()
-    return res && +res[Object.keys(res)[0]] || 0
-  }
-
-  async $update(attributes) {
-    const updated = await this.$query().updateAndFetch(attributes)
-    return this.$set(updated)
-  }
-
-  async $patch(attributes) {
-    const patched = await this.$query().patchAndFetch(attributes)
-    return this.$set(patched)
-  }
-
-  get $app() {
-    return this.constructor.app
-  }
-
   static initialize() {
     try {
       for (const relation of Object.values(this.getRelations())) {
@@ -52,10 +33,37 @@ export default class Model extends objection.Model {
     }
   }
 
+  static normalizeDbName(name) {
+    return this.app ? this.app.normalizeDbName(name) : name
+  }
+
+  static denormalizeDbName(name) {
+    return this.app ? this.app.denormalizeDbName(name) : name
+  }
+
   static installEvents(events = {}) {
     for (const [event, handler] of Object.entries(events)) {
       this.on(event, handler)
     }
+  }
+
+  get $app() {
+    return this.constructor.app
+  }
+
+  async $update(attributes) {
+    const updated = await this.$query().updateAndFetch(attributes)
+    return this.$set(updated)
+  }
+
+  async $patch(attributes) {
+    const patched = await this.$query().patchAndFetch(attributes)
+    return this.$set(patched)
+  }
+
+  static async count(...args) {
+    const res = await this.query().count(...args).first()
+    return res && +res[Object.keys(res)[0]] || 0
   }
 
   static relatedQuery(relationName, trx) {
@@ -63,13 +71,12 @@ export default class Model extends objection.Model {
   }
 
   static get tableName() {
-    const knex = this.knex()
-    return knex && knex.normalizeIdentifier
-      ? knex.normalizeIdentifier(this.name)
-      : this.name
+    return this.normalizeDbName(this.name)
   }
 
   static get idColumn() {
+    // Try extracting id column name from properties definition, with fall-back
+    // onto default Objection.js behavior.
     const { properties = {} } = this.definition
     const ids = []
     for (const [name, property] of Object.entries(properties)) {
@@ -214,39 +221,31 @@ export default class Model extends objection.Model {
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
   // rely on $formatDatabaseJson() /  $parseDatabaseJson() do detect naming
-  // conventions but instead rely directly on our added infrastructure in
-  // normalizeIdentifier() / denormalizeIdentifier().
+  // conventions but instead rely directly on our own naming mechanism through
+  // normalizeDbName() / denormalizeDbName().
   // This is only necessary to avoid problems of circular referencing when
-  // handling definitions, because $formatDatabaseJson accesses dateAttributes,
-  // booleanAttributes and co, which in turn access jsonSchema, which in turn
-  // access getRelations(), which my trigger calls to propertyNameToColumnName()
-  // on other model classes when resolving references.
-
+  // handling definitions because $formatDatabaseJson())accesses dateAttributes,
+  // booleanAttributes and co, which in turn access jsonSchema, which accesses
+  // getRelations(), which might trigger calls to propertyNameToColumnName()
+  // on other model classes when resolving references, etc.
   static propertyNameToColumnName(propertyName) {
-    const knex = this.knex()
-    return knex && knex.normalizeIdentifier
-      ? knex.normalizeIdentifier(propertyName)
-      : propertyName
+    return this.normalizeDbName(propertyName)
   }
 
   static columnNameToPropertyName(columnName) {
-    const knex = this.knex()
-    return knex && knex.denormalizeIdentifier
-      ? knex.denormalizeIdentifier(columnName)
-      : columnName
+    return this.denormalizeDbName(columnName)
   }
 
   $formatDatabaseJson(json) {
     const { constructor } = this
-    const knex = constructor.knex()
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
         json[key] = date && date.toISOString ? date.toISOString() : date
       }
     }
-    if (knex && knex.isSQLite) {
-      //  SQLite needs boolean conversion...
+    if (constructor.isSQLite()) {
+      // SQLite does not support boolean natively and needs conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
         if (bool !== undefined) {
@@ -255,20 +254,22 @@ export default class Model extends objection.Model {
       }
     }
     // NOTE: No need to normalize the identifiers in the JSON in case of
-    // normalizeDbNames, as this already happens through
+    // s, as this already happens through
     // knex.config.wrapIdentifier(), see App.js
     return super.$formatDatabaseJson(json)
   }
 
   $parseDatabaseJson(json) {
     const { constructor } = this
-    const knex = constructor.knex()
+    const { app } = constructor
     // NOTE: Demoralization of identifiers is still our own business, and needs
     // to happen before super.$parseDatabaseJson(json)
-    if (knex && knex.denormalizeIdentifier) {
+    // For performance reasons retrieve the denormalizeDbName() method directly.
+    const { denormalizeDbName } = app && app.config || {}
+    if (denormalizeDbName) {
       const converted = {}
       for (const key in json) {
-        converted[knex.denormalizeIdentifier(key)] = json[key]
+        converted[denormalizeDbName(key)] = json[key]
       }
       json = converted
     }
@@ -279,8 +280,8 @@ export default class Model extends objection.Model {
         json[key] = date ? new Date(date) : date
       }
     }
-    if (knex && knex.isSQLite) {
-      //  SQLite needs boolean conversion...
+    if (constructor.isSQLite()) {
+      // SQLite does not support boolean natively and needs conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
         if (bool !== undefined) {
@@ -400,6 +401,7 @@ export default class Model extends objection.Model {
 }
 
 EventEmitter.deferred(Model)
+KnexHelper.mixin(Model)
 // Expose a selection of QueryBuilder methods as static methods on model classes
 QueryBuilder.mixin(Model)
 

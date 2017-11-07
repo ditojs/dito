@@ -1,5 +1,6 @@
 import objection from 'objection'
 import PropertyRef from './PropertyRef'
+import { KnexHelper } from '@/mixins'
 import { QueryError } from '@/errors'
 import {
   isArray, isObject, isString, isFunction, asArray, capitalize
@@ -93,7 +94,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   truncate() {
-    if (this.knex().isPostgreSQL()) {
+    if (this.isPostgreSQL()) {
       // Include `cascade` in truncate queries.
       return this.raw('truncate table ?? restart identity cascade',
         this.modelClass().tableName)
@@ -105,7 +106,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   insert(data, returning) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
-    return !this.knex().isPostgreSQL() && isArray(data) && data.length > 1
+    return !this.isPostgreSQL() && isArray(data) && data.length > 1
       ? this.insertGraph(data)
       : super.insert(data, returning)
   }
@@ -328,6 +329,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
     }
   }
 }
+
+KnexHelper.mixin(QueryBuilder.prototype)
 
 // Add conversion of identifiers to all `where` statements, by detecting use of
 // model properties and expanding them to `${modelClass.name}.${propertyName}`,

@@ -53,4 +53,4 @@ EventEmitter.deferred = function (target) {
   }
 }
 
-export default EventEmitter
+export { EventEmitter }
