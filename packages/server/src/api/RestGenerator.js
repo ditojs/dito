@@ -50,7 +50,8 @@ export default class RestGenerator {
       }
       const path = this.getRoutePath(type, modelClass, relation)
       const target = relation || modelClass
-      this.adapter({ modelClass, relation, type, verb, path, settings },
+      this.adapter.addRoute(
+        { modelClass, relation, type, verb, path, settings },
         ctx => handler(target, ctx))
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -75,7 +76,8 @@ export default class RestGenerator {
         arguments: createArgumentsValidator(modelClass, method.arguments),
         return: createArgumentsValidator(modelClass, [method.return])
       }
-      this.adapter({ modelClass, method, type, verb, path, settings },
+      this.adapter.addRoute(
+        { modelClass, method, type, verb, path, settings },
         ctx => handler(modelClass, method, validate, ctx))
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -291,7 +293,7 @@ const restHandlers = {
     get(modelClass, ctx) {
       const { id } = ctx.params
       return modelClass.query()
-        .findById(id) // ctx.query)
+        .findById(id, ctx.query)
         .then(model => checkModel(model, modelClass, id))
     },
 
