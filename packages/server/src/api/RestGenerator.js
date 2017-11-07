@@ -174,7 +174,7 @@ function createArgumentsValidator(modelClass, args = []) {
     }
     if (properties) {
       const schema = convertSchema(properties)
-      return modelClass.getValidator().compileValidator(schema)
+      return modelClass.app.compileValidator(schema)
     }
   }
   return () => true

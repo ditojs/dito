@@ -19,7 +19,6 @@ export default class Model extends objection.Model {
       throw new WrappedError(error,
         str => str.replace(/\brelationMappings\b/g, 'relations'))
     }
-    this.getValidator().precompileModel(this)
     // Install all events listed in the static events object.
     this.installEvents(this.definition.events)
     if (this.app.config.log.schema) {
@@ -316,11 +315,9 @@ export default class Model extends objection.Model {
 
   static createValidator() {
     // Use a shared validator per app, so model schema can reference each other.
-    return this.app.validator
-  }
-
-  static compileValidator(jsonSchema, skipRequired) {
-    return this.getValidator().compileValidator(jsonSchema, skipRequired)
+    // NOTE: The Dito Validator class creates and manages this shared Objection
+    // Validator instance for us, we just need to return it here:
+    return this.app.validator.modelValidator
   }
 
   static createValidationError(errors,

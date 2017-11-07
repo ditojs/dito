@@ -1,7 +1,7 @@
 import Koa from 'koa'
 import Knex from 'knex'
 import chalk from 'chalk'
-import { Validator } from '@/model'
+import Validator from './Validator'
 import { EventEmitter } from '@/mixins'
 import { underscore, camelize } from '@/utils'
 
@@ -54,6 +54,7 @@ export default class App extends Koa {
     }
     for (const modelClass of Object.values(models)) {
       modelClass.initialize()
+      this.validator.precompileModel(modelClass)
     }
   }
 
@@ -61,6 +62,10 @@ export default class App extends Koa {
     modelClass.app = this
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
+  }
+
+  compileValidator(jsonSchema) {
+    return this.validator.compile(jsonSchema)
   }
 
   normalizeDbName(name) {
