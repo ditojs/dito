@@ -29,10 +29,9 @@ export default class App extends Koa {
         ...knexConfig,
         // This is Knex' standard hook into processing identifiers.
         // We add the call to our own normalizeDbName() to it:
-        // Note: wrapIdentifier only works in Knex ^0.14.0
-        wrapIdentifier(value, wrapIdentifier) {
-          return wrapIdentifier(normalizeDbName(value))
-        }
+        // NOTE: wrapIdentifier only works in Knex ^0.14.0
+        wrapIdentifier: (value, wrapIdentifier) =>
+          wrapIdentifier(normalizeDbName(value))
       }
     }
     this.knex = Knex(knexConfig)

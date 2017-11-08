@@ -98,9 +98,13 @@ export default class QueryBuilder extends objection.QueryBuilder {
       // Include `cascade` in truncate queries.
       return this.raw('truncate table ?? restart identity cascade',
         this.modelClass().tableName)
-    } else {
-      return super.truncate()
+    } else if (this.isSQLite()) {
+      // TODO: Fix this in Knex: https://github.com/tgriesser/knex/issues/2312
+      return this.knex().table('sqlite_sequence')
+        .delete().where('name', this.modelClass().tableName)
+        .then(() => super.truncate())
     }
+    return super.truncate()
   }
 
   insert(data, returning) {
