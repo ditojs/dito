@@ -2042,7 +2042,7 @@ object.pick@^1.2.0:
 
 "objection@github:lehni/objection.js#dito-framework":
   version "0.9.0"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/6ebd6302e50fd88e91a0bcbb81ac563f472f3353"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/d806561fba6da7bb0d0c9cd46206ae69f46660b4"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"

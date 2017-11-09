@@ -1,6 +1,7 @@
 import Koa from 'koa'
 import Knex from 'knex'
 import chalk from 'chalk'
+import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
 import { EventEmitter } from '@/mixins'
 import { underscore, camelize } from '@/utils'
@@ -12,26 +13,12 @@ export default class App extends Koa {
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
-    if (config.normalizeDbNames) {
-      // The `normalizeDbNames` option (plural) sets up the most common pair of
-      // the `normalizeDbName` and `denormalizeDbName` options for us:
-      config = {
-        ...config,
-        normalizeDbName: name => underscore(name),
-        denormalizeDbName: name => camelize(name)
-      }
-    }
     this.config = config
     let knexConfig = config.knex
-    const { normalizeDbName } = config
-    if (normalizeDbName) {
+    if (config.normalizeDbNames) {
       knexConfig = {
         ...knexConfig,
-        // This is Knex' standard hook into processing identifiers.
-        // We add the call to our own normalizeDbName() to it:
-        // NOTE: wrapIdentifier only works in Knex ^0.14.0
-        wrapIdentifier: (value, wrapIdentifier) =>
-          wrapIdentifier(normalizeDbName(value))
+        ...knexSnakeCaseMappers()
       }
     }
     this.knex = Knex(knexConfig)
@@ -65,16 +52,6 @@ export default class App extends Koa {
 
   compileValidator(jsonSchema) {
     return this.validator.compile(jsonSchema)
-  }
-
-  normalizeDbName(name) {
-    const { normalizeDbName } = this.config
-    return normalizeDbName ? normalizeDbName(name) : name
-  }
-
-  denormalizeDbName(name) {
-    const { denormalizeDbName } = this.config
-    return denormalizeDbName ? denormalizeDbName(name) : name
   }
 
   setupKnexLogging() {

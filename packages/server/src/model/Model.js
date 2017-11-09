@@ -32,14 +32,6 @@ export default class Model extends objection.Model {
     }
   }
 
-  static normalizeDbName(name) {
-    return this.app ? this.app.normalizeDbName(name) : name
-  }
-
-  static denormalizeDbName(name) {
-    return this.app ? this.app.denormalizeDbName(name) : name
-  }
-
   static installEvents(events = {}) {
     for (const [event, handler] of Object.entries(events)) {
       this.on(event, handler)
@@ -70,7 +62,7 @@ export default class Model extends objection.Model {
   }
 
   static get tableName() {
-    return this.normalizeDbName(this.name)
+    return this.name
   }
 
   static get idColumn() {
@@ -116,6 +108,12 @@ export default class Model extends objection.Model {
       this.getAttributes(({ type, computed }) =>
         !computed && ['object', 'array'].includes(type))
     ), [])
+  }
+
+  static set jsonAttributes(value) {
+    // Ignore Objection.js attempt to calculate these for now.
+    // TODO: Fix properly:
+    // https://github.com/Vincit/objection.js/commit/0cfb0c8292ddb7d585064e02e8f2bc2e3ea0e3bc#commitcomment-25509090
   }
 
   static get booleanAttributes() {
@@ -220,19 +218,15 @@ export default class Model extends objection.Model {
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
   // rely on $formatDatabaseJson() /  $parseDatabaseJson() do detect naming
-  // conventions but instead rely directly on our own naming mechanism through
-  // normalizeDbName() / denormalizeDbName().
-  // This is only necessary to avoid problems of circular referencing when
-  // handling definitions because $formatDatabaseJson())accesses dateAttributes,
-  // booleanAttributes and co, which in turn access jsonSchema, which accesses
-  // getRelations(), which might trigger calls to propertyNameToColumnName()
-  // on other model classes when resolving references, etc.
+  // conventions but assume simply that they're always the same.
+  // This is fine since we can now change naming at Knex level.
+  // See knexSnakeCaseMappers()
   static propertyNameToColumnName(propertyName) {
-    return this.normalizeDbName(propertyName)
+    return propertyName
   }
 
   static columnNameToPropertyName(columnName) {
-    return this.denormalizeDbName(columnName)
+    return columnName
   }
 
   $formatDatabaseJson(json) {
@@ -261,17 +255,6 @@ export default class Model extends objection.Model {
   $parseDatabaseJson(json) {
     const { constructor } = this
     const { app } = constructor
-    // NOTE: Demoralization of identifiers is still our own business, and needs
-    // to happen before super.$parseDatabaseJson(json)
-    // For performance reasons retrieve the denormalizeDbName() method directly.
-    const { denormalizeDbName } = app && app.config || {}
-    if (denormalizeDbName) {
-      const converted = {}
-      for (const key in json) {
-        converted[denormalizeDbName(key)] = json[key]
-      }
-      json = converted
-    }
     json = super.$parseDatabaseJson(json)
     for (const key of constructor.dateAttributes) {
       const date = json[key]
