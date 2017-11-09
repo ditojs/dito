@@ -1,7 +1,7 @@
 import objection from 'objection'
 import util from 'util'
 import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
-import { ValidationError, WrappedError } from '@/errors'
+import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
 import { convertSchema, convertRelations } from '@/schema'
@@ -303,13 +303,31 @@ export default class Model extends objection.Model {
     return this.app.validator.modelValidator
   }
 
-  static createValidationError(errors,
-    message = `The provided data for the ${this.name} instance is not valid`
-  ) {
-    return new this.ValidationError(this, { message, errors })
+  static createValidationError(errors, message) {
+    const isValidationError = this.isValidationError(errors)
+    message = message || isValidationError
+      ? `The provided data for the ${this.name} instance is not valid`
+      : 'Query error'
+    const error = { message, errors }
+    return isValidationError
+      ? new this.ValidationError(this, error)
+      : new this.QueryError(error)
+  }
+
+  static isValidationError(errors) {
+    // Unfortunately Objection.js currently uses createValidationError() for
+    // very different things, but only Ajv Errors have properties with arrays,
+    // so look at those to figure out what we are:
+    for (const key in errors) {
+      // Only if the first found key has an array value than we're dealing with
+      // real validation errors.
+      return isArray(errors[key])
+    }
+    return false
   }
 
   static ValidationError = ValidationError
+  static QueryError = QueryError
   static QueryBuilder = QueryBuilder
 
   // Only pick properties for database JSON that is mentioned in the schema.

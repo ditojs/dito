@@ -10,6 +10,9 @@ export function camelize(str, upper = false) {
 }
 
 export function decamelize(str, sep = ' ') {
+  // TODO: Once JavaScript supports Unicode properties in regexps, switch to
+  // better parsing that matches non-ASCII uppercase letters:
+  // /([\p{Ll}\d])(\p{Lu})/gu
   return str
     ? str.replace(/([a-z\d])([A-Z])/g, `$1${sep}$2`).toLowerCase()
     : ''
