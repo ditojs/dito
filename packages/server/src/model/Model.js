@@ -110,12 +110,6 @@ export default class Model extends objection.Model {
     ), [])
   }
 
-  static set jsonAttributes(value) {
-    // Ignore Objection.js attempt to calculate these for now.
-    // TODO: Fix properly:
-    // https://github.com/Vincit/objection.js/commit/0cfb0c8292ddb7d585064e02e8f2bc2e3ea0e3bc#commitcomment-25509090
-  }
-
   static get booleanAttributes() {
     return this.getCached('jsonSchema:booleanAttributes', () => (
       this.getAttributes(({ type, computed }) =>
