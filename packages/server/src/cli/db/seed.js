@@ -13,10 +13,10 @@ export async function seed(app) {
       const seed = object.default || object
       const modelClass = app.models[desc.name]
       if (modelClass) {
-        await modelClass.query().truncate()
+        await modelClass.truncate()
         const res = isFunction(seed)
           ? await seed(modelClass, app.models)
-          : await modelClass.query().insertGraph(seed)
+          : await modelClass.insertGraph(seed)
         if (isArray(res)) {
           console.log(chalk.green(
             `${modelClass.name}: ${res.length} seed records created.`))

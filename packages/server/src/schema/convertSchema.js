@@ -94,14 +94,14 @@ function addFormat(schema, newFormat) {
 }
 
 function makeNullable(schema) {
-  // Add 'null' to the allowed types through `anyOf`.
+  // Add 'null' to the allowed types through `oneOf`.
   // Move format along with type, and also support $ref:
   const { type, $ref, format, ...rest } = schema
   return isArray(type) && type.includes('null')
     ? schema
     : $ref || format
       ? {
-        anyOf: [
+        oneOf: [
           $ref ? { $ref } : { type, format },
           { type: 'null' }
         ],
