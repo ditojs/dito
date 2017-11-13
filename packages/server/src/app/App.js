@@ -4,7 +4,6 @@ import chalk from 'chalk'
 import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
 import { EventEmitter } from '@/mixins'
-import { underscore, camelize } from '@/utils'
 
 export default class App extends Koa {
   constructor(config = {}, { validator, models }) {
@@ -88,11 +87,11 @@ export default class App extends Koa {
   }
 
   async start() {
+    await this.emit('before:start')
     const {
       server: { host, port },
       environment
     } = this.config
-    await this.emit('before:start')
     await new Promise(resolve => {
       this.server = this.listen(port, host, () => {
         const { port } = this.server.address()

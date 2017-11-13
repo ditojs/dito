@@ -248,7 +248,6 @@ export default class Model extends objection.Model {
 
   $parseDatabaseJson(json) {
     const { constructor } = this
-    const { app } = constructor
     json = super.$parseDatabaseJson(json)
     for (const key of constructor.dateAttributes) {
       const date = json[key]
