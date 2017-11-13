@@ -1,4 +1,4 @@
-import { isObject, asArray, camelize } from '@/utils'
+import { isObject, isString, asArray, capitalize } from '@/utils'
 import {
   Relation,
   BelongsToOneRelation,
@@ -31,132 +31,145 @@ const throughRelationClasses = {
   HasOneThroughRelation
 }
 
+class ModelReference {
+  constructor(reference, models) {
+    this.modelClass = null
+    this.propertyNames = []
+    // Parse and validate model key references
+    for (const ref of asArray(reference)) {
+      const [modelName, propertyName] = ref && ref.split('.') || []
+      const modelClass = models[modelName]
+      if (!modelClass) {
+        throw new Error(
+          `Unknown model property reference: ${ref}`)
+      } else if (!this.modelClass) {
+        this.modelClass = modelClass
+      } else if (this.modelClass !== modelClass) {
+        throw new Error(
+          `Composite keys need to be defined on the same model: ${ref}`)
+      }
+      this.propertyNames.push(propertyName)
+    }
+  }
+
+  toArray() {
+    const modelName = this.modelClass.name
+    return this.propertyNames.map(propName => `${modelName}.${propName}`)
+  }
+
+  toString() {
+    return `[${this.toArray().join(', ')}]`
+  }
+
+  buildThrough(to) {
+    // Auto-generate the `through` setting based on simple conventions:
+    // - The camelized through table is called: `${fromName}${toName}`
+    // - The `through.from` property is called:
+    //   `${fromModelName)${capitalize(fromProp)}`
+    // - The `through.to` property is called:
+    //   `${toModelName)${capitalize(toProp)}`
+    // NOTE: Due to the use of knexSnakeCaseMappers(), there is no need to
+    // generate actual table-names here.
+    const fromClass = this.modelClass
+    const fromProperties = this.propertyNames
+    const toClass = to.modelClass
+    const toProperties = to.propertyNames
+    if (fromProperties.length !== toProperties.length) {
+      throw new Error(`Unable to create through join for ` +
+        `composite keys from '${this}' to '${to}'`)
+    }
+    const through = { from: [], to: [] }
+    for (let i = 0; i < fromProperties.length; i++) {
+      const fromProperty = fromProperties[i]
+      const toProperty = toProperties[i]
+      if (fromProperty && toProperty) {
+        const throughName = `${fromClass.name}${fromClass.name}`
+        const throughFrom = `${fromClass.name}${capitalize(fromProperty)}`
+        const throughto = `${toClass.name}${capitalize(toProperty)}`
+        through.from.push(`${throughName}.${throughFrom}`)
+        through.to.push(`${throughName}.${throughto}`)
+      } else {
+        throw new Error(
+          `Unable to create through join from '${this}' to '${to}'`)
+      }
+    }
+    return through
+  }
+}
+
+function convertReleation(schema, models) {
+  let {
+    relation,
+    // Dito-style relation description:
+    from, through, to, scope,
+    // Objection.js-style relation description
+    join, modify, filter,
+    ...rest
+  } = schema || {}
+  const relationClass = relationLookup[relation] ||
+    relationClasses[relation] || relation
+  if (!(relationClass && relationClass.prototype instanceof Relation)) {
+    throw new Error(`Unrecognized relation: ${relation}`)
+  } else if (join && !isString(relation)) {
+    // Original Objection.js-style relation, just pass through
+    return schema
+  } else {
+    // Dito-style relation, e.g.:
+    // {
+    //   relation: 'hasMany',
+    //   from: 'FromModel.primaryKeyPropertyName',
+    //   to: 'ToModel.foreignKeyPropertyName',
+    //   scope: 'latest'
+    // }
+    from = new ModelReference(from, models)
+    to = new ModelReference(to, models)
+    if (throughRelationClasses[relationClass.name]) {
+      // If the through setting is set to `true` on relations that required
+      // a `through` configuration, auto-generate it, see buildThrough():
+      if (through === true) {
+        through = from.buildThrough(to)
+      } else if (!through) {
+        throw new Error('Relation needs a through definition or a ' +
+          '`through: true` setting to auto-generate it')
+      } else {
+        // Convert optional through model name to class
+        const { modelClass } = through
+        if (isString(modelClass)) {
+          through.modelClass = models[modelClass]
+        }
+      }
+    } else if (through) {
+      throw new Error('Unsupported through join definition')
+    }
+    modify = scope || modify || filter
+    if (isObject(modify)) {
+      // Convert a find-filter object to a filter function, same as in the
+      // handling of definition.scopes, see Model.js
+      modify = builder => builder.find(modify)
+    }
+    return {
+      relation: relationClass,
+      modelClass: to.modelClass,
+      join: {
+        from: from.toArray(),
+        through,
+        to: to.toArray()
+      },
+      modify,
+      ...rest
+    }
+  }
+}
+
 export function convertRelations(ownerModelClass, schema, models) {
-  function convertReference(reference) {
-    // Converts ModelClass.propertyName to table_name.column_name, if not
-    // already provided in that format.
-    const [modelName, propertyName] = reference && reference.split('.') || []
-    const modelClass = models[modelName]
-    if (modelClass) {
-      const columnName = modelClass.propertyNameToColumnName(propertyName)
-      return `${modelClass.tableName}.${columnName}`
-    }
-    return reference
-  }
-
-  function convertReferences(references) {
-    return asArray(references).map(convertReference)
-  }
-
-  function parseReference(reference) {
-    // NOTE: This assumes references are always passed as tableName.columnName,
-    // and returned as [modelClass, columnName]
-    const [tableName, columnName] = reference && reference.split('.') || []
-    return [getModelClassByTableName(tableName), columnName]
-  }
-
-  let modelsByTableName
-  function getModelClassByTableName(name) {
-    // Create a lookup table for tableName -> modelClass on the first call:
-    if (!modelsByTableName) {
-      modelsByTableName = Object.values(models).reduce((res, modeClass) => {
-        res[modeClass.tableName] = modeClass
-        return res
-      }, {})
-    }
-    return modelsByTableName[name]
-  }
-
-  function throwError(relationName, message) {
-    throw new Error(
-      `${ownerModelClass.name}.relations.${relationName}: ` + message)
-  }
-
   const relations = {}
   for (const [relationName, relationSchema] of Object.entries(schema)) {
-    let {
-      relation,
-      modelClass,
-      join: {
-        from, through, to
-      } = {},
-      scope,
-      modify,
-      filter,
-      ...rest
-    } = relationSchema || {}
-    const relationClass = relationLookup[relation] ||
-      relationClasses[relation] || relation
-    if (relationClass && relationClass.prototype instanceof Relation) {
-      from = convertReferences(from)
-      to = convertReferences(to)
-      const throughRelation = throughRelationClasses[relationClass.name]
-      if (throughRelation) {
-        if (through === true) {
-          // If the through setting is set to`true` on relations that required a
-          // proper `through` configuration, auto-generate it based on simple
-          // conventions:
-          // - The through table is called: `${fromTable}_${toTable}`
-          // - The `from` property is called:
-          //   `${camelize(fromModelName)}${camelize(fromProp, true)}`
-          // - The `to` property is called:
-          //   `${camelize(toModelName)}${camelize(toProp, true)}`
-          if (from.length !== to.length) {
-            throwError(relationName, `Unable to create through join for ` +
-              `composite keys from '${from}' to '${to}'`)
-          }
-          through = { from: [], to: [] }
-          for (let i = 0; i < from.length; i++) {
-            const [fromClass, fromColumn] = parseReference(from[i])
-            const [toClass, toColumn] = parseReference(to[i])
-            if (fromClass && toClass && fromColumn && toColumn) {
-              const tableName = `${fromClass.tableName}_${fromClass.tableName}`
-              const fromProp = `${camelize(fromClass.name)}${
-                camelize(fromClass.columnNameToPropertyName(fromColumn), true)}`
-              const toProp = `${camelize(toClass.name)}${
-                camelize(fromClass.columnNameToPropertyName(toColumn), true)}`
-              through.from.push(`${tableName}.${
-                fromClass.propertyNameToColumnName(fromProp)}`)
-              through.to.push(`${tableName}.${
-                fromClass.propertyNameToColumnName(toProp)}`)
-            } else {
-              throwError(relationName,
-                `Unable to create through join from '${from[i]}' to '${to[i]}'`)
-            }
-          }
-        }
-        if (!through) {
-          throwError(relationName,
-            'Relation needs a through definition or a `through: true` setting' +
-            ' to auto-generate it')
-        }
-        let { modelClass: throughModelClass } = through
-        throughModelClass = models[throughModelClass] || throughModelClass
-        through = {
-          from: convertReferences(through.from),
-          to: convertReferences(through.to)
-        }
-        if (throughModelClass) {
-          through.modelClass = throughModelClass
-        }
-      } else if (through) {
-        throwError(relationName, 'Unsupported through join')
-      }
-      modify = scope || modify || filter
-      if (isObject(modify)) {
-        // Convert a find-filter object to a filter function, same as in the
-        // handling of definition.scopes, see Model.js
-        modify = builder => builder.find(modify)
-      }
-      relations[relationName] = {
-        relation: relationClass,
-        modelClass: models[modelClass] || modelClass,
-        join: { from, through, to },
-        modify,
-        ...rest
-      }
-    } else {
-      throwError(relationName, `Unrecognized relation: ${relation}`)
+    try {
+      relations[relationName] = convertReleation(relationSchema, models)
+    } catch (err) {
+      throw new Error(
+        `${ownerModelClass.name}.relations.${relationName}: ` +
+        (err.message || err))
     }
   }
   return relations
