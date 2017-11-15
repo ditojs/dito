@@ -166,18 +166,17 @@ export default {
       })
     },
 
-    requestAxios(method, path, params, payload, callback) {
-      const config = {
+    requestAxios(method, url, params, payload, callback) {
+      axios.request({
+        url,
+        method,
+        data: /^(post|put|patch)$/.test(method) && JSON.stringify(payload),
         baseURL: this.api.baseURL,
         headers: this.api.headers || {
           'Content-Type': 'application/json'
         },
         params
-      }
-      const promise = /^(post|put|patch)$/.test(method)
-        ? axios[method](path, JSON.stringify(payload), config)
-        : axios[method](path, config)
-      promise
+      })
         .then(response => callback(null, response))
         .catch(error => callback(error, error.response))
     }
