@@ -71,7 +71,7 @@ import DitoComponent from '@/DitoComponent'
 import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { clone } from '@/utils'
+import { isArray, clone } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
@@ -232,7 +232,7 @@ export default DitoComponent.component('dito-form', {
       // shouldn't be set.
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
-        if (Array.isArray(value)) {
+        if (isArray(value)) {
           const comp = this.components[key]
           // Only check for nested on list items that actuall load data, since
           // other components can have array values too.

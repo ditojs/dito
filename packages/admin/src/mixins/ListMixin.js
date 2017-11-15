@@ -1,5 +1,5 @@
 import DataMixin from '@/mixins/DataMixin'
-import { isObject, escapeHtml, camelize, labelize } from '@/utils'
+import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
 export default {
   mixins: [DataMixin],
@@ -78,7 +78,7 @@ export default {
     },
 
     getNamedSchemas(descs) {
-      return Array.isArray(descs)
+      return isArray(descs)
         ? descs.map(value => (
           isObject(value) ? value : {
             name: camelize(value, false),
@@ -86,9 +86,18 @@ export default {
           }
         ))
         : isObject(descs)
-          ? Object.entries(descs).map(([name, value]) => (
-            isObject(value) ? { name, ...value } : { name, label: value }
-          ))
+          ? Object.entries(descs).map(
+            ([name, value]) => isObject(value)
+              ? {
+                name,
+                label: labelize(name, value),
+                ...value
+              }
+              : {
+                name,
+                label: value
+              }
+          )
           : null
     },
 

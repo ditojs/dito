@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isObject } from '@/utils'
+import { isObject, isArray } from '@/utils'
 
 export default {
   data() {
@@ -33,7 +33,7 @@ export default {
         // can be used to provide the data instead of options.url
         this.options = options.values
       }
-    } else if (Array.isArray(options)) {
+    } else if (isArray(options)) {
       // Use an array of strings to provide the values be shown and selected.
       this.options = options
     }
