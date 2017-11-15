@@ -93,16 +93,19 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this.knex().raw(...args)
   }
 
-  truncate() {
+  async truncate() {
     if (this.isPostgreSQL()) {
       // Include `cascade` in truncate queries.
       return this.raw('truncate table ?? restart identity cascade',
         this.modelClass().tableName)
     } else if (this.isSQLite()) {
       // TODO: Fix this in Knex: https://github.com/tgriesser/knex/issues/2312
-      return this.knex().table('sqlite_sequence')
-        .delete().where('name', this.modelClass().tableName)
-        .then(() => super.truncate())
+      const result = await super.truncate()
+      const knex = this.knex()
+      const name = knex.client.wrapIdentifier(this.modelClass().tableName)
+        .replace(/['`"]/g, '')
+      await knex.table('sqlite_sequence').delete().where({ name })
+      return result
     }
     return super.truncate()
   }
