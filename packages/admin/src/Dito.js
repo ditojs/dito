@@ -34,7 +34,7 @@ export function setup(el, options) {
   function processView(viewSchema, viewName, routes, level) {
     const formName = viewSchema.form
     const formSchema = formName && forms[normalizeName(formName)]
-    if (!formSchema) {
+    if (formName && !formSchema) {
       throw new Error(`Form '${formName}' is not defined`)
     }
     const path = normalizePath(viewName)
@@ -50,8 +50,9 @@ export function setup(el, options) {
     // Root views have their own routes and entries in the breadcrumbs, and the
     // form routes are children of the view route. Nested lists in forms don't
     // have views and routes, so their form routes need the viewName prefixed.
-    const formRoutes = formSchema &&
-      processForm(root ? '' : `${path}/`, formSchema, formName, meta, level)
+    const formRoutes = formSchema
+      ? processForm(root ? '' : `${path}/`, formSchema, formName, meta, level)
+      : []
 
     routes.push(
       root

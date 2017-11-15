@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isObject } from '@/utils'
+import { isObject, isString, isFunction } from '@/utils'
 
 export default {
   data() {
@@ -79,10 +79,12 @@ export default {
     },
 
     getItemTitle(item, schema) {
-      schema = schema || this.formSchema
-      const { getTitle } = schema
+      schema = schema || this.viewSchema || {}
+      const { itemTitle } = schema
       const label = this.getLabel(schema)
-      const title = getTitle ? getTitle(item) : item.name
+      const title = isFunction(itemTitle) ? itemTitle(item)
+        : isString(itemTitle) ? item[itemTitle]
+        : item.name
       return `${label} ${title ? `"${title}"` : `(id:${this.getItemId(item)})`}`
     },
 

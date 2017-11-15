@@ -32,33 +32,36 @@
           v-for="item, index in value || []"
           :key="`${name}-${getItemId(item)}`"
         )
-          td(
-            v-if="columns"
-            v-for="column in columns"
-            :class="column.class"
-            :style="column.style"
-          )
-            component(
-              v-if="column.component"
-              :is="column.component"
-              :item="item"
+          template(v-if="columns")
+            td(
+              v-for="column in columns"
+              :class="column.class"
+              :style="column.style"
             )
-            span(
-              v-else
-              v-html="renderColumn(column, item)"
-            )
-          td(
-            v-else
-          )
-            component(
-              v-if="schema.component"
-              :is="schema.component"
-              :item="item"
-            )
-            span(
-              v-else-if="schema.render"
-              v-html="schema.render(item)"
-            )
+              component(
+                v-if="column.component"
+                :is="column.component"
+                :item="item"
+              )
+              span(
+                v-else
+                v-html="renderColumn(column, item)"
+              )
+          template(v-else)
+            td
+              component(
+                v-if="schema.component"
+                :is="schema.component"
+                :item="item"
+              )
+              span(
+                v-else-if="schema.render"
+                v-html="schema.render(item)"
+              )
+              span(
+                v-else
+                v-html="getItemTitle(item)"
+              )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
               v-if="schema.draggable"
