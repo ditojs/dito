@@ -7,7 +7,7 @@ export default class Validator {
   constructor({ options, keywords, formats } = {}) {
     options = {
       allErrors: true,
-      validateSchema: false,
+      validateSchema: true,
       // NOTE: `coerceTypes` is recommended to be used with the REST method
       // interface, and hopefully is OK with for the rest also...
       coerceTypes: true,

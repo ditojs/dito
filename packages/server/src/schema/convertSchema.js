@@ -45,9 +45,7 @@ export function convertSchema(schema) {
         } else if (property && property.required) {
           required.push(key)
         }
-        properties[key] = isObject(property)
-          ? convertSchema(property)
-          : property
+        properties[key] = convertSchema(property)
       }
       schema = {
         type: 'object',
