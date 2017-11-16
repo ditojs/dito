@@ -56,29 +56,43 @@ export function labelize(str) {
 export function deindent(strings, ...values) {
   strings = asArray(strings)
   // First, perform interpolation
-  let result = ''
+  let parts = []
   for (let i = 0; i < strings.length; i++) {
-    result += strings[i]
+    parts.push(strings[i]
       // Join lines when there is a suppressed newline
       .replace(/\\\n[ \t]*/g, '')
       // Handle escaped back-ticks
-      .replace(/\\`/g, '`')
+      .replace(/\\`/g, '`'))
     if (i < values.length) {
       // See if the value itself contains multiple lines, and if so, indent
       // each of them by the whitespace that precedes it except the first.
-      const value = `${values[i]}`
+      const value = values[i].toString()
       const lines = value.split(/\r\n|\n|\r/)
       if (lines.length > 1) {
-        // Determine indent by finding preceding white-space up to the previous
-        // line-break or beginning of the string.
-        const indent = (result.match(/(?:^|[\n\r])(\s*)$/) || [])[1] || ''
-        result += lines.join(`${os.EOL}${indent}`)
+        // Determine indent by finding the immediately preceding white-space up
+        // to the previous line-break or beginning of the string.
+        // (?:^|[\n\r]) # Start at either the beginning or the prev line break.
+        // (?:[\n\r]*)  # Skip the line break
+        // (\s+)        # Collect the indent...
+        // ([^\n\r]*)$  # ...up to the end or the next word, but in last line,
+        // by making sure no line breaks follow until the end. Also keep a
+        // reference to the part that follow the indent to decide first line.
+        const str = parts.join('')
+        const match = str.match(/(?:^|[\n\r])(?:[\n\r]*)(\s+)([^\n\r]*)$/)
+        parts = [str]
+        const indentFirst = match && !match[2]
+        const indent = match && match[1] || ''
+        if (indent && !indentFirst) {
+          parts.push(`${lines.shift()}${os.EOL}`)
+        }
+        parts.push(lines.join(`${os.EOL}${indent}`))
       } else {
-        result += value
+        parts.push(value)
       }
     }
   }
-  const lines = result.split(/\r\n|\n|\r/)
+  const str = parts.join('')
+  const lines = str.split(/\r\n|\n|\r/)
   // Remove the first line-break at the beginning of the result, to allow this:
   // const value = `
   //   content...
@@ -93,5 +107,5 @@ export function deindent(strings, ...values) {
   }
   return indent > 0
     ? lines.map(line => line.slice(indent)).join(os.EOL)
-    : result
+    : str
 }

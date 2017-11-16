@@ -58,7 +58,8 @@ export default async function startConsole(app, config) {
   } catch (e) {
     console.log(deindent`
       Unable to REPL history file at ${historyFile}.
-      A history file will be created on shutdown`)
+      A history file will be created on shutdown
+    `)
   }
 
   server.once('exit', async () => {
@@ -103,7 +104,8 @@ function displayUsage(app, config, details) {
         ? ` - Dito models: ${
           modelHandleNames.map(m => chalk.cyan(m)).join(', ')
         }` : ''
-    }`)
+    }
+  `)
   if (details) {
     console.log(deindent`
       Examples:
