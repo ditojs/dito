@@ -14,6 +14,7 @@ export default class Validator {
       jsonPointers: true,
       ownProperties: true,
       passContext: true,
+      schemaId: '$id',
       extendRefs: 'fail',
       format: 'full',
       ...options

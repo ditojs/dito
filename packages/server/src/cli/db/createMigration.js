@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isArray, deindent } from '@/utils'
+import { isObject, isArray, isString, deindent } from '@/utils'
 
 const typeToKnex = {
   number: 'double',
@@ -24,50 +24,80 @@ export async function createMigration(app, modelName) {
   }
 
   const modelClass = getModel(modelName)
-  const { tableName } = modelClass
+  const tableName = app.normalizeIdentifier(modelClass.tableName)
   const { properties = {}, relations = {} } = modelClass.definition
   const statements = []
   // TODO: Instead of looping through properties first and relations after,
   // merge both so that foreign key properties can have `unique()`, `nullable()`
   // and still profit from the generation of `references().inTable()`.
+  const uniqueComposites = {}
   for (const [name, property] of Object.entries(properties)) {
-    const column = modelClass.propertyNameToColumnName(name)
+    const column = app.normalizeIdentifier(name)
     let {
-      type, computed, default: _default, primary, unique, required, nullable
+      description, type, unsigned, computed, nullable, required,
+      primary, foreign, unique, index,
+      default: _default
     } = property
     const knexType = typeToKnex[type] || type
     if (!computed) {
+      if (description) {
+        statements.push(`// ${description}`)
+      }
+      if (isString(unique)) {
+        const composites = uniqueComposites[unique] ||
+          (uniqueComposites[unique] = [])
+        composites.push(column)
+        unique = false
+      }
       const statement = primary
         ? [`table.increments('${column}').primary()`]
         : [`table.${knexType}('${column}')`]
-      if (unique) {
-        statement.push('unique()')
-      }
-      statement.push((required || !nullable) ? 'notNullable()' : 'nullable()')
+      statement.push(
+        unsigned && 'unsigned()',
+        !primary && required && 'notNullable()',
+        nullable && 'nullable()',
+        unique && 'unique()',
+        index && 'index()'
+      )
       if (_default) {
-        _default = defaultValues[_default] || _default
-        _default = isArray(_default) ? `[${_default.join(', ')}]` : _default
-        statement.push(`defaultTo(${_default})`)
+        let value = defaultValues[_default]
+        if (!value) {
+          value = isArray(_default) || isObject(_default)
+            ? JSON.stringify(_default)
+            : _default
+          if (isString(value)) {
+            value = `'${value}'`
+          }
+        }
+        statement.push(`defaultTo(${value})`)
       }
-      statements.push(statement.join('.'))
-    }
-    for (const relation of Object.values(relations)) {
-      const { join: { from, to } } = relation
-      const [, fromProperty] = from && from.split('.') || []
-      const [toModelName, toProperty] = to && to.split('.') || []
-      if (fromProperty && toProperty &&
-        !(properties && properties[fromProperty])) {
-        const toModelClass = getModel(toModelName)
-        const fromColumn = modelClass.propertyNameToColumnName(fromProperty)
-        const toColumn = modelClass.propertyNameToColumnName(toProperty)
-        statements.push(
-          `table.integer('${fromColumn}').unsigned().index()`,
-          `  .references('${toColumn}').inTable('${toModelClass.tableName}')`
-        )
+      if (foreign) {
+        for (const relation of Object.values(relations)) {
+          // TODO: Support composite keys for foreign references:
+          // Use `asArray(from)`, `asArray(to)`
+          const { from, to } = relation
+          const [, fromProperty] = from && from.split('.') || []
+          if (fromProperty === name) {
+            const [toModelName, toProperty] = to && to.split('.') || []
+            statement.push(
+              '\n',
+              `references('${app.normalizeIdentifier(toProperty)}')`,
+              `inTable('${app.normalizeIdentifier(toModelName)}')`,
+              `onDelete('CASCADE')`
+            )
+          }
+          // TODO: Handle relations that have `through: true`, and auto-create
+          // the trough table in those cases.
+        }
       }
-      // TODO: Detect relations that need through joins but don't provide them,
-      // and auto-create the trough table in those cases.
+      statements.push(statement.filter(str => !!str).join('.')
+        .replace(/\.\n\./g, '\n  .'))
     }
+  }
+  for (const composites of Object.values(uniqueComposites)) {
+    statements.push(`table.unique([${
+      composites.map(column => `'${column}'`).join(', ')
+    }])`)
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
   await fs.writeFile(file, deindent`

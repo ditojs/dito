@@ -72,7 +72,7 @@ export default class Model extends objection.Model {
     const ids = []
     for (const [name, property] of Object.entries(properties)) {
       if (property.primary) {
-        ids.push(this.propertyNameToColumnName(name))
+        ids.push(name)
       }
     }
     const { length } = ids
@@ -96,7 +96,7 @@ export default class Model extends objection.Model {
     return this.getCached('jsonSchema', () => {
       const { properties } = this.definition
       return properties ? {
-        id: this.name,
+        $id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
         ...convertSchema(properties)
       } : null
@@ -411,15 +411,21 @@ const definitionHandlers = {
       }
     }
 
-    addIdProperty(this.getIdProperty(), { primary: true })
+    addIdProperty(this.getIdProperty(), {
+      primary: true
+    })
     for (const relation of Object.values(this.getRelations())) {
       for (const property of relation.ownerProp.props) {
-        addIdProperty(property, { foreign: true })
+        addIdProperty(property, {
+          unsigned: true,
+          foreign: true,
+          index: true
+        })
       }
     }
 
     // Convert root-level short-forms, for easier properties handling in
-    // getAttributes() and createMigration():
+    // getAttributes() and idColumn() & co:
     // - `name: type` to `name: { type }`
     // - `name: [...items]` to `name: { type: 'array', items }
     // NOTE: Substitutions on all other levels happen in convertSchema()

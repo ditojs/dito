@@ -50,7 +50,8 @@ export function convertSchema(schema) {
       schema = {
         type: 'object',
         properties,
-        ...(required.length > 0 && { required })
+        ...(required.length > 0 && { required }),
+        additionalProperties: false
       }
     }
     if (schema.type !== 'object') {

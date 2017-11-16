@@ -86,6 +86,15 @@ export default class App extends Koa {
     })
   }
 
+  normalizeIdentifier(identifier) {
+    return this.knex.client.wrapIdentifier(identifier).replace(/['`"]/g, '')
+  }
+
+  denormalizeIdentifier(identifier) {
+    const obj = this.knex.client.postProcessResponse({ [identifier]: 1 })
+    return Object.keys(obj)[0]
+  }
+
   async start() {
     await this.emit('before:start')
     const {

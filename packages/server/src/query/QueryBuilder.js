@@ -3,7 +3,7 @@ import PropertyRef from './PropertyRef'
 import { KnexHelper } from '@/mixins'
 import { QueryError } from '@/errors'
 import {
-  isArray, isObject, isString, isFunction, asArray, capitalize
+  isObject, isArray, isString, isFunction, asArray, capitalize
 } from '@/utils'
 
 // This code is based on objection-find, and simplified.
