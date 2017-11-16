@@ -60,16 +60,17 @@ export default class RestGenerator {
   addMethods(modelClass, type, methodsSettings, indent) {
     for (const [name, schema] of Object.entries(methodsSettings || {})) {
       const method = {
+        // Defaults:
         name,
         verb: 'get',
-        path: name,
+        // Overrides:
         ...schema
       }
       const { verb, access } = method
       const settings = {
         access: access != null ? access : true
       }
-      const path = this.getRoutePath(type, modelClass, method.path)
+      const path = this.getRoutePath(type, modelClass, name)
       const handler = methodHandlers[type]
       const validate = {
         arguments: createArgumentsValidator(modelClass, method.arguments),
@@ -96,8 +97,6 @@ export default class RestGenerator {
 
 // TODO: Add normalization Options!
 function normalize(name, plural = false) {
-  // Remove '$' from member method paths
-  name = name.replace(/\$/g, '')
   return hyphenate(plural ? pluralize(name) : name)
 }
 
