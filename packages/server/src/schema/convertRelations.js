@@ -83,7 +83,7 @@ class ModelReference {
       const fromProperty = fromProperties[i]
       const toProperty = toProperties[i]
       if (fromProperty && toProperty) {
-        const throughName = `${fromClass.name}${fromClass.name}`
+        const throughName = `${fromClass.name}${toClass.name}`
         const throughFrom = `${fromClass.name}${capitalize(fromProperty)}`
         const throughto = `${toClass.name}${capitalize(toProperty)}`
         through.from.push(`${throughName}.${throughFrom}`)
@@ -101,7 +101,7 @@ function convertReleation(schema, models) {
   let {
     relation,
     // Dito-style relation description:
-    from, through, to, scope,
+    from, through, inverse, to, scope,
     // Objection.js-style relation description
     join, modify, filter,
     ...rest
@@ -127,7 +127,7 @@ function convertReleation(schema, models) {
       // If the through setting is set to `true` on relations that required
       // a `through` configuration, auto-generate it, see buildThrough():
       if (through === true) {
-        through = from.buildThrough(to)
+        through = inverse ? to.buildThrough(from) : from.buildThrough(to)
       } else if (!through) {
         throw new Error('Relation needs a through definition or a ' +
           '`through: true` setting to auto-generate it')
