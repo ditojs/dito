@@ -131,7 +131,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
           mainQuery = builder.clone().context({ isMainQuery: true })
           // Call the `update` method on the original query turning it into an
           // update operation.
-          builder.update(data)
+          builder[opt.update ? 'update' : 'patch'](data)
         }
         return result
       })
