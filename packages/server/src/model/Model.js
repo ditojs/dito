@@ -130,6 +130,12 @@ export default class Model extends objection.Model {
     ), [])
   }
 
+  static get hiddenAttributes() {
+    return this.getCached('jsonSchema:hiddenAttributes', () => (
+      this.getAttributes(({ hidden }) => hidden)
+    ), [])
+  }
+
   static getAttributes(filter) {
     const attributes = []
     const { properties = {} } = this.definition
@@ -283,7 +289,7 @@ export default class Model extends objection.Model {
     for (const key of constructor.computedAttributes) {
       json[key] = this[key]
     }
-    for (const key of constructor.definition.hidden || []) {
+    for (const key of constructor.hiddenAttributes) {
       delete json[key]
     }
     return json
@@ -359,7 +365,7 @@ export default class Model extends objection.Model {
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
-      merged = deepMergeUnshift(name === 'hidden' ? [] : {}, ...sources)
+      merged = deepMergeUnshift({}, ...sources)
       // Once calculated, override definition getter with merged value
       if (handler && merged) {
         // Override definition before calling handler(), to prevent endless
@@ -469,7 +475,6 @@ const definitionHandlers = {
 
   relations: null,
   methods: null,
-  hidden: null,
   routes: null,
   events: null
 }
