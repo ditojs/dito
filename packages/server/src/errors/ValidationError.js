@@ -32,11 +32,11 @@ export class ValidationError extends ResponseError {
             message = 'is an unsupported additional property'
           } else {
             const definition = validator.getKeyword(keyword)
-            message = definition && definition.message || message
             if (definition && definition.macro) {
               // Skip keywords that are only delegating to other keywords.
               continue
             }
+            message = definition && definition.message || message
           }
           // Produce keys that allow better detection of nested errors in Admin:
           const errorKey = property && key && key !== property

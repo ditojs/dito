@@ -74,7 +74,10 @@ export default class RestGenerator {
       const handler = methodHandlers[type]
       const validate = {
         arguments: createArgumentsValidator(modelClass, method.arguments),
-        return: createArgumentsValidator(modelClass, [method.return])
+        return: createArgumentsValidator(modelClass, [method.return], {
+          // Use instanceof checks instead of $ref to check returned values
+          instanceof: true
+        })
       }
       this.adapter.addRoute(
         { modelClass, method, type, verb, path, settings },
@@ -160,7 +163,7 @@ const settingsHandlers = {
 /**
  * Remote Methods
  */
-function createArgumentsValidator(modelClass, args = []) {
+function createArgumentsValidator(modelClass, args = [], options = {}) {
   if (args.length > 0) {
     let properties = null
     for (const arg of args) {
@@ -172,8 +175,8 @@ function createArgumentsValidator(modelClass, args = []) {
       }
     }
     if (properties) {
-      const schema = convertSchema(properties)
-      return modelClass.app.compileValidator(schema)
+      const schema = convertSchema(properties, options)
+      return modelClass.compileValidator(schema)
     }
   }
   return () => true
@@ -198,7 +201,7 @@ function getReturn(modelClass, method, validate, value) {
   return Promise.resolve(value).then(value => {
     // Use 'root' if no name is given, see createArgumentsValidator()
     const data = { [name || 'root']: value }
-    if (!validate(data)) {
+    if (!validate.call(value, data)) { // passContext
       throw modelClass.createValidationError(validate.errors,
         `Invalid result of remote method: ${value}`)
     }

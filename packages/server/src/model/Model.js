@@ -96,7 +96,6 @@ export default class Model extends objection.Model {
     return this.getCached('jsonSchema', () => {
       const { properties = {} } = this.definition
       const schema = addRelationSchemas(this, convertSchema(properties))
-      // const schema = convertSchema(properties)
       return {
         $id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
@@ -306,6 +305,10 @@ export default class Model extends objection.Model {
     // NOTE: The Dito Validator class creates and manages this shared Objection
     // Validator instance for us, we just need to return it here:
     return this.app.validator
+  }
+
+  static compileValidator(jsonSchema) {
+    return this.app.compileValidator(jsonSchema)
   }
 
   static createValidationError(errors, message) {

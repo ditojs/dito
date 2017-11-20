@@ -35,14 +35,10 @@ export default class Validator extends AjvValidator {
     this.ajv = onCreateAjv(new Ajv(options))
 
     this.options = options
-    // Also keep the merged definitions for getKeyword() and getFormat()
+    // Also keep the merged format definitions for getFormat()
     this.formats = {
       ...schema.formats,
       ...formats
-    }
-    this.keywords = {
-      ...schema.keywords,
-      ...keywords
     }
   }
 
@@ -51,7 +47,7 @@ export default class Validator extends AjvValidator {
   }
 
   getKeyword(keyword) {
-    return this.keywords[keyword]
+    return this.ajv.getKeyword(keyword)
   }
 
   getFormat(format) {
@@ -80,7 +76,8 @@ function addKeywords(ajv, keywords = {}) {
     if (schema) {
       // Ajv appears to not copy the schema before modifying it,
       // so let's make shallow clones here.
-      ajv.addKeyword(keyword, { ...schema })
+      // Remove leading '_' to simplify special keywords (e.g. instanceof)
+      ajv.addKeyword(keyword.replace(/^_/, ''), { ...schema })
     }
   }
 }
@@ -88,8 +85,8 @@ function addKeywords(ajv, keywords = {}) {
 function addFormats(ajv, formats = {}) {
   for (const [format, schema] of Object.entries(formats)) {
     if (schema) {
-      // See addKeywords() for explanation of copying here:
-      ajv.addFormat(format, { ...schema })
+      // See addKeywords() for explanation of regexp and copying here:
+      ajv.addFormat(format.replace(/^_/, ''), { ...schema })
     }
   }
 }

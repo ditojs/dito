@@ -1,10 +1,10 @@
 import { isObject, isArray, asArray, isString } from '@/utils'
 
-export function convertSchema(schema) {
+export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
     schema = { type: schema }
   } else if (isArray(schema)) {
-    schema = schema.map(entry => convertSchema(entry))
+    schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
     // Shallow clone so we can modify and return:
@@ -16,7 +16,7 @@ export function convertSchema(schema) {
         if (type === 'array') {
           const { items } = schema
           if (items) {
-            schema.items = convertSchema(items)
+            schema.items = convertSchema(items, options)
           }
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -26,11 +26,15 @@ export function convertSchema(schema) {
         schema.type = ['string', 'object']
         schema = addFormat(schema, 'date-time')
       } else {
-        // A reference to another model as nested JSON data, use $ref instead
-        // of type, but append '_required' to use the version of the schema
-        // that has the 'required' keyword defined.
-        delete schema.type
-        schema.$ref = type
+        // A reference to another model as nested JSON data, use $ref or
+        // instanceof instead of type, based on the passed option:
+        if (options.instanceof) {
+          schema.type = 'object'
+          schema.instanceof = type
+        } else {
+          delete schema.type
+          schema.$ref = type
+        }
       }
     } else {
       // Root properties schema or nested objects
@@ -45,7 +49,7 @@ export function convertSchema(schema) {
         } else if (property && property.required) {
           required.push(key)
         }
-        properties[key] = convertSchema(property)
+        properties[key] = convertSchema(property, options)
       }
       schema = {
         type: 'object',
@@ -94,14 +98,25 @@ function addFormat(schema, newFormat) {
 
 function makeNullable(schema) {
   // Add 'null' to the allowed types through `oneOf`.
-  // Move format along with type, and also support $ref:
-  const { type, $ref, format, ...rest } = schema
+  // Move format along with type, and also support $ref and instanceof:
+  const {
+    type,
+    $ref,
+    instanceof: _instanceof,
+    format,
+    ...rest
+  } = schema
   return isArray(type) && type.includes('null')
     ? schema
-    : $ref || format
+    : $ref || _instanceof || format
       ? {
         oneOf: [
-          $ref ? { $ref } : { type, format },
+          $ref ? { $ref }
+          : {
+            type,
+            instanceof: _instanceof,
+            format
+          },
           { type: 'null' }
         ],
         ...rest

@@ -174,6 +174,9 @@ export function convertRelations(ownerModelClass, relations, models) {
   return converted
 }
 
+/**
+ * Adds json schema properties for each of the modelClass' relations.
+ */
 export function addRelationSchemas(modelClass, jsonSchema) {
   const relations = modelClass.getRelations()
   const { properties } = jsonSchema
