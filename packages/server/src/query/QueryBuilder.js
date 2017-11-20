@@ -125,12 +125,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
       .runBefore((result, builder) => {
         if (!builder.context().isMainQuery) {
           // At this point the builder should only contain a bunch of `where*`
-          // operations. Store the `where` query for later use in the `runAfter`
-          // method. Also mark the query with `isMainQuery: true` so we can
-          // skip all this when this function is called for the `mainQuery`.
+          // operations. Store this query for later use in runAfter(). Also mark
+          // the query with `isMainQuery: true` so we can skip all this when
+          // this function is called for the `mainQuery`.
           mainQuery = builder.clone().context({ isMainQuery: true })
-          // Call the `update` method on the original query turning it into an
-          // update operation.
+          // Call update() on the original query, turning it into an update.
           builder[opt.update ? 'update' : 'patch'](data)
         }
         return result
@@ -139,19 +138,18 @@ export default class QueryBuilder extends objection.QueryBuilder {
         if (!builder.context().isMainQuery) {
           return result === 0
             ? mainQuery[opt.fetch ? 'insertAndFetch' : 'insert'](data)
-            // We can use the `mainWhere` query we saved in the `runBefore`
-            // method to fetch the inserted results. It is noteworthy that this
-            // query will return the wrong results if the update changed any
-            // of the columns the where operates with. This also returns all
-            // updated models.
+            // We can use the `mainQuery` we saved in runBefore() to fetch the
+            // inserted results. It is noteworthy that this query will return
+            // the wrong results if the update changed any of the columns the
+            // where operates with. This also returns all updated models.
             : mainQuery.first()
         }
         return result
       })
   }
 
-  upsertAndFetch(data) {
-    return this.upsert(data, { fetch: true })
+  upsertAndFetch(data, opt) {
+    return this.upsert(data, { ...opt, fetch: true })
   }
 
   insertGraph(data, opt) {
