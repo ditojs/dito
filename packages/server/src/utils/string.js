@@ -59,8 +59,8 @@ export function deindent(strings, ...values) {
   let parts = []
   for (let i = 0; i < strings.length; i++) {
     parts.push(strings[i]
-      // Join lines when there is a suppressed newline
-      .replace(/\\\n[ \t]*/g, '')
+      // Join lines when there is a line-break suppressed by a preceding '\\'
+      .replace(/\\\n\s*/g, '')
       // Handle escaped back-ticks
       .replace(/\\`/g, '`'))
     if (i < values.length) {
@@ -69,14 +69,14 @@ export function deindent(strings, ...values) {
       const value = values[i].toString()
       const lines = value.split(/\r\n|\n|\r/)
       if (lines.length > 1) {
-        // Determine indent by finding the immediately preceding white-space up
-        // to the previous line-break or beginning of the string.
+        // Determine the indent by finding the immediately preceding white-space
+        // up to the previous line-break or the beginning of the string.
         // (?:^|[\n\r]) # Start at either the beginning or the prev line break.
         // (?:[\n\r]*)  # Skip the line break
-        // (\s+)        # Collect the indent...
+        // (\s+)        # Collect the indenting white-space...
         // ([^\n\r]*)$  # ...up to the end or the next word, but in last line,
         // by making sure no line breaks follow until the end. Also keep a
-        // reference to the part that follow the indent to decide first line.
+        // reference to the part that follows the indent to decide first line.
         const str = parts.join('')
         const match = str.match(/(?:^|[\n\r])(?:[\n\r]*)(\s+)([^\n\r]*)$/)
         parts = [str]

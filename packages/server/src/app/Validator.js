@@ -61,9 +61,8 @@ export default class Validator {
 
   precompileModel(modelClass) {
     const jsonSchema = modelClass.getJsonSchema()
-    // We need to make sure that the model is visible in all Ajv instances for
-    // use of `$ref` by forcing compilation and caching right away.
-    // TODO: Switch to public API with validate() - catch:
+    // Precompile validator to make sure the model is visible in all Ajv
+    // instances for use of `$ref`.
     precompileValidator(this.modelValidator, modelClass, jsonSchema, true)
     precompileValidator(this.modelValidator, modelClass, jsonSchema, false)
     // Also compile it in the local Ajv instance, so remote methods can

@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isObject, isArray, isString, deindent } from '@/utils'
+import { isObject, isArray, isString, deindent, capitalize } from '@/utils'
 
 const typeToKnex = {
   number: 'double',
@@ -14,22 +14,51 @@ const defaultValues = {
 
 const migrationDir = path.join(process.cwd(), 'migrations')
 
-export async function createMigration(app, modelName) {
-  function getModel(modelName) {
+export async function createMigration(app, name, ...modelNames) {
+  const models = modelNames.map(modelName => {
     const modelClass = app.models[modelName]
     if (!modelClass) {
       throw new Error(`Model class with name '${modelName}' does not exist`)
     }
     return modelClass
+  })
+  const tables = []
+  for (const modelClass of models) {
+    collectModelTables(modelClass, app, tables)
   }
+  for (const modelClass of models) {
+    collectThroughTables(modelClass, app, tables)
+  }
+  const createTables = []
+  const dropTables = []
+  for (const { tableName, statements } of tables) {
+    createTables.push(deindent`
+      .createTable('${tableName}', table => {
+        ${statements.join('\n')}
+      })`)
+    dropTables.unshift(deindent`
+      .dropTableIfExists('${tableName}')`)
+  }
+  const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${name}.js`)
+  await fs.writeFile(file, deindent`
+    export function up(knex) {
+      return knex.schema
+        ${createTables.join('\n')}
+    }
 
-  const modelClass = getModel(modelName)
+    export function down(knex) {
+      return knex.schema
+        ${dropTables.join('\n')}
+    }
+  `)
+  return true // done
+}
+
+async function collectModelTables(modelClass, app, tables) {
   const tableName = app.normalizeIdentifier(modelClass.tableName)
   const { properties = {}, relations = {} } = modelClass.definition
   const statements = []
-  // TODO: Instead of looping through properties first and relations after,
-  // merge both so that foreign key properties can have `unique()`, `nullable()`
-  // and still profit from the generation of `references().inTable()`.
+  tables.push({ tableName, statements })
   const uniqueComposites = {}
   for (const [name, property] of Object.entries(properties)) {
     const column = app.normalizeIdentifier(name)
@@ -78,16 +107,14 @@ export async function createMigration(app, modelName) {
           const { from, to } = relation
           const [, fromProperty] = from && from.split('.') || []
           if (fromProperty === name) {
-            const [toModelName, toProperty] = to && to.split('.') || []
+            const [toClass, toProperty] = to && to.split('.') || []
             statement.push(
               '\n',
               `references('${app.normalizeIdentifier(toProperty)}')`,
-              `inTable('${app.normalizeIdentifier(toModelName)}')`,
+              `inTable('${app.normalizeIdentifier(toClass)}')`,
               `onDelete('CASCADE')`
             )
           }
-          // TODO: Handle relations that have `through: true`, and auto-create
-          // the trough table in those cases.
         }
       }
       statements.push(statement.filter(str => !!str).join('.')
@@ -99,21 +126,38 @@ export async function createMigration(app, modelName) {
       composites.map(column => `'${column}'`).join(', ')
     }])`)
   }
-  const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${tableName}.js`)
-  await fs.writeFile(file, deindent`
-    export function up(knex) {
-      return knex.schema
-        .createTable('${tableName}', table => {
-          ${statements.join('\n')}
-        })
-    }
+}
 
-    export function down(knex) {
-      return knex.schema
-        .dropTableIfExists('${tableName}')
+async function collectThroughTables(modelClass, app, tables) {
+  const { relations = {} } = modelClass.definition
+  for (const relation of Object.values(relations)) {
+    const { from, to, through, inverse } = relation
+    if (through === true && !inverse) {
+      // TODO: Support composite keys for foreign references:
+      // Use `asArray(from)`, `asArray(to)`
+      const [fromClass, fromProperty] = from && from.split('.') || []
+      const [toClass, toProperty] = to && to.split('.') || []
+      const statements = []
+      // See convertRelations()
+      const tableName = app.normalizeIdentifier(`${fromClass}${toClass}`)
+      const fromId = app.normalizeIdentifier(
+        `${fromClass}${capitalize(fromProperty)}`)
+      const toId = app.normalizeIdentifier(
+        `${toClass}${capitalize(toProperty)}`)
+      tables.push({ tableName, statements })
+      statements.push(`table.increments('id').primary()`)
+      statements.push(deindent`
+        table.integer('${fromId}').unsigned().index()
+          .references('${app.normalizeIdentifier(fromProperty)}')\\
+          .inTable('${app.normalizeIdentifier(fromClass)}')\\
+          .onDelete('CASCADE')`)
+      statements.push(deindent`
+        table.integer('${toId}').unsigned().index()
+          .references('${app.normalizeIdentifier(toProperty)}')\\
+          .inTable('${app.normalizeIdentifier(toClass)}')\\
+          .onDelete('CASCADE')`)
     }
-  `)
-  return true // done
+  }
 }
 
 // Ensure that we have 2 places for each of the date segments.
