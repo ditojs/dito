@@ -39,7 +39,7 @@ export default class App extends Koa {
     }
     for (const modelClass of Object.values(models)) {
       modelClass.initialize()
-      this.validator.precompileModel(modelClass)
+      this.validator.addSchema(modelClass.getJsonSchema())
     }
   }
 

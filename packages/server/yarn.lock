@@ -1688,9 +1688,9 @@ kind-of@^4.0.0:
   dependencies:
     is-buffer "^1.1.5"
 
-knex@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/knex/-/knex-0.14.0.tgz#dd4569821141429c4e6b0bb5d8068874cdb50cc3"
+knex@^0.14.1:
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/knex/-/knex-0.14.1.tgz#ba4ae5afc2824a43b392fbbc8f8a7753e356d808"
   dependencies:
     babel-runtime "^6.23.0"
     bluebird "^3.4.6"
@@ -2047,9 +2047,9 @@ object.pick@^1.2.0:
   dependencies:
     isobject "^3.0.1"
 
-objection@^0.9.1:
+"objection@github:lehni/objection.js#72259ae0727b137dafe13f77c9bd286ccc25fc46":
   version "0.9.1"
-  resolved "https://registry.yarnpkg.com/objection/-/objection-0.9.1.tgz#c6511df49f4dde8f0eb4fbec86475ea13be34279"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/72259ae0727b137dafe13f77c9bd286ccc25fc46"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"

@@ -4,7 +4,7 @@ import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
-import { convertSchema, convertRelations } from '@/schema'
+import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import ModelRelation from './ModelRelation'
 
 export default class Model extends objection.Model {
@@ -94,12 +94,14 @@ export default class Model extends objection.Model {
 
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
-      const { properties } = this.definition
-      return properties ? {
+      const { properties = {} } = this.definition
+      const schema = addRelationSchemas(this, convertSchema(properties))
+      // const schema = convertSchema(properties)
+      return {
         $id: this.name,
         $schema: 'http://json-schema.org/draft-06/schema#',
-        ...convertSchema(properties)
-      } : null
+        ...schema
+      }
     })
   }
 
@@ -246,6 +248,10 @@ export default class Model extends objection.Model {
         }
       }
     }
+    // TODO: https://gitter.im/Vincit/objection.js?at=5a12fa6be606d60e34e8dc4e
+    for (const key in constructor.getRelations()) {
+      delete json[key]
+    }
     // NOTE: No need to normalize the identifiers in the JSON in case of
     // s, as this already happens through
     // knex.config.wrapIdentifier(), see App.js
@@ -299,7 +305,7 @@ export default class Model extends objection.Model {
     // Use a shared validator per app, so model schema can reference each other.
     // NOTE: The Dito Validator class creates and manages this shared Objection
     // Validator instance for us, we just need to return it here:
-    return this.app.validator.modelValidator
+    return this.app.validator
   }
 
   static createValidationError(errors, message) {

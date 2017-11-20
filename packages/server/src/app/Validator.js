@@ -3,7 +3,7 @@ import Ajv from 'ajv'
 import { mapValues } from '@/utils'
 import * as schema from '@/schema'
 
-export default class Validator {
+export default class Validator extends AjvValidator {
   constructor({ options, keywords, formats } = {}) {
     options = {
       allErrors: true,
@@ -28,9 +28,8 @@ export default class Validator {
       return ajv
     }
 
-    // Create a shared AjvValidator to be used by all Objection models.
-    // See Model.createValidator()
-    this.modelValidator = new AjvValidator({ options, onCreateAjv })
+    super({ options, onCreateAjv })
+
     // Also create a local shared ajv validator instance that will compile all
     // model definitions as well, and is used for validation in remote methods.
     this.ajv = onCreateAjv(new Ajv(options))
@@ -59,33 +58,20 @@ export default class Validator {
     return this.formats[format]
   }
 
-  precompileModel(modelClass) {
-    const jsonSchema = modelClass.getJsonSchema()
-    // Precompile validator to make sure the model is visible in all Ajv
-    // instances for use of `$ref`.
-    precompileValidator(this.modelValidator, modelClass, jsonSchema, true)
-    precompileValidator(this.modelValidator, modelClass, jsonSchema, false)
-    // Also compile it in the local Ajv instance, so remote methods can
-    // reference model schema as well through $ref:
-    this.compile(jsonSchema)
+  addSchema(jsonSchema) {
+    this.ajv.addSchema(jsonSchema)
+    this.ajvNoDefaults.addSchema({ ...jsonSchema, required: [] })
   }
-}
 
-function precompileValidator(modelValidator, modelClass, jsonSchema, patch) {
-  try {
-    // We could easily just call `AjvValidator.getValidator()`, but that's
-    // not part of the public API, so some trickery is needed instead:
-    // modelValidator.getValidator(modelClass, jsonSchema, false)
-    modelValidator.validate({
-      json: {}, // Empty data will do just fine to rigger validator caching.
-      model: modelClass.prototype, // This is fine to get to the constructor.
-      options: { patch },
-      ctx: { jsonSchema }
-    })
-  } catch (err) {
-    // Since there is no actual data provided above, this will most likely
-    // trigger a validation error. But that's fine, all we want is for
-    // AjvValidator to compile and cache the validator for this modelClass.
+  // @override
+  compileValidator(jsonSchema, skipRequired) {
+    // TODO: In order for circular references to work in JSON schema, we need
+    // to use AJV's addSchema() / getSchema() mechanism instead of a direct call
+    // to compile(). This is currently achieved by overriding the private
+    // compileValidator(jsonSchema, skipRequired) method. Check if we can add
+    // this to Objection.js instead, to increase flexibility and avoid hacking.
+    const ajv = skipRequired ? this.ajvNoDefaults : this.ajv
+    return ajv.getSchema(jsonSchema.$id)
   }
 }
 

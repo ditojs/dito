@@ -161,16 +161,35 @@ function convertReleation(schema, models) {
   }
 }
 
-export function convertRelations(ownerModelClass, schema, models) {
-  const relations = {}
-  for (const [relationName, relationSchema] of Object.entries(schema)) {
+export function convertRelations(ownerModelClass, relations, models) {
+  const converted = {}
+  for (const [name, relation] of Object.entries(relations)) {
     try {
-      relations[relationName] = convertReleation(relationSchema, models)
+      converted[name] = convertReleation(relation, models)
     } catch (err) {
       throw new Error(
-        `${ownerModelClass.name}.relations.${relationName}: ` +
-        (err.message || err))
+        `${ownerModelClass.name}.relations.${name}: ${(err.message || err)}`)
     }
   }
-  return relations
+  return converted
+}
+
+export function addRelationSchemas(modelClass, jsonSchema) {
+  const relations = modelClass.getRelations()
+  const { properties } = jsonSchema
+  for (const [name, relation] of Object.entries(relations)) {
+    const $ref = relation.relatedModelClass.name
+    properties[name] = relation.isOneToOne()
+      ? {
+        oneOf: [
+          { $ref },
+          { type: 'null' }
+        ]
+      }
+      : {
+        type: 'array',
+        items: { $ref }
+      }
+  }
+  return jsonSchema
 }
