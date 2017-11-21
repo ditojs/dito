@@ -1,42 +1,60 @@
 <template lang="pug">
-  ul.dito-panel.dito-layout-vertical(v-if="schema.components")
-    li(
-      v-for="(compSchema, key) in schema.components"
-      v-show="getValue(compSchema, 'visible', true)"
-    )
-      dito-label(
-        :name="key"
-        :text="getLabel(compSchema, key)"
+  ul.dito-panel(v-if="schema.components")
+    template(v-for="(compSchema, key) in schema.components")
+      li.dito-break(v-if="hasBreak(compSchema, 'before')")
+      li(
+        v-show="getValue(compSchema, 'visible', true)"
+        :style="getStyle(compSchema)"
       )
-      component(
-        :is="getTypeComponent(compSchema.type)"
-        :schema="compSchema"
-        :name="key"
-        :data="data"
-        :meta="meta"
-        :store="getStore(key)"
-        :disabled="getValue(compSchema, 'disabled', false) || disabled"
-        :class="{ 'dito-has-errors': errors.has(key) }"
-      )
-      dito-errors(
-        v-if="errors.has(key)"
-        :name="key"
-      )
+        dito-label(
+          :name="key"
+          :text="getLabel(compSchema, key)"
+        )
+        component.dito-component(
+          :is="getTypeComponent(compSchema.type)"
+          :schema="compSchema"
+          :name="key"
+          :data="data"
+          :meta="meta"
+          :store="getStore(key)"
+          :disabled="getValue(compSchema, 'disabled', false) || disabled"
+          :class="{ \
+            'dito-fill': hasFill(compSchema), \
+            'dito-has-errors': errors.has(key) \
+          }"
+        )
+        dito-errors(
+          v-if="errors.has(key)"
+          :name="key"
+        )
+      li.dito-break(v-if="hasBreak(compSchema, 'after')")
 </template>
 
 <style lang="sass">
 .dito
-  .dito-panel
-    width: 100%
-    border-spacing: 0 $form-spacing
+  ul.dito-panel
+    display: flex
+    flex-flow: row wrap
+    align-items: baseline
+    > li
+      flex: 1 0 auto
+      align-self: stretch
+      box-sizing: border-box
+      padding: $form-spacing
+      .dito-fill
+        display: block
+        width: 100%
+      &.dito-break
+        padding: 0
+        width: 100%
     border-bottom: $border-style
-    padding-bottom: $form-margin - $form-spacing
-    margin-bottom: $form-margin - $form-spacing
+    padding-bottom: $form-margin
+    margin-bottom: $form-margin
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isFunction } from '@/utils'
+import { isString, isFunction } from '@/utils'
 
 export default DitoComponent.component('dito-panel', {
   inject: ['$validator'],
@@ -57,6 +75,24 @@ export default DitoComponent.component('dito-panel', {
         : isFunction(value)
           ? value(this.data)
           : value
+    },
+
+    hasBreak(schema, type) {
+      return [type, 'both'].includes(schema.break)
+    },
+
+    hasFill(schema) {
+      const { fill, break: _break, width } = schema
+      return fill || _break || width && parseFloat(width) > 0
+    },
+
+    getStyle(schema) {
+      const { width } = schema
+      if (width) {
+        const value = parseFloat(width)
+        const percent = isString(width) && /%/.test(width) ? value : value * 100
+        return `flex-basis: ${Math.floor(percent * 100) / 100}%;`
+      }
     }
   }
 })

@@ -18,12 +18,13 @@
       display: block
     h1
       padding: $menu-padding
+      line-height: $menu-line-height
       font-weight: bold
       background: $color-darker
       color: $color-white
-      line-height: $menu-line-height
     a
-      padding: 0.2em $menu-padding-hor
+      padding: $menu-padding
+      line-height: $menu-line-height
       &.router-link-active
         color: $color-white
         background: $color-active

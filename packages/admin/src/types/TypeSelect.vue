@@ -34,6 +34,10 @@
     position: relative
     select
       padding-right: 2.5em
+    &.dito-fill
+      display: block
+      select
+        width: 100%
     &::after
       +arrow($select-arrow-size)
       bottom: 2px

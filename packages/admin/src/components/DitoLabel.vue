@@ -5,6 +5,7 @@
 <style lang="sass">
 .dito
   .dito-label
+    display: block
     white-space: nowrap
     width: 20%
     +user-select(none)

@@ -8,8 +8,9 @@
 <style lang="sass">
 .dito
   .dito-errors
+    position: absolute
     ul
-      margin: $form-spacing 0
+      margin-top: 2px
       color: $color-error
 </style>
 
