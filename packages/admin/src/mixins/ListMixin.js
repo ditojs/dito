@@ -130,16 +130,23 @@ export default {
     },
 
     deleteItem(item) {
+      const title = item && this.getItemTitle(item)
+
+      const notify = () => this.notify('success', 'Successfully Removed',
+        `${title} was removed.`)
+
       if (item && confirm(
-        `Do you really want to ${this.verbDelete} ${this.getItemTitle(item)}?`)
+        `Do you really want to ${this.verbDelete} ${title}?`)
       ) {
         if (this.isTransient) {
           this.removeItem(item)
+          notify()
         } else {
           const resource = { type: 'member', id: this.getItemId(item) }
           this.request('delete', { resource }, err => {
             if (!err) {
               this.removeItem(item)
+              notify()
             }
             this.reloadData()
           })

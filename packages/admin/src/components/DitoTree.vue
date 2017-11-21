@@ -59,7 +59,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObject, isArray, isString, isNumber } from '@/utils'
+import { isObject, isArray, isString } from '@/utils'
 
 export default DitoComponent.component('dito-tree', {
   props: ['name', 'data', 'root', 'open', 'childrenOpen'],
@@ -75,15 +75,14 @@ export default DitoComponent.component('dito-tree', {
     isArray,
 
     getName() {
-      return (isNumber(this.name) ? this.name : `"${this.name}": `)
+      return (isString(this.name) ? `"${this.name}": ` : this.name)
     },
 
     getValue() {
       const value = this.data
       return value === null ? 'null'
-        : isNumber(value) ? value
         : isString(value) ? `"${value}"`
-        : undefined
+        : value
     },
 
     getChildrenInfo() {

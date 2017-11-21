@@ -1,0 +1,22 @@
+=type($background, $darken: 12)
+  background: $background
+  border-left: 0
+  border-right: 8px solid darken($background, $darken)
+  color: $color-white
+  border-top-left-radius: 4px
+  border-bottom-left-radius: 4px
+
+.notification
+  padding: 8px
+  margin: 8px 8px 0
+  font-size: inherit
+  color: $color-white
+  &,
+  &.info
+    +type($color-active)
+  &.success
+    +type($color-success)
+  &.warning
+    +type($color-warning)
+  &.error
+    +type($color-error)

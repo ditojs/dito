@@ -1,10 +1,6 @@
 <template lang="pug">
   .dito-form
     form(v-if="isLastRoute" @submit.prevent="submit()")
-      dito-errors(
-        v-if="errors.has('dito-request')"
-        name="dito-request"
-      )
       dito-tabs(
         :tabs="tabs"
         :selectedTab="selectedTab"
@@ -71,7 +67,7 @@ import DitoComponent from '@/DitoComponent'
 import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { isArray, clone } from '@/utils'
+import { isArray, isObject, clone } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
@@ -309,7 +305,7 @@ export default DitoComponent.component('dito-form', {
             parentList.push(payload)
           } else {
             ok = false
-            this.errors.add('dito-request', 'Unable to create item.')
+            this.notify('error', 'Request Error', 'Unable to create item.')
           }
         } else {
           this.setParentData(payload)
@@ -326,11 +322,13 @@ export default DitoComponent.component('dito-form', {
           resource = { ...resource, path }
         }
         this.request(method, { payload, resource }, (err, response) => {
+          const { data = {} } = response
           if (!err) {
+            this.notify('success', 'Sucessfully Stored',
+              `${this.getItemTitle(this.data)} was stored.`)
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
             if (button.back === false) {
-              const { data } = response
               if (data) {
                 this.setData(data)
               }
@@ -339,17 +337,23 @@ export default DitoComponent.component('dito-form', {
             }
           } else if (this.hasValidationError(response)) {
             // Dito validation error!
-            const { errors } = response.data || {}
-            for (const [key, errs] of Object.entries(errors)) {
-              const path = key.split('/')
-              const field = path[0]
-              const component = this.components[field]
-              if (component) {
-                component.showErrors(path, errs)
-              } else {
-                throw new Error(
-                  `Cannot find component for field ${field}, errors: ${errs}`)
+            const { errors } = data || {}
+            if (errors) {
+              for (const [key, errs] of Object.entries(errors)) {
+                const path = key.split('/')
+                const field = path[0]
+                const component = this.components[field]
+                if (component) {
+                  component.showErrors(path, errs)
+                } else {
+                  this.notify('error', 'Request Error',
+                    `Cannot find component for field ${field}, errors: ${errs}`)
+                }
               }
+            } else {
+              const error = isObject(data) ? data : err
+              this.notify('error', 'Request Error',
+                error.message || error.toString())
             }
           }
         })

@@ -1,5 +1,6 @@
 <template lang="pug">
   .dito
+    notifications(position="top right")
     dito-menu(:views="views")
     main.dito-page
       dito-trail
@@ -24,8 +25,9 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import Notifications from 'vue-notification'
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
-
+DitoComponent.use(Notifications)
 DitoComponent.component('dito-spinner', DitoSpinner)
 
 export default DitoComponent.component('dito-root', {

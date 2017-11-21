@@ -1,9 +1,5 @@
 <template lang="pug">
   .dito-list
-    dito-errors(
-      v-if="errors.has('dito-request')"
-      name="dito-request"
-    )
     .dito-filters(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"

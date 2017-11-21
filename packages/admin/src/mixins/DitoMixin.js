@@ -72,6 +72,26 @@ export default {
         proto.oMatchesSelector
       const el = this.$el
       return matches.call(el, selector) ? el : el.querySelector(selector)
+    },
+
+    notify(...args) {
+      const type = args.length > 1 ? args[0] : 'info'
+      const title = args.length > 2 ? args[1] : {
+        warning: 'Warning',
+        error: 'Error',
+        info: 'Information',
+        success: 'Success'
+      }[type]
+      const content = args[args.length - 1]
+      const text = type === 'error' && content.message || content.toString()
+      this.$notify({ type, title, text })
+      const log = {
+        warning: 'warn',
+        error: 'error',
+        info: 'log',
+        success: 'log'
+      }[type]
+      console[log](content)
     }
   }
 }

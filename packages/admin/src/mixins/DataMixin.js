@@ -78,10 +78,9 @@ export default {
       return String(this.isTransient ? index : item[idName])
     },
 
-    getItemTitle(item, schema) {
-      schema = schema || this.viewSchema || {}
-      const { itemTitle } = schema
-      const label = this.getLabel(schema)
+    getItemTitle(item) {
+      const { itemTitle } = this.viewSchema
+      const label = this.getLabel(this.formSchema)
       const title = isFunction(itemTitle) ? itemTitle(item)
         : isString(itemTitle) ? item[itemTitle]
         : item.name
@@ -150,14 +149,13 @@ export default {
       const request = this.api.request || this.requestAxios
       const { resource, params, payload } = options
       const path = this.getResourcePath(resource || this.resource)
-      this.errors.remove('dito-request')
       this.setLoading(true)
       request(method, path, params, payload, (err, response) => {
         setTimeout(() => {
           this.setLoading(false)
           // Do not report validation errors as dito-request errors
           if (err && !(callback && this.hasValidationError(response))) {
-            this.errors.add('dito-request', err.toString())
+            this.notify('error', 'Request Error', err)
           }
           if (callback) {
             callback(err, response)
@@ -167,10 +165,13 @@ export default {
     },
 
     requestAxios(method, url, params, payload, callback) {
+      const data = /^(post|put|patch)$/.test(method)
+        ? JSON.stringify(payload)
+        : null
       axios.request({
         url,
         method,
-        data: /^(post|put|patch)$/.test(method) && JSON.stringify(payload),
+        data,
         baseURL: this.api.baseURL,
         headers: this.api.headers || {
           'Content-Type': 'application/json'
