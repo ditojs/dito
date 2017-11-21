@@ -83,8 +83,10 @@ export default {
         success: 'Success'
       }[type]
       const content = args[args.length - 1]
-      const text = type === 'error' && content.message || content.toString()
-      this.$notify({ type, title, text })
+      let text = type === 'error' && content.message || content.toString()
+      const duration = 1500 + (text.length + title.length) * 20
+      text = text.replace(/\r\n|\n|\r/g, '<br>')
+      this.$notify({ type, title, text, duration })
       const log = {
         warning: 'warn',
         error: 'error',

@@ -293,6 +293,8 @@ export default DitoComponent.component('dito-form', {
 
     submitData(button = {}) {
       const payload = this.data
+      const { onSuccess, onError } = button
+      const title = this.getItemTitle(this.data)
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -309,6 +311,14 @@ export default DitoComponent.component('dito-form', {
           }
         } else {
           this.setParentData(payload)
+          if (onSuccess) {
+            onSuccess.call(this, this.data, title)
+          } else {
+            this.notify('info', 'Change Applied',
+              `Changes in ${title} were applied.\n` +
+              `NOTE: The parent needs to be stored to persist this change.`
+            )
+          }
         }
         if (ok) {
           this.goBack(false, false)
@@ -324,8 +334,12 @@ export default DitoComponent.component('dito-form', {
         this.request(method, { payload, resource }, (err, response) => {
           const { data = {} } = response
           if (!err) {
-            this.notify('success', 'Sucessfully Stored',
-              `${this.getItemTitle(this.data)} was stored.`)
+            if (onSuccess) {
+              onSuccess.call(this, this.data, title)
+            } else {
+              this.notify('success', 'Sucessfully Stored',
+                `${title} was stored.`)
+            }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
             if (button.back === false) {
@@ -335,9 +349,9 @@ export default DitoComponent.component('dito-form', {
             } else {
               this.goBack(true, false)
             }
-          } else if (this.hasValidationError(response)) {
-            // Dito validation error!
-            const { errors } = data || {}
+          } else {
+            // Dito validation error?
+            const { errors } = this.hasValidationError(response) && data || {}
             if (errors) {
               for (const [key, errs] of Object.entries(errors)) {
                 const path = key.split('/')
@@ -346,14 +360,23 @@ export default DitoComponent.component('dito-form', {
                 if (component) {
                   component.showErrors(path, errs)
                 } else {
-                  this.notify('error', 'Request Error',
-                    `Cannot find component for field ${field}, errors: ${errs}`)
+                  if (onError) {
+                    onError.call(this, data, this.data, title)
+                  } else {
+                    this.notify('error', 'Request Error',
+                      `Cannot find component for field ${field},` +
+                      `errors: ${errs}`)
+                  }
                 }
               }
             } else {
               const error = isObject(data) ? data : err
-              this.notify('error', 'Request Error',
-                error.message || error.toString())
+              if (onError) {
+                onError.call(this, error, this.data, title)
+              } else {
+                this.notify('error', 'Request Error',
+                  error.message || error.toString())
+              }
             }
           }
         })
