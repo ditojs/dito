@@ -87,8 +87,10 @@
       border-radius: 1em
       padding: $tag-padding $tag-icon-size $tag-padding 0.8em
 
+    .multiselect__tags
+      overflow: auto
     .multiselect__tags-wrap
-      display: block
+      float: left
       margin: $tag-margin 0 0 $tag-margin
       line-height: 0
 
