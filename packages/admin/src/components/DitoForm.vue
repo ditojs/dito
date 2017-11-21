@@ -281,13 +281,17 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    notifyValidationErrors() {
+      this.notify('error', 'Validation Errors',
+        'Please correct the highligted errors.')
+    },
+
     async submit(button) {
       if (await this.$validator.validateAll()) {
         // Default button is submit:
         this.submitData(button || this.buttons.submit)
       } else {
-        // TODO: Implement nicer dialogs and info / error flashes...
-        alert('Please correct the validation errors.')
+        this.notifyValidationErrors()
       }
     },
 
@@ -353,6 +357,7 @@ export default DitoComponent.component('dito-form', {
             // Dito validation error?
             const { errors } = this.hasValidationError(response) && data || {}
             if (errors) {
+              let hasErrors = false
               for (const [key, errs] of Object.entries(errors)) {
                 const path = key.split('/')
                 const field = path[0]
@@ -368,6 +373,10 @@ export default DitoComponent.component('dito-form', {
                       `errors: ${errs}`)
                   }
                 }
+                hasErrors = true
+              }
+              if (hasErrors) {
+                this.notifyValidationErrors()
               }
             } else {
               const error = isObject(data) ? data : err
