@@ -11,6 +11,7 @@
             dito-panel(
               v-show="selectedTab === key"
               :schema="tabSchema"
+              :name="key"
               :data="data || {}"
               :meta="meta"
               :store="store"
@@ -85,14 +86,12 @@ export default DitoComponent.component('dito-form', {
     // Errors can get passed on throgh the meta object, so add them now.
     // See TypeMixin.showErrors()
     const { meta } = this
-    const { focus, errors } = meta
-    if (focus || errors) {
+    const { errors } = meta
+    if (errors) {
       delete meta.errors
-      delete meta.focus
       // Add the errors after initialzation of $validator
       this.$nextTick(() => {
-        this.addErrors(errors)
-        this.focus(focus)
+        this.addErrors(errors, true)
       })
     }
   },
@@ -248,11 +247,11 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    addErrors(errors) {
+    addErrors(errors, focus) {
       for (const [name, errs] of Object.entries(errors || {})) {
         const component = this.components[name]
         if (component) {
-          component.addErrors(errs)
+          component.addErrors(errs, focus)
         } else {
           throw new Error(`Cannot add errors for field ${name}: ${errors}`)
         }
@@ -290,6 +289,7 @@ export default DitoComponent.component('dito-form', {
         // Default button is submit:
         this.submitData(button || this.buttons.submit)
       } else {
+        this.focus(this.errors.items[0].field)
         this.notifyValidationErrors()
       }
     },
@@ -356,26 +356,12 @@ export default DitoComponent.component('dito-form', {
             // Dito validation error?
             const { errors } = this.hasValidationError(response) && data || {}
             if (errors) {
-              let hasErrors = false
-              for (const [key, errs] of Object.entries(errors)) {
-                const path = key.split('/')
-                const field = path[0]
-                const component = this.components[field]
-                if (component) {
-                  component.showErrors(path, errs)
-                } else {
-                  if (onError) {
-                    onError.call(this, data, this.data, title)
-                  } else {
-                    this.notify('error', 'Request Error',
-                      `Cannot find component for field ${field},` +
-                      `errors: ${errs}`)
-                  }
+              try {
+                if (this.showErrors(errors, true)) {
+                  this.notifyValidationErrors()
                 }
-                hasErrors = true
-              }
-              if (hasErrors) {
-                this.notifyValidationErrors()
+              } catch (err) {
+                this.notify('error', 'Request Error', err.message || err)
               }
             } else {
               const error = isObject(data) ? data : err
@@ -389,6 +375,23 @@ export default DitoComponent.component('dito-form', {
           }
         })
       }
+    },
+
+    showErrors(errors, focus) {
+      let hasErrors = false
+      for (const [key, errs] of Object.entries(errors)) {
+        const path = key.split('/')
+        const field = path[0]
+        const component = this.components[field]
+        if (component) {
+          component.showErrors(path, errs, !hasErrors && focus)
+        } else {
+          throw new Error(
+            `Cannot find component for field ${field}, errors: ${errs}`)
+        }
+        hasErrors = true
+      }
+      return hasErrors
     },
 
     cancel() {

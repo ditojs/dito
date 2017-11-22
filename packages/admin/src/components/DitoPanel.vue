@@ -68,6 +68,7 @@ export default DitoComponent.component('dito-panel', {
 
   props: {
     schema: { type: Object, required: true },
+    name: { type: String },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -95,6 +96,12 @@ export default DitoComponent.component('dito-panel', {
     getStyle(schema) {
       const percentage = getPercentage(schema)
       return percentage && `flex-basis: ${percentage}%;`
+    },
+
+    focus() {
+      if (this.name) {
+        this.$router.push({ hash: this.name })
+      }
     }
   }
 })

@@ -84,29 +84,31 @@ export default {
   },
 
   methods: {
-    addErrors(errors) {
+    addErrors(errors, focus) {
       for (const { message } of errors) {
         // Convert to the same sentence structure as vee-validate:
         const prefix = `The ${this.label} field`
         this.errors.add(this.name,
           message.indexOf(prefix) === 0 ? message : `${prefix} ${message}.`)
       }
+      if (focus) {
+        this.focus()
+      }
     },
 
-    showErrors(path, errors) {
+    showErrors(path, errors, focus) {
       if (path.length > 1) {
         const navigate = this.navigateToComponent
         if (navigate) {
           navigate.call(this, path, (route, property) => {
             const { matched } = route
             const { meta } = matched[matched.length - 1]
-            // Pass on the errors to the instance through the meta object.
-            // and tell DitoForm to focus component. See DitoForm.created(),
+            // Pass on the errors to the instance through the meta object,
+            // see DitoForm.created()
             if (property) {
               meta.errors = {
                 [property]: errors
               }
-              meta.focus = property
             }
           })
         } else {
@@ -114,14 +116,16 @@ export default {
             `Cannot show errors for field ${path.join('/')}: ${errors}`)
         }
       } else {
-        this.addErrors(errors)
+        this.addErrors(errors, focus)
       }
     },
 
     focus() {
+      // Also focus this component's panel in case it's a tab.
+      this.$parent.focus()
       const input = this.getElement('input')
       if (input) {
-        input.focus()
+        this.$nextTick(() => input.focus())
       }
     }
   }
