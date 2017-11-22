@@ -25,7 +25,7 @@
 
 .dito-buttons
   white-space: nowrap
-  button + button
+  .dito-button + .dito-button
     margin-left: 2px
 
 .dito-button-add:empty::before
@@ -44,17 +44,29 @@
     content: 'Apply'
 .dito-button-cancel:empty::before
     content: 'Cancel'
+.dito-button-drag:empty::before
+    content: 'Drag'
 
 .dito-buttons-round
   .dito-button
-    display: inline-block
-    white-space: nowrap
     width: 2em
     height: 2em
     border-radius: 1em
+
+.dito-buttons-inline
+  .dito-button
+    width: 1.5em
+    height: 1.5em
+  .dito-button + .dito-button
+    margin-left: 1px
+
+.dito-buttons-round,
+.dito-buttons-inline
+  .dito-button
+    display: inline-block
     text-align: center
-    padding-left: 0
-    padding-right: 0
+    white-space: nowrap
+    padding: 0
     &::before
       width: 1em
       position: absolute

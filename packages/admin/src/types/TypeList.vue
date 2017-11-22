@@ -141,12 +141,10 @@ $buttons-padding: 2px
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import VueDraggable from 'vuedraggable'
 import ListMixin from '@/mixins/ListMixin'
 
 export default TypeComponent.register('list', {
   mixins: [ListMixin],
-  components: { VueDraggable },
 
   computed: {
     paginate() {

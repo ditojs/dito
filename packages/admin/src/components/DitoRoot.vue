@@ -25,9 +25,11 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import Notifications from 'vue-notification'
+import VueNotifications from 'vue-notification'
+import VueDraggable from 'vuedraggable'
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
-DitoComponent.use(Notifications)
+DitoComponent.use(VueNotifications)
+DitoComponent.component('vue-draggable', VueDraggable)
 DitoComponent.component('dito-spinner', DitoSpinner)
 
 export default DitoComponent.component('dito-root', {
