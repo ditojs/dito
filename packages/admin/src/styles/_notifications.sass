@@ -1,21 +1,28 @@
-=type($background, $darken: 12)
-  background: $background
-  border-left: 0
-  border-top: 8px solid darken($background, $darken)
+=type($background)
+  background: lighten($background, 5)
   color: $color-white
-  border-radius: $border-radius
+  border-right: 8px solid darken($background, 10)
 
-.notification
-  padding: 8px
-  margin: 12px 12px 0
-  font-size: inherit
-  color: $color-white
-  &,
-  &.info
-    +type($color-active)
-  &.success
-    +type($color-success)
-  &.warning
-    +type($color-warning)
-  &.error
-    +type($color-error)
+.notifications
+  .notification
+    padding: 8px
+    margin: 12px 12px 0
+    font-size: inherit
+    color: $color-white
+    border-left: 0
+    border-radius: $border-radius
+    box-shadow: 0px 4px 16px 0px rgba(0,0,0,0.25)
+    .notification-title
+      font-weight: bold
+    &,
+    &.info
+      +type($color-active)
+    &.success
+      +type($color-success)
+    &.warning
+      +type($color-warning)
+    &.error
+      +type($color-error)
+
+  .notification-wrapper
+    overflow: visible

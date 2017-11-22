@@ -10,7 +10,7 @@
   .dito-errors
     position: absolute
     ul
-      margin-top: 2px
+      margin-top: 1px
       color: $color-error
 </style>
 

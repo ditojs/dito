@@ -94,7 +94,8 @@ $buttons-padding: 2px
   .dito-list
     .dito-filters
       overflow: auto
-      padding-bottom: $menu-padding-ver / 2
+      padding-bottom: $form-margin / 2
+      margin-top: -$form-margin / 2
       +user-select(none)
       .dito-scopes
         float: left

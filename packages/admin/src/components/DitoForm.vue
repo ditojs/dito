@@ -52,7 +52,6 @@
       display: flex
       flex-flow: column
     .dito-content
-      margin: -$form-spacing 0
       > .dito-buttons
         margin-top: $form-margin
         text-align: center

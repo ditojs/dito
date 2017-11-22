@@ -36,20 +36,27 @@
     display: flex
     flex-flow: row wrap
     align-items: baseline
+    margin: -$form-spacing
     > li
       flex: 1 0 auto
       align-self: stretch
       box-sizing: border-box
       padding: $form-spacing
-      .dito-fill
+      > .dito-fill
         display: block
         width: 100%
       &.dito-break
         padding: 0
         width: 100%
-    border-bottom: $border-style
-    padding-bottom: $form-margin
-    margin-bottom: $form-margin
+    &::after
+      // Use a pseudo element to display a ruler with proper margins
+      display: 'block'
+      content: ''
+      width: 100%
+      padding-bottom: $form-margin
+      border-bottom: $border-style
+      // Add removed $form-spacing again to the ruler
+      margin: 0 $form-spacing $form-margin
 </style>
 
 <script>
@@ -78,22 +85,23 @@ export default DitoComponent.component('dito-panel', {
     },
 
     hasBreak(schema, type) {
-      return [type, 'both'].includes(schema.break)
+      return schema.break === type || getPercentage(schema) === 100
     },
 
     hasFill(schema) {
-      const { fill, break: _break, width } = schema
-      return fill || _break || width && parseFloat(width) > 0
+      return getPercentage(schema) > 0
     },
 
     getStyle(schema) {
-      const { width } = schema
-      if (width) {
-        const value = parseFloat(width)
-        const percent = isString(width) && /%/.test(width) ? value : value * 100
-        return `flex-basis: ${Math.floor(percent * 100) / 100}%;`
-      }
+      const percentage = getPercentage(schema)
+      return percentage && `flex-basis: ${percentage}%;`
     }
   }
 })
+
+function getPercentage(schema) {
+  const { width } = schema
+  const value = parseFloat(width)
+  return isString(width) && /%/.test(width) ? value : value * 100
+}
 </script>
