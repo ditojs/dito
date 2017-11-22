@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-errors
     ul
-      li(v-for="error in errors.collect(name)")
+      li(v-for="error in $errors.collect(name)")
         | {{ error }}
 </template>
 

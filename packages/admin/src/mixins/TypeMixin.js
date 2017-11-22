@@ -88,7 +88,7 @@ export default {
       for (const { message } of errors) {
         // Convert to the same sentence structure as vee-validate:
         const prefix = `The ${this.label} field`
-        this.errors.add(this.name,
+        this.$errors.add(this.name,
           message.indexOf(prefix) === 0 ? message : `${prefix} ${message}.`)
       }
       if (focus) {

@@ -13,7 +13,10 @@ Vue.config.productionTip = false
 Vue.use(VueRouter)
 Vue.use(VeeValidate, {
   // See: https://github.com/logaretm/vee-validate/issues/468
-  inject: false
+  inject: false,
+  // Prefix `errors` and `fields with $ to make it clear they're special props:
+  errorBagName: '$errors',
+  fieldsBagName: '$fields'
 })
 
 const user = {

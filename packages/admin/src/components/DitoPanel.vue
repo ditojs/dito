@@ -20,11 +20,11 @@
           :disabled="getValue(compSchema, 'disabled', false) || disabled"
           :class="{ \
             'dito-fill': hasFill(compSchema), \
-            'dito-has-errors': errors.has(key) \
+            'dito-has-errors': $errors.has(key) \
           }"
         )
         dito-errors(
-          v-if="errors.has(key)"
+          v-if="$errors.has(key)"
           :name="key"
         )
       li.dito-break(v-if="compSchema.break === 'after'")

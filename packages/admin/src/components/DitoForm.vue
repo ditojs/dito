@@ -180,7 +180,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return Object.keys(this.fields).some(key => this.fields[key].dirty)
+      return Object.keys(this.$fields).some(key => this.$fields[key].dirty)
     }
   },
 
@@ -289,7 +289,7 @@ export default DitoComponent.component('dito-form', {
         // Default button is submit:
         this.submitData(button || this.buttons.submit)
       } else {
-        this.focus(this.errors.items[0].field)
+        this.focus(this.$errors.items[0].field)
         this.notifyValidationErrors()
       }
     },
