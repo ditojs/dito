@@ -1,7 +1,7 @@
 <template lang="pug">
   ul.dito-panel(v-if="schema.components")
     template(v-for="(compSchema, key) in schema.components")
-      li.dito-break(v-if="hasBreak(compSchema, 'before')")
+      li.dito-break(v-if="compSchema.break === 'before'")
       li(
         v-show="getValue(compSchema, 'visible', true)"
         :style="getStyle(compSchema)"
@@ -27,7 +27,7 @@
           v-if="errors.has(key)"
           :name="key"
         )
-      li.dito-break(v-if="hasBreak(compSchema, 'after')")
+      li.dito-break(v-if="compSchema.break === 'after'")
 </template>
 
 <style lang="sass">
@@ -85,16 +85,18 @@ export default DitoComponent.component('dito-panel', {
           : value
     },
 
-    hasBreak(schema, type) {
-      return schema.break === type || getPercentage(schema) === 100
+    hasFill(schema) {
+      return this.getPercentage(schema) > 0
     },
 
-    hasFill(schema) {
-      return getPercentage(schema) > 0
+    getPercentage(schema) {
+      const { width } = schema
+      const value = parseFloat(width)
+      return isString(width) && /%/.test(width) ? value : value * 100
     },
 
     getStyle(schema) {
-      const percentage = getPercentage(schema)
+      const percentage = this.getPercentage(schema)
       return percentage && `flex-basis: ${percentage}%;`
     },
 
@@ -105,10 +107,4 @@ export default DitoComponent.component('dito-panel', {
     }
   }
 })
-
-function getPercentage(schema) {
-  const { width } = schema
-  const value = parseFloat(width)
-  return isString(width) && /%/.test(width) ? value : value * 100
-}
 </script>
