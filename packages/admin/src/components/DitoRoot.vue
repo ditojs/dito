@@ -25,12 +25,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import VueNotifications from 'vue-notification'
-import VueDraggable from 'vuedraggable'
-import DitoSpinner from 'vue-spinner/src/PulseLoader'
-DitoComponent.use(VueNotifications)
-DitoComponent.component('vue-draggable', VueDraggable)
-DitoComponent.component('dito-spinner', DitoSpinner)
 
 export default DitoComponent.component('dito-root', {
   props: {
@@ -41,7 +35,7 @@ export default DitoComponent.component('dito-root', {
   created() {
     const { spinner } = this.settings || {}
     if (spinner) {
-      const { props } = DitoSpinner
+      const { props } = DitoComponent.get('dito-spinner').options
       props.size.default = spinner.size || '6px'
       props.color.default = spinner.color || '#999'
     }
