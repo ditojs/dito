@@ -28,6 +28,7 @@ export default {
         // so clear the filters and load data with clearing.
         this.setQuery({})
         this.loadData(true)
+        this.closeNotifications()
       } else if (path1 === path2 && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.

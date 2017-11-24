@@ -15,6 +15,10 @@ export default {
     user() { return this.meta.user },
     api() { return this.meta.api },
 
+    rootComponent() {
+      return this.$root.$children[0]
+    },
+
     routeComponent() {
       // Loop through all non-route components (e.g. DitoPanel, DitoTab) until
       // the closest component that is in the route is found.
@@ -94,6 +98,10 @@ export default {
         success: 'log'
       }[type]
       console[log](content)
+    },
+
+    closeNotifications() {
+      this.rootComponent.$refs.notifications.destroyAll()
     }
   }
 }

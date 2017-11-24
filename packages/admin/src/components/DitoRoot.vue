@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito
-    notifications(position="top right")
+    notifications(position="top right" ref="notifications")
     dito-menu(:views="views")
     main.dito-page
       dito-trail
