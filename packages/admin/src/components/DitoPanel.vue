@@ -61,7 +61,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isString, isFunction } from '@/utils'
+import { isFunction } from '@/utils'
 
 export default DitoComponent.component('dito-panel', {
   inject: ['$validator'],
@@ -91,8 +91,10 @@ export default DitoComponent.component('dito-panel', {
 
     getPercentage(schema) {
       const { width } = schema
-      const value = parseFloat(width)
-      return isString(width) && /%/.test(width) ? value : value * 100
+      return width === 'auto' ? null // auto = no fitting
+        : !width ? 100 // default = 100%
+        : /%/.test(width) ? parseFloat(width) // percentage
+        : width * 100 // fraction
     },
 
     getStyle(schema) {
