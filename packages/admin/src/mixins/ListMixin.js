@@ -108,6 +108,8 @@ export default {
     },
 
     setQuery(query) {
+      // Always keep the displayed query parameters in sync with the store.
+      this.$router.replace({ query })
       this.setStore('query', query)
     },
 
