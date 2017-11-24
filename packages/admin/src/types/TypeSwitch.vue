@@ -34,13 +34,8 @@ export default TypeComponent.register('switch', {
   computed: {
     // TODO: Remove once PR #38 is released:
     // https://github.com/euvl/vue-js-toggle-button/pull/38
-    value: {
-      get() {
-        return !!this.data[this.name]
-      },
-      set(value) {
-        this.data[this.name] = value
-      }
+    default() {
+      return false
     },
 
     width() {

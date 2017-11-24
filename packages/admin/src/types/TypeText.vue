@@ -6,6 +6,8 @@
     :title="label"
     :value="value"
     @input="onInput"
+    @focus="onFocus"
+    @blur="onBlur"
     v-validate="validations"
     :placeholder="placeholder"
     :disabled="disabled"
@@ -16,10 +18,38 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register(['text', 'email', 'url', 'tel'], {
+const maskedPassword = '****************'
+
+export default TypeComponent.register([
+  'text', 'email', 'url', 'tel', 'password'
+], {
+  computed: {
+    isPassword() {
+      return this.type === 'password'
+    },
+
+    default() {
+      return this.isPassword ? maskedPassword : null
+    }
+  },
+
   methods: {
     onInput(event) {
       this.value = event.target.value
+    },
+
+    onFocus(event) {
+      const { target } = event
+      if (this.isPassword && target.value === maskedPassword) {
+        target.value = ''
+      }
+    },
+
+    onBlur(event) {
+      const { target } = event
+      if (this.isPassword && !target.value) {
+        target.value = maskedPassword
+      }
     }
   }
 })
