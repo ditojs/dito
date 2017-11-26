@@ -43,12 +43,12 @@ export default class Model extends objection.Model {
   }
 
   async $update(attributes) {
-    const updated = await this.$query().clearEager().updateAndFetch(attributes)
+    const updated = await this.$query().updateAndFetch(attributes)
     return this.$set(updated)
   }
 
   async $patch(attributes) {
-    const patched = await this.$query().clearEager().patchAndFetch(attributes)
+    const patched = await this.$query().patchAndFetch(attributes)
     return this.$set(patched)
   }
 

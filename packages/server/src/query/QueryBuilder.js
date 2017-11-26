@@ -26,7 +26,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._allow = null
     this._propertyRefsCache = {}
-    this._mergeDefaultEager = true
+    this._applyDefaultEager = true
     this._scopes = []
   }
 
@@ -34,17 +34,19 @@ export default class QueryBuilder extends objection.QueryBuilder {
     const clone = super.clone()
     clone._allow = this._allow
     clone._propertyRefsCache = this._propertyRefsCache
-    clone._mergeDefaultEager = this._mergeDefaultEager
+    clone._applyDefaultEager = this._applyDefaultEager
     clone._scopes = this._scopes
     return clone
   }
 
   execute() {
-    if (this._mergeDefaultEager) {
+    // Only apply defaultEager setting if this is a find query, meaning it does
+    // not specify any write operations.
+    if (this._applyDefaultEager && this.isFindQuery()) {
       const { defaultEager } = this.modelClass()
       if (defaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
-        // called before (using eager() sets `_mergeDefaultEager` to false).
+        // called before. Using eager() sets `_applyDefaultEager` to `false`.
         this.mergeEager(defaultEager)
       }
     }
@@ -85,12 +87,12 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   eager(exp, filters) {
-    this._mergeDefaultEager = false
+    this._applyDefaultEager = false
     return super.eager(exp, filters)
   }
 
   clearEager() {
-    this._mergeDefaultEager = false
+    this._applyDefaultEager = false
     return super.clearEager()
   }
 
