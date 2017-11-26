@@ -89,6 +89,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return super.eager(exp, filters)
   }
 
+  clearEager() {
+    this._mergeDefaultEager = false
+    return super.clearEager()
+  }
+
   raw(...args) {
     return this.knex().raw(...args)
   }
