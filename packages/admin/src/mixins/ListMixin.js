@@ -136,7 +136,7 @@ export default {
       const title = item && this.getItemTitle(item)
 
       const notify = () => this.notify('success', 'Successfully Removed',
-        `${title} was removed.`)
+        `${title} was ${this.verbDeleted}.`)
 
       if (item && confirm(
         `Do you really want to ${this.verbDelete} ${title}?`)

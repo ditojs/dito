@@ -51,16 +51,40 @@ export default {
       return this.isTransient ? 'add' : 'create'
     },
 
+    verbCreated() {
+      return this.isTransient ? 'added' : 'created'
+    },
+
     verbSave() {
       return this.isTransient ? 'apply' : 'save'
+    },
+
+    verbSaved() {
+      return this.isTransient ? 'applied' : 'saved'
+    },
+
+    verbSubmit() {
+      return this.create ? this.verbCreate : this.verbSave
+    },
+
+    verbSubmitted() {
+      return this.create ? this.verbCreated : this.verbSaved
     },
 
     verbDelete() {
       return this.isTransient ? 'remove' : 'delete'
     },
 
+    verbDeleted() {
+      return this.isTransient ? 'removed' : 'deleted'
+    },
+
     verbEdit() {
       return 'edit'
+    },
+
+    verbEdited() {
+      return 'edited'
     }
   },
 

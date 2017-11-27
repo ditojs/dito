@@ -31,7 +31,7 @@
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
               type="submit"
-              :class="`dito-button-${create ? verbCreate : verbSave}`"
+              :class="`dito-button-${verbSubmit}`"
             ) {{ buttons.submit && buttons.submit.label }}
             button.dito-button(
               v-for="(button, key) in buttons"
@@ -67,7 +67,7 @@ import DitoComponent from '@/DitoComponent'
 import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { isArray, isObject, clone } from '@/utils'
+import { isArray, isObject, clone, capitalize } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
@@ -297,7 +297,6 @@ export default DitoComponent.component('dito-form', {
     submitData(button = {}) {
       const payload = this.data
       const { onSuccess, onError } = button
-      const title = this.getItemTitle(this.data)
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -310,16 +309,19 @@ export default DitoComponent.component('dito-form', {
             parentList.push(payload)
           } else {
             ok = false
-            this.notify('error', 'Request Error', 'Unable to create item.')
+            this.notify('error', 'Request Error',
+              `Unable to ${this.verbCreate} item.`)
           }
         } else {
           this.setParentData(payload)
+          const title = this.getItemTitle(this.data)
           if (onSuccess) {
             onSuccess.call(this, this.data, title)
           } else {
             this.notify('info', 'Change Applied',
               `Changes in ${title} were applied.\n` +
-              `NOTE: The parent needs to be stored to persist this change.`
+              `NOTE: The parent needs to be ${this.verbSaved} ` +
+              `to persist this change.`
             )
           }
         }
@@ -337,11 +339,13 @@ export default DitoComponent.component('dito-form', {
         this.request(method, { payload, resource }, (err, response) => {
           const { data = {} } = response
           if (!err) {
+            const title = this.getItemTitle(data)
             if (onSuccess) {
-              onSuccess.call(this, this.data, title)
+              onSuccess.call(this, data, title)
             } else {
-              this.notify('success', 'Sucessfully Stored',
-                `${title} was stored.`)
+              const submitted = this.verbSubmitted
+              this.notify('success', `Sucessfully ${capitalize(submitted)}`,
+                `${title} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
@@ -355,21 +359,25 @@ export default DitoComponent.component('dito-form', {
           } else {
             // Dito validation error?
             const { errors } = this.hasValidationError(response) && data || {}
+            let error = null
             if (errors) {
               try {
                 if (this.showErrors(errors, true)) {
                   this.notifyValidationErrors()
                 }
               } catch (err) {
-                this.notify('error', 'Request Error', err.message || err)
+                error = err
               }
             } else {
-              const error = isObject(data) ? data : err
+              error = isObject(data) ? data : err
+            }
+            if (error) {
+              const title = this.getItemTitle(this.data)
               if (onError) {
                 onError.call(this, error, this.data, title)
               } else {
                 this.notify('error', 'Request Error',
-                  error.message || error.toString())
+                  `Error storing ${title}: ${error.message || error}`)
               }
             }
           }
