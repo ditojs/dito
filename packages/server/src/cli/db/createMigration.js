@@ -73,6 +73,9 @@ async function collectModelTables(modelClass, app, tables) {
         statements.push(`// ${description}`)
       }
       if (isString(unique)) {
+        // To declare composite foreign keys as unique, you can give each
+        // property the same string value in the `unique` keywords, e.g.:
+        // `unique: 'customerId_name'
         const composites = uniqueComposites[unique] ||
           (uniqueComposites[unique] = [])
         composites.push(column)
@@ -105,8 +108,11 @@ async function collectModelTables(modelClass, app, tables) {
           // TODO: Support composite keys for foreign references:
           // Use `asArray(from)`, `asArray(to)`
           const { from, to } = relation
-          const [, fromProperty] = from && from.split('.') || []
+          const [fromClass, fromProperty] = from && from.split('.') || []
           if (fromProperty === name) {
+            if (fromClass !== modelClass.modelName) {
+              throw Error(`Invalid relation declaration: ${relation}`)
+            }
             const [toClass, toProperty] = to && to.split('.') || []
             statement.push(
               '\n',

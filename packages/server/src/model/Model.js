@@ -20,7 +20,10 @@ export default class Model extends objection.Model {
         str => str.replace(/\brelationMappings\b/g, 'relations'))
     }
     // Install all events listed in the static events object.
-    this.installEvents(this.definition.events)
+    const { events } = this.definition
+    for (const [event, handler] of Object.entries(events || {})) {
+      this.on(event, handler)
+    }
     if (this.app.config.log.schema) {
       console.log(`${this.name}:\n`,
         util.inspect(this.jsonSchema, {
@@ -29,12 +32,6 @@ export default class Model extends objection.Model {
           maxArrayLength: null
         })
       )
-    }
-  }
-
-  static installEvents(events = {}) {
-    for (const [event, handler] of Object.entries(events)) {
-      this.on(event, handler)
     }
   }
 

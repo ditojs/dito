@@ -102,7 +102,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   async truncate() {
     if (this.isPostgreSQL()) {
-      // Include `cascade` in truncate queries.
+      // Include `cascade` in PostgreSQL truncate queries.
       return this.raw('truncate table ?? restart identity cascade',
         this.modelClass().tableName)
     }
@@ -181,7 +181,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   upsertGraphAndFetchById(id, data, opt) {
     return this.upsertGraphAndFetch({
-      ...this.getIdObject(id),
+      ...this.getIdProperties(id),
       ...data
     }, opt)
   }
@@ -202,12 +202,12 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   updateGraphAndFetchById(id, data, opt) {
     return this.updateGraphAndFetch({
-      ...this.getIdObject(id),
+      ...this.getIdProperties(id),
       ...data
     }, opt)
   }
 
-  getIdObject(id) {
+  getIdProperties(id) {
     const modelClass = this.modelClass()
     const fullId = {}
     const ids = asArray(id)
@@ -330,7 +330,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     for (const method of mixinMethods) {
       if (method in target) {
         console.warn(
-          `There is already a property named '${method}' on '$(target)'`)
+          `There is already a property named '${method}' on '${target}'`)
       } else {
         Object.defineProperty(target, method, {
           value(...args) {
