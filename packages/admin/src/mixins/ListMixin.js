@@ -43,8 +43,8 @@ export default {
       return !this.isTransient && !this.value
     },
 
-    viewSchema() {
-      // The view description of a list is the list's description itself.
+    listSchema() {
+      // The listSchema of a list is the list's schema itself.
       return this.schema
     },
 

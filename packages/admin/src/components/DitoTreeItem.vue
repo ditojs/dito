@@ -45,7 +45,7 @@
       dito-tree-item(
         v-show="opened"
         v-for="(child, key) in children"
-        :key="key"
+        :key="getTitle(child, schema.children)"
         :data="child"
         :schema="schema.children"
         :open="childrenOpen"
@@ -115,11 +115,16 @@ export default DitoComponent.component('dito-tree-item', {
     }
   },
 
+  methods: {
+    getTitle(item, schema) {
+      const { title } = schema
+      return isFunction(title) ? title(item) : item && item[title]
+    }
+  },
+
   computed: {
     title() {
-      const { title } = this.schema
-      const { data } = this
-      return isFunction(title) ? title(data) : data && data[title]
+      return this.getTitle(this.data, this.schema)
     },
 
     children() {

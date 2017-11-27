@@ -10,8 +10,8 @@ export default {
 
   computed: {
     // Short-cuts to meta properties:
-    viewSchema() { return this.meta.viewSchema },
-    formSchema() { return this.viewSchema.formSchema },
+    listSchema() { return this.meta.listSchema },
+    formSchema() { return this.meta.formSchema },
     user() { return this.meta.user },
     api() { return this.meta.api },
 

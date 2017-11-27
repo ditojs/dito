@@ -18,7 +18,7 @@
               :disabled="loading"
             )
           dito-panel(
-            :schema="formSchema"
+            :schema="schema"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -97,8 +97,12 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
+    schema() {
+      return this.meta.schema
+    },
+
     name() {
-      return this.formSchema.name
+      return this.schema.name
     },
 
     create() {
@@ -122,11 +126,11 @@ export default DitoComponent.component('dito-form', {
     },
 
     buttons() {
-      return this.formSchema.buttons || {}
+      return this.schema.buttons || {}
     },
 
     tabs() {
-      return this.formSchema.tabs
+      return this.schema.tabs
     },
 
     selectedTab() {
@@ -152,7 +156,7 @@ export default DitoComponent.component('dito-form', {
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
       const parentData = this.parentRouteComponent.data
-      return parentData && parentData[this.viewSchema.name]
+      return parentData && parentData[this.listSchema.name]
     },
 
     inheritedData() {
@@ -202,7 +206,7 @@ export default DitoComponent.component('dito-form', {
 
       if (this.create) {
         if (!this.createdData) {
-          this.createdData = initData(this.formSchema, {})
+          this.createdData = initData(this.schema, {})
         }
       } else {
         // super.initData()
@@ -230,7 +234,7 @@ export default DitoComponent.component('dito-form', {
           const comp = this.components[key]
           // Only check for nested on list items that actuall load data, since
           // other components can have array values too.
-          if (comp && comp.isList && !comp.viewSchema.nested) {
+          if (comp && comp.isList && !comp.listSchema.nested) {
             continue
           }
         }

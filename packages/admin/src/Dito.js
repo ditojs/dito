@@ -34,18 +34,16 @@ export function setup(el, options) {
     return isFunction(value) ? value : value === true ? defaultFn : val => val
   }
 
-  function processView(viewSchema, viewName, routes, level) {
-    const formName = viewSchema.form
+  function processList(listSchema, viewName, routes, level) {
+    const formName = listSchema.form
     const formSchema = formName && forms[normalizeName(formName)]
     if (formName && !formSchema) {
       throw new Error(`Form '${formName}' is not defined`)
     }
     const path = normalizePath(viewName)
-    viewSchema.path = path
-    viewSchema.name = viewName
-    viewSchema.formSchema = formSchema
+    listSchema.path = path
+    listSchema.name = viewName
     const meta = {
-      viewSchema,
       user,
       api
     }
@@ -53,8 +51,9 @@ export function setup(el, options) {
     // Root views have their own routes and entries in the breadcrumbs, and the
     // form routes are children of the view route. Nested lists in forms don't
     // have views and routes, so their form routes need the viewName prefixed.
+    const pathPrefix = root ? '' : `${path}/`
     const formRoutes = formSchema
-      ? processForm(root ? '' : `${path}/`, formSchema, formName, meta, level)
+      ? processForm(pathPrefix, formSchema, listSchema, formName, meta, level)
       : []
 
     routes.push(
@@ -67,7 +66,9 @@ export function setup(el, options) {
           component: DitoView,
           meta: {
             ...meta,
-            labelSchema: viewSchema
+            schema: listSchema,
+            listSchema,
+            formSchema // TODO: Allow dynamic forms!
           }
         }
         // Just redirect back to the form if the user enters a nested list route
@@ -84,12 +85,14 @@ export function setup(el, options) {
     for (const name in components) {
       const schema = components[name]
       if (schema.form && !schema.inline) {
-        processView(schema, name, routes, level)
+        processList(schema, name, routes, level)
       }
     }
   }
 
-  function processForm(pathPrefix, formSchema, formName, meta, level) {
+  function processForm(pathPrefix, formSchema, listSchema, formName, meta,
+    level) {
+    // TODO: Allow dynamic forms!
     formSchema.path = normalizePath(formName)
     formSchema.name = formName
     const children = []
@@ -109,7 +112,9 @@ export function setup(el, options) {
       children,
       meta: {
         ...meta,
-        labelSchema: formSchema,
+        schema: formSchema,
+        listSchema,
+        formSchema,
         param
       }
     }]
@@ -117,14 +122,14 @@ export function setup(el, options) {
 
   api.resources = {
     member(component, itemId) {
-      return `${component.viewSchema.path}/${itemId}`
+      return `${component.listSchema.path}/${itemId}`
     },
 
     collection(component) {
-      const { parentFormComponent: parentForm, viewSchema } = component
+      const { parentFormComponent: parentForm, listSchema } = component
       return parentForm
-        ? `${parentForm.viewSchema.path}/${parentForm.itemId}/${viewSchema.path}`
-        : viewSchema.path
+        ? `${parentForm.listSchema.path}/${parentForm.itemId}/${listSchema.path}`
+        : listSchema.path
     },
     ...api.resources
   }
@@ -132,7 +137,7 @@ export function setup(el, options) {
   const routes = []
 
   for (const name in views) {
-    processView(views[name], name, routes, 0)
+    processList(views[name], name, routes, 0)
   }
 
   new Vue({

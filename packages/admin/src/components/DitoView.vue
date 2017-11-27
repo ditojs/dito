@@ -2,8 +2,8 @@
   .dito-view
     div.dito-scroll(v-if="isLastRoute")
       component.dito-content(
-        :is="getTypeComponent(viewSchema.type)"
-        :schema="viewSchema"
+        :is="getTypeComponent(schema.type)"
+        :schema="schema"
         :name="name"
         :data="data"
         :meta="meta"
@@ -35,8 +35,12 @@ export default DitoComponent.component('dito-view', {
   },
 
   computed: {
+    schema() {
+      return this.meta.schema
+    },
+
     name() {
-      return this.viewSchema.name
+      return this.schema.name
     },
 
     data() {

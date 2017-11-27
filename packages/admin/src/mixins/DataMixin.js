@@ -23,7 +23,7 @@ export default {
 
   computed: {
     isNested() {
-      return !!this.viewSchema.nested
+      return !!this.listSchema.nested
     },
 
     isTransient() {
@@ -98,15 +98,17 @@ export default {
     },
 
     getItemId(item, index) {
-      const { idName = 'id' } = this.formSchema
+      const { idName = 'id' } = this.listSchema
       return String(this.isTransient ? index : item[idName])
     },
 
     getItemTitle(item) {
-      const { itemTitle } = this.viewSchema
       const label = this.getLabel(this.formSchema)
+      const { itemTitle, columns } = this.listSchema
+      const itemProp = isString(itemTitle) && itemTitle ||
+        columns && Object.keys(columns)[0]
       const title = isFunction(itemTitle) ? itemTitle(item)
-        : isString(itemTitle) ? item[itemTitle]
+        : itemProp ? item[itemProp]
         : item.name
       return `${label} ${title ? `"${title}"` : `(id:${this.getItemId(item)})`}`
     },
@@ -137,7 +139,7 @@ export default {
         }
         // Dito specific query parameters:
         // Convert offset/limit to range so that we get entry counting
-        const { paginate, scope } = this.viewSchema
+        const { paginate, scope } = this.listSchema
         const { page = 0, ...query } = this.query || {}
         const limit = this.isList && paginate // Only use range on lists
         const offset = page * limit

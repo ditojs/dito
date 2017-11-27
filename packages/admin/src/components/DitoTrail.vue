@@ -81,12 +81,12 @@ export default DitoComponent.component('dito-trail', {
 
     getRouteLabel(route) {
       const { meta } = route
-      const { labelSchema } = meta
-      let { breadcrumb } = labelSchema
+      const { schema } = meta
+      let { breadcrumb } = schema
       if (!breadcrumb) {
         const param = this.$route.params[meta.param]
         const prefix = param ? param === 'create' ? 'Create' : 'Edit' : ''
-        breadcrumb = `${prefix} ${this.getLabel(labelSchema)}`
+        breadcrumb = `${prefix} ${this.getLabel(schema)}`
       }
       return breadcrumb
     }
