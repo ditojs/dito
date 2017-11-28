@@ -1,10 +1,12 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
+    :class="{ 'dito-mutiple': schema.multiple }"
     v-model="selectValue"
     :data-vv-name="name"
     v-validate="validations"
     :show-labels="false"
-    :placeholder="schema.placeholder"
+    :placeholder="placeholder"
+    tag-placeholder="Press enter to add new tag",
     :options="options || []"
     :label="labelKey"
     :track-by="valueKey"
@@ -16,6 +18,7 @@
     :internal-search="true"
     :close-on-select="true"
     :loading="loading"
+    @tag="addTag"
   )
 </template>
 
@@ -56,8 +59,6 @@
 
     .multiselect__single,
     .multiselect__input
-      float: left
-      width: auto
       font-size: inherit
       padding: $input-padding
       // So input can float next to tags and have proper margins with
@@ -66,6 +67,13 @@
       margin: 0
       line-height: $line-height
       background: none
+
+    &.dito-mutiple
+      // Only srink and float the input field if we have mutliple values (tags).
+      .multiselect__single,
+      .multiselect__input
+        float: left
+        width: auto
 
     &.dito-has-errors
       .multiselect__tags
@@ -183,19 +191,55 @@ export default TypeComponent.register('multiselect', {
   computed: {
     selectValue: {
       get() {
-        // Convert value to options object, since vue-multiselect can't map that
-        // itself unfortunately. `track-by` is used for :key mapping it seems.
-        const { value } = this
-        return this.valueKey
-          ? this.findOption(this.options, value, this.schema.options.groupBy)
-          : value
+        return this.schema.multiple
+          ? (this.value || []).map(v => this.valueToOption(v))
+          : this.valueToOption(this.value)
       },
-      set(value) {
-        // When changes happend, store the mapped value instead of full object.
-        this.value = this.valueKey
-          ? value && value[this.valueKey]
-          : value
+      set(option) {
+        this.value = this.schema.multiple
+          ? (option || []).map(v => this.optionToValue(v))
+          : this.optionToValue(option)
       }
+    },
+
+    placeholder() {
+      const { placeholder, searchable, taggable } = this.schema
+      return placeholder || (
+        searchable && taggable ? 'Search or add a tag'
+        : searchable ? 'Select or search entry'
+        : undefined
+      )
+    }
+  },
+
+  methods: {
+    valueToOption(value) {
+      // Convert value to options object, since vue-multiselect can't map that
+      // itself unfortunately. `track-by` is used for :key mapping it seems.
+      return this.valueKey
+        ? this.findOption(this.options, value, this.schema.options.groupBy)
+        : value
+    },
+
+    optionToValue(value) {
+      // When changes happend, store the mapped value instead of full object.
+      return this.valueKey
+        ? value && value[this.valueKey]
+        : value
+    },
+
+    addTag(tag) {
+      const { labelKey, valueKey } = this
+      const option = labelKey && valueKey
+        ? {
+          [labelKey]: tag,
+          // TODO: Define a simple schema option to convert the tag value to
+          // something else, e.g. `toTag: tag => underscore(tag)`
+          [valueKey]: tag
+        }
+        : tag
+      this.options.push(option)
+      this.value.push(this.optionToValue(option))
     }
   }
 })
