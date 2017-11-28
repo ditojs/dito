@@ -7,6 +7,7 @@
     ref="input"
     @input="onInput"
     v-validate="validations"
+    :data-vv-as="label"
     :placeholder="placeholder"
     :disabled="disabled"
     :readonly="readonly"

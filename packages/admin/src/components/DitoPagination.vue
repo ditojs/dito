@@ -24,7 +24,7 @@
       router-link.dito-button(
         v-for="page in numPages"
         :to="{ query: getQuery(page) }"
-        :key="`page_{page}`"
+        :key="page"
         tag="button"
         type="button"
         :class="{ 'dito-active': page === current }"

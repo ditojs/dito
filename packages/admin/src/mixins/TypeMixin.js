@@ -27,10 +27,10 @@ export default {
   computed: {
     value: {
       get() {
-        return pick(this.data[this.name], this.default)
+        return pick(this.data[this.schema.name], this.default)
       },
       set(value) {
-        this.data[this.name] = value
+        this.data[this.schema.name] = value
       }
     },
 
@@ -39,7 +39,7 @@ export default {
     },
 
     label() {
-      return this.getLabel(this.schema, this.name)
+      return this.getLabel(this.schema)
     },
 
     readonly() {
@@ -98,27 +98,22 @@ export default {
       }
     },
 
-    showErrors(path, errors, focus) {
-      if (path.length > 1) {
-        const navigate = this.navigateToComponent
-        if (navigate) {
-          navigate.call(this, path, (route, property) => {
-            const { matched } = route
-            const { meta } = matched[matched.length - 1]
-            // Pass on the errors to the instance through the meta object,
-            // see DitoForm.created()
-            if (property) {
-              meta.errors = {
-                [property]: errors
-              }
+    navigateToErrors(path, errors) {
+      const navigate = this.navigateToComponent
+      if (navigate) {
+        navigate.call(this, path, (route, property) => {
+          const { matched } = route
+          const { meta } = matched[matched.length - 1]
+          // Pass on the errors to the instance through the meta object,
+          // see DitoForm.created()
+          if (property) {
+            meta.errors = {
+              [property]: errors
             }
-          })
-        } else {
-          throw new Error(
-            `Cannot show errors for field ${path.join('/')}: ${errors}`)
-        }
+          }
+        })
       } else {
-        this.addErrors(errors, focus)
+        throw new Error(`Cannot show errors for field ${path}: ${errors}`)
       }
     },
 

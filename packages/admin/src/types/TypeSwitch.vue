@@ -10,6 +10,7 @@
     :title="label"
     v-model="value"
     v-validate="validations"
+    :data-vv-as="label"
     :disabled="disabled"
   )
 </template>

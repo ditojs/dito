@@ -9,6 +9,7 @@
     @focus="onFocus"
     @blur="onBlur"
     v-validate="validations"
+    :data-vv-as="label"
     :placeholder="placeholder"
     :disabled="disabled"
     :readonly="readonly"

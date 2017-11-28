@@ -43,48 +43,56 @@ export function setup(el, options) {
     const path = normalizePath(viewName)
     listSchema.path = path
     listSchema.name = viewName
-    const meta = {
-      user,
-      api
+    listSchema.formSchema = formSchema // TODO: Support multiples
+    const { inline, nested } = listSchema
+    const addRoutes = !inline
+    if (inline) {
+      if (nested === false) {
+        throw new Error(
+          'Lists with inline forms can only work with nested data')
+      }
+      listSchema.nested = true
     }
     const root = level === 0
     // Root views have their own routes and entries in the breadcrumbs, and the
     // form routes are children of the view route. Nested lists in forms don't
     // have views and routes, so their form routes need the viewName prefixed.
     const pathPrefix = root ? '' : `${path}/`
+    const meta = addRoutes && { user, api }
     const formRoutes = formSchema
       ? processForm(pathPrefix, formSchema, listSchema, formName, meta, level)
       : []
-
-    routes.push(
-      root
-        ? {
-          path: `/${path}`,
-          ...formRoutes.length > 0 && {
-            children: formRoutes
-          },
-          component: DitoView,
-          meta: {
-            ...meta,
-            schema: listSchema,
-            listSchema,
-            formSchema // TODO: Allow dynamic forms!
+    if (addRoutes) {
+      routes.push(
+        root
+          ? {
+            path: `/${path}`,
+            ...formRoutes.length > 0 && {
+              children: formRoutes
+            },
+            component: DitoView,
+            meta: {
+              ...meta,
+              schema: listSchema,
+              listSchema,
+              formSchema // TODO: Allow dynamic forms!
+            }
           }
-        }
-        // Just redirect back to the form if the user enters a nested list route
-        : {
-          path,
-          redirect: '.'
-        },
-      // Include the prefixed formRoutes for nested lists.
-      ...(!root && formRoutes)
-    )
+          // Just redirect back to the form if the user hits a nested list route
+          : {
+            path,
+            redirect: '.'
+          },
+        // Include the prefixed formRoutes for nested lists.
+        ...(!root && formRoutes)
+      )
+    }
   }
 
   function processComponents(components, routes, level) {
     for (const name in components) {
       const schema = components[name]
-      if (schema.form && !schema.inline) {
+      if (schema.form) {
         processList(schema, name, routes, level)
       }
     }
@@ -101,23 +109,25 @@ export function setup(el, options) {
       processComponents(tabs[name].components, children, level + 1)
     }
     processComponents(formSchema.components, children, level + 1)
-
-    // Use differently named url parameters on each nested level for id as
-    // otherwise they would clash and override each other inside $route.params
-    // See: https://github.com/vuejs/vue-router/issues/1345
-    const param = `id${level + 1}`
-    return [{
-      path: `${pathPrefix}:${param}`,
-      component: DitoForm,
-      children,
-      meta: {
-        ...meta,
-        schema: formSchema,
-        listSchema,
-        formSchema,
-        param
-      }
-    }]
+    // meta is only set when we want to actually produce routes.
+    if (meta) {
+      // Use differently named url parameters on each nested level for id as
+      // otherwise they would clash and override each other inside $route.params
+      // See: https://github.com/vuejs/vue-router/issues/1345
+      const param = `id${level + 1}`
+      return [{
+        path: `${pathPrefix}:${param}`,
+        component: DitoForm,
+        children,
+        meta: {
+          ...meta,
+          schema: formSchema,
+          listSchema,
+          formSchema,
+          param
+        }
+      }]
+    }
   }
 
   api.resources = {

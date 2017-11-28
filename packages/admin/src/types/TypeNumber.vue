@@ -6,6 +6,7 @@
     :title="label"
     v-model.number="value"
     v-validate="validations"
+    :data-vv-as="label"
     :placeholder="placeholder"
     :disabled="disabled"
     :readonly="readonly"

@@ -4,9 +4,10 @@
     select(
       :id="name"
       :name="name"
-     :title="label"
-     v-model="value"
+      :title="label"
+      v-model="value"
       v-validate="validations"
+      :data-vv-as="label"
     )
       template(
         v-for="option in options"

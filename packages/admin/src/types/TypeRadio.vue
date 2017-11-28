@@ -12,6 +12,7 @@
           :value="getOptionValue(option)"
           v-model="value"
           v-validate="validations"
+          :data-vv-as="label"
           :disabled="disabled"
         )
         | {{ getOptionLabel(option) }}

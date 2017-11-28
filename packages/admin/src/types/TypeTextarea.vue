@@ -5,6 +5,7 @@
     :title="label"
     v-model="value"
     v-validate="validations"
+    :data-vv-as="label"
     :rows="schema.lines || 4"
     :placeholder="placeholder"
     :disabled="disabled"

@@ -157,16 +157,27 @@ export default {
       }
     },
 
+    addItem(item = {}) {
+      this.value.push(item)
+      return item
+    },
+
     navigateToComponent(path, onComplete) {
-      const route = [...path]
+      const route = path.split('/')
       // Put collection/id pairs (even numbers) into route, and what's left
       // identifies the property to focus.
       const property = route.length & 1 ? route.pop() : null
-      this.$router.push({ path: route.join('/'), append: true }, route => {
-        if (onComplete) {
-          onComplete(route, property)
-        }
-      })
+      const location = route.join('/')
+      const { matched } = this.$router.match(location)
+      if (matched.length) {
+        this.$router.push({ path: location, append: true }, route => {
+          if (onComplete) {
+            onComplete(route, property)
+          }
+        })
+      } else {
+        throw new Error(`Cannot find route field ${path}.`)
+      }
     }
   }
 }

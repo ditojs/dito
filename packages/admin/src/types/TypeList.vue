@@ -26,9 +26,10 @@
       )
         tr(
           v-for="item, index in value || []"
-          :key="`${name}-${getItemId(item)}`"
+          :key="index"
         )
           template(v-if="columns")
+            // TODO: Implement inline components in column mode!
             td(
               v-for="column in columns"
               :class="column.class"
@@ -45,8 +46,17 @@
               )
           template(v-else)
             td
+              dito-panel(
+                v-if="schema.inline"
+                :schema="schema.formSchema"
+                :data="item"
+                :meta="meta"
+                :prefix="`${name}/${index}/`"
+                :store="store"
+                :disabled="loading"
+              )
               component(
-                v-if="schema.component"
+                v-else-if="schema.component"
                 :is="schema.component"
                 :item="item"
               )
@@ -78,7 +88,14 @@
               :class="`dito-button-${verbDelete}`"
             )
     .dito-buttons.dito-buttons-round(v-if="schema.creatable")
+      button.dito-button(
+        v-if="schema.inline"
+        type="button"
+        @click="addItem()"
+        :class="`dito-button-${verbCreate}`"
+      )
       router-link.dito-button(
+        v-else
         :to="`${path}create`" append
         tag="button"
         type="button"
@@ -103,36 +120,45 @@ $buttons-padding: 2px
         float: right
     > table
       width: 100%
-      border-spacing: 0 $list-spacing
+      border-spacing: 0
       &:not(:empty)
         margin: -$list-spacing 0
         & + .dito-buttons
           margin-top: $list-spacing
-      > thead,
+      > thead + tbody
+        // Add top border for first row if there is a thead.
+        > tr:first-child
+          > td
+            border-top: 1px solid white
       > tbody
         > tr
           vertical-align: baseline
           > td
+            border-bottom: 1px solid white
             padding: $form-spacing
             background: $color-lightest
-            // Add rounded corners in first & last headers
-            &:first-child
-              border-top-left-radius: $border-radius
-              border-bottom-left-radius: $border-radius
-            &:last-child
-              border-top-right-radius: $border-radius
-              border-bottom-right-radius: $border-radius
             & + td
-              border-left: 1px solid white
+              border-left: 1px solid $color-white
             &.dito-buttons
               width: 1%
               padding: $buttons-padding
+            &,
+            &.dito-buttons // So it's stronger than .dito-buttons setting below.
+              border-radius: 0
+              // Add rounded corners in first & last headers.
+              &:first-child
+                border-top-left-radius: $border-radius
+                border-bottom-left-radius: $border-radius
+              &:last-child
+                border-top-right-radius: $border-radius
+                border-bottom-right-radius: $border-radius
     .dito-buttons
       vertical-align: top
       text-align: right
       padding: $buttons-padding
       background: $color-lightest
       border-radius: $border-radius
+      line-height: 0
       .dito-button-drag
         cursor: grab
         &:active,

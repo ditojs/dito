@@ -11,7 +11,7 @@
             dito-panel(
               v-show="selectedTab === key"
               :schema="tabSchema"
-              :name="key"
+              :hash="key"
               :data="data || {}"
               :meta="meta"
               :store="store"
@@ -170,9 +170,9 @@ export default DitoComponent.component('dito-form', {
         const parentIndex = this.parentIndex = parentList.findIndex(
           (item, index) => this.getItemId(item, index) === this.itemId
         )
-        if (parentIndex >= 0) {
-          this.clonedData = clone(parentList[parentIndex])
-        }
+        this.clonedData = parentIndex >= 0
+          ? clone(parentList[parentIndex])
+          : null
       }
       return this.clonedData
     },
@@ -190,7 +190,7 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     initData() { // overrides DataMixin.initData()
-      const initData = (schema, data) => {
+      function initData(schema, data) {
         // Sets up an createdData object that has keys with null-values for all
         // form fields, so they can be correctly watched for changes.
         for (const key in schema.tabs) {
@@ -390,20 +390,24 @@ export default DitoComponent.component('dito-form', {
     },
 
     showErrors(errors, focus) {
-      let hasErrors = false
+      let first = true
       for (const [key, errs] of Object.entries(errors)) {
-        const path = key.split('/')
-        const field = path[0]
-        const component = this.components[field]
+        const component = this.components[key]
         if (component) {
-          component.showErrors(path, errs, !hasErrors && focus)
+          component.addErrors(errs, first && focus)
         } else {
-          throw new Error(
-            `Cannot find component for field ${field}, errors: ${errs}`)
+          const field = key.match(/^([^/]*)/)[1]
+          const component = this.components[field]
+          if (component) {
+            component.navigateToErrors(key, errs)
+          } else {
+            throw new Error(
+              `Cannot find component for field ${field}, errors: ${errs}`)
+          }
         }
-        hasErrors = true
+        first = false
       }
-      return hasErrors
+      return !first
     },
 
     cancel() {

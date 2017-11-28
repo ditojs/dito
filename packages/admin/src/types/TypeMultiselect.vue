@@ -4,6 +4,7 @@
     v-model="selectValue"
     :data-vv-name="name"
     v-validate="validations"
+    :data-vv-as="label"
     :show-labels="false"
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",

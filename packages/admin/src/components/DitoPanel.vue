@@ -3,7 +3,7 @@
     v-if="schema.components"
   )
     template(
-      v-for="(compSchema, key) in schema.components"
+      v-for="(compSchema, key) in components"
     )
       li.dito-break(
         v-if="compSchema.break === 'before'"
@@ -15,7 +15,7 @@
       )
         dito-label(
           :name="key"
-          :text="getLabel(compSchema, key)"
+          :text="getLabel(compSchema)"
         )
         component.dito-component(
           :is="getTypeComponent(compSchema.type)"
@@ -41,9 +41,10 @@
 
 <style lang="sass">
 .dito
-  ul.dito-panel
+  .dito-panel
     display: flex
     flex-flow: row wrap
+    position: relative
     align-items: baseline
     margin: -$form-spacing
     &::after
@@ -55,18 +56,25 @@
       border-bottom: $border-style
       // Add removed $form-spacing again to the ruler
       margin: 0 $form-spacing $form-margin
-  li.dito-container
+  .dito-container
     flex: 1 0 auto
     align-self: stretch
     position: relative // for .dito-errors
     box-sizing: border-box
+    // Cannot use margin here as it needs to be part of box-sizing for
+    // percentages in flex-basis to work.
     padding: $form-spacing
     .dito-component.dito-fill
       display: block
       width: 100%
-  li.dito-break
+  .dito-break
     padding: 0
     width: 100%
+  .dito-list
+    .dito-panel
+      margin-top: -2 * $form-spacing
+      &::after
+        display: none
 </style>
 
 <script>
@@ -78,11 +86,27 @@ export default DitoComponent.component('dito-panel', {
 
   props: {
     schema: { type: Object, required: true },
-    name: { type: String },
+    hash: { type: String },
+    prefix: { type: String, default: '' },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
+  },
+
+  computed: {
+    components() {
+      // Compute a components list which has the prefix baked into its keys and
+      // adds the key as the name to each component, used for labels etc.
+      const comps = {}
+      for (const [name, compSchema] of Object.entries(this.schema.components)) {
+        comps[`${this.prefix}${name}`] = {
+          name,
+          ...compSchema
+        }
+      }
+      return comps
+    }
   },
 
   methods: {
@@ -113,8 +137,9 @@ export default DitoComponent.component('dito-panel', {
     },
 
     focus() {
-      if (this.name) {
-        this.$router.push({ hash: this.name })
+      const { hash } = this
+      if (hash) {
+        this.$router.push({ hash })
       }
     }
   }

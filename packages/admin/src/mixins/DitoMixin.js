@@ -62,8 +62,8 @@ export default {
       return this.$set(this.store, key, value)
     },
 
-    getLabel(schema, name) {
-      return schema.label || labelize(schema.name || name)
+    getLabel(schema) {
+      return schema.label || labelize(schema.name)
     },
 
     getElement(selector) {
