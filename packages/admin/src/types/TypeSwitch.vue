@@ -3,7 +3,7 @@
     :id="name"
     :name="name"
     :sync="true"
-    :color="{ checked: 'inherit', unchecked: 'inherit' }"
+    :cssColors="true"
     :labels="schema.labels"
     :width="width"
     :height="height"
@@ -19,10 +19,10 @@
     // TODO: Remove need for !imporrtant:
     // https://github.com/euvl/vue-js-toggle-button/issues/36
     .v-switch-core
-      background-color: $color-light !important
+      background-color: $color-light
     &.toggled
       .v-switch-core
-        background-color: $color-active !important
+        background-color: $color-active
     .v-switch-label
       text-transform: uppercase
 </style>

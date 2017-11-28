@@ -1238,9 +1238,9 @@ code-point-at@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
 
-"codeflask@https://github.com/lehni/CodeFlask.js/tarball/f02c5bbc25743086b0e1227b1c944916d87b701b":
+"codeflask@github:lehni/CodeFlask.js#f02c5bbc25743086b0e1227b1c944916d87b701b":
   version "0.2.0"
-  resolved "https://github.com/lehni/CodeFlask.js/tarball/f02c5bbc25743086b0e1227b1c944916d87b701b#99aeea5e6f636f7923c60fa3e51fd787d92a024e"
+  resolved "https://codeload.github.com/lehni/CodeFlask.js/tar.gz/f02c5bbc25743086b0e1227b1c944916d87b701b"
   dependencies:
     prismjs "^1.6.0"
 
@@ -5508,9 +5508,9 @@ vue-hot-reload-api@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.2.0.tgz#9a21b35ced3634434a43ee80efb7350ea8fb206d"
 
-vue-js-toggle-button@^1.2.0:
+"vue-js-toggle-button@github:euvl/vue-js-toggle-button#c580dd10fe7c121c8b8de347d57ff5b03689799f":
   version "1.2.0"
-  resolved "https://registry.yarnpkg.com/vue-js-toggle-button/-/vue-js-toggle-button-1.2.0.tgz#d7ae11b9ec0ab57346faf89a34dec36b00b73eb5"
+  resolved "https://codeload.github.com/euvl/vue-js-toggle-button/tar.gz/c580dd10fe7c121c8b8de347d57ff5b03689799f"
 
 vue-loader@^13.5.0:
   version "13.5.0"
