@@ -9,9 +9,6 @@
     white-space: nowrap
     margin: 4px 0 2px 0
     +user-select(none)
-    &::after
-      content: ':'
-      margin-right: 0.35em
 </style>
 
 <script>
