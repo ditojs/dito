@@ -1,10 +1,17 @@
 <template lang="pug">
-  ul.dito-panel(v-if="schema.components")
-    template(v-for="(compSchema, key) in schema.components")
-      li.dito-break(v-if="compSchema.break === 'before'")
-      li(
+  ul.dito-panel(
+    v-if="schema.components"
+  )
+    template(
+      v-for="(compSchema, key) in schema.components"
+    )
+      li.dito-break(
+        v-if="compSchema.break === 'before'"
+      )
+      li.dito-container(
         v-show="getValue(compSchema, 'visible', true)"
         :style="getStyle(compSchema)"
+        :key="key"
       )
         dito-label(
           :name="key"
@@ -27,7 +34,9 @@
           v-if="$errors.has(key)"
           :name="key"
         )
-      li.dito-break(v-if="compSchema.break === 'after'")
+      li.dito-break(
+        v-if="compSchema.break === 'after'"
+      )
 </template>
 
 <style lang="sass">
@@ -37,17 +46,6 @@
     flex-flow: row wrap
     align-items: baseline
     margin: -$form-spacing
-    > li
-      flex: 1 0 auto
-      align-self: stretch
-      box-sizing: border-box
-      padding: $form-spacing
-      > .dito-fill
-        display: block
-        width: 100%
-      &.dito-break
-        padding: 0
-        width: 100%
     &::after
       // Use a pseudo element to display a ruler with proper margins
       display: 'block'
@@ -57,6 +55,18 @@
       border-bottom: $border-style
       // Add removed $form-spacing again to the ruler
       margin: 0 $form-spacing $form-margin
+  li.dito-container
+    flex: 1 0 auto
+    align-self: stretch
+    position: relative // for .dito-errors
+    box-sizing: border-box
+    padding: $form-spacing
+    .dito-component.dito-fill
+      display: block
+      width: 100%
+  li.dito-break
+    padding: 0
+    width: 100%
 </style>
 
 <script>
