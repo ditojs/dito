@@ -11,6 +11,7 @@
     :group-label="groupLabelKey"
     :group-values="groupOptionsKey"
     :searchable="schema.searchable"
+    :taggable="schema.taggable"
     :multiple="schema.multiple"
     :internal-search="true"
     :close-on-select="true"
@@ -27,6 +28,7 @@
   $tag-icon-size: 1.8em
   $tag-margin: 2px
   $tag-padding: 3px
+  $tag-line-height: 1.2em
 
   .dito-multiselect
     display: inline-block
@@ -34,14 +36,36 @@
     min-height: inherit
     width: auto
 
-    .multiselect__input
-      padding: $input-padding
-      line-height: $line-height
-      background: none
-
     .multiselect__tags
+      overflow: auto
       min-height: inherit
       padding: 0 $spinner-width 0 0
+      // So tags can float on multiple lines and have proper margins:
+      padding-bottom: $tag-margin
+
+    .multiselect__tag
+      float: left
+      margin: $tag-margin 0 0 $tag-margin
+      border-radius: 1em
+      padding: $tag-padding $tag-icon-size $tag-padding 0.8em
+
+    .multiselect__tags-wrap
+      overflow: auto
+      margin: $tag-margin 0 0 $tag-margin
+      line-height: 0
+
+    .multiselect__single,
+    .multiselect__input
+      float: left
+      width: auto
+      font-size: inherit
+      padding: $input-padding
+      // So input can float next to tags and have proper margins with
+      // .multiselect__tags:
+      padding-bottom: $input-padding-ver - $tag-margin
+      margin: 0
+      line-height: $line-height
+      background: none
 
     &.dito-has-errors
       .multiselect__tags
@@ -81,18 +105,13 @@
     .multiselect__option
       min-height: unset
       padding: $input-padding
-
-    .multiselect__tag
-      margin: 0 $tag-margin $tag-margin 0
-      border-radius: 1em
-      padding: $tag-padding $tag-icon-size $tag-padding 0.8em
-
-    .multiselect__tags
-      overflow: auto
-    .multiselect__tags-wrap
-      float: left
-      margin: $tag-margin 0 0 $tag-margin
-      line-height: 0
+      &::after
+        line-height: $tag-line-height
+        padding: $input-padding
+    .multiselect__option--highlight
+      &::after
+        background: transparent
+        color: $color-white
 
     .multiselect__tag-icon
       background: none
@@ -110,7 +129,7 @@
 
     .multiselect__tag,
     .multiselect__option--highlight
-      line-height: 1.2em
+      line-height: $tag-line-height
       background: $color-active
       color: $color-text-inverted
 
