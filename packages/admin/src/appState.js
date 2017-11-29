@@ -1,3 +1,4 @@
 export default {
-  loading: false
+  loading: false,
+  routeComponents: []
 }

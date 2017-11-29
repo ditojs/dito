@@ -97,7 +97,20 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     schema() {
-      return this.meta.schema
+      // Determine the current form schema through the listSchema, with multi
+      // form schema support.
+      let form = this.getFormSchema(this.data)
+      if (!form) {
+        // If the right form couldn't be determined from the data, see if
+        // there's a query parameter defining it (see `this.type`).
+        const { type } = this
+        form = type && this.getFormSchema({ type })
+      }
+      return form
+    },
+
+    type() {
+      return this.$route.query.type
     },
 
     create() {
@@ -120,12 +133,18 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    breadcrumbPrefix() {
+      return capitalize(this.create ? this.verbCreate : this.verbEdit)
+    },
+
     buttons() {
-      return this.schema.buttons || {}
+      const { schema } = this
+      return schema && schema.buttons || {}
     },
 
     tabs() {
-      return this.schema.tabs
+      const { schema } = this
+      return schema && schema.tabs
     },
 
     selectedTab() {
@@ -186,7 +205,9 @@ export default DitoComponent.component('dito-form', {
   methods: {
     initData() { // overrides DataMixin.initData()
       if (this.create) {
-        this.createdData = this.createdData || this.createData()
+        const { type } = this
+        this.createdData = this.createdData ||
+          this.createData(this.schema, { type })
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)
@@ -301,11 +322,8 @@ export default DitoComponent.component('dito-form', {
           if (onSuccess) {
             onSuccess.call(this, this.data, title)
           } else {
-            this.notify('info', 'Change Applied',
-              `Changes in ${title} were applied.\n` +
-              `NOTE: The parent needs to be ${this.verbSaved} ` +
-              `to persist this change.`
-            )
+            this.notify('success', 'Change Applied',
+              `Changes in ${title} were applied.`)
           }
         }
         if (ok) {

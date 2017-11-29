@@ -1,6 +1,6 @@
 <template lang="pug">
   ul.dito-panel(
-    v-if="schema.components"
+    v-if="components"
   )
     template(
       v-for="(compSchema, key) in components"
@@ -85,7 +85,7 @@ export default DitoComponent.component('dito-panel', {
   inject: ['$validator'],
 
   props: {
-    schema: { type: Object, required: true },
+    schema: { type: Object },
     hash: { type: String },
     prefix: { type: String, default: '' },
     data: { type: Object, required: true },
@@ -98,14 +98,20 @@ export default DitoComponent.component('dito-panel', {
     components() {
       // Compute a components list which has the prefix baked into its keys and
       // adds the key as the name to each component, used for labels etc.
-      const comps = {}
-      for (const [name, compSchema] of Object.entries(this.schema.components)) {
-        comps[`${this.prefix}${name}`] = {
+      // NOTE: schema can be null while multi-form lists load their data.
+      const {
+        schema: {
+          components = {}
+        } = {}
+      } = this
+      const prefixed = {}
+      for (const [name, compSchema] of Object.entries(components)) {
+        prefixed[`${this.prefix}${name}`] = {
           name,
           ...compSchema
         }
       }
-      return comps
+      return prefixed
     }
   },
 

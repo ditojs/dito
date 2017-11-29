@@ -157,8 +157,8 @@ export default {
       }
     },
 
-    createItem(formSchema) {
-      const item = this.createData(formSchema)
+    createItem(schema) {
+      const item = this.createData(schema)
       this.value.push(item)
       return item
     },

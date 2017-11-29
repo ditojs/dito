@@ -10,8 +10,6 @@ export default {
 
   computed: {
     // Short-cuts to meta properties:
-    listSchema() { return this.meta.listSchema },
-    formSchema() { return this.meta.formSchema },
     user() { return this.meta.user },
     api() { return this.meta.api },
 
@@ -63,7 +61,7 @@ export default {
     },
 
     getLabel(schema) {
-      return schema.label || labelize(schema.name)
+      return schema ? schema.label || labelize(schema.name) : ''
     },
 
     getElement(selector) {

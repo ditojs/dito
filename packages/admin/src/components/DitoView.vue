@@ -35,10 +35,6 @@ export default DitoComponent.component('dito-view', {
   },
 
   computed: {
-    schema() {
-      return this.meta.schema
-    },
-
     name() {
       return this.schema.name
     },

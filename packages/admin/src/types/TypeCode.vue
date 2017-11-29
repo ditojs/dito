@@ -10,6 +10,7 @@
 .dito
   .dito-code
     padding: $input-padding
+    box-sizing: border-box
 
     .CodeFlask__textarea,
     .CodeFlask__pre

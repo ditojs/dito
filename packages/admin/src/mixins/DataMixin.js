@@ -23,6 +23,10 @@ export default {
   },
 
   computed: {
+    listSchema() {
+      return this.meta.listSchema
+    },
+
     isNested() {
       return !!this.listSchema.nested
     },
@@ -98,13 +102,20 @@ export default {
         : url
     },
 
+    getFormSchema(item) {
+      const { listSchema } = this
+      const { form, forms } = listSchema
+      const type = item && item.type
+      return forms && type ? forms[type] : form
+    },
+
     getItemId(item, index) {
       const { idName = 'id' } = this.listSchema
       return String(this.isTransient ? index : item[idName])
     },
 
     getItemTitle(item) {
-      const label = this.getLabel(this.formSchema)
+      const label = this.getLabel(this.getFormSchema(item))
       const { itemTitle, columns } = this.listSchema
       const itemProp = isString(itemTitle) && itemTitle ||
         columns && Object.keys(columns)[0]
@@ -124,26 +135,26 @@ export default {
       }
     },
 
-    createData(formSchema) {
-      function setupData(schema, data) {
-        // Sets up an createdData object that has keys with null-values for all
-        // form fields, so they can be correctly watched for changes.
-        for (const key in schema.tabs) {
-          setupData(schema.tabs[key], data)
-        }
-        for (const [key, compSchema] of Object.entries(schema.components)) {
-          // Support default values both on schema and on component level.
-          const comp = TypeComponent.get(compSchema.type)
-          const defaultValue = pick(compSchema.default,
-            comp && comp.options.methods.defaultValue)
-          data[key] = isFunction(defaultValue)
-            ? defaultValue()
-            : clone(defaultValue) || null
-        }
-        return data
+    createData(schema, data = {}) {
+      // Sets up an createdData object that has keys with null-values for all
+      // form fields, so they can be correctly watched for changes.
+      const {
+        tabs = {},
+        components = {}
+      } = schema || {}
+      for (const tabSchema of Object.values(tabs)) {
+        this.createData(tabSchema, data)
       }
-
-      return setupData(formSchema || this.formSchema, {})
+      for (const [key, compSchema] of Object.entries(components)) {
+        // Support default values both on schema and on component level.
+        const comp = TypeComponent.get(compSchema.type)
+        const defaultValue = pick(compSchema.default,
+          comp && comp.options.methods.defaultValue)
+        data[key] = isFunction(defaultValue)
+          ? defaultValue()
+          : clone(defaultValue) || null
+      }
+      return data
     },
 
     reloadData() {

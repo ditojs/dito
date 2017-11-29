@@ -6,6 +6,18 @@ export default {
     validator: 'new'
   },
 
+  created() {
+    // Keep a shared stack of root components for DitoTrail to use to render
+    // labels. Can't rely on $route.matched[i].instances.default unfortunately,
+    // as instances aren't immediately ready, and instances is not reactive.
+    this.appState.routeComponents.push(this)
+  },
+
+  destroyed() {
+    const { routeComponents } = this.appState
+    routeComponents.splice(routeComponents.indexOf(this), 1)
+  },
+
   data() {
     return {
       isRoute: true,
@@ -26,6 +38,23 @@ export default {
 
     meta() {
       return this.routeRecord.meta
+    },
+
+    schema() {
+      return this.meta.schema
+    },
+
+    label() {
+      return this.getLabel(this.schema)
+    },
+
+    breadcrumb() {
+      const { breadcrumb } = this.schema || {}
+      return breadcrumb || `${this.breadcrumbPrefix} ${this.label}`
+    },
+
+    breadcrumbPrefix() {
+      return ''
     },
 
     isLastRoute() {

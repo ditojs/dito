@@ -87,19 +87,25 @@
               @click="deleteItem(item)"
               :class="`dito-button-${verbDelete}`"
             )
-    .dito-buttons.dito-buttons-round(v-if="schema.creatable")
+    .dito-buttons.dito-buttons-round(v-if="creatable")
       button.dito-button(
         v-if="schema.inline"
         type="button"
-        @click="createItem(schema.form)"
         :class="`dito-button-${verbCreate}`"
+        @click="createItem(schema.form)"
       )
       router-link.dito-button(
-        v-else
+        v-else-if="schema.form"
         :to="`${path}create`" append
         tag="button"
         type="button"
         :class="`dito-button-${verbCreate}`"
+      )
+      dito-form-chooser(
+        v-else-if="schema.forms"
+        :forms="schema.forms"
+        :path="path"
+        :verb="verbCreate"
       )
 </template>
 
@@ -183,6 +189,11 @@ export default TypeComponent.register('list', {
         (schema.editable || schema.deletable || schema.draggable))
     },
 
+    creatable() {
+      const { schema } = this
+      return schema.creatable && (schema.form || schema.forms)
+    },
+
     dragOptions() {
       return {
         animation: 150,
@@ -197,8 +208,7 @@ export default TypeComponent.register('list', {
     getInlineMeta(meta) {
       return {
         ...meta,
-        listSchema: this.schema,
-        formSchema: this.schema.form
+        listSchema: this.schema
       }
     }
   }
