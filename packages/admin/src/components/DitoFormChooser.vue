@@ -5,19 +5,57 @@
     button.dito-button(
       type="button"
       :class="`dito-button-${verb}`"
-      @click="open = !open"
+      @click="onCreate()"
     )
-    ul
-      li(
-        v-for="(form, type) in forms"
-      )
-        router-link(
-          :to="{ path: `${path}create`, query: { type } }" append
-        ) {{ getLabel(form) }}
+    ul(v-if="schema.forms")
+      li(v-for="(form, type) in schema.forms")
+        a(@click="onCreate(type)") {{ getLabel(form) }}
 </template>
 
+<script>
+import DitoComponent from '@/DitoComponent'
+
+export default DitoComponent.component('dito-form-chooser', {
+  props: {
+    schema: { type: Object },
+    path: { type: String, required: true },
+    verb: { type: String, required: true }
+  },
+
+  data() {
+    return {
+      open: false
+    }
+  },
+
+  methods: {
+    onCreate(type) {
+      const { schema } = this
+      const { forms, inline } = schema
+      const form = type
+        ? forms && forms[type]
+        : schema.form
+      if (form) {
+        if (inline) {
+          this.$parent.createItem(form, type)
+        } else {
+          this.$router.push({
+            path: `${this.path}create`,
+            query: { type },
+            append: true
+          })
+        }
+        this.open = false
+      } else if (forms) {
+        this.open = !this.open
+      }
+    }
+  }
+})
+</script>
+
 <style lang="sass">
-$radius: 1em
+$radius: 0.5em
 .dito
   .dito-form-chooser
     display: inline-block
@@ -31,12 +69,12 @@ $radius: 1em
       top: 0
       right: 0
       z-index: 2
-      line-height: $line-height
       li
         a
           display: block
           text-align: center
           padding: 0.5em 1em
+          height: 1em
           background: $button-color
           &:hover
             background: $color-active
@@ -49,20 +87,3 @@ $radius: 1em
           border-bottom-right-radius: $radius
 </style>
 
-<script>
-import DitoComponent from '@/DitoComponent'
-
-export default DitoComponent.component('dito-form-chooser', {
-  props: {
-    forms: { type: Object, required: true },
-    path: { type: String, required: true },
-    verb: { type: String, required: true }
-  },
-
-  data() {
-    return {
-      open: false
-    }
-  }
-})
-</script>

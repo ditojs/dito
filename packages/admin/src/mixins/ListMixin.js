@@ -157,8 +157,8 @@ export default {
       }
     },
 
-    createItem(schema) {
-      const item = this.createData(schema)
+    createItem(schema, type) {
+      const item = this.createData(schema, { type })
       this.value.push(item)
       return item
     },

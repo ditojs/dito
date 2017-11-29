@@ -48,7 +48,7 @@
             td
               dito-panel(
                 v-if="schema.inline"
-                :schema="schema.form"
+                :schema="getFormSchema(item)"
                 :data="item"
                 :meta="getInlineMeta(meta)"
                 :prefix="`${name}/${index}/`"
@@ -88,22 +88,8 @@
               :class="`dito-button-${verbDelete}`"
             )
     .dito-buttons.dito-buttons-round(v-if="creatable")
-      button.dito-button(
-        v-if="schema.inline"
-        type="button"
-        :class="`dito-button-${verbCreate}`"
-        @click="createItem(schema.form)"
-      )
-      router-link.dito-button(
-        v-else-if="schema.form"
-        :to="`${path}create`" append
-        tag="button"
-        type="button"
-        :class="`dito-button-${verbCreate}`"
-      )
       dito-form-chooser(
-        v-else-if="schema.forms"
-        :forms="schema.forms"
+        :schema="schema"
         :path="path"
         :verb="verbCreate"
       )
@@ -131,16 +117,11 @@ $buttons-padding: 2px
         margin: -$list-spacing 0
         & + .dito-buttons
           margin-top: $list-spacing
-      > thead + tbody
-        // Add top border for first row if there is a thead.
-        > tr:first-child
-          > td
-            border-top: 1px solid white
       > tbody
         > tr
           vertical-align: baseline
           > td
-            border-bottom: 1px solid white
+            border-top: 1px solid $color-white
             padding: $form-spacing
             background: $color-lightest
             & + td
@@ -164,7 +145,8 @@ $buttons-padding: 2px
       padding: $buttons-padding
       background: $color-lightest
       border-radius: $border-radius
-      line-height: 0
+      border-top: 1px solid $color-white
+      line-height: 1em
       .dito-button-drag
         cursor: grab
         &:active,
