@@ -7,7 +7,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { isFunction, hyphenate } from './utils'
+import { isFunction, isPromise, hyphenate } from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -23,100 +23,15 @@ const user = {
   role: 'admin' // TODO
 }
 
-export function setup(el, options) {
+export async function setup(el, options) {
   const { schemas, settings, api } = options
   const { normalizePath } = api
-  const processPath = isFunction(normalizePath)
+
+  api.processPath = isFunction(normalizePath)
     ? normalizePath
     : normalizePath === true
       ? hyphenate
       : val => val
-
-  function processList(listSchema, name, routes, level) {
-    // TODO: Allow dynamic forms!
-    const formSchema = listSchema.form
-    const path = listSchema.path = listSchema.path || processPath(name)
-    listSchema.name = name
-    const { inline, nested } = listSchema
-    const addRoutes = !inline
-    if (inline) {
-      if (nested === false) {
-        throw new Error(
-          'Lists with inline forms can only work with nested data')
-      }
-      listSchema.nested = true
-    }
-    const root = level === 0
-    // While root schemas have their own vue route objects, nested lists in
-    // forms don't have their own route objects and need their path prefixed.
-    const pathPrefix = root ? '' : `${path}/`
-    const meta = addRoutes && { user, api }
-    const formRoutes = formSchema
-      ? processForm(formSchema, listSchema, meta, pathPrefix, level)
-      : []
-    if (addRoutes) {
-      routes.push(
-        root
-          ? {
-            path: `/${path}`,
-            ...formRoutes.length > 0 && {
-              children: formRoutes
-            },
-            component: DitoView,
-            meta: {
-              ...meta,
-              schema: listSchema,
-              listSchema,
-              formSchema // TODO: Allow dynamic forms!
-            }
-          }
-          // Just redirect back to the form if the user hits a nested list route
-          : {
-            path,
-            redirect: '.'
-          },
-        // Include the prefixed formRoutes for nested lists.
-        ...(!root && formRoutes)
-      )
-    }
-  }
-
-  function processComponents(components, routes, level) {
-    for (const name in components) {
-      const schema = components[name]
-      if (schema.form) {
-        processList(schema, name, routes, level)
-      }
-    }
-  }
-
-  function processForm(formSchema, listSchema, meta, pathPrefix, level) {
-    const children = []
-    const { tabs } = formSchema
-    for (const key in tabs) {
-      processComponents(tabs[key].components, children, level + 1)
-    }
-    processComponents(formSchema.components, children, level + 1)
-    // meta is only set when we want to actually produce routes.
-    if (meta) {
-      // Use differently named url parameters on each nested level for id as
-      // otherwise they would clash and override each other inside $route.params
-      // See: https://github.com/vuejs/vue-router/issues/1345
-      const param = `id${level + 1}`
-      return [{
-        path: `${pathPrefix}:${param}`,
-        component: DitoForm,
-        children,
-        meta: {
-          ...meta,
-          schema: formSchema,
-          listSchema,
-          formSchema,
-          param
-        }
-      }]
-    }
-  }
 
   api.resources = {
     member(component, itemId) {
@@ -134,10 +49,12 @@ export function setup(el, options) {
 
   const routes = []
 
+  const all = []
   for (const name in schemas) {
     // TODO: Could be other things than lists in the future: add processSchema()
-    processList(schemas[name], name, routes, 0)
+    all.push(processList(api, schemas[name], name, routes, 0))
   }
+  await Promise.all(all)
 
   new Vue({
     el,
@@ -152,6 +69,117 @@ export function setup(el, options) {
       settings
     }
   })
+}
+
+async function importForm(formSchema) {
+  // When dynamically importing forms, try figuring out and setting their
+  // name, if they were declared as named imports:
+  formSchema = await formSchema
+  if (formSchema && !formSchema.components) {
+    const name = Object.keys(formSchema)[0]
+    formSchema = formSchema[name]
+    if (name !== 'default') {
+      formSchema.name = name
+    }
+  }
+  return formSchema
+}
+
+async function processList(api, listSchema, name, routes, level) {
+  // TODO: Allow dynamic forms!
+  let formSchema = listSchema.form
+  if (isFunction(formSchema)) {
+    formSchema = formSchema()
+  }
+  if (isPromise(formSchema)) {
+    formSchema = await importForm(formSchema)
+  }
+  const path = listSchema.path = listSchema.path || api.processPath(name)
+  listSchema.name = name
+  const { inline, nested } = listSchema
+  const addRoutes = !inline
+  if (inline) {
+    if (nested === false) {
+      throw new Error(
+        'Lists with inline forms can only work with nested data')
+    }
+    listSchema.nested = true
+  }
+  const root = level === 0
+  // While root schemas have their own vue route objects, nested lists in
+  // forms don't have their own route objects and need their path prefixed.
+  const pathPrefix = root ? '' : `${path}/`
+  const meta = addRoutes && { user, api }
+  const formRoutes = formSchema
+    ? await processForm(api, formSchema, listSchema, meta, pathPrefix, level)
+    : []
+  if (addRoutes) {
+    routes.push(
+      root
+        ? {
+          path: `/${path}`,
+          ...formRoutes.length > 0 && {
+            children: formRoutes
+          },
+          component: DitoView,
+          meta: {
+            ...meta,
+            schema: listSchema,
+            listSchema,
+            formSchema // TODO: Allow dynamic forms!
+          }
+        }
+        // Just redirect back to the form if the user hits a nested list route
+        : {
+          path,
+          redirect: '.'
+        },
+      // Include the prefixed formRoutes for nested lists.
+      ...(!root && formRoutes)
+    )
+  }
+}
+
+async function processComponents(api, components, routes, level) {
+  const all = []
+  for (const name in components) {
+    const schema = components[name]
+    if (schema.form) {
+      all.push(processList(api, schema, name, routes, level))
+    }
+  }
+  return Promise.all(all)
+}
+
+async function processForm(api, formSchema, listSchema, meta, pathPrefix,
+  level) {
+  const children = []
+  const { tabs } = formSchema
+  const all = []
+  for (const key in tabs) {
+    all.push(processComponents(api, tabs[key].components, children, level + 1))
+  }
+  all.push(processComponents(api, formSchema.components, children, level + 1))
+  await Promise.all(all)
+  // meta is only set when we want to actually produce routes.
+  if (meta) {
+    // Use differently named url parameters on each nested level for id as
+    // otherwise they would clash and override each other inside $route.params
+    // See: https://github.com/vuejs/vue-router/issues/1345
+    const param = `id${level + 1}`
+    return [{
+      path: `${pathPrefix}:${param}`,
+      component: DitoForm,
+      children,
+      meta: {
+        ...meta,
+        schema: formSchema,
+        listSchema,
+        formSchema,
+        param
+      }
+    }]
+  }
 }
 
 export const { register } = TypeComponent
