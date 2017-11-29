@@ -23,10 +23,14 @@ const user = {
   role: 'admin' // TODO
 }
 
-export async function setup(el, options) {
-  const { schemas, settings, api } = options
-  const { normalizePath } = api
+export async function setup(el, options = {}) {
+  const {
+    schemas = {},
+    settings = {},
+    api = {}
+  } = options
 
+  const { normalizePath } = api
   api.processPath = isFunction(normalizePath)
     ? normalizePath
     : normalizePath === true
@@ -37,7 +41,6 @@ export async function setup(el, options) {
     member(component, itemId) {
       return `${component.listSchema.path}/${itemId}`
     },
-
     collection(component) {
       const { parentFormComponent: parentForm, listSchema } = component
       return parentForm
