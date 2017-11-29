@@ -48,9 +48,9 @@
             td
               dito-panel(
                 v-if="schema.inline"
-                :schema="schema.formSchema"
+                :schema="schema.form"
                 :data="item"
-                :meta="meta"
+                :meta="getInlineMeta(meta)"
                 :prefix="`${name}/${index}/`"
                 :store="store"
                 :disabled="loading"
@@ -91,7 +91,7 @@
       button.dito-button(
         v-if="schema.inline"
         type="button"
-        @click="addItem()"
+        @click="createItem(schema.form)"
         :class="`dito-button-${verbCreate}`"
       )
       router-link.dito-button(
@@ -189,6 +189,16 @@ export default TypeComponent.register('list', {
         disabled: !this.schema.draggable,
         handle: '.dito-button-drag',
         ghostClass: 'dito-drag-ghost'
+      }
+    }
+  },
+
+  methods: {
+    getInlineMeta(meta) {
+      return {
+        ...meta,
+        listSchema: this.schema,
+        formSchema: this.schema.form
       }
     }
   }

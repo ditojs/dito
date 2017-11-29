@@ -7,7 +7,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import DitoView from './components/DitoView'
 import DitoForm from './components/DitoForm'
-import { isFunction, hyphenate, camelize } from './utils'
+import { isFunction, hyphenate } from './utils'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -24,26 +24,19 @@ const user = {
 }
 
 export function setup(el, options) {
-  const { views, forms, settings, api } = options
-  const normalizePath = getNormalizer('path', hyphenate)
-  const normalizeName = getNormalizer('name', val => camelize(val, false))
+  const { schemas, settings, api } = options
+  const { normalizePath } = api
+  const processPath = isFunction(normalizePath)
+    ? normalizePath
+    : normalizePath === true
+      ? hyphenate
+      : val => val
 
-  function getNormalizer(name, defaultFn) {
-    const { normalize } = api
-    const value = normalize && (name in normalize) ? normalize[name] : normalize
-    return isFunction(value) ? value : value === true ? defaultFn : val => val
-  }
-
-  function processList(listSchema, viewName, routes, level) {
-    const formName = listSchema.form
-    const formSchema = formName && forms[normalizeName(formName)]
-    if (formName && !formSchema) {
-      throw new Error(`Form '${formName}' is not defined`)
-    }
-    const path = normalizePath(viewName)
-    listSchema.path = path
-    listSchema.name = viewName
-    listSchema.formSchema = formSchema // TODO: Support multiples
+  function processList(listSchema, name, routes, level) {
+    // TODO: Allow dynamic forms!
+    const formSchema = listSchema.form
+    const path = listSchema.path = listSchema.path || processPath(name)
+    listSchema.name = name
     const { inline, nested } = listSchema
     const addRoutes = !inline
     if (inline) {
@@ -54,13 +47,12 @@ export function setup(el, options) {
       listSchema.nested = true
     }
     const root = level === 0
-    // Root views have their own routes and entries in the breadcrumbs, and the
-    // form routes are children of the view route. Nested lists in forms don't
-    // have views and routes, so their form routes need the viewName prefixed.
+    // While root schemas have their own vue route objects, nested lists in
+    // forms don't have their own route objects and need their path prefixed.
     const pathPrefix = root ? '' : `${path}/`
     const meta = addRoutes && { user, api }
     const formRoutes = formSchema
-      ? processForm(pathPrefix, formSchema, listSchema, formName, meta, level)
+      ? processForm(formSchema, listSchema, meta, pathPrefix, level)
       : []
     if (addRoutes) {
       routes.push(
@@ -98,15 +90,11 @@ export function setup(el, options) {
     }
   }
 
-  function processForm(pathPrefix, formSchema, listSchema, formName, meta,
-    level) {
-    // TODO: Allow dynamic forms!
-    formSchema.path = normalizePath(formName)
-    formSchema.name = formName
+  function processForm(formSchema, listSchema, meta, pathPrefix, level) {
     const children = []
     const { tabs } = formSchema
-    for (const name in tabs) {
-      processComponents(tabs[name].components, children, level + 1)
+    for (const key in tabs) {
+      processComponents(tabs[key].components, children, level + 1)
     }
     processComponents(formSchema.components, children, level + 1)
     // meta is only set when we want to actually produce routes.
@@ -146,8 +134,9 @@ export function setup(el, options) {
 
   const routes = []
 
-  for (const name in views) {
-    processList(views[name], name, routes, 0)
+  for (const name in schemas) {
+    // TODO: Could be other things than lists in the future: add processSchema()
+    processList(schemas[name], name, routes, 0)
   }
 
   new Vue({
@@ -156,10 +145,10 @@ export function setup(el, options) {
       mode: 'history',
       routes
     }),
-    template: '<dito-root :views="views" :settings="settings" />',
+    template: '<dito-root :schemas="schemas" :settings="settings" />',
     components: { DitoRoot },
     data: {
-      views,
+      schemas,
       settings
     }
   })

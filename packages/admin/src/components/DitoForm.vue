@@ -64,7 +64,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import TypeComponent from '@/TypeComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import { isArray, isObject, clone, capitalize } from '@/utils'
@@ -99,10 +98,6 @@ export default DitoComponent.component('dito-form', {
   computed: {
     schema() {
       return this.meta.schema
-    },
-
-    name() {
-      return this.schema.name
     },
 
     create() {
@@ -190,24 +185,8 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     initData() { // overrides DataMixin.initData()
-      function initData(schema, data) {
-        // Sets up an createdData object that has keys with null-values for all
-        // form fields, so they can be correctly watched for changes.
-        for (const key in schema.tabs) {
-          initData(schema.tabs[key], data)
-        }
-        for (const [key, compSchema] of Object.entries(schema.components)) {
-          const comp = TypeComponent.get(compSchema.type)
-          const defaultValue = comp && comp.options.methods.defaultValue
-          data[key] = defaultValue ? defaultValue() : null
-        }
-        return data
-      }
-
       if (this.create) {
-        if (!this.createdData) {
-          this.createdData = initData(this.schema, {})
-        }
+        this.createdData = this.createdData || this.createData()
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)

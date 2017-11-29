@@ -1,5 +1,3 @@
-import { pick } from '@/utils'
-
 export default {
   // Inherit the $validator from the parent.
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -27,10 +25,10 @@ export default {
   computed: {
     value: {
       get() {
-        return pick(this.data[this.schema.name], this.default)
+        return this.data[this.schema.name]
       },
       set(value) {
-        this.data[this.schema.name] = value
+        this.$set(this.data, this.schema.name, value)
       }
     },
 

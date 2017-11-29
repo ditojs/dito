@@ -2,7 +2,7 @@
   nav.dito-menu
     h1 Dito Admin
     ul
-      li(v-for="schema in views")
+      li(v-for="schema in schemas")
         router-link(:to="`/${schema.path}`") {{ getLabel(schema) }}
 </template>
 
@@ -35,7 +35,7 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-menu', {
   props: {
-    views: { type: Object, required: true }
+    schemas: { type: Object, required: true }
   }
 })
 </script>

@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { isObject, isString, isFunction } from '@/utils'
+import TypeComponent from '@/TypeComponent'
+import { isObject, isString, isFunction, pick, clone } from '@/utils'
 
 export default {
   data() {
@@ -121,6 +122,28 @@ export default {
       if (this.shouldLoad) {
         this.loadData(true)
       }
+    },
+
+    createData(formSchema) {
+      function setupData(schema, data) {
+        // Sets up an createdData object that has keys with null-values for all
+        // form fields, so they can be correctly watched for changes.
+        for (const key in schema.tabs) {
+          setupData(schema.tabs[key], data)
+        }
+        for (const [key, compSchema] of Object.entries(schema.components)) {
+          // Support default values both on schema and on component level.
+          const comp = TypeComponent.get(compSchema.type)
+          const defaultValue = pick(compSchema.default,
+            comp && comp.options.methods.defaultValue)
+          data[key] = isFunction(defaultValue)
+            ? defaultValue()
+            : clone(defaultValue) || null
+        }
+        return data
+      }
+
+      return setupData(formSchema || this.formSchema, {})
     },
 
     reloadData() {
