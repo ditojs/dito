@@ -66,7 +66,7 @@
               )
               span(
                 v-else
-                v-html="getItemTitle(item)"
+                v-html="getItemTitle(item, index)"
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
@@ -84,7 +84,7 @@
             button.dito-button(
               v-if="schema.deletable"
               type="button"
-              @click="deleteItem(item)"
+              @click="deleteItem(item, index)"
               :class="`dito-button-${verbDelete}`"
             )
       tfoot(v-if="creatable")
@@ -176,6 +176,7 @@ $buttons-padding: 2px
     .dito-list
       // Give nested lists a bit of shadow
       box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
+      margin: ($form-spacing / 2) 0
       > table
         > tbody,
         > tfoot

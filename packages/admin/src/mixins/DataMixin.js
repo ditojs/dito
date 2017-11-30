@@ -111,18 +111,27 @@ export default {
 
     getItemId(item, index) {
       const { idName = 'id' } = this.listSchema
-      return String(this.isTransient ? index : item[idName])
+      const id = this.isTransient ? index : item[idName]
+      return id === undefined ? id : String(id)
     },
 
-    getItemTitle(item) {
+    getItemTitle(item, index) {
       const label = this.getLabel(this.getFormSchema(item))
       const { itemTitle, columns } = this.listSchema
       const itemProp = isString(itemTitle) && itemTitle ||
         columns && Object.keys(columns)[0]
-      const title = isFunction(itemTitle) ? itemTitle(item)
+      let title = isFunction(itemTitle) ? itemTitle(item)
         : itemProp ? item[itemProp]
         : item.name
-      return `${label} ${title ? `"${title}"` : `(id:${this.getItemId(item)})`}`
+      if (!title) {
+        const id = this.getItemId(item)
+        title = id
+          ? ` (id:${id})`
+          : index !== undefined
+            ? ` ${index + 1}`
+            : ''
+      }
+      return `${label}${title}`
     },
 
     setData(data) {

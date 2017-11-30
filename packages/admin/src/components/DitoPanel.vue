@@ -74,6 +74,7 @@ $half-spacing: $form-spacing / 2
   .dito-list
     .dito-panel
       &::after
+        // Hide the ruler in nested forms
         display: none
 </style>
 

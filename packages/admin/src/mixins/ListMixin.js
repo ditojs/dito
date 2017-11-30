@@ -132,8 +132,8 @@ export default {
       }
     },
 
-    deleteItem(item) {
-      const title = item && this.getItemTitle(item)
+    deleteItem(item, index) {
+      const title = item && this.getItemTitle(item, index)
 
       const notify = () => this.notify('success', 'Successfully Removed',
         `${title} was ${this.verbDeleted}.`)
@@ -145,7 +145,10 @@ export default {
           this.removeItem(item)
           notify()
         } else {
-          const resource = { type: 'member', id: this.getItemId(item) }
+          const resource = {
+            type: 'member',
+            id: this.getItemId(item)
+          }
           this.request('delete', { resource }, err => {
             if (!err) {
               this.removeItem(item)
