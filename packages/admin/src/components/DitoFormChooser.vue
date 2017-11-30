@@ -69,6 +69,8 @@ $radius: 0.5em
       top: 0
       right: 0
       z-index: 2
+      border-radius: $radius
+      box-shadow: 0 2px 6px 0 rgba($color-shadow, 0.25)
       li
         a
           display: block

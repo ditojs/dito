@@ -29,12 +29,12 @@
           :key="index"
         )
           template(v-if="columns")
-            // TODO: Implement inline components in column mode!
             td(
               v-for="column in columns"
               :class="column.class"
               :style="column.style"
             )
+              // TODO: Implement inline components in column mode!
               component(
                 v-if="column.component"
                 :is="column.component"
@@ -87,12 +87,14 @@
               @click="deleteItem(item)"
               :class="`dito-button-${verbDelete}`"
             )
-    .dito-buttons.dito-buttons-round(v-if="creatable")
-      dito-form-chooser(
-        :schema="schema"
-        :path="path"
-        :verb="verbCreate"
-      )
+      tfoot(v-if="creatable")
+        tr
+          td.dito-buttons.dito-buttons-round(:colspan="numColumns")
+            dito-form-chooser(
+              :schema="schema"
+              :path="path"
+              :verb="verbCreate"
+            )
 </template>
 
 <style lang="sass">
@@ -101,6 +103,7 @@ $buttons-padding: 2px
 
 .dito
   .dito-list
+    border-radius: $border-radius
     .dito-filters
       overflow: auto
       padding-bottom: $form-margin / 2
@@ -110,47 +113,87 @@ $buttons-padding: 2px
         float: left
       .dito-pagination
         float: right
+    .dito-buttons
+      width: 1%
+      text-align: right
+      vertical-align: top // For vertical-align: baseline in normal td to work.
+      line-height: 1em
+      border-top: 1px solid $color-white
+      .dito-button-drag
+        cursor: grab
+        &:active,
+          cursor: grabbing
     > table
       width: 100%
       border-spacing: 0
       &:not(:empty)
         margin: -$list-spacing 0
-        & + .dito-buttons
-          margin-top: $list-spacing
-      > tbody
+      > tbody,
+      > tfoot
         > tr
           vertical-align: baseline
           > td
             border-top: 1px solid $color-white
             padding: $form-spacing
             background: $color-lightest
-            & + td
-              border-left: 1px solid $color-white
+            border-radius: 0
             &.dito-buttons
-              width: 1%
+              padding-left: 0
+            // Add rounded corners in first & last headers.
+            &:first-child
+              border-top-left-radius: $border-radius
+              border-bottom-left-radius: $border-radius
+            &:last-child
+              border-top-right-radius: $border-radius
+              border-bottom-right-radius: $border-radius
+      > tbody
+        > tr:first-child
+          > td
+            // Top row does not need a border at the top...
+            border-top: 0
+      > thead + tbody
+        > tr
+          &:first-child
+            > td
+              // ...except if there is a thead as well, then they need it again.
+              border-top: 1px solid $color-white
+          > td
+            padding: $table-spacing
+            & + td
+              // Also, only add horizontal borders if there is a heaader
+              border-left: 1px solid $color-white
+        &,
+        & + tfoot
+          > tr
+            > td.dito-buttons
               padding: $buttons-padding
-            &,
-            &.dito-buttons // So it's stronger than .dito-buttons setting below.
+      > tbody:empty + tfoot
+        > tr
+          > td
+            // All by its own, ther is no need for the border
+            border-top: 0
+    // Nested .dito-list:
+    .dito-list
+      // Give nested lists a bit of shadow
+      box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
+      > table
+        > tbody,
+        > tfoot
+          > tr
+            // Change corner rounding in nested lists, so that only the four
+            // outer corners are rounded to go with the shadow.
+            > td
               border-radius: 0
-              // Add rounded corners in first & last headers.
-              &:first-child
+            &:first-child
+              > td:first-child
                 border-top-left-radius: $border-radius
-                border-bottom-left-radius: $border-radius
-              &:last-child
+              > td:last-child
                 border-top-right-radius: $border-radius
+            &:last-child
+              > td:first-child
+                border-bottom-left-radius: $border-radius
+              > td:last-child
                 border-bottom-right-radius: $border-radius
-    .dito-buttons
-      vertical-align: top
-      text-align: right
-      padding: $buttons-padding
-      background: $color-lightest
-      border-radius: $border-radius
-      border-top: 1px solid $color-white
-      line-height: 1em
-      .dito-button-drag
-        cursor: grab
-        &:active,
-          cursor: grabbing
 </style>
 
 <script>
@@ -174,6 +217,11 @@ export default TypeComponent.register('list', {
     creatable() {
       const { schema } = this
       return schema.creatable && (schema.form || schema.forms)
+    },
+
+    numColumns() {
+      return (this.columns ? this.columns.length : 1) +
+        (this.creatable ? 1 : 0)
     },
 
     dragOptions() {
