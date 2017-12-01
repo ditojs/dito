@@ -252,6 +252,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
     // TODO: This clashes with and overrides objection's own definition of
     // findOne(), decide if that's ok?
     // Only allow where, eager and scope query filters on single queries.
+    // TODO: This merging is wrong. It should be the intersection between passed
+    // and internal allowed values.
     allowed = ['where', 'eager', 'scope', ...allowed || []]
     return this.find(query, allowed).first()
   }
@@ -481,26 +483,16 @@ const queryHandlers = {
         }
       }
     }
-  },
-
-  join(builder, key, value) {
-    // TODO: Parse value to see if it starts with a relation name or [ for
-    // relation expression, and fall back a normal join otherwise.
-    builder.joinRelation(value)
   }
 }
 
-// Install queryHandlers for all types of joins:
+// Install queryHandlers for all types of joins, applicable for relations:
 for (const join of [
   'join', 'innerJoin', 'outerJoin', 'leftJoin', 'leftOuterJoin', 'rightJoin',
   'rightOuterJoin', 'fullOuterJoin'
 ]) {
   queryHandlers[join] = function (builder, key, value) {
-    // Parse value to see if it starts with a relation name or `[` for valid
-    // relation expressions, and fall back a normal join otherwise.
-    const identifier = (`${value}`.match(/\[?(\w*)/) || [])[1]
-    const relation = builder.modelClass().getRelation(identifier)
-    builder[relation ? `${join}Relation` : join](value)
+    builder[`${join}Relation`](value)
   }
 }
 

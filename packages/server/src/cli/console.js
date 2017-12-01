@@ -2,6 +2,7 @@ import repl from 'repl'
 import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
+import objection from 'objection'
 import { isFunction, deindent } from '@/utils'
 
 let started = false
@@ -25,6 +26,7 @@ export default async function startConsole(app, config) {
   server.pause()
   Object.assign(server.context, {
     app,
+    objection,
     ...app.models
   })
   server.eval = wrapEval(server)

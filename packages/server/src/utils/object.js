@@ -28,8 +28,12 @@ export function isPromise(obj) {
   return isObject(obj) && isFunction(obj.then)
 }
 
-export function asArray(obj) {
-  return isArray(obj) ? obj : [obj]
+export function asArray(val) {
+  return isArray(val) ? val : [val]
+}
+
+export function asFunction(val) {
+  return isFunction(val) ? val : () => val
 }
 
 export function pick(...args) {
