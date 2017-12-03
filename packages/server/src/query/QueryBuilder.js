@@ -41,8 +41,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   execute() {
     // Only apply defaultEager setting if this is a find query, meaning it does
-    // not specify any write operations.
-    if (this._applyDefaultEager && this.isFindQuery()) {
+    // not specify any write operations, without any special selects: count()...
+    if (this._applyDefaultEager && this.isFindQuery() && !this.hasSelects()) {
       const { defaultEager } = this.modelClass()
       if (defaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
@@ -55,6 +55,10 @@ export default class QueryBuilder extends objection.QueryBuilder {
       scope(this)
     }
     return super.execute()
+  }
+
+  hasSelects() {
+    return this.has(QueryBuilder.SelectSelector)
   }
 
   unscoped() {

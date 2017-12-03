@@ -107,7 +107,7 @@ export default class App extends Koa {
   setupKnexLogging() {
     const startTimes = {}
 
-    function trim(str, length = 64) {
+    function trim(str, length = 120) {
       return str.length > length
         ? `${str.substring(0, length - 3)}...`
         : str
@@ -119,11 +119,11 @@ export default class App extends Koa {
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
       const bindings = query.bindings.join(', ')
-      console.log('  %s %s %s %s\n%s',
+      console.log(
         chalk.yellow.bold('knex:sql'),
-        chalk.cyan(query.sql),
-        chalk.gray(`[${trim(bindings)}]`),
+        chalk.cyan(trim(query.sql)),
         chalk.magenta(duration + 'ms'),
+        chalk.gray(`[${trim(bindings)}]`),
         response
           ? chalk.green(trim(JSON.stringify(response)))
           : error
