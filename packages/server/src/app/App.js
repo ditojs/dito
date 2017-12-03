@@ -107,34 +107,41 @@ export default class App extends Koa {
   setupKnexLogging() {
     const startTimes = {}
 
+    function trim(str, length = 64) {
+      return str.length > length
+        ? `${str.substring(0, length - 3)}...`
+        : str
+    }
+
     function end(query, { response, error }) {
       const id = query.__knexQueryUid
-      const duration = process.hrtime(startTimes[id])
+      const diff = process.hrtime(startTimes[id])
+      const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
+      const bindings = query.bindings.join(', ')
       console.log('  %s %s %s %s\n%s',
         chalk.yellow.bold('knex:sql'),
         chalk.cyan(query.sql),
-        chalk.gray('{' + query.bindings.join(', ') + '}'),
+        chalk.gray(`[${trim(bindings)}]`),
         chalk.magenta(duration + 'ms'),
         response
-          ? chalk.green(JSON.stringify(response))
+          ? chalk.green(trim(JSON.stringify(response)))
           : error
-            ? chalk.red(JSON.stringify(error))
+            ? chalk.red(trim(JSON.stringify(error)))
             : ''
       )
     }
 
-    this.knex.on('query', query => {
-      startTimes[query.__knexQueryUid] = process.hrtime()
-    })
-
-    this.knex.on('query-response', (response, query) => {
-      end(query, { response })
-    })
-
-    this.knex.on('query-error', (error, query) => {
-      end(query, { error })
-    })
+    this.knex
+      .on('query', query => {
+        startTimes[query.__knexQueryUid] = process.hrtime()
+      })
+      .on('query-response', (response, query) => {
+        end(query, { response })
+      })
+      .on('query-error', (error, query) => {
+        end(query, { error })
+      })
   }
 
   normalizeIdentifier(identifier) {
