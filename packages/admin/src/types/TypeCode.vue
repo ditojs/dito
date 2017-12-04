@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-code(ref="code" :style="`height: ${height}`")
+  .dito-code(ref="code" :style="style")
     | {{ value }}
 </template>
 
@@ -51,8 +51,12 @@ export default TypeComponent.register('code', {
   },
 
   computed: {
-    height() {
-      return `${1.5 * (this.schema.lines || 3)}em`
+    lines() {
+      return this.schema.lines || 3
+    },
+
+    style() {
+      return `height: calc(${this.lines} * 1.5em + 6px)`
     }
   }
 })
