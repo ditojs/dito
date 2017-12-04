@@ -110,7 +110,7 @@ async function collectModelTables(modelClass, app, tables) {
           const { from, to } = relation
           const [fromClass, fromProperty] = from && from.split('.') || []
           if (fromProperty === name) {
-            if (fromClass !== modelClass.modelName) {
+            if (fromClass !== modelClass.name) {
               throw Error(`Invalid relation declaration: ${relation}`)
             }
             const [toClass, toProperty] = to && to.split('.') || []
