@@ -150,7 +150,8 @@ $buttons-padding: 2px
         > tr:first-child
           > td
             // Top row does not need a border at the top...
-            border-top: 0
+            // But to make vuedraggable happy, hide it with background color.
+            border-color: $color-lightest
       > thead + tbody
         > tr
           &:first-child
@@ -170,7 +171,7 @@ $buttons-padding: 2px
       > tbody:empty + tfoot
         > tr
           > td
-            // All by its own, ther is no need for the border
+            // All by its own, ther is no need for the border.
             border-top: 0
     // Nested .dito-list:
     .dito-list
