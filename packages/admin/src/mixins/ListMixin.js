@@ -110,6 +110,14 @@ export default {
 
     setQuery(query) {
       // Always keep the displayed query parameters in sync with the store.
+      // Use scope and page from the list schema as defaults, but allow the
+      // route query parameters to override them.
+      const { scope, page } = this.schema
+      query = {
+        ...(scope != null && { scope }),
+        ...(page != null && { page }),
+        ...query
+      }
       this.$router.replace({ query })
       this.setStore('query', query)
     },
