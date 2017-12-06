@@ -1,10 +1,12 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isArray, isString, deepMergeUnshift } from '@/utils'
+import { isObject, isArray, deepMergeUnshift } from '@/utils'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
-import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
+import {
+  convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
+} from '@/schema'
 import ModelRelation from './ModelRelation'
 
 export default class Model extends objection.Model {
@@ -445,14 +447,7 @@ const definitionHandlers = {
     const ids = []
     const rest = []
     for (let [name, property] of Object.entries(properties)) {
-      if (isString(property)) {
-        property = { type: property }
-      } else if (isArray(property)) {
-        property = {
-          type: 'array',
-          items: property.length > 1 ? property : property[0]
-        }
-      }
+      property = expandSchemaShorthand(property)
       // Also sort properties by kind: primary id > foreign id > rest:
       const entry = [name, property]
       if (property.primary) {

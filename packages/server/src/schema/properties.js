@@ -2,8 +2,10 @@ import { isObject, isArray, asArray, isString } from '@/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
+    // Nested short-hand expansion
     schema = { type: schema }
   } else if (isArray(schema)) {
+    // Needed for anyOf, allOf, oneOf, items:
     schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
@@ -13,7 +15,24 @@ export function convertSchema(schema, options = {}) {
     if (isString(type)) {
       // Convert schema property notation to JSON schema
       if (jsonTypes[type]) {
-        if (type === 'array') {
+        if (type === 'object') {
+          if (schema.properties) {
+            const properties = {}
+            const required = []
+            for (let [key, property] of Object.entries(schema.properties)) {
+              property = convertSchema(expandSchemaShorthand(property), options)
+              properties[key] = property
+              if (property && property.required) {
+                required.push(key)
+              }
+            }
+            schema.properties = properties
+            if (required.length > 0) {
+              schema.required = required
+            }
+          }
+          // TODO: convertSchema() on patternProperties
+        } else if (type === 'array') {
           const { items } = schema
           if (items) {
             schema.items = convertSchema(items, options)
@@ -37,26 +56,9 @@ export function convertSchema(schema, options = {}) {
         }
       }
     } else {
-      // Root properties schema or nested objects
-      const properties = schema
-      const required = []
-      for (let [key, property] of Object.entries(schema)) {
-        if (isArray(property)) {
-          property = {
-            type: 'array',
-            items: property.length > 1 ? property : property[0]
-          }
-        } else if (property && property.required) {
-          required.push(key)
-        }
-        properties[key] = convertSchema(property, options)
-      }
-      schema = {
-        type: 'object',
-        properties,
-        ...(required.length > 0 && { required }),
-        additionalProperties: false
-      }
+      // Root properties schema or nested object without type that needs
+      // expanding.
+      schema = convertSchema(expandSchemaShorthand(schema), options)
     }
     if (schema.type !== 'object') {
       const {
@@ -76,6 +78,30 @@ export function convertSchema(schema, options = {}) {
       if (_default && !excludeDefaults[_default]) {
         schema.default = _default
       }
+    }
+  }
+  return schema
+}
+
+export function expandSchemaShorthand(schema) {
+  if (isString(schema)) {
+    schema = {
+      type: schema
+    }
+  } else if (isArray(schema)) {
+    schema = {
+      type: 'array',
+      items: schema.length > 1 ? schema : schema[0],
+      // The array short-forms sets an empty array as the default.
+      default: []
+    }
+  } else if (isObject(schema) && !isString(schema.type)) {
+    schema = {
+      type: 'object',
+      properties: {
+        ...schema
+      },
+      additionalProperties: false
     }
   }
   return schema
@@ -114,8 +140,8 @@ function makeNullable(schema) {
           $ref ? { $ref }
           : {
             type,
-            instanceof: _instanceof,
-            format
+            ...(_instanceof && { instanceof: _instanceof }),
+            ...(format && { format })
           },
           { type: 'null' }
         ],
