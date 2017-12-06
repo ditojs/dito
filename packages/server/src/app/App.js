@@ -60,8 +60,8 @@ export default class App extends Koa {
   setupMiddleware() {
     const { config } = this
 
-    const isSet = name => !!config[name]
-    const notFalse = name => config[name] !== false
+    const isTruthy = name => !!config[name]
+    const isntFalse = name => config[name] !== false
 
     const { log = {} } = config
     const logger = {
@@ -74,12 +74,12 @@ export default class App extends Koa {
     this.use(
       compose([
         errorHandler(),
-        notFalse('responseTime') && responseTime(),
+        isntFalse('responseTime') && responseTime(),
         logger && logger(),
-        notFalse('helmet') && helmet(),
-        notFalse('cors') && cors(),
-        isSet('compress') && compress(config.compress),
-        ...(isSet('etag') && [
+        isntFalse('helmet') && helmet(),
+        isntFalse('cors') && cors(),
+        isTruthy('compress') && compress(config.compress),
+        ...(isTruthy('etag') && [
           conditional(),
           etag()
         ] || []),
