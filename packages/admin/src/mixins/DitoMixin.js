@@ -53,11 +53,15 @@ export default {
     // long as the current editing path is still valid. For type components,
     // this memory is provided by the parent, see RouteMixin and DitoPanel.
     getStore(key) {
-      return this.store[key] || this.setStore(key, {})
+      return this.store[key]
     },
 
     setStore(key, value) {
       return this.$set(this.store, key, value)
+    },
+
+    getOrCreateStore(key) {
+      return this.getStore(key) || this.setStore(key, {})
     },
 
     getLabel(schema) {

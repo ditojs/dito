@@ -7,7 +7,7 @@
         :name="name"
         :data="data"
         :meta="meta"
-        :store="store"
+        :store="getOrCreateStore(name)"
       )
     router-view(v-else)
 </template>

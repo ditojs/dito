@@ -57,11 +57,11 @@ export default {
     },
 
     query() {
-      return this.store.query
+      return this.getStore('query')
     },
 
     total() {
-      return this.store.total
+      return this.getStore('total')
     },
 
     scopes() {
