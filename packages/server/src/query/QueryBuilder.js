@@ -52,7 +52,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     }
     // Now finally apply the scopes.
     for (const scope of this._scopes) {
-      scope(this)
+      this.applyFilter(scope)
     }
     return super.execute()
   }
@@ -61,30 +61,21 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this.has(QueryBuilder.SelectSelector)
   }
 
-  unscoped() {
+  clearScope() {
     this._scopes = []
     return this
   }
 
   scope(...scopes) {
-    return this.unscoped().mergeScope(...scopes)
+    return this.clearScope().mergeScope(...scopes)
   }
 
   mergeScope(...scopes) {
     if (scopes.length) {
-      const { namedFilters } = this.modelClass()
       for (const scope of scopes) {
-        let func
-        if (isString(scope) && namedFilters && scope in namedFilters) {
-          func = builder => builder.applyFilter(scope)
-        } else if (isObject(scope)) {
-          func = builder => builder.find(scope)
-        } else if (isFunction(scope)) {
-          func = scope
-        } else {
-          throw new QueryError(`Invalid scope: '${scope}'.`)
+        if (!this._scopes.includes(scope)) {
+          this._scopes.push(scope)
         }
-        this._scopes.push(func)
       }
     }
     return this
@@ -269,6 +260,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   allow(refs) {
+    // TODO: Use a more explicit name for this in the context of QueryBuilder,
+    // or decide to remove all together.
     if (refs) {
       this._allow = this._allow || {}
       for (const { key } of this.getPropertyRefs(refs, { checkAllow: false })) {
@@ -587,9 +580,10 @@ const mixinMethods = [
   'find',
   'findOne',
   'findById',
-  'unscoped',
   'eager',
   'scope',
+  'clearEager',
+  'clearScope',
   'select',
   'insert',
   'update',

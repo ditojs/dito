@@ -1,6 +1,6 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isArray, deepMergeUnshift } from '@/utils'
+import { isObject, isArray, isFunction, deepMergeUnshift } from '@/utils'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
@@ -79,7 +79,22 @@ export default class Model extends objection.Model {
   }
 
   static get namedFilters() {
-    return this.definition.scopes
+    // Convert Dito's scopes to Objection's namedFilters and cache result.
+    return this.getCached('namedFilters', () => {
+      const { scopes = {} } = this.definition
+      const converted = {}
+      for (const [name, scope] of Object.entries(scopes)) {
+        const func = converted[name] = isFunction(scope)
+          ? scope
+          : isObject(scope)
+            ? builder => builder.find(scope)
+            : null
+        if (!func) {
+          throw new QueryError(`Invalid scope: '${scope}'.`)
+        }
+      }
+      return converted
+    })
   }
 
   static get relationMappings() {
