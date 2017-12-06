@@ -27,6 +27,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     this._allow = null
     this._propertyRefsCache = {}
     this._applyDefaultEager = true
+    this._applyDefaultOrder = true
     this._scopes = []
   }
 
@@ -35,6 +36,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     clone._allow = this._allow
     clone._propertyRefsCache = this._propertyRefsCache
     clone._applyDefaultEager = this._applyDefaultEager
+    clone._applyDefaultOrder = this._applyDefaultOrder
     clone._scopes = this._scopes
     return clone
   }
@@ -42,12 +44,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
   execute() {
     // Only apply defaultEager setting if this is a find query, meaning it does
     // not specify any write operations, without any special selects: count()...
-    if (this._applyDefaultEager && this.isFindQuery() && !this.hasSelects()) {
-      const { defaultEager } = this.modelClass()
-      if (defaultEager) {
+    if (this.isFindQuery() && !this.hasSelects()) {
+      const { defaultEager, defaultOrder } = this.modelClass()
+      if (defaultEager && this._applyDefaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
         // called before. Using eager() sets `_applyDefaultEager` to `false`.
         this.mergeEager(defaultEager)
+      }
+      if (defaultOrder && this._applyDefaultOrder) {
+        this.orderBy(...asArray(defaultOrder))
       }
     }
     // Now finally apply the scopes.
@@ -81,14 +86,23 @@ export default class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  eager(exp, filters) {
+  eager(...args) {
     this._applyDefaultEager = false
-    return super.eager(exp, filters)
+    return super.eager(...args)
   }
 
   clearEager() {
     this._applyDefaultEager = false
     return super.clearEager()
+  }
+
+  orderBy(...args) {
+    this._applyDefaultOrder = false
+    return super.orderBy(...args)
+  }
+
+  clearOrder() {
+    this._applyDefaultOrder = false
   }
 
   raw(...args) {
@@ -584,6 +598,7 @@ const mixinMethods = [
   'scope',
   'clearEager',
   'clearScope',
+  'clearOrder',
   'select',
   'insert',
   'update',
