@@ -91,7 +91,7 @@ async function collectModelTables(modelClass, app, tables) {
         unique && 'unique()',
         index && 'index()'
       )
-      if (_default) {
+      if (_default !== undefined) {
         let value = defaultValues[_default]
         if (!value) {
           value = isArray(_default) || isObject(_default)
