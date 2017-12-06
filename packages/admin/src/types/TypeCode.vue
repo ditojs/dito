@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-code(ref="code" :style="style")
+  .dito-code.CodeFlask(ref="code" :style="style")
     | {{ value }}
 </template>
 
@@ -10,10 +10,10 @@
 .dito
   .dito-code
     padding: $input-padding
-    box-sizing: border-box
 
     .CodeFlask__textarea,
     .CodeFlask__pre
+      height: 100%
       &,
       code,
       pre
@@ -56,7 +56,7 @@ export default TypeComponent.register('code', {
     },
 
     style() {
-      return `height: calc(${this.lines} * 1.5em + 6px)`
+      return `height: ${this.lines * 1.5}em`
     }
   }
 })
