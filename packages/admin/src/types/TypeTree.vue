@@ -1,11 +1,17 @@
 <template lang="pug">
-  dito-tree-item.dito-tree(
-    :data="value"
-    :schema="schema"
-    :root="true"
-    :open="true"
-    :childrenOpen="true"
-  )
+  .dito-tree
+    dito-scopes(
+      v-if="scopes"
+      :query="query"
+      :scopes="scopes"
+    )
+    dito-tree-item(
+      :data="value"
+      :schema="schema"
+      :root="true"
+      :open="true"
+      :childrenOpen="true"
+    )
 </template>
 
 <style lang="sass">
@@ -17,6 +23,9 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import ListMixin from '@/mixins/ListMixin'
 
-export default TypeComponent.register('tree')
+export default TypeComponent.register('tree', {
+  mixins: [ListMixin]
+})
 </script>

@@ -234,7 +234,7 @@ export default DitoComponent.component('dito-form', {
           const comp = this.components[key]
           // Only check for nested on list items that actuall load data, since
           // other components can have array values too.
-          if (comp && comp.isList && !comp.listSchema.nested) {
+          if (comp && comp.isList && !comp.isNested) {
             continue
           }
         }
