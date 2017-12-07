@@ -180,29 +180,44 @@ export default {
           // See DitoMixin for an explanation of `store.total` & co.
           this.setStore('total', 0)
         }
-        // Dito specific query parameters:
-        // Convert offset/limit to range so that we get entry counting
-        const { paginate } = this.listSchema
-        const { page = 0, ...query } = this.query || {}
-        const limit = this.isList && paginate // Only use range on lists
-        const offset = page * limit
-        const params = {
-          ...query, // Query may override scope.
-          ...(limit && {
-            range: `${offset},${offset + limit - 1}`
-          })
-        }
-        this.request('get', { params }, (err, response) => {
-          if (!err) {
-            let { data } = response
-            if (this.resource.type === 'collection' && isObject(data)) {
-              this.setStore('total', data.total)
-              data = data.results
-            }
-            this.setData(data)
-          }
+        this.requestData()
+      }
+    },
+
+    requestData() {
+      // Dito specific query parameters:
+      // Convert offset/limit to range so that we get entry counting
+      // TODO: Consider moving this into a modular place, so other backends
+      // could plug in as well.
+      function toPropertiesExpression(expression) {
+        return Object.entries(expression).map(
+          ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
+        ).join(',')
+      }
+
+      const { paginate, pick, omit } = this.listSchema
+      const { page = 0, ...query } = this.query || {}
+      const limit = this.isList && paginate // Only use range on lists
+      const offset = page * limit
+      const params = {
+        ...query, // Query may override scope.
+        ...(pick && { pick: toPropertiesExpression(pick) }),
+        ...(omit && { omit: toPropertiesExpression(omit) }),
+        ...(limit && {
+          range: `${offset},${offset + limit - 1}`
         })
       }
+      console.log('request', params)
+      this.request('get', { params }, (err, response) => {
+        if (!err) {
+          let { data } = response
+          if (this.resource.type === 'collection' && isObject(data)) {
+            this.setStore('total', data.total)
+            data = data.results
+          }
+          this.setData(data)
+        }
+      })
     },
 
     setLoading(loading) {
