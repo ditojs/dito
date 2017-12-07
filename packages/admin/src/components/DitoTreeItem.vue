@@ -1,28 +1,28 @@
 <template lang="pug">
-  .dito-tree-item(
-    :class="{ 'dito-dragging': dragging }"
-  )
-    template(v-if="children && title")
-      .dito-tree-branch(@click.stop="opened = !opened")
-        .dito-tree-chevron(
-          v-if="!root"
-          :class="{ 'dito-opened': opened }"
-        )
-        .dito-tree-title(v-if="title" v-html="title")
+  .dito-tree-item(:class="{ 'dito-dragging': dragging }")
+    template(v-if="title")
+      .dito-tree-branch(v-if="children" @click.stop="opened = !opened")
+        .dito-tree-chevron(v-if="!root" :class="{ 'dito-opened': opened }")
+        .dito-tree-title(v-html="title")
         .dito-tree-info(v-if="info") {{ info }}
-    template(v-else-if="title")
-      .dito-tree-leaf
-        .dito-tree-title(v-if="title" v-html="title")
+      .dito-tree-leaf(v-else)
+        .dito-tree-title(v-html="title")
     .dito-buttons.dito-buttons-inline(v-if="hasButtons")
       button.dito-button(
         v-if="schema.draggable"
         type="button"
         class="dito-button-drag"
       )
+      // TODO:
       button.dito-button(
         v-if="schema.editable"
         type="button"
         class="dito-button-edit"
+      )
+      button.dito-button(
+        v-if="schema.deletable"
+        type="button"
+        class="dito-button-delete"
       )
       // router-link.dito-button(
         v-if="schema.editable"
@@ -39,8 +39,8 @@
       v-if="children"
       :list="children"
       :options="dragOptions"
-      @start="dragging = true"
-      @end="dragging = false"
+      @start="startDrag"
+      @end="endDrag"
     )
       dito-tree-item(
         v-show="opened"
@@ -119,6 +119,23 @@ export default DitoComponent.component('dito-tree-item', {
     getTitle(item, schema) {
       const { title } = schema
       return isFunction(title) ? title(item) : item && item[title]
+    },
+
+    startDrag() {
+      this.dragging = true
+    },
+
+    endDrag(event) {
+      this.dragging = false
+      const { orderKey } = this.schema.children
+      if (orderKey) {
+        // Reorder the chnaged children by their orderKey.
+        const start = Math.min(event.oldIndex, event.newIndex)
+        const { children } = this
+        for (let i = start; i < children.length; i++) {
+          children[i][orderKey] = i
+        }
+      }
     }
   },
 
