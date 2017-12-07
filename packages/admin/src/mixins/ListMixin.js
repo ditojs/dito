@@ -123,9 +123,8 @@ export default {
       let { scope, scopes, page } = this.schema
       if (!scope && scopes) {
         // See if the parent-store has a scope setting, and reuse if possible
-        const { $parent } = this.store.$parent
-        const query = $parent && $parent.query
-        scope = query && query.scope
+        // First parent is the form, 2nd parent is the parent list of the form.
+        scope = this.store.$parent?.$parent?.query?.scope
         // Only use the parent value if it's a possible setting
         if (scope && !scopes.includes(scope)) {
           scope = null

@@ -1,14 +1,15 @@
 {
   "presets": [
-    ["env", { "modules": false }],
-    "stage-2"
+    ["@babel/preset-env", {
+      "modules": false,
+      "targets": {
+        "browsers": ["last 2 versions", "safari >= 7"]
+      }
+    }],
+    ["@babel/preset-stage-1"]
   ],
-  "plugins": ["transform-runtime"],
-  "comments": false,
-  "env": {
-    "test": {
-      "presets": ["env", "stage-2"],
-      "plugins": [ "istanbul" ]
-    }
-  }
+  "plugins": [
+    ["@babel/plugin-transform-runtime"]
+  ],
+  "comments": false
 }

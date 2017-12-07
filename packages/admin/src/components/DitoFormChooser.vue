@@ -33,7 +33,7 @@ export default DitoComponent.component('dito-form-chooser', {
       const { schema } = this
       const { forms, inline } = schema
       const form = type
-        ? forms && forms[type]
+        ? forms?.[type]
         : schema.form
       if (form) {
         if (inline) {

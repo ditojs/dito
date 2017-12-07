@@ -71,7 +71,7 @@ export default DitoComponent.component('dito-trail', {
         const end = path.split('/').length
         matched.push({
           path: parts.slice(0, end).join('/'),
-          breadcrumb: routeComponent && routeComponent.breadcrumb,
+          breadcrumb: routeComponent?.breadcrumb,
           last: end === parts.length
         })
       }

@@ -35,7 +35,7 @@ export default {
       let transient = this.isNested
       if (!transient) {
         const parent = this.parentFormComponent
-        transient = parent && (parent.isTransient || parent.create)
+        transient = parent?.isTransient || parent?.create
       }
       return transient
     },
@@ -105,7 +105,7 @@ export default {
     getFormSchema(item) {
       const { listSchema } = this
       const { form, forms } = listSchema
-      const type = item && item.type
+      const type = item?.type
       return forms && type ? forms[type] : form
     },
 
@@ -158,7 +158,7 @@ export default {
         // Support default values both on schema and on component level.
         const comp = TypeComponent.get(compSchema.type)
         const defaultValue = pick(compSchema.default,
-          comp && comp.options.methods.defaultValue)
+          comp?.options.methods.defaultValue)
         data[key] = isFunction(defaultValue)
           ? defaultValue()
           : clone(defaultValue) || null
@@ -225,7 +225,7 @@ export default {
     },
 
     hasValidationError(response) {
-      return response && response.status === 400
+      return response?.status === 400
     },
 
     request(method, options, callback) {

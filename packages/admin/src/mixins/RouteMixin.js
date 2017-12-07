@@ -62,8 +62,7 @@ export default {
       // This getter is part of linking up store intances with their parents.
       // By default, it's just the store of the parent route-component.
       // See DitoForm for its override of parentStore()
-      const { parentRouteComponent } = this
-      return parentRouteComponent && parentRouteComponent.store
+      return this.parentRouteComponent?.store
     },
 
     breadcrumb() {

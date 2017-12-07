@@ -40,13 +40,11 @@ export default TypeComponent.register('switch', {
     },
 
     width() {
-      const { size } = this.schema
-      return size && size.width || 50
+      return this.schema.size?.width || 50
     },
 
     height() {
-      const { size } = this.schema
-      return size && size.height || 22
+      return this.schema.size?.height || 22
     }
   }
 })

@@ -212,7 +212,7 @@ export default TypeComponent.register('list', {
 
     hasButtons() {
       const { value, schema } = this
-      return !!(value && value.length > 0 &&
+      return !!(value?.length > 0 &&
         (schema.editable || schema.deletable || schema.draggable))
     },
 

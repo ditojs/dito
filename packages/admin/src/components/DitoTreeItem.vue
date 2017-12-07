@@ -118,7 +118,7 @@ export default DitoComponent.component('dito-tree-item', {
   methods: {
     getTitle(item, schema) {
       const { title } = schema
-      return isFunction(title) ? title(item) : item && item[title]
+      return isFunction(title) ? title(item) : item?.[title]
     },
 
     startDrag() {
@@ -156,7 +156,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     info() {
       const { children, object } = this
-      const count = children && children.length ||
+      const count = children?.length ||
         object && Object.keys(object).length
       const suffix = children
         ? count === 1 ? 'item' : 'items'

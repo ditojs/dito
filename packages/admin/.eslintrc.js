@@ -48,7 +48,7 @@ module.exports = {
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
-    'prefer-destructuring': ['error', {
+    'prefer-destructuring': ['warn', {
       VariableDeclarator: {
         object: true,
         array: false

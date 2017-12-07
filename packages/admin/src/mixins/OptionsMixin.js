@@ -23,8 +23,7 @@ export default {
               : response.data
           })
           .catch(error => {
-            this.$errors.add(this.name,
-              error.response && error.response.data || error.message)
+            this.$errors.add(this.name, error.response?.data || error.message)
             this.options = null
             this.loading = false
           })

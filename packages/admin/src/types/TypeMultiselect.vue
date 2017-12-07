@@ -225,7 +225,7 @@ export default TypeComponent.register('multiselect', {
     optionToValue(value) {
       // When changes happend, store the mapped value instead of full object.
       return this.valueKey
-        ? value && value[this.valueKey]
+        ? value?.[this.valueKey]
         : value
     },
 

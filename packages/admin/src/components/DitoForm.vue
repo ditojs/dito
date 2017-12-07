@@ -138,18 +138,16 @@ export default DitoComponent.component('dito-form', {
     },
 
     buttons() {
-      const { schema } = this
-      return schema && schema.buttons || {}
+      return this.schema?.buttons || {}
     },
 
     tabs() {
-      const { schema } = this
-      return schema && schema.tabs
+      return this.schema?.tabs
     },
 
     selectedTab() {
       const { hash } = this.$route
-      return hash && hash.substring(1) ||
+      return hash?.substring(1) ||
           this.tabs && Object.keys(this.tabs)[0] || ''
     },
 
@@ -166,17 +164,14 @@ export default DitoComponent.component('dito-form', {
     },
 
     parentStore() {
-      const { parentRouteComponent } = this
-      return parentRouteComponent && parentRouteComponent.getStore(
-        this.listSchema.name)
+      return this.parentRouteComponent?.getStore(this.listSchema.name)
     },
 
     parentList() {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and
       // inheriting of data.
-      const parentData = this.parentRouteComponent.data
-      return parentData && parentData[this.listSchema.name]
+      return this.parentRouteComponent.data?.[this.listSchema.name]
     },
 
     inheritedData() {
@@ -240,7 +235,7 @@ export default DitoComponent.component('dito-form', {
           const component = this.components[key]
           // Only check for nested on list items that actuall load data, since
           // other componentonents can have array values too.
-          if (component && component.isList && !component.isNested) {
+          if (component?.isList && !component.isNested) {
             continue
           }
         }

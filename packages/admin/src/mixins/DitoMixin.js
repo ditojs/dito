@@ -29,7 +29,7 @@ export default {
 
     formComponent() {
       const comp = this.routeComponent
-      return comp && comp.isForm ? comp : null
+      return comp?.isForm ? comp : null
     },
 
     parentRouteComponent() {
