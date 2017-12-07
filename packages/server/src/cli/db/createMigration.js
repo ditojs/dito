@@ -108,12 +108,12 @@ async function collectModelTables(modelClass, app, tables) {
           // TODO: Support composite keys for foreign references:
           // Use `asArray(from)`, `asArray(to)`
           const { from, to } = relation
-          const [fromClass, fromProperty] = from && from.split('.') || []
+          const [fromClass, fromProperty] = from?.split('.') || []
           if (fromProperty === name) {
             if (fromClass !== modelClass.name) {
               throw Error(`Invalid relation declaration: ${relation}`)
             }
-            const [toClass, toProperty] = to && to.split('.') || []
+            const [toClass, toProperty] = to?.split('.') || []
             statement.push(
               '\n',
               `references('${app.normalizeIdentifier(toProperty)}')`,
@@ -141,8 +141,8 @@ async function collectThroughTables(modelClass, app, tables) {
     if (through === true && !inverse) {
       // TODO: Support composite keys for foreign references:
       // Use `asArray(from)`, `asArray(to)`
-      const [fromClass, fromProperty] = from && from.split('.') || []
-      const [toClass, toProperty] = to && to.split('.') || []
+      const [fromClass, fromProperty] = from?.split('.') || []
+      const [toClass, toProperty] = to?.split('.') || []
       const statements = []
       // See convertRelations()
       const tableName = app.normalizeIdentifier(`${fromClass}${toClass}`)

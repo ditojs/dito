@@ -23,7 +23,7 @@ export class ValidationError extends ResponseError {
           // Allow custom formats and keywords to override error messages
           if (keyword === 'format') {
             const definition = validator.getFormat(params.format)
-            message = definition && definition.message || message
+            message = definition?.message || message
           } else if (keyword === 'required') {
             property = params.missingProperty
             message = 'is a required property'
@@ -32,11 +32,11 @@ export class ValidationError extends ResponseError {
             message = 'is an unsupported additional property'
           } else {
             const definition = validator.getKeyword(keyword)
-            if (definition && definition.macro) {
+            if (definition?.macro) {
               // Skip keywords that are only delegating to other keywords.
               continue
             }
-            message = definition && definition.message || message
+            message = definition?.message || message
           }
           // Produce keys that allow better detection of nested errors in Admin:
           const errorKey = property && key && key !== property
@@ -69,7 +69,7 @@ function parseErrors(errors) {
   let index = 0
   for (const { message, keyword, params, dataPath } of errors) {
     const key = dataPath.substring(1) ||
-      params && (params.missingProperty || params.additionalProperty) ||
+      params?.missingProperty || params?.additionalProperty ||
       (index++).toString()
     const array = errors[key] || (errors[key] = [])
     array.push({ message, keyword, params })

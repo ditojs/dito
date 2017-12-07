@@ -37,7 +37,7 @@ class ModelReference {
     this.propertyNames = []
     // Parse and validate model key references
     for (const ref of asArray(reference)) {
-      const [modelName, propertyName] = ref && ref.split('.') || []
+      const [modelName, propertyName] = ref?.split('.') || []
       const modelClass = models[modelName]
       if (!modelClass) {
         throw new Error(
@@ -108,7 +108,7 @@ function convertReleation(schema, models) {
   } = schema || {}
   const relationClass = relationLookup[relation] ||
     relationClasses[relation] || relation
-  if (!(relationClass && relationClass.prototype instanceof Relation)) {
+  if (!(relationClass?.prototype instanceof Relation)) {
     throw new Error(`Unrecognized relation: ${relation}`)
   } else if (join && !isString(relation)) {
     // Original Objection.js-style relation, just pass through

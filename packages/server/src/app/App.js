@@ -75,7 +75,7 @@ export default class App extends Koa {
       compose([
         errorHandler(),
         isntFalse('responseTime') && responseTime(),
-        logger && logger(),
+        logger?.(),
         isntFalse('helmet') && helmet(),
         isntFalse('cors') && cors(),
         isTruthy('compress') && compress(config.compress),

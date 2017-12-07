@@ -1,8 +1,6 @@
 export class KnexHelper {
   getDialect() {
-    const knex = this.knex()
-    const client = knex && knex.client
-    return client && client.dialect || null
+    return this.knex()?.client?.dialect || null
   }
 
   isPostgreSQL() {

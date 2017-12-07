@@ -21,7 +21,7 @@ export function isFunction(val) {
 }
 
 export function isAsync(fun) {
-  return fun && fun[Symbol.toStringTag] === 'AsyncFunction'
+  return fun?.[Symbol.toStringTag] === 'AsyncFunction'
 }
 
 export function isPromise(obj) {

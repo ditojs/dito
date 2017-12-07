@@ -81,7 +81,7 @@ export function deindent(strings, ...values) {
         const match = str.match(/(?:^|[\n\r])(?:[\n\r]*)(\s+)([^\n\r]*)$/)
         parts = [str]
         const indentFirst = match && !match[2]
-        const indent = match && match[1] || ''
+        const indent = match?.[1] || ''
         if (indent && !indentFirst) {
           parts.push(`${lines.shift()}${os.EOL}`)
         }

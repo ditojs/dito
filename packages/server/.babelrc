@@ -1,6 +1,15 @@
 {
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": {
+        "node": "8.9"
+      },
+      "useBuiltIns": "usage"
+    }],
+    ["@babel/preset-stage-1"]
+  ],
   "plugins": [
-    "dynamic-import-node",
+    "@babel/plugin-syntax-dynamic-import",
     ["module-resolver", {
       "cwd": "babelrc",
       "alias": {
@@ -8,11 +17,6 @@
         "@": "./src"
       }
     }],
-    "transform-class-properties",
-    "transform-es2015-modules-commonjs",
-    "transform-promise-to-bluebird",
-    ["transform-object-rest-spread", {
-      "useBuiltIns": true
-    }]
+    "transform-promise-to-bluebird"
   ]
 }

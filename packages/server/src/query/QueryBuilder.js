@@ -229,12 +229,12 @@ export default class QueryBuilder extends objection.QueryBuilder {
   find(query = {}, allowed) {
     this._relationsToJoin = {}
     // Convert allowed array to object lookup for quicker access.
-    const allowedLookup = allowed && allowed.reduce((lookup, name) => {
+    const allowedLookup = allowed?.reduce((lookup, name) => {
       lookup[name] = true
       return lookup
     }, {})
     for (const [key, value] of Object.entries(query)) {
-      const inAllowed = allowed && allowedLookup[key]
+      const inAllowed = allowedLookup?.[key]
       if (!allowed || inAllowed) {
         const queryHandler = queryHandlers[key]
         if (queryHandler) {
@@ -312,7 +312,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     const propertyRefs = this.getPropertyRefs(parts[0])
     for (const ref of propertyRefs) {
       const { relation } = ref
-      if (relation && relation.isOneToOne()) {
+      if (relation?.isOneToOne()) {
         this._relationsToJoin[relation.name] = relation
       }
     }

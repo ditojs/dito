@@ -22,7 +22,7 @@ export function convertSchema(schema, options = {}) {
             for (let [key, property] of Object.entries(schema.properties)) {
               property = convertSchema(expandSchemaShorthand(property), options)
               properties[key] = property
-              if (property && property.required) {
+              if (property?.required) {
                 required.push(key)
               }
             }

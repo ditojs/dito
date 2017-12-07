@@ -179,7 +179,7 @@ export default class Model extends objection.Model {
       }
       cache = entry.cache
     }
-    if (entry && entry.value === undefined) {
+    if (entry?.value === undefined) {
       // Temporarily set cache to an empty object to prevent endless
       // recursion with interdependent jsonSchema related calls...
       entry.value = empty
@@ -187,7 +187,7 @@ export default class Model extends objection.Model {
       // Clear child dependencies once parent value has changed:
       entry.cache = {}
     }
-    return entry && entry.value
+    return entry?.value
   }
 
   static checkRelation(relation) {
@@ -249,7 +249,7 @@ export default class Model extends objection.Model {
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
-        json[key] = date && date.toISOString ? date.toISOString() : date
+        json[key] = date?.toISOString ? date.toISOString() : date
       }
     }
     if (constructor.isSQLite()) {
