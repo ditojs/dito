@@ -200,7 +200,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
-      return !this.isTransient && !this.data
+      return !this.isTransient && !this.data && !this.loading
     },
 
     isDirty() {

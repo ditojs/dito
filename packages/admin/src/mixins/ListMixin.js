@@ -33,7 +33,7 @@ export default {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
         this.addQuery(to.query)
-        this.loadData(false)
+        this.initData()
       } else {
         // Similar routes, but not the same: We're going back, so reapply the
         // previous query again.
@@ -44,7 +44,11 @@ export default {
 
   computed: {
     shouldLoad() {
-      return !this.isTransient && !this.value
+      // If the route-component (view, form) that this list belongs to also
+      // loads data, depend on this first.
+      const { routeComponent } = this
+      return !this.isTransient && !this.loading && !this.value &&
+        !(routeComponent.shouldLoad || routeComponent.loading)
     },
 
     listSchema() {
@@ -116,7 +120,7 @@ export default {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the
       // route query parameters to override them.
-      let { scope, page, scopes } = this.schema
+      let { scope, scopes, page } = this.schema
       if (!scope && scopes) {
         // See if the parent-store has a scope setting, and reuse if possible
         const { $parent } = this.store.$parent

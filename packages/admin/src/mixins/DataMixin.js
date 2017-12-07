@@ -41,7 +41,7 @@ export default {
     },
 
     shouldLoad() {
-      return !this.isTransient
+      return !this.isTransient && !this.loading
     },
 
     shouldReload() {
