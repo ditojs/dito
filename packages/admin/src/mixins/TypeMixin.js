@@ -14,11 +14,19 @@ export default {
     disabled: { type: Boolean, required: false }
   },
 
+  // Register and unregister all type components on their parent forms for easy
+  // lookup.
   created() {
-    // Register all type components on the form they belong to, for easy lookup.
     const form = this.formComponent
     if (form) {
       form.components[this.name] = this
+    }
+  },
+
+  destroyed() {
+    const form = this.formComponent
+    if (form) {
+      delete form.components[this.name]
     }
   },
 

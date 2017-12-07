@@ -23,7 +23,7 @@
           :name="key"
           :data="data"
           :meta="meta"
-          :store="getOrCreateStore(key)"
+          :store="getChildStore(key)"
           :disabled="getValue(compSchema, 'disabled', false) || disabled"
           :class="{ \
             'dito-fill': hasFill(compSchema), \

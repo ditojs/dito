@@ -22,10 +22,7 @@ export default {
     return {
       isRoute: true,
       reload: false,
-      // Each route-component defines a store that gets passed on to its
-      // child components, so they can store values in them that live beyond
-      // their life-cycle. See: DitoPanel, ListMixin
-      store: {}
+      storeData: {}
     }
   },
 
@@ -46,6 +43,27 @@ export default {
 
     label() {
       return this.getLabel(this.schema)
+    },
+
+    store() {
+      // Each route-component defines a store that gets passed on to its
+      // child components, so they can store values in them that live beyond
+      // their life-cycle. See: DitoPanel, ListMixin
+      // These stores are also made aware of their parents, so settings can
+      // propagate.
+      const { parentStore } = this
+      if (parentStore) {
+        this.$set(this.storeData, '$parent', parentStore)
+      }
+      return this.storeData
+    },
+
+    parentStore() {
+      // This getter is part of linking up store intances with their parents.
+      // By default, it's just the store of the parent route-component.
+      // See DitoForm for its override of parentStore()
+      const { parentRouteComponent } = this
+      return parentRouteComponent && parentRouteComponent.store
     },
 
     breadcrumb() {

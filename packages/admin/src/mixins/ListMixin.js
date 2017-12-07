@@ -34,6 +34,10 @@ export default {
         // Update filter and reload data without clearing.
         this.addQuery(to.query)
         this.loadData(false)
+      } else {
+        // Similar routes, but not the same: We're going back, so reapply the
+        // previous query again.
+        this.addQuery(this.query)
       }
     }
   },
@@ -112,7 +116,17 @@ export default {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the
       // route query parameters to override them.
-      const { scope, page } = this.schema
+      let { scope, page, scopes } = this.schema
+      if (!scope && scopes) {
+        // See if the parent-store has a scope setting, and reuse if possible
+        const { $parent } = this.store.$parent
+        const query = $parent && $parent.query
+        scope = query && query.scope
+        // Only use the parent value if it's a possible setting
+        if (scope && !scopes.includes(scope)) {
+          scope = null
+        }
+      }
       query = {
         ...(scope != null && { scope }),
         ...(page != null && { page }),

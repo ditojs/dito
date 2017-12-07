@@ -165,6 +165,12 @@ export default DitoComponent.component('dito-form', {
       return this.createdData || this.loadedData || this.inheritedData
     },
 
+    parentStore() {
+      const { parentRouteComponent } = this
+      return parentRouteComponent && parentRouteComponent.getStore(
+        this.listSchema.name)
+    },
+
     parentList() {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and
@@ -231,10 +237,10 @@ export default DitoComponent.component('dito-form', {
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value)) {
-          const comp = this.components[key]
+          const component = this.components[key]
           // Only check for nested on list items that actuall load data, since
-          // other components can have array values too.
-          if (comp && comp.isList && !comp.isNested) {
+          // other componentonents can have array values too.
+          if (component && component.isList && !component.isNested) {
             continue
           }
         }

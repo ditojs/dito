@@ -68,8 +68,8 @@ export default {
       return this.$set(this.store, key, value)
     },
 
-    getOrCreateStore(key) {
-      return this.getStore(key) || this.setStore(key, {})
+    getChildStore(key) {
+      return this.getStore(key) || this.setStore(key, { $parent: this.store })
     },
 
     getLabel(schema) {
