@@ -151,7 +151,7 @@ $buttons-padding: 2px
           > td
             // Top row does not need a border at the top...
             // But to make vuedraggable happy, hide it with background color.
-            border-color: $color-lightest
+            border-top-color: $color-lightest
       > thead + tbody
         > tr
           &:first-child
