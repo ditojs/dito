@@ -1,40 +1,40 @@
 <template lang="pug">
   .dito-tree-item(:class="{ 'dito-dragging': dragging }")
-    template(v-if="title")
+    .dito-tree-title(v-if="title")
       .dito-tree-branch(v-if="numChildren" @click.stop="opened = !opened")
         .dito-tree-chevron(v-if="!root" :class="{ 'dito-opened': opened }")
-        .dito-tree-title(v-html="title")
+        .dito-tree-name(v-html="title")
         .dito-tree-info(v-if="info") {{ info }}
       .dito-tree-leaf(v-else)
-        .dito-tree-title(v-html="title")
-    .dito-buttons.dito-buttons-inline(v-if="hasButtons")
-      button.dito-button(
-        v-if="schema.draggable"
-        type="button"
-        class="dito-button-drag"
-      )
-      // TODO:
-      button.dito-button(
-        v-if="schema.editable"
-        type="button"
-        class="dito-button-edit"
-      )
-      button.dito-button(
-        v-if="schema.deletable"
-        type="button"
-        class="dito-button-delete"
-      )
-      // router-link.dito-button(
-        v-if="schema.editable"
-        :to="`${path}${getItemId(item, index)}`" append
-        tag="button"
-        type="button"
-        :class="`dito-button-${verbEdit}`")
-      // button.dito-button(
-        v-if="schema.deletable"
-        type="button"
-        @click="deleteItem(item)"
-        :class="`dito-button-${verbDelete}`")
+        .dito-tree-name(v-html="title")
+      .dito-buttons.dito-buttons-inline(v-if="hasButtons")
+        button.dito-button(
+          v-if="schema.draggable"
+          type="button"
+          class="dito-button-drag"
+        )
+        // TODO:
+        button.dito-button(
+          v-if="schema.editable"
+          type="button"
+          class="dito-button-edit"
+        )
+        button.dito-button(
+          v-if="schema.deletable"
+          type="button"
+          class="dito-button-delete"
+        )
+        // router-link.dito-button(
+          v-if="schema.editable"
+          :to="`${path}${getItemId(item, index)}`" append
+          tag="button"
+          type="button"
+          :class="`dito-button-${verbEdit}`")
+        // button.dito-button(
+          v-if="schema.deletable"
+          type="button"
+          @click="deleteItem(item)"
+          :class="`dito-button-${verbDelete}`")
     vue-draggable(
       v-for="list in childrenLists"
       :key="list.name"
@@ -87,13 +87,14 @@
       float: right
       margin-left: 1em
       margin-bottom: -1em // so float don't push each other away
-    &:hover
+    .dito-tree-title:hover
       > .dito-buttons
         visibility: visible
+    // Hide buttons during dragging
     &.dito-dragging
-      // Hide buttons during dragging
-      .dito-buttons
-        visibility: hidden
+      .dito-tree-title
+        > .dito-buttons
+          visibility: hidden
 </style>
 
 <script>
