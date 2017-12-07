@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-tree-item(:class="{ 'dito-dragging': dragging }")
     template(v-if="title")
-      .dito-tree-branch(v-if="children" @click.stop="opened = !opened")
+      .dito-tree-branch(v-if="numChildren" @click.stop="opened = !opened")
         .dito-tree-chevron(v-if="!root" :class="{ 'dito-opened': opened }")
         .dito-tree-title(v-html="title")
         .dito-tree-info(v-if="info") {{ info }}
@@ -36,18 +36,19 @@
         @click="deleteItem(item)"
         :class="`dito-button-${verbDelete}`")
     vue-draggable(
-      v-if="children"
-      :list="children"
-      :options="dragOptions"
-      @start="startDrag"
-      @end="endDrag"
+      v-for="list in childrenLists"
+      :key="list.name"
+      :list="list.items"
+      :options="list.dragOptions"
+      @start="startDrag(list)"
+      @end="endDrag(list, $event)"
     )
       dito-tree-item(
         v-show="opened"
-        v-for="(child, key) in children"
-        :key="getTitle(child, schema.children)"
+        v-for="(child, key) in list.items"
+        :key="getTitle(child, list.schema)"
         :data="child"
-        :schema="schema.children"
+        :schema="list.schema"
         :open="childrenOpen"
       )
 </template>
@@ -97,7 +98,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isFunction } from '@/utils'
+import { isObject, isFunction } from '@/utils'
 
 export default DitoComponent.component('dito-tree-item', {
   props: {
@@ -116,24 +117,24 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   methods: {
-    getTitle(item, schema) {
-      const { title } = schema
-      return isFunction(title) ? title(item) : item?.[title]
+    getTitle(child) {
+      const { itemTitle } = this.schema
+      return isFunction(itemTitle) ? itemTitle(child) : child?.[itemTitle]
     },
 
     startDrag() {
       this.dragging = true
     },
 
-    endDrag(event) {
+    endDrag(list, event) {
       this.dragging = false
-      const { orderKey } = this.schema.children
+      const orderKey = list.schema?.orderKey
       if (orderKey) {
         // Reorder the chnaged children by their orderKey.
         const start = Math.min(event.oldIndex, event.newIndex)
-        const { children } = this
-        for (let i = start; i < children.length; i++) {
-          children[i][orderKey] = i
+        const { items } = list
+        for (let i = start; i < items.length; i++) {
+          items[i][orderKey] = i
         }
       }
     }
@@ -144,33 +145,39 @@ export default DitoComponent.component('dito-tree-item', {
       return this.getTitle(this.data, this.schema)
     },
 
-    children() {
-      const { children } = this.schema
-      if (children) {
-        const { items } = children
-        return items
-          ? isFunction(items) ? items(this.data) : items
-          : this.data
+    childrenLists() {
+      // Loop through the schema, find all nested schemas, and build a children
+      // list for each.
+      const lists = []
+      for (const [name, schema] of Object.entries(this.schema)) {
+        if (name !== 'form' && isObject(schema)) {
+          lists.push({
+            name,
+            schema,
+            items: this.data[name],
+            dragOptions: {
+              animation: 150,
+              disabled: !schema.draggable,
+              handle: '.dito-button-drag',
+              ghostClass: 'dito-drag-ghost'
+            }
+          })
+        }
       }
+      return lists
+    },
+
+    numChildren() {
+      return this.childrenLists.reduce(
+        (count, list) => count + list.items.length,
+        0
+      )
     },
 
     info() {
-      const { children, object } = this
-      const count = children?.length ||
-        object && Object.keys(object).length
-      const suffix = children
-        ? count === 1 ? 'item' : 'items'
-        : count === 1 ? 'property' : 'properties'
-      return count && ` ${count} ${suffix}`
-    },
-
-    dragOptions() {
-      return {
-        animation: 150,
-        disabled: !this.schema.children.draggable,
-        handle: '.dito-button-drag',
-        ghostClass: 'dito-drag-ghost'
-      }
+      const { numChildren } = this
+      return numChildren && ` ${numChildren} ${
+        numChildren === 1 ? 'item' : 'items'}`
     },
 
     hasButtons() {

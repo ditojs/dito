@@ -6,8 +6,8 @@
       :scopes="scopes"
     )
     dito-tree-item(
-      :data="value"
-      :schema="schema"
+      :data="{ [name]: value }"
+      :schema="{ [name]: schema }"
       :root="true"
       :open="true"
       :childrenOpen="true"
@@ -25,7 +25,7 @@
 import TypeComponent from '@/TypeComponent'
 import ListMixin from '@/mixins/ListMixin'
 
-export default TypeComponent.register('tree', {
+export default TypeComponent.register('tree-list', {
   mixins: [ListMixin]
 })
 </script>
