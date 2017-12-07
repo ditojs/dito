@@ -5,17 +5,23 @@
     button.dito-button(
       type="button"
       :class="`dito-button-${verb}`"
-      @click="onCreate()"
+      @mousedown="onMouseDown($event)"
     )
     ul(v-if="schema.forms")
       li(v-for="(form, type) in schema.forms")
-        a(@click="onCreate(type)") {{ getLabel(form) }}
+        a(
+          @mousedown="onSelectDelayed(type)"
+          @mouseup="onSelectDelayed(type)"
+        ) {{ getLabel(form) }}
 </template>
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DomMixin from '@/mixins/DomMixin'
 
 export default DitoComponent.component('dito-form-chooser', {
+  mixins: [DomMixin],
+
   props: {
     schema: { type: Object },
     path: { type: String, required: true },
@@ -24,12 +30,41 @@ export default DitoComponent.component('dito-form-chooser', {
 
   data() {
     return {
-      open: false
+      open: false,
+      startTime: 0,
+      documentHandlers: {
+        mousedown: () => {
+          this.show(false)
+          this.domOff(document, this.documentHandlers)
+        },
+
+        mouseup: () => {
+          if (this.onSelectDelayed()) {
+            this.domOff(document, this.documentHandlers)
+          }
+        }
+      }
     }
   },
 
   methods: {
-    onCreate(type) {
+    onMouseDown(event) {
+      this.onSelect()
+      // Prevent document mousedown that would close the pulldown right away
+      event.stopPropagation()
+    },
+
+    onSelectDelayed(type) {
+      if (this.startTime && Date.now() - this.startTime > 250) {
+        this.show(false)
+        if (type) {
+          this.onSelect(type)
+        }
+        return true
+      }
+    },
+
+    onSelect(type) {
       const { schema } = this
       const { forms, inline } = schema
       const form = type
@@ -45,9 +80,17 @@ export default DitoComponent.component('dito-form-chooser', {
             append: true
           })
         }
-        this.open = false
+        this.show(false)
       } else if (forms) {
-        this.open = !this.open
+        this.show(true)
+      }
+    },
+
+    show(open) {
+      this.open = open
+      this.startTime = open ? Date.now() : 0
+      if (open) {
+        this.domOn(document, this.documentHandlers)
       }
     }
   }
@@ -60,7 +103,6 @@ $radius: 0.5em
   .dito-form-chooser
     display: inline-block
     position: relative
-    &:hover ul,
     &.dito-open ul
       display: block
     ul
@@ -74,6 +116,7 @@ $radius: 0.5em
       li
         a
           display: block
+          cursor: pointer
           text-align: center
           padding: 0.5em 1em
           height: 1em
