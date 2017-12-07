@@ -263,7 +263,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     // Only allow where, eager and scope query filters on single queries.
     // TODO: This merging is wrong. It should be the intersection between passed
     // and internal allowed values.
-    allowed = ['where', 'eager', 'scope', ...allowed || []]
+    allowed = ['where', 'eager', 'scope', 'pick', 'omit', ...allowed || []]
     return this.find(query, allowed).first()
   }
 
