@@ -446,12 +446,15 @@ const queryHandlers = {
     processPropertyRefs(null, value)
   },
 
-  // TODO: Add support for omit?
   eager(builder, key, value) {
     if (value) {
       builder.mergeEager(value)
     }
   },
+
+  omit: applyPropertiesExpression,
+
+  pick: applyPropertiesExpression,
 
   scope(builder, key, value) {
     builder.mergeScope(value)
@@ -493,6 +496,45 @@ const queryHandlers = {
           builder.orderBy(columnName, dir).skipUndefined()
         }
       }
+    }
+  }
+}
+
+function parsePropertiesExpression(value) {
+  // Use a very simple expression parser that expands these expressions,
+  // delegating the hard work to JSON.parse():
+  //
+  // "Model1[name,id,relation],Model2[name,id]" ->
+  // {
+  //   Model1: [name, id, relation],
+  //   Model2: [name, id]
+  // }
+  const parse = expression => {
+    const replaced = expression
+      // Quote all words:
+      .replace(/\s*(\w+)\s*/g, '"$1"')
+      // Expand "[" to ":[":
+      .replace(/"\[/g, '":[')
+    return JSON.parse(`{${replaced}}`)
+  }
+
+  return isArray(value)
+    ? value.map(parse).reduce(
+      (combined, value) => Object.assign(combined, value),
+      {})
+    : isString(value) ? parse(value)
+    : []
+}
+
+function applyPropertiesExpression(builder, key, value) {
+  const parsed = parsePropertiesExpression(value)
+  const { app } = builder.modelClass()
+  for (const [modelName, properties] of Object.entries(parsed)) {
+    const modelClass = app.models[modelName]
+    if (modelClass) {
+      builder[key](modelClass, properties)
+    } else {
+      // TODO: Throw error!
     }
   }
 }
