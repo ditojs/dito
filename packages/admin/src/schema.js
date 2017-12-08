@@ -25,14 +25,16 @@ export async function processForms(schema, api, level) {
     form = schema.form = await resolveForm(form)
     forms = { default: form } // Only used for loop below.
   }
-  for (const form of Object.values(forms)) {
-    for (const tab of Object.values(form.tabs || {})) {
-      processComponents(tab.components)
+  if (forms) {
+    for (const form of Object.values(forms)) {
+      for (const tab of Object.values(form.tabs || {})) {
+        processComponents(tab.components)
+      }
+      processComponents(form.components)
     }
-    processComponents(form.components)
+    await Promise.all(promises)
+    return children
   }
-  await Promise.all(promises)
-  return children
 }
 
 export async function resolveForm(form) {

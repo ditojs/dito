@@ -9,7 +9,7 @@
         .dito-tree-name(v-html="title")
       .dito-buttons.dito-buttons-inline(v-if="hasButtons")
         button.dito-button(
-          v-if="schema.draggable"
+          v-if="draggable"
           type="button"
           class="dito-button-drag"
         )
@@ -18,6 +18,7 @@
           v-if="schema.editable"
           type="button"
           class="dito-button-edit"
+          @click="onEdit"
         )
         button.dito-button(
           v-if="schema.deletable"
@@ -40,8 +41,8 @@
       :key="list.name"
       :list="list.items"
       :options="list.dragOptions"
-      @start="startDrag(list)"
-      @end="endDrag(list, $event)"
+      @start="onStartDrag(list)"
+      @end="onEndDrag(list, $event)"
     )
       dito-tree-item(
         v-show="opened"
@@ -49,7 +50,9 @@
         :key="getTitle(child, list.schema)"
         :data="child"
         :schema="list.schema"
+        :draggable="list.draggable"
         :open="childrenOpen"
+        @edit="onChildEdit"
       )
 </template>
 
@@ -106,6 +109,7 @@ export default DitoComponent.component('dito-tree-item', {
     data: { type: [Array, Object] },
     schema: { type: Object, required: true },
     root: { type: Boolean, default: false },
+    draggable: { type: Boolean, default: false },
     open: { type: Boolean, default: false },
     childrenOpen: { type: Boolean, default: false }
   },
@@ -123,11 +127,11 @@ export default DitoComponent.component('dito-tree-item', {
       return isFunction(itemTitle) ? itemTitle(child) : child?.[itemTitle]
     },
 
-    startDrag() {
+    onStartDrag() {
       this.dragging = true
     },
 
-    endDrag(list, event) {
+    onEndDrag(list, event) {
       this.dragging = false
       // eslint-disable-next-line
       const orderKey = list.schema?.orderKey
@@ -139,6 +143,17 @@ export default DitoComponent.component('dito-tree-item', {
           items[i][orderKey] = i
         }
       }
+    },
+
+    onEdit() {
+      this.$emit('edit', {
+        schema: this.schema.form,
+        item: this.data
+      })
+    },
+
+    onChildEdit(edit) {
+      this.$emit('edit', edit)
     }
   },
 
@@ -153,13 +168,16 @@ export default DitoComponent.component('dito-tree-item', {
       const lists = []
       for (const [name, schema] of Object.entries(this.schema)) {
         if (name !== 'form' && isObject(schema)) {
+          const items = this.data[name]
+          const draggable = schema.draggable && items?.length > 1
           lists.push({
             name,
             schema,
-            items: this.data[name],
+            items,
+            draggable,
             dragOptions: {
               animation: 150,
-              disabled: !schema.draggable,
+              disabled: !draggable,
               handle: '.dito-button-drag',
               ghostClass: 'dito-drag-ghost'
             }
@@ -184,7 +202,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     hasButtons() {
       const { schema } = this
-      return schema.editable || schema.deletable || schema.draggable
+      return this.draggable || schema.editable || schema.deletable
     }
   }
 })

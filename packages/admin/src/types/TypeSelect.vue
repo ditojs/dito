@@ -35,6 +35,7 @@
     position: relative
     select
       padding-right: 2.5em
+    // Handle .dito-fill separately due to required nesting in .dito-select
     &.dito-fill
       display: block
       select

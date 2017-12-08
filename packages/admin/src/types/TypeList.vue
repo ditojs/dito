@@ -201,6 +201,9 @@ $buttons-padding: 2px
 <script>
 import TypeComponent from '@/TypeComponent'
 import ListMixin from '@/mixins/ListMixin'
+import DitoView from '@/components/DitoView'
+import DitoForm from '@/components/DitoForm'
+import { processForms } from '@/schema'
 
 export default TypeComponent.register('list', {
   mixins: [ListMixin],
@@ -234,6 +237,65 @@ export default TypeComponent.register('list', {
         ghostClass: 'dito-drag-ghost'
       }
     }
-  }
+  },
+
+  processSchema
 })
+
+async function processSchema(listSchema, name, api, routes, level) {
+  const childRoutes = await processForms(listSchema, api, level)
+  // A list without forms needs no further processing
+  if (!childRoutes) return
+  const path = listSchema.path = listSchema.path || api.processPath(name)
+  listSchema.name = name
+  const { inline, nested } = listSchema
+  const addRoutes = !inline
+  if (inline) {
+    if (nested === false) {
+      throw new Error(
+        'Lists with inline forms can only work with nested data')
+    }
+    listSchema.nested = true
+  }
+  const root = level === 0
+  if (addRoutes) {
+    const meta = {
+      api,
+      listSchema
+    }
+    // Use differently named url parameters on each nested level for id as
+    // otherwise they would clash and override each other inside $route.params
+    // See: https://github.com/vuejs/vue-router/issues/1345
+    const param = `id${level + 1}`
+    const formRoute = {
+      // While root schemas have their own route records, nested lists in
+      // forms do not, and need their path prefixed with the parent's path.
+      path: root ? `:${param}` : `${path}/:${param}`,
+      component: DitoForm,
+      children: childRoutes,
+      meta: {
+        ...meta,
+        param
+      }
+    }
+    if (root) {
+      routes.push({
+        path: `/${path}`,
+        children: [formRoute],
+        component: DitoView,
+        meta: {
+          ...meta,
+          schema: listSchema
+        }
+      })
+    } else {
+      routes.push(
+        // Just redirect back to the form when a nested list route is hit.
+        { path, redirect: '.' },
+        // Add the prefixed formRoute with its children for nested lists.
+        formRoute
+      )
+    }
+  }
+}
 </script>

@@ -60,8 +60,10 @@ $half-spacing: $form-spacing / 2
     // percentages in flex-basis to work.
     padding: $form-spacing $half-spacing
     .dito-component.dito-fill
-      display: block
-      width: 100%
+      // Safari doesn't like changing width on checkboxes, so exclude them here
+      &:not(.dito-checkbox):not(.dito-radio-button)
+        display: block
+        width: 100%
   .dito-list
     .dito-panel
       &::after
