@@ -78,6 +78,13 @@ export default {
 
     columns() {
       return this.getNamedSchemas(this.schema.columns)
+    },
+
+    inlineMeta() {
+      return {
+        ...this.meta,
+        listSchema: this.schema
+      }
     }
   },
 

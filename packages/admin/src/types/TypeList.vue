@@ -50,7 +50,7 @@
                 v-if="schema.inline"
                 :schema="getFormSchema(item)"
                 :data="item"
-                :meta="getInlineMeta(meta)"
+                :meta="inlineMeta"
                 :prefix="`${name}/${index}/`"
                 :store="store"
                 :disabled="loading"
@@ -232,15 +232,6 @@ export default TypeComponent.register('list', {
         disabled: !this.schema.draggable,
         handle: '.dito-button-drag',
         ghostClass: 'dito-drag-ghost'
-      }
-    }
-  },
-
-  methods: {
-    getInlineMeta(meta) {
-      return {
-        ...meta,
-        listSchema: this.schema
       }
     }
   }

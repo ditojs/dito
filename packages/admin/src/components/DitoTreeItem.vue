@@ -129,6 +129,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     endDrag(list, event) {
       this.dragging = false
+      // eslint-disable-next-line
       const orderKey = list.schema?.orderKey
       if (orderKey) {
         // Reorder the chnaged children by their orderKey.

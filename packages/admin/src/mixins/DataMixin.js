@@ -105,6 +105,7 @@ export default {
     getFormSchema(item) {
       const { listSchema } = this
       const { form, forms } = listSchema
+      // eslint-disable-next-line
       const type = item?.type
       return forms && type ? forms[type] : form
     },
@@ -207,7 +208,6 @@ export default {
           range: `${offset},${offset + limit - 1}`
         })
       }
-      console.log('request', params)
       this.request('get', { params }, (err, response) => {
         if (!err) {
           let { data } = response
