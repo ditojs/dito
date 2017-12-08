@@ -5,9 +5,6 @@
     template(
       v-for="(compSchema, key) in components"
     )
-      li.dito-break(
-        v-if="compSchema.break === 'before'"
-      )
       li.dito-container(
         v-show="getValue(compSchema, 'visible', true)"
         :style="getStyle(compSchema)"
@@ -34,9 +31,6 @@
           v-if="$errors.has(key)"
           :name="key"
         )
-      li.dito-break(
-        v-if="compSchema.break === 'after'"
-      )
 </template>
 
 <style lang="sass">
@@ -68,9 +62,6 @@ $half-spacing: $form-spacing / 2
     .dito-component.dito-fill
       display: block
       width: 100%
-  .dito-break
-    padding: 0
-    width: 100%
   .dito-list
     .dito-panel
       &::after
