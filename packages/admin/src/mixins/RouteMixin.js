@@ -27,13 +27,12 @@ export default {
   },
 
   methods: {
-    getRecordPath(record) {
+    getRoutePath(templatePath) {
       // Maps the route's actual path to the matched routes by counting its
       // parts separated by '/', splitting the path into the mapped parts
       // containing actual parameters.
-      const { path } = record
       return this.$route.path.split('/')
-        .slice(0, path.split('/').length).join('/')
+        .slice(0, templatePath.split('/').length).join('/')
     }
   },
 
@@ -53,20 +52,19 @@ export default {
     },
 
     path() {
-      return this.getRecordPath(this.routeRecord)
+      return this.getRoutePath(this.routeRecord.path)
     },
 
-    metaPath() {
-      // Needed by tree-lists: Go all the way up to find the first routeRecord
-      // with the same meta data as the current one, and return its path.
-      let { routeRecord } = this
-      const { meta } = routeRecord
-      let { parent } = routeRecord
-      while (parent.meta === meta) {
-        routeRecord = parent
-        parent = routeRecord.parent
-      }
-      return this.getRecordPath(routeRecord)
+    rootPath() {
+      // Needed by tree-lists: Take flattening into account, and return the
+      // path up to the root id param.
+      const {
+        path,
+        meta: { flatten, param }
+      } = this.routeRecord
+      return this.getRoutePath(flatten
+        ? path.match(new RegExp(`^(.*:${param})`))[1]
+        : path)
     },
 
     label() {

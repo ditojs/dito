@@ -60,18 +60,13 @@ export default TypeComponent.register('tree-list', {
   computed: {
     editPath() {
       // Accessed from DitoTreeItem through `target.editPath`:
-      const { matched, params } = this.$route
-      const last = matched[matched.length - 1]
-      const { parent } = last
-      return last.meta === parent.meta
-        ? last.path.substring(parent.path.length)
-          .replace(/:(id\d+)/g, (all, id) => params[id])
-        : ''
+      const { formComponent } = this
+      return formComponent.path.substring(formComponent.rootPath.length)
     },
 
     rootPath() {
       // Accessed from DitoTreeItem through `target.rootPath`:
-      return this.formComponent.metaPath
+      return this.formComponent.rootPath
     }
   },
 

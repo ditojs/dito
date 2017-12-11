@@ -228,7 +228,7 @@ export default {
 }
 
 async function processListSchema(listSchema, name, api, routes, parentMeta,
-  level, flattenChildren = false, processSchema = null) {
+  level, flatten = false, processSchema = null) {
   const path = listSchema.path = listSchema.path || api.processPath(name)
   listSchema.name = name
   const { inline, nested } = listSchema
@@ -248,11 +248,18 @@ async function processListSchema(listSchema, name, api, routes, parentMeta,
     api,
     listSchema
   }
-  // When children are flattened (tree-lists), reuse the parent meta data
-  const formMeta = flattenChildren && parentMeta || {
-    ...meta,
-    param
-  }
+  // When children are flattened (tree-lists), reuse the parent meta data,
+  // but include the flatten setting also.
+  const formMeta = flatten
+    ? {
+      ...parentMeta,
+      flatten
+    }
+    : {
+      ...meta,
+      flatten,
+      param
+    }
   const childRoutes = await processForms(listSchema, api, formMeta, level)
   if (processSchema) {
     await processSchema(childRoutes, formMeta, level + 1)
@@ -267,18 +274,30 @@ async function processListSchema(listSchema, name, api, routes, parentMeta,
       meta: formMeta
     }
     const formRoutes = [formRoute]
-    // Flatten the nested child routes into one list that all loads from the
-    // parentMeta list, for reasier path parsing in tree-lists.
-    if (flattenChildren) {
-      for (const childRoute of childRoutes) {
+    // Partition childRoutes into those that need flattening (tree-lists) and
+    // those that don't and process each group separately after.
+    const [flatRoutes, subRoutes] = childRoutes.reduce(
+      (res, route) => {
+        res[route.meta.flatten ? 0 : 1].push(route)
+        return res
+      },
+      [[], []]
+    )
+    if (flatRoutes.length) {
+      const flatMeta = {
+        ...formMeta,
+        flatten: true
+      }
+      for (const childRoute of flatRoutes) {
         formRoutes.push({
           ...(childRoute.redirect ? childRoute : formRoute),
           path: `${formRoute.path}/${childRoute.path}`,
-          meta: formMeta
+          meta: flatMeta
         })
       }
-    } else {
-      formRoute.children = childRoutes
+    }
+    if (subRoutes.length) {
+      formRoute.children = subRoutes
     }
     if (root) {
       routes.push({
@@ -293,7 +312,11 @@ async function processListSchema(listSchema, name, api, routes, parentMeta,
     } else {
       routes.push(
         // Just redirect back to the form when a nested list route is hit.
-        { path, redirect: '.' },
+        {
+          path,
+          redirect: '.',
+          meta
+        },
         // Add the prefixed formRoutes with its children for nested lists.
         ...formRoutes
       )
