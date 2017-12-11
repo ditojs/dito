@@ -9,10 +9,8 @@
       dito-tree-item(
         :data="{ [name]: value }"
         :schema="{ [name]: schema }"
-        :root="true"
-        :open="true"
-        :childrenOpen="true"
         :path="''"
+        :open="true"
         :target="this"
       )
       template(v-if="edit")
@@ -58,15 +56,15 @@ export default TypeComponent.register('tree-list', {
   },
 
   computed: {
+    rootPath() {
+      // Accessed from DitoTreeItem through `target.rootPath`:
+      return this.formComponent.rootPath
+    },
+
     editPath() {
       // Accessed from DitoTreeItem through `target.editPath`:
       const { formComponent } = this
       return formComponent.path.substring(formComponent.rootPath.length)
-    },
-
-    rootPath() {
-      // Accessed from DitoTreeItem through `target.rootPath`:
-      return this.formComponent.rootPath
     }
   },
 

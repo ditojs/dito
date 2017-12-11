@@ -2,7 +2,7 @@
   .dito-tree-item(:class="{ 'dito-dragging': dragging }")
     .dito-tree-title(v-if="title")
       .dito-tree-branch(v-if="numChildren" @click.stop="opened = !opened")
-        .dito-tree-chevron(v-if="!root" :class="{ 'dito-opened': opened }")
+        .dito-tree-chevron(v-if="path" :class="{ 'dito-opened': opened }")
         .dito-tree-name(v-html="title")
         .dito-tree-info(v-if="info") {{ info }}
       .dito-tree-leaf(v-else)
@@ -19,17 +19,12 @@
           class="dito-button-edit"
           @click="onEdit"
         )
-        // TODO:
         button.dito-button(
           v-if="schema.deletable"
           type="button"
           class="dito-button-delete"
+          @click="onDelete"
         )
-        // button.dito-button(
-          v-if="schema.deletable"
-          type="button"
-          @click="deleteItem(item)"
-          :class="`dito-button-${verbDelete}`")
     vue-draggable(
       v-for="list in childrenLists"
       :key="list.name"
@@ -44,9 +39,9 @@
         :key="getTitle(child, list.schema)"
         :data="child"
         :schema="list.schema"
-        :draggable="list.draggable"
-        :open="childrenOpen || isInEditPath(list, child)"
         :path="getPath(list, child)"
+        :open="!path && open || isInEditPath(list, child)"
+        :draggable="list.draggable"
         :target="target"
       )
 </template>
@@ -103,11 +98,9 @@ export default DitoComponent.component('dito-tree-item', {
   props: {
     data: { type: [Array, Object] },
     schema: { type: Object, required: true },
-    root: { type: Boolean, default: false },
-    draggable: { type: Boolean, default: false },
-    open: { type: Boolean, default: false },
-    childrenOpen: { type: Boolean, default: false },
     path: { type: String, required: true },
+    open: { type: Boolean, default: false },
+    draggable: { type: Boolean, default: false },
     target: { type: Object, required: true }
   },
 
@@ -135,7 +128,10 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     isInEditPath(list, child) {
-      return this.target.editPath.startsWith(this.getPath(list, child))
+      const { editPath } = this.target
+      const path = this.getPath(list, child)
+      // Only count as "in edit path" when it's not the full edit path.
+      return path.length < editPath.length && editPath.startsWith(path)
     },
 
     edit() {
@@ -151,6 +147,10 @@ export default DitoComponent.component('dito-tree-item', {
         append: true
       })
       this.edit()
+    },
+
+    onDelete() {
+      // TODO: Implement!
     },
 
     onStartDrag() {
