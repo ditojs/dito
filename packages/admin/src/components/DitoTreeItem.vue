@@ -13,12 +13,12 @@
           type="button"
           class="dito-button-drag"
         )
-        router-link.dito-button(
+        button.dito-button(
           v-if="schema.editable"
-          :to="`${target.rootPath}${path}`"
-          tag="button"
           type="button"
-          :class="`dito-button-edit`")
+          class="dito-button-edit"
+          @click="onEdit"
+        )
         // TODO:
         button.dito-button(
           v-if="schema.deletable"
@@ -118,18 +118,39 @@ export default DitoComponent.component('dito-tree-item', {
     }
   },
 
-  watch: {
-    'target.editPath': 'checkEdit'
-  },
-
   mounted() {
-    this.checkEdit()
+    if (this.path && this.target.editPath === this.path) {
+      this.edit()
+    }
   },
 
   methods: {
     getTitle(child) {
       const { itemTitle } = this.schema
       return isFunction(itemTitle) ? itemTitle(child) : child?.[itemTitle]
+    },
+
+    getPath(list, child) {
+      return `${this.path}/${list.schema.path}/${child.id}`
+    },
+
+    isInEditPath(list, child) {
+      return this.target.editPath.startsWith(this.getPath(list, child))
+    },
+
+    edit() {
+      this.target.edit = {
+        schema: this.schema.form,
+        item: this.data
+      }
+    },
+
+    onEdit() {
+      this.$router.push({
+        path: `${this.target.rootPath}${this.path}`,
+        append: true
+      })
+      this.edit()
     },
 
     onStartDrag() {
@@ -146,23 +167,6 @@ export default DitoComponent.component('dito-tree-item', {
         const { items } = list
         for (let i = start; i < items.length; i++) {
           items[i][orderKey] = i
-        }
-      }
-    },
-
-    getPath(list, child) {
-      return `${this.path}/${list.schema.path}/${child.id}`
-    },
-
-    isInEditPath(list, child) {
-      return this.target.editPath.startsWith(this.getPath(list, child))
-    },
-
-    checkEdit() {
-      if (this.path && this.target.editPath === this.path) {
-        this.target.edit = {
-          schema: this.schema.form,
-          item: this.data
         }
       }
     }

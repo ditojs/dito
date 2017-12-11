@@ -82,13 +82,13 @@ export default DitoComponent.component('dito-form', {
   },
 
   created() {
-    // Errors can get passed on throgh the meta object, so add them now.
+    // Errors can get passed on through the meta object, so add them now.
     // See TypeMixin.showErrors()
     const { meta } = this
     const { errors } = meta
     if (errors) {
       delete meta.errors
-      // Add the errors after initialzation of $validator
+      // Add the errors after initialization of $validator
       this.$nextTick(() => {
         this.addErrors(errors, true)
       })
@@ -152,7 +152,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     data() {
-      // Return differnent data "containers" based on different scenarios:
+      // Return different data "containers" based on different scenarios:
       // 1. createdData, if we're in a form for a newly created object.
       // 2. loadedData, if the form itself is the root of the data (e.g. when
       //    directly loading an editing root).
@@ -195,7 +195,8 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
-      return !this.isTransient && !this.data && !this.loading
+      return this.isLastRoute && !this.isTransient &&
+        !this.data && !this.loading
     },
 
     isDirty() {
@@ -233,8 +234,8 @@ export default DitoComponent.component('dito-form', {
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value)) {
           const component = this.components[key]
-          // Only check for nested on list items that actuall load data, since
-          // other componentonents can have array values too.
+          // Only check for isNested on list items that actually load data,
+          // since other components can have array values too.
           if (component?.isList && !component.isNested) {
             continue
           }
@@ -286,7 +287,7 @@ export default DitoComponent.component('dito-form', {
 
     notifyValidationErrors() {
       this.notify('error', 'Validation Errors',
-        'Please correct the highligted errors.')
+        'Please correct the highlighted errors.')
     },
 
     async submit(button) {

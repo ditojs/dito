@@ -52,12 +52,14 @@ export default TypeComponent.register('tree-list', {
 
   data() {
     return {
+      // Set from DitoTreeItem through `target.edit`:
       edit: null
     }
   },
 
   computed: {
     editPath() {
+      // Accessed from DitoTreeItem through `target.editPath`:
       const { matched, params } = this.$route
       const last = matched[matched.length - 1]
       const { parent } = last
@@ -68,6 +70,7 @@ export default TypeComponent.register('tree-list', {
     },
 
     rootPath() {
+      // Accessed from DitoTreeItem through `target.rootPath`:
       return this.formComponent.metaPath
     }
   },

@@ -221,7 +221,7 @@ export default {
     },
 
     setLoading(loading) {
-      this.appState.loading = this.loading = loading
+      this.loading = this.appState.loading = loading
     },
 
     hasValidationError(response) {
