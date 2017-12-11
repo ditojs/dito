@@ -26,6 +26,17 @@ export default {
     }
   },
 
+  methods: {
+    getRecordPath(record) {
+      // Maps the route's actual path to the matched routes by counting its
+      // parts separated by '/', splitting the path into the mapped parts
+      // containing actual parameters.
+      const { path } = record
+      return this.$route.path.split('/')
+        .slice(0, path.split('/').length).join('/')
+    }
+  },
+
   computed: {
     routeRecord() {
       // Retrieve the route-record to which this component was mapped to:
@@ -39,6 +50,23 @@ export default {
 
     schema() {
       return this.meta.schema
+    },
+
+    path() {
+      return this.getRecordPath(this.routeRecord)
+    },
+
+    metaPath() {
+      // Needed by tree-lists: Go all the way up to find the first routeRecord
+      // with the same meta data as the current one, and return its path.
+      let { routeRecord } = this
+      const { meta } = routeRecord
+      let { parent } = routeRecord
+      while (parent.meta === meta) {
+        routeRecord = parent
+        parent = routeRecord.parent
+      }
+      return this.getRecordPath(routeRecord)
     },
 
     label() {

@@ -1,11 +1,11 @@
 <template lang="pug">
   nav.dito-trail
     ul
-      li(v-for="route in routes")
-        template(v-if="route.last")
-          span {{ route.breadcrumb }}
-        router-link(v-else, :to="route.path")
-          span {{ route.breadcrumb }}
+      li(v-for="(entry, index) in trail")
+        template(v-if="index === trail.length - 1")
+          span {{ entry.breadcrumb }}
+        router-link(v-else, :to="entry.path")
+          span {{ entry.breadcrumb }}
     dito-spinner.dito-spinner(v-if="appState.loading")
 </template>
 
@@ -57,25 +57,23 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-trail', {
   computed: {
-    routes() {
-      const matched = []
-      let index = 0
+    trail() {
       const { routeComponents } = this.appState
-      // Maps the route's actual path to the matched routes by counting its
-      // parts separated by '/', splitting the path into the mapped parts
-      // containing actual parameters. This is then used in to
-      // generate hierarchical breadcrumb links that map to routes.
-      const parts = this.$route.path.split('/')
-      for (const { path } of this.$route.matched) {
+      let prevParam = null
+      let index = 0
+      const trail = []
+      for (const { meta } of this.$route.matched) {
         const routeComponent = routeComponents[index++]
-        const end = path.split('/').length
-        matched.push({
-          path: parts.slice(0, end).join('/'),
-          breadcrumb: routeComponent?.breadcrumb,
-          last: end === parts.length
-        })
+        const { param } = meta
+        // Filter out multiple nested routes serving the same param id.
+        // This is needed to handle TypeTreeList's use of nested routes.
+        if (routeComponent && prevParam !== param) {
+          const { path, breadcrumb } = routeComponent
+          trail.push({ path, breadcrumb })
+        }
+        prevParam = param
       }
-      return matched
+      return trail
     }
   }
 })

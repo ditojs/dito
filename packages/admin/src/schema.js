@@ -1,22 +1,14 @@
 import TypeComponent from './TypeComponent'
 import { isFunction, isPromise } from './utils'
 
-export async function processComponent(schema, name, api, routes, level) {
+export async function processComponent(schema, name, api, routes, parentMeta,
+  level) {
   // Delegate processing to the actual type components.
-  const component = TypeComponent.get(schema.type)
-  return component?.options.processSchema?.(schema, name, api, routes, level)
+  return TypeComponent.get(schema.type)?.options.processSchema?.(
+    schema, name, api, routes, parentMeta, level)
 }
 
-export async function processForms(schema, api, level) {
-  const children = []
-  const promises = []
-
-  function processComponents(components) {
-    for (const [name, component] of Object.entries(components || {})) {
-      promises.push(processComponent(component, name, api, children, level + 1))
-    }
-  }
-
+export async function processForms(schema, api, parentMeta, level) {
   // First resolve the forms and store the results back on the schema.
   let { form, forms } = schema
   if (forms) {
@@ -25,7 +17,16 @@ export async function processForms(schema, api, level) {
     form = schema.form = await resolveForm(form)
     forms = { default: form } // Only used for loop below.
   }
+  const children = []
   if (forms) {
+    const promises = []
+    const processComponents = components => {
+      for (const [name, component] of Object.entries(components || {})) {
+        promises.push(
+          processComponent(component, name, api, children, parentMeta,
+            level + 1))
+      }
+    }
     for (const form of Object.values(forms)) {
       for (const tab of Object.values(form.tabs || {})) {
         processComponents(tab.components)
@@ -33,8 +34,8 @@ export async function processForms(schema, api, level) {
       processComponents(form.components)
     }
     await Promise.all(promises)
-    return children
   }
+  return children
 }
 
 export async function resolveForm(form) {

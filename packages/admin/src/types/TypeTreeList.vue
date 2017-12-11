@@ -11,9 +11,9 @@
         :schema="{ [name]: schema }"
         :root="true"
         :open="true"
-        :edit="edit"
         :childrenOpen="true"
-        @edit="onEdit"
+        :path="''"
+        :target="this"
       )
       template(v-if="edit")
         dito-panel(
@@ -45,10 +45,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import ListMixin from '@/mixins/ListMixin'
-import DitoView from '@/components/DitoView'
-import DitoForm from '@/components/DitoForm'
 import { isObject } from '@/utils'
-import { processForms } from '@/schema'
 
 export default TypeComponent.register('tree-list', {
   mixins: [ListMixin],
@@ -59,78 +56,39 @@ export default TypeComponent.register('tree-list', {
     }
   },
 
-  methods: {
-    onEdit(edit) {
-      this.edit = edit
+  computed: {
+    editPath() {
+      const { matched, params } = this.$route
+      const last = matched[matched.length - 1]
+      const { parent } = last
+      return last.meta === parent.meta
+        ? last.path.substring(parent.path.length)
+          .replace(/:(id\d+)/g, (all, id) => params[id])
+        : ''
+    },
+
+    rootPath() {
+      return this.formComponent.metaPath
     }
   },
 
   processSchema
 })
 
-async function processSchema(listSchema, name, api, routes, level) {
-  const childRoutes = await processForms(listSchema, api, level) || []
-  const promises = []
-  for (const [name, schema] of Object.entries(listSchema)) {
-    if (name !== 'form' && isObject(schema)) {
-      promises.push(processSchema(schema, name, api, childRoutes, level + 1))
-    }
-  }
-  await Promise.all(promises)
-
-  const path = listSchema.path = listSchema.path || api.processPath(name)
-  listSchema.name = name
-  // TODO: streamline and move to ListMixin
-  const { inline = true, nested } = listSchema
-  const addRoutes = true
-  if (inline) {
-    if (nested === false) {
-      throw new Error(
-        'Lists with inline forms can only work with nested data')
-    }
-    listSchema.nested = true
-  }
-  const root = level === 0
-  if (addRoutes) {
-    const meta = {
-      api,
-      listSchema
-    }
-    // Use differently named url parameters on each nested level for id as
-    // otherwise they would clash and override each other inside $route.params
-    // See: https://github.com/vuejs/vue-router/issues/1345
-    const param = `id${level + 1}`
-    const formRoute = {
-      // While root schemas have their own route records, nested lists in
-      // forms do not, and need their path prefixed with the parent's path.
-      path: root ? `:${param}` : `${path}/:${param}`,
-      component: DitoForm,
-      children: childRoutes,
-      meta: {
-        ...meta,
-        param
-      }
-    }
-    if (root) {
-      routes.push({
-        path: `/${path}`,
-        children: [formRoute],
-        component: DitoView,
-        meta: {
-          ...meta,
-          schema: listSchema
+async function processSchema(listSchema, name, api, routes, parentMeta, level) {
+  return ListMixin.processListSchema(listSchema, name, api, routes, parentMeta,
+    level, true,
+    // Pass processSchema() to add more routes to childRoutes:
+    (childRoutes, parentMeta, level) => {
+      const promises = []
+      for (const [name, schema] of Object.entries(listSchema)) {
+        if (name !== 'form' && isObject(schema)) {
+          promises.push(
+            processSchema(schema, name, api, childRoutes, parentMeta, level)
+          )
         }
-      })
-    } else {
-      routes.push(
-        // Just redirect back to the form when a nested list route is hit.
-        { path, redirect: '.' },
-        // Add the prefixed formRoute with its children for nested lists.
-        formRoute
-      )
-    }
-  }
-  console.log(name)
-  console.log(routes)
+      }
+      return Promise.all(promises)
+    })
 }
 </script>

@@ -1,4 +1,7 @@
 import DataMixin from '@/mixins/DataMixin'
+import DitoView from '@/components/DitoView'
+import DitoForm from '@/components/DitoForm'
+import { processForms } from '@/schema'
 import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
 export default {
@@ -214,6 +217,86 @@ export default {
       } else {
         throw new Error(`Cannot find route field ${path}.`)
       }
+    }
+  }, // end of `methods`
+
+  async processSchema(listSchema, name, api, routes, parentMeta, level) {
+    return processListSchema(listSchema, name, api, routes, parentMeta, level)
+  },
+
+  processListSchema
+}
+
+async function processListSchema(listSchema, name, api, routes, parentMeta,
+  level, flattenChildren = false, processSchema = null) {
+  const path = listSchema.path = listSchema.path || api.processPath(name)
+  listSchema.name = name
+  const { inline, nested } = listSchema
+  const addRoutes = !inline
+  if (inline) {
+    if (nested === false) {
+      throw new Error(
+        'Lists with inline forms can only work with nested data')
+    }
+    listSchema.nested = true
+  }
+  // Use differently named url parameters on each nested level for id as
+  // otherwise they would clash and override each other inside $route.params
+  // See: https://github.com/vuejs/vue-router/issues/1345
+  const param = `id${level + 1}`
+  const meta = {
+    api,
+    listSchema
+  }
+  // When children are flattened (tree-lists), reuse the parent meta data
+  const formMeta = flattenChildren && parentMeta || {
+    ...meta,
+    param
+  }
+  const childRoutes = await processForms(listSchema, api, formMeta, level)
+  if (processSchema) {
+    await processSchema(childRoutes, formMeta, level + 1)
+  }
+  if (addRoutes) {
+    const root = level === 0
+    const formRoute = {
+      // While root schemas have their own route records, nested lists in forms
+      // do not, and need their path prefixed with the parent's path.
+      path: root ? `:${param}` : `${path}/:${param}`,
+      component: DitoForm,
+      meta: formMeta
+    }
+    const formRoutes = [formRoute]
+    // Flatten the nested child routes into one list that all loads from the
+    // parentMeta list, for reasier path parsing in tree-lists.
+    if (flattenChildren) {
+      for (const childRoute of childRoutes) {
+        formRoutes.push({
+          ...(childRoute.redirect ? childRoute : formRoute),
+          path: `${formRoute.path}/${childRoute.path}`,
+          meta: formMeta
+        })
+      }
+    } else {
+      formRoute.children = childRoutes
+    }
+    if (root) {
+      routes.push({
+        path: `/${path}`,
+        children: formRoutes,
+        component: DitoView,
+        meta: {
+          ...meta,
+          schema: listSchema
+        }
+      })
+    } else {
+      routes.push(
+        // Just redirect back to the form when a nested list route is hit.
+        { path, redirect: '.' },
+        // Add the prefixed formRoutes with its children for nested lists.
+        ...formRoutes
+      )
     }
   }
 }

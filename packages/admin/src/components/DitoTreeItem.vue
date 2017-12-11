@@ -13,24 +13,18 @@
           type="button"
           class="dito-button-drag"
         )
-        // TODO:
-        button.dito-button(
+        router-link.dito-button(
           v-if="schema.editable"
+          :to="`${target.rootPath}${path}`"
+          tag="button"
           type="button"
-          class="dito-button-edit"
-          @click="onEdit"
-        )
+          :class="`dito-button-edit`")
+        // TODO:
         button.dito-button(
           v-if="schema.deletable"
           type="button"
           class="dito-button-delete"
         )
-        // router-link.dito-button(
-          v-if="schema.editable"
-          :to="`${path}${getItemId(item, index)}`" append
-          tag="button"
-          type="button"
-          :class="`dito-button-${verbEdit}`")
         // button.dito-button(
           v-if="schema.deletable"
           type="button"
@@ -51,8 +45,9 @@
         :data="child"
         :schema="list.schema"
         :draggable="list.draggable"
-        :open="childrenOpen"
-        @edit="onChildEdit"
+        :open="childrenOpen || isInEditPath(list, child)"
+        :path="getPath(list, child)"
+        :target="target"
       )
 </template>
 
@@ -111,14 +106,24 @@ export default DitoComponent.component('dito-tree-item', {
     root: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
     open: { type: Boolean, default: false },
-    childrenOpen: { type: Boolean, default: false }
+    childrenOpen: { type: Boolean, default: false },
+    path: { type: String, required: true },
+    target: { type: Object, required: true }
   },
 
   data() {
     return {
-      opened: this.open,
+      opened: this.open || this.inEditPath,
       dragging: false
     }
+  },
+
+  watch: {
+    'target.editPath': 'checkEdit'
+  },
+
+  mounted() {
+    this.checkEdit()
   },
 
   methods: {
@@ -145,15 +150,21 @@ export default DitoComponent.component('dito-tree-item', {
       }
     },
 
-    onEdit() {
-      this.$emit('edit', {
-        schema: this.schema.form,
-        item: this.data
-      })
+    getPath(list, child) {
+      return `${this.path}/${list.schema.path}/${child.id}`
     },
 
-    onChildEdit(edit) {
-      this.$emit('edit', edit)
+    isInEditPath(list, child) {
+      return this.target.editPath.startsWith(this.getPath(list, child))
+    },
+
+    checkEdit() {
+      if (this.path && this.target.editPath === this.path) {
+        this.target.edit = {
+          schema: this.schema.form,
+          item: this.data
+        }
+      }
     }
   },
 
