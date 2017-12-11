@@ -72,7 +72,7 @@ export default TypeComponent.register('tree-list', {
 })
 
 async function processSchema(listSchema, name, api, routes, parentMeta, level) {
-  return ListMixin.processListSchema(listSchema, name, api, routes, parentMeta,
+  return ListMixin.processSchema(listSchema, name, api, routes, parentMeta,
     level, true,
     // Pass processSchema() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {

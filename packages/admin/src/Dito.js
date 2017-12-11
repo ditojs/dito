@@ -49,7 +49,7 @@ export async function setup(el, options = {}) {
   const routes = []
   const promises = []
   for (const [name, schema] of Object.entries(schemas)) {
-    promises.push(processComponent(schema, name, api, routes, null, 0))
+    promises.push(processComponent(schema, name, api, routes))
   }
   await Promise.all(promises)
 

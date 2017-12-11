@@ -1,8 +1,8 @@
 import TypeComponent from './TypeComponent'
 import { isFunction, isPromise } from './utils'
 
-export async function processComponent(schema, name, api, routes, parentMeta,
-  level) {
+export async function processComponent(schema, name, api, routes,
+  parentMeta = null, level = 0) {
   // Delegate processing to the actual type components.
   return TypeComponent.get(schema.type)?.options.processSchema?.(
     schema, name, api, routes, parentMeta, level)

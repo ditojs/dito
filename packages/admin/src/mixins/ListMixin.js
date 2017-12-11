@@ -220,14 +220,10 @@ export default {
     }
   }, // end of `methods`
 
-  async processSchema(listSchema, name, api, routes, parentMeta, level) {
-    return processListSchema(listSchema, name, api, routes, parentMeta, level)
-  },
-
-  processListSchema
+  processSchema
 }
 
-async function processListSchema(listSchema, name, api, routes, parentMeta,
+async function processSchema(listSchema, name, api, routes, parentMeta,
   level, flatten = false, processSchema = null) {
   const path = listSchema.path = listSchema.path || api.processPath(name)
   listSchema.name = name
