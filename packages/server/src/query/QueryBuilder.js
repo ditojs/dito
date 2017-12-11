@@ -2,9 +2,7 @@ import objection from 'objection'
 import PropertyRef from './PropertyRef'
 import { KnexHelper } from '@/mixins'
 import { QueryError } from '@/errors'
-import {
-  isObject, isArray, isString, isFunction, asArray, capitalize
-} from '@/utils'
+import { isObject, isArray, isString, asArray, capitalize } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better

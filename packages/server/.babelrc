@@ -9,7 +9,7 @@
     ["@babel/preset-stage-1"]
   ],
   "plugins": [
-    "@babel/plugin-syntax-dynamic-import",
+    "dynamic-import-node-babel-7",
     ["module-resolver", {
       "cwd": "babelrc",
       "alias": {
