@@ -28,21 +28,22 @@
     vue-draggable(
       v-for="childrenList in childrenLists"
       :key="childrenList.name"
-      :list="childrenList.items"
+      :list="childrenList.listData"
       :options="childrenList.dragOptions"
       @start="onStartDrag"
       @end="onEndDrag(childrenList, $event)"
     )
       dito-tree-item(
-        v-for="(item, index) in childrenList.items"
+        v-for="(child, index) in childrenList.children"
         v-show="opened"
-        :key="getTitle(item, childrenList.schema)"
-        :data="item"
-        :listData="childrenList.items"
-        :listIndex="index"
+        :key="index"
+        :data="child.data"
+        :path="child.path"
+        :prefix="child.prefix"
+        :open="child.open"
         :schema="childrenList.schema"
-        :path="getPath(childrenList, item, index)"
-        :open="!path && open || isInEditPath(childrenList, item, index)"
+        :listData="childrenList.listData"
+        :listIndex="index"
         :draggable="childrenList.draggable"
         :listComponent="listComponent"
       )
@@ -99,11 +100,12 @@ import { isObject, isFunction } from '@/utils'
 export default DitoComponent.component('dito-tree-item', {
   props: {
     data: { type: [Array, Object] },
+    path: { type: String, default: '' },
+    prefix: { type: String, default: '' },
+    open: { type: Boolean, default: false },
+    schema: { type: Object, required: true },
     listData: { type: Array },
     listIndex: { type: Number },
-    schema: { type: Object, required: true },
-    path: { type: String, default: '' },
-    open: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
     listComponent: { type: Object, required: true }
   },
@@ -122,29 +124,12 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   methods: {
-    getTitle(item, schema) {
-      const { itemTitle } = schema
-      return isFunction(itemTitle) ? itemTitle(item) : item?.[itemTitle]
-    },
-
-    getPath(childrenList, item, index) {
-      const id = this.listComponent.getItemId(item, index)
-      return `${this.path}/${childrenList.schema.path}/${id}`
-    },
-
-    isInEditPath(childrenList, item, index) {
-      const { editPath } = this.listComponent
-      const path = this.getPath(childrenList, item, index)
-      // Only count as "in edit path" when it's not the full edit path.
-      return path.length < editPath.length && editPath.startsWith(path)
-    },
-
     edit() {
       this.listComponent.edit({
         schema: this.schema.form,
         listData: this.listData,
         listIndex: this.listIndex,
-        prefix: '' // TODO: use proper json pointer prefix!
+        prefix: this.prefix
       })
     },
 
@@ -172,9 +157,9 @@ export default DitoComponent.component('dito-tree-item', {
       if (orderKey) {
         // Reorder the chnaged children by their orderKey.
         const start = Math.min(event.oldIndex, event.newIndex)
-        const { items } = childrenList
-        for (let i = start; i < items.length; i++) {
-          items[i][orderKey] = i
+        const { listData } = childrenList
+        for (let i = start; i < listData.length; i++) {
+          listData[i][orderKey] = i
         }
       }
     }
@@ -182,7 +167,10 @@ export default DitoComponent.component('dito-tree-item', {
 
   computed: {
     title() {
-      return this.getTitle(this.data, this.schema)
+      const { itemTitle } = this.schema
+      return isFunction(itemTitle)
+        ? itemTitle(this.data)
+        : this.data?.[itemTitle]
     },
 
     childrenLists() {
@@ -191,12 +179,31 @@ export default DitoComponent.component('dito-tree-item', {
       const lists = []
       for (const [name, schema] of Object.entries(this.schema)) {
         if (name !== 'form' && isObject(schema)) {
-          const items = this.data[name]
-          const draggable = schema.draggable && items?.length > 1
+          const listData = this.data[name]
+          const draggable = schema.draggable && listData?.length > 1
+          const { editPath } = this.listComponent
+          const childrenOpen = !this.path && this.open
+          // Build a children list with child meta information for the template.
+          const children = listData?.map((data, index) => {
+            const id = this.listComponent.getItemId(data, index)
+            const path = `${this.path}/${schema.path}/${id}`
+            // Determine prefix for json pointer compatible field names:
+            const prefix = `${this.prefix}${schema.name}/${id}/`
+            const open = childrenOpen ||
+              // Only count as "in edit path" when it's not the full edit path.
+              path.length < editPath.length && editPath.startsWith(path)
+            return {
+              data,
+              path,
+              prefix,
+              open
+            }
+          }) || []
           lists.push({
             name,
             schema,
-            items,
+            children,
+            listData,
             draggable,
             dragOptions: {
               animation: 150,
@@ -212,7 +219,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     numChildren() {
       return this.childrenLists.reduce(
-        (count, childrenList) => count + childrenList.items.length,
+        (count, childrenList) => count + childrenList.listData.length,
         0
       )
     },
