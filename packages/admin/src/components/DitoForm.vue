@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-form
-    form(v-if="isLastRoute" @submit.prevent="submit()")
+    form(v-if="isLastRoute" @submit.prevent="onSubmit()")
       dito-tabs(
         :tabs="tabs"
         :selectedTab="selectedTab"
@@ -27,7 +27,7 @@
           .dito-buttons
             button.dito-button.dito-button-cancel(
               type="button"
-              @click.prevent="cancel"
+              @click.prevent="onCancel"
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
               type="submit"
@@ -37,7 +37,7 @@
               v-for="(button, key) in buttons"
               v-if="key !== 'submit' && key !== 'cancel'"
               type="submit"
-              @click.prevent="submit(button)"
+              @click.prevent="onSubmit(button)"
               :class="`dito-button-${key}`"
             ) {{ button.label }}
     router-view(v-else)
@@ -286,7 +286,7 @@ export default DitoComponent.component('dito-form', {
         'Please correct the highlighted errors.')
     },
 
-    async submit(button) {
+    async onSubmit(button) {
       if (await this.$validator.validateAll()) {
         // Default button is submit:
         this.submitData(button || this.buttons.submit)
@@ -294,6 +294,10 @@ export default DitoComponent.component('dito-form', {
         this.focus(this.$errors.items[0].field)
         this.notifyValidationErrors()
       }
+    },
+
+    onCancel() {
+      this.goBack(false, true)
     },
 
     submitData(button = {}) {
@@ -403,10 +407,6 @@ export default DitoComponent.component('dito-form', {
         first = false
       }
       return !first
-    },
-
-    cancel() {
-      this.goBack(false, true)
     }
   }
 })
