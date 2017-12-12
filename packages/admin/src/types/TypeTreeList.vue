@@ -5,39 +5,40 @@
       :query="query"
       :scopes="scopes"
     )
-    .dito-tree-content
+    .dito-tree-panel
       dito-tree-item(
         :data="{ [name]: value }"
         :schema="{ [name]: schema }"
-        :path="''"
         :open="true"
-        :target="this"
+        :listComponent="this"
       )
-      template(v-if="edit")
-        dito-panel(
-          :schema="edit.schema"
-          :data="edit.item"
-          :meta="inlineMeta"
-          :prefix="edit.prefix"
-          :store="store"
-          :disabled="loading"
-        )
+      dito-nested-form(
+        v-if="editInfo"
+        :meta="nestedMeta"
+        :store="store"
+        :schema="editInfo.schema"
+        :prefix="editInfo.prefix"
+        :listData="editInfo.listData"
+        :listIndex="editInfo.listIndex"
+        :disabled="loading"
+        :listComponent="this"
+      )
 </template>
 
 <style lang="sass">
 .dito
   .dito-tree-list
-    .dito-tree-content
+    .dito-tree-panel
       display: flex
       > .dito-tree-item
         flex: 0 1 auto
-      > .dito-panel
+      > .dito-form
         margin-left: $form-margin
         width: 0 // let it grow to size
         flex: 1 1 auto
         align-self: flex-start
-      // Allow edit buttons to position themselves at the end of lines by default
-      // display: inline-block
+        .dito-content
+          padding: 0
 </style>
 
 <script>
@@ -50,21 +51,27 @@ export default TypeComponent.register('tree-list', {
 
   data() {
     return {
-      // Set from DitoTreeItem through `target.edit`:
-      edit: null
+      // Set from DitoTreeItem through `listComponent.edit`:
+      editInfo: null
     }
   },
 
   computed: {
     rootPath() {
-      // Accessed from DitoTreeItem through `target.rootPath`:
+      // Accessed from DitoTreeItem through `listComponent.rootPath`:
       return this.formComponent.rootPath
     },
 
     editPath() {
-      // Accessed from DitoTreeItem through `target.editPath`:
+      // Accessed from DitoTreeItem through `listComponent.editPath`:
       const { formComponent } = this
       return formComponent.path.substring(formComponent.rootPath.length)
+    }
+  },
+
+  methods: {
+    edit(info) {
+      this.editInfo = info
     }
   },
 

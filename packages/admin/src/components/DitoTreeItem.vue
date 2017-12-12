@@ -26,23 +26,25 @@
           @click="onDelete"
         )
     vue-draggable(
-      v-for="list in childrenLists"
-      :key="list.name"
-      :list="list.items"
-      :options="list.dragOptions"
-      @start="onStartDrag(list)"
-      @end="onEndDrag(list, $event)"
+      v-for="childrenList in childrenLists"
+      :key="childrenList.name"
+      :list="childrenList.items"
+      :options="childrenList.dragOptions"
+      @start="onStartDrag"
+      @end="onEndDrag(childrenList, $event)"
     )
       dito-tree-item(
+        v-for="(item, index) in childrenList.items"
         v-show="opened"
-        v-for="(child, key) in list.items"
-        :key="getTitle(child, list.schema)"
-        :data="child"
-        :schema="list.schema"
-        :path="getPath(list, child)"
-        :open="!path && open || isInEditPath(list, child)"
-        :draggable="list.draggable"
-        :target="target"
+        :key="getTitle(item, childrenList.schema)"
+        :data="item"
+        :listData="childrenList.items"
+        :listIndex="index"
+        :schema="childrenList.schema"
+        :path="getPath(childrenList, item, index)"
+        :open="!path && open || isInEditPath(childrenList, item, index)"
+        :draggable="childrenList.draggable"
+        :listComponent="listComponent"
       )
 </template>
 
@@ -97,11 +99,13 @@ import { isObject, isFunction } from '@/utils'
 export default DitoComponent.component('dito-tree-item', {
   props: {
     data: { type: [Array, Object] },
+    listData: { type: Array },
+    listIndex: { type: Number },
     schema: { type: Object, required: true },
-    path: { type: String, required: true },
+    path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
-    target: { type: Object, required: true }
+    listComponent: { type: Object, required: true }
   },
 
   data() {
@@ -112,38 +116,41 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   mounted() {
-    if (this.path && this.target.editPath === this.path) {
+    if (this.path && this.listComponent.editPath === this.path) {
       this.edit()
     }
   },
 
   methods: {
-    getTitle(child) {
-      const { itemTitle } = this.schema
-      return isFunction(itemTitle) ? itemTitle(child) : child?.[itemTitle]
+    getTitle(item, schema) {
+      const { itemTitle } = schema
+      return isFunction(itemTitle) ? itemTitle(item) : item?.[itemTitle]
     },
 
-    getPath(list, child) {
-      return `${this.path}/${list.schema.path}/${child.id}`
+    getPath(childrenList, item, index) {
+      const id = this.listComponent.getItemId(item, index)
+      return `${this.path}/${childrenList.schema.path}/${id}`
     },
 
-    isInEditPath(list, child) {
-      const { editPath } = this.target
-      const path = this.getPath(list, child)
+    isInEditPath(childrenList, item, index) {
+      const { editPath } = this.listComponent
+      const path = this.getPath(childrenList, item, index)
       // Only count as "in edit path" when it's not the full edit path.
       return path.length < editPath.length && editPath.startsWith(path)
     },
 
     edit() {
-      this.target.edit = {
+      this.listComponent.edit({
         schema: this.schema.form,
-        item: this.data
-      }
+        listData: this.listData,
+        listIndex: this.listIndex,
+        prefix: '' // TODO: use proper json pointer prefix!
+      })
     },
 
     onEdit() {
       this.$router.push({
-        path: `${this.target.rootPath}${this.path}`,
+        path: `${this.listComponent.rootPath}${this.path}`,
         // Preserve current query
         query: this.$route.query
       })
@@ -158,14 +165,14 @@ export default DitoComponent.component('dito-tree-item', {
       this.dragging = true
     },
 
-    onEndDrag(list, event) {
+    onEndDrag(childrenList, event) {
       this.dragging = false
       // eslint-disable-next-line
-      const orderKey = list.schema?.orderKey
+      const orderKey = childrenList.schema?.orderKey
       if (orderKey) {
         // Reorder the chnaged children by their orderKey.
         const start = Math.min(event.oldIndex, event.newIndex)
-        const { items } = list
+        const { items } = childrenList
         for (let i = start; i < items.length; i++) {
           items[i][orderKey] = i
         }
@@ -205,7 +212,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     numChildren() {
       return this.childrenLists.reduce(
-        (count, list) => count + list.items.length,
+        (count, childrenList) => count + childrenList.items.length,
         0
       )
     },

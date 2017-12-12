@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-form
-    form(v-if="isLastRoute" @submit.prevent="onSubmit()")
+    form(v-if="isVisible" @submit.prevent="onSubmit()")
       dito-tabs(
         :tabs="tabs"
         :selectedTab="selectedTab"
@@ -13,6 +13,7 @@
             :key="key"
             :schema="tabSchema"
             :hash="key"
+            :prefix="prefix"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -20,15 +21,17 @@
           )
           dito-panel(
             :schema="schema"
+            :prefix="prefix"
             :data="data || {}"
             :meta="meta"
             :store="store"
             :disabled="loading"
           )
           .dito-buttons
-            button.dito-button.dito-button-cancel(
+            button.dito-button(
               type="button"
               @click.prevent="onCancel"
+              :class="`dito-button-${verbCancel}`"
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
               type="submit"
@@ -41,7 +44,7 @@
               @click.prevent="onSubmit(button)"
               :class="`dito-button-${key}`"
             ) {{ button.label }}
-    router-view(v-else)
+    router-view(v-else-if="isRoute")
 </template>
 
 <style lang="sass">
@@ -66,17 +69,15 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
-import RouteMixin from '@/mixins/RouteMixin'
 import { isArray, isObject, clone, capitalize } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, DataMixin],
+  mixins: [DataMixin],
 
   data() {
     return {
       createdData: null,
       clonedData: undefined,
-      parentIndex: null,
       isForm: true,
       components: {}
     }
@@ -97,32 +98,6 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
-    schema() {
-      // Determine the current form schema through the listSchema, with multi
-      // form schema support.
-      let form = this.getFormSchema(this.data)
-      if (!form) {
-        // If the right form couldn't be determined from the data, see if
-        // there's a query parameter defining it (see `this.type`).
-        const { type } = this
-        form = type && this.getFormSchema({ type })
-      }
-      return form
-    },
-
-    type() {
-      return this.$route.query.type
-    },
-
-    create() {
-      // this.param is inherited from RouteMixin
-      return this.param === 'create'
-    },
-
-    itemId() {
-      return this.create ? null : this.param
-    },
-
     method() {
       return this.create ? 'post' : 'patch'
     },
@@ -148,8 +123,7 @@ export default DitoComponent.component('dito-form', {
 
     selectedTab() {
       const { hash } = this.$route
-      return hash?.substring(1) ||
-          this.tabs && Object.keys(this.tabs)[0] || ''
+      return hash?.substring(1) || this.tabs && Object.keys(this.tabs)[0] || ''
     },
 
     data() {
@@ -160,30 +134,18 @@ export default DitoComponent.component('dito-form', {
       // 3. The data inherited from the parent, which itself may be either a
       //    view that loaded the data, or a form that either loaded the data, or
       //    also inherited it from its parent. Note that we use a clone of it,
-      //    so, data changes aren't applied until setParentData() is called.
+      //    so, data changes aren't applied until setListData() is called.
       return this.createdData || this.loadedData || this.inheritedData
-    },
-
-    parentList() {
-      // Possible parents are DitoForm for nested forms, or DitoView for root
-      // lists. Both have a data property which abstracts away loading and
-      // inheriting of data.
-      return this.parentRouteComponent.data?.[this.listSchema.name]
     },
 
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
-      // changes until changes are applied through setParentData()
-      const { parentList } = this
+      // changes until changes are applied through setListData()
       // Use a trick to store the cloned inherited data in clonedData, to make
-      // it reactive as well as to make sure that we're not cloning twice.
-      if (this.isTransient && this.clonedData === undefined && parentList) {
-        // See if we can find item by id in the parent list.
-        const parentIndex = this.parentIndex = parentList.findIndex(
-          (item, index) => this.getItemId(item, index) === this.itemId
-        )
-        this.clonedData = parentIndex >= 0
-          ? clone(parentList[parentIndex])
+      // it reactive as well and to make sure that we're not cloning twice.
+      if (this.isTransient && this.clonedData === undefined && this.listData) {
+        this.clonedData = this.listIndex >= 0
+          ? clone(this.listData[this.listIndex])
           : null
       }
       return this.clonedData
@@ -212,11 +174,13 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    setParentData(data) {
-      const { clonedData, parentIndex } = this
-      if (clonedData && parentIndex >= 0) {
-        this.$set(this.parentList, parentIndex,
-          { ...clonedData, ...this.filterData(data) })
+    setListData(data) {
+      const { clonedData, listIndex } = this
+      if (clonedData && listIndex >= 0) {
+        this.$set(this.listData, listIndex, {
+          ...clonedData,
+          ...this.filterData(data)
+        })
         return true
       }
       return false
@@ -243,8 +207,8 @@ export default DitoComponent.component('dito-form', {
 
     setData(data) {
       // setData() is called after submit when data has changed. Try to modify
-      // this.parentList first, for components with transient data.
-      if (!this.setParentData(data)) {
+      // this.listData first, for components with transient data.
+      if (!this.setListData(data)) {
         this.loadedData = data
       }
     },
@@ -267,20 +231,6 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    goBack(reload, checkDirty) {
-      if (!checkDirty || (!this.isDirty || confirm(
-        'You have unsaved changed. Do you really want to go back?'))
-      ) {
-        this.$router.push({ path: '..', append: true })
-        // Tell the parent to reload its data if this was a submit()
-        // See DataMixin.shouldReload:
-        const parent = this.parentRouteComponent
-        if (reload && !parent.isTransient) {
-          parent.reload = true
-        }
-      }
-    },
-
     notifyValidationErrors() {
       this.notify('error', 'Validation Errors',
         'Please correct the highlighted errors.')
@@ -297,11 +247,15 @@ export default DitoComponent.component('dito-form', {
     },
 
     onCancel() {
-      this.goBack(false, true)
+      if (
+        !this.isDirty ||
+        confirm('You have unsaved changed. Do you really want to cancel?')
+      ) {
+        this.close(false)
+      }
     },
 
     submitData(button = {}) {
-      const payload = this.data
       const { onSuccess, onError } = button
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
@@ -310,16 +264,16 @@ export default DitoComponent.component('dito-form', {
         // create the parent list.
         let ok = true
         if (this.create) {
-          const { parentList } = this
-          if (parentList) {
-            parentList.push(payload)
+          const { listData } = this
+          if (listData) {
+            listData.push(this.data)
           } else {
             ok = false
             this.notify('error', 'Request Error',
               `Unable to ${this.verbCreate} item.`)
           }
         } else {
-          this.setParentData(payload)
+          this.setListData(this.data)
           const title = this.getItemTitle(this.data)
           if (onSuccess) {
             onSuccess.call(this, this.data, title)
@@ -329,7 +283,7 @@ export default DitoComponent.component('dito-form', {
           }
         }
         if (ok) {
-          this.goBack(false, false)
+          this.close(false)
         }
       } else {
         let { method, resource } = this
@@ -339,6 +293,7 @@ export default DitoComponent.component('dito-form', {
         if (path) {
           resource = { ...resource, path }
         }
+        const payload = this.data
         this.request(method, { payload, resource }, (err, response) => {
           const { data = {} } = response
           if (!err) {
@@ -357,7 +312,7 @@ export default DitoComponent.component('dito-form', {
                 this.setData(data)
               }
             } else {
-              this.goBack(true, false)
+              this.close(true)
             }
           } else {
             // Dito validation error?

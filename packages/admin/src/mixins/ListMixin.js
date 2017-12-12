@@ -1,6 +1,6 @@
 import DataMixin from '@/mixins/DataMixin'
-import DitoView from '@/components/DitoView'
-import DitoForm from '@/components/DitoForm'
+import DitoRouteView from '@/components/DitoRouteView'
+import DitoRouteForm from '@/components/DitoRouteForm'
 import { processForms, processFormComponents } from '@/schema'
 import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
@@ -32,7 +32,7 @@ export default {
         // rootPath to rule out such changes:
         const { rootPath } = this.routeComponent
         if (!(path1.startsWith(rootPath) && path2.startsWith(rootPath))) {
-          // Complete change from one view to the next but DitoList is reused,
+          // Complete change from one view to the next but TypeList is reused,
           // so clear the filters and load data with clearing.
           this.setQuery({})
           this.loadData(true)
@@ -85,7 +85,7 @@ export default {
       return this.getNamedSchemas(this.schema.columns)
     },
 
-    inlineMeta() {
+    nestedMeta() {
       return {
         ...this.meta,
         listSchema: this.schema
@@ -282,7 +282,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       // While root schemas have their own route records, nested lists in forms
       // do not, and need their path prefixed with the parent's path.
       path: root ? `:${param}` : `${path}/:${param}`,
-      component: DitoForm,
+      component: DitoRouteForm,
       meta: formMeta
     }
     const formRoutes = [formRoute]
@@ -315,7 +315,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       routes.push({
         path: `/${path}`,
         children: formRoutes,
-        component: DitoView,
+        component: DitoRouteView,
         meta: {
           ...listMeta,
           schema: listSchema

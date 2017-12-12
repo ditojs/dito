@@ -45,9 +45,9 @@ export default {
     },
 
     shouldReload() {
-      // NOTE: Not all route components have the DataMixin (DitoView delegates
-      // loading to DitoList), so we can't directly force a reload on
-      // this.parentRouteComponent in DitoForm.goBack(). Instead, we use a
+      // NOTE: Not all route components have the DataMixin (DitoRouteView
+      // delegates loading to TypeList), so we can't directly force a reload on
+      // this.parentRouteComponent in DitoRouteForm.close(). Instead, we use a
       // reload flag on the closest routeComponent and respect it in created()
       return !this.isTransient && this.routeComponent.reload
     },
@@ -90,6 +90,14 @@ export default {
 
     verbEdited() {
       return 'edited'
+    },
+
+    verbCancel() {
+      return 'cancel'
+    },
+
+    verbCanceled() {
+      return 'canceled'
     }
   },
 

@@ -50,7 +50,7 @@
                 v-if="schema.inline"
                 :schema="getFormSchema(item)"
                 :data="item"
-                :meta="inlineMeta"
+                :meta="nestedMeta"
                 :prefix="`${name}/${index}/`"
                 :store="store"
                 :disabled="loading"
