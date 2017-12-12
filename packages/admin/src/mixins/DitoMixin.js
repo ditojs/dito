@@ -33,21 +33,11 @@ export default {
     },
 
     parentRouteComponent() {
-      const { routeComponent } = this
-      return routeComponent
-        ? routeComponent === this
-          ? routeComponent.$parent.routeComponent
-          : routeComponent
-        : null
+      return this.routeComponent?.$parent?.routeComponent
     },
 
     parentFormComponent() {
-      const { formComponent } = this
-      return formComponent
-        ? formComponent === this
-          ? formComponent.$parent.formComponent
-          : formComponent
-        : null
+      return this.formComponent?.$parent?.formComponent
     }
   },
 

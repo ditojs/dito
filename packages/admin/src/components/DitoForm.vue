@@ -7,16 +7,17 @@
       )
       .dito-scroll
         .dito-content
-          template(v-for="(tabSchema, key) in tabs")
-            dito-panel(
-              v-show="selectedTab === key"
-              :schema="tabSchema"
-              :hash="key"
-              :data="data || {}"
-              :meta="meta"
-              :store="store"
-              :disabled="loading"
-            )
+          dito-panel(
+            v-for="(tabSchema, key) in tabs"
+            v-show="selectedTab === key"
+            :key="key"
+            :schema="tabSchema"
+            :hash="key"
+            :data="data || {}"
+            :meta="meta"
+            :store="store"
+            :disabled="loading"
+          )
           dito-panel(
             :schema="schema"
             :data="data || {}"
@@ -191,8 +192,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
-      return this.isLastRoute && !this.isTransient &&
-        !this.data && !this.loading
+      return !this.isTransient && !this.data && !this.loading
     },
 
     isDirty() {
