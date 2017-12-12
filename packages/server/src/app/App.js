@@ -107,7 +107,7 @@ export default class App extends Koa {
   setupKnexLogging() {
     const startTimes = {}
 
-    function trim(str, length = 120) {
+    function trim(str, length = 200) {
       return str.length > length
         ? `${str.substring(0, length - 3)}...`
         : str
