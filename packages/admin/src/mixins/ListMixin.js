@@ -1,7 +1,7 @@
 import DataMixin from '@/mixins/DataMixin'
 import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
-import { processForms } from '@/schema'
+import { processForms, processFormComponents } from '@/schema'
 import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
 export default {
@@ -26,21 +26,23 @@ export default {
         [path1, path2] = [path2, path1]
       }
       // See if the routes changes completely.
-      if (path2.indexOf(path1) !== 0) {
-        // Complete change from one view to the next but DitoList is reused,
-        // so clear the filters and load data with clearing.
-        this.setQuery({})
-        this.loadData(true)
-        this.closeNotifications()
+      if (!path2.startsWith(path1)) {
+        // The paths change, but we may still be within the same component since
+        // tree lists use a part of the path to identify data. Compare against
+        // rootPath to rule out such changes:
+        const { rootPath } = this.routeComponent
+        if (!(path1.startsWith(rootPath) && path2.startsWith(rootPath))) {
+          // Complete change from one view to the next but DitoList is reused,
+          // so clear the filters and load data with clearing.
+          this.setQuery({})
+          this.loadData(true)
+          this.closeNotifications()
+        }
       } else if (path1 === path2 && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
         this.addQuery(to.query)
-        this.initData()
-      } else {
-        // Similar routes, but not the same: We're going back, so reapply the
-        // previous query again.
-        this.addQuery(this.query)
+        this.loadData(false)
       }
     }
   },
@@ -130,16 +132,11 @@ export default {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the
       // route query parameters to override them.
-      let { scope, scopes, page } = this.schema
-      if (!scope && scopes) {
-        // See if the parent-store has a scope setting, and reuse if possible
-        // First parent is the form, 2nd parent is the parent list of the form.
-        scope = this.store.$parent?.$parent?.query?.scope
-        // Only use the parent value if it's a possible setting
-        if (scope && !scopes.includes(scope)) {
-          scope = null
-        }
-      }
+      let { scope, page } = this.schema
+      const { store } = this
+      // Preserve / merge currently stored values
+      scope = scope || store.query?.scope
+      page = page || store.query?.page
       query = {
         ...(scope != null && { scope }),
         ...(page != null && { page }),
@@ -157,6 +154,25 @@ export default {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
       this.value = data
+    },
+
+    getEditRoute(item, index) {
+      // See if any of the form's components receives scopes and defines the
+      // current scope as valid, and if so, pass it on to the editing form:
+      // eslint-disable-next-line
+      const scope = this.store.query?.scope
+      const query = {}
+      if (scope) {
+        processFormComponents(this.getFormSchema(item), component => {
+          if (component.scopes?.includes?.(scope)) {
+            query.scope = scope
+          }
+        })
+      }
+      return {
+        path: `${this.path}${this.getItemId(item, index)}`,
+        query
+      }
     },
 
     removeItem(item) {
@@ -240,9 +256,10 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
   // otherwise they would clash and override each other inside $route.params
   // See: https://github.com/vuejs/vue-router/issues/1345
   const param = `id${level + 1}`
-  const meta = {
+  const listMeta = {
     api,
-    listSchema
+    listSchema,
+    flatten
   }
   // When children are flattened (tree-lists), reuse the parent meta data,
   // but include the flatten setting also.
@@ -252,8 +269,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       flatten
     }
     : {
-      ...meta,
-      flatten,
+      ...listMeta,
       param
     }
   const childRoutes = await processForms(listSchema, api, formMeta, level)
@@ -271,7 +287,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
     }
     const formRoutes = [formRoute]
     // Partition childRoutes into those that need flattening (tree-lists) and
-    // those that don't and process each group separately after.
+    // those that don't, and process each group separately after.
     const [flatRoutes, subRoutes] = childRoutes.reduce(
       (res, route) => {
         res[route.meta.flatten ? 0 : 1].push(route)
@@ -280,7 +296,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       [[], []]
     )
     if (flatRoutes.length) {
-      const flatMeta = {
+      const meta = {
         ...formMeta,
         flatten: true
       }
@@ -288,7 +304,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
         formRoutes.push({
           ...(childRoute.redirect ? childRoute : formRoute),
           path: `${formRoute.path}/${childRoute.path}`,
-          meta: flatMeta
+          meta
         })
       }
     }
@@ -301,7 +317,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
         children: formRoutes,
         component: DitoView,
         meta: {
-          ...meta,
+          ...listMeta,
           schema: listSchema
         }
       })
@@ -311,7 +327,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
         {
           path,
           redirect: '.',
-          meta
+          meta: listMeta
         },
         // Add the prefixed formRoutes with its children for nested lists.
         ...formRoutes

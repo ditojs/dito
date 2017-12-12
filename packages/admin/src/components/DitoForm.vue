@@ -163,10 +163,6 @@ export default DitoComponent.component('dito-form', {
       return this.createdData || this.loadedData || this.inheritedData
     },
 
-    parentStore() {
-      return this.parentRouteComponent?.getStore(this.listSchema.name)
-    },
-
     parentList() {
       // Possible parents are DitoForm for nested forms, or DitoView for root
       // lists. Both have a data property which abstracts away loading and

@@ -144,7 +144,8 @@ export default DitoComponent.component('dito-tree-item', {
     onEdit() {
       this.$router.push({
         path: `${this.target.rootPath}${this.path}`,
-        append: true
+        // Preserve current query
+        query: this.$route.query
       })
       this.edit()
     },

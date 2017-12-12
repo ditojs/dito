@@ -58,20 +58,12 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.component('dito-trail', {
   computed: {
     trail() {
-      const { routeComponents } = this.appState
-      let prevParam = null
-      let index = 0
       const trail = []
-      for (const { meta } of this.$route.matched) {
-        const routeComponent = routeComponents[index++]
-        const { param } = meta
-        // Filter out multiple nested routes serving the same param id.
-        // This is needed to handle TypeTreeList's use of nested routes.
-        if (routeComponent && prevParam !== param) {
+      for (const routeComponent of this.appState.routeComponents) {
+        if (routeComponent.routeRecord) {
           const { path, breadcrumb } = routeComponent
           trail.push({ path, breadcrumb })
         }
-        prevParam = param
       }
       return trail
     }

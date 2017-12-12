@@ -22,7 +22,10 @@ export default {
     return {
       isRoute: true,
       reload: false,
-      storeData: {}
+      // Each route-component defines a store that gets passed on to its
+      // child components, so they can store values in them that live beyond
+      // their life-cycle. See: DitoPanel, ListMixin
+      store: {}
     }
   },
 
@@ -56,39 +59,18 @@ export default {
     },
 
     rootPath() {
-      // Needed by tree-lists: Take flattening into account, and return the
-      // path up to the root id param.
       const {
         path,
         meta: { flatten, param }
       } = this.routeRecord
       return this.getRoutePath(flatten
+        // When flattening, return the part of the path up to the root id param:
         ? path.match(new RegExp(`^(.*:${param})`))[1]
         : path)
     },
 
     label() {
       return this.getLabel(this.schema)
-    },
-
-    store() {
-      // Each route-component defines a store that gets passed on to its
-      // child components, so they can store values in them that live beyond
-      // their life-cycle. See: DitoPanel, ListMixin
-      // These stores are also made aware of their parents, so settings can
-      // propagate.
-      const { parentStore } = this
-      if (parentStore) {
-        this.$set(this.storeData, '$parent', parentStore)
-      }
-      return this.storeData
-    },
-
-    parentStore() {
-      // This getter is part of linking up store intances with their parents.
-      // By default, it's just the store of the parent route-component.
-      // See DitoForm for its override of parentStore()
-      return this.parentRouteComponent?.store
     },
 
     breadcrumb() {

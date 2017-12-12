@@ -124,7 +124,9 @@ export default {
       let title = isFunction(itemTitle) ? itemTitle(item)
         : itemProp ? item[itemProp]
         : item.name
-      if (!title) {
+      if (title) {
+        title = ` ${title}`
+      } else {
         const id = this.getItemId(item)
         title = id
           ? ` (id:${id})`
