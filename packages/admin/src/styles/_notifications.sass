@@ -14,6 +14,11 @@
     .notification-title
       font-weight: bold
       padding-bottom: 8px
+    .notification-content
+      p
+        margin: 0
+        & + p
+          margin-top: 8px
     &,
     &.info
       +type($color-active)

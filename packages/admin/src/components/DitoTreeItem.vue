@@ -36,7 +36,7 @@
       dito-tree-item(
         v-for="(child, index) in childrenList.children"
         v-show="opened"
-        :key="index"
+        :key="child.id"
         :data="child.data"
         :path="child.path"
         :prefix="child.prefix"
@@ -45,7 +45,7 @@
         :listData="childrenList.listData"
         :listIndex="index"
         :draggable="childrenList.draggable"
-        :listComponent="listComponent"
+        :parentComponent="parentComponent"
       )
 </template>
 
@@ -107,7 +107,7 @@ export default DitoComponent.component('dito-tree-item', {
     listData: { type: Array },
     listIndex: { type: Number },
     draggable: { type: Boolean, default: false },
-    listComponent: { type: Object, required: true }
+    parentComponent: { type: Object, required: true }
   },
 
   data() {
@@ -117,25 +117,35 @@ export default DitoComponent.component('dito-tree-item', {
     }
   },
 
-  mounted() {
-    if (this.path && this.listComponent.editPath === this.path) {
-      this.edit()
-    }
+  created() {
+    this.checkEdit()
+  },
+
+  updated() {
+    // Calling checkEdit() in updated() next to created() means that we're also
+    // catching route changes that may reload data, and can update the editInfo.
+    this.checkEdit()
   },
 
   methods: {
     edit() {
-      this.listComponent.edit({
-        schema: this.schema.form,
+      this.parentComponent.edit({
         listData: this.listData,
         listIndex: this.listIndex,
+        listSchema: this.schema,
         prefix: this.prefix
       })
     },
 
+    checkEdit() {
+      if (this.path && this.path === this.parentComponent.editPath) {
+        this.edit()
+      }
+    },
+
     onEdit() {
       this.$router.push({
-        path: `${this.listComponent.rootPath}${this.path}`,
+        path: `${this.parentComponent.rootPath}${this.path}`,
         // Preserve current query
         query: this.$route.query
       })
@@ -181,18 +191,19 @@ export default DitoComponent.component('dito-tree-item', {
         if (name !== 'form' && isObject(schema)) {
           const listData = this.data[name]
           const draggable = schema.draggable && listData?.length > 1
-          const { editPath } = this.listComponent
+          const { editPath } = this.parentComponent
           const childrenOpen = !this.path && this.open
           // Build a children list with child meta information for the template.
           const children = listData?.map((data, index) => {
-            const id = this.listComponent.getItemId(data, index)
+            const id = this.parentComponent.getItemId(data, index)
             const path = `${this.path}/${schema.path}/${id}`
             // Determine prefix for json pointer compatible field names:
-            const prefix = `${this.prefix}${schema.name}/${id}/`
+            const prefix = `${this.prefix}${schema.name}/${index}/`
             const open = childrenOpen ||
               // Only count as "in edit path" when it's not the full edit path.
               path.length < editPath.length && editPath.startsWith(path)
             return {
+              id,
               data,
               path,
               prefix,

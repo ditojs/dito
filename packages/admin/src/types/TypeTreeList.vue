@@ -10,18 +10,18 @@
         :data="{ [name]: value }"
         :schema="{ [name]: schema }"
         :open="true"
-        :listComponent="this"
+        :parentComponent="this"
       )
       dito-nested-form(
         v-if="editInfo"
         :meta="nestedMeta"
         :store="store"
-        :schema="editInfo.schema"
         :prefix="editInfo.prefix"
         :listData="editInfo.listData"
         :listIndex="editInfo.listIndex"
+        :listSchema="editInfo.listSchema"
         :disabled="loading"
-        :listComponent="this"
+        :parentComponent="this"
       )
 </template>
 
@@ -51,21 +51,21 @@ export default TypeComponent.register('tree-list', {
 
   data() {
     return {
-      // Set from DitoTreeItem through `listComponent.edit`:
+      // Set from DitoTreeItem through `parentComponent.edit`:
       editInfo: null
     }
   },
 
   computed: {
     rootPath() {
-      // Accessed from DitoTreeItem through `listComponent.rootPath`:
-      return this.formComponent.rootPath
+      // Accessed from DitoTreeItem through `parentComponent.rootPath`:
+      return this.formComponent?.rootPath
     },
 
     editPath() {
-      // Accessed from DitoTreeItem through `listComponent.editPath`:
+      // Accessed from DitoTreeItem through `parentComponent.editPath`:
       const { formComponent } = this
-      return formComponent.path.substring(formComponent.rootPath.length)
+      return formComponent?.path.substring(formComponent.rootPath.length)
     }
   },
 

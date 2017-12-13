@@ -1,3 +1,11 @@
+<style lang="sass">
+.dito
+  .dito-nested-form
+    .dito-scroll
+      // No nested scrolling:
+      overflow: visible
+</style>
+
 <script>
 import DitoComponent from '@/DitoComponent'
 import DitoForm from './DitoForm'
@@ -10,24 +18,29 @@ export default DitoComponent.component('dito-nested-form', {
   },
 
   props: {
-    schema: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     prefix: { type: String, required: true },
+    disabled: { type: Boolean, required: true },
     listData: { type: Array, required: true },
     listIndex: { type: Number, required: true },
-    disabled: { type: Boolean, required: true },
-    listComponent: { type: Object, required: true }
+    listSchema: { type: Object, required: true },
+    parentComponent: { type: Object, required: true }
   },
 
-  watch: {
-    $route() {
-      this.clonedData = undefined
+  data() {
+    return {
+      formClass: 'dito-nested-form'
     }
   },
 
+  watch: {
+    listData: 'clearData',
+    listIndex: 'clearData'
+  },
+
   computed: {
-    isVisible() {
+    isActive() {
       return true
     },
 
@@ -40,12 +53,12 @@ export default DitoComponent.component('dito-nested-form', {
     },
 
     type() {
-      // TODO:
-      return null
+      // TODO: Support form chooser in nested forms.
+      return this.data?.type
     },
 
     create() {
-      // TODO:
+      // TODO: Support creating new entries in nested forms.
       return false
     },
 
@@ -61,7 +74,11 @@ export default DitoComponent.component('dito-nested-form', {
   methods: {
     close() {
       this.$validator.reset()
-      this.listComponent.edit(null)
+      this.parentComponent.edit(null)
+    },
+
+    clearData() {
+      this.clonedData = undefined
     }
   }
 })

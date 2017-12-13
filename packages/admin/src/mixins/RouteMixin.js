@@ -50,10 +50,6 @@ export default {
       return this.routeRecord.meta
     },
 
-    schema() {
-      return this.meta.schema
-    },
-
     path() {
       return this.getRoutePath(this.routeRecord.path)
     },

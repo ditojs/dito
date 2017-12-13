@@ -23,16 +23,12 @@ export default {
   },
 
   computed: {
-    listSchema() {
-      return this.meta.listSchema
-    },
-
     isNested() {
       return !!this.listSchema.nested
     },
 
     isTransient() {
-      let transient = this.isNested
+      let transient = !!this.listSchema.transient || this.isNested
       if (!transient) {
         const parent = this.parentFormComponent
         transient = parent?.isTransient || parent?.create

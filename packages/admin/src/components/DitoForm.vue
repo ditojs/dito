@@ -1,6 +1,8 @@
 <template lang="pug">
-  .dito-form
-    form(v-if="isVisible" @submit.prevent="onSubmit()")
+  .dito-form(
+    :class="formClass"
+  )
+    form(v-if="isActive" @submit.prevent="onSubmit()")
       dito-tabs(
         :tabs="tabs"
         :selectedTab="selectedTab"
@@ -79,7 +81,8 @@ export default DitoComponent.component('dito-form', {
       createdData: null,
       clonedData: undefined,
       isForm: true,
-      components: {}
+      components: {},
+      formClass: null
     }
   },
 
@@ -98,6 +101,19 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
+    schema() {
+      // Determine the current form schema through the listSchema, with multi
+      // form schema support.
+      let form = this.getFormSchema(this.data)
+      if (!form) {
+        // If the right form couldn't be determined from the data, see if
+        // there's a query parameter defining it (see `this.type`).
+        const { type } = this
+        form = type && this.getFormSchema({ type })
+      }
+      return form
+    },
+
     method() {
       return this.create ? 'post' : 'patch'
     },
@@ -278,8 +294,10 @@ export default DitoComponent.component('dito-form', {
           if (onSuccess) {
             onSuccess.call(this, this.data, title)
           } else {
-            this.notify('success', 'Change Applied',
-              `Changes in ${title} were applied.`)
+            this.notify('info', 'Change Applied',
+              `<p>Changes in ${title} were applied.</p>` +
+              '<p><b>Note</b>: the parent still needs to be saved ' +
+              'in order to persist this change.</p>')
           }
         }
         if (ok) {

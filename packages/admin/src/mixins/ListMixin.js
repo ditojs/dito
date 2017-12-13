@@ -186,15 +186,15 @@ export default {
     deleteItem(item, index) {
       const title = item && this.getItemTitle(item, index)
 
-      const notify = () => this.notify('success', 'Successfully Removed',
-        `${title} was ${this.verbDeleted}.`)
+      const notify = transient => this.notify(transient ? 'info' : 'success',
+        'Successfully Removed', `${title} was ${this.verbDeleted}.`)
 
       if (item && confirm(
         `Do you really want to ${this.verbDelete} ${title}?`)
       ) {
         if (this.isTransient) {
           this.removeItem(item)
-          notify()
+          notify(true)
         } else {
           const resource = {
             type: 'member',
@@ -203,7 +203,7 @@ export default {
           this.request('delete', { resource }, err => {
             if (!err) {
               this.removeItem(item)
-              notify()
+              notify(false)
             }
             this.reloadData()
           })

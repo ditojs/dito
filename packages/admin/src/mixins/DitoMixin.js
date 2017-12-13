@@ -24,7 +24,8 @@ export default {
       while (comp && !comp.isRoute) {
         comp = comp.$parent
       }
-      return comp
+      // Only return the component if its still in the route
+      return comp.routeRecord ? comp : null
     },
 
     formComponent() {
@@ -33,11 +34,11 @@ export default {
     },
 
     parentRouteComponent() {
-      return this.routeComponent?.$parent?.routeComponent
+      return (this.isRoute ? this.$parent : this)?.routeComponent
     },
 
     parentFormComponent() {
-      return this.formComponent?.$parent?.formComponent
+      return (this.isForm ? this.$parent : this)?.formComponent
     }
   },
 
@@ -67,6 +68,7 @@ export default {
     },
 
     getElement(selector) {
+      // TODO: ref="input"
       const proto = Element.prototype
       const matches = proto.matches ||
         proto.matchesSelector ||
