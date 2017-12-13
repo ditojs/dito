@@ -1,5 +1,6 @@
 import { isObject } from '@/utils'
 
+// TODO: Share functionality with lineto-frontend through module
 export default {
   data() {
     return {

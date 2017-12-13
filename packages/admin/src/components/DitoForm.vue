@@ -353,7 +353,7 @@ export default DitoComponent.component('dito-form', {
                 onError.call(this, error, this.data, title)
               } else {
                 this.notify('error', 'Request Error',
-                  `Error storing ${title}: ${error.message || error}`)
+                  `Error submitting ${title}:\n${error.message || error}`)
               }
             }
           }
