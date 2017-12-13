@@ -41,9 +41,9 @@ export default {
     },
 
     shouldReload() {
-      // NOTE: Not all route components have the DataMixin (DitoRouteView
-      // delegates loading to TypeList), so we can't directly force a reload on
-      // this.parentRouteComponent in DitoRouteForm.close(). Instead, we use a
+      // NOTE: Not all route components have the DataMixin (DitoView delegates
+      // loading to TypeList), so we can't directly force a reload on
+      // this.parentRouteComponent in DitoForm.close(). Instead, we use a
       // reload flag on the closest routeComponent and respect it in created()
       return !this.isTransient && this.routeComponent.reload
     },
@@ -118,6 +118,15 @@ export default {
       const { idName = 'id' } = this.listSchema
       const id = this.isTransient ? index : item[idName]
       return id === undefined ? id : String(id)
+    },
+
+    findItemIdIndex(data, itemId) {
+      // For transient data, the index is used as the id
+      return this.isTransient
+        ? itemId
+        : data?.findIndex(
+          (item, index) => this.getItemId(item, index) === itemId
+        )
     },
 
     getItemTitle(item, index) {

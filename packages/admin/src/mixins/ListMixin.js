@@ -1,6 +1,7 @@
 import DataMixin from '@/mixins/DataMixin'
-import DitoRouteView from '@/components/DitoRouteView'
-import DitoRouteForm from '@/components/DitoRouteForm'
+import DitoView from '@/components/DitoView'
+import DitoForm from '@/components/DitoForm'
+import DitoNestedForm from '@/components/DitoNestedForm'
 import { processForms, processFormComponents } from '@/schema'
 import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
@@ -28,10 +29,10 @@ export default {
       // See if the routes changes completely.
       if (!path2.startsWith(path1)) {
         // The paths change, but we may still be within the same component since
-        // tree lists use a part of the path to identify data. Compare against
-        // rootPath to rule out such changes:
-        const { rootPath } = this.routeComponent
-        if (!(path1.startsWith(rootPath) && path2.startsWith(rootPath))) {
+        // tree lists use a part of the path to edit nested data.
+        // Compare against component path to rule out such path changes:
+        const { path } = this.routeComponent
+        if (!(path1.startsWith(path) && path2.startsWith(path))) {
           // Complete change from one view to the next but TypeList is reused,
           // so clear the filters and load data with clearing.
           this.setQuery({})
@@ -166,6 +167,7 @@ export default {
         processFormComponents(this.getFormSchema(item), component => {
           if (component.scopes?.includes?.(scope)) {
             query.scope = scope
+            return false // Stop iterating through components.
           }
         })
       }
@@ -240,13 +242,13 @@ export default {
 }
 
 async function processSchema(listSchema, name, api, routes, parentMeta,
-  level, flatten = false, processSchema = null) {
-  const path = listSchema.path = listSchema.path || api.processPath(name)
+  level, nested = false, flatten = false, processSchema = null) {
+  const path = listSchema.path = listSchema.path || api.normalizePath(name)
   listSchema.name = name
-  const { inline, nested } = listSchema
+  const { inline } = listSchema
   const addRoutes = !inline
   if (inline) {
-    if (nested === false) {
+    if (listSchema.nested === false) {
       throw new Error(
         'Lists with inline forms can only work with nested data')
     }
@@ -263,15 +265,11 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
   }
   // When children are flattened (tree-lists), reuse the parent meta data,
   // but include the flatten setting also.
-  const formMeta = flatten
-    ? {
-      ...parentMeta,
-      flatten
-    }
-    : {
-      ...listMeta,
-      param
-    }
+  const formMeta = {
+    ...listMeta,
+    nested,
+    param
+  }
   const childRoutes = await processForms(listSchema, api, formMeta, level)
   if (processSchema) {
     await processSchema(childRoutes, formMeta, level + 1)
@@ -282,7 +280,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       // While root schemas have their own route records, nested lists in forms
       // do not, and need their path prefixed with the parent's path.
       path: root ? `:${param}` : `${path}/:${param}`,
-      component: DitoRouteForm,
+      component: nested ? DitoNestedForm : DitoForm,
       meta: formMeta
     }
     const formRoutes = [formRoute]
@@ -296,15 +294,14 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       [[], []]
     )
     if (flatRoutes.length) {
-      const meta = {
-        ...formMeta,
-        flatten: true
-      }
       for (const childRoute of flatRoutes) {
         formRoutes.push({
           ...(childRoute.redirect ? childRoute : formRoute),
           path: `${formRoute.path}/${childRoute.path}`,
-          meta
+          meta: {
+            ...childRoute.meta,
+            flatten
+          }
         })
       }
     }
@@ -315,7 +312,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
       routes.push({
         path: `/${path}`,
         children: formRoutes,
-        component: DitoRouteView,
+        component: DitoView,
         meta: {
           ...listMeta,
           schema: listSchema

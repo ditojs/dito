@@ -28,7 +28,7 @@
     vue-draggable(
       v-for="childrenList in childrenLists"
       :key="childrenList.name"
-      :list="childrenList.listData"
+      :list="childrenList.items"
       :options="childrenList.dragOptions"
       @start="onStartDrag"
       @end="onEndDrag(childrenList, $event)"
@@ -36,16 +36,13 @@
       dito-tree-item(
         v-for="(child, index) in childrenList.children"
         v-show="opened"
-        :key="child.id"
+        :key="index"
         :data="child.data"
         :path="child.path"
-        :prefix="child.prefix"
         :open="child.open"
         :schema="childrenList.schema"
-        :listData="childrenList.listData"
-        :listIndex="index"
         :draggable="childrenList.draggable"
-        :parentComponent="parentComponent"
+        :container="container"
       )
 </template>
 
@@ -101,13 +98,10 @@ export default DitoComponent.component('dito-tree-item', {
   props: {
     data: { type: [Array, Object] },
     path: { type: String, default: '' },
-    prefix: { type: String, default: '' },
     open: { type: Boolean, default: false },
     schema: { type: Object, required: true },
-    listData: { type: Array },
-    listIndex: { type: Number },
     draggable: { type: Boolean, default: false },
-    parentComponent: { type: Object, required: true }
+    container: { type: Object, required: true }
   },
 
   data() {
@@ -117,39 +111,13 @@ export default DitoComponent.component('dito-tree-item', {
     }
   },
 
-  created() {
-    this.checkEdit()
-  },
-
-  updated() {
-    // Calling checkEdit() in updated() next to created() means that we're also
-    // catching route changes that may reload data, and can update the editInfo.
-    this.checkEdit()
-  },
-
   methods: {
-    edit() {
-      this.parentComponent.edit({
-        listData: this.listData,
-        listIndex: this.listIndex,
-        listSchema: this.schema,
-        prefix: this.prefix
-      })
-    },
-
-    checkEdit() {
-      if (this.path && this.path === this.parentComponent.editPath) {
-        this.edit()
-      }
-    },
-
     onEdit() {
       this.$router.push({
-        path: `${this.parentComponent.rootPath}${this.path}`,
+        path: `${this.container.path}${this.path}`,
         // Preserve current query
         query: this.$route.query
       })
-      this.edit()
     },
 
     onDelete() {
@@ -167,9 +135,9 @@ export default DitoComponent.component('dito-tree-item', {
       if (orderKey) {
         // Reorder the chnaged children by their orderKey.
         const start = Math.min(event.oldIndex, event.newIndex)
-        const { listData } = childrenList
-        for (let i = start; i < listData.length; i++) {
-          listData[i][orderKey] = i
+        const { items } = childrenList
+        for (let i = start; i < items.length; i++) {
+          items[i][orderKey] = i
         }
       }
     }
@@ -189,24 +157,19 @@ export default DitoComponent.component('dito-tree-item', {
       const lists = []
       for (const [name, schema] of Object.entries(this.schema)) {
         if (name !== 'form' && isObject(schema)) {
-          const listData = this.data[name]
-          const draggable = schema.draggable && listData?.length > 1
-          const { editPath } = this.parentComponent
+          const items = this.data[name]
+          const draggable = schema.draggable && items?.length > 1
+          const { editPath } = this.container
           const childrenOpen = !this.path && this.open
           // Build a children list with child meta information for the template.
-          const children = listData?.map((data, index) => {
-            const id = this.parentComponent.getItemId(data, index)
-            const path = `${this.path}/${schema.path}/${id}`
-            // Determine prefix for json pointer compatible field names:
-            const prefix = `${this.prefix}${schema.name}/${index}/`
+          const children = items?.map((data, index) => {
+            const path = `${this.path}/${schema.path}/${index}`
             const open = childrenOpen ||
               // Only count as "in edit path" when it's not the full edit path.
-              path.length < editPath.length && editPath.startsWith(path)
+              editPath.startsWith(path) && path.length < editPath.length
             return {
-              id,
               data,
               path,
-              prefix,
               open
             }
           }) || []
@@ -214,7 +177,7 @@ export default DitoComponent.component('dito-tree-item', {
             name,
             schema,
             children,
-            listData,
+            items,
             draggable,
             dragOptions: {
               animation: 150,
@@ -230,7 +193,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     numChildren() {
       return this.childrenLists.reduce(
-        (count, childrenList) => count + childrenList.listData.length,
+        (count, childrenList) => count + childrenList.items.length,
         0
       )
     },

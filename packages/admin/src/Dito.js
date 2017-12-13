@@ -5,7 +5,7 @@ import './components'
 import './types'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
-import { isFunction, hyphenate } from './utils'
+import { hyphenate, camelize } from './utils'
 import { processComponent } from './schema'
 
 Vue.config.productionTip = false
@@ -25,12 +25,12 @@ export async function setup(el, options = {}) {
     api = {}
   } = options
 
-  const { normalizePath } = api
-  api.processPath = isFunction(normalizePath)
-    ? normalizePath
-    : normalizePath === true
-      ? hyphenate
-      : val => val
+  // Setting `api.normalizePaths = true (plural) sets both:
+  // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
+  api.normalizePath = api.normalizePath ||
+    api.normalizePaths === true ? hyphenate : val => val
+  api.denormalizePath = api.denormalizePath ||
+    api.normalizePaths === true ? camelize : val => val
 
   api.resources = {
     member(component, itemId) {

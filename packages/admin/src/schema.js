@@ -10,13 +10,20 @@ export function processComponent(schema, name, api, routes,
 
 export function processFormComponents(form, processComponent) {
   const results = []
+  let res
   const processComponents = components => {
     for (const [name, component] of Object.entries(components || {})) {
-      results.push(processComponent(component, name))
+      // processComponent() can `return false` to interrupt the loop.
+      if ((res = processComponent(component, name)) === false) {
+        return results
+      }
+      results.push(res)
     }
   }
   for (const tab of Object.values(form?.tabs || {})) {
-    processComponents(tab.components, processComponent)
+    if ((res = processComponents(tab.components, processComponent)) === false) {
+      return results
+    }
   }
   processComponents(form?.components, processComponent)
   return results

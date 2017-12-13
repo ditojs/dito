@@ -10,19 +10,9 @@
         :data="{ [name]: value }"
         :schema="{ [name]: schema }"
         :open="true"
-        :parentComponent="this"
+        :container="this"
       )
-      dito-nested-form(
-        v-if="editInfo"
-        :meta="nestedMeta"
-        :store="store"
-        :prefix="editInfo.prefix"
-        :listData="editInfo.listData"
-        :listIndex="editInfo.listIndex"
-        :listSchema="editInfo.listSchema"
-        :disabled="loading"
-        :parentComponent="this"
-      )
+      router-view
 </template>
 
 <style lang="sass">
@@ -49,45 +39,33 @@ import { isObject } from '@/utils'
 export default TypeComponent.register('tree-list', {
   mixins: [ListMixin],
 
-  data() {
-    return {
-      // Set from DitoTreeItem through `parentComponent.edit`:
-      editInfo: null
-    }
-  },
-
   computed: {
-    rootPath() {
-      // Accessed from DitoTreeItem through `parentComponent.rootPath`:
-      return this.formComponent?.rootPath
+    path() {
+      // Accessed from DitoTreeItem through `container.path`:
+      return this.formComponent?.path
     },
 
     editPath() {
-      // Accessed from DitoTreeItem through `parentComponent.editPath`:
-      const { formComponent } = this
-      return formComponent?.path.substring(formComponent.rootPath.length)
-    }
-  },
-
-  methods: {
-    edit(info) {
-      this.editInfo = info
+      // Accessed from DitoTreeItem through `container.editPath`:
+      return this.$route.path.substring(this.path?.length)
     }
   },
 
   processSchema
 })
 
-async function processSchema(listSchema, name, api, routes, parentMeta, level) {
-  return ListMixin.processSchema(listSchema, name, api, routes, parentMeta,
-    level, true,
+async function processSchema(listSchema, name, api, routes, parentMeta, level,
+  nested = true, flatten = false) {
+  return ListMixin.processSchema(
+    listSchema, name, api, routes, parentMeta, level, nested, flatten,
     // Pass processSchema() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {
       const promises = []
       for (const [name, schema] of Object.entries(listSchema)) {
         if (name !== 'form' && isObject(schema)) {
           promises.push(
-            processSchema(schema, name, api, childRoutes, parentMeta, level)
+            processSchema(
+              schema, name, api, childRoutes, parentMeta, level, nested, true)
           )
         }
       }

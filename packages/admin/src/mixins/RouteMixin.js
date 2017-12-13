@@ -46,23 +46,29 @@ export default {
       return this.$route.matched[this.$vnode.data.routerViewDepth]
     },
 
+    isLastRoute() {
+      // Returns true when this router component is the last one in the route.
+      const { matched } = this.$route
+      return this.routeRecord === matched[matched.length - 1]
+    },
+
+    isLastUnnestedRoute() {
+      const { matched } = this.$route
+      for (let i = matched.length - 1; i >= 0; i--) {
+        const match = matched[i]
+        if (!match.meta.nested) {
+          return this.routeRecord === match
+        }
+      }
+      return false
+    },
+
     meta() {
       return this.routeRecord.meta
     },
 
     path() {
       return this.getRoutePath(this.routeRecord.path)
-    },
-
-    rootPath() {
-      const {
-        path,
-        meta: { flatten, param }
-      } = this.routeRecord
-      return this.getRoutePath(flatten
-        // When flattening, return the part of the path up to the root id param:
-        ? path.match(new RegExp(`^(.*:${param})`))[1]
-        : path)
     },
 
     label() {
@@ -76,12 +82,6 @@ export default {
 
     breadcrumbPrefix() {
       return ''
-    },
-
-    isLastRoute() {
-      // Returns true when this router component is the last one in the route.
-      const { matched } = this.$route
-      return this.routeRecord === matched[matched.length - 1]
     },
 
     param() {

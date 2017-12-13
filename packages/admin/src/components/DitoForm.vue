@@ -15,7 +15,7 @@
             :key="key"
             :schema="tabSchema"
             :hash="key"
-            :prefix="prefix"
+            :prefix="dataPrefix"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -23,7 +23,7 @@
           )
           dito-panel(
             :schema="schema"
-            :prefix="prefix"
+            :prefix="dataPrefix"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -46,7 +46,7 @@
               @click.prevent="onSubmit(button)"
               :class="`dito-button-${key}`"
             ) {{ button.label }}
-    router-view(v-else-if="isRoute")
+    router-view(v-else)
 </template>
 
 <style lang="sass">
@@ -71,10 +71,11 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
+import RouteMixin from '@/mixins/RouteMixin'
 import { isArray, isObject, clone, capitalize } from '@/utils'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [DataMixin],
+  mixins: [DataMixin, RouteMixin],
 
   data() {
     return {
@@ -101,6 +102,10 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
+    listSchema() {
+      return this.meta.listSchema
+    },
+
     schema() {
       // Determine the current form schema through the listSchema, with multi
       // form schema support.
@@ -112,6 +117,23 @@ export default DitoComponent.component('dito-form', {
         form = type && this.getFormSchema({ type })
       }
       return form
+    },
+
+    isActive() {
+      return this.isLastRoute || this.isLastUnnestedRoute
+    },
+
+    type() {
+      return this.$route.query.type
+    },
+
+    create() {
+      // this.param is inherited from RouteMixin
+      return this.param === 'create'
+    },
+
+    itemId() {
+      return this.create ? null : this.param
     },
 
     method() {
@@ -152,6 +174,41 @@ export default DitoComponent.component('dito-form', {
       //    also inherited it from its parent. Note that we use a clone of it,
       //    so, data changes aren't applied until setListData() is called.
       return this.createdData || this.loadedData || this.inheritedData
+    },
+
+    dataPath() {
+      // Get the data path by denormalizePath the relative route path
+      const { parentRouteComponent: parent } = this
+      return this.api.denormalizePath(this.path
+        // DitoViews have nested routes, so don't remove their path.
+        .substring((parent.isView ? 0 : parent.path.length) + 1))
+    },
+
+    dataPrefix() {
+      return '' // DitoForm doesn't need prefixes, only DitoNestedForm does.
+    },
+
+    listData() {
+      // Possible parents are DitoForm for forms, or DitoView for root lists.
+      // Both have a data property which abstracts away loading and inheriting
+      // of data.
+      let { data } = this.parentRouteComponent
+      // Handle nested data by splitting the dataPath, iterate through the
+      // actual data and look nest child-data up.
+      const parts = this.dataPath.split('/')
+      // Use -1 for length to skip the final lookup, as we want the parent data.
+      for (let i = 0, l = parts.length - 1; i < l && data;) {
+        data = data[parts[i++]]
+        if (i < l) {
+          data = data?.[this.findItemIdIndex(data, parts[i++])]
+        }
+      }
+      return data
+    },
+
+    listIndex() {
+      // Find item by id in the parent list data.
+      return this.findItemIdIndex(this.listData, this.itemId)
     },
 
     inheritedData() {
@@ -255,7 +312,7 @@ export default DitoComponent.component('dito-form', {
     async onSubmit(button) {
       if (await this.$validator.validateAll()) {
         // Default button is submit:
-        this.submitData(button || this.buttons.submit)
+        this.submit(button || this.buttons.submit)
       } else {
         this.focus(this.$errors.items[0].field)
         this.notifyValidationErrors()
@@ -271,7 +328,17 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    submitData(button = {}) {
+    close(reload) {
+      this.$router.push({ path: '..', append: true })
+      // Tell the parent to reload its data if this was a submit()
+      // See DataMixin.shouldReload:
+      const parent = this.parentRouteComponent
+      if (reload && !parent.isTransient) {
+        parent.reload = true
+      }
+    },
+
+    submit(button = {}) {
       const { onSuccess, onError } = button
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal

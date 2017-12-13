@@ -3,11 +3,10 @@
 // NOTE: Sequence is meaningful for reasons of CSS declaration sequence. The
 // convention is in order of encountered hierarchy in the DOM.
 
-import './DitoRouteView'
-import './DitoRouteForm'
+import './DitoView'
+import './DitoForm'
 import './DitoNestedForm'
 import './DitoFormChooser'
-import './DitoForm'
 import './DitoPanel'
 import './DitoTabs'
 import './DitoLabel'
