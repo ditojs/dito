@@ -28,7 +28,7 @@ export default {
     },
 
     isTransient() {
-      let transient = !!this.listSchema.transient || this.isNested
+      let transient = this.isNested
       if (!transient) {
         const parent = this.parentFormComponent
         transient = parent?.isTransient || parent?.create

@@ -195,13 +195,18 @@ export default DitoComponent.component('dito-form', {
       let { data } = this.parentRouteComponent
       // Handle nested data by splitting the dataPath, iterate through the
       // actual data and look nest child-data up.
-      const parts = this.dataPath.split('/')
+      const dataParts = this.dataPath.split('/')
+      // Compare dataParts against matched routePath parts, to identify those
+      // parts that need to be treated like ids and mapped to indices in data.
+      const pathParts = this.routeRecord.path.split('/')
+      const routeParts = pathParts.slice(pathParts.length - dataParts.length)
       // Use -1 for length to skip the final lookup, as we want the parent data.
-      for (let i = 0, l = parts.length - 1; i < l && data;) {
-        data = data[parts[i++]]
-        if (i < l) {
-          data = data?.[this.findItemIdIndex(data, parts[i++])]
-        }
+      for (let i = 0, l = dataParts.length - 1; i < l && data; i++) {
+        const dataPart = dataParts[i]
+        const key = /^:id/.test(routeParts[i])
+          ? this.findItemIdIndex(data, dataPart)
+          : dataPart
+        data = data[key]
       }
       return data
     },
