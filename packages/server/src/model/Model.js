@@ -261,12 +261,8 @@ export default class Model extends objection.Model {
         }
       }
     }
-    // TODO: https://gitter.im/Vincit/objection.js?at=5a12fa6be606d60e34e8dc4e
-    for (const key in constructor.getRelations()) {
-      delete json[key]
-    }
     // NOTE: No need to normalize the identifiers in the JSON in case of
-    // s, as this already happens through
+    // normalizeDbNames, as this already happens through
     // knex.config.wrapIdentifier(), see App.js
     return super.$formatDatabaseJson(json)
   }

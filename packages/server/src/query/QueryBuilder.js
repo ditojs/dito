@@ -510,7 +510,7 @@ function parsePropertiesExpression(value) {
   const parse = expression => {
     const replaced = expression
       // Quote all words:
-      .replace(/\s*(\w+)\s*/g, '"$1"')
+      .replace(/\b(\w+)\b/g, '"$1"')
       // Expand "[" to ":[":
       .replace(/"\[/g, '":[')
     return JSON.parse(`{${replaced}}`)
