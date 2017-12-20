@@ -24,7 +24,7 @@
     "prismjs": "^1.9.0",
     "vee-validate": "^2.0.0-rc.25",
     "vue": "^2.5.8",
-    "vue-js-toggle-button": "github:euvl/vue-js-toggle-button#c580dd10fe7c121c8b8de347d57ff5b03689799f",
+    "vue-js-toggle-button": "github:lehni/vue-js-toggle-button#060310fa8453d70387cc1ac3c9a08a1323e5af18",
     "vue-multiselect": "^2.0.8",
     "vue-notification": "^1.3.4",
     "vue-router": "^3.0.1",

@@ -5578,9 +5578,9 @@ vue-hot-reload-api@^2.2.0:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.2.4.tgz#683bd1d026c0d3b3c937d5875679e9a87ec6cd8f"
 
-"vue-js-toggle-button@github:euvl/vue-js-toggle-button#c580dd10fe7c121c8b8de347d57ff5b03689799f":
-  version "1.2.0"
-  resolved "https://codeload.github.com/euvl/vue-js-toggle-button/tar.gz/c580dd10fe7c121c8b8de347d57ff5b03689799f"
+"vue-js-toggle-button@github:lehni/vue-js-toggle-button#060310fa8453d70387cc1ac3c9a08a1323e5af18":
+  version "1.2.1"
+  resolved "https://codeload.github.com/lehni/vue-js-toggle-button/tar.gz/060310fa8453d70387cc1ac3c9a08a1323e5af18"
 
 vue-loader@^13.5.0:
   version "13.5.0"
