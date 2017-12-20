@@ -1,5 +1,8 @@
 <template lang="pug">
-  .dito-list
+  .dito-list(
+    :class="schema.class"
+    :style="schema.style"
+  )
     .dito-filters(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"
