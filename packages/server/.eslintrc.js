@@ -45,6 +45,7 @@ module.exports = {
       destructuring: 'all'
     }],
     // TODO: Fix this in babel-eslint:
+    // https://github.com/babel/eslint-plugin-babel/issues/133
     // 'prefer-destructuring': ['error', {
     //   VariableDeclarator: {
     //     object: true,

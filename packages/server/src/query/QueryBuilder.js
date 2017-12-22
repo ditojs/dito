@@ -445,8 +445,8 @@ const queryHandlers = {
   },
 
   eager(builder, key, value) {
-    if (value) {
-      builder.mergeEager(value)
+    for (const eager of asArray(value)) {
+      builder.mergeEager(eager)
     }
   },
 
@@ -455,7 +455,9 @@ const queryHandlers = {
   pick: applyPropertiesExpression,
 
   scope(builder, key, value) {
-    builder.mergeScope(value)
+    for (const scope of asArray(value)) {
+      builder.mergeScope(scope)
+    }
   },
 
   range(builder, key, value) {
