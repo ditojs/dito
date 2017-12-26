@@ -60,14 +60,26 @@ export default class Validator extends AjvValidator {
   }
 
   // @override
-  compileValidator(jsonSchema, skipRequired) {
-    // TODO: In order for circular references to work in JSON schema, we need
-    // to use AJV's addSchema() / getSchema() mechanism instead of a direct call
-    // to compile(). This is currently achieved by overriding the private
-    // compileValidator(jsonSchema, skipRequired) method. Check if we can add
-    // this to Objection.js instead, to increase flexibility and avoid hacking.
-    const ajv = skipRequired ? this.ajvNoDefaults : this.ajv
-    return ajv.getSchema(jsonSchema.$id)
+  getValidator(ModelClass, jsonSchema, isPatchObject) {
+    const createCacheKey = this.ajvOptions.serialize || JSON.stringify
+    const cacheKey = jsonSchema === ModelClass.getJsonSchema()
+      ? ModelClass.name || ModelClass.uniqueTag()
+      : createCacheKey(jsonSchema)
+    let validators = this.cache.get(cacheKey)
+    if (!validators) {
+      validators = {
+        patchValidator: null,
+        normalValidator: null
+      }
+      this.cache.set(cacheKey, validators)
+    }
+    const validatorKey = isPatchObject ? 'patchValidator' : 'normalValidator'
+    let validator = validators[validatorKey]
+    if (!validator) {
+      const ajv = isPatchObject ? this.ajvNoDefaults : this.ajv
+      validator = validators[validatorKey] = ajv.getSchema(jsonSchema.$id)
+    }
+    return validator
   }
 }
 

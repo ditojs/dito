@@ -8,17 +8,6 @@ import { isObject, isArray, isString, asArray, capitalize } from '@/utils'
 // Instead of a separate class, we extend objection.QueryBuilder to better
 // integrate with Objection.js
 
-// Change the defaults of upsertGraph and insertGraph
-const upsertGraphOptions = {
-  relate: true,
-  unrelate: true,
-  insertMissing: true
-}
-
-const insertGraphOptions = {
-  relate: true
-}
-
 export default class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
@@ -159,69 +148,51 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertGraph(data, opt) {
-    return super.insertGraph(data, {
-      ...insertGraphOptions,
-      ...opt
-    })
+    opt = mergeOptions(insertGraphOptions, opt)
+    return super.insertGraph(processGraph(data, opt), opt)
   }
 
   insertGraphAndFetch(data, opt) {
-    return super.insertGraphAndFetch(data, {
-      ...insertGraphOptions,
-      ...opt
-    })
+    opt = mergeOptions(insertGraphOptions, opt)
+    return super.insertGraphAndFetch(processGraph(data, opt), opt)
   }
 
   upsertGraph(data, opt) {
-    return super.upsertGraph(data, {
-      ...upsertGraphOptions,
-      ...opt
-    })
+    opt = mergeOptions(upsertGraphOptions, opt)
+    return super.upsertGraph(processGraph(data, opt), opt)
   }
 
   upsertGraphAndFetch(data, opt) {
-    return super.upsertGraphAndFetch(data, {
-      ...upsertGraphOptions,
-      ...opt
-    })
-  }
-
-  upsertGraphAndFetchById(id, data, opt) {
-    return this.upsertGraphAndFetch({
-      ...this.getIdProperties(id),
-      ...data
-    }, opt)
+    opt = mergeOptions(upsertGraphOptions, opt)
+    return super.upsertGraphAndFetch(processGraph(data, opt), opt)
   }
 
   updateGraph(data, opt) {
-    return this.upsertGraph(data, {
-      update: true,
-      ...opt
-    })
+    opt = mergeOptions(updateGraphOptions, opt)
+    return super.upsertGraph(processGraph(data, opt), opt)
   }
 
   updateGraphAndFetch(data, opt) {
-    return this.upsertGraphAndFetch(data, {
-      update: true,
-      ...opt
-    })
+    opt = mergeOptions(updateGraphOptions, opt)
+    return super.upsertGraphAndFetch(processGraph(data, opt), opt)
+  }
+
+  upsertGraphAndFetchById(id, data, opt) {
+    return this.upsertGraphAndFetch(this.addIdProperties(data, id), opt)
   }
 
   updateGraphAndFetchById(id, data, opt) {
-    return this.updateGraphAndFetch({
-      ...this.getIdProperties(id),
-      ...data
-    }, opt)
+    return this.updateGraphAndFetch(this.addIdProperties(data, id), opt)
   }
 
-  getIdProperties(id) {
+  addIdProperties(data, id) {
     const modelClass = this.modelClass()
-    const fullId = {}
+    const obj = { ...data }
     const ids = asArray(id)
     for (const [index, column] of asArray(modelClass.idColumn).entries()) {
-      fullId[modelClass.columnNameToPropertyName(column)] = ids[index]
+      obj[modelClass.columnNameToPropertyName(column)] = ids[index]
     }
-    return fullId
+    return obj
   }
 
   find(query = {}, allowed) {
@@ -356,6 +327,53 @@ export default class QueryBuilder extends objection.QueryBuilder {
 }
 
 KnexHelper.mixin(QueryBuilder.prototype)
+
+// Change the defaults of insertGraph, upsertGraph and updateGraph
+const insertGraphOptions = {
+  relate: true
+}
+
+const upsertGraphOptions = {
+  relate: true,
+  unrelate: true,
+  insertMissing: true
+}
+
+const updateGraphOptions = {
+  ...upsertGraphOptions,
+  update: true
+}
+
+function mergeOptions(defaults, opt) {
+  return opt ? { ...defaults, ...opt } : defaults
+}
+
+function processGraph(data, opt) {
+  // processGraph() handles relate option by detecting Objection isntances in
+  // the graph and converting them to shallow id links. For details, see:
+  // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
+  const relate = model => {
+    const modelClass = model.constructor
+    const obj = {}
+    for (const column of asArray(modelClass.idColumn)) {
+      const key = modelClass.columnNameToPropertyName(column)
+      obj[key] = model[key]
+    }
+    return obj
+  }
+
+  const processRelate = data => {
+    return data instanceof objection.Model ? relate(data)
+      : isArray(data) ? data.map(entry => processRelate(entry))
+      : isObject(data) ? Object.entries(data).reduce((obj, [key, value]) => {
+        obj[key] = processRelate(value)
+        return obj
+      }, {})
+      : data
+  }
+
+  return opt.relate ? processRelate(data) : data
+}
 
 // Add conversion of identifiers to all `where` statements, by detecting use of
 // model properties and expanding them to `${modelClass.name}.${propertyName}`,
@@ -638,12 +656,15 @@ const mixinMethods = [
   'findById',
   'eager',
   'scope',
+  'pick',
+  'omit',
   'clearEager',
   'clearScope',
   'clearOrder',
   'select',
   'insert',
   'update',
+  'relate',
   'patch',
   'upsert',
   'truncate',

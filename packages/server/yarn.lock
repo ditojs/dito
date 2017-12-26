@@ -2621,9 +2621,9 @@ object.pick@^1.2.0:
   dependencies:
     isobject "^3.0.1"
 
-"objection@github:lehni/objection.js#cc7a78771bfca03acb74aaa84e4530b03ca09455":
-  version "0.9.2"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/cc7a78771bfca03acb74aaa84e4530b03ca09455"
+objection@0.9.4:
+  version "0.9.4"
+  resolved "https://registry.yarnpkg.com/objection/-/objection-0.9.4.tgz#708314fd2bb5bb3d5eb83c5badd5d9a1106ecb59"
   dependencies:
     ajv "^5.1.1"
     bluebird "^3.5.0"
