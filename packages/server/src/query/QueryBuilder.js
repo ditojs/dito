@@ -63,14 +63,16 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   mergeScope(...scopes) {
-    if (scopes.length) {
-      for (const scope of scopes) {
-        if (!this._scopes.includes(scope)) {
-          this._scopes.push(scope)
-        }
+    for (const scope of scopes) {
+      if (!this._scopes.includes(scope)) {
+        this._scopes.push(scope)
       }
     }
     return this
+  }
+
+  applyScope(...scopes) {
+    return this.applyFilter(...scopes)
   }
 
   eager(...args) {
@@ -229,10 +231,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
   findOne(query, allowed) {
     // TODO: This clashes with and overrides objection's own definition of
     // findOne(), decide if that's ok?
-    // Only allow where, eager and scope query filters on single queries.
-    // TODO: This merging is wrong. It should be the intersection between passed
-    // and internal allowed values.
-    allowed = ['where', 'eager', 'scope', 'pick', 'omit', ...allowed || []]
+    // Only allow the following query filters on single queries:
+    const allowedQueries = { where: 1, eager: 1, scope: 1, omit: 1 }
+    allowed = allowed
+      ? allowed.filter(str => allowedQueries[str])
+      : Object.keys(allowedQueries)
     return this.find(query, allowed).first()
   }
 
@@ -363,13 +366,18 @@ function processGraph(data, opt) {
   }
 
   const processRelate = data => {
-    return data instanceof objection.Model ? relate(data)
-      : isArray(data) ? data.map(entry => processRelate(entry))
-      : isObject(data) ? Object.entries(data).reduce((obj, [key, value]) => {
-        obj[key] = processRelate(value)
-        return obj
-      }, {})
-      : data
+    if (data instanceof objection.Model) {
+      data = relate(data)
+    } else if (isArray(data)) {
+      data = data.map(entry => processRelate(entry))
+    } else if (isObject(data)) {
+      const processed = {}
+      for (const key in data) {
+        processed[key] = processRelate(data[key])
+      }
+      data = processed
+    }
+    return data
   }
 
   return opt.relate ? processRelate(data) : data
@@ -501,18 +509,17 @@ const queryHandlers = {
       for (const ref of builder.getPropertyRefs(value, { parseDir: true })) {
         const { dir = 'asc', relation } = ref
         const columnName = ref.fullColumnName(builder)
+        let orderName = columnName
         if (relation) {
           if (!relation.isOneToOne()) {
             throw new QueryError(`Can only order by model's own properties ` +
               `and by one-to-one relations' properties.`)
           }
-          // TODO: Is alias required here?
-          const alias = `${relation.name}${capitalize(ref.propertyName)}`
-          builder.select(`${columnName} as ${alias}`)
-          builder.orderBy(alias, dir)
-        } else {
-          builder.orderBy(columnName, dir).skipUndefined()
+          // TODO: Is the use of an alias required here?
+          orderName = `${relation.name}${capitalize(ref.propertyName)}`
+          builder.select(`${columnName} as ${orderName}`)
         }
+        builder.orderBy(columnName, dir).skipUndefined()
       }
     }
   }
@@ -552,7 +559,8 @@ function applyPropertiesExpression(builder, key, value) {
     if (modelClass) {
       builder[key](modelClass, properties)
     } else {
-      // TODO: Throw error!
+      throw new QueryError(
+        `Invalid reference to model '${modelName}' in '${key}=${value}'.`)
     }
   }
 }
