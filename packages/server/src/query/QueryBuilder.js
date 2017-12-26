@@ -557,16 +557,6 @@ function applyPropertiesExpression(builder, key, value) {
   }
 }
 
-// Install queryHandlers for all types of joins, applicable for relations:
-for (const join of [
-  'join', 'innerJoin', 'outerJoin', 'leftJoin', 'leftOuterJoin', 'rightJoin',
-  'rightOuterJoin', 'fullOuterJoin'
-]) {
-  queryHandlers[join] = function (builder, key, value) {
-    builder[`${join}Relation`](value)
-  }
-}
-
 const queryFilters = {
   in(builder, ref, value) {
     return where(builder, ref, null, value.split(','), 'whereIn')
