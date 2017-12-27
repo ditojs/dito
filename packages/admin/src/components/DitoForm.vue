@@ -406,8 +406,8 @@ export default DitoComponent.component('dito-form', {
             }
           } else {
             // Dito validation error?
-            const { errors } = this.hasValidationError(response) && data || {}
             let error = null
+            const errors = this.hasValidationError(response) && data.errors
             if (errors) {
               try {
                 if (this.showErrors(errors, true)) {
@@ -429,6 +429,7 @@ export default DitoComponent.component('dito-form', {
               }
             }
           }
+          return true // Errors were already handled.
         })
       }
     },

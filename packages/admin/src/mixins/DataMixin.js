@@ -251,12 +251,9 @@ export default {
       request(method, path, params, payload, (err, response) => {
         setTimeout(() => {
           this.setLoading(false)
-          // Do not report validation errors as dito-request errors
-          if (err && !(callback && this.hasValidationError(response))) {
+          // If callback returns true, errors were already handled.
+          if (!callback?.(err, response) && err) {
             this.notify('error', 'Request Error', err)
-          }
-          if (callback) {
-            callback(err, response)
           }
         }, 0)
       })
