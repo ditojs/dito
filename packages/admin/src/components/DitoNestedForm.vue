@@ -26,10 +26,6 @@ export default DitoForm.extend({
       return true
     },
 
-    dataPrefix() {
-      return `${this.dataPath}/`
-    },
-
     verbCancel() {
       return 'close'
     },

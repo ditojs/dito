@@ -185,7 +185,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPrefix() {
-      return '' // DitoForm doesn't need prefixes, only DitoNestedForm does.
+      // Nested data needs to prefix its fields with the data path, for
+      // validation errors to find their targets.
+      return this.isNested ? `${this.dataPath}/` : ''
     },
 
     listData() {
@@ -292,12 +294,13 @@ export default DitoComponent.component('dito-form', {
     },
 
     addErrors(errors, focus) {
-      for (const [name, errs] of Object.entries(errors || {})) {
-        const component = this.components[name]
+      for (const [pointer, errs] of Object.entries(errors || {})) {
+        const component = this.components[pointer]
         if (component) {
           component.addErrors(errs, focus)
         } else {
-          throw new Error(`Cannot add errors for field ${name}: ${errors}`)
+          throw new Error(`Cannot add errors for field ${pointer}: ${
+            JSON.stringify(errors)}`)
         }
       }
     },
@@ -436,18 +439,27 @@ export default DitoComponent.component('dito-form', {
 
     showErrors(errors, focus) {
       let first = true
-      for (const [key, errs] of Object.entries(errors)) {
-        const component = this.components[key]
+      for (const [pointer, errs] of Object.entries(errors)) {
+        const component = this.components[pointer]
         if (component) {
           component.addErrors(errs, first && focus)
         } else {
-          const field = key.match(/^([^/]*)/)[1]
-          const component = this.components[field]
-          if (component) {
-            component.navigateToErrors(key, errs)
-          } else {
+          // Couldn't find the component for the given pointer. See if we have
+          // a component serving a part of the pointer, and take it from there:
+          let found = false
+          const parts = pointer.split('/')
+          while (!found && parts.length > 1) {
+            parts.pop()
+            const component = this.components[parts.join('/')]
+            if (component) {
+              component.navigateToErrors(pointer, errs)
+              found = true
+            }
+          }
+          if (!found) {
             throw new Error(
-              `Cannot find component for field ${field}, errors: ${errs}`)
+              `Cannot find component for field ${pointer}, errors: ${
+                JSON.stringify(errs)}`)
           }
         }
         first = false

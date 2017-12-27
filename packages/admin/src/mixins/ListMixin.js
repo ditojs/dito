@@ -219,21 +219,22 @@ export default {
       return item
     },
 
-    navigateToComponent(path, onComplete) {
-      const route = path.split('/')
-      // Put collection/id pairs (even numbers) into route, and what's left
-      // identifies the property to focus.
-      const property = route.length & 1 ? route.pop() : null
-      const location = route.join('/')
+    navigateToComponent(pointer, onComplete) {
+      const parts = pointer.split('/')
+      // Use collection/id pairs (even numbers of parts) to determine the route.
+      // What's left is the property pointer, and will be handled by the form.
+      parts.length -= parts.length & 1
+      const path = this.api.normalizePath(parts.join('/'))
+      const location = `${this.$route.path}/${path}`
       const { matched } = this.$router.match(location)
       if (matched.length) {
         this.$router.push({ path: location, append: true }, route => {
           if (onComplete) {
-            onComplete(route, property)
+            onComplete(route, pointer)
           }
         })
       } else {
-        throw new Error(`Cannot find route field ${path}.`)
+        throw new Error(`Cannot find route for field ${pointer}.`)
       }
     }
   }, // end of `methods`
