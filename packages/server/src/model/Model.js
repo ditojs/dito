@@ -248,8 +248,8 @@ export default class Model extends objection.Model {
     const { constructor } = this
     for (const key of constructor.dateAttributes) {
       const date = json[key]
-      if (date !== undefined) {
-        json[key] = date?.toISOString ? date.toISOString() : date
+      if (date?.toISOString) {
+        json[key] = date.toISOString()
       }
     }
     if (constructor.isSQLite()) {

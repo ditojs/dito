@@ -1,7 +1,20 @@
 export const { isArray } = Array
 
+const { toString } = Object.prototype
+
 export function isObject(val) {
-  return val && typeof val === 'object' && !isArray(val)
+  return val && toString.call(val) === '[object Object]'
+}
+
+export function isDate(val) {
+  return val && toString.call(val) === '[object Date]'
+}
+
+export function isPlainObject(val) {
+  const ctor = val?.constructor
+  // We also need to check for ctor.name === 'Object', in case this is an object
+  // from another global scope (e.g. another vm context in Node.js).
+  return ctor && (ctor === Object || ctor.name === 'Object')
 }
 
 export function isString(val) {
@@ -25,7 +38,7 @@ export function isAsync(fun) {
 }
 
 export function isPromise(obj) {
-  return isObject(obj) && isFunction(obj.then)
+  return obj && isFunction(obj.then)
 }
 
 export function asArray(val) {
