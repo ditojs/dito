@@ -2,8 +2,8 @@ import objection from 'objection'
 import { KnexHelper } from '@/mixins'
 import { QueryError } from '@/errors'
 import PropertyRef from './PropertyRef'
-import QueryHandler from './QueryHandler'
-import QueryFilter from './QueryFilter'
+import QueryHandlers from './QueryHandlers'
+import QueryFilters from './QueryFilters'
 import { isObject, isArray, isString, asArray } from '@/utils'
 
 // This code is based on objection-find, and simplified.
@@ -210,7 +210,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     for (const [key, value] of Object.entries(query)) {
       const inAllowed = allowedLookup?.[key]
       if (!allowed || inAllowed) {
-        const queryHandler = QueryHandler.get(key)
+        const queryHandler = QueryHandlers.get(key)
         if (queryHandler) {
           queryHandler(this, key, value)
         } else if (!inAllowed) {
@@ -281,7 +281,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
       : parts.length === 2
         ? parts[1]
         : null
-    const queryFilter = filterName && QueryFilter.get(filterName)
+    const queryFilter = filterName && QueryFilters.get(filterName)
     if (!queryFilter) {
       throw new QueryError(`Invalid filter in '${key}=${value}'.`)
     }

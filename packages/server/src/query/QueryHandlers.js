@@ -1,12 +1,12 @@
 import { QueryError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@/utils'
 import Registry from './Registry'
-import QueryFilter from './QueryFilter'
+import QueryFilters from './QueryFilters'
 
-const QueryHandler = new Registry()
-export default QueryHandler
+const QueryHandlers = new Registry()
+export default QueryHandlers
 
-QueryHandler.register({
+QueryHandlers.register({
   where(builder, key, value) {
     processPropertyRefs(builder, null, value)
   },
@@ -103,7 +103,7 @@ function processPropertyRefs(builder, key, value, parts) {
     }
   } else if (parts) {
     // Recursive call in object parsing
-    const filterName = QueryFilter.has(key) && key
+    const filterName = QueryFilters.has(key) && key
     if (!filterName) parts.push(key)
     const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
     builder.parseQueryFilter(ref, value)
