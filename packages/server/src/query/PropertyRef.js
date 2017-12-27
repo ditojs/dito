@@ -12,7 +12,7 @@ import { capitalize } from '@/utils'
 // current '|' approach that only works with one operator for multiple fields.
 // See: https://flask-restless.readthedocs.io/en/stable/searchformat.html
 export default class PropertyRef {
-  constructor(str, modelClass, parseDir, checkAllow) {
+  constructor(str, modelClass, parseDir, allowed) {
     if (parseDir) {
       // Support direction for order statements
       const [key, dir] = str.trim().split(/\s+/)
@@ -24,7 +24,7 @@ export default class PropertyRef {
     } else {
       this.key = str.trim()
     }
-    if (checkAllow && !checkAllow[this.key]) {
+    if (allowed && !allowed[this.key]) {
       throw new QueryError(
         `Property reference '${this.key}' not allowed.`)
     }
