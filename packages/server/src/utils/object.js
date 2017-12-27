@@ -102,7 +102,11 @@ function deepMergeWithDirection(unshift, target, sources) {
   if (target && sources.length) {
     for (const source of sources) {
       if (isObject(source) && isObject(target)) {
-        const before = unshift && { ...target }
+        let before = null
+        if (unshift) {
+          before = target
+          target = {}
+        }
         for (const key in source) {
           const value = source[key]
           target[key] = deepMerge(
@@ -112,11 +116,12 @@ function deepMergeWithDirection(unshift, target, sources) {
             ), value) || value
         }
         if (unshift) {
-          // "unshift" the added fields by deleting the fields that were there
-          // before and inserting them again at the end.
+          // "unshift" the added fields by inserting the fields that were there
+          // before in a new target at the end.
           for (const key in before) {
-            delete target[key]
-            target[key] = before[key]
+            if (!(key in target)) {
+              target[key] = before[key]
+            }
           }
         }
       } else if (isArray(source) && isArray(target)) {
@@ -129,6 +134,9 @@ function deepMergeWithDirection(unshift, target, sources) {
         if (unshift) {
           target.unshift(...dest)
         }
+      } else if (typeof source === typeof target) {
+        // The source overrides the target
+        target = source
       }
     }
   }

@@ -15,8 +15,8 @@ export default class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
-    this._applyDefaultEager = true
-    this._applyDefaultOrder = true
+    this._applyEager = true
+    this._applyOrder = true
     this._scopes = []
   }
 
@@ -24,24 +24,27 @@ export default class QueryBuilder extends objection.QueryBuilder {
     const clone = super.clone()
     clone._propertyRefsAllowed = this._propertyRefsAllowed
     clone._propertyRefsCache = this._propertyRefsCache
-    clone._applyDefaultEager = this._applyDefaultEager
-    clone._applyDefaultOrder = this._applyDefaultOrder
+    clone._applyEager = this._applyEager
+    clone._applyOrder = this._applyOrder
     clone._scopes = this._scopes
     return clone
   }
 
   execute() {
-    // Only apply defaultEager setting if this is a find query, meaning it does
-    // not specify any write operations, without any special selects: count()...
+    // Only apply the defaults.eager setting if this is a find query, meaning it
+    // does not specify any write operations, without any special selects.
+    // This is required to exclude count(), etc...
     if (this.isFindQuery() && !this.hasSelects()) {
-      const { defaultEager, defaultOrder } = this.modelClass()
-      if (defaultEager && this._applyDefaultEager) {
+      const {
+        defaults: { eager, order } = {}
+      } = this.modelClass().definition
+      if (eager && this._applyEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
-        // called before. Using eager() sets `_applyDefaultEager` to `false`.
-        this.mergeEager(defaultEager)
+        // called before. Using eager() sets `_applyEager` to `false`.
+        this.mergeEager(eager)
       }
-      if (defaultOrder && this._applyDefaultOrder) {
-        this.orderBy(...asArray(defaultOrder))
+      if (order && this._applyOrder) {
+        this.orderBy(...asArray(order))
       }
     }
     // Now finally apply the scopes.
@@ -79,22 +82,22 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   eager(...args) {
-    this._applyDefaultEager = false
+    this._applyEager = false
     return super.eager(...args)
   }
 
   clearEager() {
-    this._applyDefaultEager = false
+    this._applyEager = false
     return super.clearEager()
   }
 
   orderBy(...args) {
-    this._applyDefaultOrder = false
+    this._applyOrder = false
     return super.orderBy(...args)
   }
 
   clearOrder() {
-    this._applyDefaultOrder = false
+    this._applyOrder = false
   }
 
   raw(...args) {

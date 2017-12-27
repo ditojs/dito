@@ -1,9 +1,9 @@
 import objection from 'objection'
 import util from 'util'
-import { isObject, isArray, isFunction, deepMergeUnshift } from '@/utils'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
+import { isObject, isArray, isFunction, deepMergeUnshift } from '@/utils'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
@@ -81,19 +81,27 @@ export default class Model extends objection.Model {
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
-      const { scopes = {} } = this.definition
-      const converted = {}
+      const { scopes = {}, defaults = {} } = this.definition
+      const namedFilters = {}
       for (const [name, scope] of Object.entries(scopes)) {
-        const func = converted[name] = isFunction(scope)
+        const filter = namedFilters[name] = isFunction(scope)
           ? scope
           : isObject(scope)
             ? builder => builder.find(scope)
             : null
-        if (!func) {
+        if (!filter) {
           throw new QueryError(`Invalid scope: '${scope}'.`)
         }
       }
-      return converted
+      // Add a special $defaultEager filter that does nothing else than handling
+      // the default eager chaining. See `definitionHandlers.defaults`.
+      namedFilters.$defaultEager = builder => {
+        const { eager } = defaults
+        if (eager) {
+          builder.mergeEager(eager)
+        }
+      }
+      return namedFilters
     })
   }
 
@@ -474,6 +482,28 @@ const definitionHandlers = {
       merged[name] = property
       return merged
     }, {})
+  },
+
+  defaults(defaults) {
+    const addDefaultEager = (node, isRoot) => {
+      if (!isRoot) {
+        node.args.push('$defaultEager')
+      }
+      if (node.numChildren > 0) {
+        for (const child of Object.values(node.children)) {
+          addDefaultEager(child, false)
+        }
+      }
+      return node
+    }
+    // Parse defaults.eager expression and add the $defaultEager args to all
+    // child expressions, so they can recursively load their own defaults.eager.
+    // See namedFilter() for the definition of $defaultEager.
+    const { eager } = defaults
+    if (eager) {
+      const node = objection.RelationExpression.parse(eager)
+      defaults.eager = addDefaultEager(node, true)
+    }
   },
 
   scopes(scopes) {
