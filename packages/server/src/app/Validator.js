@@ -15,6 +15,7 @@ export default class Validator extends AjvValidator {
       ownProperties: true,
       passContext: true,
       schemaId: '$id',
+      missingRefs: true,
       extendRefs: 'fail',
       format: 'full',
       ...options
@@ -60,26 +61,9 @@ export default class Validator extends AjvValidator {
   }
 
   // @override
-  getValidator(ModelClass, jsonSchema, isPatchObject) {
-    const createCacheKey = this.ajvOptions.serialize || JSON.stringify
-    const cacheKey = jsonSchema === ModelClass.getJsonSchema()
-      ? ModelClass.name || ModelClass.uniqueTag()
-      : createCacheKey(jsonSchema)
-    let validators = this.cache.get(cacheKey)
-    if (!validators) {
-      validators = {
-        patchValidator: null,
-        normalValidator: null
-      }
-      this.cache.set(cacheKey, validators)
-    }
-    const validatorKey = isPatchObject ? 'patchValidator' : 'normalValidator'
-    let validator = validators[validatorKey]
-    if (!validator) {
-      const ajv = isPatchObject ? this.ajvNoDefaults : this.ajv
-      validator = validators[validatorKey] = ajv.getSchema(jsonSchema.$id)
-    }
-    return validator
+  getValidator(modelClass, jsonSchema, isPatchObject) {
+    const ajv = isPatchObject ? this.ajvNoDefaults : this.ajv
+    return ajv.getSchema(jsonSchema.$id)
   }
 }
 

@@ -72,6 +72,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyScope(...scopes) {
+    // A simple rediret to applyFilter() for the sake of naming consistency.
     return this.applyFilter(...scopes)
   }
 
@@ -232,7 +233,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
     // TODO: This clashes with and overrides objection's own definition of
     // findOne(), decide if that's ok?
     // Only allow the following query filters on single queries:
-    const allowedQueries = { where: 1, eager: 1, scope: 1, omit: 1 }
+    const allowedQueries = { where: 1, eager: 1, omit: 1, pick: 1, scope: 1 }
     allowed = allowed
       ? allowed.filter(str => allowedQueries[str])
       : Object.keys(allowedQueries)
@@ -333,13 +334,15 @@ KnexHelper.mixin(QueryBuilder.prototype)
 
 // Change the defaults of insertGraph, upsertGraph and updateGraph
 const insertGraphOptions = {
-  relate: true
+  relate: true,
+  dataPath: true
 }
 
 const upsertGraphOptions = {
   relate: true,
   unrelate: true,
-  insertMissing: true
+  insertMissing: true,
+  dataPath: true
 }
 
 const updateGraphOptions = {
@@ -366,16 +369,18 @@ function processGraph(data, opt) {
   }
 
   const processRelate = data => {
-    if (data instanceof objection.Model) {
-      data = relate(data)
-    } else if (isArray(data)) {
-      data = data.map(entry => processRelate(entry))
-    } else if (isObject(data)) {
-      const processed = {}
-      for (const key in data) {
-        processed[key] = processRelate(data[key])
+    if (data) {
+      if (data.$isObjectionModel) {
+        data = relate(data)
+      } else if (isArray(data)) {
+        data = data.map(entry => processRelate(entry))
+      } else if (isObject(data)) {
+        const processed = {}
+        for (const key in data) {
+          processed[key] = processRelate(data[key])
+        }
+        data = processed
       }
-      data = processed
     }
     return data
   }
@@ -656,6 +661,7 @@ const mixinMethods = [
   'scope',
   'pick',
   'omit',
+  'applyScope',
   'clearEager',
   'clearScope',
   'clearOrder',
