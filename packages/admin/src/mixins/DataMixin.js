@@ -201,24 +201,28 @@ export default {
     },
 
     requestData() {
-      // Dito specific query parameters:
-      // Convert offset/limit to range so that we get entry counting
+      // Dito Framework specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends
       // could plug in as well.
+
+      // Helper to convert properties expression in JSON notation to strings,
+      // see parsePropertiesExpression() in Dito Framework.
       function toPropertiesExpression(expression) {
         return Object.entries(expression).map(
           ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
         ).join(',')
       }
 
-      const { paginate, pick, omit } = this.listSchema
+      const { paginate, eager, pick, omit } = this.listSchema
       const { page = 0, ...query } = this.query || {}
       const limit = this.isList && paginate // Only use range on lists
       const offset = page * limit
       const params = {
         ...query, // Query may override scope.
+        ...(eager && { eager }),
         ...(pick && { pick: toPropertiesExpression(pick) }),
         ...(omit && { omit: toPropertiesExpression(omit) }),
+        // Convert offset/limit to range so that we get results counting:
         ...(limit && {
           range: `${offset},${offset + limit - 1}`
         })
