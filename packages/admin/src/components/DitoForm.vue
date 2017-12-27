@@ -388,9 +388,34 @@ export default DitoComponent.component('dito-form', {
         }
         const payload = this.data
         this.request(method, { payload, resource }, (err, response) => {
-          const { data = {} } = response
-          if (!err) {
-            const title = this.getItemTitle(data)
+          // eslint-disable-next-line
+          const data = response?.data
+          if (err) {
+            // See if we're dealing with a Dito validation error:
+            let error = null
+            const errors = this.hasValidationError(response) && data.errors
+            if (errors) {
+              try {
+                if (this.showErrors(errors, true)) {
+                  this.notifyValidationErrors()
+                }
+              } catch (err) {
+                error = err
+              }
+            } else {
+              error = isObject(data) ? data : err
+            }
+            if (error) {
+              const title = payload ? this.getItemTitle(payload) : 'form'
+              if (onError) {
+                onError.call(this, error, payload, title)
+              } else {
+                this.notify('error', 'Request Error',
+                  `Error submitting ${title}:\n${error.message || error}`)
+              }
+            }
+          } else {
+            const title = data ? this.getItemTitle(data) : 'form'
             if (onSuccess) {
               onSuccess.call(this, data, title)
             } else {
@@ -406,30 +431,6 @@ export default DitoComponent.component('dito-form', {
               }
             } else {
               this.close(true)
-            }
-          } else {
-            // Dito validation error?
-            let error = null
-            const errors = this.hasValidationError(response) && data.errors
-            if (errors) {
-              try {
-                if (this.showErrors(errors, true)) {
-                  this.notifyValidationErrors()
-                }
-              } catch (err) {
-                error = err
-              }
-            } else {
-              error = isObject(data) ? data : err
-            }
-            if (error) {
-              const title = this.getItemTitle(this.data)
-              if (onError) {
-                onError.call(this, error, this.data, title)
-              } else {
-                this.notify('error', 'Request Error',
-                  `Error submitting ${title}:\n${error.message || error}`)
-              }
             }
           }
           return true // Errors were already handled.
