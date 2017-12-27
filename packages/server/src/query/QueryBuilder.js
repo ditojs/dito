@@ -382,20 +382,14 @@ function processGraph(data, opt) {
   // processGraph() handles relate option by detecting Objection isntances in
   // the graph and converting them to shallow id links. For details, see:
   // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
-  const relate = model => {
-    const modelClass = model.constructor
-    const obj = {}
-    for (const column of asArray(modelClass.idColumn)) {
-      const key = modelClass.columnNameToPropertyName(column)
-      obj[key] = model[key]
-    }
-    return obj
-  }
-
   const processRelate = data => {
     if (data) {
       if (data.$isObjectionModel) {
-        data = relate(data)
+        // Shallow-clone to avoid relations causing problems
+        // TODO: Ideally, there would be a switch in Objection that would tell
+        // `relate: true` to behave this way with `$isObjectionModel` but still
+        // would allow referencing deep models. Check with @koskimas.
+        data = data.$clone(true)
       } else if (isArray(data)) {
         data = data.map(entry => processRelate(entry))
       } else if (isObject(data)) {
