@@ -93,9 +93,9 @@ export default class Model extends objection.Model {
           throw new QueryError(`Invalid scope: '${scope}'.`)
         }
       }
-      // Add a special $defaultEager filter that does nothing else than handling
-      // the default eager chaining. See `definitionHandlers.defaults`.
-      namedFilters.$defaultEager = builder => {
+      // Add a special 'defaults.eager' filter that does nothing else than
+      // handling the default eager chaining. See: `definitionHandlers.defaults`
+      namedFilters['defaults.eager'] = builder => {
         const { eager } = defaults
         if (eager) {
           builder.mergeEager(eager)
@@ -496,24 +496,28 @@ const definitionHandlers = {
   },
 
   defaults(defaults) {
-    const addDefaultEager = (node, isRoot) => {
+    // Parse defaults.eager expression and add the 'defaults.eager' args to all
+    // child expressions, so they can recursively load their own defaults.eager
+    // expressions. This allows for eager chaining across multiple nested models
+    // in a way that each model only needs to specify its own eager relations.
+    // See namedFilter() for the definition of 'defaults.eager'.
+    const addEager = (node, isRoot) => {
       if (!isRoot) {
-        node.args.push('$defaultEager')
+        // Use unshift instead of push so it's applied fist, not last, and other
+        // scopes can be applied after.
+        node.args.unshift('defaults.eager')
       }
       if (node.numChildren > 0) {
         for (const child of Object.values(node.children)) {
-          addDefaultEager(child, false)
+          addEager(child, false)
         }
       }
       return node
     }
-    // Parse defaults.eager expression and add the $defaultEager args to all
-    // child expressions, so they can recursively load their own defaults.eager.
-    // See namedFilter() for the definition of $defaultEager.
     const { eager } = defaults
     if (eager) {
       const node = objection.RelationExpression.parse(eager)
-      defaults.eager = addDefaultEager(node, true)
+      defaults.eager = addEager(node, true)
     }
   },
 

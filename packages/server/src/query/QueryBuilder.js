@@ -31,9 +31,9 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   execute() {
-    // Only apply the defaults.eager setting if this is a find query, meaning it
-    // does not specify any write operations, without any special selects.
-    // This is required to exclude count(), etc...
+    // Only apply the defaults: { eager, order, pick } settings if this is a
+    // find query, meaning it does not specify any write operations, without any
+    // special selects. This is required to exclude count(), etc...
     if (this.isFindQuery() && !this.hasSelects()) {
       const {
         defaults: { eager, order } = {}
