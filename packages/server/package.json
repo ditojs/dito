@@ -47,7 +47,7 @@
     "koa-pino-logger": "^2.1.1",
     "koa-response-time": "^2.0.0",
     "koa-router": "^7.3.0",
-    "objection": "github:lehni/objection.js#d49633ee1bb6d88282320c95e244617dfa90663e",
+    "objection": "github:lehni/objection.js#3d7e547c1d0d5e1215e57b81377edc7369c11b91",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"
   },
