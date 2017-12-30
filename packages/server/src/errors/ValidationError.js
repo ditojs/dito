@@ -2,14 +2,14 @@ import { ResponseError } from './ResponseError'
 import { isArray } from '@/utils'
 
 export class ValidationError extends ResponseError {
-  constructor(modelClass, data, status = 400) {
+  constructor(modelClass, data, options = {}, status = 400) {
     // Get a reference to the Dito Validator instance (not the Objection
     // Validator), so we get additional format and keyword definitions.
     const { validator } = modelClass.app || {}
     const errs = data.errors
     // If an array is passed for errors, then it's the Ajv format that first
     // needs to be parsed the same way as Objection does with parseErrors():
-    const errorHash = isArray(errs) ? parseErrors(errs) : errs
+    const errorHash = isArray(errs) ? parseErrors(errs, options) : errs
     // Now convert Objection's `errorHash` format to Dito's, with better
     // processing of nested data-paths, which luckily end up in the hashes'
     // keys. See parseErrors() / parseValidationError() for why `key` is `path`.
@@ -65,14 +65,18 @@ export class ValidationError extends ResponseError {
 // processing after, see above.
 // NOTE: We don't inverse error sequence on multiple errors per property, so
 // there still is a slight difference to Objection.
-function parseErrors(errors) {
+function parseErrors(errors, options) {
   // Convert from Ajv errors array to hash
   const errorHash = {}
   let index = 0
   for (const { message, keyword, params, dataPath } of errors) {
-    const key = dataPath.substring(1) ||
+    let key = dataPath.substring(1) ||
       params?.missingProperty || params?.additionalProperty ||
       (index++).toString()
+    // Adjust dataPaths to reflect nested validation in Objection.
+    if (options.dataPath) {
+      key = `${options.dataPath.substring(1)}/${key}`
+    }
     const array = errorHash[key] || (errorHash[key] = [])
     array.push({ message, keyword, params })
   }

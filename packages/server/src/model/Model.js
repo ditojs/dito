@@ -330,14 +330,14 @@ export default class Model extends objection.Model {
     return this.app.compileValidator(jsonSchema)
   }
 
-  static createValidationError(errors, message) {
+  static createValidationError(errors, message, options = {}) {
     const isValidationError = this.isValidationError(errors)
     message = message || isValidationError
       ? `The provided data for the ${this.name} instance is not valid`
       : 'Query error'
     const error = { message, errors }
     return isValidationError
-      ? new this.ValidationError(this, error)
+      ? new this.ValidationError(this, error, options)
       : new this.QueryError(error)
   }
 

@@ -98,19 +98,9 @@ export default class Validator extends objection.Validator {
       validator.call(model, json)
       const { errors } = validator
       if (errors) {
-        // Adjust dataPaths to reflect nested validation in Objection.
-        if (options.dataPath) {
-          // TODO: This doesn't handle the case where error.dataPath is empty
-          // and missingProperty / additionalProperty would be used instead. Fix
-          // this by adding a third dataPath argument to createValidationError
-          // and to the prefix there.
-          for (const error of errors) {
-            error.dataPath = `${options.dataPath}${error.dataPath}`
-          }
-        }
         // The conversion from Ajv errors to Objection errors happen in the
         // ValidationError class.
-        throw model.constructor.createValidationError(errors)
+        throw model.constructor.createValidationError(errors, null, options)
       }
     }
     return json
