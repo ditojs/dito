@@ -17,8 +17,6 @@
 
 <style lang="sass">
   .dito-switch
-    // TODO: Remove need for !imporrtant:
-    // https://github.com/euvl/vue-js-toggle-button/issues/36
     .v-switch-core
       background-color: $color-light
     &.toggled
@@ -33,12 +31,6 @@ import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('switch', {
   computed: {
-    // TODO: Remove once PR #38 is released:
-    // https://github.com/euvl/vue-js-toggle-button/pull/38
-    default() {
-      return false
-    },
-
     width() {
       return this.schema.size?.width || 50
     },
