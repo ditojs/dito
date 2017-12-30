@@ -63,6 +63,8 @@ export class ValidationError extends ResponseError {
 // Emulate behavior of Objection's internal error parsing method for consistency
 // `parseValidationError(errors, modelClass)`, so both can use the same post-
 // processing after, see above.
+// NOTE: We don't inverse error sequence on multiple errors per property, so
+// there still is a slight difference to Objection.
 function parseErrors(errors) {
   // Convert from Ajv errors array to hash
   const errorHash = {}
@@ -71,7 +73,7 @@ function parseErrors(errors) {
     const key = dataPath.substring(1) ||
       params?.missingProperty || params?.additionalProperty ||
       (index++).toString()
-    const array = errors[key] || (errors[key] = [])
+    const array = errorHash[key] || (errorHash[key] = [])
     array.push({ message, keyword, params })
   }
   return errorHash

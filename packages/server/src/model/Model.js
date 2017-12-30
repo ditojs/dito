@@ -342,14 +342,25 @@ export default class Model extends objection.Model {
   }
 
   static isValidationError(errors) {
-    // Unfortunately Objection.js currently uses createValidationError() for
-    // very different things, but only Ajv Errors have properties with arrays,
-    // so look at those to figure out what we are:
+    // Unfortunately, Objection.js currently uses createValidationError() for
+    // very different types of errors, so we have to look at the nature of the
+    // error to filter out actual validation errors and use different
+    // Error constructors, see createValidationError()
+
+    // First detect native AJV validation errors, which are arrays of error
+    // objects of which each defines a schemaPath.
+    if (isArray(errors)) {
+      return !!errors?.[0].schemaPath
+    }
+
+    // Now detect parsed Objection validation errors, which are the only ones to
+    // hold array properties.
     for (const key in errors) {
       // Only if the first found key has an array value than we're dealing with
       // real validation errors.
       return isArray(errors[key])
     }
+
     return false
   }
 
