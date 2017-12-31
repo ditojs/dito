@@ -110,7 +110,7 @@ function deepMergeWithDirection(unshift, target, sources) {
         for (const key in source) {
           const value = source[key]
           target[key] = deepMerge(
-            target[key] || (
+            before?.[key] || target[key] || (
               isArray(value) && [] ||
               isObject(value) && {}
             ), value) || value
