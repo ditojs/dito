@@ -17,6 +17,7 @@ export const _instanceof = {
       // instance is a model, then we can access the models and check. If not,
       // then it's fine if it fails in case the check wants a model.
       const { $app } = this
+      // eslint-disable-next-line
       const models = $app?.models
       for (const name of asArray(schema)) {
         const ctor = constructors[name] || models?.[name]

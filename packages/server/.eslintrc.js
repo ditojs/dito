@@ -46,12 +46,12 @@ module.exports = {
     }],
     // TODO: Fix this in babel-eslint:
     // https://github.com/babel/eslint-plugin-babel/issues/133
-    // 'prefer-destructuring': ['error', {
-    //   VariableDeclarator: {
-    //     object: true,
-    //     array: false
-    //   }
-    // }],
+    'prefer-destructuring': ['error', {
+      VariableDeclarator: {
+        object: true,
+        array: false
+      }
+    }],
     'quote-props': ['error', 'consistent-as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'always',
