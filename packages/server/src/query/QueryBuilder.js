@@ -67,23 +67,24 @@ export default class QueryBuilder extends objection.QueryBuilder {
     }
     // Handle _include & _exclude after all scopes were applied, as we need to
     // include the child eager expressions that may be altered by scopes.
-    if (isFindQuery) {
+    if (isFindQuery && (this._include || this._exclude)) {
       if (this._include) {
-        // Automatically add all child eager expressions to the include list.
+        // If there is an include list, automatically add all child eager
+        // expressions to the include list.
         if (this._eagerExpression?.numChildren > 0) {
           for (const key of Object.keys(this._eagerExpression.children)) {
             this._include[key] = true
           }
         }
-        this.traverse(this.modelClass(), model => {
+      }
+      this.traverse(this.modelClass(), model => {
+        if (this._include) {
           model.$pick(this._include)
-        })
-      }
-      if (this._exclude) {
-        this.traverse(this.modelClass(), model => {
+        }
+        if (this._exclude) {
           model.$omit(this._exclude)
-        })
-      }
+        }
+      })
     }
 
     return super.execute()

@@ -94,7 +94,7 @@ export default class Model extends objection.Model {
         }
       }
       // Add a special 'default.eager' filter that does nothing else than
-      // handling the default eager chaining. See: `definitionHandlers.default`
+      // handle the default eager chaining. See: `definitionHandlers.default`
       namedFilters['default.eager'] = builder => {
         const { eager } = _default
         if (eager) {
