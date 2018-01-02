@@ -1,5 +1,7 @@
 import { isObject, isArray, asArray, isString } from '@/utils'
 
+// TODO: convert `nullable: true` to `type: [... 'null']` detection?
+
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
     // Nested short-hand expansion

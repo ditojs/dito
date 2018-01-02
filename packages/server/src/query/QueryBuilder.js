@@ -62,9 +62,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
       }
     }
     // Now finally apply the scopes.
-    for (const scope of this._scopes) {
-      this.applyFilter(scope)
-    }
+    this.applyFilter(...this._scopes)
     // Handle _include & _exclude after all scopes were applied, as we need to
     // include the child eager expressions that may be altered by scopes.
     if (isFindQuery && (this._include || this._exclude)) {
@@ -77,13 +75,21 @@ export default class QueryBuilder extends objection.QueryBuilder {
           }
         }
       }
-      this.traverse(this.modelClass(), model => {
-        if (this._include) {
-          model.$pick(this._include)
-        }
-        if (this._exclude) {
-          model.$omit(this._exclude)
-        }
+      // Objection's QueryBuilder.traverse() doesn't work after range(),
+      // so let's work around it:
+      this.runAfter(result => {
+        const data = result && this.has(/^range$/)
+          ? result.results
+          : result
+        this.resultModelClass().traverse(this.modelClass(), data, model => {
+          if (this._include) {
+            model.$pick(this._include)
+          }
+          if (this._exclude) {
+            model.$omit(this._exclude)
+          }
+        })
+        return result
       })
     }
 
