@@ -81,7 +81,7 @@ export default class Model extends objection.Model {
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
-      const { scopes = {}, defaults = {} } = this.definition
+      const { scopes = {}, default: _default = {} } = this.definition
       const namedFilters = {}
       for (const [name, scope] of Object.entries(scopes)) {
         const filter = namedFilters[name] = isFunction(scope)
@@ -93,10 +93,10 @@ export default class Model extends objection.Model {
           throw new QueryError(`Invalid scope: '${scope}'.`)
         }
       }
-      // Add a special 'defaults.eager' filter that does nothing else than
-      // handling the default eager chaining. See: `definitionHandlers.defaults`
-      namedFilters['defaults.eager'] = builder => {
-        const { eager } = defaults
+      // Add a special 'default.eager' filter that does nothing else than
+      // handling the default eager chaining. See: `definitionHandlers.default`
+      namedFilters['default.eager'] = builder => {
+        const { eager } = _default
         if (eager) {
           builder.mergeEager(eager)
         }
@@ -495,17 +495,17 @@ const definitionHandlers = {
     }, {})
   },
 
-  defaults(defaults) {
-    // Parse defaults.eager expression and add the 'defaults.eager' args to all
-    // child expressions, so they can recursively load their own defaults.eager
+  default(_default) {
+    // Parse default.eager expression and add the 'default.eager' args to all
+    // child expressions, so they can recursively load their own default.eager
     // expressions. This allows for eager chaining across multiple nested models
     // in a way that each model only needs to specify its own eager relations.
-    // See namedFilter() for the definition of 'defaults.eager'.
+    // See namedFilter() for the definition of 'default.eager'.
     const addEager = (node, isRoot) => {
       if (!isRoot) {
         // Use unshift instead of push so it's applied fist, not last, and other
         // scopes can be applied after.
-        node.args.unshift('defaults.eager')
+        node.args.unshift('default.eager')
       }
       if (node.numChildren > 0) {
         for (const child of Object.values(node.children)) {
@@ -514,10 +514,10 @@ const definitionHandlers = {
       }
       return node
     }
-    const { eager } = defaults
+    const { eager } = _default
     if (eager) {
       const node = objection.RelationExpression.parse(eager)
-      defaults.eager = addEager(node, true)
+      _default.eager = addEager(node, true)
     }
   },
 

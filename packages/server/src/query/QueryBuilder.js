@@ -38,13 +38,13 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   async execute() {
-    // Only apply the defaults: { eager, include, order } settings if this is a
+    // Only apply the default: { eager, include, order } settings if this is a
     // find query, meaning it does not specify any write operations, without any
     // special selects. This is required to exclude count(), etc...
     const isFindQuery = this.isFindQuery() && !this.hasSelects()
     if (isFindQuery) {
       const {
-        defaults: { eager, order, include, exclude } = {}
+        default: { eager, order, include, exclude } = {}
       } = this.modelClass().definition
       if (eager && this._applyDefaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
