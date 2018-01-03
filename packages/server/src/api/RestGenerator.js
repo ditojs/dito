@@ -302,13 +302,17 @@ const restHandlers = {
     },
     put(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.updateGraphAndFetchById(id, ctx.request.body)
-        .then(model => checkModel(model, modelClass, id))
+      return objection.transaction(modelClass, modelClass =>
+        modelClass.updateGraphAndFetchById(id, ctx.request.body)
+          .then(model => checkModel(model, modelClass, id))
+      )
     },
     patch(modelClass, ctx) {
       const { id } = ctx.params
-      return modelClass.upsertGraphAndFetchById(id, ctx.request.body)
-        .then(model => checkModel(model, modelClass, id))
+      return objection.transaction(modelClass, modelClass =>
+        modelClass.upsertGraphAndFetchById(id, ctx.request.body)
+          .then(model => checkModel(model, modelClass, id))
+      )
     }
   },
 
@@ -330,15 +334,13 @@ const restHandlers = {
       // instead?
       const { id } = ctx.params
       const { ownerModelClass } = relation
-      return objection.transaction(ownerModelClass, ownerModelClass =>
-        ownerModelClass.findById(id)
-          .then(model => checkModel(model, ownerModelClass, id)
-            .$relatedQuery(relation.name)
-            // TODO: Test if filter works for delete
-            .find(ctx.query)
-            .delete())
-          .then(count => ({ count }))
-      )
+      return ownerModelClass.findById(id)
+        .then(model => checkModel(model, ownerModelClass, id)
+          .$relatedQuery(relation.name)
+          // TODO: Test if filter works for delete
+          .find(ctx.query)
+          .delete())
+        .then(count => ({ count }))
     },
     post(relation, ctx) {
       // TODO: What's the expected behavior in a toOne relation?
@@ -383,19 +385,17 @@ const restHandlers = {
     post(relation, ctx) {
       const { id, relatedId } = ctx.params
       const { ownerModelClass, relatedModelClass } = relation
-      return objection.transaction(ownerModelClass, relatedModelClass,
-        (ownerModelClass, relatedModelClass) => ownerModelClass
-          .findById(id)
-          .then(model => checkModel(model, ownerModelClass, id)
-            .$relatedQuery(relation.name)
-            .relate(relatedId))
-          .then(related => {
-            // TODO: inspect and decide what to do next
-            console.log('related', related)
-            return relatedModelClass
-              .findById(relatedId, ctx.query)
-          })
-      )
+      return ownerModelClass
+        .findById(id)
+        .then(model => checkModel(model, ownerModelClass, id)
+          .$relatedQuery(relation.name)
+          .relate(relatedId))
+        .then(related => {
+          // TODO: inspect and decide what to do next
+          console.log('related', related)
+          return relatedModelClass
+            .findById(relatedId, ctx.query)
+        })
     }
   }
 }
