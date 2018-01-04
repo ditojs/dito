@@ -50,7 +50,7 @@
           template(v-else)
             td
               dito-panel(
-                v-if="schema.inline"
+                v-if="inline"
                 :schema="getFormSchema(item)"
                 :data="item"
                 :meta="nestedMeta"
@@ -73,19 +73,19 @@
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
-              v-if="schema.draggable"
+              v-if="draggable"
               type="button"
               class="dito-button-drag"
             )
             router-link.dito-button(
-              v-if="schema.editable"
+              v-if="editable"
               :to="getEditRoute(item, index)" append
               tag="button"
               type="button"
               :class="`dito-button-${verbEdit}`"
             )
             button.dito-button(
-              v-if="schema.deletable"
+              v-if="deletable"
               type="button"
               @click="deleteItem(item, index)"
               :class="`dito-button-${verbDelete}`"
@@ -213,15 +213,31 @@ export default TypeComponent.register('list', {
       return this.schema.paginate
     },
 
-    hasButtons() {
-      const { value, schema } = this
-      return !!(value?.length > 0 &&
-        (schema.editable || schema.deletable || schema.draggable))
+    inline() {
+      return this.schema.inline
     },
 
     creatable() {
       const { schema } = this
       return schema.creatable && (schema.form || schema.forms)
+    },
+
+    editable() {
+      return this.schema.editable && !this.inline
+    },
+
+    deletable() {
+      return this.schema.deletable
+    },
+
+    draggable() {
+      return this.schema.draggable
+    },
+
+    hasButtons() {
+      const { value } = this
+      return !!(value?.length > 0 &&
+        (this.editable || this.deletable || this.draggable))
     },
 
     numColumns() {
