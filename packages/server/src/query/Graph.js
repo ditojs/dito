@@ -1,18 +1,19 @@
 import { RelationExpression } from 'objection'
+import pointer from 'json-pointer'
 import { isArray, asArray, pick } from '@/utils'
 
 export default class Graph {
-  constructor(rootModelClass, data, isUpsert, options) {
+  constructor(rootModelClass, data, action, restoreRelations, options) {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
     this.data = data
       ? asArray(data).map(model => !model ? null
         : model instanceof rootModelClass ? model
-        : rootModelClass.fromJson(model)
+        : rootModelClass.fromJson(model, { skipValidation: true })
       )
       : []
     this.isArray = isArray(data)
-    this.isUpsert = isUpsert
+    this.action = action
     this.options = options
     this.overrides = {}
     this.numOptions = Object.keys(options).length
@@ -21,6 +22,7 @@ export default class Graph {
     if (this.numOverrides > 0) {
       this.processOverrides()
     }
+    this.removedRelations = restoreRelations && {}
   }
 
   getOptions() {
@@ -31,19 +33,15 @@ export default class Graph {
 
   getData() {
     // TODO: On inserts with relates, we need to filter out the nested data of
-    // nested models ($isObjectionModel === true), but keep the nested data
-    // and set it again on the results. Consider using json points to do so:
+    // nested models ($isObjectionModel === true), but keep the nested data and
+    // set it again on the results. Consider using json points to do so:
     // https://github.com/manuelstofer/json-pointer
     // But even this won't work for validations, as the data removed there will
     // still be missing :/, so see if we can fix/improve in objection instead?
-    const data = this.isUpsert
-      ? this.data
-      : processGraph(this.data, this.options)
+    const data = this.action === 'insert' && this.options.relate
+      ? this.processRelate(this.data)
+      : this.data
     return this.isArray ? data : data[0]
-  }
-
-  get optionName() {
-    return this.isUpsert ? 'upsert' : 'insert'
   }
 
   /**
@@ -52,8 +50,6 @@ export default class Graph {
    * each setting, so processOverrides() can fill them if any overrides exist.
    */
   collectOverrides() {
-    const { optionName } = this
-
     const processed = {}
     const processModelClass = modelClass => {
       const { name } = modelClass
@@ -61,7 +57,7 @@ export default class Graph {
         const relationDefinitions = modelClass.definition.relations
         const relationInstances = modelClass.getRelations()
         for (const [name, relation] of Object.entries(relationDefinitions)) {
-          const options = relation[optionName]
+          const options = relation[this.action]
           if (options) {
             for (const key in options) {
               if (!this.overrides[key] && options[key] !== this.options[key]) {
@@ -82,7 +78,6 @@ export default class Graph {
   }
 
   processOverrides() {
-    const { optionName } = this
     const exp = RelationExpression.fromGraph(this.data)
     const overrides = Object.entries(this.overrides) // Cache for repeated use.
 
@@ -92,7 +87,7 @@ export default class Graph {
         // Loop through all override options, figure out their settings for the
         // current relation and build relation expression arrays for each
         // override, reflecting their nested settings in arrays of expressions.
-        const options = relation[optionName]
+        const options = relation[this.action]
         for (const [key, override] of overrides) {
           const option = pick(options?.[key], this.options[key])
           if (option) {
@@ -122,35 +117,60 @@ export default class Graph {
       }
     }
   }
-}
 
-export function processGraph(data, opt) {
-  // processGraph() handles relate option by detecting Objection instances in
-  // the graph and converting them to shallow id links. For details, see:
-  // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
-  const processRelate = (data, relate) => {
+  processRelate(data, dataPath = '/') {
+    // processGraph() handles relate option by detecting Objection instances in
+    // the graph and converting them to shallow id links. For details, see:
+    // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
     if (data) {
       if (data.$isObjectionModel) {
-        // Shallow-clone to avoid relations causing problems
-        // TODO: Ideally, there would be a switch in Objection that would tell
-        // `relate: true` to behave this way with `$isObjectionModel` but still
-        // would allow referencing deep models. Check with @koskimas.
-        const shallow = relate && data.$hasId()
-        data = data.$clone(shallow)
-        if (!shallow) {
-          for (const key in data.constructor.getRelations()) {
-            // Set relate to true for nested objects, so nested relations end up
-            // having it set.
-            data[key] = processRelate(data[key], true)
+        const relations = data.constructor.getRelations()
+        const shallow = data.$hasId()
+        const clone = data.$clone(shallow)
+        if (shallow) {
+          // Fill removedRelations with json-pointer -> relation-value pairs,
+          // so that we can restore the relations again after the operation in
+          // restoreRelations():
+          if (this.removedRelations) {
+            const values = {}
+            let hasRelations = false
+            for (const key in relations) {
+              if (key in data) {
+                values[key] = data[key]
+                hasRelations = true
+              }
+            }
+            if (hasRelations) {
+              this.removedRelations[dataPath] = values
+            }
+          }
+        } else {
+          for (const key in relations) {
+            // Set relate to true for nested objects, so nested relations end
+            // up having it set.
+            clone[key] = this.processRelate(clone[key], `${dataPath}${key}/`)
           }
         }
+        return clone
       } else if (isArray(data)) {
         // Pass on relate for hasMany arrays.
-        data = data.map(entry => processRelate(entry, relate))
+        return data.map((entry, index) =>
+          this.processRelate(entry, `${dataPath}${index}/`))
       }
     }
     return data
   }
 
-  return opt.relate ? processRelate(data, false) : data
+  restoreRelations(result) {
+    if (this.removedRelations) {
+      const data = asArray(result)
+      for (const [path, values] of Object.entries(this.removedRelations)) {
+        const obj = pointer.get(data, path)
+        for (const key in values) {
+          obj[key] = values[key]
+        }
+      }
+    }
+    return result
+  }
 }

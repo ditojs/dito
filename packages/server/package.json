@@ -36,6 +36,7 @@
     "chalk": "^2.3.0",
     "eventemitter2": "^5.0.0",
     "fs-extra": "^5.0.0",
+    "json-pointer": "^0.6.0",
     "koa": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
     "koa-compose": "^4.0.0",
@@ -47,7 +48,7 @@
     "koa-pino-logger": "^2.1.1",
     "koa-response-time": "^2.0.0",
     "koa-router": "^7.3.0",
-    "objection": "github:lehni/objection.js#6f6f81c4d0298522e6d97c482646bed5c9929418",
+    "objection": "github:lehni/objection.js#c6fb3b09bbdb71714154d6431b028a669b611dff",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"
   },
@@ -72,7 +73,7 @@
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
     "knex": "^0.14.2",
-    "pg": "^7.3.0",
+    "pg": "^7.4.1",
     "sqlite3": "^3.1.13"
   }
 }

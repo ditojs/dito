@@ -4,7 +4,7 @@ import { QueryError } from '@/errors'
 import PropertyRef from './PropertyRef'
 import QueryHandlers from './QueryHandlers'
 import QueryFilters from './QueryFilters'
-import { default as Graph, processGraph } from './Graph'
+import Graph from './Graph'
 import { isObject, isArray, isString, asArray } from '@/utils'
 
 // This code is based on objection-find, and simplified.
@@ -244,25 +244,26 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertGraph(data, options) {
-    const graph = new Graph(this.modelClass(), data, false,
+    const graph = new Graph(this.modelClass(), data, 'insert', true,
       mergeOptions(insertGraphOptions, options))
     return super.insertGraph(graph.getData(), graph.getOptions())
+      .then(result => graph.restoreRelations(result))
   }
 
   insertGraphAndFetch(data, options) {
-    const graph = new Graph(this.modelClass(), data, false,
+    const graph = new Graph(this.modelClass(), data, 'insert', false,
       mergeOptions(insertGraphOptions, options))
     return super.insertGraphAndFetch(graph.getData(), graph.getOptions())
   }
 
   upsertGraph(data, options) {
-    const graph = new Graph(this.modelClass(), data, true,
+    const graph = new Graph(this.modelClass(), data, 'upsert', false,
       mergeOptions(upsertGraphOptions, options))
     return super.upsertGraph(graph.getData(), graph.getOptions())
   }
 
   upsertGraphAndFetch(data, options) {
-    const graph = new Graph(this.modelClass(), data, true,
+    const graph = new Graph(this.modelClass(), data, 'upsert', false,
       mergeOptions(upsertGraphOptions, options))
     return super.upsertGraphAndFetch(graph.getData(), graph.getOptions())
   }
