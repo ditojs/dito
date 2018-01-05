@@ -4,6 +4,7 @@ import { QueryError } from '@/errors'
 import PropertyRef from './PropertyRef'
 import QueryHandlers from './QueryHandlers'
 import QueryFilters from './QueryFilters'
+import { default as Graph, processGraph } from './Graph'
 import { isObject, isArray, isString, asArray } from '@/utils'
 
 // This code is based on objection-find, and simplified.
@@ -209,7 +210,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
-  upsert(data, opt = {}) {
+  upsert(data, options = {}) {
     let mainQuery
     return this
       .runBefore((result, builder) => {
@@ -220,14 +221,14 @@ export default class QueryBuilder extends objection.QueryBuilder {
           // this function is called for the `mainQuery`.
           mainQuery = builder.clone().context({ isMainQuery: true })
           // Call update() on the original query, turning it into an update.
-          builder[opt.update ? 'update' : 'patch'](data)
+          builder[options.update ? 'update' : 'patch'](data)
         }
         return result
       })
       .runAfter((result, builder) => {
         if (!builder.context().isMainQuery) {
           return result === 0
-            ? mainQuery[opt.fetch ? 'insertAndFetch' : 'insert'](data)
+            ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
             // We can use the `mainQuery` we saved in runBefore() to fetch the
             // inserted results. It is noteworthy that this query will return
             // the wrong results if the update changed any of the columns the
@@ -238,46 +239,54 @@ export default class QueryBuilder extends objection.QueryBuilder {
       })
   }
 
-  upsertAndFetch(data, opt) {
-    return this.upsert(data, { ...opt, fetch: true })
+  upsertAndFetch(data, options) {
+    return this.upsert(data, { ...options, fetch: true })
   }
 
-  insertGraph(data, opt) {
-    opt = mergeOptions(insertGraphOptions, opt)
-    return super.insertGraph(processGraph(data, opt), opt)
+  insertGraph(data, options) {
+    // const graph = new Graph(this.modelClass(), data, false,
+    //   mergeOptions(insertGraphOptions, options))
+    // return super.insertGraph(graph.getData(), graph.getOptions())
+    options = mergeOptions(insertGraphOptions, options)
+    return super.insertGraph(processGraph(data, options), options)
   }
 
-  insertGraphAndFetch(data, opt) {
-    opt = mergeOptions(insertGraphOptions, opt)
-    return super.insertGraphAndFetch(processGraph(data, opt), opt)
+  insertGraphAndFetch(data, options) {
+    // const graph = new Graph(this.modelClass(), data, false,
+    //   mergeOptions(insertGraphOptions, options))
+    // return super.insertGraphAndFetch(graph.getData(), graph.getOptions())
+    options = mergeOptions(insertGraphOptions, options)
+    return super.insertGraphAndFetch(processGraph(data, options), options)
   }
 
-  upsertGraph(data, opt) {
-    opt = mergeOptions(upsertGraphOptions, opt)
-    return super.upsertGraph(processGraph(data, opt), opt)
+  upsertGraph(data, options) {
+    const graph = new Graph(this.modelClass(), data, true,
+      mergeOptions(upsertGraphOptions, options))
+    return super.upsertGraph(graph.getData(), graph.getOptions())
   }
 
-  upsertGraphAndFetch(data, opt) {
-    opt = mergeOptions(upsertGraphOptions, opt)
-    return super.upsertGraphAndFetch(processGraph(data, opt), opt)
+  upsertGraphAndFetch(data, options) {
+    const graph = new Graph(this.modelClass(), data, true,
+      mergeOptions(upsertGraphOptions, options))
+    return super.upsertGraphAndFetch(graph.getData(), graph.getOptions())
   }
 
-  updateGraph(data, opt) {
-    opt = mergeOptions(updateGraphOptions, opt)
-    return super.upsertGraph(processGraph(data, opt), opt)
+  updateGraph(data, options) {
+    return this.upsertGraph(data,
+      mergeOptions(updateGraphOptions, options))
   }
 
-  updateGraphAndFetch(data, opt) {
-    opt = mergeOptions(updateGraphOptions, opt)
-    return super.upsertGraphAndFetch(processGraph(data, opt), opt)
+  updateGraphAndFetch(data, options) {
+    return this.upsertGraphAndFetch(data,
+      mergeOptions(updateGraphOptions, options))
   }
 
-  upsertGraphAndFetchById(id, data, opt) {
-    return this.upsertGraphAndFetch(this.addIdProperties(data, id), opt)
+  upsertGraphAndFetchById(id, data, options) {
+    return this.upsertGraphAndFetch(this.addIdProperties(data, id), options)
   }
 
-  updateGraphAndFetchById(id, data, opt) {
-    return this.updateGraphAndFetch(this.addIdProperties(data, id), opt)
+  updateGraphAndFetchById(id, data, options) {
+    return this.updateGraphAndFetch(this.addIdProperties(data, id), options)
   }
 
   addIdProperties(data, id) {
@@ -460,40 +469,11 @@ const upsertGraphOptions = {
 }
 
 const updateGraphOptions = {
-  ...upsertGraphOptions,
   update: true
 }
 
-function mergeOptions(defaults, opt) {
-  return opt ? { ...defaults, ...opt } : defaults
-}
-
-function processGraph(data, opt) {
-  // processGraph() handles relate option by detecting Objection isntances in
-  // the graph and converting them to shallow id links. For details, see:
-  // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
-  const processRelate = data => {
-    if (data) {
-      if (data.$isObjectionModel) {
-        // Shallow-clone to avoid relations causing problems
-        // TODO: Ideally, there would be a switch in Objection that would tell
-        // `relate: true` to behave this way with `$isObjectionModel` but still
-        // would allow referencing deep models. Check with @koskimas.
-        data = data.$clone(true)
-      } else if (isArray(data)) {
-        data = data.map(entry => processRelate(entry))
-      } else if (isObject(data)) {
-        const processed = {}
-        for (const key in data) {
-          processed[key] = processRelate(data[key])
-        }
-        data = processed
-      }
-    }
-    return data
-  }
-
-  return opt.relate ? processRelate(data) : data
+function mergeOptions(defaults, options) {
+  return options ? { ...defaults, ...options } : defaults
 }
 
 const mixinMethods = [
