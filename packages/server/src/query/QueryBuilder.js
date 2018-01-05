@@ -15,25 +15,28 @@ export default class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
+    this._hasRange = false
     this._applyDefaultEager = true
     this._applyDefaultInclude = true
     this._applyDefaultExclude = true
     this._applyDefaultOrder = true
     this._scopes = []
     this._include = null
+    this._exclude = null
   }
 
   clone() {
     const clone = super.clone()
     clone._propertyRefsAllowed = this._propertyRefsAllowed
     clone._propertyRefsCache = this._propertyRefsCache
+    clone._hasRange = this._hasRange
     clone._applyDefaultEager = this._applyDefaultEager
     clone._applyDefaultOrder = this._applyDefaultOrder
     clone._applyDefaultInclude = this._applyDefaultInclude
     clone._applyDefaultExclude = this._applyDefaultExclude
+    clone._scopes = [...this._scopes]
     clone._include = this._include ? { ...this._include } : null
     clone._exclude = this._exclude ? { ...this._exclude } : null
-    clone._scopes = [...this._scopes]
     return clone
   }
 
@@ -78,7 +81,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
       // Objection's QueryBuilder.traverse() doesn't work after range(),
       // so let's work around it:
       this.runAfter(result => {
-        const data = result && this.has(/^range$/)
+        const data = result && this._hasRange
           ? result.results
           : result
         this.resultModelClass().traverse(this.modelClass(), data, model => {
@@ -98,6 +101,31 @@ export default class QueryBuilder extends objection.QueryBuilder {
 
   hasSelects() {
     return this.has(QueryBuilder.SelectSelector)
+  }
+
+  range(...args) {
+    this._hasRange = true
+    return super.range(...args)
+  }
+
+  eager(...args) {
+    this._applyDefaultEager = false
+    return super.eager(...args)
+  }
+
+  clearEager() {
+    this._applyDefaultEager = false
+    return super.clearEager()
+  }
+
+  orderBy(...args) {
+    this._applyDefaultOrder = false
+    return super.orderBy(...args)
+  }
+
+  clearOrder() {
+    this._applyDefaultOrder = false
+    return this
   }
 
   scope(...scopes) {
@@ -121,26 +149,6 @@ export default class QueryBuilder extends objection.QueryBuilder {
   applyScope(...scopes) {
     // A simple rediret to applyFilter() for the sake of naming consistency.
     return this.applyFilter(...scopes)
-  }
-
-  eager(...args) {
-    this._applyDefaultEager = false
-    return super.eager(...args)
-  }
-
-  clearEager() {
-    this._applyDefaultEager = false
-    return super.clearEager()
-  }
-
-  orderBy(...args) {
-    this._applyDefaultOrder = false
-    return super.orderBy(...args)
-  }
-
-  clearOrder() {
-    this._applyDefaultOrder = false
-    return this
   }
 
   include(...properties) {

@@ -20,6 +20,9 @@ export default class Validator extends objection.Validator {
       validateSchema: true,
       // NOTE: `coerceTypes` is recommended to be used with the REST method
       // interface, and hopefully is OK with for the rest also...
+      // TODO: Consider renaming `this.ajv` to `this.ajvRest` or similar, and
+      // using it to pre-validate all data that passes through the AJV interface
+      // so coercion is handled there.
       coerceTypes: true,
       jsonPointers: true,
       ownProperties: true,
