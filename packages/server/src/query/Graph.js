@@ -1,5 +1,5 @@
 import { RelationExpression } from 'objection'
-import pointer from 'json-pointer'
+import jsonPointer from 'json-pointer'
 import { isArray, asArray, pick } from '@/utils'
 
 export default class Graph {
@@ -32,12 +32,9 @@ export default class Graph {
   }
 
   getData() {
-    // TODO: On inserts with relates, we need to filter out the nested data of
-    // nested models ($isObjectionModel === true), but keep the nested data and
-    // set it again on the results. Consider using json points to do so:
-    // https://github.com/manuelstofer/json-pointer
-    // But even this won't work for validations, as the data removed there will
-    // still be missing :/, so see if we can fix/improve in objection instead?
+    // On inserts with relates, use processRelate() to filter out the nested
+    // relations of models that are used for relates, but keep the removed
+    // relations to restore them again on the results,see restoreRelations()
     const data = this.action === 'insert' && this.options.relate
       ? this.processRelate(this.data)
       : this.data
@@ -77,12 +74,17 @@ export default class Graph {
     processModelClass(this.rootModelClass)
   }
 
+  /**
+   * Fills the empty override arrays collected by collectOverrides() by waling
+   * through the actual graph and finding relations that have overrides, and
+   * building relation paths for them.
+   */
   processOverrides() {
     const exp = RelationExpression.fromGraph(this.data)
     const overrides = Object.entries(this.overrides) // Cache for repeated use.
 
-    const processExpression = (exp, modelClass, relation, path) => {
-      path = path ? `${path}.${exp.name}` : exp.name
+    const processExpression = (exp, modelClass, relation, relationPath) => {
+      relationPath = relationPath ? `${relationPath}.${exp.name}` : exp.name
       if (relation) {
         // Loop through all override options, figure out their settings for the
         // current relation and build relation expression arrays for each
@@ -91,7 +93,7 @@ export default class Graph {
         for (const [key, override] of overrides) {
           const option = pick(options?.[key], this.options[key])
           if (option) {
-            override.push(path)
+            override.push(relationPath)
           }
         }
       }
@@ -101,7 +103,7 @@ export default class Graph {
         for (const child of Object.values(exp.children)) {
           const { relatedModelClass } = relationInstances[child.name]
           processExpression(child, relatedModelClass,
-            relationDefinitions[child.name], path)
+            relationDefinitions[child.name], relationPath)
         }
       }
     }
@@ -118,6 +120,13 @@ export default class Graph {
     }
   }
 
+  /**
+   * Handles relate option by detecting Objection instances in the graph and
+   * converting them to shallow id links.
+   *
+   * For details, see:
+   * https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
+   */
   processRelate(data, dataPath = '/') {
     // processGraph() handles relate option by detecting Objection instances in
     // the graph and converting them to shallow id links. For details, see:
@@ -161,11 +170,14 @@ export default class Graph {
     return data
   }
 
+  /**
+   * Restores relations in the final result removed by processRelate()
+   */
   restoreRelations(result) {
     if (this.removedRelations) {
       const data = asArray(result)
       for (const [path, values] of Object.entries(this.removedRelations)) {
-        const obj = pointer.get(data, path)
+        const obj = jsonPointer.get(data, path)
         for (const key in values) {
           obj[key] = values[key]
         }
