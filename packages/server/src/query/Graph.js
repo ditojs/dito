@@ -127,10 +127,7 @@ export default class Graph {
    * For details, see:
    * https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
    */
-  processRelate(data, dataPath = '/') {
-    // processGraph() handles relate option by detecting Objection instances in
-    // the graph and converting them to shallow id links. For details, see:
-    // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
+  processRelate(data, dataPath = '/', relationPath = []) {
     if (data) {
       if (data.$isObjectionModel) {
         const relations = data.constructor.getRelations()
@@ -140,7 +137,15 @@ export default class Graph {
           // Fill removedRelations with json-pointer -> relation-value pairs,
           // so that we can restore the relations again after the operation in
           // restoreRelations():
-          if (this.removedRelations) {
+          let { relate } = this.overrides
+          if (relate) {
+            // See if the relate overrides contain this particular relation-Path
+            // and only remove and restore relation data if relate is to be used
+            relate = relate.includes(relationPath.join('.'))
+          } else {
+            relate = this.options.relate
+          }
+          if (relate && this.removedRelations) {
             const values = {}
             let hasRelations = false
             for (const key in relations) {
@@ -157,14 +162,15 @@ export default class Graph {
           for (const key in relations) {
             // Set relate to true for nested objects, so nested relations end
             // up having it set.
-            clone[key] = this.processRelate(clone[key], `${dataPath}${key}/`)
+            clone[key] = this.processRelate(clone[key], `${dataPath}${key}/`,
+              [...relationPath, key])
           }
         }
         return clone
       } else if (isArray(data)) {
         // Pass on relate for hasMany arrays.
         return data.map((entry, index) =>
-          this.processRelate(entry, `${dataPath}${index}/`))
+          this.processRelate(entry, `${dataPath}${index}/`, relationPath))
       }
     }
     return data
