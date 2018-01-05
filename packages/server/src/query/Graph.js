@@ -1,18 +1,18 @@
 import { RelationExpression } from 'objection'
-import { isObject, isArray, asArray, pick } from '@/utils'
+import { isArray, asArray, pick } from '@/utils'
 
 export default class Graph {
-  constructor(rootModelClass, data, upsert, options) {
+  constructor(rootModelClass, data, isUpsert, options) {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
     this.data = data
-      ? asArray(data).map(model =>
-        !model ? null
+      ? asArray(data).map(model => !model ? null
         : model instanceof rootModelClass ? model
         : rootModelClass.fromJson(model)
       )
       : []
-    this.upsert = upsert
+    this.isArray = isArray(data)
+    this.isUpsert = isUpsert
     this.options = options
     this.overrides = {}
     this.numOptions = Object.keys(options).length
@@ -36,11 +36,14 @@ export default class Graph {
     // https://github.com/manuelstofer/json-pointer
     // But even this won't work for validations, as the data removed there will
     // still be missing :/, so see if we can fix/improve in objection instead?
-    return this.upsert ? this.data : processGraph(this.data, this.options)
+    const data = this.isUpsert
+      ? this.data
+      : processGraph(this.data, this.options)
+    return this.isArray ? data : data[0]
   }
 
   get optionName() {
-    return this.upsert ? 'upsert' : 'insert'
+    return this.isUpsert ? 'upsert' : 'insert'
   }
 
   /**
@@ -127,23 +130,23 @@ export function processGraph(data, opt) {
   // https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
   const processRelate = (data, relate) => {
     if (data) {
-      if (data.$isObjectionModel && relate) {
+      if (data.$isObjectionModel) {
         // Shallow-clone to avoid relations causing problems
         // TODO: Ideally, there would be a switch in Objection that would tell
         // `relate: true` to behave this way with `$isObjectionModel` but still
         // would allow referencing deep models. Check with @koskimas.
-        data = data.$clone(true)
-      } else if (isArray(data)) {
-        // Pass on relate for arrays
-        data = data.map(entry => processRelate(entry, relate))
-      } else if (isObject(data)) {
-        // Set relate to true for nested objects, so nested relations end up
-        // having it set.
-        const processed = {}
-        for (const key in data) {
-          processed[key] = processRelate(data[key], true)
+        const shallow = relate && data.$hasId()
+        data = data.$clone(shallow)
+        if (!shallow) {
+          for (const key in data.constructor.getRelations()) {
+            // Set relate to true for nested objects, so nested relations end up
+            // having it set.
+            data[key] = processRelate(data[key], true)
+          }
         }
-        data = processed
+      } else if (isArray(data)) {
+        // Pass on relate for hasMany arrays.
+        data = data.map(entry => processRelate(entry, relate))
       }
     }
     return data

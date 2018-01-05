@@ -18,12 +18,6 @@ export default class Validator extends objection.Validator {
     this.options = {
       allErrors: true,
       validateSchema: true,
-      // NOTE: `coerceTypes` is recommended to be used with the REST method
-      // interface, and hopefully is OK with for the rest also...
-      // TODO: Consider renaming `this.ajv` to `this.ajvRest` or similar, and
-      // using it to pre-validate all data that passes through the AJV interface
-      // so coercion is handled there.
-      coerceTypes: true,
       jsonPointers: true,
       ownProperties: true,
       passContext: true,
@@ -45,7 +39,11 @@ export default class Validator extends objection.Validator {
 
     // Create a shared Ajv validator instance that is used for validation in
     // remote methods and other validations outside Objection.
-    this.ajv = createAjv(this.options)
+    // NOTE: Use `coerceTypes: true` option for remote methods & REST interface.
+    this.ajv = createAjv({
+      ...this.options,
+      coerceTypes: true
+    })
 
     // Create a Ajv instance that sets default values.
     this.ajvDefaults = createAjv({

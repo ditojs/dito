@@ -244,19 +244,15 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertGraph(data, options) {
-    // const graph = new Graph(this.modelClass(), data, false,
-    //   mergeOptions(insertGraphOptions, options))
-    // return super.insertGraph(graph.getData(), graph.getOptions())
-    options = mergeOptions(insertGraphOptions, options)
-    return super.insertGraph(processGraph(data, options), options)
+    const graph = new Graph(this.modelClass(), data, false,
+      mergeOptions(insertGraphOptions, options))
+    return super.insertGraph(graph.getData(), graph.getOptions())
   }
 
   insertGraphAndFetch(data, options) {
-    // const graph = new Graph(this.modelClass(), data, false,
-    //   mergeOptions(insertGraphOptions, options))
-    // return super.insertGraphAndFetch(graph.getData(), graph.getOptions())
-    options = mergeOptions(insertGraphOptions, options)
-    return super.insertGraphAndFetch(processGraph(data, options), options)
+    const graph = new Graph(this.modelClass(), data, false,
+      mergeOptions(insertGraphOptions, options))
+    return super.insertGraphAndFetch(graph.getData(), graph.getOptions())
   }
 
   upsertGraph(data, options) {
@@ -293,8 +289,11 @@ export default class QueryBuilder extends objection.QueryBuilder {
     const modelClass = this.modelClass()
     const obj = { ...data }
     const ids = asArray(id)
-    for (const [index, column] of asArray(modelClass.idColumn).entries()) {
-      obj[modelClass.columnNameToPropertyName(column)] = ids[index]
+    const { properties } = modelClass.definition
+    for (const [index, name] of modelClass.getIdPropertyArray().entries()) {
+      const property = properties[name]
+      const id = ids[index]
+      obj[name] = /^(integer|number)$/.test(property.type) ? +id : id
     }
     return obj
   }
