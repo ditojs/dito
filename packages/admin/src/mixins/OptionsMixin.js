@@ -13,9 +13,11 @@ export default {
   created() {
     const { options } = this.schema
     if (isObject(options)) {
-      if (options.url) {
+      const url = options.url ||
+        options.api && this.api.baseURL + options.api
+      if (url) {
         this.loading = true
-        axios.get(options.url)
+        axios.get(url)
           .then(response => {
             this.loading = false
             this.options = options.groupBy
@@ -29,7 +31,7 @@ export default {
           })
       } else {
         // When providing options.labelKey & options.valueKey, options.values
-        // can be used to provide the data instead of options.url
+        // can be used to provide the data instead of url.
         this.options = options.values
       }
     } else if (isArray(options)) {
@@ -43,14 +45,17 @@ export default {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
       return this.schema.options.labelKey ||
-          this.options && isObject(this.options[0]) && 'label' || null
+       isObject(this.options?.[0]) && 'label' || null
     },
 
     valueKey() {
       // If no valueKey was provided but the options are objects, assume a
       // default value of 'value':
-      return this.schema.options.valueKey ||
-          this.options && isObject(this.options[0]) && 'value' || null
+      const { options } = this.schema
+      return options.valueKey ||
+        options.relate && 'id' ||
+        isObject(this.options?.[0]) && 'value' ||
+        null
     },
 
     groupLabelKey() {
@@ -64,13 +69,13 @@ export default {
 
   methods: {
     getOptionValue(option) {
-      const { valueKey } = this
-      return valueKey ? option[valueKey] : option
+      return this.schema.options.relate
+        ? { id: option.id }
+        : this.valueKey ? option[this.valueKey] : option
     },
 
     getOptionLabel(option) {
-      const { labelKey } = this
-      return labelKey ? option[labelKey] : option
+      return this.labelKey ? option[this.labelKey] : option
     },
 
     groupBy(options, groupBy) {
@@ -100,7 +105,7 @@ export default {
             if (found) {
               return found
             }
-          } else if (value === option[this.valueKey]) {
+          } else if (value === this.getOptionValue(option)) {
             return option
           }
         }
