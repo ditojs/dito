@@ -69,7 +69,7 @@
               )
               span(
                 v-else
-                v-html="getItemTitle(item, index)"
+                v-html="getItemLabel(item, index)"
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(

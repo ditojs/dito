@@ -186,7 +186,7 @@ export default {
     },
 
     deleteItem(item, index) {
-      const title = item && this.getItemTitle(item, index)
+      const title = item && this.getItemLabel(item, index)
 
       const notify = transient => this.notify(transient ? 'info' : 'success',
         'Successfully Removed', `${title} was ${this.verbDeleted}.`)

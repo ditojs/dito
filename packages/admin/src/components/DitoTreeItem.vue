@@ -145,10 +145,10 @@ export default DitoComponent.component('dito-tree-item', {
 
   computed: {
     title() {
-      const { itemTitle } = this.schema
-      return isFunction(itemTitle)
-        ? itemTitle(this.data)
-        : this.data?.[itemTitle]
+      const { itemLabel } = this.schema
+      return isFunction(itemLabel)
+        ? itemLabel(this.data)
+        : this.data?.[itemLabel]
     },
 
     childrenLists() {

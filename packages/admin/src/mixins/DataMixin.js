@@ -129,12 +129,12 @@ export default {
         )
     },
 
-    getItemTitle(item, index) {
+    getItemLabel(item, index) {
       const label = this.getLabel(this.getFormSchema(item))
-      const { itemTitle, columns } = this.listSchema
-      const itemProp = isString(itemTitle) && itemTitle ||
+      const { itemLabel, columns } = this.listSchema
+      const itemProp = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0]
-      let title = isFunction(itemTitle) ? itemTitle(item)
+      let title = isFunction(itemLabel) ? itemLabel(item)
         : itemProp ? item[itemProp]
         : item.name
       if (title) {

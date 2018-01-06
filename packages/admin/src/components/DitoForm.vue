@@ -365,12 +365,12 @@ export default DitoComponent.component('dito-form', {
           }
         } else {
           this.setListData(this.data)
-          const title = this.getItemTitle(this.data)
+          const label = this.getItemLabel(this.data)
           if (onSuccess) {
-            onSuccess.call(this, this.data, title)
+            onSuccess.call(this, this.data, label)
           } else {
             this.notify('info', 'Change Applied',
-              `<p>Changes in ${title} were applied.</p>` +
+              `<p>Changes in ${label} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
               'in order to persist this change.</p>')
           }
@@ -406,22 +406,22 @@ export default DitoComponent.component('dito-form', {
               error = isObject(data) ? data : err
             }
             if (error) {
-              const title = payload ? this.getItemTitle(payload) : 'form'
+              const label = payload ? this.getItemLabel(payload) : 'form'
               if (onError) {
-                onError.call(this, error, payload, title)
+                onError.call(this, error, payload, label)
               } else {
                 this.notify('error', 'Request Error',
-                  `Error submitting ${title}:\n${error.message || error}`)
+                  `Error submitting ${label}:\n${error.message || error}`)
               }
             }
           } else {
-            const title = data ? this.getItemTitle(data) : 'form'
+            const label = data ? this.getItemLabel(data) : 'form'
             if (onSuccess) {
-              onSuccess.call(this, data, title)
+              onSuccess.call(this, data, label)
             } else {
               const submitted = this.verbSubmitted
               this.notify('success', `Sucessfully ${capitalize(submitted)}`,
-                `${title} was ${submitted}.`)
+                `${label} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
