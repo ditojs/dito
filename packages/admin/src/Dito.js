@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import VueAsyncComputed from 'vue-async-computed'
 import VeeValidate from 'vee-validate'
 import './components'
 import './types'
@@ -10,6 +11,7 @@ import { processComponent } from './schema'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
+Vue.use(VueAsyncComputed)
 Vue.use(VeeValidate, {
   // See: https://github.com/logaretm/vee-validate/issues/468
   inject: false,

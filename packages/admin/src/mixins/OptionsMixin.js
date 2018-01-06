@@ -1,42 +1,49 @@
 import axios from 'axios'
+import jsonPointer from 'json-pointer'
 import { isObject, isArray } from '@/utils'
 
 export default {
   data() {
     return {
-      options: [],
       // TODO: Allow handling through RouteMixin if required...
       loading: false
     }
   },
 
-  created() {
-    const { options } = this.schema
-    if (isObject(options)) {
-      const url = options.url ||
-        options.api && this.api.baseURL + options.api
-      if (url) {
-        this.loading = true
-        axios.get(url)
-          .then(response => {
-            this.loading = false
-            this.options = options.groupBy
-              ? this.groupBy(response.data, options.groupBy)
-              : response.data
-          })
-          .catch(error => {
-            this.$errors.add(this.name, error.response?.data || error.message)
-            this.options = null
-            this.loading = false
-          })
-      } else {
-        // When providing options.labelKey & options.valueKey, options.values
-        // can be used to provide the data instead of url.
-        this.options = options.values
+  asyncComputed: {
+    options() {
+      const { options } = this.schema
+      if (isObject(options)) {
+        const url = options.url ||
+          options.apiPath && this.api.baseURL + options.apiPath
+        if (url) {
+          this.loading = true
+          return axios.get(url)
+            .then(response => {
+              this.loading = false
+              return options.groupBy
+                ? this.groupBy(response.data, options.groupBy)
+                : response.data
+            })
+            .catch(error => {
+              this.$errors.add(this.name, error.response?.data || error.message)
+              this.loading = false
+              return null
+            })
+        } else if (options.dataPath) {
+          // dataPath uses the json-pointer format to reference data in the
+          // dataRoot, meaning the first parent data that isn't nested.
+          return this.dataRoot &&
+            jsonPointer.get(this.dataRoot, options.dataPath)
+        } else {
+          // When providing options.labelKey & options.valueKey, options.values
+          // can be used to provide the data instead of url.
+          return options.values
+        }
+      } else if (isArray(options)) {
+        // Use an array of strings to provide the values be shown and selected.
+        return options
       }
-    } else if (isArray(options)) {
-      // Use an array of strings to provide the values be shown and selected.
-      this.options = options
     }
   },
 
