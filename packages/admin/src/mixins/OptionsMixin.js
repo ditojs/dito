@@ -41,14 +41,14 @@ export default {
   },
 
   computed: {
-    labelKey() {
+    optionLabelKey() {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
       return this.schema.options.labelKey ||
        isObject(this.options?.[0]) && 'label' || null
     },
 
-    valueKey() {
+    optionValueKey() {
       // If no valueKey was provided but the options are objects, assume a
       // default value of 'value':
       const { options } = this.schema
@@ -71,11 +71,11 @@ export default {
     getOptionValue(option) {
       return this.schema.options.relate
         ? { id: option.id }
-        : this.valueKey ? option[this.valueKey] : option
+        : this.optionValueKey ? option[this.optionValueKey] : option
     },
 
     getOptionLabel(option) {
-      return this.labelKey ? option[this.labelKey] : option
+      return this.optionLabelKey ? option[this.optionLabelKey] : option
     },
 
     groupBy(options, groupBy) {
