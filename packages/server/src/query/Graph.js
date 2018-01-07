@@ -1,6 +1,5 @@
 import { RelationExpression } from 'objection'
-import jsonPointer from 'json-pointer'
-import { isArray, asArray, pick } from '@/utils'
+import { isArray, asArray, pick, getPath } from '@/utils'
 
 export default class Graph {
   constructor(rootModelClass, data, action, restoreRelations, options) {
@@ -127,7 +126,7 @@ export default class Graph {
    * For details, see:
    * https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
    */
-  processRelate(data, dataPath = '/', relationPath = []) {
+  processRelate(data, dataPath = [], relationPath = []) {
     if (data) {
       if (data.$isObjectionModel) {
         const relations = data.constructor.getRelations()
@@ -155,14 +154,14 @@ export default class Graph {
               }
             }
             if (hasRelations) {
-              this.removedRelations[dataPath] = values
+              this.removedRelations[dataPath.join('.')] = values
             }
           }
         } else {
           for (const key in relations) {
             // Set relate to true for nested objects, so nested relations end
             // up having it set.
-            clone[key] = this.processRelate(clone[key], `${dataPath}${key}/`,
+            clone[key] = this.processRelate(clone[key], [...dataPath, key],
               [...relationPath, key])
           }
         }
@@ -170,7 +169,7 @@ export default class Graph {
       } else if (isArray(data)) {
         // Pass on relate for hasMany arrays.
         return data.map((entry, index) =>
-          this.processRelate(entry, `${dataPath}${index}/`, relationPath))
+          this.processRelate(entry, [...dataPath, index], relationPath))
       }
     }
     return data
@@ -183,7 +182,7 @@ export default class Graph {
     if (this.removedRelations) {
       const data = asArray(result)
       for (const [path, values] of Object.entries(this.removedRelations)) {
-        const obj = jsonPointer.get(data, path)
+        const obj = getPath(data, path)
         for (const key in values) {
           obj[key] = values[key]
         }

@@ -70,14 +70,12 @@ export class ValidationError extends ResponseError {
 function parseErrors(errors, options) {
   // Convert from Ajv errors array to hash
   const errorHash = {}
-  let index = 0
   for (const { message, keyword, params, dataPath } of errors) {
     let key = dataPath.substring(1) ||
-      params?.missingProperty || params?.additionalProperty ||
-      (index++).toString()
+      params?.missingProperty || params?.additionalProperty
     // Adjust dataPaths to reflect nested validation in Objection.
     if (options.dataPath) {
-      key = `${options.dataPath.substring(1)}/${key}`
+      key = [...options.dataPath, key].join('.')
     }
     const array = errorHash[key] || (errorHash[key] = [])
     array.push({ message, keyword, params })

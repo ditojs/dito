@@ -18,7 +18,6 @@ export default class Validator extends objection.Validator {
     this.options = {
       allErrors: true,
       validateSchema: true,
-      jsonPointers: true,
       ownProperties: true,
       passContext: true,
       schemaId: '$id',

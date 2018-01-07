@@ -457,15 +457,13 @@ for (const key of [
 
 // Change the defaults of insertGraph, upsertGraph and updateGraph
 const insertGraphOptions = {
-  relate: true,
-  dataPath: true
+  relate: true
 }
 
 const upsertGraphOptions = {
   relate: true,
   unrelate: true,
-  insertMissing: true,
-  dataPath: true
+  insertMissing: true
 }
 
 const updateGraphOptions = {

@@ -36,7 +36,6 @@
     "chalk": "^2.3.0",
     "eventemitter2": "^5.0.0",
     "fs-extra": "^5.0.0",
-    "json-pointer": "^0.6.0",
     "koa": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
     "koa-compose": "^4.0.0",
@@ -48,7 +47,7 @@
     "koa-pino-logger": "^2.1.1",
     "koa-response-time": "^2.0.0",
     "koa-router": "^7.3.0",
-    "objection": "github:lehni/objection.js#65709f2a3312849e0dcb49aaad6e3f23c56a37cd",
+    "objection": "github:lehni/objection.js#343c8b41d2a557197fe8934c98ab92b26c02287e",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"
   },
