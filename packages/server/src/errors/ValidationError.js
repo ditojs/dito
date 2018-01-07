@@ -39,8 +39,10 @@ export class ValidationError extends ResponseError {
             message = definition?.message || message
           }
           // Produce keys that allow better detection of nested errors in Admin:
-          const errorKey = property && key && key !== property
-            ? `${key}/${property}`
+          const errorKey = property && key
+            ? key.endsWith(property)
+              ? key
+              : `${key}/${property}`
             : property || key
           const fullKey = `${errorKey}_${keyword}`
           if (!duplicates[fullKey]) {

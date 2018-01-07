@@ -745,7 +745,7 @@ ajv@^4.9.1:
     co "^4.6.0"
     json-stable-stringify "^1.0.1"
 
-ajv@^5.1.1, ajv@^5.2.3, ajv@^5.3.0:
+ajv@^5.2.3, ajv@^5.3.0:
   version "5.5.1"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-5.5.1.tgz#b38bb8876d9e86bee994956a04e721e88b248eb2"
   dependencies:
@@ -953,7 +953,7 @@ block-stream@*:
   dependencies:
     inherits "~2.0.0"
 
-bluebird@^3.4.6, bluebird@^3.5.0, bluebird@^3.5.1:
+bluebird@^3.4.6, bluebird@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.1.tgz#d9551f9de98f1fcda1e683d17ee91a0602ee2eb9"
 
@@ -2679,12 +2679,12 @@ object.pick@^1.2.0:
   dependencies:
     isobject "^3.0.1"
 
-"objection@github:lehni/objection.js#c6fb3b09bbdb71714154d6431b028a669b611dff":
-  version "0.9.4"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/c6fb3b09bbdb71714154d6431b028a669b611dff"
+"objection@github:lehni/objection.js#65709f2a3312849e0dcb49aaad6e3f23c56a37cd":
+  version "1.0.0-rc.1"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/65709f2a3312849e0dcb49aaad6e3f23c56a37cd"
   dependencies:
-    ajv "^5.1.1"
-    bluebird "^3.5.0"
+    ajv "^5.5.2"
+    bluebird "^3.5.1"
     lodash "^4.17.4"
 
 on-finished@^2.1.0:
