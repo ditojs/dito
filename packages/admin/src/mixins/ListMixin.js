@@ -219,10 +219,10 @@ export default {
       return item
     },
 
-    navigateToComponent(pointer, onComplete) {
-      const parts = pointer.split('/')
+    navigateToComponent(dataPath, onComplete) {
+      const parts = dataPath.split('.')
       // Use collection/id pairs (even numbers of parts) to determine the route.
-      // What's left is the property pointer, and will be handled by the form.
+      // What's left is the property dataPath, and will be handled by the form.
       parts.length -= parts.length & 1
       const path = this.api.normalizePath(parts.join('/'))
       const location = `${this.$route.path}/${path}`
@@ -230,11 +230,11 @@ export default {
       if (matched.length) {
         this.$router.push({ path: location, append: true }, route => {
           if (onComplete) {
-            onComplete(route, pointer)
+            onComplete(route, dataPath)
           }
         })
       } else {
-        throw new Error(`Cannot find route for field ${pointer}.`)
+        throw new Error(`Cannot find route for field ${dataPath}.`)
       }
     }
   }, // end of `methods`

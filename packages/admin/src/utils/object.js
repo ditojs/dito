@@ -53,6 +53,16 @@ export function pick(...args) {
   }
 }
 
+export function getPath(obj, path) {
+  for (const part of isArray(path) ? path : path.split(/[./]/)) {
+    if (!(obj && part in obj)) {
+      throw new Error(`Invalid path token: ${part}`)
+    }
+    obj = obj[part]
+  }
+  return obj
+}
+
 export function clone(obj) {
   return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
 }

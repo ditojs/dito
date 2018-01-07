@@ -104,10 +104,10 @@ export default {
       }
     },
 
-    navigateToErrors(pointer, errors) {
+    navigateToErrors(dataPath, errors) {
       const navigate = this.navigateToComponent
       if (navigate) {
-        navigate.call(this, pointer, (route, property) => {
+        navigate.call(this, dataPath, (route, property) => {
           const { matched } = route
           const { meta } = matched[matched.length - 1]
           // Pass on the errors to the instance through the meta object,
@@ -119,7 +119,7 @@ export default {
           }
         })
       } else {
-        throw new Error(`Cannot show errors for field ${pointer}: ${errors}`)
+        throw new Error(`Cannot show errors for field ${dataPath}: ${errors}`)
       }
     },
 

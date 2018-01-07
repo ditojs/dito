@@ -15,7 +15,7 @@
             :key="key"
             :schema="tabSchema"
             :hash="key"
-            :prefix="dataPrefix"
+            :dataPath="nestedDataPath"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -23,7 +23,7 @@
           )
           dito-panel(
             :schema="schema"
-            :prefix="dataPrefix"
+            :dataPath="nestedDataPath"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -182,12 +182,13 @@ export default DitoComponent.component('dito-form', {
       return this.api.denormalizePath(this.path
         // DitoViews have nested routes, so don't remove their path.
         .substring((parent.isView ? 0 : parent.path.length) + 1))
+        .replace(/\//g, '.')
     },
 
-    dataPrefix() {
+    nestedDataPath() {
       // Nested data needs to prefix its fields with the data path, for
       // validation errors to find their targets.
-      return this.isNested ? `${this.dataPath}/` : ''
+      return this.isNested ? this.dataPath : ''
     },
 
     listData() {
@@ -197,7 +198,7 @@ export default DitoComponent.component('dito-form', {
       let { data } = this.parentRouteComponent
       // Handle nested data by splitting the dataPath, iterate through the
       // actual data and look nest child-data up.
-      const dataParts = this.dataPath.split('/')
+      const dataParts = this.dataPath.split('.')
       // Compare dataParts against matched routePath parts, to identify those
       // parts that need to be treated like ids and mapped to indices in data.
       const pathParts = this.routeRecord.path.split('/')
@@ -294,12 +295,12 @@ export default DitoComponent.component('dito-form', {
     },
 
     addErrors(errors, focus) {
-      for (const [pointer, errs] of Object.entries(errors || {})) {
-        const component = this.components[pointer]
+      for (const [dataPath, errs] of Object.entries(errors || {})) {
+        const component = this.components[dataPath]
         if (component) {
           component.addErrors(errs, focus)
         } else {
-          throw new Error(`Cannot add errors for field ${pointer}: ${
+          throw new Error(`Cannot add errors for field ${dataPath}: ${
             JSON.stringify(errors)}`)
         }
       }
@@ -440,26 +441,26 @@ export default DitoComponent.component('dito-form', {
 
     showErrors(errors, focus) {
       let first = true
-      for (const [pointer, errs] of Object.entries(errors)) {
-        const component = this.components[pointer]
+      for (const [dataPath, errs] of Object.entries(errors)) {
+        const component = this.components[dataPath]
         if (component) {
           component.addErrors(errs, first && focus)
         } else {
-          // Couldn't find the component for the given pointer. See if we have
-          // a component serving a part of the pointer, and take it from there:
+          // Couldn't find the component for the given dataPath. See if we have
+          // a component serving a part of the dataPath, and take it from there:
           let found = false
-          const parts = pointer.split('/')
+          const parts = dataPath.split('.')
           while (!found && parts.length > 1) {
             parts.pop()
-            const component = this.components[parts.join('/')]
+            const component = this.components[parts.join('.')]
             if (component) {
-              component.navigateToErrors(pointer, errs)
+              component.navigateToErrors(dataPath, errs)
               found = true
             }
           }
           if (!found) {
             throw new Error(
-              `Cannot find component for field ${pointer}, errors: ${
+              `Cannot find component for field ${dataPath}, errors: ${
                 JSON.stringify(errs)}`)
           }
         }

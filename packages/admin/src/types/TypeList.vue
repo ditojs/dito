@@ -54,7 +54,7 @@
                 :schema="getFormSchema(item)"
                 :data="item"
                 :meta="nestedMeta"
-                :prefix="`${name}/${index}/`"
+                :dataPath="`${name}.${index}`"
                 :store="store"
                 :disabled="loading"
               )

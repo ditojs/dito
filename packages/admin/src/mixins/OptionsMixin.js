@@ -1,6 +1,5 @@
 import axios from 'axios'
-import jsonPointer from 'json-pointer'
-import { isObject, isArray } from '@/utils'
+import { isObject, isArray, getPath } from '@/utils'
 
 export default {
   data() {
@@ -26,15 +25,19 @@ export default {
                 : response.data
             })
             .catch(error => {
-              this.$errors.add(this.name, error.response?.data || error.message)
               this.loading = false
+              this.$errors.add(this.name, error.response?.data || error.message)
               return null
             })
         } else if (options.dataPath) {
           // dataPath uses the json-pointer format to reference data in the
           // dataRoot, meaning the first parent data that isn't nested.
-          return this.dataRoot &&
-            jsonPointer.get(this.dataRoot, options.dataPath)
+          const { dataPath } = options
+          if (/^[./]/.test(dataPath)) {
+            return this.dataRoot && getPath(this.dataRoot, dataPath.substr(1))
+          } else {
+            return this.data && getPath(this.data, dataPath)
+          }
         } else {
           // When providing options.labelKey & options.valueKey, options.values
           // can be used to provide the data instead of url.

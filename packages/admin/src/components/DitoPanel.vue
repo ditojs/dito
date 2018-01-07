@@ -81,7 +81,7 @@ export default DitoComponent.component('dito-panel', {
   props: {
     schema: { type: Object },
     hash: { type: String },
-    prefix: { type: String, default: '' },
+    dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -90,22 +90,26 @@ export default DitoComponent.component('dito-panel', {
 
   computed: {
     components() {
-      // Compute a components list which has the prefix baked into its keys and
-      // adds the key as the name to each component, used for labels etc.
-      // NOTE: schema can be null while multi-form lists load their data.
+      // Compute a components list which has the dataPath baked into its keys
+      // and adds the key as the name to each component, used for labels, etc.
       const {
+        dataPath,
+        // NOTE: schema can be null while multi-form lists load their data.
         schema: {
           components = {}
         } = {}
       } = this
-      const prefixed = {}
-      for (const [name, compSchema] of Object.entries(components)) {
-        prefixed[`${this.prefix}${name}`] = {
-          name,
-          ...compSchema
+      if (dataPath) {
+        const prefixed = {}
+        for (const [name, compSchema] of Object.entries(components)) {
+          prefixed[`${dataPath}.${name}`] = {
+            name,
+            ...compSchema
+          }
         }
+        return prefixed
       }
-      return prefixed
+      return components
     }
   },
 
