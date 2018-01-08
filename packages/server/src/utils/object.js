@@ -59,11 +59,22 @@ export function pick(...args) {
 
 export function getPath(obj, path) {
   for (const part of isArray(path) ? path : path.split(/[./]/)) {
-    if (!(obj && part in obj)) {
-      throw new Error(`Invalid path token: ${part}`)
+    if (!(obj && typeof obj === 'object' && part in obj)) {
+      throw new Error(`Invalid path: ${path}`)
     }
     obj = obj[part]
   }
+  return obj
+}
+
+export function setPath(obj, path, value) {
+  path = isArray(path) ? path : path.split(/[./]/)
+  const last = path.pop()
+  const dest = getPath(obj, path)
+  if (!(dest && typeof dest === 'object')) {
+    throw new Error(`Invalid path: ${path}`)
+  }
+  dest[last] = value
   return obj
 }
 
