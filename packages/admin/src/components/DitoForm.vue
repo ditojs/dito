@@ -387,7 +387,7 @@ export default DitoComponent.component('dito-form', {
         if (path) {
           resource = { ...resource, path }
         }
-        const payload = this.data
+        const payload = this.processPayload(this.data)
         this.request(method, { payload, resource }, (err, response) => {
           // eslint-disable-next-line
           const data = response?.data

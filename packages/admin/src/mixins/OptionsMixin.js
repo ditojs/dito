@@ -79,9 +79,17 @@ export default {
 
   methods: {
     getOptionValue(option) {
-      return this.schema.options.relate
-        ? { id: option.id }
-        : this.optionValueKey ? option[this.optionValueKey] : option
+      if (this.schema.options.relate) {
+        let { id } = option
+        // If ids are missing and we want to relate, add a transitional nanoid,
+        // but mark it with a '@' at the beginning.
+        if (!id) {
+          id = option.id = `@${++temporaryId}`
+        }
+        return { id }
+      } else {
+        return this.optionValueKey ? option[this.optionValueKey] : option
+      }
     },
 
     getOptionLabel(option) {
@@ -123,3 +131,5 @@ export default {
     }
   }
 }
+
+let temporaryId = 0

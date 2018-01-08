@@ -95,19 +95,14 @@ export default DitoComponent.component('dito-panel', {
       const {
         dataPath,
         // NOTE: schema can be null while multi-form lists load their data.
-        schema: {
-          components = {}
-        } = {}
+        schema = {}
       } = this
-      if (dataPath) {
-        const prefixed = {}
-        for (const [name, compSchema] of Object.entries(components)) {
-          prefixed[`${dataPath}.${name}`] = {
-            name,
-            ...compSchema
-          }
+      const components = {}
+      for (const [name, component] of Object.entries(schema.components || {})) {
+        components[dataPath ? `${dataPath}.${name}` : name] = {
+          name,
+          ...component
         }
-        return prefixed
       }
       return components
     }

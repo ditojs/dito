@@ -1,6 +1,6 @@
 import axios from 'axios'
 import TypeComponent from '@/TypeComponent'
-import { isObject, isString, isFunction, pick, clone } from '@/utils'
+import { isArray, isObject, isString, isFunction, pick, clone } from '@/utils'
 
 export default {
   data() {
@@ -201,40 +201,10 @@ export default {
     },
 
     requestData() {
-      // Dito Framework specific query parameters:
-      // TODO: Consider moving this into a modular place, so other backends
-      // could plug in as well.
-
-      // Helper to convert properties expression in JSON notation to strings,
-      // see parsePropertiesExpression() in Dito Framework.
-      function toPropertiesExpression(expression) {
-        return Object.entries(expression).map(
-          ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
-        ).join(',')
-      }
-
-      const { paginate, eager, pick, omit } = this.listSchema
-      const { page = 0, ...query } = this.query || {}
-      const limit = this.isList && paginate // Only use range on lists
-      const offset = page * limit
-      const params = {
-        ...query, // Query may override scope.
-        ...(eager && { eager }),
-        ...(pick && { pick: toPropertiesExpression(pick) }),
-        ...(omit && { omit: toPropertiesExpression(omit) }),
-        // Convert offset/limit to range so that we get results counting:
-        ...(limit && {
-          range: `${offset},${offset + limit - 1}`
-        })
-      }
+      const params = this.getQueryParams()
       this.request('get', { params }, (err, response) => {
         if (!err) {
-          let { data } = response
-          if (this.resource.type === 'collection' && isObject(data)) {
-            this.setStore('total', data.total)
-            data = data.results
-          }
-          this.setData(data)
+          this.setData(this.processResponse(response.data))
         }
       })
     },
@@ -279,6 +249,101 @@ export default {
       })
         .then(response => callback(null, response))
         .catch(error => callback(error, error.response))
+    },
+
+    // Dito Framework specific processing of parameters, payload and response:
+
+    getQueryParams() {
+      // Dito Framework specific query parameters:
+      // TODO: Consider moving this into a modular place, so other backends
+      // could plug in as well.
+
+      // Helper to convert properties expression in JSON notation to strings,
+      // see parsePropertiesExpression() in Dito Framework.
+      function toPropertiesExpression(expression) {
+        return Object.entries(expression).map(
+          ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
+        ).join(',')
+      }
+
+      const { paginate, eager, pick, omit } = this.listSchema
+      const { page = 0, ...query } = this.query || {}
+      const limit = this.isList && paginate // Only use range on lists
+      const offset = page * limit
+      return {
+        ...query, // Query may override scope.
+        ...(eager && { eager }),
+        ...(pick && { pick: toPropertiesExpression(pick) }),
+        ...(omit && { omit: toPropertiesExpression(omit) }),
+        // Convert offset/limit to range so that we get results counting:
+        ...(limit && {
+          range: `${offset},${offset + limit - 1}`
+        })
+      }
+    },
+
+    processResponse(data) {
+      // Dito Framework specific handling of paginated response:
+      if (this.resource.type === 'collection' && isObject(data)) {
+        this.setStore('total', data.total)
+        data = data.results
+      }
+      return data
+    },
+
+    processPayload(data) {
+      // Dito Framework specific handling of relates within graphs:
+      // Find and group entries with temporary ids, and convert them to
+      // #id / #ref pairs.
+      const idLists = {}
+
+      const process = data => {
+        if (data) {
+          if (isObject(data)) {
+            const processed = {}
+            let hasProperties = false
+            for (const key in data) {
+              processed[key] = process(data[key])
+              if (!hasProperties && key !== 'id') {
+                hasProperties = true
+              }
+            }
+
+            const { id } = processed
+            if (/^@/.test(id)) {
+              // Remove the temporary id and set up id lists for later
+              // assignment of #id and #ref values.
+              delete processed.id
+              const idList = idLists[id] = idLists[id] || []
+              // The first element with properties is going to be #id,
+              // the others will receive the #ref references.
+              if (!idList.length && hasProperties) {
+                idList.unshift(processed)
+              } else {
+                idList.push(processed)
+              }
+            }
+
+            data = processed
+          } else if (isArray(data)) {
+            data = data.map(entry => process(entry))
+          }
+        }
+        return data
+      }
+
+      const processed = process(data)
+
+      // Now assign #id and #ref of all entries in idLists.
+      for (const [id, idList] of Object.entries(idLists)) {
+        const first = idList.shift()
+        first['#id'] = id
+        for (const other of idList) {
+          other['#ref'] = id
+        }
+      }
+
+      return processed
     }
   }
 }
