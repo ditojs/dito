@@ -295,32 +295,27 @@ export default {
       // Dito Framework specific handling of relates within graphs:
       // Find and group entries with temporary ids, and convert them to
       // #id / #ref pairs.
-      const idLists = {}
+      const encounterdIds = {}
 
       const process = data => {
         if (data) {
           if (isObject(data)) {
-            const processed = {}
-            let hasProperties = false
+            let processed = {}
             for (const key in data) {
               processed[key] = process(data[key])
-              if (!hasProperties && key !== 'id') {
-                hasProperties = true
-              }
             }
 
             const { id } = processed
             if (/^@/.test(id)) {
-              // Remove the temporary id and set up id lists for later
-              // assignment of #id and #ref values.
-              delete processed.id
-              const idList = idLists[id] = idLists[id] || []
-              // The first element with properties is going to be #id,
-              // the others will receive the #ref references.
-              if (!idList.length && hasProperties) {
-                idList.unshift(processed)
+              // The first time a temporary id is encountered, replace it with
+              // the #id key. All other encounters are replaced with shallow
+              // #ref references to it.
+              if (!encounterdIds[id]) {
+                encounterdIds[id] = true
+                delete processed.id
+                processed['#id'] = id
               } else {
-                idList.push(processed)
+                processed = { '#ref': id }
               }
             }
 
@@ -332,18 +327,7 @@ export default {
         return data
       }
 
-      const processed = process(data)
-
-      // Now assign #id and #ref of all entries in idLists.
-      for (const [id, idList] of Object.entries(idLists)) {
-        const first = idList.shift()
-        first['#id'] = id
-        for (const other of idList) {
-          other['#ref'] = id
-        }
-      }
-
-      return processed
+      return process(data)
     }
   }
 }

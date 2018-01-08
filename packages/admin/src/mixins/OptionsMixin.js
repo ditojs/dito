@@ -37,7 +37,7 @@ export default {
             ? this.dataRoot && getPath(this.dataRoot, dataPath.substr(1))
             : this.data && getPath(this.data, dataPath)
           if (this.schema.options.relate) {
-            // If ids are missing and we want to relate, add a temporary id,
+            // If ids are missing and we want to relate, add temporary ids,
             // marked it with a '@' at the beginning.
             if (data) {
               for (const option of data) {
