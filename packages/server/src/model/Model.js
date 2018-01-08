@@ -459,12 +459,16 @@ const definitionHandlers = {
     addIdProperty(this.getIdProperty(), {
       primary: true
     })
+
+    const { relations } = this.definition
     for (const relation of Object.values(this.getRelations())) {
+      const { nullable } = relations[relation.name]
       for (const property of relation.ownerProp.props) {
         addIdProperty(property, {
           unsigned: true,
           foreign: true,
-          index: true
+          index: true,
+          nullable
         })
       }
     }
