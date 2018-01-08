@@ -33,11 +33,21 @@ export default {
           // dataPath uses the json-pointer format to reference data in the
           // dataRoot, meaning the first parent data that isn't nested.
           const { dataPath } = options
-          if (/^[./]/.test(dataPath)) {
-            return this.dataRoot && getPath(this.dataRoot, dataPath.substr(1))
-          } else {
-            return this.data && getPath(this.data, dataPath)
+          const data = /^[./]/.test(dataPath)
+            ? this.dataRoot && getPath(this.dataRoot, dataPath.substr(1))
+            : this.data && getPath(this.data, dataPath)
+          if (this.schema.options.relate) {
+            // If ids are missing and we want to relate, add a temporary id,
+            // marked it with a '@' at the beginning.
+            if (data) {
+              for (const option of data) {
+                if (!option.id) {
+                  option.id = `@${++temporaryId}`
+                }
+              }
+            }
           }
+          return data
         } else {
           // When providing options.labelKey & options.valueKey, options.values
           // can be used to provide the data instead of url.
@@ -51,6 +61,19 @@ export default {
   },
 
   computed: {
+    selectValue: {
+      get() {
+        return this.schema.options.relate
+          ? this.optionToValue(this.value)
+          : this.value
+      },
+      set(value) {
+        this.value = this.schema.options.relate
+          ? this.valueToOption(value)
+          : value
+      }
+    },
+
     optionLabelKey() {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
@@ -79,17 +102,7 @@ export default {
 
   methods: {
     getOptionValue(option) {
-      if (this.schema.options.relate) {
-        let { id } = option
-        // If ids are missing and we want to relate, add a transitional nanoid,
-        // but mark it with a '@' at the beginning.
-        if (!id) {
-          id = option.id = `@${++temporaryId}`
-        }
-        return { id }
-      } else {
-        return this.optionValueKey ? option[this.optionValueKey] : option
-      }
+      return this.optionValueKey ? option[this.optionValueKey] : option
     },
 
     getOptionLabel(option) {
@@ -128,6 +141,21 @@ export default {
           }
         }
       }
+    },
+
+    valueToOption(value) {
+      // Convert value to options object, since vue-multiselect can't map that
+      // itself unfortunately. `track-by` is used for :key mapping it seems.
+      return this.optionValueKey
+        ? this.findOption(this.options, value, this.schema.options.groupBy)
+        : value
+    },
+
+    optionToValue(value) {
+      // When changes happend, store the mapped value instead of full object.
+      return this.optionValueKey
+        ? value?.[this.optionValueKey]
+        : value
     }
   }
 }

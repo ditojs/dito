@@ -5,6 +5,7 @@
 import './TypeButton'
 import './TypeCheckbox'
 import './TypeCheckboxes'
+import './TypeComputed'
 import './TypeCode'
 import './TypeDate'
 import './TypeList'

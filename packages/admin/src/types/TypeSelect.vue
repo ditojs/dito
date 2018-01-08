@@ -5,7 +5,7 @@
       :id="name"
       :name="name"
       :title="label"
-      v-model="value"
+      v-model="selectValue"
       v-validate="validations"
       :data-vv-as="label"
     )

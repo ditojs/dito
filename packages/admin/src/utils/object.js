@@ -55,8 +55,8 @@ export function pick(...args) {
 
 export function getPath(obj, path) {
   for (const part of isArray(path) ? path : path.split(/[./]/)) {
-    if (!(obj && part in obj)) {
-      throw new Error(`Invalid path token: ${part}`)
+    if (!(obj && typeof obj === 'object' && part in obj)) {
+      throw new Error(`Invalid path: ${path}`)
     }
     obj = obj[part]
   }
