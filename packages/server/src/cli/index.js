@@ -1,7 +1,8 @@
 #!/usr/bin/env babel-node
 
 import path from 'path'
-import { isFunction, camelize } from '@/utils'
+import Knex from 'knex'
+import { isObject, isFunction, camelize } from '@/utils'
 import * as db from './db'
 import startConsole from './console'
 
@@ -25,6 +26,8 @@ async function execute() {
     let arg = (await import(path.resolve(importPath))).default
     if (isFunction(arg)) {
       arg = await arg()
+    } else if (isObject(arg) && arg.knex) {
+      arg = Knex(arg.knex)
     }
     const res = await execute(arg, ...args)
     if (res === true) {

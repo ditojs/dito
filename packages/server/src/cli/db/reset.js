@@ -1,9 +1,7 @@
-import Knex from 'knex'
 import chalk from 'chalk'
 import { migrate } from './migrate'
 
-export async function reset(config) {
-  const knex = Knex(config.knex)
+export async function reset(knex) {
   const batches = []
   const migrations = []
   while (true) {
@@ -17,6 +15,6 @@ export async function reset(config) {
     : chalk.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
       `rolled back: ${migrations.length} migrations\n`) +
       chalk.cyan(migrations.join('\n')))
-  await migrate(config)
+  await migrate(knex)
   return true // done
 }

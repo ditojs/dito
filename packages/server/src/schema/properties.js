@@ -139,12 +139,13 @@ function makeNullable(schema) {
     : $ref || _instanceof || format
       ? {
         oneOf: [
-          $ref ? { $ref }
-          : {
-            type,
-            ...(_instanceof && { instanceof: _instanceof }),
-            ...(format && { format })
-          },
+          $ref
+            ? { $ref }
+            : {
+              type,
+              ...(_instanceof && { instanceof: _instanceof }),
+              ...(format && { format })
+            },
           { type: 'null' }
         ],
         ...rest
