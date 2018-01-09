@@ -4,6 +4,7 @@
     :name="name"
     type="text"
     :value="value"
+    :readonly="true"
   )
 </template>
 
