@@ -120,7 +120,7 @@ export default class Model extends objection.Model {
       const schema = addRelationSchemas(this, convertSchema(properties))
       return {
         $id: this.name,
-        $schema: 'http://json-schema.org/draft-06/schema#',
+        $schema: 'http://json-schema.org/draft-07/schema#',
         ...schema
       }
     })

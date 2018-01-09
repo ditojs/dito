@@ -131,7 +131,7 @@ export default class Graph {
       if (data.$isObjectionModel) {
         const relations = data.constructor.getRelations()
         const shallow = data.$hasId()
-        const clone = data.$clone(shallow)
+        const clone = data.$clone({ shallow })
         if (shallow) {
           // Fill removedRelations with json-pointer -> relation-value pairs,
           // so that we can restore the relations again after the operation in
