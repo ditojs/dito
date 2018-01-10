@@ -5,7 +5,7 @@ import PropertyRef from './PropertyRef'
 import QueryHandlers from './QueryHandlers'
 import QueryFilters from './QueryFilters'
 import Graph from './Graph'
-import { isObject, isArray, isString, asArray } from '@/utils'
+import { isArray, isPlainObject, isString, asArray } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -444,7 +444,7 @@ for (const key of [
 
     if (isString(arg)) {
       arg = convertIdentifier(arg)
-    } else if (isObject(arg)) {
+    } else if (isPlainObject(arg)) {
       const converted = {}
       for (const key in arg) {
         converted[convertIdentifier(key)] = arg[key]
