@@ -30,7 +30,7 @@ exports.cssLoaders = function (options) {
   }
 
   // generate loader string to be used with extract text plugin
-  function generateLoaders (loader, loaderOptions) {
+  function generateLoaders(loader, loaderOptions) {
     const loaders = options.usePostCSS ? [cssLoader, postcssLoader] : [cssLoader]
 
     if (loader) {
@@ -55,7 +55,7 @@ exports.cssLoaders = function (options) {
   }
 
   const sassOptions = {
-    includePaths: [ './src/styles' ],
+    includePaths: ['./src/styles'],
     data: '@import "_imports";'
   }
 
