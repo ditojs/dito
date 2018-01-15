@@ -2,14 +2,13 @@ import { ResponseError } from './ResponseError'
 import { isObject, isString } from 'dito-utils'
 
 export class WrappedError extends ResponseError {
-  constructor(error, process = str => str, status = 400) {
-    if (isString(error)) {
-      error = { message: error }
-    }
+  constructor(error, process = str => str) {
     super({
-      message: process(error.message),
-      ...error
-    }, status)
-    this.stack = process(error.stack)
+      message: process(isString(error) ? error : error?.message),
+      ...(isObject(error) ? error : null)
+    }, { message: 'Wrapped error', status: 400 })
+    if (error?.stack) {
+      this.stack = process(error.stack)
+    }
   }
 }

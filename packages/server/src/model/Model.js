@@ -331,42 +331,16 @@ export default class Model extends objection.Model {
     return this.app.compileValidator(jsonSchema)
   }
 
-  static createValidationError(errors, message, options = {}) {
-    const isValidationError = this.isValidationError(errors)
-    message = message || isValidationError
-      ? `The provided data for the ${this.name} instance is not valid`
-      : 'Query error'
-    const error = { message, errors }
-    return isValidationError
-      ? new this.ValidationError(this, error, options)
-      : new this.QueryError(error)
+  static createValidationError({ type, message, errors, options }) {
+    if (type === 'ModelValidation' || type === 'RestValidation') {
+      errors = this.app.validator.parseErrors(errors, options)
+      message = message ||
+        `The provided data for the ${this.name} instance is not valid`
+      return new ValidationError({ type, message, errors })
+    }
+    return new QueryError({ type, message, errors })
   }
 
-  static isValidationError(errors) {
-    // Unfortunately, Objection.js currently uses createValidationError() for
-    // very different types of errors, so we have to look at the nature of the
-    // error to filter out actual validation errors and use different
-    // Error constructors, see createValidationError()
-
-    // First detect native AJV validation errors, which are arrays of error
-    // objects of which each defines a schemaPath.
-    if (isArray(errors)) {
-      return !!errors?.[0].schemaPath
-    }
-
-    // Now detect parsed Objection validation errors, which are the only ones to
-    // hold array properties.
-    for (const key in errors) {
-      // Only if the first found key has an array value than we're dealing with
-      // real validation errors.
-      return isArray(errors[key])
-    }
-
-    return false
-  }
-
-  static ValidationError = ValidationError
-  static QueryError = QueryError
   static QueryBuilder = QueryBuilder
 
   // Only pick properties for database JSON that is mentioned in the schema.

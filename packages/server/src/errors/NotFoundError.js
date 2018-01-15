@@ -1,7 +1,7 @@
 import { ResponseError } from './ResponseError'
 
 export class NotFoundError extends ResponseError {
-  constructor(message, status = 404) {
-    super(message, status)
+  constructor(error) {
+    super(error, { message: 'Not-found error', status: 404 })
   }
 }

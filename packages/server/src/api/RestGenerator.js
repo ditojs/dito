@@ -185,8 +185,11 @@ function createArgumentsValidator(modelClass, args = [], options = {}) {
 function getArguments(modelClass, method, validate, ctx) {
   const { query } = ctx
   if (!validate(query)) {
-    throw modelClass.createValidationError(validate.errors,
-      `The provided data is not valid: ${JSON.stringify(query)}`)
+    throw modelClass.createValidationError({
+      type: 'RestValidation',
+      message: `The provided data is not valid: ${JSON.stringify(query)}`,
+      errors: validate.errors
+    })
   }
   const args = []
   // If no arguments are provided, pass the full ctx object to the method
@@ -202,8 +205,11 @@ function getReturn(modelClass, method, validate, value) {
     // Use 'root' if no name is given, see createArgumentsValidator()
     const data = { [name || 'root']: value }
     if (!validate.call(value, data)) { // passContext
-      throw modelClass.createValidationError(validate.errors,
-        `Invalid result of remote method: ${value}`)
+      throw modelClass.createValidationError({
+        type: 'RestValidation',
+        message: `Invalid result of remote method: ${value}`,
+        errors: validate.errors
+      })
     }
     return name ? data : value
   })

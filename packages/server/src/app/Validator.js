@@ -18,6 +18,7 @@ export default class Validator extends objection.Validator {
 
     this.options = {
       allErrors: true,
+      errorDataPath: 'property',
       validateSchema: true,
       ownProperties: true,
       passContext: true,
@@ -84,6 +85,39 @@ export default class Validator extends objection.Validator {
     this.ajvNoDefaults.addSchema({ ...jsonSchema, required: [] })
   }
 
+  parseErrors(errors, options) {
+    // Convert from Ajv errors array to Objection-style errorHash,
+    // with additional parsing and processing.
+    const errorHash = {}
+    // Ajv produces duplicate validation errors sometimes, filter them out here.
+    const duplicates = {}
+    for (const error of errors) {
+      // Adjust dataPaths to reflect nested validation in Objection.
+      const dataPath = `${options?.dataPath || ''}${error.dataPath}`
+      // Unknown properties are reported in `['propertyName']` notation,
+      // so replace those with dot-notation, see:
+      // https://github.com/epoberezkin/ajv/issues/671
+      const key = dataPath.replace(/\['([^']*)'\]/g, '.$1').substring(1)
+      let { message, keyword, params } = error
+      // Allow custom formats and keywords to override error messages
+      const definition = keyword === 'format'
+        ? this.getFormat(params.format)
+        : this.getKeyword(keyword)
+      if (definition?.macro) {
+        // Skip keywords that are only delegating to other keywords.
+        continue
+      }
+      message = definition?.message || message
+      const identifier = `${key}_${keyword}`
+      if (!duplicates[identifier]) {
+        const array = errorHash[key] || (errorHash[key] = [])
+        array.push({ message, keyword, params })
+        duplicates[identifier] = true
+      }
+    }
+    return errorHash
+  }
+
   // @override
   validate(args) {
     let { json, model, options, ctx } = args
@@ -99,9 +133,13 @@ export default class Validator extends objection.Validator {
       validator.call(model, json)
       const { errors } = validator
       if (errors) {
-        // The conversion from Ajv errors to Objection errors happen in the
-        // ValidationError class.
-        throw model.constructor.createValidationError(errors, null, options)
+        // NOTE: The conversion from Ajv errors to Objection errors happen in
+        // Model.createValidationError(), through Validator.parseError()
+        throw model.constructor.createValidationError({
+          type: 'ModelValidation',
+          errors,
+          options
+        })
       }
     }
     return json
