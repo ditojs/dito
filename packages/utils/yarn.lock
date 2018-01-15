@@ -132,7 +132,7 @@
   dependencies:
     "@babel/types" "7.0.0-beta.37"
 
-"@babel/helper-module-imports@7.0.0-beta.37", "@babel/helper-module-imports@^7.0.0-beta":
+"@babel/helper-module-imports@7.0.0-beta.37":
   version "7.0.0-beta.37"
   resolved "https://registry.yarnpkg.com/@babel/helper-module-imports/-/helper-module-imports-7.0.0-beta.37.tgz#e0f34cfbe7eb0d70dc02e1481a236e26d127fb43"
   dependencies:
@@ -331,7 +331,7 @@
   version "7.0.0-beta.37"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-do-expressions/-/plugin-syntax-do-expressions-7.0.0-beta.37.tgz#95943b067bae307aa2552e930f0a428440017197"
 
-"@babel/plugin-syntax-dynamic-import@7.0.0-beta.37", "@babel/plugin-syntax-dynamic-import@^7.0.0-beta.32":
+"@babel/plugin-syntax-dynamic-import@7.0.0-beta.37", "@babel/plugin-syntax-dynamic-import@^7.0.0-beta.37":
   version "7.0.0-beta.37"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-dynamic-import/-/plugin-syntax-dynamic-import-7.0.0-beta.37.tgz#cac79651c3ab6b3cd9c0898c801b2518dd9379aa"
 
@@ -844,11 +844,11 @@ babel-eslint@^8.2.1:
     eslint-scope "~3.7.1"
     eslint-visitor-keys "^1.0.0"
 
-babel-plugin-dynamic-import-node-babel-7@2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node-babel-7/-/babel-plugin-dynamic-import-node-babel-7-2.0.1.tgz#1a893d03c29e09d90b8f34f8b7468ba36168cf1a"
+babel-plugin-dynamic-import-node-babel-7@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node-babel-7/-/babel-plugin-dynamic-import-node-babel-7-2.0.3.tgz#5134838dcbd09f96a956bc14aa7345d5764c4657"
   dependencies:
-    "@babel/plugin-syntax-dynamic-import" "^7.0.0-beta.32"
+    "@babel/plugin-syntax-dynamic-import" "^7.0.0-beta.37"
 
 babel-plugin-module-resolver@^3.0.0:
   version "3.0.0"
@@ -859,12 +859,6 @@ babel-plugin-module-resolver@^3.0.0:
     pkg-up "^2.0.0"
     reselect "^3.0.1"
     resolve "^1.4.0"
-
-babel-plugin-transform-promise-to-bluebird@2.0.0-beta.1:
-  version "2.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/babel-plugin-transform-promise-to-bluebird/-/babel-plugin-transform-promise-to-bluebird-2.0.0-beta.1.tgz#8f5165f92b52cb0a6b5e28ba78d4cec19dd0c662"
-  dependencies:
-    "@babel/helper-module-imports" "^7.0.0-beta"
 
 babylon@7.0.0-beta.36:
   version "7.0.0-beta.36"
