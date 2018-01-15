@@ -182,7 +182,6 @@ export default DitoComponent.component('dito-form', {
       return this.api.denormalizePath(this.path
         // DitoViews have nested routes, so don't remove their path.
         .substring((parent.isView ? 0 : parent.path.length) + 1))
-        .replace(/\//g, '.')
     },
 
     nestedDataPath() {
@@ -198,7 +197,7 @@ export default DitoComponent.component('dito-form', {
       let { data } = this.parentRouteComponent
       // Handle nested data by splitting the dataPath, iterate through the
       // actual data and look nest child-data up.
-      const dataParts = this.dataPath.split('.')
+      const dataParts = this.dataPath.split('/')
       // Compare dataParts against matched routePath parts, to identify those
       // parts that need to be treated like ids and mapped to indices in data.
       const pathParts = this.routeRecord.path.split('/')
@@ -441,7 +440,12 @@ export default DitoComponent.component('dito-form', {
 
     showErrors(errors, focus) {
       let first = true
-      for (const [dataPath, errs] of Object.entries(errors)) {
+      for (const [key, errs] of Object.entries(errors)) {
+        // Convert from JavaScript property access notation, to our own form
+        // of relative JSON pointers as data-paths:
+        const dataPath = key
+          .replace(/\.([^.]*)/g, '/$1')
+          .replace(/\[([^\]]*)\]/g, '/$1')
         const component = this.components[dataPath]
         if (component) {
           component.addErrors(errs, first && focus)
@@ -449,10 +453,10 @@ export default DitoComponent.component('dito-form', {
           // Couldn't find the component for the given dataPath. See if we have
           // a component serving a part of the dataPath, and take it from there:
           let found = false
-          const parts = dataPath.split('.')
+          const parts = dataPath.split('/')
           while (!found && parts.length > 1) {
             parts.pop()
-            const component = this.components[parts.join('.')]
+            const component = this.components[parts.join('/')]
             if (component) {
               component.navigateToErrors(dataPath, errs)
               found = true

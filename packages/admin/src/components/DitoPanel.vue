@@ -99,7 +99,7 @@ export default DitoComponent.component('dito-panel', {
       } = this
       const components = {}
       for (const [name, component] of Object.entries(schema.components || {})) {
-        components[dataPath ? `${dataPath}.${name}` : name] = {
+        components[dataPath ? `${dataPath}/${name}` : name] = {
           name,
           ...component
         }

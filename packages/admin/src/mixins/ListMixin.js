@@ -220,11 +220,11 @@ export default {
     },
 
     navigateToComponent(dataPath, onComplete) {
-      const parts = dataPath.split('.')
+      const parts = this.api.normalizePath(dataPath).split('/')
       // Use collection/id pairs (even numbers of parts) to determine the route.
       // What's left is the property dataPath, and will be handled by the form.
       parts.length -= parts.length & 1
-      const path = this.api.normalizePath(parts.join('/'))
+      const path = parts.join('/')
       const location = `${this.$route.path}/${path}`
       const { matched } = this.$router.match(location)
       if (matched.length) {
