@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Dito Framework utility functions",
   "main": "lib/index.js",
-  "repository": "https://github.com/lineto/dito-utils",
+  "repository": "https://github.com/dito-framework/dito-utils",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "files": [
