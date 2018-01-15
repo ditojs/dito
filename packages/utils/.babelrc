@@ -1,0 +1,21 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": {
+        "node": "8.9"
+      },
+      "useBuiltIns": "usage"
+    }],
+    ["@babel/preset-stage-1"]
+  ],
+  "plugins": [
+    "dynamic-import-node-babel-7",
+    ["module-resolver", {
+      "cwd": "babelrc",
+      "alias": {
+        "~": ".",
+        "@": "./src"
+      }
+    }]
+  ]
+}
