@@ -1,4 +1,4 @@
-import { isObject, isArray } from 'dito-utils'
+import { isObject, isArray } from '@ditojs/utils'
 
 export function mapValues(obj, callback) {
   return Object.entries(obj).reduce((res, [key, value]) => {

@@ -2,7 +2,7 @@
 
 import path from 'path'
 import Knex from 'knex'
-import { isPlainObject, isFunction, camelize } from 'dito-utils'
+import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
 import * as db from './db'
 import startConsole from './console'
 

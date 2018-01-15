@@ -1,5 +1,5 @@
 import { RelationExpression } from 'objection'
-import { isArray, asArray, pick, getDataPath } from 'dito-utils'
+import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
 
 export default class Graph {
   constructor(rootModelClass, data, action, restoreRelations, options) {

@@ -1,5 +1,5 @@
 import { QueryError } from '@/errors'
-import { isObject, isArray, isString, asArray, capitalize } from 'dito-utils'
+import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import Registry from './Registry'
 import QueryFilters from './QueryFilters'
 

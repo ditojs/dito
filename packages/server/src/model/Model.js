@@ -3,7 +3,7 @@ import util from 'util'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
-import { isObject, isFunction } from 'dito-utils'
+import { isObject, isFunction } from '@ditojs/utils'
 import { deepMergeUnshift } from '@/utils'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations

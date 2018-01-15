@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
-import { isFunction, isArray } from 'dito-utils'
+import { isFunction, isArray } from '@ditojs/utils'
 
 export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')

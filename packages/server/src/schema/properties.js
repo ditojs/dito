@@ -1,4 +1,4 @@
-import { isObject, isArray, asArray, isString } from 'dito-utils'
+import { isObject, isArray, asArray, isString } from '@ditojs/utils'
 
 // TODO: convert `nullable: true` to `type: [... 'null']` detection?
 

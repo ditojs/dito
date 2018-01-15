@@ -3,7 +3,7 @@ import chalk from 'chalk'
 import pluralize from 'pluralize'
 import { convertSchema } from '@/schema'
 import { NotFoundError } from '@/errors'
-import { isObject, isString, isFunction, pick, hyphenate } from 'dito-utils'
+import { isObject, isString, isFunction, pick, hyphenate } from '@ditojs/utils'
 
 export default class RestGenerator {
   constructor({ adapter, logging, prefix } = {}) {

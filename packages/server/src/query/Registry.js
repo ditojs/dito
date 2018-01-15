@@ -1,4 +1,4 @@
-import { isObject } from 'dito-utils'
+import { isObject } from '@ditojs/utils'
 
 export default function () {
   const registry = Object.create(null)

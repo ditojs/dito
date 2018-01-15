@@ -1,6 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
-import { isArray, isObject, clone } from 'dito-utils'
+import { isArray, isObject, clone } from '@ditojs/utils'
 import { mapValues } from '@/utils'
 import * as schema from '@/schema'
 

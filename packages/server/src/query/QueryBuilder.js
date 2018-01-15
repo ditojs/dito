@@ -5,7 +5,7 @@ import PropertyRef from './PropertyRef'
 import QueryHandlers from './QueryHandlers'
 import QueryFilters from './QueryFilters'
 import Graph from './Graph'
-import { isArray, isPlainObject, isString, asArray } from 'dito-utils'
+import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better

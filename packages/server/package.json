@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Dito.js Server – Dito.js is a minimal and modern web framework, based on Koa2 and Objection.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito-server",
