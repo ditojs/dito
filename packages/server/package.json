@@ -1,11 +1,9 @@
 {
-  "name": "dito-framework",
-  "version": "0.1.0",
-  "description": "Dito Framework is a minimal and modern object oriented REST API server framework, based on Koa2 and Objection.js",
+  "name": "@ditojs/server",
+  "version": "0.2.0",
+  "description": "Dito.js Server – Dito.js is a minimal and modern web framework, based on Koa2 and Objection.js",
   "main": "lib/index.js",
-  "module": "src/index.js",
-  "jsnext:main": "src/index.js",
-  "repository": "https://github.com/lineto/dito-framework",
+  "repository": "https://github.com/ditojs/dito-server",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "files": [
@@ -31,11 +29,11 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
+    "@ditojs/utils": "^0.2.1",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.0.1",
     "bluebird": "^3.5.1",
     "chalk": "^2.3.0",
-    "dito-utils": "^0.1.0",
     "eventemitter2": "^5.0.1",
     "fs-extra": "^5.0.0",
     "koa": "^2.3.0",
