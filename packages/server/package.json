@@ -13,7 +13,7 @@
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
     "build": "babel src --out-dir lib --copy-files --source-maps inline",
-    "watch": "babel src --out-dir lib --watch --copy-files --source-maps inline",
+    "watch": "yarn build --watch",
     "prepare": "yarn build",
     "posttest": "yarn lint && nsp check",
     "lint": "cross-env NODE_ENV=production eslint src",
@@ -24,8 +24,7 @@
     "dito": "./lib/cli/index.js"
   },
   "engines": {
-    "node": ">= 8.0.0",
-    "npm": ">= 5.0.0",
+    "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
