@@ -17,7 +17,7 @@
 
 import DitoComponent from './DitoComponent'
 import TypeMixin from './mixins/TypeMixin'
-import { asArray } from './utils'
+import { asArray } from 'dito-utils'
 
 const { typeComponents } = DitoComponent
 

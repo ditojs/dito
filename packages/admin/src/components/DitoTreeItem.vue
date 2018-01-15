@@ -92,7 +92,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObject, isFunction } from '@/utils'
+import { isObject, isFunction } from 'dito-utils'
 
 export default DitoComponent.component('dito-tree-item', {
   props: {

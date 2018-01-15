@@ -1,4 +1,4 @@
-import { isObject } from '@/utils'
+import { isObject } from 'dito-utils'
 
 // TODO: Share functionality with lineto-frontend through module
 export default {

@@ -2,8 +2,8 @@ import DataMixin from '@/mixins/DataMixin'
 import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
+import { isObject, isArray, escapeHtml, camelize, labelize } from 'dito-utils'
 import { processForms, processFormComponents } from '@/schema'
-import { isObject, isArray, escapeHtml, camelize, labelize } from '@/utils'
 
 export default {
   mixins: [DataMixin],

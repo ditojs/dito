@@ -1,5 +1,5 @@
 import TypeComponent from './TypeComponent'
-import { isFunction, isPromise } from './utils'
+import { isFunction, isPromise } from 'dito-utils'
 
 export function processComponent(schema, name, api, routes,
   parentMeta = null, level = 0) {

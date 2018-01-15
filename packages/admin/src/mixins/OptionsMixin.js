@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isObject, isArray, getPath } from '@/utils'
+import { isObject, isArray, getDataPath } from 'dito-utils'
 
 export default {
   data() {
@@ -34,8 +34,8 @@ export default {
           // dataRoot, meaning the first parent data that isn't nested.
           const { dataPath } = options
           const data = /^[./]/.test(dataPath)
-            ? this.dataRoot && getPath(this.dataRoot, dataPath.substr(1))
-            : this.data && getPath(this.data, dataPath)
+            ? this.dataRoot && getDataPath(this.dataRoot, dataPath.substr(1))
+            : this.data && getDataPath(this.data, dataPath)
           if (this.schema.options.relate) {
             // If ids are missing and we want to relate, add temporary ids,
             // marked it with a '@' at the beginning.

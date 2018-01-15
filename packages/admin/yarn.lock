@@ -2047,6 +2047,10 @@ dir-glob@^2.0.0:
     arrify "^1.0.1"
     path-type "^3.0.0"
 
+dito-utils@^0.0.0:
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/dito-utils/-/dito-utils-0.0.0.tgz#2e824978a89cd0432959515891a6e2bfd1e54763"
+
 dns-equal@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/dns-equal/-/dns-equal-1.0.0.tgz#b39e7f1da6eb0a75ba9c17324b34753c47e0654d"

@@ -1,6 +1,8 @@
-import axios from 'axios'
 import TypeComponent from '@/TypeComponent'
-import { isArray, isObject, isString, isFunction, pick, clone } from '@/utils'
+import axios from 'axios'
+import {
+  isArray, isObject, isString, isFunction, pick, clone
+} from 'dito-utils'
 
 export default {
   data() {

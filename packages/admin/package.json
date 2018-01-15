@@ -21,6 +21,7 @@
   "dependencies": {
     "axios": "^0.17.1",
     "codeflask": "github:lehni/CodeFlask.js#f02c5bbc25743086b0e1227b1c944916d87b701b",
+    "dito-utils": "^0.0.0",
     "hint.css": "^2.5.0",
     "prismjs": "^1.9.0",
     "vee-validate": "^2.0.2",

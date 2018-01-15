@@ -1,5 +1,5 @@
 import appState from '@/appState'
-import { labelize } from '@/utils'
+import { labelize } from 'dito-utils'
 
 export default {
   data() {
