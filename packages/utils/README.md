@@ -1,7 +1,6 @@
 # Dito.js Utility Functions
 
-Dito.js is a minimal and modern object oriented REST API server framework, based
-on Koa2 and Objection.js
+Dito.js is a minimal and modern web framework, based on Koa2 and Objection.js
 
 More documentation to come soon.
 

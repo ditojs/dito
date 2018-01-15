@@ -1,7 +1,7 @@
 {
   "name": "@ditojs/utils",
   "version": "0.2.1",
-  "description": "Dito.js utility functions",
+  "description": "Dito.js Utility Functions – Dito.js is a minimal and modern web framework, based on Koa2 and Objection.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito-utils",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
