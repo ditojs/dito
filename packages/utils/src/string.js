@@ -41,9 +41,8 @@ export function labelize(str) {
   // console.log(labelize('MyCamelCasedLabel'))
   // console.log(labelize('hello world'))
   return str
-    ? str.replace(
-      /([-_ ]|^)(\w)|([a-z])([A-Z])/g,
-      function (all, hyphen, hyphenated, camelLeft, camelRight) {
+    ? str.replace(/([-_ ]|^)(\w)|([a-z])([A-Z])/g,
+      (all, hyphen, hyphenated, camelLeft, camelRight) => {
         return hyphenated
           ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
           : `${camelLeft} ${camelRight}`
