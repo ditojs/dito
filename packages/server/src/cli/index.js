@@ -2,7 +2,7 @@
 
 import path from 'path'
 import Knex from 'knex'
-import { isObject, isFunction, camelize } from '@/utils'
+import { isPlainObject, isFunction, camelize } from 'dito-utils'
 import * as db from './db'
 import startConsole from './console'
 
@@ -26,7 +26,7 @@ async function execute() {
     let arg = (await import(path.resolve(importPath))).default
     if (isFunction(arg)) {
       arg = await arg()
-    } else if (isObject(arg) && arg.knex) {
+    } else if (isPlainObject(arg) && arg.knex) {
       arg = Knex(arg.knex)
     }
     const res = await execute(arg, ...args)

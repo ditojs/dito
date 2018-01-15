@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
 import objection from 'objection'
-import { isFunction, deindent } from '@/utils'
+import { isFunction, deindent } from 'dito-utils'
 
 let started = false
 let server = null

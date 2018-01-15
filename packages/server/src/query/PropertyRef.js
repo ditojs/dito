@@ -1,5 +1,5 @@
 import { QueryError } from '@/errors'
-import { capitalize } from '@/utils'
+import { capitalize } from 'dito-utils'
 
 // TODO:
 // Make this work with objection.ref():

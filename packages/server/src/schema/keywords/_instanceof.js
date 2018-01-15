@@ -1,4 +1,4 @@
-import { asArray } from '@/utils'
+import { asArray } from 'dito-utils'
 
 export const _instanceof = {
   metaSchema: {

@@ -1,5 +1,5 @@
 import { ResponseError } from './ResponseError'
-import { isString } from '@/utils'
+import { isObject, isString } from 'dito-utils'
 
 export class WrappedError extends ResponseError {
   constructor(error, process = str => str, status = 400) {

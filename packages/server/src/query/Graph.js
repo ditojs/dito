@@ -1,5 +1,5 @@
 import { RelationExpression } from 'objection'
-import { isArray, asArray, pick, getPath } from '@/utils'
+import { isArray, asArray, pick, getDataPath } from 'dito-utils'
 
 export default class Graph {
   constructor(rootModelClass, data, action, restoreRelations, options) {
@@ -182,7 +182,7 @@ export default class Graph {
     if (this.removedRelations) {
       const data = asArray(result)
       for (const [path, values] of Object.entries(this.removedRelations)) {
-        const obj = getPath(data, path)
+        const obj = getDataPath(data, path)
         for (const key in values) {
           obj[key] = values[key]
         }

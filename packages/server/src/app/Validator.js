@@ -1,6 +1,7 @@
 import objection from 'objection'
 import Ajv from 'ajv'
-import { isArray, isObject, clone, mapValues } from '@/utils'
+import { isArray, isObject, clone } from 'dito-utils'
+import { mapValues } from '@/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own

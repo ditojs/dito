@@ -3,7 +3,8 @@ import util from 'util'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/mixins'
-import { isObject, isArray, isFunction, deepMergeUnshift } from '@/utils'
+import { isObject, isFunction } from 'dito-utils'
+import { deepMergeUnshift } from '@/utils'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'

@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isObject, isArray, isString, deindent, capitalize } from '@/utils'
+import { isObject, isArray, isString, deindent, capitalize } from 'dito-utils'
 
 const typeToKnex = {
   number: 'double',

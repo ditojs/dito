@@ -1,4 +1,4 @@
-import { isObject, isString } from '@/utils'
+import { isObject, isString } from 'dito-utils'
 
 export class ResponseError extends Error {
   constructor(error, status = 400) {

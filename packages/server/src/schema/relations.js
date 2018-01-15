@@ -1,4 +1,4 @@
-import { isObject, isString, asArray, capitalize } from '@/utils'
+import { isObject, isString, asArray, capitalize } from 'dito-utils'
 import {
   Relation,
   BelongsToOneRelation,

@@ -1,5 +1,5 @@
 import { ResponseError } from './ResponseError'
-import { isArray } from '@/utils'
+import { isArray } from 'dito-utils'
 
 export class ValidationError extends ResponseError {
   constructor(modelClass, data, options = {}, status = 400) {
