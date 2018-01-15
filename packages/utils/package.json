@@ -1,9 +1,9 @@
 {
-  "name": "dito-utils",
-  "version": "0.1.0",
-  "description": "Dito Framework utility functions",
+  "name": "@ditojs/utils",
+  "version": "0.2.0",
+  "description": "Dito.js utility functions",
   "main": "lib/index.js",
-  "repository": "https://github.com/dito-framework/dito-utils",
+  "repository": "https://github.com/ditojs/dito-utils",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "files": [
