@@ -2,7 +2,7 @@ import objection from 'objection'
 import util from 'util'
 import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
-import { EventEmitter, KnexHelper } from '@/mixins'
+import { EventEmitter, KnexHelper } from '@/lib'
 import { isObject, isFunction } from 'dito-utils'
 import { deepMergeUnshift } from '@/utils'
 import {

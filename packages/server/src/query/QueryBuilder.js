@@ -1,5 +1,5 @@
 import objection from 'objection'
-import { KnexHelper } from '@/mixins'
+import { KnexHelper } from '@/lib'
 import { QueryError } from '@/errors'
 import PropertyRef from './PropertyRef'
 import QueryHandlers from './QueryHandlers'
