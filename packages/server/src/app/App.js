@@ -6,6 +6,8 @@ import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
+import passport from 'koa-passport'
+import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
 import koaLogger from 'koa-logger'
@@ -86,6 +88,17 @@ export default class App extends Koa {
         modelsHandler(this)
       ].filter(val => val))
     )
+  }
+
+  setupSession() {
+    // TODO: Set up session properly.
+    this.keys = ['secret']
+    this.use(session({}, this))
+  }
+
+  setupAuthentication() {
+    this.use(passport.initialize())
+    this.use(passport.session())
   }
 
   setupKnex() {

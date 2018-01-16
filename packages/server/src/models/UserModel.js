@@ -116,8 +116,12 @@ async function login(name, ctx) {
       if (err) {
         reject(err)
       } else if (user) {
-        await ctx.login(user)
-        resolve(user)
+        try {
+          await ctx.login(user)
+          resolve(user)
+        } catch (err) {
+          reject(err)
+        }
       } else {
         reject(new AuthenticationError(
           message || 'Password or username is incorrect', status))
