@@ -52,6 +52,16 @@ export default class Model extends objection.Model {
     return this.$set(patched)
   }
 
+  static query(trx) {
+    const builder = super.query(trx)
+    // If this model class is bound to a koa context, pass it on to the query
+    // builder's context, so scopes can refer to it, e.g. to check user roles.
+    if (this.ctx) {
+      builder.context({ ctx: this.ctx })
+    }
+    return builder
+  }
+
   static async count(...args) {
     const res = await this.query().count(...args).first()
     return res && +res[Object.keys(res)[0]] || 0

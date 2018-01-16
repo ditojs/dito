@@ -1,5 +1,6 @@
 export * from '@/app'
-export * from '@/model'
+export * from '@/mixins'
+export * from '@/models'
 export * from '@/query'
 export * from '@/errors'
 export * from '@/api'

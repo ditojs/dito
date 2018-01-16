@@ -1,6 +1,4 @@
-import Model from './Model'
-
-export default class TimeStampedModel extends Model {
+export default modelClass => class extends modelClass {
   static properties = {
     createdAt: {
       type: 'timestamp',
