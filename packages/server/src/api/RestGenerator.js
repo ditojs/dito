@@ -48,10 +48,10 @@ export default class RestGenerator {
         continue
       }
       const path = this.getRoutePath(type, modelClass, relation)
-      const target = relation || modelClass
       this.adapter.addRoute(
         { modelClass, relation, type, verb, path, settings },
-        ctx => handler(target, ctx))
+        ctx => handler(getTarget(ctx, modelClass, relation), ctx)
+      )
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
     }
@@ -81,7 +81,8 @@ export default class RestGenerator {
       }
       this.adapter.addRoute(
         { modelClass, method, type, verb, path, settings },
-        ctx => handler(modelClass, method, validate, ctx))
+        ctx => handler(getTarget(ctx, modelClass), method, validate, ctx)
+      )
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
     }
@@ -96,6 +97,19 @@ export default class RestGenerator {
   getRoutePath(type, modelClass, param) {
     return `${this.prefix}${routePath[type](modelClass, param)}`
   }
+}
+
+function getTarget(ctx, modelClass, relation) {
+  // Get the version of the model bound to the web-context, and use
+  // that instead of the bare modelClass as target for the handler.
+  const boundClass = ctx.models?.[modelClass.name]
+  return boundClass
+    // If a relation is the target, fetch its bound version also.
+    ? relation
+      ? boundClass.getRelations()[relation.name]
+      : boundClass
+    // If the non-bound versions should be used, it's simple:
+    : relation || modelClass
 }
 
 // TODO: Add normalization Options!
@@ -279,19 +293,19 @@ const restHandlers = {
         .then(count => ({ count }))
     },
     post(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass =>
-        modelClass.insertGraphAndFetch(ctx.request.body)
-      )
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.insertGraphAndFetch(ctx.request.body)
+      })
     },
     put(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass =>
-        modelClass.updateGraphAndFetch(ctx.request.body)
-      )
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.updateGraphAndFetch(ctx.request.body)
+      })
     },
     patch(modelClass, ctx) {
-      return objection.transaction(modelClass, modelClass =>
-        modelClass.upsertGraphAndFetch(ctx.request.body)
-      )
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.upsertGraphAndFetch(ctx.request.body)
+      })
     }
   },
 
@@ -308,17 +322,17 @@ const restHandlers = {
     },
     put(modelClass, ctx) {
       const { id } = ctx.params
-      return objection.transaction(modelClass, modelClass =>
-        modelClass.updateGraphAndFetchById(id, ctx.request.body)
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.updateGraphAndFetchById(id, ctx.request.body)
           .then(model => checkModel(model, modelClass, id))
-      )
+      })
     },
     patch(modelClass, ctx) {
       const { id } = ctx.params
-      return objection.transaction(modelClass, modelClass =>
-        modelClass.upsertGraphAndFetchById(id, ctx.request.body)
+      return objection.transaction(modelClass, modelClass => {
+        return modelClass.upsertGraphAndFetchById(id, ctx.request.body)
           .then(model => checkModel(model, modelClass, id))
-      )
+      })
     }
   },
 

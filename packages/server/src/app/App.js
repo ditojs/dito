@@ -1,7 +1,6 @@
 import Koa from 'koa'
 import Knex from 'knex'
 import chalk from 'chalk'
-
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
@@ -13,10 +12,10 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
-
+import modelsHandler from './modelsHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
-import { EventEmitter } from '@/mixins'
+import { EventEmitter } from '@/lib'
 
 export default class App extends Koa {
   constructor(config = {}, { validator, models }) {
@@ -26,7 +25,7 @@ export default class App extends Koa {
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
     this.config = config
-    this.models = {}
+    this.models = Object.create(null)
     this.validator = validator || new Validator()
     this.setupKnex()
     this.setupMiddleware()
@@ -83,8 +82,8 @@ export default class App extends Koa {
           conditional(),
           etag()
         ] || []),
-        bodyParser()
-        // methodOverride(),
+        bodyParser(),
+        modelsHandler(this)
       ].filter(val => val))
     )
   }
