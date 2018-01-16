@@ -1,6 +1,6 @@
 <template lang="pug">
   nav.dito-menu
-    h1 Dito Admin
+    h1 {{ appState.title }}
     ul
       li(v-for="schema in schemas")
         router-link(:to="`/${schema.path}`") {{ getLabel(schema) }}

@@ -23,7 +23,6 @@ Vue.use(VeeValidate, {
 export async function setup(el, options = {}) {
   const {
     schemas = {},
-    settings = {},
     api = {}
   } = options
 
@@ -61,11 +60,11 @@ export async function setup(el, options = {}) {
       mode: 'history',
       routes
     }),
-    template: '<dito-root :schemas="schemas" :settings="settings" />',
+    template: '<dito-root :schemas="schemas" :options="options" />',
     components: { DitoRoot },
     data: {
       schemas,
-      settings
+      options
     }
   })
 }

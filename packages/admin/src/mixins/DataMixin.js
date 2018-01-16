@@ -253,15 +253,15 @@ export default {
         .catch(error => callback(error, error.response))
     },
 
-    // Dito Framework specific processing of parameters, payload and response:
+    // dito-server specific processing of parameters, payload and response:
 
     getQueryParams() {
-      // Dito Framework specific query parameters:
+      // dito-server specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends
       // could plug in as well.
 
       // Helper to convert properties expression in JSON notation to strings,
-      // see parsePropertiesExpression() in Dito Framework.
+      // see parsePropertiesExpression() in dito-server.
       function toPropertiesExpression(expression) {
         return Object.entries(expression).map(
           ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
@@ -285,7 +285,7 @@ export default {
     },
 
     processResponse(data) {
-      // Dito Framework specific handling of paginated response:
+      // dito-server specific handling of paginated response:
       if (this.resource.type === 'collection' && isObject(data)) {
         this.setStore('total', data.total)
         data = data.results
@@ -294,7 +294,7 @@ export default {
     },
 
     processPayload(data) {
-      // Dito Framework specific handling of relates within graphs:
+      // dito-server specific handling of relates within graphs:
       // Find and group entries with temporary ids, and convert them to
       // #id / #ref pairs.
       const encounterdIds = {}
