@@ -104,9 +104,9 @@ passport.serializeUser(toCallback(user => {
   return userClasses[modelName] ? `${modelName}-${user.id}` : null
 }))
 
-passport.deserializeUser(toCallback(identifier => {
+passport.deserializeUser(toCallback(async identifier => {
   const [modelName, userId] = identifier.split('-')
-  return userClasses[modelName]?.findById(userId) || null
+  return await userClasses[modelName]?.findById(userId) || null
 }))
 
 async function login(name, ctx) {
