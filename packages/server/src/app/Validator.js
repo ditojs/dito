@@ -12,7 +12,7 @@ import * as schema from '@/schema'
 // model class name. That way, schemas can reference each other, and they can
 // easily validate nested structures.
 
-export default class Validator extends objection.Validator {
+export class Validator extends objection.Validator {
   constructor({ options, keywords, formats } = {}) {
     super()
 

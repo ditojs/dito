@@ -1,9 +1,9 @@
 import Koa from 'koa'
 import Router from 'koa-router'
-import RestGenerator from './RestGenerator'
+import { RestGenerator } from './RestGenerator'
 import { ResponseError, WrappedError } from '@/errors'
 
-export default class RestApi extends Koa {
+export class RestApi extends Koa {
   constructor(app, prefix) {
     super()
     this.router = new Router()

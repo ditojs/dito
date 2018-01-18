@@ -1,9 +1,9 @@
 import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryError } from '@/errors'
+import { QueryHandlers } from './QueryHandlers'
+import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
-import QueryHandlers from './QueryHandlers'
-import QueryFilters from './QueryFilters'
 import Graph from './Graph'
 import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
 
@@ -11,7 +11,7 @@ import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
 // Instead of a separate class, we extend objection.QueryBuilder to better
 // integrate with Objection.js
 
-export default class QueryBuilder extends objection.QueryBuilder {
+export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
     this._propertyRefsAllowed = null
@@ -148,7 +148,7 @@ export default class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyScope(...scopes) {
-    // A simple rediret to applyFilter() for the sake of naming consistency.
+    // A simple redirect to applyFilter() for the sake of naming consistency.
     return this.applyFilter(...scopes)
   }
 

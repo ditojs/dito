@@ -10,7 +10,7 @@ import {
 } from '@/schema'
 import ModelRelation from './ModelRelation'
 
-export default class Model extends objection.Model {
+export class Model extends objection.Model {
   static initialize() {
     try {
       for (const relation of Object.values(this.getRelations())) {

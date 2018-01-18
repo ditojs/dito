@@ -19,7 +19,7 @@ import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
 import { EventEmitter } from '@/lib'
 
-export default class App extends Koa {
+export class App extends Koa {
   constructor(config = {}, { validator, models }) {
     super()
     // Override Koa's events with our own EventEmitter that adds support for

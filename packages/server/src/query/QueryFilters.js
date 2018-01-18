@@ -1,7 +1,6 @@
 import Registry from './Registry'
 
-const QueryFilters = new Registry()
-export default QueryFilters
+export const QueryFilters = new Registry()
 
 function where(builder, ref, operator, value, method = 'where') {
   const columnName = ref.fullColumnName(builder)

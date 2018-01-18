@@ -1,10 +1,9 @@
 import { QueryError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
+import { QueryFilters } from './QueryFilters'
 import Registry from './Registry'
-import QueryFilters from './QueryFilters'
 
-const QueryHandlers = new Registry()
-export default QueryHandlers
+export const QueryHandlers = new Registry()
 
 QueryHandlers.register({
   where(builder, key, value) {

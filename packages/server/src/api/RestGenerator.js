@@ -5,7 +5,7 @@ import { convertSchema } from '@/schema'
 import { NotFoundError } from '@/errors'
 import { isObject, isString, isFunction, pick, hyphenate } from '@ditojs/utils'
 
-export default class RestGenerator {
+export class RestGenerator {
   constructor({ adapter, logging, prefix } = {}) {
     this.adapter = adapter
     this.logging = logging

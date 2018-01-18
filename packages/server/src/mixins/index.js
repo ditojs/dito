@@ -1,1 +1,1 @@
-export { default as TimeStampedMixin } from './TimeStampedMixin'
+export * from './TimeStampedMixin'
