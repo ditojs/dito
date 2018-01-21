@@ -49,7 +49,7 @@
     "koa-response-time": "^2.0.0",
     "koa-router": "^7.3.0",
     "koa-session": "^5.7.0",
-    "objection": "github:lehni/objection.js#6968c03be0fe7328447668bf19d7547bfb783663",
+    "objection": "github:lehni/objection.js#259b6ee56bc4dcd153bea294e14163dbee9954b8",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"

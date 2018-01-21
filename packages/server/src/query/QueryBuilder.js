@@ -16,7 +16,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
-    this._hasRange = false
     this._applyDefaultEager = true
     this._applyDefaultInclude = true
     this._applyDefaultExclude = true
@@ -30,7 +29,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     const clone = super.clone()
     clone._propertyRefsAllowed = this._propertyRefsAllowed
     clone._propertyRefsCache = this._propertyRefsCache
-    clone._hasRange = this._hasRange
     clone._applyDefaultEager = this._applyDefaultEager
     clone._applyDefaultOrder = this._applyDefaultOrder
     clone._applyDefaultInclude = this._applyDefaultInclude
@@ -45,8 +43,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Only apply the default: { eager, include, order } settings if this is a
     // find query, meaning it does not specify any write operations, without any
     // special selects. This is required to exclude count(), etc...
-    const isFindQuery = this.isFindQuery() && !this.hasSelects()
-    if (isFindQuery) {
+    const isFind = this.isFind() && !this.hasSelects()
+    if (isFind) {
       const {
         default: { eager, order, include, exclude } = {}
       } = this.modelClass().definition
@@ -69,7 +67,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this.applyFilter(...this._scopes)
     // Handle _include & _exclude after all scopes were applied, as we need to
     // include the child eager expressions that may be altered by scopes.
-    if (isFindQuery && (this._include || this._exclude)) {
+    if (isFind && (this._include || this._exclude)) {
       if (this._include) {
         // If there is an include list, automatically add all child eager
         // expressions to the include list.
@@ -82,7 +80,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       // Objection's QueryBuilder.traverse() doesn't work after range(),
       // so let's work around it:
       this.runAfter(result => {
-        const data = result && this._hasRange
+        const data = result && this.has('range')
           ? result.results
           : result
         this.resultModelClass().traverse(this.modelClass(), data, model => {
@@ -98,15 +96,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     return super.execute()
-  }
-
-  hasSelects() {
-    return this.has(QueryBuilder.SelectSelector)
-  }
-
-  range(...args) {
-    this._hasRange = true
-    return super.range(...args)
   }
 
   eager(...args) {
