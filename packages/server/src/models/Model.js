@@ -9,6 +9,7 @@ import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
 import ModelRelation from './ModelRelation'
+import eagerScope from '@/query/eagerScope'
 
 export class Model extends objection.Model {
   static initialize() {
@@ -490,23 +491,15 @@ const definitionHandlers = {
     // expressions. This allows for eager chaining across multiple nested models
     // in a way that each model only needs to specify its own eager relations.
     // See namedFilter() for the definition of 'default.eager'.
-    const addEager = (node, isRoot) => {
-      if (!isRoot) {
-        // Use unshift instead of push so it's applied fist, not last, and other
-        // scopes can be applied after.
-        node.args.unshift('default.eager')
-      }
-      if (node.numChildren > 0) {
-        for (const child of Object.values(node.children)) {
-          addEager(child, false)
-        }
-      }
-      return node
-    }
-    const { eager } = _default
-    if (eager) {
-      const node = objection.RelationExpression.parse(eager)
-      _default.eager = addEager(node, true)
+    if (_default.eager) {
+      // Use unshift instead of push so it's applied fist, not last, and other
+      // scopes can be applied after.
+      _default.eager = eagerScope(
+        this,
+        objection.RelationExpression.parse(_default.eager),
+        'default.eager',
+        'unshift'
+      )
     }
   },
 

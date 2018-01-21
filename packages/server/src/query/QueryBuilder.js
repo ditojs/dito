@@ -5,6 +5,7 @@ import { QueryHandlers } from './QueryHandlers'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
 import Graph from './Graph'
+import eagerScope from './eagerScope'
 import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
 
 // This code is based on objection-find, and simplified.
@@ -96,6 +97,13 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     return super.execute()
+  }
+
+  eagerScope(scope) {
+    if (this._eagerExpression) {
+      eagerScope(this.modelClass(), this._eagerExpression, scope, 'push')
+    }
+    return this
   }
 
   eager(...args) {
