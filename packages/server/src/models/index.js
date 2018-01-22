@@ -1,2 +1,2 @@
-export { Model } from './Model'
-export { UserModel } from './UserModel'
+export * from './Model'
+export * from './UserModel'
