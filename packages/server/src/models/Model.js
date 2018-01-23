@@ -283,7 +283,7 @@ export class Model extends objection.Model {
     }
     // NOTE: No need to normalize the identifiers in the JSON in case of
     // normalizeDbNames, as this already happens through
-    // knex.config.wrapIdentifier(), see App.js
+    // knex.config.wrapIdentifier(), see Application.js
     return super.$formatDatabaseJson(json)
   }
 

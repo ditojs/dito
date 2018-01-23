@@ -22,8 +22,8 @@ export function convertSchema(schema, options = {}) {
             const properties = {}
             const required = []
             for (let [key, property] of Object.entries(schema.properties)) {
-              property = convertSchema(expandSchemaShorthand(property), options)
-              properties[key] = property
+              property = expandSchemaShorthand(property)
+              properties[key] = convertSchema(property, options)
               if (property?.required) {
                 required.push(key)
               }

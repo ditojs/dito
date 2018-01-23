@@ -2,6 +2,7 @@ import Koa from 'koa'
 import Knex from 'knex'
 import chalk from 'chalk'
 import bodyParser from 'koa-bodyparser'
+import mount from 'koa-mount'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
@@ -18,9 +19,10 @@ import modelsHandler from './modelsHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
 import { EventEmitter } from '@/lib'
+import { hyphenate } from '@ditojs/utils'
 
-export class App extends Koa {
-  constructor(config = {}, { validator, models }) {
+export class Application extends Koa {
+  constructor(config = {}, { validator, models, controllers }) {
     super()
     // Override Koa's events with our own EventEmitter that adds support for
     // asynchronous events.
@@ -28,11 +30,15 @@ export class App extends Koa {
     EventEmitter.mixin(this)
     this.config = config
     this.models = Object.create(null)
+    this.controllers = Object.create(null)
     this.validator = validator || new Validator()
     this.setupKnex()
     this.setupMiddleware()
     if (models) {
       this.addModels(models)
+    }
+    if (controllers) {
+      this.addControllers(controllers)
     }
   }
 
@@ -52,6 +58,23 @@ export class App extends Koa {
     modelClass.app = this
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
+  }
+
+  addControllers(controllers) {
+    for (const controllerClass of Object.values(controllers)) {
+      this.addController(controllerClass)
+    }
+  }
+
+  addController(ControllerClass) {
+    const controller = new ControllerClass(this)
+    this.controllers[controller.name] = controller
+    controller.initialize()
+    this.use(mount(controller.getUrl(), controller))
+  }
+
+  normalizePath(path) {
+    return this.config.normalizePaths ? hyphenate(path) : path
   }
 
   compileValidator(jsonSchema) {

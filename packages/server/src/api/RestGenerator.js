@@ -114,7 +114,7 @@ function getTarget(ctx, modelClass, relation) {
 
 // TODO: Add normalization Options!
 function normalize(name, plural = false) {
-  return hyphenate(plural ? pluralize(name) : name)
+  return hyphenate(plural ? pluralize.plural(name) : name)
 }
 
 const routePath = {
