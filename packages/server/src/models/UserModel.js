@@ -28,53 +28,12 @@ export class UserModel extends Model {
     }
   }
 
-  static methods = {
-    collection: {
-      login: {},
-      logout: {}
-    }
-  }
-
   set password(password) {
     this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
   }
 
   async verifyPassword(password) {
     return bcrypt.compare(password, this.hash)
-  }
-
-  static async login(ctx) {
-    let user
-    let error
-    try {
-      user = await login(this.name, ctx)
-      await user.$patch({ lastLogin: new Date() })
-      // Or, if we activate `change-tracking`: (but is it better?)
-      // user.lastLogin = new Date()
-      // await user.$store()
-    } catch (err) {
-      error = err.data?.message || err.message
-      ctx.status = err.status || 401
-    }
-    const success = !!user
-    return {
-      success,
-      authenticated: success && ctx.isAuthenticated(),
-      user,
-      error
-    }
-  }
-
-  static async logout(ctx) {
-    let success = false
-    if (ctx.isAuthenticated()) {
-      await ctx.logout()
-      success = ctx.isUnauthenticated()
-    }
-    return {
-      success,
-      authenticated: ctx.isAuthenticated()
-    }
   }
 
   static initialize() {
@@ -93,6 +52,27 @@ export class UserModel extends Model {
       )
     )
   }
+
+  static async login(ctx) {
+    // Unfortunately koa-passport isn't promisified yet, so do some wrapping:
+    return new Promise((resolve, reject) => {
+      passport.authenticate(this.name, async (err, user, message, status) => {
+        if (err) {
+          reject(err)
+        } else if (user) {
+          try {
+            await ctx.login(user)
+            resolve(user)
+          } catch (err) {
+            reject(err)
+          }
+        } else {
+          reject(new AuthenticationError(
+            message || 'Password or username is incorrect', status))
+        }
+      })(ctx)
+    })
+  }
 }
 
 const userClasses = {}
@@ -108,24 +88,3 @@ passport.deserializeUser(toCallback(async identifier => {
   const [modelName, userId] = identifier.split('-')
   return await userClasses[modelName]?.findById(userId) || null
 }))
-
-async function login(name, ctx) {
-  // Unfortunately koa-passport isn't promisified yet, so do some wrapping:
-  return new Promise((resolve, reject) => {
-    passport.authenticate(name, async (err, user, message, status) => {
-      if (err) {
-        reject(err)
-      } else if (user) {
-        try {
-          await ctx.login(user)
-          resolve(user)
-        } catch (err) {
-          reject(err)
-        }
-      } else {
-        reject(new AuthenticationError(
-          message || 'Password or username is incorrect', status))
-      }
-    })(ctx)
-  })
-}

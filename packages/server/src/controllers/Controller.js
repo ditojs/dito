@@ -12,23 +12,56 @@ export class Controller {
     this.namespace = this.namespace || namespace
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
-    this.path = this.path || app.normalizePath(this.name)
+    this.path = this.path || app?.normalizePath(this.name)
     this.graph = !!this.graph
     this.scope = this.scope || null
     this.modelClass = this.modelClass ||
-      this.app.models[camelize(pluralize.singular(this.name), true)]
-    // Create an empty instance for validation of ids, see getId()
-    // eslint-disable-next-line new-cap
-    this.instance = new this.modelClass()
-    this.router = new Router()
+      app?.models[camelize(pluralize.singular(this.name), true)]
+    if (this.modelClass) {
+      // Create an empty instance for validation of ids, see getId()
+      // eslint-disable-next-line new-cap
+      this.instance = new this.modelClass()
+      this.router = new Router()
+    }
   }
 
   initialize() {
+    const { path, namespace } = this
+    this.url = namespace ? `/${namespace}/${path}` : `/${path}`
     this.applyScope = this.scope
       ? query => query.applyScope(this.scope)
       : null
-    this.collection = this.setupActions(this.collection, collection, false)
-    this.member = this.setupActions(this.member, member, true)
+    const parent = this.constructor.getParentActions()
+    this.collection = this.setupActions('collection', parent)
+    this.member = this.setupActions('member', parent)
+  }
+
+  static getParentActions() {
+    const parentClass = Object.getPrototypeOf(this)
+    if (!parentClass.hasOwnProperty('collection') &&
+      !parentClass.hasOwnProperty('member')) {
+      // If `collection` and `member` hasn't been inherited and resolved yet,
+      // we need to create one instance of each controller class up the chain,
+      // in order to get to its definitions of `collection` and `member`.
+      // Once their inheritance is set up correctly, they will be exposed on the
+      // class itself.
+      // eslint-disable-next-line new-cap
+      const { collection, member } = new parentClass()
+      if (parentClass !== Controller) {
+        // Recursively set up inheritance chains.
+        const parent = parentClass.getParentActions()
+        Object.setPrototypeOf(collection, parent.collection)
+        Object.setPrototypeOf(member, parent.member)
+      }
+      parentClass.collection = collection
+      parentClass.member = member
+    }
+    const { collection, member } = parentClass
+    return { collection, member }
+  }
+
+  getOwnProperty(name) {
+    return this.hasOwnProperty(name) && this[name]
   }
 
   compose() {
@@ -38,35 +71,35 @@ export class Controller {
     ])
   }
 
-  getPath() {
-    const { path, namespace } = this
-    return namespace ? `/${namespace}/${path}` : `/${path}`
-  }
-
-  setupActions(actions = {}, proto, member) {
-    // Inherit from the default methods so overrides can use super.<action>():
-    Object.setPrototypeOf(actions, proto)
+  setupActions(name, parent) {
+    const actions = this[name] || {}
+    // Inherit from the parent actions so overrides can use super.<action>():
+    Object.setPrototypeOf(actions, parent[name])
     const { only } = actions
+    // NOTE: setupActions() is called after the first call of getParentActions()
+    // so we can be sure that Controller.collection / Controller.member is
+    // defined and resolved. For more information see getParentActions():
+    const defaults = Controller[name]
     // Respect `only` settings and clear any default method to deactivate it:
     if (only) {
       for (const key in actions) {
-        if (key in proto && !only.includes(key)) {
+        if (key in defaults && !only.includes(key)) {
           actions[key] = undefined
         }
       }
     }
 
     // Now install the routes.
-    const rootPath = this.getPath()
+    const member = name === 'member'
+    // NOTE: We can't use Object.entries() loops here, since we want the keys
+    // inherited from the parents as well, see getParentActions()
     for (const key in actions) {
-      // NOTE: We can't use Object.entries() loops here, since we want the
-      // keys inherited from the prototype as well.
       const action = actions[key]
       if (isFunction(action)) {
         let verb = key
-        let path = member ? `${rootPath}/:id` : rootPath
+        let path = member ? `${this.url}/:id` : this.url
         let method = action
-        if (!(key in proto)) {
+        if (!(key in defaults)) {
           // A custom action:
           path = `${path}/${action.path || this.app.normalizePath(key)}`
           verb = action.verb || 'get'
@@ -108,7 +141,7 @@ export class Controller {
     return id
   }
 
-  async callAction(action, ctx, arg) {
+  async callAction(action, ctx, getMember = null) {
     const { query } = ctx
     let { validators, parameters, returns } = action
     if (!validators && (parameters || returns)) {
@@ -131,12 +164,8 @@ export class Controller {
         errors: validators.parameters.errors
       })
     }
-    const split = this.splitArguments(parameters, ctx, member)
-    if (arg) {
-      // Resolve first argument and add to argument list.
-      split.args.unshift(await arg(split.ctx))
-    }
-    const value = await action.call(this, ...split.args)
+    const args = await this.collectArguments(ctx, parameters, getMember)
+    const value = await action.call(this, ...args)
     const returnName = returns?.name
     // Use 'root' if no name is given, see createValidator()
     const returnData = { [returnName || 'root']: value }
@@ -171,9 +200,9 @@ export class Controller {
     return () => true
   }
 
-  splitArguments(parameters, ctx, member) {
+  async collectArguments(ctx, parameters, getMember) {
     const { query } = ctx
-    const consumed = parameters && member && {}
+    const consumed = parameters && getMember && {}
     const args = parameters?.map(
       ({ name }) => {
         if (consumed) {
@@ -183,18 +212,22 @@ export class Controller {
       }) ||
       // If no parameters are provided, pass the full ctx object to the method
       [ctx]
-    if (consumed) {
-      // Create a copy of ctx that inherits from the real one but overrides
-      // query with aversion that has all consumed query params removed, so it
-      // can be passed on to the member.get(ctx) method.
-      ctx = Object.setPrototypeOf({}, ctx)
-      ctx.query = Object.entries(query).reduce((query, [key, value]) => {
-        if (!consumed[key]) {
-          query[key] = value
-        }
-      }, {})
+    if (getMember) {
+      if (consumed) {
+        // Create a copy of ctx that inherits from the real one but overrides
+        // query with aversion that has all consumed query params removed, so it
+        // can be passed on to the getMember() which calls `member.get(ctx)`:
+        ctx = Object.setPrototypeOf({}, ctx)
+        ctx.query = Object.entries(query).reduce((query, [key, value]) => {
+          if (!consumed[key]) {
+            query[key] = value
+          }
+        }, {})
+      }
+      // Resolve member and add as first argument to list.
+      args.unshift(await getMember(ctx))
     }
-    return { ctx, args }
+    return args
   }
 
   execute(method) {
@@ -222,61 +255,61 @@ export class Controller {
         .then(model => this.checkModel(model, id))
     )
   }
-}
 
-const collection = {
-  get(ctx, modify) {
-    return this.modelClass
-      .find(ctx.query)
-      .modify(this.applyScope)
-      .modify(modify)
-  },
+  collection = {
+    get(ctx, modify) {
+      return this.modelClass
+        .find(ctx.query)
+        .modify(this.applyScope)
+        .modify(modify)
+    },
 
-  delete(ctx, modify) {
-    // TODO: Decide if we should set status? status = 204
-    return this.modelClass
-      .find(ctx.query)
-      .delete()
-      .modify(modify)
-      .then(count => ({ count }))
-  },
+    delete(ctx, modify) {
+      // TODO: Decide if we should set status? status = 204
+      return this.modelClass
+        .find(ctx.query)
+        .delete()
+        .modify(modify)
+        .then(count => ({ count }))
+    },
 
-  post(ctx, modify) {
-    // TODO: Decide if we should set status? status = 201
-    return this.executeAndFetch('insert', ctx, modify)
-  },
+    post(ctx, modify) {
+      // TODO: Decide if we should set status? status = 201
+      return this.executeAndFetch('insert', ctx, modify)
+    },
 
-  put(ctx, modify) {
-    return this.executeAndFetch('update', ctx, modify)
-  },
+    put(ctx, modify) {
+      return this.executeAndFetch('update', ctx, modify)
+    },
 
-  patch(ctx, modify) {
-    return this.executeAndFetch('upsert', ctx, modify)
+    patch(ctx, modify) {
+      return this.executeAndFetch('upsert', ctx, modify)
+    }
   }
-}
 
-const member = {
-  get(ctx, modify) {
-    const id = this.getId(ctx)
-    return this.modelClass
-      .findById(id, ctx.query)
-      .modify(this.applyScope)
-      .modify(modify)
-      .then(model => this.checkModel(model, id))
-  },
+  member = {
+    get(ctx, modify) {
+      const id = this.getId(ctx)
+      return this.modelClass
+        .findById(id, ctx.query)
+        .modify(this.applyScope)
+        .modify(modify)
+        .then(model => this.checkModel(model, id))
+    },
 
-  delete(ctx, modify) {
-    return this.modelClass
-      .deleteById(this.getId(ctx))
-      .modify(modify)
-      .then(count => ({ count }))
-  },
+    delete(ctx, modify) {
+      return this.modelClass
+        .deleteById(this.getId(ctx))
+        .modify(modify)
+        .then(count => ({ count }))
+    },
 
-  put(ctx, modify) {
-    return this.executeAndFetchById('update', ctx, modify)
-  },
+    put(ctx, modify) {
+      return this.executeAndFetchById('update', ctx, modify)
+    },
 
-  patch(ctx, modify) {
-    return this.executeAndFetchById('upsert', ctx, modify)
+    patch(ctx, modify) {
+      return this.executeAndFetchById('upsert', ctx, modify)
+    }
   }
 }

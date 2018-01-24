@@ -16,7 +16,7 @@ import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
-import { Controller } from './Controller'
+import { Controller } from '@/controllers'
 import { Validator } from './Validator'
 import { hyphenate } from '@ditojs/utils'
 
@@ -27,12 +27,16 @@ export class Application extends Koa {
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
-    this.config = config
+    // Pluck keys out of config to keep them secret
+    const { keys, ...conf } = config
+    this.keys = keys
+    this.config = conf
+    this.proxy = conf.proxy
     this.models = Object.create(null)
     this.controllers = Object.create(null)
     this.validator = validator || new Validator()
-    this.setupKnex()
     this.setupMiddleware()
+    this.setupKnex()
     if (models) {
       this.addModels(models)
     }
@@ -70,12 +74,11 @@ export class Application extends Koa {
   }
 
   addController(ControllerClass, namespace) {
-    console.log('add', namespace)
     const controller = new ControllerClass(this, namespace)
     // Inheritance of action methods cannot happen in the constructor itself,
     // so call a separate initialize() method after in order to take care of it.
     controller.initialize()
-    // this.controllers[controller.name] = controller
+    this.controllers[controller.url] = controller
     this.use(controller.compose())
   }
 
@@ -113,20 +116,17 @@ export class Application extends Koa {
           conditional(),
           etag()
         ] || []),
-        bodyParser()
+        bodyParser(),
+        isTruthy('session') && session(
+          config.session === true ? {} : config.session,
+          this
+        ),
+        ...(isTruthy('passport') && [
+          passport.initialize(),
+          passport.session()
+        ] || [])
       ].filter(val => val))
     )
-  }
-
-  setupSession() {
-    // TODO: Set up session properly.
-    this.keys = ['secret']
-    this.use(session({}, this))
-  }
-
-  setupAuthentication() {
-    this.use(passport.initialize())
-    this.use(passport.session())
   }
 
   setupKnex() {
