@@ -7,11 +7,14 @@ import { isString, isFunction, asArray, camelize } from '@ditojs/utils'
 import { convertSchema } from '@/schema'
 
 export class Controller {
-  constructor(app) {
+  constructor(app, namespace) {
     this.app = app
-    const { name } = this.constructor
-    this.name = this.name || name.match(/^(.*?)(?:Controller|)$/)[1]
+    this.namespace = this.namespace || namespace
+    this.name = this.name ||
+      this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
     this.path = this.path || app.normalizePath(this.name)
+    this.graph = !!this.graph
+    this.scope = this.scope || null
     this.modelClass = this.modelClass ||
       this.app.models[camelize(pluralize.singular(this.name), true)]
     // Create an empty instance for validation of ids, see getId()
@@ -21,6 +24,9 @@ export class Controller {
   }
 
   initialize() {
+    this.applyScope = this.scope
+      ? query => query.applyScope(this.scope)
+      : null
     this.collection = this.setupActions(this.collection, collection, false)
     this.member = this.setupActions(this.member, member, true)
   }
@@ -52,7 +58,10 @@ export class Controller {
 
     // Now install the routes.
     const rootPath = this.getPath()
-    for (const [key, action] of Object.entries(actions)) {
+    for (const key in actions) {
+      // NOTE: We can't use Object.entries() loops here, since we want the
+      // keys inherited from the prototype as well.
+      const action = actions[key]
       if (isFunction(action)) {
         let verb = key
         let path = member ? `${rootPath}/:id` : rootPath
@@ -92,10 +101,10 @@ export class Controller {
   getId(ctx) {
     const { id } = ctx.params
     // Use a dummy instance to validate the format of the passed id
-    // this.instance.$validate(
-    //   this.modelClass.getIdProperties(id),
-    //   { patch: true }
-    // )
+    this.instance.$validate(
+      this.modelClass.getIdProperties(id),
+      { patch: true }
+    )
     return id
   }
 
@@ -187,12 +196,39 @@ export class Controller {
     }
     return { ctx, args }
   }
+
+  execute(method) {
+    return this.graph
+      ? objection.transaction(this.modelClass, method)
+      : method(this.modelClass)
+  }
+
+  executeAndFetch(action, ctx, modify) {
+    const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
+    return this.execute(modelClass =>
+      modelClass[name](ctx.request.body)
+        .modify(this.applyScope)
+        .modify(modify)
+    )
+  }
+
+  executeAndFetchById(action, ctx, modify) {
+    const id = this.getId(ctx)
+    const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
+    return this.execute(modelClass =>
+      modelClass[name](id, ctx.request.body)
+        .modify(this.applyScope)
+        .modify(modify)
+        .then(model => this.checkModel(model, id))
+    )
+  }
 }
 
 const collection = {
   get(ctx, modify) {
     return this.modelClass
       .find(ctx.query)
+      .modify(this.applyScope)
       .modify(modify)
   },
 
@@ -207,29 +243,15 @@ const collection = {
 
   post(ctx, modify) {
     // TODO: Decide if we should set status? status = 201
-    // TODO: Add Controller#graph and only use graphs here for controllers that
-    // require it.
-    return objection.transaction(this.modelClass, modelClass => {
-      return modelClass
-        .insertGraphAndFetch(ctx.request.body)
-        .modify(modify)
-    })
+    return this.executeAndFetch('insert', ctx, modify)
   },
 
   put(ctx, modify) {
-    return objection.transaction(this.modelClass, modelClass => {
-      return modelClass
-        .updateGraphAndFetch(ctx.request.body)
-        .modify(modify)
-    })
+    return this.executeAndFetch('update', ctx, modify)
   },
 
   patch(ctx, modify) {
-    return objection.transaction(this.modelClass, modelClass => {
-      return modelClass
-        .upsertGraphAndFetch(ctx.request.body)
-        .modify(modify)
-    })
+    return this.executeAndFetch('upsert', ctx, modify)
   }
 }
 
@@ -238,6 +260,7 @@ const member = {
     const id = this.getId(ctx)
     return this.modelClass
       .findById(id, ctx.query)
+      .modify(this.applyScope)
       .modify(modify)
       .then(model => this.checkModel(model, id))
   },
@@ -250,22 +273,10 @@ const member = {
   },
 
   put(ctx, modify) {
-    const id = this.getId(ctx)
-    return objection.transaction(this.modelClass, modelClass => {
-      return modelClass
-        .updateGraphAndFetchById(id, ctx.request.body)
-        .modify(modify)
-        .then(model => this.checkModel(model, id))
-    })
+    return this.executeAndFetchById('update', ctx, modify)
   },
 
   patch(ctx, modify) {
-    const id = this.getId(ctx)
-    return objection.transaction(this.modelClass, modelClass => {
-      return modelClass
-        .upsertGraphAndFetchById(id, ctx.request.body)
-        .modify(modify)
-        .then(model => this.checkModel(model, id))
-    })
+    return this.executeAndFetchById('upsert', ctx, modify)
   }
 }

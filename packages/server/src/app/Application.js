@@ -15,9 +15,10 @@ import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
 import { knexSnakeCaseMappers } from 'objection'
-import Validator from './Validator'
 import { EventEmitter } from '@/lib'
-import { hyphenate } from '@ditojs/utils'
+import { Controller } from './Controller'
+import { Validator } from './Validator'
+import { isFunction, hyphenate } from '@ditojs/utils'
 
 export class Application extends Koa {
   constructor(config = {}, { validator, models, controllers }) {
@@ -58,18 +59,23 @@ export class Application extends Koa {
     modelClass.knex(this.knex)
   }
 
-  addControllers(controllers) {
-    for (const controllerClass of Object.values(controllers)) {
-      this.addController(controllerClass)
+  addControllers(controllers, namespace) {
+    for (const [key, value] of Object.entries(controllers)) {
+      if (value.prototype instanceof Controller) {
+        this.addController(value, namespace)
+      } else {
+        this.addControllers(value, namespace ? `${namespace}/${key}` : key)
+      }
     }
   }
 
-  addController(ControllerClass) {
-    const controller = new ControllerClass(this)
+  addController(ControllerClass, namespace) {
+    console.log('add', namespace)
+    const controller = new ControllerClass(this, namespace)
     // Inheritance of action methods cannot happen in the constructor itself,
     // so call a separate initialize() method after in order to take care of it.
     controller.initialize()
-    this.controllers[controller.name] = controller
+    // this.controllers[controller.name] = controller
     this.use(controller.compose())
   }
 
