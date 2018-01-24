@@ -1,4 +1,3 @@
-import { isObject, isString, asArray, capitalize } from '@ditojs/utils'
 import {
   Relation,
   BelongsToOneRelation,
@@ -7,6 +6,8 @@ import {
   HasManyRelation,
   ManyToManyRelation
 } from 'objection'
+import { isObject, isString, asArray, capitalize } from '@ditojs/utils'
+import { RelationError } from '@/errors'
 
 const relationLookup = {
   // one:
@@ -40,12 +41,12 @@ class ModelReference {
       const [modelName, propertyName] = ref?.split('.') || []
       const modelClass = models[modelName]
       if (!modelClass) {
-        throw new Error(
+        throw new RelationError(
           `Unknown model property reference: ${ref}`)
       } else if (!this.modelClass) {
         this.modelClass = modelClass
       } else if (this.modelClass !== modelClass) {
-        throw new Error(
+        throw new RelationError(
           `Composite keys need to be defined on the same model: ${ref}`)
       }
       this.propertyNames.push(propertyName)
@@ -75,7 +76,7 @@ class ModelReference {
     const toClass = to.modelClass
     const toProperties = to.propertyNames
     if (fromProperties.length !== toProperties.length) {
-      throw new Error(`Unable to create through join for ` +
+      throw new RelationError(`Unable to create through join for ` +
         `composite keys from '${this}' to '${to}'`)
     }
     const through = { from: [], to: [] }
@@ -89,7 +90,7 @@ class ModelReference {
         through.from.push(`${throughName}.${throughFrom}`)
         through.to.push(`${throughName}.${throughto}`)
       } else {
-        throw new Error(
+        throw new RelationError(
           `Unable to create through join from '${this}' to '${to}'`)
       }
     }
@@ -97,7 +98,7 @@ class ModelReference {
   }
 }
 
-function convertReleation(schema, models) {
+function convertRelation(schema, models) {
   let {
     relation,
     // Dito-style relation description:
@@ -109,7 +110,7 @@ function convertReleation(schema, models) {
   const relationClass = relationLookup[relation] ||
     relationClasses[relation] || relation
   if (!(relationClass?.prototype instanceof Relation)) {
-    throw new Error(`Unrecognized relation: ${relation}`)
+    throw new RelationError(`Unrecognized relation: ${relation}`)
   } else if (join && !isString(relation)) {
     // Original Objection.js-style relation, just pass through
     return schema
@@ -129,7 +130,7 @@ function convertReleation(schema, models) {
       if (through === true) {
         through = inverse ? to.buildThrough(from) : from.buildThrough(to)
       } else if (!through) {
-        throw new Error('Relation needs a through definition or a ' +
+        throw new RelationError('Relation needs a through definition or a ' +
           '`through: true` setting to auto-generate it')
       } else {
         // Convert optional through model name to class
@@ -139,7 +140,7 @@ function convertReleation(schema, models) {
         }
       }
     } else if (through) {
-      throw new Error('Unsupported through join definition')
+      throw new RelationError('Unsupported through join definition')
     }
     modify = scope || modify || filter
     if (isObject(modify)) {
@@ -165,9 +166,9 @@ export function convertRelations(ownerModelClass, relations, models) {
   const converted = {}
   for (const [name, relation] of Object.entries(relations)) {
     try {
-      converted[name] = convertReleation(relation, models)
+      converted[name] = convertRelation(relation, models)
     } catch (err) {
-      throw new Error(
+      throw new RelationError(
         `${ownerModelClass.name}.relations.${name}: ${(err.message || err)}`)
     }
   }

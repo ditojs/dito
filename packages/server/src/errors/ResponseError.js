@@ -8,9 +8,13 @@ export class ResponseError extends Error {
         ? { message: error }
         : {}
     const { status, ...data } = { ...defaults, ...error }
-    super(JSON.stringify(data, null, 2))
+    super(data.message)
     this.name = this.constructor.name
     this.status = status
     this.data = data
+  }
+
+  toJSON() {
+    return this.data
   }
 }

@@ -1,4 +1,4 @@
-import { QueryError } from '@/errors'
+import { QueryBuilderError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import { QueryFilters } from './QueryFilters'
 import Registry from './Registry'
@@ -26,7 +26,7 @@ QueryHandlers.register({
     if (value) {
       const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
       if (isNaN(start) || isNaN(end) || end < start) {
-        throw new QueryError(`Invalid range: [${start}, ${end}].`)
+        throw new QueryBuilderError(`Invalid range: [${start}, ${end}].`)
       }
       builder.range(start, end)
     }
@@ -48,7 +48,8 @@ QueryHandlers.register({
         let orderName = columnName
         if (relation) {
           if (!relation.isOneToOne()) {
-            throw new QueryError(`Can only order by model's own properties ` +
+            throw new QueryBuilderError(
+              `Can only order by model's own properties ` +
               `and by one-to-one relations' properties.`)
           }
           // TODO: Is the use of an alias required here?
@@ -114,7 +115,7 @@ function processPropertyRefs(builder, key, value, parts) {
       processPropertyRefs(builder, null, entry)
     }
   } else {
-    throw new QueryError(`Unsupported 'where' query: '${value}'.`)
+    throw new QueryBuilderError(`Unsupported 'where' query: '${value}'.`)
   }
 }
 
@@ -152,7 +153,7 @@ function applyPropertiesExpression(builder, key, value) {
     if (modelClass) {
       builder[key](modelClass, properties)
     } else {
-      throw new QueryError(
+      throw new QueryBuilderError(
         `Invalid reference to model '${modelName}' in '${key}=${value}'.`)
     }
   }

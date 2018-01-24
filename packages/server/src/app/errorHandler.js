@@ -7,7 +7,7 @@ export default function errorHandler() {
     } catch (err) {
       ctx.status = err.status || 500
       ctx.body = err instanceof ResponseError
-        ? err.data
+        ? err.toJSON()
         : {
           message: err.message || 'An error has occurred.'
         }

@@ -1,6 +1,6 @@
 import objection from 'objection'
 import { KnexHelper } from '@/lib'
-import { QueryError } from '@/errors'
+import { QueryBuilderError } from '@/errors'
 import { QueryHandlers } from './QueryHandlers'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
@@ -276,24 +276,13 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertGraphAndFetchById(id, data, options) {
-    return this.upsertGraphAndFetch(this.addIdProperties(data, id), options)
+    return this.upsertGraphAndFetch(
+      this.modelClass().getIdProperties(id, { ...data }), options)
   }
 
   updateGraphAndFetchById(id, data, options) {
-    return this.updateGraphAndFetch(this.addIdProperties(data, id), options)
-  }
-
-  addIdProperties(data, id) {
-    const modelClass = this.modelClass()
-    const obj = { ...data }
-    const ids = asArray(id)
-    const { properties } = modelClass.definition
-    for (const [index, name] of modelClass.getIdPropertyArray().entries()) {
-      const property = properties[name]
-      const id = ids[index]
-      obj[name] = /^(integer|number)$/.test(property.type) ? +id : id
-    }
-    return obj
+    return this.updateGraphAndFetch(
+      this.modelClass().getIdProperties(id, { ...data }), options)
   }
 
   find(query = {}, allowed) {
@@ -313,11 +302,11 @@ export class QueryBuilder extends objection.QueryBuilder {
           // Only complain if the key isn't explicitly listed in allowed even
           // if we don't recognize it here, so RrestGenerator can add the
           // remote method arguments to the allowed list and let them pass.
-          throw new QueryError(
+          throw new QueryBuilderError(
             `Invalid query parameter '${key}' in '${key}=${value}'.`)
         }
       } else {
-        throw new QueryError(`Query parameter '${key}' is not allowed.`)
+        throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }
     }
     // TODO: Is this really needed? Looks like it works without it also...
@@ -379,7 +368,7 @@ export class QueryBuilder extends objection.QueryBuilder {
         : null
     const queryFilter = filterName && QueryFilters.get(filterName)
     if (!queryFilter) {
-      throw new QueryError(`Invalid filter in '${key}=${value}'.`)
+      throw new QueryBuilderError(`Invalid filter in '${key}=${value}'.`)
     }
     const propertyRefs = this.getPropertyRefs(parts[0])
     for (const ref of propertyRefs) {

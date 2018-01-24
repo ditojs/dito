@@ -1,15 +1,19 @@
 import objection from 'objection'
+import { wrapError, DBError } from 'db-errors'
 import util from 'util'
-import { ValidationError, QueryError, WrappedError } from '@/errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
-import { isObject, isFunction } from '@ditojs/utils'
+import { isObject, isFunction, asArray } from '@ditojs/utils'
 import { deepMergeUnshift } from '@/utils'
+import eagerScope from '@/query/eagerScope'
+import ModelRelation from './ModelRelation'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
-import ModelRelation from './ModelRelation'
-import eagerScope from '@/query/eagerScope'
+import {
+  ResponseError, WrappedError, DatabaseError, GraphError, ModelError,
+  RelationError, ValidationError
+} from '@/errors'
 
 export class Model extends objection.Model {
   static initialize() {
@@ -19,9 +23,7 @@ export class Model extends objection.Model {
         this.addRelationAccessor(relation)
       }
     } catch (error) {
-      // Adjust objection.js error messages to point to the right property.
-      throw new WrappedError(error,
-        str => str.replace(/\brelationMappings\b/g, 'relations'))
+      throw error instanceof RelationError ? error : new RelationError(error)
     }
     // Install all events listed in the static events object.
     const { events } = this.definition
@@ -54,13 +56,13 @@ export class Model extends objection.Model {
   }
 
   static query(trx) {
-    const builder = super.query(trx)
-    // If this model class is bound to a koa context, pass it on to the query
-    // builder's context, so scopes can refer to it, e.g. to check user roles.
-    if (this.ctx) {
-      builder.context({ ctx: this.ctx })
-    }
-    return builder
+    return super.query(trx).onError(err => {
+      err = wrapError(err)
+      err = err instanceof ResponseError ? err
+        : err instanceof DBError ? new DatabaseError(err)
+        : new WrappedError(err)
+      return Promise.reject(err)
+    })
   }
 
   static async count(...args) {
@@ -102,7 +104,7 @@ export class Model extends objection.Model {
             ? builder => builder.find(scope)
             : null
         if (!filter) {
-          throw new QueryError(`Invalid scope: '${scope}'.`)
+          throw new ModelError(`Invalid scope: '${scope}'.`)
         }
       }
       // Add a special 'default.eager' filter that does nothing else than
@@ -216,7 +218,7 @@ export class Model extends objection.Model {
     const relatedProperties = relatedModelClass.definition.properties || {}
     for (const property of relation.relatedProp.props) {
       if (!(property in relatedProperties)) {
-        throw new Error(
+        throw new RelationError(
           `Model "${relatedModelClass.name}" is missing back-reference ` +
           `"${property}" for relation "${this.name}.${relation.name}"`)
       }
@@ -229,7 +231,7 @@ export class Model extends objection.Model {
     // for access to relations and implicit calls to $relatedQuery(name).
     const accessor = `$${relation.name}`
     if (accessor in this.prototype) {
-      throw new Error(
+      throw new RelationError(
         `Model "${this.name}" already defines a property with name ` +
         `"${accessor}" that clashes with the relation accessor.`)
     }
@@ -343,13 +345,23 @@ export class Model extends objection.Model {
   }
 
   static createValidationError({ type, message, errors, options }) {
-    if (type === 'ModelValidation' || type === 'RestValidation') {
-      errors = this.app.validator.parseErrors(errors, options)
-      message = message ||
-        `The provided data for the ${this.name} instance is not valid`
-      return new ValidationError({ type, message, errors })
+    switch (type) {
+    case 'ModelValidation':
+    case 'RestValidation':
+      return new ValidationError({
+        type,
+        message: message ||
+          `The provided data for the ${this.name} instance is not valid`,
+        errors: this.app.validator.parseErrors(errors, options)
+      })
+    case 'RelationExpression':
+    case 'UnallowedRelation':
+      return new RelationError({ type, message, errors })
+    case 'InvalidGraph':
+      return new GraphError({ type, message, errors })
+    default:
+      return new ResponseError({ type, message, errors })
     }
-    return new QueryError({ type, message, errors })
   }
 
   static QueryBuilder = QueryBuilder
