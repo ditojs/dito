@@ -1,9 +1,12 @@
 import objection from 'objection'
+import chalk from 'chalk'
 import Router from 'koa-router'
 import compose from 'koa-compose'
 import { ResponseError, NotFoundError, WrappedError } from '@/errors'
 import pluralize from 'pluralize'
-import { isString, isFunction, asArray, camelize } from '@ditojs/utils'
+import {
+  isObject, isString, isFunction, asArray, camelize
+} from '@ditojs/utils'
 import { convertSchema } from '@/schema'
 
 export class Controller {
@@ -17,12 +20,11 @@ export class Controller {
     this.scope = this.scope || null
     this.modelClass = this.modelClass ||
       app?.models[camelize(pluralize.singular(this.name), true)]
-    if (this.modelClass) {
-      // Create an empty instance for validation of ids, see getId()
-      // eslint-disable-next-line new-cap
-      this.instance = new this.modelClass()
-      this.router = new Router()
-    }
+    this.logging = app?.config.log.routes
+    // Create an empty instance for validation of ids, see getId()
+    // eslint-disable-next-line new-cap
+    this.validator = this.modelClass && new this.modelClass()
+    this.router = new Router()
   }
 
   initialize() {
@@ -31,37 +33,12 @@ export class Controller {
     this.applyScope = this.scope
       ? query => query.applyScope(this.scope)
       : null
+    this.log(`${namespace && chalk.green(`${namespace}/`)}${
+      chalk.cyan(this.name)}${chalk.white(':')}`)
     const parent = this.constructor.getParentActions()
     this.collection = this.setupActions('collection', parent)
     this.member = this.setupActions('member', parent)
-  }
-
-  static getParentActions() {
-    const parentClass = Object.getPrototypeOf(this)
-    if (!parentClass.hasOwnProperty('collection') &&
-      !parentClass.hasOwnProperty('member')) {
-      // If `collection` and `member` hasn't been inherited and resolved yet,
-      // we need to create one instance of each controller class up the chain,
-      // in order to get to its definitions of `collection` and `member`.
-      // Once their inheritance is set up correctly, they will be exposed on the
-      // class itself.
-      // eslint-disable-next-line new-cap
-      const { collection, member } = new parentClass()
-      if (parentClass !== Controller) {
-        // Recursively set up inheritance chains.
-        const parent = parentClass.getParentActions()
-        Object.setPrototypeOf(collection, parent.collection)
-        Object.setPrototypeOf(member, parent.member)
-      }
-      parentClass.collection = collection
-      parentClass.member = member
-    }
-    const { collection, member } = parentClass
-    return { collection, member }
-  }
-
-  getOwnProperty(name) {
-    return this.hasOwnProperty(name) && this[name]
+    this.relations = this.setupRelations('relations', parent)
   }
 
   compose() {
@@ -71,28 +48,63 @@ export class Controller {
     ])
   }
 
-  setupActions(name, parent) {
-    const actions = this[name] || {}
-    // Inherit from the parent actions so overrides can use super.<action>():
-    Object.setPrototypeOf(actions, parent[name])
-    const { only } = actions
-    // NOTE: setupActions() is called after the first call of getParentActions()
-    // so we can be sure that Controller.collection / Controller.member is
-    // defined and resolved. For more information see getParentActions():
-    const defaults = Controller[name]
-    // Respect `only` settings and clear any default method to deactivate it:
-    if (only) {
-      for (const key in actions) {
-        if (key in defaults && !only.includes(key)) {
-          actions[key] = undefined
+  static getParentActions() {
+    const parentClass = Object.getPrototypeOf(this)
+    const has = name => parentClass.hasOwnProperty(name)
+    if (!has('collection') && !has('member') && !has('relations')) {
+      // If `collection` and `member` hasn't been inherited and resolved yet,
+      // we need to create one instance of each controller class up the chain,
+      // in order to get to its definitions of `collection` and `member`.
+      // Once their inheritance is set up correctly, they will be exposed on the
+      // class itself.
+      // eslint-disable-next-line new-cap
+      let { collection, member, relations } = new parentClass()
+      if (parentClass !== Controller) {
+        // Recursively set up inheritance chains.
+        const parent = parentClass.getParentActions()
+        Object.setPrototypeOf(collection, parent.collection)
+        Object.setPrototypeOf(member, parent.member)
+        if (parent.relations) {
+          relations = Object.setPrototypeOf(relations || {}, parent.relations)
+        }
+      }
+      parentClass.collection = collection
+      parentClass.member = member
+      parentClass.relations = relations
+    }
+    const { collection, member, relations } = parentClass
+    return { collection, member, relations }
+  }
+
+  inheritAndFilter(name, parent) {
+    let values = this[name]
+    if (parent[name]) {
+      // Inherit from the parent actions so overrides can use super.<action>():
+      values = Object.setPrototypeOf(values || {}, parent[name])
+      // Respect `only` settings and clear any default method to deactivate it:
+      if (values.only) {
+        for (const key in values) {
+          if (!values.hasOwnProperty(key) &&
+              !values.only.includes(key) &&
+              key !== 'only') {
+            values[key] = undefined
+          }
         }
       }
     }
+    return values
+  }
 
+  setupActions(name, parent) {
+    const actions = this.inheritAndFilter(name, parent)
     // Now install the routes.
     const member = name === 'member'
+    // NOTE: setupActions() is called after the first call of getParentActions()
+    // so we can be sure that Controller.collection / Controller.member is
+    // defined and resolved. For more information see getParentActions().
     // NOTE: We can't use Object.entries() loops here, since we want the keys
-    // inherited from the parents as well, see getParentActions()
+    // inherited from the parents as well.
+    const defaults = Controller[name]
     for (const key in actions) {
       const action = actions[key]
       if (isFunction(action)) {
@@ -107,7 +119,7 @@ export class Controller {
             member && (ctx => actions.get.call(this, ctx))
           )
         }
-        console.log(verb, path)
+        this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`, 1)
         this.router[verb](path, async ctx => {
           try {
             const res = await method.call(this, ctx)
@@ -123,6 +135,24 @@ export class Controller {
     return actions
   }
 
+  setupRelations(name, parent) {
+    const relations = this.inheritAndFilter(name, parent)
+    for (const key in relations) {
+      const relation = relations[key]
+      if (isObject(relation)) {
+        this.log(`${chalk.blue(key)}${chalk.white(':')}`, 1)
+        // TODO: Implement
+      }
+    }
+    return relations
+  }
+
+  log(str, indent = 0) {
+    if (this.logging) {
+      console.log(`${'  '.repeat(indent)}${str}`)
+    }
+  }
+
   checkModel(model, id) {
     if (!model) {
       throw new NotFoundError(
@@ -134,7 +164,7 @@ export class Controller {
   getId(ctx) {
     const { id } = ctx.params
     // Use a dummy instance to validate the format of the passed id
-    this.instance.$validate(
+    this.validator.$validate(
       this.modelClass.getIdProperties(id),
       { patch: true }
     )

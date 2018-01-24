@@ -37,6 +37,14 @@ export class UserController extends Controller {
         success,
         authenticated: ctx.isAuthenticated()
       }
+    },
+
+    @verb('get')
+    current(ctx) {
+      return {
+        authenticated: ctx.isAuthenticated(),
+        user: ctx.state.user
+      }
     }
   }
 }
