@@ -1,36 +1,43 @@
 import objection from 'objection'
-import Koa from 'koa'
 import Router from 'koa-router'
+import compose from 'koa-compose'
 import { ResponseError, NotFoundError, WrappedError } from '@/errors'
 import pluralize from 'pluralize'
 import { isString, isFunction, asArray, camelize } from '@ditojs/utils'
 import { convertSchema } from '@/schema'
 
-export class Controller extends Koa {
+export class Controller {
   constructor(app) {
-    super()
     this.app = app
     const { name } = this.constructor
     this.name = this.name || name.match(/^(.*?)(?:Controller|)$/)[1]
     this.path = this.path || app.normalizePath(this.name)
     this.modelClass = this.modelClass ||
       this.app.models[camelize(pluralize.singular(this.name), true)]
+    // Create an empty instance for validation of ids, see getId()
+    // eslint-disable-next-line new-cap
+    this.instance = new this.modelClass()
     this.router = new Router()
   }
 
   initialize() {
-    this.collection = this.setupActions(this.collection || {}, collection, true)
-    this.member = this.setupActions(this.member || {}, member, false)
-    this.use(this.router.routes())
-    this.use(this.router.allowedMethods())
+    this.collection = this.setupActions(this.collection, collection, false)
+    this.member = this.setupActions(this.member, member, true)
   }
 
-  getUrl() {
+  compose() {
+    return compose([
+      this.router.routes(),
+      this.router.allowedMethods()
+    ])
+  }
+
+  getPath() {
     const { path, namespace } = this
     return namespace ? `/${namespace}/${path}` : `/${path}`
   }
 
-  setupActions(actions, proto, collection) {
+  setupActions(actions = {}, proto, member) {
     // Inherit from the default methods so overrides can use super.<action>():
     Object.setPrototypeOf(actions, proto)
     const { only } = actions
@@ -44,22 +51,21 @@ export class Controller extends Koa {
     }
 
     // Now install the routes.
+    const rootPath = this.getPath()
     for (const [key, action] of Object.entries(actions)) {
       if (isFunction(action)) {
         let verb = key
-        let path = collection ? '/' : '/:id'
+        let path = member ? `${rootPath}/:id` : rootPath
         let method = action
         if (!(key in proto)) {
           // A custom action:
           path = `${path}/${action.path || this.app.normalizePath(key)}`
-          verb = action.verb
+          verb = action.verb || 'get'
           method = async ctx => this.callAction(action, ctx,
-            ctx => collection
-              ? this.modelClass
-              : actions.get.call(this, ctx)
+            member && (ctx => actions.get.call(this, ctx))
           )
         }
-        console.log(verb, `${this.getUrl()}${path}`)
+        console.log(verb, path)
         this.router[verb](path, async ctx => {
           try {
             const res = await method.call(this, ctx)
@@ -83,7 +89,17 @@ export class Controller extends Koa {
     return model
   }
 
-  async callAction(action, ctx, bind) {
+  getId(ctx) {
+    const { id } = ctx.params
+    // Use a dummy instance to validate the format of the passed id
+    // this.instance.$validate(
+    //   this.modelClass.getIdProperties(id),
+    //   { patch: true }
+    // )
+    return id
+  }
+
+  async callAction(action, ctx, arg) {
     const { query } = ctx
     let { validators, parameters, returns } = action
     if (!validators && (parameters || returns)) {
@@ -96,6 +112,9 @@ export class Controller extends Koa {
       }
     }
 
+    // TODO: Instead of splitting by consumed parameters, split by parameters
+    // expected by QueryBuilder and supported by this controller, and pass
+    // everything else to the parameters validator.
     if (validators && !validators.parameters(query)) {
       throw this.modelClass.createValidationError({
         type: 'RestValidation',
@@ -103,26 +122,12 @@ export class Controller extends Koa {
         errors: validators.parameters.errors
       })
     }
-    let consumed = null
-    const args = parameters?.map(
-      ({ name }) => {
-        consumed = consumed || {}
-        consumed[name] = true
-        return name ? query[name] : query
-      }) ||
-      // If no parameters are provided, pass the full ctx object to the method
-      [ctx]
-    if (consumed) {
-      // Create a copy of ctx that inherits from the real one but overrides
-      // query with aversion that has all consumed query params removed.
-      ctx = Object.setPrototypeOf({}, ctx)
-      ctx.query = Object.entries(ctx.query).reduce((query, [key, value]) => {
-        if (!consumed[key]) {
-          query[key] = value
-        }
-      }, {})
+    const split = this.splitArguments(parameters, ctx, member)
+    if (arg) {
+      // Resolve first argument and add to argument list.
+      split.args.unshift(await arg(split.ctx))
     }
-    const value = await action.call(bind && await bind(ctx), ...args)
+    const value = await action.call(this, ...split.args)
     const returnName = returns?.name
     // Use 'root' if no name is given, see createValidator()
     const returnData = { [returnName || 'root']: value }
@@ -155,6 +160,32 @@ export class Controller extends Koa {
       }
     }
     return () => true
+  }
+
+  splitArguments(parameters, ctx, member) {
+    const { query } = ctx
+    const consumed = parameters && member && {}
+    const args = parameters?.map(
+      ({ name }) => {
+        if (consumed) {
+          consumed[name] = true
+        }
+        return name ? query[name] : query
+      }) ||
+      // If no parameters are provided, pass the full ctx object to the method
+      [ctx]
+    if (consumed) {
+      // Create a copy of ctx that inherits from the real one but overrides
+      // query with aversion that has all consumed query params removed, so it
+      // can be passed on to the member.get(ctx) method.
+      ctx = Object.setPrototypeOf({}, ctx)
+      ctx.query = Object.entries(query).reduce((query, [key, value]) => {
+        if (!consumed[key]) {
+          query[key] = value
+        }
+      }, {})
+    }
+    return { ctx, args }
   }
 }
 
@@ -204,7 +235,7 @@ const collection = {
 
 const member = {
   get(ctx, modify) {
-    const { id } = ctx.params
+    const id = this.getId(ctx)
     return this.modelClass
       .findById(id, ctx.query)
       .modify(modify)
@@ -212,15 +243,14 @@ const member = {
   },
 
   delete(ctx, modify) {
-    const { id } = ctx.params
     return this.modelClass
-      .deleteById(id)
+      .deleteById(this.getId(ctx))
       .modify(modify)
       .then(count => ({ count }))
   },
 
   put(ctx, modify) {
-    const { id } = ctx.params
+    const id = this.getId(ctx)
     return objection.transaction(this.modelClass, modelClass => {
       return modelClass
         .updateGraphAndFetchById(id, ctx.request.body)
@@ -230,7 +260,7 @@ const member = {
   },
 
   patch(ctx, modify) {
-    const { id } = ctx.params
+    const id = this.getId(ctx)
     return objection.transaction(this.modelClass, modelClass => {
       return modelClass
         .upsertGraphAndFetchById(id, ctx.request.body)

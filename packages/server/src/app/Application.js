@@ -2,7 +2,6 @@ import Koa from 'koa'
 import Knex from 'knex'
 import chalk from 'chalk'
 import bodyParser from 'koa-bodyparser'
-import mount from 'koa-mount'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
@@ -15,7 +14,6 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
-import modelsHandler from './modelsHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import Validator from './Validator'
 import { EventEmitter } from '@/lib'
@@ -68,9 +66,11 @@ export class Application extends Koa {
 
   addController(ControllerClass) {
     const controller = new ControllerClass(this)
-    this.controllers[controller.name] = controller
+    // Inheritance of action methods cannot happen in the constructor itself,
+    // so call a separate initialize() method after in order to take care of it.
     controller.initialize()
-    this.use(mount(controller.getUrl(), controller))
+    this.controllers[controller.name] = controller
+    this.use(controller.compose())
   }
 
   normalizePath(path) {
@@ -107,8 +107,7 @@ export class Application extends Koa {
           conditional(),
           etag()
         ] || []),
-        bodyParser(),
-        modelsHandler(this)
+        bodyParser()
       ].filter(val => val))
     )
   }

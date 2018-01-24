@@ -43,18 +43,12 @@ export class RestApi extends Koa {
     this.router[verb](path, async ctx => {
       ctx.route = route
       try {
-        // Get the version of the model bound to the web-context, and use
-        // that instead of the bare modelClass as target for the handler.
-        // For details, see `modelsHandler()`
-        const target = ctx.models
-          ? ctx.models[modelClass.name]
-          : modelClass
-        await target.emit(before, ctx)
+        await modelClass.emit(before, ctx)
         const res = await handler(ctx)
         if (res !== undefined) {
           ctx.body = res
         }
-        await target.emit(after, ctx)
+        await modelClass.emit(after, ctx)
       } catch (err) {
         throw err instanceof ResponseError ? err : new WrappedError(err)
       }

@@ -1,8 +1,7 @@
-import { asArray } from '@ditojs/utils'
+import { isArray } from '@ditojs/utils'
 
-export function parameters(parameters) {
+export function parameters(...args) {
   return (target, key, descriptor) => {
-    parameters = asArray(parameters)
-    descriptor.value.parameters = parameters
+    descriptor.value.parameters = isArray(args[0]) ? args[0] : args
   }
 }

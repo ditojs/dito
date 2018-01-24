@@ -92,6 +92,17 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
+  static getIdProperties(id, obj = {}) {
+    const ids = asArray(id)
+    const { properties } = this.definition
+    for (const [index, name] of this.getIdPropertyArray().entries()) {
+      const property = properties[name]
+      const id = ids[index]
+      obj[name] = /^(integer|number)$/.test(property.type) ? +id : id
+    }
+    return obj
+  }
+
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {

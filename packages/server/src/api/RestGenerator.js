@@ -42,6 +42,7 @@ export class RestGenerator {
   addRoutes(modelClass, relation, type, routesSettings, indent) {
     const handlers = restHandlers[type]
     const getSettings = settingsHandlers[type]
+    const target = relation || modelClass
     for (const [verb, handler] of Object.entries(getSettings ? handlers : {})) {
       const settings = getSettings(verb, handlers, routesSettings)
       if (!settings || !settings.access) {
@@ -50,7 +51,7 @@ export class RestGenerator {
       const path = this.getRoutePath(type, modelClass, relation)
       this.adapter.addRoute(
         { modelClass, relation, type, verb, path, settings },
-        ctx => handler(getTarget(ctx, modelClass, relation), ctx)
+        ctx => handler(target, ctx)
       )
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -81,7 +82,7 @@ export class RestGenerator {
       }
       this.adapter.addRoute(
         { modelClass, method, type, verb, path, settings },
-        ctx => handler(getTarget(ctx, modelClass), method, validate, ctx)
+        ctx => handler(modelClass, method, validate, ctx)
       )
       this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`,
         indent)
@@ -97,19 +98,6 @@ export class RestGenerator {
   getRoutePath(type, modelClass, param) {
     return `${this.prefix}${routePath[type](modelClass, param)}`
   }
-}
-
-function getTarget(ctx, modelClass, relation) {
-  // Get the version of the model bound to the web-context, and use
-  // that instead of the bare modelClass as target for the handler.
-  const boundClass = ctx.models?.[modelClass.name]
-  return boundClass
-    // If a relation is the target, fetch its bound version also.
-    ? relation
-      ? boundClass.getRelations()[relation.name]
-      : boundClass
-    // If the non-bound versions should be used, it's simple:
-    : relation || modelClass
 }
 
 // TODO: Add normalization Options!
