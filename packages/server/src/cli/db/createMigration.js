@@ -1,6 +1,8 @@
 import path from 'path'
 import fs from 'fs-extra'
-import { isObject, isArray, isString, deindent, capitalize } from '@ditojs/utils'
+import {
+  isObject, isArray, isString, deindent, capitalize
+} from '@ditojs/utils'
 
 const typeToKnex = {
   number: 'double',

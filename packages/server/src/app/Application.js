@@ -18,7 +18,7 @@ import { knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from './Controller'
 import { Validator } from './Validator'
-import { isFunction, hyphenate } from '@ditojs/utils'
+import { hyphenate } from '@ditojs/utils'
 
 export class Application extends Koa {
   constructor(config = {}, { validator, models, controllers }) {
