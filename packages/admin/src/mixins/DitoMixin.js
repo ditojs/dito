@@ -41,14 +41,14 @@ export default {
       return (this.isForm ? this.$parent : this)?.formComponent
     },
 
-    // Returns the data of the first parentFormComponent that doesn't hold
+    // Returns the first formComponent in the chain of parents that doesn't hold
     // nested data.
-    dataRoot() {
+    dataFormComponent() {
       let { formComponent } = this
       while (formComponent?.isNested) {
         formComponent = formComponent.parentFormComponent
       }
-      return formComponent?.data
+      return formComponent
     }
   },
 
