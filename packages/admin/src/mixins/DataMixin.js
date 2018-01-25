@@ -242,7 +242,7 @@ export default {
         url,
         method,
         data,
-        baseURL: this.api.baseURL,
+        baseURL: this.api.url,
         headers: this.api.headers || {
           'Content-Type': 'application/json'
         },

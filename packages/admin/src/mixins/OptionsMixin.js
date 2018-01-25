@@ -14,7 +14,7 @@ export default {
       const { options } = this.schema
       if (isObject(options)) {
         const url = options.url ||
-          options.apiPath && this.api.baseURL + options.apiPath
+          options.apiPath && this.api.url + options.apiPath
         if (url) {
           this.loading = true
           return axios.get(url)
