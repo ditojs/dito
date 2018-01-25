@@ -186,13 +186,13 @@ export default {
     },
 
     deleteItem(item, index) {
-      const title = item && this.getItemLabel(item, index)
+      const label = item && this.getItemLabel(item, index)
 
       const notify = transient => this.notify(transient ? 'info' : 'success',
-        'Successfully Removed', `${title} was ${this.verbDeleted}.`)
+        'Successfully Removed', `${label} was ${this.verbDeleted}.`)
 
       if (item && confirm(
-        `Do you really want to ${this.verbDelete} ${title}?`)
+        `Do you really want to ${this.verbDelete} ${label}?`)
       ) {
         if (this.isTransient) {
           this.removeItem(item)

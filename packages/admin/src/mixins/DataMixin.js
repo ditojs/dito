@@ -132,24 +132,23 @@ export default {
     },
 
     getItemLabel(item, index) {
-      const label = this.getLabel(this.getFormSchema(item))
       const { itemLabel, columns } = this.listSchema
-      const itemProp = isString(itemLabel) && itemLabel ||
-        columns && Object.keys(columns)[0]
+      const itemProperty = isString(itemLabel) && itemLabel ||
+        columns && Object.keys(columns)[0] ||
+        'name'
       let title = isFunction(itemLabel) ? itemLabel(item)
-        : itemProp ? item[itemProp]
-        : item.name
-      if (title) {
-        title = ` ${title}`
-      } else {
+        : item[itemProperty]
+      if (!title) {
+        const label = this.getLabel(this.getFormSchema(item))
         const id = this.getItemId(item)
         title = id
           ? ` (id:${id})`
           : index !== undefined
             ? ` ${index + 1}`
             : ''
+        title = `${label}${title}`
       }
-      return `${label}${title}`
+      return title
     },
 
     setData(data) {
