@@ -28,13 +28,13 @@ An admin of a model consists of two parts, the view and the form. The view repre
 
 In order to add a new model to the admin create a new folder in dito-admin/src/schemas. The name of the folder is irrelevant however the convention is to use the hyphenated model name. Also export the new folder in the index.js file in the schemas folder like this:
 
-``` js
+```js
 export * from './folder-name'
 ```
 
 Within the folder create a new index.js file. Within this file the View is exported. An empty view looks like this:
 
-``` js
+```js
 export const viewName = {}
 ```
 
@@ -132,71 +132,72 @@ required
 
 A text component, as simple as it gets.
 
-``` js
+```js
 firstName: {
-      type: 'text',
-      label: 'First Name',
-      width: '40%'
-    }
+  type: 'text',
+  label: 'First Name',
+  width: '40%'
+}
 
 ```
 
 Here is an example of a select component. One might just as well use type radio here. The layout can be vertical or horizontal.
 
-``` js
+```js
 prefix: {
-      type: 'select',
-      label: 'Prefix',
-      width: '10%',
-      layout: 'vertical',
-      options: [
-        { label: 'Dr.', value: 'dr' },
-        { label: 'Mr.', value: 'mr' },
-        { label: 'Ms.', value: 'ms' }
-      ]
-    }
+  type: 'select',
+  label: 'Prefix',
+  width: '10%',
+  layout: 'vertical',
+  options: [
+    { label: 'Dr.', value: 'dr' },
+    { label: 'Mr.', value: 'mr' },
+    { label: 'Ms.', value: 'ms' }
+  ]
+}
 ```
 
 This component allows selection of multiple items. It also searchable, meaning there will be suggestions as one enters a string into the input. Taggable allows adding additional options.
 
-``` js
+```js
 tags: {
-      type: 'multiselect',
-      label: 'Tags',
-      width: '50%',
-      multiple: true,
-      searchable: true,
-      taggable: true,
-      options: ['Developer', 'Designer', 'Writer', 'Composer']
-    }
+  type: 'multiselect',
+  label: 'Tags',
+  width: '50%',
+  multiple: true,
+  searchable: true,
+  taggable: true,
+  options: ['Developer', 'Designer', 'Writer', 'Composer']
+}
 ```
 
 This component uses an API to fetch its data. It also has a placeholder which is displayed in the input field until data is entered. The API provides JSON with an array of dictionaries. labelKey retrieves the label that is diplayed to the user. valueKey the value of the options. Options with the same groupBy value can be merged into groups.
 
-``` js
+```js
 country: {
-      type: 'multiselect',
-      label: 'Country',
-      multiple: false,
-      searchable: true,
-      placeholder: 'Select or search country',
-      options: {
-        url: 'https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json',
-        labelKey: 'name',
-        valueKey: 'alpha-2',
-        groupBy: 'sub-region'
-      }
-    }
+  type: 'multiselect',
+  label: 'Country',
+  multiple: false,
+  searchable: true,
+  placeholder: 'Select or search country',
+  options: {
+    url: 'https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json',
+    labelKey: 'name',
+    valueKey: 'alpha-2',
+    groupBy: 'sub-region'
+  }
+}
 ```
 
 This example validates the input with the step and the range options. There are further such options like min and max. step also gives buttons to increase/decrease the number.
-``` js
+
+```js
 factor: {
-      label: 'Factor',
-      type: 'number',
-      width: 'auto',
-      step: 0.01,
-      range: [0, 100],
-      required: true
-    }
+  label: 'Factor',
+  type: 'number',
+  width: 'auto',
+  step: 0.01,
+  range: [0, 100],
+  required: true
+}
 ```
