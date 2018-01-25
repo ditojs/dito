@@ -99,24 +99,18 @@ export class Controller {
     const actions = this.inheritAndFilter(name, parent)
     // Now install the routes.
     const member = name === 'member'
-    // NOTE: setupActions() is called after the first call of getParentActions()
-    // so we can be sure that Controller.collection / Controller.member is
-    // defined and resolved. For more information see getParentActions().
-    // NOTE: We can't use Object.entries() loops here, since we want the keys
-    // inherited from the parents as well.
-    const defaults = Controller[name]
     for (const key in actions) {
       const action = actions[key]
       if (isFunction(action)) {
-        let verb = key
+        let verb = actionToVerb[key]
         let path = member ? `${this.url}/:id` : this.url
         let method = action
-        if (!(key in defaults)) {
+        if (!verb) {
           // A custom action:
           path = `${path}/${action.path || this.app.normalizePath(key)}`
           verb = action.verb || 'get'
           method = async ctx => this.callAction(action, ctx,
-            member && (ctx => actions.get.call(this, ctx))
+            member && (ctx => actions.find.call(this, ctx))
           )
         }
         this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`, 1)
@@ -246,7 +240,7 @@ export class Controller {
       if (consumed) {
         // Create a copy of ctx that inherits from the real one but overrides
         // query with aversion that has all consumed query params removed, so it
-        // can be passed on to the getMember() which calls `member.get(ctx)`:
+        // can be passed on to the getMember() which calls `actions.find(ctx)`:
         ctx = Object.setPrototypeOf({}, ctx)
         ctx.query = Object.entries(query).reduce((query, [key, value]) => {
           if (!consumed[key]) {
@@ -287,7 +281,7 @@ export class Controller {
   }
 
   collection = {
-    get(ctx, modify) {
+    find(ctx, modify) {
       return this.modelClass
         .find(ctx.query)
         .modify(this.applyScope)
@@ -303,22 +297,22 @@ export class Controller {
         .then(count => ({ count }))
     },
 
-    post(ctx, modify) {
+    insert(ctx, modify) {
       // TODO: Decide if we should set status? status = 201
       return this.executeAndFetch('insert', ctx, modify)
     },
 
-    put(ctx, modify) {
+    update(ctx, modify) {
       return this.executeAndFetch('update', ctx, modify)
     },
 
     patch(ctx, modify) {
-      return this.executeAndFetch('upsert', ctx, modify)
+      return this.executeAndFetch('patch', ctx, modify)
     }
   }
 
   member = {
-    get(ctx, modify) {
+    find(ctx, modify) {
       const id = this.getId(ctx)
       return this.modelClass
         .findById(id, ctx.query)
@@ -334,12 +328,20 @@ export class Controller {
         .then(count => ({ count }))
     },
 
-    put(ctx, modify) {
+    update(ctx, modify) {
       return this.executeAndFetchById('update', ctx, modify)
     },
 
     patch(ctx, modify) {
-      return this.executeAndFetchById('upsert', ctx, modify)
+      return this.executeAndFetchById('patch', ctx, modify)
     }
   }
+}
+
+const actionToVerb = {
+  find: 'get',
+  delete: 'delete',
+  insert: 'post',
+  update: 'put',
+  patch: 'patch'
 }
