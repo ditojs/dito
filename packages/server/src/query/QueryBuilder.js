@@ -240,39 +240,54 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, { ...options, fetch: true })
   }
 
+  _handleGraph(method, data, defaults, options, restoreRelations) {
+    const graph = new Graph(this.modelClass(), data, restoreRelations,
+      mergeOptions(defaults, options))
+    const builder = super[method](graph.getData(), graph.getOptions())
+    if (restoreRelations) {
+      builder.then(result => graph.restoreRelations(result))
+    }
+    return builder
+  }
+
   insertGraph(data, options) {
-    const graph = new Graph(this.modelClass(), data, 'insert', true,
-      mergeOptions(insertGraphOptions, options))
-    return super.insertGraph(graph.getData(), graph.getOptions())
-      .then(result => graph.restoreRelations(result))
+    return this._handleGraph('insertGraph',
+      data, insertGraphOptions, options, true)
   }
 
   insertGraphAndFetch(data, options) {
-    const graph = new Graph(this.modelClass(), data, 'insert', false,
-      mergeOptions(insertGraphOptions, options))
-    return super.insertGraphAndFetch(graph.getData(), graph.getOptions())
+    return this._handleGraph('insertGraphAndFetch',
+      data, insertGraphOptions, options, false)
   }
 
   upsertGraph(data, options) {
-    const graph = new Graph(this.modelClass(), data, 'upsert', false,
-      mergeOptions(upsertGraphOptions, options))
-    return super.upsertGraph(graph.getData(), graph.getOptions())
+    return this._handleGraph('upsertGraph',
+      data, upsertGraphOptions, options, false)
   }
 
   upsertGraphAndFetch(data, options) {
-    const graph = new Graph(this.modelClass(), data, 'upsert', false,
-      mergeOptions(upsertGraphOptions, options))
-    return super.upsertGraphAndFetch(graph.getData(), graph.getOptions())
+    return this._handleGraph('upsertGraphAndFetch',
+      data, upsertGraphOptions, options, false)
   }
 
   updateGraph(data, options) {
-    return this.upsertGraph(data,
-      mergeOptions(updateGraphOptions, options))
+    return this._handleGraph('upsertGraph',
+      data, updateGraphOptions, options, false)
   }
 
   updateGraphAndFetch(data, options) {
-    return this.upsertGraphAndFetch(data,
-      mergeOptions(updateGraphOptions, options))
+    return this._handleGraph('upsertGraphAndFetch',
+      data, updateGraphOptions, options, false)
+  }
+
+  patchGraph(data, options) {
+    return this._handleGraph('upsertGraph',
+      data, patchGraphOptions, options, false)
+  }
+
+  patchGraphAndFetch(data, options) {
+    return this._handleGraph('upsertGraphAndFetch',
+      data, patchGraphOptions, options, false)
   }
 
   upsertGraphAndFetchById(id, data, options) {
@@ -282,6 +297,11 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   updateGraphAndFetchById(id, data, options) {
     return this.updateGraphAndFetch(
+      this.modelClass().getIdProperties(id, { ...data }), options)
+  }
+
+  patchGraphAndFetchById(id, data, options) {
+    return this.patchGraphAndFetch(
       this.modelClass().getIdProperties(id, { ...data }), options)
   }
 
@@ -441,7 +461,7 @@ for (const key of [
   }
 }
 
-// Change the defaults of insertGraph, upsertGraph and updateGraph
+// Change the defaults of insertGraph, upsertGraph, updateGraph and patchGraph
 const insertGraphOptions = {
   relate: true
 }
@@ -452,8 +472,17 @@ const upsertGraphOptions = {
   insertMissing: true
 }
 
+const patchGraphOptions = {
+  relate: true,
+  unrelate: true,
+  insertMissing: false
+}
+
 const updateGraphOptions = {
-  update: true
+  relate: true,
+  unrelate: true,
+  update: true,
+  insertMissing: false
 }
 
 function mergeOptions(defaults, options) {
@@ -475,26 +504,30 @@ const mixinMethods = [
   'clearOrder',
   'select',
   'insert',
+  'upsert',
   'update',
   'relate',
   'patch',
-  'upsert',
   'truncate',
   'delete',
   'deleteById',
   'insertAndFetch',
-  'updateAndFetch',
   'upsertAndFetch',
+  'updateAndFetch',
+  'patchAndFetch',
   'updateAndFetchById',
   'patchAndFetchById',
   'insertGraph',
-  'updateGraph',
   'upsertGraph',
+  'updateGraph',
+  'patchGraph',
   'insertGraphAndFetch',
-  'updateGraphAndFetch',
   'upsertGraphAndFetch',
-  'updateGraphAndFetchById',
+  'updateGraphAndFetch',
+  'patchGraphAndFetch',
   'upsertGraphAndFetchById',
+  'updateGraphAndFetchById',
+  'patchGraphAndFetchById',
   'where',
   'whereNot',
   'whereRaw',

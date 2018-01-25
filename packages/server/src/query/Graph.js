@@ -2,7 +2,7 @@ import { RelationExpression } from 'objection'
 import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
 
 export default class Graph {
-  constructor(rootModelClass, data, action, restoreRelations, options) {
+  constructor(rootModelClass, data, restoreRelations, options) {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
     this.data = data
@@ -12,7 +12,6 @@ export default class Graph {
       )
       : []
     this.isArray = isArray(data)
-    this.action = action
     this.options = options
     this.overrides = {}
     this.numOptions = Object.keys(options).length
@@ -34,8 +33,8 @@ export default class Graph {
     // On inserts with relates, use processRelate() to filter out the nested
     // relations of models that are used for relates, but keep the removed
     // relations to restore them again on the results,see restoreRelations()
-    const data = this.action === 'insert' && this.options.relate
-      ? this.processRelate(this.data)
+    const data = this.removedRelations && this.options.relate
+      ? this.processRelates(this.data)
       : this.data
     return this.isArray ? data : data[0]
   }
@@ -53,10 +52,15 @@ export default class Graph {
         const relationDefinitions = modelClass.definition.relations
         const relationInstances = modelClass.getRelations()
         for (const [name, relation] of Object.entries(relationDefinitions)) {
-          const options = relation[this.action]
-          if (options) {
-            for (const key in options) {
-              if (!this.overrides[key] && options[key] !== this.options[key]) {
+          const { graph } = relation
+          if (graph) {
+            // Loop through this.options and only look for overrides of them,
+            // since the relation.graph options are shared for insert  / upsert
+            // & co., but not all of them use all options (insert defines less).
+            for (const key in this.options) {
+              if (key in graph &&
+                  graph[key] !== this.options[key] &&
+                  !this.overrides[key]) {
                 this.numOverrides++
                 this.overrides[key] = []
               }
@@ -88,9 +92,8 @@ export default class Graph {
         // Loop through all override options, figure out their settings for the
         // current relation and build relation expression arrays for each
         // override, reflecting their nested settings in arrays of expressions.
-        const options = relation[this.action]
         for (const [key, override] of overrides) {
-          const option = pick(options?.[key], this.options[key])
+          const option = pick(relation.graph?.[key], this.options[key])
           if (option) {
             override.push(relationPath)
           }
@@ -126,7 +129,7 @@ export default class Graph {
    * For details, see:
    * https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
    */
-  processRelate(data, dataPath = [], relationPath = []) {
+  processRelates(data, dataPath = [], relationPath = []) {
     if (data) {
       if (data.$isObjectionModel) {
         const relations = data.constructor.getRelations()
@@ -161,7 +164,7 @@ export default class Graph {
           for (const key in relations) {
             // Set relate to true for nested objects, so nested relations end
             // up having it set.
-            clone[key] = this.processRelate(clone[key], [...dataPath, key],
+            clone[key] = this.processRelates(clone[key], [...dataPath, key],
               [...relationPath, key])
           }
         }
@@ -169,14 +172,14 @@ export default class Graph {
       } else if (isArray(data)) {
         // Pass on relate for hasMany arrays.
         return data.map((entry, index) =>
-          this.processRelate(entry, [...dataPath, index], relationPath))
+          this.processRelates(entry, [...dataPath, index], relationPath))
       }
     }
     return data
   }
 
   /**
-   * Restores relations in the final result removed by processRelate()
+   * Restores relations in the final result removed by processRelates()
    */
   restoreRelations(result) {
     if (this.removedRelations) {
