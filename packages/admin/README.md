@@ -42,91 +42,58 @@ Notice, that the name given to the view is important. Firstly, it is a default v
 
 From there we define the view with a number of properties:
 
-type
-:  The type of the view. For now the value is 'list'.
+| Property | Description |
+| --- | --- |
+| `type` | The type of the view. For now the value is 'list'. |
+| `label` | The label of the view. If no label is given, the labelized export name is used. |
+| `form/forms` | The form or a dictionary of forms of the view. |
+| `path` | The route of the view. If no path is given, the hyphentaed export name is used. |
+| `itemLabel` | The label given to the items. Can be string giving a property name of the item or a function of the item returning a string (e.g. `(person) => person.firstName + person.lastName`). If no itemLabel is given, the default is the 'name' property of the item, followed by label of the form of the view (plus item id) and other defaults. |
+| `columns` | The columns displayed in the table. The columns can be given as a list where each entry is the name of a property of the item (e.g. `['property1', 'property2'])`). However it is usually beneficial to assign an object with further options to the columns property. The options are the following:<br><ul><li>**label** The name of the column as a string. The default value is the labelized key.</li><li>**component** Use a Vue component to render the cell. The component is specified like this: `() => import(...)`.</li><li>**sortable** Boolean value determining if the column should be sortable.</li><li>**render** A function of the value and the item returning the displayed name. If the column is sortable, the column is sorted by value and not by rendered name.</li><li>**class** A string giving a class to the column cells.</li><li>**style** A string giving a style to the column cells.</li></ul>|
+| `editable` | Boolean value determining if the items can be edited with the admin. |
+| `creatable` | Boolean value determining if the items can be created with the admin. |
+| `deletable` | Boolean value determining if the items can be deleted with the admin. |
+| `paginate` | The number of items displayed per page. |
+| `scopes` | Scope names as defined on the model. Can be given as an array (`['scope1', 'scope2']`) or as a dictionary with optional labels (`{scope1 : {label : 'Scope A'}, scope2 : {label : 'Scope B'}}`). |
+| `scope` | Optional default scope name. |
 
-label
-:  The label of the view. If no label is given, the labelized export name is used.
-
-form/forms
-:  The form or a dictionary of forms of the view.
-
-path
-:  The route of the view. If no path is given, the hyphentaed export name is used.
-
-itemLabel
-: The label given to the items. Can be string giving a property name of the item or a function of the item returning a string (e.g. ```(person) => person.firstName + person.lastName```). If no itemLabel is given, the default is the 'name' property of the item, followed by label of the form of the view (plus item id) and other defaults.
-
-columns
-: The columns displayed in the table. The columns can be given as a list where each entry is the name of a property of the item (e.g. ```['property1', 'property2'])```). However it is usually beneficial to assign an object with further options to the columns property. The options are the following:
-
-:  **label**
-:  The name of the column as a string. The default value is the labelized key.
-
-:  **component**
-:  Use a Vue component to render the cell. The component is specified like this: ```() => import(...)```.
-
-:  **sortable**
-:  Boolean value determining if the column should be sortable.
-
-:  **render**
-:  A function of the value and the item returning the displayed name. If the column is sortable, the column is sorted by value and not by rendered name.
-
-:  **class**
-:  A string giving a class to the column cells.
-
-:  **style**
-:  A string giving a style to the column cells.
-
-editable
-:  Boolean value determining if the items can be edited with the admin.
-
-creatable
-:  Boolean value determining if the items can be created with the admin.
-
-deletable
-:  Boolean value determining if the items can be deleted with the admin.
-
-paginate
-:  The number of items displayed per page.
-
-scopes
-:  Scope names as defined on the model. Can be given as an array (```['scope1', 'scope2']```) or as a dictionary with optional labels (```{scope1 : {label : 'Scope A'}, scope2 : {label : 'Scope B'}}```).
-
-scope
-:  Optional default scope name.
 
 ## Creating A Form
 
 The form is created in the same folder as the view. The convention for the form name is to take the model name. Again, the labelized form name is used as the default label. A form can have the following properties:
 
-label
-:  The label of the form.
+| Property | Description |
+| --- | --- |
+| `label` | The label of the form. |
+| `tabs` | With tabs several forms can be displayed in different tabs within the form (`{tab1 : form1, tab2 : form2}`). |
+| `components` | Keys within the components dictionary are the are the property name of the item which they are displaying/editing. The value is another object with options. I both tabs and components are given, the components are always visible whereas the tabs can be toggled. |
 
-tabs
-:  With tabs several forms can be displayed in different tabs within the form (```{tab1 : form1, tab2 : form2}```).
-
-components
-:  Keys within the components dictionary are the are the property name of the item which they are displaying/editing. The value is another object with options. I both tabs and components are given, the components are always visible whereas the tabs can be toggled.
 
 ### Components
 
 There are a large variety of components for different data types and purposes. The most important properties are these:
 
-label
-:  The label of the component, if none is given the labelized key of the compoenent is used.
+| Property | Description |
+| --- | --- |
+| `label` | The label of the component, if none is given the labelized key of the compoenent is used. |
+| `type` | The type of the component, there are many different options like 'text', 'textarea', 'email', 'radio', 'select' etc. For more types see the examples below or consult the code. |
+| `options` | An array of options. Only required if the type is 'select', 'radio' or a similar type. The array can also contain label-value pairs (`[{label : 'Option 1', value : 1}, {label : 'Option 2', value : 6}]`). |
+| `width` | The width of the component. The value can be given in percent (e.g. '20%') or as 'auto'. There will be several components on one line until their percentage exeeds 100%. |
+| `required` | Boolean value if the field is required or not. Dito uses both backend and frontend validation both required validation as well as the validation of some types (like email) are only frontend. |
 
-type
-: The type of the component, there are many different options like 'text', 'textarea', 'email', 'radio', 'select' etc. For more types see the examples below or consult the code.
+Also, a component can be a nested list. For example, if you are modelling people with children, then a list of children can be shown for every person with a component like this:
 
-options
-:  An array of options. Only required if the type is 'select', 'radio' or a similar type. The array can also contain label-value pairs (```[{label : 'Option 1', value : 1}, {label : 'Option 2', value : 6}]```).
-
-width
-: The width of the component. The value can be given in percent (e.g. '20%') or as 'auto'. There will be several components on one line until their percentage exeeds 100%.
-
-required
-:  Boolean value if the field is required or not. Dito uses both backend and frontend validation both required validation as well as the validation of some types (like email) are only frontend.
+``` js
+children: {
+  type: 'list',
+  form: import('./ChildrenForm')
+  inline: true,
+  nested: true,
+  creatable: true,
+  editable: true,
+  deletable: true
+}
+```
 
 ### Component Examples
 
