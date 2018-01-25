@@ -273,7 +273,7 @@ export default {
       const offset = page * limit
       return {
         ...query, // Query may override scope.
-        ...(eager && { eager }),
+        ...(eager && { eager: eager.replace(/\s/g, '') }),
         ...(pick && { pick: toPropertiesExpression(pick) }),
         ...(omit && { omit: toPropertiesExpression(omit) }),
         // Convert offset/limit to range so that we get results counting:
