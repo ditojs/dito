@@ -1,9 +1,9 @@
 import { Controller } from './Controller'
-import { verb } from '@/decorators'
+import { action } from '@/decorators'
 
 export class UserController extends Controller {
   collection = {
-    @verb('get') // TODO: post?
+    @action('get') // TODO: post?
     async login(ctx) {
       let user
       let error
@@ -26,7 +26,7 @@ export class UserController extends Controller {
       }
     },
 
-    @verb('get') // TODO: post?
+    @action('get') // TODO: post?
     async logout(ctx) {
       let success = false
       if (ctx.isAuthenticated()) {
@@ -39,7 +39,7 @@ export class UserController extends Controller {
       }
     },
 
-    @verb('get')
+    @action('get')
     current(ctx) {
       return {
         authenticated: ctx.isAuthenticated(),
