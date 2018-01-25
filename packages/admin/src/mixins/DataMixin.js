@@ -258,24 +258,12 @@ export default {
       // dito-server specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends
       // could plug in as well.
-
-      // Helper to convert properties expression in JSON notation to strings,
-      // see parsePropertiesExpression() in dito-server.
-      function toPropertiesExpression(expression) {
-        return Object.entries(expression).map(
-          ([modelName, properties]) => `${modelName}[${properties.join(',')}]`
-        ).join(',')
-      }
-
-      const { paginate, eager, pick, omit } = this.listSchema
+      const { paginate } = this.listSchema
       const { page = 0, ...query } = this.query || {}
       const limit = this.isList && paginate // Only use range on lists
       const offset = page * limit
       return {
         ...query, // Query may override scope.
-        ...(eager && { eager: eager.replace(/\s/g, '') }),
-        ...(pick && { pick: toPropertiesExpression(pick) }),
-        ...(omit && { omit: toPropertiesExpression(omit) }),
         // Convert offset/limit to range so that we get results counting:
         ...(limit && {
           range: `${offset},${offset + limit - 1}`
