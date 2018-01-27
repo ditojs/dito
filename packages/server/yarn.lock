@@ -747,6 +747,14 @@ ajv@^6.0.1:
     fast-json-stable-stringify "^2.0.0"
     json-schema-traverse "^0.3.0"
 
+ajv@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-6.1.0.tgz#adc4b3dd64b2d8740d13c5b38e4596115970e59d"
+  dependencies:
+    fast-deep-equal "^1.0.0"
+    fast-json-stable-stringify "^2.0.0"
+    json-schema-traverse "^0.3.0"
+
 ansi-escapes@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/ansi-escapes/-/ansi-escapes-3.0.0.tgz#ec3e8b4e9f8064fc02c3ac9b65f1c275bda8ef92"
@@ -2685,9 +2693,9 @@ object.pick@^1.2.0:
   dependencies:
     isobject "^3.0.1"
 
-"objection@github:lehni/objection.js#259b6ee56bc4dcd153bea294e14163dbee9954b8":
-  version "1.0.0-rc.4"
-  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/259b6ee56bc4dcd153bea294e14163dbee9954b8"
+"objection@github:lehni/objection.js#91a816a59dec260c27784afcc60cd282340cb81f":
+  version "1.0.0-rc.6"
+  resolved "https://codeload.github.com/lehni/objection.js/tar.gz/91a816a59dec260c27784afcc60cd282340cb81f"
   dependencies:
     ajv "^6.0.1"
     bluebird "^3.5.1"
