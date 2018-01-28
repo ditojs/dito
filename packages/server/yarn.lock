@@ -331,7 +331,7 @@
   version "7.0.0-beta.38"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-do-expressions/-/plugin-syntax-do-expressions-7.0.0-beta.38.tgz#256fb3cdad5b888d018757f6bf3e5a557fb88ead"
 
-"@babel/plugin-syntax-dynamic-import@7.0.0-beta.38", "@babel/plugin-syntax-dynamic-import@^7.0.0-beta.37":
+"@babel/plugin-syntax-dynamic-import@7.0.0-beta.38", "@babel/plugin-syntax-dynamic-import@^7.0.0-beta.38":
   version "7.0.0-beta.38"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-dynamic-import/-/plugin-syntax-dynamic-import-7.0.0-beta.38.tgz#b74bc5d57b4cbe6a341570ea6d7db9ffba450f7b"
 
@@ -888,11 +888,11 @@ babel-eslint@^8.2.1:
     eslint-scope "~3.7.1"
     eslint-visitor-keys "^1.0.0"
 
-babel-plugin-dynamic-import-node-babel-7@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node-babel-7/-/babel-plugin-dynamic-import-node-babel-7-2.0.3.tgz#5134838dcbd09f96a956bc14aa7345d5764c4657"
+babel-plugin-dynamic-import-node-babel-7@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node-babel-7/-/babel-plugin-dynamic-import-node-babel-7-2.0.4.tgz#22b9c0ea06eea709e3ede8306abe281891606ac8"
   dependencies:
-    "@babel/plugin-syntax-dynamic-import" "^7.0.0-beta.37"
+    "@babel/plugin-syntax-dynamic-import" "^7.0.0-beta.38"
 
 babel-plugin-module-resolver@^3.0.0:
   version "3.0.0"

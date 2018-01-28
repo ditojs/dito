@@ -65,7 +65,7 @@
     "@babel/preset-env": "^7.0.0-beta.38",
     "@babel/preset-stage-1": "^7.0.0-beta.38",
     "babel-eslint": "^8.2.1",
-    "babel-plugin-dynamic-import-node-babel-7": "^2.0.3",
+    "babel-plugin-dynamic-import-node-babel-7": "^2.0.4",
     "babel-plugin-module-resolver": "^3.0.0",
     "babel-plugin-transform-promise-to-bluebird": "2.0.0-beta.1",
     "cross-env": "^5.1.3",

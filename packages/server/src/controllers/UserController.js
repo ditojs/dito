@@ -1,7 +1,7 @@
-import { Controller } from './Controller'
+import { ModelController } from './ModelController'
 import { action } from '@/decorators'
 
-export class UserController extends Controller {
+export class UserController extends ModelController {
   collection = {
     @action('get') // TODO: post?
     async login(ctx) {
