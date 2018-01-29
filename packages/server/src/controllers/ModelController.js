@@ -61,9 +61,10 @@ export class ModelController extends Controller {
 
   inheritAndFilter(name, parent) {
     let values = this[name]
-    if (parent[name]) {
+    const parentValues = parent[name]
+    if (parentValues) {
       // Inherit from the parent actions so overrides can use super.<action>():
-      values = Object.setPrototypeOf(values || {}, parent[name])
+      values = Object.setPrototypeOf(values || {}, parentValues)
       // Respect `only` settings and clear any default method to deactivate it:
       if (values.only) {
         for (const key in values) {
@@ -81,19 +82,19 @@ export class ModelController extends Controller {
   setupActions(name, parent) {
     const actions = this.inheritAndFilter(name, parent)
     // Now install the routes.
-    const member = name === 'member'
+    const isMember = name === 'member'
     for (const key in actions) {
       const action = actions[key]
       if (isFunction(action)) {
         let verb = actionToVerb[key]
-        let path = member ? `${this.url}/:id` : this.url
+        let path = isMember ? `${this.url}/:id` : this.url
         let method = action
         if (!verb) {
           // A custom action:
           path = `${path}/${action.path || this.app.normalizePath(key)}`
           verb = action.verb || 'get'
           method = async ctx => this.callAction(action, ctx,
-            member && (ctx => actions.find.call(this, ctx))
+            isMember && (ctx => actions.find.call(this, ctx))
           )
         }
         this.log(`${chalk.magenta(verb.toUpperCase())} ${chalk.white(path)}`, 1)

@@ -99,9 +99,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.execute()
   }
 
-  eagerScope(scope) {
+  eagerScope(...args) {
     if (this._eagerExpression) {
-      eagerScope(this.modelClass(), this._eagerExpression, scope, 'push')
+      eagerScope(this.modelClass(), this._eagerExpression, args)
     }
     return this
   }

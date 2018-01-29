@@ -520,8 +520,8 @@ const definitionHandlers = {
       _default.eager = eagerScope(
         this,
         objection.RelationExpression.parse(_default.eager),
-        'default.eager',
-        'unshift'
+        ['default.eager'],
+        true
       )
     }
   },
