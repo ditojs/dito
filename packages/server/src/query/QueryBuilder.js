@@ -126,6 +126,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
+  clearDefaults() {
+    this._applyDefaultEager = false
+    this._applyDefaultOrder = false
+    return this
+  }
+
   scope(...scopes) {
     return this.clearScope().mergeScope(...scopes)
   }

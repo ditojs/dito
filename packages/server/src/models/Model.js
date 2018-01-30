@@ -115,7 +115,7 @@ export class Model extends objection.Model {
             ? builder => builder.find(scope)
             : null
         if (!filter) {
-          throw new ModelError(`Invalid scope: '${scope}'.`)
+          throw new ModelError(this, `Invalid scope: '${scope}'.`)
         }
       }
       // Add a special 'default.eager' filter that does nothing else than

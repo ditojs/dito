@@ -78,7 +78,7 @@ export default class Graph {
   }
 
   /**
-   * Fills the empty override arrays collected by collectOverrides() by waling
+   * Fills the empty override arrays collected by collectOverrides() by walking
    * through the actual graph and finding relations that have overrides, and
    * building relation paths for them.
    */

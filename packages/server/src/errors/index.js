@@ -1,5 +1,6 @@
 export * from './ResponseError'
 export * from './AuthenticationError'
+export * from './ControllerError'
 export * from './DatabaseError'
 export * from './GraphError'
 export * from './ModelError'
