@@ -30,7 +30,7 @@
   "dependencies": {
     "@ditojs/utils": "^0.2.1",
     "@koa/cors": "^2.2.1",
-    "ajv": "^6.1.0",
+    "ajv": "^6.1.1",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.1",
     "chalk": "^2.3.0",
@@ -48,9 +48,9 @@
     "koa-passport": "^4.0.1",
     "koa-pino-logger": "^2.1.1",
     "koa-response-time": "^2.0.0",
-    "koa-router": "^7.3.0",
+    "koa-router": "^7.4.0",
     "koa-session": "^5.8.1",
-    "objection": "github:lehni/objection.js#91a816a59dec260c27784afcc60cd282340cb81f",
+    "objection": "^1.0.0-rc.10",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"
