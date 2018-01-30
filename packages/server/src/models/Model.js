@@ -277,6 +277,15 @@ export class Model extends objection.Model {
     return columnName
   }
 
+  $initialize() {
+  }
+
+  $setJson(json, options) {
+    super.$setJson(json, options)
+    this.$initialize()
+    return this
+  }
+
   $formatDatabaseJson(json) {
     const { constructor } = this
     for (const key of constructor.dateAttributes) {
@@ -362,7 +371,7 @@ export class Model extends objection.Model {
       return new ValidationError({
         type,
         message: message ||
-          `The provided data for the ${this.name} instance is not valid`,
+          `The provided data for the ${this.name} model is not valid`,
         errors: this.app.validator.parseErrors(errors, options)
       })
     case 'RelationExpression':
