@@ -172,15 +172,18 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
     }
     if (this._eagerExpression) {
-      this._eagerFilters = {
+      const filters = {
         ...this._eagerFilters,
         _eagerScope_: query => query.applyEagerScope(...scopes)
       }
-      eagerScope(
-        this.modelClass(),
-        this._eagerExpression,
-        [...scopes, '_eagerScope_'],
-        this._eagerFilters
+      this.eager(
+        eagerScope(
+          this.modelClass(),
+          this._eagerExpression,
+          [...scopes, '_eagerScope_'],
+          filters
+        ),
+        filters
       )
     }
     return this

@@ -4,7 +4,9 @@ import { RelationError } from '@/errors'
 export default function eagerScope(modelClass, expr, scopes, filters = null,
   prepend = false, isRoot = true) {
   if (isRoot) {
-    expr = RelationExpression.create(expr)
+    expr = expr?.isObjectionRelationExpression
+      ? expr.clone()
+      : RelationExpression.create(expr)
   } else {
     // Only add the scope if it's not already defined by the eager statement and
     // if it's actually available as a filter in the model's namedFilters list.
