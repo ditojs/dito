@@ -700,9 +700,9 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
-"@ditojs/utils@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.3.0.tgz#0c411ca6a1122d5f15e94f9d050cdf5637f4841b"
+"@ditojs/utils@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.3.1.tgz#139b66b84278df4b814a40a638dd31cbe2da3751"
 
 "@koa/cors@^2.2.1":
   version "2.2.1"
