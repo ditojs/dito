@@ -23,11 +23,12 @@ export class RelationController extends CollectionController {
     this.initialize(false)
   }
 
-  executeQuery(transaction, ctx, modify) {
+  // @override
+  execute(transaction, ctx, modify) {
     const id = this.parent.getId(ctx)
-    return this.parent.executeQuery(transaction, ctx, query => query
+    return this.parent.execute(transaction, ctx, query => query
       .findById(id)
-      .clearDefaults()
+      .clearEager()
       .then(
         model => modify(
           this.parent.checkModel(model, id)

@@ -278,6 +278,7 @@ export class Model extends objection.Model {
   }
 
   $initialize() {
+    // Do nothing by default.
   }
 
   $setJson(json, options) {

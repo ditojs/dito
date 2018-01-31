@@ -162,9 +162,6 @@ export class Controller {
       }
     }
 
-    // TODO: Instead of splitting by consumed parameters, split by parameters
-    // expected by QueryBuilder and supported by this controller, and pass
-    // everything else to the parameters validator.
     if (validators && !validators.parameters(query)) {
       throw this.modelClass.createValidationError({
         type: 'RestValidation',
@@ -172,6 +169,9 @@ export class Controller {
         errors: validators.parameters.errors
       })
     }
+    // TODO: Instead of splitting by consumed parameters, split by parameters
+    // expected by QueryBuilder and supported by this controller, and pass
+    // everything else to the parameters validator.
     const args = await this.collectArguments(ctx, parameters, getFirstArgument)
     const value = await action.call(this, ...args)
     const returnName = returns?.name

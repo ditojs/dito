@@ -30,9 +30,8 @@ export class CollectionController extends Controller {
       // A custom action:
       verb = action.verb || 'get'
       path = action.path || this.app.normalizePath(name)
-      handler = ctx => this.callAction(action, ctx,
-        isMember && (ctx => actions.find.call(this, ctx))
-      )
+      const getFirstArgument = isMember && (ctx => actions.find.call(this, ctx))
+      handler = ctx => this.callAction(action, ctx, getFirstArgument)
     }
     this.setupRoute(verb, this.getPath(isMember, path), handler)
   }
@@ -65,8 +64,8 @@ export class CollectionController extends Controller {
     return id
   }
 
-  executeQuery(transaction, ctx, modify) {
-    // NOTE: ctx is required by RelationController which overrides executeQuery.
+  execute(transaction, ctx, modify) {
+    // NOTE: ctx is required by RelationController which overrides execute().
     const call = modelClass => modify(
       modelClass.query().modify(this.applyScope)
     )
@@ -77,7 +76,7 @@ export class CollectionController extends Controller {
 
   executeAndFetch(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
-    return this.executeQuery(this.graph, ctx, query =>
+    return this.execute(this.graph, ctx, query =>
       query[name](ctx.request.body)
         .modify(modify)
     )
@@ -86,7 +85,7 @@ export class CollectionController extends Controller {
   executeAndFetchById(action, ctx, modify) {
     const id = this.getId(ctx)
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
-    return this.executeQuery(this.graph, ctx, query =>
+    return this.execute(this.graph, ctx, query =>
       query[name](id, ctx.request.body)
         .modify(modify)
         .then(model => this.checkModel(model, id))
@@ -96,17 +95,18 @@ export class CollectionController extends Controller {
   collection = {
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
-      return this.executeQuery(false, ctx, query => query
+      return this.execute(false, ctx, query => query
         .modify(modify)[find](ctx.request.body)
       )
     },
 
     delete(ctx, modify) {
       // TODO: Decide if we should set status? status = 204
-      return this.executeQuery(false, ctx, query => query
+      return this.execute(false, ctx, query => query
         .modify(modify)
         // TODO: Test if filter works for delete
         .find(ctx.query)
+        .clearEager()
         .delete()
         .then(count => ({ count }))
       )
@@ -129,7 +129,7 @@ export class CollectionController extends Controller {
   member = {
     find(ctx, modify) {
       const id = this.getId(ctx)
-      return this.executeQuery(false, ctx, query => query
+      return this.execute(false, ctx, query => query
         .modify(modify)
         .findById(id, ctx.query)
         .then(model => this.checkModel(model, id))
@@ -138,8 +138,9 @@ export class CollectionController extends Controller {
 
     delete(ctx, modify) {
       const id = this.getId(ctx)
-      return this.executeQuery(false, ctx, query => query
+      return this.execute(false, ctx, query => query
         .modify(modify)
+        .clearEager()
         .deleteById(id)
         .then(count => ({ count }))
       )
