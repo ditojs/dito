@@ -18,13 +18,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
     this._applyDefaultEager = true
-    this._applyDefaultInclude = true
-    this._applyDefaultExclude = true
     this._applyDefaultOrder = true
     this._scopes = []
     this._eagerScopes = []
-    this._include = null
-    this._exclude = null
   }
 
   clone() {
@@ -33,23 +29,18 @@ export class QueryBuilder extends objection.QueryBuilder {
     clone._propertyRefsCache = this._propertyRefsCache
     clone._applyDefaultEager = this._applyDefaultEager
     clone._applyDefaultOrder = this._applyDefaultOrder
-    clone._applyDefaultInclude = this._applyDefaultInclude
-    clone._applyDefaultExclude = this._applyDefaultExclude
     clone._scopes = [...this._scopes]
     clone._eagerScopes = [...this._eagerScopes]
-    clone._include = this._include ? { ...this._include } : null
-    clone._exclude = this._exclude ? { ...this._exclude } : null
     return clone
   }
 
   async execute() {
-    // Only apply the default: { eager, include, order } settings if this is a
-    // find query, meaning it does not specify any write operations, without any
+    // Only apply the default: { eager, order } settings if this is a find
+    // query, meaning it does not specify any write operations, without any
     // special selects. This is required to exclude count(), etc...
-    const isFind = this.isFind() && !this.hasSelects()
-    if (isFind) {
+    if (this.isFind() && !this.hasSelects()) {
       const {
-        default: { eager, order, include, exclude } = {}
+        default: { eager, order } = {}
       } = this.modelClass().definition
       if (eager && this._applyDefaultEager) {
         // Use mergeEager() instead of eager(), in case mergeEager() was already
@@ -59,45 +50,10 @@ export class QueryBuilder extends objection.QueryBuilder {
       if (order && this._applyDefaultOrder) {
         this.orderBy(...asArray(order))
       }
-      if (include && this._applyDefaultInclude) {
-        this.mergeInclude(...asArray(include))
-      }
-      if (exclude && this._applyDefaultExclude) {
-        this.mergeExclude(...asArray(exclude))
-      }
     }
     // Now finally apply the scopes.
-    this.applyFilter(...this._scopes)
+    this.applyScope(...this._scopes)
     this.applyEagerScope(...this._eagerScopes)
-    // Handle _include & _exclude after all scopes were applied, as we need to
-    // include the child eager expressions that may be altered by scopes.
-    if (isFind && (this._include || this._exclude)) {
-      if (this._include) {
-        // If there is an include list, automatically add all child eager
-        // expressions to the include list.
-        if (this._eagerExpression?.numChildren > 0) {
-          for (const key of Object.keys(this._eagerExpression.children)) {
-            this._include[key] = true
-          }
-        }
-      }
-      // Objection's QueryBuilder.traverse() doesn't work after range(),
-      // so let's work around it:
-      this.runAfter(result => {
-        const data = result && this.has('range')
-          ? result.results
-          : result
-        this.resultModelClass().traverse(this.modelClass(), data, model => {
-          if (this._include) {
-            model.$pick(this._include)
-          }
-          if (this._exclude) {
-            model.$omit(this._exclude)
-          }
-        })
-        return result
-      })
-    }
 
     return super.execute()
   }
@@ -185,42 +141,6 @@ export class QueryBuilder extends objection.QueryBuilder {
         ),
         filters
       )
-    }
-    return this
-  }
-
-  include(...properties) {
-    return this.clearInclude().mergeInclude(...properties)
-  }
-
-  clearInclude() {
-    this._include = null
-    this._applyDefaultInclude = false
-    return this
-  }
-
-  mergeInclude(...properties) {
-    this._include = this._include || {}
-    for (const property of properties) {
-      this._include[property] = true
-    }
-    return this
-  }
-
-  exclude(...properties) {
-    return this.clearExclude().mergeExclude(...properties)
-  }
-
-  clearExclude() {
-    this._exclude = null
-    this._applyDefaultExclude = false
-    return this
-  }
-
-  mergeExclude(...properties) {
-    this._exclude = this._exclude || {}
-    for (const property of properties) {
-      this._exclude[property] = true
     }
     return this
   }
