@@ -131,6 +131,10 @@ export class Model extends objection.Model {
     })
   }
 
+  static hasScope(name) {
+    return name in this.namedFilters
+  }
+
   static get relationMappings() {
     return this.getCached('relationMappings', () => {
       const { relations } = this.definition
@@ -543,7 +547,9 @@ const definitionHandlers = {
     if (_default.eager) {
       // Use unshift instead of push so it's applied fist, not last, and other
       // scopes can be applied after.
-      _default.eager = eagerScope(this, _default.eager, ['default.eager'], true)
+      _default.eager = eagerScope(
+        this, _default.eager, ['default.eager'], null, true
+      )
     }
   },
 

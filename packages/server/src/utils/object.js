@@ -1,5 +1,9 @@
 import { isObject, isArray } from '@ditojs/utils'
 
+export function asArguments(val) {
+  return isArray(val) ? val : val != null ? [val] : []
+}
+
 export function mapValues(obj, callback) {
   return Object.entries(obj).reduce((res, [key, value]) => {
     res[key] = callback(value, key)

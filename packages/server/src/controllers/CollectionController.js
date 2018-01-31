@@ -1,4 +1,5 @@
 import objection from 'objection'
+import { asArguments } from '@/utils'
 import { Controller } from './Controller'
 
 export class CollectionController extends Controller {
@@ -12,8 +13,10 @@ export class CollectionController extends Controller {
     this.idParam = this.level ? `id${this.level}` : 'id'
     this.graph = !!this.graph
     this.scope = this.scope || null
-    this.applyScope = this.scope
-      ? query => query.applyScope(this.scope)
+    this.applyScope = this.scope || this.eagerScope
+      ? query => query
+        .applyScope(...asArguments(this.scope))
+        .eagerScope(...asArguments(this.eagerScope))
       : null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
@@ -133,6 +136,8 @@ export class CollectionController extends Controller {
         .modify(modify)
         .clearEager()
         .deleteById(id)
+        // TODO: Consider .throwIfNotFound() and returning something else on
+        // success? status = 204?
         .then(count => ({ count }))
       )
     },

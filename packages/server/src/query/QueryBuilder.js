@@ -22,6 +22,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._applyDefaultExclude = true
     this._applyDefaultOrder = true
     this._scopes = []
+    this._eagerScopes = []
     this._include = null
     this._exclude = null
   }
@@ -35,6 +36,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     clone._applyDefaultInclude = this._applyDefaultInclude
     clone._applyDefaultExclude = this._applyDefaultExclude
     clone._scopes = [...this._scopes]
+    clone._eagerScopes = [...this._eagerScopes]
     clone._include = this._include ? { ...this._include } : null
     clone._exclude = this._exclude ? { ...this._exclude } : null
     return clone
@@ -66,6 +68,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
     // Now finally apply the scopes.
     this.applyFilter(...this._scopes)
+    this.applyEagerScope(...this._eagerScopes)
     // Handle _include & _exclude after all scopes were applied, as we need to
     // include the child eager expressions that may be altered by scopes.
     if (isFind && (this._include || this._exclude)) {
@@ -97,13 +100,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     return super.execute()
-  }
-
-  eagerScope(...args) {
-    if (this._eagerExpression) {
-      eagerScope(this.modelClass(), this._eagerExpression, args)
-    }
-    return this
   }
 
   eager(...args) {
@@ -147,6 +143,47 @@ export class QueryBuilder extends objection.QueryBuilder {
   applyScope(...scopes) {
     // A simple redirect to applyFilter() for the sake of naming consistency.
     return this.applyFilter(...scopes)
+  }
+
+  eagerScope(...scopes) {
+    return this.clearEagerScope().mergeEagerScope(...scopes)
+  }
+
+  clearEagerScope() {
+    this._eagerScopes = []
+    return this
+  }
+
+  mergeEagerScope(...scopes) {
+    for (const scope of scopes) {
+      if (!this._eagerScopes.includes(scope)) {
+        this._eagerScopes.push(scope)
+      }
+    }
+    return this
+  }
+
+  applyEagerScope(...scopes) {
+    if (!scopes.length) return this
+    const modelClass = this.modelClass()
+    for (const scope of scopes) {
+      if (modelClass.hasScope(scope)) {
+        this.applyScope(scope)
+      }
+    }
+    if (this._eagerExpression) {
+      this._eagerFilters = {
+        ...this._eagerFilters,
+        _eagerScope_: query => query.applyEagerScope(...scopes)
+      }
+      eagerScope(
+        this.modelClass(),
+        this._eagerExpression,
+        [...scopes, '_eagerScope_'],
+        this._eagerFilters
+      )
+    }
+    return this
   }
 
   include(...properties) {
