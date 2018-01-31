@@ -10,7 +10,7 @@ export default class ModelRelation {
 
   query(trx) {
     return this.modelClass
-      ? this.modelClass.relatedQuery(this.name, trx)
+      ? this.modelClass.relatedQuery(this.name)
       : this.model.$relatedQuery(this.name, trx)
   }
 
