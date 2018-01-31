@@ -1,5 +1,4 @@
 import objection from 'objection'
-import { NotFoundError } from '@/errors'
 import { Controller } from './Controller'
 
 export class CollectionController extends Controller {
@@ -42,14 +41,6 @@ export class CollectionController extends Controller {
       : path
   }
 
-  checkModel(model, id) {
-    if (!model) {
-      throw new NotFoundError(
-        `Cannot find '${this.modelClass.name}' model with id ${id}`)
-    }
-    return model
-  }
-
   getId(ctx) {
     const id = ctx.params[this.idParam]
     const { name } = this.modelClass
@@ -88,7 +79,7 @@ export class CollectionController extends Controller {
     return this.execute(this.graph, ctx, query =>
       query[name](id, ctx.request.body)
         .modify(modify)
-        .then(model => this.checkModel(model, id))
+        .throwIfNotFound()
     )
   }
 
@@ -132,7 +123,7 @@ export class CollectionController extends Controller {
       return this.execute(false, ctx, query => query
         .modify(modify)
         .findById(id, ctx.query)
-        .then(model => this.checkModel(model, id))
+        .throwIfNotFound()
       )
     },
 

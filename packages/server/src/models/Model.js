@@ -11,8 +11,8 @@ import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
 import {
-  ResponseError, WrappedError, DatabaseError, GraphError, ModelError,
-  RelationError, ValidationError
+  ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
+  RelationError, ValidationError, WrappedError
 } from '@/errors'
 
 export class Model extends objection.Model {
@@ -365,6 +365,12 @@ export class Model extends objection.Model {
       delete json[key]
     }
     return json
+  }
+
+  static createNotFoundError(ctx) {
+    return new NotFoundError(ctx.byId
+      ? `'${this.name}' model with id ${ctx.byId} not found`
+      : `'${this.name}' model not found`)
   }
 
   static createValidator() {

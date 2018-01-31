@@ -291,18 +291,39 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
     return this.upsertGraphAndFetch(
       this.modelClass().getIdProperties(id, { ...data }), options)
   }
 
   updateGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
     return this.updateGraphAndFetch(
       this.modelClass().getIdProperties(id, { ...data }), options)
   }
 
   patchGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
     return this.patchGraphAndFetch(
       this.modelClass().getIdProperties(id, { ...data }), options)
+  }
+
+  updateAndFetchById(id, data) {
+    this.context({ byId: id })
+    return super.updateAndFetchById(id, data)
+  }
+
+  patchAndFetchById(id, data) {
+    this.context({ byId: id })
+    return super.patchAndFetchById(id, data)
+  }
+
+  findById(id, query, allowed) {
+    // Remember id so Model.createNotFoundError() can report it:
+    this.context({ byId: id })
+    // Add support for optional query to findById()
+    super.findById(id)
+    return query ? this.findOne(query, allowed) : this
   }
 
   find(query = {}, allowed) {
@@ -345,12 +366,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       ? allowed.filter(str => allowedQueries[str])
       : Object.keys(allowedQueries)
     return this.find(query, allowed).first()
-  }
-
-  findById(id, query, allowed) {
-    // Add support for optional query to findById()
-    super.findById(id)
-    return query ? this.findOne(query, allowed) : this
   }
 
   allowProperties(refs) {

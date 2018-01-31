@@ -29,11 +29,11 @@ export class RelationController extends CollectionController {
     return this.parent.execute(transaction, ctx, query => query
       .findById(id)
       .clearEager()
+      .throwIfNotFound()
       .then(
-        model => modify(
-          this.parent.checkModel(model, id)
-            .$relatedQuery(this.relation.name)
-            .modify(this.applyScope)
+        model => modify(model
+          .$relatedQuery(this.relation.name)
+          .modify(this.applyScope)
         )
       )
     )
