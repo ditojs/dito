@@ -2,7 +2,9 @@ import DataMixin from '@/mixins/DataMixin'
 import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
-import { isObject, isArray, escapeHtml, camelize, labelize } from 'dito-utils'
+import {
+  isObject, isArray, escapeHtml, camelize, labelize
+} from '@ditojs/utils'
 import { processForms, processFormComponents } from '@/schema'
 
 export default {
@@ -234,7 +236,7 @@ export default {
           }
         })
       } else {
-        throw new Error(`Cannot find route for field ${dataPath}.`)
+        throw new Error(`Cannot find component for field ${dataPath}.`)
       }
     }
   }, // end of `methods`

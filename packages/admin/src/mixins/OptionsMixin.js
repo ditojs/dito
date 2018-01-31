@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isObject, isArray, isFunction, getDataPath } from 'dito-utils'
+import { isObject, isArray, isFunction, getDataPath } from '@ditojs/utils'
 
 export default {
   data() {

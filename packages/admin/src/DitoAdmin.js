@@ -6,7 +6,7 @@ import './components'
 import './types'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
-import { hyphenate, camelize } from 'dito-utils'
+import { hyphenate, camelize } from '@ditojs/utils'
 import { processComponent } from './schema'
 
 Vue.config.productionTip = false

@@ -19,6 +19,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
+// TODO: maskedPassword should only be set if there was a password?
 const maskedPassword = '****************'
 
 export default TypeComponent.register([

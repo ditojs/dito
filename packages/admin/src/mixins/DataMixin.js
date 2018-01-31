@@ -2,7 +2,7 @@ import TypeComponent from '@/TypeComponent'
 import axios from 'axios'
 import {
   isArray, isObject, isString, isFunction, pick, clone
-} from 'dito-utils'
+} from '@ditojs/utils'
 
 export default {
   data() {

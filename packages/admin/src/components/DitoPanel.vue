@@ -73,7 +73,7 @@ $half-spacing: $form-spacing / 2
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isFunction } from 'dito-utils'
+import { isFunction } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-panel', {
   inject: ['$validator'],

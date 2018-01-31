@@ -34,7 +34,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import ListMixin from '@/mixins/ListMixin'
-import { isObject } from 'dito-utils'
+import { isObject } from '@ditojs/utils'
 
 export default TypeComponent.register('tree-list', {
   mixins: [ListMixin],

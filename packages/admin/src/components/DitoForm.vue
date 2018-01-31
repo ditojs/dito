@@ -72,7 +72,7 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { isArray, isObject, clone, capitalize } from 'dito-utils'
+import { isArray, isObject, clone, capitalize } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [DataMixin, RouteMixin],
