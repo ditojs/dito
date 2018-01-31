@@ -1,5 +1,5 @@
 import objection from 'objection'
-import { wrapError, DBError } from 'db-errors'
+import dbErrors from 'db-errors'
 import util from 'util'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
@@ -41,6 +41,10 @@ export class Model extends objection.Model {
     }
   }
 
+  $initialize() {
+    // Do nothing by default.
+  }
+
   get $app() {
     return this.constructor.app
   }
@@ -56,10 +60,11 @@ export class Model extends objection.Model {
   }
 
   static query(trx) {
+    // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
-      err = wrapError(err)
+      err = dbErrors.wrapError(err)
       err = err instanceof ResponseError ? err
-        : err instanceof DBError ? new DatabaseError(err)
+        : err instanceof dbErrors.DBError ? new DatabaseError(err)
         : new WrappedError(err)
       return Promise.reject(err)
     })
@@ -68,10 +73,6 @@ export class Model extends objection.Model {
   static async count(...args) {
     const res = await this.query().count(...args).first()
     return res && +res[Object.keys(res)[0]] || 0
-  }
-
-  static relatedQuery(relationName, trx) {
-    return this.getRelation(relationName).relatedModelClass.query(trx)
   }
 
   static get tableName() {
@@ -288,10 +289,6 @@ export class Model extends objection.Model {
 
   static columnNameToPropertyName(columnName) {
     return columnName
-  }
-
-  $initialize() {
-    // Do nothing by default.
   }
 
   $setJson(json, options) {
@@ -546,12 +543,7 @@ const definitionHandlers = {
     if (_default.eager) {
       // Use unshift instead of push so it's applied fist, not last, and other
       // scopes can be applied after.
-      _default.eager = eagerScope(
-        this,
-        objection.RelationExpression.create(_default.eager),
-        ['default.eager'],
-        true
-      )
+      _default.eager = eagerScope(this, _default.eager, ['default.eager'], true)
     }
   },
 
