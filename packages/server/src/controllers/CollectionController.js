@@ -23,8 +23,7 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(action, name, actions) {
-    const isMember = actions === this.member
+  setupAction(action, name, type) {
     let verb = actionToVerb[name]
     let path = ''
     let handler = action
@@ -32,14 +31,16 @@ export class CollectionController extends Controller {
       // A custom action:
       verb = action.verb || 'get'
       path = action.path || this.app.normalizePath(name)
-      const getFirstArgument = isMember && (ctx => actions.find.call(this, ctx))
+      const getFirstArgument = type === 'member'
+        ? ctx => this.member.find.call(this, ctx)
+        : null
       handler = ctx => this.callAction(action, ctx, getFirstArgument)
     }
-    this.setupRoute(verb, this.getPath(isMember, path), handler)
+    this.setupRoute(verb, this.getPath(type, path), handler)
   }
 
-  getPath(isMember, path) {
-    return isMember
+  getPath(type, path) {
+    return type === 'member'
       ? path ? `:${this.idParam}/${path}` : `:${this.idParam}`
       : path
   }

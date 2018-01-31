@@ -12,12 +12,12 @@ export class ModelController extends CollectionController {
     this.relations = this.setupRelations('relations')
   }
 
-  setupRelations(name) {
-    const relations = this.inheritValues(name)
+  setupRelations(type) {
+    const relations = this.inheritValues(type)
     for (const name in relations) {
       const relation = relations[name]
       if (isObject(relation)) {
-        this.setupRelation(relation, name, relations)
+        relations[name] = this.setupRelation(relation, name)
       } else {
         throw new ControllerError(this, `Invalid relation "${name}".`)
       }
@@ -25,7 +25,7 @@ export class ModelController extends CollectionController {
     return relations
   }
 
-  setupRelation(relation, name, relations) {
+  setupRelation(relation, name) {
     const modelRelation = this.modelClass.getRelations()[name]
     if (!modelRelation) {
       throw new ControllerError(this, `Relation "${name}" not found.`)
@@ -50,6 +50,6 @@ export class ModelController extends CollectionController {
 
     setupInheritance('collection')
     setupInheritance('model')
-    relations[name] = relationController
+    return relationController
   }
 }

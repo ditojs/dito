@@ -64,9 +64,9 @@ export class Controller {
     this._controller = controller
   }
 
-  static getParentValues(name) {
+  static getParentValues(type) {
     const parentClass = Object.getPrototypeOf(this)
-    if (!parentClass.hasOwnProperty(name)) {
+    if (!parentClass.hasOwnProperty(type)) {
       // If the values haven't been inherited and resolved yet, we need to
       // create one instance of each controller class up the chain in order to
       // get to their definitions of the inheritable values.
@@ -76,22 +76,22 @@ export class Controller {
         ? parentClass.instance
         // eslint-disable-next-line new-cap
         : (parentClass.instance = new parentClass())
-      let values = instance[name]
+      let values = instance[type]
       if (parentClass !== Controller) {
         // Recursively set up inheritance chains.
-        const parentValues = parentClass.getParentValues(name)
+        const parentValues = parentClass.getParentValues(type)
         if (parentValues) {
           values = Object.setPrototypeOf(values || {}, parentValues)
         }
       }
-      parentClass[name] = values
+      parentClass[type] = values
     }
-    return parentClass[name]
+    return parentClass[type]
   }
 
-  inheritValues(name) {
-    let values = this[name]
-    const parentValues = this.constructor.getParentValues(name)
+  inheritValues(type) {
+    let values = this[type]
+    const parentValues = this.constructor.getParentValues(type)
     if (parentValues) {
       // Inherit from the parent values so overrides can use super.<action>():
       values = Object.setPrototypeOf(values || {}, parentValues)
@@ -112,18 +112,18 @@ export class Controller {
     return values
   }
 
-  setupActions(name) {
-    const actions = this.inheritValues(name)
-    for (const key in actions) {
-      const action = actions[key]
+  setupActions(type) {
+    const actions = this.inheritValues(type)
+    for (const name in actions) {
+      const action = actions[name]
       if (isFunction(action)) {
-        this.setupAction(action, key, actions)
+        this.setupAction(action, name, type)
       }
     }
     return actions
   }
 
-  setupAction(action, name /*, actions */) {
+  setupAction(action, name /*, type */) {
     this.setupRoute(
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
