@@ -90,7 +90,7 @@ export class CollectionController extends Controller {
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
       return this.execute(false, ctx, query => query
-        .modify(modify)[find](ctx.request.body)
+        .modify(modify)[find](ctx.query)
       )
     },
 
