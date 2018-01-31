@@ -50,7 +50,7 @@
     "koa-response-time": "^2.0.0",
     "koa-router": "^7.4.0",
     "koa-session": "^5.8.1",
-    "objection": "^1.0.0-rc.10",
+    "objection": "github:Vincit/objection.js#6f5bf0c15f787ba5b261e79cc2cfc69b14384437",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3"

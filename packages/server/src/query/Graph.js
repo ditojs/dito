@@ -83,7 +83,7 @@ export default class Graph {
    * building relation paths for them.
    */
   processOverrides() {
-    const exp = RelationExpression.fromGraph(this.data)
+    const exp = RelationExpression.fromModelGraph(this.data)
     const overrides = Object.entries(this.overrides) // Cache for repeated use.
 
     const processExpression = (exp, modelClass, relation, relationPath) => {

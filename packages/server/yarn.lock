@@ -2693,9 +2693,9 @@ object.pick@^1.2.0:
   dependencies:
     isobject "^3.0.1"
 
-objection@^1.0.0-rc.10:
+"objection@github:Vincit/objection.js#6f5bf0c15f787ba5b261e79cc2cfc69b14384437":
   version "1.0.0-rc.10"
-  resolved "https://registry.yarnpkg.com/objection/-/objection-1.0.0-rc.10.tgz#d01a2765022bf599012865e6ef20627d05c91af1"
+  resolved "https://codeload.github.com/Vincit/objection.js/tar.gz/6f5bf0c15f787ba5b261e79cc2cfc69b14384437"
   dependencies:
     ajv "^6.0.1"
     bluebird "^3.5.1"

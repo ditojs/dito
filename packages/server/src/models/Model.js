@@ -542,7 +542,7 @@ const definitionHandlers = {
       // scopes can be applied after.
       _default.eager = eagerScope(
         this,
-        objection.RelationExpression.parse(_default.eager),
+        objection.RelationExpression.create(_default.eager),
         ['default.eager'],
         true
       )
