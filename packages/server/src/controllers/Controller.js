@@ -3,7 +3,7 @@ import Router from 'koa-router'
 import chalk from 'chalk'
 import { Model } from 'objection'
 import { isString, isFunction, asArray } from '@ditojs/utils'
-import { ResponseError, WrappedError } from '@/errors'
+import { ResponseError, ValidationError, WrappedError } from '@/errors'
 import { convertSchema } from '@/schema'
 
 export class Controller {
@@ -172,29 +172,35 @@ export class Controller {
     }
 
     if (validators && !validators.parameters(query)) {
-      throw this.modelClass.createValidationError({
-        type: 'RestValidation',
-        message: `The provided data is not valid: ${JSON.stringify(query)}`,
-        errors: validators.parameters.errors
-      })
+      throw this.createValidationError(
+        `The provided data is not valid: ${JSON.stringify(query)}`,
+        validators.parameters.errors
+      )
     }
     // TODO: Instead of splitting by consumed parameters, split by parameters
     // expected by QueryBuilder and supported by this controller, and pass
     // everything else to the parameters validator.
     const args = await this.collectArguments(ctx, parameters, getFirstArgument)
-    const value = await action.call(this, ...args)
+    const result = await action.call(this, ...args)
     const returnName = returns?.name
     // Use 'root' if no name is given, see createValidator()
-    const returnData = { [returnName || 'root']: value }
-    // Use `call()` to pass `value` as context to Ajv, see passContext:
-    if (validators && !validators.returns.call(value, returnData)) {
-      throw this.modelClass.createValidationError({
-        type: 'RestValidation',
-        message: `Invalid result of custom action: ${value}`,
-        errors: validators.returns.errors
-      })
+    const returnData = { [returnName || 'root']: result }
+    // Use `call()` to pass `result` as context to Ajv, see passContext:
+    if (validators && !validators.returns.call(result, returnData)) {
+      throw this.createValidationError(
+        `Invalid result of action: ${JSON.stringify(result)}`,
+        validators.returns.errors
+      )
     }
-    return returnName ? returnData : value
+    return returnName ? returnData : result
+  }
+
+  createValidationError(message, errors) {
+    return new ValidationError({
+      type: 'ControllerValidation',
+      message,
+      errors: this.app.validator.parseErrors(errors)
+    })
   }
 
   createValidator(parameters = [], options = {}) {
