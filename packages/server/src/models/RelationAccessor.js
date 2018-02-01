@@ -1,6 +1,6 @@
 import { QueryBuilder } from '@/query'
 
-export default class ModelRelation {
+export default class RelationAccessor {
   constructor(modelClass, model, relation) {
     this.modelClass = modelClass
     this.model = model
@@ -32,4 +32,4 @@ export default class ModelRelation {
 }
 
 // Expose a selection of QueryBuilder methods as instance methods on relations.
-QueryBuilder.mixin(ModelRelation.prototype)
+QueryBuilder.mixin(RelationAccessor.prototype)

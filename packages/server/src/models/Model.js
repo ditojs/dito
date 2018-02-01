@@ -6,7 +6,7 @@ import { EventEmitter, KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
 import { deepMergeUnshift } from '@/utils'
 import eagerScope from '@/query/eagerScope'
-import ModelRelation from './ModelRelation'
+import RelationAccessor from './RelationAccessor'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
@@ -243,7 +243,7 @@ export class Model extends objection.Model {
   }
 
   static addRelationAccessor(relation) {
-    // Expose ModelRelation instances for each relation under short-cut $name,
+    // Expose RelationAccessor instances for each relation under short-cut $name
     // for access to relations and implicit calls to $relatedQuery(name).
     const accessor = `$${relation.name}`
     if (accessor in this.prototype) {
@@ -252,11 +252,11 @@ export class Model extends objection.Model {
         `"${accessor}" that clashes with the relation accessor.`)
     }
     // Define an accessor on the class as well as on the prototype that when
-    // first called creates a ModelRelation instance and then overrides the
+    // first called creates a RelationAccessor instance and then overrides the
     // accessor with one that then just returns the same value afterwards.
     Object.defineProperty(this, accessor, {
       get() {
-        const value = new ModelRelation(this, null, relation)
+        const value = new RelationAccessor(this, null, relation)
         Object.defineProperty(this, accessor, {
           value,
           configurable: true,
@@ -269,7 +269,7 @@ export class Model extends objection.Model {
     })
     Object.defineProperty(this.prototype, accessor, {
       get() {
-        const value = new ModelRelation(null, this, relation)
+        const value = new RelationAccessor(null, this, relation)
         Object.defineProperty(this, accessor, {
           value,
           configurable: true,
