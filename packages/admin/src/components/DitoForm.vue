@@ -72,7 +72,9 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { isArray, isObject, clone, capitalize } from '@ditojs/utils'
+import {
+  isArray, isObject, clone, capitalize, parseDataPath
+} from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
   mixins: [DataMixin, RouteMixin],
@@ -443,9 +445,7 @@ export default DitoComponent.component('dito-form', {
       for (const [key, errs] of Object.entries(errors)) {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
-        const dataPath = key
-          .replace(/\.([^.]*)/g, '/$1')
-          .replace(/\[([^\]]*)\]/g, '/$1')
+        const dataPath = parseDataPath(key).join('/')
         const component = this.components[dataPath]
         if (component) {
           component.addErrors(errs, first && focus)
