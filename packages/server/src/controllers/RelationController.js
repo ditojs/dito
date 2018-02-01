@@ -18,9 +18,19 @@ export class RelationController extends CollectionController {
     this.graph = parent.graph
     this.router = parent.router
     this.level = parent.level + 1
+    // Inherit eagerScope since it's in its nature to propagate to relations.
+    this.eagerScope = parent.eagerScope
+    // Initialize:
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.name)}${chalk.white(':')}`, this.level)
+    // Copy over all fields in definition except relation and member,
+    // for settings like scope, eagerScope, etc.
+    for (const key in this.definition) {
+      if (!/^(relation|member)$/.test(key)) {
+        this[key] = this.definition[key]
+      }
+    }
     this.initialize(false)
   }
 
