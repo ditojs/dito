@@ -15,7 +15,7 @@ export class CollectionController extends Controller {
     this.scope = this.scope || null
     this.applyScope = this.scope || this.eagerScope
       ? query => query
-        .applyScope(...asArguments(this.scope))
+        .scope(...asArguments(this.scope))
         .eagerScope(...asArguments(this.eagerScope))
       : null
     this.collection = this.setupActions('collection')
@@ -63,7 +63,8 @@ export class CollectionController extends Controller {
   execute(transaction, ctx, modify) {
     // NOTE: ctx is required by RelationController which overrides execute().
     const call = modelClass => modify(
-      modelClass.query().modify(this.applyScope)
+      modelClass.query()
+        .modify(this.applyScope)
     )
     return transaction
       ? objection.transaction(this.modelClass, call)
@@ -88,6 +89,15 @@ export class CollectionController extends Controller {
     )
   }
 
+  clearQuery(query) {
+    return query
+      .clearEager()
+      // TODO: Consider doing this in clearEager()?
+      .clearEagerScope()
+      .clearOrder()
+      .clearSelect()
+  }
+
   collection = {
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
@@ -104,7 +114,8 @@ export class CollectionController extends Controller {
         // TODO: Test if filter works for delete
         .find(ctx.query)
         .modify(modify)
-        .clearEager()
+        .modify(this.clearQuery)
+        // TODO: .throwIfNotFound() on isOneToOne?
         .delete()
         .then(count => ({ count }))
       )
@@ -139,10 +150,11 @@ export class CollectionController extends Controller {
     delete(ctx, modify) {
       const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
+        // TODO: query filters??
+        .modify(modify)
+        .modify(this.clearQuery)
         .deleteById(id)
         .throwIfNotFound()
-        .modify(modify)
-        .clearEager()
         // Consider status 204 and no result
         .then(count => ({ count }))
       )
