@@ -24,11 +24,15 @@ export async function seed(app) {
           }
         }
         if (isArray(res)) {
-          console.log(chalk.green(
-            `${base}: ${res.length} seed records created.`))
+          console.log(
+            chalk.green(`${base}:`),
+            chalk.cyan(`${res.length} seed records created.`)
+          )
         } else {
-          console.log(chalk.red(
-            `${base}: No seed records created.`))
+          console.log(
+            chalk.red(`${base}:`),
+            chalk.cyan('No seed records created.')
+          )
         }
       } catch (err) {
         console.error(
