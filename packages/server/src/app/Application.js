@@ -16,6 +16,7 @@ import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
+import { ResponseError } from '@/errors'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
 import { hyphenate } from '@ditojs/utils'
@@ -193,7 +194,19 @@ export class Application extends Koa {
     return Object.keys(obj)[0]
   }
 
+  onError(err) {
+    if (err.status !== 404 && !err.expose && !this.silent) {
+      console.error(err instanceof ResponseError
+        ? `${err.name}: ${JSON.stringify(err.toJSON(), null, '  ')}`
+        : err.stack || err.toString()
+      )
+    }
+  }
+
   async start() {
+    if (!this.listeners('error').length) {
+      this.on('error', this.onError)
+    }
     await this.emit('before:start')
     const {
       server: { host, port },
