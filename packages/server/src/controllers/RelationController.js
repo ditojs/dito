@@ -41,10 +41,9 @@ export class RelationController extends CollectionController {
 
   collection = {
     delete(ctx, modify) {
-      // TODO: What's the expected behavior in relations?
-      // Currently it deletes the members, but shouldn't it unrelate instead?
-      // Answer: It should respect the to be introduced owner setting in
-      // relations.
+      // TODO: What's the expected behavior in relations? Currently it deletes
+      // the members, but shouldn't it unrelate instead? Answer: It should
+      // respect the owner setting in relations, to be introduced.
       return super.delete(ctx, modify)
     }
   }

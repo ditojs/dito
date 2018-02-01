@@ -94,6 +94,7 @@ export class CollectionController extends Controller {
       return this.execute(false, ctx, query =>
         query[find](ctx.query)
           .modify(modify)
+          .then(result => result || null)
       )
     },
 
