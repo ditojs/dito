@@ -507,7 +507,7 @@ const definitionHandlers = {
           unsigned: true,
           foreign: true,
           index: true,
-          nullable
+          ...(nullable && { nullable })
         })
       }
     }
