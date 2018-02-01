@@ -413,32 +413,41 @@ export class QueryBuilder extends objection.QueryBuilder {
 
 KnexHelper.mixin(QueryBuilder.prototype)
 
-// Add conversion of identifiers to all `where` statements, by detecting use of
-// model properties and expanding them to `${modelClass.name}.${propertyName}`,
-// for unambiguous identification of used properties in complex statements.
+// Add conversion of identifiers to all `where` statements, as well as to
+// `select` and `orderBy`, by detecting use of model properties and expanding
+// them to `${tableRefFor(modelClass}.${propertyName}`, for unambiguous
+// identification of used properties in complex statements.
 for (const key of [
   'where', 'whereNot', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull',
-  'whereBetween', 'whereNotBetween'
+  'whereBetween', 'whereNotBetween',
+  // TODO: Consider adding all having methods as well, look into their signature
+  'select', 'orderBy'
 ]) {
   const method = QueryBuilder.prototype[key]
-  QueryBuilder.prototype[key] = function (arg, ...args) {
+  QueryBuilder.prototype[key] = function (...args) {
     const modelClass = this.modelClass()
     const { properties } = modelClass.definition
 
+    // expands the identifier to extende
     const convertIdentifier = identifier => identifier in properties
       ? `${this.tableRefFor(modelClass)}.${identifier}`
       : identifier
 
-    if (isString(arg)) {
-      arg = convertIdentifier(arg)
-    } else if (isPlainObject(arg)) {
-      const converted = {}
-      for (const key in arg) {
-        converted[convertIdentifier(key)] = arg[key]
+    const length = key === 'select' ? args.length : 1
+    for (let i = 0; i < length; i++) {
+      let arg = args[i]
+      if (isString(arg)) {
+        arg = convertIdentifier(arg)
+      } else if (/^(where|having)/.test(key) && isPlainObject(arg)) {
+        const converted = {}
+        for (const key in arg) {
+          converted[convertIdentifier(key)] = arg[key]
+        }
+        arg = converted
       }
-      arg = converted
+      args[i] = arg
     }
-    return method.call(this, arg, ...args)
+    return method.call(this, ...args)
   }
 }
 
