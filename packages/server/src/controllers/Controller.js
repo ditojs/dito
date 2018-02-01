@@ -38,6 +38,15 @@ export class Controller {
     ])
   }
 
+  getPath(type, path) {
+    return path
+  }
+
+  getUrl(type, path) {
+    path = this.getPath(type, path)
+    return path && path !== '/' ? `${this.url}/${path}` : this.url
+  }
+
   get controller() {
     if (!this._controller) {
       this._controller = {}
@@ -117,22 +126,23 @@ export class Controller {
     for (const name in actions) {
       const action = actions[name]
       if (isFunction(action)) {
-        this.setupAction(action, name, type)
+        this.setupAction(type, action, name)
       }
     }
     return actions
   }
 
-  setupAction(action, name /*, type */) {
+  setupAction(type, action, name) {
     this.setupRoute(
+      type,
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
       ctx => this.callAction(action, ctx)
     )
   }
 
-  setupRoute(verb, path, handler) {
-    const url = path && path !== '/' ? `${this.url}/${path}` : this.url
+  setupRoute(type, verb, path, handler) {
+    const url = this.getUrl(type, path)
     this.log(
       `${chalk.magenta(verb.toUpperCase())} ${chalk.white(url)}`,
       this.level + 1

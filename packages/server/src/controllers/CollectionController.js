@@ -23,7 +23,7 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(action, name, type) {
+  setupAction(type, action, name) {
     let verb = actionToVerb[name]
     let path = ''
     let handler = action
@@ -36,9 +36,10 @@ export class CollectionController extends Controller {
         : null
       handler = ctx => this.callAction(action, ctx, getFirstArgument)
     }
-    this.setupRoute(verb, this.getPath(type, path), handler)
+    this.setupRoute(type, verb, path, handler)
   }
 
+  // @override
   getPath(type, path) {
     return type === 'member'
       ? path ? `:${this.idParam}/${path}` : `:${this.idParam}`
@@ -109,8 +110,9 @@ export class CollectionController extends Controller {
     },
 
     insert(ctx, modify) {
-      return this.executeAndFetch('insert', ctx, modify).then(() => {
+      return this.executeAndFetch('insert', ctx, modify).then(model => {
         ctx.status = 201
+        ctx.set('Location', this.getUrl('collection', model.id))
       })
     },
 

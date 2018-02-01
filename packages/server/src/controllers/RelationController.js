@@ -18,7 +18,7 @@ export class RelationController extends CollectionController {
     this.router = parent.router
     this.level = parent.level + 1
     this.path = this.app.normalizePath(this.name)
-    this.url = `${this.parent.url}/${this.parent.getPath(true, this.path)}`
+    this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.name)}${chalk.white(':')}`, this.level)
     this.initialize(false)
   }
