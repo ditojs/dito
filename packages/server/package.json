@@ -59,11 +59,11 @@
     "knex": "^0.14.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.0.0-beta.39",
-    "@babel/core": "^7.0.0-beta.39",
-    "@babel/node": "^7.0.0-beta.39",
-    "@babel/preset-env": "^7.0.0-beta.39",
-    "@babel/preset-stage-1": "^7.0.0-beta.39",
+    "@babel/cli": "7.0.0-beta.38",
+    "@babel/core": "7.0.0-beta.38",
+    "@babel/node": "7.0.0-beta.38",
+    "@babel/preset-env": "7.0.0-beta.38",
+    "@babel/preset-stage-1": "7.0.0-beta.38",
     "babel-eslint": "^8.2.1",
     "babel-plugin-dynamic-import-node-babel-7": "^2.0.4",
     "babel-plugin-module-resolver": "^3.0.0",
