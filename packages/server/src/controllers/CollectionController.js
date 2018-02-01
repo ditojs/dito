@@ -90,17 +90,18 @@ export class CollectionController extends Controller {
   collection = {
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
-      return this.execute(false, ctx, query => query
-        .modify(modify)[find](ctx.query)
+      return this.execute(false, ctx, query =>
+        query[find](ctx.query)
+          .modify(modify)
       )
     },
 
     delete(ctx, modify) {
       // TODO: Decide if we should set status? status = 204
       return this.execute(false, ctx, query => query
-        .modify(modify)
         // TODO: Test if filter works for delete
         .find(ctx.query)
+        .modify(modify)
         .clearEager()
         .delete()
         .then(count => ({ count }))
@@ -108,8 +109,9 @@ export class CollectionController extends Controller {
     },
 
     insert(ctx, modify) {
-      // TODO: Decide if we should set status? status = 201
-      return this.executeAndFetch('insert', ctx, modify)
+      return this.executeAndFetch('insert', ctx, modify).then(() => {
+        ctx.status = 201
+      })
     },
 
     update(ctx, modify) {
@@ -125,20 +127,20 @@ export class CollectionController extends Controller {
     find(ctx, modify) {
       const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
-        .modify(modify)
         .findById(id, ctx.query)
         .throwIfNotFound()
+        .modify(modify)
       )
     },
 
     delete(ctx, modify) {
       const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
+        .deleteById(id)
+        .throwIfNotFound()
         .modify(modify)
         .clearEager()
-        .deleteById(id)
-        // TODO: Consider .throwIfNotFound() and returning something else on
-        // success? status = 204?
+        // Consider status 204 and no result
         .then(count => ({ count }))
       )
     },

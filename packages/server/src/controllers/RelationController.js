@@ -28,8 +28,8 @@ export class RelationController extends CollectionController {
     const id = this.parent.getId(ctx)
     return this.parent.execute(transaction, ctx, query => query
       .findById(id)
-      .clearEager()
       .throwIfNotFound()
+      .clearEager()
       .then(
         model => modify(model
           .$relatedQuery(this.relation.name)
