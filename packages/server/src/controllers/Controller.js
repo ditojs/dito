@@ -98,8 +98,7 @@ export class Controller {
     return parentClass[type]
   }
 
-  inheritValues(type) {
-    let values = this[type]
+  inheritValues(type, values) {
     const parentValues = this.constructor.getParentValues(type)
     if (parentValues) {
       // Inherit from the parent values so overrides can use super.<action>():
@@ -122,7 +121,7 @@ export class Controller {
   }
 
   setupActions(type) {
-    const actions = this.inheritValues(type)
+    const actions = this.inheritValues(type, this[type])
     for (const name in actions) {
       const action = actions[name]
       if (isFunction(action)) {

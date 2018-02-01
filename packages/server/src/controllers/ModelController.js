@@ -13,43 +13,23 @@ export class ModelController extends CollectionController {
   }
 
   setupRelations(type) {
-    const relations = this.inheritValues(type)
-    for (const name in relations) {
-      const relation = relations[name]
-      if (isObject(relation)) {
-        relations[name] = this.setupRelation(relation, name)
+    const definitions = this.inheritValues(type, this[type])
+    for (const name in definitions) {
+      const definition = definitions[name]
+      if (isObject(definition)) {
+        definitions[name] = this.setupRelation(definition, name)
       } else {
         throw new ControllerError(this, `Invalid relation "${name}".`)
       }
     }
-    return relations
+    return definitions
   }
 
-  setupRelation(relation, name) {
-    const modelRelation = this.modelClass.getRelations()[name]
-    if (!modelRelation) {
+  setupRelation(definition, name) {
+    const relation = this.modelClass.getRelations()[name]
+    if (!relation) {
       throw new ControllerError(this, `Relation "${name}" not found.`)
     }
-    const relationController = new RelationController(this, modelRelation)
-
-    const setupInheritance = key => {
-      let object = relation
-      while (object !== Object.prototype) {
-        const parent = Object.getPrototypeOf(object)
-        if (object.hasOwnProperty(key)) {
-          const values = object[key]
-          const parentValues = parent[key] || relationController[key]
-          if (parentValues) {
-            Object.setPrototypeOf(values, parentValues)
-          }
-        }
-        object = parent
-      }
-      relationController[key] = this.filterValues(relation[key])
-    }
-
-    setupInheritance('collection')
-    setupInheritance('model')
-    return relationController
+    return new RelationController(this, relation, definition)
   }
 }

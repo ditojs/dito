@@ -3,7 +3,7 @@ import { ControllerError } from '@/errors'
 import { CollectionController } from './CollectionController'
 
 export class RelationController extends CollectionController {
-  constructor(parent, relation) {
+  constructor(parent, relation, definition) {
     super(parent.app, null)
     if (parent.modelClass !== relation.ownerModelClass) {
       throw new ControllerError(parent,
@@ -11,6 +11,7 @@ export class RelationController extends CollectionController {
     }
     this.parent = parent
     this.relation = relation
+    this.definition = definition
     this.name = relation.name
     this.modelClass = relation.relatedModelClass
     this.isOneToOne = relation.isOneToOne()
@@ -23,6 +24,23 @@ export class RelationController extends CollectionController {
     this.initialize(false)
   }
 
+  inheritValues(type) {
+    const { definition } = this
+    let object = definition
+    while (object !== Object.prototype) {
+      const parent = Object.getPrototypeOf(object)
+      if (object.hasOwnProperty(type)) {
+        const values = object[type]
+        const parentValues = parent[type] || this[type]
+        if (parentValues) {
+          Object.setPrototypeOf(values, parentValues)
+        }
+      }
+      object = parent
+    }
+    return super.inheritValues(type, definition[type])
+  }
+
   // @override
   execute(transaction, ctx, modify) {
     const id = this.parent.getId(ctx)
@@ -30,6 +48,7 @@ export class RelationController extends CollectionController {
       .findById(id)
       .throwIfNotFound()
       .modify(this.clearQuery)
+      // Explicitly only select the foreign key ids for more efficiency.
       .select(...this.relation.ownerProp.props)
       .then(
         model => modify(model
