@@ -38,7 +38,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Only apply the default: { eager, order } settings if this is a find
     // query, meaning it does not specify any write operations, without any
     // special selects. This is required to exclude count(), etc...
-    if (this.isFind() && !this.hasSelects()) {
+    if (this.isFind() && (!this.hasSelects() || this.has('select'))) {
       const {
         default: { eager, order } = {}
       } = this.modelClass().definition
@@ -278,6 +278,11 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.patchAndFetchById(id, data)
   }
 
+  deleteById(id) {
+    this.context({ byId: id })
+    return super.deleteById(id)
+  }
+
   findById(id, query, allowed) {
     // Remember id so Model.createNotFoundError() can report it:
     this.context({ byId: id })
@@ -420,7 +425,7 @@ for (const key of [
     const { properties } = modelClass.definition
 
     const convertIdentifier = identifier => identifier in properties
-      ? `${modelClass.name}.${identifier}`
+      ? `${this.tableRefFor(modelClass)}.${identifier}`
       : identifier
 
     if (isString(arg)) {
