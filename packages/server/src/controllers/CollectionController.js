@@ -1,4 +1,3 @@
-import objection from 'objection'
 import { asArguments } from '@/utils'
 import { Controller } from './Controller'
 
@@ -60,15 +59,8 @@ export class CollectionController extends Controller {
     return id
   }
 
-  execute(transaction, ctx, modify) {
-    // NOTE: ctx is required by RelationController which overrides execute().
-    const call = modelClass => modify(
-      modelClass.query()
-        .modify(this.applyScope)
-    )
-    return transaction
-      ? objection.transaction(this.modelClass, call)
-      : call(this.modelClass)
+  execute(/* transaction, ctx, modify */) {
+    // Does nothing in base class.
   }
 
   executeAndFetch(action, ctx, modify) {

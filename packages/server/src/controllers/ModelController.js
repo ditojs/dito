@@ -1,3 +1,4 @@
+import objection from 'objection'
 import pluralize from 'pluralize'
 import { isObject, camelize } from '@ditojs/utils'
 import { ControllerError } from '@/errors'
@@ -32,4 +33,17 @@ export class ModelController extends CollectionController {
     }
     return new RelationController(this, relation, definition)
   }
+
+  // @override
+  execute(transaction, ctx, modify) {
+    // NOTE: ctx is required by RelationController.execute()
+    const call = modelClass => modify(
+      modelClass.query()
+        .modify(this.applyScope)
+    )
+    return transaction
+      ? objection.transaction(this.modelClass, call)
+      : call(this.modelClass)
+  }
+
 }

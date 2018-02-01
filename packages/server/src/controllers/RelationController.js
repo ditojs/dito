@@ -25,20 +25,23 @@ export class RelationController extends CollectionController {
   }
 
   inheritValues(type) {
+    // On relations, the collection methods are stored in an object called
+    // relation so it makes sense both for one- and many-relations.
+    const name = type === 'collection' ? 'relation' : type
     const { definition } = this
     let object = definition
     while (object !== Object.prototype) {
       const parent = Object.getPrototypeOf(object)
-      if (object.hasOwnProperty(type)) {
-        const values = object[type]
-        const parentValues = parent[type] || this[type]
+      if (object.hasOwnProperty(name)) {
+        const values = object[name]
+        const parentValues = parent[name] || this[name]
         if (parentValues) {
           Object.setPrototypeOf(values, parentValues)
         }
       }
       object = parent
     }
-    return super.inheritValues(type, definition[type])
+    return super.inheritValues(type, definition[name])
   }
 
   // @override
