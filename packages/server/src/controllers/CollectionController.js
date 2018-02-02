@@ -3,6 +3,7 @@ import { Controller } from './Controller'
 import ControllerAction from './ControllerAction'
 import MemberAction from './MemberAction'
 
+// Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
   constructor(app, namespace) {
     super(app, namespace)

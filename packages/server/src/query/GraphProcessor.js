@@ -1,7 +1,7 @@
 import { RelationExpression } from 'objection'
 import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
 
-export default class Graph {
+export default class GraphProcessor {
   constructor(rootModelClass, data, restoreRelations, options) {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
@@ -143,7 +143,7 @@ export default class Graph {
           if (relate) {
             // See if the relate overrides contain this particular relation-Path
             // and only remove and restore relation data if relate is to be used
-            relate = relate.includes(relationPath.join('.'))
+            relate = relate.includes(relationPath.join('/'))
           } else {
             relate = this.options.relate
           }
@@ -157,7 +157,7 @@ export default class Graph {
               }
             }
             if (hasRelations) {
-              this.removedRelations[dataPath.join('.')] = values
+              this.removedRelations[dataPath.join('/')] = values
             }
           }
         } else {

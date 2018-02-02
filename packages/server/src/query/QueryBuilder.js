@@ -4,7 +4,7 @@ import { QueryBuilderError } from '@/errors'
 import { QueryHandlers } from './QueryHandlers'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
-import Graph from './Graph'
+import GraphProcessor from './GraphProcessor'
 import eagerScope from './eagerScope'
 import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
 
@@ -202,11 +202,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _handleGraph(method, data, defaults, options, restoreRelations) {
-    const graph = new Graph(this.modelClass(), data, restoreRelations,
+    const graph = new GraphProcessor(this.modelClass(), data, restoreRelations,
       mergeOptions(defaults, options))
     const builder = super[method](graph.getData(), graph.getOptions())
     if (restoreRelations) {
-      builder.then(result => graph.restoreRelations(result))
+      builder.runAfter(result => graph.restoreRelations(result))
     }
     return builder
   }
@@ -218,7 +218,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   insertGraphAndFetch(data, options) {
     return this._handleGraph('insertGraphAndFetch',
-      data, insertGraphOptions, options, false)
+      data, insertGraphOptions, options, true)
   }
 
   upsertGraph(data, options) {
