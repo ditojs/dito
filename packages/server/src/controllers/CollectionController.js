@@ -1,5 +1,7 @@
 import { asArguments } from '@/utils'
 import { Controller } from './Controller'
+import ControllerAction from './ControllerAction'
+import MemberAction from './MemberAction'
 
 export class CollectionController extends Controller {
   constructor(app, namespace) {
@@ -25,17 +27,21 @@ export class CollectionController extends Controller {
   setupAction(type, action, name) {
     let verb = actionToVerb[name]
     let path = ''
-    let handler = action
+    let actionClass = ControllerAction
     if (!verb) {
-      // A custom action:
+      // A custom action, where member actions need to fetch their member
+      // argument through the MemberAction class:
       verb = action.verb || 'get'
       path = action.path || this.app.normalizePath(name)
-      const getFirstArgument = type === 'member'
-        ? ctx => this.member.find.call(this, ctx)
-        : null
-      handler = ctx => this.callAction(action, ctx, getFirstArgument)
+      actionClass = type === 'member' ? MemberAction : ControllerAction
     }
-    this.setupRoute(type, verb, path, handler)
+    this.setupRoute(
+      type,
+      verb,
+      path,
+      // eslint-disable-next-line new-cap
+      new actionClass(this, action)
+    )
   }
 
   // @override

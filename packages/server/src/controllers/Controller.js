@@ -2,9 +2,9 @@ import compose from 'koa-compose'
 import Router from 'koa-router'
 import chalk from 'chalk'
 import { Model } from 'objection'
-import { isString, isFunction, asArray } from '@ditojs/utils'
-import { ResponseError, ValidationError, WrappedError } from '@/errors'
-import { convertSchema } from '@/schema'
+import { isFunction, asArray } from '@ditojs/utils'
+import { ResponseError, WrappedError } from '@/errors'
+import ControllerAction from './ControllerAction'
 
 export class Controller {
   constructor(app, namespace) {
@@ -136,11 +136,11 @@ export class Controller {
       type,
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
-      ctx => this.callAction(action, ctx)
+      new ControllerAction(this, action)
     )
   }
 
-  setupRoute(type, verb, path, handler) {
+  setupRoute(type, verb, path, controllerAction) {
     const url = this.getUrl(type, path)
     this.log(
       `${chalk.magenta(verb.toUpperCase())} ${chalk.white(url)}`,
@@ -148,7 +148,7 @@ export class Controller {
     )
     this.router[verb](url, async ctx => {
       try {
-        const res = await handler.call(this, ctx)
+        const res = await controllerAction.callAction(ctx)
         if (res !== undefined) {
           ctx.body = res
         }
@@ -156,101 +156,6 @@ export class Controller {
         throw err instanceof ResponseError ? err : new WrappedError(err)
       }
     })
-  }
-
-  async callAction(action, ctx, getFirstArgument = null) {
-    const { query } = ctx
-    let { validators, parameters, returns } = action
-    if (!validators && (parameters || returns)) {
-      validators = action.validators = {
-        parameters: this.createValidator(parameters),
-        returns: this.createValidator(returns, {
-          // Use instanceof checks instead of $ref to check returned values.
-          instanceof: true
-        })
-      }
-    }
-
-    if (validators && !validators.parameters(query)) {
-      throw this.createValidationError(
-        `The provided data is not valid: ${JSON.stringify(query)}`,
-        validators.parameters.errors
-      )
-    }
-    // TODO: Instead of splitting by consumed parameters, split by parameters
-    // expected by QueryBuilder and supported by this controller, and pass
-    // everything else to the parameters validator.
-    const args = await this.collectArguments(ctx, parameters, getFirstArgument)
-    const result = await action.call(this, ...args)
-    const returnName = returns?.name
-    // Use 'root' if no name is given, see createValidator()
-    const returnData = { [returnName || 'root']: result }
-    // Use `call()` to pass `result` as context to Ajv, see passContext:
-    if (validators && !validators.returns.call(result, returnData)) {
-      throw this.createValidationError(
-        `Invalid result of action: ${JSON.stringify(result)}`,
-        validators.returns.errors
-      )
-    }
-    return returnName ? returnData : result
-  }
-
-  createValidationError(message, errors) {
-    return new ValidationError({
-      type: 'ControllerValidation',
-      message,
-      errors: this.app.validator.parseErrors(errors)
-    })
-  }
-
-  createValidator(parameters = [], options = {}) {
-    parameters = asArray(parameters)
-    if (parameters.length > 0) {
-      let properties = null
-      for (const param of parameters) {
-        if (param) {
-          const property = isString(param) ? { type: param } : param
-          const { name, type, ...rest } = property
-          properties = properties || {}
-          properties[name || 'root'] = type ? { type, ...rest } : rest
-        }
-      }
-      if (properties) {
-        const schema = convertSchema(properties, options)
-        return this.app.compileValidator(schema)
-      }
-    }
-    return () => true
-  }
-
-  async collectArguments(ctx, parameters, getFirstArgument) {
-    const { query } = ctx
-    const consumed = parameters && getFirstArgument && {}
-    const args = parameters?.map(
-      ({ name }) => {
-        if (consumed) {
-          consumed[name] = true
-        }
-        return name ? query[name] : query
-      }) ||
-      // If no parameters are provided, pass the full ctx object to the method
-      [ctx]
-    if (getFirstArgument) {
-      if (consumed) {
-        // Create a copy of ctx that inherits from the real one but overrides
-        // query with a version that has all consumed query params removed so it
-        // can be passed on to getFirstArgument() which calls actions.find(ctx):
-        ctx = Object.setPrototypeOf({}, ctx)
-        ctx.query = Object.entries(query).reduce((query, [key, value]) => {
-          if (!consumed[key]) {
-            query[key] = value
-          }
-        }, {})
-      }
-      // Resolve member and add as first argument to list.
-      args.unshift(await getFirstArgument(ctx))
-    }
-    return args
   }
 
   log(str, indent = 0) {

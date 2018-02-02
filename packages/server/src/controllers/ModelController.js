@@ -45,5 +45,4 @@ export class ModelController extends CollectionController {
       ? objection.transaction(this.modelClass, call)
       : call(this.modelClass)
   }
-
 }
