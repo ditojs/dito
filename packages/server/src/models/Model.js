@@ -2,7 +2,7 @@ import objection from 'objection'
 import dbErrors from 'db-errors'
 import util from 'util'
 import { QueryBuilder } from '@/query'
-import { EventEmitter, KnexHelper } from '@/lib'
+import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
 import { deepMergeUnshift } from '@/utils'
 import eagerScope from '@/query/eagerScope'
@@ -24,11 +24,6 @@ export class Model extends objection.Model {
       }
     } catch (error) {
       throw error instanceof RelationError ? error : new RelationError(error)
-    }
-    // Install all events listed in the static events object.
-    const { events } = this.definition
-    for (const [event, handler] of Object.entries(events || {})) {
-      this.on(event, handler)
     }
     if (this.app.config.log.schema) {
       console.log(`${this.name}:\n`,
@@ -475,7 +470,6 @@ export class Model extends objection.Model {
   }
 }
 
-EventEmitter.deferred(Model)
 KnexHelper.mixin(Model)
 // Expose a selection of QueryBuilder methods as static methods on model classes
 QueryBuilder.mixin(Model)
@@ -563,8 +557,5 @@ const definitionHandlers = {
     }
   },
 
-  relations: null,
-  methods: null,
-  routes: null,
-  events: null
+  relations: null
 }
