@@ -392,34 +392,55 @@ KnexHelper.mixin(QueryBuilder.prototype)
 // them to `${tableRefFor(modelClass}.${propertyName}`, for unambiguous
 // identification of used properties in complex statements.
 for (const key of [
-  'where', 'whereNot', 'whereIn', 'whereNotIn', 'whereNull', 'whereNotNull',
-  'whereBetween', 'whereNotBetween',
-  // TODO: Consider adding all having methods as well, look into their signature
-  'select', 'orderBy'
+  'where', 'andWhere', 'orWhere',
+  'whereNot', 'orWhereNot',
+  'whereIn', 'orWhereIn',
+  'whereNotIn', 'orWhereNotIn',
+  'whereNull', 'orWhereNull',
+  'whereNotNull', 'orWhereNotNull',
+  'whereBetween', 'andWhereBetween', 'orWhereBetween',
+  'whereNotBetween', 'andWhereNotBetween', 'orWhereNotBetween',
+
+  'having', 'orHaving',
+  'havingIn', 'orHavingIn',
+  'havingNotIn', 'orHavingNotIn',
+  'havingNull', 'orHavingNull',
+  'havingNotNull', 'orHavingNotNull',
+  'havingBetween', 'orHavingBetween',
+  'havingNotBetween', 'orHavingNotBetween',
+
+  'select', 'first', 'pluck',
+
+  'groupBy', 'orderBy'
 ]) {
   const method = QueryBuilder.prototype[key]
   QueryBuilder.prototype[key] = function (...args) {
     const modelClass = this.modelClass()
     const { properties } = modelClass.definition
 
-    // expands the identifier to extende
+    // Expands all identifiers known to the model to their extended versions.
     const convertIdentifier = identifier => identifier in properties
       ? `${this.tableRefFor(modelClass)}.${identifier}`
       : identifier
 
-    const length = key === 'select' ? args.length : 1
-    for (let i = 0; i < length; i++) {
-      let arg = args[i]
+    const convertArgument = arg => {
       if (isString(arg)) {
         arg = convertIdentifier(arg)
-      } else if (/^(where|having)/.test(key) && isPlainObject(arg)) {
+      } else if (isArray(arg)) {
+        arg = arg.map(value => convertIdentifier(value))
+      } else if (isPlainObject(arg)) {
         const converted = {}
         for (const key in arg) {
           converted[convertIdentifier(key)] = arg[key]
         }
         arg = converted
       }
-      args[i] = arg
+      return arg
+    }
+
+    const length = ['select', 'first'].includes(key) ? args.length : 1
+    for (let i = 0; i < length; i++) {
+      args[i] = convertArgument(args[i])
     }
     return method.call(this, ...args)
   }
@@ -532,15 +553,22 @@ const mixinMethods = [
   'whereNotNull',
   'whereBetween',
   'whereNotBetween',
-  'whereJsonEquals',
-  'whereJsonNotEquals',
   'whereJsonSupersetOf',
   'whereJsonNotSupersetOf',
   'whereJsonSubsetOf',
   'whereJsonNotSubsetOf',
   'whereJsonHasAny',
   'whereJsonHasAll',
-  'whereJsonField',
   'whereJsonIsArray',
-  'whereJsonIsObject'
+  'whereJsonIsObject',
+  'having',
+  'havingIn',
+  'havingNotIn',
+  'havingNull',
+  'havingNotNull',
+  'havingExists',
+  'havingNotExists',
+  'havingBetween',
+  'havingNotBetween',
+  'havingRaw'
 ]
