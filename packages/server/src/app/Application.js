@@ -16,7 +16,6 @@ import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
 import { knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
-import { ResponseError } from '@/errors'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
 import { hyphenate } from '@ditojs/utils'
@@ -148,7 +147,7 @@ export class Application extends Koa {
   setupKnexLogging() {
     const startTimes = {}
 
-    function trim(str, length = 200) {
+    function trim(str, length = 512) {
       return str.length > length
         ? `${str.substring(0, length - 3)}...`
         : str
@@ -196,10 +195,13 @@ export class Application extends Koa {
 
   onError(err) {
     if (err.status !== 404 && !err.expose && !this.silent) {
-      console.error(err instanceof ResponseError
-        ? `${err.name}: ${JSON.stringify(err.toJSON(), null, '  ')}`
-        : err.stack || err.toString()
+      console.error(`${err.name}: ${err.toJSON
+        ? JSON.stringify(err.toJSON(), null, '  ')
+        : err.message || err}`
       )
+      if (err.stack) {
+        console.error(err.stack)
+      }
     }
   }
 
