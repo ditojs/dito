@@ -4,6 +4,7 @@ import { isObject, camelize } from '@ditojs/utils'
 import { ControllerError } from '@/errors'
 import { CollectionController } from './CollectionController'
 import { RelationController } from './RelationController'
+import { setupPropertyInheritance } from '@/utils'
 
 export class ModelController extends CollectionController {
   initialize() {
@@ -14,9 +15,13 @@ export class ModelController extends CollectionController {
   }
 
   setupRelations(type) {
-    const definitions = this.inheritValues(type, this[type])
+    // Inherit `relations` from the controller and / or its sub-classes,
+    // then build inheritance chains for each relation object through
+    // `setupPropertyInheritance()`, before creating the relation controllers,
+    // which then carry on with setting up inheritance for their actions.
+    const definitions = this.inheritValues(type)
     for (const name in definitions) {
-      const definition = definitions[name]
+      const definition = setupPropertyInheritance(definitions, name)
       if (isObject(definition)) {
         definitions[name] = this.setupRelation(definition, name)
       } else {

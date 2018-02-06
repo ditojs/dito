@@ -35,3 +35,22 @@ export function mergeAsArrays(target, ...sources) {
   }
   return target
 }
+
+export function setupPropertyInheritance(object, key, baseValue = null) {
+  // Loops up the inheritance chain of object until the base object is met,
+  // and sets up a related inheritance chain for the given property `key`.
+  // At the end, the resulting value with proper inheritance is returned.
+  let current = object
+  while (current !== Object.prototype) {
+    const parent = Object.getPrototypeOf(current)
+    if (current.hasOwnProperty(key)) {
+      const value = current[key]
+      const parentValue = parent[key] || baseValue
+      if (parentValue) {
+        Object.setPrototypeOf(value, parentValue)
+      }
+    }
+    current = parent
+  }
+  return object[key]
+}

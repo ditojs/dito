@@ -23,7 +23,6 @@ export class CollectionController extends Controller {
     this.clearQuery = query => query
       .clearEager()
       .clearScope()
-      .clearSelect()
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
   }

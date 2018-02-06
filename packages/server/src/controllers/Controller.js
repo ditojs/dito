@@ -31,6 +31,44 @@ export class Controller {
     }
   }
 
+  get controller() {
+    // On base controllers, the actions can be defined directly in the class
+    // instead of inside an actions object as is done with model and relation
+    // controllers. But in order to use the same structure for inheritance as
+    // these other controllers, we emulate a `controller` accessor that reflects
+    // these instance fields in a separate object. This accessor has a setter,
+    // so that if it is set in a sub-class, the overridden value is used.
+    if (!this._controller) {
+      this._controller = {}
+
+      const collect = key => {
+        const action = this[key]
+        if (key !== 'constructor' &&
+            isFunction(action) &&
+            !(action.prototype instanceof Model)) {
+          this._controller[key] = action
+        }
+      }
+
+      // Use `Object.getOwnPropertyNames()` to get the fields in order to not
+      // also receive values from parents (those are fetched later in
+      // `inheritValues()`, see `getParentValues()`).
+      // As a rule of thumb: Any prototype that defines `initialize()` is part
+      // of a core class and does not need to be inspected for fields. If the
+      // prototype doesn't define the method, it must be an extended class.
+      const proto = Object.getPrototypeOf(this)
+      if (!proto.hasOwnProperty('initialize')) {
+        Object.getOwnPropertyNames(proto).forEach(collect)
+      }
+      Object.getOwnPropertyNames(this).forEach(collect)
+    }
+    return this._controller
+  }
+
+  set controller(controller) {
+    this._controller = controller
+  }
+
   compose() {
     return compose([
       this.router.routes(),
@@ -47,66 +85,6 @@ export class Controller {
     return path && path !== '/' ? `${this.url}/${path}` : this.url
   }
 
-  get controller() {
-    if (!this._controller) {
-      this._controller = {}
-
-      const collect = key => {
-        const action = this[key]
-        if (key !== 'constructor' &&
-            isFunction(action) &&
-            !(action.prototype instanceof Model)) {
-          this._controller[key] = action
-        }
-      }
-
-      const proto = Object.getPrototypeOf(this)
-      if (!proto.hasOwnProperty('initialize')) {
-        Object.getOwnPropertyNames(proto).forEach(collect)
-      }
-      Object.getOwnPropertyNames(this).forEach(collect)
-    }
-    return this._controller
-  }
-
-  set controller(controller) {
-    this._controller = controller
-  }
-
-  static getParentValues(type) {
-    const parentClass = Object.getPrototypeOf(this)
-    if (!parentClass.hasOwnProperty(type)) {
-      // If the values haven't been inherited and resolved yet, we need to
-      // create one instance of each controller class up the chain in order to
-      // get to their definitions of the inheritable values.
-      // Once their inheritance is set up correctly, values will be exposed on
-      // the class itself.
-      const instance = parentClass.hasOwnProperty('instance')
-        ? parentClass.instance
-        // eslint-disable-next-line new-cap
-        : (parentClass.instance = new parentClass())
-      let values = instance[type]
-      if (parentClass !== Controller) {
-        // Recursively set up inheritance chains.
-        const parentValues = parentClass.getParentValues(type)
-        if (parentValues) {
-          values = Object.setPrototypeOf(values || {}, parentValues)
-        }
-      }
-      parentClass[type] = values
-    }
-    return parentClass[type]
-  }
-
-  inheritValues(type, values) {
-    const parentValues = this.constructor.getParentValues(type)
-    if (parentValues) {
-      // Inherit from the parent values so overrides can use super.<action>():
-      values = Object.setPrototypeOf(values || {}, parentValues)
-    }
-    return this.filterValues(values)
-  }
-
   filterValues(values) {
     // Respect `allow` settings and clear any default method to deactivate it:
     if (values?.allow) {
@@ -120,8 +98,48 @@ export class Controller {
     return values
   }
 
+  inheritValues(type) {
+    // Gets the controller class's instance field for a given action type, e.g.
+    // `controller` (Controller), `collection`, `member` (ModelController,
+    // RelationController), `relation` (RelationController), and sets up an
+    // inheritance chain for it that goes all the way up to it base class (e.g.
+    // CollectionController), so that the default definitions for all http verbs
+    // can be correctly inherited and overridden while using `super.<action>()`.
+    const parentClass = Object.getPrototypeOf(this.constructor)
+    // Create one instance of each controller class up the chain in order to
+    // get to their definitions of the inheritable values. Cache both instance
+    // and resolved values per parentClass in an inheritanceMap.
+    if (!inheritanceMap.has(parentClass)) {
+      inheritanceMap.set(parentClass, {
+        // eslint-disable-next-line new-cap
+        instance: new parentClass()
+      })
+    }
+    const entry = inheritanceMap.get(parentClass)
+    if (!entry[type]) {
+      const parent = entry.instance
+      let values = parent[type]
+      if (parentClass !== Controller) {
+        // Recursively set up inheritance chains.
+        values = parent.inheritValues(type)
+      }
+      entry[type] = values
+    }
+    const currentValues = this[type]
+    const parentValues = entry[type]
+    // Combine parentValues and currentValues with proper inheritance.
+    const values = parentValues
+      ? currentValues
+        ? Object.setPrototypeOf(currentValues, parentValues)
+        // If the current class doesn't have a definition, just use the one of
+        // the parent and keep propagating it up.
+        : parentValues
+      : currentValues
+    return this.filterValues(values)
+  }
+
   setupActions(type) {
-    const actions = this.inheritValues(type, this[type])
+    const actions = this.inheritValues(type)
     for (const name in actions) {
       const action = actions[name]
       if (isFunction(action)) {
@@ -164,3 +182,5 @@ export class Controller {
     }
   }
 }
+
+const inheritanceMap = new WeakMap()
