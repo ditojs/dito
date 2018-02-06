@@ -20,6 +20,10 @@ export class CollectionController extends Controller {
         .scope(...asArguments(this.scope))
         .eagerScope(...asArguments(this.eagerScope))
       : null
+    this.clearQuery = query => query
+      .clearEager()
+      .clearScope()
+      .clearSelect()
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
   }
@@ -60,7 +64,7 @@ export class CollectionController extends Controller {
       // eslint-disable-next-line new-cap
       (validatorsCache[name] = new this.modelClass())
     validator.$validate(
-      this.modelClass.getIdProperties(id),
+      this.modelClass.getIdValues(id),
       { patch: true }
     )
     return id
@@ -86,15 +90,6 @@ export class CollectionController extends Controller {
         .modify(modify)
         .throwIfNotFound()
     )
-  }
-
-  clearQuery(query) {
-    return query
-      .clearEager()
-      // TODO: Consider doing this in clearEager()?
-      .clearEagerScope()
-      .clearOrder()
-      .clearSelect()
   }
 
   collection = {

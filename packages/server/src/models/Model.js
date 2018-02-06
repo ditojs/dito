@@ -4,9 +4,7 @@ import util from 'util'
 import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
-import { deepMergeUnshift } from '@/utils'
-import eagerScope from '@/query/eagerScope'
-import RelationAccessor from './RelationAccessor'
+import { mergeWithoutOverride, mergeAsArrays } from '@/utils'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
@@ -14,6 +12,7 @@ import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, ValidationError, WrappedError
 } from '@/errors'
+import RelationAccessor from './RelationAccessor'
 
 export class Model extends objection.Model {
   static initialize() {
@@ -88,9 +87,9 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static getIdProperties(id, obj = {}) {
+  static getIdValues(id, obj = {}) {
     const ids = asArray(id)
-    const { properties } = this.definition
+    const { properties = {} } = this.definition
     for (const [index, name] of this.getIdPropertyArray().entries()) {
       const property = properties[name]
       const id = ids[index]
@@ -102,24 +101,13 @@ export class Model extends objection.Model {
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
-      const { scopes = {}, default: _default = {} } = this.definition
+      const { scopes = {} } = this.definition
       const namedFilters = {}
       for (const [name, scope] of Object.entries(scopes)) {
-        const filter = namedFilters[name] = isFunction(scope)
-          ? scope
-          : isObject(scope)
-            ? builder => builder.find(scope)
-            : null
-        if (!filter) {
-          throw new ModelError(this, `Invalid scope: '${scope}'.`)
-        }
-      }
-      // Add a special 'default.eager' filter that does nothing else than
-      // handle the default eager chaining. See: `definitionHandlers.default`
-      namedFilters['default.eager'] = builder => {
-        const { eager } = _default
-        if (eager) {
-          builder.mergeEager(eager)
+        if (isFunction(scope)) {
+          namedFilters[name] = scope
+        } else {
+          throw new ModelError(this, `Invalid scope: '${name}'.`)
         }
       }
       return namedFilters
@@ -226,9 +214,9 @@ export class Model extends objection.Model {
   static checkRelation(relation) {
     // Make sure all relations are defined correctly, with back-references.
     const { relatedModelClass } = relation
-    const relatedProperties = relatedModelClass.definition.properties || {}
+    const { properties = {} } = relatedModelClass.definition
     for (const property of relation.relatedProp.props) {
-      if (!(property in relatedProperties)) {
+      if (!(property in properties)) {
         throw new RelationError(
           `Model "${relatedModelClass.name}" is missing back-reference ` +
           `"${property}" for relation "${this.name}.${relation.name}"`)
@@ -411,50 +399,6 @@ export class Model extends objection.Model {
     if (definition) return definition
     definitionMap.set(this, definition = {})
 
-    // If no definition object was defined yet, create one with accessors for
-    // each entry in `definitionHandlers`. Each of these getters when called
-    // merge definitions up the inheritance chain and store the merged result
-    // in `modelClass.definition[name]` for further caching.
-    const getDefinition = name => {
-      let merged
-      let modelClass = this
-      const handler = definitionHandlers[name]
-      // Collect sources values from ancestors in reverse sequence for correct
-      // inheritance.
-      const sources = []
-      while (modelClass !== objection.Model) {
-        // Only consider model classes that actually define `name` property.
-        if (name in modelClass) {
-          // Use reflection through getOwnPropertyDescriptor() to be able to
-          // call the getter on `this` rather than on `modelClass`. This can be
-          // used to provide abstract base-classes and have them create their
-          // relations for `this` inside `get relations`.
-          const { get, value } = Object.getOwnPropertyDescriptor(
-            modelClass, name) || {}
-          const source = get ? get.call(this) : value
-          if (source) {
-            sources.unshift(source)
-          }
-        }
-        modelClass = Object.getPrototypeOf(modelClass)
-      }
-      merged = deepMergeUnshift({}, ...sources)
-      // Once calculated, override definition getter with merged value
-      if (handler && merged) {
-        // Override definition before calling handler(), to prevent endless
-        // recursion with interdependent definition related calls...
-        setDefinition(name, { value: merged }, true)
-        merged = handler.call(this, merged) || merged
-        // NOTE: Now that it changed, setDefinition() is called once more below.
-      }
-      if (merged) {
-        setDefinition(name, { value: merged }, false)
-      } else {
-        delete definition[name]
-      }
-      return merged
-    }
-
     const setDefinition = (name, property, configurable) => {
       Object.defineProperty(definition, name, {
         ...property,
@@ -463,6 +407,54 @@ export class Model extends objection.Model {
       })
     }
 
+    const getDefinition = name => {
+      let modelClass = this
+      // Collect ancestor values for proper inheritance. Note: values are
+      // collected in sequence of inheritance, from sub-class to super-class,
+      // so when merging, mergeWithoutOverride() needs to be used to prevent
+      // overrides in the wrong direction. mergeAsArrays() can be used to keep
+      // lists of values to be inherited per key, see definitionHandlers.scopes
+      const values = []
+      while (modelClass !== objection.Model) {
+        // Only consider model classes that actually define `name` property.
+        if (name in modelClass) {
+          // Use reflection through getOwnPropertyDescriptor() to be able to
+          // call the getter on `this` rather than on `modelClass`. This can be
+          // used to provide abstract base-classes and have them create their
+          // relations for `this` inside `get relations()` accessors.
+          const desc = Object.getOwnPropertyDescriptor(modelClass, name)
+          const value = desc?.get?.call(this) || desc?.value
+          if (value) {
+            values.push(value)
+          }
+        }
+        modelClass = Object.getPrototypeOf(modelClass)
+      }
+      let merged = null
+      if (values.length) {
+        const handler = definitionHandlers[name]
+        if (handler) {
+          // To prevent endless recursion with interdependent calls related to
+          // properties, override definition before calling handler():
+          setDefinition(name, { value: {} }, true)
+          merged = handler.call(this, values)
+        } else {
+          merged = mergeWithoutOverride({}, ...values)
+        }
+      }
+      // Once calculated, override definition getter with merged value
+      if (merged) {
+        setDefinition(name, { value: merged }, false)
+      } else {
+        delete definition[name]
+      }
+      return merged
+    }
+
+    // If no definition object was defined yet, create one with accessors for
+    // each entry in `definitionHandlers`. Each of these getters when called
+    // merge definitions up the inheritance chain and store the merged result
+    // in `modelClass.definition[name]` for further caching.
     for (const name in definitionHandlers) {
       setDefinition(name, { get: () => getDefinition(name) }, true)
     }
@@ -478,7 +470,8 @@ const definitionMap = new WeakMap()
 const cacheMap = new WeakMap()
 
 const definitionHandlers = {
-  properties(properties) {
+  properties(values) {
+    const properties = mergeWithoutOverride({}, ...values)
     // Include auto-generated 'id' properties for models and relations.
     function addIdProperty(name, schema) {
       if (!(name in properties)) {
@@ -532,29 +525,32 @@ const definitionHandlers = {
     }, {})
   },
 
-  default(_default) {
-    // Parse default.eager expression and add the 'default.eager' args to all
-    // child expressions, so they can recursively load their own default.eager
-    // expressions. This allows for eager chaining across multiple nested models
-    // in a way that each model only needs to specify its own eager relations.
-    // See namedFilter() for the definition of 'default.eager'.
-    if (_default.eager) {
-      // Use unshift instead of push so it's applied fist, not last, and other
-      // scopes can be applied after.
-      _default.eager = eagerScope(
-        this, _default.eager, ['default.eager'], null, true
+  scopes(values) {
+    // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
+    // so they can be called in sequence.
+    const scopesArrays = mergeAsArrays({}, ...values)
+    const scopes = {}
+    for (const [name, array] of Object.entries(scopesArrays)) {
+      // Convert array of filter to filter functions that all take a query and
+      // return the query if the next filter should be called, `null` otherwise.
+      const filters = array.map(
+        filter =>
+          isFunction(filter) ? filter
+          : isObject(filter) ? query => query.find(filter)
+          : () => filter
       )
-    }
-  },
-
-  scopes(scopes) {
-    for (const [name, scope] of Object.entries(scopes)) {
-      if (isObject(scope)) {
-        // Convert find()-style filter object to filter function,
-        // see QueryBuilder#find()
-        scopes[name] = builder => builder.find(scope)
+      scopes[name] = query => {
+        // Call all inherited filters per scope in sequence from sub-class to
+        // super-class, but abort sequence when one of them returns `null`,
+        // or calls `.break()` (which in turn returns `null`).
+        for (const filter of filters) {
+          query = filter(query)
+          if (!query) break
+        }
+        return query
       }
     }
+    return scopes
   },
 
   relations: null

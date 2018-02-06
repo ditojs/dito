@@ -1,12 +1,11 @@
 import objection from 'objection'
 import { KnexHelper } from '@/lib'
-import { QueryBuilderError } from '@/errors'
+import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryHandlers } from './QueryHandlers'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
-import eagerScope from './eagerScope'
-import { isArray, isPlainObject, isString, asArray } from '@ditojs/utils'
+import { isArray, isPlainObject, isString, clone } from '@ditojs/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -17,133 +16,108 @@ export class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
-    this._applyDefaultEager = true
-    this._applyDefaultOrder = true
-    this._scopes = []
-    this._eagerScopes = []
+    this._eagerScopeId = 0
+    this.clearScope(true)
   }
 
   clone() {
-    const clone = super.clone()
-    clone._propertyRefsAllowed = this._propertyRefsAllowed
-    clone._propertyRefsCache = this._propertyRefsCache
-    clone._applyDefaultEager = this._applyDefaultEager
-    clone._applyDefaultOrder = this._applyDefaultOrder
-    clone._scopes = [...this._scopes]
-    clone._eagerScopes = [...this._eagerScopes]
-    return clone
+    const copy = super.clone()
+    copy._propertyRefsAllowed = this._propertyRefsAllowed
+    copy._propertyRefsCache = this._propertyRefsCache
+    copy._scopes = clone(this._scopes)
+    return copy
   }
 
   async execute() {
-    // Only apply the default: { eager, order } settings if this is a find
-    // query, meaning it does not specify any write operations, without any
-    // special selects. This is required to exclude count(), etc...
-    if (this.isFind() && (!this.hasSelects() || this.has('select'))) {
-      const {
-        default: { eager, order } = {}
-      } = this.modelClass().definition
-      if (eager && this._applyDefaultEager) {
-        // Use mergeEager() instead of eager(), in case mergeEager() was already
-        // called before. Using eager() sets `_applyDefaultEager` to `false`.
-        this.mergeEager(eager)
-      }
-      if (order && this._applyDefaultOrder) {
-        this.orderBy(...asArray(order))
-      }
+    for (const { scope, eager } of this._scopes) {
+      this.applyScope(scope, eager)
     }
-    // Now finally apply the scopes.
-    this.applyScope(...this._scopes)
-    this.applyEagerScope(...this._eagerScopes)
+    // If this isn't a find query, meaning it does specify any write operations,
+    // or if it defines special selects, then we need to clear eager and order.
+    // This is required to not mess with count(), etc...
+    if (!this.isFind() || this.hasSelects() && !this.has('select')) {
+      this.clearEager()
+      this.clear('orderBy')
+    }
 
     return super.execute()
   }
 
-  eager(...args) {
-    this._applyDefaultEager = false
-    return super.eager(...args)
+  childQueryOf(query, fork) {
+    if (fork) {
+      this.clearScope()
+    }
+    return super.childQueryOf(query, fork)
   }
 
-  clearEager() {
-    this._applyDefaultEager = false
-    return super.clearEager()
+  applyScope(scope, eager = false) {
+    if (eager) {
+      const modelClass = this.modelClass()
+      if (modelClass.hasScope(scope)) {
+        this.applyFilter(scope)
+      }
+      if (this._eagerExpression) {
+        const name = `_s${++this._eagerScopeId}_`
+        const filters = {
+          ...this._eagerFilters,
+          [name]: query => query.applyScope(scope, true)
+        }
+        this.eager(
+          addEagerScope(
+            this.modelClass(),
+            this._eagerExpression,
+            [scope, name],
+            filters
+          ),
+          filters
+        )
+      }
+    } else {
+      this.applyFilter(scope)
+    }
+    return this
   }
 
-  orderBy(...args) {
-    this._applyDefaultOrder = false
-    return super.orderBy(...args)
-  }
-
-  clearOrder() {
-    this._applyDefaultOrder = false
+  clearScope(addDefault = false) {
+    this._scopes = addDefault
+      ? [{
+        scope: 'default',
+        eager: true
+      }]
+      : []
     return this
   }
 
   scope(...scopes) {
-    return this.clearScope().mergeScope(...scopes)
-  }
-
-  clearScope() {
-    this._scopes = []
-    return this
+    return this.clearScope(true).mergeScope(...scopes)
   }
 
   mergeScope(...scopes) {
-    for (const scope of scopes) {
-      if (!this._scopes.includes(scope)) {
-        this._scopes.push(scope)
-      }
-    }
-    return this
-  }
-
-  applyScope(...scopes) {
-    // A simple redirect to applyFilter() for the sake of naming consistency.
-    return this.applyFilter(...scopes)
+    return this._mergeScopes(scopes, false)
   }
 
   eagerScope(...scopes) {
-    return this.clearEagerScope().mergeEagerScope(...scopes)
-  }
-
-  clearEagerScope() {
-    this._eagerScopes = []
-    return this
+    return this.clearScope(true).mergeEagerScope(...scopes)
   }
 
   mergeEagerScope(...scopes) {
+    return this._mergeScopes(scopes, true)
+  }
+
+  _mergeScopes(scopes, eager) {
     for (const scope of scopes) {
-      if (!this._eagerScopes.includes(scope)) {
-        this._eagerScopes.push(scope)
+      const entry = this._scopes.find(entry => entry.scope === scope)
+      if (entry) {
+        entry.eager = entry.eager || eager
+      } else {
+        this._scopes.push({ scope, eager })
       }
     }
     return this
   }
 
-  applyEagerScope(...scopes) {
-    if (!scopes.length) return this
-    const modelClass = this.modelClass()
-    for (const scope of scopes) {
-      if (modelClass.hasScope(scope)) {
-        this.applyScope(scope)
-      }
-    }
-    if (this._eagerExpression) {
-      const name = `_s${scopes.length}_`
-      const filters = {
-        ...this._eagerFilters,
-        [name]: query => query.applyEagerScope(...scopes)
-      }
-      this.eager(
-        eagerScope(
-          this.modelClass(),
-          this._eagerExpression,
-          [...scopes, name],
-          filters
-        ),
-        filters
-      )
-    }
-    return this
+  break() {
+    return null
   }
 
   raw(...args) {
@@ -254,19 +228,19 @@ export class QueryBuilder extends objection.QueryBuilder {
   upsertGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
     return this.upsertGraphAndFetch(
-      this.modelClass().getIdProperties(id, { ...data }), options)
+      this.modelClass().getIdValues(id, { ...data }), options)
   }
 
   updateGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
     return this.updateGraphAndFetch(
-      this.modelClass().getIdProperties(id, { ...data }), options)
+      this.modelClass().getIdValues(id, { ...data }), options)
   }
 
   patchGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
     return this.patchGraphAndFetch(
-      this.modelClass().getIdProperties(id, { ...data }), options)
+      this.modelClass().getIdValues(id, { ...data }), options)
   }
 
   updateAndFetchById(id, data) {
@@ -479,6 +453,38 @@ function mergeOptions(defaults, options) {
   return options ? { ...defaults, ...options } : defaults
 }
 
+function addEagerScope(modelClass, expr, scopes, filters = null,
+  prepend = false, isRoot = true) {
+  if (isRoot) {
+    expr = expr?.isObjectionRelationExpression
+      ? expr.clone()
+      : objection.RelationExpression.create(expr)
+  } else {
+    // Only add the scope if it's not already defined by the eager statement and
+    // if it's actually available as a filter in the model's namedFilters list.
+    for (const scope of scopes) {
+      if (!expr.args.includes(scope) &&
+          (modelClass.namedFilters[scope] || filters?.[scope])) {
+        expr.args[prepend ? 'unshift' : 'push'](scope)
+      }
+    }
+  }
+  if (expr.numChildren > 0) {
+    const relations = modelClass.getRelations()
+    for (const child of Object.values(expr.children)) {
+      const relation = relations[child.name]
+      if (!relation) {
+        throw new RelationError(
+          `Invalid child expression: "${child.name}"`)
+      }
+      addEagerScope(
+        relation.relatedModelClass, child, scopes, filters, prepend, false
+      )
+    }
+  }
+  return expr
+}
+
 const mixinMethods = [
   'first',
   'find',
@@ -491,7 +497,6 @@ const mixinMethods = [
   'applyScope',
   'clearEager',
   'clearScope',
-  'clearOrder',
   'select',
   'insert',
   'upsert',

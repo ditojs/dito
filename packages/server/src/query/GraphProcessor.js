@@ -49,9 +49,9 @@ export default class GraphProcessor {
     const processModelClass = modelClass => {
       const { name } = modelClass
       if (!processed[name]) {
-        const relationDefinitions = modelClass.definition.relations
+        const { relations = {} } = modelClass.definition
         const relationInstances = modelClass.getRelations()
-        for (const [name, relation] of Object.entries(relationDefinitions)) {
+        for (const [name, relation] of Object.entries(relations)) {
           const { graph } = relation
           if (graph) {
             // Loop through this.options and only look for overrides of them,
@@ -100,12 +100,13 @@ export default class GraphProcessor {
         }
       }
       if (exp.numChildren > 0) {
-        const relationDefinitions = modelClass.definition.relations
+        const { relations = {} } = modelClass.definition
         const relationInstances = modelClass.getRelations()
         for (const child of Object.values(exp.children)) {
           const { relatedModelClass } = relationInstances[child.name]
-          processExpression(child, relatedModelClass,
-            relationDefinitions[child.name], relationPath)
+          processExpression(
+            child, relatedModelClass, relations[child.name], relationPath
+          )
         }
       }
     }
