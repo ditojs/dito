@@ -32,9 +32,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const { scope, eager } of this._scopes) {
       this.applyScope(scope, eager)
     }
-    // If this isn't a find query, meaning it does specify any write operations,
-    // or if it defines special selects, then we need to clear eager and order.
-    // This is required to not mess with count(), etc...
+    // If this isn't a find query, meaning if it defines any write operations or
+    // special selects, then eager and order needs to be cleared. This is to not
+    // mess with special selects such as count(), etc...
     if (!this.isFind() || this.hasSelects() && !this.has('select')) {
       this.clearEager()
       this.clear('orderBy')
@@ -57,7 +57,7 @@ export class QueryBuilder extends objection.QueryBuilder {
         this.applyFilter(scope)
       }
       if (this._eagerExpression) {
-        const name = `_s${++this._eagerScopeId}_`
+        const name = `_eagerScope${++this._eagerScopeId}_`
         const filters = {
           ...this._eagerFilters,
           [name]: query => query.applyScope(scope, true)
@@ -453,8 +453,7 @@ function mergeOptions(defaults, options) {
   return options ? { ...defaults, ...options } : defaults
 }
 
-function addEagerScope(modelClass, expr, scopes, filters = null,
-  prepend = false, isRoot = true) {
+function addEagerScope(modelClass, expr, scopes, filters, isRoot = true) {
   if (isRoot) {
     expr = expr?.isObjectionRelationExpression
       ? expr.clone()
@@ -465,7 +464,7 @@ function addEagerScope(modelClass, expr, scopes, filters = null,
     for (const scope of scopes) {
       if (!expr.args.includes(scope) &&
           (modelClass.namedFilters[scope] || filters?.[scope])) {
-        expr.args[prepend ? 'unshift' : 'push'](scope)
+        expr.args.push(scope)
       }
     }
   }
@@ -477,9 +476,7 @@ function addEagerScope(modelClass, expr, scopes, filters = null,
         throw new RelationError(
           `Invalid child expression: '${child.name}'`)
       }
-      addEagerScope(
-        relation.relatedModelClass, child, scopes, filters, prepend, false
-      )
+      addEagerScope(relation.relatedModelClass, child, scopes, filters, false)
     }
   }
   return expr
