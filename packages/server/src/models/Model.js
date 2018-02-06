@@ -93,7 +93,7 @@ export class Model extends objection.Model {
     for (const [index, name] of this.getIdPropertyArray().entries()) {
       const property = properties[name]
       const id = ids[index]
-      obj[name] = /^(integer|number)$/.test(property.type) ? +id : id
+      obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
     }
     return obj
   }

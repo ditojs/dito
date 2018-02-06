@@ -27,7 +27,7 @@ export class RelationController extends CollectionController {
     // Copy over all fields in definition except relation and member,
     // for settings like scope, eagerScope, etc.
     for (const key in this.definition) {
-      if (!/^(relation|member)$/.test(key)) {
+      if (!['relation', 'member'].includes(key)) {
         this[key] = this.definition[key]
       }
     }

@@ -16,7 +16,7 @@ export default class PropertyRef {
     if (parseDir) {
       // Support direction for order statements
       const [key, dir] = str.trim().split(/\s+/)
-      if (dir && !/^(asc|desc)$/i.test(dir)) {
+      if (dir && !['asc', 'desc'].includes(dir)) {
         throw new QueryBuilderError(`Invalid order direction: '${dir}'.`)
       }
       this.key = key
