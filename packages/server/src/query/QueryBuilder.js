@@ -475,7 +475,7 @@ function addEagerScope(modelClass, expr, scopes, filters = null,
       const relation = relations[child.name]
       if (!relation) {
         throw new RelationError(
-          `Invalid child expression: "${child.name}"`)
+          `Invalid child expression: '${child.name}'`)
       }
       addEagerScope(
         relation.relatedModelClass, child, scopes, filters, prepend, false

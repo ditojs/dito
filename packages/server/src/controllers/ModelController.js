@@ -20,7 +20,7 @@ export class ModelController extends CollectionController {
       if (isObject(definition)) {
         definitions[name] = this.setupRelation(definition, name)
       } else {
-        throw new ControllerError(this, `Invalid relation "${name}".`)
+        throw new ControllerError(this, `Invalid relation '${name}'.`)
       }
     }
     return definitions
@@ -29,7 +29,7 @@ export class ModelController extends CollectionController {
   setupRelation(definition, name) {
     const relation = this.modelClass.getRelations()[name]
     if (!relation) {
-      throw new ControllerError(this, `Relation "${name}" not found.`)
+      throw new ControllerError(this, `Relation '${name}' not found.`)
     }
     return new RelationController(this, relation, definition)
   }

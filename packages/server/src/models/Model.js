@@ -218,8 +218,8 @@ export class Model extends objection.Model {
     for (const property of relation.relatedProp.props) {
       if (!(property in properties)) {
         throw new RelationError(
-          `Model "${relatedModelClass.name}" is missing back-reference ` +
-          `"${property}" for relation "${this.name}.${relation.name}"`)
+          `Model '${relatedModelClass.name}' is missing back-reference ` +
+          `'${property}' for relation '${this.name}.${relation.name}'`)
       }
     }
     // TODO: Check `through` settings also
@@ -231,8 +231,8 @@ export class Model extends objection.Model {
     const accessor = `$${relation.name}`
     if (accessor in this.prototype) {
       throw new RelationError(
-        `Model "${this.name}" already defines a property with name ` +
-        `"${accessor}" that clashes with the relation accessor.`)
+        `Model '${this.name}' already defines a property with name ` +
+        `'${accessor}' that clashes with the relation accessor.`)
     }
     // Define an accessor on the class as well as on the prototype that when
     // first called creates a RelationAccessor instance and then overrides the

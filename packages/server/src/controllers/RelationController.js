@@ -7,7 +7,7 @@ export class RelationController extends CollectionController {
     super(parent.app, null)
     if (parent.modelClass !== relation.ownerModelClass) {
       throw new ControllerError(parent,
-        `Invalid parent controller for relation "${relation.name}".`)
+        `Invalid parent controller for relation '${relation.name}'.`)
     }
     this.parent = parent
     this.relation = relation
