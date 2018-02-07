@@ -49,7 +49,7 @@ export default class GraphProcessor {
     const processModelClass = modelClass => {
       const { name } = modelClass
       if (!processed[name]) {
-        const { relations = {} } = modelClass.definition
+        const { relations } = modelClass.definition
         const relationInstances = modelClass.getRelations()
         for (const [name, relation] of Object.entries(relations)) {
           const { graph } = relation
@@ -100,7 +100,7 @@ export default class GraphProcessor {
         }
       }
       if (exp.numChildren > 0) {
-        const { relations = {} } = modelClass.definition
+        const { relations } = modelClass.definition
         const relationInstances = modelClass.getRelations()
         for (const child of Object.values(exp.children)) {
           const { relatedModelClass } = relationInstances[child.name]

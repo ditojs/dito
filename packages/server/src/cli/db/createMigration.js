@@ -58,7 +58,7 @@ export async function createMigration(app, name, ...modelNames) {
 
 async function collectModelTables(modelClass, app, tables) {
   const tableName = app.normalizeIdentifier(modelClass.tableName)
-  const { properties = {}, relations = {} } = modelClass.definition
+  const { properties, relations } = modelClass.definition
   const statements = []
   tables.push({ tableName, statements })
   const uniqueComposites = {}
@@ -137,7 +137,7 @@ async function collectModelTables(modelClass, app, tables) {
 }
 
 async function collectThroughTables(modelClass, app, tables) {
-  const { relations = {} } = modelClass.definition
+  const { relations } = modelClass.definition
   for (const relation of Object.values(relations)) {
     const { from, to, through, inverse } = relation
     if (through === true && !inverse) {

@@ -76,7 +76,7 @@ export class Model extends objection.Model {
   static get idColumn() {
     // Try extracting id column name from properties definition, with fall-back
     // onto default Objection.js behavior.
-    const { properties = {} } = this.definition
+    const { properties } = this.definition
     const ids = []
     for (const [name, property] of Object.entries(properties)) {
       if (property.primary) {
@@ -89,7 +89,7 @@ export class Model extends objection.Model {
 
   static getIdValues(id, obj = {}) {
     const ids = asArray(id)
-    const { properties = {} } = this.definition
+    const { properties } = this.definition
     for (const [index, name] of this.getIdPropertyArray().entries()) {
       const property = properties[name]
       const id = ids[index]
@@ -101,7 +101,7 @@ export class Model extends objection.Model {
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
-      const { scopes = {} } = this.definition
+      const { scopes } = this.definition
       const namedFilters = {}
       for (const [name, scope] of Object.entries(scopes)) {
         if (isFunction(scope)) {
@@ -129,7 +129,7 @@ export class Model extends objection.Model {
 
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
-      const { properties = {} } = this.definition
+      const { properties } = this.definition
       const schema = addRelationSchemas(this, convertSchema(properties))
       return {
         $id: this.name,
@@ -174,7 +174,7 @@ export class Model extends objection.Model {
 
   static getAttributes(filter) {
     const attributes = []
-    const { properties = {} } = this.definition
+    const { properties } = this.definition
     for (const [name, property] of Object.entries(properties)) {
       if (filter(property)) {
         attributes.push(name)
@@ -214,7 +214,7 @@ export class Model extends objection.Model {
   static checkRelation(relation) {
     // Make sure all relations are defined correctly, with back-references.
     const { relatedModelClass } = relation
-    const { properties = {} } = relatedModelClass.definition
+    const { properties } = relatedModelClass.definition
     for (const property of relation.relatedProp.props) {
       if (!(property in properties)) {
         throw new RelationError(
@@ -430,24 +430,15 @@ export class Model extends objection.Model {
         }
         modelClass = Object.getPrototypeOf(modelClass)
       }
-      let merged = null
-      if (values.length) {
-        const handler = definitionHandlers[name]
-        if (handler) {
-          // To prevent endless recursion with interdependent calls related to
-          // properties, override definition before calling handler():
-          setDefinition(name, { value: {} }, true)
-          merged = handler.call(this, values)
-        } else {
-          merged = mergeWithoutOverride({}, ...values)
-        }
-      }
+      // To prevent endless recursion with interdependent calls related to
+      // properties, override definition before calling handler():
+      setDefinition(name, { value: {} }, true)
+      const handler = definitionHandlers[name]
+      const merged = handler
+        ? handler.call(this, values)
+        : mergeWithoutOverride({}, ...values)
       // Once calculated, override definition getter with merged value
-      if (merged) {
-        setDefinition(name, { value: merged }, false)
-      } else {
-        delete definition[name]
-      }
+      setDefinition(name, { value: merged }, false)
       return merged
     }
 
