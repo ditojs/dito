@@ -66,7 +66,7 @@ export class RelationController extends CollectionController {
     return this.parent.execute(transaction, ctx, query => query
       .findById(id)
       .throwIfNotFound()
-      .modify(this.clearQuery)
+      .clearScope()
       // Explicitly only select the foreign key ids for more efficiency.
       .select(...this.relation.ownerProp.props)
       .then(

@@ -20,9 +20,6 @@ export class CollectionController extends Controller {
         .scope(...asArguments(this.scope))
         .eagerScope(...asArguments(this.eagerScope))
       : null
-    this.clearQuery = query => query
-      .clearEager()
-      .clearScope()
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
   }
@@ -104,10 +101,10 @@ export class CollectionController extends Controller {
     delete(ctx, modify) {
       // TODO: Decide if we should set status? status = 204
       return this.execute(false, ctx, query => query
+        .clearScope()
         // TODO: Test if filter works for delete
         .find(ctx.query)
         .modify(modify)
-        .modify(this.clearQuery)
         // TODO: .throwIfNotFound() on isOneToOne?
         .delete()
         .then(count => ({ count }))
@@ -143,9 +140,9 @@ export class CollectionController extends Controller {
     delete(ctx, modify) {
       const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
+        .clearScope()
         // TODO: query filters??
         .modify(modify)
-        .modify(this.clearQuery)
         .deleteById(id)
         .throwIfNotFound()
         // Consider status 204 and no result
