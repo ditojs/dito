@@ -125,15 +125,14 @@ export class Controller {
       }
       entry[type] = values
     }
-    const currentValues = this[type]
+    // If there are no values defined on `this`, create an empty object so
+    // inheritance can be set up and `filterValues()` can still be called.
+    const currentValues =
+      this.hasOwnProperty(type) && this[type] || (this[type] = {})
     const parentValues = entry[type]
-    // Combine parentValues and currentValues with proper inheritance.
+    // Combine parentValues and currentValues with correct inheritance.
     const values = parentValues
-      ? currentValues
-        ? Object.setPrototypeOf(currentValues, parentValues)
-        // If the current class doesn't have a definition, just use the one of
-        // the parent and keep propagating it up.
-        : parentValues
+      ? Object.setPrototypeOf(currentValues, parentValues)
       : currentValues
     return this.filterValues(values)
   }
