@@ -109,7 +109,7 @@ async function collectModelTables(modelClass, app, tables) {
         for (const relation of Object.values(relations)) {
           // TODO: Support composite keys for foreign references:
           // Use `asArray(from)`, `asArray(to)`
-          const { from, to } = relation
+          const { from, to, owner } = relation
           const [fromClass, fromProperty] = from?.split('.') || []
           if (fromProperty === name) {
             if (fromClass !== modelClass.name) {
@@ -120,7 +120,9 @@ async function collectModelTables(modelClass, app, tables) {
               '\n',
               `references('${app.normalizeIdentifier(toProperty)}')`,
               `inTable('${app.normalizeIdentifier(toClass)}')`,
-              `onDelete('CASCADE')`
+              // Only relations that aren't owners of their data should cascade
+              // on delete.
+              !owner && `onDelete('CASCADE')`
             )
           }
         }

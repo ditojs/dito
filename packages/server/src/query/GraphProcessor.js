@@ -56,9 +56,9 @@ export default class GraphProcessor {
         for (const [name, relation] of Object.entries(relations)) {
           const { graph } = relation
           if (graph) {
-            // Loop through this.options and only look for overrides of them,
-            // since the relation.graph options are shared for insert  / upsert
-            // & co., but not all of them use all options (insert defines less).
+            // Loop through `this.options` and only look for overrides of them,
+            // since `relation.graphOptions` is across insert  / upsert & co.,
+            // but not all of them use all options (insert defines less).
             for (const key in this.options) {
               if (key in graph &&
                   graph[key] !== this.options[key] &&
@@ -87,15 +87,25 @@ export default class GraphProcessor {
   processOverrides() {
     const exp = RelationExpression.fromModelGraph(this.data)
     const overrides = Object.entries(this.overrides) // Cache for repeated use.
+    // When a relation is owner of its data, then a fall-back for `graphOptions`
+    // is provided where both `relate` and `unrelate` id disabled, resulting in
+    // inserts and deletes instead.
+    const ownerOptions = {
+      relate: false,
+      unrelate: false
+    }
 
     const processExpression = (exp, modelClass, relation, relationPath) => {
       relationPath = relationPath ? `${relationPath}.${exp.name}` : exp.name
       if (relation) {
+        // Determine the `graphOptions` to be used for this relation.
+        const graphOptions =
+          relation.graphOptions || relation.owner && ownerOptions || {}
         // Loop through all override options, figure out their settings for the
         // current relation and build relation expression arrays for each
         // override, reflecting their nested settings in arrays of expressions.
         for (const [key, override] of overrides) {
-          const option = pick(relation.graph?.[key], this.options[key])
+          const option = pick(graphOptions[key], this.options[key])
           if (option) {
             override.push(relationPath)
           }
