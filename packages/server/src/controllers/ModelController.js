@@ -19,24 +19,27 @@ export class ModelController extends CollectionController {
     // then build inheritance chains for each relation object through
     // `setupPropertyInheritance()`, before creating the relation controllers,
     // which then carry on with setting up inheritance for their actions.
-    const definitions = this.inheritValues(type)
-    for (const name in definitions) {
-      const definition = setupPropertyInheritance(definitions, name)
-      if (isObject(definition)) {
-        definitions[name] = this.setupRelation(definition, name)
+    const objects = this.inheritValues(type)
+    for (const name in objects) {
+      const object = setupPropertyInheritance(objects, name)
+      if (isObject(object)) {
+        objects[name] = this.setupRelation(object, name)
       } else {
         throw new ControllerError(this, `Invalid relation '${name}'.`)
       }
     }
-    return definitions
+    return objects
   }
 
-  setupRelation(definition, name) {
-    const relation = this.modelClass.getRelations()[name]
-    if (!relation) {
+  setupRelation(object, name) {
+    const relationInstance = this.modelClass.getRelations()[name]
+    const relationDefinition = this.modelClass.definition.relations[name]
+    if (!relationInstance || !relationDefinition) {
       throw new ControllerError(this, `Relation '${name}' not found.`)
     }
-    return new RelationController(this, relation, definition)
+    return new RelationController(
+      this, object, relationInstance, relationDefinition
+    )
   }
 
   // @override

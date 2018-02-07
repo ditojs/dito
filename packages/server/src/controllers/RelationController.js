@@ -4,18 +4,22 @@ import { CollectionController } from './CollectionController'
 import { setupPropertyInheritance } from '@/utils'
 
 export class RelationController extends CollectionController {
-  constructor(parent, relation, definition) {
+  constructor(parent, object, relationInstance, relationDefinition) {
     super(parent.app, null)
-    if (parent.modelClass !== relation.ownerModelClass) {
+    if (parent.modelClass !== relationInstance.ownerModelClass) {
       throw new ControllerError(parent,
-        `Invalid parent controller for relation '${relation.name}'.`)
+        `Invalid parent controller for relation '${relationInstance.name}'.`)
     }
     this.parent = parent
-    this.relation = relation
-    this.definition = definition
-    this.name = relation.name
-    this.modelClass = relation.relatedModelClass
-    this.isOneToOne = relation.isOneToOne()
+    this.object = object
+    this.relationInstance = relationInstance
+    this.relationDefinition = relationDefinition
+    this.name = relationInstance.name
+    this.modelClass = relationInstance.relatedModelClass
+    this.isOneToOne = relationInstance.isOneToOne()
+    this.relate = !relationDefinition.owner
+    this.unrelate = !relationDefinition.owner
+    // Inherit parent values:
     this.graph = parent.graph
     this.router = parent.router
     this.level = parent.level + 1
@@ -25,11 +29,11 @@ export class RelationController extends CollectionController {
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.name)}${chalk.white(':')}`, this.level)
-    // Copy over all fields in definition except relation and member,
+    // Copy over all fields in the relation object except `relation` & `member`,
     // for settings like scope, eagerScope, etc.
-    for (const key in this.definition) {
+    for (const key in this.object) {
       if (!['relation', 'member'].includes(key)) {
-        this[key] = this.definition[key]
+        this[key] = this.object[key]
       }
     }
     this.initialize(false)
@@ -41,19 +45,20 @@ export class RelationController extends CollectionController {
     // ModelController parents and are never extended directly in the user land
     // code, inheritance works differently here than on the other controllers:
     // ModelController already sets up inheritance for its `relations` object
-    // and its entries for each relation from which `definition` is retrieved.
+    // and its entries for each relation from which `object` is retrieved.
     // But the actions per relation still need to have inheritance set up,
     // using the values in its parent controller and potential super-classes,
     // falling back on the definitions in RelationController and its inherited
     // values from ModelController.
     return this.filterValues(
       setupPropertyInheritance(
-        this.definition,
-        // On relation definitions, the `collection` actions are stored in a
+        this.object,
+        // On the relation objects, the `collection` actions are stored in a
         // `relation` object, to make sense both for one- and many-relations:
         type === 'collection' ? 'relation' : type,
         // Set up inheritance for RelationController's override of `collection`
         // and `member` objects, and use it as the base for further inheritance.
+        // NOTE: Currently they're empty, but they could allow local overrides.
         super.inheritValues(type)
       )
     )
@@ -63,14 +68,14 @@ export class RelationController extends CollectionController {
   execute(transaction, ctx, modify) {
     const id = this.parent.getId(ctx)
     return this.parent.execute(transaction, ctx, query => query
+      .clearScope()
       .findById(id)
       .throwIfNotFound()
-      .clearScope()
       // Explicitly only select the foreign key ids for more efficiency.
-      .select(...this.relation.ownerProp.props)
+      .select(...this.relationInstance.ownerProp.props)
       .then(
         model => modify(model
-          .$relatedQuery(this.relation.name)
+          .$relatedQuery(this.relationInstance.name)
           .modify(this.applyScope)
         )
       )
@@ -78,11 +83,8 @@ export class RelationController extends CollectionController {
   }
 
   collection = {
-    delete(ctx, modify) {
-      // TODO: What's the expected behavior in relations? Currently it deletes
-      // the members, but shouldn't it unrelate instead? Answer: It should
-      // respect the owner setting in relations, to be introduced.
-      return super.delete(ctx, modify)
-    }
+  }
+
+  member = {
   }
 }

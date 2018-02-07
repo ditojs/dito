@@ -175,11 +175,13 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, { ...options, fetch: true })
   }
 
-  _handleGraph(method, data, defaults, options, restoreRelations) {
-    const graph = new GraphProcessor(this.modelClass(), data, restoreRelations,
-      mergeOptions(defaults, options))
+  _handleGraph(method, data, options, defaultOptions, settings = {}) {
+    // Only process graph option overrides if the user doesn't override options.
+    settings = !options ? { ...settings, processOverrides: true } : settings
+    options = options || defaultOptions
+    const graph = new GraphProcessor(this.modelClass(), data, options, settings)
     const builder = super[method](graph.getData(), graph.getOptions())
-    if (restoreRelations) {
+    if (settings.restoreRelations) {
       builder.runAfter(result => graph.restoreRelations(result))
     }
     return builder
@@ -187,42 +189,42 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   insertGraph(data, options) {
     return this._handleGraph('insertGraph',
-      data, insertGraphOptions, options, true)
+      data, options, insertGraphOptions, { restoreRelations: true })
   }
 
   insertGraphAndFetch(data, options) {
     return this._handleGraph('insertGraphAndFetch',
-      data, insertGraphOptions, options, true)
+      data, options, insertGraphOptions, { restoreRelations: true })
   }
 
   upsertGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, upsertGraphOptions, options, false)
+      data, options, upsertGraphOptions)
   }
 
   upsertGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, upsertGraphOptions, options, false)
+      data, options, upsertGraphOptions)
   }
 
   updateGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, updateGraphOptions, options, false)
+      data, options, updateGraphOptions)
   }
 
   updateGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, updateGraphOptions, options, false)
+      data, options, updateGraphOptions)
   }
 
   patchGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, patchGraphOptions, options, false)
+      data, options, patchGraphOptions)
   }
 
   patchGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, patchGraphOptions, options, false)
+      data, options, patchGraphOptions)
   }
 
   upsertGraphAndFetchById(id, data, options) {
@@ -468,10 +470,6 @@ const updateGraphOptions = {
   unrelate: true,
   update: true,
   insertMissing: false
-}
-
-function mergeOptions(defaults, options) {
-  return options ? { ...defaults, ...options } : defaults
 }
 
 function addEagerScope(modelClass, expr, scopes, filters, isRoot = true) {

@@ -2,7 +2,7 @@ import { RelationExpression } from 'objection'
 import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
 
 export default class GraphProcessor {
-  constructor(rootModelClass, data, restoreRelations, options) {
+  constructor(rootModelClass, data, options, settings) {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
     this.data = data
@@ -16,11 +16,13 @@ export default class GraphProcessor {
     this.overrides = {}
     this.numOptions = Object.keys(options).length
     this.numOverrides = 0
-    this.collectOverrides()
-    if (this.numOverrides > 0) {
-      this.processOverrides()
+    if (settings.processOverrides) {
+      this.collectOverrides()
+      if (this.numOverrides > 0) {
+        this.processOverrides()
+      }
     }
-    this.removedRelations = restoreRelations && {}
+    this.removedRelations = settings.restoreRelations && {}
   }
 
   getOptions() {

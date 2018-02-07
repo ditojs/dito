@@ -1,3 +1,4 @@
+import { isObject } from '@ditojs/utils'
 import { asArguments } from '@/utils'
 import { Controller } from './Controller'
 import ControllerAction from './ControllerAction'
@@ -8,6 +9,8 @@ export class CollectionController extends Controller {
   constructor(app, namespace) {
     super(app, namespace)
     this.isOneToOne = false
+    this.relate = false
+    this.unrelate = false
   }
 
   initialize(isRoot) {
@@ -79,12 +82,11 @@ export class CollectionController extends Controller {
   }
 
   executeAndFetchById(action, ctx, modify) {
-    const id = this.getId(ctx)
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     return this.execute(this.graph, ctx, query =>
-      query[name](id, ctx.request.body)
-        .modify(modify)
+      query[name](this.getId(ctx), ctx.request.body)
         .throwIfNotFound()
+        .modify(modify)
     )
   }
 
@@ -99,22 +101,29 @@ export class CollectionController extends Controller {
     },
 
     delete(ctx, modify) {
-      // TODO: Decide if we should set status? status = 204
       return this.execute(false, ctx, query => query
         .clearScope()
-        // TODO: Test if filter works for delete
         .find(ctx.query)
+        .modify(query => this.isOneToOne && query.throwIfNotFound())
         .modify(modify)
-        // TODO: .throwIfNotFound() on isOneToOne?
-        .delete()
+        .modify(query => this.unrelate ? query.unrelate() : query.delete())
         .then(count => ({ count }))
       )
     },
 
     insert(ctx, modify) {
-      return this.executeAndFetch('insert', ctx, modify).then(model => {
+      const query = this.relate
+        // Use patchGraphAndFetch() to handle relates for us.
+        ? this.execute(true, ctx, query => query
+          .patchGraphAndFetch(ctx.request.body, { relate: true })
+          .modify(modify)
+        )
+        : this.executeAndFetch('insert', ctx, modify)
+      return query.then(result => {
         ctx.status = 201
-        ctx.set('Location', this.getUrl('collection', model.id))
+        if (isObject(result)) {
+          ctx.set('Location', this.getUrl('collection', result.id))
+        }
       })
     },
 
@@ -129,23 +138,20 @@ export class CollectionController extends Controller {
 
   member = {
     find(ctx, modify) {
-      const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
-        .findById(id, ctx.query)
+        .findById(this.getId(ctx), ctx.query)
         .throwIfNotFound()
         .modify(modify)
       )
     },
 
     delete(ctx, modify) {
-      const id = this.getId(ctx)
       return this.execute(false, ctx, query => query
         .clearScope()
-        // TODO: query filters??
-        .modify(modify)
-        .deleteById(id)
+        .findById(this.getId(ctx), ctx.query)
         .throwIfNotFound()
-        // Consider status 204 and no result
+        .modify(modify)
+        .modify(query => this.unrelate ? query.unrelate() : query.delete())
         .then(count => ({ count }))
       )
     },
