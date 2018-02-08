@@ -131,24 +131,25 @@ export default {
         )
     },
 
-    getItemLabel(item, index) {
+    getItemLabel(item, index, fallback = true) {
       const { itemLabel, columns } = this.listSchema
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
         'name'
-      let title = isFunction(itemLabel) ? itemLabel(item)
-        : item[itemProperty]
-      if (!title) {
-        const label = this.getLabel(this.getFormSchema(item))
+      let label = isFunction(itemLabel)
+        ? itemLabel(item)
+        : pick(item[itemProperty], null)
+      if (!label && fallback) {
+        const formLabel = this.getLabel(this.getFormSchema(item))
         const id = this.getItemId(item)
-        title = id
+        label = id
           ? ` (id:${id})`
           : index !== undefined
             ? ` ${index + 1}`
             : ''
-        title = `${label}${title}`
+        label = `${formLabel}${label}`
       }
-      return title
+      return label
     },
 
     setData(data) {

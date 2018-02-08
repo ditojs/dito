@@ -2,46 +2,52 @@
   ul.dito-panel(
     v-if="components"
   )
-    template(
-      v-for="(compSchema, key) in components"
+    li.dito-container.dito-title(
+      v-if="label !== undefined && schema.label !== false"
     )
-      li.dito-container(
-        v-show="getValue(compSchema, 'visible', true)"
-        :style="getStyle(compSchema)"
-        :key="key"
+      dito-label(
+        :name="dataPath"
+        :text="panelLabel"
       )
-        dito-label(
-          :name="key"
-          :text="getLabel(compSchema)"
-        )
-        component.dito-component(
-          :is="getTypeComponent(compSchema.type)"
-          :schema="compSchema"
-          :name="key"
-          :data="data"
-          :meta="meta"
-          :store="getChildStore(key)"
-          :disabled="getValue(compSchema, 'disabled', false) || disabled"
-          :class="{ \
-            'dito-fill': hasFill(compSchema), \
-            'dito-has-errors': $errors.has(key) \
-          }"
-        )
-        dito-errors(
-          v-if="$errors.has(key)"
-          :name="key"
-        )
+    li.dito-container(
+      v-for="(compSchema, key) in components"
+      v-show="getValue(compSchema, 'visible', true)"
+      :style="getStyle(compSchema)"
+      :key="key"
+    )
+      dito-label(
+        v-if="compSchema.label !== false"
+        :name="key"
+        :text="getLabel(compSchema)"
+      )
+      component.dito-component(
+        :is="getTypeComponent(compSchema.type)"
+        :schema="compSchema"
+        :name="key"
+        :data="data"
+        :meta="meta"
+        :store="getChildStore(key)"
+        :disabled="getValue(compSchema, 'disabled', false) || disabled"
+        :class="{ \
+          'dito-fill': hasFill(compSchema), \
+          'dito-has-errors': $errors.has(key) \
+        }"
+      )
+      dito-errors(
+        v-if="$errors.has(key)"
+        :name="key"
+      )
 </template>
 
 <style lang="sass">
-$half-spacing: $form-spacing / 2
+$half-form-spacing: $form-spacing / 2
 .dito
   .dito-panel
     display: flex
     flex-flow: row wrap
     position: relative
     align-items: baseline
-    margin: (-$form-spacing) (-$half-spacing)
+    margin: (-$form-spacing) (-$half-form-spacing)
     &::after
       // Use a pseudo element to display a ruler with proper margins
       display: 'block'
@@ -50,20 +56,25 @@ $half-spacing: $form-spacing / 2
       padding-bottom: $form-margin
       border-bottom: $border-style
       // Add removed $form-spacing again to the ruler
-      margin: 0 $half-spacing $form-margin
-  .dito-container
-    flex: 1 0 auto
-    align-self: stretch
-    position: relative // for .dito-errors
-    box-sizing: border-box
-    // Cannot use margin here as it needs to be part of box-sizing for
-    // percentages in flex-basis to work.
-    padding: $form-spacing $half-spacing
-    .dito-component.dito-fill
-      // Safari doesn't like changing width on checkboxes, so exclude them here
-      &:not(.dito-checkbox):not(.dito-radio-button)
-        display: block
-        width: 100%
+      margin: 0 $half-form-spacing $form-margin
+    .dito-container
+      flex: 1 0 auto
+      align-self: stretch
+      position: relative // for .dito-errors
+      box-sizing: border-box
+      // Cannot use margin here as it needs to be part of box-sizing for
+      // percentages in flex-basis to work.
+      padding: $form-spacing $half-form-spacing
+      .dito-component.dito-fill
+        // Safari doesn't like changing width on checkboxes, so exclude them here
+        &:not(.dito-checkbox):not(.dito-radio-button)
+          display: block
+          width: 100%
+    .dito-title
+      flex-basis: 100%;
+      padding-bottom: 0
+      .dito-label
+        margin-bottom: 0
   .dito-list
     .dito-panel
       &::after
@@ -85,6 +96,7 @@ export default DitoComponent.component('dito-panel', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    label: { type: String },
     disabled: { type: Boolean, required: true }
   },
 
@@ -105,6 +117,11 @@ export default DitoComponent.component('dito-panel', {
         }
       }
       return components
+    },
+
+    panelLabel() {
+      const label = this.getLabel(this.schema)
+      return this.label ? `${label}: ${this.label}` : label
     }
   },
 

@@ -56,6 +56,7 @@
                 :meta="nestedMeta"
                 :dataPath="`${name}/${index}`"
                 :store="store"
+                :label="getItemLabel(item, index, false)"
                 :disabled="loading"
               )
               component(
