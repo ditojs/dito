@@ -161,12 +161,12 @@ $buttons-padding: 2px
           &:first-child
             > td
               // ...except if there is a thead as well, then they need it again.
-              border-top: 1px solid $color-white
+              border-top-color: $color-white
           > td
             padding: $table-spacing
             & + td
               // Also, only add horizontal borders if there is a heaader
-              border-left: 1px solid $color-white
+              border-top-color: $color-white
         &,
         & + tfoot
           > tr
@@ -176,7 +176,7 @@ $buttons-padding: 2px
         > tr
           > td
             // All by its own, ther is no need for the border.
-            border-top: 0
+            border-top-color: $color-lightest
     // Nested .dito-list:
     .dito-list
       // Give nested lists a bit of shadow
