@@ -13,7 +13,7 @@
         v-for="option in options"
       )
         optgroup(
-          v-if="schema.options.groupBy"
+          v-if="groupBy"
           :label="option[groupLabelKey]"
         )
           option(

@@ -12,6 +12,7 @@ export default {
   asyncComputed: {
     options() {
       const { options } = this.schema
+      let data = null
       if (isObject(options)) {
         const url = options.url ||
           options.apiPath && this.api.url + options.apiPath
@@ -20,9 +21,7 @@ export default {
           return axios.get(url)
             .then(response => {
               this.loading = false
-              return options.groupBy
-                ? this.groupBy(response.data, options.groupBy)
-                : response.data
+              return this.processOptions(response.data)
             })
             .catch(error => {
               this.loading = false
@@ -34,10 +33,10 @@ export default {
           // dataFormComponent, meaning the first parent data that isn't nested.
           const getAtPath = (data, path) => data && getDataPath(data, path)
           const { dataPath } = options
-          const data = /^[./]/.test(dataPath)
+          data = /^[./]/.test(dataPath)
             ? getAtPath(this.dataFormComponent?.data, dataPath.substr(1))
             : getAtPath(this.data, dataPath)
-          if (this.schema.options.relate) {
+          if (this.relate) {
             // If ids are missing and we want to relate, add temporary ids,
             // marked it with a '@' at the beginning.
             if (data) {
@@ -48,60 +47,64 @@ export default {
               }
             }
           }
-          return data
         } else {
-          let { values } = options
-          if (isFunction(values)) {
-            values = values.call(this, this.data)
-          }
-          if (isArray(values)) {
-            return values
-          }
+          const { values } = options
+          data = isFunction(values)
+            ? values.call(this, this.data)
+            : values
         }
-      } else if (isArray(options)) {
-        // Use an array of strings to provide the values be shown and selected.
-        return options
+      } else {
+        data = options
       }
+      return this.processOptions(data)
     }
   },
 
   computed: {
     selectValue: {
       get() {
-        return this.schema.options.relate
+        return this.relate
           ? this.optionToValue(this.value)
           : this.value
       },
       set(value) {
-        this.value = this.schema.options.relate
+        this.value = this.relate
           ? this.valueToOption(value)
           : value
       }
+    },
+
+    groupBy() {
+      return this.schema.options.groupBy
+    },
+
+    relate() {
+      return this.schema.options.relate
     },
 
     optionLabelKey() {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
       return this.schema.options.labelKey ||
-       isObject(this.options?.[0]) && 'label' || null
+        isObject(this.options?.[0]) && 'label' ||
+        null
     },
 
     optionValueKey() {
       // If no valueKey was provided but the options are objects, assume a
       // default value of 'value':
-      const { options } = this.schema
-      return options.valueKey ||
-        options.relate && 'id' ||
+      return this.schema.options.valueKey ||
+        this.relate && 'id' ||
         isObject(this.options?.[0]) && 'value' ||
         null
     },
 
     groupLabelKey() {
-      return this.schema.options.groupBy && 'name' || null
+      return this.groupBy && 'name' || null
     },
 
     groupOptionsKey() {
-      return this.schema.options.groupBy && 'options' || null
+      return this.groupBy && 'options' || null
     }
   },
 
@@ -114,50 +117,78 @@ export default {
       return this.optionLabelKey ? option[this.optionLabelKey] : option
     },
 
-    groupBy(options, groupBy) {
-      const grouped = {}
-      return options.reduce((results, option) => {
-        const name = option[groupBy]
-        let entry = grouped[name]
-        if (!entry) {
-          entry = grouped[name] = {
-            name, // :group-label, see groupLabelKey()
-            options: [] // :group-values, see groupOptionsKey()
+    processOptions(options) {
+      if (!isArray(options)) {
+        return []
+      }
+      if (this.groupBy) {
+        const grouped = {}
+        options = options.reduce((results, option) => {
+          const name = option[this.groupBy]
+          let entry = grouped[name]
+          if (!entry) {
+            entry = grouped[name] = {
+              [this.groupLabelKey]: name,
+              [this.groupOptionsKey]: []
+            }
+            results.push(entry)
           }
-          results.push(entry)
-        }
-        entry.options.push(option)
-        return results
-      }, [])
+          entry.options.push(option)
+          return results
+        }, [])
+      }
+      if (this.relate) {
+        // Inject a non-enumerable $relate property so processPayload() can
+        // remove everything except the id for relates, and generate correct
+        // #ref / #id values for temporary ids.
+        options = this.mapOptions(options, option =>
+          Object.defineProperty({ ...option }, '$relate', {
+            enumerable: false,
+            configurable: true,
+            writeable: true,
+            value: true
+          })
+        )
+      }
+      return options
     },
 
-    findOption(options, value, groupBy) {
+    findOption(options, value, groupBy = this.groupBy) {
       // Search for the option object with the given value and return the
       // whole object.
-      if (options) {
-        for (const option of options) {
-          if (groupBy) {
-            const found = this.findOption(option.options, value, false)
-            if (found) {
-              return found
-            }
-          } else if (value === this.getOptionValue(option)) {
-            return option
+      for (const option of options) {
+        if (groupBy) {
+          const found = this.findOption(option.options, value, false)
+          if (found) {
+            return found
           }
+        } else if (value === this.getOptionValue(option)) {
+          return option
         }
       }
     },
 
+    mapOptions(options, callback, groupBy = this.groupBy) {
+      if (groupBy) {
+        return options.map(group => ({
+          ...group,
+          [this.groupOptionsKey]: this.mapOptions(
+            group[this.groupOptionsKey], callback, false
+          )
+        }))
+      } else {
+        return options.map(option => callback(option))
+      }
+    },
+
     valueToOption(value) {
-      // Convert value to options object, since vue-multiselect can't map that
-      // itself unfortunately. `track-by` is used for :key mapping it seems.
       return this.optionValueKey
-        ? this.findOption(this.options, value, this.schema.options.groupBy)
+        ? this.findOption(this.options, value)
         : value
     },
 
     optionToValue(value) {
-      // When changes happend, store the mapped value instead of full object.
+      // When changes happen, store the mapped value instead of full object.
       return this.optionValueKey
         ? value?.[this.optionValueKey]
         : value

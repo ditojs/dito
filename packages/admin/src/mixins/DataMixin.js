@@ -285,28 +285,26 @@ export default {
       // dito-server specific handling of relates within graphs:
       // Find and group entries with temporary ids, and convert them to
       // #id / #ref pairs.
-      const encounterdIds = {}
 
       const process = data => {
         if (data) {
           if (isObject(data)) {
-            let processed = {}
-            for (const key in data) {
-              processed[key] = process(data[key])
+            const { id } = data
+            const processed = {}
+            if (data.$relate) {
+              processed.id = id
+            } else {
+              for (const key in data) {
+                processed[key] = process(data[key])
+              }
             }
 
-            const { id } = processed
+            // Special handling is required for temporary ids:
             if (/^@/.test(id)) {
-              // The first time a temporary id is encountered, replace it with
-              // the #id key. All other encounters are replaced with shallow
-              // #ref references to it.
-              if (!encounterdIds[id]) {
-                encounterdIds[id] = true
-                delete processed.id
-                processed['#id'] = id
-              } else {
-                processed = { '#ref': id }
-              }
+              // Replace temporary id with #id / #ref, based on $relate which is
+              // true when relating to an item and undefined when creating it.
+              delete processed.id
+              processed[data.$relate ? '#ref' : '#id'] = id
             }
 
             data = processed
