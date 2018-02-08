@@ -19,7 +19,8 @@ export class DatabaseError extends WrappedError {
     // Remove knex SQL query and move to separate `query` property.
     // TODO: Fix this properly in Knex / Objection instead, see:
     // https://gitter.im/Vincit/objection.js?at=5a68728f5a9ebe4f75ca40b0
-    const [, sql, message] = error.message.match(/^(.*?)\s*-\s*([^-]*)$/)
+    const [, sql, message] = error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
+      [null, null, error.message]
     super(Object.setPrototypeOf({ message, sql }, error),
       { message: 'Database error', status })
   }
