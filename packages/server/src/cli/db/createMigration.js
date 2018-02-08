@@ -122,6 +122,8 @@ async function collectModelTables(modelClass, app, tables) {
               `inTable('${app.normalizeIdentifier(toClass)}')`,
               // Only relations that aren't owners of their data should cascade
               // on delete.
+              // TODO: Find the reverse relation of this in the other class and
+              // only add `onDelete('CASCADE')` if that one's an owner.
               !owner && `onDelete('CASCADE')`
             )
           }

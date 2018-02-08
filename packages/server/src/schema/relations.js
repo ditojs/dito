@@ -146,7 +146,7 @@ function convertRelation(schema, models) {
     if (isObject(modify)) {
       // Convert a find-filter object to a filter function, same as in the
       // handling of definition.scopes, see Model.js
-      modify = builder => builder.find(modify)
+      modify = query => query.find(modify)
     }
     return {
       relation: relationClass,

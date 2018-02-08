@@ -124,6 +124,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.knex().raw(...args)
   }
 
+  selectRaw(...args) {
+    return this.select(this.raw(...args))
+  }
+
   async truncate() {
     if (this.isPostgreSQL()) {
       // Include `cascade` in PostgreSQL truncate queries.
@@ -412,6 +416,8 @@ for (const key of [
   'havingNotBetween', 'orHavingNotBetween',
 
   'select', 'first', 'pluck',
+
+  // TODO: column(), columns()?
 
   'groupBy', 'orderBy'
 ]) {
