@@ -17,6 +17,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
     this._joinedRelations = {}
+    this._rawSelects = {}
     this._eagerScopeId = 0
     this.clearScope(true)
   }
@@ -25,7 +26,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     const copy = super.clone()
     copy._propertyRefsAllowed = this._propertyRefsAllowed
     copy._propertyRefsCache = this._propertyRefsCache
-    copy._joinedRelations = clone(this._joinedRelations)
+    copy._joinedRelations = { ...this._joinedRelations }
+    copy._rawSelects = { ...this._rawSelects }
     copy._scopes = clone(this._scopes)
     return copy
   }
@@ -127,7 +129,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   selectRaw(...args) {
-    return this.select(this.raw(...args))
+    const raw = this.raw(...args)
+    // Prevent multiple calls of selectRaw() with the same statement from being
+    // executed multiple times, e.g. through named filters chaining.
+    const key = raw.toString().trim()
+    if (!this._rawSelects[key]) {
+      this._rawSelects[key] = true
+      this.select(raw)
+    }
+    return this
   }
 
   async truncate() {
@@ -457,8 +467,8 @@ for (const key of [
 }
 
 // Allow all joinRelation() operations to be called multiple times for the same
-// relation, as long as the same operation is being executed, but only actually
-// execute the first time it's encountered to prevent SQL errors.
+// relation, as long as the same operation is being executed with the same args,
+// but only execute the first time it's encountered to prevent SQL errors.
 // This is to allow more flexible combinations of scopes and eager statements.
 for (const key of [
   'joinRelation', 'innerJoinRelation', 'outerJoinRelation', 'leftJoinRelation',
