@@ -16,6 +16,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
+    this._joinedRelations = {}
     this._eagerScopeId = 0
     this.clearScope(true)
   }
@@ -24,6 +25,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     const copy = super.clone()
     copy._propertyRefsAllowed = this._propertyRefsAllowed
     copy._propertyRefsCache = this._propertyRefsCache
+    copy._joinedRelations = clone(this._joinedRelations)
     copy._scopes = clone(this._scopes)
     return copy
   }
@@ -60,7 +62,7 @@ export class QueryBuilder extends objection.QueryBuilder {
         const name = `_eagerScope${++this._eagerScopeId}_`
         const filters = {
           ...this._eagerFilters,
-          [name]: query => query.applyScope(scope, true)
+          [name]: query => query.applyScope(scope, eager)
         }
         this.eager(
           addEagerScope(
@@ -451,6 +453,32 @@ for (const key of [
       args[i] = convertArgument(args[i])
     }
     return method.call(this, ...args)
+  }
+}
+
+// Allow all joinRelation() operations to be called multiple times for the same
+// relation, as long as the same operation is being executed, but only actually
+// execute the first time it's encountered to prevent SQL errors.
+// This is to allow more flexible combinations of scopes and eager statements.
+for (const key of [
+  'joinRelation', 'innerJoinRelation', 'outerJoinRelation', 'leftJoinRelation',
+  'leftOuterJoinRelation', 'rightJoinRelation', 'rightOuterJoinRelation',
+  'fullOuterJoinRelation'
+]) {
+  const method = QueryBuilder.prototype[key]
+  QueryBuilder.prototype[key] = function (expr, ...args) {
+    const identifier = `${expr} ${JSON.stringify(args)}`
+    const joined = this._joinedRelations[identifier]
+    if (joined === key) {
+      return this
+    } else if (joined) {
+      throw new QueryBuilderError(
+        `Unable to execute different join operations for the same relation ` +
+        `expression ${expr} within the same query`
+      )
+    }
+    this._joinedRelations[identifier] = key
+    return method.call(this, expr, ...args)
   }
 }
 

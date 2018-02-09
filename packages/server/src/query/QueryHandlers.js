@@ -17,9 +17,11 @@ QueryHandlers.register({
   },
 
   scope(builder, key, value) {
-    for (const scope of asArray(value)) {
-      builder.mergeScope(scope)
-    }
+    builder.mergeScope(...asArray(value))
+  },
+
+  eagerScope(builder, key, value) {
+    builder.mergeEagerScope(...asArray(value))
   },
 
   range(builder, key, value) {
