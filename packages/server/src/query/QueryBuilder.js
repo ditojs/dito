@@ -417,9 +417,7 @@ for (const key of [
   'havingBetween', 'orHavingBetween',
   'havingNotBetween', 'orHavingNotBetween',
 
-  'select', 'first', 'pluck',
-
-  // TODO: column(), columns()?
+  'select', 'column', 'columns', 'first', 'pluck',
 
   'groupBy', 'orderBy'
 ]) {
@@ -448,7 +446,9 @@ for (const key of [
       return arg
     }
 
-    const length = ['select', 'first'].includes(key) ? args.length : 1
+    const length = ['select', 'column', 'columns', 'first'].includes(key)
+      ? args.length
+      : 1
     for (let i = 0; i < length; i++) {
       args[i] = convertArgument(args[i])
     }
