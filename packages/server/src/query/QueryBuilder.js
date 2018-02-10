@@ -46,6 +46,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   childQueryOf(query, fork) {
     if (fork) {
       this.clearScope()
+    } else if (this.modelClass() === query.modelClass()) {
+      // Pass on the parent's scopes if this child query is for the same
+      // modelClass as the parent. This resolves the issue of all `*AndFetch()`
+      // methods returning their data without any scopes applied to them.
+      this._scopes = clone(query._scopes)
     }
     return super.childQueryOf(query, fork)
   }
