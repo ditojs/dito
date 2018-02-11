@@ -11,6 +11,10 @@ export default function () {
       return name in registry
     },
 
+    keys() {
+      return Object.keys(registry)
+    },
+
     register(name, handler) {
       if (isObject(name)) {
         Object.assign(registry, name)

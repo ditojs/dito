@@ -67,6 +67,19 @@ QueryHandlers.register({
   pick: applyPropertiesExpression
 })
 
+QueryHandlers.getAllowed = function (exclude) {
+  return this.keys().reduce((obj, key) => {
+    if (!exclude?.includes(key)) {
+      obj[key] = true
+    }
+    return obj
+  }, Object.create(null))
+}
+
+QueryHandlers.getAllowedFindOne = function () {
+  return this.getAllowed(['order', 'range'])
+}
+
 function processPropertyRefs(builder, key, value, parts) {
   // Recursively translate object based filters to string based ones for
   // standardized processing in PropertyRef.

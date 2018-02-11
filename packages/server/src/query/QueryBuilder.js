@@ -5,7 +5,9 @@ import { QueryHandlers } from './QueryHandlers'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
-import { isArray, isPlainObject, isString, clone } from '@ditojs/utils'
+import {
+  isObject, isPlainObject, isString, isArray, asArray, clone
+} from '@ditojs/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -28,13 +30,13 @@ export class QueryBuilder extends objection.QueryBuilder {
     return copy
   }
 
-  async execute() {
+  execute() {
     for (const { scope, eager } of this._scopes) {
       this.applyScope(scope, eager)
     }
     // If this isn't a find query, meaning if it defines any write operations or
-    // special selects, then eager and order needs to be cleared. This is to not
-    // mess with special selects such as count(), etc...
+    // special selects, then 'eager' and 'orderBy' operations need to be
+    // cleared. This is to not mess with special selects such as count(), etc...
     if (!this.isFind() || this.hasSelects() && !this.has('select')) {
       this.clearEager()
       this.clear('orderBy')
@@ -279,23 +281,36 @@ export class QueryBuilder extends objection.QueryBuilder {
     return query ? this.findOne(query, allowed) : this
   }
 
-  find(query = {}, allowed) {
+  find(query, allowed, _fallback = false) {
+    if (!query) return this
+    const allowedHandlers = QueryHandlers.getAllowed()
+    const allowedLookup = !allowed
+      ? allowedHandlers
+      : isObject(allowed)
+        ? allowed
+        // Convert allowed array to object lookup for quicker access.
+        : asArray(allowed).reduce((obj, name) => {
+          obj[name] = true
+          return obj
+        }, {})
+    if (_fallback) {
+      // If there are no known handlers in the query, use the whole query object
+      // for the `where` handler to fall-back on Objection's format of findOne()
+      const hasHandlers = !!Object.keys(query).find(key => allowedHandlers[key])
+      if (!hasHandlers) {
+        query = {
+          where: query
+        }
+      }
+    }
     this._relationsToJoin = {}
-    // Convert allowed array to object lookup for quicker access.
-    const allowedLookup = allowed?.reduce((lookup, name) => {
-      lookup[name] = true
-      return lookup
-    }, {})
     for (const [key, value] of Object.entries(query)) {
-      const inAllowed = allowedLookup?.[key]
-      if (!allowed || inAllowed) {
+      const inAllowed = allowedLookup[key]
+      if (inAllowed) {
         const queryHandler = QueryHandlers.get(key)
         if (queryHandler) {
           queryHandler(this, key, value)
-        } else if (!inAllowed) {
-          // Only complain if the key isn't explicitly listed in allowed even
-          // if we don't recognize it here, so RrestGenerator can add the
-          // remote method arguments to the allowed list and let them pass.
+        } else {
           throw new QueryBuilderError(
             `Invalid query parameter '${key}' in '${key}=${value}'.`)
         }
@@ -311,14 +326,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   findOne(query, allowed) {
-    // TODO: This clashes with and overrides objection's own definition of
-    // findOne(), decide if that's ok?
-    // Only allow the following query filters on single queries:
-    const allowedQueries = { where: 1, eager: 1, omit: 1, pick: 1, scope: 1 }
+    if (!query) return this
+    // Only allow the suitable query handlers on find-one queries:
+    const allowedHandlers = QueryHandlers.getAllowedFindOne()
     allowed = allowed
-      ? allowed.filter(str => allowedQueries[str])
-      : Object.keys(allowedQueries)
-    return this.find(query, allowed).first()
+      ? allowed.filter(str => allowedHandlers[str])
+      : Object.keys(allowedHandlers)
+    // Pass `true` for `_fallback` to emulate and remain compatible with
+    // Objection's `findOne()`
+    return this.find(query, allowed, true).first()
   }
 
   allowProperties(refs) {
