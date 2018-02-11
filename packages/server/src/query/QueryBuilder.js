@@ -342,7 +342,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     // or decide to remove all together.
     if (refs) {
       this._propertyRefsAllowed = this._propertyRefsAllowed || {}
-      for (const { key } of this.getPropertyRefs(refs, { checkAllow: false })) {
+      for (const ref of asArray(refs)) {
+        const { key } = this.getPropertyRef(ref, { checkAllowed: false })
         this._propertyRefsAllowed[key] = true
       }
     } else {
@@ -351,22 +352,23 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  getPropertyRefs(refs, { parseDir = false, checkAllowed = true } = {}) {
-    refs = isString(refs) ? refs.split(/\s*\|\s*/) : refs
+  getPropertyRef(ref, { parseDirection = false, checkAllowed = true } = {}) {
     const cache = this._propertyRefsCache
     // Pass on _propertyRefsAllowed to make sure there are only allowed
     // properties in the query parameters.
-    return refs.map(ref => cache[ref] ||
-      (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDir,
-        checkAllowed && this._propertyRefsAllowed)))
+    if (!(ref in cache)) {
+      cache[ref] = new PropertyRef(ref, this.modelClass(), parseDirection,
+        checkAllowed && this._propertyRefsAllowed)
+    }
+    return cache[ref]
   }
 
-  parseQueryFilter(key, value) {
+  parseQueryFilter(where, key, value) {
     const parts = key.split(/\s*:\s*/)
     const filterName = parts.length === 1
       ? value === null
         ? 'null'
-        : 'eq'
+        : 'is'
       : parts.length === 2
         ? parts[1]
         : null
@@ -374,24 +376,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (!queryFilter) {
       throw new QueryBuilderError(`Invalid filter in '${key}=${value}'.`)
     }
-    const propertyRefs = this.getPropertyRefs(parts[0])
-    for (const ref of propertyRefs) {
-      const { relation } = ref
-      if (relation?.isOneToOne()) {
-        this._relationsToJoin[relation.name] = relation
-      }
+    const ref = this.getPropertyRef(parts[0])
+    const { relation } = ref
+    if (relation?.isOneToOne()) {
+      this._relationsToJoin[relation.name] = relation
     }
-    if (propertyRefs.length === 1) {
-      propertyRefs[0].applyQueryFilter(this, this, queryFilter, value)
-    } else {
-      // If there are multiple property refs, they are combined with an `OR`
-      // operator.
-      this.where(builder => {
-        for (const ref of propertyRefs) {
-          ref.applyQueryFilter(this, builder, queryFilter, value, 'or')
-        }
-      })
-    }
+    ref.applyQueryFilter(this, this, queryFilter, where, value)
   }
 
   static mixin(target) {

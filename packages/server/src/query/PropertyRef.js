@@ -1,9 +1,7 @@
 import { QueryBuilderError } from '@/errors'
-import { capitalize } from '@ditojs/utils'
 
-// TODO:
-// Make this work with objection.ref():
-// https://github.com/Vincit/objection.js/blob/master/doc/includes/API.md#global-query-building-helpers
+// TODO: Make this work with objection.ref():
+// http://vincit.github.io/objection.js/#ref
 // So that query references can works with JSON attributes as well. See if this
 // also works with eager query data, nested relationships, etc?
 // TODO: semi-colon is currently used for operators. Use a different string
@@ -12,15 +10,15 @@ import { capitalize } from '@ditojs/utils'
 // current '|' approach that only works with one operator for multiple fields.
 // See: https://flask-restless.readthedocs.io/en/stable/searchformat.html
 export default class PropertyRef {
-  constructor(str, modelClass, parseDir, allowed) {
-    if (parseDir) {
+  constructor(str, modelClass, parseDirection, allowed) {
+    if (parseDirection) {
       // Support direction for order statements
-      const [key, dir] = str.trim().split(/\s+/)
-      if (dir && !['asc', 'desc'].includes(dir)) {
-        throw new QueryBuilderError(`Invalid order direction: '${dir}'.`)
+      const [key, direction] = str.trim().split(/\s+/)
+      if (direction && !['asc', 'desc'].includes(direction)) {
+        throw new QueryBuilderError(`Invalid order direction: '${direction}'.`)
       }
       this.key = key
-      this.dir = dir
+      this.direction = direction
     } else {
       this.key = str.trim()
     }
@@ -52,7 +50,7 @@ export default class PropertyRef {
       this.propertyName)
   }
 
-  fullColumnName(builder) {
+  getFullColumnName(builder) {
     // Use the full name for the relation identifiers, to always be unambiguous.
     const ref = this.relation
       ? this.relation.name
@@ -60,22 +58,21 @@ export default class PropertyRef {
     return `${ref}.${this.columnName}`
   }
 
-  applyQueryFilter(builder, query, queryFilter, value, boolOp) {
-    const { method, args } = queryFilter(builder, this, value, this.modelClass)
-    const whereMethod = boolOp ? `${boolOp}${capitalize(method)}` : method
+  applyQueryFilter(builder, query, queryFilter, where, value) {
+    const { method, args } = queryFilter(builder, where, this, value)
     const { relation } = this
     // TODO: Figure out if all relations work, since we're using full relation
-    // ids for relations (see fullColumnName())
+    // ids for relations (see getFullColumnName())
     if (relation && !relation.isOneToOne()) {
       const subQuery = relation.findQuery(
         relation.relatedModelClass.query(), {
           ownerIds: relation.ownerProp.refs(builder)
         }
       )
-      subQuery[whereMethod](...args)
+      subQuery[method](...args)
       query.whereExists(subQuery)
     } else {
-      query[whereMethod](...args)
+      query[method](...args)
     }
   }
 }

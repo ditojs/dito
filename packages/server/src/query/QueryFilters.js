@@ -2,10 +2,10 @@ import Registry from './Registry'
 
 export const QueryFilters = new Registry()
 
-function where(builder, ref, operator, value, method = 'where') {
-  const columnName = ref.fullColumnName(builder)
+function filter(builder, where = 'where', method = '', ref, operator, value) {
+  const columnName = ref.getFullColumnName(builder)
   return {
-    method,
+    method: `${where}${method}`,
     args: operator
       ? [columnName, operator, value]
       : value !== undefined
@@ -15,37 +15,45 @@ function where(builder, ref, operator, value, method = 'where') {
 }
 
 QueryFilters.register({
-  in(builder, ref, value) {
-    return where(builder, ref, null, value.split(','), 'whereIn')
+  is(builder, where, ref, value) {
+    return filter(builder, where, '', ref, null, value)
   },
 
-  notIn(builder, ref, value) {
-    return where(builder, ref, null, value.split(','), 'whereNotIn')
+  not(builder, where, ref, value) {
+    return filter(builder, where, 'Not', ref, null, value)
   },
 
-  between(builder, ref, value) {
-    return where(builder, ref, null, value.split(','), 'whereBetween')
+  in(builder, where, ref, value) {
+    return filter(builder, where, 'In', ref, null, value.split(','))
   },
 
-  notBetween(builder, ref, value) {
-    return where(builder, ref, null, value.split(','), 'whereNotBetween')
+  notIn(builder, where, ref, value) {
+    return filter(builder, where, 'NotIn', ref, null, value.split(','))
   },
 
-  null(builder, ref) {
-    return where(builder, ref, null, undefined, 'whereNull')
+  between(builder, where, ref, value) {
+    return filter(builder, where, 'Between', ref, null, value.split(','))
   },
 
-  notNull(builder, ref) {
-    return where(builder, ref, null, undefined, 'whereNotNull')
+  notBetween(builder, where, ref, value) {
+    return filter(builder, where, 'NotBetween', ref, null, value.split(','))
   },
 
-  empty(builder, ref) {
-    return where(builder, ref, '=', '')
+  null(builder, where, ref) {
+    return filter(builder, where, 'Null', ref, null, undefined)
   },
 
-  notEmpty(builder, ref) {
+  notNull(builder, where, ref) {
+    return filter(builder, where, 'NotNull', ref, null, undefined)
+  },
+
+  empty(builder, where, ref) {
+    return filter(builder, where, '', ref, '=', '')
+  },
+
+  notEmpty(builder, where, ref) {
     // https://stackoverflow.com/a/42723975/1163708
-    return where(builder, ref, '>', '')
+    return filter(builder, where, '', ref, '>', '')
   }
 })
 
@@ -65,7 +73,6 @@ QueryFilters.register({
 const operators = {
   eq: '=',
   ne: '!=',
-  not: 'is not',
   lt: '<',
   lte: '<=',
   gt: '>',
@@ -73,13 +80,13 @@ const operators = {
   between: 'between',
   notBetween: 'not between',
   like: 'like',
-  noteLike: 'not like',
+  notLike: 'not like',
   iLike: 'ilike',
   notILike: 'not ilike'
 }
 
 for (const [key, operator] of Object.entries(operators)) {
-  QueryFilters.register(key, (builder, ref, value) =>
-    where(builder, ref, operator, value)
+  QueryFilters.register(key, (builder, where, ref, value) =>
+    filter(builder, where, '', ref, operator, value)
   )
 }

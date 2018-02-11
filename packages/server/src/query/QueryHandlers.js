@@ -7,7 +7,11 @@ export const QueryHandlers = new Registry()
 
 QueryHandlers.register({
   where(builder, key, value) {
-    processPropertyRefs(builder, null, value)
+    processWherePropertyRefs(builder, 'where', null, value)
+  },
+
+  orWhere(builder, key, value) {
+    processWherePropertyRefs(builder, 'orWhere', null, value)
   },
 
   eager(builder, key, value) {
@@ -36,9 +40,10 @@ QueryHandlers.register({
 
   order(builder, key, value) {
     if (value) {
-      for (const ref of builder.getPropertyRefs(value, { parseDir: true })) {
-        const { dir = 'asc', relation } = ref
-        const columnName = ref.fullColumnName(builder)
+      for (const entry of asArray(value)) {
+        const ref = builder.getPropertyRef(entry, { parseDirection: true })
+        const { direction = 'asc', relation } = ref
+        const columnName = ref.getFullColumnName(builder)
         let orderName = columnName
         if (relation) {
           if (!relation.isOneToOne()) {
@@ -50,7 +55,7 @@ QueryHandlers.register({
           orderName = `${relation.name}${capitalize(ref.propertyName)}`
           builder.select(`${columnName} as ${orderName}`)
         }
-        builder.orderBy(columnName, dir).skipUndefined()
+        builder.orderBy(columnName, direction).skipUndefined()
       }
     }
   }
@@ -69,7 +74,7 @@ QueryHandlers.getAllowedFindOne = function () {
   return this.getAllowed(['order', 'range'])
 }
 
-function processPropertyRefs(builder, key, value, parts) {
+function processWherePropertyRefs(builder, where, key, value, parts) {
   // Recursively translate object based filters to string based ones for
   // standardized processing in PropertyRef.
   // So this...
@@ -82,27 +87,16 @@ function processPropertyRefs(builder, key, value, parts) {
   //     }
   //   }
   // ...becomes that:
-  //   { key: 'firstName:like', value: 'Jo%' }
-  //   { key: 'lastName', value: '%oe' }
-  //   { key: 'messages.text:like', value: '% and %' }
-  //   { key: 'messages.unread', value: true }
-  // TODO: figure out and implement a better convention for handling
-  // AND / OR queries in object notation.
-  // TODO: Support / figure out object literal notation for null filters
-  //    latest: builder => builder.whereNull('nextId')
-  // -> Compare with LoopBack and others
-  // TODO: Figure out and implement better parsing of string
-  // "?where=..."" queries, including AND / OR.
-  // e.g.
-  // /api/dummies?where=firstName=Joe&where=lastName=Doe
-  // /api/dummies?where=firstName=Joe|where=lastName=Doe
-  // NOTE: The 2nd notation will end up as a string containing
-  // "firstName=Joe|where=lastName=Doe", and will have to be further
-  // parsed.
+  //   { ref: 'firstName:like', value: 'Jo%' }
+  //   { ref: 'lastName', value: '%oe' }
+  //   { ref: 'messages.text:like', value: '% and %' }
+  //   { ref: 'messages.unread', value: true }
+  //
+  // TODO: Think about better ways to handle and / or in Object notation.
   if (isObject(value)) {
     for (const [subKey, subValue] of Object.entries(value)) {
       // NOTE: We need to clone `parts` for branching:
-      processPropertyRefs(builder, subKey, subValue,
+      processWherePropertyRefs(builder, where, subKey, subValue,
         parts ? [...parts, key] : [])
     }
   } else if (parts) {
@@ -110,13 +104,13 @@ function processPropertyRefs(builder, key, value, parts) {
     const filterName = QueryFilters.has(key) && key
     if (!filterName) parts.push(key)
     const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
-    builder.parseQueryFilter(ref, value)
+    builder.parseQueryFilter(where, ref, value)
   } else if (isString(value)) {
     const [ref, val] = value.split('=')
-    builder.parseQueryFilter(ref, val)
+    builder.parseQueryFilter(where, ref, val)
   } else if (isArray(value)) {
     for (const entry of value) {
-      processPropertyRefs(builder, null, entry)
+      processWherePropertyRefs(builder, where, null, entry)
     }
   } else {
     throw new QueryBuilderError(`Unsupported 'where' query: '${value}'.`)
