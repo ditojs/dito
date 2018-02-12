@@ -1,17 +1,17 @@
 import { QueryBuilderError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
-import { QueryFilters } from './QueryFilters'
+import { QueryWhereFilters } from './QueryWhereFilters'
 import Registry from './Registry'
 
 export const QueryParameters = new Registry()
 
 QueryParameters.register({
   where(builder, key, value) {
-    processWherePropertyRefs(builder, 'where', null, value)
+    processWhereFilters(builder, 'where', null, value)
   },
 
   orWhere(builder, key, value) {
-    processWherePropertyRefs(builder, 'orWhere', null, value)
+    processWhereFilters(builder, 'orWhere', null, value)
   },
 
   eager(builder, key, value) {
@@ -85,8 +85,8 @@ QueryParameters.getAllowedFindOne = function () {
   return this.getAllowed(['order', 'range'])
 }
 
-function processWherePropertyRefs(builder, where, key, value, parts) {
-  // Recursively translate object based filters to string based ones for
+function processWhereFilters(builder, where, key, value, parts) {
+  // Recursively translate object based where filters to string based ones for
   // standardized processing in PropertyRef.
   // So this...
   //   where: {
@@ -107,21 +107,21 @@ function processWherePropertyRefs(builder, where, key, value, parts) {
   if (isObject(value)) {
     for (const [subKey, subValue] of Object.entries(value)) {
       // NOTE: We need to clone `parts` for branching:
-      processWherePropertyRefs(builder, where, subKey, subValue,
+      processWhereFilters(builder, where, subKey, subValue,
         parts ? [...parts, key] : [])
     }
   } else if (parts) {
     // Recursive call in object parsing
-    const filterName = QueryFilters.has(key) && key
+    const filterName = QueryWhereFilters.has(key) && key
     if (!filterName) parts.push(key)
     const ref = `${parts.join('.')}${filterName ? ` ${filterName}` : ''}`
-    builder.parseQueryFilter(where, ref, value)
+    builder.parseWhereFilter(where, ref, value)
   } else if (isString(value)) {
     const [ref, val] = value.split('=')
-    builder.parseQueryFilter(where, ref, val)
+    builder.parseWhereFilter(where, ref, val)
   } else if (isArray(value)) {
     for (const entry of value) {
-      processWherePropertyRefs(builder, where, null, entry)
+      processWhereFilters(builder, where, null, entry)
     }
   } else {
     throw new QueryBuilderError(`Unsupported 'where' query: '${value}'.`)

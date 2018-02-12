@@ -1,6 +1,6 @@
 import Registry from './Registry'
 
-export const QueryFilters = new Registry()
+export const QueryWhereFilters = new Registry()
 
 function filter(builder, where = 'where', method = '', ref, operator, value) {
   const columnName = ref.getFullColumnName(builder)
@@ -14,7 +14,7 @@ function filter(builder, where = 'where', method = '', ref, operator, value) {
   }
 }
 
-QueryFilters.register({
+QueryWhereFilters.register({
   is(builder, where, ref, value) {
     return filter(builder, where, '', ref, null, value)
   },
@@ -86,7 +86,7 @@ const operators = {
 }
 
 for (const [key, operator] of Object.entries(operators)) {
-  QueryFilters.register(key, (builder, where, ref, value) =>
+  QueryWhereFilters.register(key, (builder, where, ref, value) =>
     filter(builder, where, '', ref, operator, value)
   )
 }

@@ -58,7 +58,7 @@ export default class PropertyRef {
     return `${ref}.${this.columnName}`
   }
 
-  applyQueryFilter(builder, query, queryFilter, where, value) {
+  applyWhereFilter(builder, query, queryFilter, where, value) {
     const { method, args } = queryFilter(builder, where, this, value)
     const { relation } = this
     // TODO: Figure out if all relations work, since we're using full relation

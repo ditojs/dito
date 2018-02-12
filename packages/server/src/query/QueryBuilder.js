@@ -2,7 +2,7 @@ import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
-import { QueryFilters } from './QueryFilters'
+import { QueryWhereFilters } from './QueryWhereFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
 import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
@@ -357,10 +357,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     )
   }
 
-  parseQueryFilter(where, key, value) {
+  parseWhereFilter(where, key, value) {
     let [ref, filter] = key.split(/\s/)
     filter = filter || (value === null ? 'null' : 'is')
-    const queryFilter = filter && QueryFilters.get(filter)
+    const queryFilter = filter && QueryWhereFilters.get(filter)
     if (!queryFilter) {
       throw new QueryBuilderError(`Invalid filter in '${key}=${value}'.`)
     }
@@ -369,7 +369,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (relation?.isOneToOne()) {
       this._relationsToJoin[relation.name] = relation
     }
-    propertyRef.applyQueryFilter(this, this, queryFilter, where, value)
+    propertyRef.applyWhereFilter(this, this, queryFilter, where, value)
   }
 
   static mixin(target) {
