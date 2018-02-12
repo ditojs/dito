@@ -1,2 +1,2 @@
-export * from './TimeStampMixin'
-export * from './UserMixin'
+export * from './controllers'
+export * from './models'

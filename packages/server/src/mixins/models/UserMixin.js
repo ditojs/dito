@@ -4,7 +4,7 @@ import { Strategy as LocalStrategy } from 'passport-local'
 import { AuthenticationError } from '@/errors'
 import { toCallback } from '@ditojs/utils'
 
-export const UserMixin = modelClass => class extends modelClass {
+export const UserMixin = Model => class extends Model {
   static properties = {
     username: {
       type: 'string',
