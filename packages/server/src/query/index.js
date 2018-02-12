@@ -1,3 +1,3 @@
 export * from './QueryBuilder'
 export * from './QueryFilters'
-export * from './QueryHandlers'
+export * from './QueryParameters'

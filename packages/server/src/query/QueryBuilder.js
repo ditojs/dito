@@ -1,7 +1,7 @@
 import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryBuilderError, RelationError } from '@/errors'
-import { QueryHandlers } from './QueryHandlers'
+import { QueryParameters } from './QueryParameters'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
@@ -281,11 +281,13 @@ export class QueryBuilder extends objection.QueryBuilder {
     return query ? this.findOne(query, allowed) : this
   }
 
-  find(query, allowed, _fallback = false) {
+  find(query, allowed, checkRootWhere = true) {
+    // Use `true` as default for `checkRootWhere` on findOne() to emulate and
+    // remain compatible with Objection's `findOne()`
     if (!query) return this
-    const allowedHandlers = QueryHandlers.getAllowed()
+    const allowedParams = QueryParameters.getAllowed()
     const allowedLookup = !allowed
-      ? allowedHandlers
+      ? allowedParams
       : isObject(allowed)
         ? allowed
         // Convert allowed array to object lookup for quicker access.
@@ -293,11 +295,11 @@ export class QueryBuilder extends objection.QueryBuilder {
           obj[name] = true
           return obj
         }, {})
-    if (_fallback) {
+    if (checkRootWhere) {
       // If there are no known handlers in the query, use the whole query object
       // for the `where` handler to fall-back on Objection's format of findOne()
-      const hasHandlers = !!Object.keys(query).find(key => allowedHandlers[key])
-      if (!hasHandlers) {
+      const hasParams = !!Object.keys(query).find(key => allowedParams[key])
+      if (!hasParams) {
         query = {
           where: query
         }
@@ -307,9 +309,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const [key, value] of Object.entries(query)) {
       const inAllowed = allowedLookup[key]
       if (inAllowed) {
-        const queryHandler = QueryHandlers.get(key)
-        if (queryHandler) {
-          queryHandler(this, key, value)
+        const paramHandler = QueryParameters.get(key)
+        if (paramHandler) {
+          paramHandler(this, key, value)
         } else {
           throw new QueryBuilderError(
             `Invalid query parameter '${key}' in '${key}=${value}'.`)
@@ -325,16 +327,14 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(query, allowed) {
+  findOne(query, allowed, checkRootWhere = true) {
     if (!query) return this
     // Only allow the suitable query handlers on find-one queries:
-    const allowedHandlers = QueryHandlers.getAllowedFindOne()
+    const allowedParams = QueryParameters.getAllowedFindOne()
     allowed = allowed
-      ? allowed.filter(str => allowedHandlers[str])
-      : Object.keys(allowedHandlers)
-    // Pass `true` for `_fallback` to emulate and remain compatible with
-    // Objection's `findOne()`
-    return this.find(query, allowed, true).first()
+      ? allowed.filter(str => allowedParams[str])
+      : Object.keys(allowedParams)
+    return this.find(query, allowed, checkRootWhere).first()
   }
 
   allowProperties(refs) {

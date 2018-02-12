@@ -3,9 +3,9 @@ import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import { QueryFilters } from './QueryFilters'
 import Registry from './Registry'
 
-export const QueryHandlers = new Registry()
+export const QueryParameters = new Registry()
 
-QueryHandlers.register({
+QueryParameters.register({
   where(builder, key, value) {
     processWherePropertyRefs(builder, 'where', null, value)
   },
@@ -72,7 +72,7 @@ QueryHandlers.register({
   pick: applyPropertiesExpression
 })
 
-QueryHandlers.getAllowed = function (exclude) {
+QueryParameters.getAllowed = function (exclude) {
   return this.keys().reduce((obj, key) => {
     if (!exclude?.includes(key)) {
       obj[key] = true
@@ -81,7 +81,7 @@ QueryHandlers.getAllowed = function (exclude) {
   }, Object.create(null))
 }
 
-QueryHandlers.getAllowedFindOne = function () {
+QueryParameters.getAllowedFindOne = function () {
   return this.getAllowed(['order', 'range'])
 }
 
