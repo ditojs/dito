@@ -29,10 +29,11 @@ export class RelationController extends CollectionController {
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.name)}${chalk.white(':')}`, this.level)
-    // Copy over all fields in the relation object except `relation` & `member`,
+    // Copy over all fields in the relation object except the ones that are
+    // going to be inherited in `initialize()` (relation, member, allow),
     // for settings like scope, eagerScope, etc.
     for (const key in this.object) {
-      if (!['relation', 'member'].includes(key)) {
+      if (!['relation', 'member', 'allow'].includes(key)) {
         this[key] = this.object[key]
       }
     }
@@ -40,7 +41,7 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  inheritValues(type) {
+  inheritValues(type, filter = false) {
     // Since RelationController are mapped to nested `relations` objects in
     // ModelController parents and are never extended directly in the user land
     // code, inheritance works differently here than on the other controllers:
@@ -50,18 +51,17 @@ export class RelationController extends CollectionController {
     // using the values in its parent controller and potential super-classes,
     // falling back on the definitions in RelationController and its inherited
     // values from ModelController.
-    return this.filterValues(
-      setupPropertyInheritance(
-        this.object,
-        // On the relation objects, the `collection` actions are stored in a
-        // `relation` object, to make sense both for one- and many-relations:
-        type === 'collection' ? 'relation' : type,
-        // Set up inheritance for RelationController's override of `collection`
-        // and `member` objects, and use it as the base for further inheritance.
-        // NOTE: Currently they're empty, but they could allow local overrides.
-        super.inheritValues(type)
-      )
+    const values = setupPropertyInheritance(
+      this.object,
+      // On the relation objects, the `collection` actions are stored in a
+      // `relation` object, to make sense both for one- and many-relations:
+      type === 'collection' ? 'relation' : type,
+      // Set up inheritance for RelationController's override of `collection`
+      // and `member` objects, and use it as the base for further inheritance.
+      // NOTE: Currently they're empty, but they could allow local overrides.
+      super.inheritValues(type)
     )
+    return filter ? this.filterValues(values) : values
   }
 
   // @override

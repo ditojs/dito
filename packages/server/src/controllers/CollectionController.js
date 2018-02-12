@@ -25,6 +25,11 @@ export class CollectionController extends Controller {
       : null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
+    this.allow = this.inheritValues('allow')
+    this.findOptions = {
+      allow: this.allow.params,
+      checkRootWhere: false
+    }
   }
 
   // @override
@@ -90,11 +95,13 @@ export class CollectionController extends Controller {
     )
   }
 
+  allow = {}
+
   collection = {
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
       return this.execute(false, ctx, query =>
-        query[find](ctx.query)
+        query[find](ctx.query, this.findOptions)
           .modify(modify)
           .then(result => result || null)
       )
@@ -103,7 +110,7 @@ export class CollectionController extends Controller {
     delete(ctx, modify) {
       return this.execute(false, ctx, query => query
         .clearScope()
-        .find(ctx.query)
+        .find(ctx.query, this.findOptions)
         .modify(query => this.isOneToOne && query.throwIfNotFound())
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
@@ -139,7 +146,7 @@ export class CollectionController extends Controller {
   member = {
     find(ctx, modify) {
       return this.execute(false, ctx, query => query
-        .findById(this.getId(ctx), ctx.query)
+        .findById(this.getId(ctx), ctx.query, this.findOptions)
         .throwIfNotFound()
         .modify(modify)
       )
@@ -148,7 +155,7 @@ export class CollectionController extends Controller {
     delete(ctx, modify) {
       return this.execute(false, ctx, query => query
         .clearScope()
-        .findById(this.getId(ctx), ctx.query)
+        .findById(this.getId(ctx), ctx.query, this.findOptions)
         .throwIfNotFound()
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())

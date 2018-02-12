@@ -120,7 +120,7 @@ function displayUsage(app, config, details) {
   console.log('------------------------------------------------------------')
 }
 
-// Wrap the default eval with a handler that resolves promises
+// Wraps the default eval with a handler that resolves promises
 function wrapEval({ eval: defaultEval }) {
   return async function (code, context, file, cb) {
     return defaultEval.call(this, code, context, file, async (err, result) => {

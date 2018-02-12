@@ -11,24 +11,24 @@ export class ModelController extends CollectionController {
     super.initialize(true)
     this.modelClass = this.modelClass ||
       this.app.models[camelize(pluralize.singular(this.name), true)]
-    this.relations = this.setupRelations('relations')
+    this.relations = this.setupRelations()
   }
 
-  setupRelations(type) {
+  setupRelations() {
     // Inherit `relations` from the controller and / or its sub-classes,
     // then build inheritance chains for each relation object through
     // `setupPropertyInheritance()`, before creating the relation controllers,
     // which then carry on with setting up inheritance for their actions.
-    const objects = this.inheritValues(type)
-    for (const name in objects) {
-      const object = setupPropertyInheritance(objects, name)
-      if (isObject(object)) {
-        objects[name] = this.setupRelation(object, name)
+    const relations = this.inheritValues('relations', true)
+    for (const name in relations) {
+      const relation = setupPropertyInheritance(relations, name)
+      if (isObject(relation)) {
+        relations[name] = this.setupRelation(relation, name)
       } else {
         throw new ControllerError(this, `Invalid relation '${name}'.`)
       }
     }
-    return objects
+    return relations
   }
 
   setupRelation(object, name) {

@@ -52,5 +52,10 @@ export function setupPropertyInheritance(object, key, baseValue = null) {
     }
     current = parent
   }
+  if (baseValue && !(key in object)) {
+    // If there wasn't any override in the chain, and we have a baseValue,
+    // set up direct inheritance from that now.
+    object[key] = Object.setPrototypeOf({}, baseValue)
+  }
   return object[key]
 }

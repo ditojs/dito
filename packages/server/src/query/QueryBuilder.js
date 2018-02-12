@@ -5,9 +5,7 @@ import { QueryParameters } from './QueryParameters'
 import { QueryFilters } from './QueryFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
-import {
-  isObject, isPlainObject, isString, isArray, asArray, clone
-} from '@ditojs/utils'
+import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -273,28 +271,26 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.deleteById(id)
   }
 
-  findById(id, query, allowed) {
+  findById(id, query, options) {
     // Remember id so Model.createNotFoundError() can report it:
     this.context({ byId: id })
     // Add support for optional query to findById()
     super.findById(id)
-    return query ? this.findOne(query, allowed) : this
+    return query ? this.findOne(query, options) : this
   }
 
-  find(query, allowed, checkRootWhere = true) {
+  find(query, { allow, checkRootWhere = true }) {
     // Use `true` as default for `checkRootWhere` on findOne() to emulate and
     // remain compatible with Objection's `findOne()`
     if (!query) return this
     const allowedParams = QueryParameters.getAllowed()
-    const allowedLookup = !allowed
+    const allowed = !allow
       ? allowedParams
-      : isObject(allowed)
-        ? allowed
-        // Convert allowed array to object lookup for quicker access.
-        : asArray(allowed).reduce((obj, name) => {
-          obj[name] = true
-          return obj
-        }, {})
+      // Convert allow array to object lookup for quicker access.
+      : asArray(allow).reduce((obj, name) => {
+        obj[name] = true
+        return obj
+      }, {})
     if (checkRootWhere) {
       // If there are no known handlers in the query, use the whole query object
       // for the `where` handler to fall-back on Objection's format of findOne()
@@ -307,18 +303,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
-      const inAllowed = allowedLookup[key]
-      if (inAllowed) {
-        const paramHandler = QueryParameters.get(key)
-        if (paramHandler) {
-          paramHandler(this, key, value)
-        } else {
-          throw new QueryBuilderError(
-            `Invalid query parameter '${key}' in '${key}=${value}'.`)
-        }
-      } else {
+      if (!allowed[key]) {
         throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }
+      const paramHandler = QueryParameters.get(key)
+      if (!paramHandler) {
+        throw new QueryBuilderError(
+          `Invalid query parameter '${key}' in '${key}=${value}'.`)
+      }
+      paramHandler(this, key, value)
     }
     // TODO: Is this really needed? Looks like it works without it also...
     for (const relation of Object.values(this._relationsToJoin)) {
@@ -327,14 +320,14 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(query, allowed, checkRootWhere = true) {
+  findOne(query, { allow, checkRootWhere = true }) {
     if (!query) return this
     // Only allow the suitable query handlers on find-one queries:
     const allowedParams = QueryParameters.getAllowedFindOne()
-    allowed = allowed
-      ? allowed.filter(str => allowedParams[str])
+    allow = allow
+      ? allow.filter(str => allowedParams[str])
       : Object.keys(allowedParams)
-    return this.find(query, allowed, checkRootWhere).first()
+    return this.find(query, { allow, checkRootWhere }).first()
   }
 
   allowProperties(refs) {

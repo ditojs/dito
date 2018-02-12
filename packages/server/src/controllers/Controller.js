@@ -98,7 +98,7 @@ export class Controller {
     return values
   }
 
-  inheritValues(type) {
+  inheritValues(type, filter = false) {
     // Gets the controller class's instance field for a given action type, e.g.
     // `controller` (Controller), `collection`, `member` (ModelController,
     // RelationController), `relation` (RelationController), and sets up an
@@ -121,7 +121,7 @@ export class Controller {
       let values = parent[type]
       if (parentClass !== Controller) {
         // Recursively set up inheritance chains.
-        values = parent.inheritValues(type)
+        values = parent.inheritValues(type, filter)
       }
       entry[type] = values
     }
@@ -134,11 +134,11 @@ export class Controller {
     const values = parentValues
       ? Object.setPrototypeOf(currentValues, parentValues)
       : currentValues
-    return this.filterValues(values)
+    return filter ? this.filterValues(values) : values
   }
 
   setupActions(type) {
-    const actions = this.inheritValues(type)
+    const actions = this.inheritValues(type, true)
     for (const name in actions) {
       const action = actions[name]
       if (isFunction(action)) {

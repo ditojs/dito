@@ -81,8 +81,8 @@ const operators = {
   notBetween: 'not between',
   like: 'like',
   notLike: 'not like',
-  iLike: 'ilike',
-  notILike: 'not ilike'
+  ilike: 'ilike',
+  notIlike: 'not ilike'
 }
 
 for (const [key, operator] of Object.entries(operators)) {
