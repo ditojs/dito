@@ -18,11 +18,6 @@ export class CollectionController extends Controller {
     this.idParam = this.level ? `id${this.level}` : 'id'
     this.graph = !!this.graph
     this.scope = this.scope || null
-    this.applyScope = this.scope || this.eagerScope
-      ? query => query
-        .scope(...asArguments(this.scope))
-        .eagerScope(...asArguments(this.eagerScope))
-      : null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
     this.allow = this.inheritValues('allow')
@@ -72,6 +67,18 @@ export class CollectionController extends Controller {
       { patch: true }
     )
     return id
+  }
+
+  handleScopes(query) {
+    if (this.allow.scopes) {
+      query.allowScope(...this.allow.scopes)
+    }
+    if (this.scope) {
+      query.scope(...asArguments(this.scope))
+    }
+    if (this.eagerScope) {
+      query.eagerScope(...asArguments())
+    }
   }
 
   execute(/* transaction, ctx, modify */) {

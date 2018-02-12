@@ -16,13 +16,14 @@ export class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
+    this._allowScopes = null
     this.clearScope(true)
   }
 
   clone() {
     const copy = super.clone()
     copy._propertyRefsCache = this._propertyRefsCache
-    copy._scopes = clone(this._scopes)
+    copy._copyScopes(this)
     return copy
   }
 
@@ -48,7 +49,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       // Pass on the parent's scopes if this child query is for the same
       // modelClass as the parent. This resolves the issue of all `*AndFetch()`
       // methods returning their data without any scopes applied to them.
-      this._scopes = clone(query._scopes)
+      this._copyScopes(query)
     }
     return super.childQueryOf(query, fork)
   }
@@ -83,6 +84,28 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
+  _mergeScopes(scopes, eager) {
+    for (const scope of scopes) {
+      if (this._allowScopes && !this._allowScopes[scope]) {
+        throw new QueryBuilderError(`Query scope '${scope}' is not allowed.`)
+      }
+      const entry = this._scopes.find(entry => entry.scope === scope)
+      if (entry) {
+        entry.eager = entry.eager || eager
+      } else {
+        this._scopes.push({ scope, eager })
+      }
+    }
+    return this
+  }
+
+  _copyScopes(source) {
+    this._scopes = clone(source._scopes)
+    this._allowScopes = source._allowScopes
+      ? { ...source._allowScopes }
+      : null
+  }
+
   clearScope(addDefault = false) {
     this._scopes = addDefault
       ? [{
@@ -91,6 +114,13 @@ export class QueryBuilder extends objection.QueryBuilder {
       }]
       : []
     return this
+  }
+
+  allowScope(...scopes) {
+    this._allowScopes = this._allowScopes || {}
+    for (const scope of scopes) {
+      this._allowScopes[scope] = true
+    }
   }
 
   scope(...scopes) {
@@ -107,18 +137,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   mergeEagerScope(...scopes) {
     return this._mergeScopes(scopes, true)
-  }
-
-  _mergeScopes(scopes, eager) {
-    for (const scope of scopes) {
-      const entry = this._scopes.find(entry => entry.scope === scope)
-      if (entry) {
-        entry.eager = entry.eager || eager
-      } else {
-        this._scopes.push({ scope, eager })
-      }
-    }
-    return this
   }
 
   break() {

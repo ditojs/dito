@@ -47,7 +47,7 @@ export class ModelController extends CollectionController {
     // NOTE: ctx is required by RelationController.execute()
     const call = modelClass => modify(
       modelClass.query()
-        .modify(this.applyScope)
+        .modify(query => this.handleScopes(query))
     )
     return transaction
       ? objection.transaction(this.modelClass, call)

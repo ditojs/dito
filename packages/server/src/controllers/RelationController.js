@@ -76,7 +76,7 @@ export class RelationController extends CollectionController {
       .then(
         model => modify(model
           .$relatedQuery(this.relationInstance.name)
-          .modify(this.applyScope)
+          .modify(query => this.handleScopes(query))
         )
       )
     )

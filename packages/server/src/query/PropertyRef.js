@@ -4,11 +4,6 @@ import { QueryBuilderError } from '@/errors'
 // http://vincit.github.io/objection.js/#ref
 // So that query references can works with JSON attributes as well. See if this
 // also works with eager query data, nested relationships, etc?
-// TODO: semi-colon is currently used for operators. Use a different string
-// to mark operators instead, e.g. 'jsonColumn:details.name::like=%bla%'
-// TODO: Implement proper OR queries through where objects rather than the
-// current '|' approach that only works with one operator for multiple fields.
-// See: https://flask-restless.readthedocs.io/en/stable/searchformat.html
 export default class PropertyRef {
   constructor(str, modelClass, { parseDirection = false } = {}) {
     if (parseDirection) {
