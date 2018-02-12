@@ -392,6 +392,8 @@ export class Model extends objection.Model {
 
   // Only pick properties for database JSON that is mentioned in the schema.
   static pickJsonSchemaProperties = true
+  // See https://gitter.im/Vincit/objection.js?at=5a81f859ce68c3bc7479d65a
+  static useLimitInFirst = true
 
   static get definition() {
     // Check if we already have a definition object for this class and return it
