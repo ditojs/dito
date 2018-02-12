@@ -22,7 +22,7 @@ export class CollectionController extends Controller {
     this.member = this.isOneToOne ? {} : this.setupActions('member')
     this.allow = this.inheritValues('allow')
     this.findOptions = {
-      allow: this.allow.params,
+      allow: this.allow.param,
       checkRootWhere: false
     }
   }
@@ -70,14 +70,20 @@ export class CollectionController extends Controller {
   }
 
   handleScopes(query) {
-    if (this.allow.scopes) {
-      query.allowScope(...this.allow.scopes)
+    if (this.allow.scope) {
+      query.allowScope(
+        ...this.allow.scope,
+        // Also include the scopes defined by scope and eagerScope so these can
+        // pass through.
+        ...asArguments(this.scope),
+        ...asArguments(this.eagerScope)
+      )
     }
     if (this.scope) {
       query.scope(...asArguments(this.scope))
     }
     if (this.eagerScope) {
-      query.eagerScope(...asArguments())
+      query.eagerScope(...asArguments(this.eagerScope))
     }
   }
 
