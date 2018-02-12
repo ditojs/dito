@@ -60,14 +60,20 @@ export default {
 
     selectValue: {
       get() {
-        return this.relate
-          ? this.optionToValue(this.value)
-          : this.value
+        const convert = value => this.relate
+          ? this.optionToValue(value)
+          : value
+        return isArray(this.value)
+          ? this.value.map(convert)
+          : convert(this.value)
       },
       set(value) {
-        this.value = this.relate
+        const convert = value => this.relate
           ? this.valueToOption(value)
           : value
+        this.value = isArray(value)
+          ? value.map(convert)
+          : convert(value)
       }
     },
 
@@ -127,14 +133,6 @@ export default {
       }
     },
 
-    getOptionValue(option) {
-      return this.optionValueKey ? option[this.optionValueKey] : option
-    },
-
-    getOptionLabel(option) {
-      return this.optionLabelKey ? option[this.optionLabelKey] : option
-    },
-
     processOptions(options) {
       if (!isArray(options)) {
         return []
@@ -175,21 +173,6 @@ export default {
       }, [])
     },
 
-    findOption(options, value, groupBy = this.groupBy) {
-      // Search for the option object with the given value and return the
-      // whole object.
-      for (const option of options) {
-        if (groupBy) {
-          const found = this.findOption(option.options, value, null)
-          if (found) {
-            return found
-          }
-        } else if (value === this.getOptionValue(option)) {
-          return option
-        }
-      }
-    },
-
     mapOptions(options, callback, groupBy = this.groupBy) {
       if (groupBy) {
         return options.map(group => ({
@@ -203,17 +186,38 @@ export default {
       }
     },
 
+    findOption(options, value, groupBy = this.groupBy) {
+      // Search for the option object with the given value and return the
+      // whole object.
+      for (const option of options) {
+        if (groupBy) {
+          const found = this.findOption(option.options, value, null)
+          if (found) {
+            return found
+          }
+        } else if (value === this.optionToValue(option)) {
+          return option
+        }
+      }
+    },
+
     valueToOption(value) {
       return this.optionValueKey
         ? this.findOption(this.options, value)
         : value
     },
 
-    optionToValue(value) {
+    optionToValue(option) {
       // When changes happen, store the mapped value instead of full object.
       return this.optionValueKey
-        ? value?.[this.optionValueKey]
-        : value
+        ? option?.[this.optionValueKey]
+        : option
+    },
+
+    optionToLabel(option) {
+      return this.optionLabelKey
+        ? option?.[this.optionLabelKey]
+        : option
     }
   }
 }

@@ -9,13 +9,13 @@
           :name="name"
           type="checkbox"
           :title="label"
-          :value="getOptionValue(option)"
-          v-model="value"
+          :value="optionToValue(option)"
+          v-model="selectValue"
           v-validate="validations"
           :data-vv-as="label"
           :disabled="disabled"
         )
-        | {{ getOptionLabel(option) }}
+        | {{ optionToLabel(option) }}
 </template>
 
 <style lang="sass">

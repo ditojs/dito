@@ -18,14 +18,14 @@
         )
           option(
             v-for="opt in option[groupOptionsKey]"
-            :value="getOptionValue(opt)"
+            :value="optionToValue(opt)"
           )
-            | {{ getOptionLabel(opt) }}
+            | {{ optionToLabel(opt) }}
         option(
           v-else
-          :value="getOptionValue(option)"
+          :value="optionToValue(option)"
         )
-          | {{ getOptionLabel(option) }}
+          | {{ optionToLabel(option) }}
 </template>
 
 <style lang="sass">
