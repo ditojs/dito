@@ -356,32 +356,27 @@ export class QueryBuilder extends objection.QueryBuilder {
     const cache = this._propertyRefsCache
     // Pass on _propertyRefsAllowed to make sure there are only allowed
     // properties in the query parameters.
-    if (!(ref in cache)) {
-      cache[ref] = new PropertyRef(ref, this.modelClass(), parseDirection,
-        checkAllowed && this._propertyRefsAllowed)
-    }
-    return cache[ref]
+    return cache[ref] || (
+      cache[ref] = new PropertyRef(
+        ref, this.modelClass(), parseDirection,
+        checkAllowed && this._propertyRefsAllowed
+      )
+    )
   }
 
   parseQueryFilter(where, key, value) {
-    const parts = key.split(/\s*:\s*/)
-    const filterName = parts.length === 1
-      ? value === null
-        ? 'null'
-        : 'is'
-      : parts.length === 2
-        ? parts[1]
-        : null
-    const queryFilter = filterName && QueryFilters.get(filterName)
+    let [ref, filter] = key.split(/\s/)
+    filter = filter || (value === null ? 'null' : 'is')
+    const queryFilter = filter && QueryFilters.get(filter)
     if (!queryFilter) {
       throw new QueryBuilderError(`Invalid filter in '${key}=${value}'.`)
     }
-    const ref = this.getPropertyRef(parts[0])
-    const { relation } = ref
+    const propertyRef = this.getPropertyRef(ref)
+    const { relation } = propertyRef
     if (relation?.isOneToOne()) {
       this._relationsToJoin[relation.name] = relation
     }
-    ref.applyQueryFilter(this, this, queryFilter, where, value)
+    propertyRef.applyQueryFilter(this, this, queryFilter, where, value)
   }
 
   static mixin(target) {

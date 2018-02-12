@@ -87,9 +87,9 @@ function processWherePropertyRefs(builder, where, key, value, parts) {
   //     }
   //   }
   // ...becomes that:
-  //   { ref: 'firstName:like', value: 'Jo%' }
+  //   { ref: 'firstName like', value: 'Jo%' }
   //   { ref: 'lastName', value: '%oe' }
-  //   { ref: 'messages.text:like', value: '% and %' }
+  //   { ref: 'messages.text like', value: '% and %' }
   //   { ref: 'messages.unread', value: true }
   //
   // TODO: Think about better ways to handle and / or in Object notation.
@@ -103,7 +103,7 @@ function processWherePropertyRefs(builder, where, key, value, parts) {
     // Recursive call in object parsing
     const filterName = QueryFilters.has(key) && key
     if (!filterName) parts.push(key)
-    const ref = `${parts.join('.')}${filterName ? `:${filterName}` : ''}`
+    const ref = `${parts.join('.')}${filterName ? ` ${filterName}` : ''}`
     builder.parseQueryFilter(where, ref, value)
   } else if (isString(value)) {
     const [ref, val] = value.split('=')
