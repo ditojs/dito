@@ -1,11 +1,10 @@
 import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { Model } from './Model'
 import { AuthenticationError } from '@/errors'
 import { toCallback } from '@ditojs/utils'
 
-export class UserModel extends Model {
+export const UserMixin = modelClass => class extends modelClass {
   static properties = {
     username: {
       type: 'string',
