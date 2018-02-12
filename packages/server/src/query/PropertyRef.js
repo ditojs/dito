@@ -10,7 +10,7 @@ import { QueryBuilderError } from '@/errors'
 // current '|' approach that only works with one operator for multiple fields.
 // See: https://flask-restless.readthedocs.io/en/stable/searchformat.html
 export default class PropertyRef {
-  constructor(str, modelClass, parseDirection) {
+  constructor(str, modelClass, { parseDirection = false } = {}) {
     if (parseDirection) {
       // Support direction for order statements
       const [key, direction] = str.trim().split(/\s+/)

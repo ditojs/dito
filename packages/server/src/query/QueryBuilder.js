@@ -277,7 +277,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return query ? this.findOne(query, options) : this
   }
 
-  find(query, { allow, checkRootWhere = true }) {
+  find(query, { allow, checkRootWhere = true } = {}) {
     // Use `true` as default for `checkRootWhere` on findOne() to emulate and
     // remain compatible with Objection's `findOne()`
     if (!query) return this
@@ -317,7 +317,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  findOne(query, { allow, checkRootWhere = true }) {
+  findOne(query, { allow, checkRootWhere = true } = {}) {
     if (!query) return this
     // Only allow the suitable query handlers on find-one queries:
     const allowedParams = QueryParameters.getAllowedFindOne()
@@ -327,10 +327,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.find(query, { allow, checkRootWhere }).first()
   }
 
-  getPropertyRef(ref, { parseDirection = false } = {}) {
+  getPropertyRef(ref, options) {
     const cache = this._propertyRefsCache
     return cache[ref] ||
-      (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDirection))
+      (cache[ref] = new PropertyRef(ref, this.modelClass(), options))
   }
 
   parseWhereFilter(where, key, value) {
