@@ -14,7 +14,6 @@ import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
-    this._propertyRefsAllowed = null
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
     this.clearScope(true)
@@ -22,7 +21,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   clone() {
     const copy = super.clone()
-    copy._propertyRefsAllowed = this._propertyRefsAllowed
     copy._propertyRefsCache = this._propertyRefsCache
     copy._scopes = clone(this._scopes)
     return copy
@@ -313,7 +311,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
       paramHandler(this, key, value)
     }
-    // TODO: Is this really needed? Looks like it works without it also...
     for (const relation of Object.values(this._relationsToJoin)) {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
@@ -330,31 +327,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.find(query, { allow, checkRootWhere }).first()
   }
 
-  allowProperties(refs) {
-    // TODO: Use a more explicit name for this in the context of QueryBuilder,
-    // or decide to remove all together.
-    if (refs) {
-      this._propertyRefsAllowed = this._propertyRefsAllowed || {}
-      for (const ref of asArray(refs)) {
-        const { key } = this.getPropertyRef(ref, { checkAllowed: false })
-        this._propertyRefsAllowed[key] = true
-      }
-    } else {
-      this._propertyRefsAllowed = null
-    }
-    return this
-  }
-
-  getPropertyRef(ref, { parseDirection = false, checkAllowed = true } = {}) {
+  getPropertyRef(ref, { parseDirection = false } = {}) {
     const cache = this._propertyRefsCache
-    // Pass on _propertyRefsAllowed to make sure there are only allowed
-    // properties in the query parameters.
-    return cache[ref] || (
-      cache[ref] = new PropertyRef(
-        ref, this.modelClass(), parseDirection,
-        checkAllowed && this._propertyRefsAllowed
-      )
-    )
+    return cache[ref] ||
+      (cache[ref] = new PropertyRef(ref, this.modelClass(), parseDirection))
   }
 
   parseWhereFilter(where, key, value) {
