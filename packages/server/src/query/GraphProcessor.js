@@ -135,6 +135,15 @@ export default class GraphProcessor {
     }
   }
 
+  shouldRelate(relationPath) {
+    const { relate } = this.overrides
+    return relate
+      // See if the relate overrides contain this particular relation-Path
+      // and only remove and restore relation data if relate is to be used
+      ? relate.includes(relationPath.join('/'))
+      : this.options.relate
+  }
+
   /**
    * Handles relate option by detecting Objection instances in the graph and
    * converting them to shallow id links.
@@ -152,15 +161,7 @@ export default class GraphProcessor {
           // Fill removedRelations with json-pointer -> relation-value pairs,
           // so that we can restore the relations again after the operation in
           // restoreRelations():
-          let { relate } = this.overrides
-          if (relate) {
-            // See if the relate overrides contain this particular relation-Path
-            // and only remove and restore relation data if relate is to be used
-            relate = relate.includes(relationPath.join('/'))
-          } else {
-            relate = this.options.relate
-          }
-          if (relate && this.removedRelations) {
+          if (this.removedRelations && this.shouldRelate(relationPath)) {
             const values = {}
             let hasRelations = false
             for (const key in relations) {
@@ -175,10 +176,11 @@ export default class GraphProcessor {
           }
         } else {
           for (const key in relations) {
-            // Set relate to true for nested objects, so nested relations end
-            // up having it set.
-            clone[key] = this.processRelates(clone[key], [...dataPath, key],
-              [...relationPath, key])
+            clone[key] = this.processRelates(
+              clone[key],
+              [...dataPath, key],
+              [...relationPath, key]
+            )
           }
         }
         return clone
