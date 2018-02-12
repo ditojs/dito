@@ -115,10 +115,8 @@ export default {
           this.loadedOptions = null
           axios.get(url)
             .then(response => {
-              setTimeout(() => {
-                this.setLoading(false)
-                this.loadedOptions = this.processOptions(response.data)
-              }, 1000)
+              this.setLoading(false)
+              this.loadedOptions = this.processOptions(response.data)
             })
             .catch(error => {
               this.setLoading(false)
