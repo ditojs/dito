@@ -17,7 +17,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
     this._allowScopes = null
-    this.clearScope(true)
+    this._clearScopes(true)
   }
 
   clone() {
@@ -29,7 +29,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   execute() {
     for (const { scope, eager } of this._scopes) {
-      this.applyScope(scope, eager)
+      this._applyScopes([scope], eager)
     }
     // If this isn't a find query, meaning if it defines any write operations or
     // special selects, then 'eager' and 'orderBy' operations need to be
@@ -44,7 +44,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   childQueryOf(query, fork) {
     if (fork) {
-      this.clearScope()
+      this._clearScopes(false)
     } else if (this.modelClass() === query.modelClass()) {
       // Pass on the parent's scopes if this child query is for the same
       // modelClass as the parent. This resolves the issue of all `*AndFetch()`
@@ -54,33 +54,21 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.childQueryOf(query, fork)
   }
 
-  applyScope(scope, eager = false) {
-    if (eager) {
-      const modelClass = this.modelClass()
-      if (modelClass.hasScope(scope)) {
-        this.applyFilter(scope)
-      }
-      if (this._eagerExpression) {
-        const name = `_eagerScope${++this._eagerScopeId}_`
-        const filters = {
-          [name]: query => query.applyScope(scope, eager)
-        }
-        this.eager(
-          addEagerScope(
-            this.modelClass(),
-            this._eagerExpression,
-            [name],
-            filters
-          ),
-          {
-            ...this._eagerFilters,
-            ...filters
-          }
-        )
-      }
-    } else {
-      this.applyFilter(scope)
-    }
+  _clearScopes(addDefault) {
+    this._scopes = addDefault
+      ? [{
+        scope: 'default',
+        eager: true
+      }]
+      : []
+    return this
+  }
+
+  _copyScopes(query) {
+    this._scopes = clone(query._scopes)
+    this._allowScopes = query._allowScopes
+      ? { ...query._allowScopes }
+      : null
     return this
   }
 
@@ -99,21 +87,40 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  _copyScopes(source) {
-    this._scopes = clone(source._scopes)
-    this._allowScopes = source._allowScopes
-      ? { ...source._allowScopes }
-      : null
+  _applyScopes(scopes, eager) {
+    if (eager) {
+      const modelClass = this.modelClass()
+      for (const scope of scopes) {
+        if (modelClass.hasScope(scope)) {
+          this.applyFilter(scope)
+        }
+      }
+      if (this._eagerExpression) {
+        const name = `_eagerScope${++this._eagerScopeId}_`
+        const filters = {
+          [name]: query => query._applyScopes(scopes, eager)
+        }
+        this.eager(
+          addEagerScope(
+            this.modelClass(),
+            this._eagerExpression,
+            [name],
+            filters
+          ),
+          {
+            ...this._eagerFilters,
+            ...filters
+          }
+        )
+      }
+    } else {
+      this.applyFilter(...scopes)
+    }
+    return this
   }
 
-  clearScope(addDefault = false) {
-    this._scopes = addDefault
-      ? [{
-        scope: 'default',
-        eager: true
-      }]
-      : []
-    return this
+  clearScope() {
+    return this._clearScopes(false)
   }
 
   allowScope(...scopes) {
@@ -124,19 +131,27 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   scope(...scopes) {
-    return this.clearScope(true).mergeScope(...scopes)
+    return this._clearScopes(true).mergeScope(...scopes)
   }
 
   mergeScope(...scopes) {
     return this._mergeScopes(scopes, false)
   }
 
+  applyScope(...scopes) {
+    return this._applyScopes(scopes, false)
+  }
+
   eagerScope(...scopes) {
-    return this.clearScope(true).mergeEagerScope(...scopes)
+    return this._clearScopes(true).mergeEagerScope(...scopes)
   }
 
   mergeEagerScope(...scopes) {
     return this._mergeScopes(scopes, true)
+  }
+
+  applyEagerScope(...scopes) {
+    return this._applyScopes(scopes, true)
   }
 
   break() {
