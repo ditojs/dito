@@ -3,12 +3,14 @@ import axios from 'axios'
 import {
   isArray, isObject, isString, isFunction, pick, clone
 } from '@ditojs/utils'
+import LoadingMixin from './LoadingMixin'
 
 export default {
+  mixins: [LoadingMixin],
+
   data() {
     return {
-      loadedData: null,
-      loading: false
+      loadedData: null
     }
   },
 
@@ -209,10 +211,6 @@ export default {
           this.setData(this.processResponse(response.data))
         }
       })
-    },
-
-    setLoading(loading) {
-      this.loading = this.appState.loading = loading
     },
 
     hasValidationError(response) {

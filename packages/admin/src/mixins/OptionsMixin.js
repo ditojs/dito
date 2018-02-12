@@ -1,34 +1,33 @@
 import axios from 'axios'
 import { isObject, isArray, isFunction, getDataPath } from '@ditojs/utils'
+import LoadingMixin from './LoadingMixin'
 
 export default {
+  mixins: [LoadingMixin],
+
   data() {
     return {
-      // TODO: Allow handling through RouteMixin if required...
-      loading: false
+      loadedOptions: null
     }
   },
 
-  asyncComputed: {
+  created() {
+    this.loadOptions(this.schema.options)
+  },
+
+  watch: {
+    'schema.options': 'loadOptions'
+  },
+
+  computed: {
     options() {
+      if (this.loadedOptions) {
+        return this.loadedOptions
+      }
       const { options } = this.schema
       let data = null
       if (isObject(options)) {
-        const url = options.url ||
-          options.apiPath && this.api.url + options.apiPath
-        if (url) {
-          this.loading = true
-          return axios.get(url)
-            .then(response => {
-              this.loading = false
-              return this.processOptions(response.data)
-            })
-            .catch(error => {
-              this.loading = false
-              this.$errors.add(this.name, error.response?.data || error.message)
-              return null
-            })
-        } else if (options.dataPath) {
+        if (options.dataPath) {
           // dataPath uses the json-pointer format to reference data in the
           // dataFormComponent, meaning the first parent data that isn't nested.
           const getAtPath = (data, path) => data && getDataPath(data, path)
@@ -57,10 +56,8 @@ export default {
         data = options
       }
       return this.processOptions(data)
-    }
-  },
+    },
 
-  computed: {
     selectValue: {
       get() {
         return this.relate
@@ -109,6 +106,29 @@ export default {
   },
 
   methods: {
+    loadOptions(options) {
+      if (isObject(options)) {
+        const url = options.url ||
+          options.apiPath && this.api.url + options.apiPath
+        if (url) {
+          this.setLoading(true)
+          this.loadedOptions = null
+          axios.get(url)
+            .then(response => {
+              setTimeout(() => {
+                this.setLoading(false)
+                this.loadedOptions = this.processOptions(response.data)
+              }, 1000)
+            })
+            .catch(error => {
+              this.setLoading(false)
+              this.$errors.add(this.name, error.response?.data || error.message)
+              return null
+            })
+        }
+      }
+    },
+
     getOptionValue(option) {
       return this.optionValueKey ? option[this.optionValueKey] : option
     },
@@ -122,20 +142,7 @@ export default {
         return []
       }
       if (this.groupBy) {
-        const grouped = {}
-        options = options.reduce((results, option) => {
-          const name = option[this.groupBy]
-          let entry = grouped[name]
-          if (!entry) {
-            entry = grouped[name] = {
-              [this.groupLabelKey]: name,
-              [this.groupOptionsKey]: []
-            }
-            results.push(entry)
-          }
-          entry.options.push(option)
-          return results
-        }, [])
+        options = this.groupOptions(options)
       }
       if (this.relate) {
         // Inject a non-enumerable $relate property so processPayload() can
@@ -153,12 +160,29 @@ export default {
       return options
     },
 
+    groupOptions(options) {
+      const grouped = {}
+      return options.reduce((results, option) => {
+        const name = option[this.groupBy]
+        let entry = grouped[name]
+        if (!entry) {
+          entry = grouped[name] = {
+            [this.groupLabelKey]: name,
+            [this.groupOptionsKey]: []
+          }
+          results.push(entry)
+        }
+        entry.options.push(option)
+        return results
+      }, [])
+    },
+
     findOption(options, value, groupBy = this.groupBy) {
       // Search for the option object with the given value and return the
       // whole object.
       for (const option of options) {
         if (groupBy) {
-          const found = this.findOption(option.options, value, false)
+          const found = this.findOption(option.options, value, null)
           if (found) {
             return found
           }
@@ -173,7 +197,7 @@ export default {
         return options.map(group => ({
           ...group,
           [this.groupOptionsKey]: this.mapOptions(
-            group[this.groupOptionsKey], callback, false
+            group[this.groupOptionsKey], callback, null
           )
         }))
       } else {

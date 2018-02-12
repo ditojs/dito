@@ -1,5 +1,5 @@
 export default {
   title: '',
-  loading: false,
+  loading: 0,
   routeComponents: []
 }

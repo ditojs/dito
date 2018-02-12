@@ -6,7 +6,7 @@
           span {{ entry.breadcrumb }}
         router-link(v-else, :to="entry.path")
           span {{ entry.breadcrumb }}
-    dito-spinner.dito-spinner(v-if="appState.loading")
+    dito-spinner.dito-spinner(v-if="appState.loading > 0")
 </template>
 
 <style lang="sass">
