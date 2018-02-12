@@ -166,8 +166,11 @@ export default class GraphProcessor {
             let hasRelations = false
             for (const key in relations) {
               if (key in data) {
-                values[key] = data[key]
-                hasRelations = true
+                const value = data[key]
+                if (value !== undefined) {
+                  values[key] = value
+                  hasRelations = true
+                }
               }
             }
             if (hasRelations) {
@@ -176,11 +179,14 @@ export default class GraphProcessor {
           }
         } else {
           for (const key in relations) {
-            clone[key] = this.processRelates(
+            const value = this.processRelates(
               clone[key],
               [...dataPath, key],
               [...relationPath, key]
             )
+            if (value !== undefined) {
+              clone[key] = value
+            }
           }
         }
         return clone
