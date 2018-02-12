@@ -15,8 +15,10 @@ export default TypeComponent.register('computed', {
   computed: {
     value() {
       const value = this.schema.value(this.data)
-      this.$set(this.data, this.schema.name, value)
-      return value
+      if (value !== undefined) {
+        this.$set(this.data, this.schema.name, value)
+      }
+      return this.data[this.schema.name]
     }
   }
 })
