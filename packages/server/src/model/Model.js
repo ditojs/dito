@@ -301,6 +301,10 @@ export class Model extends objection.Model {
         }
       }
     }
+    // Remove the computed properties so they don't attempt to get set.
+    for (const key of this.constructor.computedAttributes) {
+      delete json[key]
+    }
     // NOTE: No need to normalize the identifiers in the JSON in case of
     // normalizeDbNames, as this already happens through
     // knex.config.wrapIdentifier(), see Application.js
@@ -308,8 +312,8 @@ export class Model extends objection.Model {
   }
 
   $parseDatabaseJson(json) {
-    const { constructor } = this
     json = super.$parseDatabaseJson(json)
+    const { constructor } = this
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
@@ -329,20 +333,19 @@ export class Model extends objection.Model {
     return this.$parseJson(json)
   }
 
-  $parseJson(json) {
-    // Remove the computed properties so they don't get set.
-    for (const key of this.constructor.computedAttributes) {
-      delete json[key]
-    }
-    return json
-  }
-
   $formatJson(json) {
     json = super.$formatJson(json)
     const { constructor } = this
     // Calculate and set the computed properties.
     for (const key of constructor.computedAttributes) {
-      json[key] = this[key]
+      // Perhaps the computed property is produced in the SQL statement,
+      // in which case we don't have to do anything anymore here.
+      if (!(key in json)) {
+        const value = this[key]
+        if (value !== undefined) {
+          json[key] = value
+        }
+      }
     }
     // Remove hidden attributes.
     for (const key of constructor.hiddenAttributes) {
