@@ -1,2 +1,2 @@
-export * from './TimeStampedMixin'
+export * from './TimeStampMixin'
 export * from './UserMixin'
