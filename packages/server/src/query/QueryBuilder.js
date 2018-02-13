@@ -14,6 +14,8 @@ import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
+    this._parent = null
+    this._lastChild = null
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
     this._allowScopes = null
@@ -22,12 +24,23 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   clone() {
     const copy = super.clone()
+    copy._parent = this._parent
+    copy._lastChild = this._lastChild
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
     return copy
   }
 
   execute() {
+    // See if this query is the fetch-part of an *AndFetch() operation.
+    // For more information, see childQueryOf().
+    if (this._parent &&
+        this._parent._lastChild === this &&
+        this._parent.has(/AndFetch$/)) {
+      // It's ok to just take over the parent's scopes for fetch queries,
+      // since this child query cannot have any scopes of its own.
+      this._copyScopes(this._parent)
+    }
     for (const { scope, eager } of this._scopes) {
       this._applyScopes([scope], eager)
     }
@@ -43,13 +56,17 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   childQueryOf(query, fork) {
-    if (fork) {
-      this._clearScopes(false)
-    } else if (this.modelClass() === query.modelClass()) {
-      // Pass on the parent's scopes if this child query is for the same
-      // modelClass as the parent. This resolves the issue of all `*AndFetch()`
-      // methods returning their data without any scopes applied to them.
-      this._copyScopes(query)
+    // Clear all scopes for child-queries, but remember the hierarchy and
+    // sequence of queries so that in execute() we can identify the last query
+    // of a *AndFetch() operation and copy the scopes from the parent.
+    this._clearScopes(false)
+    this._parent = query
+    if (!fork) {
+      // HACK: For now, use `fork` to identify child-queries used inside
+      // UpsertGraph, which luckily pass `fork = true`...
+      // The proper solution on the long turn probably is to write our own
+      // versions of each *AndFetch() operation.
+      query._lastChild = this
     }
     return super.childQueryOf(query, fork)
   }
@@ -241,32 +258,32 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   upsertGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, upsertGraphOptions)
+      data, options, upsertGraphOptions, { restoreRelations: true })
   }
 
   upsertGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, upsertGraphOptions)
+      data, options, upsertGraphOptions, { restoreRelations: true })
   }
 
   updateGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, updateGraphOptions)
+      data, options, updateGraphOptions, { restoreRelations: true })
   }
 
   updateGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, updateGraphOptions)
+      data, options, updateGraphOptions, { restoreRelations: true })
   }
 
   patchGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, patchGraphOptions)
+      data, options, patchGraphOptions, { restoreRelations: true })
   }
 
   patchGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, patchGraphOptions)
+      data, options, patchGraphOptions, { restoreRelations: true })
   }
 
   upsertGraphAndFetchById(id, data, options) {
@@ -523,12 +540,17 @@ const mixinMethods = [
   'findOne',
   'findById',
   'eager',
+  'mergeEager',
+  'clearEager',
   'scope',
+  'mergeScope',
+  'applyScope',
+  'eagerScope',
+  'mergeEagerScope',
+  'applyEagerScope',
+  'clearScope',
   'pick',
   'omit',
-  'applyScope',
-  'clearEager',
-  'clearScope',
   'select',
   'insert',
   'upsert',
