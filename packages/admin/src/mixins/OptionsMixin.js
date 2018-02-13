@@ -11,18 +11,18 @@ export default {
     }
   },
 
-  created() {
-    this.loadOptions(this.schema.options)
-  },
-
   watch: {
     'schema.options': 'loadOptions'
+  },
+
+  created() {
+    this.loadOptions(this.schema.options)
   },
 
   computed: {
     options() {
       if (this.loadedOptions) {
-        return this.loadedOptions
+        return this.processOptions(this.loadedOptions)
       }
       const { options } = this.schema
       let data = null
@@ -63,16 +63,25 @@ export default {
         const convert = value => this.relate
           ? this.optionToValue(value)
           : value
-        return isArray(this.value)
+        const value = isArray(this.value)
           ? this.value.map(convert)
           : convert(this.value)
+        if (this.relate && this.hasOptions() &&
+            this.value && !this.value.$relate) {
+          // When relating and as soon as the options are available, replace the
+          // original value with its representation as an option, so that it'll
+          // have the $relate property set to true, for processPayload().
+          this.selectValue = value
+        }
+        return value
       },
       set(value) {
         const convert = value => this.relate
           ? this.valueToOption(value)
           : value
         this.value = isArray(value)
-          ? value.map(convert)
+          // Also set $relate on arrays, so the check in get() work with both.
+          ? this.setRelate(value.map(convert))
           : convert(value)
       }
     },
@@ -112,6 +121,10 @@ export default {
   },
 
   methods: {
+    hasOptions() {
+      return this.options?.length > 0
+    },
+
     loadOptions(options) {
       if (isObject(options)) {
         const url = options.url ||
@@ -122,7 +135,7 @@ export default {
           axios.get(url)
             .then(response => {
               this.setLoading(false)
-              this.loadedOptions = this.processOptions(response.data)
+              this.loadedOptions = response.data
             })
             .catch(error => {
               this.setLoading(false)
@@ -141,16 +154,8 @@ export default {
         options = this.groupOptions(options)
       }
       if (this.relate) {
-        // Inject a non-enumerable $relate property so processPayload() can
-        // remove everything except the id for relates, and generate correct
-        // #ref / #id values for temporary ids.
-        options = this.mapOptions(options, option =>
-          Object.defineProperty({ ...option }, '$relate', {
-            enumerable: false,
-            configurable: true,
-            writeable: true,
-            value: true
-          })
+        options = this.mapOptions(options,
+          option => this.setRelate({ ...option })
         )
       }
       return options
@@ -199,6 +204,20 @@ export default {
           return option
         }
       }
+    },
+
+    setRelate(obj) {
+      return this.relate
+        // Inject a non-enumerable $relate property so processPayload() can
+        // remove everything except the id for relates, and generate correct
+        // #ref / #id values for temporary ids.
+        ? Object.defineProperty(obj, '$relate', {
+          enumerable: false,
+          configurable: true,
+          writeable: true,
+          value: true
+        })
+        : obj
     },
 
     valueToOption(value) {
