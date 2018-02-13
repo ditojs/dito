@@ -234,56 +234,56 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, { ...options, fetch: true })
   }
 
-  _handleGraph(method, data, options, defaultOptions, settings = {}) {
-    // Only process graph option overrides if the user doesn't override options.
-    settings = !options ? { ...settings, processOverrides: true } : settings
-    options = options || defaultOptions
-    const graph = new GraphProcessor(this.modelClass(), data, options, settings)
+  _handleGraph(method, data, defaultOptions, options = defaultOptions) {
+    const graph = new GraphProcessor(this.modelClass(), data, options, {
+      // Only process option overrides if the user doesn't override options:
+      processOverrides: options === defaultOptions,
+      restoreRelations: true
+    })
+    console.log(method)
     const builder = super[method](graph.getData(), graph.getOptions())
-    if (settings.restoreRelations) {
-      builder.runAfter(result => graph.restoreRelations(result))
-    }
+    builder.runAfter(result => graph.restoreRelations(result))
     return builder
   }
 
   insertGraph(data, options) {
     return this._handleGraph('insertGraph',
-      data, options, insertGraphOptions, { restoreRelations: true })
+      data, insertGraphOptions, options)
   }
 
   insertGraphAndFetch(data, options) {
     return this._handleGraph('insertGraphAndFetch',
-      data, options, insertGraphOptions, { restoreRelations: true })
+      data, insertGraphOptions, options)
   }
 
   upsertGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, upsertGraphOptions, { restoreRelations: true })
+      data, upsertGraphOptions, options)
   }
 
   upsertGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, upsertGraphOptions, { restoreRelations: true })
+      data, upsertGraphOptions, options)
   }
 
   updateGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, updateGraphOptions, { restoreRelations: true })
+      data, updateGraphOptions, options)
   }
 
   updateGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, updateGraphOptions, { restoreRelations: true })
+      data, updateGraphOptions, options)
   }
 
   patchGraph(data, options) {
     return this._handleGraph('upsertGraph',
-      data, options, patchGraphOptions, { restoreRelations: true })
+      data, patchGraphOptions, options)
   }
 
   patchGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
-      data, options, patchGraphOptions, { restoreRelations: true })
+      data, patchGraphOptions, options)
   }
 
   upsertGraphAndFetchById(id, data, options) {
