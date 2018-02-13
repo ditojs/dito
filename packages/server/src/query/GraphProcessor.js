@@ -60,10 +60,10 @@ export default class GraphProcessor {
    * each setting, so processOverrides() can fill them if any overrides exist.
    */
   collectOverrides() {
-    // TODO: Should we very switch to our own implementation of *AndFetch()
-    // methods and thus always call `RelationExpression.fromModelGraph(data)`,
-    // we may want optimize this code to only collect the overrides for the
-    // relations that are actually used in the graph?
+    // TODO: we may want optimize this code to only collect the overrides for
+    // the relations that are actually used in the graph, e.g. through
+    // `RelationExpression.fromModelGraph(data)`. Should we ever switch to our
+    // own implementation of *AndFetch() methods, we already have to call this.
     const processed = {}
     const processModelClass = modelClass => {
       const { name } = modelClass
@@ -86,6 +86,8 @@ export default class GraphProcessor {
                 this.overrides[key] = []
               }
             }
+            // Keep scanning until we're done or found that all options have
+            // overrides.
             if (this.numOverrides < this.numOptions) {
               processModelClass(relationInstances[name].relatedModelClass)
             }
@@ -133,15 +135,6 @@ export default class GraphProcessor {
     }
 
     processExpression(exp, this.rootModelClass)
-
-    // It may be that the relations with overrides aren't actually contained in
-    // the graph. If that's the case,delete and fall back to the default values:
-    for (const [key, override] of overrides) {
-      if (!override.length) {
-        delete this.overrides[key]
-        this.numOverrides--
-      }
-    }
   }
 
   shouldRelate(relationPath) {
@@ -151,7 +144,7 @@ export default class GraphProcessor {
       return relate
         // See if the relate overrides contain this particular relation-Path
         // and only remove and restore relation data if relate is to be used
-        ? relate.includes(relationPath.join('/'))
+        ? relate.includes(relationPath.join('.'))
         : this.options.relate
     }
   }
@@ -186,7 +179,7 @@ export default class GraphProcessor {
               }
             }
             if (hasRelations) {
-              this.removedRelations[dataPath.join('/')] = values
+              this.removedRelations[dataPath.join('.')] = values
             }
           }
         } else {

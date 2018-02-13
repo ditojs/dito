@@ -240,7 +240,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       processOverrides: options === defaultOptions,
       restoreRelations: true
     })
-    console.log(method)
     const builder = super[method](graph.getData(), graph.getOptions())
     builder.runAfter(result => graph.restoreRelations(result))
     return builder
