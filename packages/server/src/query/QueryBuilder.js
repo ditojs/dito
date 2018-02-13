@@ -37,7 +37,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (this._parent &&
         this._parent._lastChild === this &&
         this._parent.has(/AndFetch$/)) {
-      // It's ok to just take over the parent's scopes for fetch queries,
+      // It's ok to just copy the parent's scopes for fetch queries,
       // since this child query cannot have any scopes of its own.
       this._copyScopes(this._parent)
     }
@@ -62,10 +62,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._clearScopes(false)
     this._parent = query
     if (!fork) {
-      // HACK: For now, use `fork` to identify child-queries used inside
-      // UpsertGraph, which luckily pass `fork = true`...
-      // The proper solution on the long turn probably is to write our own
-      // versions of each *AndFetch() operation.
+      // TODO: For now, use `fork` to identify child-queries used inside
+      // Objection's UpsertGraph class, which luckily pass `fork = true`...
+      // The proper solution on the long run probably is to write our own
+      // versions of each *AndFetch() operation, unfortunately...
       query._lastChild = this
     }
     return super.childQueryOf(query, fork)
