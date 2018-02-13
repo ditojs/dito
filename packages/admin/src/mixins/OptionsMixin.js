@@ -68,9 +68,9 @@ export default {
           : convert(this.value)
         if (this.relate && this.hasOptions() &&
             this.value && !this.value.$relate) {
-          // When relating and as soon as the options are available, replace the
-          // original value with its representation as an option, so that it'll
-          // have the $relate property set to true, for processPayload().
+          // When relating, and as soon as the options are available, replace
+          // the original value with its option version, so that it'll have the
+          // $relate property set, as required by processPayload().
           this.selectValue = value
         }
         return value
@@ -81,6 +81,7 @@ export default {
           : value
         this.value = isArray(value)
           // Also set $relate on arrays, so the check in get() work with both.
+          // The options themselves receive it already in processOption().
           ? this.setRelate(value.map(convert))
           : convert(value)
       }

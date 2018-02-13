@@ -281,9 +281,8 @@ export default {
 
     processPayload(data) {
       // dito-server specific handling of relates within graphs:
-      // Find and group entries with temporary ids, and convert them to
-      // #id / #ref pairs.
-
+      // Find entries with temporary ids, and convert them to #id / #ref pairs.
+      // Also handle items with $relate and convert them to only contain ids.
       const process = data => {
         if (data) {
           if (isObject(data)) {
@@ -296,7 +295,6 @@ export default {
                 processed[key] = process(data[key])
               }
             }
-
             // Special handling is required for temporary ids:
             if (/^@/.test(id)) {
               // Replace temporary id with #id / #ref, based on $relate which is
@@ -304,7 +302,6 @@ export default {
               delete processed.id
               processed[data.$relate ? '#ref' : '#id'] = id
             }
-
             data = processed
           } else if (isArray(data)) {
             data = data.map(entry => process(entry))
