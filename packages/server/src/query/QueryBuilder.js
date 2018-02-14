@@ -22,6 +22,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._clearScopes(true)
   }
 
+  // @override
   clone() {
     const copy = super.clone()
     copy._parent = this._parent
@@ -31,6 +32,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return copy
   }
 
+  // @override
   execute() {
     // See if this query is the fetch-part of an *AndFetch() operation.
     // For more information, see childQueryOf().
@@ -60,6 +62,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.execute()
   }
 
+  // @override
   childQueryOf(query, fork) {
     // Clear all scopes for child-queries, but remember the hierarchy and
     // sequence of queries so that in execute() we can identify the last query
@@ -182,6 +185,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.select(this.raw(...args))
   }
 
+  // @override
   async truncate() {
     if (this.isPostgreSQL()) {
       // Include `cascade` in PostgreSQL truncate queries.
@@ -191,6 +195,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.truncate()
   }
 
+  // @override
   insert(data, returning) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
@@ -240,25 +245,28 @@ export class QueryBuilder extends objection.QueryBuilder {
       restoreRelations: true
     })
     const builder = super[method](graph.getData(), graph.getOptions())
-    builder.runAfter(result => graph.restoreRelations(result))
-    return builder
+    return builder.runAfter(result => graph.restoreRelations(result))
   }
 
+  // @override
   insertGraph(data, options) {
     return this._handleGraph('insertGraph',
       data, insertGraphOptions, options)
   }
 
+  // @override
   insertGraphAndFetch(data, options) {
     return this._handleGraph('insertGraphAndFetch',
       data, insertGraphOptions, options)
   }
 
+  // @override
   upsertGraph(data, options) {
     return this._handleGraph('upsertGraph',
       data, upsertGraphOptions, options)
   }
 
+  // @override
   upsertGraphAndFetch(data, options) {
     return this._handleGraph('upsertGraphAndFetch',
       data, upsertGraphOptions, options)
@@ -302,21 +310,25 @@ export class QueryBuilder extends objection.QueryBuilder {
       this.modelClass().getIdValues(id, { ...data }), options)
   }
 
+  // @override
   updateAndFetchById(id, data) {
     this.context({ byId: id })
     return super.updateAndFetchById(id, data)
   }
 
+  // @override
   patchAndFetchById(id, data) {
     this.context({ byId: id })
     return super.patchAndFetchById(id, data)
   }
 
+  // @override
   deleteById(id) {
     this.context({ byId: id })
     return super.deleteById(id)
   }
 
+  // @override
   findById(id, query, options) {
     // Remember id so Model.createNotFoundError() can report it:
     this.context({ byId: id })
@@ -365,6 +377,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
+  // @override
   findOne(query, { allow, checkRootWhere = true } = {}) {
     if (!query) return this
     // Only allow the suitable query handlers on find-one queries:

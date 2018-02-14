@@ -213,6 +213,11 @@ export class Model extends objection.Model {
 
   static checkRelation(relation) {
     // Make sure all relations are defined correctly, with back-references.
+    // This is to ensure that we can enforce all foreign keys in properties.
+    // TODO: Find a better way to detect foreign ids without enforcing back-
+    // references. Should there be a cashed backRelations on the modelClass?
+    // For example, checkRelation() could be initializeRelation(), and it could
+    // create entries in relatedModelClass for each relation.
     const { relatedModelClass } = relation
     const { properties } = relatedModelClass.definition
     for (const property of relation.relatedProp.props) {

@@ -106,45 +106,48 @@ export default class GraphProcessor {
    */
   processOverrides() {
     const exp = RelationExpression.fromModelGraph(this.data)
-    const overrides = Object.entries(this.overrides) // Cache for repeated use.
 
-    const processExpression = (exp, modelClass, relation, relationPath) => {
-      relationPath = relationPath ? `${relationPath}.${exp.name}` : exp.name
-      if (relation) {
-        const graphOptions = this.getGraphOptions(relation)
-        // Loop through all override options, figure out their settings for the
-        // current relation and build relation expression arrays for each
-        // override, reflecting their nested settings in arrays of expressions.
-        for (const [key, override] of overrides) {
-          const option = pick(graphOptions[key], this.options[key])
-          if (option) {
-            override.push(relationPath)
+    const processExpression =
+      (exp, modelClass, relation, relationPath = '') => {
+        if (relation) {
+          const graphOptions = this.getGraphOptions(relation)
+          // Loop through all override options, figure out their settings for
+          // the current relation and build relation expression arrays for each
+          // override reflecting their nested settings in arrays of expressions.
+          for (const key in this.overrides) {
+            const option = pick(graphOptions[key], this.options[key])
+            if (option) {
+              this.overrides[key].push(relationPath)
+            }
+          }
+        }
+        if (exp.numChildren > 0) {
+          const { relations } = modelClass.definition
+          const relationInstances = modelClass.getRelations()
+          for (const name in exp.children) {
+            const child = exp.children[name]
+            const { relatedModelClass } = relationInstances[name]
+            processExpression(
+              child,
+              relatedModelClass,
+              relations[name],
+              appendPath(relationPath, '.', name)
+            )
           }
         }
       }
-      if (exp.numChildren > 0) {
-        const { relations } = modelClass.definition
-        const relationInstances = modelClass.getRelations()
-        for (const child of Object.values(exp.children)) {
-          const { relatedModelClass } = relationInstances[child.name]
-          processExpression(
-            child, relatedModelClass, relations[child.name], relationPath
-          )
-        }
-      }
-    }
 
     processExpression(exp, this.rootModelClass)
   }
 
   shouldRelate(relationPath) {
-    // Root objects (relationPath.length === 0) should never relate.
-    if (relationPath.length) {
+    // Root objects (relationPath === '') should never relate.
+    if (relationPath !== '') {
       const { relate } = this.overrides
       return relate
         // See if the relate overrides contain this particular relation-Path
         // and only remove and restore relation data if relate is to be used
-        ? relate.includes(relationPath.join('.'))
+        ? relate.includes(relationPath)
         : this.options.relate
     }
   }
@@ -156,7 +159,7 @@ export default class GraphProcessor {
    * For details, see:
    * https://gitter.im/Vincit/objection.js?at=5a4246eeba39a53f1aa3a3b1
    */
-  processRelates(data, dataPath = [], relationPath = []) {
+  processRelates(data, relationPath = '', dataPath = '') {
     if (data) {
       if (data.$isObjectionModel) {
         const relations = data.constructor.getRelations()
@@ -179,15 +182,15 @@ export default class GraphProcessor {
               }
             }
             if (hasRelations) {
-              this.removedRelations[dataPath.join('.')] = values
+              this.removedRelations[dataPath] = values
             }
           }
         } else {
           for (const key in relations) {
             const value = this.processRelates(
               clone[key],
-              [...dataPath, key],
-              [...relationPath, key]
+              appendPath(relationPath, '.', key),
+              appendPath(dataPath, '/', key)
             )
             if (value !== undefined) {
               clone[key] = value
@@ -197,8 +200,11 @@ export default class GraphProcessor {
         return clone
       } else if (isArray(data)) {
         // Pass on relate for hasMany arrays.
-        return data.map((entry, index) =>
-          this.processRelates(entry, [...dataPath, index], relationPath))
+        return data.map((entry, index) => this.processRelates(
+          entry,
+          relationPath,
+          appendPath(dataPath, '/', index)
+        ))
       }
     }
     return data
@@ -217,4 +223,8 @@ export default class GraphProcessor {
     }
     return result
   }
+}
+
+function appendPath(path, separator, token) {
+  return path !== '' ? `${path}${separator}${token}` : token
 }
