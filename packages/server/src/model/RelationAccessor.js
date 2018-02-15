@@ -1,11 +1,11 @@
 import { QueryBuilder } from '@/query'
 
 export default class RelationAccessor {
-  constructor(modelClass, model, relation) {
-    this.modelClass = modelClass
-    this.model = model
+  constructor(relation, modelClass, model) {
     this.relation = relation
     this.name = relation.name
+    this.modelClass = modelClass
+    this.model = model
   }
 
   query(trx) {
@@ -14,16 +14,23 @@ export default class RelationAccessor {
       : this.model.$relatedQuery(this.name, trx)
   }
 
-  load(...args) {
+  load(arg0, ...args) {
     return this.modelClass
-      ? this.modelClass.loadRelated(args[0], this.name, ...args.slice(1))
-      : this.model.$loadRelated(this.name, ...args)
+      ? this.modelClass.loadRelated(arg0, this.name, ...args)
+      : this.model.$loadRelated(this.name, arg0, ...args)
   }
 
+  /**
+   * Accessor to provide simplified access to the implicitly generated join
+   * model class, handling the passing on of  the knex instance, as well as
+   * the application of `QueryBuilder.mixin()`.
+   */
   get joinModelClass() {
     const joinModelClass = this.relation.joinModelClass(
       this.relation.relatedModelClass.knex())
-    // Add QueryBuilder.mixin() if there is no joinModelClass.where() yet:
+    // Result is already cached per knex by `this.relation.joinModelClass()`,
+    // so all that's left to do is apply `QueryBuilder.mixin()`,
+    // if there is no `joinModelClass.where()` yet:
     if (!('where' in joinModelClass)) {
       QueryBuilder.mixin(joinModelClass)
     }

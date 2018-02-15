@@ -98,6 +98,10 @@ export class Model extends objection.Model {
     return obj
   }
 
+  static hasScope(name) {
+    return name in this.namedFilters
+  }
+
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
@@ -112,10 +116,6 @@ export class Model extends objection.Model {
       }
       return namedFilters
     })
-  }
-
-  static hasScope(name) {
-    return name in this.namedFilters
   }
 
   static get relationMappings() {
@@ -239,35 +239,33 @@ export class Model extends objection.Model {
         `Model '${this.name}' already defines a property with name ` +
         `'${accessor}' that clashes with the relation accessor.`)
     }
+
     // Define an accessor on the class as well as on the prototype that when
     // first called creates a RelationAccessor instance and then overrides the
     // accessor with one that then just returns the same value afterwards.
-    Object.defineProperty(this, accessor, {
-      get() {
-        const value = new RelationAccessor(this, null, relation)
-        Object.defineProperty(this, accessor, {
-          value,
-          configurable: true,
-          enumerable: false
-        })
-        return value
-      },
-      configurable: true,
-      enumerable: false
-    })
-    Object.defineProperty(this.prototype, accessor, {
-      get() {
-        const value = new RelationAccessor(null, this, relation)
-        Object.defineProperty(this, accessor, {
-          value,
-          configurable: true,
-          enumerable: false
-        })
-        return value
-      },
-      configurable: true,
-      enumerable: false
-    })
+    const defineAccessor = (target, isClass) => {
+      Object.defineProperty(target, accessor, {
+        get() {
+          const value = new RelationAccessor(
+            relation,
+            isClass ? this : null, // modelClass
+            isClass ? null : this // model
+          )
+          // Override accessor with value on first call for caching.
+          Object.defineProperty(this, accessor, {
+            value,
+            configurable: true,
+            enumerable: false
+          })
+          return value
+        },
+        configurable: true,
+        enumerable: false
+      })
+    }
+
+    defineAccessor(this, true)
+    defineAccessor(this.prototype, false)
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
