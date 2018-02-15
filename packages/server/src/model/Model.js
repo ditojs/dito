@@ -1,6 +1,5 @@
 import objection from 'objection'
 import dbErrors from 'db-errors'
-import util from 'util'
 import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
@@ -18,21 +17,54 @@ export class Model extends objection.Model {
   static initialize() {
     try {
       for (const relation of Object.values(this.getRelations())) {
-        this.checkRelation(relation)
-        this.addRelationAccessor(relation)
+        this.initializeRelation(relation)
       }
     } catch (error) {
       throw error instanceof RelationError ? error : new RelationError(error)
     }
-    if (this.app.config.log.schema) {
-      console.log(`${this.name}:\n`,
-        util.inspect(this.jsonSchema, {
-          colors: true,
-          depth: null,
-          maxArrayLength: null
-        })
-      )
+  }
+
+  static initializeRelation(relation) {
+    // Add this relation to the related model's relatedRelations, so it can
+    // register all required foreign keys in its properties.
+    relation.relatedModelClass.getRelatedRelations().push(relation)
+    // TODO: Check `through` settings to make sure they're correct?
+
+    // Expose RelationAccessor instances for each relation under short-cut $name
+    // for access to relations and implicit calls to $relatedQuery(name).
+    const accessor = `$${relation.name}`
+    if (accessor in this.prototype) {
+      throw new RelationError(
+        `Model '${this.name}' already defines a property with name ` +
+        `'${accessor}' that clashes with the relation accessor.`)
     }
+
+    // Define an accessor on the class as well as on the prototype that when
+    // first called creates a RelationAccessor instance and then overrides the
+    // accessor with one that then just returns the same value afterwards.
+    const defineAccessor = (target, isClass) => {
+      Object.defineProperty(target, accessor, {
+        get() {
+          const value = new RelationAccessor(
+            relation,
+            isClass ? this : null, // modelClass
+            isClass ? null : this // model
+          )
+          // Override accessor with value on first call for caching.
+          Object.defineProperty(this, accessor, {
+            value,
+            configurable: true,
+            enumerable: false
+          })
+          return value
+        },
+        configurable: true,
+        enumerable: false
+      })
+    }
+
+    defineAccessor(this, true)
+    defineAccessor(this.prototype, false)
   }
 
   $initialize() {
@@ -184,7 +216,7 @@ export class Model extends objection.Model {
   }
 
   static getCached(identifier, calculate, empty = {}) {
-    let cache = getMeta(this, 'cache', () => ({}))
+    let cache = getMeta(this, 'cache', {})
     // Use a simple dependency tracking mechanism with cache identifiers that
     // can be children of other cached values, e.g.:
     // 'jsonSchema:jsonAttributes' as a child of 'jsonSchema', so that whenever
@@ -208,61 +240,8 @@ export class Model extends objection.Model {
     return entry?.value
   }
 
-  static checkRelation(relation) {
-    // Make sure all relations are defined correctly, with back-references.
-    // This is to ensure that we can enforce all foreign keys in properties.
-    // TODO: Find a better way to detect foreign ids without enforcing back-
-    // references. Should there be a cashed backRelations on the modelClass?
-    // For example, checkRelation() could be initializeRelation(), and it could
-    // create entries in relatedModelClass for each relation.
-    const { relatedModelClass } = relation
-    const { properties } = relatedModelClass.definition
-    for (const property of relation.relatedProp.props) {
-      if (!(property in properties)) {
-        throw new RelationError(
-          `Model '${relatedModelClass.name}' is missing back-reference ` +
-          `'${property}' for relation '${this.name}.${relation.name}'`)
-      }
-    }
-    // TODO: Check `through` settings also
-  }
-
-  static addRelationAccessor(relation) {
-    // Expose RelationAccessor instances for each relation under short-cut $name
-    // for access to relations and implicit calls to $relatedQuery(name).
-    const accessor = `$${relation.name}`
-    if (accessor in this.prototype) {
-      throw new RelationError(
-        `Model '${this.name}' already defines a property with name ` +
-        `'${accessor}' that clashes with the relation accessor.`)
-    }
-
-    // Define an accessor on the class as well as on the prototype that when
-    // first called creates a RelationAccessor instance and then overrides the
-    // accessor with one that then just returns the same value afterwards.
-    const defineAccessor = (target, isClass) => {
-      Object.defineProperty(target, accessor, {
-        get() {
-          const value = new RelationAccessor(
-            relation,
-            isClass ? this : null, // modelClass
-            isClass ? null : this // model
-          )
-          // Override accessor with value on first call for caching.
-          Object.defineProperty(this, accessor, {
-            value,
-            configurable: true,
-            enumerable: false
-          })
-          return value
-        },
-        configurable: true,
-        enumerable: false
-      })
-    }
-
-    defineAccessor(this, true)
-    defineAccessor(this.prototype, false)
+  static getRelatedRelations() {
+    return getMeta(this, 'relatedRelations', [])
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
@@ -472,13 +451,13 @@ QueryBuilder.mixin(Model)
 
 const metaMap = new WeakMap()
 
-const getMeta = (modelClass, key, initialize) => {
+const getMeta = (modelClass, key, value) => {
   let meta = metaMap.get(modelClass)
   if (!meta) {
     metaMap.set(modelClass, meta = {})
   }
   if (!(key in meta)) {
-    meta[key] = initialize()
+    meta[key] = isFunction(value) ? value() : value
   }
   return meta[key]
 }
@@ -487,7 +466,7 @@ const definitionHandlers = {
   properties(values) {
     const properties = mergeWithoutOverride({}, ...values)
     // Include auto-generated 'id' properties for models and relations.
-    function addIdProperty(name, schema) {
+    const addIdProperty = (name, schema) => {
       if (!(name in properties)) {
         properties[name] = {
           type: 'integer',
@@ -500,10 +479,10 @@ const definitionHandlers = {
       primary: true
     })
 
-    const { relations } = this.definition
-    for (const relation of Object.values(this.getRelations())) {
-      const { nullable } = relations[relation.name]
-      for (const property of relation.ownerProp.props) {
+    const addRelationProperties = (relation, propName) => {
+      const modelClass = relation.ownerModelClass
+      const { nullable } = modelClass.definition.relations[relation.name]
+      for (const property of relation[propName].props) {
         addIdProperty(property, {
           unsigned: true,
           foreign: true,
@@ -511,6 +490,14 @@ const definitionHandlers = {
           ...(nullable && { nullable })
         })
       }
+    }
+
+    for (const relation of Object.values(this.getRelations())) {
+      addRelationProperties(relation, 'ownerProp')
+    }
+
+    for (const relation of Object.values(this.getRelatedRelations())) {
+      addRelationProperties(relation, 'relatedProp')
     }
 
     // Convert root-level short-forms, for easier properties handling in

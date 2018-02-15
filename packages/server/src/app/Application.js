@@ -1,5 +1,6 @@
 import Koa from 'koa'
 import Knex from 'knex'
+import util from 'util'
 import chalk from 'chalk'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
@@ -51,9 +52,24 @@ export class Application extends Koa {
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
-    for (const modelClass of Object.values(models)) {
+    // Initialize all models  in reversed sequence,so that getRelatedRelations()
+    // knows the related model already.
+    // TODO: Consider sorting all models based on their defined relations
+    // instead of relying on the user exporting them in the right order
+    for (const modelClass of Object.values(models).reverse()) {
       modelClass.initialize()
       this.validator.addSchema(modelClass.getJsonSchema())
+    }
+    if (this.config.log.schema) {
+      for (const modelClass of Object.values(models)) {
+        console.log(`\n${modelClass.name}:`,
+          util.inspect(modelClass.getJsonSchema(), {
+            colors: true,
+            depth: null,
+            maxArrayLength: null
+          })
+        )
+      }
     }
   }
 
