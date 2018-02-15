@@ -14,7 +14,7 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register('computed', {
   computed: {
     value() {
-      const value = this.schema.value(this.data)
+      const value = this.schema.value(this.data, this.formComponent.data)
       if (value !== undefined) {
         this.$set(this.data, this.schema.name, value)
       }
