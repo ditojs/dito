@@ -31,6 +31,7 @@
         :class="{ \
           'dito-disabled': isDisabled(compSchema), \
           'dito-fill': hasFill(compSchema), \
+          'dito-fixed': isFixed(compSchema), \
           'dito-has-errors': $errors.has(key) \
         }"
       )
@@ -141,12 +142,17 @@ export default DitoComponent.component('dito-panel', {
     },
 
     hasFill(schema) {
-      return this.getPercentage(schema) > 0
+      return this.getPercentage(schema) > 0 || schema.width === 'fill'
+    },
+
+    isFixed(schema) {
+      return schema.width === 'fixed'
     },
 
     getPercentage(schema) {
       const { width } = schema
-      return width === 'auto' ? null // auto = no fitting
+      // 'auto' = no fitting:
+      return ['auto', 'fixed', 'fill'].includes(width) ? null
         : !width ? 100 // default = 100%
         : /%/.test(width) ? parseFloat(width) // percentage
         : width * 100 // fraction
@@ -154,7 +160,11 @@ export default DitoComponent.component('dito-panel', {
 
     getStyle(schema) {
       const percentage = this.getPercentage(schema)
-      return percentage && `flex-basis: ${percentage}%;`
+      const fixed = this.isFixed(schema)
+      return {
+        'flex-basis': percentage && `${percentage}%`,
+        'flex-grow': fixed && 0
+      }
     },
 
     focus() {
