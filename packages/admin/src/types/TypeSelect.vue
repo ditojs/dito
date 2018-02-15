@@ -8,6 +8,7 @@
       v-model="selectValue"
       v-validate="validations"
       :data-vv-as="label"
+      :disabled="disabled"
     )
       template(
         v-for="option in options"
@@ -44,6 +45,8 @@
       +arrow($select-arrow-size)
       bottom: 2px
       right: $select-right-margin
+    &.dito-disabled::after
+      border-color: $border-color
 </style>
 
 <script>

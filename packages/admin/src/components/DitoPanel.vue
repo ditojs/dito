@@ -27,8 +27,9 @@
         :data="data"
         :meta="meta"
         :store="getChildStore(key)"
-        :disabled="getValue(compSchema, 'disabled', false) || disabled"
+        :disabled="isDisabled(compSchema)"
         :class="{ \
+          'dito-disabled': isDisabled(compSchema), \
           'dito-fill': hasFill(compSchema), \
           'dito-has-errors': $errors.has(key) \
         }"
@@ -133,6 +134,10 @@ export default DitoComponent.component('dito-panel', {
         : isFunction(value)
           ? value(this.data)
           : value
+    },
+
+    isDisabled(schema) {
+      return this.getValue(schema, 'disabled', false) || this.disabled
     },
 
     hasFill(schema) {
