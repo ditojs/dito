@@ -184,10 +184,7 @@ export class Model extends objection.Model {
   }
 
   static getCached(identifier, calculate, empty = {}) {
-    if (!cacheMap.has(this)) {
-      cacheMap.set(this, {})
-    }
-    let cache = cacheMap.get(this)
+    let cache = getMeta(this, 'cache', () => ({}))
     // Use a simple dependency tracking mechanism with cache identifiers that
     // can be children of other cached values, e.g.:
     // 'jsonSchema:jsonAttributes' as a child of 'jsonSchema', so that whenever
@@ -403,61 +400,69 @@ export class Model extends objection.Model {
 
   static get definition() {
     // Check if we already have a definition object for this class and return it
-    let definition = definitionMap.get(this)
-    if (definition) return definition
-    definitionMap.set(this, definition = {})
+    return getMeta(this, 'definition', () => {
+      const definition = {}
 
-    const setDefinition = (name, property, configurable) => {
-      Object.defineProperty(definition, name, {
-        ...property,
-        configurable,
-        enumerable: true
-      })
-    }
-
-    const getDefinition = name => {
-      let modelClass = this
-      // Collect ancestor values for proper inheritance. Note: values are
-      // collected in sequence of inheritance, from sub-class to super-class,
-      // so when merging, mergeWithoutOverride() needs to be used to prevent
-      // overrides in the wrong direction. mergeAsArrays() can be used to keep
-      // lists of values to be inherited per key, see definitionHandlers.scopes
-      const values = []
-      while (modelClass !== objection.Model) {
-        // Only consider model classes that actually define `name` property.
-        if (name in modelClass) {
-          // Use reflection through getOwnPropertyDescriptor() to be able to
-          // call the getter on `this` rather than on `modelClass`. This can be
-          // used to provide abstract base-classes and have them create their
-          // relations for `this` inside `get relations()` accessors.
-          const desc = Object.getOwnPropertyDescriptor(modelClass, name)
-          const value = desc?.get?.call(this) || desc?.value
-          if (value) {
-            values.push(value)
-          }
-        }
-        modelClass = Object.getPrototypeOf(modelClass)
+      const setDefinition = (name, property) => {
+        Object.defineProperty(definition, name, {
+          ...property,
+          enumerable: true
+        })
       }
-      // To prevent endless recursion with interdependent calls related to
-      // properties, override definition before calling handler():
-      setDefinition(name, { value: {} }, true)
-      const handler = definitionHandlers[name]
-      const merged = handler
-        ? handler.call(this, values)
-        : mergeWithoutOverride({}, ...values)
-      // Once calculated, override definition getter with merged value
-      setDefinition(name, { value: merged }, false)
-      return merged
-    }
 
-    // If no definition object was defined yet, create one with accessors for
-    // each entry in `definitionHandlers`. Each of these getters when called
-    // merge definitions up the inheritance chain and store the merged result
-    // in `modelClass.definition[name]` for further caching.
-    for (const name in definitionHandlers) {
-      setDefinition(name, { get: () => getDefinition(name) }, true)
-    }
-    return definition
+      const getDefinition = name => {
+        let modelClass = this
+        // Collect ancestor values for proper inheritance. Note: values are
+        // collected in sequence of inheritance, from sub-class to super-class,
+        // so when merging, mergeWithoutOverride() needs to be used to prevent
+        // overrides in the wrong direction. mergeAsArrays() can be used to keep
+        // arrays of inherited values per key, see `definitionHandlers.scopes`.
+        const values = []
+        while (modelClass !== objection.Model) {
+          // Only consider model classes that actually define `name` property.
+          if (name in modelClass) {
+            // Use reflection through getOwnPropertyDescriptor() to be able to
+            // call the getter on `this` rather than on `modelClass`. This can
+            // be used to provide abstract base-classes and have them create
+            // their relations for `this` inside `get relations()` accessors.
+            const desc = Object.getOwnPropertyDescriptor(modelClass, name)
+            const value = desc?.get?.call(this) || desc?.value
+            if (value) {
+              values.push(value)
+            }
+          }
+          modelClass = Object.getPrototypeOf(modelClass)
+        }
+        // To prevent endless recursion with interdependent calls related to
+        // properties, override definition before calling handler():
+        setDefinition(name, {
+          configurable: true,
+          value: {}
+        })
+        const handler = definitionHandlers[name]
+        const merged = handler
+          ? handler.call(this, values)
+          : mergeWithoutOverride({}, ...values)
+        // Once calculated, override definition getter with final merged value.
+        setDefinition(name, {
+          configurable: false,
+          value: merged
+        })
+        return merged
+      }
+
+      // If no definition object was defined yet, create one with accessors for
+      // each entry in `definitionHandlers`. Each of these getters when called
+      // merge definitions up the inheritance chain and store the merged result
+      // in `modelClass.definition[name]` for further caching.
+      for (const name in definitionHandlers) {
+        setDefinition(name, {
+          configurable: true,
+          get: () => getDefinition(name)
+        })
+      }
+      return definition
+    })
   }
 }
 
@@ -465,8 +470,18 @@ KnexHelper.mixin(Model)
 // Expose a selection of QueryBuilder methods as static methods on model classes
 QueryBuilder.mixin(Model)
 
-const definitionMap = new WeakMap()
-const cacheMap = new WeakMap()
+const metaMap = new WeakMap()
+
+const getMeta = (modelClass, key, initialize) => {
+  let meta = metaMap.get(modelClass)
+  if (!meta) {
+    metaMap.set(modelClass, meta = {})
+  }
+  if (!(key in meta)) {
+    meta[key] = initialize()
+  }
+  return meta[key]
+}
 
 const definitionHandlers = {
   properties(values) {
