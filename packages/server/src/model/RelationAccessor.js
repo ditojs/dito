@@ -27,11 +27,11 @@ export default class RelationAccessor {
    */
   get joinModelClass() {
     const joinModelClass = this.relation.joinModelClass(
-      this.relation.relatedModelClass.knex())
+      this.relation.ownerModelClass.knex())
     // Result is already cached per knex by `this.relation.joinModelClass()`,
     // so all that's left to do is apply `QueryBuilder.mixin()`,
     // if there is no `joinModelClass.where()` yet:
-    if (!('where' in joinModelClass)) {
+    if (joinModelClass && !('where' in joinModelClass)) {
       QueryBuilder.mixin(joinModelClass)
     }
     return joinModelClass

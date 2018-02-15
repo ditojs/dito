@@ -15,7 +15,7 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
-import { knexSnakeCaseMappers } from 'objection'
+import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
@@ -52,16 +52,22 @@ export class Application extends Koa {
     for (const modelClass of Object.values(models)) {
       this.addModel(modelClass)
     }
-    // Initialize all models  in reversed sequence,so that getRelatedRelations()
-    // knows the related model already.
-    // TODO: Consider sorting all models based on their defined relations
-    // instead of relying on the user exporting them in the right order
-    for (const modelClass of Object.values(models).reverse()) {
-      modelClass.initialize()
-      this.validator.addSchema(modelClass.getJsonSchema())
+    // Now (re-)sort all models based on their relations.
+    this.models = this.sortModels(this.models)
+    // Filter through all sorted models, keeping only the newly added ones.
+    const sortedModels = Object.values(this.models).filter(
+      modelClass => models[modelClass.name] === modelClass
+    )
+    // Initialize the added models in correct sorted sequence, so that for every
+    // model, getRelatedRelations() returns the full list of relating relations.
+    for (const modelClass of sortedModels) {
+      if (models[modelClass.name] === modelClass) {
+        modelClass.initialize()
+        this.validator.addSchema(modelClass.getJsonSchema())
+      }
     }
     if (this.config.log.schema) {
-      for (const modelClass of Object.values(models)) {
+      for (const modelClass of sortedModels) {
         console.log(`\n${modelClass.name}:`,
           util.inspect(modelClass.getJsonSchema(), {
             colors: true,
@@ -77,6 +83,43 @@ export class Application extends Koa {
     modelClass.app = this
     this.models[modelClass.name] = modelClass
     modelClass.knex(this.knex)
+  }
+
+  sortModels(models) {
+    const sortByRelations = (list, collected = {}, excluded = {}) => {
+      for (const modelClass of list) {
+        const { name } = modelClass
+        if (!collected[name] && !excluded[name]) {
+          for (const relation of Object.values(modelClass.getRelations())) {
+            if (!(relation instanceof BelongsToOneRelation)) {
+              const { relatedModelClass, joinTableModelClass } = relation
+              for (const related of [joinTableModelClass, relatedModelClass]) {
+                // Exclude self-references and generated join models:
+                if (related && related !== modelClass && models[related.name]) {
+                  sortByRelations([related], collected, {
+                    // Exclude modelClass to prevent endless recursions:
+                    [name]: modelClass,
+                    ...excluded
+                  })
+                }
+              }
+            }
+          }
+          collected[name] = modelClass
+        }
+      }
+      return Object.values(collected)
+    }
+    // Return a new object with the sorted models as its key/value pairs.
+    // NOTE: We need to reverse for the above algorithm to sort properly,
+    // and then reverse the result back.
+    return sortByRelations(Object.values(models).reverse()).reverse().reduce(
+      (models, modelClass) => {
+        models[modelClass.name] = modelClass
+        return models
+      },
+      Object.create(null)
+    )
   }
 
   addControllers(controllers, namespace) {

@@ -496,7 +496,7 @@ const definitionHandlers = {
       addRelationProperties(relation, 'ownerProp')
     }
 
-    for (const relation of Object.values(this.getRelatedRelations())) {
+    for (const relation of this.getRelatedRelations()) {
       addRelationProperties(relation, 'relatedProp')
     }
 
