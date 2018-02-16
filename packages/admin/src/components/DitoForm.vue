@@ -429,7 +429,7 @@ export default DitoComponent.component('dito-form', {
               onSuccess.call(this, data, label)
             } else {
               const submitted = this.verbSubmitted
-              this.notify('success', `Sucessfully ${capitalize(submitted)}`,
+              this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${label} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
