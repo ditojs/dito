@@ -73,8 +73,11 @@ export async function resolveForm(form) {
 export async function resolveForms(forms) {
   // Basically Promise.props() without bluebird:
   const results = await Promise.all(Object.values(forms).map(resolveForm))
-  return Object.keys(forms).reduce((mapped, key, index) => {
-    mapped[key] = results[index]
-    return mapped
-  }, {})
+  return Object.keys(forms).reduce(
+    (mapped, key, index) => {
+      mapped[key] = results[index]
+      return mapped
+    },
+    {}
+  )
 }

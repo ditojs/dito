@@ -165,19 +165,22 @@ export default {
 
     groupOptions(options) {
       const grouped = {}
-      return options.reduce((results, option) => {
-        const name = option[this.groupBy]
-        let entry = grouped[name]
-        if (!entry) {
-          entry = grouped[name] = {
-            [this.groupLabelKey]: name,
-            [this.groupOptionsKey]: []
+      return options.reduce(
+        (results, option) => {
+          const name = option[this.groupBy]
+          let entry = grouped[name]
+          if (!entry) {
+            entry = grouped[name] = {
+              [this.groupLabelKey]: name,
+              [this.groupOptionsKey]: []
+            }
+            results.push(entry)
           }
-          results.push(entry)
-        }
-        entry.options.push(option)
-        return results
-      }, [])
+          entry.options.push(option)
+          return results
+        },
+        []
+      )
     },
 
     mapOptions(options, callback, groupBy = this.groupBy) {

@@ -264,10 +264,10 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
   const listMeta = {
     api,
     listSchema,
+    // When children are flattened (tree-lists), reuse the parent meta data,
+    // but include the `flatten` setting also.
     flatten
   }
-  // When children are flattened (tree-lists), reuse the parent meta data,
-  // but include the flatten setting also.
   const formMeta = {
     ...listMeta,
     nested,
