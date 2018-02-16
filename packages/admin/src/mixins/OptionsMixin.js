@@ -75,6 +75,7 @@ export default {
         }
         return value
       },
+
       set(value) {
         const convert = value => this.relate
           ? this.valueToOption(value)
@@ -207,18 +208,10 @@ export default {
       }
     },
 
-    setRelate(obj) {
-      return this.relate
-        // Inject a non-enumerable $relate property so processPayload() can
-        // remove everything except the id for relates, and generate correct
-        // #ref / #id values for temporary ids.
-        ? Object.defineProperty(obj, '$relate', {
-          enumerable: false,
-          configurable: true,
-          writeable: true,
-          value: true
-        })
-        : obj
+    setRelate(object) {
+      // Set the $relate flag so processPayload() can remove everything except
+      // id for relates, and generate correct #ref/#id values for temporary ids.
+      return this.relate ? this.setFlag(object, '$relate') : object
     },
 
     valueToOption(value) {

@@ -3,7 +3,7 @@
     :id="name"
     :name="name"
     type="text"
-    :value="value"
+    :value="computedValue"
     :readonly="true"
   )
 </template>
@@ -13,12 +13,12 @@ import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('computed', {
   computed: {
-    value() {
+    computedValue() {
       const value = this.schema.value(this.data, this.formComponent.data)
       if (value !== undefined) {
-        this.$set(this.data, this.schema.name, value)
+        this.value = value
       }
-      return this.data[this.schema.name]
+      return this.value
     }
   }
 })

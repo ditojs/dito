@@ -48,12 +48,6 @@ module.exports = {
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
-    'prefer-destructuring': ['warn', {
-      VariableDeclarator: {
-        object: true,
-        array: false
-      }
-    }],
     'quote-props': ['error', 'consistent-as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'always',

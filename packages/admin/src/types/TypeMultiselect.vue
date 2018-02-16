@@ -196,6 +196,7 @@ export default TypeComponent.register('multiselect', {
           ? (this.selectValue || []).map(value => this.valueToOption(value))
           : this.valueToOption(this.selectValue)
       },
+
       set(option) {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.

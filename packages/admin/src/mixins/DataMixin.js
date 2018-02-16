@@ -284,28 +284,41 @@ export default {
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with $relate and convert them to only contain ids.
       const process = data => {
-        if (data) {
-          if (isObject(data)) {
-            const { id } = data
-            const processed = {}
-            if (data.$relate) {
-              processed.id = id
-            } else {
-              for (const key in data) {
-                processed[key] = process(data[key])
+        if (data?.$exclude) {
+          return undefined
+        }
+        if (isObject(data)) {
+          const { id } = data
+          const processed = {}
+          if (data.$relate) {
+            processed.id = id
+          } else {
+            for (const key in data) {
+              const value = process(data[key])
+              if (value !== undefined) {
+                processed[key] = value
               }
             }
-            // Special handling is required for temporary ids:
-            if (/^@/.test(id)) {
-              // Replace temporary id with #id / #ref, based on $relate which is
-              // true when relating to an item and undefined when creating it.
-              delete processed.id
-              processed[data.$relate ? '#ref' : '#id'] = id
-            }
-            data = processed
-          } else if (isArray(data)) {
-            data = data.map(entry => process(entry))
           }
+          // Special handling is required for temporary ids:
+          if (/^@/.test(id)) {
+            // Replace temporary id with #id / #ref, based on $relate which is
+            // true when relating to an item and undefined when creating it.
+            delete processed.id
+            processed[data.$relate ? '#ref' : '#id'] = id
+          }
+          data = processed
+        } else if (isArray(data)) {
+          data = data.reduce(
+            (array, entry) => {
+              const value = process(entry)
+              if (value !== undefined) {
+                array.push(value)
+              }
+              return array
+            },
+            []
+          )
         }
         return data
       }

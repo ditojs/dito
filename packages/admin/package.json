@@ -19,7 +19,7 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@ditojs/utils": "^0.3.1",
+    "@ditojs/utils": "^0.3.2",
     "axios": "^0.17.1",
     "codeflask": "github:lehni/CodeFlask.js#f02c5bbc25743086b0e1227b1c944916d87b701b",
     "hint.css": "^2.5.0",

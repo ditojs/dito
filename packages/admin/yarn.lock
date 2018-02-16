@@ -666,9 +666,9 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
-"@ditojs/utils@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.3.1.tgz#139b66b84278df4b814a40a638dd31cbe2da3751"
+"@ditojs/utils@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.3.2.tgz#19d0842fc51e5a7c9c85be119822fd65217978ee"
 
 abbrev@1:
   version "1.1.1"
