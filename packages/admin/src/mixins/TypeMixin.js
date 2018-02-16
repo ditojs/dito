@@ -1,5 +1,3 @@
-import { asObject } from '@ditojs/utils'
-
 export default {
   // Inherit the $validator from the parent.
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -98,15 +96,6 @@ export default {
   },
 
   methods: {
-    setFlag(object, key, value = true) {
-      return Object.defineProperty(asObject(object), key, {
-        enumerable: false,
-        configurable: true,
-        writeable: true,
-        value
-      })
-    },
-
     addErrors(errors, focus) {
       for (const { message } of errors) {
         // Convert to the same sentence structure as vee-validate:

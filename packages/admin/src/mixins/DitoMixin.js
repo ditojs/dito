@@ -1,5 +1,5 @@
 import appState from '@/appState'
-import { labelize } from '@ditojs/utils'
+import { asObject, labelize } from '@ditojs/utils'
 
 export default {
   data() {
@@ -75,6 +75,25 @@ export default {
 
     getLabel(schema) {
       return schema ? schema.label || labelize(schema.name) : ''
+    },
+
+    setHiddenProperty(object, key, value = true) {
+      return object != null
+        ? Object.defineProperty(asObject(object), key, {
+          enumerable: false,
+          configurable: true,
+          writeable: true,
+          value
+        })
+        : object
+    },
+
+    setFlag(object, flag) {
+      return this.setHiddenProperty(object, flag, true)
+    },
+
+    setParent(object, parent) {
+      return this.setHiddenProperty(object, '$parent', parent)
     },
 
     getElement(selector) {

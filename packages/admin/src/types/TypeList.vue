@@ -52,7 +52,7 @@
               dito-panel(
                 v-if="inline"
                 :schema="getFormSchema(item)"
-                :data="item"
+                :data="setParent(item, data)"
                 :meta="nestedMeta"
                 :dataPath="`${name}/${index}`"
                 :store="store"

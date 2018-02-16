@@ -48,7 +48,7 @@ export default DitoComponent.component('dito-view', {
         // Set up viewData so we can pass it on to the nested component which
         // will look up its own data under its name, see this.value
         // NOTE: DitoView isn't doing any actual data loading. Only DitoList
-        // and DitoForm use the DitoMixin and are capable of requesting and
+        // and DitoForm use the DataMixin and are capable of requesting and
         // mutating data, but they inherit the data container from DitoView.
         this.viewData = {
           [this.name]: null
