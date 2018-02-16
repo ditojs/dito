@@ -125,8 +125,8 @@ export default {
     },
 
     findItemIdIndex(data, itemId) {
-      // For transient data, the index is used as the id
       return this.isTransient
+        // For transient data, the index is used as the id
         ? itemId
         : data?.findIndex(
           (item, index) => this.getItemId(item, index) === itemId
