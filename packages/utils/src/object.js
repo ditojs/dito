@@ -1,6 +1,6 @@
 export const { isArray } = Array
 
-const { toString } = Object.prototype
+const { toString, valueOf } = Object.prototype
 
 export function isPlainObject(val) {
   const ctor = val?.constructor
@@ -39,6 +39,10 @@ export function isAsync(val) {
 
 export function isPromise(val) {
   return val && isFunction(val.then)
+}
+
+export function asObject(val) {
+  return val != null ? valueOf.call(val) : val
 }
 
 export function asArray(val) {
