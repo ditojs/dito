@@ -11,8 +11,6 @@
 
 .dito
   .dito-code
-    &.dito-fill
-      width: auto
     padding: $input-padding
 
     .CodeFlask__textarea,
@@ -37,6 +35,8 @@
       .token
         background: transparent
         text-shadow: none
+    &.dito-fill
+      width: auto
 </style>
 
 <script>

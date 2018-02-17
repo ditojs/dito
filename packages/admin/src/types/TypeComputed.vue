@@ -5,6 +5,7 @@
     :name="dataPath"
     type="text"
     :value="computedValue"
+    :disabled="disabled"
     :readonly="true"
   )
 </template>

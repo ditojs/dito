@@ -72,14 +72,16 @@ $half-form-spacing: $form-spacing / 2
       padding-bottom: 0
       .dito-label
         margin-bottom: 0
+    &.dito-fill
+      width: auto
+  .dito-fill
+    display: block
+    width: 100%
   .dito-list
     .dito-panel
       &::after
         // Hide the ruler in nested forms
         display: none
-  .dito-fill
-    display: block
-    width: 100%
 </style>
 
 <script>
