@@ -21,13 +21,12 @@ export default {
 
   computed: {
     options() {
-      if (this.loadedOptions) {
-        return this.processOptions(this.loadedOptions)
-      }
       const { options } = this.schema
       let data = null
       if (isObject(options)) {
-        if (options.dataPath) {
+        if (this.loadedOptions) {
+          data = this.loadedOptions
+        } else if (options.dataPath) {
           // dataPath uses the json-pointer format to reference data in the
           // dataFormComponent, meaning the first parent data that isn't nested.
           const getAtPath = (data, path) => data && getDataPath(data, path)
@@ -51,6 +50,9 @@ export default {
           data = isFunction(values)
             ? values.call(this, this.data)
             : values
+        }
+        if (options.filter) {
+          data = options.filter(data)
         }
       } else {
         data = options
