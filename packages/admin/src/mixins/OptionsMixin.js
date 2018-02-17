@@ -214,7 +214,14 @@ export default {
     setRelate(object) {
       // Set the $relate flag so processPayload() can remove everything except
       // id for relates, and generate correct #ref/#id values for temporary ids.
-      return this.relate ? this.setFlag(object, '$relate') : object
+      return this.relate && object != null
+        ? Object.defineProperty(object, '$relate', {
+          enumerable: false,
+          configurable: true,
+          writeable: true,
+          value: true
+        })
+        : object
     },
 
     valueToOption(value) {

@@ -39,9 +39,6 @@ export default {
       },
 
       set(value) {
-        if (value != null && this.schema.exclude) {
-          this.setFlag(value, '$exclude')
-        }
         this.$set(this.data, this.schema.name, value)
       }
     },

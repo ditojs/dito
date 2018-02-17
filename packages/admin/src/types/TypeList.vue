@@ -50,7 +50,7 @@
                 :label="getItemLabel(item, index, false)"
                 :schema="getFormSchema(item)"
                 :dataPath="`${dataPath}/${index}`"
-                :data="setParent(item, data)"
+                :data="item"
                 :meta="nestedMeta"
                 :store="store"
                 :disabled="disabled || loading"

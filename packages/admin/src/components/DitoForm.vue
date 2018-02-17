@@ -204,20 +204,14 @@ export default DitoComponent.component('dito-form', {
       // parts that need to be treated like ids and mapped to indices in data.
       const pathParts = this.routeRecord.path.split('/')
       const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-      let parent = data
       // Use -1 for length to skip the final lookup, as we want the parent data.
       for (let i = 0, l = dataParts.length - 1; i < l && data; i++) {
         const dataPart = dataParts[i]
         // If this is an :id part, find the index of the item with given id.
-        const isItemId = /^:id/.test(routeParts[i])
-        const key = isItemId
+        const key = /^:id/.test(routeParts[i])
           ? this.findItemIdIndex(data, dataPart)
           : dataPart
         data = data[key]
-        if (isItemId) {
-          this.setParent(data, parent)
-          parent = data
-        }
       }
       return data
     },
