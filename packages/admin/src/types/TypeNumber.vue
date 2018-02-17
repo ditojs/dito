@@ -5,7 +5,7 @@
     :name="dataPath"
     type="number"
     :title="label"
-    v-model.number="value"
+    v-model="numberValue"
     v-validate="validations"
     :data-vv-as="label"
     :placeholder="placeholder"
@@ -30,5 +30,17 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('number')
+export default TypeComponent.register('number', {
+  computed: {
+    numberValue: {
+      get() {
+        return this.value !== null ? this.value : ''
+      },
+
+      set(value) {
+        this.value = value !== '' ? parseFloat(value) : null
+      }
+    }
+  }
+})
 </script>
