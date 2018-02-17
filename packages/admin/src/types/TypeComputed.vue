@@ -1,5 +1,6 @@
 <template lang="pug">
   input.dito-text.dito-input(
+    ref="element"
     :id="dataPath"
     :name="dataPath"
     type="text"

@@ -1,10 +1,10 @@
 <template lang="pug">
   input.dito-date.dito-input(
+    ref="element"
     :id="dataPath"
     :name="dataPath"
     :type="type === 'datetime' ? 'datetime-local' : type"
     :title="label"
-    ref="input"
     @input="onInput"
     v-validate="validations"
     :data-vv-as="label"
@@ -23,12 +23,12 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register(['date', 'datetime', 'time'], {
   watch: {
     value(value) {
-      const { input } = this.$refs
+      const { element } = this.$refs
       value = value ? this.toLocalDate(value) : value
       // Only set native value again in case it changed, to prevent resetting
       // input sequence in native date / datetime-local input fields.
-      if (input.value !== value) {
-        input.value = value
+      if (element.value !== value) {
+        element.value = value
       }
     }
   },

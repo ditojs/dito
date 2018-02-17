@@ -6,6 +6,7 @@
     li(v-for="option in options")
       label
         input.dito-checkbox(
+          ref="element"
           :name="dataPath"
           type="checkbox"
           :title="label"

@@ -1,5 +1,6 @@
 <template lang="pug">
   toggle-button.dito-switch(
+    ref="element"
     :id="dataPath"
     :name="dataPath"
     :sync="true"

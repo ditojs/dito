@@ -1,5 +1,6 @@
 <template lang="pug">
   textarea.dito-textarea.dito-input(
+    ref="element"
     :id="dataPath"
     :name="dataPath"
     :title="label"

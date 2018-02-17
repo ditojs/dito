@@ -6,6 +6,7 @@
     li(v-for="option in options")
       label
         input.dito-radio-button(
+          ref="element"
           :name="dataPath"
           type="radio"
           :title="label"

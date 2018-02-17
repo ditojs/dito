@@ -1,6 +1,8 @@
 <template lang="pug">
-  .dito-code.CodeFlask(ref="code" :style="style")
-    | {{ value }}
+  .dito-code.CodeFlask(
+    ref="code"
+    :style="style"
+  ) {{ value }}
 </template>
 
 <style lang="sass">
@@ -57,6 +59,12 @@ export default TypeComponent.register('code', {
 
     style() {
       return `height: ${this.lines * 1.5}em`
+    }
+  },
+
+  methods: {
+    focus() {
+      this.$el.querySelector('textarea')?.focus()
     }
   }
 })

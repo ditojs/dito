@@ -1,5 +1,6 @@
 <template lang="pug">
   input.dito-checkbox(
+    ref="element"
     :id="dataPath"
     :name="dataPath"
     type="checkbox"

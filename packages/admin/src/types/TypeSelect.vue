@@ -2,6 +2,7 @@
   // In order to make an arrow appear over the select item, we need nesting:
   .dito-select
     select(
+      ref="element"
       :id="dataPath"
       :name="dataPath"
       :title="label"

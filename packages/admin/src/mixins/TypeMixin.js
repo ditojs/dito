@@ -1,3 +1,5 @@
+import { isArray } from '@ditojs/utils'
+
 export default {
   // Inherit the $validator from the parent.
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -134,9 +136,10 @@ export default {
     focus() {
       // Also focus this component's panel in case it's a tab.
       this.$parent.focus()
-      const input = this.getElement('input')
-      if (input) {
-        this.$nextTick(() => input.focus())
+      const { element } = this.$refs
+      const focus = isArray(element) ? element[0] : element
+      if (focus) {
+        this.$nextTick(() => focus.focus())
       }
     }
   }

@@ -1,5 +1,9 @@
 <template lang="pug">
-  button.dito-button(:id="dataPath" :type="schema.type") {{ schema.text }}
+  button.dito-button(
+    ref="element"
+    :id="dataPath"
+    :type="schema.type"
+  ) {{ schema.text }}
 </template>
 
 <script>

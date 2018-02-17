@@ -96,19 +96,6 @@ export default {
       return this.setHiddenProperty(object, '$parent', parent)
     },
 
-    getElement(selector) {
-      // TODO: ref="input"
-      const proto = Element.prototype
-      const matches = proto.matches ||
-        proto.matchesSelector ||
-        proto.webkitMatchesSelector ||
-        proto.mozMatchesSelector ||
-        proto.msMatchesSelector ||
-        proto.oMatchesSelector
-      const el = this.$el
-      return matches.call(el, selector) ? el : el.querySelector(selector)
-    },
-
     notify(...args) {
       const type = args.length > 1 ? args[0] : 'info'
       const title = args.length > 2 ? args[1] : {

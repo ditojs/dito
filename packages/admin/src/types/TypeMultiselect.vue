@@ -1,5 +1,6 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
+    ref="element"
     :class="{ 'dito-mutiple': schema.multiple }"
     v-model="multiSelectValue"
     :data-vv-name="dataPath"
@@ -229,6 +230,10 @@ export default TypeComponent.register('multiselect', {
         : tag
       this.options.push(option)
       this.value.push(this.optionToValue(option))
+    },
+
+    focus() {
+      this.$refs.element.activate()
     }
   }
 })
