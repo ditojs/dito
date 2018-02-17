@@ -72,7 +72,8 @@ $half-form-spacing: $form-spacing / 2
       padding-bottom: 0
       .dito-label
         margin-bottom: 0
-    &.dito-fill
+    &.dito-component.dito-fill
+      // When nested, erase the .dito-component.dito-fill style from below again
       width: auto
   .dito-component.dito-fill
     display: block
