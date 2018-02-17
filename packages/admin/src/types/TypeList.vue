@@ -41,7 +41,7 @@
               component(
                 v-if="column.component"
                 :is="column.component"
-                :item="item"
+                :data="item"
               )
               span(
                 v-else
@@ -62,7 +62,7 @@
               component(
                 v-else-if="schema.component"
                 :is="schema.component"
-                :item="item"
+                :data="item"
               )
               span(
                 v-else-if="schema.render"

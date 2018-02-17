@@ -2,7 +2,12 @@
   // When used to nest arbitrary vue components as a type in a schema, see below
   component(
     :is="schema.component"
-    :item="data"
+    :schema="schema"
+    :name="name"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :disabled="disabled"
   )
 </template>
 
