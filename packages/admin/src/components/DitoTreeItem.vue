@@ -27,7 +27,7 @@
         )
     vue-draggable(
       v-for="childrenList in childrenLists"
-      :key="childrenList.name"
+      :key="childrenList.key"
       :list="childrenList.items"
       :options="childrenList.dragOptions"
       @start="onStartDrag"
@@ -155,9 +155,9 @@ export default DitoComponent.component('dito-tree-item', {
       // Loop through the schema, find all nested schemas, and build a children
       // list for each.
       const lists = []
-      for (const [name, schema] of Object.entries(this.schema)) {
-        if (name !== 'form' && isObject(schema)) {
-          const items = this.data[name]
+      for (const [key, schema] of Object.entries(this.schema)) {
+        if (key !== 'form' && isObject(schema)) {
+          const items = this.data[key]
           const draggable = schema.draggable && items?.length > 1
           const { editPath } = this.container
           const childrenOpen = !this.path && this.open
@@ -174,7 +174,7 @@ export default DitoComponent.component('dito-tree-item', {
             }
           }) || []
           lists.push({
-            name,
+            key,
             schema,
             children,
             items,

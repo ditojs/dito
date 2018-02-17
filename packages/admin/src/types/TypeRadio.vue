@@ -1,12 +1,12 @@
 <template lang="pug">
   ul.dito-radio-buttons(
-    :id="name"
+    :id="dataPath"
     :class="`dito-layout-${schema.layout || 'vertical'}`"
   )
     li(v-for="option in options")
       label
         input.dito-radio-button(
-          :name="name"
+          :name="dataPath"
           type="radio"
           :title="label"
           :value="optionToValue(option)"

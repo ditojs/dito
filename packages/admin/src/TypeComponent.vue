@@ -3,7 +3,7 @@
   component(
     :is="schema.component"
     :schema="schema"
-    :name="name"
+    :dataPath="dataPath"
     :data="data"
     :meta="meta"
     :store="store"

@@ -4,7 +4,7 @@
       component.dito-content(
         :is="getTypeComponent(schema.type)"
         :schema="schema"
-        :name="name"
+        :dataPath="name"
         :data="data"
         :meta="meta"
         :store="getChildStore(name)"

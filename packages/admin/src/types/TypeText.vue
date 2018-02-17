@@ -1,7 +1,7 @@
 <template lang="pug">
   input.dito-text.dito-input(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     :type="type"
     :title="label"
     :value="value"

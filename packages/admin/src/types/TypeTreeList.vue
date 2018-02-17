@@ -7,8 +7,8 @@
     )
     .dito-tree-panel
       dito-tree-item(
-        :data="{ [name]: value }"
-        :schema="{ [name]: schema }"
+        :data="{ [dataPath]: value }"
+        :schema="{ [dataPath]: schema }"
         :open="true"
         :container="this"
       )

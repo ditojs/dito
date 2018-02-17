@@ -141,7 +141,7 @@ export default {
             })
             .catch(error => {
               this.setLoading(false)
-              this.$errors.add(this.name, error.response?.data || error.message)
+              this.addError(error.response?.data || error.message)
               return null
             })
         }

@@ -1,7 +1,7 @@
 <template lang="pug">
   input.dito-date.dito-input(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     :type="type === 'datetime' ? 'datetime-local' : type"
     :title="label"
     ref="input"

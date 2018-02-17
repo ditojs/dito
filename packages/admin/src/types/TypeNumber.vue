@@ -1,7 +1,7 @@
 <template lang="pug">
   input.dito-number.dito-input(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     type="number"
     :title="label"
     v-model.number="value"

@@ -2,7 +2,7 @@
   vue-multiselect.dito-multiselect(
     :class="{ 'dito-mutiple': schema.multiple }"
     v-model="multiSelectValue"
-    :data-vv-name="name"
+    :data-vv-name="dataPath"
     v-validate="validations"
     :data-vv-as="label"
     :show-labels="false"

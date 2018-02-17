@@ -51,12 +51,12 @@
             td
               dito-panel(
                 v-if="inline"
+                :label="getItemLabel(item, index, false)"
                 :schema="getFormSchema(item)"
+                :dataPath="`${dataPath}/${index}`"
                 :data="setParent(item, data)"
                 :meta="nestedMeta"
-                :dataPath="`${name}/${index}`"
                 :store="store"
-                :label="getItemLabel(item, index, false)"
                 :disabled="loading"
               )
               component(

@@ -1,7 +1,7 @@
 <template lang="pug">
   textarea.dito-textarea.dito-input(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     :title="label"
     v-model="value"
     v-validate="validations"

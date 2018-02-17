@@ -6,38 +6,38 @@
       v-if="label !== undefined && schema.label !== false"
     )
       dito-label(
-        :name="dataPath"
+        :dataPath="dataPath"
         :text="panelLabel"
       )
     li.dito-container(
-      v-for="(compSchema, key) in components"
+      v-for="(compSchema, compDataPath) in components"
       v-show="getValue(compSchema, 'visible', true)"
       :style="getStyle(compSchema)"
-      :key="key"
+      :key="compDataPath"
     )
       dito-label(
         v-if="compSchema.label !== false"
-        :name="key"
+        :dataPath="compDataPath"
         :text="getLabel(compSchema)"
       )
       component.dito-component(
         :is="getTypeComponent(compSchema.type)"
         :schema="compSchema"
-        :name="key"
+        :dataPath="compDataPath"
         :data="data"
         :meta="meta"
-        :store="getChildStore(key)"
+        :store="getChildStore(compSchema.name)"
         :disabled="isDisabled(compSchema)"
         :class="{ \
           'dito-disabled': isDisabled(compSchema), \
           'dito-fill': hasFill(compSchema), \
           'dito-fixed': isFixed(compSchema), \
-          'dito-has-errors': $errors.has(key) \
+          'dito-has-errors': $errors.has(compDataPath) \
         }"
       )
       dito-errors(
-        v-if="$errors.has(key)"
-        :name="key"
+        v-if="$errors.has(compDataPath)"
+        :dataPath="compDataPath"
       )
 </template>
 
@@ -92,13 +92,13 @@ export default DitoComponent.component('dito-panel', {
   inject: ['$validator'],
 
   props: {
+    tab: { type: String },
+    label: { type: String },
     schema: { type: Object },
-    hash: { type: String },
     dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    label: { type: String },
     disabled: { type: Boolean, required: true }
   },
 
@@ -128,8 +128,8 @@ export default DitoComponent.component('dito-panel', {
   },
 
   methods: {
-    getValue(schema, name, defaultValue) {
-      const value = schema[name]
+    getValue(schema, key, defaultValue) {
+      const value = schema[key]
       return value === undefined
         ? defaultValue
         : isFunction(value)
@@ -168,9 +168,8 @@ export default DitoComponent.component('dito-panel', {
     },
 
     focus() {
-      const { hash } = this
-      if (hash) {
-        this.$router.push({ hash })
+      if (this.tab) {
+        this.$router.push({ hash: this.tab })
       }
     }
   }

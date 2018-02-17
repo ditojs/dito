@@ -2,8 +2,8 @@
   // In order to make an arrow appear over the select item, we need nesting:
   .dito-select
     select(
-      :id="name"
-      :name="name"
+      :id="dataPath"
+      :name="dataPath"
       :title="label"
       v-model="selectValue"
       v-validate="validations"

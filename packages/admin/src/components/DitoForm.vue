@@ -13,8 +13,8 @@
             v-for="(tabSchema, key) in tabs"
             v-show="selectedTab === key"
             :key="key"
+            :tab="key"
             :schema="tabSchema"
-            :hash="key"
             :dataPath="nestedDataPath"
             :data="data || {}"
             :meta="meta"
@@ -314,8 +314,8 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    focus(name) {
-      const component = this.components[name]
+    focus(dataPath) {
+      const component = this.components[dataPath]
       if (component) {
         component.focus()
       }

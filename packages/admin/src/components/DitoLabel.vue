@@ -1,5 +1,5 @@
 <template lang="pug">
-  label.dito-label(:for="name") {{ text }}
+  label.dito-label(:for="dataPath") {{ text }}
 </template>
 
 <style lang="sass">
@@ -16,7 +16,7 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-label', {
   props: {
-    name: { type: String, required: true },
+    dataPath: { type: String, required: true },
     text: { type: String, required: true }
   }
 })

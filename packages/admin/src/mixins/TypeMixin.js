@@ -7,7 +7,7 @@ export default {
 
   props: {
     schema: { type: Object, required: true },
-    name: { type: String, required: true },
+    dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -19,14 +19,14 @@ export default {
   created() {
     const form = this.formComponent
     if (form) {
-      form.components[this.name] = this
+      form.components[this.dataPath] = this
     }
   },
 
   destroyed() {
     const form = this.formComponent
     if (form) {
-      delete form.components[this.name]
+      delete form.components[this.dataPath]
     }
   },
 
@@ -96,12 +96,16 @@ export default {
   },
 
   methods: {
+    addError(error) {
+      // Convert to the same sentence structure as vee-validate:
+      const prefix = `The ${this.label} field`
+      this.$errors.add(this.dataPath,
+        error.indexOf(prefix) === 0 ? error : `${prefix} ${error}.`)
+    },
+
     addErrors(errors, focus) {
       for (const { message } of errors) {
-        // Convert to the same sentence structure as vee-validate:
-        const prefix = `The ${this.label} field`
-        this.$errors.add(this.name,
-          message.indexOf(prefix) === 0 ? message : `${prefix} ${message}.`)
+        this.addError(message)
       }
       if (focus) {
         this.focus()

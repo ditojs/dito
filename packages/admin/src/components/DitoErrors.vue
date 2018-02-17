@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-errors
     ul
-      li(v-for="error in $errors.collect(name)")
+      li(v-for="error in $errors.collect(dataPath)")
         | {{ error }}
 </template>
 
@@ -21,7 +21,7 @@ export default DitoComponent.component('dito-errors', {
   inject: ['$validator'],
 
   props: {
-    name: { type: String, required: true }
+    dataPath: { type: String, required: true }
   }
 })
 </script>

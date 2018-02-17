@@ -1,12 +1,12 @@
 <template lang="pug">
   ul.dito-checkboxes(
-    :id="name"
+    :id="dataPath"
     :class="`dito-layout-${schema.layout || 'vertical'}`"
   )
     li(v-for="option in options")
       label
         input.dito-checkbox(
-          :name="name"
+          :name="dataPath"
           type="checkbox"
           :title="label"
           :value="optionToValue(option)"

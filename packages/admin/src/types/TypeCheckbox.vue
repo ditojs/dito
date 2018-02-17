@@ -1,7 +1,7 @@
 <template lang="pug">
   input.dito-checkbox(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     type="checkbox"
     :title="label"
     v-model="value"

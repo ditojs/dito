@@ -1,7 +1,7 @@
 <template lang="pug">
   toggle-button.dito-switch(
-    :id="name"
-    :name="name"
+    :id="dataPath"
+    :name="dataPath"
     :sync="true"
     :cssColors="true"
     :labels="schema.labels"
