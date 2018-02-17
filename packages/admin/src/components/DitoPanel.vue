@@ -74,9 +74,14 @@ $half-form-spacing: $form-spacing / 2
         margin-bottom: 0
     &.dito-fill
       width: auto
-  .dito-fill
+  .dito-component.dito-fill
     display: block
     width: 100%
+    &.dito-checkbox,
+    &.dito-radio-button
+      // WebKit doesn't like changed width on checkboxes and radios, override:
+      display: inline-block
+      width: auto
   .dito-list
     .dito-panel
       &::after
