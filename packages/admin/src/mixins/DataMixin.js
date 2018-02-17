@@ -177,11 +177,14 @@ export default {
       for (const [key, compSchema] of Object.entries(components)) {
         // Support default values both on schema and on component level.
         const comp = TypeComponent.get(compSchema.type)
-        const defaultValue = pick(compSchema.default,
-          comp?.options.methods.defaultValue)
+        const defaultValue = pick(
+          compSchema.default,
+          comp?.options.methods.defaultValue,
+          null
+        )
         data[key] = isFunction(defaultValue)
           ? defaultValue()
-          : clone(defaultValue) || null
+          : clone(defaultValue)
       }
       return data
     },

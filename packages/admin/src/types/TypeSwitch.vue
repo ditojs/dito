@@ -49,6 +49,12 @@ export default TypeComponent.register('switch', {
     height() {
       return this.schema.size?.height || 22
     }
+  },
+
+  methods: {
+    defaultValue() {
+      return false
+    }
   }
 })
 </script>

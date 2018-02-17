@@ -14,5 +14,11 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('checkbox')
+export default TypeComponent.register('checkbox', {
+  methods: {
+    defaultValue() {
+      return false
+    }
+  }
+})
 </script>

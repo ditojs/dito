@@ -1,4 +1,5 @@
 <template lang="pug">
+  // When used to nest arbitrary vue components as a type in a schema, see below
   component(
     :is="schema.component"
     :item="data"
