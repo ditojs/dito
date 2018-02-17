@@ -42,6 +42,7 @@ export function isPromise(val) {
 }
 
 export function asObject(val) {
+  // http://2ality.com/2011/04/javascript-converting-any-value-to.html
   return val != null ? valueOf.call(val) : val
 }
 
@@ -54,6 +55,10 @@ export function asFunction(val) {
 }
 
 export function pick(...args) {
+  // Optimize for the most common case of two arguments:
+  if (args.length === 2) {
+    return args[0] !== undefined ? args[0] : args[1]
+  }
   for (const arg of args) {
     if (arg !== undefined) {
       return arg
