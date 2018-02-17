@@ -67,11 +67,6 @@ $half-form-spacing: $form-spacing / 2
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $half-form-spacing
-      .dito-component.dito-fill
-        // Safari doesn't like changing width on checkboxes, so exclude them here
-        &:not(.dito-checkbox):not(.dito-radio-button)
-          display: block
-          width: 100%
     .dito-title
       flex-basis: 100%;
       padding-bottom: 0
@@ -82,6 +77,9 @@ $half-form-spacing: $form-spacing / 2
       &::after
         // Hide the ruler in nested forms
         display: none
+  .dito-fill
+    display: block
+    width: 100%
 </style>
 
 <script>

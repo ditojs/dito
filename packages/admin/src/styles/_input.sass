@@ -4,3 +4,10 @@
 
 .dito-select select
   box-shadow: none
+
+.dito-fill
+  &.dito-checkbox,
+  &.dito-radio-button
+    // WebKit doesn't like changed width on checkboxes and radios, so override.
+    display: inline-block
+    width: auto

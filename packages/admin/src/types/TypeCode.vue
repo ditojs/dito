@@ -11,6 +11,8 @@
 
 .dito
   .dito-code
+    &.dito-fill
+      width: auto
     padding: $input-padding
 
     .CodeFlask__textarea,

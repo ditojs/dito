@@ -17,7 +17,7 @@
 <style lang="sass">
 .dito
   .dito-textarea
-    width: 100% // TODO: Change when grid is in place
+    width: 100%
     resize: none
 </style>
 
