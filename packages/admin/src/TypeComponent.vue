@@ -1,13 +1,9 @@
 <template lang="pug">
   // When used to nest arbitrary vue components in a schema, see below.
+  // For values of $props, see TypeMixin.props
   component(
     :is="component"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :disabled="disabled"
+    v-bind="$props"
   )
 </template>
 
