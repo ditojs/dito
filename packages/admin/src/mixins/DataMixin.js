@@ -282,13 +282,24 @@ export default {
       return data
     },
 
-    processPayload(data) {
+    processPayload(data, components) {
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with $relate and convert them to only contain ids.
-      const process = data => {
-        if (data?.$exclude) {
-          return undefined
+      const appendPath = (dataPath, token) => dataPath !== ''
+        ? `${dataPath}/${token}`
+        : token
+
+      const process = (data, dataPath = '') => {
+        const component = components[dataPath]
+        if (component) {
+          const { schema } = component
+          if (schema.exclude) {
+            return undefined
+          }
+          if (schema.process) {
+            data = pick(schema.process(data, component.data), data)
+          }
         }
         if (isObject(data)) {
           const { id } = data
@@ -297,7 +308,7 @@ export default {
             processed.id = id
           } else {
             for (const key in data) {
-              const value = process(data[key])
+              const value = process(data[key], appendPath(dataPath, key))
               if (value !== undefined) {
                 processed[key] = value
               }
@@ -313,8 +324,8 @@ export default {
           data = processed
         } else if (isArray(data)) {
           data = data.reduce(
-            (array, entry) => {
-              const value = process(entry)
+            (array, entry, index) => {
+              const value = process(entry, appendPath(dataPath, index))
               if (value !== undefined) {
                 array.push(value)
               }
