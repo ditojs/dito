@@ -16,7 +16,7 @@ export default {
   },
 
   created() {
-    this.loadOptions(this.schema.options)
+    this.loadOptions()
   },
 
   computed: {
@@ -25,6 +25,7 @@ export default {
       let data = null
       if (isObject(options)) {
         if (this.loadedOptions) {
+          // See this.loadOptions()
           data = this.loadedOptions
         } else if (options.dataPath) {
           // dataPath uses the json-pointer format to reference data in the
@@ -34,21 +35,10 @@ export default {
           data = /^[./]/.test(dataPath)
             ? getAtPath(this.dataFormComponent?.data, dataPath.substr(1))
             : getAtPath(this.data, dataPath)
-          if (this.relate) {
-            // If ids are missing and we want to relate, add temporary ids,
-            // marked it with a '@' at the beginning.
-            if (data) {
-              for (const option of data) {
-                if (!option.id) {
-                  option.id = `@${++temporaryId}`
-                }
-              }
-            }
-          }
         } else {
           const { values } = options
           data = isFunction(values)
-            ? values.call(this, this.data)
+            ? values.call(this, this.data, this.dataFormComponent?.data)
             : values
         }
         if (options.filter) {
@@ -56,6 +46,19 @@ export default {
         }
       } else {
         data = options
+      }
+      if (this.relate) {
+        // If ids are missing and we want to relate, add temporary ids,
+        // marked it with a '@' at the beginning.
+        // NOTE: This only makes sense if the data is from the graph that
+        // we're currently editing.
+        if (data) {
+          for (const option of data) {
+            if (!option.id) {
+              option.id = `@${++temporaryId}`
+            }
+          }
+        }
       }
       return this.processOptions(data)
     },
@@ -129,10 +132,11 @@ export default {
       return this.options?.length > 0
     },
 
-    loadOptions(options) {
+    loadOptions() {
+      const { options } = this.schema
       if (isObject(options)) {
         const url = options.url ||
-          options.apiPath && this.api.url + options.apiPath
+          options.apiPath && `${this.api.url}${options.apiPath}`
         if (url) {
           this.setLoading(true)
           this.loadedOptions = null
