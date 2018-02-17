@@ -16,7 +16,7 @@
         :total="total || 0"
       )
     table
-      dito-headers(
+      dito-header(
         v-if="columns"
         :query="query"
         :columns="columns"
@@ -32,21 +32,17 @@
           :key="index"
         )
           template(v-if="columns")
-            td(
+            dito-cell(
               v-for="column in columns"
-              :class="column.class"
-              :style="column.style"
+              :key="column.name"
+              :column="column"
+              :schema="schema"
+              :dataPath="`${dataPath}/${index}`"
+              :data="item"
+              :meta="nestedMeta"
+              :store="store"
+              :disabled="disabled || loading"
             )
-              // TODO: Implement inline components in column mode!
-              component(
-                v-if="column.component"
-                :is="column.component"
-                :data="item"
-              )
-              span(
-                v-else
-                v-html="renderColumn(column, item)"
-              )
           template(v-else)
             td
               dito-panel(
@@ -57,11 +53,11 @@
                 :data="setParent(item, data)"
                 :meta="nestedMeta"
                 :store="store"
-                :disabled="loading"
+                :disabled="disabled || loading"
               )
               component(
-                v-else-if="schema.component"
-                :is="schema.component"
+                v-else-if="component"
+                :is="component"
                 :data="item"
               )
               span(
@@ -210,6 +206,10 @@ export default TypeComponent.register('list', {
   mixins: [ListMixin],
 
   computed: {
+    component() {
+      return this.resolveTypeComponent(this.schema.component)
+    },
+
     paginate() {
       return this.schema.paginate
     },

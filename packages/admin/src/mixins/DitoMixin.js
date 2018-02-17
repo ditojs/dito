@@ -1,5 +1,6 @@
 import appState from '@/appState'
-import { asObject, labelize } from '@ditojs/utils'
+import TypeMixin from './TypeMixin'
+import { isFunction, asObject, labelize } from '@ditojs/utils'
 
 export default {
   data() {
@@ -94,6 +95,30 @@ export default {
 
     setParent(object, parent) {
       return this.setHiddenProperty(object, '$parent', parent)
+    },
+
+    resolveTypeComponent(component) {
+      // A helper method to allow two things:
+      // - When used in a computed property, it removes the need to have to
+      //   load components with async functions `component: () => import(...)`.
+      //   instead, they can be directly provided: `component: import(...)`
+      // - The properties passed to such components don't need to be defined.
+      //   Instead, the default TypeMixin props are automatically set.
+      return component
+        ? async () => {
+          // At first, resolve component is it is loaded asynchronously.
+          let comp = isFunction(component)
+            ? await component()
+            : await component
+          comp = comp?.default || comp
+          if (comp.options) {
+            comp.options.props = TypeMixin.props
+          } else {
+            comp.props = TypeMixin.props
+          }
+          return comp
+        }
+        : component
     },
 
     notify(...args) {

@@ -1,11 +1,9 @@
 import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
-import {
-  isObject, isArray, escapeHtml, camelize, labelize
-} from '@ditojs/utils'
-import { processForms, processFormComponents } from '@/schema'
 import DataMixin from './DataMixin'
+import { processForms, processFormComponents } from '@/schema'
+import { isObject, isArray, camelize, labelize } from '@ditojs/utils'
 
 export default {
   mixins: [DataMixin],
@@ -123,12 +121,6 @@ export default {
               }
           )
           : null
-    },
-
-    renderColumn(column, item) {
-      const { name, render } = column
-      const value = item[name]
-      return render ? render(value, item) : escapeHtml(value)
     },
 
     setQuery(query) {

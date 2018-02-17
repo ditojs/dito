@@ -1,7 +1,7 @@
 <template lang="pug">
-  // When used to nest arbitrary vue components as a type in a schema, see below
+  // When used to nest arbitrary vue components in a schema, see below.
   component(
-    :is="schema.component"
+    :is="component"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
@@ -13,14 +13,14 @@
 
 <script>
 // TypeComponent is the base component for all other type components inside the
-// types/ folder. It is also registered as a type component itself and can be
-// used to nest arbitrary vue components as a type:
+// types/ folder.
+// It is also registered as a type component itself, registered with
+// type="component", and can be used to nest arbitrary vue components in schema:
 //
 // {
 //   type: 'component',
-//   component: () => import('./component')
+//   component: import('./component')
 // }
-
 import DitoComponent from './DitoComponent'
 import TypeMixin from './mixins/TypeMixin'
 import { asArray } from '@ditojs/utils'
@@ -28,7 +28,13 @@ import { asArray } from '@ditojs/utils'
 const { typeComponents } = DitoComponent
 
 const TypeComponent = DitoComponent.component('typo-component', {
-  mixins: [TypeMixin]
+  mixins: [TypeMixin],
+
+  computed: {
+    component() {
+      return this.resolveTypeComponent(this.schema.component)
+    }
+  }
 })
 
 typeComponents.component = TypeComponent
