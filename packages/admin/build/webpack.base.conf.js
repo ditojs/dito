@@ -3,9 +3,18 @@ const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
 const vueLoaderConfig = require('./vue-loader.conf')
+const fs = require('fs')
 
-function resolve(dir) {
-  return path.join(__dirname, '..', dir)
+function resolve(dir, realpath = false) {
+  dir = path.resolve(__dirname, '..', dir)
+  if (realpath) {
+    // This hack is required for the optional sym-linked dev folder to work.
+    try {
+      dir = fs.realpathSync(dir)
+    } catch (err) {
+    }
+  }
+  return dir
 }
 
 const createLintingRule = () => ({
@@ -31,9 +40,14 @@ module.exports = {
     extensions: ['.js', '.vue', '.json'],
     alias: {
       'vue$': 'vue/dist/vue.esm.js',
-      '@': resolve('src')
-    }
+      '@': resolve('src'),
+      // This is required for sym-linked dev folder to work:
+      '@ditojs/admin': resolve('src')
+    },
+    // Turn off symlinks for sym-linked dev folder to work:
+    symlinks: false
   },
+
   module: {
     rules: [
       ...(config.dev.useEslint ? [createLintingRule()] : []),
@@ -45,7 +59,14 @@ module.exports = {
       {
         test: /\.js$/,
         loader: 'babel-loader',
-        include: [resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client')]
+        include: [
+          resolve('src'),
+          // Resolve the optional sym-linked dev folder twice for both forms:
+          resolve('dev', true),
+          resolve('dev', false),
+          resolve('test'),
+          resolve('node_modules/webpack-dev-server/client')
+        ]
       },
       {
         test: /\.html?$/,
