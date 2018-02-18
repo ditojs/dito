@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito
     notifications(position="top right" ref="notifications")
-    dito-menu(:schemas="schemas")
+    dito-menu(:views="views")
     main.dito-page
       dito-trail
       router-view
@@ -28,7 +28,7 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-root', {
   props: {
-    schemas: { type: Object, required: true },
+    views: { type: Object, required: true },
     options: { type: Object, required: true }
   },
 

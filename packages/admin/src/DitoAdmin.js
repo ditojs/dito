@@ -20,7 +20,7 @@ Vue.use(VeeValidate, {
 
 export async function setup(el, options = {}) {
   const {
-    schemas = {},
+    views = {},
     api = {}
   } = options
 
@@ -47,7 +47,7 @@ export async function setup(el, options = {}) {
   // Collect all routes from the root schema components
   const routes = []
   const promises = []
-  for (const [name, schema] of Object.entries(schemas)) {
+  for (const [name, schema] of Object.entries(views)) {
     promises.push(processComponent(schema, name, api, routes))
   }
   await Promise.all(promises)
@@ -58,10 +58,10 @@ export async function setup(el, options = {}) {
       mode: 'history',
       routes
     }),
-    template: '<dito-root :schemas="schemas" :options="options" />',
+    template: '<dito-root :views="views" :options="options" />',
     components: { DitoRoot },
     data: {
-      schemas,
+      views,
       options
     }
   })
