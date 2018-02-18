@@ -1,6 +1,6 @@
-# Dito
+# Dito.js Admin
 
-> A schema based admin framework with auto-generated forms for Vue.js
+Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js
 
 ## Build Setup
 
@@ -8,10 +8,10 @@
 # install dependencies
 yarn install
 
-# serve with hot reload at localhost:4000
+# serve your admin folder sym-linked into `dev` with hot reload at localhost:8080
 yarn dev
 
-# build for production with minification
+# build library for production, with and without minification
 yarn build
 
 # build for production and view the bundle analyzer report
