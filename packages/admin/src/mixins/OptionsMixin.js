@@ -1,7 +1,5 @@
 import LoadingMixin from './LoadingMixin'
-import {
-  isObject, isArray, isFunction, isPromise, getDataPath
-} from '@ditojs/utils'
+import { isObject, isArray, isFunction, isPromise } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -93,23 +91,6 @@ export default {
     async getOptions() {
       const { options = {} } = this.schema
       let { values } = options
-      if (!values) {
-        const { url, apiPath, dataPath } = options
-        if (url || apiPath) {
-          // Create a load function that will return a promise when called,
-          // for further processing below:
-          values = async function () {
-            return this.load({ url, api: apiPath })
-          }
-        } else if (dataPath) {
-          // dataPath uses the json-pointer format to reference data in the
-          // dataFormComponent, meaning the first parent data that isn't nested.
-          const getAtPath = (data, path) => data && getDataPath(data, path)
-          values = /^[./]/.test(dataPath)
-            ? getAtPath(this.dataFormComponent?.data, dataPath.substr(1))
-            : getAtPath(this.data, dataPath)
-        }
-      }
       if (isFunction(values)) {
         values = values.call(
           this, this.data, this.dataFormComponent?.data, this.dataPath
