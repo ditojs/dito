@@ -109,7 +109,7 @@ function convertRelation(schema, models) {
   } = schema || {}
   const relationClass = relationLookup[relation] ||
     relationClasses[relation] || relation
-  if (!(relationClass?.prototype instanceof Relation)) {
+  if (!Relation.isPrototypeOf(relationClass)) {
     throw new RelationError(`Unrecognized relation: ${relation}`)
   } else if (join && !isString(relation)) {
     // Original Objection.js-style relation, just pass through

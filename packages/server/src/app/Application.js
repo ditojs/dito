@@ -19,7 +19,7 @@ import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
-import { hyphenate } from '@ditojs/utils'
+import { isPlainObject, hyphenate } from '@ditojs/utils'
 
 export class Application extends Koa {
   constructor(config = {}, { validator, models, controllers }) {
@@ -124,21 +124,29 @@ export class Application extends Koa {
 
   addControllers(controllers, namespace) {
     for (const [key, value] of Object.entries(controllers)) {
-      if (value.prototype instanceof Controller) {
-        this.addController(value, namespace)
-      } else {
+      if (isPlainObject(value)) {
         this.addControllers(value, namespace ? `${namespace}/${key}` : key)
+      } else {
+        this.addController(value, namespace)
       }
     }
   }
 
-  addController(ControllerClass, namespace) {
-    const controller = new ControllerClass(this, namespace)
-    // Inheritance of action methods cannot happen in the constructor itself,
-    // so call a separate initialize() method after in order to take care of it.
-    controller.initialize()
-    this.controllers[controller.url] = controller
-    this.use(controller.compose())
+  addController(controller, namespace) {
+    // Auto-instantiate controller classes:
+    if (Controller.isPrototypeOf(controller)) {
+      // eslint-disable-next-line new-cap
+      controller = new controller(this, namespace)
+      // Inheritance of action methods cannot happen in the constructor itself,
+      // so call separate initialize() method after in order to take care of it.
+      controller.initialize()
+    }
+    if (controller instanceof Controller) {
+      this.use(controller.compose())
+      this.controllers[controller.url] = controller
+    } else {
+      throw new Error(`Unknown controller: ${controller}`)
+    }
   }
 
   normalizePath(path) {

@@ -1,9 +1,8 @@
 import compose from 'koa-compose'
 import Router from 'koa-router'
 import chalk from 'chalk'
-import { Model } from 'objection'
-import { isFunction, asArray } from '@ditojs/utils'
 import { ResponseError, WrappedError } from '@/errors'
+import { isFunction, asArray } from '@ditojs/utils'
 import ControllerAction from './ControllerAction'
 
 export class Controller {
@@ -17,16 +16,19 @@ export class Controller {
   initialize(isRoot = true) {
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
-    this.path = this.path || this.app.normalizePath(this.name)
-    const { path, namespace } = this
+    if (this.path === undefined) {
+      this.path = this.app.normalizePath(this.name)
+    }
     if (isRoot) {
-      this.url = namespace ? `/${namespace}/${path}` : `/${path}`
+      const { path, namespace } = this
+      const url = path ? `/${path}` : ''
+      this.url = namespace ? `/${namespace}${url}` : url
       this.log(
         `${namespace && chalk.green(`${namespace}/`)}${
           chalk.cyan(this.name)}${chalk.white(':')}`,
         this.level
       )
-      this.router = new Router()
+      this.router = null
       this.controller = this.setupActions('controller')
     }
   }
@@ -43,9 +45,7 @@ export class Controller {
 
       const collect = key => {
         const action = this[key]
-        if (key !== 'constructor' &&
-            isFunction(action) &&
-            !(action.prototype instanceof Model)) {
+        if (key !== 'constructor' && isFunction(action)) {
           this._controller[key] = action
         }
       }
@@ -70,10 +70,13 @@ export class Controller {
   }
 
   compose() {
-    return compose([
-      this.router.routes(),
-      this.router.allowedMethods()
-    ])
+    return compose(this.router
+      ? [
+        this.router.routes(),
+        this.router.allowedMethods()
+      ]
+      : []
+    )
   }
 
   getPath(type, path) {
@@ -163,6 +166,9 @@ export class Controller {
       `${chalk.magenta(verb.toUpperCase())} ${chalk.white(url)}`,
       this.level + 1
     )
+    if (!this.router) {
+      this.router = new Router()
+    }
     this.router[verb](url, async ctx => {
       try {
         const res = await controllerAction.callAction(ctx)
