@@ -364,13 +364,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
-      if (!allowed[key]) {
+      // Support array notation for multiple parameters, as sent by axios:
+      const param = key.endsWith('[]') ? key.substr(0, key.length - 2) : key
+      if (!allowed[param]) {
         throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }
-      const paramHandler = QueryParameters.get(key)
+      const paramHandler = QueryParameters.get(param)
       if (!paramHandler) {
         throw new QueryBuilderError(
-          `Invalid query parameter '${key}' in '${key}=${value}'.`)
+          `Invalid query parameter '${param}' in '${key}=${value}'.`)
       }
       paramHandler(this, key, value)
     }
