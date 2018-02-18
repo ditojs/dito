@@ -25,9 +25,6 @@
     )
 </template>
 
-<style lang="sass">
-</style>
-
 <script>
 import DitoComponent from '@/DitoComponent'
 import { escapeHtml } from '@ditojs/utils'

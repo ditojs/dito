@@ -11,11 +11,16 @@ module.exports = {
   env: {
     browser: true,
   },
-  // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
-  extends: 'standard',
+  extends: [
+    // https://github.com/vuejs/eslint-plugin-vue#priority-a-essential-error-prevention
+    // consider switching to `plugin:vue/strongly-recommended` or `plugin:vue/recommended` for stricter rules.
+    // 'plugin:vue/essential', // TODO: This is currently failing
+    // https://github.com/standard/standard/blob/master/docs/RULES-en.md#javascript-standard-style
+    'standard'
+  ],
   // Required to lint *.vue files
   plugins: [
-    'html'
+    'html' // 'vue' // TODO: This is currently failing
   ],
   rules: {
     'array-bracket-spacing': ['error', 'never'],
