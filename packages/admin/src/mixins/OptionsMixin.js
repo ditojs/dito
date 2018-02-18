@@ -90,7 +90,7 @@ export default {
 
     async getOptions() {
       const { options = {} } = this.schema
-      let { values } = options
+      let values = isObject(options) ? options.values : options
       if (isFunction(values)) {
         values = values.call(
           this, this.data, this.dataFormComponent?.data, this.dataPath
