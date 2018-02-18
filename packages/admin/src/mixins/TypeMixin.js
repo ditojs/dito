@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { isArray } from '@ditojs/utils'
 
 export default {
@@ -95,6 +96,53 @@ export default {
   },
 
   methods: {
+    async load(config) {
+      const { api, cache, ...rest } = config
+      if (api) {
+        // Process config.api
+        config = {
+          url: `${this.api.url}${api}`,
+          ...rest
+        }
+      }
+      // See if we need to consult the cache first, and allow caching on global
+      // level ('global') and form level ('form').
+      // If no cache setting was provided, use different default for api calls
+      // ('form'), and url calls ('global').
+      // Provide `cache: false` to explicitly disable caching.
+      const cacheType = cache === undefined
+        ? api ? 'form' : config.url ? 'global' : null
+        : cache
+      // Build a cache key from the config
+      const cacheKey = cacheType && `${
+        config.method || 'get'} ${
+        config.url} ${
+        JSON.stringify(config.params || '')} ${
+        JSON.stringify(config.data || '')
+      }`
+      const loadCache =
+        cacheType === 'global' ? this.appState.loadCache
+        : cacheType === 'form' ? this.formComponent.loadCache
+        : null
+      if (loadCache && (cacheKey in loadCache)) {
+        return loadCache[cacheKey]
+      }
+      try {
+        const load = async () => (await axios.request(config)).data
+        // NOTE: No await here, res is a promise that we can easily cache.
+        const res = load()
+        if (loadCache) {
+          loadCache[cacheKey] = res
+        }
+        return res
+      } catch (error) {
+        // Convert axios errors to normal errors
+        throw error.response
+          ? new Error(error.response?.data)
+          : error
+      }
+    },
+
     addError(error) {
       // Convert to the same sentence structure as vee-validate:
       const prefix = `The ${this.label} field`

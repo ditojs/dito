@@ -1,5 +1,6 @@
 export default {
   title: '',
   loading: 0,
-  routeComponents: []
+  routeComponents: [],
+  loadCache: {} // See TypeMixin.load()
 }

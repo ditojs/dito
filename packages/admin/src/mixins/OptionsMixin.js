@@ -1,68 +1,26 @@
-import axios from 'axios'
-import { isObject, isArray, isFunction, getDataPath } from '@ditojs/utils'
 import LoadingMixin from './LoadingMixin'
+import {
+  isObject, isArray, isFunction, isPromise, getDataPath
+} from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
 
   data() {
     return {
-      loadedOptions: null
+      options: []
     }
   },
 
   watch: {
-    'schema.options': 'loadOptions'
+    'schema.options': 'getOptions'
   },
 
   created() {
-    this.loadOptions()
+    this.getOptions()
   },
 
   computed: {
-    options() {
-      const { options } = this.schema
-      let data = null
-      if (isObject(options)) {
-        if (this.loadedOptions) {
-          // See this.loadOptions()
-          data = this.loadedOptions
-        } else if (options.dataPath) {
-          // dataPath uses the json-pointer format to reference data in the
-          // dataFormComponent, meaning the first parent data that isn't nested.
-          const getAtPath = (data, path) => data && getDataPath(data, path)
-          const { dataPath } = options
-          data = /^[./]/.test(dataPath)
-            ? getAtPath(this.dataFormComponent?.data, dataPath.substr(1))
-            : getAtPath(this.data, dataPath)
-        } else {
-          const { values } = options
-          data = isFunction(values)
-            ? values.call(this, this.data, this.dataFormComponent?.data)
-            : values
-        }
-        if (options.filter) {
-          data = options.filter(data)
-        }
-      } else {
-        data = options
-      }
-      if (this.relate) {
-        // If ids are missing and we want to relate, add temporary ids,
-        // marked it with a '@' at the beginning.
-        // NOTE: This only makes sense if the data is from the graph that
-        // we're currently editing.
-        if (data) {
-          for (const option of data) {
-            if (!option.id) {
-              option.id = `@${++temporaryId}`
-            }
-          }
-        }
-      }
-      return this.processOptions(data)
-    },
-
     selectValue: {
       get() {
         const convert = value => this.relate
@@ -105,7 +63,7 @@ export default {
       // If no labelKey was provided but the options are objects, assume a
       // default value of 'label':
       return this.schema.options.labelKey ||
-        isObject(this.options?.[0]) && 'label' ||
+        isObject(this.options[0]) && 'label' ||
         null
     },
 
@@ -114,7 +72,7 @@ export default {
       // default value of 'value':
       return this.schema.options.valueKey ||
         this.relate && 'id' ||
-        isObject(this.options?.[0]) && 'value' ||
+        isObject(this.options[0]) && 'value' ||
         null
     },
 
@@ -129,44 +87,66 @@ export default {
 
   methods: {
     hasOptions() {
-      return this.options?.length > 0
+      return this.options.length > 0
     },
 
-    loadOptions() {
-      const { options } = this.schema
-      if (isObject(options)) {
-        const url = options.url ||
-          options.apiPath && `${this.api.url}${options.apiPath}`
-        if (url) {
-          this.setLoading(true)
-          this.loadedOptions = null
-          axios.get(url)
-            .then(response => {
-              this.setLoading(false)
-              this.loadedOptions = response.data
-            })
-            .catch(error => {
-              this.setLoading(false)
-              this.addError(error.response?.data || error.message)
-              return null
-            })
+    async getOptions() {
+      const { options = {} } = this.schema
+      let { values } = options
+      if (!values) {
+        const { url, apiPath, dataPath } = options
+        if (url || apiPath) {
+          // Create a load function that will return a promise when called,
+          // for further processing below:
+          values = async function () {
+            return this.load({ url, api: apiPath })
+          }
+        } else if (dataPath) {
+          // dataPath uses the json-pointer format to reference data in the
+          // dataFormComponent, meaning the first parent data that isn't nested.
+          const getAtPath = (data, path) => data && getDataPath(data, path)
+          values = /^[./]/.test(dataPath)
+            ? getAtPath(this.dataFormComponent?.data, dataPath.substr(1))
+            : getAtPath(this.data, dataPath)
         }
       }
-    },
-
-    processOptions(options) {
-      if (!isArray(options)) {
-        return []
-      }
-      if (this.groupBy) {
-        options = this.groupOptions(options)
-      }
-      if (this.relate) {
-        options = this.mapOptions(options,
-          option => this.setRelate({ ...option })
+      if (isFunction(values)) {
+        values = values.call(
+          this, this.data, this.dataFormComponent?.data, this.dataPath
         )
       }
-      return options
+      if (isPromise(values)) {
+        this.setLoading(true)
+        try {
+          values = await values
+        } catch (error) {
+          values = []
+          this.addError(error.message)
+        }
+        this.setLoading(false)
+      }
+      this.setOptions(values)
+      return values
+    },
+
+    setOptions(options = []) {
+      if (options.length) {
+        if (this.relate) {
+          // If ids are missing and we want to relate, add temporary ids,
+          // marked it with a '@' at the beginning.
+          // Also set the $relate flag for processPayload()
+          // NOTE: This only makes sense if the data is from the graph that
+          // we're currently editing.
+          options = options.map(({ id, ...rest }) => this.setRelate({
+            id: id || `@${++temporaryId}`,
+            ...rest
+          }))
+        }
+        if (this.groupBy) {
+          options = this.groupOptions(options)
+        }
+      }
+      this.options = options
     },
 
     groupOptions(options) {
@@ -187,19 +167,6 @@ export default {
         },
         []
       )
-    },
-
-    mapOptions(options, callback, groupBy = this.groupBy) {
-      if (groupBy) {
-        return options.map(group => ({
-          ...group,
-          [this.groupOptionsKey]: this.mapOptions(
-            group[this.groupOptionsKey], callback, null
-          )
-        }))
-      } else {
-        return options.map(option => callback(option))
-      }
     },
 
     findOption(options, value, groupBy = this.groupBy) {

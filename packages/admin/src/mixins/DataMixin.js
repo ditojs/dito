@@ -1,9 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import axios from 'axios'
-import {
-  isArray, isObject, isString, isFunction, pick, clone
-} from '@ditojs/utils'
 import LoadingMixin from './LoadingMixin'
+import { isObject, isString, isFunction, pick, clone } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -280,64 +278,6 @@ export default {
         data = data.results
       }
       return data
-    },
-
-    processPayload(data, components) {
-      // dito-server specific handling of relates within graphs:
-      // Find entries with temporary ids, and convert them to #id / #ref pairs.
-      // Also handle items with $relate and convert them to only contain ids.
-      const appendPath = (dataPath, token) => dataPath !== ''
-        ? `${dataPath}/${token}`
-        : token
-
-      const process = (data, dataPath = '') => {
-        const component = components[dataPath]
-        if (component) {
-          const { schema } = component
-          if (schema.exclude) {
-            return undefined
-          }
-          if (schema.process) {
-            data = pick(schema.process(data, component.data), data)
-          }
-        }
-        if (isObject(data)) {
-          const { id } = data
-          const processed = {}
-          if (data.$relate) {
-            processed.id = id
-          } else {
-            for (const key in data) {
-              const value = process(data[key], appendPath(dataPath, key))
-              if (value !== undefined) {
-                processed[key] = value
-              }
-            }
-          }
-          // Special handling is required for temporary ids:
-          if (/^@/.test(id)) {
-            // Replace temporary id with #id / #ref, based on $relate which is
-            // true when relating to an item and undefined when creating it.
-            delete processed.id
-            processed[data.$relate ? '#ref' : '#id'] = id
-          }
-          data = processed
-        } else if (isArray(data)) {
-          data = data.reduce(
-            (array, entry, index) => {
-              const value = process(entry, appendPath(dataPath, index))
-              if (value !== undefined) {
-                array.push(value)
-              }
-              return array
-            },
-            []
-          )
-        }
-        return data
-      }
-
-      return process(data)
     }
   }
 }

@@ -73,7 +73,7 @@ import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import {
-  isArray, isObject, clone, capitalize, parseDataPath
+  isArray, isObject, clone, pick, capitalize, parseDataPath
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -85,6 +85,7 @@ export default DitoComponent.component('dito-form', {
       clonedData: undefined,
       isForm: true,
       components: {},
+      loadCache: {}, // See TypeMixin.load()
       formClass: null
     }
   },
@@ -351,6 +352,7 @@ export default DitoComponent.component('dito-form', {
 
     submit(button = {}) {
       const { onSuccess, onError } = button
+      const payload = this.processPayload()
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -360,17 +362,17 @@ export default DitoComponent.component('dito-form', {
         if (this.create) {
           const { listData } = this
           if (listData) {
-            listData.push(this.data)
+            listData.push(payload)
           } else {
             ok = false
             this.notify('error', 'Request Error',
               `Unable to ${this.verbCreate} item.`)
           }
         } else {
-          this.setListData(this.data)
-          const label = this.getItemLabel(this.data)
+          this.setListData(payload)
+          const label = this.getItemLabel(payload)
           if (onSuccess) {
-            onSuccess.call(this, this.data, label)
+            onSuccess.call(this, payload, label)
           } else {
             this.notify('info', 'Change Applied',
               `<p>Changes in ${label} were applied.</p>` +
@@ -389,7 +391,6 @@ export default DitoComponent.component('dito-form', {
         if (path) {
           resource = { ...resource, path }
         }
-        const payload = this.processPayload(this.data, this.components)
         this.request(method, { payload, resource }, (err, response) => {
           // eslint-disable-next-line
           const data = response?.data
@@ -439,6 +440,64 @@ export default DitoComponent.component('dito-form', {
           return true // Errors were already handled.
         })
       }
+    },
+
+    processPayload() {
+      // dito-server specific handling of relates within graphs:
+      // Find entries with temporary ids, and convert them to #id / #ref pairs.
+      // Also handle items with $relate and convert them to only contain ids.
+      const appendPath = (dataPath, token) => dataPath !== ''
+        ? `${dataPath}/${token}`
+        : token
+
+      const process = (data, dataPath = '') => {
+        const component = this.components[dataPath]
+        if (component) {
+          const { schema } = component
+          if (schema.exclude) {
+            return undefined
+          }
+          if (schema.process) {
+            data = pick(schema.process(data, component.data), data, dataPath)
+          }
+        }
+        if (isObject(data)) {
+          const { id } = data
+          const processed = {}
+          if (data.$relate) {
+            processed.id = id
+          } else {
+            for (const key in data) {
+              const value = process(data[key], appendPath(dataPath, key))
+              if (value !== undefined) {
+                processed[key] = value
+              }
+            }
+          }
+          // Special handling is required for temporary ids:
+          if (/^@/.test(id)) {
+            // Replace temporary id with #id / #ref, based on $relate which is
+            // true when relating to an item and undefined when creating it.
+            delete processed.id
+            processed[data.$relate ? '#ref' : '#id'] = id
+          }
+          data = processed
+        } else if (isArray(data)) {
+          data = data.reduce(
+            (array, entry, index) => {
+              const value = process(entry, appendPath(dataPath, index))
+              if (value !== undefined) {
+                array.push(value)
+              }
+              return array
+            },
+            []
+          )
+        }
+        return data
+      }
+
+      return process(this.data)
     },
 
     showErrors(errors, focus) {
