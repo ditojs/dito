@@ -209,21 +209,23 @@ export default DitoComponent.component('dito-form', {
       // Both have a data property which abstracts away loading and inheriting
       // of data.
       let { data } = this.parentRouteComponent
-      // Handle nested data by splitting the dataPath, iterate through the
-      // actual data and look nest child-data up.
-      const dataParts = this.parentDataPath.split('/')
-      // Compare dataParts against matched routePath parts, to identify those
-      // parts that need to be treated like ids and mapped to indices in data.
-      const pathParts = this.routeRecord.path.split('/')
-      const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-      // Use -1 for length to skip the final lookup, as we want the parent data.
-      for (let i = 0, l = dataParts.length - 1; i < l && data; i++) {
-        const dataPart = dataParts[i]
-        // If this is an :id part, find the index of the item with given id.
-        const key = /^:id/.test(routeParts[i])
-          ? this.findItemIdIndex(data, dataPart)
-          : dataPart
-        data = data[key]
+      if (data) {
+        // Handle nested data by splitting the dataPath, iterate through the
+        // actual data and look nest child-data up.
+        const dataParts = this.parentDataPath.split('/')
+        // Compare dataParts against matched routePath parts, to identify those
+        // parts that need to be treated like ids and mapped to indices in data.
+        const pathParts = this.routeRecord.path.split('/')
+        const routeParts = pathParts.slice(pathParts.length - dataParts.length)
+        // Use -1 for length to skip final lookup, as we want the parent data.
+        for (let i = 0, l = dataParts.length - 1; i < l && data; i++) {
+          const dataPart = dataParts[i]
+          // If this is an :id part, find the index of the item with given id.
+          const key = /^:id/.test(routeParts[i])
+            ? this.findItemIdIndex(data, dataPart)
+            : dataPart
+          data = data[key]
+        }
       }
       return data
     },
@@ -366,10 +368,10 @@ export default DitoComponent.component('dito-form', {
     },
 
     close(reload) {
-      this.$router.push({ path: '..', append: true })
+      const parent = this.parentRouteComponent
+      this.$router.push({ path: parent.path })
       // Tell the parent to reload its data if this was a submit()
       // See DataMixin.shouldReload:
-      const parent = this.parentRouteComponent
       if (reload && !parent.isTransient) {
         parent.reload = true
       }

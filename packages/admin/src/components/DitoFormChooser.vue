@@ -75,7 +75,7 @@ export default DitoComponent.component('dito-form-chooser', {
           this.$parent.createItem(form, type)
         } else {
           this.$router.push({
-            path: `${this.path}create`,
+            path: `${this.path}/create`,
             query: { type },
             append: true
           })

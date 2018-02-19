@@ -68,7 +68,8 @@ export default {
     },
 
     path() {
-      return this.routeComponent.isView ? '' : `${this.schema.path}/`
+      const { isView, path } = this.routeComponent
+      return isView ? path : `${path}/${this.schema.path}`
     },
 
     query() {
@@ -166,7 +167,7 @@ export default {
         })
       }
       return {
-        path: `${this.path}${this.getItemId(item, index)}`,
+        path: `${this.path}/${this.getItemId(item, index)}`,
         query
       }
     },
