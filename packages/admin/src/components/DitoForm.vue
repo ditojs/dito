@@ -180,11 +180,11 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      // Get the data path by denormalizePath the relative route path
-      const { parentRouteComponent: parent } = this
-      return this.api.denormalizePath(this.path
-        // DitoViews have nested routes, so don't remove their path.
-        .substring((parent.isView ? 0 : parent.path.length) + 1))
+      return this.getDataPathFrom(this.routeComponent)
+    },
+
+    parentDataPath() {
+      return this.getDataPathFrom(this.parentRouteComponent)
     },
 
     nestedDataPath() {
@@ -200,7 +200,7 @@ export default DitoComponent.component('dito-form', {
       let { data } = this.parentRouteComponent
       // Handle nested data by splitting the dataPath, iterate through the
       // actual data and look nest child-data up.
-      const dataParts = this.dataPath.split('/')
+      const dataParts = this.parentDataPath.split('/')
       // Compare dataParts against matched routePath parts, to identify those
       // parts that need to be treated like ids and mapped to indices in data.
       const pathParts = this.routeRecord.path.split('/')
@@ -247,6 +247,13 @@ export default DitoComponent.component('dito-form', {
   },
 
   methods: {
+    getDataPathFrom(route) {
+      // Get the data path by denormalizePath the relative route path
+      return this.api.denormalizePath(this.path
+        // DitoViews have nested routes, so don't remove their path.
+        .substring((route.isView ? 0 : route.path.length) + 1))
+    },
+
     initData() { // overrides DataMixin.initData()
       if (this.create) {
         const { type } = this
@@ -445,15 +452,15 @@ export default DitoComponent.component('dito-form', {
     processPayload() {
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
-      // Also handle items with $relate and convert them to only contain ids.
+      // Also handle items with relate and convert them to only contain ids.
       const appendPath = (dataPath, token) => dataPath !== ''
         ? `${dataPath}/${token}`
         : token
 
       const process = (data, dataPath = '') => {
         const component = this.components[dataPath]
-        if (component) {
-          const { schema } = component
+        const { schema, relate } = component || {}
+        if (schema) {
           if (schema.exclude) {
             return undefined
           }
@@ -464,7 +471,7 @@ export default DitoComponent.component('dito-form', {
         if (isObject(data)) {
           const { id } = data
           const processed = {}
-          if (data.$relate) {
+          if (relate) {
             processed.id = id
           } else {
             for (const key in data) {
@@ -476,10 +483,10 @@ export default DitoComponent.component('dito-form', {
           }
           // Special handling is required for temporary ids:
           if (/^@/.test(id)) {
-            // Replace temporary id with #id / #ref, based on $relate which is
+            // Replace temporary id with #id / #ref, based on relate which is
             // true when relating to an item and undefined when creating it.
             delete processed.id
-            processed[data.$relate ? '#ref' : '#id'] = id
+            processed[relate ? '#ref' : '#id'] = id
           }
           data = processed
         } else if (isArray(data)) {
@@ -497,7 +504,7 @@ export default DitoComponent.component('dito-form', {
         return data
       }
 
-      return process(this.data)
+      return process(this.data, this.dataPath)
     },
 
     showErrors(errors, focus) {

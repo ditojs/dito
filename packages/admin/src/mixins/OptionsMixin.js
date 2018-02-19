@@ -24,17 +24,9 @@ export default {
         const convert = value => this.relate
           ? this.optionToValue(value)
           : value
-        const value = isArray(this.value)
+        return isArray(this.value)
           ? this.value.map(convert)
           : convert(this.value)
-        if (this.relate && this.hasOptions() &&
-            this.value && !this.value.$relate) {
-          // When relating, and as soon as the options are available, replace
-          // the original value with its option version, so that it'll have the
-          // $relate property set, as required by processPayload().
-          this.selectValue = value
-        }
-        return value
       },
 
       set(value) {
@@ -42,9 +34,7 @@ export default {
           ? this.valueToOption(value)
           : value
         this.value = isArray(value)
-          // Also set $relate on arrays, so the check in get() work with both.
-          // The options themselves receive it already in processOption().
-          ? this.setRelate(value.map(convert))
+          ? value.map(convert)
           : convert(value)
       }
     },
@@ -115,10 +105,9 @@ export default {
         if (this.relate) {
           // If ids are missing and we want to relate, add temporary ids,
           // marked it with a '@' at the beginning.
-          // Also set the $relate flag for processPayload()
           // NOTE: This only makes sense if the data is from the graph that
           // we're currently editing.
-          options = options.map(({ id, ...rest }) => this.setRelate({
+          options = options.map(({ id, ...rest }) => ({
             id: id || `@${++temporaryId}`,
             ...rest
           }))
@@ -163,19 +152,6 @@ export default {
           return option
         }
       }
-    },
-
-    setRelate(object) {
-      // Set the $relate flag so processPayload() can remove everything except
-      // id for relates, and generate correct #ref/#id values for temporary ids.
-      return this.relate && object != null
-        ? Object.defineProperty(object, '$relate', {
-          enumerable: false,
-          configurable: true,
-          writeable: true,
-          value: true
-        })
-        : object
     },
 
     valueToOption(value) {
