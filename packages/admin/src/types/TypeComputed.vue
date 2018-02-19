@@ -16,7 +16,7 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register('computed', {
   computed: {
     computedValue() {
-      const value = this.schema.compute(this.data, this.dataFormComponent.data)
+      const value = this.schema.compute(this.data, this.dataRouteComponent.data)
       if (value !== undefined) {
         this.value = value
       }

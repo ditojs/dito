@@ -41,14 +41,14 @@ export default {
       return (this.isForm ? this.$parent : this)?.formComponent
     },
 
-    // Returns the first formComponent in the chain of parents that doesn't hold
-    // nested data.
-    dataFormComponent() {
-      let { formComponent } = this
-      while (formComponent?.isNested) {
-        formComponent = formComponent.parentFormComponent
+    // Returns the first routeComponent in the chain of parents that doesn't
+    // hold nested data.
+    dataRouteComponent() {
+      let { routeComponent } = this
+      while (routeComponent?.isNested) {
+        routeComponent = routeComponent.parentRouteComponent
       }
-      return formComponent
+      return routeComponent
     }
   },
 

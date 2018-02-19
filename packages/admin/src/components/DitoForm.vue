@@ -15,7 +15,7 @@
             :key="key"
             :tab="key"
             :schema="tabSchema"
-            :dataPath="nestedDataPath"
+            :dataPath="dataPath"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -23,7 +23,7 @@
           )
           dito-panel(
             :schema="schema"
-            :dataPath="nestedDataPath"
+            :dataPath="dataPath"
             :data="data || {}"
             :meta="meta"
             :store="store"
@@ -191,17 +191,11 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.routeComponent)
+      return this.getDataPathFrom(this.dataRouteComponent)
     },
 
     parentDataPath() {
       return this.getDataPathFrom(this.parentRouteComponent)
-    },
-
-    nestedDataPath() {
-      // Nested data needs to prefix its fields with the data path, for
-      // validation errors to find their targets.
-      return this.isNested ? this.dataPath : ''
     },
 
     listData() {
