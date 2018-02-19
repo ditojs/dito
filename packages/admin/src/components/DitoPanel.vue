@@ -2,8 +2,8 @@
   ul.dito-panel(
     v-if="components"
   )
-    li.dito-container.dito-title(
-      v-if="label !== undefined && schema.label !== false"
+    li.dito-panel-bar(
+      v-if="label !== undefined && !schema.compact"
     )
       dito-label(
         :dataPath="dataPath"
@@ -67,9 +67,10 @@ $half-form-spacing: $form-spacing / 2
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $half-form-spacing
-    .dito-title
-      flex-basis: 100%;
-      padding-bottom: 0
+    .dito-panel-bar
+      flex-basis: 100%
+      padding: $form-spacing
+      margin: 0 (-$half-form-spacing)
       .dito-label
         margin-bottom: 0
     &.dito-component.dito-fill

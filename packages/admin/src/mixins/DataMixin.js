@@ -111,7 +111,6 @@ export default {
     getFormSchema(item) {
       const { listSchema } = this
       const { form, forms } = listSchema
-      // eslint-disable-next-line
       const type = item?.type
       return forms && type ? forms[type] : form
     },

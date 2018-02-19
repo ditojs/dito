@@ -154,7 +154,6 @@ export default {
     getEditRoute(item, index) {
       // See if any of the form's components receives scopes and defines the
       // current scope as valid, and if so, pass it on to the editing form:
-      // eslint-disable-next-line
       const scope = this.store.query?.scope
       const query = {}
       if (scope) {

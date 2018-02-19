@@ -400,7 +400,6 @@ export default DitoComponent.component('dito-form', {
           resource = { ...resource, path }
         }
         this.request(method, { payload, resource }, (err, response) => {
-          // eslint-disable-next-line
           const data = response?.data
           if (err) {
             // See if we're dealing with a Dito validation error:

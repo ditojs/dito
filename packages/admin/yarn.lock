@@ -306,7 +306,7 @@
   version "7.0.0-beta.40"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-do-expressions/-/plugin-syntax-do-expressions-7.0.0-beta.40.tgz#05afe1230a8dabc5dc84800c3b6553c1d374695e"
 
-"@babel/plugin-syntax-dynamic-import@7.0.0-beta.40":
+"@babel/plugin-syntax-dynamic-import@7.0.0-beta.40", "@babel/plugin-syntax-dynamic-import@^7.0.0-beta.39":
   version "7.0.0-beta.40"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-dynamic-import/-/plugin-syntax-dynamic-import-7.0.0-beta.40.tgz#5d9b58d4fbe1dfabbd44dee2eb267c466d7e9b87"
 
@@ -1020,6 +1020,12 @@ babel-loader@8.0.0-beta.0:
     find-cache-dir "^1.0.0"
     loader-utils "^1.0.2"
     mkdirp "^0.5.1"
+
+babel-plugin-dynamic-import-node-babel-7@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node-babel-7/-/babel-plugin-dynamic-import-node-babel-7-2.0.5.tgz#882398d64fe9c09ba074af9d98b5a171375780a4"
+  dependencies:
+    "@babel/plugin-syntax-dynamic-import" "^7.0.0-beta.39"
 
 babel-plugin-syntax-object-rest-spread@^6.8.0:
   version "6.13.0"

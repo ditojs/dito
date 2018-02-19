@@ -52,6 +52,7 @@
     "babel-eslint": "^8.2.1",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "babel-loader": "8.0.0-beta.0",
+    "babel-plugin-dynamic-import-node-babel-7": "^2.0.5",
     "chalk": "^2.3.1",
     "copy-webpack-plugin": "^4.4.1",
     "css-loader": "^0.28.9",

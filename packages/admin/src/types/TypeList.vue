@@ -30,6 +30,7 @@
         tr(
           v-for="item, index in value || []"
           :key="index"
+          :class="getInlineClass(item)"
         )
           template(v-if="columns")
             dito-cell(
@@ -196,6 +197,29 @@ $buttons-padding: 2px
                 border-bottom-left-radius: $border-radius
               > td:last-child
                 border-bottom-right-radius: $border-radius
+  // Inline Rows
+  tr.dito-inline-row
+    display: block
+    margin-bottom: $form-spacing
+    tr.dito-inline-row
+      margin-bottom: 0
+    &.dito-inline-bar
+      position: relative
+      // Only style the td elements directly in this .dito-inline-bar,
+      // not further nested ones:
+      > table
+        > tbody
+          > tr
+            > td
+              display: block
+              &.dito-buttons
+                background: none
+                position: absolute
+                width: auto
+                top: 0
+                right: 0
+                .dito-button:hover
+                  background: $button-color-active
 </style>
 
 <script>
@@ -252,6 +276,15 @@ export default TypeComponent.register('list', {
         disabled: !this.schema.draggable,
         handle: '.dito-button-drag',
         ghostClass: 'dito-drag-ghost'
+      }
+    }
+  },
+
+  methods: {
+    getInlineClass(item) {
+      return this.inline && {
+        'dito-inline-row': true,
+        'dito-inline-bar': !this.getFormSchema(item).compact
       }
     }
   }
