@@ -1,34 +1,37 @@
-import path from 'path'
 import Koa from 'koa'
+import mount from 'koa-mount'
 import webpack from 'webpack'
 import koaWebpack from 'koa-webpack'
-import mount from 'koa-mount'
+import autoprefixer from 'autoprefixer'
 import historyApiFallback from 'koa-connect-history-api-fallback'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import { Controller } from './Controller'
 
 export class AdminController extends Controller {
+  name = 'admin'
+
   // @override
   compose() {
-    const index = path.resolve(this.entry, 'index.html')
+    const { config } = this
     const koa = new Koa()
     koa.use(historyApiFallback())
     koa.use(koaWebpack({
       config: {
         entry: [
-          this.entry,
-          path.resolve(this.entry, 'index.sass')
-        ],
+          config.path,
+          config.style,
+          '@ditojs/admin/dist/dito-admin.css'
+        ].filter(value => value),
         output: {
-          path: this.entry,
+          path: config.path,
           publicPath: `${this.url}/`
         },
         resolve: {
           extensions: ['.js', '.vue', '.json'],
           alias: {
             'vue$': 'vue/dist/vue.esm.js',
-            '@': this.entry
+            '@': config.path
           }
         },
         module: {
@@ -42,8 +45,8 @@ export class AdminController extends Controller {
               test: /\.js$/,
               loader: 'babel-loader',
               include: [
-                this.entry,
-                path.resolve('node_modules/webpack-dev-server/client')
+                config.path,
+                'webpack-dev-server/client'
               ]
             },
             ...styleLoaders({
@@ -58,7 +61,7 @@ export class AdminController extends Controller {
           new webpack.NoEmitOnErrorsPlugin(),
           // https://github.com/ampedandwired/html-webpack-plugin
           new HtmlWebpackPlugin({
-            template: index,
+            template: config.index,
             inject: true
           })
         ]
@@ -94,10 +97,20 @@ function cssLoaders(options = {}) {
     }
   }
 
+  // https://github.com/michael-ciniawsky/postcss-load-config
   const postcssLoader = {
     loader: 'postcss-loader',
     options: {
-      sourceMap: options.sourceMap
+      sourceMap: options.sourceMap,
+      plugins: [
+        autoprefixer({
+          browsers: [
+            '> 1%',
+            'last 2 versions',
+            'not ie <= 8'
+          ]
+        })
+      ]
     }
   }
 
