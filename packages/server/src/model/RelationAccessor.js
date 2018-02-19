@@ -26,8 +26,7 @@ export default class RelationAccessor {
    * the application of `QueryBuilder.mixin()`.
    */
   get joinModelClass() {
-    const joinModelClass = this.relation.joinModelClass(
-      this.relation.ownerModelClass.knex())
+    const { joinModelClass } = this.relation
     // Result is already cached per knex by `this.relation.joinModelClass()`,
     // so all that's left to do is apply `QueryBuilder.mixin()`,
     // if there is no `joinModelClass.where()` yet:
