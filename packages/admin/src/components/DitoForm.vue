@@ -73,7 +73,7 @@ import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import {
-  isArray, isObject, clone, pick, capitalize, parseDataPath
+  isArray, isObject, clone, capitalize, parseDataPath
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -459,34 +459,16 @@ export default DitoComponent.component('dito-form', {
 
       const process = (data, dataPath = '') => {
         const component = this.components[dataPath]
-        const { schema, relate } = component || {}
-        if (schema) {
-          if (schema.exclude) {
-            return undefined
-          }
-          if (schema.process) {
-            data = pick(schema.process(data, component.data), data, dataPath)
-          }
+        if (component) {
+          data = component.processPayload(data, dataPath)
         }
         if (isObject(data)) {
-          const { id } = data
           const processed = {}
-          if (relate) {
-            processed.id = id
-          } else {
-            for (const key in data) {
-              const value = process(data[key], appendPath(dataPath, key))
-              if (value !== undefined) {
-                processed[key] = value
-              }
+          for (const key in data) {
+            const value = process(data[key], appendPath(dataPath, key))
+            if (value !== undefined) {
+              processed[key] = value
             }
-          }
-          // Special handling is required for temporary ids:
-          if (/^@/.test(id)) {
-            // Replace temporary id with #id / #ref, based on relate which is
-            // true when relating to an item and undefined when creating it.
-            delete processed.id
-            processed[relate ? '#ref' : '#id'] = id
           }
           data = processed
         } else if (isArray(data)) {
@@ -501,6 +483,7 @@ export default DitoComponent.component('dito-form', {
             []
           )
         }
+
         return data
       }
 

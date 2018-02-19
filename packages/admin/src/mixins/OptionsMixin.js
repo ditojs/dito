@@ -1,4 +1,5 @@
 import LoadingMixin from './LoadingMixin'
+import TypeMixin from './TypeMixin'
 import { isObject, isArray, isFunction, isPromise } from '@ditojs/utils'
 
 export default {
@@ -171,6 +172,35 @@ export default {
       return this.optionLabelKey
         ? option?.[this.optionLabelKey]
         : option
+    },
+
+    processPayload(data, dataPath) {
+      const process = (data, dataPath) => {
+        data = TypeMixin.methods.processPayload.call(this, data, dataPath)
+        const { id } = data
+        const hasTempId = /^@/.test(id)
+        if (this.relate) {
+          data = { id }
+        } else if (hasTempId) {
+          // Shallow copy for further modification after.
+          data = { ...data }
+        }
+        if (hasTempId) {
+          // Special handling is required for temporary ids:
+          // Replace id with #id / #ref, based on relate which is true when
+          // relating to an item and undefined when creating it.
+          delete data.id
+          data[this.relate ? '#ref' : '#id'] = id
+        }
+        return data
+      }
+
+      // Selected options can be both objects and arrays, e.g. TypeCheckboxes:
+      return data
+        ? isArray(data)
+          ? data.map((entry, index) => process(entry, `${dataPath}/${index}`))
+          : process(data, dataPath)
+        : data
     }
   }
 }

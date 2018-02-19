@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isArray } from '@ditojs/utils'
+import { isArray, pick } from '@ditojs/utils'
 
 export default {
   // Inherit the $validator from the parent.
@@ -141,6 +141,18 @@ export default {
           ? new Error(error.response?.data)
           : error
       }
+    },
+
+    processPayload(data, dataPath) {
+      const { schema } = this
+      return schema.exclude
+        ? undefined
+        : schema.process
+          ? pick(
+            schema.process(data, this.data, dataPath),
+            data
+          )
+          : data
     },
 
     addError(error) {
