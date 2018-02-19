@@ -459,6 +459,12 @@ export default DitoComponent.component('dito-form', {
       return /^@/.test(data?.id)
     },
 
+    isReference(data) {
+      // Returns true if value is an object that holds nothing more than an id.
+      const keys = data && Object.keys(data)
+      return keys?.length === 1 && keys[0] === 'id'
+    },
+
     processPayload() {
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
@@ -468,14 +474,17 @@ export default DitoComponent.component('dito-form', {
         : token
 
       const process = (data, dataPath = '') => {
-        const component = this.components[dataPath]
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
         if (!this.isTransient && this.hasTemporaryId(data)) {
           const { id, ...rest } = data
-          data = { '#id': id, ...rest }
+          // A refeference is a shallow copy that hold nothing more than ids.
+          // Use #ref instead of #id for these:
+          const key = this.isReference(data) ? '#ref' : '#id'
+          data = { [key]: id, ...rest }
         }
+        const component = this.components[dataPath]
         if (component) {
           data = component.processPayload(data, dataPath)
         }

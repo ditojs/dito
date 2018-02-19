@@ -20,7 +20,8 @@ export default {
         const value = isArray(this.value)
           ? this.value.map(convert)
           : convert(this.value)
-        if (this.relate && this.hasOptions() && this.isReference(this.value)) {
+        if (this.relate && this.hasOptions() &&
+            this.formComponent.isReference(this.value)) {
           // When relating, and as soon as the options are available, replace
           // the original, shallow value with its option version, so that it'll
           // hold actualy data, not just an reference id.
@@ -110,12 +111,6 @@ export default {
       return this.options.length > 0
     },
 
-    isReference(value) {
-      // Returns true if value is an object that holds nothing more than an id.
-      const keys = value && Object.keys(value)
-      return keys?.length === 1 && keys[0] === 'id'
-    },
-
     processOptions(options = []) {
       if (options.length) {
         if (this.relate) {
@@ -192,25 +187,15 @@ export default {
     },
 
     processPayload(data, dataPath) {
-      const process = (data, dataPath) => {
-        data = TypeMixin.methods.processPayload.call(this, data, dataPath)
-        // When relating, convert object to a shallow copy with only id.
-        if (data && this.relate) {
-          // Create shallow references that hold nothing more than ids.
-          // Special handling is required for temporary ids: Move #id to #ref.
-          data = '#id' in data
-            ? { '#ref': data['#id'] }
-            : { id: data.id }
-        }
-        return data
+      if (this.relate) {
+        // Convert object to a shallow copy with only id.
+        const processRelate = data => data ? { id: data.id } : data
+        // Selected options can be both objects and arrays, e.g. TypeCheckboxes:
+        data = isArray(data)
+          ? data.map(entry => processRelate(entry))
+          : processRelate(data)
       }
-
-      // Selected options can be both objects and arrays, e.g. TypeCheckboxes:
-      return data
-        ? isArray(data)
-          ? data.map((entry, index) => process(entry, `${dataPath}/${index}`))
-          : process(data, dataPath)
-        : data
+      return TypeMixin.methods.processPayload.call(this, data, dataPath)
     }
   }
 }
