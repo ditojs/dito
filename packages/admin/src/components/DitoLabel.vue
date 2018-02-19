@@ -7,7 +7,7 @@
   .dito-label
     display: block
     white-space: nowrap
-    margin: 0 0 2px 0
+    margin: 0 0 $form-spacing-half 0
     +user-select(none)
 </style>
 

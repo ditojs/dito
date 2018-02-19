@@ -42,14 +42,13 @@
 </template>
 
 <style lang="sass">
-$half-form-spacing: $form-spacing / 2
 .dito
   .dito-panel
     display: flex
     flex-flow: row wrap
     position: relative
     align-items: baseline
-    margin: (-$form-spacing) (-$half-form-spacing)
+    margin: (-$form-spacing) (-$form-spacing-half)
     &::after
       // Use a pseudo element to display a ruler with proper margins
       display: 'block'
@@ -58,19 +57,18 @@ $half-form-spacing: $form-spacing / 2
       padding-bottom: $form-margin
       border-bottom: $border-style
       // Add removed $form-spacing again to the ruler
-      margin: 0 $half-form-spacing $form-margin
+      margin: 0 $form-spacing-half $form-margin
     .dito-container
       flex: 1 1 auto
       align-self: stretch
-      position: relative // for .dito-errors
       box-sizing: border-box
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
-      padding: $form-spacing $half-form-spacing
+      padding: $form-spacing $form-spacing-half
     .dito-panel-bar
       flex-basis: 100%
       padding: $form-spacing
-      margin: 0 (-$half-form-spacing)
+      margin: 0 (-$form-spacing-half)
       .dito-label
         margin-bottom: 0
     &.dito-component.dito-fill

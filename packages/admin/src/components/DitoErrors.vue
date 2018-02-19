@@ -12,6 +12,8 @@
     ul
       margin-top: 1px
       color: $color-error
+      li
+        background: $color-white
 </style>
 
 <script>
