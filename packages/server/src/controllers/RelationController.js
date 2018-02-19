@@ -28,7 +28,7 @@ export class RelationController extends CollectionController {
     // Initialize:
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
-    this.log(`${chalk.blue(this.name)}${chalk.white(':')}`, this.level)
+    this.log(`${chalk.blue(this.path)}${chalk.white(':')}`, this.level)
     // Copy over all fields in the relation object except the ones that are
     // going to be inherited in `initialize()` (relation, member, allow),
     // for settings like scope, eagerScope, etc.

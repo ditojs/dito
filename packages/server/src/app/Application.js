@@ -142,7 +142,10 @@ export class Application extends Koa {
       controller.initialize()
     }
     if (controller instanceof Controller) {
-      this.use(controller.compose())
+      const middleware = controller.compose()
+      if (middleware) {
+        this.use(middleware)
+      }
       this.controllers[controller.url] = controller
     } else {
       throw new Error(`Unknown controller: ${controller}`)

@@ -1,37 +1,42 @@
+import path from 'path'
 import Koa from 'koa'
 import mount from 'koa-mount'
-import webpack from 'webpack'
-import koaWebpack from 'koa-webpack'
-import autoprefixer from 'autoprefixer'
+import webpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
+import { NamedModulesPlugin, NoEmitOnErrorsPlugin } from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
+import autoprefixer from 'autoprefixer'
 import { Controller } from './Controller'
 
 export class AdminController extends Controller {
-  name = 'admin'
-
   // @override
   compose() {
-    const { config } = this
+    const config = this.app.config.admin
+    if (!config?.dev) {
+      // TODO: Implement static serving of built resources from `config.path`,
+      // for production hosting.
+      return null
+    }
+    const resolved = path.resolve(config.path)
     const koa = new Koa()
     koa.use(historyApiFallback())
-    koa.use(koaWebpack({
+    koa.use(webpack({
       config: {
         entry: [
-          config.path,
-          config.style,
-          '@ditojs/admin/dist/dito-admin.css'
-        ].filter(value => value),
+          resolved,
+          '@ditojs/admin/dist/dito-admin.css',
+          ...(config.others || [])
+        ],
         output: {
-          path: config.path,
+          path: resolved,
           publicPath: `${this.url}/`
         },
         resolve: {
           extensions: ['.js', '.vue', '.json'],
           alias: {
             'vue$': 'vue/dist/vue.esm.js',
-            '@': config.path
+            '@': resolved
           }
         },
         module: {
@@ -45,7 +50,7 @@ export class AdminController extends Controller {
               test: /\.js$/,
               loader: 'babel-loader',
               include: [
-                config.path,
+                resolved,
                 'webpack-dev-server/client'
               ]
             },
@@ -57,8 +62,8 @@ export class AdminController extends Controller {
         },
         plugins: [
           // HMR shows correct file names in console on update:
-          new webpack.NamedModulesPlugin(),
-          new webpack.NoEmitOnErrorsPlugin(),
+          new NamedModulesPlugin(),
+          new NoEmitOnErrorsPlugin(),
           // https://github.com/ampedandwired/html-webpack-plugin
           new HtmlWebpackPlugin({
             template: config.index,

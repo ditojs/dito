@@ -24,8 +24,10 @@ export class Controller {
       const url = path ? `/${path}` : ''
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
-        `${namespace && chalk.green(`${namespace}/`)}${
-          chalk.cyan(this.name)}${chalk.white(':')}`,
+        `${namespace ? chalk.green(`${namespace}/`) : ''}${
+          chalk.cyan(path)}${
+          chalk.white(':')
+        }`,
         this.level
       )
       this.router = null
