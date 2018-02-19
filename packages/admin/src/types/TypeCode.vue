@@ -6,8 +6,8 @@
 </template>
 
 <style lang="sass">
-@import '~prismjs/themes/prism.css'
-@import '~codeflask/src/codeflask.css'
+@import '~prismjs/themes/prism'
+@import '~codeflask/src/codeflask'
 
 .dito
   .dito-code
