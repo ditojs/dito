@@ -29,18 +29,20 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.component('dito-root', {
   props: {
     views: { type: Object, required: true },
-    options: { type: Object, required: true }
+    options: { type: Object, default: {} }
   },
 
   created() {
+    this.appState.title = document.title || 'Dito.js Admin'
     const {
-      title = 'Dito.js Admin',
-      spinner = {}
-    } = this.options || {}
-    document.title = this.appState.title = title
+      spinner: {
+        size = '8px',
+        color = '#999'
+      } = {}
+    } = this.options
     const { props } = DitoComponent.get('dito-spinner').options
-    props.size.default = spinner.size || '8px'
-    props.color.default = spinner.color || '#999'
+    props.size.default = size
+    props.color.default = color
   }
 })
 </script>

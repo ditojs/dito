@@ -21,7 +21,8 @@ Vue.use(VeeValidate, {
 export async function setup(el, options = {}) {
   const {
     views = {},
-    api = {}
+    api = {},
+    base = '/'
   } = options
 
   // Setting `api.normalizePaths = true (plural) sets both:
@@ -56,7 +57,8 @@ export async function setup(el, options = {}) {
     el,
     router: new VueRouter({
       mode: 'history',
-      routes
+      routes,
+      base
     }),
     template: '<dito-root :views="views" :options="options" />',
     components: { DitoRoot },
