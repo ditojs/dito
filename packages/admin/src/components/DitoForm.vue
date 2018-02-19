@@ -36,6 +36,7 @@
               :class="`dito-button-${verbCancel}`"
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
+              v-if="!isDirect"
               type="submit"
               :class="`dito-button-${verbSubmit}`"
             ) {{ buttons.submit && buttons.submit.label }}
@@ -91,6 +92,11 @@ export default DitoComponent.component('dito-form', {
     }
   },
 
+  watch: {
+    listData: 'clearClonedData',
+    listIndex: 'clearClonedData'
+  },
+
   created() {
     // Errors can get passed on through the meta object, so add them now.
     // See TypeMixin.showErrors()
@@ -125,6 +131,10 @@ export default DitoComponent.component('dito-form', {
 
     isActive() {
       return this.isLastRoute || this.isLastUnnestedRoute
+    },
+
+    isDirect() {
+      return this.listSchema.direct
     },
 
     type() {
@@ -229,9 +239,13 @@ export default DitoComponent.component('dito-form', {
       // Use a trick to store the cloned inherited data in clonedData, to make
       // it reactive as well and to make sure that we're not cloning twice.
       if (this.isTransient && this.clonedData === undefined && this.listData) {
-        this.clonedData = this.listIndex >= 0
-          ? clone(this.listData[this.listIndex])
+        let data = this.listIndex >= 0
+          ? this.listData[this.listIndex]
           : null
+        if (!this.isDirect) {
+          this.clonedData = data = clone(data)
+        }
+        return data
       }
       return this.clonedData
     },
@@ -305,6 +319,10 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    clearClonedData() {
+      this.clonedData = undefined
+    },
+
     addErrors(errors, focus) {
       for (const [dataPath, errs] of Object.entries(errors || {})) {
         const component = this.components[dataPath]
@@ -340,10 +358,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     onCancel() {
-      if (
-        !this.isDirty ||
-        confirm('You have unsaved changed. Do you really want to cancel?')
-      ) {
+      if (this.isDirect || !this.isDirty || confirm(
+        'You have unsaved changed. Do you really want to cancel?'
+      )) {
         this.close(false)
       }
     },

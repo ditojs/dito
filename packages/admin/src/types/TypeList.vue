@@ -31,7 +31,7 @@
       )
         tr(
           v-for="item, index in value || []"
-          :key="index"
+          :key="getItemId(item, index)"
           :class="getInlineClass(item)"
         )
           template(v-if="columns")
@@ -258,7 +258,7 @@ export default TypeComponent.register('list', {
     },
 
     draggable() {
-      return this.schema.draggable
+      return this.schema.draggable && this.value.length > 1
     },
 
     hasButtons() {

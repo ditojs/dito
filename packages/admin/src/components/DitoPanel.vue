@@ -60,7 +60,7 @@ $half-form-spacing: $form-spacing / 2
       // Add removed $form-spacing again to the ruler
       margin: 0 $half-form-spacing $form-margin
     .dito-container
-      flex: 1 0 auto
+      flex: 1 1 auto
       align-self: stretch
       position: relative // for .dito-errors
       box-sizing: border-box

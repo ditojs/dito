@@ -1,5 +1,10 @@
 <template lang="pug">
-  .dito-tree-item(:class="{ 'dito-dragging': dragging }")
+  .dito-tree-item(
+    :class="{ \
+      'dito-dragging': dragging, \
+      'dito-editing': editing \
+    }"
+  )
     .dito-tree-title(v-if="title")
       .dito-tree-branch(v-if="numChildren" @click.stop="opened = !opened")
         .dito-tree-chevron(v-if="path" :class="{ 'dito-opened': opened }")
@@ -40,6 +45,7 @@
         :data="child.data"
         :path="child.path"
         :open="child.open"
+        :editing="child.editing"
         :schema="childrenList.schema"
         :draggable="childrenList.draggable"
         :container="container"
@@ -88,6 +94,10 @@
       .dito-tree-title
         > .dito-buttons
           visibility: hidden
+    &.dito-editing
+      > .dito-tree-title
+        background: $color-lightest
+        border-radius: $border-radius
 </style>
 
 <script>
@@ -102,6 +112,7 @@ export default DitoComponent.component('dito-tree-item', {
     data: { type: [Array, Object] },
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
+    editing: { type: Boolean, default: false },
     schema: { type: Object, required: true },
     draggable: { type: Boolean, default: false },
     container: { type: Object, required: true }
@@ -115,6 +126,8 @@ export default DitoComponent.component('dito-tree-item', {
 
   methods: {
     onEdit() {
+      // All we got to do is push the right edit path to the router, the rest
+      // is handled by our routes, allowing reloads as well.
       this.$router.push({
         path: `${this.container.path}${this.path}`,
         // Preserve current query
@@ -151,10 +164,12 @@ export default DitoComponent.component('dito-tree-item', {
             const open = childrenOpen ||
               // Only count as "in edit path" when it's not the full edit path.
               editPath.startsWith(path) && path.length < editPath.length
+            const editing = editPath === path
             return {
               data,
               path,
-              open
+              open,
+              editing
             }
           }) || []
           lists.push({

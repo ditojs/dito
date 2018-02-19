@@ -20,12 +20,16 @@
   .dito-tree-list
     .dito-tree-panel
       display: flex
+      justify-content: space-between
       > .dito-tree-item
         flex: 0 1 auto
-      > .dito-form
-        margin-left: $form-margin
+      > .dito-nested-form
+        background: $color-lightest
+        border-radius: $border-radius
+        padding: $form-margin
         width: 0 // let it grow to size
-        flex: 1 1 auto
+        flex: 1 1 50%
+        max-width: 50%
         align-self: flex-start
         .dito-content
           padding: 0

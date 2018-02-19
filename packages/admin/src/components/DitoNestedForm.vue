@@ -16,11 +16,6 @@ export default DitoForm.extend({
     }
   },
 
-  watch: {
-    listData: 'clearClonedData',
-    listIndex: 'clearClonedData'
-  },
-
   computed: {
     isNested() {
       return true
@@ -32,12 +27,6 @@ export default DitoForm.extend({
 
     verbCanceled() {
       return 'closed'
-    }
-  },
-
-  methods: {
-    clearClonedData() {
-      this.clonedData = undefined
     }
   }
 })
