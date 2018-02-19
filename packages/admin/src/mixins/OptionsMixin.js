@@ -7,16 +7,8 @@ export default {
 
   data() {
     return {
-      options: []
+      resolvedValues: null
     }
-  },
-
-  watch: {
-    'schema.options': 'getOptions'
-  },
-
-  created() {
-    this.getOptions()
   },
 
   computed: {
@@ -25,9 +17,16 @@ export default {
         const convert = value => this.relate
           ? this.optionToValue(value)
           : value
-        return isArray(this.value)
+        const value = isArray(this.value)
           ? this.value.map(convert)
           : convert(this.value)
+        if (this.relate && this.hasOptions() && this.isReference(this.value)) {
+          // When relating, and as soon as the options are available, replace
+          // the original, shallow value with its option version, so that it'll
+          // hold actualy data, not just an reference id.
+          this.selectValue = value
+        }
+        return value
       },
 
       set(value) {
@@ -38,6 +37,38 @@ export default {
           ? value.map(convert)
           : convert(value)
       }
+    },
+
+    options() {
+      let values = this.resolvedValues
+      if (!values) {
+        const { options = {} } = this.schema
+        values = isObject(options) ? options.values : options
+        if (isFunction(values)) {
+          const rootData = this.dataFormComponent.data
+          values = rootData &&
+            values.call(this, this.data, rootData, this.dataPath)
+        }
+        if (isPromise(values)) {
+          // If the values are asynchronous, we can't return them straight away.
+          // But we can "cheat" using computed properties and `resolvedValues`,
+          // which is going to receive the loaded data asynchronously,
+          // triggering a recompute of `options` which depends on its value.
+          this.setLoading(true)
+          values
+            .then(values => {
+              this.setLoading(false)
+              this.resolvedValues = values
+            })
+            .catch(error => {
+              this.setLoading(false)
+              this.addError(error.message)
+            })
+          // Use an empty array for now, until resolved.
+          values = []
+        }
+      }
+      return this.processOptions(values)
     },
 
     groupBy() {
@@ -79,45 +110,31 @@ export default {
       return this.options.length > 0
     },
 
-    async getOptions() {
-      const { options = {} } = this.schema
-      let values = isObject(options) ? options.values : options
-      if (isFunction(values)) {
-        values = values.call(
-          this, this.data, this.dataFormComponent?.data, this.dataPath
-        )
-      }
-      if (isPromise(values)) {
-        this.setLoading(true)
-        try {
-          values = await values
-        } catch (error) {
-          values = []
-          this.addError(error.message)
-        }
-        this.setLoading(false)
-      }
-      this.setOptions(values)
-      return values
+    isReference(value) {
+      // Returns true if value is an object that holds nothing more than an id.
+      const keys = value && Object.keys(value)
+      return keys?.length === 1 && keys[0] === 'id'
     },
 
-    setOptions(options = []) {
+    processOptions(options = []) {
       if (options.length) {
         if (this.relate) {
-          // If ids are missing and we want to relate, add temporary ids,
-          // marked it with a '@' at the beginning.
+          // If ids are missing and we want to relate, set temporary ids.
+          // NOTE: We need to modify the actual data, making a copy won't work
+          // as it won't propagate.
           // NOTE: This only makes sense if the data is from the graph that
           // we're currently editing.
-          options = options.map(({ id, ...rest }) => ({
-            id: id || `@${++temporaryId}`,
-            ...rest
-          }))
+          for (const option of options) {
+            if (!('id' in option)) {
+              this.formComponent.setTemporaryId(option)
+            }
+          }
         }
         if (this.groupBy) {
           options = this.groupOptions(options)
         }
       }
-      this.options = options
+      return options
     },
 
     groupOptions(options) {
@@ -177,20 +194,13 @@ export default {
     processPayload(data, dataPath) {
       const process = (data, dataPath) => {
         data = TypeMixin.methods.processPayload.call(this, data, dataPath)
-        const { id } = data
-        const hasTempId = /^@/.test(id)
-        if (this.relate) {
-          data = { id }
-        } else if (hasTempId) {
-          // Shallow copy for further modification after.
-          data = { ...data }
-        }
-        if (hasTempId) {
-          // Special handling is required for temporary ids:
-          // Replace id with #id / #ref, based on relate which is true when
-          // relating to an item and undefined when creating it.
-          delete data.id
-          data[this.relate ? '#ref' : '#id'] = id
+        // When relating, convert object to a shallow copy with only id.
+        if (data && this.relate) {
+          // Create shallow references that hold nothing more than ids.
+          // Special handling is required for temporary ids: Move #id to #ref.
+          data = '#id' in data
+            ? { '#ref': data['#id'] }
+            : { id: data.id }
         }
         return data
       }
@@ -204,5 +214,3 @@ export default {
     }
   }
 }
-
-let temporaryId = 0

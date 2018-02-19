@@ -86,7 +86,8 @@ export default DitoComponent.component('dito-form', {
       isForm: true,
       components: {},
       loadCache: {}, // See TypeMixin.load()
-      formClass: null
+      formClass: null,
+      temporaryId: 0
     }
   },
 
@@ -449,6 +450,15 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
+    setTemporaryId(data) {
+      // Temporary ids are marked with a '@' at the beginning.
+      data.id = `@${++this.temporaryId}`
+    },
+
+    hasTemporaryId(data) {
+      return /^@/.test(data?.id)
+    },
+
     processPayload() {
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
@@ -459,6 +469,13 @@ export default DitoComponent.component('dito-form', {
 
       const process = (data, dataPath = '') => {
         const component = this.components[dataPath]
+        // Special handling is required for temporary ids when procssing non
+        // transient data: Replace id with #id, so '#ref' can be used for
+        // relates, see OptionsMixin:
+        if (!this.isTransient && this.hasTemporaryId(data)) {
+          const { id, ...rest } = data
+          data = { '#id': id, ...rest }
+        }
         if (component) {
           data = component.processPayload(data, dataPath)
         }
