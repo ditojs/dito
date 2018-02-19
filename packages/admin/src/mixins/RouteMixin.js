@@ -89,6 +89,11 @@ export default {
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
       return this.$route.params[this.meta.param]
+    },
+
+    nestedRoutes() {
+      const { routeComponents } = this.appState
+      return routeComponents.slice(routeComponents.indexOf(this) + 1)
     }
   }
 }

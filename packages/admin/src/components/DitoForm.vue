@@ -258,8 +258,19 @@ export default DitoComponent.component('dito-form', {
       return !this.isTransient && !this.data && !this.loading
     },
 
+    nestedForms() {
+      return this.nestedRoutes.filter(entry => entry.isForm)
+    },
+
     isDirty() {
-      return Object.keys(this.$fields).some(key => this.$fields[key].dirty)
+      for (const form of [this, ...this.nestedForms]) {
+        if (!form.isDirect && Object.keys(form.$fields).some(
+          key => form.$fields[key].dirty)
+        ) {
+          return true
+        }
+      }
+      return false
     }
   },
 
@@ -360,7 +371,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     onCancel() {
-      if (this.isDirect || !this.isDirty || confirm(
+      if (!this.isDirty || confirm(
         'You have unsaved changed. Do you really want to cancel?'
       )) {
         this.close(false)
@@ -395,7 +406,7 @@ export default DitoComponent.component('dito-form', {
             this.notify('error', 'Request Error',
               `Unable to ${this.verbCreate} item.`)
           }
-        } else {
+        } else if (!this.isDirect) {
           this.setListData(payload)
           const label = this.getItemLabel(payload)
           if (onSuccess) {
