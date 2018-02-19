@@ -132,13 +132,14 @@ export default {
 
     getItemLabel(item, index, fallback = true) {
       const { itemLabel, columns } = this.listSchema
+      if (itemLabel === false) return null
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
         'name'
       let label = isFunction(itemLabel)
         ? itemLabel(item)
         : pick(item[itemProperty], null)
-      if (!label && fallback) {
+      if (label == null && fallback) {
         const formLabel = this.getLabel(this.getFormSchema(item))
         const id = this.getItemId(item)
         label = id

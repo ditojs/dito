@@ -143,9 +143,11 @@ export default DitoComponent.component('dito-tree-item', {
   computed: {
     title() {
       const { itemLabel } = this.schema
-      return isFunction(itemLabel)
-        ? itemLabel(this.data)
-        : this.data?.[itemLabel]
+      return itemLabel === false
+        ? null
+        : isFunction(itemLabel)
+          ? itemLabel(this.data)
+          : this.data?.[itemLabel]
     },
 
     childrenLists() {
