@@ -1,4 +1,4 @@
-export const TimeStampMixin = Model => class extends Model {
+export const TimeStampedMixin = Model => class extends Model {
   static properties = {
     createdAt: {
       type: 'timestamp',

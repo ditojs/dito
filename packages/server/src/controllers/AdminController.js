@@ -72,7 +72,13 @@ export class AdminController extends Controller {
         ]
       },
       dev: {
-        publicPath: '/'
+        publicPath: '/',
+        // https://webpack.js.org/configuration/stats/#stats
+        stats: 'minimal'
+      },
+      hot: {
+        reload: true,
+        stats: 'minimal'
       }
     }))
     return mount(this.url, koa)
