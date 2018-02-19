@@ -31,7 +31,7 @@
       :list="childrenList.items"
       :options="childrenList.dragOptions"
       @start="onStartDrag"
-      @end="onEndDrag(childrenList, $event)"
+      @end="onEndDrag($event, childrenList.items, childrenList.schema)"
     )
       dito-tree-item(
         v-for="(child, index) in childrenList.children"
@@ -92,9 +92,12 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import OrderedMixin from '@/mixins/OrderedMixin'
 import { isObject, isFunction } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-tree-item', {
+  mixins: [OrderedMixin],
+
   props: {
     data: { type: [Array, Object] },
     path: { type: String, default: '' },
@@ -106,8 +109,7 @@ export default DitoComponent.component('dito-tree-item', {
 
   data() {
     return {
-      opened: this.open || this.inEditPath,
-      dragging: false
+      opened: this.open || this.inEditPath
     }
   },
 
@@ -122,24 +124,6 @@ export default DitoComponent.component('dito-tree-item', {
 
     onDelete() {
       // TODO: Implement!
-    },
-
-    onStartDrag() {
-      this.dragging = true
-    },
-
-    onEndDrag(childrenList, event) {
-      this.dragging = false
-      // eslint-disable-next-line
-      const orderKey = childrenList.schema?.orderKey
-      if (orderKey) {
-        // Reorder the chnaged children by their orderKey.
-        const start = Math.min(event.oldIndex, event.newIndex)
-        const { items } = childrenList
-        for (let i = start; i < items.length; i++) {
-          items[i][orderKey] = i
-        }
-      }
     }
   },
 

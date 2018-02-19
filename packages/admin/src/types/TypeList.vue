@@ -26,6 +26,8 @@
         element="tbody"
         :list="value"
         :options="dragOptions"
+        @start="onStartDrag"
+        @end="onEndDrag"
       )
         tr(
           v-for="item, index in value || []"

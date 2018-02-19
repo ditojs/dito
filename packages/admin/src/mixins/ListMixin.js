@@ -2,11 +2,12 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
+import OrderedMixin from './OrderedMixin'
 import { processForms, processFormComponents } from '@/schema'
 import { isObject, isArray, camelize, labelize } from '@ditojs/utils'
 
 export default {
-  mixins: [DataMixin],
+  mixins: [DataMixin, OrderedMixin],
 
   data() {
     return {
