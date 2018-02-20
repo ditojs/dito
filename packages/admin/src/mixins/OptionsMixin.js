@@ -46,7 +46,7 @@ export default {
         const { options = {} } = this.schema
         values = isObject(options) ? options.values : options
         if (isFunction(values)) {
-          const rootData = this.dataRouteComponent.data
+          const rootData = this.rootFormComponent.data
           values = rootData &&
             values.call(this, this.data, rootData, this.dataPath)
         }

@@ -43,12 +43,12 @@ export default {
 
     // Returns the first routeComponent in the chain of parents that doesn't
     // hold nested data.
-    dataRouteComponent() {
-      let { routeComponent } = this
-      while (routeComponent?.isNested) {
-        routeComponent = routeComponent.parentRouteComponent
+    rootFormComponent() {
+      let { formComponent } = this
+      while (formComponent?.isNested) {
+        formComponent = formComponent.parentRouteComponent
       }
-      return routeComponent
+      return formComponent
     }
   },
 
@@ -75,6 +75,12 @@ export default {
 
     getLabel(schema) {
       return schema ? schema.label || labelize(schema.name) : ''
+    },
+
+    appendDataPath(dataPath = '', token) {
+      return dataPath !== ''
+        ? `${dataPath}/${token}`
+        : token
     },
 
     notify(...args) {

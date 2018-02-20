@@ -27,12 +27,12 @@ export default {
       // parent form is submitting its data. For processPayload() to be able
       // to correctly process all nested data, the form's components need to be
       // registered at parent's level as well.
-      // NOTE: dataRouteComponent is used, since that's where the data is loaded
+      // NOTE: rootFormComponent is used, since that's where the data is loaded
       // and submitted.
       if (form.doesMutate) {
-        const dataRoute = this.dataRouteComponent
-        if (dataRoute !== form && dataRoute.isForm) {
-          dataRoute.components[this.dataPath] = this
+        const rootForm = this.rootFormComponent
+        if (rootForm !== form) {
+          rootForm.components[this.dataPath] = this
         }
       }
     }
@@ -171,7 +171,7 @@ export default {
       // Convert to the same sentence structure as vee-validate:
       const prefix = `The ${this.label} field`
       this.$errors.add(this.dataPath,
-        error.indexOf(prefix) === 0 ? error : `${prefix} ${error}.`)
+        error.startsWith(prefix) ? error : `${prefix} ${error}.`)
     },
 
     addErrors(errors, focus) {

@@ -195,7 +195,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.dataRouteComponent)
+      return this.getDataPathFrom(this.rootFormComponent)
     },
 
     parentDataPath() {
@@ -281,11 +281,22 @@ export default DitoComponent.component('dito-form', {
         .substring((route.isView ? 0 : route.path.length) + 1))
     },
 
+    getComponent(dataPathOrKey) {
+      if (isArray(dataPathOrKey)) {
+        dataPathOrKey = dataPathOrKey.join('/')
+      }
+      // See if the argument starts with this form's dataPath. If not,
+      // then it's a key and needs to be prepended with the full path:
+      const dataPath = !dataPathOrKey.startsWith(this.dataPath)
+        ? this.appendDataPath(this.dataPath, dataPathOrKey)
+        : dataPathOrKey
+      return this.components[dataPath] || null
+    },
+
     initData() { // overrides DataMixin.initData()
       if (this.create) {
-        const { type } = this
         this.createdData = this.createdData ||
-          this.createData(this.schema, { type })
+          this.createData(this.schema, { type: this.type }, this.dataPath)
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)
@@ -311,10 +322,10 @@ export default DitoComponent.component('dito-form', {
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value)) {
-          const component = this.components[key]
+          const component = this.getComponent(key)
           // Only check for isNested on list items that actually load data,
           // since other components can have array values too.
-          if (component?.isList && !component.isNested) {
+          if (component && component.isList && !component.isNested) {
             continue
           }
         }
@@ -337,7 +348,7 @@ export default DitoComponent.component('dito-form', {
 
     addErrors(errors, focus) {
       for (const [dataPath, errs] of Object.entries(errors || {})) {
-        const component = this.components[dataPath]
+        const component = this.getComponent(dataPath)
         if (component) {
           component.addErrors(errs, focus)
         } else {
@@ -348,10 +359,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     focus(dataPath) {
-      const component = this.components[dataPath]
-      if (component) {
-        component.focus()
-      }
+      this.getComponent(dataPath)?.focus()
     },
 
     notifyValidationErrors() {
@@ -499,14 +507,10 @@ export default DitoComponent.component('dito-form', {
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
-      const appendPath = (dataPath, token) => dataPath !== ''
-        ? `${dataPath}/${token}`
-        : token
-
       const process = (data, dataPath = '') => {
         // First, see if there's an associated component requiring processing.
         // See TypeMixin.processPayload(), OptionsMixin.processPayload():
-        const component = this.components[dataPath]
+        const component = this.getComponent(dataPath)
         if (component) {
           data = component.processPayload(data, dataPath)
         }
@@ -525,7 +529,7 @@ export default DitoComponent.component('dito-form', {
           // Use reduce() for both arrays and objects thanks to Object.entries()
           data = Object.entries(data).reduce(
             (processed, [key, entry]) => {
-              const value = process(entry, appendPath(dataPath, key))
+              const value = process(entry, this.appendDataPath(dataPath, key))
               if (value !== undefined) {
                 processed[key] = value
               }
@@ -542,21 +546,21 @@ export default DitoComponent.component('dito-form', {
 
     showErrors(errors, focus) {
       let first = true
-      for (const [key, errs] of Object.entries(errors)) {
+      for (const [errDataPath, errs] of Object.entries(errors)) {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
-        const dataPath = parseDataPath(key).join('/')
-        const component = this.components[dataPath]
+        const dataPath = parseDataPath(errDataPath)
+        const component = this.getComponent(dataPath)
         if (component) {
           component.addErrors(errs, first && focus)
         } else {
           // Couldn't find the component for the given dataPath. See if we have
           // a component serving a part of the dataPath, and take it from there:
           let found = false
-          const parts = dataPath.split('/')
-          while (!found && parts.length > 1) {
-            parts.pop()
-            const component = this.components[parts.join('/')]
+          while (!found && dataPath.length > 1) {
+            // Keep removing the last part until we find a match.
+            dataPath.pop()
+            const component = this.getComponent(dataPath)
             if (component) {
               component.navigateToErrors(dataPath, errs)
               found = true

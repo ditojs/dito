@@ -209,8 +209,16 @@ export default {
     },
 
     createItem(schema, type) {
-      const item = this.createData(schema, { type })
-      this.value.push(item)
+      // Immediately create and insert an empty item just with the type key set,
+      // so that it can trigger the instantiation of the right form.
+      // Then use $nextTick() to call createData(), so that all associated
+      // components are registered and can be consulted for default values.
+      // See DataMixin.createData()
+      const item = { type }
+      const index = this.value.push(item) - 1
+      this.$nextTick(() => {
+        this.createData(schema, item, this.appendDataPath(this.dataPath, index))
+      })
       return item
     },
 

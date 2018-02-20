@@ -1,4 +1,3 @@
-import TypeComponent from '@/TypeComponent'
 import axios from 'axios'
 import LoadingMixin from './LoadingMixin'
 import { isObject, isString, isFunction, pick, clone } from '@ditojs/utils'
@@ -162,7 +161,7 @@ export default {
       }
     },
 
-    createData(schema, data = {}) {
+    createData(schema, data = {}, dataPath) {
       // Sets up an createdData object that has keys with null-values for all
       // form fields, so they can be correctly watched for changes.
       const {
@@ -170,19 +169,17 @@ export default {
         components = {}
       } = schema || {}
       for (const tabSchema of Object.values(tabs)) {
-        this.createData(tabSchema, data)
+        this.createData(tabSchema, data, dataPath)
       }
-      for (const [key, compSchema] of Object.entries(components)) {
+      for (const key in components) {
         // Support default values both on schema and on component level.
-        const comp = TypeComponent.get(compSchema.type)
-        const defaultValue = pick(
-          compSchema.default,
-          comp?.options.methods.defaultValue,
-          null
+        const component = this.rootFormComponent.getComponent(
+          this.appendDataPath(dataPath, key)
         )
-        data[key] = isFunction(defaultValue)
-          ? defaultValue()
-          : clone(defaultValue)
+        const { default: defaultValue } = component.schema
+        data[key] = defaultValue !== undefined
+          ? clone(defaultValue)
+          : pick(component.defaultValue?.(), null)
       }
       return data
     },

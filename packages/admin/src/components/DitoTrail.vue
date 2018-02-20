@@ -59,9 +59,9 @@ export default DitoComponent.component('dito-trail', {
   computed: {
     trail() {
       const trail = []
-      for (const routeComponent of this.appState.routeComponents) {
-        if (routeComponent.routeRecord) {
-          const { path, breadcrumb } = routeComponent
+      for (const component of this.appState.routeComponents) {
+        if (component.routeRecord) {
+          const { path, breadcrumb } = component
           trail.push({ path, breadcrumb })
         }
       }
