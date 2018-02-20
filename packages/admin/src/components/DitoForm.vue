@@ -521,28 +521,19 @@ export default DitoComponent.component('dito-form', {
             ? { '#ref': id }
             : { '#id': id, ...rest }
         }
-        if (isObject(data)) {
-          const processed = {}
-          for (const key in data) {
-            const value = process(data[key], appendPath(dataPath, key))
-            if (value !== undefined) {
-              processed[key] = value
-            }
-          }
-          data = processed
-        } else if (isArray(data)) {
-          data = data.reduce(
-            (array, entry, index) => {
-              const value = process(entry, appendPath(dataPath, index))
+        if (isObject(data) || isArray(data)) {
+          // Use reduce() for both arrays and objects thanks to Object.entries()
+          data = Object.entries(data).reduce(
+            (processed, [key, entry]) => {
+              const value = process(entry, appendPath(dataPath, key))
               if (value !== undefined) {
-                array.push(value)
+                processed[key] = value
               }
-              return array
+              return processed
             },
-            []
+            isArray(data) ? [] : {}
           )
         }
-
         return data
       }
 
