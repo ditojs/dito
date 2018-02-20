@@ -5,10 +5,9 @@
     :name="dataPath"
     :type="type"
     :title="label"
-    :value="value"
-    @input="onInput"
-    @focus="onFocus"
-    @blur="onBlur"
+    v-model="textValue"
+    @focus="focused = true"
+    @blur="focused = false"
     v-validate="validations"
     :data-vv-as="label"
     :placeholder="placeholder"
@@ -20,39 +19,40 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-// TODO: maskedPassword should only be set if there was a password?
 const maskedPassword = '****************'
 
 export default TypeComponent.register([
   'text', 'email', 'url', 'tel', 'password'
 ], {
+  data() {
+    return {
+      focused: false
+    }
+  },
+
   computed: {
     isPassword() {
       return this.type === 'password'
     },
 
-    default() {
-      return this.isPassword ? maskedPassword : null
+    textValue: {
+      get() {
+        return this.isPassword && this.value === undefined && !this.focused
+          ? maskedPassword
+          : this.value
+      },
+
+      set(value) {
+        this.value = value
+      }
     }
   },
 
   methods: {
-    onInput(event) {
-      this.value = event.target.value
-    },
-
-    onFocus(event) {
-      const { target } = event
-      if (this.isPassword && target.value === maskedPassword) {
-        target.value = ''
-      }
-    },
-
-    onBlur(event) {
-      const { target } = event
-      if (this.isPassword && !target.value) {
-        target.value = maskedPassword
-      }
+    defaultValue() {
+      // Use `undefined` to indicate that a fake password should be displayed as
+      // a placeholder, '' to display an empty field.
+      return this.isPassword ? undefined : ''
     }
   }
 })
