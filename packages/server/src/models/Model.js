@@ -76,13 +76,17 @@ export class Model extends objection.Model {
   }
 
   async $update(attributes) {
-    const updated = await this.$query().updateAndFetch(attributes)
-    return this.$set(updated)
+    if (await this.$query().update(attributes)) {
+      this.$set(attributes)
+    }
+    return this
   }
 
   async $patch(attributes) {
-    const patched = await this.$query().patchAndFetch(attributes)
-    return this.$set(patched)
+    if (await this.$query().patch(attributes)) {
+      this.$set(attributes)
+    }
+    return this
   }
 
   static query(trx) {
