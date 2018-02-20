@@ -3,9 +3,9 @@
     ref="element"
     :id="dataPath"
     :name="dataPath"
-    :type="type"
+    :type="inputType"
     :title="label"
-    v-model="textValue"
+    v-model="inputValue"
     @focus="focused = true"
     @blur="focused = false"
     v-validate="validations"
@@ -22,7 +22,7 @@ import TypeComponent from '@/TypeComponent'
 const maskedPassword = '****************'
 
 export default TypeComponent.register([
-  'text', 'email', 'url', 'tel', 'password'
+  'text', 'email', 'url', 'tel', 'password', 'creditcard'
 ], {
   data() {
     return {
@@ -35,7 +35,11 @@ export default TypeComponent.register([
       return this.type === 'password'
     },
 
-    textValue: {
+    inputType() {
+      return this.type === 'creditcard' ? 'text' : this.type
+    },
+
+    inputValue: {
       get() {
         return this.isPassword && this.value === undefined && !this.focused
           ? maskedPassword
@@ -45,6 +49,19 @@ export default TypeComponent.register([
       set(value) {
         this.value = value
       }
+    },
+
+    validations() {
+      const rules = this.getValidationRules()
+      const rule = {
+        email: 'email',
+        url: 'url',
+        creditcard: 'credit_card'
+      }[this.type]
+      if (rule) {
+        rules[rule] = true
+      }
+      return { rules }
     }
   },
 

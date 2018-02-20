@@ -5,7 +5,7 @@
     :name="dataPath"
     type="number"
     :title="label"
-    v-model="numberValue"
+    v-model="inputValue"
     v-validate="validations"
     :data-vv-as="label"
     :placeholder="placeholder"
@@ -38,7 +38,7 @@ export default TypeComponent.register([
       return this.type === 'integer'
     },
 
-    numberValue: {
+    inputValue: {
       get() {
         return this.value !== null ? this.value : ''
       },

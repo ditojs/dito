@@ -98,6 +98,15 @@ export default {
     },
 
     validations() {
+      const rules = this.getValidationRules()
+      return { rules }
+    }
+  },
+
+  methods: {
+    getValidationRules() {
+      // This method exists to make it easier to override `validations` computed
+      // property in type components.
       const rules = {
         required: this.required
       }
@@ -120,11 +129,9 @@ export default {
       if (this.isInteger) {
         rules.numeric = true
       }
-      return { rules }
-    }
-  },
+      return rules
+    },
 
-  methods: {
     async load(config) {
       const { api, cache, ...rest } = config
       if (api) {
