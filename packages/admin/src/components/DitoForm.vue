@@ -384,6 +384,8 @@ export default DitoComponent.component('dito-form', {
 
     submit(button = {}) {
       const { onSuccess, onError } = button
+      // TODO: Sometimes, the form doesn't need to submit the payload.
+      // Can this be made optional?
       const payload = this.processPayload()
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
@@ -497,6 +499,12 @@ export default DitoComponent.component('dito-form', {
         : token
 
       const process = (data, dataPath = '') => {
+        // First, see if there's an associated component requiring processing.
+        // See TypeMixin.processPayload(), OptionsMixin.processPayload():
+        const component = this.components[dataPath]
+        if (component) {
+          data = component.processPayload(data, dataPath)
+        }
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
@@ -504,12 +512,9 @@ export default DitoComponent.component('dito-form', {
           const { id, ...rest } = data
           // A refeference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
-          const key = this.isReference(data) ? '#ref' : '#id'
-          data = { [key]: id, ...rest }
-        }
-        const component = this.components[dataPath]
-        if (component) {
-          data = component.processPayload(data, dataPath)
+          data = this.isReference(data)
+            ? { '#ref': id }
+            : { '#id': id, ...rest }
         }
         if (isObject(data)) {
           const processed = {}
