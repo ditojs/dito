@@ -4,13 +4,6 @@ export function asArguments(val) {
   return isArray(val) ? val : val != null ? [val] : []
 }
 
-export function mapValues(obj, callback) {
-  return Object.entries(obj).reduce((res, [key, value]) => {
-    res[key] = callback(value, key)
-    return res
-  }, {})
-}
-
 export function mergeWithoutOverride(target, ...sources) {
   for (const source of sources) {
     for (const key in source) {

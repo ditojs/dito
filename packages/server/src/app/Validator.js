@@ -1,7 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
 import { isArray, isObject, clone } from '@ditojs/utils'
-import { mapValues } from '@/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
@@ -208,6 +207,9 @@ function clearOverrides(defaults, overrides) {
   // default formats and keywords in their metaSchema definitions.
   return {
     ...defaults,
-    ...mapValues(overrides, () => null)
+    ...Object.keys(overrides).reduce((cleared, key) => {
+      cleared[key] = null
+      return cleared
+    }, {})
   }
 }

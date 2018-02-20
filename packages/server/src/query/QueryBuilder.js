@@ -479,11 +479,10 @@ for (const key of [
       } else if (isArray(arg)) {
         arg = arg.map(value => convertIdentifier(value))
       } else if (isPlainObject(arg)) {
-        const converted = {}
-        for (const key in arg) {
+        arg = Object.keys(arg).reduce((converted, key) => {
           converted[convertIdentifier(key)] = arg[key]
-        }
-        arg = converted
+          return converted
+        }, {})
       }
       return arg
     }
