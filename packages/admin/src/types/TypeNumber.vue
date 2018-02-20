@@ -30,15 +30,23 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('number', {
+export default TypeComponent.register([
+  'number', 'integer'
+], {
   computed: {
+    isInteger() {
+      return this.type === 'integer'
+    },
+
     numberValue: {
       get() {
         return this.value !== null ? this.value : ''
       },
 
       set(value) {
-        this.value = value !== '' ? parseFloat(value) : null
+        this.value = value !== ''
+          ? this.isInteger ? parseInt(value, 10) : parseFloat(value)
+          : null
       }
     }
   }

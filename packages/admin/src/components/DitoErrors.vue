@@ -9,6 +9,7 @@
 .dito
   .dito-errors
     position: absolute
+    z-index: 1
     ul
       margin-top: 1px
       color: $color-error

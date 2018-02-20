@@ -73,17 +73,24 @@ export default {
     },
 
     step() {
-      return this.schema.step
+      const { step } = this.schema
+      return this.isInteger && step !== undefined ? Math.ceil(step) : step
     },
 
     min() {
       const { schema } = this
-      return schema.range ? schema.range[0] : schema.min
+      const min = schema.range ? schema.range[0] : schema.min
+      return this.isInteger && min !== undefined ? Math.floor(min) : min
     },
 
     max() {
       const { schema } = this
-      return schema.range ? schema.range[1] : schema.max
+      const max = schema.range ? schema.range[1] : schema.max
+      return this.isInteger && max !== undefined ? Math.ceil(max) : max
+    },
+
+    decimals() {
+      return this.schema.decimals
     },
 
     required() {
@@ -100,8 +107,18 @@ export default {
       if (this.max) {
         rules.max_value = this.max
       }
-      if (this.step) {
-        rules.decimal = `${this.step}`.split('.')[1].length
+      if (this.decimals) {
+        rules.decimal = this.decimals
+      } else if (this.step) {
+        const decimals = (`${this.step}`.split('.')[1] || '').length
+        if (decimals > 0) {
+          rules.decimal = decimals
+        } else {
+          rules.numeric = true
+        }
+      }
+      if (this.isInteger) {
+        rules.numeric = true
       }
       return { rules }
     }
