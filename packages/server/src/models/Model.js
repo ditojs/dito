@@ -534,19 +534,16 @@ const definitionHandlers = {
     for (const [name, array] of Object.entries(scopesArrays)) {
       // Convert array of filter to filter functions that all take a query and
       // return the query if the next filter should be called, `null` otherwise.
-      const filters = array.map(
-        filter =>
+      const filters = array
+        .map(filter =>
           isFunction(filter) ? filter
           : isObject(filter) ? query => query.find(filter)
-          : () => filter
-      )
+          : () => filter)
+        .reverse() // Reverse to go from super-class to sub-class.
       scopes[name] = query => {
-        // Call all inherited filters per scope in sequence from sub-class to
-        // super-class, but abort sequence when one of them returns `null`,
-        // or calls `.break()` (which in turn returns `null`).
+        // Call all inherited filters per scope.
         for (const filter of filters) {
-          query = filter(query)
-          if (!query) break
+          filter(query)
         }
         return query
       }
