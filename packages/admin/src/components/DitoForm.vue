@@ -36,7 +36,7 @@
               :class="`dito-button-${verbCancel}`"
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
-              v-if="!isDirect"
+              v-if="!doesMutate"
               type="submit"
               :class="`dito-button-${verbSubmit}`"
             ) {{ buttons.submit && buttons.submit.label }}
@@ -133,11 +133,15 @@ export default DitoComponent.component('dito-form', {
       return this.isLastRoute || this.isLastUnnestedRoute
     },
 
-    isDirect() {
-      return this.listSchema.direct
+    doesMutate() {
+      // When `listSchema.mutate` is true, the form edits the inherited data
+      // directly instead of making a copy for application upon submit.
+      // See `inheritedData()` computed property for more details.
+      return this.listSchema.mutate
     },
 
     type() {
+      // The type of form to create, if there are multiple forms to choose from.
       return this.$route.query.type
     },
 
@@ -231,14 +235,15 @@ export default DitoComponent.component('dito-form', {
 
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
-      // changes until changes are applied through setListData()
-      // Use a trick to store the cloned inherited data in clonedData, to make
-      // it reactive as well and to make sure that we're not cloning twice.
+      // changes until changes are applied through setListData(), unless
+      // `listSchema.mutate` is true, in which case data is mutated directly.
       if (this.isTransient && this.clonedData === undefined && this.listData) {
         let data = this.listIndex >= 0
           ? this.listData[this.listIndex]
           : null
-        if (!this.isDirect) {
+        if (!this.doesMutate) {
+          // Use a trick to store cloned inherited data in clonedData, to make
+          // it reactive and prevent it from being cloned multiple times.
           this.clonedData = data = clone(data)
         }
         return data
@@ -258,7 +263,7 @@ export default DitoComponent.component('dito-form', {
 
     isDirty() {
       for (const form of [this, ...this.nestedForms]) {
-        if (!form.isDirect && Object.keys(form.$fields).some(
+        if (!form.doesMutate && Object.keys(form.$fields).some(
           key => form.$fields[key].dirty)
         ) {
           return true
@@ -402,7 +407,7 @@ export default DitoComponent.component('dito-form', {
             this.notify('error', 'Request Error',
               `Unable to ${this.verbCreate} item.`)
           }
-        } else if (!this.isDirect) {
+        } else if (!this.doesMutate) {
           this.setListData(payload)
           const label = this.getItemLabel(payload)
           if (onSuccess) {

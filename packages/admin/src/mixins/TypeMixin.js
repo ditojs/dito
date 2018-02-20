@@ -29,7 +29,7 @@ export default {
       // registered at parent's level as well.
       // NOTE: dataRouteComponent is used, since that's where the data is loaded
       // and submitted.
-      if (form.isDirect) {
+      if (form.doesMutate) {
         const dataRoute = this.dataRouteComponent
         if (dataRoute !== form && dataRoute.isForm) {
           dataRoute.components[this.dataPath] = this

@@ -24,7 +24,7 @@ export default DitoForm.extend({
       // since closing the nested form would remove all its fields immediately,
       // and wee need them around to know if a direct editing form changed data.
       handler(fields) {
-        if (this.isDirect) {
+        if (this.doesMutate) {
           const validator = this.$parent.$validator
           for (const [name, field] of Object.entries(fields)) {
             if (!(name in validator.flags)) {
