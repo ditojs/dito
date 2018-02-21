@@ -7,7 +7,7 @@ export default {
 
   data() {
     return {
-      resolvedValues: null
+      resolvedData: null
     }
   },
 
@@ -41,35 +41,35 @@ export default {
     },
 
     options() {
-      let values = this.resolvedValues
-      if (!values) {
+      let data = this.resolvedData
+      if (!data) {
         const { options = {} } = this.schema
-        values = isObject(options) ? options.values : options
-        if (isFunction(values)) {
+        data = isObject(options) ? options.data : options
+        if (isFunction(data)) {
           const rootData = this.rootFormComponent.data
-          values = rootData &&
-            values.call(this, this.data, rootData, this.dataPath)
+          data = rootData &&
+            data.call(this, this.data, rootData, this.dataPath)
         }
-        if (isPromise(values)) {
-          // If the values are asynchronous, we can't return them straight away.
-          // But we can "cheat" using computed properties and `resolvedValues`,
+        if (isPromise(data)) {
+          // If the data is asynchronous, we can't return it straight away.
+          // But we can "cheat" using computed properties and `resolvedData`,
           // which is going to receive the loaded data asynchronously,
           // triggering a recompute of `options` which depends on its value.
           this.setLoading(true)
-          values
-            .then(values => {
+          data
+            .then(data => {
               this.setLoading(false)
-              this.resolvedValues = values
+              this.resolvedData = data
             })
             .catch(error => {
               this.setLoading(false)
               this.addError(error.message)
             })
           // Use an empty array for now, until resolved.
-          values = []
+          data = []
         }
       }
-      return this.processOptions(values)
+      return this.processOptions(data)
     },
 
     groupBy() {

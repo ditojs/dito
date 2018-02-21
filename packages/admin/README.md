@@ -148,7 +148,7 @@ country: {
   searchable: true,
   placeholder: 'Select or search country',
   options: {
-    values() {
+    data() {
       return this.load({
         url: 'https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json'
       })
