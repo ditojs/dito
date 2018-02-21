@@ -155,7 +155,9 @@ export default DitoComponent.component('dito-tree-item', {
       // list for each.
       const lists = []
       for (const [key, schema] of Object.entries(this.schema)) {
-        if (key !== 'form' && isObject(schema)) {
+        // Identify nested entries that describe sub-trees as objects with a
+        // `form` or `forms` setting:
+        if (isObject(schema) && (schema.form || schema.forms)) {
           const items = this.data[key]
           const draggable = schema.draggable && items?.length > 1
           const { editPath } = this.container

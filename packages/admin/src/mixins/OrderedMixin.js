@@ -12,16 +12,20 @@ export default {
 
     onEndDrag(event, list = this.value, schema = this.schema) {
       this.dragging = false
-      const { orderKey } = schema
-      if (orderKey) {
-        // Reorder the changed children by their orderKey.
+      const {
+        draggable: {
+          order
+        } = {}
+      } = schema
+      if (order) {
+        // Reorder the changed children by their order key.
         let start = Math.min(event.oldIndex, event.newIndex)
         // Detect if no order values were set, and change `start` accordingly.
-        while (start > 0 && list[start][orderKey] == null) {
+        while (start > 0 && list[start][order] == null) {
           start--
         }
         for (let i = start; i < list.length; i++) {
-          list[i][orderKey] = i
+          list[i][order] = i
         }
       }
     }
