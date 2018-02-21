@@ -10,7 +10,7 @@
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",
     :options="options || []"
-    :label="optionLabel"
+    :custom-label="getLabelForOption"
     :track-by="optionValue"
     :group-label="groupByLabel"
     :group-values="groupByOptions"

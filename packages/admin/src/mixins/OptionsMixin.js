@@ -126,63 +126,59 @@ export default {
           }
         }
         if (this.groupBy) {
-          options = this.groupOptions(options)
+          const grouped = {}
+          options = options.reduce(
+            (results, option) => {
+              const group = option[this.groupBy]
+              let entry = grouped[group]
+              if (!entry) {
+                entry = grouped[group] = {
+                  [this.groupByLabel]: group,
+                  [this.groupByOptions]: []
+                }
+                results.push(entry)
+              }
+              entry.options.push(option)
+              return results
+            },
+            []
+          )
         }
       }
       return options
     },
 
-    groupOptions(options) {
-      const grouped = {}
-      return options.reduce(
-        (results, option) => {
-          const group = option[this.groupBy]
-          let entry = grouped[group]
-          if (!entry) {
-            entry = grouped[group] = {
-              [this.groupByLabel]: group,
-              [this.groupByOptions]: []
+    getOptionForValue(value) {
+      const findOption = (options, value, groupBy) => {
+        // Search for the option object with the given value and return the
+        // whole object.
+        for (const option of options) {
+          if (groupBy) {
+            const found = findOption(option.options, value, null)
+            if (found) {
+              return found
             }
-            results.push(entry)
+          } else if (value === this.getValueForOption(option)) {
+            return option
           }
-          entry.options.push(option)
-          return results
-        },
-        []
-      )
-    },
-
-    findOption(options, value, groupBy = this.groupBy) {
-      // Search for the option object with the given value and return the
-      // whole object.
-      for (const option of options) {
-        if (groupBy) {
-          const found = this.findOption(option.options, value, null)
-          if (found) {
-            return found
-          }
-        } else if (value === this.getValueForOption(option)) {
-          return option
         }
       }
-    },
 
-    getOptionForValue(value) {
       return this.optionValue
-        ? this.findOption(this.options, value)
+        ? findOption(this.options, value, this.groupBy)
         : value
     },
 
     getValueForOption(option) {
-      // When changes happen, store the mapped value instead of full object.
       return this.optionValue
         ? option?.[this.optionValue]
         : option
     },
 
     getLabelForOption(option) {
-      return this.optionLabel
-        ? option?.[this.optionLabel]
+      return isFunction(this.optionLabel)
+        ? this.optionLabel(option)
+        : this.optionLabel ? option?.[this.optionLabel]
         : option
     },
 
