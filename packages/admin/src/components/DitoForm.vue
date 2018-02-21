@@ -296,7 +296,7 @@ export default DitoComponent.component('dito-form', {
     initData() { // overrides DataMixin.initData()
       if (this.create) {
         this.createdData = this.createdData ||
-          this.createData(this.schema, { type: this.type }, this.dataPath)
+          this.setupData(this.schema, { type: this.type }, this.dataPath)
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)

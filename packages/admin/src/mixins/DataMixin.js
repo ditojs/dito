@@ -1,6 +1,11 @@
 import axios from 'axios'
 import LoadingMixin from './LoadingMixin'
-import { isObject, isString, isFunction, pick, clone } from '@ditojs/utils'
+import { isObject, isString, isFunction, pick } from '@ditojs/utils'
+
+// Use an empty object as initial value when setting up data in setupData(),
+// so that TypeMixin can recognize it and replace it with proper default values
+// once components are instantiated.
+export const initialValue = {}
 
 export default {
   mixins: [LoadingMixin],
@@ -161,25 +166,19 @@ export default {
       }
     },
 
-    createData(schema, data = {}, dataPath) {
-      // Sets up an createdData object that has keys with null-values for all
-      // form fields, so they can be correctly watched for changes.
+    setupData(schema, data) {
+      // Sets up a data object that has keys with `initialValue` for all
+      // form fields, so they can be correctly watched for changes and properly
+      // initiated in TypeMixin once the form and its components are set up.
       const {
         tabs = {},
         components = {}
       } = schema || {}
       for (const tabSchema of Object.values(tabs)) {
-        this.createData(tabSchema, data, dataPath)
+        this.setupData(tabSchema, data)
       }
       for (const key in components) {
-        // Support default values both on schema and on component level.
-        const component = this.rootFormComponent.getComponent(
-          this.appendDataPath(dataPath, key)
-        )
-        const { default: defaultValue } = component.schema
-        data[key] = defaultValue !== undefined
-          ? clone(defaultValue)
-          : pick(component.defaultValue?.(), null)
+        data[key] = initialValue
       }
       return data
     },

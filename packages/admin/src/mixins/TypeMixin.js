@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { isArray, pick } from '@ditojs/utils'
+import { initialValue } from './DataMixin'
+import { isArray, pick, clone } from '@ditojs/utils'
 
 export default {
   // Inherit the $validator from the parent.
@@ -48,7 +49,19 @@ export default {
   computed: {
     value: {
       get() {
-        return this.data[this.schema.name]
+        const { name } = this.schema
+        let value = this.data[name]
+        // DataMixin.setupData() sets up the data object with initial values set
+        // to `initialValue`, so that reactivity can be set up and the forms and
+        // its components are instantiated. Now that the component is created,
+        // replace `initialValue` with the actual `defaultValue`:
+        if (value === initialValue) {
+          const { default: defaultValue } = this.schema
+          value = this.data[name] = defaultValue !== undefined
+            ? clone(defaultValue)
+            : pick(this.defaultValue?.(), null)
+        }
+        return value
       },
 
       set(value) {
@@ -149,7 +162,7 @@ export default {
       const cacheType = cache === undefined
         ? apiPath ? 'form' : config.url ? 'global' : null
         : cache
-      // Build a cache key from the config
+      // Build a cache key from the config.
       const cacheKey = cacheType && `${
         config.method || 'get'} ${
         config.url} ${
