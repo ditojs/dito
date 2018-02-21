@@ -10,10 +10,10 @@
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",
     :options="options || []"
-    :label="optionLabelKey"
-    :track-by="optionValueKey"
-    :group-label="groupLabelKey"
-    :group-values="groupOptionsKey"
+    :label="optionLabel"
+    :track-by="optionValue"
+    :group-label="groupByLabel"
+    :group-values="groupByOptions"
     :searchable="!!schema.searchable"
     :taggable="!!schema.taggable"
     :multiple="!!schema.multiple"
@@ -194,16 +194,16 @@ export default TypeComponent.register('multiselect', {
     multiSelectValue: {
       get() {
         return this.schema.multiple
-          ? (this.selectValue || []).map(value => this.valueToOption(value))
-          : this.valueToOption(this.selectValue)
+          ? (this.selectValue || []).map(value => this.getOptionForValue(value))
+          : this.getOptionForValue(this.selectValue)
       },
 
       set(option) {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
         this.selectValue = this.schema.multiple
-          ? (option || []).map(value => this.optionToValue(value))
-          : this.optionToValue(option)
+          ? (option || []).map(value => this.getValueForOption(value))
+          : this.getValueForOption(option)
       }
     },
 
@@ -219,17 +219,17 @@ export default TypeComponent.register('multiselect', {
 
   methods: {
     addTag(tag) {
-      const { optionLabelKey, optionValueKey } = this
-      const option = optionLabelKey && optionValueKey
+      const { optionLabel, optionValue } = this
+      const option = optionLabel && optionValue
         ? {
-          [optionLabelKey]: tag,
+          [optionLabel]: tag,
           // TODO: Define a simple schema option to convert the tag value to
           // something else, e.g. `toTag: tag => underscore(tag)`
-          [optionValueKey]: tag
+          [optionValue]: tag
         }
         : tag
       this.options.push(option)
-      this.value.push(this.optionToValue(option))
+      this.value.push(this.getValueForOption(option))
     },
 
     focus() {

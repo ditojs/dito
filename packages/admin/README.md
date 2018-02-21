@@ -138,7 +138,7 @@ tags: {
 }
 ```
 
-This component uses an API to fetch its data. It also has a placeholder which is displayed in the input field until data is entered. The API provides JSON with an array of dictionaries. labelKey retrieves the label that is diplayed to the user. valueKey the value of the options. Options with the same groupBy value can be merged into groups.
+This component uses an API to fetch its data. It also has a placeholder which is displayed in the input field until data is entered. The API provides JSON with an array of dictionaries. `label` retrieves the label that is diplayed to the user. `value` the value of the options. Options with the same `groupBy` value can be merged into groups.
 
 ```js
 country: {
@@ -153,7 +153,7 @@ country: {
         url: 'https://cdn.rawgit.com/lukes/ISO-3166-Countries-with-Regional-Codes/d4031492/all/all.json'
       })
     },
-    labelKey: 'name',
+    label: 'name',
     valueKey: 'alpha-2',
     groupBy: 'sub-region'
   }

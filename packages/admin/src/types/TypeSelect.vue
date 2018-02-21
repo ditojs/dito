@@ -16,18 +16,18 @@
       )
         optgroup(
           v-if="groupBy"
-          :label="option[groupLabelKey]"
+          :label="option[groupByLabel]"
         )
           option(
-            v-for="opt in option[groupOptionsKey]"
-            :value="optionToValue(opt)"
+            v-for="opt in option[groupByOptions]"
+            :value="getValueForOption(opt)"
           )
-            | {{ optionToLabel(opt) }}
+            | {{ getLabelForOption(opt) }}
         option(
           v-else
-          :value="optionToValue(option)"
+          :value="getValueForOption(option)"
         )
-          | {{ optionToLabel(option) }}
+          | {{ getLabelForOption(option) }}
 </template>
 
 <style lang="sass">

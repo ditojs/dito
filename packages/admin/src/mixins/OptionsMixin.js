@@ -15,7 +15,7 @@ export default {
     selectValue: {
       get() {
         const convert = value => this.relate
-          ? this.optionToValue(value)
+          ? this.getValueForOption(value)
           : value
         const value = isArray(this.value)
           ? this.value.map(convert)
@@ -32,7 +32,7 @@ export default {
 
       set(value) {
         const convert = value => this.relate
-          ? this.valueToOption(value)
+          ? this.getOptionForValue(value)
           : value
         this.value = isArray(value)
           ? value.map(convert)
@@ -72,37 +72,37 @@ export default {
       return this.processOptions(data)
     },
 
-    groupBy() {
-      return this.schema.options.groupBy
-    },
-
     relate() {
       return this.schema.options.relate
     },
 
-    optionLabelKey() {
-      // If no labelKey was provided but the options are objects, assume a
+    groupBy() {
+      return this.schema.options.groupBy
+    },
+
+    groupByLabel() {
+      return this.groupBy && 'label' || null
+    },
+
+    groupByOptions() {
+      return this.groupBy && 'options' || null
+    },
+
+    optionLabel() {
+      // If no `label` was provided but the options are objects, assume a
       // default value of 'label':
-      return this.schema.options.labelKey ||
+      return this.schema.options.label ||
         isObject(this.options[0]) && 'label' ||
         null
     },
 
-    optionValueKey() {
+    optionValue() {
       // If no valueKey was provided but the options are objects, assume a
       // default value of 'value':
-      return this.schema.options.valueKey ||
+      return this.schema.options.value ||
         this.relate && 'id' ||
         isObject(this.options[0]) && 'value' ||
         null
-    },
-
-    groupLabelKey() {
-      return this.groupBy && 'name' || null
-    },
-
-    groupOptionsKey() {
-      return this.groupBy && 'options' || null
     }
   },
 
@@ -136,12 +136,12 @@ export default {
       const grouped = {}
       return options.reduce(
         (results, option) => {
-          const name = option[this.groupBy]
-          let entry = grouped[name]
+          const group = option[this.groupBy]
+          let entry = grouped[group]
           if (!entry) {
-            entry = grouped[name] = {
-              [this.groupLabelKey]: name,
-              [this.groupOptionsKey]: []
+            entry = grouped[group] = {
+              [this.groupByLabel]: group,
+              [this.groupByOptions]: []
             }
             results.push(entry)
           }
@@ -161,28 +161,28 @@ export default {
           if (found) {
             return found
           }
-        } else if (value === this.optionToValue(option)) {
+        } else if (value === this.getValueForOption(option)) {
           return option
         }
       }
     },
 
-    valueToOption(value) {
-      return this.optionValueKey
+    getOptionForValue(value) {
+      return this.optionValue
         ? this.findOption(this.options, value)
         : value
     },
 
-    optionToValue(option) {
+    getValueForOption(option) {
       // When changes happen, store the mapped value instead of full object.
-      return this.optionValueKey
-        ? option?.[this.optionValueKey]
+      return this.optionValue
+        ? option?.[this.optionValue]
         : option
     },
 
-    optionToLabel(option) {
-      return this.optionLabelKey
-        ? option?.[this.optionLabelKey]
+    getLabelForOption(option) {
+      return this.optionLabel
+        ? option?.[this.optionLabel]
         : option
     },
 

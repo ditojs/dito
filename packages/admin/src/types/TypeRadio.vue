@@ -10,13 +10,13 @@
           :name="dataPath"
           type="radio"
           :title="label"
-          :value="optionToValue(option)"
+          :value="getValueForOption(option)"
           v-model="selectValue"
           v-validate="validations"
           :data-vv-as="label"
           :disabled="disabled"
         )
-        | {{ optionToLabel(option) }}
+        | {{ getLabelForOption(option) }}
 </template>
 
 <style lang="sass">
