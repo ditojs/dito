@@ -133,11 +133,11 @@ export default {
     },
 
     async load(config) {
-      const { api, cache, ...rest } = config
-      if (api) {
+      const { apiPath, cache, ...rest } = config
+      if (apiPath) {
         // Process config.api
         config = {
-          url: `${this.api.url}${api}`,
+          url: `${this.api.url}${apiPath}`,
           ...rest
         }
       }
@@ -147,7 +147,7 @@ export default {
       // ('form'), and url calls ('global').
       // Provide `cache: false` to explicitly disable caching.
       const cacheType = cache === undefined
-        ? api ? 'form' : config.url ? 'global' : null
+        ? apiPath ? 'form' : config.url ? 'global' : null
         : cache
       // Build a cache key from the config
       const cacheKey = cacheType && `${
