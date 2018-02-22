@@ -33,10 +33,8 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
-  methods: {
-    defaultValue() {
-      return []
-    }
+  defaultValue() {
+    return []
   }
 })
 </script>

@@ -9,6 +9,10 @@ import { isObject, isArray, camelize, labelize } from '@ditojs/utils'
 export default {
   mixins: [DataMixin, OrderedMixin],
 
+  defaultValue() {
+    return []
+  },
+
   data() {
     return {
       isList: true
@@ -97,10 +101,6 @@ export default {
   },
 
   methods: {
-    defaultValue() {
-      return []
-    },
-
     getNamedSchemas(descs) {
       return isArray(descs)
         ? descs.map(value => (
@@ -209,7 +209,7 @@ export default {
     },
 
     createItem(schema, type) {
-      const item = this.setupData(schema, { type })
+      const item = this.createData(schema, type)
       this.value.push(item)
       return item
     },

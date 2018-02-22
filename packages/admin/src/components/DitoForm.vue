@@ -198,10 +198,6 @@ export default DitoComponent.component('dito-form', {
       return this.getDataPathFrom(this.rootFormComponent)
     },
 
-    parentDataPath() {
-      return this.getDataPathFrom(this.parentRouteComponent)
-    },
-
     listData() {
       // Possible parents are DitoForm for forms, or DitoView for root lists.
       // Both have a data property which abstracts away loading and inheriting
@@ -210,7 +206,9 @@ export default DitoComponent.component('dito-form', {
       if (data) {
         // Handle nested data by splitting the dataPath, iterate through the
         // actual data and look nest child-data up.
-        const dataParts = this.parentDataPath.split('/')
+        const dataParts = parseDataPath(
+          this.getDataPathFrom(this.parentRouteComponent)
+        )
         // Compare dataParts against matched routePath parts, to identify those
         // parts that need to be treated like ids and mapped to indices in data.
         const pathParts = this.routeRecord.path.split('/')
@@ -296,7 +294,7 @@ export default DitoComponent.component('dito-form', {
     initData() { // overrides DataMixin.initData()
       if (this.create) {
         this.createdData = this.createdData ||
-          this.setupData(this.schema, { type: this.type }, this.dataPath)
+          this.createData(this.schema, this.type)
       } else {
         // super.initData()
         DataMixin.methods.initData.call(this)

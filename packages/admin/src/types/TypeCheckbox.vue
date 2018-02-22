@@ -16,10 +16,8 @@
 import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('checkbox', {
-  methods: {
-    defaultValue() {
-      return false
-    }
+  defaultValue() {
+    return false
   }
 })
 </script>

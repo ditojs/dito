@@ -24,6 +24,10 @@ const maskedPassword = '****************'
 export default TypeComponent.register([
   'text', 'email', 'url', 'tel', 'password', 'creditcard'
 ], {
+  defaultValue() {
+    return ''
+  },
+
   data() {
     return {
       focused: false
@@ -62,14 +66,6 @@ export default TypeComponent.register([
         rules[rule] = true
       }
       return { rules }
-    }
-  },
-
-  methods: {
-    defaultValue() {
-      // Use `undefined` to indicate that a fake password should be displayed as
-      // a placeholder, '' to display an empty field.
-      return this.isPassword ? undefined : ''
     }
   }
 })

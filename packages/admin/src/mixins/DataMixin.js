@@ -1,11 +1,7 @@
+import TypeComponent from '@/TypeComponent'
 import axios from 'axios'
 import LoadingMixin from './LoadingMixin'
-import { isObject, isString, isFunction, pick } from '@ditojs/utils'
-
-// Use an empty object as initial value when setting up data in setupData(),
-// so that TypeMixin can recognize it and replace it with proper default values
-// once components are instantiated.
-export const initialValue = {}
+import { isObject, isString, isFunction, pick, clone } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -166,19 +162,33 @@ export default {
       }
     },
 
-    setupData(schema, data) {
-      // Sets up a data object that has keys with `initialValue` for all
-      // form fields, so they can be correctly watched for changes and properly
-      // initiated in TypeMixin once the form and its components are set up.
-      const {
-        tabs = {},
-        components = {}
-      } = schema || {}
-      for (const tabSchema of Object.values(tabs)) {
-        this.setupData(tabSchema, data)
+    createData(schema, type) {
+      const data = type ? { type } : {}
+      // Sets up a data object that has keys with default values for all
+      // form fields, so they can be correctly watched for changes.
+      const processComponents = (components = {}) => {
+        for (const [key, componentSchema] of Object.entries(components)) {
+          // Support default values both on schema and on component level.
+          // NOTE: At the time of creation, components may not be instantiated,
+          // (e.g. if entries are created through  nested forms, the parent form
+          // isn't mounted) so we can't use `dataPath` to get to components,
+          // and then to the defaultValue from there. That's why defaultValue is
+          // a 'static' value on the component definitions:
+          const component = TypeComponent.get(componentSchema.type)
+          const defaultValue = pick(
+            componentSchema.default,
+            component?.options.defaultValue,
+            null
+          )
+          data[key] = isFunction(defaultValue)
+            ? defaultValue(componentSchema.type)
+            : clone(defaultValue)
+        }
       }
-      for (const key in components) {
-        data[key] = initialValue
+
+      processComponents(schema.components)
+      if (schema.tabs) {
+        Object.values(schema.tabs).forEach(processComponents)
       }
       return data
     },
