@@ -50,56 +50,43 @@ export default {
       return !this.isTransient && this.routeComponent.reload
     },
 
-    verbCreate() {
-      return this.isTransient ? 'add' : 'create'
-    },
-
-    verbCreated() {
-      return this.isTransient ? 'added' : 'created'
-    },
-
-    verbSave() {
-      return this.isTransient ? 'apply' : 'save'
-    },
-
-    verbSaved() {
-      return this.isTransient ? 'applied' : 'saved'
-    },
-
-    verbSubmit() {
-      return this.create ? this.verbCreate : this.verbSave
-    },
-
-    verbSubmitted() {
-      return this.create ? this.verbCreated : this.verbSaved
-    },
-
-    verbDelete() {
-      return this.isTransient ? 'remove' : 'delete'
-    },
-
-    verbDeleted() {
-      return this.isTransient ? 'removed' : 'deleted'
-    },
-
-    verbEdit() {
-      return 'edit'
-    },
-
-    verbEdited() {
-      return 'edited'
-    },
-
-    verbCancel() {
-      return 'cancel'
-    },
-
-    verbCanceled() {
-      return 'canceled'
+    verbs() {
+      // The actual code is a method, for easier overriding of the computed
+      // property.
+      return this.getVerbs()
     }
   },
 
   methods: {
+    getVerbs() {
+      const verbs = this.isTransient
+        ? {
+          create: 'add',
+          created: 'added',
+          save: 'apply',
+          saved: 'applied',
+          delete: 'remove',
+          deleted: 'removed'
+        }
+        : {
+          create: 'create',
+          created: 'created',
+          save: 'save',
+          saved: 'saved',
+          delete: 'delete',
+          deleted: 'deleted'
+        }
+      return {
+        ...verbs,
+        edit: 'edit',
+        edited: 'edited',
+        cancel: 'cancel',
+        canceled: 'canceled',
+        submit: this.create ? verbs.create : verbs.save,
+        submited: this.create ? verbs.created : verbs.saved
+      }
+    },
+
     getResourcePath(resource) {
       const { type, id, path } = resource
       const url = this.api.resources[type](this, id)

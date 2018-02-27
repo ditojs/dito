@@ -82,13 +82,13 @@
               :to="getEditRoute(item, index)" append
               tag="button"
               type="button"
-              :class="`dito-button-${verbEdit}`"
+              :class="`dito-button-${verbs.edit}`"
             )
             button.dito-button(
               v-if="deletable"
               type="button"
               @click="deleteItem(item, index)"
-              :class="`dito-button-${verbDelete}`"
+              :class="`dito-button-${verbs.delete}`"
             )
       tfoot(v-if="creatable")
         tr
@@ -96,7 +96,7 @@
             dito-form-chooser(
               :schema="schema"
               :path="path"
-              :verb="verbCreate"
+              :verb="verbs.create"
             )
 </template>
 

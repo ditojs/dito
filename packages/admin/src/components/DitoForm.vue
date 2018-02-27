@@ -33,12 +33,12 @@
             button.dito-button(
               type="button"
               @click.prevent="onCancel"
-              :class="`dito-button-${verbCancel}`"
+              :class="`dito-button-${verbs.cancel}`"
             ) {{ buttons.cancel && buttons.cancel.label }}
             button.dito-button(
               v-if="!doesMutate"
               type="submit"
-              :class="`dito-button-${verbSubmit}`"
+              :class="`dito-button-${verbs.submit}`"
             ) {{ buttons.submit && buttons.submit.label }}
             button.dito-button(
               v-for="(button, key) in buttons"
@@ -166,7 +166,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     breadcrumbPrefix() {
-      return capitalize(this.create ? this.verbCreate : this.verbEdit)
+      return capitalize(this.create ? this.verbs.create : this.verbs.edit)
     },
 
     buttons() {
@@ -411,7 +411,7 @@ export default DitoComponent.component('dito-form', {
           } else {
             ok = false
             this.notify('error', 'Request Error',
-              `Unable to ${this.verbCreate} item.`)
+              `Unable to ${this.verbs.create} item.`)
           }
         } else if (!this.doesMutate) {
           this.setListData(payload)
@@ -467,7 +467,7 @@ export default DitoComponent.component('dito-form', {
             if (onSuccess) {
               onSuccess.call(this, data, label)
             } else {
-              const submitted = this.verbSubmitted
+              const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${label} was ${submitted}.`)
             }

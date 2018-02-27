@@ -43,12 +43,12 @@ export default DitoForm.extend({
       return true
     },
 
-    verbCancel() {
-      return 'close'
-    },
-
-    verbCanceled() {
-      return 'closed'
+    verbs() {
+      return {
+        ...this.getVerbs(),
+        cancel: 'close',
+        canceled: 'closed'
+      }
     }
   }
 })
