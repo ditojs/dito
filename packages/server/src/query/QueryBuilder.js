@@ -43,9 +43,10 @@ export class QueryBuilder extends objection.QueryBuilder {
         // UpsertGraph.fetchCurrentState(), which define their own onBuild().
         // TODO: The proper solution on the long run may be to write our own
         // versions of each *AndFetch() operation, unfortunately. But before
-        // going that route, see if Objection can't add a check for this, e.g.
-        // QueryBuilder.isInternal(), returning true for all internal queries,
-        // but false for the final fetch.
+        // going down that route, see if Objection can't add a check for this,
+        // e.g. QueryBuilder.isInternal(), returning true for all internal
+        // queries, but false for the final fetch. We could also check for
+        // `keepImplicitJoinProps` in `internalOptions()`, but that's private.
         this.context().onBuild === this._parent.context().onBuild) {
       // It's ok to just copy the parent's scopes for fetch queries,
       // since this child query cannot have any scopes of its own.

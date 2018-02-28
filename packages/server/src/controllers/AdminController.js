@@ -18,25 +18,25 @@ export class AdminController extends Controller {
       // for production hosting.
       return null
     }
-    const resolved = path.resolve(config.path)
+    const resolvedPath = path.resolve(config.path)
     const koa = new Koa()
     koa.use(historyApiFallback())
     koa.use(webpack({
       config: {
         entry: [
-          resolved,
           '@ditojs/admin/dist/dito-admin.css',
-          ...(config.others || [])
+          ...(config.include || []),
+          resolvedPath
         ],
         output: {
-          path: resolved,
+          path: resolvedPath,
           publicPath: `${this.url}/`
         },
         resolve: {
           extensions: ['.js', '.vue', '.json'],
           alias: {
             'vue$': 'vue/dist/vue.esm.js',
-            '@': resolved
+            '@': resolvedPath
           }
         },
         module: {
@@ -49,10 +49,7 @@ export class AdminController extends Controller {
             {
               test: /\.js$/,
               loader: 'babel-loader',
-              include: [
-                resolved,
-                'webpack-dev-server/client'
-              ]
+              include: resolvedPath
             },
             ...styleLoaders({
               sourceMap: true,
@@ -77,6 +74,10 @@ export class AdminController extends Controller {
         stats: 'minimal'
       },
       hot: {
+        // Real hot-reloading doesn't quite seem to work yet, but it wasn't too
+        // far away from functioning, see:
+        // https://github.com/ditojs/dito-admin/tree/hot-reload
+        hot: false,
         reload: true,
         stats: 'minimal'
       }
