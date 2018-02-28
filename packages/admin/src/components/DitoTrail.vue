@@ -49,7 +49,8 @@
         transform: rotate(-$angle)
         transform-origin: bottom
     .dito-spinner
-      margin: $menu-padding-ver 0 0 $menu-padding-hor
+      display: inline-block
+      margin-top: $menu-padding-ver
 </style>
 
 <script>

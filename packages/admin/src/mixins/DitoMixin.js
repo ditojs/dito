@@ -77,6 +77,8 @@ export default {
       return schema ? schema.label || labelize(schema.name) : ''
     },
 
+    labelize,
+
     appendDataPath(dataPath = '', token) {
       return dataPath !== ''
         ? `${dataPath}/${token}`

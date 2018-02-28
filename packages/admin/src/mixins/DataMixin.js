@@ -82,6 +82,8 @@ export default {
         edited: 'edited',
         cancel: 'cancel',
         canceled: 'canceled',
+        drag: 'drag',
+        dragged: 'dragged',
         submit: this.create ? verbs.create : verbs.save,
         submited: this.create ? verbs.created : verbs.saved
       }

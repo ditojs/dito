@@ -182,7 +182,7 @@ export default {
         : option
     },
 
-    processPayload(data, dataPath) {
+    processData(data, dataPath) {
       if (this.relate) {
         // Convert object to a shallow copy with only id.
         const processRelate = data => data ? { id: data.id } : data
@@ -191,7 +191,7 @@ export default {
           ? data.map(entry => processRelate(entry))
           : processRelate(data)
       }
-      return TypeMixin.methods.processPayload.call(this, data, dataPath)
+      return TypeMixin.methods.processData.call(this, data, dataPath)
     }
   }
 }

@@ -24,7 +24,7 @@ export default {
     if (form) {
       form.components[this.dataPath] = this
       // If the form is directly editing the data, it can be closed before the
-      // parent form is submitting its data. For processPayload() to be able
+      // parent form is submitting its data. For processData() to be able
       // to correctly process all nested data, the form's components need to be
       // registered at parent's level as well.
       // NOTE: rootFormComponent is used, since that's where the data is loaded
@@ -179,7 +179,7 @@ export default {
       }
     },
 
-    processPayload(data, dataPath) {
+    processData(data, dataPath) {
       const { schema } = this
       return schema.exclude
         ? undefined

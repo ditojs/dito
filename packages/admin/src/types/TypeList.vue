@@ -76,6 +76,7 @@
               v-if="draggable"
               type="button"
               class="dito-button-drag"
+              :title="labelize(verbs.drag)"
             )
             router-link.dito-button(
               v-if="editable"
@@ -83,12 +84,14 @@
               tag="button"
               type="button"
               :class="`dito-button-${verbs.edit}`"
+              :title="labelize(verbs.edit)"
             )
             button.dito-button(
               v-if="deletable"
               type="button"
               @click="deleteItem(item, index)"
               :class="`dito-button-${verbs.delete}`"
+              :title="labelize(verbs.delete)"
             )
       tfoot(v-if="creatable")
         tr
@@ -101,7 +104,6 @@
 </template>
 
 <style lang="sass">
-$list-spacing: 1px
 $buttons-padding: 2px
 
 .dito

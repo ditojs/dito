@@ -4,8 +4,9 @@
   )
     button.dito-button(
       type="button"
-      :class="`dito-button-${verb}`"
       @mousedown="onMouseDown($event)"
+      :class="`dito-button-${verb}`"
+      :title="labelize(verb)"
     )
     ul(v-if="schema.forms")
       li(v-for="(form, type) in schema.forms")

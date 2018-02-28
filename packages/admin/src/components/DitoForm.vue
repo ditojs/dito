@@ -249,6 +249,12 @@ export default DitoComponent.component('dito-form', {
       return this.clonedData
     },
 
+    clipboardData() {
+      return this.processData({
+        removeIds: true
+      })
+    },
+
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see data():
@@ -397,7 +403,9 @@ export default DitoComponent.component('dito-form', {
       const { onSuccess, onError } = button
       // TODO: Sometimes, the form doesn't need to submit the payload.
       // Can this be made optional?
-      const payload = this.processPayload()
+      const payload = this.processData({
+        temporaryIds: true
+      })
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -501,21 +509,25 @@ export default DitoComponent.component('dito-form', {
       return keys?.length === 1 && keys[0] === 'id'
     },
 
-    processPayload() {
+    processData(options = {}) {
+      const {
+        temporaryIds = false,
+        removeIds = false
+      } = options
       // dito-server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
       const process = (data, dataPath = '') => {
         // First, see if there's an associated component requiring processing.
-        // See TypeMixin.processPayload(), OptionsMixin.processPayload():
+        // See TypeMixin.processData(), OptionsMixin.processData():
         const component = this.getComponent(dataPath)
         if (component) {
-          data = component.processPayload(data, dataPath)
+          data = component.processData(data, dataPath)
         }
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
-        if (!this.isTransient && this.hasTemporaryId(data)) {
+        if (!this.isTransient && temporaryIds && this.hasTemporaryId(data)) {
           const { id, ...rest } = data
           // A refeference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
@@ -535,6 +547,9 @@ export default DitoComponent.component('dito-form', {
             },
             isArray(data) ? [] : {}
           )
+        }
+        if (removeIds && data?.id) {
+          delete data.id
         }
         return data
       }
