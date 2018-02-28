@@ -29,7 +29,7 @@
 import DitoComponent from '@/DitoComponent'
 import { escapeHtml } from '@ditojs/utils'
 
-export default DitoComponent.component('dito-cell', {
+export default DitoComponent.component('dito-list-cell', {
   props: {
     column: { type: Object, required: true },
     schema: { type: Object, required: true },

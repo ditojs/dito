@@ -1,5 +1,5 @@
 <template lang="pug">
-  thead.dito-header
+  thead.dito-list-header
     tr
       th(
         v-for="(column, index) in columns"
@@ -23,7 +23,7 @@
 $arrow-size: 4px
 
 .dito
-  .dito-header
+  .dito-list-header
     +user-select(none)
     th
       padding: 0
@@ -81,7 +81,7 @@ $arrow-size: 4px
 <script>
 import DitoComponent from '@/DitoComponent'
 
-export default DitoComponent.component('dito-header', {
+export default DitoComponent.component('dito-list-header', {
   props: {
     query: { type: Object, required: true },
     columns: { type: Array, required: true },

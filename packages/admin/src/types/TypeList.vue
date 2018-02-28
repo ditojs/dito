@@ -16,7 +16,7 @@
         :total="total || 0"
       )
     table
-      dito-header(
+      dito-list-header(
         v-if="columns"
         :query="query"
         :columns="columns"
@@ -35,7 +35,7 @@
           :class="getInlineClass(item)"
         )
           template(v-if="columns")
-            dito-cell(
+            dito-list-cell(
               v-for="column in columns"
               :key="column.name"
               :column="column"
