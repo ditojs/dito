@@ -4,7 +4,7 @@ import { isObject, isArray, asArray, isString } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
-    // Nested short-hand expansion
+    // Nested shorthand expansion
     schema = { type: schema }
   } else if (isArray(schema)) {
     // Needed for anyOf, allOf, oneOf, items:
