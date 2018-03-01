@@ -63,7 +63,7 @@ export class AdminController extends Controller {
           new NoEmitOnErrorsPlugin(),
           // https://github.com/ampedandwired/html-webpack-plugin
           new HtmlWebpackPlugin({
-            template: config.index,
+            template: config.template,
             inject: true
           })
         ]

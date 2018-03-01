@@ -28,11 +28,11 @@ export class Application extends Koa {
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
-    // Pluck keys out of config to keep them secret
-    const { keys, ...conf } = config
+    // Pluck keys out of config.app to keep them secret
+    const { keys, ...app } = config.app || {}
+    this.config = { ...config, app }
     this.keys = keys
-    this.config = conf
-    this.proxy = conf.proxy
+    this.proxy = !!app.proxy
     this.models = Object.create(null)
     this.controllers = Object.create(null)
     this.validator = validator || new Validator()
@@ -153,7 +153,7 @@ export class Application extends Koa {
   }
 
   normalizePath(path) {
-    return this.config.normalizePaths ? hyphenate(path) : path
+    return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
   compileValidator(jsonSchema) {
@@ -161,18 +161,17 @@ export class Application extends Koa {
   }
 
   setupMiddleware() {
-    const { config } = this
+    const { log, app } = this.config
 
-    const isTruthy = name => !!config[name]
-    const isntFalse = name => config[name] !== false
+    const isTruthy = name => !!app[name]
+    const isntFalse = name => app[name] !== false
 
-    const { log = {} } = config
     const logger = {
       console: koaLogger,
       true: koaLogger,
       // TODO: Implement logging to actual file instead of console for Pino.
       file: pinoLogger
-    }[log.server]
+    }[log?.server]
 
     this.use(
       compose([
@@ -181,14 +180,14 @@ export class Application extends Koa {
         logger?.(),
         isntFalse('helmet') && helmet(),
         isntFalse('cors') && cors(),
-        isTruthy('compress') && compress(config.compress),
+        isTruthy('compress') && compress(app.compress),
         ...(isTruthy('etag') && [
           conditional(),
           etag()
         ] || []),
         bodyParser(),
         isTruthy('session') && session(
-          config.session === true ? {} : config.session,
+          app.session === true ? {} : app.session,
           this
         ),
         ...(isTruthy('passport') && [
@@ -202,7 +201,7 @@ export class Application extends Koa {
   setupKnex() {
     const { config } = this
     let knexConfig = config.knex
-    if (config.normalizeDbNames) {
+    if (knexConfig.normalizeDbNames) {
       knexConfig = {
         ...knexConfig,
         ...knexSnakeCaseMappers()
@@ -280,15 +279,12 @@ export class Application extends Koa {
       this.on('error', this.onError)
     }
     await this.emit('before:start')
-    const {
-      server: { host, port },
-      environment
-    } = this.config
+    const { host, port, env } = this.config
     await new Promise(resolve => {
       this.server = this.listen(port, host, () => {
         const { port } = this.server.address()
         console.log(
-          `${environment} server started at http://${host}:${port}`
+          `${env} server started at http://${host}:${port}`
         )
         resolve(this.server)
       })
