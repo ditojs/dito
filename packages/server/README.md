@@ -70,8 +70,8 @@ which a selection of predefined tasks are executed:
 ```
 
 Note that in order to work, each of these scripts require either the path to the
-application, or the path to the application’s configuration, as specified above.
-Here a brief description of each script’s purpose:
+application, or the path to the application's configuration, as specified above.
+Here a brief description of each script's purpose:
 
 - `yarn console`: Starts an interactive Read-Eval-Print-Loop console in which
   all Dito.js models can be directly used.

@@ -1,28 +1,27 @@
 # Dito.js Models
 
 Dito.js Models are an extension of
-[Objection.js’ Model class](http://vincit.github.io/objection.js/#models).
+[Objection.js' Model class](http://vincit.github.io/objection.js/#models).
 Objection.js is a very powerful, versatile and modern ORM for Node.js. Instead
 of fully abstracting away the complexity of SQL behind object-oriented
 structures as normal ORMs often do, Objection.js is built around a mighty and
-elegant SQL query builder (itself based on [Knex.js](http://knexjs.org/)), using
-OOP patterns only where they make sense, but never trying to completely hide
-away the presence of SQL.
+elegant SQL query builder (itself based on [Knex.js](http://knexjs.org/)),
+deploying OOP patterns only where they make sense, but never trying to
+completely hide away the presence of SQL.
 
 The result is an ORM that is more flexible and dynamic in its treatment of SQL
 than most, making it at once powerful yet enjoyable to work with. You will often
-find that Objection.js abstracts away the bad parts of SQL while preserving its
-power and potential to create and process data in complex ways.
+find that Objection.js abstracts away the tricky or yucky parts of SQL while
+preserving its power and potential to create and process data in complex ways.
 
-A Dito.js Model class represents a database table and instances of that class
-represent table rows. See [Migrations](./migrations.md) for more information on
-how to create database tables to go along with the Model classes, as well as how
-database table and column names are mapped to Dito.js classes and properties.
+Just like in Objection.js, a Dito.js Model class represents a database table and
+instances of that class represent table rows. See [Migrations](./migrations.md)
+for more information on how to create database tables to go along with the Model
+classes, as well as how database table and column names are mapped to Dito.js
+classes and properties.
 
 Dito.js Models differ from Objection.js Models in a row of extensions aimed at
 making declarative model configuration more streamlined and convention based.
-See [Differences to Objection.js](#differences-to-objectionjs) for a detailed
-list of these differences.
 
 # Model Definitions
 
@@ -54,530 +53,57 @@ export class MyModel extends Model {
 }
 ```
 
-Models describe their [properties](#properties), [relations](#relations),
-[scopes](#scopes), and [filters](#filters) as static class properties. Just like
-with any class in JS, they can also define [methods](#methods), both as static
-class methods, and as instance methods.
+Models describe their `properties`, `relations`, `scopes`, and `filters` as
+static class properties. Just like with any class in JS, they can also define
+methods, both as static class methods, and as instance methods. Read more on
+the definition of each type in these separate chapters:
 
-Note: When inheriting from other Model classes that already provide such fields,
-all these definitions from the inheritance chain get merged into one. While with
-methods, normal JS class inheritance can be used and previous definitions can be
-accessed through the
+- [Model Properties](./model-properties.md)
+- [Model Relations](./model-relations.md)
+- [Model Scopes](./model-scopes.md)
+- [Model Filters](./model-filters.md)
+- [Model Methods](./model-methods.md)
+
+Note: When inheriting from other Model classes that already provide such
+definitions, all the definitions from the Model classes' inheritance chain get
+merged into one. While with methods, normal JS class inheritance can be used and
+previous definitions can be accessed through the
 [`super`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/super)
 keyword, other strategies are deployed for `properties`, `relations`, `scopes`
-and `filters`: Their processed state is reflected in the
-`Model.definition` property, which holds merged entries for each:
-`Model.definition = { properties: {}, relations: {}, scopes: {}, filters: {} }`
+and `filters`:
 
-## Properties
-
-The properties of the model are described in the static `properties` field,
-holding an object in which the keys are the names of each property, and the
-values are again objects describing the property schema.
-
-These property definitions are used for two main purposes:
-
-- When creating [migrations](./migrations.md) for a given model, the `yarn
-  db:create_migration` command uses these properties definition to determine the
-  name, type and settings for each database column. This is why some of the
-  information in the property schema is only provided for the purpose of
-  migrations.
-- Objection.js supports [JSON schema validation](http://json-schema.org/)
-  through the static `jsonSchema` class field. Dito.js goes a step further, and
-  generates this validation schema automatically out of the properties
-  definitions. While Dito.js properties schemas are similar to JSON schema, they
-  are streamlined and simplified in a variety of ways that makes working with
-  them easier. See [Differences to JSON schema](#differences-to-jsonschema) for
-  a description of these differences.
-
-In order to inspect the JSON schema generated by Dito.js out of your properties
-definitions, set `config.log.schema = true` in `src/config/` and start the app.
-
-By default, the following property schema keywords are available. Additional
-keywords can be registered with a custom validator, see
-[Validator](./validator.md):
-
-| Keywords                   | Description
-| -------------------------- | -------------------------------------------------
-| `type`: `string`           | The type of the property. Possible values are:<br>`'string'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'date'`, `'datetime'` or `'timestamp'`.
-| `format`: `string`         | The requried format of the property.<br>Any standard JSON schema formats are supported, such as `'date-time'`, `'email'`, `'hostname'`, `'ipv4'`, `'ipv6'`, `'uri'`. Additional formats can be registered with a custom validator, see [Validator](./validator.md).
-| `default`: `any`           | Sets the property’s default value.<br>This impacts both validation as well as migrations: For validation unless when using `patch` operations, missing properties are replaced with their default values. In migrations, the `.defaultTo()` method is called for the database column.
-| `required`: `boolean`      | Defines if the property is required.<br>This impacts both validation as well as migrations: Validation errors are thrown for missing required properties. In migrations, the `.notNullable()` method is called for the database column.
-| `primary`: `boolean`       | Marks the column as the primary key in the database.
-| `foreign`: `boolean`       | Defines if the property is a foreign key.<br>Finds the information about the related model in the `relations` definition and adds a reference to the related model table in migrations, by calling the `.references(columnName).inTable(tableName)` method.
-| `index`: `boolean`         | Adds an index to the database column in the migrations, by calling the `.index()` method.
-| `nullable`: `boolean`      | Marks the column as nullable in the migrations, by calling the `.nullable()` method.
-| `unique`: `boolean` &#124; `string` | Adds a unique constraint to the table for the given column in the migrations, by calling the `.unique()` method. If a string is provided, all columns with the same string value for `unique` are grouped together in one unique constraint, by calling `.unique([column1, column2, …])`.
-| `unsigned`: `boolean`      | Marks the column for a property of type `'integer'` to be unsigned in the migrations, by calling the `.index()` method.calling the `.unsigned()` method.
-| `computed`: `boolean`      | Marks the property as computed.<br>Computed properties are not present as columns in the database itself. They can be created either by an SQL statement (`SELECT … AS`), or by a getter accessor defined on the model. Computed properties are set when converting to JSON if not present already, and removed again before data is sent to the database.
-| `hidden`: `boolean`        | Marks the property has hidden, so that it does not show up in data converted to JSON.<br>This can be used for sensitive data.
-| `range`: `array`           | Validates a property of type `'number'` or `'integer'` to be in a given range, e.g.: `[2, 5]` 
-
-In addition to all the declared properties, Dito automatically adds an `id`
-property to the properties of every model if a property with the `primary: true`
-setting is not already explicitly defined. The settings used for an
-automatically inserted primary `id` are:
+Their processed, merged state is automatically reflected by Dito.js in the
+static `Model.definition` property, which holds precomputed entries for each
+definition:
 
 ```js
-id: {
-  type: 'integer',
-  primary: true
-}
-```
-
-The same is the case if foreign keys occurring in `relations` definitions are
-not explicitly defined in the properties. The settings used for automatically
-inserted foreign keys are:
-
-```js
-foreignKeyId: {
-  type: 'integer',
-  unsigned: true,
-  foreign: true,
-  index: true,
-  nullable: relation.nullable || false
-}
-```
-
-Note that in order to avoid having to declare foreign keys just to provide
-the desired `nullable` setting, Dito.js allows it to be provided on the relation
-instead. See [Relations](#relations) for more information.
-
-### Properties Example
-
-Here is an example class with a bunch of properties. Notice the validations in
-the email and age property:
-
-- The `format: 'email'` is a standard JSON schema  format, supported by the
-  [AJV](https://github.com/epoberezkin/ajv) validation library which Dito.js
-  uses for validation.
-- The `range: [0, 100]` is a custom keyword that Dito.js adds to the validator.
-- `fullName` is a computed property and therefore has a getter accessor defined
-  in the model.
-
-```js
-import { Model } from '@ditojs/server'
-
-export class MyModel extends Model {
-  static properties = {
-    firstName: {
-      type: 'string',
-      required: true
-    },
-
-    lastName: {
-      type: 'string',
-      required: true
-    },
-
-    fullName: {
-      type: 'string',
-      computed: true
-    },
-
-    email: {
-      type: 'string',
-      format: 'email',
-      nullable: true
-    },
-
-    age: {
-      type: 'integer',
-      range: [0, 100],
-      required: true
-    }
-  }
-
-  get fullName() {
-    return `${this.firstName} ${this.lastName}`
-  }
-}
-```
-
-If we activate the `config.log.schema` setting and start up the app, we can see
-the resulting JSON schema that is used for validation, logged to the console:
-
-```js
-{
-  '$id': 'MyModel',
-  '$schema': 'http://json-schema.org/draft-07/schema#',
-  type: 'object',
-  properties: {
-    id: {
-      type: 'integer',
-      primary: true
-    },
-    firstName: {
-      type: 'string',
-      format: 'required'
-    },
-    lastName: {
-      type: 'string',
-      format: 'required'
-    },
-    fullName: {
-      type: 'string',
-      computed: true
-    },
-    email: {
-      oneOf: [{
-        type: 'string',
-        format: 'email'
-      }, {
-        type: 'null'
-      }],
-      nullable: true
-    },
-    age: {
-      type: 'integer',
-      range: [0, 100],
-      format: 'required'
-    },
-    createdAt: {
-      type: ['string', 'object'],
-      format: 'date-time'
-    },
-    updatedAt: {
-      type: ['string', 'object'],
-      format: 'date-time'
-    }
-  },
-  additionalProperties: false,
-  required: ['firstName', 'lastName', 'age']
-}
-```
-
-### Differences to JSON schema
-
-Notice the differences to the output JSON schema in the above example:
-
-- Dito.js properties definitions only describe the properties, while the JSON
-  schema describes the whole model, hence the `type: 'object'` wrapper.
-- JSON schema does not support the `required: true` keyword on the properties.
-  Instead, the required keyword is defined as an array outside of the
-  `properties` object. Dito.js add a custom `format: 'required'` format, to
-  perform a more natural `required` check where empty strings are not considered
-  to be defined values, which JSON schema would allow to pass through its own
-  `required: []` list.
-- The desired effect `nullable: true` can only be achieved by rather complicated
-  `oneOf: []` statements in JSON schema. Luckily for us, they don't have to be
-   spelled out, as Dito.js creates them for us.
-- `'date'`, `'datetime'` and `'timestamp'` aren't real JSON schema types, but
-  they are useful for Dito.js when creating migrations, so they are supported.
-  In the generated JSON schema, they are replaced with `['string', 'object']`,
-  both types in which dates can be represented.
-
-### Nested Properties
-
-Through Objection.js’ support of JSON properties, Dito.js has native support for
-JSON (or JSONB) based nested properties. The schema for such nested properties
-can be described using standard JSON schema format:
-
-```js
-static properties = {
-  messages: {
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        author: {
-          type: 'string'
-        },
-
-        content: {
-          type: 'string'
-        },
-
-        comments: {
-          type: 'array',
-          items: {
-            type: 'string'
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-But just like with the with the resulting JSON schema that we've logged in
-[Properties Example](#properties-example), these nested schemas tend to get
-complex and long-winded fairly quickly. This is what Dito.js offers a few schema
-shorthands:
-
-### Property Schema Shorthands
-
-Dito.js offers a few ways to simplify the complexity of JSON schema notation for
-some commonly occurring scenarios, by allowing values describing the properties
-different from the already outlined property object schema:
-
-- A string value instead of a property object schema is expanded to a property
-  schema with the value as its type.  
-    So this:
-    ```js
-    propertyName: 'number'
-    ```
-    becomes that: 
-    ```js
-    propertyName: { type: 'number '}
-    ```
-- An array value instead of a property object schema is expanded to an array
-  schema with the value as its `items`, and `[]` as its `default`.  
-    So this:
-    ```js
-    propertyName: ['string']
-    ```
-    becomes that: 
-    ```js
-    propertyName: {
-      type: 'array',
-      items: 'string',
-      default: []
-    }
-    ```
-    And when multiple values are in the array, then the array is preserved:
-    ```js
-    propertyName: {
-      type: 'array',
-      items: ['string', 'null'],
-      default: []
-    }
-    ```
-- An object value without a `type` property, instead of a property object
-  schema, is expanded to an object schema with the object's content as its
-  `properties`, and `additionalProperties` set to `false`.  
-    So this:
-    ```js
-    propertyName: {
-      firstName: {
-        type: 'string'
-      },
-      lastName: {
-        type: 'string'
-      }
-    }
-    ```
-    becomes that: 
-    ```js
-    propertyName: {
-      type: 'object',
-      properties: {
-        firstName: {
-          type: 'string'
-        },
-        lastName: {
-          type: 'string'
-        }
-      },
-      additionalProperties: false
-    }
-
-And lastly, all these shorthands can be combined as well, allowing for some
-rather powerful simplifications. As an example, this:
-
-```js
-static properties = {
-  messages: [{
-    author: 'string',
-    content: 'string',
-    comments: ['string']
-  }]
-}
-```
-
-becomes that:
-
-```js
-static properties = {
-  messages: {
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        author: {
-          type: 'string'
-        },
-
-        content: {
-          type: 'string'
-        },
-
-        comments: {
-          type: 'array',
-          items: {
-            type: 'string'
-          },
-          default: []
-        }
-      },
-      additionalProperties: false
-    },
-    default: []
-  }
-}
-```
-
-## Relations
-
-Models can be related with each other through relations. The available types of
-relations are `'belongsTo'`, `'hasMany'`, `'hasOne'`, `'hasOneThrough'` and
-`'manyToMany'`. Just like properties, relations are given in an object where
-the key is the name of the relationship.
-
-### Examples
-#### *belongsTo*, *hasMany* and *hasOne*
-
-Here is an example of model A which belongs to model B. The relation is given
-its type as well as the properties it is linking. It is important to make sure
-the referenced property in model B exists. Naturally it is convenient to take
-the id which is auto-generated but one could use other properties. In this case
-the id of the B it belongs to is stored in the table of A.
-
-```js
-static relations = {
-  b: {
-    relation: 'belongsTo',
-    from: 'A.bId',
-    to: 'B.id'
-  }
-}
-```
-
-One can then also define the inverse relationship from B to A although it is
-not required in this case. This generally is a *hasMany* relation, since many
-A can belong to the same B. In some cases it can also be a *hasOne* relation,
-if we are looking at a one-to-one relationship.
-
-```js
-static relations = {
-  a: {
-    relation: 'hasMany',
-    from: 'B.id',
-    to: 'A.bid'
-  }
-}
-```
-
-#### *hasOneThrough*
-
-The *hasOneThrough* relation allows you to use a through table with relations
-that normally do not require one. This can be useful to store additional data
-associated with the relation in the table.
-
-TODO: Was passiert hier???
-
-#### *manyToMany*
-
-The *manyToMany* relation allows relating many models of one class with many
-models of another class. This relation requires a through table and Dito can
-automatically create it for you if desired. This is achieved by setting
-*through* to `true`. The *inverse* argument is used for the creation of the
-migrations to determine the through table name and creating it only once.
-
-```js
-static relations = {
-  b: {
-    relation: 'manyToMany',
-    from: 'A.id',
-    through: true,
-    inverse: true,
-    to: 'B.id'
-  }
-}
-```
-
-You can control the through table and add additional columns to it by
-describing the through table explicitly. This property then appears on the
-related model.
-
-```js
-through: {
-  from: 'a_b.aId',
-  to: 'a_b.bId',
-  extra : ['extraProperty']
+Model.definition = {
+  properties: {},
+  relations: {},
+  scopes: {},
+  filters: {}
 }
 ```
 
 ## Model Queries
 
-Dito offers a query language based on Objection.js queries which as Dito uses
-Knex for accessing the database. Knex then translates the query into SQL
-commands.
+Dito.js inherits Objection.js' `QueryBuilder` class and extends it further with
+useful additions that align well with the Dito.js way of doing things. Read more
+on queries here:
 
-Knex offers a query builder which is the further extended by Objection.
-In particular, Objection offers eager statements which allows you to easily
-load related models, apply scopes to them etc.
-
-Dito adds some additional simplifications to queries, for example
-`modelClass.query().first()` is equivalent to `modelClass.first()` and
-`model.$relatedQuery('relationName').first()` is equivalent to
-`model.$relationName.first()`.
-
-Any Objection query is also a valid Dito query so it makes sense to
-look at Objections documentation. An easy way to play around with queries is to
-start the Dito console.
-
-
-```sh
-yarn console
-```
-
-You can use `.debug()` on any query to log SQL statement to console.
-
-## Scopes
-
-Scopes can be used define query templates on models. The scopes can then be
-accessed on the model and through routes via the controllers if desired. Scopes
-can be defined on the model like this:
-
-```js
-static scopes = {
-    all : query => query,
-    published: query => query
-      .where('published', true)
-      .mergeEager('relationName(published)')
-  }
-```
-
-The dictionary keys are the name of the scope and the values are function taking
-a Knex query object and returns a modified query.  Note that
-mergeEager merges existing eager statements whereas eager overwrites existing
-eager statements. The full documentation on eager statements is in the Objection
-documentation. Scopes are called namedFilters in Objection.
+- [Model Queries](./model-queries.md)
 
 ## Differences to Objection.js
 
-- Objection.js doesn't provide any mechanisms to formulate `properties`
-  definitions, and automatically create validation schemas and migrations from
-  it.
--  Objection.js doesn't inherit and merge model definitions.
-- In Objection.js, `scopes` are basically called `namedFilters`. But Dito.js’
-  scopes do a few things more than Objection.js’ named filters:
-    - Default scopes are automatically applied to find queries
-    - Dito.js scopes can be eager loaded
-    - Dito.js scopes can be query objects that are converted to filters through
-      Dito.js’ `QueryBuilder.find(query)`
-- Dito.js models have versions of all common `QueryBuilder` methods as short-
-  cuts that can be called directly in on the model class, without having to call
-  `Model.query()` first: `Model.query().where(…)` simply becomes
-  `Model.where(…)`, and everything else carries on normally from there.
-- Dito.js models give access to relations through special accessors for each 
-  relation, accessible through `model.$relationName`. These accessors give 
-  access to related queries, among other things. So this:
+Each chapter linked to above contains a sub-chapter listing the
+differences to Objection.js, e.g.
+[Model Properties – Differences to Objection.js](./model-properties.md#differences-to-objectionjs)
+Once these differences are understood, you should be able to consult the useful
+and detailed documentation of
+[Objection.js](http://vincit.github.io/objection.js/) without causing confusion
+between the two libraries.
 
-    ```js
-    model.$relatedQuery('relationName').where(…)
-    ```
+On a level of model definitions, these are the differences to Objection.js:
 
-    becomes:
-
-    ```js
-    model.$relationName.query().where(…)
-    ```
-
-    and because relation accessors also offer `QueryBuilder` short-cuts, this can
-    be further shortened to:
-
-    ```js
-    model.$relationName.where(…)
-    ```
+- Objection.js doesn't inherit and merge model definitions across a model classes'
+  inheritance chain, and doesn't and keep them around in a static `Model.definition` field.

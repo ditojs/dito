@@ -87,7 +87,8 @@ export class Controller {
 
   getUrl(type, path) {
     path = this.getPath(type, path)
-    return path && path !== '/' ? `${this.url}/${path}` : this.url
+    // Use '.' as the path for the controller's "index" action.
+    return path && path !== '.' ? `${this.url}/${path}` : this.url
   }
 
   filterValues(values) {
