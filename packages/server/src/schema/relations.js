@@ -33,29 +33,31 @@ const throughRelationClasses = {
 }
 
 class ModelReference {
-  constructor(reference, models) {
+  constructor(reference, models, allowUnknown = false) {
+    this.modelName = null
     this.modelClass = null
     this.propertyNames = []
     // Parse and validate model key references
     for (const ref of asArray(reference)) {
       const [modelName, propertyName] = ref?.split('.') || []
       const modelClass = models[modelName]
-      if (!modelClass) {
+      if (!modelClass && !allowUnknown) {
         throw new RelationError(
-          `Unknown model property reference: ${ref}`)
-      } else if (!this.modelClass) {
+          `Unknown model reference: ${ref}`)
+      }
+      if (!this.modelName) {
+        this.modelName = modelName
         this.modelClass = modelClass
-      } else if (this.modelClass !== modelClass) {
+      } else if (this.modelName !== modelName) {
         throw new RelationError(
-          `Composite keys need to be defined on the same model: ${ref}`)
+          `Composite keys need to be defined on the same table: ${ref}`)
       }
       this.propertyNames.push(propertyName)
     }
   }
 
   toArray() {
-    const modelName = this.modelClass.name
-    return this.propertyNames.map(propName => `${modelName}.${propName}`)
+    return this.propertyNames.map(propName => `${this.modelName}.${propName}`)
   }
 
   toString() {
@@ -71,9 +73,9 @@ class ModelReference {
     //   `${toModelName)${capitalize(toProp)}`
     // NOTE: Due to the use of knexSnakeCaseMappers(), there is no need to
     // generate actual table-names here.
-    const fromClass = this.modelClass
+    const fromName = this.modelName
     const fromProperties = this.propertyNames
-    const toClass = to.modelClass
+    const toName = to.modelName
     const toProperties = to.propertyNames
     if (fromProperties.length !== toProperties.length) {
       throw new RelationError(`Unable to create through join for ` +
@@ -84,11 +86,11 @@ class ModelReference {
       const fromProperty = fromProperties[i]
       const toProperty = toProperties[i]
       if (fromProperty && toProperty) {
-        const throughName = `${fromClass.name}${toClass.name}`
-        const throughFrom = `${fromClass.name}${capitalize(fromProperty)}`
-        const throughto = `${toClass.name}${capitalize(toProperty)}`
+        const throughName = `${fromName}${toName}`
+        const throughFrom = `${fromName}${capitalize(fromProperty)}`
+        const throughTo = `${toName}${capitalize(toProperty)}`
         through.from.push(`${throughName}.${throughFrom}`)
-        through.to.push(`${throughName}.${throughto}`)
+        through.to.push(`${throughName}.${throughTo}`)
       } else {
         throw new RelationError(
           `Unable to create through join from '${this}' to '${to}'`)
@@ -102,7 +104,7 @@ function convertRelation(schema, models) {
   let {
     relation,
     // Dito-style relation description:
-    from, through, inverse, to, scope,
+    from, to, through, inverse, scope,
     // Objection.js-style relation description
     join, modify, filter,
     ...rest
@@ -122,22 +124,45 @@ function convertRelation(schema, models) {
     //   to: 'ToModel.foreignKeyPropertyName',
     //   scope: 'latest'
     // }
-    from = new ModelReference(from, models)
-    to = new ModelReference(to, models)
+    from = new ModelReference(from, models, false)
+    to = new ModelReference(to, models, false)
     if (throughRelationClasses[relationClass.name]) {
-      // If the through setting is set to `true` on relations that required
-      // a `through` configuration, auto-generate it, see buildThrough():
+      // Setting `through` to `true` is the same as providing an empty object
+      // for it. It simply means: auto-generate the through settings.
       if (through === true) {
-        through = inverse ? to.buildThrough(from) : from.buildThrough(to)
-      } else if (!through) {
-        throw new RelationError('Relation needs a through definition or a ' +
-          '`through: true` setting to auto-generate it')
-      } else {
-        // Convert optional through model name to class
-        const { modelClass } = through
-        if (isString(modelClass)) {
-          through.modelClass = models[modelClass]
+        through = {}
+      }
+      if (!through) {
+        throw new RelationError('The relation needs a `through` definition ' +
+          'or a `through: true` setting to auto-generate it')
+      } else if (!through.from && !through.to) {
+        // Auto-generate the through settings, see buildThrough():
+        const built = inverse ? to.buildThrough(from) : from.buildThrough(to)
+        through.from = built.from
+        through.to = built.to
+      } else if (through.from && through.to) {
+        // `through.from` and `through.to` need special processing, where  they
+        // can either be model references or table references, and if they
+        // reference models, they should be converted to table references and
+        // the model should be extracted automatically.
+        const throughFrom = new ModelReference(through.from, models, true)
+        const throughTo = new ModelReference(through.to, models, true)
+        if (throughFrom.modelClass || throughTo.modelClass) {
+          if (throughFrom.modelClass === throughTo.modelClass) {
+            through.modelClass = throughTo.modelClass
+            through.from = throughFrom.toArray()
+            through.to = throughTo.toArray()
+          } else {
+            throw new RelationError('Both sides of the `through` definition ' +
+              'need to be on the same join model')
+          }
+        } else {
+          // Assume the references are to a join table, and use the settings
+          // unmodified.
         }
+      } else {
+        throw new RelationError('The relation needs a `through.from` and ' +
+          '`through.to` definition')
       }
     } else if (through) {
       throw new RelationError('Unsupported through join definition')
@@ -153,8 +178,8 @@ function convertRelation(schema, models) {
       modelClass: to.modelClass,
       join: {
         from: from.toArray(),
-        through,
-        to: to.toArray()
+        to: to.toArray(),
+        through
       },
       modify,
       ...rest
