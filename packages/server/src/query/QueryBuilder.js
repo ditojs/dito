@@ -178,10 +178,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this._applyScopes(scopes, true)
   }
 
-  break() {
-    return null
-  }
-
   raw(...args) {
     return this.knex().raw(...args)
   }
@@ -201,12 +197,12 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  insert(data, returning) {
+  insert(data) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
     return !this.isPostgreSQL() && isArray(data) && data.length > 1
       ? this.insertGraph(data)
-      : super.insert(data, returning)
+      : super.insert(data)
   }
 
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
