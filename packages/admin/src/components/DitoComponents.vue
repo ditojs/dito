@@ -1,8 +1,8 @@
 <template lang="pug">
-  ul.dito-panel(
+  ul.dito-components(
     v-if="components"
   )
-    li.dito-panel-bar(
+    li.dito-components-bar(
       v-if="label !== undefined && !schema.compact"
     )
       dito-label(
@@ -43,7 +43,7 @@
 
 <style lang="sass">
 .dito
-  .dito-panel
+  .dito-components
     display: flex
     flex-flow: row wrap
     position: relative
@@ -65,7 +65,7 @@
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $form-spacing-half
-    .dito-panel-bar
+    .dito-components-bar
       flex-basis: 100%
       padding: $form-spacing
       margin: 0 (-$form-spacing-half)
@@ -83,7 +83,7 @@
       display: inline-block
       width: auto
   .dito-list
-    .dito-panel
+    .dito-components
       &::after
         // Hide the ruler in nested forms
         display: none
@@ -93,7 +93,7 @@
 import DitoComponent from '@/DitoComponent'
 import { isFunction } from '@ditojs/utils'
 
-export default DitoComponent.component('dito-panel', {
+export default DitoComponent.component('dito-components', {
   inject: ['$validator'],
 
   props: {

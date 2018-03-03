@@ -18,8 +18,8 @@ export default {
     },
 
     routeComponent() {
-      // Loop through all non-route components (e.g. DitoPanel, DitoTab) until
-      // the closest component that is in the route is found.
+      // Loop through all non-route components (e.g. DitoComponents, DitoTab)
+      // until the closest component that is in the route is found.
       let comp = this
       while (comp && !comp.isRoute) {
         comp = comp.$parent
@@ -60,7 +60,7 @@ export default {
     // We can't store this in `data`, as this is already the pure data from the
     // API server. That's what the `store` is for: Memory that's available as
     // long as the current editing path is still valid. For type components,
-    // this memory is provided by the parent, see RouteMixin and DitoPanel.
+    // this memory is provided by the parent, see RouteMixin and DitoComponents.
     getStore(key) {
       return this.store[key]
     },

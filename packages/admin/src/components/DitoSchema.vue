@@ -6,7 +6,7 @@
     )
     .dito-scroll
       .dito-scroll-content
-        dito-panel(
+        dito-components(
           v-for="(tabSchema, key) in tabs"
           v-show="selectedTab === key"
           :key="key"
@@ -18,7 +18,7 @@
           :store="store"
           :disabled="disabled"
         )
-        dito-panel(
+        dito-components(
           :schema="schema"
           :dataPath="dataPath"
           :data="data"
