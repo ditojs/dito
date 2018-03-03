@@ -1,15 +1,15 @@
 <template lang="pug">
-  .dito-view
-    div.dito-scroll(v-if="isLastRoute")
-      component.dito-content(
-        :is="getTypeComponent(schema.type)"
-        :schema="schema"
-        :dataPath="name"
-        :data="data"
-        :meta="meta"
-        :store="getChildStore(name)"
-      )
-    router-view(v-else)
+  // If view is not active, render router-view to nest further route componenets
+  router-view(v-if="!isLastRoute")
+  .dito-view.dito-scroll(v-else)
+    component.dito-scroll-content(
+      :is="getTypeComponent(schema.type)"
+      :schema="schema"
+      :dataPath="name"
+      :data="data"
+      :meta="meta"
+      :store="getChildStore(name)"
+    )
 </template>
 
 <style lang="sass">

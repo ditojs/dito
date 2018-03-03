@@ -31,7 +31,7 @@
         flex: 1 1 50%
         max-width: 50%
         align-self: flex-start
-        .dito-content
+        .dito-scroll-content
           padding: 0
 </style>
 

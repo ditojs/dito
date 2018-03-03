@@ -1,65 +1,43 @@
 <template lang="pug">
-  .dito-form(
+  // If form is not active, render router-view to nest further route componenets
+  router-view(v-if="!isActive")
+  form.dito-form.dito-scroll-parent(
+    v-else
     :class="formClass"
+    @submit.prevent="onSubmit()"
   )
-    form(v-if="isActive" @submit.prevent="onSubmit()")
-      dito-tabs(
-        :tabs="tabs"
-        :selectedTab="selectedTab"
-      )
-      .dito-scroll
-        .dito-content
-          dito-panel(
-            v-for="(tabSchema, key) in tabs"
-            v-show="selectedTab === key"
-            :key="key"
-            :tab="key"
-            :schema="tabSchema"
-            :dataPath="dataPath"
-            :data="data || {}"
-            :meta="meta"
-            :store="store"
-            :disabled="loading"
-          )
-          dito-panel(
-            :schema="schema"
-            :dataPath="dataPath"
-            :data="data || {}"
-            :meta="meta"
-            :store="store"
-            :disabled="loading"
-          )
-          .dito-buttons
-            button.dito-button(
-              type="button"
-              @click.prevent="onCancel"
-              :class="`dito-button-${verbs.cancel}`"
-            ) {{ buttons.cancel && buttons.cancel.label }}
-            button.dito-button(
-              v-if="!doesMutate"
-              type="submit"
-              :class="`dito-button-${verbs.submit}`"
-            ) {{ buttons.submit && buttons.submit.label }}
-            button.dito-button(
-              v-for="(button, key) in buttons"
-              v-if="key !== 'submit' && key !== 'cancel'"
-              type="submit"
-              @click.prevent="onSubmit(button)"
-              :class="`dito-button-${key}`"
-            ) {{ button.label }}
-    router-view(v-else)
+    dito-schema(
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data || {}"
+      :meta="meta"
+      :store="store"
+      :disabled="loading"
+    )
+      .dito-buttons(slot="buttons")
+        button.dito-button(
+          type="button"
+          @click.prevent="onCancel"
+          :class="`dito-button-${verbs.cancel}`"
+        ) {{ buttons.cancel && buttons.cancel.label }}
+        button.dito-button(
+          v-if="!doesMutate"
+          type="submit"
+          :class="`dito-button-${verbs.submit}`"
+        ) {{ buttons.submit && buttons.submit.label }}
+        button.dito-button(
+          v-for="(button, key) in buttons"
+          v-if="key !== 'submit' && key !== 'cancel'"
+          type="submit"
+          @click.prevent="onSubmit(button)"
+          :class="`dito-button-${key}`"
+        ) {{ button.label }}
 </template>
 
 <style lang="sass">
 .dito
   .dito-form
-    &,
-    form
-      // To make vertical scrolling in .dito-scroll work
-      flex: 1
-      display: flex
-      flex-flow: column
-    .dito-content
+    .dito-scroll-content
       > .dito-buttons
         margin-top: $form-margin
         text-align: center
@@ -171,15 +149,6 @@ export default DitoComponent.component('dito-form', {
 
     buttons() {
       return this.schema?.buttons || {}
-    },
-
-    tabs() {
-      return this.schema?.tabs
-    },
-
-    selectedTab() {
-      const { hash } = this.$route
-      return hash?.substring(1) || this.tabs && Object.keys(this.tabs)[0] || ''
     },
 
     data() {

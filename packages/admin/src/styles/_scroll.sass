@@ -2,7 +2,13 @@
   overflow-y: scroll
   flex: 1
 
-.dito-content
+.dito-scroll-parent
+  // To make vertical scrolling in .dito-scroll work
+  flex: 1
+  display: flex
+  flex-flow: column
+
+.dito-scroll-content
   max-width: $content-width
   box-sizing: border-box
   padding: $form-margin
