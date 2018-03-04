@@ -51,8 +51,8 @@ export default {
     },
 
     verbs() {
-      // The actual code is a method, for easier overriding of the computed
-      // property.
+      // The actual code is the `getVerbs()` method, for easier overriding of
+      // this computed property in components that use the DataMixin.
       return this.getVerbs()
     }
   },

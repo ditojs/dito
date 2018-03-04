@@ -91,9 +91,13 @@ export default {
       return this.$route.params[this.meta.param]
     },
 
-    nestedRoutes() {
+    nestedRouteComponents() {
       const { routeComponents } = this.appState
       return routeComponents.slice(routeComponents.indexOf(this) + 1)
+    },
+
+    nestedFormComponents() {
+      return this.nestedRouteComponents.filter(component => component.isForm)
     }
   }
 }

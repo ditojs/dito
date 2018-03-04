@@ -1,5 +1,5 @@
 <template lang="pug">
-  // If form is not active, render router-view to nest further route componenets
+  // If form is not active, render router-view to nest further route components
   router-view(v-if="!isActive")
   form.dito-form.dito-scroll-parent(
     v-else
@@ -226,16 +226,12 @@ export default DitoComponent.component('dito-form', {
 
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
-      // can't inherit the data from the parent already, see data():
+      // can't inherit the data from the parent already, see computed data():
       return !this.isTransient && !this.data && !this.loading
     },
 
-    nestedForms() {
-      return this.nestedRoutes.filter(entry => entry.isForm)
-    },
-
     isDirty() {
-      for (const form of [this, ...this.nestedForms]) {
+      for (const form of [this, ...this.nestedFormComponents]) {
         if (!form.doesMutate && Object.keys(form.$fields).some(
           key => form.$fields[key].dirty)
         ) {

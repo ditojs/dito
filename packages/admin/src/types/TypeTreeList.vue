@@ -68,8 +68,10 @@ async function processSchema(listSchema, name, api, routes, parentMeta, level,
       for (const [name, schema] of Object.entries(listSchema)) {
         if (name !== 'form' && isObject(schema)) {
           promises.push(
+            // Pass `true` for `flatten` in tree lists.
             processSchema(
-              schema, name, api, childRoutes, parentMeta, level, nested, true)
+              schema, name, api, childRoutes, parentMeta, level, nested, true
+            )
           )
         }
       }

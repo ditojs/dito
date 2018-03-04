@@ -1,5 +1,5 @@
 <template lang="pug">
-  // If view is not active, render router-view to nest further route componenets
+  // If view is not active, render router-view to nest further route components
   router-view(v-if="!isLastRoute")
   .dito-view.dito-scroll(v-else)
     component.dito-scroll-content(
