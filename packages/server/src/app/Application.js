@@ -279,7 +279,10 @@ export class Application extends Koa {
       this.on('error', this.onError)
     }
     await this.emit('before:start')
-    const { host, port, env } = this.config
+    const {
+      server: { host, port },
+      env
+    } = this.config
     await new Promise(resolve => {
       this.server = this.listen(port, host, () => {
         const { port } = this.server.address()
