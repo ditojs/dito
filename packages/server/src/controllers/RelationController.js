@@ -65,9 +65,9 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  execute(transaction, ctx, modify) {
+  execute(transacted, ctx, modify) {
     const id = this.parent.getId(ctx)
-    return this.parent.execute(transaction, ctx, query => query
+    return this.parent.execute(transacted, ctx, query => query
       .clearScope()
       .findById(id)
       .throwIfNotFound()

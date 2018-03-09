@@ -43,14 +43,16 @@ export class ModelController extends CollectionController {
   }
 
   // @override
-  execute(transaction, ctx, modify) {
+  execute(transacted, ctx, modify) {
     // NOTE: ctx is required by RelationController.execute()
-    const call = modelClass => modify(
-      modelClass.query()
+    const execute = trx => modify(
+      this.modelClass
+        .query(trx)
         .modify(query => this.handleScopes(query))
     )
-    return transaction
-      ? objection.transaction(this.modelClass, call)
-      : call(this.modelClass)
+
+    return transacted
+      ? objection.transaction(this.modelClass.knex(), trx => execute(trx))
+      : execute()
   }
 }
