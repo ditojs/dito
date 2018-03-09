@@ -23,6 +23,7 @@ export class AdminController extends Controller {
     koa.use(historyApiFallback())
     koa.use(webpack({
       config: {
+        mode: 'development',
         entry: [
           '@ditojs/admin/dist/dito-admin.css',
           ...(config.include || []),
