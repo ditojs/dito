@@ -297,7 +297,7 @@ and distinguished by their verbs. Here's the mapping of their verbs to the
 collection actions and the database methods they execute.
 
 | Verb       | Collection Action | Database Method
-| ---------- | ------------------|----------------
+| ---------- | ----------------- | ---------------------------------------------
 | `'get'`    | `find()`          | `find()`
 | `'delete'` | `delete()`        | `delete()`
 | `'post'`   | `insert()`        | `insertAndFetch()` or `insertGraphAndFetch()`
@@ -312,7 +312,7 @@ and distinguished by their verbs. Here's the mapping of their verbs to the
 member actions and the database methods they execute.
 
 | Verb       | Member Action | Database Method
-| ---------- | --------------|----------------
+| ---------- | ------------- | -------------------------------------------------
 | `'get'`    | `find()`      | `findOne()`
 | `'delete'` | `delete()`    | `deleteById()`
 | `'put'`    | `update()`    | `updateAndFetchById()` or `updateGraphAndFetchById()`
@@ -324,7 +324,8 @@ see below.
 
 Important: By default, all these actions are allowed, facilitating rapid
 prototyping but leading to obvious security issues when left open in production.
-Use `allow` to control which actions should be exposed.
+Use the `allow` configuration on both the `collection` and `member` objects to
+control which actions should be exposed.
 
 ### Example
 
@@ -367,15 +368,21 @@ As you can see, in comparison to the base controller class, model controllers
 add quite a few configuration settings to map these structures to model actions
 in a clean way:
 
-| Instance Field                | Description
-| ----------------------------- | -------------------------------------------------
-| `modelClass`: `function`      | The model class that this controller represents. If none is provided, the singularized controller name is used to look up the model class in models registered with the application. As a convention, model controller names should always be provided in pluralized form.
-| `graph`: `boolean`            | Controls whether normal database methods should be used, or their `…Graph…` counterparts. For more information on graphs, see [Model Queries – Graph Methods](./model-queries.md#graph-methods)
-| `collection`: `Object`        | The object describing all the controller's collection actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the collection.
-| `collection.allow`: `boolean` | Just like on the base controller class, `allow` settings can also be provided on the level of the `collection` object.
-| `member`: `Object`            | The object describing all the controller's member actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the member.
-| `member.allow`: `boolean`     | Just like on the base controller class, `allow` settings can also be provided on the level of the `member` object.
-| `relations`: `Object`         | The list of relation controller configurations, to be mapped to instances of `RelationController` that are automatically instantiated by the `ModelController`. See [`RelationController` Class](#relationcontroller-class) for more details.
+| Instance Field                                  | Description
+| ----------------------------------------------- | ----------------------------
+| `modelClass`: `function`                        | The model class that this controller represents. If none is provided, the singularized controller name is used to look up the model class in models registered with the application. As a convention, model controller names should always be provided in pluralized form.
+| `collection`: `Object`                          | The object describing all the controller's collection actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the collection.
+| `collection.allow`: `Array`                     | Just like on the base controller class, `allow` settings can also be provided on the level of the `collection` object.
+| `member`: `Object`                              | The object describing all the controller's member actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the member.
+| `member.allow`: `Array`                         | Just like on the base controller class, `allow` settings can also be provided on the level of the `member` object.
+| `relations`: `Object`                           | The list of relation controller configurations, to be mapped to instances of `RelationController` that are automatically instantiated by the `ModelController`. See [`RelationController` Class](#relationcontroller-class) for details.
+| `graph`: `boolean`                              | Controls whether normal database methods should be used, or their `…Graph…` counterparts. For more information on graphs, see [Model Queries – Graph Methods](./model-queries.md#graph-methods)
+| `allow.param`: `string` &#124; `Array`          | The query parameter(s) allowed to be passed to `find()` actions, both on `collection` and `member` level, e.g. `'scope'`, `'range'`, `'order'`. If none is provided, every supported parameter is allowed. See [Model Queries – Find Methods](./model-queries.md#find-methods) for more information on the supported query parameters.
+| `allow.scope`: `string` &#124; `Array`          | The scope(s) allowed to be requested when passing the `'scope'` query parameter. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
+| `scope`: `string` &#124; `Array`                | The scope(s) to be applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
+| `eagerScope`: `string` &#124; `Array`           | The scope(s) to be eagerly applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
+| `role`: `string` &#124; `Array` &#124; `Object` | Not yet implemented.
+| `cache`: `Object`                               | Not yet implemented.
 ## `RelationController` Class
 
 Model controllers can optionally also generate routes for their relations
@@ -439,12 +446,13 @@ collection actions for easier handling of user authentication through
 with Dito.js' `UserModel` base-class or the `UserMixin`:
 
 | Verb       | Collection Action | Parameters             
-| ---------- | ------------------|------------------------
+| ---------- | ----------------- | -----------------------
 | `'post'`   | `login()`         | `username` / `password`
 | `'post'`   | `logout()`        |
 | `'get'`    | `current()`       |
 
-TODO: Write about UserModel, UserMixin, and describe return values of actions.
+TODO: Write about `UserModel`, `UserMixin`, and describe return values of
+actions.
 
 ## `AdminController` Class
 

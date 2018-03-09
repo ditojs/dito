@@ -157,7 +157,7 @@ table and model class by providing an object for the `trough` setting:
 | ------------------------------------ | ---------------------------------------
 | `through.from`: `string`             | The model and property name or table and column name of an existing join model class or join table from which the through relation is to be built, as a string with both identifiers separated by `'.'`, e.g.: `'FromModelClass.fromPropertyName'`
 | `through.to`: `string`               | The model and property name or table and column name of an existing join model class or join table to which the through relation is to be built, as a string with both identifiers separated by `'.'`, e.g.: `'toModelClass.toPropertyName'`
-| `through.extra`: `Array`             | List additional columns to be added to the related model. See [Extra Properties](#extra-jproperties) for more details.
+| `through.extra`: `Array`             | List additional columns to be added to the related model. See [Extra Properties](#extra-jproperties) for details.
 
 - To work with an existing join model class, provide both the `through.from` and
 `through.to` reference just as with the main relation definition:

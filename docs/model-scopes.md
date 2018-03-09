@@ -40,7 +40,7 @@ export class MyModel extends Model {
 
 The definition of the `orderBy()` statement in the `default` scopes means that
 the models of this class appear ordered by default when any query is executed.
-See [Default Scopes](#default-scopes) for more details.
+See [Default Scopes](#default-scopes) for details.
 
 The `published` scope will list all models that have their `published` property
 set to `true`, and for these it will also eager-load the models of the
@@ -121,6 +121,14 @@ If a sub-class does not desire the effect of a super-class scope, it can undo
 its effects by using Objection.js'
 [`clear()`](http://vincit.github.io/objection.js/#clear) method, or in the case
 of eager expressions with `clearEager()`.
+
+## Applying Scopes
+
+TODO:
+
+- Through queries (link)
+- Through controllers defaults (link)
+- Through find controller actions (link)
 
 ## Differences to Objection.js
 
