@@ -12,7 +12,7 @@
     )
       button.dito-button.dito-button-copy(
         type="button"
-        ref="copy"
+        ref="copyData"
         title="Copy Data"
       )
       button.dito-button.dito-button-paste(
@@ -85,16 +85,18 @@ export default DitoComponent.component('dito-tabs', {
   },
 
   mounted() {
-    this.$clipboard = new Clipboard(this.$refs.copy, {
-      text: () => {
-        if (this.formComponent) {
-          const data = this.formComponent.clipboardData
-          this.appState.clipboardData = clone(data)
-          return JSON.stringify(data)
-        }
-      },
-      action: 'copy'
-    })
+    if (this.clipboard) {
+      this.$clipboard = new Clipboard(this.$refs.copyData, {
+        text: () => {
+          if (this.formComponent) {
+            const data = this.formComponent.clipboardData
+            this.appState.clipboardData = clone(data)
+            return JSON.stringify(data)
+          }
+        },
+        action: 'copy'
+      })
+    }
   },
 
   destroyed() {
