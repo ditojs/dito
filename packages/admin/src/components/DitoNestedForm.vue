@@ -47,7 +47,7 @@ export default DitoForm.extend({
       return {
         ...this.getVerbs(),
         cancel: 'close',
-        canceled: 'closed'
+        cancelled: 'closed'
       }
     }
   }

@@ -81,11 +81,11 @@ export default {
         edit: 'edit',
         edited: 'edited',
         cancel: 'cancel',
-        canceled: 'canceled',
+        cancelled: 'cancelled',
         drag: 'drag',
         dragged: 'dragged',
         submit: this.create ? verbs.create : verbs.save,
-        submited: this.create ? verbs.created : verbs.saved
+        submitted: this.create ? verbs.created : verbs.saved
       }
     },
 
