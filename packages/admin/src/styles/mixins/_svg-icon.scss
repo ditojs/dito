@@ -4,7 +4,7 @@
   @include svg((
     viewBox: "0 0 24 24",
     preserveAspectRatio: "xMinYMid",
-    style: "fill:none;stroke:#{$color};stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round"
+    style: "fill:none;stroke:#{$color};stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"
   )) {
     @content;
   }
