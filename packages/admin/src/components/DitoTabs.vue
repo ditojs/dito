@@ -7,16 +7,18 @@
       :class="{ selected: selectedTab === key }"
     )
       | {{ tabSchema.label }}
-    .dito-buttons.dito-buttons-round
+    .dito-clipboard.dito-buttons.dito-buttons-round(
+      v-if="clipboard"
+    )
       button.dito-button.dito-button-copy(
         type="button"
         ref="copy"
-        title="Copy Form"
+        title="Copy Data"
       )
       button.dito-button.dito-button-paste(
         type="button"
-        @click="paste"
-        title="Paste Form"
+        @click="pasteData"
+        title="Paste Data"
         :disabled="!appState.clipboardData"
       )
 </template>
@@ -72,17 +74,18 @@ import { clone } from '@ditojs/utils'
 export default DitoComponent.component('dito-tabs', {
   props: {
     tabs: { type: Object, required: false },
-    selectedTab: { type: String, required: false }
+    selectedTab: { type: String, required: false },
+    clipboard: { type: Boolean, default: false }
   },
 
   data() {
     return {
-      clipboard: null
+      $clipboard: null
     }
   },
 
   mounted() {
-    this.clipboard = new Clipboard(this.$refs.copy, {
+    this.$clipboard = new Clipboard(this.$refs.copy, {
       text: () => {
         if (this.formComponent) {
           const data = this.formComponent.clipboardData
@@ -95,11 +98,11 @@ export default DitoComponent.component('dito-tabs', {
   },
 
   destroyed() {
-    this.clipboard?.destroy()
+    this.$clipboard?.destroy()
   },
 
   methods: {
-    paste() {
+    pasteData() {
       const { clipboardData } = this.appState
       const targetData = this.formComponent?.data
       if (clipboardData && targetData) {

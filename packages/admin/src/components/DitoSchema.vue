@@ -3,6 +3,7 @@
     dito-tabs(
       :tabs="tabs"
       :selectedTab="selectedTab"
+      :clipboard="clipboard"
     )
     .dito-scroll
       .dito-scroll-content
@@ -50,6 +51,10 @@ export default DitoComponent.component('dito-schema', {
     selectedTab() {
       const { hash } = this.$route
       return hash?.substring(1) || this.tabs && Object.keys(this.tabs)[0] || ''
+    },
+
+    clipboard() {
+      return this.schema?.clipboard
     }
   }
 })
