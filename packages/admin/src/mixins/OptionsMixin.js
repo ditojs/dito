@@ -46,9 +46,9 @@ export default {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
-          const rootData = this.rootFormComponent.data
-          data = rootData &&
-            data.call(this, this.data, rootData, this.dataPath)
+          const dataRoot = this.dataRouteComponent.data
+          data = dataRoot &&
+            data.call(this, this.data, dataRoot, this.dataPath)
         }
         if (isPromise(data)) {
           // If the data is asynchronous, we can't return it straight away.

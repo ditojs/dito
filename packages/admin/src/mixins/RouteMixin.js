@@ -22,6 +22,9 @@ export default {
     return {
       isRoute: true,
       reload: false,
+      // TypeMixin registers itself with the closest route component, as well as
+      // with the root route component.
+      components: {},
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoComponents, ListMixin

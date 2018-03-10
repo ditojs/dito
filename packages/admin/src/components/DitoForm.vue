@@ -63,7 +63,6 @@ export default DitoComponent.component('dito-form', {
       createdData: null,
       clonedData: undefined,
       isForm: true,
-      components: {},
       loadCache: {}, // See TypeMixin.load()
       formClass: null,
       temporaryId: 0
@@ -164,7 +163,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.rootFormComponent)
+      return this.getDataPathFrom(this.dataRouteComponent)
     },
 
     listData() {

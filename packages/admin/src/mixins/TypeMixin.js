@@ -20,15 +20,15 @@ export default {
   // Register and unregister all type components on their parent forms for easy
   // lookup.
   created() {
-    const form = this.formComponent
-    if (form) {
-      form.components[this.dataPath] = this
-      // If this form is nested also register its components with the root form.
+    const { routeComponent, dataRouteComponent, dataPath } = this
+    if (routeComponent) {
+      routeComponent.components[dataPath] = this
+      // If this component is nested, also register its components with the root
+      // route component.
       // This is needed for processData() to be able to correctly process all
       // nested data, even if the nested form was already closed on submit.
-      const rootForm = this.rootFormComponent
-      if (rootForm !== form) {
-        rootForm.components[this.dataPath] = this
+      if (dataRouteComponent !== routeComponent) {
+        dataRouteComponent.components[dataPath] = this
       }
     }
   },
