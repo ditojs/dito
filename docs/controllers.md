@@ -1,35 +1,35 @@
 # Dito.js Controllers
 
-Dito.js offers a selection of controller base classes which are to be used to
-define the controllers in a Dito.js application.
+Dito.js offers a selection of controller base classes through which a Dito.js
+application defines its own controllers.
 
 Controllers are defined by extending these base classes and giving them the
-desired behavior through code and configuration objects set on the class. These
-classes are then passed as arguments when creating the
+desired behavior through code and configuration objects defined on the class
+instance. These classes are then passed as arguments when creating the
 [Application](docs/application.md) instance.
 
-The application handles their creation and registration, as well as their
-mapping to namespaces and setting up of the their routes automatically, hence
-the code of a Dito.js application doesn't need to concern itself with the
+The application automatically handles their creation and registration, as well
+as their mapping to namespaces and setting up of the their routes, hence the
+code of a Dito.js application doesn't need to concern itself with the
 instantiation of controllers.
 
 ## Actions
 
 In their definition, all Dito.js controllers can provide action methods which
-are the functions to be called when their route is requested. Actions can define
-their paths to which they are mapped, defined relative to the route of their
-controller, and the HTTP verb to which they should listen. By default, the
-normalized method name is used as the action's path, and the `'get'` verb is
-assigned if none is provided. See [Path Normalization](#path-normalization) for 
-more information on how Dito.js normalizes router paths.
+are the functions to be called when their route is requested. Actions can
+specify the paths to which they are mapped, defined in relation to the route
+path of their controller, and the HTTP verb to which they should listen. By
+default, the normalized method name is used as the action's path, and the
+`'get'` verb is assigned if none is provided. See [Path Normalization](#path-
+normalization) for more information on how Dito.js normalizes router paths.
 
 Actions can also define mappings and validation schemas for their parameters and
 return values, provided in the same format as is used for model properties,
 mapping the query parameters passed to an action method and the value returned
 from it, and triggering their automatic validation.
 
-Dito.js provides a selection of JavaScript decorators designed to provide a
-clean, streamlined way to define all these action configurations, see
+Dito.js provides a selection of JavaScript decorators designed to offer a clean,
+streamlined way to configure all these action attributes, see
 [Decorators](#decorators) for more information.
 
 ### Example
@@ -74,8 +74,22 @@ requires a verb other than `'get'`, or when the default path that is
 automatically determined by normalizing the action method's name is not the
 desired route.
 
-See [Path Normalization](#path-normalization) for 
-more information on how Dito.js normalizes router paths.
+See [Path Normalization](#path-normalization) for more information on how
+Dito.js normalizes router paths.
+
+By setting the action's path to `'.'`, it is mapped the the controller's own
+route path without an additional action path, assigning the action the function
+of the controller's index action:
+
+```js
+@action('get', '.')
+@returns({
+  type: 'string'
+})
+index() {
+  return 'Hello from the index action. Note: its method name does not matter.'
+}
+```
 
 ### `@parameters(parameters)`
 
@@ -281,20 +295,20 @@ on the level of both the *collection*, and its *members*. To better explain
 these terms:
 
 - *collection*: The totality of all members of a given model class. In database
-  speech, this is the *table*. In JavaScript, it's an array of instances of the
-  model class.
+  speech, this is the *table*. In JavaScript, it's an *array of instances* of
+  the model class.
 - *member*: A single member of a given model class. In database
-  speech, this is a single *row* in the *table*. In JavaScript, it's a single
-  instance of the model class.
+  speech, this is a single *row* in the table. In JavaScript, it's a single
+  *instance* of the model class.
 
 On both levels, Dito.js provides a series of default model actions that are
-activated by default and mapped to database methods and default routes:
+activated by default and mapped to database methods and default model routes:
 
 ### Collection Actions
 
 Collection actions are all mapped to the controller's route path (`this.path`),
-and distinguished by their verbs. Here's the mapping of their verbs to the 
-collection actions and the database methods they execute.
+and distinguished only by their verbs. Here's the mapping of their verbs to the 
+collection actions and the database methods they execute:
 
 | Verb       | Collection Action | Database Method
 | ---------- | ----------------- | ---------------------------------------------
@@ -308,8 +322,8 @@ collection actions and the database methods they execute.
 
 Member actions are all mapped to the controller's member route path
 (`` `${this.path}/:id` ``),
-and distinguished by their verbs. Here's the mapping of their verbs to the 
-member actions and the database methods they execute.
+and distinguished only by their verbs. Here's the mapping of their verbs to the 
+member actions and the database methods they execute:
 
 | Verb       | Member Action | Database Method
 | ---------- | ------------- | -------------------------------------------------
@@ -318,11 +332,22 @@ member actions and the database methods they execute.
 | `'put'`    | `update()`    | `updateAndFetchById()` or `updateGraphAndFetchById()`
 | `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchGraphAndFetchById()`
 
+In comparison to the `collection` actions, the `insert()` action assigned to the
+`post` verb is missing here, but with good reason: Inserting into an existing
+member is an undefined operation.
+
+### Graph Methods
+
 Notice the distinction between the database methods and their `…Graph…`
 counterparts. This behavior is controlled by the `graph` configuration setting,
-see below.
+see [Instance Fields](#modelcontroller-instance-fields) below.
 
-Important: By default, all these actions are allowed, facilitating rapid
+For more information on graphs, see
+[Model Queries – Graph Methods](./model-queries.md#graph-methods).
+
+### Security Concerns
+
+Please note: By default, all these actions are allowed, facilitating rapid
 prototyping but leading to obvious security issues when left open in production.
 Use the `allow` configuration on both the `collection` and `member` objects to
 control which actions should be exposed.
@@ -368,6 +393,8 @@ As you can see, in comparison to the base controller class, model controllers
 add quite a few configuration settings to map these structures to model actions
 in a clean way:
 
+### Instance Fields
+
 | Instance Field                                  | Description
 | ----------------------------------------------- | ----------------------------
 | `modelClass`: `function`                        | The model class that this controller represents. If none is provided, the singularized controller name is used to look up the model class in models registered with the application. As a convention, model controller names should always be provided in pluralized form.
@@ -376,13 +403,14 @@ in a clean way:
 | `member`: `Object`                              | The object describing all the controller's member actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the member.
 | `member.allow`: `Array`                         | Just like on the base controller class, `allow` settings can also be provided on the level of the `member` object.
 | `relations`: `Object`                           | The list of relation controller configurations, to be mapped to instances of `RelationController` that are automatically instantiated by the `ModelController`. See [`RelationController` Class](#relationcontroller-class) for details.
-| `graph`: `boolean`                              | Controls whether normal database methods should be used, or their `…Graph…` counterparts. For more information on graphs, see [Model Queries – Graph Methods](./model-queries.md#graph-methods)
-| `allow.param`: `string` &#124; `Array`          | The query parameter(s) allowed to be passed to `find()` actions, both on `collection` and `member` level, e.g. `'scope'`, `'range'`, `'order'`. If none is provided, every supported parameter is allowed. See [Model Queries – Find Methods](./model-queries.md#find-methods) for more information on the supported query parameters.
-| `allow.scope`: `string` &#124; `Array`          | The scope(s) allowed to be requested when passing the `'scope'` query parameter. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
+| `graph`: `boolean`                              | Controls whether normal database methods should be used, or their `…Graph…` counterparts. For more information on graphs, see [Model Queries – Graph Methods](./model-queries.md#graph-methods).
+| `allow.param`: `string` &#124; `Array`          | The query parameter(s) allowed to be passed to the default model actions, both on `collection` and `member` level, e.g. `'scope'`, `'range'`, `'order'`. If none is provided, every supported parameter is allowed. See [Model Queries – Find Methods](./model-queries.md#find-methods) for more information on the supported query parameters.
+| `allow.scope`: `string` &#124; `Array`          | The scope(s) allowed to be requested when passing the `'scope'` query parameter to the default model actions. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `scope`: `string` &#124; `Array`                | The scope(s) to be applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `eagerScope`: `string` &#124; `Array`           | The scope(s) to be eagerly applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `role`: `string` &#124; `Array` &#124; `Object` | Not yet implemented.
 | `cache`: `Object`                               | Not yet implemented.
+
 ## `RelationController` Class
 
 Model controllers can optionally also generate routes for their relations

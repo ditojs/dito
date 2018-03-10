@@ -47,9 +47,9 @@ these aspects separately:
 - [Configuration](docs/configuration.md)
 - [Application](docs/application.md)
 - [Models](docs/models.md)
+- [Controllers](docs/controllers.md)
 - [Migrations](docs/migrations.md)
 - [Seeds](docs/seeds.md)
-- [Controllers](docs/controllers.md)
 - [Admin](docs/admin.md)
 
 ## Setting up `package.json` for a Dito.js Application
