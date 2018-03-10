@@ -23,17 +23,12 @@ export default {
     const form = this.formComponent
     if (form) {
       form.components[this.dataPath] = this
-      // If the form is directly editing the data, it may be closed before the
-      // parent form is submitting its data. For processData() to be able
-      // to correctly process all nested data, the form's components need to be
-      // registered at parent's level as well.
-      // NOTE: rootFormComponent is used, since that's where the data is loaded
-      // and submitted.
-      if (form.doesMutate) {
-        const rootForm = this.rootFormComponent
-        if (rootForm !== form) {
-          rootForm.components[this.dataPath] = this
-        }
+      // If this form is nested also register its components with the root form.
+      // This is needed for processData() to be able to correctly process all
+      // nested data, even if the nested form was already closed on submit.
+      const rootForm = this.rootFormComponent
+      if (rootForm !== form) {
+        rootForm.components[this.dataPath] = this
       }
     }
   },
