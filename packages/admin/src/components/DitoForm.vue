@@ -527,21 +527,22 @@ export default DitoComponent.component('dito-form', {
 
     showErrors(errors, focus) {
       let first = true
-      for (const [errDataPath, errs] of Object.entries(errors)) {
+      for (const [dataPath, errs] of Object.entries(errors)) {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
-        const dataPath = parseDataPath(errDataPath)
-        const component = this.getComponent(dataPath)
-        if (component) {
+        const dataPathParts = parseDataPath(dataPath)
+        const component = this.getComponent(dataPathParts)
+        if (component?.formComponent?.isActive) {
           component.addErrors(errs, first && focus)
         } else {
-          // Couldn't find the component for the given dataPath. See if we have
-          // a component serving a part of the dataPath, and take it from there:
+          // Couldn't find a component in an active form for the given dataPath.
+          // See if we have a component serving a part of the dataPath, and take
+          // it from there:
           let found = false
-          while (!found && dataPath.length > 1) {
+          while (!found && dataPathParts.length > 1) {
             // Keep removing the last part until we find a match.
-            dataPath.pop()
-            const component = this.getComponent(dataPath)
+            dataPathParts.pop()
+            const component = this.getComponent(dataPathParts)
             if (component) {
               component.navigateToErrors(dataPath, errs)
               found = true

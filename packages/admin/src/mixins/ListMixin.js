@@ -4,7 +4,9 @@ import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
 import OrderedMixin from './OrderedMixin'
 import { processForms } from '@/schema'
-import { isObject, isArray, camelize, labelize } from '@ditojs/utils'
+import {
+  isObject, isArray, camelize, labelize, parseDataPath
+} from '@ditojs/utils'
 
 export default {
   mixins: [DataMixin, OrderedMixin],
@@ -222,17 +224,17 @@ export default {
     },
 
     navigateToComponent(dataPath, onComplete) {
-      const parts = this.api.normalizePath(dataPath).split('/')
+      const dataPathParts = [...parseDataPath(dataPath)]
       // Use collection/id pairs (even numbers of parts) to determine the route.
       // What's left is the property dataPath, and will be handled by the form.
-      parts.length -= parts.length & 1
-      const path = parts.join('/')
+      const property = dataPathParts.length & 1 ? dataPathParts.pop() : null
+      const path = this.api.normalizePath(dataPathParts.join('/'))
       const location = `${this.$route.path}/${path}`
       const { matched } = this.$router.match(location)
       if (matched.length) {
         this.$router.push({ path: location, append: true }, route => {
           if (onComplete) {
-            onComplete(route, dataPath)
+            onComplete(route, property)
           }
         })
       } else {
