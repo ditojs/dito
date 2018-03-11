@@ -150,7 +150,7 @@ export default {
         ...(page != null && { page }),
         ...query
       }
-      this.$router.replace({ query })
+      this.$router.replace({ query, hash: this.$route.hash })
       this.setStore('query', query)
     },
 
