@@ -311,8 +311,11 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    clearClonedData() {
-      this.clonedData = undefined
+    clearClonedData(newValue, oldValue) {
+      // Only clear if the watched listData itself changes in the form.
+      if (newValue !== oldValue) {
+        this.clonedData = undefined
+      }
     },
 
     addErrors(errors, focus) {
