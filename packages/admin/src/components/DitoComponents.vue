@@ -2,13 +2,7 @@
   ul.dito-components(
     v-if="components"
   )
-    li.dito-components-bar(
-      v-if="label !== undefined && !schema.compact"
-    )
-      dito-label(
-        :dataPath="dataPath"
-        :text="panelLabel"
-      )
+    slot(name="header")
     li.dito-container(
       v-for="(compSchema, compDataPath) in components"
       v-show="getValue(compSchema, 'visible', true)"
@@ -65,12 +59,6 @@
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $form-spacing-half
-    .dito-components-bar
-      flex-basis: 100%
-      padding: $form-spacing
-      margin: 0 (-$form-spacing-half)
-      .dito-label
-        margin-bottom: 0
     &.dito-component.dito-fill
       // When nested, erase the .dito-component.dito-fill style from below again
       width: auto
@@ -98,7 +86,6 @@ export default DitoComponent.component('dito-components', {
 
   props: {
     tab: { type: String },
-    label: { type: String },
     schema: { type: Object },
     dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
@@ -124,11 +111,6 @@ export default DitoComponent.component('dito-components', {
         }
       }
       return components
-    },
-
-    panelLabel() {
-      const label = this.getLabel(this.schema)
-      return this.label ? `${label}: ${this.label}` : label
     }
   },
 

@@ -48,7 +48,7 @@
             )
           template(v-else)
             td
-              dito-components(
+              dito-inline-components(
                 v-if="inline"
                 :label="getItemLabel(item, index, false)"
                 :schema="getFormSchema(item)"
