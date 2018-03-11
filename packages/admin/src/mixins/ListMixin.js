@@ -3,7 +3,7 @@ import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
 import OrderedMixin from './OrderedMixin'
-import { processForms, processFormComponents } from '@/schema'
+import { processForms } from '@/schema'
 import { isObject, isArray, camelize, labelize } from '@ditojs/utils'
 
 export default {
@@ -54,6 +54,17 @@ export default {
   },
 
   computed: {
+    listData() {
+      let data = this.value
+      // If @ditojs/server sends data in the form of `{ results: [...], total }`
+      // replace the value with the result, but remember the total in the store.
+      if (isObject(data)) {
+        this.setStore('total', data.total)
+        this.value = data = data.results
+      }
+      return data
+    },
+
     shouldLoad() {
       // If the route-component (view, form) that this list belongs to also
       // loads data, depend on this first.
@@ -150,26 +161,22 @@ export default {
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
-      this.value = data
+      // Support two formats for list data:
+      // - Array: `[...]`
+      // - Object: `{ results: [...], total }`
+      if (isArray(data) || isObject(data) && data.results) {
+        // NOTE: Conversion of object format happens in `listData()`, so the
+        // same format can be returned in controllers that return data for the
+        // full view, see below.
+        this.value = data
+      } else if (this.routeComponent.isView) {
+        // The controller is sending data for the view, including the list data.
+        this.routeComponent.data = data
+      }
     },
 
     getEditRoute(item, index) {
-      // See if any of the form's components receives scopes and defines the
-      // current scope as valid, and if so, pass it on to the editing form:
-      const scope = this.store.query?.scope
-      const query = {}
-      if (scope) {
-        processFormComponents(this.getFormSchema(item), component => {
-          if (component.scopes?.includes?.(scope)) {
-            query.scope = scope
-            return false // Stop iterating through components.
-          }
-        })
-      }
-      return {
-        path: `${this.path}/${this.getItemId(item, index)}`,
-        query
-      }
+      return { path: `${this.path}/${this.getItemId(item, index)}` }
     },
 
     removeItem(item) {
@@ -271,11 +278,11 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
     await processSchema(childRoutes, formMeta, level + 1)
   }
   if (addRoutes) {
-    const root = level === 0
+    const isView = level === 0
     const formRoute = {
-      // While root schemas have their own route records, nested lists in forms
-      // do not, and need their path prefixed with the parent's path.
-      path: root ? `:${param}` : `${path}/:${param}`,
+      // While lists in views have their own route records, nested lists in
+      // forms do not, and need their path prefixed with the parent's path.
+      path: isView ? `:${param}` : `${path}/:${param}`,
       component: nested ? DitoNestedForm : DitoForm,
       meta: formMeta
     }
@@ -304,7 +311,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
     if (subRoutes.length) {
       formRoute.children = subRoutes
     }
-    if (root) {
+    if (isView) {
       routes.push({
         path: `/${path}`,
         children: formRoutes,

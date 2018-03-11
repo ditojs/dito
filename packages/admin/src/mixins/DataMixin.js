@@ -1,7 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import axios from 'axios'
 import LoadingMixin from './LoadingMixin'
-import { isObject, isString, isFunction, pick, clone } from '@ditojs/utils'
+import { isString, isFunction, pick, clone } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -204,7 +204,7 @@ export default {
       const params = this.getQueryParams()
       this.request('get', { params }, (err, response) => {
         if (!err) {
-          this.setData(this.processResponse(response.data))
+          this.setData(response.data)
         }
       })
     },
@@ -247,10 +247,10 @@ export default {
         .catch(error => callback(error, error.response))
     },
 
-    // dito-server specific processing of parameters, payload and response:
+    // @ditojs/server specific processing of parameters, payload and response:
 
     getQueryParams() {
-      // dito-server specific query parameters:
+      // @ditojs/server specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends
       // could plug in as well.
       const { paginate } = this.listSchema
@@ -264,15 +264,6 @@ export default {
           range: `${offset},${offset + limit - 1}`
         })
       }
-    },
-
-    processResponse(data) {
-      // dito-server specific handling of paginated response:
-      if (this.resource.type === 'collection' && isObject(data)) {
-        this.setStore('total', data.total)
-        data = data.results
-      }
-      return data
     }
   }
 }

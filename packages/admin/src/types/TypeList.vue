@@ -24,13 +24,13 @@
       )
       vue-draggable(
         element="tbody"
-        :list="value"
+        :list="listData"
         :options="dragOptions"
         @start="onStartDrag"
         @end="onEndDrag"
       )
         tr(
-          v-for="item, index in value || []"
+          v-for="item, index in listData || []"
           :key="getItemId(item, index)"
           :class="getInlineClass(item)"
         )
@@ -260,12 +260,12 @@ export default TypeComponent.register('list', {
     },
 
     draggable() {
-      return this.schema.draggable && this.value.length > 1
+      return this.schema.draggable && this.listData.length > 1
     },
 
     hasButtons() {
-      const { value } = this
-      return !!(value?.length > 0 &&
+      const { listData } = this
+      return !!(listData?.length > 0 &&
         (this.editable || this.deletable || this.draggable))
     },
 

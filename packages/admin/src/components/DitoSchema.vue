@@ -18,6 +18,7 @@
           :meta="meta"
           :store="store"
           :disabled="disabled"
+          :generateLabels="generateLabels"
         )
         dito-components(
           :schema="schema"
@@ -26,6 +27,7 @@
           :meta="meta"
           :store="store"
           :disabled="disabled"
+          :generateLabels="generateLabels"
         )
         slot(name="buttons")
 </template>
@@ -40,7 +42,8 @@ export default DitoComponent.component('dito-schema', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: true }
+    disabled: { type: Boolean, required: true },
+    generateLabels: { type: Boolean, default: true }
   },
 
   computed: {

@@ -1,5 +1,39 @@
 import TypeComponent from './TypeComponent'
+import DitoView from '@/components/DitoView'
 import { isFunction, isPromise } from '@ditojs/utils'
+
+export async function processView(schema, name, api, routes) {
+  if (schema.type === 'view') {
+    schema.path = schema.path || api.normalizePath(name)
+    schema.name = name
+    const meta = {
+      api,
+      schema
+    }
+    const path = `/${schema.path}`
+    const children = []
+    await processSchemaComponents(schema, api, children, meta, 0)
+    const [route] = children
+    if (route?.component === DitoView) {
+      // The view contains a list that already produced the route for this view,
+      // just adjust it to reflect its nesting in the view:
+      route.meta.schema = schema
+      route.meta.listSchema.path = schema.path
+      route.path = path
+      routes.push(route)
+    } else {
+      routes.push({
+        path,
+        children,
+        component: DitoView,
+        meta
+      })
+    }
+  } else {
+    // A single-component view
+    return processComponent(schema, name, api, routes)
+  }
+}
 
 export function processComponent(schema, name, api, routes,
   parentMeta = null, level = 0) {
@@ -8,25 +42,21 @@ export function processComponent(schema, name, api, routes,
     schema, name, api, routes, parentMeta, level)
 }
 
-export function processFormComponents(form, processComponent) {
-  const results = []
-  let res
-  const processComponents = components => {
+export function processSchemaComponents(schema, api, routes,
+  parentMeta = null, level = 0) {
+  const promises = []
+  const process = components => {
     for (const [name, component] of Object.entries(components || {})) {
-      // processComponent() can `return false` to interrupt the loop.
-      if ((res = processComponent(component, name)) === false) {
-        return results
-      }
-      results.push(res)
+      promises.push(
+        processComponent(component, name, api, routes, parentMeta, level)
+      )
     }
   }
-  for (const tab of Object.values(form?.tabs || {})) {
-    if ((res = processComponents(tab.components, processComponent)) === false) {
-      return results
-    }
+  for (const tab of Object.values(schema?.tabs || {})) {
+    process(tab.components, processComponent)
   }
-  processComponents(form?.components, processComponent)
-  return results
+  process(schema?.components, processComponent)
+  return Promise.all(promises)
 }
 
 export async function processForms(schema, api, parentMeta, level) {
@@ -40,12 +70,11 @@ export async function processForms(schema, api, parentMeta, level) {
   }
   const children = []
   if (forms) {
-    const promises = []
-    for (const form of Object.values(forms)) {
-      promises.push(...processFormComponents(form, (component, name) =>
-        processComponent(component, name, api, children, parentMeta, level + 1)
-      ))
-    }
+    const promises = Object.values(forms).map(
+      form => processSchemaComponents(
+        form, api, children, parentMeta, level + 1
+      )
+    )
     await Promise.all(promises)
   }
   return children

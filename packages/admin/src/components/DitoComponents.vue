@@ -10,7 +10,7 @@
       :key="compDataPath"
     )
       dito-label(
-        v-if="compSchema.label !== false"
+        v-if="hasLabel(compSchema)"
         :dataPath="compDataPath"
         :text="getLabel(compSchema)"
       )
@@ -91,7 +91,8 @@ export default DitoComponent.component('dito-components', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: true }
+    disabled: { type: Boolean, required: true },
+    generateLabels: { type: Boolean, default: true }
   },
 
   computed: {
@@ -126,6 +127,10 @@ export default DitoComponent.component('dito-components', {
 
     isDisabled(schema) {
       return this.getValue(schema, 'disabled', false) || this.disabled
+    },
+
+    hasLabel(schema) {
+      return (schema.label || this.generateLabels) && schema.label !== false
     },
 
     hasFill(schema) {

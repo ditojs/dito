@@ -6,7 +6,7 @@ import './types'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize } from '@ditojs/utils'
-import { processComponent } from './schema'
+import { processView } from './schema'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -49,7 +49,7 @@ export async function setup(el, options = {}) {
   const routes = []
   const promises = []
   for (const [name, schema] of Object.entries(views)) {
-    promises.push(processComponent(schema, name, api, routes))
+    promises.push(processView(schema, name, api, routes))
   }
   await Promise.all(promises)
 

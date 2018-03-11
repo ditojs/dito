@@ -479,7 +479,7 @@ export default DitoComponent.component('dito-form', {
         temporaryIds = false,
         removeIds = false
       } = options
-      // dito-server specific handling of relates within graphs:
+      // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
       const process = (data, dataPath = '') => {

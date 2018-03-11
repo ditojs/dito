@@ -24,7 +24,7 @@ export default {
             this.formComponent.isReference(this.value)) {
           // When relating, and as soon as the options are available, replace
           // the original, shallow value with its option version, so that it'll
-          // hold actualy data, not just an reference id.
+          // hold actually data, not just an reference id.
           this.selectValue = value
         }
         return value

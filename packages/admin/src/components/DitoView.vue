@@ -1,9 +1,21 @@
 <template lang="pug">
   // If view is not active, render router-view to nest further route components
   router-view(v-if="!isLastRoute")
+  .dito-view(v-else-if="type === 'view'")
+    // A multi-component view
+    dito-schema(
+      :schema="schema"
+      :dataPath="name"
+      :data="data"
+      :meta="meta"
+      :store="getChildStore(name)"
+      :disabled="loading"
+      :generateLabels="false"
+    )
   .dito-view.dito-scroll(v-else)
+    // A single-component view
     component.dito-scroll-content(
-      :is="getTypeComponent(schema.type)"
+      :is="getTypeComponent(type)"
       :schema="schema"
       :dataPath="name"
       :data="data"
@@ -30,7 +42,7 @@ export default DitoComponent.component('dito-view', {
   data() {
     return {
       isView: true,
-      viewData: {}
+      data: {}
     }
   },
 
@@ -43,18 +55,17 @@ export default DitoComponent.component('dito-view', {
       return this.schema.name
     },
 
-    data() {
-      if (!(this.name in this.viewData)) {
-        // Set up viewData so we can pass it on to the nested component which
-        // will look up its own data under its name, see this.value
-        // NOTE: DitoView isn't doing any actual data loading. Only DitoList
-        // and DitoForm use the DataMixin and are capable of requesting and
-        // mutating data, but they inherit the data container from DitoView.
-        this.viewData = {
-          [this.name]: null
+    type() {
+      return this.schema.type
+    },
+
+    loading() {
+      for (const component of Object.values(this.schema.components || {})) {
+        if (component.loading) {
+          return true
         }
       }
-      return this.viewData
+      return false
     }
   }
 })
