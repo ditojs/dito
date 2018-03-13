@@ -687,19 +687,19 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
-"@ditojs/admin@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@ditojs/admin/-/admin-0.4.1.tgz#dba32f0804b48e8005b7776ba843ec091be5160c"
+"@ditojs/admin@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@ditojs/admin/-/admin-0.5.0.tgz#d73d473c74ae50f79c9a3aecbaf6d8902d3a47e1"
   dependencies:
     "@ditojs/utils" "^0.3.2"
     axios "^0.18.0"
-    clipboard "^1.7.1"
+    clipboard "^2.0.0"
     codeflask "github:lehni/CodeFlask.js#f02c5bbc25743086b0e1227b1c944916d87b701b"
     hint.css "^2.5.0"
-    prismjs "^1.11.0"
+    prismjs "^1.12.2"
     to-pascal-case "^1.0.0"
-    vee-validate "^2.0.4"
-    vue "^2.5.13"
+    vee-validate "^2.0.5"
+    vue "^2.5.14"
     vue-js-toggle-button "^1.2.2"
     vue-multiselect "^2.0.8"
     vue-notification "^1.3.7"
@@ -724,6 +724,12 @@
   resolved "https://registry.yarnpkg.com/@types/babylon/-/babylon-6.16.2.tgz#062ce63b693d9af1c246f5aedf928bc9c30589c8"
   dependencies:
     "@types/babel-types" "*"
+
+"@vue/test-utils@^1.0.0-beta.12":
+  version "1.0.0-beta.12"
+  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.12.tgz#c020d5e7566d176a654e44c88d303743ad19b3cf"
+  dependencies:
+    lodash "^4.17.4"
 
 abbrev@1:
   version "1.1.1"
@@ -1617,6 +1623,14 @@ cli-width@^2.0.0:
 clipboard@^1.7.1:
   version "1.7.1"
   resolved "https://registry.yarnpkg.com/clipboard/-/clipboard-1.7.1.tgz#360d6d6946e99a7a1fef395e42ba92b5e9b5a16b"
+  dependencies:
+    good-listener "^1.2.2"
+    select "^1.1.2"
+    tiny-emitter "^2.0.0"
+
+clipboard@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/clipboard/-/clipboard-2.0.0.tgz#4661dc972fb72a4c4770b8db78aa9b1caef52b50"
   dependencies:
     good-listener "^1.2.2"
     select "^1.1.2"
@@ -4086,9 +4100,9 @@ koa-is-json@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/koa-is-json/-/koa-is-json-1.0.0.tgz#273c07edcdcb8df6a2c1ab7d59ee76491451ec14"
 
-koa-logger@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/koa-logger/-/koa-logger-3.1.0.tgz#81a353f41870119d56260e0e644f04e731810039"
+koa-logger@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/koa-logger/-/koa-logger-3.2.0.tgz#8aef64d8b848fb6253a9b31aa708d0e05141f0e6"
   dependencies:
     bytes "^2.5.0"
     chalk "^1.1.3"
@@ -5655,7 +5669,13 @@ pretty-error@^2.0.2:
     renderkid "^2.0.1"
     utila "~0.4"
 
-prismjs@^1.11.0, prismjs@^1.6.0:
+prismjs@^1.12.2:
+  version "1.12.2"
+  resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.12.2.tgz#a40a6cd5bf36716e316cb75df91976a7d5d694e6"
+  optionalDependencies:
+    clipboard "^2.0.0"
+
+prismjs@^1.6.0:
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.11.0.tgz#297aef33eb79421bfdb19273a5092ca515970d29"
   optionalDependencies:
@@ -7260,10 +7280,11 @@ vary@^1.0.0:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
 
-vee-validate@^2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/vee-validate/-/vee-validate-2.0.4.tgz#cf76e7a742d801243b6682b9d104fd322f3da13c"
+vee-validate@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/vee-validate/-/vee-validate-2.0.5.tgz#8fb4a4423345d5d23878bbcfe23ce79b98e30249"
   dependencies:
+    "@vue/test-utils" "^1.0.0-beta.12"
     babel-plugin-transform-object-rest-spread "^6.26.0"
 
 velocity-animate@^1.5.0:
@@ -7343,9 +7364,9 @@ vue-style-loader@^4.0.1:
     hash-sum "^1.0.2"
     loader-utils "^1.0.2"
 
-vue-template-compiler@^2.5.14:
-  version "2.5.14"
-  resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.5.14.tgz#ba058359d4bd5ba0807fbc8adfc98065d7dbfebd"
+vue-template-compiler@^2.5.15:
+  version "2.5.15"
+  resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.5.15.tgz#cc004097e37167be8b85ea22ab2840d8e8cca1c0"
   dependencies:
     de-indent "^1.0.2"
     he "^1.1.0"
@@ -7354,9 +7375,9 @@ vue-template-es2015-compiler@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.6.0.tgz#dc42697133302ce3017524356a6c61b7b69b4a18"
 
-vue@^2.5.13:
-  version "2.5.13"
-  resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.13.tgz#95bd31e20efcf7a7f39239c9aa6787ce8cf578e1"
+vue@^2.5.14:
+  version "2.5.15"
+  resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.15.tgz#fdb67861dde967cd8d1b53116380f2f269b45202"
 
 vuedraggable@^2.16.0:
   version "2.16.0"
