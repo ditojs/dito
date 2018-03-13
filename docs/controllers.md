@@ -77,9 +77,9 @@ desired route.
 See [Path Normalization](#path-normalization) for more information on how
 Dito.js normalizes router paths.
 
-By setting the action's path to `'.'`, it is mapped the the controller's own
-route path without an additional action path, assigning the action the function
-of the controller's index action:
+By setting the action's path to `'.'`, it is mapped the controller's own route
+path without an additional action path, assigning the action the function of the
+controller's index action:
 
 ```js
 @action('get', '.')
@@ -196,7 +196,7 @@ camel-cased names are separated by hyphens and all chars are lower-cased, so
 `'myActionName'` turns into `'my-action-name'`.
 
 When normalizing controller names, and the controller class name ends in
-`'Controller'`, then this taht is stripped off the name. So
+`'Controller'`, then this that is stripped off the name. So
 `'GreetingsController'` is normalized to `'greetings'`.
 
 ## Namespaces
@@ -411,6 +411,43 @@ in a clean way:
 | `role`: `string` &#124; `Array` &#124; `Object` | Not yet implemented.
 | `cache`: `Object`                               | Not yet implemented.
 
+### Action Inheritance
+
+Dito.js implements a sophisticated inheritance strategy so that normal JS-style
+inheritance patterns can be used on action methods declared inside actions
+instance fields, such as `collection`, `member`, and even in a nested way on
+`relations` and its own `relation` and `member` fields (See
+[`RelationController` Class](#relationcontroller-class)).
+
+In normal JS classes, such fields wouldn't automatically inherit from each
+other, but in Dito.js Controllers, inheritance is set up for them at
+instantiation time so that all actions defined in the base controllers are
+inherited inside instance fields, and `super` can be used in those that override
+them:
+
+```js
+import { ModelController } from '@ditojs/server'
+import { MyModel } from '@/models'
+
+export class MyModels extends ModelController {
+  modelClass = MyModel
+
+  collection = {
+    allow: ['find'],
+
+    // Let's override the default `collection.find(ctx)` method and add some
+    // additional data to its returns value.
+    async find(ctx) {
+      const results = await super.find(ctx)
+      return {
+        results,
+        additional: `Whatever you'd like to send back, really`
+      }
+    }
+  }
+}
+```
+
 ## `RelationController` Class
 
 Model controllers can optionally also generate routes for their relations
@@ -439,10 +476,19 @@ more information on the relation's `owner` setting.
 ### Example
 
 ```js
-import { ModelController } from '@ditojs/server'
-import { MyModel } from '@/models'
+import { Model, ModelController } from '@ditojs/server'
 
-export class MyModels extends ModelController {
+class MyModel extends Model {
+  static relations = {
+    myRelation: {
+      relation: 'hasMany',
+      from: 'MyModel.id',
+      to: 'OtherModel.myModelId',
+    }
+  }
+}
+
+class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {

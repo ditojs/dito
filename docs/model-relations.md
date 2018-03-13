@@ -17,7 +17,7 @@ settings are available:
 | `relation`: `string`                 | The type of relation. Supported types are:<br>`'belongsTo'`, `'hasMany'`, `'hasOne'`, `'manyToMany'` and `'hasOneThrough'`.
 | `from`: `string`                     | The model and property name from which the relation is to be built, as a string with both identifiers separated by `'.'`, e.g.: `'FromModelClass.fromPropertyName'`
 | `to`: `string`                       | The model and property name to which the relation is to be built, as a string with both identifiers separated by `'.'`, e.g.: `'ToModelClass.toPropertyName'`
-| `through`: `boolean` &#124; `Object` | Controls whether a join model class and table is to be built automatically, or allows to specify one manually:<ul><li>Setting it to `true` tells Dito.js to create the join table and model class automatically.</li><li>Providing an object allows for more fain-grained configuration of the join table and model class. See [Join Models and Tables](#join-models-and-tables) for details.</li></ul>
+| `through`: `boolean` &#124; `Object` | Controls whether a join model class and table is to be built automatically, or allows to specify one manually:<ul><li>Setting it to `true` tells Dito.js to create the join table and model class automatically.</li><li>Providing an object allows for more fine-grained configuration of the join table and model class. See [Join Models and Tables](#join-models-and-tables) for details.</li></ul>
 | `inverse`: `boolean`                 | Controls whether the relation is the inverse of another relation. This information is only required when working with `through` relations. Without it, Dito.js wouldn't be able to tell which side of the relation is on the left-hand side, and which is on the right-hand side when automatically creating the join model class and table.
 | `scope`: `string`                    | Optionally, a scope can be defined to be applied when loading the relation's models. The scope needs to be defined in the related model class' `scopes` definitions. See [Model Scopes](./model-scopes.md) for more information on working with scopes.
 | `nullable`: `boolean`                | Controls whether the auto-inserted foreign key property should be marked as nullable. This only makes sense on a `'belongsTo'` relation, where the model class holds the foreign key, and only when the foreign key isn't already explicitly defined in the [Model Properties](./model-properties.md). 
@@ -39,7 +39,7 @@ The `'belongsTo'` relation is used for relations where the model class on which
 it is defined holds the foreign key. The reverse of a `'belongsTo'` relation is
 either a `'hasMany'` or `'hasOne'` relation.
 
-Below is an example of model `Book` which belongs to a model `Author`:
+Here an example of model `Book` which belongs to a model `Author`:
 
 ```js
 class Book extends Model {
@@ -55,7 +55,7 @@ class Book extends Model {
 
 Note: The `from` property is a foreign key defined on the own model, while the
 `to` property is the primary key on the related model. While it is most common
-to take the model's primary key ('id' in this case), one could relate to other
+to take the model's primary key (`'id'` in this case), one could relate to other
 properties as well.
 
 ### `'hasMany'` and `'hasOne'`
@@ -94,6 +94,40 @@ The difference between a `'hasMany'` and a `'hasOne'` relation is simply that
 when using queries, the `'hasOne'` relation is limited to returning the first
 result as an object, while the `'hasMany'` relation returns an array of all
 models.
+
+### Example: `'belongsTo'` ⇄ `'hasMany'`
+
+To better understand what the relation configurations in the examples above
+really do, here two example tables to go along with that configuration.
+Note that due to the use of the use of `config.knex.normalizeDbNames`,
+the column for the `authorId` property is called `author_id`. See
+[Configuration](./configuration.md) for details on database name normalization.
+
+##### Table `author`
+
+`id` | `name`
+---- | -----------
+1    | Shakespeare
+2    | Goethe
+
+##### Table `book`
+
+`id` | `name`  | `author_id`
+---- | ------- | -----------
+1    | Werther | 2
+2    | Hamlet  | 1
+3    | Faust   | 2
+4    | Othello | 1
+
+Some observations:
+
+- `from` always points to the own model of a relation, while `to` points to the
+  related model.
+- `Book.author` is a `'belongsTo'` relation, therefore its `from` setting
+  points to the foreign key in its own table.
+- `Author.books` is a `'hasMany'` relation, therefore its `from` setting points
+  to its own primary key, while the `to` setting points to the foreign key in
+  the related table.
 
 ### `'manyToMany'` and `'hasOneThrough'`
 
@@ -150,7 +184,7 @@ suffice.
 ## Join Models and Tables
 
 For the cases where the automatically generated join table and model doesn't
-offer enough control, Dito.js allows more fine-graned configuration of the join
+offer enough control, Dito.js allows more fine-grained configuration of the join
 table and model class by providing an object for the `trough` setting:
 
 | Keywords                             | Description
