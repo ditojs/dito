@@ -55,11 +55,12 @@ export class Controller {
       // Use `Object.getOwnPropertyNames()` to get the fields in order to not
       // also receive values from parents (those are fetched later in
       // `inheritValues()`, see `getParentValues()`).
-      // As a rule of thumb: Any prototype that defines `initialize()` is part
-      // of a core class and does not need to be inspected for fields. If the
-      // prototype doesn't define the method, it must be an extended class.
+      // A rule of thumb: Any prototype that defines `initialize` or `compose`
+      // is part of a core class and does not need to be inspected for fields.
+      // If it doesn't define the method, it must be an extended class.
       const proto = Object.getPrototypeOf(this)
-      if (!proto.hasOwnProperty('initialize')) {
+      if (!proto.hasOwnProperty('initialize') &&
+          !proto.hasOwnProperty('compose')) {
         Object.getOwnPropertyNames(proto).forEach(collect)
       }
       Object.getOwnPropertyNames(this).forEach(collect)
@@ -131,11 +132,16 @@ export class Controller {
       }
       entry[type] = values
     }
-    // If there are no values defined on `this`, create an empty object so
-    // inheritance can be set up and `filterValues()` can still be called.
-    const currentValues =
-      this.hasOwnProperty(type) && this[type] || (this[type] = {})
+    // If there are no values defined on `this` that differ from the parent,
+    // set to an empty object so inheritance can be set up and `filterValues()`
+    // can still be called.
+    // NOTE: We can't check with `this.hasOwnProperty(type)` because the
+    // field can be on the class prototype as well, in case of accessors.
     const parentValues = entry[type]
+    let currentValues = this[type]
+    if (currentValues && currentValues === parentValues) {
+      currentValues = this[type] = {}
+    }
     // Combine parentValues and currentValues with correct inheritance.
     const values = parentValues
       ? Object.setPrototypeOf(currentValues, parentValues)
