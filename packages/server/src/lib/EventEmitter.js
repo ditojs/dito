@@ -4,14 +4,14 @@ import EventEmitter from 'eventemitter2'
 const {
   emitAsync: emit, on, off, once, onAny, offAny,
   removeListener, listeners,
-  _on, _onAny, _once
+  _on, _onAny, _once, _many
 } = EventEmitter.prototype
 
 const methods = {
   /* eslint object-property-newline: "off" */
   emit, on, off, once, onAny, offAny,
   removeListener, listeners,
-  _on, _onAny, _once
+  _on, _onAny, _once, _many
 }
 
 const properties = {}

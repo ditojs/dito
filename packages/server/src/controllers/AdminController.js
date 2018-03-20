@@ -7,21 +7,31 @@ import { NamedModulesPlugin, NoEmitOnErrorsPlugin } from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import autoprefixer from 'autoprefixer'
+import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 
 export class AdminController extends Controller {
   // @override
   compose() {
-    const config = this.app.config.admin
-    if (!config?.dev) {
+    if (!this.config) {
+      throw new ControllerError(this, 'Missing config field.')
+    }
+    if (this.app.config.env === 'development') {
+      this.app.once('after:start', () => this.setupWebpack())
+      this.koa = new Koa()
+      return mount(this.url, this.koa)
+    } else {
       // TODO: Implement static serving of built resources from `config.path`,
       // for production hosting.
       return null
     }
+  }
+
+  setupWebpack() {
+    const { config } = this
     const resolvedPath = path.resolve(config.path)
-    const koa = new Koa()
-    koa.use(historyApiFallback())
-    koa.use(webpack({
+    this.koa.use(historyApiFallback())
+    this.koa.use(webpack({
       config: {
         mode: 'development',
         entry: [
@@ -75,15 +85,14 @@ export class AdminController extends Controller {
         stats: 'minimal'
       },
       hot: {
-        // Real hot-reloading doesn't quite seem to work yet, but it wasn't too
-        // far away from functioning, see:
+        // Real hot-reloading doesn't quite seem to work yet, but it wasn't
+        // too far away from functioning, see:
         // https://github.com/ditojs/dito-admin/tree/hot-reload
         hot: false,
         reload: true,
         stats: 'minimal'
       }
     }))
-    return mount(this.url, koa)
   }
 }
 
