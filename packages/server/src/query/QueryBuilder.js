@@ -338,15 +338,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     return query ? this.findOne(query, options) : this
   }
 
-  find(query, { allow, checkRootWhere = true } = {}) {
+  find(query, { allowParam, checkRootWhere = true } = {}) {
     // Use `true` as default for `checkRootWhere` on findOne() to emulate and
     // remain compatible with Objection's `findOne()`
     if (!query) return this
     const allowedParams = QueryParameters.getAllowed()
-    const allowed = !allow
+    const allowed = !allowParam
       ? allowedParams
       // Convert allow array to object lookup for quicker access.
-      : asArray(allow).reduce((obj, name) => {
+      : asArray(allowParam).reduce((obj, name) => {
         obj[name] = true
         return obj
       }, {})
@@ -381,14 +381,14 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  findOne(query, { allow, checkRootWhere = true } = {}) {
+  findOne(query, { allowParam, checkRootWhere = true } = {}) {
     if (!query) return this
     // Only allow the suitable query handlers on find-one queries:
     const allowedParams = QueryParameters.getAllowedFindOne()
-    allow = allow
-      ? allow.filter(str => allowedParams[str])
+    allowParam = allowParam
+      ? allowParam.filter(str => allowedParams[str])
       : Object.keys(allowedParams)
-    return this.find(query, { allow, checkRootWhere }).first()
+    return this.find(query, { allowParam, checkRootWhere }).first()
   }
 
   getPropertyRef(ref, options) {

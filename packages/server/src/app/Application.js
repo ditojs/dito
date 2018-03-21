@@ -171,7 +171,7 @@ export class Application extends Koa {
       true: koaLogger,
       // TODO: Implement logging to actual file instead of console for Pino.
       file: pinoLogger
-    }[log?.server]
+    }[log?.request]
 
     this.use(
       compose([

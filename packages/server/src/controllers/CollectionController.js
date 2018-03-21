@@ -20,9 +20,8 @@ export class CollectionController extends Controller {
     this.scope = this.scope || null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
-    this.allow = this.inheritValues('allow')
     this.findOptions = {
-      allow: this.allow.param,
+      allowParam: this.allowParam,
       checkRootWhere: false
     }
   }
@@ -70,9 +69,9 @@ export class CollectionController extends Controller {
   }
 
   handleScopes(query) {
-    if (this.allow.scope) {
+    if (this.allowScope) {
       query.allowScope(
-        ...this.allow.scope,
+        ...this.allowScope,
         // Also include the scopes defined by scope and eagerScope so these can
         // pass through.
         ...asArguments(this.scope),

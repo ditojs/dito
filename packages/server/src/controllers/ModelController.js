@@ -19,7 +19,7 @@ export class ModelController extends CollectionController {
     // then build inheritance chains for each relation object through
     // `setupPropertyInheritance()`, before creating the relation controllers,
     // which then carry on with setting up inheritance for their actions.
-    const relations = this.inheritValues('relations', true)
+    const relations = this.inheritValues('relations')
     for (const name in relations) {
       const relation = setupPropertyInheritance(relations, name)
       if (isObject(relation)) {

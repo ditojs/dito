@@ -14,7 +14,7 @@ export default {
     port: env.NODE_PORT || env.PORT || 8080
   },
   log: {
-    server: false,
+    request: false,
     schema: false,
     routes: false,
     sql: false
@@ -41,14 +41,6 @@ export default {
     connection: {
       filename: './database.db'
     }
-  },
-  admin: { // Used by AdminController
-    dev: true,
-    path: './src/admin',
-    template: './src/admin/index.html',
-    include: [
-      './src/admin/style.sass'
-    ]
   }
 }
 ```

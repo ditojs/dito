@@ -2,7 +2,8 @@ import compose from 'koa-compose'
 import Router from 'koa-router'
 import chalk from 'chalk'
 import { ResponseError, WrappedError } from '@/errors'
-import { isFunction, asArray } from '@ditojs/utils'
+import { isFunction } from '@ditojs/utils'
+import { asArguments } from '@/utils'
 import ControllerAction from './ControllerAction'
 
 export class Controller {
@@ -43,25 +44,31 @@ export class Controller {
     // these instance fields in a separate object. This accessor has a setter,
     // so that if it is set in a sub-class, the overridden value is used.
     if (!this._controller) {
-      this._controller = {}
+      // Create an allow array with all copied entries, only if the instance
+      // does not already provide one.
+      const allow = !this.allow && []
+      this._controller = {
+        allow: this.allow || allow
+      }
 
       const collect = key => {
         const action = this[key]
-        if (key !== 'constructor' && isFunction(action)) {
+        if (
+          isFunction(action) &&
+          !['constructor', 'modelClass'].includes(key)
+        ) {
           this._controller[key] = action
+          if (allow && !allow.includes(key)) {
+            allow.push(key)
+          }
         }
       }
 
       // Use `Object.getOwnPropertyNames()` to get the fields in order to not
       // also receive values from parents (those are fetched later in
       // `inheritValues()`, see `getParentValues()`).
-      // A rule of thumb: Any prototype that defines `initialize` or `compose`
-      // is part of a core class and does not need to be inspected for fields.
-      // If it doesn't define the method, it must be an extended class.
-      const proto = Object.getPrototypeOf(this)
-      if (!proto.hasOwnProperty('initialize') &&
-          !proto.hasOwnProperty('compose')) {
-        Object.getOwnPropertyNames(proto).forEach(collect)
+      if (!this.isCore()) {
+        Object.getOwnPropertyNames(Object.getPrototypeOf(this)).forEach(collect)
       }
       Object.getOwnPropertyNames(this).forEach(collect)
     }
@@ -70,6 +77,13 @@ export class Controller {
 
   set controller(controller) {
     this._controller = controller
+  }
+
+  isCore() {
+    // This is hackish, but works for now: Any Controller class that defines
+    // `initialize` or `compose` is considered to be a core class.
+    const proto = Object.getPrototypeOf(this)
+    return proto.hasOwnProperty('initialize') || proto.hasOwnProperty('compose')
   }
 
   compose() {
@@ -93,12 +107,17 @@ export class Controller {
   }
 
   filterValues(values) {
-    // Respect `allow` settings and clear any default method to deactivate it:
-    if (values?.allow) {
-      const allow = asArray(values.allow)
-      for (const key in values) {
-        if (!allow.includes(key) && key !== 'allow') {
-          values[key] = undefined
+    // Respect `allow` settings and clear action methods that aren't listed.
+    // Do not filter actions on core controllers.
+    if (values && !this.isCore()) {
+      const allow = values.hasOwnProperty('allow')
+        ? asArguments(values.allow)
+        : []
+      if (!allow.includes('*')) {
+        for (const key in values) {
+          if (!allow.includes(key) && key !== 'allow') {
+            values[key] = undefined
+          }
         }
       }
     }
