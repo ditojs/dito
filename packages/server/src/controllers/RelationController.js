@@ -83,8 +83,12 @@ export class RelationController extends CollectionController {
   }
 
   collection = {
+    // See CollectionController.collection.$core:
+    $core: true
   }
 
   member = {
+    // See CollectionController.member.$core:
+    $core: true
   }
 }

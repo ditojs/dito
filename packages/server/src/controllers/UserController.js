@@ -40,7 +40,7 @@ export class UserController extends ModelController {
     },
 
     @action('get')
-    current(ctx) {
+    status(ctx) {
       return {
         authenticated: ctx.isAuthenticated(),
         user: ctx.state.user

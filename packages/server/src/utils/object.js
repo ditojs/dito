@@ -4,6 +4,15 @@ export function asArguments(val) {
   return isArray(val) ? val : val != null ? [val] : []
 }
 
+export function getKeys(obj) {
+  // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
+  const keys = []
+  for (const key in obj) {
+    keys.push(key)
+  }
+  return keys
+}
+
 export function mergeWithoutOverride(target, ...sources) {
   for (const source of sources) {
     for (const key in source) {

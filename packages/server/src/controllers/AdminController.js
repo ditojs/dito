@@ -11,6 +11,10 @@ import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 
 export class AdminController extends Controller {
+  constructor(app, namespace) {
+    super(app, namespace, false)
+  }
+
   // @override
   compose() {
     if (!this.config) {

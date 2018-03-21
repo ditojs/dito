@@ -262,7 +262,7 @@ available, to be set on the controller instance.
 | `name`: `string`           | The controller's name. If not provided, it is automatically deducted from the controller class name. If this name ends in `'Controller'`, that is stripped off the name, so `'GreetingsController'` turns into `'Greetings'`. 
 | `path`: `string`           | The relative path used to determine the controller's route path. 
 | `namespace`: `string`      | The controller's namespace, which is prepended to `path` to generate the absolute controller route. Note that it is rare to provide this manually. Usually Dito.js determines the `namespace` automatically from the controller object passed to the Dito.js application's constructor and its sub-objects. See [Namespaces](#namespaces) for more information.
-| `allow`: `Array`           | An optional list of allowed actions. If provided, only the action names listed here as strings will be mapped to routes, everything else will be omitted.
+| `allow`: `Array`           | A list of allowed actions. If provided, only the action names listed here as strings will be mapped to routes, everything else will be omitted.
 
 Note: While traditionally, these instance fields would have to be set in the
 controller constructor, we can leverage the proposal for [public class fields in
@@ -404,8 +404,8 @@ in a clean way:
 | `member.allow`: `Array`                         | Just like on the base controller class, `allow` settings can also be provided on the level of the `member` object.
 | `relations`: `Object`                           | The list of relation controller configurations, to be mapped to instances of `RelationController` that are automatically instantiated by the `ModelController`. See [`RelationController` Class](#relationcontroller-class) for details.
 | `graph`: `boolean`                              | Controls whether normal database methods should be used, or their `…Graph…` counterparts. For more information on graphs, see [Model Queries – Graph Methods](./model-queries.md#graph-methods).
-| `allow.param`: `string` &#124; `Array`          | The query parameter(s) allowed to be passed to the default model actions, both on `collection` and `member` level, e.g. `'scope'`, `'range'`, `'order'`. If none is provided, every supported parameter is allowed. See [Model Queries – Find Methods](./model-queries.md#find-methods) for more information on the supported query parameters.
-| `allow.scope`: `string` &#124; `Array`          | The scope(s) allowed to be requested when passing the `'scope'` query parameter to the default model actions. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
+| `allowParam`: `string` &#124; `Array`           | The query parameter(s) allowed to be passed to the default model actions, both on `collection` and `member` level, e.g. `'scope'`, `'range'`, `'order'`. If none is provided, every supported parameter is allowed. See [Model Queries – Find Methods](./model-queries.md#find-methods) for more information on the supported query parameters.
+| `allowScope`: `string` &#124; `Array`           | The scope(s) allowed to be requested when passing the `'scope'` query parameter to the default model actions. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `scope`: `string` &#124; `Array`                | The scope(s) to be applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `eagerScope`: `string` &#124; `Array`           | The scope(s) to be eagerly applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `role`: `string` &#124; `Array` &#124; `Object` | Not yet implemented.
@@ -433,8 +433,6 @@ export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['find'],
-
     // Let's override the default `collection.find(ctx)` method and add some
     // additional data to its returns value.
     async find(ctx) {

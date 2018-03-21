@@ -2,16 +2,58 @@ import compose from 'koa-compose'
 import Router from 'koa-router'
 import chalk from 'chalk'
 import { ResponseError, WrappedError } from '@/errors'
-import { isFunction } from '@ditojs/utils'
-import { asArguments } from '@/utils'
+import { isArray, isFunction } from '@ditojs/utils'
+import { getKeys } from '@/utils'
 import ControllerAction from './ControllerAction'
 
 export class Controller {
-  constructor(app, namespace) {
+  constructor(app, namespace, setupControllerAccessor = true) {
     this.app = app
     this.namespace = this.namespace || namespace
     this.logging = this.app?.config.log.routes
     this.level = 0
+    if (setupControllerAccessor) {
+      // On base controllers, the actions can be defined directly in the class
+      // instead of inside an actions object as is done with model and relation
+      // controllers. But in order to use the same structure for inheritance as
+      // these other controllers, we emulate a `controller` accessor that
+      // reflects these instance fields in a separate object.  This accessor has
+      // a setter, so that once it is set, the overridden value is used.
+      let controller
+      Object.defineProperty(this, 'controller', {
+        get() {
+          if (!controller) {
+            const { allow } = this
+            controller = allow ? { allow } : {}
+
+            const collect = key => {
+              const value = this[key]
+              if (
+                isFunction(value) &&
+                !['constructor', 'modelClass'].includes(key)
+              ) {
+                controller[key] = value
+              }
+            }
+
+            // Use `Object.getOwnPropertyNames()` to get the fields, in order to
+            // not also receive values from parents (those are fetched later in
+            // `inheritValues()`, see `getParentValues()`).
+            const proto = Object.getPrototypeOf(this)
+            Object.getOwnPropertyNames(proto).forEach(collect)
+            Object.getOwnPropertyNames(this).forEach(collect)
+          }
+          return controller
+        },
+
+        set(value) {
+          controller = value
+        },
+
+        configurable: true,
+        enumerable: false
+      })
+    }
   }
 
   initialize(isRoot = true) {
@@ -36,56 +78,6 @@ export class Controller {
     }
   }
 
-  get controller() {
-    // On base controllers, the actions can be defined directly in the class
-    // instead of inside an actions object as is done with model and relation
-    // controllers. But in order to use the same structure for inheritance as
-    // these other controllers, we emulate a `controller` accessor that reflects
-    // these instance fields in a separate object. This accessor has a setter,
-    // so that if it is set in a sub-class, the overridden value is used.
-    if (!this._controller) {
-      // Create an allow array with all copied entries, only if the instance
-      // does not already provide one.
-      const allow = !this.allow && []
-      this._controller = {
-        allow: this.allow || allow
-      }
-
-      const collect = key => {
-        const action = this[key]
-        if (
-          isFunction(action) &&
-          !['constructor', 'modelClass'].includes(key)
-        ) {
-          this._controller[key] = action
-          if (allow && !allow.includes(key)) {
-            allow.push(key)
-          }
-        }
-      }
-
-      // Use `Object.getOwnPropertyNames()` to get the fields in order to not
-      // also receive values from parents (those are fetched later in
-      // `inheritValues()`, see `getParentValues()`).
-      if (!this.isCore()) {
-        Object.getOwnPropertyNames(Object.getPrototypeOf(this)).forEach(collect)
-      }
-      Object.getOwnPropertyNames(this).forEach(collect)
-    }
-    return this._controller
-  }
-
-  set controller(controller) {
-    this._controller = controller
-  }
-
-  isCore() {
-    // This is hackish, but works for now: Any Controller class that defines
-    // `initialize` or `compose` is considered to be a core class.
-    const proto = Object.getPrototypeOf(this)
-    return proto.hasOwnProperty('initialize') || proto.hasOwnProperty('compose')
-  }
-
   compose() {
     return compose(this.router
       ? [
@@ -107,21 +99,53 @@ export class Controller {
   }
 
   filterValues(values) {
+    if (!values) return values
+    const allowed = []
     // Respect `allow` settings and clear action methods that aren't listed.
-    // Do not filter actions on core controllers.
-    if (values && !this.isCore()) {
-      const allow = values.hasOwnProperty('allow')
-        ? asArguments(values.allow)
-        : []
-      if (!allow.includes('*')) {
-        for (const key in values) {
-          if (!allow.includes(key) && key !== 'allow') {
-            values[key] = undefined
-          }
+    // Rules:
+    // - Own actions on action objects that don't define an `allow` array are
+    //   automatically allowed. If an `allow` array is defined as well, then
+    //   these own actions need to be explicitly listed.
+    // - If no `allow` arrays are defined in the prototypal hierarchy, each
+    //   level allows its own actions, and these are merged, except for those
+    //   marked as `$core`, which need to be explicitly listed in `allow`.
+
+    let current = values
+    while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
+      // Fetch the `allow` array, but only if it's defined on that inheritance
+      // level.
+      let allow = current.hasOwnProperty('allow') && current.allow
+      if (!allow) {
+        allow = Object.keys(current)
+      } else if (!isArray(allow)) {
+        allow = [allow]
+      }
+      if (allow.includes('*')) {
+        allow = getKeys(values)
+      }
+      for (const key of allow) {
+        if (key !== 'allow' && !allowed.includes(key)) {
+          allowed.push(key)
         }
       }
+      current = Object.getPrototypeOf(current)
     }
-    return values
+    const hasOwnAllow = values.hasOwnProperty('allow')
+    // Convert to a new `values` object that explicitly lists allowed actions in
+    // its `allow` array, including expansion of '*'. This is required for
+    // proper inheritance of `allow` arrays.
+    return getKeys(values).reduce((result, key) => {
+      if (key !== 'allow' && (
+        allowed.includes(key) ||
+        // See the rules above for an explanation of this:
+        !hasOwnAllow && values.hasOwnProperty(key)
+      )) {
+        result[key] = values[key]
+      }
+      return result
+    }, {
+      allow: allowed
+    })
   }
 
   inheritValues(type, filter = false) {
@@ -138,7 +162,7 @@ export class Controller {
     if (!inheritanceMap.has(parentClass)) {
       inheritanceMap.set(parentClass, {
         // eslint-disable-next-line new-cap
-        instance: new parentClass()
+        instance: new parentClass(this.app, this.namespace, false)
       })
     }
     const entry = inheritanceMap.get(parentClass)
@@ -147,7 +171,7 @@ export class Controller {
       let values = parent[type]
       if (parentClass !== Controller) {
         // Recursively set up inheritance chains.
-        values = parent.inheritValues(type, filter)
+        values = parent.inheritValues(type)
       }
       entry[type] = values
     }

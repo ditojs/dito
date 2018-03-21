@@ -7,7 +7,7 @@ import MemberAction from './MemberAction'
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
   constructor(app, namespace) {
-    super(app, namespace)
+    super(app, namespace, false)
     this.isOneToOne = false
     this.relate = false
     this.unrelate = false
@@ -107,9 +107,10 @@ export class CollectionController extends Controller {
     )
   }
 
-  allow = {}
-
   collection = {
+    // Mark action object as $core, so `filterValues()` can correctly filter.
+    $core: true,
+
     find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
       return this.execute(false, ctx, query =>
@@ -156,6 +157,9 @@ export class CollectionController extends Controller {
   }
 
   member = {
+    // See collection.$core:
+    $core: true,
+
     find(ctx, modify) {
       return this.execute(false, ctx, query => query
         .findById(this.getId(ctx), ctx.query, this.findOptions)
