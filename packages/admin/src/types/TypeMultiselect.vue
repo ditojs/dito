@@ -129,7 +129,7 @@
       font-weight: inherit
       top: inherit
       bottom: inherit
-      line-height: inherit
+      line-height: 1em
       width: $tag-icon-size
       &::after
         color: $color-text-inverted
