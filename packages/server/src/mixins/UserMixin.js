@@ -21,6 +21,13 @@ export const UserMixin = Model => class extends Model {
       type: 'string',
       hidden: true
     },
+    roles: {
+      type: 'array',
+      item: {
+        type: 'string'
+      },
+      default: []
+    },
     lastLogin: {
       type: 'timestamp',
       nullable: true
@@ -33,6 +40,10 @@ export const UserMixin = Model => class extends Model {
 
   async verifyPassword(password) {
     return bcrypt.compare(password, this.hash)
+  }
+
+  hasRole(...roles) {
+    return this.roles.find(role => roles.includes(role))
   }
 
   static initialize() {

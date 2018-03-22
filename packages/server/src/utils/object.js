@@ -1,16 +1,20 @@
 import { isArray } from '@ditojs/utils'
 
-export function asArguments(val) {
-  return isArray(val) ? val : val != null ? [val] : []
+export function asArguments(value) {
+  return isArray(value) ? value : value != null ? [value] : []
 }
 
-export function getAllKeys(obj) {
+export function getAllKeys(object) {
   // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
   const keys = []
-  for (const key in obj) {
+  for (const key in object) {
     keys.push(key)
   }
   return keys
+}
+
+export function getOwnProperty(object, key) {
+  return object.hasOwnProperty(key) ? object[key] : undefined
 }
 
 export function mergeWithoutOverride(target, ...sources) {

@@ -1,12 +1,10 @@
 import compose from 'koa-compose'
 import Router from 'koa-router'
 import chalk from 'chalk'
-import { ResponseError, WrappedError } from '@/errors'
-import { getAllKeys } from '@/utils'
+import { getOwnProperty, getAllKeys } from '@/utils'
 import ControllerAction from './ControllerAction'
-import {
-  isString, isArray, isBoolean, isFunction, asArray
-} from '@ditojs/utils'
+import { ResponseError, WrappedError } from '@/errors'
+import { isObject, isArray, isFunction } from '@ditojs/utils'
 
 export class Controller {
   constructor(app, namespace) {
@@ -27,7 +25,8 @@ export class Controller {
       const url = path ? `/${path}` : ''
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
-        `${namespace ? chalk.green(`${namespace}/`) : ''}${
+        `${
+          namespace ? chalk.green(`${namespace}/`) : ''}${
           chalk.cyan(path)}${
           chalk.white(':')
         }`,
@@ -132,8 +131,11 @@ export class Controller {
 
   processActions(actions) {
     if (!actions) return actions
-    const allowed = []
     // Respect `allow` settings and clear action methods that aren't listed.
+    // Also collect and expand `authorize` settings so that at the end, the
+    // `actions` object contains an `authorize` object with valid settings
+    // for all the defined actions.
+    //
     // Rules:
     // - Own actions on action objects that don't define an `allow` array are
     //   automatically allowed. If an `allow` array is defined as well, then
@@ -141,24 +143,45 @@ export class Controller {
     // - If no `allow` arrays are defined in the prototypal hierarchy, each
     //   level allows its own actions, and these are merged, except for those
     //   marked as `$core`, which need to be explicitly listed in `allow`.
+    const allow = {}
+    const authorize = {}
     let current = actions
     while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
-      // Fetch the `allow` array, but only if it's defined on that inheritance
-      // level.
-      let allow = current.hasOwnProperty('allow') && current.allow
-      if (!allow) {
-        allow = Object.keys(current)
-      } else if (!isArray(allow)) {
-        allow = [allow]
+      // Get and process the `allow` and `authorize` settings, but only if they
+      // are defined on the current inheritance level.
+      let ownAllow = getOwnProperty(current, 'allow')
+      if (!ownAllow) {
+        ownAllow = Object.keys(current)
+      } else if (!isArray(ownAllow)) {
+        ownAllow = [ownAllow]
       }
-      if (allow.includes('*')) {
-        allow = getAllKeys(actions)
+      if (ownAllow.includes('*')) {
+        ownAllow = getAllKeys(actions)
       }
-      for (const key of allow) {
-        if (key !== 'allow' && !allowed.includes(key)) {
-          allowed.push(key)
+      for (const key of ownAllow) {
+        if (key !== 'allow') {
+          allow[key] = true
         }
       }
+
+      const ownAuthorize = getOwnProperty(current, 'authorize')
+      const addAuthorize = (key, value) => {
+        // Since we're walking up in the inheritance change, only take on an
+        // authorize setting for a given key if it wasn't already defined before
+        if (isFunction(current[key]) && !(key in authorize)) {
+          authorize[key] = value
+        }
+      }
+      if (isObject(ownAuthorize)) {
+        for (const key in ownAuthorize) {
+          addAuthorize(key, ownAuthorize[key])
+        }
+      } else if (ownAuthorize != null) {
+        for (const key in current) {
+          addAuthorize(key, ownAuthorize)
+        }
+      }
+
       current = Object.getPrototypeOf(current)
     }
     const hasOwnAllow = actions.hasOwnProperty('allow')
@@ -166,41 +189,49 @@ export class Controller {
     // its `allow` array, including expansion of '*'. This is required for
     // proper inheritance of `allow` arrays.
     return getAllKeys(actions).reduce((result, key) => {
-      if (key !== 'allow' && (
-        allowed.includes(key) ||
+      if (
+        key !== 'allow' &&
         // See the rules above for an explanation of this:
-        !hasOwnAllow && actions.hasOwnProperty(key)
-      )) {
+        (allow[key] || !hasOwnAllow && actions.hasOwnProperty(key))
+      ) {
         result[key] = actions[key]
       }
       return result
-    }, {})
+    }, {
+      allow: Object.keys(allow),
+      authorize
+    })
   }
 
   setupActions(type) {
     const actions = this.processActions(this.inheritValues(type))
+    const { authorize } = actions
     for (const name in actions) {
       const action = actions[name]
       if (isFunction(action)) {
-        this.setupAction(type, name, action)
+        this.setupAction(type, name, action, authorize[name])
       }
     }
     return actions
   }
 
-  setupAction(type, name, action) {
+  setupAction(type, name, action, authorize) {
     this.setupRoute(
       type,
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
-      new ControllerAction(this, action)
+      new ControllerAction(this, action, authorize)
     )
   }
 
   setupRoute(type, verb, path, controllerAction) {
     const url = this.getUrl(type, path)
     this.log(
-      `${chalk.magenta(verb.toUpperCase())} ${chalk.white(url)}`,
+      `${
+        chalk.magenta(verb.toUpperCase())} ${
+        chalk.white(url)} ${
+        chalk.gray(controllerAction.describeAuthorize())
+      }`,
       this.level + 1
     )
     if (!this.router) {

@@ -27,7 +27,7 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, name, action) {
+  setupAction(type, name, action, authorize) {
     let verb = actionToVerb[name]
     let path = ''
     let actionClass = ControllerAction
@@ -43,7 +43,7 @@ export class CollectionController extends Controller {
       verb,
       path,
       // eslint-disable-next-line new-cap
-      new actionClass(this, action)
+      new actionClass(this, action, authorize)
     )
   }
 
