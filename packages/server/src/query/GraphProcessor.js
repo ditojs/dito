@@ -6,7 +6,8 @@ export default class GraphProcessor {
     this.rootModelClass = rootModelClass
     // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
     this.data = data
-      ? asArray(data).map(model => !model ? null
+      ? asArray(data).map(
+        model => !model ? null
         : model instanceof rootModelClass ? model
         : rootModelClass.fromJson(model, { skipValidation: true })
       )
