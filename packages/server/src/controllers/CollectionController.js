@@ -79,10 +79,10 @@ export class CollectionController extends Controller {
       )
     }
     if (this.scope) {
-      query.scope(...asArguments(this.scope))
+      query.mergeScope(...asArguments(this.scope))
     }
     if (this.eagerScope) {
-      query.eagerScope(...asArguments(this.eagerScope))
+      query.mergeEagerScope(...asArguments(this.eagerScope))
     }
   }
 
