@@ -4,7 +4,7 @@ export function asArguments(val) {
   return isArray(val) ? val : val != null ? [val] : []
 }
 
-export function getKeys(obj) {
+export function getAllKeys(obj) {
   // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
   const keys = []
   for (const key in obj) {

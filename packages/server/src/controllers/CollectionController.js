@@ -14,7 +14,7 @@ export class CollectionController extends Controller {
   }
 
   initialize(isRoot) {
-    super.initialize(isRoot)
+    super.initialize(isRoot, false)
     this.idParam = this.level ? `id${this.level}` : 'id'
     this.graph = !!this.graph
     this.scope = this.scope || null
@@ -27,7 +27,7 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, action, name) {
+  setupAction(type, name, action) {
     let verb = actionToVerb[name]
     let path = ''
     let actionClass = ControllerAction

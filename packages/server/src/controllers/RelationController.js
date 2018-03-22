@@ -41,7 +41,7 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  inheritValues(type, filter = false) {
+  inheritValues(type) {
     // Since RelationController are mapped to nested `relations` objects in
     // ModelController parents and are never extended directly in the user land
     // code, inheritance works differently here than on the other controllers:
@@ -61,7 +61,7 @@ export class RelationController extends CollectionController {
       // NOTE: Currently they're empty, but they could allow local overrides.
       super.inheritValues(type)
     )
-    return filter ? this.filterValues(values) : values
+    return values
   }
 
   // @override
