@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import { getOwnProperty, getAllKeys } from '@/utils'
 import ControllerAction from './ControllerAction'
 import { ResponseError, WrappedError } from '@/errors'
-import { isObject, isArray, isFunction } from '@ditojs/utils'
+import { isObject, isFunction, asArray } from '@ditojs/utils'
 
 export class Controller {
   constructor(app, namespace) {
@@ -143,24 +143,31 @@ export class Controller {
     // - If no `allow` arrays are defined in the prototypal hierarchy, each
     //   level allows its own actions, and these are merged, except for those
     //   marked as `$core`, which need to be explicitly listed in `allow`.
-    const allow = {}
+    let allow = {}
+    let hasOwnAllow = false
     const authorize = {}
     let current = actions
     while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
       // Get and process the `allow` and `authorize` settings, but only if they
       // are defined on the current inheritance level.
       let ownAllow = getOwnProperty(current, 'allow')
-      if (!ownAllow) {
+      if (ownAllow) {
+        ownAllow = asArray(ownAllow)
+        hasOwnAllow = true
+        allow = {}
+      } else if (!hasOwnAllow) {
+        // Only keep adding to the merged `allow` if we didn't already encounter
+        // an own `allow` object further up the chain.
         ownAllow = Object.keys(current)
-      } else if (!isArray(ownAllow)) {
-        ownAllow = [ownAllow]
       }
-      if (ownAllow.includes('*')) {
-        ownAllow = getAllKeys(actions)
-      }
-      for (const key of ownAllow) {
-        if (key !== 'allow') {
-          allow[key] = true
+      if (ownAllow) {
+        if (ownAllow.includes('*')) {
+          ownAllow = getAllKeys(current)
+        }
+        for (const key of ownAllow) {
+          if (key !== 'allow') {
+            allow[key] = true
+          }
         }
       }
 
@@ -184,16 +191,11 @@ export class Controller {
 
       current = Object.getPrototypeOf(current)
     }
-    const hasOwnAllow = actions.hasOwnProperty('allow')
     // Convert to a new `values` object that explicitly lists allowed actions in
     // its `allow` array, including expansion of '*'. This is required for
     // proper inheritance of `allow` arrays.
     return getAllKeys(actions).reduce((result, key) => {
-      if (
-        key !== 'allow' &&
-        // See the rules above for an explanation of this:
-        (allow[key] || !hasOwnAllow && actions.hasOwnProperty(key))
-      ) {
+      if (key !== 'allow' && allow[key]) {
         result[key] = actions[key]
       }
       return result

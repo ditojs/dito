@@ -3,7 +3,7 @@ import { ModelController } from './ModelController'
 
 export class UserController extends ModelController {
   collection = {
-    @action('get') // TODO: post?
+    @action('get') // TODO: switch to post once the form is in place.
     async login(ctx) {
       let user
       let error
@@ -26,7 +26,7 @@ export class UserController extends ModelController {
       }
     },
 
-    @action('get') // TODO: post?
+    @action('get') // TODO: switch to post once the form is in place.
     async logout(ctx) {
       let success = false
       if (ctx.isAuthenticated()) {
@@ -40,7 +40,7 @@ export class UserController extends ModelController {
     },
 
     @action('get')
-    status(ctx) {
+    session(ctx) {
       return {
         authenticated: ctx.isAuthenticated(),
         user: ctx.state.user
