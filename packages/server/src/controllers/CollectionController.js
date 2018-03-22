@@ -28,10 +28,16 @@ export class CollectionController extends Controller {
 
   // @override
   setupAction(type, name, action, authorize) {
-    let verb = actionToVerb[name]
-    let path = ''
-    let actionClass = ControllerAction
-    if (!verb) {
+    // NOTE: `ControllerAction` is used for the default member actions, since
+    // they don't need to fetch members ahead of their call.
+    // Only custom member actions use `MemberAction`.
+    let verb, path, actionClass
+    if (name in actionToVerb) {
+      // A default collection or member action, see `actionToVerb`:
+      verb = actionToVerb[name]
+      path = ''
+      actionClass = ControllerAction
+    } else {
       // A custom action, where member actions need to fetch their member
       // argument through the MemberAction class:
       verb = action.verb || 'get'

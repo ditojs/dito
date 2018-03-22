@@ -189,13 +189,20 @@ export class Application extends Koa {
         isTruthy('session') && session(
           app.session === true ? {} : app.session,
           this
-        ),
-        ...(isTruthy('passport') && [
-          passport.initialize(),
-          passport.session()
-        ] || [])
+        )
       ].filter(val => val))
     )
+  }
+
+  usePassport() {
+    // NOTE: This is not part of the automatic `setupMiddleware()` so that apps
+    // can set up the static serving of assets before installing the passport
+    // middleware. If `usePassport()` is called before the assets, then logged
+    // in users would be resolved for every loaded resource.
+    this.use(compose([
+      passport.initialize(),
+      passport.session()
+    ]))
   }
 
   setupKnex() {
