@@ -1,12 +1,13 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import VeeValidate from 'vee-validate'
+import axios from 'axios'
 import './components'
 import './types'
+import DitoComponent from './DitoComponent'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize } from '@ditojs/utils'
-import { processView } from './schema'
 
 Vue.config.productionTip = false
 Vue.use(VueRouter)
@@ -18,60 +19,87 @@ Vue.use(VeeValidate, {
   fieldsBagName: '$fields'
 })
 
-export async function setup(el, options = {}) {
-  const {
-    views = {},
-    api = {},
-    base = '/'
-  } = options
+export default class DitoAdmin {
+  constructor(el, { api = {}, base = '/', views = {}, ...options } = {}) {
+    this.el = el
+    this.api = api
+    this.options = options
 
-  // Setting `api.normalizePaths = true (plural) sets both:
-  // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
-  api.normalizePath = api.normalizePath ||
-    api.normalizePaths === true ? hyphenate : val => val
-  api.denormalizePath = api.denormalizePath ||
-    api.normalizePaths === true ? camelize : val => val
+    api.request = api.request || ((...args) => this.request(...args))
 
-  api.resources = {
-    member(component, itemId) {
-      return `${component.listSchema.path}/${itemId}`
-    },
-    collection(component) {
-      const { parentFormComponent: parent, listSchema } = component
-      return parent
-        ? `${parent.listSchema.path}/${parent.itemId}/${listSchema.path}`
-        : listSchema.path
-    },
-    ...api.resources
-  }
+    // Setting `api.normalizePaths = true (plural) sets both:
+    // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
+    api.normalizePath = api.normalizePath ||
+      api.normalizePaths === true ? hyphenate : val => val
+    api.denormalizePath = api.denormalizePath ||
+      api.normalizePaths === true ? camelize : val => val
 
-  // Collect all routes from the root schema components
-  const routes = []
-  const promises = []
-  for (const [name, schema] of Object.entries(views)) {
-    promises.push(processView(schema, name, api, routes))
-  }
-  await Promise.all(promises)
-
-  new Vue({
-    el,
-    router: new VueRouter({
-      mode: 'history',
-      routes,
-      base
-    }),
-    template: '<dito-root :views="views" :options="options" />',
-    components: { DitoRoot },
-    data: {
-      views,
-      options
+    // Allow overriding of resource paths:
+    // api: {
+    //   resources: {
+    //     member(component, itemId) {
+    //       return `${component.schema.path}/${itemId}`
+    //     },
+    //     collection(component) {
+    //       const { parentFormComponent: parent, listSchema } = component
+    //       return parent
+    //         ? `${listSchema.path}?${parent.path}_id=${parent.itemId}`
+    //         : listSchema.path
+    //     }
+    //   },
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   }
+    // }
+    api.resources = {
+      member(component, itemId) {
+        return `${component.listSchema.path}/${itemId}`
+      },
+      collection(component) {
+        const { parentFormComponent: parent, listSchema } = component
+        return parent
+          ? `${parent.listSchema.path}/${parent.itemId}/${listSchema.path}`
+          : listSchema.path
+      },
+      ...api.resources
     }
-  })
-}
 
-export const { register } = TypeComponent
+    this.root = new DitoComponent({
+      el,
+      router: new VueRouter({
+        mode: 'history',
+        base
+      }),
+      template: '<dito-root :meta="meta" :views="views" :options="options" />',
+      components: { DitoRoot },
+      data: {
+        meta: { api },
+        views,
+        options
+      }
+    })
+  }
 
-export default {
-  setup,
-  register
+  register(type, options) {
+    return TypeComponent.register(type, options)
+  }
+
+  request(method, url, params, payload, callback) {
+    const data = /^(post|put|patch)$/.test(method)
+      ? JSON.stringify(payload)
+      : null
+    axios.request({
+      url,
+      method,
+      data,
+      baseURL: this.api.url,
+      headers: this.api.headers || {
+        'Content-Type': 'application/json'
+      },
+      withCredentials: !!this.api.cors?.credentials,
+      params
+    })
+      .then(response => callback(null, response))
+      .catch(error => callback(error, error.response))
+  }
 }

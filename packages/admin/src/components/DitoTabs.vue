@@ -28,16 +28,17 @@ $tab-color-background: $color-white
 $tab-color-inactive: $button-color
 $tab-color-hover: lighten($tab-color-inactive, 5%)
 $tab-color-active: $tab-color-inactive
+$tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 .dito
   .dito-tabs
-    position: absolute
-    width: 100%
+    position: relative
     max-width: $content-width
+    height: $tab-height
+    margin-top: -$tab-height
     box-sizing: border-box
     padding: 0 $menu-padding-hor
     z-index: $menu-z-index
-    margin-top: -$menu-font-size - 2 * $tab-padding-ver
     display: flex
     justify-content: flex-end
     // turn off pointer events in background so that DitoTrail keeps working.

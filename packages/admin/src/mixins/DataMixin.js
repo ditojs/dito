@@ -1,5 +1,4 @@
 import TypeComponent from '@/TypeComponent'
-import axios from 'axios'
 import LoadingMixin from './LoadingMixin'
 import { isString, isFunction, pick, clone } from '@ditojs/utils'
 
@@ -203,7 +202,11 @@ export default {
     requestData() {
       const params = this.getQueryParams()
       this.request('get', { params }, (err, response) => {
-        if (!err) {
+        if (err) {
+          if (response?.status === 401) {
+            return true
+          }
+        } else {
           this.setData(response.data)
         }
       })
@@ -214,41 +217,19 @@ export default {
     },
 
     request(method, options, callback) {
-      const request = this.api.request || this.requestAxios
       const { resource, params, payload } = options
       const path = this.getResourcePath(resource || this.resource)
       this.setLoading(true)
-      request(method, path, params, payload, (err, response) => {
-        setTimeout(() => {
-          this.setLoading(false)
-          // If callback returns true, errors were already handled.
-          if (!callback?.(err, response) && err) {
-            this.notify('error', 'Request Error', err)
-          }
-        }, 0)
+      this.api.request(method, path, params, payload, (err, response) => {
+        this.setLoading(false)
+        // If callback returns true, errors were already handled.
+        if (!callback?.(err, response) && err) {
+          this.notify('error', 'Request Error', err)
+        }
       })
-    },
-
-    requestAxios(method, url, params, payload, callback) {
-      const data = /^(post|put|patch)$/.test(method)
-        ? JSON.stringify(payload)
-        : null
-      axios.request({
-        url,
-        method,
-        data,
-        baseURL: this.api.url,
-        headers: this.api.headers || {
-          'Content-Type': 'application/json'
-        },
-        params
-      })
-        .then(response => callback(null, response))
-        .catch(error => callback(error, error.response))
     },
 
     // @ditojs/server specific processing of parameters, payload and response:
-
     getQueryParams() {
       // @ditojs/server specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends

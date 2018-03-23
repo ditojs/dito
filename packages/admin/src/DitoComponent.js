@@ -1,6 +1,7 @@
 import Vue from 'vue'
-import VueNotifications from 'vue-notification'
 import VueDraggable from 'vuedraggable'
+import VueModal from 'vue-js-modal'
+import VueNotifications from 'vue-notification'
 import VueToggleButton from 'vue-js-toggle-button'
 import DitoSpinner from 'vue-spinner/src/PulseLoader'
 import DitoMixin from './mixins/DitoMixin'
@@ -47,9 +48,13 @@ const DitoComponent = Vue.extend({
 DitoComponent.typeComponents = typeComponents
 
 DitoComponent.component = function (name, options) {
-  const ctor = this.extend(options)
-  components[name] = ctor
-  return ctor
+  if (options) {
+    const ctor = this.extend(options)
+    components[name] = ctor
+    return ctor
+  } else {
+    return components[name]
+  }
 }
 
 DitoComponent.get = function (name) {
@@ -58,6 +63,7 @@ DitoComponent.get = function (name) {
 
 // Register "global" components and plugins, on the DitoComponent level so
 // the global Vue is not polluted.
+DitoComponent.use(VueModal, { dynamic: true })
 DitoComponent.use(VueNotifications)
 DitoComponent.use(VueToggleButton)
 DitoComponent.component('vue-draggable', VueDraggable)

@@ -2,6 +2,16 @@ import TypeComponent from './TypeComponent'
 import DitoView from '@/components/DitoView'
 import { isFunction, isPromise } from '@ditojs/utils'
 
+export async function resolveViews(views) {
+  if (isFunction(views)) {
+    views = views()
+  }
+  if (isPromise(views)) {
+    views = await views
+  }
+  return views
+}
+
 export async function processView(schema, name, api, routes) {
   if (schema.type === 'view') {
     schema.path = schema.path || api.normalizePath(name)

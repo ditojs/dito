@@ -14,7 +14,7 @@
       :store="store"
       :disabled="loading"
     )
-      .dito-buttons(slot="buttons")
+      .dito-buttons.dito-buttons-form(slot="buttons")
         button.dito-button(
           type="button"
           @click.prevent="onCancel"
@@ -31,21 +31,8 @@
           type="submit"
           @click.prevent="onSubmit(button)"
           :class="`dito-button-${key}`"
-        ) {{ button.label }}
+        ) {{ getLabel(button, key) }}
 </template>
-
-<style lang="sass">
-.dito
-  .dito-form
-    .dito-scroll-content
-      > .dito-buttons
-        margin-top: $form-margin
-        text-align: center
-        font-size: $menu-font-size
-        button
-          border-radius: 2em
-          padding: 0.3em 0.9em
-</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
@@ -406,8 +393,8 @@ export default DitoComponent.component('dito-form', {
         }
       } else {
         let { method, resource } = this
-        // Allow buttons to override both method and resource path:
-        method = button.method || method
+        // Allow buttons to override both method (verb) and resource path:
+        method = button.method || button.verb || method
         const { path } = button
         if (path) {
           resource = { ...resource, path }

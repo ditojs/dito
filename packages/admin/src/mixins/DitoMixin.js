@@ -1,4 +1,5 @@
 import appState from '@/appState'
+import DitoComponent from '@/DitoComponent'
 import { labelize } from '@ditojs/utils'
 
 export default {
@@ -9,9 +10,9 @@ export default {
   },
 
   computed: {
-    // Short-cuts to meta properties:
-    user() { return this.meta.user },
-    api() { return this.meta.api },
+    api() {
+      return this.meta?.api || null
+    },
 
     rootComponent() {
       return this.$root.$children[0]
@@ -25,7 +26,7 @@ export default {
         comp = comp.$parent
       }
       // Only return the component if its still in the route
-      return comp.routeRecord ? comp : null
+      return comp?.routeRecord ? comp : null
     },
 
     formComponent() {
@@ -73,8 +74,8 @@ export default {
       return this.getStore(key) || this.setStore(key, {})
     },
 
-    getLabel(schema) {
-      return schema ? schema.label || labelize(schema.name) : ''
+    getLabel(schema, name) {
+      return schema ? schema.label || labelize(schema.name || name) : ''
     },
 
     labelize,
@@ -83,6 +84,10 @@ export default {
       return dataPath !== ''
         ? `${dataPath}/${token}`
         : token
+    },
+
+    showDialog(options, config) {
+      this.$modal.show(DitoComponent.component('dito-dialog'), options, config)
     },
 
     notify(...args) {

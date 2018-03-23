@@ -14,13 +14,6 @@
   )
 </template>
 
-<style lang="sass">
-.dito
-  .dito-textarea
-    width: 100%
-    resize: none
-</style>
-
 <script>
 import TypeComponent from '@/TypeComponent'
 

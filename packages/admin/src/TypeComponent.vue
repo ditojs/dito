@@ -35,9 +35,9 @@ const TypeComponent = DitoComponent.component('typo-component', {
 
 typeComponents.component = TypeComponent
 
-TypeComponent.register = function (type, options) {
+TypeComponent.register = function (type, options = {}) {
   const types = asArray(type)
-  const component = TypeComponent.component(`type-${types[0]}`, options)
+  const component = this.component(`type-${types[0]}`, options)
   for (const t of types) {
     typeComponents[t] = component
   }
