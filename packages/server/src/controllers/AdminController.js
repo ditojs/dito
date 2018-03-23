@@ -1,9 +1,9 @@
 import path from 'path'
 import Koa from 'koa'
 import mount from 'koa-mount'
-import webpack from 'koa-webpack'
+import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
-import { NamedModulesPlugin, NoEmitOnErrorsPlugin } from 'webpack'
+import webpack from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import ExtractTextPlugin from 'extract-text-webpack-plugin'
 import autoprefixer from 'autoprefixer'
@@ -32,57 +32,9 @@ export class AdminController extends Controller {
   }
 
   setupWebpack() {
-    const { config } = this
-    const resolvedPath = path.resolve(config.path)
     this.koa.use(historyApiFallback())
-    this.koa.use(webpack({
-      config: {
-        mode: 'development',
-        entry: [
-          '@ditojs/admin/dist/dito-admin.css',
-          ...(config.include || []),
-          resolvedPath
-        ],
-        output: {
-          path: resolvedPath,
-          publicPath: `${this.url}/`
-        },
-        resolve: {
-          extensions: ['.js', '.vue', '.json'],
-          alias: {
-            'vue$': 'vue/dist/vue.esm.js',
-            '@': resolvedPath
-          }
-        },
-        module: {
-          rules: [
-            {
-              test: /\.vue$/,
-              loader: 'vue-loader',
-              options: vueLoaderConfig
-            },
-            {
-              test: /\.js$/,
-              loader: 'babel-loader',
-              include: resolvedPath
-            },
-            ...styleLoaders({
-              sourceMap: true,
-              usePostCSS: true
-            })
-          ]
-        },
-        plugins: [
-          // HMR shows correct file names in console on update:
-          new NamedModulesPlugin(),
-          new NoEmitOnErrorsPlugin(),
-          // https://github.com/ampedandwired/html-webpack-plugin
-          new HtmlWebpackPlugin({
-            template: config.template,
-            inject: true
-          })
-        ]
-      },
+    this.koa.use(koaWebpack({
+      config: this.getWebpackConfig('development'),
       dev: {
         publicPath: '/',
         // https://webpack.js.org/configuration/stats/#stats
@@ -97,6 +49,80 @@ export class AdminController extends Controller {
         stats: 'minimal'
       }
     }))
+  }
+
+  getWebpackConfig(mode) {
+    const { config } = this
+    const resolvedPath = path.resolve(config.path)
+    return {
+      mode,
+      entry: [
+        '@ditojs/admin/dist/dito-admin.css',
+        ...(config.include || []),
+        resolvedPath
+      ],
+      output: {
+        filename: '[name].[hash].js',
+        path: resolvedPath,
+        publicPath: `${this.url}/`
+      },
+      resolve: {
+        extensions: ['.js', '.vue', '.json'],
+        alias: {
+          'vue$': 'vue/dist/vue.esm.js',
+          '@': resolvedPath
+        },
+        // Preserve names of `yarn link` modules, for `splitChunks` to work.
+        symlinks: false
+      },
+      optimization: {
+        splitChunks: {
+          // Split dependencies into two chunks, one for all common libraries,
+          // and one for all views, so they can be loaded separately, and only
+          // once authentication was successful.
+          cacheGroups: {
+            common: {
+              name: 'common',
+              test: /\/node_modules\//,
+              chunks: 'all'
+            },
+            views: {
+              name: 'views',
+              test: /\/views\//,
+              chunks: 'all'
+            }
+          }
+        }
+      },
+      module: {
+        rules: [
+          {
+            test: /\.vue$/,
+            loader: 'vue-loader',
+            options: vueLoaderConfig
+          },
+          {
+            test: /\.js$/,
+            loader: 'babel-loader',
+            include: resolvedPath
+          },
+          ...styleLoaders({
+            sourceMap: true,
+            usePostCSS: true
+          })
+        ]
+      },
+      plugins: [
+        // HMR shows correct file names in console on update:
+        new webpack.NamedModulesPlugin(),
+        new webpack.NoEmitOnErrorsPlugin(),
+        // https://github.com/ampedandwired/html-webpack-plugin
+        new HtmlWebpackPlugin({
+          template: config.template,
+          inject: true
+        })
+      ]
+    }
   }
 }
 
