@@ -38,6 +38,7 @@
     font-size: inherit
     min-height: inherit
     width: auto
+    color: $color-black
 
     .multiselect__tags
       overflow: auto
@@ -63,10 +64,12 @@
       padding: $input-padding
       // So input can float next to tags and have proper margins with
       // .multiselect__tags:
-      padding-bottom: $input-padding-ver - $tag-margin
+      padding-bottom: 0
       margin: 0
       line-height: $line-height
       background: none
+      &::placeholder
+        color: $color-placeholder
 
     &.dito-mutiple
       // Only srink and float the input field if we have mutliple values (tags).
