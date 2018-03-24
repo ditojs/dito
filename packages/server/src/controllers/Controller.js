@@ -3,8 +3,12 @@ import Router from 'koa-router'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys } from '@/utils'
 import ControllerAction from './ControllerAction'
-import { ResponseError, WrappedError } from '@/errors'
-import { isObject, isFunction, asArray } from '@ditojs/utils'
+import {
+  ResponseError, WrappedError, ControllerError, AuthorizationError
+} from '@/errors'
+import {
+  isObject, isString, isArray, isBoolean, isFunction, asArray, pick
+} from '@ditojs/utils'
 
 export class Controller {
   constructor(app, namespace) {
@@ -205,6 +209,51 @@ export class Controller {
     })
   }
 
+  processAuthorize(authorize) {
+    if (isFunction(authorize)) {
+      return async (ctx, ...args) => {
+        const res = await authorize(ctx, ...args)
+        // Pass res through `processAuthorize()` to support strings & arrays.
+        return this.processAuthorize(res)(ctx, ...args)
+      }
+    } else if (isString(authorize) || isArray(authorize)) {
+      return ctx => {
+        return !!ctx.state.user?.hasRole(...asArray(authorize))
+      }
+    } else if (isBoolean(authorize)) {
+      return () => authorize
+    } else if (authorize == null) {
+      return () => true
+    } else {
+      throw new ControllerError(this,
+        `Unsupported authorize setting: '${authorize}'`
+      )
+    }
+  }
+
+  describeAuthorize(authorize) {
+    if (isFunction(authorize)) {
+      const match = authorize.toString().match(
+        /^\s*(?:function[^(]*\(([^)]*)\)|\(([^)]*)\)\s*=>|(\S*)\s*=>)\s*(.)/
+      )
+      if (match) {
+        const body = match[4] === '{' ? '{ ... }' : '...'
+        return match[1] !== undefined ? `function (${match[1]}) ${body}`
+          : match[2] !== undefined ? `(${match[2]}) => ${body}`
+          : match[3] !== undefined ? `${match[3]} => ${body}`
+          : ''
+      }
+    }
+    return pick(authorize, '')
+  }
+
+  async handleAuthorization(authorize, ctx, args = []) {
+    const ok = await authorize(ctx, ...args)
+    if (ok !== true) {
+      throw new AuthorizationError()
+    }
+  }
+
   setupActions(type) {
     const actions = this.processActions(this.inheritValues(type))
     const { authorize } = actions
@@ -222,17 +271,18 @@ export class Controller {
       type,
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
+      authorize,
       new ControllerAction(this, action, authorize)
     )
   }
 
-  setupRoute(type, verb, path, controllerAction) {
+  setupRoute(type, verb, path, authorize, controllerAction) {
     const url = this.getUrl(type, path)
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
         chalk.white(url)} ${
-        chalk.gray(controllerAction.describeAuthorize())
+        chalk.gray(this.describeAuthorize(authorize))
       }`,
       this.level + 1
     )

@@ -19,7 +19,7 @@ import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
-import { isPlainObject, hyphenate } from '@ditojs/utils'
+import { isObject, isPlainObject, hyphenate } from '@ditojs/utils'
 
 export class Application extends Koa {
   constructor(config = {}, { validator, models, controllers }) {
@@ -179,7 +179,7 @@ export class Application extends Koa {
         isntFalse('responseTime') && responseTime(),
         logger?.(),
         isntFalse('helmet') && helmet(),
-        isntFalse('cors') && cors(),
+        isntFalse('cors') && cors(isObject(app.cors) ? app.cors : {}),
         isTruthy('compress') && compress(app.compress),
         ...(isTruthy('etag') && [
           conditional(),
@@ -187,7 +187,7 @@ export class Application extends Koa {
         ] || []),
         bodyParser(),
         isTruthy('session') && session(
-          app.session === true ? {} : app.session,
+          isObject(app.session) ? app.session : {},
           this
         )
       ].filter(val => val))

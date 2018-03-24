@@ -7,7 +7,7 @@ import MemberAction from './MemberAction'
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
   constructor(app, namespace) {
-    super(app, namespace, false)
+    super(app, namespace)
     this.isOneToOne = false
     this.relate = false
     this.unrelate = false
@@ -48,6 +48,7 @@ export class CollectionController extends Controller {
       type,
       verb,
       path,
+      authorize,
       // eslint-disable-next-line new-cap
       new actionClass(this, action, authorize)
     )

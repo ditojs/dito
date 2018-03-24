@@ -11,24 +11,28 @@ import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 
 export class AdminController extends Controller {
-  constructor(app, namespace) {
-    super(app, namespace, false)
-  }
-
   // @override
   compose() {
     if (!this.config) {
       throw new ControllerError(this, 'Missing config field.')
     }
+    this.koa = new Koa()
+
+    const authorize = this.processAuthorize(this.authorize)
+    // Shield admin views against unauthorized access.
+    this.koa.use(async (ctx, next) => {
+      if (/\/views/.test(ctx.request.url)) {
+        await this.handleAuthorization(authorize, ctx)
+      }
+      return next()
+    })
     if (this.app.config.env === 'development') {
       this.app.once('after:start', () => this.setupWebpack())
-      this.koa = new Koa()
-      return mount(this.url, this.koa)
     } else {
       // TODO: Implement static serving of built resources from `config.path`,
       // for production hosting.
-      return null
     }
+    return mount(this.url, this.koa)
   }
 
   setupWebpack() {

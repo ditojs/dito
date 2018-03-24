@@ -1,19 +1,16 @@
 import { convertSchema } from '@/schema'
-import { ValidationError, ControllerError, AuthorizationError } from '@/errors'
-import {
-  isString, isArray, isBoolean, isFunction, asArray, pick
-} from '@ditojs/utils'
+import { ValidationError } from '@/errors'
+import { isString, asArray } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, authorize) {
     this.controller = controller
     this.handler = handler
-    this.authorize = authorize || handler.authorize
+    this.authorize = controller.processAuthorize(authorize || handler.authorize)
     this.parameters = handler.parameters
     this.returns = handler.returns
     this.app = controller.app
     this.validators = null
-    this.callAuthorize = this.getAuthorize(this.authorize)
   }
 
   async callAction(ctx) {
@@ -37,10 +34,7 @@ export default class ControllerAction {
     }
 
     const args = await this.collectArguments(ctx, parameters)
-    const ok = await this.callAuthorize(ctx, ...args)
-    if (ok !== true) {
-      throw new AuthorizationError()
-    }
+    await this.controller.handleAuthorization(this.authorize, ctx, args)
     const result = await this.handler.call(this.controller, ...args)
     const resultName = returns?.name
     // Use 'root' if no name is given, see createValidator()
@@ -55,44 +49,6 @@ export default class ControllerAction {
       )
     }
     return resultName ? resultData : result
-  }
-
-  getAuthorize(authorize) {
-    if (isFunction(authorize)) {
-      return async (ctx, ...args) => {
-        const res = await authorize(ctx, ...args)
-        // Pass res through `getAuthorize()` again to support strings & arrays.
-        return this.getAuthorize(res)(ctx, ...args)
-      }
-    } else if (isString(authorize) || isArray(authorize)) {
-      return ctx => {
-        return !!ctx.state.user?.hasRole(...asArray(authorize))
-      }
-    } else if (isBoolean(authorize)) {
-      return () => authorize
-    } else if (authorize == null) {
-      return () => true
-    } else {
-      throw new ControllerError(this.controller,
-        `Unsupported authorize setting: '${authorize}'`
-      )
-    }
-  }
-
-  describeAuthorize() {
-    if (isFunction(this.authorize)) {
-      const match = this.authorize.toString().match(
-        /^\s*(?:function[^(]*\(([^)]*)\)|\(([^)]*)\)\s*=>|(\S*)\s*=>)\s*(.)/
-      )
-      if (match) {
-        const body = match[4] === '{' ? '{ ... }' : '...'
-        return match[1] !== undefined ? `function (${match[1]}) ${body}`
-          : match[2] !== undefined ? `(${match[2]}) => ${body}`
-          : match[3] !== undefined ? `${match[3]} => ${body}`
-          : ''
-      }
-    }
-    return pick(this.authorize, '')
   }
 
   createValidationError(message, errors) {
