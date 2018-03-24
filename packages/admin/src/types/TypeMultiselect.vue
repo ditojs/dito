@@ -1,6 +1,6 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
-    :class="{ 'dito-mutiple': schema.multiple }"
+    :class="{ 'dito-mutiple': multiple }"
     v-model="multiSelectValue"
     v-validate="validations"
     v-bind="getAttributes()"
@@ -12,9 +12,9 @@
     :track-by="optionValue"
     :group-label="groupByLabel"
     :group-values="groupByOptions"
-    :searchable="!!schema.searchable"
-    :taggable="!!schema.taggable"
-    :multiple="!!schema.multiple"
+    :multiple="!!multiple"
+    :searchable="!!searchable"
+    :taggable="!!taggable"
     :internal-search="true"
     :close-on-select="true"
     :loading="loading"
@@ -191,18 +191,38 @@ export default TypeComponent.register('multiselect', {
   computed: {
     multiSelectValue: {
       get() {
-        return this.schema.multiple
-          ? (this.selectValue || []).map(value => this.getOptionForValue(value))
+        return this.multiple
+          ? (this.selectValue || [])
+            .map(
+              // If an option cannot be found, we may be in taggable mode and
+              // can add it.
+              value => this.getOptionForValue(value) || this.addTagOption(value)
+            )
+            // Filter out options that we couldn't match.
+            // TODO: We really should display an error instead
+            .filter(value => value)
           : this.getOptionForValue(this.selectValue)
       },
 
       set(option) {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
-        this.selectValue = this.schema.multiple
+        this.selectValue = this.multiple
           ? (option || []).map(value => this.getValueForOption(value))
           : this.getValueForOption(option)
       }
+    },
+
+    multiple() {
+      return this.schema.multiple
+    },
+
+    searchable() {
+      return this.schema.searchable
+    },
+
+    taggable() {
+      return this.schema.taggable
     },
 
     placeholder() {
@@ -216,18 +236,27 @@ export default TypeComponent.register('multiselect', {
   },
 
   methods: {
+    addTagOption(tag) {
+      if (this.taggable) {
+        const { optionLabel, optionValue } = this
+        const option = optionLabel && optionValue
+          ? {
+            [optionLabel]: tag,
+            // TODO: Define a simple schema option to convert the tag value to
+            // something else, e.g. `toTag: tag => underscore(tag)`
+            [optionValue]: tag
+          }
+          : tag
+        this.options.push(option)
+        return option
+      }
+    },
+
     addTag(tag) {
-      const { optionLabel, optionValue } = this
-      const option = optionLabel && optionValue
-        ? {
-          [optionLabel]: tag,
-          // TODO: Define a simple schema option to convert the tag value to
-          // something else, e.g. `toTag: tag => underscore(tag)`
-          [optionValue]: tag
-        }
-        : tag
-      this.options.push(option)
-      this.value.push(this.getValueForOption(option))
+      const option = this.addTagOption(tag)
+      if (option) {
+        this.value.push(this.getValueForOption(option))
+      }
     },
 
     focus() {
