@@ -216,17 +216,23 @@ export default {
       return response?.status === 400
     },
 
-    request(method, options, callback) {
-      const { resource, params, payload } = options
-      const path = this.getResourcePath(resource || this.resource)
+    async request(method, options, callback) {
+      const { resource, payload: data, params } = options
+      const url = this.getResourcePath(resource || this.resource)
       this.setLoading(true)
-      this.api.request(method, path, params, payload, (err, response) => {
-        this.setLoading(false)
+      const request = { method, url, data, params }
+      try {
+        await this.rootComponent.onBeforeRequest(request)
+        const response = await this.api.request(request)
+        await this.rootComponent.onAfterRequest(request)
+        callback?.(null, response)
+      } catch (error) {
         // If callback returns true, errors were already handled.
-        if (!callback?.(err, response) && err) {
-          this.notify('error', 'Request Error', err)
+        if (!callback?.(error, error.response)) {
+          this.notify('error', 'Request Error', error)
         }
-      })
+      }
+      this.setLoading(false)
     },
 
     // @ditojs/server specific processing of parameters, payload and response:

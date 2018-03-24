@@ -127,7 +127,7 @@ export default {
       return rules
     },
 
-    async load(config) {
+    load(config) {
       const { apiPath, cache, ...rest } = config
       if (apiPath) {
         // Process config.api
@@ -159,7 +159,6 @@ export default {
         return loadCache[cacheKey]
       }
       try {
-        // TODO: Use api.request() here too?
         const load = async () => (await axios.request(config)).data
         // NOTE: No await here, res is a promise that we can easily cache.
         const res = load()

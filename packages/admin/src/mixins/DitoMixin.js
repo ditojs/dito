@@ -87,7 +87,19 @@ export default {
     },
 
     showDialog(options, config) {
-      this.$modal.show(DitoComponent.component('dito-dialog'), options, config)
+      // Shows a dito-dialog component through vue-js-modal, and wraps it in a
+      // promise so that the buttons int he dialog can use `dialog.resolve()`
+      // and `dialog.reject()` to close the modal dialog and resolve / reject
+      // the promise at once.
+      return new Promise((resolve, reject) => {
+        this.$modal.show(DitoComponent.component('dito-dialog'), {
+          ...options,
+          promise: {
+            resolve,
+            reject
+          }
+        }, config)
+      })
     },
 
     notify(...args) {
@@ -97,7 +109,7 @@ export default {
         error: 'Error',
         info: 'Information',
         success: 'Success'
-      }[type]
+      }[type] || 'Notification'
       const content = args[args.length - 1]
       let text = type === 'error' && content.message || content.toString()
       const duration = 1500 + (text.length + title.length) * 20
@@ -108,7 +120,7 @@ export default {
         error: 'error',
         info: 'log',
         success: 'log'
-      }[type]
+      }[type] || 'error'
       console[log](content)
     },
 

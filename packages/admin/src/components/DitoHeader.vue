@@ -14,8 +14,11 @@
       v-if="user"
       :user="user"
     )
-    // Prevent header from collapsing:
-    span(v-else) &nbsp;
+    a.dito-login(
+      v-else
+      @click="rootComponent.login()"
+    )
+      span Login
 </template>
 
 <style lang="sass">

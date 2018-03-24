@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito
-    notifications(position="top right" ref="notifications")
     modals-container
+    notifications(position="top right" ref="notifications")
     dito-menu(:views="resolvedViews")
     main.dito-page
       dito-header(:user="user")
@@ -38,8 +38,7 @@ export default DitoComponent.component('dito-root', {
   data() {
     return {
       user: null,
-      resolvedViews: {},
-      emulateUnauthorized: false
+      resolvedViews: {}
     }
   },
 
@@ -49,95 +48,121 @@ export default DitoComponent.component('dito-root', {
       spinner: {
         size = '8px',
         color = '#999'
-      } = {},
-      emulateUnauthorized
+      } = {}
     } = this.options
     const { props } = DitoComponent.get('dito-spinner').options
     props.size.default = size
     props.color.default = color
-    this.emulateUnauthorized = emulateUnauthorized
   },
 
-  mounted() {
-    this.resolveViews()
+  async mounted() {
+    try {
+      if (await this.getUser()) {
+        await this.resolveViews()
+      } else {
+        await this.login()
+      }
+    } catch (err) {
+      console.error(err)
+    }
   },
 
   methods: {
-    async login(error) {
-      const data = await new Promise((resolve, reject) => {
-        this.showDialog({
-          components: {
-            username: {
-              type: 'text'
-            },
-            password: {
-              type: 'password'
+    async login() {
+      const loginData = await this.showDialog({
+        components: {
+          username: {
+            type: 'text'
+          },
+          password: {
+            type: 'password'
+          }
+        },
+        buttons: {
+          login: {
+            type: 'submit',
+            onClick(dialog) {
+              dialog.resolve(dialog.data)
             }
           },
-          buttons: {
-            login: {
-              type: 'submit',
-              onClick(dialog) {
-                dialog.close()
-                resolve(dialog.data)
-              }
-            },
-            cancel: {
-              onClick(dialog) {
-                dialog.close()
-                reject(error)
-              }
-            }
-          },
-          data: {
-            username: 'me',
-            password: 'secret'
-          }
-        }, {
-          width: '480px',
-          height: 'auto',
-          clickToClose: false
-        })
-      })
-      this.api.request('post', `${this.api.authPath}/login`, null, data,
-        async (err, response) => {
-          if (err) {
-            console.error(err)
-          } else {
-            this.user = response?.data?.user
-            if (!Object.keys(this.views).length) {
-              await this.resolveViews()
+          cancel: {
+            onClick(dialog) {
+              dialog.resolve(false)
             }
           }
+        },
+        data: {
+          username: 'me',
+          password: 'secret'
         }
-      )
+      }, {
+        width: '480px',
+        height: 'auto',
+        clickToClose: false
+      })
+      if (loginData) {
+        try {
+          const response = await this.api.request({
+            method: 'post',
+            url: `${this.api.authPath}/login`,
+            data: loginData
+          })
+          this.user = response.data.user
+          await this.resolveViews()
+        } catch (err) {
+          console.error(err)
+        }
+      }
     },
 
     async logout() {
-      this.api.request('post', `${this.api.authPath}/logout`, null, {},
-        async (err, response) => {
-          if (err) {
-            console.error(err)
-          } else {
-            if (response.data?.success) {
-              this.user = null
-              this.resolvedViews = {}
-              this.$router.push({ path: '/' })
-            }
-          }
+      try {
+        const response = await this.api.request({
+          method: 'post',
+          url: `${this.api.authPath}/logout`
+        })
+        if (response.data.success) {
+          this.user = null
+          this.resolvedViews = {}
+          this.$router.push({ path: '/' })
         }
-      )
+      } catch (err) {
+        console.error(err)
+      }
+    },
+
+    async getUser() {
+      try {
+        const response = await this.api.request({
+          method: 'get',
+          url: `${this.api.authPath}/session`
+        })
+        this.user = response.data.user || null
+      } catch (err) {
+        this.user = null
+        console.error(err)
+      }
+      return this.user
+    },
+
+    async ensureUser() {
+      try {
+        if (!(await this.getUser())) {
+          await this.login()
+        }
+      } catch (err) {
+        console.error(err)
+      }
     },
 
     async resolveViews() {
       try {
-        if (this.emulateUnauthorized) {
-          this.emulateUnauthorized = false
-          throw new Error('Loading chunk views failed.')
-        }
         this.resolvedViews = await resolveViews(this.views)
       } catch (error) {
-        return this.login(error)
+        if (!error.request) {
+          console.error(error)
+        }
+        return this.login()
       }
       // Collect all routes from the root schema components
       const routes = []
@@ -147,6 +172,20 @@ export default DitoComponent.component('dito-root', {
       }
       await Promise.all(promises)
       this.$router.addRoutes(routes)
+    },
+
+    onBeforeRequest() {
+      return this.ensureUser()
+    },
+
+    onAfterRequest({ method, url }) {
+      // Detect change of the own user, and reload it if necessary.
+      if (
+        method === 'patch' &&
+        url === `${this.api.authPath}/${this.user?.id}`
+      ) {
+        return this.getUser()
+      }
     }
   }
 })
