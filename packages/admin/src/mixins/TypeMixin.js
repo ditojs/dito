@@ -6,7 +6,7 @@ export default {
   // See: https://github.com/logaretm/vee-validate/issues/468
   // NOTE: We can't do this in DitoMixin for all components, as it would
   // override the $validates: true` setting there.
-  inject: ['$validator'],
+  inject: ['api', '$validator'],
 
   props: {
     schema: { type: Object, required: true },

@@ -5,7 +5,6 @@
     dito-menu(:views="resolvedViews")
     main.dito-page
       dito-header(
-        :meta="meta"
         :allowLogin="allowLogin"
       )
       router-view
@@ -33,9 +32,15 @@ import { processView, resolveViews } from '@/schema'
 
 export default DitoComponent.component('dito-root', {
   props: {
-    meta: { type: Object, required: true },
+    api: { type: Object, required: true },
     views: { type: [Object, Function, Promise], required: true },
     options: { type: Object, default: {} }
+  },
+
+  provide() {
+    return {
+      api: this.api
+    }
   },
 
   data() {
@@ -72,7 +77,17 @@ export default DitoComponent.component('dito-root', {
     this.allowLogin = true
   },
 
+  computed: {
+    notifications() {
+      return this.$refs.notifications
+    }
+  },
+
   methods: {
+    closeNotifications() {
+      this.notifications.destroyAll()
+    },
+
     async login() {
       this.allowLogin = true
       const loginData = await this.showDialog({

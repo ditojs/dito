@@ -1,4 +1,5 @@
 export default {
+  inject: ['api'],
   // Each route-component shall provide a vee-validate $validator object,
   // to be shared along all its children.
   // See: https://github.com/logaretm/vee-validate/issues/468

@@ -70,10 +70,10 @@ export default class DitoAdmin {
         mode: 'history',
         base
       }),
-      template: '<dito-root :meta="meta" :views="views" :options="options" />',
+      template: '<dito-root :api="api" :views="views" :options="options" />',
       components: { DitoRoot },
       data: {
-        meta: { api },
+        api,
         views,
         options
       }

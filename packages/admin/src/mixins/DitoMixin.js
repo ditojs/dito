@@ -10,10 +10,6 @@ export default {
   },
 
   computed: {
-    api() {
-      return this.meta?.api || null
-    },
-
     rootComponent() {
       return this.$root.$children[0]
     },
@@ -125,7 +121,7 @@ export default {
     },
 
     closeNotifications() {
-      this.rootComponent.$refs.notifications.destroyAll()
+      this.rootComponent.closeNotifications()
     }
   }
 }

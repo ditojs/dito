@@ -75,8 +75,9 @@
 import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-header', {
+  inject: ['api'],
+
   props: {
-    meta: { type: Object },
     allowLogin: { type: Boolean }
   },
 
