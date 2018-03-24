@@ -101,6 +101,21 @@ export default {
       return this.getNamedSchemas(this.schema.scopes)
     },
 
+    defaultScope() {
+      if (this.scopes) {
+        let first = null
+        for (const scope of this.scopes) {
+          if (scope.default) {
+            return scope
+          }
+          if (!first) {
+            first = scope
+          }
+        }
+        return first
+      }
+    },
+
     columns() {
       return this.getNamedSchemas(this.schema.columns)
     },
@@ -142,11 +157,10 @@ export default {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the
       // route query parameters to override them.
-      let { scope, page } = this.schema
       const { store } = this
       // Preserve / merge currently stored values
-      scope = scope || store.query?.scope
-      page = page || store.query?.page
+      const scope = store.query?.scope || this.defaultScope?.name
+      const page = store.query?.page || this.schema.page
       query = {
         ...(scope != null && { scope }),
         ...(page != null && { page }),
