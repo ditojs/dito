@@ -1,16 +1,10 @@
 <template lang="pug">
   input.dito-date.dito-input(
-    ref="element"
     :id="dataPath"
-    :name="dataPath"
     :type="type === 'datetime' ? 'datetime-local' : type"
-    :title="label"
     @input="onInput"
     v-validate="validations"
-    :data-vv-as="label"
-    :placeholder="placeholder"
-    :disabled="disabled"
-    :readonly="readonly"
+    v-bind="getAttributes(true, true)"
     :min="min && toLocalDate(min)"
     :max="max && toLocalDate(min)"
     :step="hasTime ? step || (schema.seconds ? 1 : 60) : step"

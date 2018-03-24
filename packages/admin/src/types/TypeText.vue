@@ -1,18 +1,12 @@
 <template lang="pug">
   input.dito-text.dito-input(
-    ref="element"
     :id="dataPath"
-    :name="dataPath"
     :type="inputType"
-    :title="label"
     v-model="inputValue"
     @focus="focused = true"
     @blur="focused = false"
     v-validate="validations"
-    :data-vv-as="label"
-    :placeholder="placeholder"
-    :disabled="disabled"
-    :readonly="readonly"
+    v-bind="getAttributes(true, true)"
   )
 </template>
 

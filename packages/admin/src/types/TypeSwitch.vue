@@ -1,18 +1,14 @@
 <template lang="pug">
   toggle-button.dito-switch(
-    ref="element"
     :id="dataPath"
-    :name="dataPath"
     :sync="true"
     :cssColors="true"
     :labels="schema.labels"
     :width="width"
     :height="height"
-    :title="label"
     v-model="value"
     v-validate="validations"
-    :data-vv-as="label"
-    :disabled="disabled"
+    v-bind="getAttributes()"
   )
 </template>
 

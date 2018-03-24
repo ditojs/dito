@@ -59,14 +59,6 @@ export default {
       return this.getLabel(this.schema)
     },
 
-    readonly() {
-      return this.schema.readonly
-    },
-
-    placeholder() {
-      return this.schema.placeholder
-    },
-
     step() {
       const { step } = this.schema
       return this.isInteger && step !== undefined ? Math.ceil(step) : step
@@ -125,6 +117,26 @@ export default {
         rules.numeric = true
       }
       return rules
+    },
+
+    getAttributes(nativeField = false, textField = false) {
+      const attributes = {
+        'ref': 'element',
+        'data-vv-name': this.dataPath,
+        'data-vv-as': this.label,
+        'disabled': this.disabled
+      }
+      if (nativeField) {
+        const { readonly, autofocus } = this.schema
+        attributes.name = this.dataPath
+        attributes.title = this.label
+        attributes.readonly = readonly
+        attributes.autofocus = autofocus
+      }
+      if (textField) {
+        attributes.placeholder = this.schema.placeholder
+      }
+      return attributes
     },
 
     load(config) {

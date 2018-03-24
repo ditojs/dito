@@ -6,15 +6,11 @@
     li(v-for="option in options")
       label
         input.dito-checkbox(
-          ref="element"
-          :name="dataPath"
           type="checkbox"
-          :title="label"
           :value="getValueForOption(option)"
           v-model="selectValue"
           v-validate="validations"
-          :data-vv-as="label"
-          :disabled="disabled"
+          v-bind="getAttributes(true)"
         )
         | {{ getLabelForOption(option) }}
 </template>

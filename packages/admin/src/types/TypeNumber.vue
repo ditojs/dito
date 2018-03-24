@@ -1,16 +1,10 @@
 <template lang="pug">
   input.dito-number.dito-input(
-    ref="element"
     :id="dataPath"
-    :name="dataPath"
     type="number"
-    :title="label"
     v-model="inputValue"
     v-validate="validations"
-    :data-vv-as="label"
-    :placeholder="placeholder"
-    :disabled="disabled"
-    :readonly="readonly"
+    v-bind="getAttributes(true, true)"
     :min="min"
     :max="max"
     :step="step"
