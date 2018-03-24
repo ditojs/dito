@@ -147,65 +147,85 @@ export class Controller {
     // - If no `allow` arrays are defined in the prototypal hierarchy, each
     //   level allows its own actions, and these are merged, except for those
     //   marked as `$core`, which need to be explicitly listed in `allow`.
-    let allow = {}
+
+    // NOTE: `handleAllow()` and `handleAuthorize()` are applied in sequence of
+    // the `actions` inheritance, from sub-class to base-class.
+
+    const mergedAllow = {}
+    const mergedAuthorize = {}
     let hasOwnAllow = false
-    const authorize = {}
-    let current = actions
-    while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
-      // Get and process the `allow` and `authorize` settings, but only if they
-      // are defined on the current inheritance level.
-      let ownAllow = getOwnProperty(current, 'allow')
-      if (ownAllow) {
-        ownAllow = asArray(ownAllow)
+
+    const handleAllow = (allow, current) => {
+      if (allow) {
+        allow = asArray(allow)
         hasOwnAllow = true
-        allow = {}
       } else if (!hasOwnAllow) {
         // Only keep adding to the merged `allow` if we didn't already encounter
         // an own `allow` object further up the chain.
-        ownAllow = Object.keys(current)
+        allow = Object.keys(current)
       }
-      if (ownAllow) {
-        if (ownAllow.includes('*')) {
-          ownAllow = getAllKeys(current)
+      if (allow) {
+        if (allow.includes('*')) {
+          allow = getAllKeys(current)
         }
-        for (const key of ownAllow) {
+        for (const key of allow) {
           if (key !== 'allow') {
-            allow[key] = true
+            mergedAllow[key] = true
           }
         }
       }
+    }
 
-      const ownAuthorize = getOwnProperty(current, 'authorize')
-      const addAuthorize = (key, value) => {
+    const handleAuthorize = authorize => {
+      const add = (key, value) => {
         // Since we're walking up in the inheritance change, only take on an
         // authorize setting for a given key if it wasn't already defined before
-        if (isFunction(current[key]) && !(key in authorize)) {
-          authorize[key] = value
+        if (isFunction(actions[key]) && !(key in mergedAuthorize)) {
+          mergedAuthorize[key] = value
         }
       }
-      if (isObject(ownAuthorize)) {
-        for (const key in ownAuthorize) {
-          addAuthorize(key, ownAuthorize[key])
+      if (isObject(authorize)) {
+        for (const key in authorize) {
+          add(key, authorize[key])
         }
-      } else if (ownAuthorize != null) {
-        for (const key in current) {
-          addAuthorize(key, ownAuthorize)
+      } else if (authorize != null) {
+        // This is an actions-wide setting. Loop through all actions, not just
+        // current ones, and apply to any action that doesn't already have one:
+        for (const key in actions) {
+          add(key, authorize)
         }
       }
+    }
 
+    // Process the `allow` and `authorize` settings in sequence of the `actions`
+    // inheritance, from sub-class to base-class.
+    let current = actions
+    while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
+      handleAllow(getOwnProperty(current, 'allow'), current)
+      handleAuthorize(getOwnProperty(current, 'authorize'))
       current = Object.getPrototypeOf(current)
     }
+
+    // At the end of the chain, also support both settings on the controller-
+    // level, and thus applied to all action objects in the controller.
+    if (this.allow) {
+      handleAllow(this.allow, actions)
+    }
+    if (this.authorize) {
+      handleAuthorize(this.authorize)
+    }
+
     // Convert to a new `values` object that explicitly lists allowed actions in
     // its `allow` array, including expansion of '*'. This is required for
     // proper inheritance of `allow` arrays.
     return getAllKeys(actions).reduce((result, key) => {
-      if (key !== 'allow' && allow[key]) {
+      if (key !== 'allow' && mergedAllow[key]) {
         result[key] = actions[key]
       }
       return result
     }, {
-      allow: Object.keys(allow),
-      authorize
+      allow: Object.keys(mergedAllow),
+      authorize: mergedAuthorize
     })
   }
 
