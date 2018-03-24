@@ -4,7 +4,10 @@
     notifications(position="top right" ref="notifications")
     dito-menu(:views="resolvedViews")
     main.dito-page
-      dito-header(:user="user")
+      dito-header(
+        :meta="meta"
+        :allowLogin="allowLogin"
+      )
       router-view
 </template>
 
@@ -37,7 +40,7 @@ export default DitoComponent.component('dito-root', {
 
   data() {
     return {
-      user: null,
+      allowLogin: false,
       resolvedViews: {}
     }
   },
@@ -57,6 +60,7 @@ export default DitoComponent.component('dito-root', {
 
   async mounted() {
     try {
+      this.allowLogin = false
       if (await this.getUser()) {
         await this.resolveViews()
       } else {
@@ -65,14 +69,17 @@ export default DitoComponent.component('dito-root', {
     } catch (err) {
       console.error(err)
     }
+    this.allowLogin = true
   },
 
   methods: {
     async login() {
+      this.allowLogin = true
       const loginData = await this.showDialog({
         components: {
           username: {
-            type: 'text'
+            type: 'text',
+            autofocus: true
           },
           password: {
             type: 'password'
@@ -107,7 +114,7 @@ export default DitoComponent.component('dito-root', {
             url: `${this.api.authPath}/login`,
             data: loginData
           })
-          this.user = response.data.user
+          this.setUser(response.data.user)
           await this.resolveViews()
         } catch (err) {
           console.error(err)
@@ -122,7 +129,7 @@ export default DitoComponent.component('dito-root', {
           url: `${this.api.authPath}/logout`
         })
         if (response.data.success) {
-          this.user = null
+          this.setUser(null)
           this.resolvedViews = {}
           this.$router.push({ path: '/' })
         }
@@ -132,17 +139,22 @@ export default DitoComponent.component('dito-root', {
     },
 
     async getUser() {
+      let user = null
       try {
         const response = await this.api.request({
           method: 'get',
           url: `${this.api.authPath}/session`
         })
-        this.user = response.data.user || null
+        user = response.data.user || null
       } catch (err) {
-        this.user = null
         console.error(err)
       }
-      return this.user
+      this.setUser(user)
+      return user
+    },
+
+    setUser(user) {
+      this.$set(this.api, 'user', user)
     },
 
     async ensureUser() {
@@ -182,7 +194,7 @@ export default DitoComponent.component('dito-root', {
       // Detect change of the own user, and reload it if necessary.
       if (
         method === 'patch' &&
-        url === `${this.api.authPath}/${this.user?.id}`
+        url === `${this.api.authPath}/${this.api.user?.id}`
       ) {
         return this.getUser()
       }

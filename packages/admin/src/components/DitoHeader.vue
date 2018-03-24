@@ -11,14 +11,17 @@
             span {{ entry.breadcrumb }}
       dito-spinner.dito-spinner(v-if="appState.loading > 0")
     dito-user(
-      v-if="user"
-      :user="user"
+      v-if="api.user"
+      :user="api.user"
     )
     a.dito-login(
-      v-else
+      v-else-if="allowLogin"
       @click="rootComponent.login()"
     )
       span Login
+    span(
+      v-else
+    ) &nbsp;
 </template>
 
 <style lang="sass">
@@ -73,7 +76,8 @@ import DitoComponent from '@/DitoComponent'
 
 export default DitoComponent.component('dito-header', {
   props: {
-    user: { type: Object }
+    meta: { type: Object },
+    allowLogin: { type: Boolean }
   },
 
   computed: {
