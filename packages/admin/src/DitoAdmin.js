@@ -84,15 +84,23 @@ export default class DitoAdmin {
     return TypeComponent.register(type, options)
   }
 
-  request({ method, url, data, params }) {
+  request({
+    url,
+    method = 'get',
+    data = null,
+    params = null,
+    headers = null
+  }) {
     return axios.request({
       url,
       method,
-      data: data != null ? JSON.stringify(data) : null,
+      data: data !== null ? JSON.stringify(data) : null,
       params,
       baseURL: this.api.url,
-      headers: this.api.headers || {
-        'Content-Type': 'application/json'
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.api.headers,
+        ...headers
       },
       withCredentials: !!this.api.cors?.credentials
     })
