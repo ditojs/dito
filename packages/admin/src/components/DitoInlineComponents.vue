@@ -1,6 +1,5 @@
 <template lang="pug">
-div
-  dito-components(
+  dito-components.dito-inline-components(
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
@@ -16,6 +15,10 @@ div
 
 <style lang="sass">
 .dito
+  .dito-inline-components
+    .dito-components.dito-fill
+      // When nested, erase the .dito-component.dito-fill style from above again
+      width: auto
   .dito-components-header
     flex-basis: 100%
     padding: $form-spacing

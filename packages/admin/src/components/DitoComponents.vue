@@ -59,9 +59,6 @@
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $form-spacing-half
-    &.dito-component.dito-fill
-      // When nested, erase the .dito-component.dito-fill style from below again
-      width: auto
   .dito-component.dito-fill
     display: block
     width: 100%
