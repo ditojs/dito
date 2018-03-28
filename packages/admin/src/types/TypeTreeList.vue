@@ -58,10 +58,10 @@ export default TypeComponent.register('tree-list', {
   processSchema
 })
 
-async function processSchema(listSchema, name, api, routes, parentMeta, level,
+async function processSchema(api, listSchema, name, routes, parentMeta, level,
   nested = true, flatten = false) {
   return ListMixin.processSchema(
-    listSchema, name, api, routes, parentMeta, level, nested, flatten,
+    api, listSchema, name, routes, parentMeta, level, nested, flatten,
     // Pass processSchema() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {
       const promises = []
@@ -70,7 +70,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta, level,
           promises.push(
             // Pass `true` for `flatten` in tree lists.
             processSchema(
-              schema, name, api, childRoutes, parentMeta, level, nested, true
+              api, schema, name, childRoutes, parentMeta, level, nested, true
             )
           )
         }

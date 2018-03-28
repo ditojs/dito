@@ -1,7 +1,7 @@
 <template lang="pug">
   // If view is not active, render router-view to nest further route components
   router-view(v-if="!isLastRoute")
-  .dito-view(v-else-if="type === 'view'")
+  .dito-view(v-else-if="isMulti")
     // A multi-component view
     dito-schema(
       :schema="schema"
@@ -57,6 +57,10 @@ export default DitoComponent.component('dito-view', {
 
     type() {
       return this.schema.type
+    },
+
+    isMulti() {
+      return this.type === undefined
     },
 
     loading() {

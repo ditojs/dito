@@ -19,13 +19,13 @@
           class="dito-button-drag"
         )
         button.dito-button(
-          v-if="schema.editable"
+          v-if="editable"
           type="button"
           class="dito-button-edit"
           @click="onEdit"
         )
         button.dito-button(
-          v-if="schema.deletable"
+          v-if="deletable"
           type="button"
           class="dito-button-delete"
           @click="onDelete"
@@ -101,6 +101,7 @@
 </style>
 
 <script>
+import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { isObject, isFunction } from '@ditojs/utils'
@@ -116,6 +117,10 @@ export default DitoComponent.component('dito-tree-item', {
     schema: { type: Object, required: true },
     draggable: { type: Boolean, default: false },
     container: { type: Object, required: true }
+  },
+
+  components: {
+    VueDraggable
   },
 
   data() {
@@ -159,7 +164,7 @@ export default DitoComponent.component('dito-tree-item', {
         // `form` or `forms` setting:
         if (isObject(schema) && (schema.form || schema.forms)) {
           const items = this.data[key]
-          const draggable = schema.draggable && items?.length > 1
+          const draggable = this.draggable && items?.length > 1
           const { editPath } = this.container
           const childrenOpen = !this.path && this.open
           // Build a children list with child meta information for the template.
@@ -207,9 +212,26 @@ export default DitoComponent.component('dito-tree-item', {
         numChildren === 1 ? 'item' : 'items'}`
     },
 
+    creatable() {
+      // TODO: Support creatable!
+      return this.getSchemaValue('creatable', true) &&
+        (this.schema.form || this.schema.forms)
+    },
+
+    editable() {
+      return this.getSchemaValue('editable', true)
+    },
+
+    deletable() {
+      return this.getSchemaValue('deletable', true)
+    },
+
+    draggable() {
+      return this.getSchemaValue('draggable', true)
+    },
+
     hasButtons() {
-      const { schema } = this
-      return this.draggable || schema.editable || schema.deletable
+      return this.draggable || this.editable || this.deletable
     }
   }
 })

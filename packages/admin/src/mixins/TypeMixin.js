@@ -5,7 +5,7 @@ export default {
   // See: https://github.com/logaretm/vee-validate/issues/468
   // NOTE: We can't do this in DitoMixin for all components, as it would
   // override the $validates: true` setting there.
-  inject: ['api', '$validator'],
+  inject: ['$validator'],
 
   props: {
     schema: { type: Object, required: true },
@@ -125,15 +125,22 @@ export default {
         'data-vv-as': this.label,
         'disabled': this.disabled
       }
+
+      const setValue = key => {
+        const value = this.getSchemaValue(key, false)
+        if (value !== undefined) {
+          attributes[key] = value
+        }
+      }
+
       if (nativeField) {
-        const { readonly, autofocus } = this.schema
         attributes.name = this.dataPath
         attributes.title = this.label
-        attributes.readonly = readonly
-        attributes.autofocus = autofocus
+        setValue('readonly')
+        setValue('autofocus')
       }
       if (textField) {
-        attributes.placeholder = this.schema.placeholder
+        setValue('placeholder')
       }
       return attributes
     },

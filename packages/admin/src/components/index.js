@@ -6,7 +6,7 @@
 import './DitoRoot'
 import './DitoMenu'
 import './DitoHeader'
-import './DitoUser'
+import './DitoAccount'
 import './DitoDialog'
 import './DitoTabs'
 import './DitoLabel'

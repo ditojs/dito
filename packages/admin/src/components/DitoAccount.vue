@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-user
+  .dito-account
     a(
       @mousedown="handlePulldownClick($event)"
     )
@@ -17,7 +17,7 @@
 
 <style lang="sass">
 .dito
-  .dito-user
+  .dito-account
     position: relative
     .dito-pulldown
       top: $pulldown-padding-ver
@@ -29,12 +29,8 @@
 import DitoComponent from '@/DitoComponent'
 import PulldownMixin from '@/mixins/PulldownMixin'
 
-export default DitoComponent.component('dito-user', {
+export default DitoComponent.component('dito-account', {
   mixins: [PulldownMixin],
-
-  props: {
-    user: { type: Object }
-  },
 
   data() {
     return {

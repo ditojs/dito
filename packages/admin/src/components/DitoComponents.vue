@@ -5,7 +5,8 @@
     slot(name="header")
     li.dito-container(
       v-for="(compSchema, compDataPath) in components"
-      v-show="getValue(compSchema, 'visible', true)"
+      v-if="include(compSchema)"
+      v-show="isVisible(compSchema)"
       :style="getStyle(compSchema)"
       :key="compDataPath"
     )
@@ -76,7 +77,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isFunction } from '@ditojs/utils'
+import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-components', {
   inject: ['$validator'],
@@ -113,17 +114,17 @@ export default DitoComponent.component('dito-components', {
   },
 
   methods: {
-    getValue(schema, key, defaultValue) {
-      const value = schema[key]
-      return value === undefined
-        ? defaultValue
-        : isFunction(value)
-          ? value(this.data)
-          : value
+    include(schema) {
+      return pick(this.getSchemaValue('if', true, schema), true)
+    },
+
+    isVisible(schema) {
+      return pick(this.getSchemaValue('visible', true, schema), true)
     },
 
     isDisabled(schema) {
-      return this.getValue(schema, 'disabled', false) || this.disabled
+      return this.disabled ||
+        pick(this.getSchemaValue('disabled', true, schema), false)
     },
 
     hasLabel(schema) {

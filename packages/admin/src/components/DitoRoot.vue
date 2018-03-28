@@ -5,8 +5,16 @@
     dito-menu(:views="resolvedViews")
     main.dito-page
       dito-header(
-        :allowLogin="allowLogin"
+        :spinner="options.spinner"
       )
+        dito-account(
+          v-if="user"
+        )
+        a.dito-login(
+          v-else-if="allowLogin"
+          @click="rootComponent.login()"
+        )
+          span Login
       router-view
 </template>
 
@@ -28,19 +36,14 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/schema'
+import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-root', {
   props: {
-    api: { type: Object, required: true },
     views: { type: [Object, Function, Promise], required: true },
-    options: { type: Object, default: {} }
-  },
-
-  provide() {
-    return {
-      api: this.api
-    }
+    options: { type: Object, default: () => {} }
   },
 
   data() {
@@ -52,21 +55,12 @@ export default DitoComponent.component('dito-root', {
 
   created() {
     this.appState.title = document.title || 'Dito.js Admin'
-    const {
-      spinner: {
-        size = '8px',
-        color = '#999'
-      } = {}
-    } = this.options
-    const { props } = DitoComponent.get('dito-spinner').options
-    props.size.default = size
-    props.color.default = color
   },
 
   async mounted() {
     try {
       this.allowLogin = false
-      if (await this.getUser()) {
+      if (await this.fetchUser()) {
         await this.resolveViews()
       } else {
         await this.login()
@@ -153,7 +147,7 @@ export default DitoComponent.component('dito-root', {
       }
     },
 
-    async getUser() {
+    async fetchUser() {
       let user = null
       try {
         const response = await this.api.request({
@@ -169,12 +163,15 @@ export default DitoComponent.component('dito-root', {
     },
 
     setUser(user) {
-      this.$set(this.api, 'user', user)
+      if (user) {
+        Object.setPrototypeOf(user, DitoUser.prototype)
+      }
+      this.appState.user = user
     },
 
     async ensureUser() {
       try {
-        if (!(await this.getUser())) {
+        if (!(await this.fetchUser())) {
           await this.login()
         }
       } catch (err) {
@@ -184,7 +181,14 @@ export default DitoComponent.component('dito-root', {
 
     async resolveViews() {
       try {
-        this.resolvedViews = await resolveViews(this.views)
+        const views = await resolveViews(this.views)
+        const filteredViews = {}
+        for (const [name, view] of Object.entries(views)) {
+          if (pick(this.getSchemaValue('if', true, view), true)) {
+            filteredViews[name] = view
+          }
+        }
+        this.resolvedViews = filteredViews
       } catch (error) {
         if (!error.request) {
           console.error(error)
@@ -195,7 +199,7 @@ export default DitoComponent.component('dito-root', {
       const routes = []
       const promises = []
       for (const [name, schema] of Object.entries(this.resolvedViews)) {
-        promises.push(processView(schema, name, this.api, routes))
+        promises.push(processView(this.api, schema, name, routes))
       }
       await Promise.all(promises)
       this.$router.addRoutes(routes)
@@ -209,9 +213,9 @@ export default DitoComponent.component('dito-root', {
       // Detect change of the own user, and reload it if necessary.
       if (
         method === 'patch' &&
-        url === `${this.api.authPath}/${this.api.user?.id}`
+        url === `${this.api.authPath}/${this.user?.id}`
       ) {
-        return this.getUser()
+        return this.fetchUser()
       }
     }
   }

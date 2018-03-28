@@ -9,19 +9,10 @@
             span {{ entry.breadcrumb }}
           router-link.dito-breadcrumb(v-else, :to="entry.path")
             span {{ entry.breadcrumb }}
-      dito-spinner.dito-spinner(v-if="appState.loading > 0")
-    dito-user(
-      v-if="api.user"
-      :user="api.user"
-    )
-    a.dito-login(
-      v-else-if="allowLogin"
-      @click="rootComponent.login()"
-    )
-      span Login
-    span(
-      v-else
-    ) &nbsp;
+      spinner.dito-spinner(v-if="appState.loading > 0")
+    slot
+      // Default to prevent collapsing header
+      span &nbsp;
 </template>
 
 <style lang="sass">
@@ -73,12 +64,23 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import PulseLoader from 'vue-spinner/src/PulseLoader'
+
+const Spinner = DitoComponent.component('spinner', PulseLoader)
 
 export default DitoComponent.component('dito-header', {
-  inject: ['api'],
-
   props: {
-    allowLogin: { type: Boolean }
+    spinner: { type: Object }
+  },
+
+  created() {
+    const {
+      size = '8px',
+      color = '#999'
+    } = this.spinner || {}
+    const { props } = Spinner.options
+    props.size.default = size
+    props.color.default = color
   },
 
   computed: {

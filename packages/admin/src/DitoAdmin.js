@@ -1,15 +1,18 @@
 import Vue from 'vue'
+import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
+import VueNotifications from 'vue-notification'
 import VeeValidate from 'vee-validate'
 import axios from 'axios'
 import './components'
 import './types'
-import DitoComponent from './DitoComponent'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize } from '@ditojs/utils'
 
 Vue.config.productionTip = false
+
+// All global plugins that need to be registered on `Vue`:
 Vue.use(VueRouter)
 Vue.use(VeeValidate, {
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -18,6 +21,10 @@ Vue.use(VeeValidate, {
   errorBagName: '$errors',
   fieldsBagName: '$fields'
 })
+Vue.use(VueModal, {
+  dynamic: true
+})
+Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, { api = {}, base = '/', views = {}, ...options } = {}) {
@@ -64,16 +71,18 @@ export default class DitoAdmin {
       ...api.resources
     }
 
-    this.root = new DitoComponent({
+    this.root = new Vue({
       el,
       router: new VueRouter({
         mode: 'history',
         base
       }),
-      template: '<dito-root :api="api" :views="views" :options="options" />',
+      template: '<dito-root :views="views" :options="options" />',
       components: { DitoRoot },
+      provide: {
+        api
+      },
       data: {
-        api,
         views,
         options
       }

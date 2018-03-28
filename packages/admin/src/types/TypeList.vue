@@ -227,11 +227,16 @@ $buttons-padding: 2px
 </style>
 
 <script>
+import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
 import ListMixin from '@/mixins/ListMixin'
 
 export default TypeComponent.register('list', {
   mixins: [ListMixin],
+
+  components: {
+    VueDraggable
+  },
 
   computed: {
     component() {
@@ -239,28 +244,28 @@ export default TypeComponent.register('list', {
     },
 
     paginate() {
-      return this.schema.paginate
+      return this.getSchemaValue('paginate', false)
     },
 
     inline() {
-      return this.schema.inline
+      return this.getSchemaValue('inline', true)
     },
 
     creatable() {
-      const { schema } = this
-      return schema.creatable && (schema.form || schema.forms)
+      return this.getSchemaValue('creatable', true) &&
+        (this.schema.form || this.schema.forms)
     },
 
     editable() {
-      return this.schema.editable && !this.inline
+      return !this.inline && this.getSchemaValue('editable', true)
     },
 
     deletable() {
-      return this.schema.deletable
+      return this.getSchemaValue('deletable', true)
     },
 
     draggable() {
-      return this.schema.draggable && this.listData.length > 1
+      return this.getSchemaValue('draggable', true) && this.listData.length > 1
     },
 
     hasButtons() {

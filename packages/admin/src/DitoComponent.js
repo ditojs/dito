@@ -1,9 +1,4 @@
 import Vue from 'vue'
-import VueDraggable from 'vuedraggable'
-import VueModal from 'vue-js-modal'
-import VueNotifications from 'vue-notification'
-import VueToggleButton from 'vue-js-toggle-button'
-import DitoSpinner from 'vue-spinner/src/PulseLoader'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
 import { isFunction, isPromise } from '@ditojs/utils'
@@ -53,20 +48,8 @@ DitoComponent.component = function (name, options) {
     components[name] = ctor
     return ctor
   } else {
-    return components[name]
+    return components[name] || Vue.component(name)
   }
 }
-
-DitoComponent.get = function (name) {
-  return components[name]
-}
-
-// Register "global" components and plugins, on the DitoComponent level so
-// the global Vue is not polluted.
-DitoComponent.use(VueModal, { dynamic: true })
-DitoComponent.use(VueNotifications)
-DitoComponent.use(VueToggleButton)
-DitoComponent.component('vue-draggable', VueDraggable)
-DitoComponent.component('dito-spinner', DitoSpinner)
 
 export default DitoComponent

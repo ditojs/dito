@@ -129,16 +129,16 @@ export default {
   },
 
   methods: {
-    getNamedSchemas(descs) {
-      return isArray(descs)
-        ? descs.map(value => (
+    getNamedSchemas(descriptions) {
+      return isArray(descriptions)
+        ? descriptions.map(value => (
           isObject(value) ? value : {
             name: camelize(value, false),
             label: labelize(value)
           }
         ))
-        : isObject(descs)
-          ? Object.entries(descs).map(
+        : isObject(descriptions)
+          ? Object.entries(descriptions).map(
             ([name, value]) => isObject(value)
               ? {
                 name,
@@ -260,7 +260,7 @@ export default {
   processSchema
 }
 
-async function processSchema(listSchema, name, api, routes, parentMeta,
+async function processSchema(api, listSchema, name, routes, parentMeta,
   level, nested = false, flatten = false, processSchema = null) {
   const path = listSchema.path = listSchema.path || api.normalizePath(name)
   listSchema.name = name
@@ -289,7 +289,7 @@ async function processSchema(listSchema, name, api, routes, parentMeta,
     nested,
     param
   }
-  const childRoutes = await processForms(listSchema, api, formMeta, level)
+  const childRoutes = await processForms(api, listSchema, formMeta, level)
   if (processSchema) {
     await processSchema(childRoutes, formMeta, level + 1)
   }

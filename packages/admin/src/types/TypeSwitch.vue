@@ -36,6 +36,11 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
+import VueToggleButton from 'vue-js-toggle-button'
+
+// Use `VueToggleButton` as a local dependency
+DitoComponent.use(VueToggleButton)
 
 export default TypeComponent.register('switch', {
   defaultValue() {

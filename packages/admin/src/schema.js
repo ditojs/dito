@@ -9,11 +9,16 @@ export async function resolveViews(views) {
   if (isPromise(views)) {
     views = await views
   }
+
   return views
 }
 
-export async function processView(schema, name, api, routes) {
-  if (schema.type === 'view') {
+export async function processView(api, schema, name, routes) {
+  if ('type' in schema) {
+    // A single-component view
+    await processComponent(api, schema, name, routes)
+  } else {
+    // A multi-component view
     schema.path = schema.path || api.normalizePath(name)
     schema.name = name
     const meta = {
@@ -22,7 +27,7 @@ export async function processView(schema, name, api, routes) {
     }
     const path = `/${schema.path}`
     const children = []
-    await processSchemaComponents(schema, api, children, meta, 0)
+    await processSchemaComponents(api, schema, children, meta, 0)
     const [route] = children
     if (route?.component === DitoView) {
       // The view contains a list that already produced the route for this view,
@@ -39,27 +44,24 @@ export async function processView(schema, name, api, routes) {
         meta
       })
     }
-  } else {
-    // A single-component view
-    return processComponent(schema, name, api, routes)
   }
 }
 
-export function processComponent(schema, name, api, routes,
+export function processComponent(api, schema, name, routes,
   parentMeta = null, level = 0) {
   // Delegate processing to the actual type components.
   return TypeComponent.get(schema.type)?.options.processSchema?.(
-    schema, name, api, routes, parentMeta, level
+    api, schema, name, routes, parentMeta, level
   )
 }
 
-export function processSchemaComponents(schema, api, routes,
+export function processSchemaComponents(api, schema, routes,
   parentMeta = null, level = 0) {
   const promises = []
   const process = components => {
     for (const [name, component] of Object.entries(components || {})) {
       promises.push(
-        processComponent(component, name, api, routes, parentMeta, level)
+        processComponent(api, component, name, routes, parentMeta, level)
       )
     }
   }
@@ -70,7 +72,7 @@ export function processSchemaComponents(schema, api, routes,
   return Promise.all(promises)
 }
 
-export async function processForms(schema, api, parentMeta, level) {
+export async function processForms(api, schema, parentMeta, level) {
   // First resolve the forms and store the results back on the schema.
   let { form, forms } = schema
   if (forms) {
@@ -83,7 +85,7 @@ export async function processForms(schema, api, parentMeta, level) {
   if (forms) {
     const promises = Object.values(forms).map(
       form => processSchemaComponents(
-        form, api, children, parentMeta, level + 1
+        api, form, children, parentMeta, level + 1
       )
     )
     await Promise.all(promises)
