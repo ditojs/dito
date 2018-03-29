@@ -16,7 +16,7 @@ import RelationAccessor from './RelationAccessor'
 export class Model extends objection.Model {
   static initialize() {
     try {
-      for (const relation of Object.values(this.getRelations())) {
+      for (const relation of this.getRelationArray()) {
         this.initializeRelation(relation)
       }
     } catch (error) {
@@ -496,7 +496,7 @@ const definitionHandlers = {
       }
     }
 
-    for (const relation of Object.values(this.getRelations())) {
+    for (const relation of this.getRelationArray()) {
       addRelationProperties(relation, 'ownerProp')
     }
 
