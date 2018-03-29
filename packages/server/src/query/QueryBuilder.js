@@ -520,26 +520,25 @@ const updateGraphOptions = {
 
 function addEagerScope(modelClass, expr, scopes, filters, isRoot = true) {
   if (isRoot) {
-    expr = expr?.isObjectionRelationExpression
-      ? expr.clone()
-      : objection.RelationExpression.create(expr)
+    expr = expr.clone ? expr.clone() : clone(expr)
   } else {
     // Only add the scope if it's not already defined by the eager statement and
     // if it's actually available as a filter in the model's namedFilters list.
     for (const scope of scopes) {
-      if (!expr.args.includes(scope) &&
+      if (!expr.$modify?.includes(scope) &&
           (modelClass.namedFilters[scope] || filters?.[scope])) {
-        expr.args.push(scope)
+        expr.$modify.push(scope)
       }
     }
   }
-  if (expr.numChildren > 0) {
-    const relations = modelClass.getRelations()
-    for (const child of Object.values(expr.children)) {
-      const relation = relations[child.name]
+  const relations = modelClass.getRelations()
+  for (const key in expr) {
+    // All enumerable properties that don't start with '$' are child nodes.
+    if (!key.startsWith('$')) {
+      const child = expr[key]
+      const relation = relations[child.$relation || key]
       if (!relation) {
-        throw new RelationError(
-          `Invalid child expression: '${child.name}'`)
+        throw new RelationError(`Invalid child expression: '${key}'`)
       }
       addEagerScope(relation.relatedModelClass, child, scopes, filters, false)
     }

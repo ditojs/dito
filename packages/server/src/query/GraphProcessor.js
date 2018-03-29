@@ -1,4 +1,3 @@
-import { RelationExpression } from 'objection'
 import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
 
 export default class GraphProcessor {
@@ -63,8 +62,8 @@ export default class GraphProcessor {
   collectOverrides() {
     // TODO: we may want optimize this code to only collect the overrides for
     // the relations that are actually used in the graph, e.g. through
-    // `RelationExpression.fromModelGraph(data)`. Should we ever switch to our
-    // own implementation of *AndFetch() methods, we already have to call this.
+    // `modelGraphToNode(data)`. Should we ever switch to our own implementation
+    // of *AndFetch() methods, we already have to call this.
     const processed = {}
     const processModelClass = modelClass => {
       const { name } = modelClass
@@ -106,10 +105,10 @@ export default class GraphProcessor {
    * building relation paths for them.
    */
   processOverrides() {
-    const exp = RelationExpression.fromModelGraph(this.data)
+    const node = modelGraphToNode(this.data)
 
     const processExpression =
-      (exp, modelClass, relation, relationPath = '') => {
+      (node, modelClass, relation, relationPath = '') => {
         if (relation) {
           const graphOptions = this.getGraphOptions(relation)
           // Loop through all override options, figure out their settings for
@@ -122,23 +121,22 @@ export default class GraphProcessor {
             }
           }
         }
-        if (exp.numChildren > 0) {
-          const { relations } = modelClass.definition
-          const relationInstances = modelClass.getRelations()
-          for (const name in exp.children) {
-            const child = exp.children[name]
-            const { relatedModelClass } = relationInstances[name]
-            processExpression(
-              child,
-              relatedModelClass,
-              relations[name],
-              appendPath(relationPath, '.', name)
-            )
-          }
+
+        const { relations } = modelClass.definition
+        const relationInstances = modelClass.getRelations()
+        for (const key in node) {
+          const child = node[key]
+          const { relatedModelClass } = relationInstances[key]
+          processExpression(
+            child,
+            relatedModelClass,
+            relations[key],
+            appendPath(relationPath, '.', key)
+          )
         }
       }
 
-    processExpression(exp, this.rootModelClass)
+    processExpression(node, this.rootModelClass)
   }
 
   shouldRelate(relationPath) {
@@ -228,4 +226,18 @@ export default class GraphProcessor {
 
 function appendPath(path, separator, token) {
   return path !== '' ? `${path}${separator}${token}` : token
+}
+
+function modelGraphToNode(graph, node) {
+  if (graph) {
+    node = node || {}
+    for (const model of asArray(graph)) {
+      for (const { name } of model.constructor.getRelationArray()) {
+        if (model.hasOwnProperty(name)) {
+          node[name] = modelGraphToNode(model[name], node[name])
+        }
+      }
+    }
+  }
+  return node
 }
