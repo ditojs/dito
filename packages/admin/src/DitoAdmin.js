@@ -8,7 +8,7 @@ import './components'
 import './types'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
-import { hyphenate, camelize } from '@ditojs/utils'
+import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
 
 Vue.config.productionTip = false
 
@@ -71,6 +71,11 @@ export default class DitoAdmin {
       ...api.resources
     }
 
+    api.headers = {
+      'Content-Type': 'application/json',
+      ...api.headers
+    }
+
     this.root = new Vue({
       el,
       router: new VueRouter({
@@ -100,18 +105,18 @@ export default class DitoAdmin {
     params = null,
     headers = null
   }) {
+    const isApiRequest = !isAbsoluteUrl(url) || url.startsWith(this.api.url)
     return axios.request({
       url,
       method,
       data: data !== null ? JSON.stringify(data) : null,
       params,
-      baseURL: this.api.url,
+      baseURL: isApiRequest ? this.api.url : null,
       headers: {
-        'Content-Type': 'application/json',
-        ...this.api.headers,
+        ...(isApiRequest && this.api.headers),
         ...headers
       },
-      withCredentials: !!this.api.cors?.credentials
+      withCredentials: isApiRequest && !!this.api.cors?.credentials
     })
   }
 }
