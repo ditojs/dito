@@ -14,6 +14,7 @@ const toPascalCase = require('to-pascal-case')
 const env = require('../config/prod.env')
 
 const webpackConfig = merge(baseWebpackConfig, {
+  mode: 'production',
   entry: {
     [config.name]: './src/index.js'
   },
