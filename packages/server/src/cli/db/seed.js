@@ -2,7 +2,8 @@ import path from 'path'
 import fs from 'fs-extra'
 import chalk from 'chalk'
 import util from 'util'
-import { isFunction, isArray } from '@ditojs/utils'
+import pluralize from 'pluralize'
+import { isFunction, isArray, camelize } from '@ditojs/utils'
 
 export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
@@ -17,7 +18,9 @@ export async function seed(app) {
         if (isFunction(seed)) {
           res = await seed(app.models)
         } else {
-          const modelClass = app.models[name]
+          const modelClass =
+            app.models[name] ||
+            app.models[camelize(pluralize.singular(name), true)]
           if (modelClass) {
             await modelClass.truncate()
             res = await modelClass.insertGraph(seed)
