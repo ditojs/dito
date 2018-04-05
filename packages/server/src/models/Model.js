@@ -110,12 +110,13 @@ export class Model extends objection.Model {
   }
 
   static get idColumn() {
-    // Try extracting id column name from properties definition, with fall-back
-    // onto default Objection.js behavior.
-    const { properties } = this.definition
+    // Try extracting the id column name from the raw properties definitions,
+    // not the resolved `definition.properties` which aren't ready at this point
+    // with fall-back onto default Objection.js behavior.
+    const { properties } = this
     const ids = []
-    for (const [name, property] of Object.entries(properties)) {
-      if (property.primary) {
+    for (const [name, property] of Object.entries(properties || {})) {
+      if (property?.primary) {
         ids.push(name)
       }
     }
