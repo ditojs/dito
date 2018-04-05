@@ -70,7 +70,7 @@
     "eslint-plugin-vue": "^4.4.0",
     "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "file-loader": "^1.1.11",
-    "friendly-errors-webpack-plugin": "github:ooflorent/friendly-errors-webpack-plugin#98baeb9cd181ed0d8754e8a3afc4c4546516651c",
+    "friendly-errors-webpack-plugin": "^1.7.0",
     "html-webpack-plugin": "^3.2.0",
     "husky": "^0.14.2",
     "node-notifier": "^5.2.1",
