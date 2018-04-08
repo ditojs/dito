@@ -182,7 +182,7 @@ $buttons-padding: 2px
     .dito-list
       // Give nested lists a bit of shadow
       box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
-      margin: ($form-spacing / 2) 0
+      margin: $form-spacing-half 0
       > table
         > tbody,
         > tfoot
