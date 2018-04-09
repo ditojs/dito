@@ -351,10 +351,6 @@ export class Model extends objection.Model {
     return this.app.validator
   }
 
-  static compileValidator(jsonSchema) {
-    return this.app.compileValidator(jsonSchema)
-  }
-
   static createValidationError({ type, message, errors, options }) {
     switch (type) {
     case 'ModelValidation':

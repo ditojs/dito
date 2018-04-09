@@ -1,6 +1,6 @@
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
-import { isString, asArray } from '@ditojs/utils'
+import { isObject, asArray, isString } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, authorize) {
@@ -14,38 +14,39 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    const { query } = ctx
-    let { validators, parameters, returns } = this
-    if (!validators && (parameters || returns)) {
-      validators = this.validators = {
-        parameters: this.createValidator(parameters),
-        returns: this.createValidator(returns, {
+    if (!this.validators && (this.parameters || this.returns)) {
+      this.validators = {
+        parameters: this.createValidator(this.parameters),
+        returns: this.createValidator(this.returns, {
           // Use instanceof checks instead of $ref to check returned values.
           instanceof: true
         })
       }
     }
 
-    if (validators && !validators.parameters(query)) {
-      throw this.createValidationError(
-        `The provided data is not valid: ${JSON.stringify(query)}`,
-        validators.parameters.errors
-      )
+    if (this.validators) {
+      const errors = this.validateParameters(ctx)
+      if (errors) {
+        throw this.createValidationError(
+          `The provided data is not valid: ${JSON.stringify(ctx.query)}`,
+          errors
+        )
+      }
     }
 
-    const args = await this.collectArguments(ctx, parameters)
+    const args = await this.collectArguments(ctx, this.parameters)
     await this.controller.handleAuthorization(this.authorize, ctx, args)
     const result = await this.handler.call(this.controller, ...args)
-    const resultName = returns?.name
+    const resultName = this.returns?.name
     // Use 'root' if no name is given, see createValidator()
     const resultData = {
       [resultName || 'root']: result
     }
     // Use `call()` to pass `result` as context to Ajv, see passContext:
-    if (validators && !validators.returns.call(result, resultData)) {
+    if (this.validators && !this.validators.returns.call(result, resultData)) {
       throw this.createValidationError(
         `Invalid result of action: ${JSON.stringify(result)}`,
-        validators.returns.errors
+        this.validators.returns.errors
       )
     }
     return resultName ? resultData : result
@@ -64,12 +65,10 @@ export default class ControllerAction {
     if (parameters.length > 0) {
       let properties = null
       for (const param of parameters) {
-        if (param) {
-          const property = isString(param) ? { type: param } : param
-          const { name, type, ...rest } = property
-          properties = properties || {}
-          properties[name || 'root'] = type ? { type, ...rest } : rest
-        }
+        const property = isString(param) ? { type: param } : param
+        const { name, type, ...rest } = property
+        properties = properties || {}
+        properties[name || 'root'] = type ? { type, ...rest } : rest
       }
       if (properties) {
         const schema = convertSchema(properties, options)
@@ -77,6 +76,49 @@ export default class ControllerAction {
       }
     }
     return () => true
+  }
+
+  validateParameters(ctx) {
+    const { query } = ctx
+    // NOTE: `validators.parameters(query)` coerces data in `ctx.query` to the
+    // required formats, according to the rules specified here:
+    // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
+    // Coercion isn't currently offered for `type: 'object'`, so handle this
+    // case prior to the call of `validators.parameters()`:
+    const errors = []
+    for (const param of asArray(this.parameters)) {
+      const { name, type } = isString(param) ? { type: param } : param
+      if (type === 'object') {
+        const value = name ? query[name] : query
+        let converted = value
+        if (value && !isObject(value)) {
+          try {
+            converted = JSON.parse(value)
+          } catch (err) {
+            errors.push({
+              dataPath: `.${name}`, // JavaScript property access notation
+              keyword: 'type',
+              message: err.message || err.toString(),
+              params: {
+                type,
+                json: true
+              }
+            })
+          }
+        }
+        if (converted !== value) {
+          if (name) {
+            query[name] = converted
+          } else {
+            ctx.query = converted
+          }
+        }
+      }
+    }
+    if (!this.validators.parameters(query)) {
+      errors.push(...this.validators.parameters.errors)
+    }
+    return errors.length > 0 ? errors : null
   }
 
   collectConsumedArguments(ctx, parameters, consumed) {

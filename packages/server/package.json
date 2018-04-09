@@ -34,7 +34,7 @@
     "@babel/preset-env": "^7.0.0-beta.44",
     "@babel/preset-stage-1": "^7.0.0-beta.44",
     "@ditojs/admin": "^0.6.0",
-    "@ditojs/utils": "^0.4.0",
+    "@ditojs/utils": "^0.5.0",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.4.0",
     "babel-loader": "^8.0.0-beta.2",

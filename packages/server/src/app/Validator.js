@@ -39,10 +39,10 @@ export class Validator extends objection.Validator {
 
     // Create a shared Ajv validator instance that is used for validation in
     // remote methods and other validations outside Objection.
-    // NOTE: Use `coerceTypes: true` option for remote methods & REST interface.
+    // NOTE: Use `coerceTypes: 'array'` option for controllers / actions.
     this.ajv = createAjv({
       ...this.options,
-      coerceTypes: true
+      coerceTypes: 'array'
     })
 
     // Create a Ajv instance that sets default values.
