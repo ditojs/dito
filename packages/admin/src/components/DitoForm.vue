@@ -77,11 +77,11 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     listSchema() {
-      return this.meta.listSchema
+      return this.meta.schema
     },
 
     schema() {
-      // Determine the current form schema through the listSchema, with multi
+      // Determine the current form schema through the listSchema, with multi-
       // form schema support.
       let form = this.getFormSchema(this.data)
       if (!form) {

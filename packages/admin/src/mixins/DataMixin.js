@@ -97,8 +97,7 @@ export default {
     },
 
     getFormSchema(item) {
-      const { listSchema } = this
-      const { form, forms } = listSchema
+      const { form, forms } = this.listSchema
       const type = item?.type
       return forms && type ? forms[type] : form
     },

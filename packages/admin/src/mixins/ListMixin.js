@@ -130,7 +130,7 @@ export default {
     nestedMeta() {
       return {
         ...this.meta,
-        listSchema: this.schema
+        schema: this.schema
       }
     },
 
@@ -300,36 +300,36 @@ export default {
   processSchema
 }
 
-async function processSchema(api, listSchema, name, routes, parentMeta,
+async function processSchema(api, schema, name, routes, parentMeta,
   level, nested = false, flatten = false, processSchema = null) {
-  const path = listSchema.path = listSchema.path || api.normalizePath(name)
-  listSchema.name = name
-  const { inline } = listSchema
+  const path = schema.path = schema.path || api.normalizePath(name)
+  schema.name = name
+  const { inline } = schema
   const addRoutes = !inline
   if (inline) {
-    if (listSchema.nested === false) {
+    if (schema.nested === false) {
       throw new Error(
         'Lists with inline forms can only work with nested data')
     }
-    listSchema.nested = true
+    schema.nested = true
   }
   // Use differently named url parameters on each nested level for id as
   // otherwise they would clash and override each other inside $route.params
   // See: https://github.com/vuejs/vue-router/issues/1345
   const param = `id${level + 1}`
-  const listMeta = {
+  const meta = {
     api,
-    listSchema,
+    schema,
     // When children are flattened (tree-lists), reuse the parent meta data,
     // but include the `flatten` setting also.
     flatten
   }
   const formMeta = {
-    ...listMeta,
+    ...meta,
     nested,
     param
   }
-  const childRoutes = await processForms(api, listSchema, formMeta, level)
+  const childRoutes = await processForms(api, schema, formMeta, level)
   if (processSchema) {
     await processSchema(childRoutes, formMeta, level + 1)
   }
@@ -372,10 +372,7 @@ async function processSchema(api, listSchema, name, routes, parentMeta,
         path: `/${path}`,
         children: formRoutes,
         component: DitoView,
-        meta: {
-          ...listMeta,
-          schema: listSchema
-        }
+        meta
       })
     } else {
       routes.push(
@@ -383,7 +380,7 @@ async function processSchema(api, listSchema, name, routes, parentMeta,
         {
           path,
           redirect: '.',
-          meta: listMeta
+          meta
         },
         // Add the prefixed formRoutes with its children for nested lists.
         ...formRoutes

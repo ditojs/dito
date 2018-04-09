@@ -33,7 +33,6 @@ export async function processView(api, schema, name, routes) {
       // The view contains a list that already produced the route for this view,
       // just adjust it to reflect its nesting in the view:
       route.meta.schema = schema
-      route.meta.listSchema.path = schema.path
       route.path = path
       routes.push(route)
     } else {
