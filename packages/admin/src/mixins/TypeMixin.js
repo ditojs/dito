@@ -40,18 +40,22 @@ export default {
   },
 
   computed: {
-    value: {
-      get() {
-        return this.data[this.schema.name]
-      },
-
-      set(value) {
-        this.$set(this.data, this.schema.name, value)
-      }
+    name() {
+      return this.schema.name
     },
 
     type() {
       return this.schema.type
+    },
+
+    value: {
+      get() {
+        return this.data[this.name]
+      },
+
+      set(value) {
+        this.$set(this.data, this.name, value)
+      }
     },
 
     label() {
@@ -86,6 +90,11 @@ export default {
     validations() {
       const rules = this.getValidationRules()
       return { rules }
+    },
+
+    hasForm() {
+      // Support both single form and multiple forms notation.
+      return this.schema.form || this.schema.forms
     }
   },
 

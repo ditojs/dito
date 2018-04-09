@@ -33,6 +33,9 @@ const TypeComponent = DitoComponent.component('typo-component', {
   }
 })
 
+// Expose this component as the general purpose 'component' type, which can
+// resolves to any provided custom component, through `schema.component`, see
+// `resolveTypeComponent()`
 typeComponents.component = TypeComponent
 
 TypeComponent.register = function (type, options = {}) {

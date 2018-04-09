@@ -214,8 +214,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     creatable() {
       // TODO: Support creatable!
-      return this.getSchemaValue('creatable', true) &&
-        (this.schema.form || this.schema.forms)
+      return this.getSchemaValue('creatable', true) && this.hasForm
     },
 
     editable() {

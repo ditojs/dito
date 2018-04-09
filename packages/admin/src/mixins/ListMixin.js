@@ -11,6 +11,10 @@ import {
 export default {
   mixins: [DataMixin, OrderedMixin],
 
+  props: {
+    isObject: { type: Boolean, default: false }
+  },
+
   defaultValue() {
     return []
   },
@@ -58,9 +62,12 @@ export default {
   computed: {
     listData() {
       let data = this.value
-      // If @ditojs/server sends data in the form of `{ results: [...], total }`
-      // replace the value with the result, but remember the total in the store.
-      if (isObject(data)) {
+      if (this.isObject) {
+        // Convert to list array.
+        data = data != null ? [data] : []
+      } else if (isObject(data)) {
+        // If @ditojs/server sends data in the form of `{ results, total }`
+        // replace the value with result, but remember the total in the store.
         this.setStore('total', data.total)
         this.value = data = data.results
       }
@@ -136,8 +143,8 @@ export default {
     },
 
     creatable() {
-      return this.getSchemaValue('creatable', true) &&
-        (this.schema.form || this.schema.forms)
+      return this.getSchemaValue('creatable', true) && this.hasForm &&
+        !this.isObject ^ !this.value
     },
 
     editable() {
@@ -220,11 +227,25 @@ export default {
       return { path: `${this.path}/${this.getItemId(item, index)}` }
     },
 
+    createItem(schema, type) {
+      const item = this.createData(schema, type)
+      if (this.isObject) {
+        this.value = item
+      } else {
+        this.value.push(item)
+      }
+      return item
+    },
+
     removeItem(item) {
-      const list = this.value
-      const index = list && list.indexOf(item)
-      if (index >= 0) {
-        list.splice(index, 1)
+      if (this.isObject) {
+        this.value = null
+      } else {
+        const list = this.value
+        const index = list && list.indexOf(item)
+        if (index >= 0) {
+          list.splice(index, 1)
+        }
       }
     },
 
@@ -254,12 +275,6 @@ export default {
           })
         }
       }
-    },
-
-    createItem(schema, type) {
-      const item = this.createData(schema, type)
-      this.value.push(item)
-      return item
     },
 
     navigateToComponent(dataPath, onComplete) {
