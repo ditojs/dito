@@ -1,7 +1,8 @@
 <template lang="pug">
-  .dito-tabs
+  .dito-tabs(
+    v-if="tabs"
+  )
     a(
-      v-if="tabs"
       v-for="(tabSchema, key) in tabs"
       :href="`#${key}`"
       :class="{ selected: selectedTab === key }"
