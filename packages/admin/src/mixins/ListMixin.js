@@ -97,6 +97,10 @@ export default {
       return this.getStore('total')
     },
 
+    columns() {
+      return this.getNamedSchemas(this.schema.columns)
+    },
+
     scopes() {
       return this.getNamedSchemas(this.schema.scopes)
     },
@@ -116,15 +120,36 @@ export default {
       }
     },
 
-    columns() {
-      return this.getNamedSchemas(this.schema.columns)
-    },
-
     nestedMeta() {
       return {
         ...this.meta,
         listSchema: this.schema
       }
+    },
+
+    paginate() {
+      return this.getSchemaValue('paginate', false)
+    },
+
+    inline() {
+      return this.getSchemaValue('inline', true)
+    },
+
+    creatable() {
+      return this.getSchemaValue('creatable', true) &&
+        (this.schema.form || this.schema.forms)
+    },
+
+    editable() {
+      return !this.inline && this.getSchemaValue('editable', true)
+    },
+
+    deletable() {
+      return this.getSchemaValue('deletable', true)
+    },
+
+    draggable() {
+      return this.getSchemaValue('draggable', true) && this.listData.length > 1
     }
   },
 

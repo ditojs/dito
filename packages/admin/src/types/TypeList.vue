@@ -239,44 +239,14 @@ export default TypeComponent.register('list', {
   },
 
   computed: {
-    component() {
-      return this.resolveTypeComponent(this.schema.component)
-    },
-
-    paginate() {
-      return this.getSchemaValue('paginate', false)
-    },
-
-    inline() {
-      return this.getSchemaValue('inline', true)
-    },
-
-    creatable() {
-      return this.getSchemaValue('creatable', true) &&
-        (this.schema.form || this.schema.forms)
-    },
-
-    editable() {
-      return !this.inline && this.getSchemaValue('editable', true)
-    },
-
-    deletable() {
-      return this.getSchemaValue('deletable', true)
-    },
-
-    draggable() {
-      return this.getSchemaValue('draggable', true) && this.listData.length > 1
+    numColumns() {
+      return (this.columns ? this.columns.length : 1) + (this.creatable ? 1 : 0)
     },
 
     hasButtons() {
       const { listData } = this
       return !!(listData?.length > 0 &&
         (this.editable || this.deletable || this.draggable))
-    },
-
-    numColumns() {
-      return (this.columns ? this.columns.length : 1) +
-        (this.creatable ? 1 : 0)
     },
 
     dragOptions() {
