@@ -187,11 +187,16 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  async truncate() {
+  async truncate({ restart = true, cascade = false } = {}) {
     if (this.isPostgreSQL()) {
-      // Include `cascade` in PostgreSQL truncate queries.
-      return this.raw('truncate table ?? restart identity cascade',
-        this.modelClass().tableName)
+      // Support `restart` and `cascade` in PostgreSQL truncate queries.
+      return this.raw(
+        `truncate table ??${
+          restart ? ' restart identity' : ''}${
+          cascade ? ' cascade' : ''
+        }`,
+        this.modelClass().tableName
+      )
     }
     return super.truncate()
   }
