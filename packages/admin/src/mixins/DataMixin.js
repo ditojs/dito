@@ -25,7 +25,7 @@ export default {
 
   computed: {
     isNested() {
-      return !!this.listSchema.nested
+      return !!this.sourceSchema.nested
     },
 
     isTransient() {
@@ -97,13 +97,13 @@ export default {
     },
 
     getFormSchema(item) {
-      const { form, forms } = this.listSchema
+      const { form, forms } = this.sourceSchema
       const type = item?.type
       return forms && type ? forms[type] : form
     },
 
     getItemId(item, index) {
-      const { idName = 'id' } = this.listSchema
+      const { idName = 'id' } = this.sourceSchema
       const id = this.isTransient ? index : item[idName]
       return id === undefined ? id : String(id)
     },
@@ -118,7 +118,7 @@ export default {
     },
 
     getItemLabel(item, index, fallback = true) {
-      const { itemLabel, columns } = this.listSchema
+      const { itemLabel, columns } = this.sourceSchema
       if (itemLabel === false) return null
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
@@ -239,7 +239,7 @@ export default {
       // @ditojs/server specific query parameters:
       // TODO: Consider moving this into a modular place, so other backends
       // could plug in as well.
-      const { paginate } = this.listSchema
+      const { paginate } = this.sourceSchema
       const { page = 0, ...query } = this.query || {}
       const limit = this.isList && paginate // Only use range on lists
       const offset = page * limit

@@ -82,8 +82,8 @@ export default {
         !(routeComponent.shouldLoad || routeComponent.loading)
     },
 
-    listSchema() {
-      // The listSchema of a list is the list's schema itself.
+    sourceSchema() {
+      // The sourceSchema of a list is the list's schema itself.
       return this.schema
     },
 

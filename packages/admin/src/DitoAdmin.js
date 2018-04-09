@@ -48,10 +48,10 @@ export default class DitoAdmin {
     //       return `${component.schema.path}/${itemId}`
     //     },
     //     collection(component) {
-    //       const { parentFormComponent: parent, listSchema } = component
+    //       const { parentFormComponent: parent, sourceSchema } = component
     //       return parent
-    //         ? `${listSchema.path}?${parent.path}_id=${parent.itemId}`
-    //         : listSchema.path
+    //         ? `${sourceSchema.path}?${parent.path}_id=${parent.itemId}`
+    //         : sourceSchema.path
     //     }
     //   },
     //   headers: {
@@ -60,13 +60,13 @@ export default class DitoAdmin {
     // }
     api.resources = {
       member(component, itemId) {
-        return `${component.listSchema.path}/${itemId}`
+        return `${component.sourceSchema.path}/${itemId}`
       },
       collection(component) {
-        const { parentFormComponent: parent, listSchema } = component
+        const { parentFormComponent: parent, sourceSchema } = component
         return parent
-          ? `${parent.listSchema.path}/${parent.itemId}/${listSchema.path}`
-          : listSchema.path
+          ? `${parent.sourceSchema.path}/${parent.itemId}/${sourceSchema.path}`
+          : sourceSchema.path
       },
       ...api.resources
     }

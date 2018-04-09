@@ -76,12 +76,12 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
-    listSchema() {
+    sourceSchema() {
       return this.meta.schema
     },
 
     schema() {
-      // Determine the current form schema through the listSchema, with multi-
+      // Determine the current form schema through the sourceSchema, with multi-
       // form schema support.
       let form = this.getFormSchema(this.data)
       if (!form) {
@@ -98,10 +98,10 @@ export default DitoComponent.component('dito-form', {
     },
 
     doesMutate() {
-      // When `listSchema.mutate` is true, the form edits the inherited data
+      // When `sourceSchema.mutate` is true, the form edits the inherited data
       // directly instead of making a copy for application upon submit.
       // See `inheritedData()` computed property for more details.
-      return this.listSchema.mutate
+      return this.sourceSchema.mutate
     },
 
     type() {
@@ -189,7 +189,7 @@ export default DitoComponent.component('dito-form', {
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
       // changes until changes are applied through setListData(), unless
-      // `listSchema.mutate` is true, in which case data is mutated directly.
+      // `sourceSchema.mutate` is true, in which case data is mutated directly.
       if (this.isTransient && this.clonedData === undefined && this.listData) {
         let data = this.listIndex >= 0
           ? this.listData[this.listIndex]
