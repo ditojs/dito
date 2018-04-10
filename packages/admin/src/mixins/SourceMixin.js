@@ -2,14 +2,13 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import OrderedMixin from './OrderedMixin'
 import { processForms } from '@/schema'
 import {
   isObject, isArray, camelize, labelize, parseDataPath
 } from '@ditojs/utils'
 
 export default {
-  mixins: [DataMixin, OrderedMixin],
+  mixins: [DataMixin],
 
   defaultValue(type) {
     return type === 'object' ? null : []
@@ -264,7 +263,7 @@ export default {
     },
 
     deleteItem(item, index) {
-      const label = item && this.getItemLabel(item, index)
+      const label = item && this.getItemLabel(item, { index })
 
       const notify = transient => this.notify(transient ? 'info' : 'success',
         'Successfully Removed', `${label} was ${this.verbs.deleted}.`)

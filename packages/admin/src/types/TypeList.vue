@@ -50,7 +50,7 @@
             td
               dito-inline-components(
                 v-if="inline"
-                :label="getItemLabel(item, index, false)"
+                :label="getItemLabel(item, { index, formLabel: false })"
                 :schema="getFormSchema(item)"
                 :dataPath="`${dataPath}/${index}`"
                 :data="item"
@@ -69,7 +69,7 @@
               )
               span(
                 v-else
-                v-html="getItemLabel(item, index)"
+                v-html="getItemLabel(item, { index, formLabel: false })"
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
@@ -230,9 +230,10 @@ $buttons-padding: 2px
 import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
+import OrderedMixin from '@/mixins/OrderedMixin'
 
 export default TypeComponent.register('list', {
-  mixins: [SourceMixin],
+  mixins: [SourceMixin, OrderedMixin],
 
   components: {
     VueDraggable

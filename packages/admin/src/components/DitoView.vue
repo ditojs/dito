@@ -60,7 +60,7 @@ export default DitoComponent.component('dito-view', {
     },
 
     isMulti() {
-      return this.type === undefined
+      return !this.type
     },
 
     loading() {

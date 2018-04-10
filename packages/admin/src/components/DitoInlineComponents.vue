@@ -27,6 +27,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-inline-components', {
   props: {
@@ -40,8 +41,16 @@ export default DitoComponent.component('dito-inline-components', {
   },
 
   computed: {
+    compact() {
+      return pick(
+        this.schema.compact,
+        // The default is true for object sources:
+        this.meta.schema.type === 'object'
+      )
+    },
+
     header() {
-      if (!this.schema.compact) {
+      if (!this.compact) {
         const label = this.getLabel(this.schema)
         return this.label ? `${label}: ${this.label}` : label
       }

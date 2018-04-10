@@ -112,26 +112,32 @@ export default {
       return index !== -1 ? index : null
     },
 
-    getItemLabel(item, index, fallback = true) {
-      const { itemLabel, columns } = this.sourceSchema
+    getItemLabel(item, { index, formLabel = true, autoLabel = true } = {}) {
+      const { itemLabel, columns, type } = this.sourceSchema
       if (itemLabel === false) return null
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
         'name'
-      let label = isFunction(itemLabel)
-        ? itemLabel(item)
-        : pick(item[itemProperty], null)
-      if (label == null && fallback) {
-        const formLabel = this.getLabel(this.getFormSchema(item))
+      let label = pick(
+        isFunction(itemLabel)
+          ? itemLabel(item)
+          : item[itemProperty],
+        null
+      )
+      if (autoLabel && label == null) {
         const id = this.getItemId(item)
         label = id
-          ? ` (id:${id})`
-          : index !== undefined
-            ? ` ${index + 1}`
+          ? `(id: ${id})`
+          : type === 'list' && index !== undefined
+            ? `${index + 1}`
             : ''
-        label = `${formLabel}${label}`
+        if (label) {
+          formLabel = true
+        }
       }
-      return label
+      return formLabel && label
+        ? `${this.getLabel(this.getFormSchema(item))} ${label}`
+        : label || ''
     },
 
     setData(data) {

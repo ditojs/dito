@@ -368,7 +368,7 @@ export default DitoComponent.component('dito-form', {
 
     onCancel() {
       if (!this.isDirty || confirm(
-        'You have unsaved changed. Do you really want to cancel?'
+        `You have unsaved changed. Do you really want to ${this.verbs.cancel}?`
       )) {
         this.close(false)
       }
@@ -391,6 +391,9 @@ export default DitoComponent.component('dito-form', {
       const payload = this.processData({
         temporaryIds: true
       })
+
+      const getLabel = data => data ? this.getItemLabel(data) : 'form'
+
       if (this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -405,7 +408,7 @@ export default DitoComponent.component('dito-form', {
           }
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
-          const label = this.getItemLabel(payload)
+          const label = getLabel(payload)
           if (onSuccess) {
             onSuccess.call(this, payload, label)
           } else {
@@ -444,7 +447,7 @@ export default DitoComponent.component('dito-form', {
               error = isObject(data) ? data : err
             }
             if (error) {
-              const label = payload ? this.getItemLabel(payload) : 'form'
+              const label = getLabel(payload)
               if (onError) {
                 onError.call(this, error, payload, label)
               } else {
@@ -453,7 +456,7 @@ export default DitoComponent.component('dito-form', {
               }
             }
           } else {
-            const label = data ? this.getItemLabel(data) : 'form'
+            const label = getLabel(data)
             if (onSuccess) {
               onSuccess.call(this, data, label)
             } else {
