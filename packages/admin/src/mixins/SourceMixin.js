@@ -55,12 +55,12 @@ export default {
   },
 
   computed: {
-    isListSource() {
-      return this.type === 'list'
-    },
-
     isObjectSource() {
       return this.type === 'object'
+    },
+
+    isListSource() {
+      return !this.isObjectSource
     },
 
     listData() {
@@ -68,7 +68,7 @@ export default {
       if (this.isObjectSource) {
         // Convert to list array.
         data = data != null ? [data] : []
-      } else if (this.isListSource && isObject(data)) {
+      } else if (isObject(data)) {
         // If @ditojs/server sends data in the form of `{ results, total }`
         // replace the value with result, but remember the total in the store.
         this.setStore('total', data.total)
@@ -149,7 +149,7 @@ export default {
       return this.hasForm && this.getSchemaValue('creatable', true)
         ? this.isObjectSource
           ? !this.value
-          : this.isListSource
+          : true
         : false
     },
 
@@ -234,31 +234,31 @@ export default {
 
     getEditRoute(item, index) {
       return {
-        path: this.isListSource
-          ? `${this.path}/${this.getItemId(item, index)}`
-          : this.path
+        path: this.isObjectSource
+          ? this.path
+          : `${this.path}/${this.getItemId(item, index)}`
       }
     },
 
     createItem(schema, type) {
       const item = this.createData(schema, type)
-      if (this.isListSource) {
-        this.value.push(item)
-      } else {
+      if (this.isObjectSource) {
         this.value = item
+      } else {
+        this.value.push(item)
       }
       return item
     },
 
     removeItem(item) {
-      if (this.isListSource) {
+      if (this.isObjectSource) {
+        this.value = null
+      } else {
         const list = this.value
         const index = list && list.indexOf(item)
         if (index >= 0) {
           list.splice(index, 1)
         }
-      } else {
-        this.value = null
       }
     },
 
@@ -315,7 +315,7 @@ export default {
 
 async function processSchema(
   api, schema, name, routes, parentMeta, level, nested = false, flatten = false,
-  processSchema = null
+  process = null
 ) {
   const path = schema.path = schema.path || api.normalizePath(name)
   schema.name = name
@@ -345,18 +345,19 @@ async function processSchema(
     param
   }
   const childRoutes = await processForms(api, schema, formMeta, level)
-  if (processSchema) {
-    await processSchema(childRoutes, formMeta, level + 1)
+  if (process) {
+    await process(childRoutes, formMeta, level + 1)
   }
   if (addRoutes) {
     const isView = level === 0
     // While lists in views have their own route records, nested lists in
     // forms do not, and need their path prefixed with the parent's path:
     const formPath = isView ? '' : path
+    const isObjectSource = schema.type === 'object'
     const formRoute = {
       // Object sources don't need id params in their form paths, as they
       // directly edit one object.
-      path: getPathWithParam(formPath, schema.type === 'list' && param),
+      path: getPathWithParam(formPath, !isObjectSource && param),
       component: nested ? DitoNestedForm : DitoForm,
       meta: formMeta
     }
@@ -393,19 +394,19 @@ async function processSchema(
         meta
       })
     } else {
-      if (schema.type === 'list') {
-        // Just redirect back to the form when a nested list route is hit.
-        routes.push({
-          path,
-          redirect: '.',
-          meta
-        })
-      } else if (schema.type === 'object') {
+      if (isObjectSource) {
         // Also add a param route, simply to handle '/create' links the same
         // way that lists do, where it overlaps with :id for item ids.
         routes.push({
           ...formRoute,
           path: getPathWithParam(formPath, param)
+        })
+      } else {
+        // Just redirect back to the form when a nested list route is hit.
+        routes.push({
+          path,
+          redirect: '.',
+          meta
         })
       }
       // Add the prefixed formRoutes with its children for nested lists.

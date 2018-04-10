@@ -294,9 +294,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     addSourceData(data) {
-      return this.sourceType === 'list'
-        ? this.sourceData?.push(data) || false
-        : this.setSourceData(data)
+      return this.sourceType === 'object'
+        ? this.setSourceData(data)
+        : this.sourceData?.push(data) || false
     },
 
     filterData(data) {

@@ -104,7 +104,8 @@
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { isObject, isFunction } from '@ditojs/utils'
+import { isFunction } from '@ditojs/utils'
+import { hasForm } from '@/utils'
 
 export default DitoComponent.component('dito-tree-item', {
   mixins: [OrderedMixin],
@@ -162,7 +163,7 @@ export default DitoComponent.component('dito-tree-item', {
       for (const [key, schema] of Object.entries(this.schema)) {
         // Identify nested entries that describe sub-trees as objects with a
         // `form` or `forms` setting:
-        if (isObject(schema) && (schema.form || schema.forms)) {
+        if (hasForm(schema)) {
           const items = this.data[key]
           const draggable = !!(
             items?.length > 1 &&

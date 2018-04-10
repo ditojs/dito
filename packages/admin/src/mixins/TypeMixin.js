@@ -1,4 +1,5 @@
 import { isArray, isAbsoluteUrl, pick } from '@ditojs/utils'
+import { hasForm } from '@/utils'
 
 export default {
   // Inherit the $validator from the parent.
@@ -93,8 +94,7 @@ export default {
     },
 
     hasForm() {
-      // Support both single form and multiple forms notation.
-      return this.schema.form || this.schema.forms
+      return hasForm(this.schema)
     }
   },
 

@@ -128,7 +128,7 @@ export default {
         const id = this.getItemId(item)
         label = id
           ? `(id: ${id})`
-          : type === 'list' && index !== undefined
+          : type !== 'object' && index !== undefined
             ? `${index + 1}`
             : ''
         if (label) {

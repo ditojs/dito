@@ -38,7 +38,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { isObject } from '@ditojs/utils'
+import { hasForm } from '@/utils'
 
 export default TypeComponent.register('tree-list', {
   mixins: [SourceMixin],
@@ -67,7 +67,7 @@ async function processSchema(
     (childRoutes, parentMeta, level) => {
       const promises = []
       for (const [name, schema] of Object.entries(schema)) {
-        if (name !== 'form' && isObject(schema)) {
+        if (hasForm(schema)) {
           promises.push(
             // Pass `true` for `flatten` in tree lists.
             processSchema(
