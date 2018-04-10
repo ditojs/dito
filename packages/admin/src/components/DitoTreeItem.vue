@@ -164,7 +164,10 @@ export default DitoComponent.component('dito-tree-item', {
         // `form` or `forms` setting:
         if (isObject(schema) && (schema.form || schema.forms)) {
           const items = this.data[key]
-          const draggable = this.draggable && items?.length > 1
+          const draggable = !!(
+            items?.length > 1 &&
+            this.getSchemaValue('draggable', true, schema)
+          )
           const { editPath } = this.container
           const childrenOpen = !this.path && this.open
           // Build a children list with child meta information for the template.
@@ -223,10 +226,6 @@ export default DitoComponent.component('dito-tree-item', {
 
     deletable() {
       return this.getSchemaValue('deletable', true)
-    },
-
-    draggable() {
-      return this.getSchemaValue('draggable', true)
     },
 
     hasButtons() {
