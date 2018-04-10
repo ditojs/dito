@@ -27,7 +27,7 @@ export default {
       components: {},
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
-      // their life-cycle. See: DitoComponents, ListMixin
+      // their life-cycle. See: DitoComponents, SourceMixin
       store: {}
     }
   },

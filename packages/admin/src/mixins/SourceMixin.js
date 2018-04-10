@@ -11,17 +11,13 @@ import {
 export default {
   mixins: [DataMixin, OrderedMixin],
 
-  props: {
-    isObject: { type: Boolean, default: false }
-  },
-
-  defaultValue() {
-    return []
+  defaultValue(type) {
+    return type === 'object' ? null : []
   },
 
   data() {
     return {
-      isList: true
+      isSource: true
     }
   },
 
@@ -60,12 +56,20 @@ export default {
   },
 
   computed: {
+    isListSource() {
+      return this.type === 'list'
+    },
+
+    isObjectSource() {
+      return this.type === 'object'
+    },
+
     listData() {
       let data = this.value
-      if (this.isObject) {
+      if (this.isObjectSource) {
         // Convert to list array.
         data = data != null ? [data] : []
-      } else if (isObject(data)) {
+      } else if (this.isListSource && isObject(data)) {
         // If @ditojs/server sends data in the form of `{ results, total }`
         // replace the value with result, but remember the total in the store.
         this.setStore('total', data.total)
@@ -143,12 +147,16 @@ export default {
     },
 
     creatable() {
-      return this.getSchemaValue('creatable', true) && this.hasForm &&
-        !this.isObject ^ !this.value
+      return this.hasForm && this.getSchemaValue('creatable', true)
+        ? this.isObjectSource
+          ? !this.value
+          : this.isListSource
+        : false
     },
 
     editable() {
-      return !this.inline && this.getSchemaValue('editable', true)
+      return !this.inline &&
+        this.getSchemaValue('editable', true)
     },
 
     deletable() {
@@ -156,7 +164,9 @@ export default {
     },
 
     draggable() {
-      return this.getSchemaValue('draggable', true) && this.listData.length > 1
+      return this.isListSource &&
+        this.getSchemaValue('draggable', true) &&
+        this.listData.length > 1
     }
   },
 
@@ -224,28 +234,32 @@ export default {
     },
 
     getEditRoute(item, index) {
-      return { path: `${this.path}/${this.getItemId(item, index)}` }
+      return {
+        path: this.isListSource
+          ? `${this.path}/${this.getItemId(item, index)}`
+          : this.path
+      }
     },
 
     createItem(schema, type) {
       const item = this.createData(schema, type)
-      if (this.isObject) {
-        this.value = item
-      } else {
+      if (this.isListSource) {
         this.value.push(item)
+      } else {
+        this.value = item
       }
       return item
     },
 
     removeItem(item) {
-      if (this.isObject) {
-        this.value = null
-      } else {
+      if (this.isListSource) {
         const list = this.value
         const index = list && list.indexOf(item)
         if (index >= 0) {
           list.splice(index, 1)
         }
+      } else {
+        this.value = null
       }
     },
 
@@ -300,8 +314,10 @@ export default {
   processSchema
 }
 
-async function processSchema(api, schema, name, routes, parentMeta,
-  level, nested = false, flatten = false, processSchema = null) {
+async function processSchema(
+  api, schema, name, routes, parentMeta, level, nested = false, flatten = false,
+  processSchema = null
+) {
   const path = schema.path = schema.path || api.normalizePath(name)
   schema.name = name
   const { inline } = schema
@@ -335,10 +351,13 @@ async function processSchema(api, schema, name, routes, parentMeta,
   }
   if (addRoutes) {
     const isView = level === 0
+    // While lists in views have their own route records, nested lists in
+    // forms do not, and need their path prefixed with the parent's path:
+    const formPath = isView ? '' : path
     const formRoute = {
-      // While lists in views have their own route records, nested lists in
-      // forms do not, and need their path prefixed with the parent's path.
-      path: isView ? `:${param}` : `${path}/:${param}`,
+      // Object sources don't need id params in their form paths, as they
+      // directly edit one object.
+      path: getPathWithParam(formPath, schema.type === 'list' && param),
       component: nested ? DitoNestedForm : DitoForm,
       meta: formMeta
     }
@@ -375,16 +394,29 @@ async function processSchema(api, schema, name, routes, parentMeta,
         meta
       })
     } else {
-      routes.push(
+      if (schema.type === 'list') {
         // Just redirect back to the form when a nested list route is hit.
-        {
+        routes.push({
           path,
           redirect: '.',
           meta
-        },
-        // Add the prefixed formRoutes with its children for nested lists.
-        ...formRoutes
-      )
+        })
+      } else if (schema.type === 'object') {
+        // Also add a param route, simply to handle '/create' links the same
+        // way that lists do, where it overlaps with :id for item ids.
+        routes.push({
+          ...formRoute,
+          path: getPathWithParam(formPath, param)
+        })
+      }
+      // Add the prefixed formRoutes with its children for nested lists.
+      routes.push(...formRoutes)
     }
   }
+}
+
+function getPathWithParam(path, param) {
+  return param
+    ? path ? `${path}/:${param}` : `:${param}`
+    : path
 }

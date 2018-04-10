@@ -27,7 +27,12 @@ Vue.use(VueModal, {
 Vue.use(VueNotifications)
 
 export default class DitoAdmin {
-  constructor(el, { api = {}, base = '/', views = {}, ...options } = {}) {
+  constructor(el, {
+    api = {},
+    base = '/',
+    views = {},
+    ...options
+  } = {}) {
     this.el = el
     this.api = api
     this.options = options
@@ -60,14 +65,20 @@ export default class DitoAdmin {
     // }
     api.resources = {
       member(component, itemId) {
-        return `${component.sourceSchema.path}/${itemId}`
+        // If itemId is null, then this represents an object source, not a list,
+        // (an one-to-one relation on the backend), use the collection endpoint.
+        return itemId !== null
+          ? `${component.sourceSchema.path}/${itemId}`
+          : this.collection(component)
       },
+
       collection(component) {
         const { parentFormComponent: parent, sourceSchema } = component
         return parent
           ? `${parent.sourceSchema.path}/${parent.itemId}/${sourceSchema.path}`
           : sourceSchema.path
       },
+
       ...api.resources
     }
 

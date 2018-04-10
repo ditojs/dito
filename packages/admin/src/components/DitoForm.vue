@@ -6,6 +6,10 @@
     :class="formClass"
     @submit.prevent="onSubmit()"
   )
+    // .debug
+      div Created {{ `${createdData}` }}
+      div Inherited {{ `${inheritedData}` }}
+      div Loaded {{ `${loadedData}` }}
     dito-schema(
       :schema="schema"
       :dataPath="dataPath"
@@ -39,7 +43,7 @@ import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import {
-  isArray, isObject, clone, capitalize, parseDataPath
+  isArray, isObject, clone, pick, capitalize, parseDataPath
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -49,6 +53,7 @@ export default DitoComponent.component('dito-form', {
     return {
       createdData: null,
       clonedData: undefined,
+      sourceKey: null,
       isForm: true,
       loadCache: {}, // See TypeMixin.load()
       formClass: null,
@@ -57,8 +62,9 @@ export default DitoComponent.component('dito-form', {
   },
 
   watch: {
-    listData: 'clearClonedData',
-    listIndex: 'clearClonedData'
+    sourceData: 'clearClonedData',
+    // Needed for the 'create' redirect in `inheritedData()` to work:
+    create: 'initData'
   },
 
   created() {
@@ -76,10 +82,6 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
-    sourceSchema() {
-      return this.meta.schema
-    },
-
     schema() {
       // Determine the current form schema through the sourceSchema, with multi-
       // form schema support.
@@ -91,6 +93,14 @@ export default DitoComponent.component('dito-form', {
         form = type && this.getFormSchema({ type })
       }
       return form
+    },
+
+    sourceSchema() {
+      return this.meta.schema
+    },
+
+    sourceType() {
+      return this.sourceSchema.type
     },
 
     isActive() {
@@ -115,7 +125,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     itemId() {
-      return this.create ? null : this.param
+      return this.create ? null : pick(this.param, null)
     },
 
     method() {
@@ -145,7 +155,7 @@ export default DitoComponent.component('dito-form', {
       // 3. The data inherited from the parent, which itself may be either a
       //    view that loaded the data, or a form that either loaded the data, or
       //    also inherited it from its parent. Note that we use a clone of it,
-      //    so, data changes aren't applied until setListData() is called.
+      //    so, data changes aren't applied until setSourceData() is called.
       return this.createdData || this.loadedData || this.inheritedData
     },
 
@@ -153,7 +163,7 @@ export default DitoComponent.component('dito-form', {
       return this.getDataPathFrom(this.dataRouteComponent)
     },
 
-    listData() {
+    sourceData() {
       // Possible parents are DitoForm for forms, or DitoView for root lists.
       // Both have a data property which abstracts away loading and inheriting
       // of data.
@@ -168,36 +178,51 @@ export default DitoComponent.component('dito-form', {
         // parts that need to be treated like ids and mapped to indices in data.
         const pathParts = this.routeRecord.path.split('/')
         const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-        // Use -1 for length to skip final lookup, as we want the parent data.
-        for (let i = 0, l = dataParts.length - 1; i < l && data; i++) {
+        this.sourceKey = null
+        const lastDataPart = dataParts[dataParts.length - 1]
+        if (this.sourceType === 'object' && lastDataPart === 'create') {
+          // If we have an object source and are creating, the dataPath needs to
+          // be shortened by the 'create' entry. This isn't the case for list
+          // sources, because there the paranmter is also used for the item id.
+          dataParts.length--
+        }
+        for (let i = 0, l = dataParts.length; i < l && data; i++) {
           const dataPart = dataParts[i]
           // If this is an :id part, find the index of the item with given id.
           const key = /^:id/.test(routeParts[i])
             ? this.findItemIdIndex(data, dataPart)
             : dataPart
-          data = data[key]
+          // Skip the final lookup but remember `sourceKey`, as we want the
+          // parent data so we can replace the entry at `sourceKey` on it.
+          if (i === l - 1) {
+            this.sourceKey = key !== 'create' ? key : null
+          } else {
+            data = data[key]
+          }
         }
       }
       return data
     },
 
-    listIndex() {
-      // Find item by id in the parent list data.
-      return this.findItemIdIndex(this.listData, this.itemId)
-    },
-
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
-      // changes until changes are applied through setListData(), unless
+      // changes until changes are applied through setSourceData(), unless
       // `sourceSchema.mutate` is true, in which case data is mutated directly.
-      if (this.isTransient && this.clonedData === undefined && this.listData) {
-        let data = this.listIndex >= 0
-          ? this.listData[this.listIndex]
-          : null
+      if (
+        this.isTransient &&
+        this.clonedData === undefined &&
+        this.sourceData &&
+        this.sourceKey !== null
+      ) {
+        let data = this.sourceData[this.sourceKey]
         if (!this.doesMutate) {
           // Use a trick to store cloned inherited data in clonedData, to make
           // it reactive and prevent it from being cloned multiple times.
           this.clonedData = data = clone(data)
+        }
+        if (data === null && !this.create && this.sourceType === 'object') {
+          // If data of an object source is null, redirect to its create route.
+          this.$router.push({ path: 'create', append: true })
         }
         return data
       }
@@ -259,16 +284,19 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    setListData(data) {
-      const { clonedData, listIndex } = this
-      if (clonedData && listIndex >= 0) {
-        this.$set(this.listData, listIndex, {
-          ...clonedData,
-          ...this.filterData(data)
-        })
+    setSourceData(data) {
+      console.log('setSourceData', data)
+      if (this.sourceData && this.sourceKey !== null) {
+        this.$set(this.sourceData, this.sourceKey, this.filterData(data))
         return true
       }
       return false
+    },
+
+    addSourceData(data) {
+      return this.sourceType === 'list'
+        ? this.sourceData?.push(data) || false
+        : this.setSourceData(data)
     },
 
     filterData(data) {
@@ -279,9 +307,9 @@ export default DitoComponent.component('dito-form', {
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value)) {
           const component = this.getComponent(key)
-          // Only check for isNested on list items that actually load data,
+          // Only check for isNested on source items that actually load data,
           // since other components can have array values too.
-          if (component && component.isList && !component.isNested) {
+          if (component && component.isSource && !component.isNested) {
             continue
           }
         }
@@ -291,15 +319,17 @@ export default DitoComponent.component('dito-form', {
     },
 
     setData(data) {
-      // setData() is called after submit when data has changed. Try to modify
-      // this.listData first, for components with transient data.
-      if (!this.setListData(data)) {
+      // setData() is called after submit when data has changed.
+      if (this.isTransient) {
+        // For components with transient data, modify this.sourceData.
+        this.setSourceData(data)
+      } else {
         this.loadedData = data
       }
     },
 
     clearClonedData(newValue, oldValue) {
-      // Only clear if the watched listData itself changes in the form.
+      // Only clear if the watched sourceData itself changes in the form.
       if (newValue !== oldValue) {
         this.clonedData = undefined
       }
@@ -368,16 +398,13 @@ export default DitoComponent.component('dito-form', {
         // create the parent list.
         let ok = true
         if (this.create) {
-          const { listData } = this
-          if (listData) {
-            listData.push(payload)
-          } else {
-            ok = false
+          ok = this.addSourceData(payload)
+          if (!ok) {
             this.notify('error', 'Request Error',
               `Unable to ${this.verbs.create} item.`)
           }
         } else if (!this.doesMutate) {
-          this.setListData(payload)
+          this.setSourceData(payload)
           const label = this.getItemLabel(payload)
           if (onSuccess) {
             onSuccess.call(this, payload, label)

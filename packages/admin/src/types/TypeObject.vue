@@ -1,15 +1,12 @@
 <template lang="pug">
-  type-list.dito-object(
-    v-bind="$props"
-    :isObject="true"
-  )
+  type-list.dito-object(v-bind="$props")
 </template>
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import ListMixin from '@/mixins/ListMixin'
+import SourceMixin from '@/mixins/SourceMixin'
 
 export default TypeComponent.register('object', {
-  processSchema: ListMixin.processSchema
+  processSchema: SourceMixin.processSchema
 })
 </script>

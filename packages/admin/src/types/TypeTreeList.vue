@@ -37,11 +37,11 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import ListMixin from '@/mixins/ListMixin'
+import SourceMixin from '@/mixins/SourceMixin'
 import { isObject } from '@ditojs/utils'
 
 export default TypeComponent.register('tree-list', {
-  mixins: [ListMixin],
+  mixins: [SourceMixin],
 
   computed: {
     path() {
@@ -58,11 +58,12 @@ export default TypeComponent.register('tree-list', {
   processSchema
 })
 
-async function processSchema(api, schema, name, routes, parentMeta, level,
-  nested = true, flatten = false) {
-  return ListMixin.processSchema(
+async function processSchema(
+  api, schema, name, routes, parentMeta, level, nested = true, flatten = false
+) {
+  return SourceMixin.processSchema(
     api, schema, name, routes, parentMeta, level, nested, flatten,
-    // Pass processSchema() to add more routes to childRoutes:
+    // Pass process() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {
       const promises = []
       for (const [name, schema] of Object.entries(schema)) {
@@ -76,6 +77,7 @@ async function processSchema(api, schema, name, routes, parentMeta, level,
         }
       }
       return Promise.all(promises)
-    })
+    }
+  )
 }
 </script>

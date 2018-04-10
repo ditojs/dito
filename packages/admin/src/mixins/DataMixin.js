@@ -13,14 +13,8 @@ export default {
 
   created() {
     // Give other mixins the change to receive created() events first, e.g.
-    // ListMixin to set up query:
-    this.$nextTick(() => {
-      if (this.shouldReload) {
-        this.reloadData()
-      } else {
-        this.initData()
-      }
-    })
+    // SourceMixin to set up query:
+    this.$nextTick(() => this.initData())
   },
 
   computed: {
@@ -109,12 +103,13 @@ export default {
     },
 
     findItemIdIndex(data, itemId) {
-      return this.isTransient
+      const index = this.isTransient
         // For transient data, the index is used as the id
         ? itemId
         : data?.findIndex(
           (item, index) => this.getItemId(item, index) === itemId
         )
+      return index !== -1 ? index : null
     },
 
     getItemLabel(item, index, fallback = true) {
@@ -144,8 +139,28 @@ export default {
     },
 
     initData() {
-      if (this.shouldLoad) {
+      if (this.shouldReload) {
+        this.reloadData()
+      } else if (this.shouldLoad) {
         this.loadData(true)
+      }
+    },
+
+    reloadData() {
+      if (!this.isTransient) {
+        this.loadData(false)
+      }
+      this.routeComponent.reload = false
+    },
+
+    loadData(clear) {
+      if (!this.isTransient) {
+        if (clear) {
+          this.loadedData = null
+          // See DitoMixin for an explanation of `store.total` & co.
+          this.setStore('total', 0)
+        }
+        this.requestData()
       }
     },
 
@@ -178,24 +193,6 @@ export default {
         Object.values(schema.tabs).forEach(processComponents)
       }
       return data
-    },
-
-    reloadData() {
-      if (!this.isTransient) {
-        this.loadData(false)
-      }
-      this.routeComponent.reload = false
-    },
-
-    loadData(clear) {
-      if (!this.isTransient) {
-        if (clear) {
-          this.loadedData = null
-          // See DitoMixin for an explanation of `store.total` & co.
-          this.setStore('total', 0)
-        }
-        this.requestData()
-      }
     },
 
     requestData() {
@@ -241,7 +238,7 @@ export default {
       // could plug in as well.
       const { paginate } = this.sourceSchema
       const { page = 0, ...query } = this.query || {}
-      const limit = this.isList && paginate // Only use range on lists
+      const limit = this.isListSource && paginate // Only apply ranges on lists.
       const offset = page * limit
       return {
         ...query, // Query may override scope.
