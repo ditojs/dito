@@ -1,5 +1,4 @@
 import { isArray, isAbsoluteUrl, pick } from '@ditojs/utils'
-import { hasForm } from '@/utils'
 
 export default {
   // Inherit the $validator from the parent.
@@ -91,10 +90,6 @@ export default {
     validations() {
       const rules = this.getValidationRules()
       return { rules }
-    },
-
-    hasForm() {
-      return hasForm(this.schema)
     }
   },
 

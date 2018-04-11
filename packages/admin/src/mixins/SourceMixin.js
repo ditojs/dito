@@ -2,7 +2,7 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { processForms } from '@/schema'
+import { processForms, hasForms, isObjectSource, isListSource } from '@/schema'
 import {
   isObject, isArray, camelize, labelize, parseDataPath
 } from '@ditojs/utils'
@@ -11,7 +11,7 @@ export default {
   mixins: [DataMixin],
 
   defaultValue(type) {
-    return type === 'object' ? null : []
+    return isListSource(type) ? [] : null
   },
 
   data() {
@@ -56,11 +56,11 @@ export default {
 
   computed: {
     isObjectSource() {
-      return this.type === 'object'
+      return isObjectSource(this.type)
     },
 
     isListSource() {
-      return !this.isObjectSource
+      return isListSource(this.type)
     },
 
     listData() {
@@ -146,7 +146,7 @@ export default {
     },
 
     creatable() {
-      return this.hasForm && this.getSchemaValue('creatable', true)
+      return hasForms(this.schema) && this.getSchemaValue('creatable', true)
         ? this.isObjectSource
           ? !this.value
           : true
@@ -353,11 +353,10 @@ async function processSchema(
     // While lists in views have their own route records, nested lists in
     // forms do not, and need their path prefixed with the parent's path:
     const formPath = isView ? '' : path
-    const isObjectSource = schema.type === 'object'
     const formRoute = {
       // Object sources don't need id params in their form paths, as they
       // directly edit one object.
-      path: getPathWithParam(formPath, !isObjectSource && param),
+      path: getPathWithParam(formPath, isListSource(schema) && param),
       component: nested ? DitoNestedForm : DitoForm,
       meta: formMeta
     }
@@ -394,7 +393,7 @@ async function processSchema(
         meta
       })
     } else {
-      if (isObjectSource) {
+      if (isObjectSource(schema)) {
         // Also add a param route, simply to handle '/create' links the same
         // way that lists do, where it overlaps with :id for item ids.
         routes.push({

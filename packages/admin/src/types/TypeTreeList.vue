@@ -38,7 +38,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { hasForm } from '@/utils'
+import { hasForms } from '@/schema'
 
 export default TypeComponent.register('tree-list', {
   mixins: [SourceMixin],
@@ -66,12 +66,14 @@ async function processSchema(
     // Pass process() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {
       const promises = []
-      for (const [name, schema] of Object.entries(schema)) {
-        if (hasForm(schema)) {
+      for (const [name, subSchema] of Object.entries(schema)) {
+        if (hasForms(subSchema)) {
+          // Add `type` to the nested tree list.
+          subSchema.type = 'tree-list'
           promises.push(
-            // Pass `true` for `flatten` in tree lists.
             processSchema(
-              api, schema, name, childRoutes, parentMeta, level, nested, true
+              // Pass `true` for `flatten` in tree lists.
+              api, subSchema, name, childRoutes, parentMeta, level, nested, true
             )
           )
         }

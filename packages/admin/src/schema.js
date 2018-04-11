@@ -1,6 +1,6 @@
 import TypeComponent from './TypeComponent'
 import DitoView from '@/components/DitoView'
-import { isFunction, isPromise } from '@ditojs/utils'
+import { isObject, isFunction, isPromise } from '@ditojs/utils'
 
 export async function resolveViews(views) {
   if (isFunction(views)) {
@@ -121,4 +121,18 @@ export async function resolveForms(forms) {
     },
     {}
   )
+}
+
+export function hasForms(schema) {
+  // Support both single form and multiple forms notation.
+  return isObject(schema) && (schema.form || schema.forms)
+}
+
+export function isObjectSource(schemaOrType) {
+  const type = isObject(schemaOrType) ? schemaOrType.type : schemaOrType
+  return !!TypeComponent.get(type)?.options.isObjectSource
+}
+
+export function isListSource(schemaOrType) {
+  return !isObjectSource(schemaOrType)
 }

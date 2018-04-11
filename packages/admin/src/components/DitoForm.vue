@@ -42,6 +42,7 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
+import { isObjectSource } from '@/schema'
 import {
   isArray, isObject, clone, pick, capitalize, parseDataPath
 } from '@ditojs/utils'
@@ -97,10 +98,6 @@ export default DitoComponent.component('dito-form', {
 
     sourceSchema() {
       return this.meta.schema
-    },
-
-    sourceType() {
-      return this.sourceSchema.type
     },
 
     isActive() {
@@ -180,7 +177,7 @@ export default DitoComponent.component('dito-form', {
         const routeParts = pathParts.slice(pathParts.length - dataParts.length)
         this.sourceKey = null
         const lastDataPart = dataParts[dataParts.length - 1]
-        if (this.sourceType === 'object' && lastDataPart === 'create') {
+        if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
           // If we have an object source and are creating, the dataPath needs to
           // be shortened by the 'create' entry. This isn't the case for list
           // sources, because there the paranmter is also used for the item id.
@@ -220,7 +217,11 @@ export default DitoComponent.component('dito-form', {
           // it reactive and prevent it from being cloned multiple times.
           this.clonedData = data = clone(data)
         }
-        if (data === null && !this.create && this.sourceType === 'object') {
+        if (
+          data === null &&
+          !this.create &&
+          isObjectSource(this.sourceSchema)
+        ) {
           // If data of an object source is null, redirect to its create route.
           this.$router.push({ path: 'create', append: true })
         }
@@ -285,7 +286,6 @@ export default DitoComponent.component('dito-form', {
     },
 
     setSourceData(data) {
-      console.log('setSourceData', data)
       if (this.sourceData && this.sourceKey !== null) {
         this.$set(this.sourceData, this.sourceKey, this.filterData(data))
         return true
@@ -294,7 +294,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     addSourceData(data) {
-      return this.sourceType === 'object'
+      return isObjectSource(this.sourceSchema)
         ? this.setSourceData(data)
         : this.sourceData?.push(data) || false
     },

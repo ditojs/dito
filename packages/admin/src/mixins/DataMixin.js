@@ -1,5 +1,6 @@
 import TypeComponent from '@/TypeComponent'
 import LoadingMixin from './LoadingMixin'
+import { isListSource } from '@/schema'
 import { isString, isFunction, pick, clone } from '@ditojs/utils'
 
 export default {
@@ -128,7 +129,7 @@ export default {
         const id = this.getItemId(item)
         label = id
           ? `(id: ${id})`
-          : type !== 'object' && index !== undefined
+          : isListSource(type) && index !== undefined
             ? `${index + 1}`
             : ''
         if (label) {
