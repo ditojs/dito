@@ -232,11 +232,15 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 
-export default TypeComponent.register('list', {
+export default TypeComponent.register([
+  'list', 'object'
+], {
   mixins: [SourceMixin, OrderedMixin],
+  components: { VueDraggable },
 
-  components: {
-    VueDraggable
+  getSourceType(type) {
+    // No need for transformation here. See TypeTreeList for details.
+    return type
   },
 
   computed: {

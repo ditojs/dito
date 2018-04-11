@@ -120,9 +120,7 @@ export default DitoComponent.component('dito-tree-item', {
     container: { type: Object, required: true }
   },
 
-  components: {
-    VueDraggable
-  },
+  components: { VueDraggable },
 
   data() {
     return {

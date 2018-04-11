@@ -43,6 +43,12 @@ import { hasForms } from '@/schema'
 export default TypeComponent.register('tree-list', {
   mixins: [SourceMixin],
 
+  getSourceType(/* type */) {
+    // TODO: Implement object source type:
+    // return type === 'tree-object' ? 'object' : 'list'
+    return 'list'
+  },
+
   computed: {
     path() {
       // Accessed from DitoTreeItem through `container.path`:

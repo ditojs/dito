@@ -114,7 +114,7 @@ export default {
     },
 
     getItemLabel(item, { index, formLabel = true, autoLabel = true } = {}) {
-      const { itemLabel, columns, type } = this.sourceSchema
+      const { itemLabel, columns } = this.sourceSchema
       if (itemLabel === false) return null
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
@@ -129,7 +129,7 @@ export default {
         const id = this.getItemId(item)
         label = id
           ? `(id: ${id})`
-          : isListSource(type) && index !== undefined
+          : isListSource(this.sourceSchema) && index !== undefined
             ? `${index + 1}`
             : ''
         if (label) {
