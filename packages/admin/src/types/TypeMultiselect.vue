@@ -12,9 +12,9 @@
     :track-by="optionValue"
     :group-label="groupByLabel"
     :group-values="groupByOptions"
-    :multiple="!!multiple"
-    :searchable="!!searchable"
-    :taggable="!!taggable"
+    :multiple="multiple"
+    :searchable="searchable"
+    :taggable="taggable"
     :internal-search="true"
     :close-on-select="true"
     :loading="loading"
@@ -217,15 +217,15 @@ export default TypeComponent.register('multiselect', {
     },
 
     multiple() {
-      return this.schema.multiple
+      return this.getSchemaValue('multiple', true)
     },
 
     searchable() {
-      return this.schema.searchable
+      return this.getSchemaValue('searchable', true)
     },
 
     taggable() {
-      return this.schema.taggable
+      return this.getSchemaValue('taggable', true)
     },
 
     placeholder() {
