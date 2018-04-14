@@ -1,5 +1,6 @@
 import compose from 'koa-compose'
 import Router from 'koa-router'
+import multer from 'koa-multer'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys } from '@/utils'
 import ControllerAction from './ControllerAction'
@@ -43,17 +44,25 @@ export class Controller {
         // we can use the normal inheritance mechanism through `setupActions()`:
         this.controller = this.setupActions('controller')
       }
+      this.setupUploads()
     }
   }
 
   compose() {
-    return compose(this.router
-      ? [
+    const middleware = [
+      (ctx, next) => {
+        // Expose the handling controller through `ctx.state`.
+        ctx.state.controller = this
+        return next()
+      }
+    ]
+    if (this.router) {
+      middleware.push(
         this.router.routes(),
         this.router.allowedMethods()
-      ]
-      : []
-    )
+      )
+    }
+    return compose(middleware)
   }
 
   reflectControllerObject() {
@@ -133,27 +142,28 @@ export class Controller {
       : currentValues
   }
 
-  processActions(actions) {
-    if (!actions) return actions
-    // Respect `allow` settings and clear action methods that aren't listed.
-    // Also collect and expand `authorize` settings so that at the end, the
-    // `actions` object contains an `authorize` object with valid settings
-    // for all the defined actions.
+  processValues(values) {
+    if (!values) return {}
+    // Respect `allow` settings and clear entries that aren't allowed.
+    // Also collect and expand `authorize` settings so that in the end, an
+    // `authorize` object can be returned with valid settings for all values.
     //
     // Rules:
-    // - Own actions on action objects that don't define an `allow` array are
+    // - Own values on objects that don't define an `allow` array are
     //   automatically allowed. If an `allow` array is defined as well, then
-    //   these own actions need to be explicitly listed.
+    //   these own values need to be explicitly listed.
     // - If no `allow` arrays are defined in the prototypal hierarchy, each
-    //   level allows its own actions, and these are merged, except for those
+    //   level allows its own values, and these are merged, except for those
     //   marked as `$core`, which need to be explicitly listed in `allow`.
 
     // NOTE: `handleAllow()` and `handleAuthorize()` are applied in sequence of
-    // the `actions` inheritance, from sub-class to base-class.
+    // the `values` inheritance, from sub-class to base-class.
 
     const mergedAllow = {}
     const mergedAuthorize = {}
     let hasOwnAllow = false
+
+    const excludeKey = key => ['allow', 'authorize'].includes(key)
 
     const handleAllow = (allow, current) => {
       if (allow) {
@@ -169,7 +179,7 @@ export class Controller {
           allow = getAllKeys(current)
         }
         for (const key of allow) {
-          if (key !== 'allow') {
+          if (!excludeKey(key)) {
             mergedAllow[key] = true
           }
         }
@@ -180,26 +190,31 @@ export class Controller {
       const add = (key, value) => {
         // Since we're walking up in the inheritance change, only take on an
         // authorize setting for a given key if it wasn't already defined before
-        if (isFunction(actions[key]) && !(key in mergedAuthorize)) {
+        if (
+          key in values &&
+          !(key in mergedAuthorize) &&
+          !excludeKey(key)
+        ) {
           mergedAuthorize[key] = value
         }
       }
+
       if (isObject(authorize)) {
         for (const key in authorize) {
           add(key, authorize[key])
         }
       } else if (authorize != null) {
-        // This is an actions-wide setting. Loop through all actions, not just
+        // This is an values-wide setting. Loop through all values, not just
         // current ones, and apply to any action that doesn't already have one:
-        for (const key in actions) {
+        for (const key in values) {
           add(key, authorize)
         }
       }
     }
 
-    // Process the `allow` and `authorize` settings in sequence of the `actions`
+    // Process the `allow` and `authorize` settings in sequence of the `values`
     // inheritance, from sub-class to base-class.
-    let current = actions
+    let current = values
     while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
       handleAllow(getOwnProperty(current, 'allow'), current)
       handleAuthorize(getOwnProperty(current, 'authorize'))
@@ -209,24 +224,26 @@ export class Controller {
     // At the end of the chain, also support both settings on the controller-
     // level, and thus applied to all action objects in the controller.
     if (this.allow) {
-      handleAllow(this.allow, actions)
+      handleAllow(this.allow, values)
     }
     if (this.authorize) {
       handleAuthorize(this.authorize)
     }
 
-    // Convert to a new `values` object that explicitly lists allowed actions in
-    // its `allow` array, including expansion of '*'. This is required for
-    // proper inheritance of `allow` arrays.
-    return getAllKeys(actions).reduce((result, key) => {
-      if (key !== 'allow' && mergedAllow[key]) {
-        result[key] = actions[key]
-      }
-      return result
-    }, {
+    return {
+      // Create a filtered `values` object that only contains the allowed fields
+      values: getAllKeys(values).reduce(
+        (result, key) => {
+          if (mergedAllow[key]) {
+            result[key] = values[key]
+          }
+          return result
+        },
+        {}
+      ),
       allow: Object.keys(mergedAllow),
       authorize: mergedAuthorize
-    })
+    }
   }
 
   processAuthorize(authorize) {
@@ -274,30 +291,7 @@ export class Controller {
     }
   }
 
-  setupActions(type) {
-    const actions = this.processActions(this.inheritValues(type))
-    const { authorize } = actions
-    for (const name in actions) {
-      const action = actions[name]
-      if (isFunction(action)) {
-        this.setupAction(type, name, action, authorize[name])
-      }
-    }
-    return actions
-  }
-
-  setupAction(type, name, action, authorize) {
-    this.setupRoute(
-      type,
-      action.verb || 'get',
-      action.path || this.app.normalizePath(name),
-      authorize,
-      new ControllerAction(this, action, authorize)
-    )
-  }
-
-  setupRoute(type, verb, path, authorize, controllerAction) {
-    const url = this.getUrl(type, path)
+  setupRoute(url, verb, authorize, ...handlers) {
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
@@ -309,16 +303,93 @@ export class Controller {
     if (!this.router) {
       this.router = new Router()
     }
-    this.router[verb](url, async ctx => {
-      try {
-        const res = await controllerAction.callAction(ctx)
-        if (res !== undefined) {
-          ctx.body = res
+    this.router[verb](url, ...handlers)
+  }
+
+  setupActions(type) {
+    const {
+      values: actions,
+      authorize
+    } = this.processValues(this.inheritValues(type))
+    for (const name in actions) {
+      this.setupAction(type, name, actions[name], authorize[name])
+    }
+    return actions
+  }
+
+  setupAction(type, name, action, authorize) {
+    this.setupActionRoute(
+      type,
+      action.verb || 'get',
+      action.path || this.app.normalizePath(name),
+      authorize,
+      new ControllerAction(this, action, authorize)
+    )
+  }
+
+  setupActionRoute(type, verb, path, authorize, controllerAction) {
+    this.setupRoute(
+      this.getUrl(type, path), verb, authorize,
+      async ctx => {
+        try {
+          const res = await controllerAction.callAction(ctx)
+          if (res !== undefined) {
+            ctx.body = res
+          }
+        } catch (err) {
+          throw err instanceof ResponseError ? err : new WrappedError(err)
         }
-      } catch (err) {
-        throw err instanceof ResponseError ? err : new WrappedError(err)
       }
+    )
+  }
+
+  setupUploads() {
+    const {
+      values: upload,
+      authorize
+    } = this.processValues(this.inheritValues('upload'))
+    for (const name in upload) {
+      this.setupUpload(name, upload[name], authorize[name])
+    }
+  }
+
+  setupUpload(name, config = {}, authorize) {
+    if (isString(config)) {
+      config = {
+        storage: config
+      }
+    }
+    const {
+      storage: storageName,
+      ...settings
+    } = config
+    const storage = this.app.storage[storageName]
+    if (!storage) {
+      throw new ControllerError(this,
+        `Unknown storage configuration: '${storageName}'`
+      )
+    }
+    const url = this.getUrl('controller', `upload/${name}`)
+    const upload = multer({
+      storage
     })
+    const authorizeFunc = this.processAuthorize(authorize)
+    this.setupRoute(
+      url, 'post', authorize,
+      async (ctx, next) => {
+        await this.handleAuthorization(authorizeFunc, ctx)
+        // Give the multer callbacks access to `ctx` through `req`.
+        ctx.req.ctx = ctx
+        return next()
+      },
+      upload.fields([{
+        ...settings,
+        name
+      }]),
+      ctx => {
+        ctx.body = ctx.req.files[name]
+      }
+    )
   }
 
   log(str, indent = 0) {

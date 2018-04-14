@@ -44,7 +44,7 @@ export class CollectionController extends Controller {
       path = action.path || this.app.normalizePath(name)
       actionClass = type === 'member' ? MemberAction : ControllerAction
     }
-    this.setupRoute(
+    this.setupActionRoute(
       type,
       verb,
       path,

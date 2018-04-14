@@ -2,11 +2,15 @@ import Koa from 'koa'
 import Knex from 'knex'
 import util from 'util'
 import chalk from 'chalk'
+import fs from 'fs-extra'
+import path from 'path'
+import uuidv1 from 'uuid/v1'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
+import multer from 'koa-multer'
 import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
@@ -28,7 +32,7 @@ export class Application extends Koa {
     // asynchronous events.
     // TODO: Test if Koa's internal events still behave the same (they should!)
     EventEmitter.mixin(this)
-    // Pluck keys out of config.app to keep them secret
+    // Pluck keys out of `config.app` to keep them secret
     const { keys, ...app } = config.app || {}
     this.config = { ...config, app }
     this.keys = keys
@@ -36,8 +40,12 @@ export class Application extends Koa {
     this.models = Object.create(null)
     this.controllers = Object.create(null)
     this.validator = validator || new Validator()
+    this.storage = {}
     this.setupMiddleware()
     this.setupKnex()
+    if (config.storage) {
+      this.setupStorage(config.storage)
+    }
     if (models) {
       this.addModels(models)
     }
@@ -149,6 +157,39 @@ export class Application extends Koa {
       this.controllers[controller.url] = controller
     } else {
       throw new Error(`Unknown controller: ${controller}`)
+    }
+  }
+
+  setupStorage(config) {
+    for (const [name, settings] of Object.entries(config)) {
+      let storage = null
+      if (isPlainObject(settings)) {
+        const { dest, s3 } = settings
+        if (dest) {
+          storage = multer.diskStorage({
+            destination(req, file, cb) {
+              const uuid = uuidv1()
+              file.filename = uuid
+              const dir = path.resolve(dest, uuid[0], uuid[1])
+              fs.ensureDir(dir)
+                .then(() => cb(null, dir))
+                .catch(cb)
+            },
+
+            filename(req, file, cb) {
+              cb(null, file.filename)
+            }
+          })
+        } else if (s3) {
+          // TODO: Implement multer-s3
+        }
+      } else if (isObject(settings)) {
+        // Assume that this is already a multer storage instance.
+        storage = settings
+      }
+      if (storage) {
+        this.storage[name] = storage
+      }
     }
   }
 
