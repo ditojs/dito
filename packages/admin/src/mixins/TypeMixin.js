@@ -90,6 +90,10 @@ export default {
     validations() {
       const rules = this.getValidationRules()
       return { rules }
+    },
+
+    verbs() {
+      return this.formComponent.verbs
     }
   },
 
