@@ -4,6 +4,17 @@ table.dito-table
   border-radius: $border-radius
   &:not(:empty)
     margin: -$list-spacing 0
+
+  .dito-buttons
+    width: 1%
+    text-align: right
+    vertical-align: top // For vertical-align: baseline in normal td to work.
+    line-height: 1em
+    .dito-button-drag
+      cursor: grab
+      &:active,
+        cursor: grabbing
+
   > tbody,
   > tfoot
     > tr
@@ -43,7 +54,7 @@ table.dito-table
     & + tfoot
       > tr
         > td.dito-buttons
-          padding: 2px
+          padding: $button-margin
   > tbody:empty + tfoot
     > tr
       > td
@@ -71,3 +82,36 @@ table.dito-table
             border-bottom-left-radius: $border-radius
           > td:last-child
             border-bottom-right-radius: $border-radius
+
+thead.dito-table-head
+  +user-select(none)
+  th
+    padding: 0
+    background: $color-lighter
+    font-weight: normal
+    text-align: left
+    & + th
+      border-left: $border-style
+    // Convention: Nested spans handle margin and spacing
+    span
+      display: inline-block
+      padding: $button-padding-ver 0
+      margin: 0 $form-spacing
+      // When there's no sort-button, add a 1px border to get same height
+      &:first-child
+        border: 1px solid transparent
+    &:first-child
+      &,
+      button
+        border-top-left-radius: $border-radius
+        border-bottom-left-radius: $border-radius
+    &:last-child
+      &,
+      button
+        border-top-right-radius: $border-radius
+        border-bottom-right-radius: $border-radius
+    .dito-button
+      padding: 0
+      width: 100%
+      text-align: inherit
+      border-radius: 0

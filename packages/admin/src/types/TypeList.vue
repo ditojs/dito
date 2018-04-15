@@ -16,7 +16,7 @@
         :total="total || 0"
       )
     table.dito-table
-      dito-list-header(
+      dito-list-head(
         v-if="columns"
         :query="query"
         :columns="columns"
@@ -115,16 +115,6 @@
         float: left
       .dito-pagination
         float: right
-    .dito-buttons
-      width: 1%
-      text-align: right
-      vertical-align: top // For vertical-align: baseline in normal td to work.
-      line-height: 1em
-      border-top: 1px solid $color-white
-      .dito-button-drag
-        cursor: grab
-        &:active,
-          cursor: grabbing
   // Inline Rows
   tr.dito-inline-row
     display: block
@@ -133,8 +123,8 @@
       margin-bottom: 0
     &.dito-inline-bar
       position: relative
-      // Only style the td elements directly in this .dito-inline-bar,
-      // not further nested ones:
+      // Only style the td and .dito-buttons elements directly in this
+      // .dito-inline-bar, not further nested ones:
       > table
         > tbody
           > tr
