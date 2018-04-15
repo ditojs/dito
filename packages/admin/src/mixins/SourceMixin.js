@@ -10,8 +10,8 @@ import {
 export default {
   mixins: [DataMixin],
 
-  defaultValue(type) {
-    return isListSource(type) ? [] : null
+  defaultValue(schema) {
+    return isListSource(schema) ? [] : null
   },
 
   data() {

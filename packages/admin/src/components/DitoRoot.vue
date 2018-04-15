@@ -126,7 +126,13 @@ export default DitoComponent.component('dito-root', {
           this.setUser(response.data.user)
           await this.resolveViews()
         } catch (err) {
-          console.error(err)
+          const error = err.response?.data?.error
+          if (error) {
+            this.notify('error', 'Authentication Error', error)
+            this.login()
+          } else {
+            console.error(err, err.response)
+          }
         }
       }
     },

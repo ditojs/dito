@@ -190,7 +190,7 @@ export default {
             null
           )
           data[key] = isFunction(defaultValue)
-            ? defaultValue(componentSchema.type)
+            ? defaultValue(componentSchema)
             : clone(defaultValue)
         }
       }
