@@ -25,7 +25,7 @@
       vue-draggable(
         element="tbody"
         :list="listData"
-        :options="dragOptions"
+        :options="getDragOptions(draggable)"
         @start="onStartDrag"
         @end="onEndDrag"
       )
@@ -176,15 +176,6 @@ export default TypeComponent.register([
       const { listData } = this
       return !!(listData?.length > 0 &&
         (this.editable || this.deletable || this.draggable))
-    },
-
-    dragOptions() {
-      return {
-        animation: 150,
-        disabled: !this.schema.draggable,
-        handle: '.dito-button-drag',
-        ghostClass: 'dito-drag-ghost'
-      }
     }
   },
 

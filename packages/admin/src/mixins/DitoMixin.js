@@ -139,6 +139,15 @@ export default {
 
     closeNotifications() {
       this.rootComponent.closeNotifications()
+    },
+
+    getDragOptions(draggable) {
+      return {
+        animation: 150,
+        disabled: !draggable,
+        handle: '.dito-button-drag',
+        ghostClass: 'dito-drag-ghost'
+      }
     }
   }
 }

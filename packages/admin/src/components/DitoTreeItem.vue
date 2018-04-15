@@ -189,12 +189,7 @@ export default DitoComponent.component('dito-tree-item', {
             children,
             items,
             draggable,
-            dragOptions: {
-              animation: 150,
-              disabled: !draggable,
-              handle: '.dito-button-drag',
-              ghostClass: 'dito-drag-ghost'
-            }
+            dragOptions: this.getDragOptions(draggable)
           })
         }
       }
