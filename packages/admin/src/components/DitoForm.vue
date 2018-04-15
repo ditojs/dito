@@ -504,10 +504,10 @@ export default DitoComponent.component('dito-form', {
       // Also handle items with relate and convert them to only contain ids.
       const process = (data, dataPath = '') => {
         // First, see if there's an associated component requiring processing.
-        // See TypeMixin.processData(), OptionsMixin.processData():
+        // See TypeMixin.processValue(), OptionsMixin.processValue():
         const component = this.getComponent(dataPath)
         if (component) {
-          data = component.processData(data, dataPath)
+          data = component.processValue(data, dataPath)
         }
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for

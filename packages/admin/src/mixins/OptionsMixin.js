@@ -183,16 +183,16 @@ export default {
         : option
     },
 
-    processData(data, dataPath) {
+    processValue(value, dataPath) {
       if (this.relate) {
         // Convert object to a shallow copy with only id.
         const processRelate = data => data ? { id: data.id } : data
         // Selected options can be both objects and arrays, e.g. TypeCheckboxes:
-        data = isArray(data)
-          ? data.map(entry => processRelate(entry))
-          : processRelate(data)
+        value = isArray(value)
+          ? value.map(entry => processRelate(entry))
+          : processRelate(value)
       }
-      return TypeMixin.methods.processData.call(this, data, dataPath)
+      return TypeMixin.methods.processValue.call(this, value, dataPath)
     }
   }
 }

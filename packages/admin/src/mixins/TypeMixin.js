@@ -24,7 +24,7 @@ export default {
       routeComponent.components[dataPath] = this
       // If this component is nested, also register its components with the root
       // route component.
-      // This is needed for processData() to be able to correctly process all
+      // This is needed for processValue() to be able to correctly process all
       // nested data, even if the nested form was already closed on submit.
       if (dataRouteComponent !== routeComponent) {
         dataRouteComponent.components[dataPath] = this
@@ -187,16 +187,16 @@ export default {
       return res
     },
 
-    processData(data, dataPath) {
+    processValue(value, dataPath) {
       const { schema } = this
       return schema.exclude
         ? undefined
         : schema.process
           ? pick(
-            schema.process(data, this.data, dataPath),
-            data
+            schema.process(value, this.data, dataPath),
+            value
           )
-          : data
+          : value
     },
 
     addError(error) {
