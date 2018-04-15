@@ -138,7 +138,7 @@ export default {
     },
 
     paginate() {
-      return this.getSchemaValue('paginate', false)
+      return this.getSchemaValue('paginate', true)
     },
 
     inline() {

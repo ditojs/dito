@@ -1,6 +1,6 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
-import { isFunction, isString, isArray, asArray, labelize } from '@ditojs/utils'
+import { isFunction, isArray, labelize } from '@ditojs/utils'
 
 export default {
   inject: ['api'],
@@ -82,13 +82,13 @@ export default {
 
     labelize,
 
-    getSchemaValue(key, matchRole = true, schema = this.schema) {
+    getSchemaValue(key, matchRole = false, schema = this.schema) {
       let value = schema[key]
       if (isFunction(value)) {
         value = value.call(this, this.data)
       }
-      if (matchRole && (isString(value) || isArray(value))) {
-        value = this.user.hasRole(...asArray(value))
+      if (matchRole && isArray(value)) {
+        value = this.user.hasRole(...value)
       }
       return value
     },
