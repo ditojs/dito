@@ -10,17 +10,21 @@ export const UserMixin = Model => class extends Model {
       type: 'string',
       required: true
     },
+
     email: {
       type: 'string',
       format: 'email'
     },
+
     password: {
       type: 'string'
     },
+
     hash: {
       type: 'string',
       hidden: true
     },
+
     roles: {
       type: 'array',
       item: {
@@ -28,6 +32,7 @@ export const UserMixin = Model => class extends Model {
       },
       default: []
     },
+
     lastLogin: {
       type: 'timestamp',
       nullable: true

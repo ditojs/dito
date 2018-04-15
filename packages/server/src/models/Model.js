@@ -106,7 +106,8 @@ export class Model extends objection.Model {
   }
 
   static get tableName() {
-    return this.name
+    // If the class name ends in 'Model', remove that from the table name.
+    return this.name.match(/^(.*?)(?:Model|)$/)[1]
   }
 
   static get idColumn() {

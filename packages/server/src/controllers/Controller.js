@@ -20,6 +20,7 @@ export class Controller {
   }
 
   initialize(isRoot = true, setupControllerObject = true) {
+    // If the class name ends in 'Controller', remove it from controller name.
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
     if (this.path === undefined) {
@@ -31,7 +32,7 @@ export class Controller {
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
         `${
-          namespace ? chalk.green(`${namespace}/`) : ''}${
+          namespace ? chalk.green(`/${namespace}/`) : ''}${
           chalk.cyan(path)}${
           chalk.white(':')
         }`,
@@ -44,7 +45,7 @@ export class Controller {
         // we can use the normal inheritance mechanism through `setupActions()`:
         this.controller = this.setupActions('controller')
       }
-      this.setupUploads()
+      this.upload = this.setupUpload()
     }
   }
 
@@ -291,12 +292,13 @@ export class Controller {
     }
   }
 
-  setupRoute(url, verb, authorize, ...handlers) {
+  setupRoute({ url, verb, authorize, handlers }) {
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
-        chalk.white(url)} ${
-        chalk.gray(this.describeAuthorize(authorize))
+        chalk.green(this.url)}${
+        chalk.cyan(url.substring(this.url.length))} ${
+        chalk.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1
     )
@@ -328,32 +330,44 @@ export class Controller {
   }
 
   setupActionRoute(type, verb, path, authorize, controllerAction) {
-    this.setupRoute(
-      this.getUrl(type, path), verb, authorize,
-      async ctx => {
-        try {
-          const res = await controllerAction.callAction(ctx)
-          if (res !== undefined) {
-            ctx.body = res
+    this.setupRoute({
+      url: this.getUrl(type, path),
+      verb,
+      authorize,
+      handlers: [
+        async ctx => {
+          try {
+            const res = await controllerAction.callAction(ctx)
+            if (res !== undefined) {
+              ctx.body = res
+            }
+          } catch (err) {
+            throw err instanceof ResponseError ? err : new WrappedError(err)
           }
-        } catch (err) {
-          throw err instanceof ResponseError ? err : new WrappedError(err)
         }
-      }
-    )
+      ]
+    })
   }
 
-  setupUploads() {
+  setupUpload() {
     const {
       values: upload,
       authorize
     } = this.processValues(this.inheritValues('upload'))
     for (const name in upload) {
-      this.setupUpload(name, upload[name], authorize[name])
+      // Write back the converted configuration, so that from here on out,
+      // the object notation can be assumed for all of them, see:
+      // `getUploadConfiguration()`
+      upload[name] = this.setupUploadRoute(name, upload[name], authorize[name])
     }
+    return upload
   }
 
-  setupUpload(name, config = {}, authorize) {
+  getUploadConfig(name) {
+    return this.upload[name] || null
+  }
+
+  setupUploadRoute(name, config = {}, authorize) {
     if (isString(config)) {
       config = {
         storage: config
@@ -363,7 +377,7 @@ export class Controller {
       storage: storageName,
       ...settings
     } = config
-    const storage = this.app.storage[storageName]
+    const storage = this.app.getStorage(storageName)
     if (!storage) {
       throw new ControllerError(this,
         `Unknown storage configuration: '${storageName}'`
@@ -374,22 +388,32 @@ export class Controller {
       storage
     })
     const authorizeFunc = this.processAuthorize(authorize)
-    this.setupRoute(
-      url, 'post', authorize,
-      async (ctx, next) => {
-        await this.handleAuthorization(authorizeFunc, ctx)
-        // Give the multer callbacks access to `ctx` through `req`.
-        ctx.req.ctx = ctx
-        return next()
-      },
-      upload.fields([{
-        ...settings,
-        name
-      }]),
-      ctx => {
-        ctx.body = ctx.req.files[name]
-      }
-    )
+    this.setupRoute({
+      url,
+      verb: 'post',
+      authorize,
+      handlers: [
+        async (ctx, next) => {
+          await this.handleAuthorization(authorizeFunc, ctx)
+          // Give the multer callbacks access to `ctx` through `req`.
+          ctx.req.ctx = ctx
+          return next()
+        },
+
+        upload.fields([{
+          ...settings,
+          name
+        }]),
+
+        async (ctx, next) => {
+          const files = this.app.convertUploads(ctx.req.files[name])
+          await this.app.rememberUploads(this.url, name, files)
+          ctx.body = files
+          return next()
+        }
+      ]
+    })
+    return config
   }
 
   log(str, indent = 0) {

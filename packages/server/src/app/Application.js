@@ -130,6 +130,11 @@ export class Application extends Koa {
     )
   }
 
+  getModel(name) {
+    return this.models[name] ||
+      !name.endsWith('Model') && this.models[`${name}Model`]
+  }
+
   addControllers(controllers, namespace) {
     for (const [key, value] of Object.entries(controllers)) {
       if (isPlainObject(value)) {
@@ -160,6 +165,10 @@ export class Application extends Koa {
     }
   }
 
+  getController(url) {
+    return this.controllers[url]
+  }
+
   setupStorage(config) {
     for (const [name, settings] of Object.entries(config)) {
       let storage = null
@@ -169,8 +178,8 @@ export class Application extends Koa {
           storage = multer.diskStorage({
             destination(req, file, cb) {
               const uuid = uuidv1()
-              file.filename = uuid
-              const dir = path.resolve(dest, uuid[0], uuid[1])
+              file.filename = `${uuid}${path.extname(file.originalname)}`
+              const dir = path.join(dest, uuid[0], uuid[1])
               fs.ensureDir(dir)
                 .then(() => cb(null, dir))
                 .catch(cb)
@@ -180,16 +189,106 @@ export class Application extends Koa {
               cb(null, file.filename)
             }
           })
+          storage.dest = dest
         } else if (s3) {
           // TODO: Implement multer-s3
+          // storage.s3 = s3
         }
       } else if (isObject(settings)) {
         // Assume that this is already a multer storage instance.
         storage = settings
       }
       if (storage) {
+        storage.name = name
         this.storage[name] = storage
       }
+    }
+  }
+
+  getStorage(name) {
+    return this.storage[name]
+  }
+
+  convertUpload(file) {
+    // Convert multer-file object to our own file object format.
+    // TODO: Figure out how to handle s3.
+    return {
+      mimeType: file.mimetype,
+      destination: file.destination,
+      fileName: file.filename,
+      originalName: file.originalname,
+      size: file.size
+    }
+  }
+
+  convertUploads(files) {
+    return files.map(
+      file => this.convertUpload(file)
+    )
+  }
+
+  getUploadStorage({
+    storageName,
+    // or:
+    controllerUrl,
+    uploadName
+  }) {
+    // If controllerUrl & uploadName are provided get the storageName from them.
+    if (controllerUrl && uploadName) {
+      const controller = this.getController(controllerUrl)
+      const uploadConfig = controller?.getUploadConfig(uploadName)
+      storageName = uploadConfig?.storage
+    }
+    return storageName ? this.getStorage(storageName) : null
+  }
+
+  getUploadPath(file, config) {
+    // TODO: Figure out how to handle s3.
+    const filePath = path.join(file.destination, file.fileName)
+    // If the upload config is provided, make sure that the file actually
+    // resides in its storage.
+    const storage = this.getUploadStorage(config)
+    if (
+      storage?.dest &&
+      !path.resolve(filePath).startsWith(path.resolve(storage.dest))
+    ) {
+      return null
+    }
+    return filePath
+  }
+
+  async removeUpload(file, config) {
+    // TODO: Figure out how to handle s3.
+    const filePath = this.getUploadPath(file, config)
+    if (filePath) {
+      await fs.unlink(filePath)
+      return true
+    }
+    return false
+  }
+
+  async rememberUploads(controllerUrl, uploadName, files) {
+    const UploadModel = this.getModel('Upload')
+    if (UploadModel) {
+      const uploads = []
+      for (const file of files) {
+        uploads.push({
+          fileName: file.fileName,
+          file,
+          controllerUrl,
+          uploadName
+        })
+      }
+      return UploadModel.insert(uploads)
+    }
+    return null
+  }
+
+  async releaseUploads(files) {
+    const UploadModel = this.getModel('Upload')
+    if (UploadModel) {
+      const fileNames = files.map(file => file.fileName)
+      return UploadModel.delete().whereIn('fileName', fileNames)
     }
   }
 
