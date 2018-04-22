@@ -6,7 +6,7 @@
       )
         router-link.dito-button(
           v-if="column.sortable"
-          :to="{ query: getSortQuery(column.name) }"
+          :to="getSortLink(column.name)"
           tag="button"
           type="button"
           :class="getSortClass(column.name)"
@@ -29,23 +29,34 @@ export default DitoComponent.component('dito-list-head', {
     hasButtons: { type: Boolean, required: true }
   },
 
-  methods: {
-    getSortParams() {
-      return (this.query.order || '').split(/\s+/)
-    },
+  computed: {
+    sort() {
+      const order = (this.query.order || '').split(/\s+/)
+      return {
+        name: order[0],
+        order: order[1]
+      }
+    }
+  },
 
+  methods: {
     getSortClass(name) {
-      const [sortName, sortOrder] = this.getSortParams()
-      return sortName === name
-        ? `dito-active dito-order-${sortOrder}`
+      return this.sort.name === name
+        ? `dito-active dito-order-${this.sort.order}`
         : null
     },
 
-    getSortQuery(name) {
-      const [sortName, sortOrder] = this.getSortParams()
-      // Toggle order if we're clicking the same column
-      const order = sortName === name && sortOrder === 'asc' ? 'desc' : 'asc'
-      return { ...this.query, order: `${name} ${order}` }
+    getSortLink(name) {
+      // Toggle order if the same column is clicked again.
+      const order = this.sort.name === name && this.sort.order === 'asc'
+        ? 'desc'
+        : 'asc'
+      return {
+        query: {
+          ...this.query,
+          order: `${name} ${order}`
+        }
+      }
     }
   }
 })

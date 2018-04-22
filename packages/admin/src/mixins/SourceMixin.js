@@ -232,7 +232,7 @@ export default {
       }
     },
 
-    getEditRoute(item, index) {
+    getEditLink(item, index) {
       return {
         path: this.isObjectSource
           ? this.path

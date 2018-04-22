@@ -80,7 +80,7 @@
             )
             router-link.dito-button(
               v-if="editable"
-              :to="getEditRoute(item, index)" append
+              :to="getEditLink(item, index)" append
               tag="button"
               type="button"
               :class="`dito-button-${verbs.edit}`"
