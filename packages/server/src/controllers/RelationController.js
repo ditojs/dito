@@ -65,20 +65,22 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  execute(transacted, ctx, modify) {
+  execute(transacted, ctx, execute) {
     const id = this.parent.getId(ctx)
-    return this.parent.execute(transacted, ctx, query => query
-      .clearScope()
-      .findById(id)
-      .throwIfNotFound()
-      // Explicitly only select the foreign key ids for more efficiency.
-      .select(...this.relationInstance.ownerProp.props)
-      .then(
-        model => modify(model
-          .$relatedQuery(this.relationInstance.name)
-          .modify(query => this.handleScopes(query))
-        )
-      )
+    return this.parent.execute(transacted, ctx,
+      (parentQuery, trx) => parentQuery
+        .clearScope()
+        .findById(id)
+        .throwIfNotFound()
+        // Explicitly only select the foreign key ids for more efficiency.
+        .select(...this.relationInstance.ownerProp.props)
+        .then(model => {
+          // This is the same as `ModelController.execute()`, except for the use
+          // of `model.$relatedQuery()` instead of `modelClass.query()`:
+          const query = model.$relatedQuery(this.relationInstance.name, trx)
+          this.handleScopes(query)
+          return execute(query, trx)
+        })
     )
   }
 

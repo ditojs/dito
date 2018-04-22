@@ -93,7 +93,7 @@ export class CollectionController extends Controller {
     }
   }
 
-  execute(/* transaction, ctx, modify */) {
+  execute(/* transaction, ctx, execute(query, trx) {} */) {
     // Does nothing in base class.
   }
 
