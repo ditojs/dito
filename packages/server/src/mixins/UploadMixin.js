@@ -18,7 +18,7 @@ export const UploadMixin = Model => class extends Model {
       required: true
     },
 
-    uploadName: {
+    dataPath: {
       type: 'string',
       required: true
     }

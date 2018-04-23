@@ -8,7 +8,8 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, pick
+  isObject, isString, isArray, isBoolean, isFunction, asArray, pick,
+  parseDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -351,23 +352,33 @@ export class Controller {
 
   setupUpload() {
     const {
-      values: upload,
+      values,
       authorize
     } = this.processValues(this.inheritValues('upload'))
-    for (const name in upload) {
-      // Write back the converted configuration, so that from here on out,
-      // the object notation can be assumed for all of them, see:
-      // `getUploadConfiguration()`
-      upload[name] = this.setupUploadRoute(name, upload[name], authorize[name])
-    }
-    return upload
+    return values
+      ? Object.entries(values).reduce(
+        (upload, [key, value]) => {
+          // Convert dataPath to '/'-notation.
+          const dataPath = parseDataPath(key).join('/')
+          // Collect the converted configuration, so that from here on out, the
+          // object notation can be assumed, see: `getUploadConfig()`
+          upload[dataPath] = this.setupUploadRoute(
+            dataPath,
+            value,
+            authorize[key]
+          )
+          return upload
+        },
+        {}
+      )
+      : null
   }
 
-  getUploadConfig(name) {
-    return this.upload[name] || null
+  getUploadConfig(dataPath) {
+    return this.upload?.[dataPath] || null
   }
 
-  setupUploadRoute(name, config = {}, authorize) {
+  setupUploadRoute(dataPath, config = {}, authorize) {
     if (isString(config)) {
       config = {
         storage: config
@@ -383,7 +394,7 @@ export class Controller {
         `Unknown storage configuration: '${storageName}'`
       )
     }
-    const url = this.getUrl('controller', `upload/${name}`)
+    const url = this.getUrl('controller', `upload/${dataPath}`)
     const upload = multer({
       storage
     })
@@ -402,12 +413,12 @@ export class Controller {
 
         upload.fields([{
           ...settings,
-          name
+          name: dataPath
         }]),
 
         async (ctx, next) => {
-          const files = this.app.convertUploads(ctx.req.files[name])
-          await this.app.rememberUploads(this.url, name, files)
+          const files = this.app.convertUploads(ctx.req.files[dataPath])
+          await this.app.rememberUploads(this.url, dataPath, files)
           ctx.body = files
           return next()
         }
