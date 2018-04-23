@@ -14,8 +14,6 @@ import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
-    this._parent = null
-    this._lastChild = null
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
     this._allowScopes = null
@@ -25,8 +23,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   clone() {
     const copy = super.clone()
-    copy._parent = this._parent
-    copy._lastChild = this._lastChild
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
     return copy
@@ -34,24 +30,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   execute() {
-    // See if this query is the fetch-part of an *AndFetch() operation.
-    // For more information, see childQueryOf().
-    if (this._parent &&
-        this._parent._lastChild === this &&
-        this._parent.has(/AndFetch$/) &&
-        // Check context().onBuild to filter out queries used in Objection's
-        // UpsertGraph.fetchCurrentState(), which define their own onBuild().
-        // TODO: The proper solution on the long run may be to write our own
-        // versions of each *AndFetch() operation, unfortunately. But before
-        // going down that route, see if Objection can't add a check for this,
-        // e.g. QueryBuilder.isInternal(), returning true for all internal
-        // queries, but false for the final fetch. We could also check for
-        // `keepImplicitJoinProps` in `internalOptions()`, but that's private.
-        this.context().onBuild === this._parent.context().onBuild) {
-      // It's ok to just copy the parent's scopes for fetch queries,
-      // since this child query cannot have any scopes of its own.
-      this._copyScopes(this._parent)
-    }
     for (const { scope, eager } of this._scopes) {
       this._applyScopes([scope], eager)
     }
@@ -63,18 +41,19 @@ export class QueryBuilder extends objection.QueryBuilder {
       this.clearEager()
       this.clear('orderBy')
     }
-
     return super.execute()
   }
 
   // @override
   childQueryOf(query, fork) {
-    // Clear all scopes for child-queries, but remember the hierarchy and
-    // sequence of queries so that in execute() we can identify the last query
-    // of a *AndFetch() operation and copy the scopes from the parent.
-    this._clearScopes(false)
-    this._parent = query
-    query._lastChild = this
+    if (fork) {
+      // Forked queries shouldn't apply or inherit any scopes.
+      this._clearScopes(false)
+    } else {
+      // Inherit the scopes from the parent query, but only include non-eager
+      // scopes if this query is for the same model-class as the parent query.
+      this._copyScopes(query, this.modelClass() !== query.modelClass())
+    }
     return super.childQueryOf(query, fork)
   }
 
@@ -88,11 +67,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  _copyScopes(query) {
-    this._scopes = clone(query._scopes)
-    this._allowScopes = query._allowScopes
-      ? { ...query._allowScopes }
-      : null
+  _copyScopes(query, eagerOnly = false) {
+    if (eagerOnly) {
+      this._scopes = query._scopes.filter(scope => scope.eager)
+    } else {
+      this._scopes = query._scopes.slice()
+      this._allowScopes = query._allowScopes
+        ? { ...query._allowScopes }
+        : null
+    }
     return this
   }
 
