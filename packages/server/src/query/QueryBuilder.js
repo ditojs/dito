@@ -17,6 +17,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
     this._eagerScopeId = 0
     this._allowScopes = null
+    this._ignoreScopes = false
     this._clearScopes(true)
   }
 
@@ -30,8 +31,10 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   execute() {
-    for (const { scope, eager } of this._scopes) {
-      this._applyScopes([scope], eager)
+    if (!this._ignoreScopes) {
+      for (const { scope, eager } of this._scopes) {
+        this._applyScopes([scope], eager)
+      }
     }
     // If this isn't a find query, meaning if it defines any write operations or
     // special selects, then 'eager' and 'orderBy' operations need to be
@@ -95,39 +98,46 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _applyScopes(scopes, eager) {
-    if (eager) {
-      const modelClass = this.modelClass()
-      for (const scope of scopes) {
-        if (modelClass.hasScope(scope)) {
-          this.applyFilter(scope)
-        }
-      }
-      if (this._eagerExpression) {
-        const name = `_eagerScope${++this._eagerScopeId}_`
-        const filters = {
-          [name]: query => query._applyScopes(scopes, eager)
-        }
-        this.eager(
-          addEagerScope(
-            this.modelClass(),
-            this._eagerExpression,
-            [name],
-            filters
-          ),
-          {
-            ...this._eagerFilters,
-            ...filters
+    if (!this._ignoreScopes) {
+      if (eager) {
+        const modelClass = this.modelClass()
+        for (const scope of scopes) {
+          if (modelClass.hasScope(scope)) {
+            this.applyFilter(scope)
           }
-        )
+        }
+        if (this._eagerExpression) {
+          const name = `_eagerScope${++this._eagerScopeId}_`
+          const filters = {
+            [name]: query => query._applyScopes(scopes, eager)
+          }
+          this.eager(
+            addEagerScope(
+              this.modelClass(),
+              this._eagerExpression,
+              [name],
+              filters
+            ),
+            {
+              ...this._eagerFilters,
+              ...filters
+            }
+          )
+        }
+      } else {
+        this.applyFilter(...scopes)
       }
-    } else {
-      this.applyFilter(...scopes)
     }
     return this
   }
 
   clearScope() {
     return this._clearScopes(false)
+  }
+
+  ignoreScope() {
+    this._ignoreScopes = true
+    return this
   }
 
   allowScope(...scopes) {
