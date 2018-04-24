@@ -10,6 +10,11 @@ export const TimeStampedMixin = Model => class extends Model {
     }
   }
 
+  static scopes = {
+    timeStamped: query => query
+      .select('createdAt', 'updatedAt')
+  }
+
   $beforeInsert(ctx) {
     this.createdAt = this.updatedAt = new Date()
     return super.$beforeInsert(ctx)
