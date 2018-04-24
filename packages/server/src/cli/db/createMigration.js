@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
+import { getRelationClass, isThroughRelationClass } from '@/schema'
 import {
   isObject, isArray, isString, deindent, capitalize
 } from '@ditojs/utils'
@@ -143,8 +144,9 @@ async function collectModelTables(modelClass, app, tables) {
 async function collectThroughTables(modelClass, app, tables) {
   const { relations } = modelClass.definition
   for (const relation of Object.values(relations)) {
-    const { from, to, through, inverse } = relation
-    if (through === true && !inverse) {
+    const { from, to, inverse } = relation
+    const relationClass = getRelationClass(relation.relation)
+    if (isThroughRelationClass(relationClass) && !inverse) {
       // TODO: Support composite keys for foreign references:
       // Use `asArray(from)`, `asArray(to)`
       const [fromClass, fromProperty] = from?.split('.') || []

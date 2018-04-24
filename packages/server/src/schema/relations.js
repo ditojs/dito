@@ -100,24 +100,31 @@ class ModelReference {
   }
 }
 
+export function getRelationClass(relation) {
+  return relationLookup[relation] || relationClasses[relation] || relation
+}
+
+export function isThroughRelationClass(relationClass) {
+  return throughRelationClasses[relationClass.name]
+}
+
 function convertRelation(schema, models) {
   let {
     relation,
-    // Dito-style relation description:
+    // Dito.js-style relation description:
     from, to, through, inverse, scope,
     // Objection.js-style relation description
     join, modify, filter,
     ...rest
   } = schema || {}
-  const relationClass = relationLookup[relation] ||
-    relationClasses[relation] || relation
+  const relationClass = getRelationClass(relation)
   if (!Relation.isPrototypeOf(relationClass)) {
     throw new RelationError(`Unrecognized relation: ${relation}`)
   } else if (join && !isString(relation)) {
     // Original Objection.js-style relation, just pass through
     return schema
   } else {
-    // Dito-style relation, e.g.:
+    // Dito.js-style relation, e.g.:
     // {
     //   relation: 'hasMany',
     //   from: 'FromModel.primaryKeyPropertyName',
@@ -126,22 +133,13 @@ function convertRelation(schema, models) {
     // }
     from = new ModelReference(from, models, false)
     to = new ModelReference(to, models, false)
-    if (throughRelationClasses[relationClass.name]) {
-      // Setting `through` to `true` is the same as providing an empty object
-      // for it. It simply means: auto-generate the through settings.
-      if (through === true) {
-        through = {}
-      }
-      if (!through) {
-        throw new RelationError('The relation needs a `through` definition ' +
-          'or a `through: true` setting to auto-generate it')
-      } else if (!through.from && !through.to) {
+    if (isThroughRelationClass(relationClass)) {
+      // TODO: `through === true` is deprecated, remove later.
+      if (!through || through === true) {
         // Auto-generate the through settings, see buildThrough():
-        const built = inverse ? to.buildThrough(from) : from.buildThrough(to)
-        through.from = built.from
-        through.to = built.to
+        through = inverse ? to.buildThrough(from) : from.buildThrough(to)
       } else if (through.from && through.to) {
-        // `through.from` and `through.to` need special processing, where  they
+        // `through.from` and `through.to` need special processing, where they
         // can either be model references or table references, and if they
         // reference models, they should be converted to table references and
         // the model should be extracted automatically.
