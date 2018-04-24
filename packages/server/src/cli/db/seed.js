@@ -8,8 +8,7 @@ import { isFunction, isArray, camelize } from '@ditojs/utils'
 export async function seed(app) {
   const seedDir = path.join(process.cwd(), 'seeds')
   const files = await fs.readdir(seedDir)
-  const seedModels = []
-  const seedFunctions = []
+  const seeds = []
   // Create a lookup table with sort indices per model name.
   const modelIndices = Object.keys(app.models).reduce(
     (indices, name, index) => {
@@ -24,34 +23,25 @@ export async function seed(app) {
     if (/^\.(js|json)$/.test(ext)) {
       const object = await import(path.resolve(seedDir, file))
       const seed = object.default || object
-      if (isFunction(seed)) {
-        seedFunctions.push({
-          base,
-          seed
-        })
-      } else {
-        const modelClass =
-          app.models[name] ||
-          app.models[camelize(pluralize.singular(name), true)]
-        if (modelClass) {
-          seedModels.push({
-            base,
-            seed,
-            modelClass,
-            index: modelIndices[modelClass.name]
-          })
-        }
-      }
+      // Try to determine the related model from the seed name, and use it also
+      // to determine seed sequence based on its index in `app.models`.
+      const modelClass =
+        app.models[name] ||
+        app.models[camelize(pluralize.singular(name), true)]
+      const index = modelClass ? modelIndices[modelClass.name] : Infinity
+      seeds.push({
+        base,
+        seed,
+        modelClass,
+        index
+      })
     }
   }
   // Now sort the seed model data according to `app.models` sorting,
   // as determined by `Application.sortModels()`:
-  seedModels.sort((entry1, entry2) => entry1.index - entry2.index)
-  for (const { base, seed, modelClass } of seedModels) {
+  seeds.sort((entry1, entry2) => entry1.index - entry2.index)
+  for (const { base, seed, modelClass } of seeds) {
     await handleSeed(app, base, seed, modelClass)
-  }
-  for (const { base, seed } of seedFunctions) {
-    await handleSeed(app, base, seed)
   }
   return true // done
 }
