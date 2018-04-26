@@ -6,8 +6,8 @@ import {
   HasManyRelation,
   ManyToManyRelation
 } from 'objection'
-import { isObject, isString, asArray, capitalize } from '@ditojs/utils'
 import { RelationError } from '@/errors'
+import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 
 const relationLookup = {
   // one:
@@ -56,15 +56,25 @@ class ModelReference {
     }
   }
 
-  toArray() {
-    return this.propertyNames.map(propName => `${this.modelName}.${propName}`)
+  asValue(properties) {
+    // Unpack the reference array if it doesn't contain multiple properties.
+    return properties.length > 1 ? properties : properties[0]
+  }
+
+  toValue() {
+    return this.asValue(
+      this.propertyNames.map(
+        propName => `${this.modelName}.${propName}`
+      )
+    )
   }
 
   toString() {
-    return `[${this.toArray().join(', ')}]`
+    const value = this.toValue()
+    return isArray(value) ? `[${value.join(', ')}]` : value
   }
 
-  buildThrough(to) {
+  buildThrough(toRef, inverse) {
     // Auto-generate the `through` setting based on simple conventions:
     // - The camelized through table is called: `${fromName}${toName}`
     // - The `through.from` property is called:
@@ -75,28 +85,36 @@ class ModelReference {
     // generate actual table-names here.
     const fromName = this.modelName
     const fromProperties = this.propertyNames
-    const toName = to.modelName
-    const toProperties = to.propertyNames
+    const toName = toRef.modelName
+    const toProperties = toRef.propertyNames
     if (fromProperties.length !== toProperties.length) {
       throw new RelationError(`Unable to create through join for ` +
-        `composite keys from '${this}' to '${to}'`)
+        `composite keys from '${this}' to '${toRef}'`)
     }
-    const through = { from: [], to: [] }
+    const from = []
+    const to = []
     for (let i = 0; i < fromProperties.length; i++) {
       const fromProperty = fromProperties[i]
       const toProperty = toProperties[i]
       if (fromProperty && toProperty) {
         const throughName = `${fromName}${toName}`
-        const throughFrom = `${fromName}${capitalize(fromProperty)}`
-        const throughTo = `${toName}${capitalize(toProperty)}`
-        through.from.push(`${throughName}.${throughFrom}`)
-        through.to.push(`${throughName}.${throughTo}`)
+        const throughFrom = this.getThroughProperty(fromName, fromProperty)
+        const throughTo = this.getThroughProperty(toName, toProperty)
+        from.push(`${throughName}.${throughFrom}`)
+        to.push(`${throughName}.${throughTo}`)
       } else {
         throw new RelationError(
           `Unable to create through join from '${this}' to '${to}'`)
       }
     }
-    return through
+    return {
+      from: this.asValue(inverse ? to : from),
+      to: this.asValue(inverse ? from : to)
+    }
+  }
+
+  getThroughProperty(name, property) {
+    return `${name[0].toLowerCase()}${name.substring(1)}${capitalize(property)}`
   }
 }
 
@@ -137,7 +155,9 @@ function convertRelation(schema, models) {
       // TODO: `through === true` is deprecated, remove later.
       if (!through || through === true) {
         // Auto-generate the through settings, see buildThrough():
-        through = inverse ? to.buildThrough(from) : from.buildThrough(to)
+        through = inverse
+          ? to.buildThrough(from, true)
+          : from.buildThrough(to, false)
       } else if (through.from && through.to) {
         // `through.from` and `through.to` need special processing, where they
         // can either be model references or table references, and if they
@@ -148,8 +168,8 @@ function convertRelation(schema, models) {
         if (throughFrom.modelClass || throughTo.modelClass) {
           if (throughFrom.modelClass === throughTo.modelClass) {
             through.modelClass = throughTo.modelClass
-            through.from = throughFrom.toArray()
-            through.to = throughTo.toArray()
+            through.from = throughFrom.toValue()
+            through.to = throughTo.toValue()
           } else {
             throw new RelationError('Both sides of the `through` definition ' +
               'need to be on the same join model')
@@ -175,8 +195,8 @@ function convertRelation(schema, models) {
       relation: relationClass,
       modelClass: to.modelClass,
       join: {
-        from: from.toArray(),
-        to: to.toArray(),
+        from: from.toValue(),
+        to: to.toValue(),
         through
       },
       modify,
