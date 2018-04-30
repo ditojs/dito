@@ -104,7 +104,7 @@
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { isFunction } from '@ditojs/utils'
+import { isObject, isFunction } from '@ditojs/utils'
 import { hasForms } from '@/schema'
 
 export default DitoComponent.component('dito-tree-item', {
@@ -141,6 +141,12 @@ export default DitoComponent.component('dito-tree-item', {
 
     onDelete() {
       // TODO: Implement!
+    },
+
+    isObjectKey(key) {
+      // Returns `true` for schema key that can provide objects, so they can be
+      // distinguished from nested schema objects.
+      return ['form', 'forms', 'draggable'].includes(key)
     }
   },
 
@@ -159,9 +165,8 @@ export default DitoComponent.component('dito-tree-item', {
       // list for each.
       const lists = []
       for (const [key, schema] of Object.entries(this.schema)) {
-        // Identify nested entries that describe sub-trees as objects with a
-        // `form` or `forms` setting:
-        if (hasForms(schema)) {
+        // Identify nested entries that describe sub-trees as schema objects.
+        if (isObject(schema) && !this.isObjectKey(key)) {
           const items = this.data[key]
           const draggable = !!(
             items?.length > 1 &&
@@ -216,7 +221,8 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     editable() {
-      return this.getSchemaValue('editable', true)
+      return hasForms(this.schema) &&
+        this.getSchemaValue('editable', true)
     },
 
     deletable() {
