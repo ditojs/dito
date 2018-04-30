@@ -836,34 +836,33 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
-"@ditojs/admin@^0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@ditojs/admin/-/admin-0.6.0.tgz#c7f3ec03cc26a89bfde0b128513c4d75f9f51505"
+"@ditojs/admin@^0.6.1":
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/@ditojs/admin/-/admin-0.6.1.tgz#b9bf527156f2f9f8ad38a3813fb0d97633c858da"
   dependencies:
-    "@ditojs/utils" "^0.4.0"
+    "@ditojs/utils" "^0.6.0"
     axios "^0.18.0"
-    clipboard "^2.0.0"
+    clipboard "^2.0.1"
     codeflask "github:lehni/CodeFlask.js#f02c5bbc25743086b0e1227b1c944916d87b701b"
+    filesize "^3.6.1"
+    filesize-parser "^1.4.2"
     hint.css "^2.5.0"
-    prismjs "^1.13.0"
+    prismjs "^1.14.0"
     to-pascal-case "^1.0.0"
-    vee-validate "^2.0.6"
+    vee-validate "^2.0.8"
     vue "^2.5.16"
-    vue-js-modal "^1.3.12"
-    vue-js-toggle-button "^1.2.2"
+    vue-js-modal "^1.3.13"
+    vue-js-toggle-button "^1.2.3"
     vue-multiselect "^2.1.0"
     vue-notification "^1.3.7"
     vue-router "^3.0.1"
     vue-spinner "^1.0.2"
+    vue-upload-component "^2.8.5"
     vuedraggable "^2.16.0"
 
-"@ditojs/utils@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.4.0.tgz#63449570b879b65586a0bd491485fb86c9e2c212"
-
-"@ditojs/utils@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.5.0.tgz#8d63746a4c29053a1aa0bd5d96b06e9c73c30cf9"
+"@ditojs/utils@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.6.0.tgz#bec493fc06fe8656d51adaa9e56045d95f8dd710"
 
 "@koa/cors@^2.2.1":
   version "2.2.1"
@@ -1652,9 +1651,9 @@ chalk@^2.0.0, chalk@^2.0.1, chalk@^2.1.0, chalk@^2.3.0, chalk@^2.3.1:
     escape-string-regexp "^1.0.5"
     supports-color "^5.2.0"
 
-chalk@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/chalk/-/chalk-2.4.0.tgz#a060a297a6b57e15b61ca63ce84995daa0fe6e52"
+chalk@^2.4.1:
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/chalk/-/chalk-2.4.1.tgz#18c49ab16a037b6eb0152cc83e3471338215b66e"
   dependencies:
     ansi-styles "^3.2.1"
     escape-string-regexp "^1.0.5"
@@ -1783,6 +1782,14 @@ clipboard@^1.7.1:
 clipboard@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/clipboard/-/clipboard-2.0.0.tgz#4661dc972fb72a4c4770b8db78aa9b1caef52b50"
+  dependencies:
+    good-listener "^1.2.2"
+    select "^1.1.2"
+    tiny-emitter "^2.0.0"
+
+clipboard@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/clipboard/-/clipboard-2.0.1.tgz#a12481e1c13d8a50f5f036b0560fe5d16d74e46a"
   dependencies:
     good-listener "^1.2.2"
     select "^1.1.2"
@@ -2636,9 +2643,9 @@ eslint-plugin-promise@^3.7.0:
   version "3.7.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-promise/-/eslint-plugin-promise-3.7.0.tgz#f4bde5c2c77cdd69557a8f69a24d1ad3cfc9e67e"
 
-eslint-plugin-standard@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-standard/-/eslint-plugin-standard-3.0.1.tgz#34d0c915b45edc6f010393c7eef3823b08565cf2"
+eslint-plugin-standard@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-standard/-/eslint-plugin-standard-3.1.0.tgz#2a9e21259ba4c47c02d53b2d0c9135d4b1022d47"
 
 eslint-scope@^3.7.1, eslint-scope@~3.7.1:
   version "3.7.1"
@@ -2908,6 +2915,14 @@ file-entry-cache@^2.0.0:
 filename-regex@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/filename-regex/-/filename-regex-2.0.1.tgz#c1c4b9bee3e09725ddb106b75c1e301fe2f18b26"
+
+filesize-parser@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/filesize-parser/-/filesize-parser-1.4.2.tgz#469efc97354a252aacadf06864e2aa009e72d742"
+
+filesize@^3.6.1:
+  version "3.6.1"
+  resolved "https://registry.yarnpkg.com/filesize/-/filesize-3.6.1.tgz#090bb3ee01b6f801a8a8be99d31710b3422bb317"
 
 fill-range@^2.1.0:
   version "2.2.3"
@@ -4331,9 +4346,9 @@ koa-webpack@^3.0.2:
     webpack-hot-client "^2.0.0"
     webpack-log "^1.1.1"
 
-koa@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/koa/-/koa-2.5.0.tgz#b0fbe1e195e43b27588a04fd0be0ddaeca2c154c"
+koa@^2.5.1:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/koa/-/koa-2.5.1.tgz#79f8b95f8d72d04fe9a58a8da5ebd6d341103f9c"
   dependencies:
     accepts "^1.2.2"
     content-disposition "~0.5.0"
@@ -4968,9 +4983,9 @@ node-pre-gyp@~0.9.0:
     semver "^5.3.0"
     tar "^4"
 
-node-sass@^4.8.3:
-  version "4.8.3"
-  resolved "https://registry.yarnpkg.com/node-sass/-/node-sass-4.8.3.tgz#d077cc20a08ac06f661ca44fb6f19cd2ed41debb"
+node-sass@^4.9.0:
+  version "4.9.0"
+  resolved "https://registry.yarnpkg.com/node-sass/-/node-sass-4.9.0.tgz#d1b8aa855d98ed684d6848db929a20771cc2ae52"
   dependencies:
     async-foreach "^0.1.3"
     chalk "^1.1.1"
@@ -5904,9 +5919,9 @@ pretty-error@^2.0.2:
     renderkid "^2.0.1"
     utila "~0.4"
 
-prismjs@^1.13.0:
-  version "1.13.0"
-  resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.13.0.tgz#edcc14a90bbd72a03e5ffd2bab81a04c79a607a6"
+prismjs@^1.14.0:
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.14.0.tgz#bbccfdb8be5d850d26453933cb50122ca0362ae0"
   optionalDependencies:
     clipboard "^2.0.0"
 
@@ -7555,9 +7570,9 @@ vary@^1.0.0:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
 
-vee-validate@^2.0.6:
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/vee-validate/-/vee-validate-2.0.6.tgz#0a28046e3c80fb5b9b944da5f7771c7404f90a6a"
+vee-validate@^2.0.8:
+  version "2.0.8"
+  resolved "https://registry.yarnpkg.com/vee-validate/-/vee-validate-2.0.8.tgz#5fe52e1158d418736fe65807517ef5a0998d9c87"
 
 velocity-animate@^1.5.0:
   version "1.5.1"
@@ -7589,13 +7604,13 @@ vue-hot-reload-api@^2.2.0:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.2.4.tgz#683bd1d026c0d3b3c937d5875679e9a87ec6cd8f"
 
-vue-js-modal@^1.3.12:
-  version "1.3.12"
-  resolved "https://registry.yarnpkg.com/vue-js-modal/-/vue-js-modal-1.3.12.tgz#2e0a31c31af1a066dd18bbbe74737f31c57f2d68"
+vue-js-modal@^1.3.13:
+  version "1.3.13"
+  resolved "https://registry.yarnpkg.com/vue-js-modal/-/vue-js-modal-1.3.13.tgz#1718c3182a94a03e03422db50c60229bbbd53f18"
 
-vue-js-toggle-button@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/vue-js-toggle-button/-/vue-js-toggle-button-1.2.2.tgz#0062f8fa0f34babf2d76c77d88ccbe4d462ce1ac"
+vue-js-toggle-button@^1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/vue-js-toggle-button/-/vue-js-toggle-button-1.2.3.tgz#efc3309bf500ff5f84c5a8c3bea734b932cad191"
 
 vue-loader@^14.2.2:
   version "14.2.2"
@@ -7650,6 +7665,10 @@ vue-template-compiler@^2.5.16:
 vue-template-es2015-compiler@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.6.0.tgz#dc42697133302ce3017524356a6c61b7b69b4a18"
+
+vue-upload-component@^2.8.5:
+  version "2.8.5"
+  resolved "https://registry.yarnpkg.com/vue-upload-component/-/vue-upload-component-2.8.5.tgz#680de2934f55c6a38da7b382d0f37fd79995dd42"
 
 vue@^2.5.16:
   version "2.5.16"
