@@ -1,4 +1,4 @@
-import { asArray } from './object'
+import { asArray } from './base'
 import os from 'os'
 
 export function camelize(str, upper = false) {

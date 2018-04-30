@@ -1,4 +1,4 @@
-import { isArray } from './object'
+import { isArray } from './base'
 
 export function parseDataPath(path) {
   return isArray(path)
