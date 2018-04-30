@@ -6,8 +6,10 @@
       },
       "useBuiltIns": "usage"
     }],
-    ["@babel/preset-stage-1"]
-  ],
+    ["@babel/preset-stage-1", {
+      "decoratorsLegacy": true
+    }]
+],
   "plugins": [
     "dynamic-import-node-babel-7",
     ["module-resolver", {
