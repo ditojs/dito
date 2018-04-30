@@ -1,5 +1,4 @@
-import { isObject } from '@ditojs/utils'
-import { asArguments } from '@/utils'
+import { isObject, asArray } from '@ditojs/utils'
 import { Controller } from './Controller'
 import ControllerAction from './ControllerAction'
 import MemberAction from './MemberAction'
@@ -81,15 +80,15 @@ export class CollectionController extends Controller {
         ...this.allowScope,
         // Also include the scopes defined by scope and eagerScope so these can
         // pass through.
-        ...asArguments(this.scope),
-        ...asArguments(this.eagerScope)
+        ...asArray(this.scope),
+        ...asArray(this.eagerScope)
       )
     }
     if (this.scope) {
-      query.mergeScope(...asArguments(this.scope))
+      query.mergeScope(...asArray(this.scope))
     }
     if (this.eagerScope) {
-      query.mergeEagerScope(...asArguments(this.eagerScope))
+      query.mergeEagerScope(...asArray(this.eagerScope))
     }
   }
 
