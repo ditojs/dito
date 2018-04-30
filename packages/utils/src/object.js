@@ -47,7 +47,7 @@ export function asObject(val) {
 }
 
 export function asArray(val) {
-  return isArray(val) ? val : val != null ? [val] : []
+  return isArray(val) ? val : val !== undefined ? [val] : []
 }
 
 export function asFunction(val) {
