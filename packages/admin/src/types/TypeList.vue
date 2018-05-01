@@ -36,9 +36,9 @@
         )
           template(v-if="columns")
             dito-list-cell(
-              v-for="column in columns"
-              :key="column.name"
-              :column="column"
+              v-for="cell in columns"
+              :key="cell.name"
+              :cell="cell"
               :schema="schema"
               :dataPath="`${dataPath}/${index}`"
               :data="item"

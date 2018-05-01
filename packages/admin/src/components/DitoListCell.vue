@@ -5,10 +5,10 @@
 
 <template lang="pug">
   td(
-    :class="column.class"
-    :style="column.style"
+    :class="cell.class"
+    :style="cell.style"
   )
-    // TODO: Implement inline components in column mode!
+    // TODO: Implement inline components in cell mode!
     component(
       v-if="component"
       :is="component"
@@ -21,7 +21,7 @@
     )
     span(
       v-else
-      v-html="renderCell(column, data)"
+      v-html="renderCell(cell, data)"
     )
 </template>
 
@@ -31,7 +31,7 @@ import { escapeHtml } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-list-cell', {
   props: {
-    column: { type: Object, required: true },
+    cell: { type: Object, required: true },
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
@@ -42,13 +42,13 @@ export default DitoComponent.component('dito-list-cell', {
 
   computed: {
     component() {
-      return this.resolveTypeComponent(this.column.component)
+      return this.resolveTypeComponent(this.cell.component)
     }
   },
 
   methods: {
-    renderCell(column, item) {
-      const { name, render } = column
+    renderCell(cell, item) {
+      const { name, render } = cell
       const value = item[name]
       return render ? render(value, item) : escapeHtml(value)
     }

@@ -9,6 +9,7 @@
       dito-tree-item(
         :data="rootData"
         :schema="rootSchema"
+        :dataPath="rootDataPath"
         :open="true"
       )
       router-view
@@ -67,6 +68,14 @@ export default TypeComponent.register(['tree-list', 'tree-object'], {
       return this.isListSource
         ? { [this.name]: this.value }
         : this.value
+    },
+
+    rootDataPath() {
+      // Remove `name` from `dataPath`, as it is addeed
+      // to `rootData` and `rootSchema`
+      return this.isListSource
+        ? this.dataPath.substring(0, this.dataPath.length - this.name.length)
+        : this.dataPath
     },
 
     rootSchema() {

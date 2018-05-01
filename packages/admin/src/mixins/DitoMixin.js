@@ -1,6 +1,8 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
-import { isFunction, isArray, labelize } from '@ditojs/utils'
+import {
+  isObject, isArray, isFunction, camelize, labelize
+} from '@ditojs/utils'
 
 export default {
   inject: ['api'],
@@ -81,6 +83,30 @@ export default {
     },
 
     labelize,
+
+    getNamedSchemas(descriptions) {
+      return isArray(descriptions)
+        ? descriptions.map(value => (
+          isObject(value) ? value : {
+            name: camelize(value, false),
+            label: labelize(value)
+          }
+        ))
+        : isObject(descriptions)
+          ? Object.entries(descriptions).map(
+            ([name, value]) => isObject(value)
+              ? {
+                name,
+                label: labelize(name, value),
+                ...value
+              }
+              : {
+                name,
+                label: value
+              }
+          )
+          : null
+    },
 
     getSchemaValue(key, matchRole = false, schema = this.schema) {
       let value = schema[key]

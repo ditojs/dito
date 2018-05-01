@@ -3,9 +3,7 @@ import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
 import { processForms, hasForms, isObjectSource, isListSource } from '@/schema'
-import {
-  isObject, isArray, camelize, labelize, parseDataPath
-} from '@ditojs/utils'
+import { isObject, isArray, parseDataPath } from '@ditojs/utils'
 
 export default {
   mixins: [DataMixin],
@@ -170,30 +168,6 @@ export default {
   },
 
   methods: {
-    getNamedSchemas(descriptions) {
-      return isArray(descriptions)
-        ? descriptions.map(value => (
-          isObject(value) ? value : {
-            name: camelize(value, false),
-            label: labelize(value)
-          }
-        ))
-        : isObject(descriptions)
-          ? Object.entries(descriptions).map(
-            ([name, value]) => isObject(value)
-              ? {
-                name,
-                label: labelize(name, value),
-                ...value
-              }
-              : {
-                name,
-                label: value
-              }
-          )
-          : null
-    },
-
     setQuery(query) {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the

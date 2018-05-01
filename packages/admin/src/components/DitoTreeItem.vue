@@ -6,10 +6,10 @@
     }"
   )
     .dito-tree-title(v-if="title")
-      .dito-tree-branch(v-if="numChildren" @click.stop="opened = !opened")
-        .dito-tree-chevron(v-if="path" :class="{ 'dito-opened': opened }")
+      .dito-tree-branch(v-if="numItems" @click.stop="opened = !opened")
+        .dito-tree-chevron(v-if="numItems" :class="{ 'dito-opened': opened }")
         .dito-tree-name(v-html="title")
-        .dito-tree-info(v-if="info") {{ info }}
+        .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
         .dito-tree-name(v-html="title")
       .dito-buttons.dito-buttons-inline(v-if="hasButtons")
@@ -30,8 +30,32 @@
           class="dito-button-delete"
           @click="onDelete"
         )
+      table.dito-properties(
+        v-if="properties"
+        v-show="opened"
+      )
+        tr(
+          v-for="cell in properties"
+        )
+          td
+            dito-label(
+              v-if="cell.label !== false"
+              :dataPath="getDataPath(cell)"
+              :text="getLabel(cell)"
+            )
+          dito-list-cell(
+            :key="cell.name"
+            :cell="cell"
+            :schema="schema"
+            :dataPath="getDataPath(cell)"
+            :data="data"
+            :meta="nestedMeta"
+            :store="store"
+            :disabled="disabled"
+          )
     vue-draggable(
       v-if="children"
+      v-show="opened"
       :list="childrenList"
       :options="childrenDragOptions"
       @start="onStartDrag"
@@ -39,10 +63,10 @@
     )
       dito-tree-item(
         v-for="(item, index) in childrenItems"
-        v-show="opened"
         :key="index"
         :data="item.data"
         :path="item.path"
+        :dataPath="item.dataPath"
         :open="item.open"
         :editing="item.editing"
         :schema="children"
@@ -51,11 +75,13 @@
 </template>
 
 <style lang="sass">
+$tree-indent: 1.2em
+
 .dito
   .dito-tree-item
     .dito-tree-item
       .dito-tree-item
-        margin-left: 1.2em
+        margin-left: $tree-indent
     .dito-tree-branch
       cursor: pointer
     .dito-tree-branch,
@@ -96,6 +122,12 @@
       > .dito-tree-title
         background: $color-lightest
         border-radius: $border-radius
+    .dito-properties
+      margin-left: $tree-indent
+      .dito-label
+        margin: 0
+        &::after
+          content: ': '
 </style>
 
 <script>
@@ -112,6 +144,7 @@ export default DitoComponent.component('dito-tree-item', {
   props: {
     data: { type: [Array, Object] },
     path: { type: String, default: '' },
+    dataPath: { type: String, default: '' },
     open: { type: Boolean, default: false },
     editing: { type: Boolean, default: false },
     schema: { type: Object, required: true },
@@ -122,11 +155,15 @@ export default DitoComponent.component('dito-tree-item', {
 
   data() {
     return {
-      opened: this.open || this.inEditPath
+      opened: this.open || this.schema.open
     }
   },
 
   methods: {
+    getDataPath(cell) {
+      return `${this.dataPath}/${cell.name}`
+    },
+
     onEdit() {
       // All we got to do is push the right edit path to the router, the rest
       // is handled by our routes, allowing reloads as well.
@@ -152,6 +189,29 @@ export default DitoComponent.component('dito-tree-item', {
           : this.data?.[itemLabel]
     },
 
+    meta() {
+      return this.container.meta
+    },
+
+    store() {
+      return this.container.store
+    },
+
+    disabled() {
+      return this.container.disabled
+    },
+
+    nestedMeta() {
+      return {
+        ...this.meta,
+        schema: this.schema
+      }
+    },
+
+    properties() {
+      return this.getNamedSchemas(this.schema.properties)
+    },
+
     children() {
       return this.schema.children
     },
@@ -161,15 +221,15 @@ export default DitoComponent.component('dito-tree-item', {
       return name && this.data[name]
     },
 
-    numChildren() {
-      return this.childrenList?.length
-    },
-
     childrenDraggable() {
       return !!(
         this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', true, this.children)
       )
+    },
+
+    numItems() {
+      return (this.properties?.length || 0) + (this.childrenList?.length || 0)
     },
 
     childrenDragOptions() {
@@ -180,10 +240,14 @@ export default DitoComponent.component('dito-tree-item', {
       const { children } = this
       if (children) {
         const { editPath } = this.container
-        const childrenOpen = !this.path && this.open
+        const childrenOpen = !this.path && children.open
         // Build a children list with child meta information for the template.
         return this.childrenList?.map((data, index) => {
           const path = children.path && `${this.path}/${children.path}/${index}`
+          const dataPath = this.appendDataPath(
+            this.dataPath,
+            `${children.name}/${index}`
+          )
           const open = childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
             editPath.startsWith(path) && path.length < editPath.length
@@ -191,6 +255,7 @@ export default DitoComponent.component('dito-tree-item', {
           return {
             data,
             path,
+            dataPath,
             open,
             editing
           }
@@ -198,10 +263,10 @@ export default DitoComponent.component('dito-tree-item', {
       }
     },
 
-    info() {
-      const { numChildren } = this
-      return numChildren && ` ${numChildren} ${
-        numChildren === 1 ? 'item' : 'items'}`
+    details() {
+      const { numItems } = this
+      return numItems && ` ${numItems} ${
+        numItems === 1 ? 'item' : 'items'}`
     },
 
     creatable() {
