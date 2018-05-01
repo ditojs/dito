@@ -7,10 +7,9 @@
     )
     .dito-tree-panel
       dito-tree-item(
-        :data="{ [dataPath]: value }"
-        :schema="{ [dataPath]: schema }"
+        :data="rootData"
+        :schema="rootSchema"
         :open="true"
-        :container="this"
       )
       router-view
 </template>
@@ -40,13 +39,17 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import { hasForms } from '@/schema'
 
-export default TypeComponent.register('tree-list', {
+export default TypeComponent.register(['tree-list', 'tree-object'], {
   mixins: [SourceMixin],
 
-  getSourceType(/* type */) {
-    // TODO: Implement object source type:
-    // return type === 'tree-object' ? 'object' : 'list'
-    return 'list'
+  provide() {
+    return {
+      container: this
+    }
+  },
+
+  getSourceType(type) {
+    return type === 'tree-object' ? 'object' : 'list'
   },
 
   computed: {
@@ -58,6 +61,23 @@ export default TypeComponent.register('tree-list', {
     editPath() {
       // Accessed from DitoTreeItem through `container.editPath`:
       return this.$route.path.substring(this.path?.length)
+    },
+
+    rootData() {
+      return this.isListSource
+        ? { [this.name]: this.value }
+        : this.value
+    },
+
+    rootSchema() {
+      return this.isListSource
+        ? {
+          children: {
+            name: this.name,
+            ...this.schema
+          }
+        }
+        : this.schema
     }
   },
 
@@ -71,20 +91,18 @@ async function processSchema(
     api, schema, name, routes, parentMeta, level, nested, flatten,
     // Pass process() to add more routes to childRoutes:
     (childRoutes, parentMeta, level) => {
-      const promises = []
-      for (const [name, subSchema] of Object.entries(schema)) {
-        if (hasForms(subSchema)) {
+      const { children } = schema
+      if (children) {
+        const { name } = children
+        if (hasForms(children)) {
           // Add `type` to the nested tree list.
-          subSchema.type = 'tree-list'
-          promises.push(
-            processSchema(
-              // Pass `true` for `flatten` in tree lists.
-              api, subSchema, name, childRoutes, parentMeta, level, nested, true
-            )
+          children.type = 'tree-list'
+          return processSchema(
+            // Pass `true` for `flatten` in tree lists.
+            api, children, name, childRoutes, parentMeta, level, nested, true
           )
         }
       }
-      return Promise.all(promises)
     }
   )
 }

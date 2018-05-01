@@ -217,11 +217,9 @@ export default TypeComponent.register('upload', {
             this.value = file
           }
         } else {
+          // TODO: Implement progress bar for uploads
           console.log('update', newFile)
         }
-      }
-      if (!newFile && oldFile) {
-        console.log('remove', oldFile)
       }
     },
 

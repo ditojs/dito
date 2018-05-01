@@ -31,24 +31,22 @@
           @click="onDelete"
         )
     vue-draggable(
-      v-for="childrenList in childrenLists"
-      :key="childrenList.key"
-      :list="childrenList.items"
-      :options="childrenList.dragOptions"
+      v-if="children"
+      :list="childrenList"
+      :options="childrenDragOptions"
       @start="onStartDrag"
-      @end="onEndDrag($event, childrenList.items, childrenList.schema)"
+      @end="onEndDrag($event, childrenList, children)"
     )
       dito-tree-item(
-        v-for="(child, index) in childrenList.children"
+        v-for="(item, index) in childrenItems"
         v-show="opened"
         :key="index"
-        :data="child.data"
-        :path="child.path"
-        :open="child.open"
-        :editing="child.editing"
-        :schema="childrenList.schema"
-        :draggable="childrenList.draggable"
-        :container="container"
+        :data="item.data"
+        :path="item.path"
+        :open="item.open"
+        :editing="item.editing"
+        :schema="children"
+        :draggable="childrenDraggable"
       )
 </template>
 
@@ -104,11 +102,12 @@
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { isObject, isFunction } from '@ditojs/utils'
+import { isFunction } from '@ditojs/utils'
 import { hasForms } from '@/schema'
 
 export default DitoComponent.component('dito-tree-item', {
   mixins: [OrderedMixin],
+  inject: ['container'],
 
   props: {
     data: { type: [Array, Object] },
@@ -116,8 +115,7 @@ export default DitoComponent.component('dito-tree-item', {
     open: { type: Boolean, default: false },
     editing: { type: Boolean, default: false },
     schema: { type: Object, required: true },
-    draggable: { type: Boolean, default: false },
-    container: { type: Object, required: true }
+    draggable: { type: Boolean, default: false }
   },
 
   components: { VueDraggable },
@@ -141,12 +139,6 @@ export default DitoComponent.component('dito-tree-item', {
 
     onDelete() {
       // TODO: Implement!
-    },
-
-    isObjectKey(key) {
-      // Returns `true` for schema key that can provide objects, so they can be
-      // distinguished from nested schema objects.
-      return ['form', 'forms', 'draggable'].includes(key)
     }
   },
 
@@ -160,52 +152,50 @@ export default DitoComponent.component('dito-tree-item', {
           : this.data?.[itemLabel]
     },
 
-    childrenLists() {
-      // Loop through the schema, find all nested schemas, and build a children
-      // list for each.
-      const lists = []
-      for (const [key, schema] of Object.entries(this.schema)) {
-        // Identify nested entries that describe sub-trees as schema objects.
-        if (isObject(schema) && !this.isObjectKey(key)) {
-          const items = this.data[key]
-          const draggable = !!(
-            items?.length > 1 &&
-            this.getSchemaValue('draggable', true, schema)
-          )
-          const { editPath } = this.container
-          const childrenOpen = !this.path && this.open
-          // Build a children list with child meta information for the template.
-          const children = items?.map((data, index) => {
-            const path = `${this.path}/${schema.path}/${index}`
-            const open = childrenOpen ||
-              // Only count as "in edit path" when it's not the full edit path.
-              editPath.startsWith(path) && path.length < editPath.length
-            const editing = editPath === path
-            return {
-              data,
-              path,
-              open,
-              editing
-            }
-          }) || []
-          lists.push({
-            key,
-            schema,
-            children,
-            items,
-            draggable,
-            dragOptions: this.getDragOptions(draggable)
-          })
-        }
-      }
-      return lists
+    children() {
+      return this.schema.children
+    },
+
+    childrenList() {
+      const name = this.children?.name
+      return name && this.data[name]
     },
 
     numChildren() {
-      return this.childrenLists.reduce(
-        (count, childrenList) => count + childrenList.items.length,
-        0
+      return this.childrenList?.length
+    },
+
+    childrenDraggable() {
+      return !!(
+        this.childrenList?.length > 1 &&
+        this.getSchemaValue('draggable', true, this.children)
       )
+    },
+
+    childrenDragOptions() {
+      return this.getDragOptions(this.childrenDraggable)
+    },
+
+    childrenItems() {
+      const { children } = this
+      if (children) {
+        const { editPath } = this.container
+        const childrenOpen = !this.path && this.open
+        // Build a children list with child meta information for the template.
+        return this.childrenList?.map((data, index) => {
+          const path = children.path && `${this.path}/${children.path}/${index}`
+          const open = childrenOpen ||
+            // Only count as "in edit path" when it's not the full edit path.
+            editPath.startsWith(path) && path.length < editPath.length
+          const editing = editPath === path
+          return {
+            data,
+            path,
+            open,
+            editing
+          }
+        }) || []
+      }
     },
 
     info() {
