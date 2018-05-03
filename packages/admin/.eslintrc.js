@@ -53,7 +53,7 @@ module.exports = {
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
-    'quote-props': ['error', 'consistent-as-needed'],
+    'quote-props': ['error', 'as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'always',
       named: 'never',

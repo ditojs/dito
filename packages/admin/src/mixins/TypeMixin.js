@@ -128,10 +128,10 @@ export default {
 
     getAttributes(nativeField = false, textField = false) {
       const attributes = {
-        'ref': 'element',
+        ref: 'element',
         'data-vv-name': this.dataPath,
         'data-vv-as': this.label,
-        'disabled': this.disabled
+        disabled: this.disabled
       }
 
       const setValue = key => {
