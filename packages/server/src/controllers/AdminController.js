@@ -73,7 +73,7 @@ export class AdminController extends Controller {
       resolve: {
         extensions: ['.js', '.vue', '.json'],
         alias: {
-          'vue$': 'vue/dist/vue.esm.js',
+          vue$: 'vue/dist/vue.esm.js',
           '@': resolvedPath
         },
         // Preserve names of `yarn link` modules, for `splitChunks` to work.

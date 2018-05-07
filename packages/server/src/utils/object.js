@@ -1,5 +1,3 @@
-import { isArray } from '@ditojs/utils'
-
 export function getAllKeys(object) {
   // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
   const keys = []
