@@ -20,7 +20,7 @@ export async function seed(app) {
   // Collect all seed, and separate between seed functions and model see data:
   for (const file of files) {
     const { name, ext, base } = path.parse(file)
-    if (/^\.(js|json)$/.test(ext)) {
+    if (!name.startsWith('.') && ['.js', '.json'].includes(ext)) {
       const object = await import(path.resolve(seedDir, file))
       const seed = object.default || object
       // Try to determine the related model from the seed name, and use it also
