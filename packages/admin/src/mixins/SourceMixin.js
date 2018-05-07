@@ -72,7 +72,7 @@ export default {
         this.setStore('total', data.total)
         this.value = data = data.results
       }
-      return data
+      return data || []
     },
 
     shouldLoad() {

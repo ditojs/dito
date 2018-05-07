@@ -164,8 +164,8 @@ export default TypeComponent.register([
 
     hasButtons() {
       const { listData } = this
-      return !!(listData?.length > 0 &&
-        (this.editable || this.deletable || this.draggable))
+      return listData.length > 0 &&
+        (this.editable || this.deletable || this.draggable)
     }
   },
 
