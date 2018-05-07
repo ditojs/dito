@@ -75,6 +75,10 @@ export class Model extends objection.Model {
     return this.constructor.app
   }
 
+  $is(model) {
+    return model?.constructor === this.constructor && model?.id === this.id
+  }
+
   async $update(attributes) {
     if (await this.$query().update(attributes)) {
       this.$set(attributes)

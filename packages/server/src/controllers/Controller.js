@@ -249,20 +249,41 @@ export class Controller {
   }
 
   processAuthorize(authorize) {
-    if (isFunction(authorize)) {
-      return async (ctx, ...args) => {
-        const res = await authorize(ctx, ...args)
-        // Pass res through `processAuthorize()` to support strings & arrays.
-        return this.processAuthorize(res)(ctx, ...args)
-      }
-    } else if (isString(authorize) || isArray(authorize)) {
-      return ctx => {
-        return !!ctx.state.user?.hasRole(...asArray(authorize))
-      }
+    if (authorize == null) {
+      return () => true
     } else if (isBoolean(authorize)) {
       return () => authorize
-    } else if (authorize == null) {
-      return () => true
+    } else if (isFunction(authorize)) {
+      return async (...args) => {
+        const res = await authorize(...args)
+        // Pass res through `processAuthorize()` to support strings & arrays.
+        return this.processAuthorize(res)(...args)
+      }
+    } else if (isString(authorize) || isArray(authorize)) {
+      return (ctx, member) => {
+        const { user } = ctx.state
+        return user && !!asArray(authorize).find(
+          // Support 3 scenarios:
+          // - '$self': The requested member is checked against `ctx.state.user`
+          //   and the action is only authorized if it matches the member.
+          // - '$owner': The member is asked if it is owned by `ctx.state.user`
+          //   through the optional `Model.$hasOwner()` method.
+          // - any string:  `ctx.state.user` is checked for this role through
+          //   the overridable `UserModel.hasRole()` method.
+          value => {
+            return value === '$self'
+              ? member
+                // member actions
+                ? member.$is(user)
+                // collection actions: match id and modelClass
+                : user.constructor === this.modelClass &&
+                  `${user.id}` === ctx.params.id
+              : value === '$owner'
+                ? member?.$hasOwner?.(user)
+                : user.$hasRole(value)
+          }
+        )
+      }
     } else {
       throw new ControllerError(this,
         `Unsupported authorize setting: '${authorize}'`
@@ -325,7 +346,7 @@ export class Controller {
       type,
       action.verb || 'get',
       action.path || this.app.normalizePath(name),
-      authorize,
+      action.authorize || authorize,
       new ControllerAction(this, action, authorize)
     )
   }

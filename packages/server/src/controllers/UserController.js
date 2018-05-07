@@ -45,6 +45,19 @@ export class UserController extends ModelController {
         authenticated: ctx.isAuthenticated(),
         user: ctx.state.user
       }
+    },
+
+    @action('get')
+    self(ctx) {
+      const { user } = ctx.state
+      if (ctx.isAuthenticated() && user instanceof this.modelClass) {
+        ctx.params.id = user.id
+        return this.member.find.call(this, ctx)
+      }
     }
+  }
+
+  member = {
+    authorize: ['$self']
   }
 }

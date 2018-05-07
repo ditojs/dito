@@ -16,21 +16,15 @@ export const UserMixin = Model => class extends Model {
       format: 'email'
     },
 
-    password: {
-      type: 'string'
-    },
-
     hash: {
       type: 'string',
       hidden: true
     },
 
-    roles: {
-      type: 'array',
-      item: {
-        type: 'string'
-      },
-      default: []
+    // `password` isn't stored, but this is required for validation:
+    password: {
+      type: 'string',
+      computed: true
     },
 
     lastLogin: {
@@ -43,12 +37,21 @@ export const UserMixin = Model => class extends Model {
     this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
   }
 
-  async verifyPassword(password) {
+  async $verifyPassword(password) {
     return bcrypt.compare(password, this.hash)
   }
 
-  hasRole(...roles) {
-    return this.roles.find(role => roles.includes(role))
+  $hasRole(...roles) {
+    // Support an optional `roles` arry on the model that can contain roles.
+    return this.roles?.find(role => roles.includes(role)) || false
+  }
+
+  $hasOwner(owner) {
+    return this.$is(owner)
+  }
+
+  $isLoggedIn(ctx) {
+    return this.$is(ctx.state.user)
   }
 
   static initialize() {
@@ -62,7 +65,7 @@ export const UserMixin = Model => class extends Model {
         },
         toCallback(async (username, password) => {
           const user = await this.where({ username }).first()
-          return user && await user.verifyPassword(password) ? user : null
+          return user && await user.$verifyPassword(password) ? user : null
         })
       )
     )
@@ -71,6 +74,8 @@ export const UserMixin = Model => class extends Model {
   static async login(ctx) {
     // Unfortunately koa-passport isn't promisified yet, so do some wrapping:
     return new Promise((resolve, reject) => {
+      // Use a custom callback to handle authentication, see:
+      // http://www.passportjs.org/docs/downloads/html/#custom-callback
       passport.authenticate(this.name, async (err, user, message, status) => {
         if (err) {
           reject(err)

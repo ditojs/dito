@@ -41,6 +41,7 @@ export class CollectionController extends Controller {
       // argument through the MemberAction class:
       verb = action.verb || 'get'
       path = action.path || this.app.normalizePath(name)
+      authorize = action.authorize || authorize
       actionClass = type === 'member' ? MemberAction : ControllerAction
     }
     this.setupActionRoute(
