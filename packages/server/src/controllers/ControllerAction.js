@@ -35,7 +35,7 @@ export default class ControllerAction {
     }
 
     const args = await this.collectArguments(ctx, this.parameters)
-    await this.controller.handleAuthorization(this.authorize, ctx, args)
+    await this.controller.handleAuthorization(this.authorize, ...args)
     const result = await this.handler.call(this.controller, ...args)
     const resultName = this.returns?.name
     // Use 'root' if no name is given, see createValidator()
@@ -124,16 +124,18 @@ export default class ControllerAction {
   collectConsumedArguments(ctx, parameters, consumed) {
     // `consumed` is used in MemberAction.collectArguments()
     const { query } = ctx
-    return parameters
-      ? parameters.map(
+    return [
+      // Always pass `ctx` as first argument.
+      ctx,
+      ...(parameters?.map(
         ({ name }) => {
           if (consumed) {
             consumed[name] = true
           }
           return name ? query[name] : query
-        })
-      // If no parameters are provided, pass the full ctx object to the method
-      : [ctx]
+        }
+      ) || [])
+    ]
   }
 
   async collectArguments(ctx, parameters) {

@@ -286,8 +286,8 @@ export class Controller {
     return pick(authorize, '')
   }
 
-  async handleAuthorization(authorize, ctx, args = []) {
-    const ok = await authorize(ctx, ...args)
+  async handleAuthorization(authorize, ...args) {
+    const ok = await authorize(...args)
     if (ok !== true) {
       throw new AuthorizationError()
     }
