@@ -2,14 +2,13 @@ import compose from 'koa-compose'
 import Router from 'koa-router'
 import multer from 'koa-multer'
 import chalk from 'chalk'
-import { getOwnProperty, getAllKeys } from '@/utils'
+import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
 import ControllerAction from './ControllerAction'
 import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, pick,
-  parseDataPath
+  isObject, isString, isArray, isBoolean, isFunction, asArray, parseDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -291,22 +290,6 @@ export class Controller {
     }
   }
 
-  describeAuthorize(authorize) {
-    if (isFunction(authorize)) {
-      const match = authorize.toString().match(
-        /^\s*(?:function[^(]*\(([^)]*)\)|\(([^)]*)\)\s*=>|(\S*)\s*=>)\s*(.)/
-      )
-      if (match) {
-        const body = match[4] === '{' ? '{ ... }' : '...'
-        return match[1] !== undefined ? `function (${match[1]}) ${body}`
-          : match[2] !== undefined ? `(${match[2]}) => ${body}`
-          : match[3] !== undefined ? `${match[3]} => ${body}`
-          : ''
-      }
-    }
-    return pick(authorize, '')
-  }
-
   async handleAuthorization(authorize, ...args) {
     const ok = await authorize(...args)
     if (ok !== true) {
@@ -315,12 +298,19 @@ export class Controller {
   }
 
   setupRoute({ url, verb, authorize, handlers }) {
+    const authorizeStr = isFunction(authorize)
+      ? describeFunction(authorize)
+      : isString(authorize)
+        ? `'${authorize}'`
+        : isArray(authorize)
+          ? `[${authorize.map(value => `'${value}'`).join(', ')}]`
+          : ''
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
         chalk.green(this.url)}${
         chalk.cyan(url.substring(this.url.length))} ${
-        chalk.white(this.describeAuthorize(authorize))
+        chalk.white(authorizeStr)
       }`,
       this.level + 1
     )
