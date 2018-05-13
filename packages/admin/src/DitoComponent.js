@@ -7,9 +7,9 @@ const components = {}
 const typeComponents = {}
 
 const DitoComponent = Vue.extend({
-  mixins: [DitoMixin],
   // Make sure that registered components are present in all DitoComponent.
   components,
+  mixins: [DitoMixin],
 
   methods: {
     getTypeComponent(type) {

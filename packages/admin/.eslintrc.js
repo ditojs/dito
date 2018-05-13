@@ -3,8 +3,9 @@ var isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
   root: true,
-  parser: 'babel-eslint',
+  parser: 'vue-eslint-parser',
   parserOptions: {
+    parser: 'babel-eslint',
     ecmaVersion: 2017,
     sourceType: 'module'
   },
@@ -12,15 +13,14 @@ module.exports = {
     browser: true,
   },
   extends: [
-    // https://github.com/vuejs/eslint-plugin-vue#priority-a-essential-error-prevention
-    // consider switching to `plugin:vue/strongly-recommended` or `plugin:vue/recommended` for stricter rules.
-    // 'plugin:vue/essential', // TODO: This is currently failing
     // https://github.com/standard/standard/blob/master/docs/RULES-en.md#javascript-standard-style
-    'standard'
+    'standard',
+    // https://github.com/vuejs/eslint-plugin-vue#priority-c-recommended-minimizing-arbitrary-choices-and-cognitive-overhead
+    'plugin:vue/recommended'
   ],
   // Required to lint *.vue files
   plugins: [
-    'html' // 'vue' // TODO: This is currently failing
+    'vue'
   ],
   rules: {
     'array-bracket-spacing': ['error', 'never'],

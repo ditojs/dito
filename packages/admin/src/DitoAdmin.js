@@ -93,15 +93,15 @@ export default class DitoAdmin {
         mode: 'history',
         base
       }),
-      template: '<dito-root :views="views" :options="options" />',
       components: { DitoRoot },
-      provide: {
-        api
-      },
       data: {
         views,
         options
-      }
+      },
+      provide: {
+        api
+      },
+      template: '<dito-root :views="views" :options="options" />'
     })
   }
 

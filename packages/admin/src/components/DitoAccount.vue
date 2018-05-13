@@ -3,7 +3,7 @@
     a(
       @mousedown="handlePulldownClick($event)"
     )
-      span {{ user.username }}
+      span {{ user.username }}
     ul.dito-pulldown(
       :class="{ 'dito-open': pulldown.open }"
     )

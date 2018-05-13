@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-tree-item(
-    :class="{ \
+    :class="{ \
       'dito-dragging': dragging, \
       'dito-editing': editing \
     }"

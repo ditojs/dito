@@ -1,6 +1,6 @@
 <template lang="pug">
   mixin nbsp
-    | !{' '}
+    | !{ '' }
   .dito-pagination.dito-buttons-round
     .dito-pages
       template(v-if="total > 0") {{ first }} – {{ last }}
