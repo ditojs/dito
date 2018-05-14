@@ -18,6 +18,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._eagerScopeId = 0
     this._allowScopes = null
     this._ignoreScopes = false
+    this._appliedScopes = {}
     this._clearScopes(true)
   }
 
@@ -26,6 +27,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     const copy = super.clone()
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
+    copy._appliedScopes = { ...this._appliedScopes }
     return copy
   }
 
@@ -99,14 +101,25 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   _applyScopes(scopes, eager) {
     if (!this._ignoreScopes) {
-      if (eager) {
-        const modelClass = this.modelClass()
-        for (const scope of scopes) {
-          if (modelClass.hasScope(scope)) {
-            this.applyFilter(scope)
-          }
+      const modelClass = this.modelClass()
+      for (const scope of scopes) {
+        if (
+          // Prevent multiple application of scopes.
+          // This can easily occur with the nesting of eager scopes, see below.
+          !this._appliedScopes[scope] &&
+          // Only eager-apply scopes that are actually defined on the model:
+          (!eager || modelClass.hasScope(scope))
+        ) {
+          this._appliedScopes[scope] = true
+          this.applyFilter(scope)
         }
+      }
+      if (eager) {
         if (this._eagerExpression) {
+          // Add a new filter to the existing eager expression that recursively
+          // applies the eager-scope to the resulting queries. This even works
+          // if nested scopes expand the eager expression, because it re-applies
+          // itself to the result.
           const name = `_eagerScope${++this._eagerScopeId}_`
           const filters = {
             [name]: query => query._applyScopes(scopes, eager)
@@ -124,8 +137,6 @@ export class QueryBuilder extends objection.QueryBuilder {
             }
           )
         }
-      } else {
-        this.applyFilter(...scopes)
       }
     }
     return this
