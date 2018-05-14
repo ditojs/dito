@@ -475,18 +475,19 @@ for (const key of [
     const { properties } = modelClass.definition
 
     // Expands all identifiers known to the model to their extended versions.
-    const convertIdentifier = identifier => identifier in properties
-      ? `${this.tableRefFor(modelClass)}.${identifier}`
-      : identifier
+    const expandIdentifier = identifier =>
+      identifier === '*' || identifier in properties
+        ? `${this.tableRefFor(modelClass)}.${identifier}`
+        : identifier
 
     const convertArgument = arg => {
       if (isString(arg)) {
-        arg = convertIdentifier(arg)
+        arg = expandIdentifier(arg)
       } else if (isArray(arg)) {
-        arg = arg.map(value => convertIdentifier(value))
+        arg = arg.map(value => expandIdentifier(value))
       } else if (isPlainObject(arg)) {
         arg = Object.keys(arg).reduce((converted, key) => {
-          converted[convertIdentifier(key)] = arg[key]
+          converted[expandIdentifier(key)] = arg[key]
           return converted
         }, {})
       }
