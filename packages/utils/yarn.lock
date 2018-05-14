@@ -1358,9 +1358,9 @@ eslint-visitor-keys@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-1.0.0.tgz#3f3180fb2e291017716acb4c9d6d5b5c34a6a81d"
 
-eslint@^4.19.1:
+"eslint@npm:eslint-nullish-coalescing":
   version "4.19.1"
-  resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.19.1.tgz#32d1d653e1d90408854bfb296f076ec7e186a300"
+  resolved "https://registry.yarnpkg.com/eslint-nullish-coalescing/-/eslint-nullish-coalescing-4.19.1.tgz#08782b34fc2d5c3902db246ad3e0a9fdc5e5b766"
   dependencies:
     ajv "^5.3.0"
     babel-code-frame "^6.22.0"
