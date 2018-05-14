@@ -5,7 +5,7 @@
     slot(name="header")
     li.dito-container(
       v-for="(compSchema, compDataPath) in components"
-      v-if="include(compSchema)"
+      v-if="shouldRender(compSchema)"
       v-show="isVisible(compSchema)"
       :style="getStyle(compSchema)"
       :key="compDataPath"
@@ -114,10 +114,6 @@ export default DitoComponent.component('dito-components', {
   },
 
   methods: {
-    include(schema) {
-      return pick(this.getSchemaValue('if', true, schema), true)
-    },
-
     isVisible(schema) {
       return pick(this.getSchemaValue('visible', true, schema), true)
     },

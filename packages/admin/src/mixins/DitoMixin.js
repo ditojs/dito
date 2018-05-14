@@ -1,7 +1,7 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
 import {
-  isObject, isArray, isFunction, camelize, labelize
+  isObject, isArray, isString, isFunction, asArray, camelize, labelize
 } from '@ditojs/utils'
 
 export default {
@@ -109,14 +109,19 @@ export default {
     },
 
     getSchemaValue(key, matchRole = false, schema = this.schema) {
-      let value = schema[key]
+      let value = schema?.[key]
       if (isFunction(value)) {
-        value = value.call(this, this.data)
+        // Only call the callback if we actually have data already
+        value = this.data ? value.call(this, this.data) : null
       }
-      if (matchRole && isArray(value)) {
-        value = this.user.hasRole(...value)
+      if (matchRole && (isString(value) || isArray(value))) {
+        value = this.user.hasRole(...asArray(value))
       }
       return value
+    },
+
+    shouldRender(schema = null) {
+      return !!schema && this.getSchemaValue('if', true, schema) ?? true
     },
 
     appendDataPath(dataPath = '', token) {

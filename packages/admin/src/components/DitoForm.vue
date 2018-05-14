@@ -20,18 +20,19 @@
     )
       .dito-buttons.dito-buttons-form(slot="buttons")
         button.dito-button(
+          v-if="shouldRender(buttons.cancel || {})"
           type="button"
           @click.prevent="onCancel"
           :class="`dito-button-${verbs.cancel}`"
         ) {{ buttons.cancel && buttons.cancel.label }}
         button.dito-button(
-          v-if="!doesMutate"
+          v-if="shouldRender(buttons.submit || {}) && !doesMutate"
           type="submit"
           :class="`dito-button-${verbs.submit}`"
         ) {{ buttons.submit && buttons.submit.label }}
         button.dito-button(
           v-for="(button, key) in buttons"
-          v-if="key !== 'submit' && key !== 'cancel'"
+          v-if="shouldRender(button) && key !== 'submit' && key !== 'cancel'"
           type="submit"
           @click.prevent="onSubmit(button)"
           :class="`dito-button-${key}`"
