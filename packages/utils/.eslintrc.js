@@ -9,7 +9,8 @@ module.exports = {
     sourceType: 'module'
   },
   env: {
-    node: true
+    node: true,
+    es6: true
   },
   // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: 'standard',
@@ -27,6 +28,7 @@ module.exports = {
     // Allow debugger during development.
     'no-debugger': isProduction ? 'error' : 'warn',
     'no-constant-condition': isProduction ? 'error' : 'warn',
+    'no-undef': isProduction ? 'error' : 'warn',
     'no-unused-vars': [isProduction ? 'error' : 'warn', {
       args: 'after-used',
       argsIgnorePattern: '^_',
