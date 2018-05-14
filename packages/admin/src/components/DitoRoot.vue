@@ -129,10 +129,11 @@ export default DitoComponent.component('dito-root', {
           const error = err.response?.data?.error
           if (error) {
             this.notify('error', 'Authentication Error', error)
-            this.login()
           } else {
+            this.notify('error', 'Authentication Error', err)
             console.error(err, err.response)
           }
+          this.login()
         }
       }
     },

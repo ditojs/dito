@@ -11,6 +11,7 @@ module.exports = {
   },
   env: {
     browser: true,
+    es6: true
   },
   extends: [
     // https://github.com/standard/standard/blob/master/docs/RULES-en.md#javascript-standard-style
@@ -36,6 +37,7 @@ module.exports = {
     // Allow debugger during development.
     'no-debugger': isProduction ? 'error' : 'warn',
     'no-constant-condition': isProduction ? 'error' : 'warn',
+    'no-undef': isProduction ? 'error' : 'warn',
     'no-unused-vars': [isProduction ? 'error' : 'warn', {
       args: 'after-used',
       argsIgnorePattern: '^_',
