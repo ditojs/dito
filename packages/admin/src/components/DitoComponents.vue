@@ -77,7 +77,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-components', {
   inject: ['$validator'],
@@ -115,12 +114,12 @@ export default DitoComponent.component('dito-components', {
 
   methods: {
     isVisible(schema) {
-      return pick(this.getSchemaValue('visible', true, schema), true)
+      return this.getSchemaValue('visible', true, schema) ?? true
     },
 
     isDisabled(schema) {
       return this.disabled ||
-        pick(this.getSchemaValue('disabled', true, schema), false)
+        (this.getSchemaValue('disabled', true, schema) ?? false)
     },
 
     hasLabel(schema) {

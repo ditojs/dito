@@ -45,7 +45,7 @@ import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import { isObjectSource } from '@/schema'
 import {
-  isArray, isObject, clone, pick, capitalize, parseDataPath
+  isArray, isObject, clone, capitalize, parseDataPath
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -123,7 +123,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     itemId() {
-      return this.create ? null : pick(this.param, null)
+      return this.create ? null : this.param ?? null
     },
 
     method() {

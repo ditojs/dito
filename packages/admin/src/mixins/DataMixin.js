@@ -1,7 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import LoadingMixin from './LoadingMixin'
 import { isListSource } from '@/schema'
-import { isString, isFunction, pick, clone } from '@ditojs/utils'
+import { isString, isFunction, clone } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -119,12 +119,11 @@ export default {
       const itemProperty = isString(itemLabel) && itemLabel ||
         columns && Object.keys(columns)[0] ||
         'name'
-      let label = pick(
+      let label = (
         isFunction(itemLabel)
           ? itemLabel(item)
-          : item[itemProperty],
-        null
-      )
+          : item[itemProperty]
+      ) ?? null
       if (autoLabel && label == null) {
         const id = this.getItemId(item)
         label = id
@@ -184,11 +183,10 @@ export default {
           // and then to the defaultValue from there. That's why defaultValue is
           // a 'static' value on the component definitions:
           const component = TypeComponent.get(componentSchema.type)
-          const defaultValue = pick(
-            componentSchema.default,
-            component?.options.defaultValue,
+          const defaultValue =
+            componentSchema.default ??
+            component?.options.defaultValue ??
             null
-          )
           data[key] = isFunction(defaultValue)
             ? defaultValue(componentSchema)
             : clone(defaultValue)

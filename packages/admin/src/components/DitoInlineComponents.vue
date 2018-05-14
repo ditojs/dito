@@ -28,7 +28,6 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { isObjectSource } from '@/schema'
-import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-inline-components', {
   props: {
@@ -43,11 +42,8 @@ export default DitoComponent.component('dito-inline-components', {
 
   computed: {
     compact() {
-      return pick(
-        this.schema.compact,
-        // The default is true for object sources:
-        isObjectSource(this.meta.schema)
-      )
+      // The default is true for object sources:
+      return this.schema.compact ?? isObjectSource(this.meta.schema)
     },
 
     header() {

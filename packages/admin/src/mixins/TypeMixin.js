@@ -1,4 +1,4 @@
-import { isArray, isAbsoluteUrl, pick } from '@ditojs/utils'
+import { isArray, isAbsoluteUrl } from '@ditojs/utils'
 
 export default {
   // Inherit the $validator from the parent.
@@ -196,10 +196,7 @@ export default {
       return schema.exclude
         ? undefined
         : schema.process
-          ? pick(
-            schema.process(value, this.data, dataPath),
-            value
-          )
+          ? schema.process(value, this.data, dataPath) ?? value
           : value
     },
 

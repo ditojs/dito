@@ -38,7 +38,6 @@
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/schema'
-import { pick } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-root', {
   props: {
@@ -191,7 +190,7 @@ export default DitoComponent.component('dito-root', {
         const views = await resolveViews(this.views)
         const filteredViews = {}
         for (const [name, view] of Object.entries(views)) {
-          if (pick(this.getSchemaValue('if', true, view), true)) {
+          if (this.getSchemaValue('if', true, view) ?? true) {
             filteredViews[name] = view
           }
         }
