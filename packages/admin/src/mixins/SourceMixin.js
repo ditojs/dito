@@ -152,17 +152,16 @@ export default {
     },
 
     editable() {
-      return !this.inline &&
-        this.getSchemaValue('editable', true)
+      return !this.inline && !!this.getSchemaValue('editable', true)
     },
 
     deletable() {
-      return this.getSchemaValue('deletable', true)
+      return !!this.getSchemaValue('deletable', true)
     },
 
     draggable() {
       return this.isListSource &&
-        this.getSchemaValue('draggable', true) &&
+        !!this.getSchemaValue('draggable', true) &&
         this.listData.length > 1
     }
   },

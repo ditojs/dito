@@ -20,7 +20,7 @@
         v-if="columns"
         :query="query"
         :columns="columns"
-        :has-buttons="hasButtons"
+        :hasButtons="hasButtons"
       )
       vue-draggable(
         element="tbody"

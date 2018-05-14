@@ -271,17 +271,15 @@ export default DitoComponent.component('dito-tree-item', {
 
     creatable() {
       // TODO: Support creatable!
-      return hasForms(this.schema) &&
-        this.getSchemaValue('creatable', true)
+      return hasForms(this.schema) && !!this.getSchemaValue('creatable', true)
     },
 
     editable() {
-      return hasForms(this.schema) &&
-        this.getSchemaValue('editable', true)
+      return hasForms(this.schema) && !!this.getSchemaValue('editable', true)
     },
 
     deletable() {
-      return this.getSchemaValue('deletable', true)
+      return !!this.getSchemaValue('deletable', true)
     },
 
     hasButtons() {
