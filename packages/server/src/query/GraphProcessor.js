@@ -1,4 +1,4 @@
-import { isArray, asArray, pick, getDataPath } from '@ditojs/utils'
+import { isArray, asArray, getDataPath } from '@ditojs/utils'
 
 export default class GraphProcessor {
   constructor(rootModelClass, data, options, settings) {
@@ -115,7 +115,7 @@ export default class GraphProcessor {
           // the current relation and build relation expression arrays for each
           // override reflecting their nested settings in arrays of expressions.
           for (const key in this.overrides) {
-            const option = pick(graphOptions[key], this.options[key])
+            const option = graphOptions[key] ?? this.options[key]
             if (option) {
               this.overrides[key].push(relationPath)
             }
