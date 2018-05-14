@@ -1,4 +1,6 @@
 export * from './action'
 export * from './authorize'
+export * from './eagerScope'
 export * from './parameters'
 export * from './returns'
+export * from './scope'

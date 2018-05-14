@@ -75,21 +75,25 @@ export class CollectionController extends Controller {
     return id
   }
 
-  handleScopes(query) {
+  handleScopes(
+    query,
+    scope = this.scope,
+    eagerScope = this.eagerScope
+  ) {
     if (this.allowScope) {
       query.allowScope(
         ...this.allowScope,
         // Also include the scopes defined by scope and eagerScope so these can
         // pass through.
-        ...asArray(this.scope),
-        ...asArray(this.eagerScope)
+        ...asArray(scope),
+        ...asArray(eagerScope)
       )
     }
-    if (this.scope) {
-      query.mergeScope(...asArray(this.scope))
+    if (scope) {
+      query.mergeScope(...asArray(scope))
     }
-    if (this.eagerScope) {
-      query.mergeEagerScope(...asArray(this.eagerScope))
+    if (eagerScope) {
+      query.mergeEagerScope(...asArray(eagerScope))
     }
   }
 
