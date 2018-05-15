@@ -6,8 +6,8 @@
     }"
   )
     .dito-tree-title(v-if="title")
-      .dito-tree-branch(v-if="numItems" @click.stop="opened = !opened")
-        .dito-tree-chevron(v-if="numItems" :class="{ 'dito-opened': opened }")
+      .dito-tree-branch(v-if="numEntries" @click.stop="opened = !opened")
+        .dito-tree-chevron(v-if="numEntries" :class="{ 'dito-opened': opened }")
         .dito-tree-name(v-html="title")
         .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
@@ -124,6 +124,8 @@ $tree-indent: 1.2em
         border-radius: $border-radius
     .dito-properties
       margin-left: $tree-indent
+      > tr
+        vertical-align: baseline
       .dito-label
         margin: 0
         &::after
@@ -228,8 +230,16 @@ export default DitoComponent.component('dito-tree-item', {
       )
     },
 
-    numItems() {
-      return (this.properties?.length || 0) + (this.childrenList?.length || 0)
+    numChildren() {
+      return this.childrenList?.length || 0
+    },
+
+    numProperties() {
+      return this.properties?.length || 0
+    },
+
+    numEntries() {
+      return this.numProperties + this.numChildren
     },
 
     childrenDragOptions() {
@@ -264,9 +274,9 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     details() {
-      const { numItems } = this
-      return numItems && ` ${numItems} ${
-        numItems === 1 ? 'item' : 'items'}`
+      const { numChildren } = this
+      return numChildren && ` ${numChildren} ${
+        numChildren === 1 ? 'item' : 'items'}`
     },
 
     creatable() {
