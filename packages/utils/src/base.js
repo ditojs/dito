@@ -6,7 +6,8 @@ export function isPlainObject(val) {
   const ctor = val?.constructor
   // We also need to check for ctor.name === 'Object', in case this is an object
   // from another global scope (e.g. another vm context in Node.js).
-  return ctor && (ctor === Object || ctor.name === 'Object')
+  // When an value has no constructor, it was created with `Object.create(null)`
+  return !ctor || (ctor === Object || ctor.name === 'Object')
 }
 
 export function isObject(val) {
