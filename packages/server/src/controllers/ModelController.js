@@ -1,4 +1,3 @@
-import objection from 'objection'
 import pluralize from 'pluralize'
 import { isObject, camelize } from '@ditojs/utils'
 import { ControllerError } from '@/errors'
@@ -52,7 +51,7 @@ export class ModelController extends CollectionController {
     }
 
     return transacted
-      ? objection.transaction(this.modelClass.knex(), trx => executeQuery(trx))
+      ? this.modelClass.transaction(executeQuery)
       : executeQuery()
   }
 }

@@ -37,6 +37,7 @@ You can use `.debug()` on any query to directly log SQL statement to console.
 ### `applyEagerScope(name, …)`
 ### `allowScope(name, …)`
 ### `clearScope()`
+### `ignoreScope()`
 
 ## Filter Methods
 

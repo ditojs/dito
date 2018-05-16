@@ -93,6 +93,14 @@ export class Model extends objection.Model {
     return this
   }
 
+  async $transaction(handler) {
+    return this.constructor.transaction(handler)
+  }
+
+  static transaction(handler) {
+    return objection.transaction(this.knex(), handler)
+  }
+
   static query(trx) {
     // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
@@ -545,11 +553,14 @@ const definitionHandlers = {
     for (const [name, array] of Object.entries(scopeArrays)) {
       // Convert array of inherited scope definitions to scope functions.
       const functions = array
-        .map(value =>
-          isFunction(value) ? value
-          : isObject(value) ? query => query.find(value)
-          : () => value)
         .reverse() // Reverse to go from super-class to sub-class.
+        .map(
+          value => isFunction(value)
+            ? value
+            : isObject(value)
+              ? query => query.find(value)
+              : () => value
+        )
       // Now define the scope as a function that calls all inherited scope
       // functions.
       scopes[name] = query => {
@@ -571,6 +582,7 @@ const definitionHandlers = {
       // Convert array of inherited filter definitions to filter functions,
       // including parameter validation.
       const functions = array
+        .reverse() // Reverse to go from super-class to sub-class.
         .map(func => {
           const { parameters } = func
           // If parameters are defined, wrap the function in a closure that
@@ -600,7 +612,6 @@ const definitionHandlers = {
           // ...otherwise use the defined function unmodified.
           return func
         })
-        .reverse() // Reverse to go from super-class to sub-class.
       // Now define the filter as a function that calls all inherited filter
       // functions.
       filters[name] = (query, ...args) => {
