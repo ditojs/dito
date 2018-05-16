@@ -1,6 +1,8 @@
+import { createDecorator } from '@/utils'
+
 export function action(verb, path) {
-  return (target, key, descriptor) => {
-    descriptor.value.verb = verb
-    descriptor.value.path = path
-  }
+  return createDecorator(value => {
+    value.verb = verb
+    value.path = path
+  })
 }

@@ -1,5 +1,7 @@
+import { createDecorator } from '@/utils'
+
 export function authorize(authorize) {
-  return (target, key, descriptor) => {
-    descriptor.value.authorize = authorize
-  }
+  return createDecorator(value => {
+    value.authorize = authorize
+  })
 }

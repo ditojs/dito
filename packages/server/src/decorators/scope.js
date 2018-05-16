@@ -1,7 +1,8 @@
+import { createDecorator } from '@/utils'
+
 export function scope(...scopes) {
-  return (target, key, descriptor) => {
-    const { value } = descriptor
+  return createDecorator(value => {
     const scope = value.scope = value.scope || []
     scope.push(...scopes)
-  }
+  })
 }

@@ -1,7 +1,8 @@
 import { isArray } from '@ditojs/utils'
+import { createDecorator } from '@/utils'
 
 export function parameters(...args) {
-  return (target, key, descriptor) => {
-    descriptor.value.parameters = isArray(args[0]) ? args[0] : args
-  }
+  return createDecorator(value => {
+    value.parameters = isArray(args[0]) ? args[0] : args
+  })
 }
