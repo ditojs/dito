@@ -29,6 +29,19 @@ QueryParameters.register({
     builder.mergeEagerScope(...asArray(value))
   },
 
+  filter(builder, key, value) {
+    const [name, json] = value.split(':')
+    let params
+    try {
+      params = asArray(JSON.parse(`[${json}]`))
+    } catch (error) {
+      throw new QueryBuilderError(
+        `Invalid Query filter parameters: ${error.message}.`
+      )
+    }
+    builder.applyFilter(name, ...params)
+  },
+
   range(builder, key, value) {
     if (value) {
       const [start, end] = isString(value) ? value.split(/\s*,s*/) : value

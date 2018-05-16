@@ -9,7 +9,7 @@ import {
 } from '@/schema'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
-  RelationError, ValidationError, WrappedError
+  RelationError, WrappedError
 } from '@/errors'
 import RelationAccessor from './RelationAccessor'
 
@@ -360,11 +360,12 @@ export class Model extends objection.Model {
     switch (type) {
     case 'ModelValidation':
     case 'ControllerValidation':
-      return new ValidationError({
+      return this.app.createValidationError({
         type,
         message: message ||
           `The provided data for the ${this.name} model is not valid`,
-        errors: this.app.validator.parseErrors(errors, options)
+        errors,
+        options
       })
     case 'RelationExpression':
     case 'UnallowedRelation':
@@ -532,24 +533,28 @@ const definitionHandlers = {
     }, {})
   },
 
+  // No special treatment needed for relations, but we still need to define it
+  // so it will be recognized as a definition:
+  relations: null,
+
   scopes(values) {
     // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
     // so they can be called in sequence.
-    const scopesArrays = mergeAsArrays({}, ...values)
+    const scopeArrays = mergeAsArrays({}, ...values)
     const scopes = {}
-    for (const [name, array] of Object.entries(scopesArrays)) {
-      // Convert array of filter to filter functions that all take a query and
-      // return the query if the next filter should be called, `null` otherwise.
-      const filters = array
-        .map(filter =>
-          isFunction(filter) ? filter
-          : isObject(filter) ? query => query.find(filter)
-          : () => filter)
+    for (const [name, array] of Object.entries(scopeArrays)) {
+      // Convert array of inherited scope definitions to scope functions.
+      const functions = array
+        .map(value =>
+          isFunction(value) ? value
+          : isObject(value) ? query => query.find(value)
+          : () => value)
         .reverse() // Reverse to go from super-class to sub-class.
+      // Now define the scope as a function that calls all inherited scope
+      // functions.
       scopes[name] = query => {
-        // Call all inherited filters per scope.
-        for (const filter of filters) {
-          filter(query)
+        for (const func of functions) {
+          func(query)
         }
         return query
       }
@@ -557,5 +562,55 @@ const definitionHandlers = {
     return scopes
   },
 
-  relations: null
+  filters(values) {
+    // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
+    // so they can be called in sequence.
+    const filterArrays = mergeAsArrays({}, ...values)
+    const filters = {}
+    for (const [name, array] of Object.entries(filterArrays)) {
+      // Convert array of inherited filter definitions to filter functions,
+      // including parameter validation.
+      const functions = array
+        .map(func => {
+          const { parameters } = func
+          // If parameters are defined, wrap the function in a closure that
+          // performs parameter validation...
+          if (parameters) {
+            const validate = this.app.compileParametersValidator(parameters)
+            return (query, ...args) => {
+              // Convert args to object for validation:
+              const object = {}
+              let index = 0
+              for (const param of parameters) {
+                // Use 'root' if no name is given, see:
+                // Application.compileParametersValidator()
+                object[param?.name || 'root'] = args[index++]
+              }
+              if (!validate(object)) {
+                throw this.app.createValidationError({
+                  type: 'FilterValidation',
+                  message:
+                    `The provided data for query filter '${name}' is not valid`,
+                  errors: validate.errors
+                })
+              }
+              return func(query, ...args)
+            }
+          }
+          // ...otherwise use the defined function unmodified.
+          return func
+        })
+        .reverse() // Reverse to go from super-class to sub-class.
+      // Now define the filter as a function that calls all inherited filter
+      // functions.
+      filters[name] = (query, ...args) => {
+        for (const func of functions) {
+          console.log(func.parameters)
+          func(query, ...args)
+        }
+        return query
+      }
+    }
+    return filters
+  }
 }

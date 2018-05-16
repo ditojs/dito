@@ -1,5 +1,3 @@
-import { convertSchema } from '@/schema'
-import { ValidationError } from '@/errors'
 import { isObject, asArray, isString } from '@ditojs/utils'
 
 export default class ControllerAction {
@@ -16,8 +14,8 @@ export default class ControllerAction {
   async callAction(ctx) {
     if (!this.validators && (this.parameters || this.returns)) {
       this.validators = {
-        parameters: this.createValidator(this.parameters),
-        returns: this.createValidator(this.returns, {
+        parameters: this.app.compileParametersValidator(this.parameters),
+        returns: this.app.compileParametersValidator(this.returns, {
           // Use instanceof checks instead of $ref to check returned values.
           instanceof: true
         })
@@ -27,10 +25,11 @@ export default class ControllerAction {
     if (this.validators) {
       const errors = this.validateParameters(ctx)
       if (errors) {
-        throw this.createValidationError(
-          `The provided data is not valid: ${JSON.stringify(ctx.query)}`,
+        throw this.createValidationError({
+          message:
+            `The provided data is not valid: ${JSON.stringify(ctx.query)}`,
           errors
-        )
+        })
       }
     }
 
@@ -38,44 +37,27 @@ export default class ControllerAction {
     await this.controller.handleAuthorization(this.authorize, ...args)
     const result = await this.handler.call(this.controller, ...args)
     const resultName = this.returns?.name
-    // Use 'root' if no name is given, see createValidator()
+    // Use 'root' if no name is given, see:
+    // Application.compileParametersValidator()
     const resultData = {
       [resultName || 'root']: result
     }
     // Use `call()` to pass `result` as context to Ajv, see passContext:
     if (this.validators && !this.validators.returns.call(result, resultData)) {
-      throw this.createValidationError(
-        `Invalid result of action: ${JSON.stringify(result)}`,
-        this.validators.returns.errors
-      )
+      throw this.createValidationError({
+        message: `Invalid result of action: ${JSON.stringify(result)}`,
+        errors: this.validators.returns.errors
+      })
     }
     return resultName ? resultData : result
   }
 
-  createValidationError(message, errors) {
-    return new ValidationError({
+  createValidationError({ message, errors }) {
+    return this.app.createValidationError({
       type: 'ControllerValidation',
       message,
-      errors: this.app.validator.parseErrors(errors)
+      errors
     })
-  }
-
-  createValidator(parameters = [], options = {}) {
-    parameters = asArray(parameters)
-    if (parameters.length > 0) {
-      let properties = null
-      for (const param of parameters) {
-        const property = isString(param) ? { type: param } : param
-        const { name, type, ...rest } = property
-        properties = properties || {}
-        properties[name || 'root'] = type ? { type, ...rest } : rest
-      }
-      if (properties) {
-        const schema = convertSchema(properties, options)
-        return this.app.compileValidator(schema)
-      }
-    }
-    return () => true
   }
 
   validateParameters(ctx) {

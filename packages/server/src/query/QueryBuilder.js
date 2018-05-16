@@ -20,6 +20,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._allowScopes = null
     this._ignoreScopes = false
     this._appliedScopes = {}
+    this._allowFilters = null
     this._clearScopes(true)
   }
 
@@ -29,6 +30,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
     copy._appliedScopes = { ...this._appliedScopes }
+    copy._allowFilters = { ...this._allowFilters }
     return copy
   }
 
@@ -87,9 +89,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   _mergeScopes(scopes, eager) {
     for (const scope of scopes) {
-      if (this._allowScopes && !this._allowScopes[scope]) {
-        throw new QueryBuilderError(`Query scope '${scope}' is not allowed.`)
-      }
       const entry = this._scopes.find(entry => entry.scope === scope)
       if (entry) {
         entry.eager = entry.eager || eager
@@ -111,8 +110,17 @@ export class QueryBuilder extends objection.QueryBuilder {
           // Only eager-apply scopes that are actually defined on the model:
           (!eager || modelClass.hasScope(scope))
         ) {
+          if (this._allowScopes && !this._allowScopes[scope]) {
+            throw new QueryBuilderError(
+              `Query scope '${scope}' is not allowed.`
+            )
+          }
           this._appliedScopes[scope] = true
-          this.applyFilter(scope)
+          // Use Objection's applyFilter() to apply our scope.
+          // NOTE: Our applyFilter() does something else, but this may be OK,
+          // since Objection.js is considering switching to `modifiers` instead
+          // of `namedFilters`.
+          super.applyFilter(scope)
         }
       }
       if (eager) {
@@ -181,6 +189,25 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   applyEagerScope(...scopes) {
     return this._applyScopes(scopes, true)
+  }
+
+  applyFilter(name, ...args) {
+    if (this._allowFilters && !this._allowFilters[name]) {
+      throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
+    }
+    const { filters } = this.modelClass().definition
+    const filter = filters[name]
+    if (!filter) {
+      throw new QueryBuilderError(`Query filter '${name}' is not defined.`)
+    }
+    return filter(this, ...args)
+  }
+
+  allowFilter(...filters) {
+    this._allowFilters = this._allowFilters || {}
+    for (const filter of filters) {
+      this._allowFilters[filter] = true
+    }
   }
 
   raw(...args) {

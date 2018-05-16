@@ -23,7 +23,11 @@ import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Validator } from './Validator'
-import { isObject, isPlainObject, hyphenate } from '@ditojs/utils'
+import { convertSchema } from '@/schema'
+import { ValidationError } from '@/errors'
+import {
+  isObject, isString, asArray, isPlainObject, hyphenate
+} from '@ditojs/utils'
 
 export class Application extends Koa {
   constructor(config = {}, { validator, models, controllers }) {
@@ -298,6 +302,32 @@ export class Application extends Koa {
 
   compileValidator(jsonSchema) {
     return this.validator.compile(jsonSchema)
+  }
+
+  compileParametersValidator(parameters = [], options = {}) {
+    parameters = asArray(parameters)
+    if (parameters.length > 0) {
+      let properties = null
+      for (const param of parameters) {
+        const property = isString(param) ? { type: param } : param
+        const { name, type, ...rest } = property
+        properties = properties || {}
+        properties[name || 'root'] = type ? { type, ...rest } : rest
+      }
+      if (properties) {
+        const jsonSchema = convertSchema(properties, options)
+        return this.compileValidator(jsonSchema)
+      }
+    }
+    return () => true
+  }
+
+  createValidationError({ type, message, errors, options }) {
+    return new ValidationError({
+      type,
+      message,
+      errors: this.validator.parseErrors(errors, options)
+    })
   }
 
   setupMiddleware() {
