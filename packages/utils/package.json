@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/utils",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Dito.js Utility Functions – Dito.js is a minimal and modern web framework, based on Koa2 and Objection.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito-utils",
