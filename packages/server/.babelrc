@@ -20,5 +20,6 @@
       }
     }],
     "transform-promise-to-bluebird"
-  ]
+  ],
+  "comments": false
 }
