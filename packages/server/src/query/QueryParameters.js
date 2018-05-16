@@ -1,6 +1,7 @@
 import { QueryBuilderError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import { QueryWhereFilters } from './QueryWhereFilters'
+import { createLookup } from '@/utils'
 import Registry from './Registry'
 
 export const QueryParameters = new Registry()
@@ -73,12 +74,7 @@ QueryParameters.register({
 })
 
 QueryParameters.getAllowed = function (exclude) {
-  return this.keys().reduce((obj, key) => {
-    if (!exclude?.includes(key)) {
-      obj[key] = true
-    }
-    return obj
-  }, Object.create(null))
+  return createLookup(this.keys(), exclude && (key => !exclude.includes(key)))
 }
 
 QueryParameters.getAllowedFindOne = function () {

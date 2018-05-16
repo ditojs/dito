@@ -1,3 +1,5 @@
+import { asArray } from '@ditojs/utils'
+
 export function getAllKeys(object) {
   // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
   const keys = []
@@ -9,6 +11,15 @@ export function getAllKeys(object) {
 
 export function getOwnProperty(object, key) {
   return object.hasOwnProperty(key) ? object[key] : undefined
+}
+
+export function createLookup(keys, filter) {
+  return asArray(keys).reduce((obj, key) => {
+    if (!filter || filter(key)) {
+      obj[key] = true
+    }
+    return obj
+  }, Object.create(null))
 }
 
 export function mergeWithoutOverride(target, ...sources) {

@@ -5,7 +5,8 @@ import { QueryParameters } from './QueryParameters'
 import { QueryWhereFilters } from './QueryWhereFilters'
 import PropertyRef from './PropertyRef'
 import GraphProcessor from './GraphProcessor'
-import { isPlainObject, isString, isArray, asArray, clone } from '@ditojs/utils'
+import { isPlainObject, isString, isArray, clone } from '@ditojs/utils'
+import { createLookup } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -351,18 +352,14 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Use `true` as default for `checkRootWhere` on findOne() to emulate and
     // remain compatible with Objection's `findOne()`
     if (!query) return this
-    const allowedParams = QueryParameters.getAllowed()
     const allowed = !allowParam
-      ? allowedParams
-      // Convert allow array to object lookup for quicker access.
-      : asArray(allowParam).reduce((obj, name) => {
-        obj[name] = true
-        return obj
-      }, {})
+      ? QueryParameters.getAllowed()
+      // If it's already a lookup object just use it, otherwise convert it:
+      : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
     if (checkRootWhere) {
       // If there are no known handlers in the query, use the whole query object
       // for the `where` handler to fall-back on Objection's format of findOne()
-      const hasParams = !!Object.keys(query).find(key => allowedParams[key])
+      const hasParams = !!Object.keys(query).find(key => allowed[key])
       if (!hasParams) {
         query = {
           where: query
@@ -396,7 +393,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     const allowedParams = QueryParameters.getAllowedFindOne()
     allowParam = allowParam
       ? allowParam.filter(str => allowedParams[str])
-      : Object.keys(allowedParams)
+      : allowedParams // Passed on as lookup object.
     return this.find(query, { allowParam, checkRootWhere }).first()
   }
 
@@ -571,6 +568,7 @@ const mixinMethods = [
   'mergeEagerScope',
   'applyEagerScope',
   'clearScope',
+  'clear',
   'pick',
   'omit',
   'select',
