@@ -38,6 +38,11 @@ You can use `.debug()` on any query to directly log SQL statement to console.
 ### `allowScope(name, …)`
 ### `clearScope()`
 
+## Filter Methods
+
+### `applyFilter(name, ...args)`
+### `allowFilter(name, …)`
+
 ## Mutation Methods
 
 In addition to Objection.js' many database methods, ...:

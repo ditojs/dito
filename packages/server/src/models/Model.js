@@ -605,7 +605,6 @@ const definitionHandlers = {
       // functions.
       filters[name] = (query, ...args) => {
         for (const func of functions) {
-          console.log(func.parameters)
           func(query, ...args)
         }
         return query

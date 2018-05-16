@@ -34,8 +34,9 @@ export default class MemberAction extends ControllerAction {
     return this.controller.member.find.call(
       this.controller,
       ctx,
-      // Handle `scope` and `eagerScope` in the `modify()` function of `find()`
-      query => this.controller.handleScopes(query, this.scope, this.eagerScope)
+      // Provide a `modify()` function for `find()` to handle the setting of
+      // `this.scope` and `this.eagerScope` on the query, see constructor()
+      query => this.controller.setupQuery(query, this)
     )
   }
 }

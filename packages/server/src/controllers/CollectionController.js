@@ -75,19 +75,23 @@ export class CollectionController extends Controller {
     return id
   }
 
-  handleScopes(
-    query,
-    scope = this.scope,
-    eagerScope = this.eagerScope
-  ) {
-    if (this.allowScope) {
+  setupQuery(query, base = this) {
+    const { scope, eagerScope } = base
+    const { allowScope, allowFilter } = this
+
+    const asAllowArray = value => value === false ? [] : asArray(value)
+
+    if (allowScope !== undefined && allowScope !== true) {
       query.allowScope(
-        ...this.allowScope,
+        ...asAllowArray(allowScope),
         // Also include the scopes defined by scope and eagerScope so these can
         // pass through.
         ...asArray(scope),
         ...asArray(eagerScope)
       )
+    }
+    if (allowFilter !== undefined && allowFilter !== true) {
+      query.allowFilter(...asAllowArray(allowFilter))
     }
     if (scope) {
       query.mergeScope(...asArray(scope))
@@ -95,6 +99,7 @@ export class CollectionController extends Controller {
     if (eagerScope) {
       query.mergeEagerScope(...asArray(eagerScope))
     }
+    return query
   }
 
   execute(/* transaction, ctx, execute(query, trx) {} */) {

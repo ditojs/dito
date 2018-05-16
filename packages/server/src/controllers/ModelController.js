@@ -47,7 +47,7 @@ export class ModelController extends CollectionController {
     // NOTE: `ctx` is required by RelationController.execute()
     const executeQuery = trx => {
       const query = this.modelClass.query(trx)
-      this.handleScopes(query)
+      this.setupQuery(query)
       return execute(query, trx)
     }
 

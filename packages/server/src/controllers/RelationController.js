@@ -78,7 +78,7 @@ export class RelationController extends CollectionController {
           // This is the same as `ModelController.execute()`, except for the use
           // of `model.$relatedQuery()` instead of `modelClass.query()`:
           const query = model.$relatedQuery(this.relationInstance.name, trx)
-          this.handleScopes(query)
+          this.setupQuery(query)
           return execute(query, trx)
         })
     )
