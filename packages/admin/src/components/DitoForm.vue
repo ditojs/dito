@@ -4,7 +4,7 @@
   form.dito-form.dito-scroll-parent(
     v-else
     :class="formClass"
-    @submit.prevent="onSubmit()"
+    @submit.prevent="onSubmit(buttons.submit)"
   )
     // .debug
       div Created {{ `${createdData}` }}
@@ -19,24 +19,38 @@
       :disabled="loading"
     )
       .dito-buttons.dito-buttons-form(slot="buttons")
+        // Render cancel button
         button.dito-button(
-          v-if="shouldRender(buttons.cancel || {})"
+          v-if="shouldRender(buttons.cancel)"
           type="button"
-          @click.prevent="onCancel"
+          @click="onCancel"
           :class="`dito-button-${verbs.cancel}`"
-        ) {{ buttons.cancel && buttons.cancel.label }}
+        ) {{ buttons.cancel.label }}
+        // Render submit button
         button.dito-button(
-          v-if="shouldRender(buttons.submit || {}) && !doesMutate"
+          v-if="shouldRender(buttons.submit) && !doesMutate"
           type="submit"
           :class="`dito-button-${verbs.submit}`"
-        ) {{ buttons.submit && buttons.submit.label }}
-        button.dito-button(
-          v-for="(button, key) in buttons"
-          v-if="shouldRender(button) && key !== 'submit' && key !== 'cancel'"
-          type="submit"
-          @click.prevent="onSubmit(button)"
-          :class="`dito-button-${key}`"
-        ) {{ getLabel(button, key) }}
+        ) {{ buttons.submit.label }}
+        // Render all other buttons
+        template(
+          v-for="button in buttons"
+          v-if="!isDefaultButton(button) && shouldRender(button)"
+        )
+          // Distinguish between buttons thata fire onClick events and those
+          // that submit the form.
+          button.dito-button(
+            v-if="button.onClick"
+            type="button"
+            @click="onClick(button)"
+            :class="`dito-button-${button.name}`"
+          ) {{ getLabel(button) }}
+          button.dito-button(
+            v-else
+            type="submit"
+            @click.prevent="onSubmit(button)"
+            :class="`dito-button-${button.name}`"
+          ) {{ getLabel(button) }}
 </template>
 
 <script>
@@ -45,7 +59,7 @@ import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import { isObjectSource } from '@/schema'
 import {
-  isArray, isObject, clone, capitalize, parseDataPath
+  isArray, isObject, clone, capitalize, parseDataPath, deepMerge
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -142,7 +156,15 @@ export default DitoComponent.component('dito-form', {
     },
 
     buttons() {
-      return this.schema?.buttons || {}
+      return this.getNamedSchemas(
+        deepMerge(
+          {
+            cancel: {},
+            submit: {}
+          },
+          this.schema.buttons
+        )
+      )
     },
 
     data() {
@@ -357,14 +379,21 @@ export default DitoComponent.component('dito-form', {
         'Please correct the highlighted errors.')
     },
 
+    isDefaultButton(button) {
+      return ['submit', 'cancel'].includes(button.name)
+    },
+
     async onSubmit(button) {
       if (await this.$validator.validateAll()) {
-        // Default button is submit:
-        this.submit(button || this.buttons.submit)
+        this.submit(button)
       } else {
         this.focus(this.$errors.items[0].field)
         this.notifyValidationErrors()
       }
+    },
+
+    onClick(button) {
+      return button.onClick.call(this, this.data, button)
     },
 
     onCancel() {
@@ -385,17 +414,13 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    submit(button = {}) {
+    submit(button) {
       const { onSuccess, onError } = button
-      // TODO: Sometimes, the form doesn't need to submit the payload.
-      // Can this be made optional?
-      const payload = this.processData({
-        temporaryIds: true
+      const itemLabel = this.data ? this.getItemLabel(this.data) : 'form'
+      const payload = this.isDefaultButton(button) && this.processData({
+        processIds: true
       })
-
-      const getLabel = data => data ? this.getItemLabel(data) : 'form'
-
-      if (this.isTransient) {
+      if (payload && this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
         // to be done as it just works, but when creating, we need to add to /
@@ -409,12 +434,11 @@ export default DitoComponent.component('dito-form', {
           }
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
-          const label = getLabel(payload)
           if (onSuccess) {
-            onSuccess.call(this, payload, label)
+            onSuccess.call(this, payload, itemLabel)
           } else {
             this.notify('info', 'Change Applied',
-              `<p>Changes in ${label} were applied.</p>` +
+              `<p>Changes in ${itemLabel} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
               'in order to persist this change.</p>')
           }
@@ -423,13 +447,14 @@ export default DitoComponent.component('dito-form', {
           this.close(false)
         }
       } else {
-        let { method, resource } = this
         // Allow buttons to override both method (verb) and resource path:
-        method = button.method || button.verb || method
-        const { path } = button
-        if (path) {
-          resource = { ...resource, path }
-        }
+        const method = button.method || button.verb || this.method
+        const resource = button.path
+          ? {
+            ...this.resource,
+            path: button.path
+          }
+          : this.resource
         this.request(method, { payload, resource }, (err, response) => {
           const data = response?.data
           if (err) {
@@ -448,22 +473,20 @@ export default DitoComponent.component('dito-form', {
               error = isObject(data) ? data : err
             }
             if (error) {
-              const label = getLabel(payload)
               if (onError) {
-                onError.call(this, error, payload, label)
+                onError.call(this, error, itemLabel)
               } else {
                 this.notify('error', 'Request Error',
-                  `Error submitting ${label}:\n${error.message || error}`)
+                  `Error submitting ${itemLabel}:\n${error.message || error}`)
               }
             }
           } else {
-            const label = getLabel(data)
             if (onSuccess) {
-              onSuccess.call(this, data, label)
+              onSuccess.call(this, payload, itemLabel)
             } else {
               const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
-                `${label} was ${submitted}.`)
+                `${itemLabel} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
@@ -497,7 +520,7 @@ export default DitoComponent.component('dito-form', {
 
     processData(options = {}) {
       const {
-        temporaryIds = false,
+        processIds = false,
         removeIds = false
       } = options
       // @ditojs/server specific handling of relates within graphs:
@@ -513,7 +536,7 @@ export default DitoComponent.component('dito-form', {
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
-        if (!this.isTransient && temporaryIds && this.hasTemporaryId(data)) {
+        if (!this.isTransient && processIds && this.hasTemporaryId(data)) {
           const { id, ...rest } = data
           // A refeference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
