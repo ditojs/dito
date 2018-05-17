@@ -85,15 +85,21 @@ export default {
     labelize,
 
     getNamedSchemas(descriptions) {
+      const toObject = (array, toSchema) => array.reduce((object, value) => {
+        const schema = toSchema(value)
+        object[schema.name] = schema
+        return object
+      }, {})
+
       return isArray(descriptions)
-        ? descriptions.map(value => (
+        ? toObject(descriptions, value => (
           isObject(value) ? value : {
             name: camelize(value, false),
             label: labelize(value)
           }
         ))
         : isObject(descriptions)
-          ? Object.entries(descriptions).map(
+          ? toObject(Object.entries(descriptions),
             ([name, value]) => isObject(value)
               ? {
                 name,

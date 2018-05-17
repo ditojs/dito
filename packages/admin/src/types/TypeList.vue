@@ -159,7 +159,8 @@ export default TypeComponent.register([
 
   computed: {
     numColumns() {
-      return (this.columns ? this.columns.length : 1) + (this.creatable ? 1 : 0)
+      return (this.columns ? Object.keys(this.columns).length : 1) +
+        (this.creatable ? 1 : 0)
     },
 
     hasButtons() {

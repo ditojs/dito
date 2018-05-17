@@ -38,7 +38,7 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.component('dito-scopes', {
   props: {
     query: { type: Object, required: true },
-    scopes: { type: Array, required: true }
+    scopes: { type: Object, required: true }
   },
 
   methods: {

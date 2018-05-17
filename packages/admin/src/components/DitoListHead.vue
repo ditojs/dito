@@ -25,7 +25,7 @@ import DitoComponent from '@/DitoComponent'
 export default DitoComponent.component('dito-list-head', {
   props: {
     query: { type: Object, required: true },
-    columns: { type: Array, required: true },
+    columns: { type: Object, required: true },
     hasButtons: { type: Boolean, required: true }
   },
 

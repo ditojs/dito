@@ -116,7 +116,7 @@ export default {
     defaultScope() {
       if (this.scopes) {
         let first = null
-        for (const scope of this.scopes) {
+        for (const scope of Object.values(this.scopes)) {
           if (scope.default) {
             return scope
           }
