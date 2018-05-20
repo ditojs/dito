@@ -205,6 +205,12 @@ export default {
       }
     },
 
+    getDataPath(index) {
+      return this.isObjectSource
+        ? this.dataPath
+        : `${this.dataPath}/${index}`
+    },
+
     getEditLink(item, index) {
       return {
         path: this.isObjectSource
