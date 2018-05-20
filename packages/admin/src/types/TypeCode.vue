@@ -49,9 +49,8 @@ export default TypeComponent.register('code', {
     })
     flask.onUpdate(value => {
       this.value = value
-      console.log(value)
     })
-    this.$watch('value', value => { flask.updateCode(value) })
+    this.$watch('value', value => flask.updateCode(value || ''))
   },
 
   computed: {
