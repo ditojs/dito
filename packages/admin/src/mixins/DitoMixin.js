@@ -60,6 +60,10 @@ export default {
     // that doesn't hold nested data.
     rootData() {
       return this.dataRouteComponent.data
+    },
+
+    parentData() {
+      return this.parentRouteComponent.data
     }
   },
 
