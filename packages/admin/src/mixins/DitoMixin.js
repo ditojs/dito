@@ -23,14 +23,18 @@ export default {
     },
 
     routeComponent() {
-      // Loop through all non-route components (e.g. DitoComponents, DitoTab)
-      // until the closest component that is in the route is found.
-      let comp = this
-      while (comp && !comp.isRoute) {
-        comp = comp.$parent
+      // Only return this if it's still in the route (has a `routeRecord`).
+      if (this.isRoute && this.routeRecord) {
+        return this
       }
-      // Only return the component if its still in the route
-      return comp?.routeRecord ? comp : null
+      // Skip to the parent that defines the `routeComponent` computed property,
+      // and defer to it. This filtering is required due to the use of non-Dito
+      // components such as VueDraggable, which don't inherit the DitoMixin.
+      let parent = this.$parent
+      while (parent && !('routeComponent' in parent)) {
+        parent = parent.$parent
+      }
+      return parent?.routeComponent
     },
 
     formComponent() {
@@ -59,11 +63,11 @@ export default {
     // Returns the data of the first route component in the chain of parents
     // that doesn't hold nested data.
     rootData() {
-      return this.dataRouteComponent.data
+      return this.dataRouteComponent?.data
     },
 
     parentData() {
-      return this.parentRouteComponent.data
+      return this.parentRouteComponent?.data
     }
   },
 
