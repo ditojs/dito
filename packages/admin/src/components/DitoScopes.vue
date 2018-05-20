@@ -8,7 +8,7 @@
       type="button"
       :class="{ 'dito-active': scope.name === query.scope }"
     )
-      | {{ scope.label }}
+      | {{ getLabel(scope) }}
 </template>
 
 <style lang="sass">

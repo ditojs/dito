@@ -12,10 +12,10 @@
           :class="getSortClass(column.name)"
         )
           .dito-order-arrows
-          span {{ column.label }}
+          span {{ getLabel(column) }}
         span(
           v-else
-        ) {{ column.label }}
+        ) {{ getLabel(column) }}
       th(v-if="hasButtons")
 </template>
 

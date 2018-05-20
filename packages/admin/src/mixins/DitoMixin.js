@@ -104,8 +104,7 @@ export default {
       return isArray(descriptions)
         ? toObject(descriptions, value => (
           isObject(value) ? value : {
-            name: camelize(value, false),
-            label: labelize(value)
+            name: camelize(value, false)
           }
         ))
         : isObject(descriptions)
@@ -113,7 +112,6 @@ export default {
             ([name, value]) => isObject(value)
               ? {
                 name,
-                label: labelize(name, value),
                 ...value
               }
               : {
