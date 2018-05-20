@@ -7,9 +7,9 @@
     )
     .dito-tree-panel
       dito-tree-item(
-        :data="rootData"
-        :schema="rootSchema"
-        :dataPath="rootDataPath"
+        :data="treeData"
+        :schema="treeSchema"
+        :dataPath="treeDataPath"
         :open="true"
       )
       router-view
@@ -64,21 +64,21 @@ export default TypeComponent.register(['tree-list', 'tree-object'], {
       return this.$route.path.substring(this.path?.length)
     },
 
-    rootData() {
+    treeData() {
       return this.isListSource
         ? { [this.name]: this.value }
         : this.value
     },
 
-    rootDataPath() {
+    treeDataPath() {
       // Remove `name` from `dataPath`, as it is addeed
-      // to `rootData` and `rootSchema`
+      // to `treeData` and `treeSchema`
       return this.isListSource
         ? this.dataPath.substring(0, this.dataPath.length - this.name.length)
         : this.dataPath
     },
 
-    rootSchema() {
+    treeSchema() {
       return this.isListSource
         ? {
           children: {

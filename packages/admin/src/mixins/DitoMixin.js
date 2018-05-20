@@ -54,6 +54,12 @@ export default {
         routeComponent = routeComponent.parentRouteComponent
       }
       return routeComponent
+    },
+
+    // Returns the data of the first route component in the chain of parents
+    // that doesn't hold nested data.
+    rootData() {
+      return this.dataRouteComponent.data
     }
   },
 
