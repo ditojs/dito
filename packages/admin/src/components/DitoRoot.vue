@@ -158,6 +158,7 @@ export default DitoComponent.component('dito-root', {
       try {
         const response = await this.api.request({
           method: 'get',
+          // TODO: Convert to `${this.api.authPath}/session`?
           url: `${this.api.authPath}/session`
         })
         user = response.data.user || null

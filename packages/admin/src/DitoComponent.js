@@ -22,7 +22,7 @@ const DitoComponent = Vue.extend({
       //   load components with async functions `component: () => import(...)`.
       //   instead, they can be directly provided: `component: import(...)`
       // - The properties passed to such components don't need to be defined.
-      //   Instead, the default TypeMixin props are automatically set.
+      //   Instead, the TypeMixin props are automatically inherited.
       // - The component can use all internal components known to dito-admin.
       return component
         ? async () => {
@@ -31,7 +31,7 @@ const DitoComponent = Vue.extend({
             : isPromise(component) ? await component
             : component
           comp = comp?.default || comp
-          comp.props = TypeMixin.props
+          comp.mixins = [DitoMixin, TypeMixin]
           comp.components = components
           return comp
         }
