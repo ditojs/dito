@@ -40,12 +40,15 @@ export function labelize(str) {
   // console.log(labelize('one_underscored_label'))
   // console.log(labelize('MyCamelCasedLabel'))
   // console.log(labelize('hello world'))
+  // console.log(labelize('test1'))
+  // console.log(labelize('test2test'))
   return str
-    ? str.replace(/([-_ ]|^)(\w)|([a-z])([A-Z])/g,
-      (all, hyphen, hyphenated, camelLeft, camelRight) => {
-        return hyphenated
-          ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
-          : `${camelLeft} ${camelRight}`
+    ? str.replace(/([-_ ]|^)(\w)|(?<=[a-z])([A-Z0-9])|(?<=\d)([a-zA-Z])/g,
+      function (all, hyphen, hyphenated, camel, decimal) {
+        return hyphenated ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
+          : camel ? ` ${camel}`
+          : decimal ? ` ${decimal.toUpperCase()}`
+          : ''
       })
     : ''
 }
