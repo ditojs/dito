@@ -202,20 +202,22 @@ export default DitoComponent.component('dito-form', {
         const lastDataPart = dataParts[dataParts.length - 1]
         if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
           // If we have an object source and are creating, the dataPath needs to
-          // be shortened by the 'create' entry. This isn't the case for list
-          // sources, because there the paranmter is also used for the item id.
+          // be shortened by the 'create' entry. This isn't needed for list
+          // sources, as there the parameter is actually mapped to the item id.
           dataParts.length--
         }
         for (let i = 0, l = dataParts.length; i < l && data; i++) {
           const dataPart = dataParts[i]
           // If this is an :id part, find the index of the item with given id.
           const key = /^:id/.test(routeParts[i])
-            ? this.findItemIdIndex(data, dataPart)
+            ? dataPart === 'create'
+              ? null // There's no index for entries about to be created
+              : this.findItemIdIndex(data, dataPart)
             : dataPart
           // Skip the final lookup but remember `sourceKey`, as we want the
           // parent data so we can replace the entry at `sourceKey` on it.
           if (i === l - 1) {
-            this.sourceKey = key !== 'create' ? key : null
+            this.sourceKey = key
           } else {
             data = data[key]
           }

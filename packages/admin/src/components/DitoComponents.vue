@@ -98,7 +98,8 @@ export default DitoComponent.component('dito-components', {
       // and adds the key as the name to each component, used for labels, etc.
       const {
         dataPath,
-        // NOTE: schema can be null while multi-form lists load their data.
+        // NOTE: schema can be null while multi-form lists load their data,
+        // because only the avialble data will determine the type of form.
         schema = {}
       } = this
       const components = {}

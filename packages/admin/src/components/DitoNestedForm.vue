@@ -18,6 +18,7 @@ export default DitoForm.extend({
 
   watch: {
     $fields: {
+      deep: true,
       // Whenever a field changes on a direct editing form, loop through all of
       // them and attach / flag the field back up on the parent's validator.
       // Unfortunately we can't just share the $validator with the parent form,
@@ -33,8 +34,7 @@ export default DitoForm.extend({
             validator.flag(name, field)
           }
         }
-      },
-      deep: true
+      }
     }
   },
 
