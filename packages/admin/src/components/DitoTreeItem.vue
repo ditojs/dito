@@ -137,7 +137,8 @@ import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { isFunction } from '@ditojs/utils'
-import { hasForms } from '@/schema'
+import { getSchemaAccessor } from '@/utils/accessor'
+import { hasForms } from '@/utils/schema'
 
 export default DitoComponent.component('dito-tree-item', {
   mixins: [OrderedMixin],
@@ -279,18 +280,18 @@ export default DitoComponent.component('dito-tree-item', {
         numChildren === 1 ? 'item' : 'items'}`
     },
 
-    creatable() {
+    creatable: getSchemaAccessor('creatable', function () {
       // TODO: Support creatable!
       return hasForms(this.schema) && !!this.getSchemaValue('creatable', true)
-    },
+    }),
 
-    editable() {
+    editable: getSchemaAccessor('editable', function () {
       return hasForms(this.schema) && !!this.getSchemaValue('editable', true)
-    },
+    }),
 
-    deletable() {
+    deletable: getSchemaAccessor('deletable', function () {
       return !!this.getSchemaValue('deletable', true)
-    },
+    }),
 
     hasButtons() {
       return this.draggable || this.editable || this.deletable

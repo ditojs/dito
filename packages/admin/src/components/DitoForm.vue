@@ -57,7 +57,7 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import { isObjectSource } from '@/schema'
+import { isObjectSource } from '@/utils/schema'
 import {
   isArray, isObject, clone, capitalize, parseDataPath, deepMerge
 } from '@ditojs/utils'

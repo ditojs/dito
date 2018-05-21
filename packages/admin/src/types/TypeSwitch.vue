@@ -4,8 +4,8 @@
     :sync="true"
     :cssColors="true"
     :labels="schema.labels"
-    :width="width"
-    :height="height"
+    :width="size.width"
+    :height="size.height"
     v-model="value"
     v-validate="validations"
     v-bind="getAttributes()"
@@ -48,12 +48,11 @@ export default TypeComponent.register('switch', {
   },
 
   computed: {
-    width() {
-      return this.schema.size?.width || 50
-    },
-
-    height() {
-      return this.schema.size?.height || 22
+    size() {
+      return this.schema.size || {
+        width: 50,
+        height: 22
+      }
     }
   }
 })

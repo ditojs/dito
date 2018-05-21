@@ -124,7 +124,7 @@ export default TypeComponent.register('upload', {
     },
 
     maxSize() {
-      const maxSize = this.getSchemaValue('maxSize', true)
+      const maxSize = this.getSchemaValue('maxSize')
       return maxSize ? parseFileSize(maxSize) : undefined
     },
 

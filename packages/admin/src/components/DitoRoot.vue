@@ -37,7 +37,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
-import { processView, resolveViews } from '@/schema'
+import { processView, resolveViews } from '@/utils/schema'
 
 export default DitoComponent.component('dito-root', {
   props: {

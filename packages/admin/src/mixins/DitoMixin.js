@@ -9,7 +9,8 @@ export default {
 
   data() {
     return {
-      appState
+      appState,
+      overrides: null
     }
   },
 
@@ -92,8 +93,23 @@ export default {
       return this.getStore(key) || this.setStore(key, {})
     },
 
+    getSchemaValue(key, matchRole = false, schema = this.schema) {
+      let value = schema?.[key]
+      if (isFunction(value)) {
+        // Only call the callback if we actually have data already
+        value = this.data ? value.call(this, this.data) : null
+      }
+      if (matchRole && (isString(value) || isArray(value))) {
+        value = this.user.hasRole(...asArray(value))
+      }
+      return value
+    },
+
     getLabel(schema, name) {
-      return schema ? schema.label || labelize(schema.name || name) : ''
+      return schema
+        ? this.getSchemaValue('label', false, schema) ||
+          labelize(schema.name || name)
+        : ''
     },
 
     labelize,
@@ -124,18 +140,6 @@ export default {
               }
           )
           : null
-    },
-
-    getSchemaValue(key, matchRole = false, schema = this.schema) {
-      let value = schema?.[key]
-      if (isFunction(value)) {
-        // Only call the callback if we actually have data already
-        value = this.data ? value.call(this, this.data) : null
-      }
-      if (matchRole && (isString(value) || isArray(value))) {
-        value = this.user.hasRole(...asArray(value))
-      }
-      return value
     },
 
     shouldRender(schema = null) {

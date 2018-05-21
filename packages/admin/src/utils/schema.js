@@ -1,4 +1,4 @@
-import TypeComponent from './TypeComponent'
+import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
 import { isObject, isFunction, isPromise } from '@ditojs/utils'
 

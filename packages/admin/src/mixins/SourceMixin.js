@@ -2,8 +2,11 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { processForms, hasForms, isObjectSource, isListSource } from '@/schema'
 import { isObject, isArray, parseDataPath } from '@ditojs/utils'
+import {
+  processForms, hasForms, isObjectSource, isListSource
+} from '@/utils/schema'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 export default {
   mixins: [DataMixin],
@@ -143,27 +146,27 @@ export default {
       return this.getSchemaValue('inline', true)
     },
 
-    creatable() {
+    creatable: getSchemaAccessor('creatable', function () {
       return hasForms(this.schema) && this.getSchemaValue('creatable', true)
         ? this.isObjectSource
           ? !this.value
           : true
         : false
-    },
+    }),
 
-    editable() {
+    editable: getSchemaAccessor('editable', function () {
       return !this.inline && !!this.getSchemaValue('editable', true)
-    },
+    }),
 
-    deletable() {
+    deletable: getSchemaAccessor('deletable', function () {
       return !!this.getSchemaValue('deletable', true)
-    },
+    }),
 
-    draggable() {
+    draggable: getSchemaAccessor('draggable', function () {
       return this.isListSource &&
         !!this.getSchemaValue('draggable', true) &&
         this.listData.length > 1
-    }
+    })
   },
 
   methods: {

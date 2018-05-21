@@ -1,6 +1,6 @@
 import TypeComponent from '@/TypeComponent'
 import LoadingMixin from './LoadingMixin'
-import { isListSource } from '@/schema'
+import { isListSource } from '@/utils/schema'
 import { isString, isFunction, clone } from '@ditojs/utils'
 
 export default {

@@ -27,7 +27,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObjectSource } from '@/schema'
+import { isObjectSource } from '@/utils/schema'
 
 export default DitoComponent.component('dito-inline-components', {
   props: {

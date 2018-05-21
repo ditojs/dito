@@ -1,4 +1,5 @@
 import { isArray, isAbsoluteUrl } from '@ditojs/utils'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 export default {
   // Inherit the $validator from the parent.
@@ -58,40 +59,50 @@ export default {
       get() {
         return this.data[this.name]
       },
-
       set(value) {
         this.$set(this.data, this.name, value)
       }
     },
 
-    label() {
+    label: getSchemaAccessor('label', function () {
       return this.getLabel(this.schema)
-    },
+    }),
 
-    step() {
-      const { step } = this.schema
+    width: getSchemaAccessor('width'),
+    visible: getSchemaAccessor('visible'),
+    required: getSchemaAccessor('required'),
+    decimals: getSchemaAccessor('decimals'),
+
+    step: getSchemaAccessor('step', function () {
+      const step = this.getSchemaValue('step')
       return this.isInteger && step !== undefined ? Math.ceil(step) : step
-    },
+    }),
 
-    min() {
+    min: getSchemaAccessor('min', function () {
       const { schema } = this
       const min = schema.range ? schema.range[0] : schema.min
-      return this.isInteger && min !== undefined ? Math.floor(min) : min
-    },
+      return this.isInteger && min != null ? Math.floor(min) : min
+    }),
 
-    max() {
+    max: getSchemaAccessor('max', function () {
       const { schema } = this
       const max = schema.range ? schema.range[1] : schema.max
       return this.isInteger && max !== undefined ? Math.ceil(max) : max
-    },
+    }),
 
-    decimals() {
-      return this.schema.decimals
-    },
-
-    required() {
-      return !!this.schema.required
-    },
+    range: getSchemaAccessor('range',
+      function get() {
+        const { min, max } = this
+        return min !== undefined && max !== undefined ? [min, max] : undefined
+      },
+      // Provide a setter that delegates to `[this.min, this.max]`, since those
+      // already handle `schema.range`.
+      function set(range) {
+        if (isArray(range)) {
+          [this.min, this.max] = range
+        }
+      }
+    ),
 
     validations() {
       const rules = this.getValidationRules()
