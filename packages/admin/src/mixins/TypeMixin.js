@@ -138,7 +138,7 @@ export default {
         disabled: this.disabled
       }
 
-      const setValue = key => {
+      const setAttribute = key => {
         const value = this.getSchemaValue(key, false)
         if (value !== undefined) {
           attributes[key] = value
@@ -148,11 +148,11 @@ export default {
       if (nativeField) {
         attributes.name = this.dataPath
         attributes.title = this.label
-        setValue('readonly')
-        setValue('autofocus')
+        setAttribute('readonly')
+        setAttribute('autofocus')
       }
       if (textField) {
-        setValue('placeholder')
+        setAttribute('placeholder')
       }
       return attributes
     },

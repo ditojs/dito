@@ -148,6 +148,10 @@ export default {
         : token
     },
 
+    getFormComponent(dataPathOrKey) {
+      return this.formComponent.getComponent(dataPathOrKey)
+    },
+
     showDialog(options, config) {
       // Shows a dito-dialog component through vue-js-modal, and wraps it in a
       // promise so that the buttons in the dialog can use `dialog.resolve()`

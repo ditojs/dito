@@ -291,8 +291,8 @@ export default DitoComponent.component('dito-form', {
       if (isArray(dataPathOrKey)) {
         dataPathOrKey = dataPathOrKey.join('/')
       }
-      // See if the argument starts with this form's dataPath. If not,
-      // then it's a key and needs to be prepended with the full path:
+      // See if the argument starts with this form's dataPath. If not, then it's
+      // a key or subDataPath and needs to be prepended with the full path:
       const dataPath = !dataPathOrKey.startsWith(this.dataPath)
         ? this.appendDataPath(this.dataPath, dataPathOrKey)
         : dataPathOrKey
