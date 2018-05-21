@@ -4,6 +4,7 @@
     v-model="value"
     v-validate="validations"
     v-bind="getAttributes(true, true)"
+    v-on="getEvents(true, true)"
     :rows="schema.lines || 4"
   )
 </template>

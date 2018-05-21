@@ -5,6 +5,7 @@
     @input="onInput"
     v-validate="validations"
     v-bind="getAttributes(true, true)"
+    v-on="getEvents(true, true)"
     :min="min && toLocalDate(min)"
     :max="max && toLocalDate(min)"
     :step="hasTime ? step || (schema.seconds ? 1 : 60) : step"

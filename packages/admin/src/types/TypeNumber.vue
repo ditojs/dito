@@ -5,6 +5,7 @@
     v-model="inputValue"
     v-validate="validations"
     v-bind="getAttributes(true, true)"
+    v-on="getEvents(true, true)"
     :min="min"
     :max="max"
     :step="step"

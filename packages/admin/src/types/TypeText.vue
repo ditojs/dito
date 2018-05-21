@@ -3,10 +3,9 @@
     :id="dataPath"
     :type="inputType"
     v-model="inputValue"
-    @focus="focused = true"
-    @blur="focused = false"
     v-validate="validations"
     v-bind="getAttributes(true, true)"
+    v-on="getEvents(true, true)"
   )
 </template>
 
@@ -20,12 +19,6 @@ export default TypeComponent.register([
 ], {
   defaultValue() {
     return ''
-  },
-
-  data() {
-    return {
-      focused: false
-    }
   },
 
   computed: {

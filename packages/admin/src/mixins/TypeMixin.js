@@ -16,6 +16,12 @@ export default {
     disabled: { type: Boolean, required: false }
   },
 
+  data() {
+    return {
+      focused: false
+    }
+  },
+
   // Register and unregister all type components on their parent forms for easy
   // lookup.
   created() {
@@ -138,8 +144,8 @@ export default {
         disabled: this.disabled
       }
 
-      const setAttribute = key => {
-        const value = this.getSchemaValue(key, false)
+      const addAttribute = (key, matchRole = false) => {
+        const value = this.getSchemaValue(key, matchRole)
         if (value !== undefined) {
           attributes[key] = value
         }
@@ -148,13 +154,26 @@ export default {
       if (nativeField) {
         attributes.name = this.dataPath
         attributes.title = this.label
-        setAttribute('readonly')
-        setAttribute('autofocus')
-      }
-      if (textField) {
-        setAttribute('placeholder')
+        addAttribute('readonly', true)
+        addAttribute('autofocus')
+        if (textField) {
+          addAttribute('placeholder')
+        }
       }
       return attributes
+    },
+
+    getEvents(nativeField = false, textField = false) {
+      const events = {}
+      if (nativeField && textField) {
+        events.focus = () => {
+          this.focused = true
+        }
+        events.blur = () => {
+          this.focused = false
+        }
+      }
+      return events
     },
 
     load({ cache, ...options }) {
