@@ -418,8 +418,17 @@ export default DitoComponent.component('dito-form', {
 
     submit(button) {
       const { onSuccess, onError } = button
+      // Allow buttons to override both method (verb) and resource path:
+      const method = button.method || button.verb || this.method
+      const resource = button.path
+        ? {
+          ...this.resource,
+          path: button.path
+        }
+        : this.resource
       const itemLabel = this.data ? this.getItemLabel(this.data) : 'form'
-      const payload = this.isDefaultButton(button) && this.processData({
+      // Convention: only post and patch requests pass the data as payload.
+      const payload = ['post', 'patch'].includes(method) && this.processData({
         processIds: true
       })
       if (payload && this.isTransient) {
@@ -449,14 +458,6 @@ export default DitoComponent.component('dito-form', {
           this.close(false)
         }
       } else {
-        // Allow buttons to override both method (verb) and resource path:
-        const method = button.method || button.verb || this.method
-        const resource = button.path
-          ? {
-            ...this.resource,
-            path: button.path
-          }
-          : this.resource
         this.request(method, { payload, resource }, (err, response) => {
           const data = response?.data
           if (err) {
