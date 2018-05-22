@@ -44,9 +44,7 @@ import VueToggleButton from 'vue-js-toggle-button'
 DitoComponent.use(VueToggleButton)
 
 export default TypeComponent.register('switch', {
-  defaultValue() {
-    return false
-  },
+  defaultValue: false,
 
   computed: {
     size() {

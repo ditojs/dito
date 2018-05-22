@@ -14,9 +14,6 @@ import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('checkbox', {
   nativeField: true,
-
-  defaultValue() {
-    return false
-  }
+  defaultValue: false
 })
 </script>

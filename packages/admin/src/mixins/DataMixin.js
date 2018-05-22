@@ -185,8 +185,7 @@ export default {
           const component = TypeComponent.get(componentSchema.type)
           const defaultValue =
             componentSchema.default ??
-            component?.options.defaultValue ??
-            null
+            component?.options.defaultValue
           data[key] = isFunction(defaultValue)
             ? defaultValue(componentSchema)
             : clone(defaultValue)

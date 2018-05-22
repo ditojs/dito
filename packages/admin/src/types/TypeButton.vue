@@ -9,5 +9,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('button')
+export default TypeComponent.register('button', {
+  defaultValue: undefined
+})
 </script>

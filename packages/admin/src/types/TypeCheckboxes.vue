@@ -31,9 +31,6 @@ export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
   nativeField: true,
-
-  defaultValue() {
-    return []
-  }
+  defaultValue: []
 })
 </script>
