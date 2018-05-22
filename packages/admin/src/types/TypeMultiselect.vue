@@ -4,6 +4,7 @@
     v-model="multiSelectValue"
     v-validate="validations"
     v-bind="getAttributes()"
+    v-on="getEvents()"
     :show-labels="false"
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",

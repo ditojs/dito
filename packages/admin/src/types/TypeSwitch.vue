@@ -9,6 +9,7 @@
     v-model="value"
     v-validate="validations"
     v-bind="getAttributes()"
+    v-on="getEvents()"
   )
 </template>
 

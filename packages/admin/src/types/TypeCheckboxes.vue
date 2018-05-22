@@ -10,7 +10,8 @@
           :value="getValueForOption(option)"
           v-model="selectValue"
           v-validate="validations"
-          v-bind="getAttributes(true)"
+          v-bind="getAttributes()"
+          v-on="getEvents()"
         )
         | {{ getLabelForOption(option) }}
 </template>
@@ -28,6 +29,8 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 
 export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
+
+  nativeField: true,
 
   defaultValue() {
     return []

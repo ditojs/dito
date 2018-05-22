@@ -3,8 +3,8 @@
     :id="dataPath"
     v-model="value"
     v-validate="validations"
-    v-bind="getAttributes(true, true)"
-    v-on="getEvents(true, true)"
+    v-bind="getAttributes()"
+    v-on="getEvents()"
     :rows="schema.lines || 4"
   )
 </template>
@@ -12,5 +12,8 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('textarea')
+export default TypeComponent.register('textarea', {
+  nativeField: true,
+  textField: true
+})
 </script>

@@ -5,7 +5,8 @@
       :id="dataPath"
       v-model="selectValue"
       v-validate="validations"
-      v-bind="getAttributes(true)"
+      v-bind="getAttributes()"
+      v-on="getEvents()"
     )
       template(
         v-for="option in options"
@@ -51,6 +52,8 @@ import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
 export default TypeComponent.register('select', {
-  mixins: [OptionsMixin]
+  mixins: [OptionsMixin],
+
+  nativeField: true
 })
 </script>

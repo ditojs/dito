@@ -4,8 +4,8 @@
     :type="inputType"
     v-model="inputValue"
     v-validate="validations"
-    v-bind="getAttributes(true, true)"
-    v-on="getEvents(true, true)"
+    v-bind="getAttributes()"
+    v-on="getEvents()"
   )
 </template>
 
@@ -17,6 +17,9 @@ const maskedPassword = '****************'
 export default TypeComponent.register([
   'text', 'email', 'url', 'tel', 'password', 'creditcard'
 ], {
+  nativeField: true,
+  textField: true,
+
   defaultValue() {
     return ''
   },

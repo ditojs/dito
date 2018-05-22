@@ -4,7 +4,8 @@
     type="checkbox"
     v-model="value"
     v-validate="validations"
-    v-bind="getAttributes(true)"
+    v-bind="getAttributes()"
+    v-on="getEvents()"
   )
 </template>
 
@@ -12,6 +13,8 @@
 import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('checkbox', {
+  nativeField: true,
+
   defaultValue() {
     return false
   }

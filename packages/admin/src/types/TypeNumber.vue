@@ -4,8 +4,8 @@
     type="number"
     v-model="inputValue"
     v-validate="validations"
-    v-bind="getAttributes(true, true)"
-    v-on="getEvents(true, true)"
+    v-bind="getAttributes()"
+    v-on="getEvents()"
     :min="min"
     :max="max"
     :step="step"
@@ -28,6 +28,9 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register([
   'number', 'integer'
 ], {
+  nativeField: true,
+  textField: true,
+
   computed: {
     isInteger() {
       return this.type === 'integer'

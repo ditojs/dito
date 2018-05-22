@@ -10,7 +10,8 @@
           :value="getValueForOption(option)"
           v-model="selectValue"
           v-validate="validations"
-          v-bind="getAttributes(true)"
+          v-bind="getAttributes()"
+          v-on="getEvents()"
         )
         | {{ getLabelForOption(option) }}
 </template>
@@ -27,6 +28,8 @@ import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
 export default TypeComponent.register('radio', {
-  mixins: [OptionsMixin]
+  mixins: [OptionsMixin],
+
+  nativeField: true
 })
 </script>

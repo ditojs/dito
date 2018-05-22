@@ -147,7 +147,12 @@ export default {
       return rules
     },
 
-    getAttributes(nativeField = false, textField = false) {
+    getAttributes() {
+      const {
+        nativeField = false,
+        textField = false
+      } = this.constructor.options
+
       const attributes = {
         ref: 'element',
         'data-vv-name': this.dataPath,
@@ -174,15 +179,16 @@ export default {
       return attributes
     },
 
-    getEvents(nativeField = false, textField = false) {
+    getEvents() {
+      const {
+        nativeField = false
+      } = this.constructor.options
+
       const events = {}
-      if (nativeField && textField) {
-        events.focus = () => {
-          this.focused = true
-        }
-        events.blur = () => {
-          this.focused = false
-        }
+      if (nativeField) {
+        events.change = event => this.onChange(event)
+        events.focus = event => this.onFocus(event)
+        events.blur = event => this.onBlur(event)
       }
       return events
     },
@@ -277,6 +283,20 @@ export default {
       if (focus) {
         this.$nextTick(() => focus.focus())
       }
+    },
+
+    onFocus(event) {
+      this.focused = true
+      this.$emit('focus', event)
+    },
+
+    onBlur(event) {
+      this.focused = false
+      this.$emit('blur', event)
+    },
+
+    onChange(event) {
+      this.$emit('change', event)
     }
   }
 }
