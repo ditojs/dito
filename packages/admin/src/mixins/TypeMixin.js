@@ -120,10 +120,7 @@ export default {
       // property in type components.
       const rules = {}
       if (this.required) {
-        // A poor design choice in vee-validate: The option for the `required`
-        // validator is `invalidateFalse`, `true` by default. So we need to set
-        // `required` to `false` here to activate it & disable `invalidateFalse`
-        rules.required = false
+        rules.required = true
       }
       if (this.min) {
         rules.min_value = this.min
