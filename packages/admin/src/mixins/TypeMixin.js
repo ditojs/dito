@@ -154,6 +154,9 @@ export default {
         ref: 'element',
         'data-vv-name': this.dataPath,
         'data-vv-as': this.label,
+        // Validate with a little delay. This is mainly needed for password
+        // handling in TypeText, but may be of use in other places also.
+        'data-vv-delay': 1,
         disabled: this.disabled
       }
 
