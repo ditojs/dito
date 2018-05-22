@@ -13,7 +13,6 @@
 import TypeComponent from '@/TypeComponent'
 
 export default TypeComponent.register('checkbox', {
-  nativeField: true,
-  defaultValue: false
+  nativeField: true
 })
 </script>

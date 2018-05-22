@@ -19,7 +19,6 @@ export default TypeComponent.register([
 ], {
   nativeField: true,
   textField: true,
-  defaultValue: '',
 
   computed: {
     isPassword() {
