@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-schema.dito-scroll-parent
-    dito-tabs(
+    dito-form-header(
       :tabs="tabs"
       :selectedTab="selectedTab"
       :clipboard="clipboard"

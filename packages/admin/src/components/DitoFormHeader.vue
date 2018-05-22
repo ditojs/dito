@@ -1,6 +1,6 @@
 <template lang="pug">
-  .dito-tabs(
-    v-if="tabs"
+  .dito-form-header(
+    v-if="tabs || clipboard"
   )
     a(
       v-for="(tabSchema, key) in tabs"
@@ -32,7 +32,7 @@ $tab-color-active: $tab-color-inactive
 $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 .dito
-  .dito-tabs
+  .dito-form-header
     position: relative
     max-width: $content-width
     height: $tab-height
@@ -73,7 +73,7 @@ import DitoComponent from '@/DitoComponent'
 import Clipboard from 'clipboard'
 import { clone } from '@ditojs/utils'
 
-export default DitoComponent.component('dito-tabs', {
+export default DitoComponent.component('dito-form-header', {
   props: {
     tabs: { type: Object, required: false },
     selectedTab: { type: String, required: false },
