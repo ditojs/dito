@@ -7,7 +7,7 @@
       :href="`#${key}`"
       :class="{ selected: selectedTab === key }"
     )
-      | {{ tabSchema.label }}
+      | {{ getLabel(tabSchema, key) }}
     .dito-clipboard.dito-buttons.dito-buttons-round(
       v-if="clipboard"
     )
