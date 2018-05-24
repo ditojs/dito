@@ -15,6 +15,7 @@ import DitoForm from './DitoForm'
 export default DitoForm.extend({
   data() {
     return {
+      formTag: 'div', // Use a <div> as we shouldn't nest acutal <form> tags.
       formClass: 'dito-nested-form'
     }
   },

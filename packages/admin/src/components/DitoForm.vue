@@ -1,8 +1,9 @@
 <template lang="pug">
   // If form is not active, render router-view to nest further route components
   router-view(v-if="!isActive")
-  form.dito-form.dito-scroll-parent(
+  component.dito-form.dito-scroll-parent(
     v-else
+    :is="formTag"
     :class="formClass"
     @submit.prevent="onSubmit(buttons.submit)"
   )
@@ -72,6 +73,7 @@ export default DitoComponent.component('dito-form', {
       sourceKey: null,
       isForm: true,
       loadCache: {}, // See TypeMixin.load()
+      formTag: 'form',
       formClass: null,
       temporaryId: 0
     }
