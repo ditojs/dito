@@ -48,7 +48,7 @@ export async function processView(api, schema, name, routes) {
 
 export function processComponent(api, schema, name, routes,
   parentMeta = null, level = 0) {
-  // Delegate processing to the actual type components.
+  // Delegate schema processing to the actual type components.
   return TypeComponent.get(schema.type)?.options.processSchema?.(
     api, schema, name, routes, parentMeta, level
   )

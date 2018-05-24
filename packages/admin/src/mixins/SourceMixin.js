@@ -292,112 +292,111 @@ export default {
     }
   }, // end of `methods`
 
-  processSchema
-}
-
-async function processSchema(
-  api, schema, name, routes, parentMeta, level, nested = false, flatten = false,
-  process = null
-) {
-  const path = schema.path = schema.path || api.normalizePath(name)
-  schema.name = name
-  const { inline } = schema
-  const addRoutes = !inline
-  if (inline) {
-    if (schema.nested === false) {
-      throw new Error(
-        'Lists with inline forms can only work with nested data')
-    }
-    schema.nested = true
-  }
-  // Use differently named url parameters on each nested level for id as
-  // otherwise they would clash and override each other inside $route.params
-  // See: https://github.com/vuejs/vue-router/issues/1345
-  const param = `id${level + 1}`
-  const meta = {
-    api,
-    schema,
-    // When children are flattened (tree-lists), reuse the parent meta data,
-    // but include the `flatten` setting also.
-    flatten
-  }
-  const formMeta = {
-    ...meta,
-    nested,
-    param
-  }
-  const childRoutes = await processForms(api, schema, formMeta, level)
-  if (process) {
-    await process(childRoutes, formMeta, level + 1)
-  }
-  if (addRoutes) {
-    const isView = level === 0
-    // While lists in views have their own route records, nested lists in
-    // forms do not, and need their path prefixed with the parent's path:
-    const formPath = isView ? '' : path
-    const formRoute = {
-      // Object sources don't need id params in their form paths, as they
-      // directly edit one object.
-      path: getPathWithParam(formPath, isListSource(schema) && param),
-      component: nested ? DitoNestedForm : DitoForm,
-      meta: formMeta
-    }
-    const formRoutes = [formRoute]
-    // Partition childRoutes into those that need flattening (tree-lists) and
-    // those that don't, and process each group separately after.
-    const [flatRoutes, subRoutes] = childRoutes.reduce(
-      (res, route) => {
-        res[route.meta.flatten ? 0 : 1].push(route)
-        return res
-      },
-      [[], []]
-    )
-    if (flatRoutes.length) {
-      for (const childRoute of flatRoutes) {
-        formRoutes.push({
-          ...(childRoute.redirect ? childRoute : formRoute),
-          path: `${formRoute.path}/${childRoute.path}`,
-          meta: {
-            ...childRoute.meta,
-            flatten
-          }
-        })
+  async processSchema(
+    api, schema, name, routes, parentMeta, level,
+    nested = false, flatten = false,
+    process = null
+  ) {
+    const path = schema.path = schema.path || api.normalizePath(name)
+    schema.name = name
+    const { inline } = schema
+    const addRoutes = !inline
+    if (inline) {
+      if (schema.nested === false) {
+        throw new Error(
+          'Lists with inline forms can only work with nested data')
       }
+      schema.nested = true
     }
-    if (subRoutes.length) {
-      formRoute.children = subRoutes
+    // Use differently named url parameters on each nested level for id as
+    // otherwise they would clash and override each other inside $route.params
+    // See: https://github.com/vuejs/vue-router/issues/1345
+    const param = `id${level + 1}`
+    const meta = {
+      api,
+      schema,
+      // When children are flattened (tree-lists), reuse the parent meta data,
+      // but include the `flatten` setting also.
+      flatten
     }
-    if (isView) {
-      routes.push({
-        path: `/${path}`,
-        children: formRoutes,
-        component: DitoView,
-        meta
-      })
-    } else {
-      if (isObjectSource(schema)) {
-        // Also add a param route, simply to handle '/create' links the same
-        // way that lists do, where it overlaps with :id for item ids.
+    const formMeta = {
+      ...meta,
+      nested,
+      param
+    }
+    const childRoutes = await processForms(api, schema, formMeta, level)
+    if (process) {
+      await process(childRoutes, formMeta, level + 1)
+    }
+    if (addRoutes) {
+      const getPathWithParam = (path, param) => param
+        ? path
+          ? `${path}/:${param}`
+          : `:${param}`
+        : path
+
+      const isView = level === 0
+      // While lists in views have their own route records, nested lists in
+      // forms do not, and need their path prefixed with the parent's path:
+      const formPath = isView ? '' : path
+      const formRoute = {
+        // Object sources don't need id params in their form paths, as they
+        // directly edit one object.
+        path: getPathWithParam(formPath, isListSource(schema) && param),
+        component: nested ? DitoNestedForm : DitoForm,
+        meta: formMeta
+      }
+      const formRoutes = [formRoute]
+      // Partition childRoutes into those that need flattening (tree-lists) and
+      // those that don't, and process each group separately after.
+      const [flatRoutes, subRoutes] = childRoutes.reduce(
+        (res, route) => {
+          res[route.meta.flatten ? 0 : 1].push(route)
+          return res
+        },
+        [[], []]
+      )
+      if (flatRoutes.length) {
+        for (const childRoute of flatRoutes) {
+          formRoutes.push({
+            ...(childRoute.redirect ? childRoute : formRoute),
+            path: `${formRoute.path}/${childRoute.path}`,
+            meta: {
+              ...childRoute.meta,
+              flatten
+            }
+          })
+        }
+      }
+      if (subRoutes.length) {
+        formRoute.children = subRoutes
+      }
+      if (isView) {
         routes.push({
-          ...formRoute,
-          path: getPathWithParam(formPath, param)
-        })
-      } else {
-        // Just redirect back to the form when a nested list route is hit.
-        routes.push({
-          path,
-          redirect: '.',
+          path: `/${path}`,
+          children: formRoutes,
+          component: DitoView,
           meta
         })
+      } else {
+        if (isObjectSource(schema)) {
+          // Also add a param route, simply to handle '/create' links the same
+          // way that lists do, where it overlaps with :id for item ids.
+          routes.push({
+            ...formRoute,
+            path: getPathWithParam(formPath, param)
+          })
+        } else {
+          // Just redirect back to the form when a nested list route is hit.
+          routes.push({
+            path,
+            redirect: '.',
+            meta
+          })
+        }
+        // Add the prefixed formRoutes with its children for nested lists.
+        routes.push(...formRoutes)
       }
-      // Add the prefixed formRoutes with its children for nested lists.
-      routes.push(...formRoutes)
     }
   }
-}
-
-function getPathWithParam(path, param) {
-  return param
-    ? path ? `${path}/:${param}` : `:${param}`
-    : path
 }

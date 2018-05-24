@@ -90,29 +90,29 @@ export default TypeComponent.register(['tree-list', 'tree-object'], {
     }
   },
 
-  processSchema
-})
-
-async function processSchema(
-  api, schema, name, routes, parentMeta, level, nested = true, flatten = false
-) {
-  return SourceMixin.processSchema(
-    api, schema, name, routes, parentMeta, level, nested, flatten,
-    // Pass process() to add more routes to childRoutes:
-    (childRoutes, parentMeta, level) => {
-      const { children } = schema
-      if (children) {
-        const { name } = children
+  async processSchema(
+    api, schema, name, routes, parentMeta, level,
+    nested = true, flatten = false,
+    process = null
+  ) {
+    return SourceMixin.processSchema(
+      api, schema, name, routes, parentMeta, level,
+      nested, flatten,
+      // Pass process() to add more routes to childRoutes:
+      (childRoutes, parentMeta, level) => {
+        const { children } = schema
         if (hasForms(children)) {
           // Add `type` to the nested tree list.
           children.type = 'tree-list'
-          return processSchema(
+          return this.processSchema(
             // Pass `true` for `flatten` in tree lists.
-            api, children, name, childRoutes, parentMeta, level, nested, true
+            api, children, children.name, childRoutes, parentMeta, level,
+            nested, true,
+            process
           )
         }
       }
-    }
-  )
-}
+    )
+  }
+})
 </script>
