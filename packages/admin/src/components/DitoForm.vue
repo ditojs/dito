@@ -1,7 +1,7 @@
 <template lang="pug">
   // If form is not active, render router-view to nest further route components
   router-view(v-if="!isActive")
-  component.dito-form.dito-scroll-parent(
+  component.dito-form(
     v-else
     :is="formTag"
     :class="formClass"
@@ -19,7 +19,7 @@
       :store="store"
       :disabled="loading"
     )
-      .dito-buttons.dito-buttons-form(slot="buttons")
+      .dito-buttons.dito-form-buttons(slot="buttons")
         // Render cancel button
         button.dito-button(
           v-if="shouldRender(buttons.cancel)"
@@ -53,6 +53,12 @@
             :class="`dito-button-${button.name}`"
           ) {{ getLabel(button) }}
 </template>
+
+<style lang="sass">
+.dito
+  .dito-form
+    @extend %dito-scroll-parent
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'

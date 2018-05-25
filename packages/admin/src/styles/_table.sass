@@ -1,8 +1,6 @@
 table.dito-table
   width: 100%
   border-radius: $border-radius
-  &:not(:empty)
-    margin: -$list-spacing 0
 
   .dito-buttons
     width: 1%
@@ -54,10 +52,10 @@ table.dito-table
       > tr
         > td.dito-buttons
           padding: $button-margin
-  > tbody:empty + tfoot
+  // Without <thead> and an empty <tbody> there's no need for the <tfoot> border
+  > tbody:first-child:empty + tfoot
     > tr
       > td
-        // All by its own, ther is no need for the border.
         border-top-color: $color-lightest
   // Nested .dito-table:
   table.dito-table

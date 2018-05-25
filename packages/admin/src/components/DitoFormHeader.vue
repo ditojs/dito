@@ -1,7 +1,5 @@
 <template lang="pug">
-  .dito-form-header(
-    v-if="tabs || clipboard"
-  )
+  .dito-form-header
     a(
       v-for="(tabSchema, key) in tabs"
       :href="`#${key}`"
@@ -33,8 +31,11 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 .dito
   .dito-form-header
-    position: relative
+    position: absolute
     max-width: $content-width
+    top: 0
+    left: 0
+    right: 0
     height: $tab-height
     margin-top: -$tab-height
     box-sizing: border-box
@@ -113,7 +114,6 @@ export default DitoComponent.component('dito-form-header', {
         for (const key in clipboardData) {
           this.$set(targetData, key, clipboardData[key])
         }
-        this.appState.clipboardData = null
       }
     }
   }

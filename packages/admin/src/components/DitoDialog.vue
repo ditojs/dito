@@ -9,7 +9,7 @@
       :disabled="false"
       :generateLabels="true"
     )
-      .dito-buttons.dito-buttons-form(slot="buttons")
+      .dito-buttons.dito-form-buttons(slot="buttons")
         button.dito-button(
           v-for="(button, key) in buttons"
           :type="button.type || 'button'"

@@ -26,7 +26,7 @@
       > .dito-nested-form
         background: $color-lightest
         border-radius: $border-radius
-        padding: $form-margin
+        padding: $content-padding
         width: 0 // let it grow to size
         flex: 1 1 50%
         max-width: 50%

@@ -26,12 +26,7 @@
   height: 100%
   display: flex
   .dito-page
-    flex: 1
-    display: flex
-    flex-flow: column
-    .dito-view
-      flex: 1
-      min-height: 0
+    @extend %dito-scroll-parent
 </style>
 
 <script>

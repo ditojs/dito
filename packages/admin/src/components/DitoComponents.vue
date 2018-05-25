@@ -3,7 +3,7 @@
     v-if="components"
   )
     slot(name="header")
-    li.dito-container(
+    li.dito-component-wrapper(
       v-for="(compSchema, compDataPath) in components"
       v-if="shouldRender(compSchema)"
       v-show="isVisible(compSchema)"
@@ -44,16 +44,7 @@
     position: relative
     align-items: baseline
     margin: (-$form-spacing) (-$form-spacing-half)
-    &::after
-      // Use a pseudo element to display a ruler with proper margins
-      display: 'block'
-      content: ''
-      width: 100%
-      padding-bottom: $form-margin
-      border-bottom: $border-style
-      // Add removed $form-spacing again to the ruler
-      margin: 0 $form-spacing-half $form-margin
-    .dito-container
+    .dito-component-wrapper
       flex: 1 1 auto
       align-self: stretch
       box-sizing: border-box

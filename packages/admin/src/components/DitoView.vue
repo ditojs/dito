@@ -1,10 +1,9 @@
 <template lang="pug">
   // If view is not active, render router-view to nest further route components
   router-view(v-if="!isLastRoute")
-  .dito-view(v-else-if="isMulti")
-    // A multi-component view
+  .dito-view(v-else)
     dito-schema(
-      :schema="schema"
+      :schema="viewSchema"
       :dataPath="name"
       :data="data"
       :meta="meta"
@@ -12,24 +11,12 @@
       :disabled="loading"
       :generateLabels="false"
     )
-  .dito-view.dito-scroll(v-else)
-    // A single-component view
-    component.dito-scroll-content(
-      :is="getTypeComponent(type)"
-      :schema="schema"
-      :dataPath="name"
-      :data="data"
-      :meta="meta"
-      :store="getChildStore(name)"
-    )
 </template>
 
 <style lang="sass">
 .dito
   .dito-view
-    position: relative
-    display: flex
-    flex-flow: column
+    @extend %dito-scroll-parent
 </style>
 
 <script>
@@ -55,12 +42,21 @@ export default DitoComponent.component('dito-view', {
       return this.schema.name
     },
 
-    type() {
-      return this.schema.type
-    },
-
-    isMulti() {
-      return !this.type
+    viewSchema() {
+      const { schema } = this
+      // If the schema has a type, it is a single-component view. Translate it
+      // into a muli-component schema, so it can be handled by DitoSchema also:
+      return schema.type
+        ? {
+          name: schema.name,
+          components: {
+            [schema.name]: {
+              ...schema,
+              label: false
+            }
+          }
+        }
+        : schema
     },
 
     loading() {

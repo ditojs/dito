@@ -32,7 +32,7 @@
         tr(
           v-for="item, index in listData || []"
           :key="getItemId(item, index)"
-          :class="getInlineClass(item)"
+          :class="{ 'dito-inline-row': inline }"
         )
           template(v-if="columns")
             dito-list-cell(
@@ -108,8 +108,8 @@
   .dito-list
     .dito-filters
       overflow: auto
-      padding-bottom: $form-margin / 2
-      margin-top: -$form-margin / 2
+      padding-bottom: $content-padding-half
+      margin-top: -$content-padding-half
       +user-select(none)
       .dito-scopes
         float: left
@@ -121,23 +121,6 @@
     margin-bottom: $form-spacing
     tr.dito-inline-row
       margin-bottom: 0
-    &.dito-inline-bar
-      position: relative
-      // Only style the td and .dito-buttons elements directly in this
-      // .dito-inline-bar, not further nested ones:
-      > table
-        > tbody
-          > tr
-            > td
-              display: block
-              &.dito-buttons
-                background: none
-                position: absolute
-                width: auto
-                top: 0
-                right: 0
-                .dito-button:hover
-                  background: $button-color-active
 </style>
 
 <script>
@@ -167,15 +150,6 @@ export default TypeComponent.register([
       const { listData } = this
       return listData.length > 0 &&
         (this.editable || this.deletable || this.draggable)
-    }
-  },
-
-  methods: {
-    getInlineClass(item) {
-      return this.inline && {
-        'dito-inline-row': true,
-        'dito-inline-bar': !this.getFormSchema(item).compact
-      }
     }
   }
 })

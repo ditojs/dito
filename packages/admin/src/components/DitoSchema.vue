@@ -1,36 +1,56 @@
 <template lang="pug">
-  .dito-schema.dito-scroll-parent
+  .dito-schema
     dito-form-header(
+      v-if="tabs || clipboard"
       :tabs="tabs"
       :selectedTab="selectedTab"
       :clipboard="clipboard"
     )
-    .dito-scroll
-      .dito-scroll-content
-        dito-components(
-          v-for="(tabSchema, key) in tabs"
-          v-show="selectedTab === key"
-          :key="key"
-          :tab="key"
-          :schema="tabSchema"
-          :dataPath="dataPath"
-          :data="data"
-          :meta="meta"
-          :store="store"
-          :disabled="disabled"
-          :generateLabels="generateLabels"
-        )
-        dito-components(
-          :schema="schema"
-          :dataPath="dataPath"
-          :data="data"
-          :meta="meta"
-          :store="store"
-          :disabled="disabled"
-          :generateLabels="generateLabels"
-        )
-        slot(name="buttons")
+    dito-components.dito-tab-components(
+      v-for="(tabSchema, key) in tabs"
+      v-show="selectedTab === key"
+      :key="key"
+      :tab="key"
+      :schema="tabSchema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+      :generateLabels="generateLabels"
+    )
+    dito-components.dito-main-components(
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+      :generateLabels="generateLabels"
+    )
+    slot(name="buttons")
 </template>
+
+<style lang="sass">
+.dito
+  .dito-schema
+    @extend %dito-scroll
+    padding: $content-padding
+    max-width: $content-width
+    box-sizing: border-box
+    // Display a ruler between tabbed components and towards the .dito-buttons
+    .dito-tab-components + .dito-main-components,
+    .dito-components + .dito-buttons
+      &::before
+        // Use a pseudo element to display a ruler with proper margins
+        display: block
+        content: ''
+        width: 100%
+        padding-top: $content-padding
+        border-bottom: $border-style
+        // Add removed $form-spacing again to the ruler
+        margin: $form-spacing-half
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
