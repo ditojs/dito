@@ -2,7 +2,6 @@
   ul.dito-components(
     v-if="components"
   )
-    slot(name="header")
     li.dito-component-wrapper(
       v-for="(compSchema, compDataPath) in components"
       v-if="shouldRender(compSchema)"
@@ -59,11 +58,6 @@
       // WebKit doesn't like changed width on checkboxes and radios, override:
       display: inline-block
       width: auto
-  .dito-list
-    .dito-components
-      &::after
-        // Hide the ruler in nested forms
-        display: none
 </style>
 
 <script>

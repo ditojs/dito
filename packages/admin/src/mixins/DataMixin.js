@@ -136,7 +136,7 @@ export default {
         }
       }
       return formLabel && label
-        ? `${this.getLabel(this.getFormSchema(item))} ${label}`
+        ? `${this.getLabel(this.getFormSchema(item))}: ${label}`
         : label || ''
     },
 

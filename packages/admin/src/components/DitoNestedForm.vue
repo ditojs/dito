@@ -4,9 +4,9 @@
     .dito-scroll
       // No nested scrolling:
       overflow: visible
-    .dito-inline-components
-      // Align nested inline-components with nested-form:
-      margin: (-$form-spacing) (-$form-spacing - $form-spacing-half)
+    .dito-inline-schema
+      // Align inline-schema with nested-form:
+      margin: -$form-spacing
 </style>
 
 <script>

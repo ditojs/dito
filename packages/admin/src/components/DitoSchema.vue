@@ -1,7 +1,8 @@
 <template lang="pug">
   .dito-schema
-    dito-form-header(
-      v-if="tabs || clipboard"
+    dito-schema-header(
+      v-if="label || tabs || clipboard"
+      :label="label"
       :tabs="tabs"
       :selectedTab="selectedTab"
       :clipboard="clipboard"
@@ -20,6 +21,7 @@
       :generateLabels="generateLabels"
     )
     dito-components.dito-main-components(
+      v-if="schema.components"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -34,7 +36,6 @@
 <style lang="sass">
 .dito
   .dito-schema
-    @extend %dito-scroll
     padding: $content-padding
     max-width: $content-width
     box-sizing: border-box
@@ -62,6 +63,7 @@ export default DitoComponent.component('dito-schema', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    label: { type: String, required: false },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: true }
   },

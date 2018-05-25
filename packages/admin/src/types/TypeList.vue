@@ -48,9 +48,9 @@
             )
           template(v-else)
             td
-              dito-inline-components(
+              dito-inline-schema(
                 v-if="inline"
-                :label="getItemLabel(item, { index, formLabel: false })"
+                :label="getItemLabel(item, { index, formLabel: true })"
                 :schema="getFormSchema(item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
@@ -117,8 +117,10 @@
         float: right
   // Inline Rows
   tr.dito-inline-row
+    // Turn the rows into blocks, so we can add margins:
     display: block
     margin-bottom: $form-spacing
+    // Only top-level inline rows (on white) should have margins
     tr.dito-inline-row
       margin-bottom: 0
 </style>

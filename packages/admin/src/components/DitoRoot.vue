@@ -3,7 +3,7 @@
     modals-container
     notifications(position="top right" ref="notifications")
     dito-menu(:views="resolvedViews")
-    main.dito-page
+    main.dito-page.dito-parent
       dito-header(
         :spinner="options.spinner"
       )
@@ -25,8 +25,6 @@
 
   height: 100%
   display: flex
-  .dito-page
-    @extend %dito-scroll-parent
 </style>
 
 <script>

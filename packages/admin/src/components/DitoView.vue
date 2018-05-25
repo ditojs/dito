@@ -1,8 +1,8 @@
 <template lang="pug">
   // If view is not active, render router-view to nest further route components
   router-view(v-if="!isLastRoute")
-  .dito-view(v-else)
-    dito-schema(
+  .dito-view.dito-parent(v-else)
+    dito-schema.dito-scroll(
       :schema="viewSchema"
       :dataPath="name"
       :data="data"
@@ -12,12 +12,6 @@
       :generateLabels="false"
     )
 </template>
-
-<style lang="sass">
-.dito
-  .dito-view
-    @extend %dito-scroll-parent
-</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'

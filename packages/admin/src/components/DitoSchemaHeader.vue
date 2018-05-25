@@ -1,11 +1,13 @@
 <template lang="pug">
-  .dito-form-header
-    a(
-      v-for="(tabSchema, key) in tabs"
-      :href="`#${key}`"
-      :class="{ selected: selectedTab === key }"
-    )
-      | {{ getLabel(tabSchema, key) }}
+  .dito-schema-header
+    .dito-label(v-if="label") {{ label }}
+    .dito-tabs
+      a(
+        v-for="(tabSchema, key) in tabs"
+        :href="`#${key}`"
+        :class="{ selected: selectedTab === key }"
+      )
+        | {{ getLabel(tabSchema, key) }}
     .dito-clipboard.dito-buttons.dito-buttons-round(
       v-if="clipboard"
     )
@@ -30,43 +32,53 @@ $tab-color-active: $tab-color-inactive
 $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 .dito
-  .dito-form-header
+  .dito-schema-header
+    display: flex
+    box-sizing: border-box
+    // turn off pointer events in background so that DitoTrail keeps working.
+    pointer-events: none
+    justify-content: space-between
+    > *
+      pointer-events: auto
+    .dito-tabs,
+    .dito-buttons
+      display: flex
+      align-self: flex-end
+    .dito-tabs
+      // See: https://codepen.io/tholex/pen/hveBx/
+      margin-left: auto
+      a
+        display: block
+        +user-select(none)
+        background: $tab-color-inactive
+        margin-left: $tab-margin
+        border-top-left-radius: $tab-radius
+        border-top-right-radius: $tab-radius
+        &:hover
+          background: $tab-color-hover
+        &:active
+          background: $tab-color-active
+        &.selected
+          background: $tab-color-background
+    .dito-buttons
+      .dito-button
+        margin: 0 0 $tab-margin $tab-margin
+  // Style tabs on the main level
+  .dito-parent > .dito-scroll > .dito-schema-header
     position: absolute
+    height: $tab-height
+    margin-top: -$tab-height
+    padding: 0 $menu-padding-hor
     max-width: $content-width
     top: 0
     left: 0
     right: 0
-    height: $tab-height
-    margin-top: -$tab-height
-    box-sizing: border-box
-    padding: 0 $menu-padding-hor
     z-index: $menu-z-index
-    display: flex
-    justify-content: flex-end
-    // turn off pointer events in background so that DitoTrail keeps working.
-    pointer-events: none
     > *
-      pointer-events: auto
       font-size: $menu-font-size
-    a
-      +user-select(none)
+    .dito-tabs a
       line-height: $menu-line-height
       padding: $tab-padding-ver $tab-padding-hor
-      background: $tab-color-inactive
-      margin-left: $tab-margin
-      border-top-left-radius: $tab-radius
-      border-top-right-radius: $tab-radius
-      &:hover
-        background: $tab-color-hover
-      &:active
-        background: $tab-color-active
-      &.selected
-        background: $tab-color-background
-    .dito-buttons
-      display: flex
-      align-items: flex-end
-      .dito-button
-        margin: 0 0 $tab-margin $tab-margin
 </style>
 
 <script>
@@ -74,8 +86,9 @@ import DitoComponent from '@/DitoComponent'
 import Clipboard from 'clipboard'
 import { clone } from '@ditojs/utils'
 
-export default DitoComponent.component('dito-form-header', {
+export default DitoComponent.component('dito-schema-header', {
   props: {
+    label: { type: String, required: false },
     tabs: { type: Object, required: false },
     selectedTab: { type: String, required: false },
     clipboard: { type: Boolean, default: false }

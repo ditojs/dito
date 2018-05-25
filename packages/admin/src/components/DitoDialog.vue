@@ -1,6 +1,6 @@
 <template lang="pug">
   form.dito-dialog(@submit.prevent="")
-    dito-schema(
+    dito-schema.dito-scroll(
       :schema="schema"
       dataPath=""
       :data="data"
