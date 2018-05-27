@@ -10,6 +10,7 @@
       :store="getChildStore(name)"
       :disabled="loading"
       :generateLabels="false"
+      :menuHeader="true"
     )
 </template>
 

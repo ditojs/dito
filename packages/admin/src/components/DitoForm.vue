@@ -18,6 +18,7 @@
       :meta="meta"
       :store="store"
       :disabled="loading"
+      :menuHeader="true"
     )
       .dito-buttons.dito-form-buttons(slot="buttons")
         // Render cancel button

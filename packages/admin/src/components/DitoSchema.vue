@@ -1,12 +1,20 @@
 <template lang="pug">
   .dito-schema
-    dito-schema-header(
+    .dito-schema-header(
       v-if="label || tabs || clipboard"
-      :label="label"
-      :tabs="tabs"
-      :selectedTab="selectedTab"
-      :clipboard="clipboard"
+      :class="{ 'dito-schema-menu-header': menuHeader }"
     )
+      .dito-label(
+        v-if="label"
+      ) {{ label }}
+      dito-tabs(
+        v-if="tabs"
+        :tabs="tabs"
+        :selectedTab="selectedTab"
+      )
+      dito-clipboard(
+        v-if="clipboard"
+      )
     dito-components.dito-tab-components(
       v-for="(tabSchema, key) in tabs"
       v-show="selectedTab === key"
@@ -34,6 +42,7 @@
 </template>
 
 <style lang="sass">
+$tab-height: $menu-font-size + 2 * $tab-padding-ver
 .dito
   .dito-schema
     padding: $content-padding
@@ -51,6 +60,35 @@
         border-bottom: $border-style
         // Add removed $form-spacing again to the ruler
         margin: $form-spacing-half
+  .dito-schema-header
+    display: flex
+    box-sizing: border-box
+    // turn off pointer events in background so that DitoTrail keeps working.
+    pointer-events: none
+    justify-content: space-between
+    > *
+      pointer-events: auto
+    .dito-tabs,
+    .dito-clipboard
+      display: flex
+      align-self: flex-end
+    .dito-clipboard
+      .dito-button
+        margin: 0 0 $tab-margin $tab-margin
+    &.dito-schema-menu-header
+      position: absolute
+      height: $tab-height
+      margin-top: -$tab-height
+      padding: 0 $menu-padding-hor
+      max-width: $content-width
+      top: 0
+      left: 0
+      right: 0
+      z-index: $menu-z-index
+      > *
+        font-size: $menu-font-size
+      .dito-tabs a
+        line-height: $menu-line-height
 </style>
 
 <script>
@@ -65,7 +103,8 @@ export default DitoComponent.component('dito-schema', {
     store: { type: Object, required: true },
     label: { type: String, required: false },
     disabled: { type: Boolean, required: true },
-    generateLabels: { type: Boolean, default: true }
+    generateLabels: { type: Boolean, default: true },
+    menuHeader: { type: Boolean, default: false }
   },
 
   computed: {
