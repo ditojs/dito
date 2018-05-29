@@ -1,6 +1,7 @@
 import { action } from '@/decorators'
 import { ModelController } from './ModelController'
 
+// TODO: Rename to UsersController?
 export class UserController extends ModelController {
   collection = {
     @action('post')

@@ -102,26 +102,35 @@ export class QueryBuilder extends objection.QueryBuilder {
   _applyScopes(scopes, eager) {
     if (!this._ignoreScopes) {
       const modelClass = this.modelClass()
-      for (const scope of scopes) {
-        if (
-          // Prevent multiple application of scopes.
-          // This can easily occur with the nesting of eager scopes, see below.
-          !this._appliedScopes[scope] &&
-          // Only eager-apply scopes that are actually defined on the model:
-          (!eager || modelClass.hasScope(scope))
-        ) {
-          if (this._allowScopes && !this._allowScopes[scope]) {
-            throw new QueryBuilderError(
-              `Query scope '${scope}' is not allowed.`
-            )
+      // When a scope itself is allowed, it should be able to apply all other
+      // scopes internally, ignoring the settings of _allowScopes during its
+      // execution. Do so by temporarily clearing and restoring _allowScopes:
+      const { _allowScopes } = this
+      this._allowScopes = null
+      try {
+        for (const scope of scopes) {
+          if (
+            // Prevent multiple application of scopes. This can easily occur
+            // with the nesting of eager scopes, see below.
+            !this._appliedScopes[scope] &&
+            // Only eager-apply scopes that are actually defined on the model:
+            (!eager || modelClass.hasScope(scope))
+          ) {
+            if (_allowScopes && !_allowScopes[scope]) {
+              throw new QueryBuilderError(
+                `Query scope '${scope}' is not allowed.`
+              )
+            }
+            this._appliedScopes[scope] = true
+            // Use Objection's applyFilter() to apply our scope.
+            // NOTE: Our applyFilter() does something else, but this may be OK,
+            // since Objection.js is considering switching to `modifiers`
+            // instead of `namedFilters`.
+            super.applyFilter(scope)
           }
-          this._appliedScopes[scope] = true
-          // Use Objection's applyFilter() to apply our scope.
-          // NOTE: Our applyFilter() does something else, but this may be OK,
-          // since Objection.js is considering switching to `modifiers` instead
-          // of `namedFilters`.
-          super.applyFilter(scope)
         }
+      } finally {
+        this._allowScopes = _allowScopes
       }
       if (eager) {
         if (this._eagerExpression) {
