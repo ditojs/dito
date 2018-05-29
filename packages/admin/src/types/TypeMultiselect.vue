@@ -33,6 +33,7 @@
   $tag-margin: 2px
   $tag-padding: 3px
   $tag-line-height: 1.2em
+  $tag-icon-scale: 1.2
 
   .dito-multiselect
     display: inline-block
@@ -53,6 +54,7 @@
       margin: $tag-margin 0 0 $tag-margin
       border-radius: 1em
       padding: $tag-padding $tag-icon-size $tag-padding 0.8em
+      line-height: $tag-line-height
 
     .multiselect__tags-wrap
       overflow: auto
@@ -116,34 +118,30 @@
 
     .multiselect__option
       min-height: unset
+      height: unset
+      line-height: $tag-line-height
       padding: $input-padding
       &::after
-        line-height: $tag-line-height
         padding: $input-padding
     .multiselect__option--highlight
       &::after
         background: transparent
         color: $color-white
+    .multiselect__option--disabled
+      background: none
+      color: $color-disabled
 
     .multiselect__tag-icon
       background: none
       border-radius: 1em
       font-weight: inherit
-      top: inherit
-      bottom: inherit
-      line-height: 1em
+      line-height: $tag-line-height * $tag-icon-scale
       width: $tag-icon-size
       &::after
         color: $color-text-inverted
-        font-size: 1.2em
+        font-size: 1em * $tag-icon-scale
       &:hover::after
         color: $color-text
-
-    .multiselect__tag,
-    .multiselect__option--highlight
-      line-height: $tag-line-height
-      background: $color-active
-      color: $color-text-inverted
 
     .multiselect__option--selected
       background: $color-highlight
@@ -151,6 +149,11 @@
       font-weight: normal
       &.multiselect__option--highlight
         color: $color-text-inverted
+
+    .multiselect__tag,
+    .multiselect__option--highlight
+      background: $color-active
+      color: $color-text-inverted
 
     .multiselect__tags,
     .multiselect__content-wrapper
