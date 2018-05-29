@@ -50,7 +50,7 @@
             td
               dito-inline-schema(
                 v-if="inline"
-                :label="getItemLabel(item, { index, formLabel: true })"
+                :label="getItemLabel(item, index)"
                 :schema="getFormSchema(item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
@@ -69,7 +69,7 @@
               )
               span(
                 v-else
-                v-html="getItemLabel(item, { index, formLabel: false })"
+                v-html="getItemLabel(item, index)"
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(

@@ -113,30 +113,40 @@ export default {
       return index !== -1 ? index : null
     },
 
-    getItemLabel(item, { index, formLabel = true, autoLabel = true } = {}) {
-      const { itemLabel, columns } = this.sourceSchema
+    getItemLabel(item, index = null, extended = false) {
+      const { itemLabel } = this.sourceSchema
       if (itemLabel === false) return null
-      const itemProperty = isString(itemLabel) && itemLabel ||
-        columns && Object.keys(columns)[0] ||
-        'name'
-      let label = (
-        isFunction(itemLabel)
-          ? itemLabel(item)
-          : item[itemProperty]
-      ) ?? null
-      if (autoLabel && label == null) {
-        const id = this.getItemId(item)
-        label = id
-          ? `(id: ${id})`
-          : isListSource(this.sourceSchema) && index !== undefined
-            ? `${index + 1}`
-            : ''
-        if (label) {
-          formLabel = true
-        }
+      const getFormLabel = () => this.getLabel(this.getFormSchema(item))
+      let label = null
+      if (isFunction(itemLabel)) {
+        label = itemLabel.length > 1 // See if callback wants 2nd argument
+          ? itemLabel(item, getFormLabel())
+          : itemLabel(item)
+        // It's up to `itemLabel()` entirely to produce the name:
+        extended = false
+      } else {
+        const { columns } = this.sourceSchema
+        // Look up the name on the item, by these rules:
+        // 1. If `itemLabel` is a string, use it as the property key
+        // 2. Otherwise, if there are columns, use the value of the first
+        // 3. Otherwise, see if the item has a property named 'name'
+        const key = isString(itemLabel) && itemLabel ||
+          columns && Object.keys(columns)[0] ||
+          'name'
+        label = item[key]
       }
-      return formLabel && label
-        ? `${this.getLabel(this.getFormSchema(item))}: ${label}`
+      // If no label was found so far, try to produce one from the id or index.
+      if (label == null) {
+        const id = this.getItemId(item)
+        label = id ? `(id: ${id})`
+          : isListSource(this.sourceSchema) && index !== null ? `${index + 1}`
+          : ''
+        extended = true
+      } else if (extended) {
+        label = `'${label}'`
+      }
+      return extended
+        ? label ? `${getFormLabel()} ${label}` : getFormLabel()
         : label || ''
     },
 

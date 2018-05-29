@@ -429,7 +429,9 @@ export default DitoComponent.component('dito-form', {
           path: button.path
         }
         : this.resource
-      const itemLabel = this.data ? this.getItemLabel(this.data) : 'form'
+      const itemLabel = this.data
+        ? this.getItemLabel(this.data, null, true)
+        : 'form'
       // Convention: only post and patch requests pass the data as payload.
       const payload = ['post', 'patch'].includes(method) && this.processData({
         processIds: true
