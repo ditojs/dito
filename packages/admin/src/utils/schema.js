@@ -101,10 +101,10 @@ export async function resolveForm(form) {
   }
   // When dynamically importing forms, try figuring out and setting their
   // name, if they were declared as named imports:
-  if (form && !form.components) {
+  if (form && !('components' in form)) {
     const name = Object.keys(form)[0]
     form = form[name]
-    if (name !== 'default') {
+    if (form && name !== 'default') {
       form.name = name
     }
   }
