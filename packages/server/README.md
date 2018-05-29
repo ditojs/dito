@@ -25,7 +25,7 @@ under the MIT license, with support by [Lineto.com](https://lineto.com/).
 ## Structuring a Dito.js Application
 
 Unlike other frameworks, Dito.js is not opinionated about its folder structures
-and file naming, and does not deduct any information from such structures. With
+and file naming, and does not deduce any information from such structures. With
 the exception of the creation of migration files, there aren't any generators
 that automatically create files for you.
 
