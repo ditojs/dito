@@ -335,7 +335,8 @@ export class Controller {
     this.setupActionRoute(
       type,
       action.verb || 'get',
-      action.path || this.app.normalizePath(name),
+      // Use ?? instead of || to allow '' to override the path.
+      action.path ?? this.app.normalizePath(name),
       action.authorize || authorize,
       new ControllerAction(this, action, authorize)
     )
