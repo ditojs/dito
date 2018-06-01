@@ -1,0 +1,68 @@
+// Colors
+$color-black:     hsl(0, 0%, 4%)
+$color-darker:    hsl(0, 0%, 20%)
+$color-dark:      hsl(0, 0%, 30%)
+$color-grey:      hsl(0, 0%, 50%)
+$color-light:     hsl(0, 0%, 80%)
+$color-lighter:   hsl(0, 0%, 88%)
+$color-lightest:  hsl(0, 0%, 96%)
+$color-white:     hsl(0, 0%, 100%)
+
+$color-active:    hsl(211, 100%, 61%) // ActiveBorder
+$color-highlight: hsl(211, 100%, 85%) // Highlight
+$color-success:   hsl(141, 71%, 48%) // hsl(138, 50%, 61%) // hsl(141, 71%, 48%)
+$color-warning:   hsl(44, 100%, 64%) // hsl(36, 100%, 64%) // hsl(48, 100%, 67%)
+$color-error:     hsl(348, 100%, 61%) // hsl(4, 76%, 58%) // hsl(348, 100%, 61%)
+$color-black:     hsl(0, 0%, 4%)
+$color-white:     hsl(0, 0%, 100%)
+
+$color-text: $color-black
+$color-text-inverted: $color-white
+$color-shadow: $color-black
+$color-placeholder: $color-grey
+$color-disabled: $color-grey
+
+// Borders
+$border-radius: 4px
+$border-color: $color-light
+$border-width: 1px
+$border-style: $border-width solid $border-color
+
+// Shadows
+$shadow-window: 0 2px 6px 0 rgba($color-shadow, 0.25)
+// 0 6px 12px rgba($color-shadow, 0.175)
+
+// Input
+$input-padding-ver: 3px
+$input-padding-hor: 6px
+$input-padding: $input-padding-ver $input-padding-hor
+
+// Select
+$select-arrow-size: 0.5em
+$select-right-margin: 1em
+
+// Button
+$button-color: $color-lighter
+$button-color-hover: darken($button-color, 5%)
+$button-color-active: darken($button-color, 10%)
+$button-color-active-border: darken($button-color-active, 10%)
+$button-color-active-hover: mix($button-color-hover, $button-color-active)
+
+$button-padding-ver: 0.2em
+$button-padding-hor: 0.6em
+$button-padding: $button-padding-ver $button-padding-hor
+
+$button-margin: 2px
+
+// Easings
+// http://easings.net/zh-cn#easeOutQuart
+$easeOutQuart: cubic-bezier(0.165, 0.84, 0.44, 1)
+// http://easings.net/zh-cn#easeOutQuint
+$easeOutQuint: cubic-bezier(0.23, 1, 0.32, 1)
+// http://easings.net/zh-cn#easeOutCirc
+$easeOutCirc: cubic-bezier(0.075, 0.82, 0.165, 1)
+// http://easings.net/zh-cn#easeOutElastic
+$easeOutElastic: cubic-bezier(0.64, 0.57, 0.67, 1.53)
+
+// Math
+$math-sqrt2: 1.4142135623730951

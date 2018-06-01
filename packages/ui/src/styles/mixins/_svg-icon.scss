@@ -1,0 +1,19 @@
+@mixin svg-icon($color: $color-black, $background: transparent) {
+  background: $background no-repeat left;
+  background-origin: content-box;
+  width: 1em;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  content: '';
+  @include svg((
+    viewBox: "0 0 24 24",
+    preserveAspectRatio: "xMinYMid",
+    style: "fill:none;stroke:#{$color};stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"
+  )) {
+    @content;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "javascript.validate.enable": false,
+  "eslint.enable": true,
+  "files.exclude": {
+    "dist": true
+  },
+  "vetur.validation.script": false,
+  "eslint.validate": [
+    "javascript", {
+      "language": "vue"
+    }
+  ]
+}
