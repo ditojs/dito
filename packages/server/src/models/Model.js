@@ -1,6 +1,6 @@
 import objection from 'objection'
 import dbErrors from 'db-errors'
-import { QueryBuilder } from '@/query'
+import { QueryBuilder, QueryFilters } from '@/query'
 import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
 import { mergeWithoutOverride, mergeAsArrays } from '@/utils'
@@ -583,11 +583,36 @@ const definitionHandlers = {
       // including parameter validation.
       const functions = array
         .reverse() // Reverse to go from super-class to sub-class.
-        .map(func => {
-          const { parameters } = func
+        .map(filter => {
+          let func
+          let parameters
+          if (isFunction(filter)) {
+            func = filter
+            parameters = func.parameters
+          } else if (isObject(filter)) {
+            // Convert QueryFilters to normal filter functions
+            const queryFilter = QueryFilters.get(filter.type)
+            parameters = queryFilter.parameters
+            if (queryFilter) {
+              const { properties } = filter
+              func = (builder, ...args) => {
+                if (properties) {
+                  // When the filter provides multiple properties, match them
+                  // all, but combine the expressions with OR.
+                  for (const property of properties) {
+                    builder.orWhere(function() {
+                      queryFilter(this, property, ...args)
+                    })
+                  }
+                } else {
+                  queryFilter(builder, name, ...args)
+                }
+              }
+            }
+          }
           // If parameters are defined, wrap the function in a closure that
           // performs parameter validation...
-          if (parameters) {
+          if (func && parameters) {
             const validate = this.app.compileParametersValidator(parameters)
             return (query, ...args) => {
               // Convert args to object for validation:

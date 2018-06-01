@@ -33,8 +33,8 @@ QueryParameters.register({
     try {
       for (const filter of asArray(value)) {
         const [, name, json] = filter.match(/^(\w+):(.*)$/)
-        const params = asArray(JSON.parse(`[${json}]`))
-        builder.applyFilter(name, ...params)
+        const args = asArray(JSON.parse(`[${json}]`))
+        builder.applyFilter(name, ...args)
       }
     } catch (error) {
       throw new QueryBuilderError(
