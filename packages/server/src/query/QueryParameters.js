@@ -30,16 +30,17 @@ QueryParameters.register({
   },
 
   filter(builder, key, value) {
-    const [name, json] = value.split(':')
-    let params
     try {
-      params = asArray(JSON.parse(`[${json}]`))
+      for (const filter of asArray(value)) {
+        const [, name, json] = filter.match(/^(\w+):(.*)$/)
+        const params = asArray(JSON.parse(`[${json}]`))
+        builder.applyFilter(name, ...params)
+      }
     } catch (error) {
       throw new QueryBuilderError(
         `Invalid Query filter parameters: ${error.message}.`
       )
     }
-    builder.applyFilter(name, ...params)
   },
 
   range(builder, key, value) {
