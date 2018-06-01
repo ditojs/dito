@@ -49,7 +49,7 @@
         background: $color-active
         color: $color-text-inverted
         &:active
-          border-color: $color-active
+          border-color: darken($color-active, 10%)
       &-prev::before
         +icon-arrow
         transform: scaleX(-1)
