@@ -49,6 +49,8 @@
       &.dito-active
         background: $color-active
         color: $color-text-inverted
+        &:active
+          border-color: $color-active
       &-prev::before
         +icon-arrow
         transform: scaleX(-1)
