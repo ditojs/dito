@@ -215,13 +215,20 @@ export default {
         : ''
     },
 
+    today() {
+      // Create a new Date() object with the time set to 0, to be used when
+      // first setting any of the times, for meaningful dates in case the
+      // object is shared with a DatePicker.
+      return copyDate(new Date(), { hours: 0, minutes: 0, seconds: 0 })
+    },
+
     hours: {
       get() {
         return this.date ? this.date.getHours() : 0
       },
 
       set(hours) {
-        this.date = copyDate(this.date, { hours })
+        this.date = copyDate(this.date || this.today, { hours })
       }
     },
 
@@ -231,7 +238,7 @@ export default {
       },
 
       set(minutes) {
-        this.date = copyDate(this.date, { minutes })
+        this.date = copyDate(this.date || this.today, { minutes })
       }
     },
 
@@ -241,7 +248,7 @@ export default {
       },
 
       set(seconds) {
-        this.date = copyDate(this.date, { seconds })
+        this.date = copyDate(this.date || this.today, { seconds })
       }
     }
   },

@@ -270,14 +270,16 @@ export default {
   },
 
   watch: {
+    date: 'updateDateRange',
+    disabledDate: 'updateDateRange',
+
     value(value) {
-      this.date = value
+      this.date = value || new Date()
     },
+
     mode(mode) {
       this.currMode = mode
-    },
-    date: 'updateDateRange',
-    disabledDate: 'updateDateRange'
+    }
   },
 
   mounted() {
