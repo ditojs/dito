@@ -15,9 +15,15 @@ import TypeComponent from '@/TypeComponent'
 import DatePicker from '@ditojs/ui/src/components/DatePicker'
 import TimePicker from '@ditojs/ui/src/components/TimePicker'
 import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
+import { isDate } from '@ditojs/utils'
 
 export default TypeComponent.register(['date', 'datetime', 'time'], {
   components: { DatePicker, TimePicker, DateTimePicker },
+  // TODO: This is only here so we get placeholder added. Come up with a better
+  // way to support attributes per component (a list of actually supported
+  // attributes)
+  nativeField: true,
+  textField: true,
 
   computed: {
     dateValue: {
@@ -43,7 +49,7 @@ export default TypeComponent.register(['date', 'datetime', 'time'], {
 
     processValue(value) {
       // Convert to string for JSON
-      return value ? value.toISOString() : value
+      return isDate(value) ? value.toISOString() : value
     }
   }
 })

@@ -1,6 +1,8 @@
 <template lang="pug">
   // If form is not active, render router-view to nest further route components
-  router-view(v-if="!isActive")
+  router-view(
+    v-if="!isActive"
+  )
   component.dito-form.dito-parent(
     v-else
     :is="formTag"
@@ -20,7 +22,9 @@
       :disabled="loading"
       :menuHeader="true"
     )
-      .dito-buttons.dito-form-buttons(slot="buttons")
+      .dito-buttons.dito-form-buttons(
+        slot="buttons"
+      )
         // Render cancel button
         button.dito-button(
           v-if="shouldRender(buttons.cancel)"

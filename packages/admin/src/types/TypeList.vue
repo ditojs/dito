@@ -3,7 +3,7 @@
     :class="schema.class"
     :style="schema.style"
   )
-    .dito-filters(v-if="scopes || paginate")
+    .dito-navigation(v-if="scopes || paginate")
       dito-scopes(
         v-if="scopes"
         :query="query"
@@ -15,6 +15,30 @@
         :limit="paginate"
         :total="total || 0"
       )
+    .dito-filters(
+      v-if="filters"
+    )
+      .dito-filters-title
+      form(
+        @submit.prevent="applyFilters"
+      )
+        dito-schema.dito-filters-schema(
+          :schema="filtersSchema"
+          :data="filtersData"
+          dataPath=""
+          :meta="{}"
+          :store="{}"
+          :disabled="false"
+          :generateLabels="true"
+        )
+          .dito-buttons(slot="buttons")
+            button.dito-button.dito-button-clear(
+              type="button"
+              @click="clearFilters"
+            )
+            button.dito-button.dito-button-filter(
+              type="submit"
+            )
     table.dito-table
       dito-list-head(
         v-if="columns"
@@ -106,23 +130,53 @@
 <style lang="sass">
 .dito
   .dito-list
-    .dito-filters
-      overflow: auto
+    position: relative
+    .dito-navigation
+      display: flex
+      justify-content: space-between
       padding-bottom: $content-padding-half
       margin-top: -$content-padding-half
       +user-select(none)
-      .dito-scopes
-        float: left
-      .dito-pagination
-        float: right
-  // Inline Rows
-  tr.dito-inline-row
-    // Turn the rows into blocks, so we can add margins:
-    display: block
-    margin-bottom: $form-spacing
-    // Only top-level inline rows (on white) should have margins
+    // Inline Rows
     tr.dito-inline-row
-      margin-bottom: 0
+      // Turn the rows into blocks, so we can add margins:
+      display: block
+      margin-bottom: $form-spacing
+      // Only top-level inline rows (on white) should have margins
+      tr.dito-inline-row
+        margin-bottom: 0
+    .dito-filters
+      position: absolute
+      left: $content-width + $content-padding
+      min-width: 240px
+      .dito-filters-title
+        &::before
+          content: 'Filters'
+        height: 2em
+        line-height: 2em
+        padding: 0 $form-spacing
+        background: $button-color
+        border-radius: $border-radius
+      .dito-filters-schema
+        font-size: 11px
+        margin-top: 1px
+        background: $table-color-background
+        border-radius: $border-radius
+        padding: 0 $form-spacing
+        tr.dito-inline-row
+          // Clear trick above again, as it causes trouble on Chrome
+          display: table-row
+        td
+          padding: 0
+        .dito-label
+          margin: 0
+        .dito-components
+          margin: 0 (-$form-spacing-half)
+        .dito-component-container
+          padding: $form-spacing-half
+        .dito-buttons
+          text-align: right
+          padding: $form-spacing 0
 </style>
 
 <script>
@@ -130,12 +184,13 @@ import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
+import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
 
 export default TypeComponent.register([
   'list', 'object'
 ], {
   mixins: [SourceMixin, OrderedMixin],
-  components: { VueDraggable },
+  components: { VueDraggable, DateTimePicker },
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.

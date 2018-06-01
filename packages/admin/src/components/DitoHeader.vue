@@ -11,14 +11,11 @@
             span {{ entry.breadcrumb }}
       spinner.dito-spinner(v-if="appState.loading > 0")
     slot
-      // Default to prevent collapsing header
-      span &nbsp;
 </template>
 
 <style lang="sass">
 .dito
   .dito-header
-    display: flex
     background: $color-black
     font-size: $menu-font-size
     line-height: $menu-line-height
@@ -31,8 +28,9 @@
     .dito-trail
       display: flex
       box-sizing: border-box
+      height: 3em
       width: 100%
-      max-width: $content-width
+      max-width: $content-width + $content-padding
       ul
         display: flex
       a
@@ -60,6 +58,12 @@
           transform-origin: bottom
     .dito-spinner
       margin-top: $menu-padding-ver
+    .dito-account,
+    .dito-login
+      position: absolute
+      top: 0
+    .dito-account
+      left: $content-width + $content-padding * 2
 </style>
 
 <script>

@@ -42,7 +42,7 @@ export default DitoComponent.component('dito-list-head', {
   methods: {
     getSortClass(name) {
       return this.sort.name === name
-        ? `dito-active dito-order-${this.sort.order}`
+        ? `dito-selected dito-order-${this.sort.order}`
         : null
     },
 

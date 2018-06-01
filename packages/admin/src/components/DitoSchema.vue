@@ -1,44 +1,45 @@
 <template lang="pug">
   .dito-schema
-    .dito-schema-header(
-      v-if="label || tabs || clipboard"
-      :class="{ 'dito-schema-menu-header': menuHeader }"
-    )
-      .dito-label(
-        v-if="label"
-      ) {{ label }}
-      dito-tabs(
-        v-if="tabs"
-        :tabs="tabs"
-        :selectedTab="selectedTab"
+    .dito-content
+      .dito-schema-header(
+        v-if="label || tabs || clipboard"
+        :class="{ 'dito-schema-menu-header': menuHeader }"
       )
-      dito-clipboard(
-        v-if="clipboard"
+        .dito-label(
+          v-if="label"
+        ) {{ label }}
+        dito-tabs(
+          v-if="tabs"
+          :tabs="tabs"
+          :selectedTab="selectedTab"
+        )
+        dito-clipboard(
+          v-if="clipboard"
+        )
+      dito-components.dito-tab-components(
+        v-for="(tabSchema, key) in tabs"
+        v-show="selectedTab === key"
+        :key="key"
+        :tab="key"
+        :schema="tabSchema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
       )
-    dito-components.dito-tab-components(
-      v-for="(tabSchema, key) in tabs"
-      v-show="selectedTab === key"
-      :key="key"
-      :tab="key"
-      :schema="tabSchema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-      :generateLabels="generateLabels"
-    )
-    dito-components.dito-main-components(
-      v-if="schema.components"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-      :generateLabels="generateLabels"
-    )
-    slot(name="buttons")
+      dito-components.dito-main-components(
+        v-if="schema.components"
+        :schema="schema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
+      )
+      slot(name="buttons")
 </template>
 
 <style lang="sass">
@@ -46,11 +47,10 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 .dito
   .dito-schema
     padding: $content-padding
-    max-width: $content-width
     box-sizing: border-box
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
-    .dito-components + .dito-buttons
+    .dito-components + .dito-form-buttons
       &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
@@ -58,8 +58,10 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
         width: 100%
         padding-top: $content-padding
         border-bottom: $border-style
-        // Add removed $form-spacing again to the ruler
-        margin: $form-spacing-half
+    .dito-tab-components + .dito-main-components::before
+      // Add removed $form-spacing again to the ruler
+      margin: $form-spacing-half
+    > .dito-buttons
   .dito-schema-header
     display: flex
     box-sizing: border-box
@@ -80,7 +82,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
       height: $tab-height
       margin-top: -$tab-height
       padding: 0 $menu-padding-hor
-      max-width: $content-width
+      max-width: $content-width + 2 * $content-padding
       top: 0
       left: 0
       right: 0

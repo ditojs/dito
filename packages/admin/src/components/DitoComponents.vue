@@ -2,7 +2,7 @@
   ul.dito-components(
     v-if="components"
   )
-    li.dito-component-wrapper(
+    li.dito-component-container(
       v-for="(compSchema, compDataPath) in components"
       v-if="shouldRender(compSchema)"
       v-show="isVisible(compSchema)"
@@ -43,7 +43,7 @@
     position: relative
     align-items: baseline
     margin: (-$form-spacing) (-$form-spacing-half)
-    .dito-component-wrapper
+    .dito-component-container
       flex: 1 1 auto
       align-self: stretch
       box-sizing: border-box

@@ -29,6 +29,7 @@
 
 <style lang="sass">
 .dito
+  // TODO: Move to dito-ui
   .dito-select
     display: inline-block
     position: relative

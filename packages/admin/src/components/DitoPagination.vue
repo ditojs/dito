@@ -1,11 +1,10 @@
 <template lang="pug">
-  .dito-pagination
-    pagination(
-      ref="pagination"
-      :pageSize="limit"
-      :total="total * 10"
-      :page.sync="page"
-    )
+  pagination(
+    ref="pagination"
+    :pageSize="limit"
+    :total="total"
+    :page.sync="page"
+  )
 </template>
 
 <script>

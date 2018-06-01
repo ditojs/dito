@@ -1,5 +1,6 @@
 table.dito-table
   width: 100%
+  height: 100% // To stretch table > thead > th > button
   border-radius: $border-radius
 
   .dito-buttons
@@ -18,8 +19,8 @@ table.dito-table
       vertical-align: baseline
       > td
         border-top: 1px solid $color-white
-        padding: $form-spacing
-        background: $color-lightest
+        padding: $table-spacing
+        background: $table-color-background
         border-radius: 0
         &.dito-buttons
           padding-left: 0
@@ -35,7 +36,7 @@ table.dito-table
       > td
         // Top row does not need a border at the top...
         // But to make vuedraggable happy, hide it with background color.
-        border-top-color: $color-lightest
+        border-top-color: $table-color-background
   > thead + tbody
     > tr
       &:first-child
@@ -56,7 +57,7 @@ table.dito-table
   > tbody:first-child:empty + tfoot
     > tr
       > td
-        border-top-color: $color-lightest
+        border-top-color: $table-color-background
   // Nested .dito-table:
   table.dito-table
     // Give nested lists a bit of shadow
@@ -82,11 +83,14 @@ table.dito-table
 
 thead.dito-table-head
   +user-select(none)
+  tr
+    height: 100% // To stretch table > thead > th > button
   th
     padding: 0
     background: $button-color
     font-weight: normal
     text-align: left
+    height: 100% // To stretch table > thead > th > button
     & + th
       border-left: $border-style
     // Convention: Nested spans handle margin and spacing
@@ -110,5 +114,6 @@ thead.dito-table-head
     .dito-button
       padding: 0
       width: 100%
+      height: 100% // To stretch table > thead > th > button
       text-align: inherit
       border-radius: 0

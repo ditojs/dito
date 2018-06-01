@@ -6,7 +6,7 @@
       :key="scope.name"
       tag="button"
       type="button"
-      :class="{ 'dito-active': scope.name === query.scope }"
+      :class="{ 'dito-selected': scope.name === query.scope }"
     )
       | {{ getLabel(scope) }}
 </template>
@@ -14,6 +14,7 @@
 <style lang="sass">
 .dito
   .dito-scopes
+    white-space: nowrap
     .dito-button
       border-radius: 0
       &:first-child

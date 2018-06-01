@@ -2,7 +2,7 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { isObject, isArray, parseDataPath } from '@ditojs/utils'
+import { isObject, isArray, asArray, parseDataPath } from '@ditojs/utils'
 import {
   processForms, hasForms, isObjectSource, isListSource
 } from '@/utils/schema'
@@ -17,13 +17,18 @@ export default {
 
   data() {
     return {
-      isSource: true
+      isSource: true,
+      filtersData: {}
     }
   },
 
   created() {
     // Make sure filters are set correctly before initData() triggers request.
     this.addQuery(this.$route.query)
+  },
+
+  mounted() {
+    this.setupFiltersData(true)
   },
 
   watch: {
@@ -52,6 +57,14 @@ export default {
         this.addQuery(to.query)
         this.loadData(false)
       }
+    },
+
+    query() {
+      this.setupFiltersData(true)
+    },
+
+    filtersSchema() {
+      this.setupFiltersData(false)
     }
   },
 
@@ -114,6 +127,41 @@ export default {
 
     scopes() {
       return this.getNamedSchemas(this.schema.scopes)
+    },
+
+    filters() {
+      return this.getNamedSchemas(this.schema.filters)
+    },
+
+    filtersSchema() {
+      const filters = {}
+      for (const filter of Object.values(this.filters || {})) {
+        const form = {
+          ...filter
+        }
+        const { components } = form
+        form.components = {}
+        // Convert labels to placeholders:
+        for (const [key, schema] of Object.entries(components)) {
+          const label = this.getLabel(schema, key)
+          form.components[key] = {
+            ...schema,
+            label: false,
+            placeholder: label
+          }
+        }
+        filters[filter.name] = {
+          label: form.label,
+          type: 'object',
+          form,
+          nested: true,
+          inline: true
+        }
+      }
+      console.log(filters)
+      return {
+        components: filters
+      }
     },
 
     defaultScope() {
@@ -270,6 +318,64 @@ export default {
           })
         }
       }
+    },
+
+    setupFiltersData(restore) {
+      const filters = {}
+      // Same as @ditojs/server's QueryParameters.filter: Translate the data
+      // from the query string back to param lists per filter:
+      if (restore) {
+        for (const filter of asArray(this.query?.filter)) {
+          const [, name, json] = filter.match(/^(\w+):(.*)$/)
+          try {
+            filters[name] = asArray(JSON.parse(`[${json}]`))
+          } catch (error) {
+          }
+        }
+      }
+      for (const name in this.filters) {
+        const data = {}
+        // If we have retrieved params from the query, fetch the associated
+        // form components so we can map the values back to object keys:
+        const params = filters[name]
+        if (params) {
+          const filterComponent = this.filtersSchema.components[name]
+          const filterFormComponents = filterComponent?.form?.components
+          if (filterFormComponents) {
+            let index = 0
+            for (const key in filterFormComponents) {
+              data[key] = params[index++]
+            }
+          }
+        }
+        this.$set(this.filtersData, name, data)
+      }
+    },
+
+    clearFilters() {
+      this.setupFiltersData(false)
+      this.applyFilters()
+    },
+
+    applyFilters() {
+      const filters = []
+      for (const key in this.filters) {
+        const entry = this.filtersData[key]
+        const params = []
+        for (const name in entry) {
+          params.push(JSON.stringify(entry[name]))
+        }
+        if (params.length) {
+          filters.push(`${key}:${params.join(',')}`)
+        }
+      }
+      this.$router.push({
+        query: {
+          ...this.query,
+          filter: filters
+        },
+        hash: this.$route.hash
+      })
     },
 
     navigateToComponent(dataPath, onComplete) {

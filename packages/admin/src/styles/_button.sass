@@ -3,7 +3,7 @@
   .dito-order-arrows
     display: inline-block
     width: round($button-order-arrow-size * $math-sqrt2)
-    padding-left: $form-spacing + $border-width
+    padding-left: $form-spacing
     $arrow-offset: $button-order-arrow-size / 2 + $border-width
     &::before
       +arrow($button-order-arrow-size, 'up')
@@ -23,37 +23,44 @@
       top: 0
 
 .dito-button-add:empty::before
-    content: 'Add'
+  content: 'Add'
 .dito-button-create:empty::before
-    content: 'Create'
+  content: 'Create'
 .dito-button-delete:empty::before
-    content: 'Delete'
+  content: 'Delete'
 .dito-button-remove:empty::before
-    content: 'Remove'
+  content: 'Remove'
 .dito-button-edit:empty::before
-    content: 'Edit'
+  content: 'Edit'
 .dito-button-save:empty::before
-    content: 'Save'
+  content: 'Save'
 .dito-button-apply:empty::before
-    content: 'Apply'
+  content: 'Apply'
 .dito-button-cancel:empty::before
-    content: 'Cancel'
+  content: 'Cancel'
 .dito-button-close:empty::before
-    content: 'Close'
+  content: 'Close'
 .dito-button-drag:empty::before
-    content: 'Drag'
+  content: 'Drag'
 .dito-button-copy:empty::before
-    content: 'Copy'
+  content: 'Copy'
 .dito-button-paste:empty::before
-    content: 'Paste'
+  content: 'Paste'
+.dito-button-clear:empty::before
+  content: 'Clear'
+.dito-button-filter:empty::before
+  content: 'Filter'
+
+.dito-buttons.dito-form-buttons
+  text-align: center
+  font-size: $menu-font-size
+  button
+    margin-top: $content-padding
+    border-radius: 2em
+    padding: 0.3em 0.9em
 
 .dito-buttons-round,
 .dito-buttons-small
-  .dito-button
-    display: inline-block
-    text-align: center
-    white-space: nowrap
-    padding: 0
   .dito-button-add:empty::before,
   .dito-button-create:empty::before
     +icon-add
