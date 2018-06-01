@@ -122,7 +122,7 @@ function displayUsage(app, config, details) {
 
 // Wraps the default eval with a handler that resolves promises
 function wrapEval({ eval: defaultEval }) {
-  return async function (code, context, file, cb) {
+  return async function(code, context, file, cb) {
     return defaultEval.call(this, code, context, file, async (err, result) => {
       if (err || !(result && isFunction(result.then))) {
         return cb(err, result)

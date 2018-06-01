@@ -505,7 +505,7 @@ for (const key of [
   'groupBy', 'orderBy'
 ]) {
   const method = QueryBuilder.prototype[key]
-  QueryBuilder.prototype[key] = function (...args) {
+  QueryBuilder.prototype[key] = function(...args) {
     const modelClass = this.modelClass()
     const { properties } = modelClass.definition
 

@@ -87,11 +87,11 @@ QueryParameters.register({
   pick: applyPropertiesExpression
 })
 
-QueryParameters.getAllowed = function (exclude) {
+QueryParameters.getAllowed = function(exclude) {
   return createLookup(this.keys(), exclude && (key => !exclude.includes(key)))
 }
 
-QueryParameters.getAllowedFindOne = function () {
+QueryParameters.getAllowedFindOne = function() {
   return this.getAllowed(['order', 'range'])
 }
 

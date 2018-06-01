@@ -48,7 +48,7 @@ module.exports = {
     }],
     'quote-props': ['error', 'as-needed'],
     'space-before-function-paren': ['error', {
-      anonymous: 'always',
+      anonymous: 'never',
       named: 'never',
       asyncArrow: 'always'
     }],

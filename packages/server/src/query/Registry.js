@@ -1,6 +1,6 @@
 import { isObject } from '@ditojs/utils'
 
-export default function () {
+export default function() {
   const registry = Object.create(null)
   return {
     get(name) {

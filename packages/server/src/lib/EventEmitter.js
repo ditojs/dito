@@ -24,7 +24,7 @@ for (const [key, method] of Object.entries(methods)) {
   }
 }
 
-EventEmitter.mixin = function (target) {
+EventEmitter.mixin = function(target) {
   Object.defineProperties(target, properties)
   EventEmitter.call(target, {
     delimiter: ':',
@@ -34,7 +34,7 @@ EventEmitter.mixin = function (target) {
   })
 }
 
-EventEmitter.deferred = function (target) {
+EventEmitter.deferred = function(target) {
   // Installs all public-facing methods except `emit()` as triggers that when
   // first called fully install the EventEmitter functionality, by which they
   // get replaced. If no listeners are installed, `emit()` can do nothing until
@@ -42,7 +42,7 @@ EventEmitter.deferred = function (target) {
   target.emit = () => {}
   for (const key in methods) {
     if (!/$(_|emit)/.test(key)) {
-      target[key] = function (...args) {
+      target[key] = function(...args) {
         // Install the real EventEmitter functions on `this` instead of target,
         // to support events on sub-classes of target also.
         // Then call the newly installed function on it again right after.
