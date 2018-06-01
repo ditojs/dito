@@ -68,3 +68,25 @@ export function deepMerge(target, ...sources) {
   }
   return target
 }
+
+export function groupBy(items, propertyGetter) {
+  return items.reduce((groups, item) => {
+    const key = propertyGetter(item)
+    let group = groups[key]
+
+    if (!group) {
+      group = []
+      groups[key] = group
+    }
+
+    group.push(item)
+    return groups
+  }, {})
+}
+
+export function mapValues(obj, mapper) {
+  return Object.keys(obj).reduce((mapped, key) => {
+    mapped[key] = mapper(obj[key], key)
+    return mapped
+  }, {})
+}
