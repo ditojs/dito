@@ -25,16 +25,15 @@
 <style lang="sass">
 
 .dito-pagination
+  display: flex
   .dito-pagination-total
-    display: inline-block
     margin-right: 0.5em
     line-height: 2em
   .dito-pagination-items
-    float: right
+    display: flex
     padding: 0
     li
       list-style: none
-      float: left
     .dito-pagination-item
       display: block
       transition: all .3s ease, color 0s, background 0s, border 0s

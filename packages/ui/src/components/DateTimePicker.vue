@@ -41,7 +41,7 @@
         padding-right: 0
     .dito-time-picker
       width: 40%
-      min-width: 4.5em
+      min-width: 5em
       .dito-input
         background: none
         padding-left: 0

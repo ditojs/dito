@@ -55,7 +55,6 @@
   @import '../styles/transitions/index'
 
   .dito-trigger-container
-    display: inline-block
     position: relative
 
   .dito-trigger-disabled
