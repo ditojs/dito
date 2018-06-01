@@ -339,11 +339,10 @@ export default {
         // form components so we can map the values back to object keys:
         const params = filters[name]
         if (params) {
-          const filterComponent = this.filtersSchema.components[name]
-          const filterFormComponents = filterComponent?.form?.components
-          if (filterFormComponents) {
+          const filterComponents = this.getComponentsForFilter(name)
+          if (filterComponents) {
             let index = 0
-            for (const key in filterFormComponents) {
+            for (const key in filterComponents) {
               data[key] = params[index++]
             }
           }
@@ -359,14 +358,13 @@ export default {
 
     applyFilters() {
       const filters = []
-      for (const key in this.filters) {
-        const entry = this.filtersData[key]
-        const params = []
-        for (const name in entry) {
-          params.push(JSON.stringify(entry[name]))
-        }
-        if (params.length) {
-          filters.push(`${key}:${params.join(',')}`)
+      for (const name in this.filters) {
+        const entry = this.filtersData[name]
+        if (Object.keys(entry).length) {
+          const params = Object.keys(this.getComponentsForFilter(name)).map(
+            key => JSON.stringify(entry[key])
+          )
+          filters.push(`${name}:${params.join(',')}`)
         }
       }
       this.$router.push({
@@ -376,6 +374,11 @@ export default {
         },
         hash: this.$route.hash
       })
+    },
+
+    getComponentsForFilter(name) {
+      const filterComponent = this.filtersSchema.components[name]
+      return filterComponent?.form?.components
     },
 
     navigateToComponent(dataPath, onComplete) {
