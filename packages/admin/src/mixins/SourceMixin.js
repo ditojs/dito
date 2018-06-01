@@ -2,11 +2,14 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { isObject, isArray, asArray, parseDataPath } from '@ditojs/utils'
+import { isObject, isArray, parseDataPath } from '@ditojs/utils'
 import {
   processForms, hasForms, isObjectSource, isListSource
 } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
+import {
+  convertFiltersSchema, getFiltersData, getFiltersQuery
+} from '@/utils/filter'
 
 export default {
   mixins: [DataMixin],
@@ -134,34 +137,7 @@ export default {
     },
 
     filtersSchema() {
-      const filters = {}
-      for (const filter of Object.values(this.filters || {})) {
-        const form = {
-          ...filter
-        }
-        const { components } = form
-        form.components = {}
-        // Convert labels to placeholders:
-        for (const [key, schema] of Object.entries(components)) {
-          const label = this.getLabel(schema, key)
-          form.components[key] = {
-            ...schema,
-            label: false,
-            placeholder: label
-          }
-        }
-        filters[filter.name] = {
-          label: form.label,
-          type: 'object',
-          form,
-          nested: true,
-          inline: true
-        }
-      }
-      console.log(filters)
-      return {
-        components: filters
-      }
+      return convertFiltersSchema(this.filters)
     },
 
     defaultScope() {
@@ -321,34 +297,10 @@ export default {
     },
 
     setupFiltersData(restore) {
-      const filters = {}
-      // Same as @ditojs/server's QueryParameters.filter: Translate the data
-      // from the query string back to param lists per filter:
-      if (restore) {
-        for (const filter of asArray(this.query?.filter)) {
-          const [, name, json] = filter.match(/^(\w+):(.*)$/)
-          try {
-            filters[name] = asArray(JSON.parse(`[${json}]`))
-          } catch (error) {
-          }
-        }
-      }
-      for (const name in this.filters) {
-        const data = {}
-        // If we have retrieved params from the query, fetch the associated
-        // form components so we can map the values back to object keys:
-        const params = filters[name]
-        if (params) {
-          const filterComponents = this.getComponentsForFilter(name)
-          if (filterComponents) {
-            let index = 0
-            for (const key in filterComponents) {
-              data[key] = params[index++]
-            }
-          }
-        }
-        this.$set(this.filtersData, name, data)
-      }
+      this.filtersData = getFiltersData(
+        this.filtersSchema,
+        restore && this.query
+      )
     },
 
     clearFilters() {
@@ -357,20 +309,11 @@ export default {
     },
 
     applyFilters() {
-      const filters = []
-      for (const name in this.filters) {
-        const entry = this.filtersData[name]
-        if (Object.keys(entry).length) {
-          const params = Object.keys(this.getComponentsForFilter(name)).map(
-            key => JSON.stringify(entry[key])
-          )
-          filters.push(`${name}:${params.join(',')}`)
-        }
-      }
+      const filter = getFiltersQuery(this.filtersSchema, this.filtersData)
       this.$router.push({
         query: {
           ...this.query,
-          filter: filters
+          filter
         },
         hash: this.$route.hash
       })
