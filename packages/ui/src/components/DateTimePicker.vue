@@ -35,13 +35,13 @@
         box-shadow: none
     .dito-date-picker
       width: 60%
-      min-width: 6.5em
+      min-width: 6.9em
       .dito-input
         background: none
         padding-right: 0
     .dito-time-picker
       width: 40%
-      min-width: 5em
+      min-width: 5.4em
       .dito-input
         background: none
         padding-left: 0
@@ -66,7 +66,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: 'Choose Date'
+      default: null
     },
     format: {
       type: String,

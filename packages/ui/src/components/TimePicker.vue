@@ -68,6 +68,7 @@
   $time-picker-line-height: 24px
   .dito-time-picker
     .dito-input
+      font-variant-numeric: tabular-nums
       cursor: pointer
       width: 100%
       .dito-icon-time
@@ -108,6 +109,7 @@
       padding: 0 17px 0 0
       height: 7 * $time-picker-line-height
       & > li
+        font-variant-numeric: tabular-nums
         text-align: center
         cursor: pointer
         white-space: nowrap
@@ -145,7 +147,6 @@
 
 <script>
 import Trigger from './Trigger'
-// import Icon from '../Icon'
 import {
   copyDate, scrollTo, setSelection, getKeyNavigation, leftPad
 } from '../utils'
@@ -160,7 +161,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: 'Choose Time'
+      default: null
     },
     transition: {
       type: String,

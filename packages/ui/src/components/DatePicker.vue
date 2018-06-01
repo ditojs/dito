@@ -29,6 +29,7 @@
   .dito-date-picker
     min-width: 240px
     .dito-input
+      font-variant-numeric: tabular-nums
       cursor: pointer
       width: 100%
   .dito-date-picker-popup
@@ -38,12 +39,11 @@
 <script>
 import Trigger from './Trigger'
 import Calendar from './Calendar'
-// import Icon from './Icon'
 import { getKeyNavigation } from '../utils'
 
 export default {
   components: {
-    Trigger, Calendar //, Icon
+    Trigger, Calendar
   },
 
   props: {
@@ -61,7 +61,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: 'Choose Date'
+      default: null
     },
     format: {
       type: String,
