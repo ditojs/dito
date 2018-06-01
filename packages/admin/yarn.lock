@@ -821,6 +821,16 @@
     lodash "^4.17.5"
     to-fast-properties "^2.0.0"
 
+"@ditojs/ui@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@ditojs/ui/-/ui-0.1.0.tgz#cb65e2599c88c45ae46929fd3254d1f97dfb40e9"
+  dependencies:
+    "@ditojs/utils" "^0.8.0"
+    hint.css "^2.5.0"
+    node-sass "^4.9.0"
+    sass-svg "^1.2.0"
+    vue "^2.5.16"
+
 "@ditojs/utils@^0.8.0":
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/@ditojs/utils/-/utils-0.8.0.tgz#e83795648ff954419334c8f9723001521add4247"
@@ -5905,7 +5915,7 @@ node-pre-gyp@^0.6.39:
     tar "^2.2.1"
     tar-pack "^3.4.0"
 
-node-sass@4.9.0:
+node-sass@4.9.0, node-sass@^4.9.0:
   version "4.9.0"
   resolved "https://registry.yarnpkg.com/node-sass/-/node-sass-4.9.0.tgz#d1b8aa855d98ed684d6848db929a20771cc2ae52"
   dependencies:

@@ -12,7 +12,7 @@
         .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
         .dito-tree-name(v-html="title")
-      .dito-buttons.dito-buttons-inline(v-if="hasButtons")
+      .dito-buttons.dito-buttons-small(v-if="hasButtons")
         button.dito-button(
           v-if="draggable"
           type="button"

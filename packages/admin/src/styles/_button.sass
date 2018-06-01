@@ -1,31 +1,4 @@
 .dito-button
-  background: $button-color
-  color: $color-text
-  position: relative
-  border: 1px solid transparent
-  border-radius: $border-radius
-  padding: 0.2em 0.6em
-  text-align: center
-  white-space: nowrap
-  cursor: pointer
-  +user-select(none)
-  &:focus
-    outline: none
-    border-color: $color-active
-  &:hover
-    background: $button-color-hover
-  &.dito-active
-    background: $button-color-active
-    &:hover
-      background: $button-color-active-hover
-  &:active
-    background: $button-color-active-hover
-    border-color: $button-color-active-border
-    box-shadow: inset 0 1px 2px 0 rgba($color-shadow, 0.2)
-  &[disabled]
-    opacity: 0.6
-    pointer-events: none
-
   // .dito-button with order-arrows:
   .dito-order-arrows
     display: inline-block
@@ -48,18 +21,6 @@
       display: none
     &::after
       top: 0
-
-.dito-buttons
-  white-space: nowrap
-  .dito-button + .dito-button
-    margin-left: $button-margin
-  &.dito-form-buttons
-    text-align: center
-    font-size: $menu-font-size
-    button
-      margin-top: $content-padding
-      border-radius: 2em
-      padding: 0.3em 0.9em
 
 .dito-button-add:empty::before
     content: 'Add'
@@ -86,35 +47,13 @@
 .dito-button-paste:empty::before
     content: 'Paste'
 
-.dito-buttons-round
-  .dito-button
-    width: 2em
-    height: 2em
-    border-radius: 1em
-
-.dito-buttons-inline
-  .dito-button
-    width: 1.5em
-    height: 1.5em
-  .dito-button + .dito-button
-    margin-left: 1px
-
 .dito-buttons-round,
-.dito-buttons-inline
+.dito-buttons-small
   .dito-button
     display: inline-block
     text-align: center
     white-space: nowrap
     padding: 0
-    &::before
-      width: 1em
-      position: absolute
-      top: 0
-      left: 0
-      right: 0
-      bottom: 0
-      margin: auto
-      content: ''
   .dito-button-add:empty::before,
   .dito-button-create:empty::before
     +icon-add

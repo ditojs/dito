@@ -1,76 +1,49 @@
 <template lang="pug">
-  input.dito-date.dito-input(
-    :id="dataPath"
-    :type="type === 'datetime' ? 'datetime-local' : type"
-    @input="onInput"
-    v-validate="validations"
-    v-bind="getAttributes()"
-    v-on="getEvents()"
-    :min="min && toLocalDate(min)"
-    :max="max && toLocalDate(min)"
-    :step="hasTime ? step || (schema.seconds ? 1 : 60) : step"
-  )
+  .dito-date
+    component(
+      :is="getComponent(type)"
+      :id="dataPath"
+      v-model="dateValue"
+      v-validate="validations"
+      v-bind="getAttributes()"
+      v-on="getEvents()"
+    )
 </template>
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DatePicker from '@ditojs/ui/src/components/DatePicker'
+import TimePicker from '@ditojs/ui/src/components/TimePicker'
+import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
 
 export default TypeComponent.register(['date', 'datetime', 'time'], {
-  watch: {
-    value(value) {
-      const { element } = this.$refs
-      value = value ? this.toLocalDate(value) : value
-      // Only set native value again in case it changed, to prevent resetting
-      // input sequence in native date / datetime-local input fields.
-      if (element.value !== value) {
-        element.value = value
-      }
-    }
-  },
+  components: { DatePicker, TimePicker, DateTimePicker },
 
   computed: {
-    hasDate() {
-      return /^date/.test(this.type)
-    },
+    dateValue: {
+      get() {
+        const { value } = this
+        return value ? new Date(value) : value
+      },
 
-    hasTime() {
-      return /time$/.test(this.type)
+      set(value) {
+        this.value = value
+      }
     }
   },
 
   methods: {
-    onInput(event) {
-      const { value } = event.target
-      this.value = value ? new Date(value) : value
+    getComponent(type) {
+      return {
+        date: 'date-picker',
+        time: 'time-picker',
+        datetime: 'date-time-picker'
+      }[type]
     },
 
-    toLocalDate(value) {
-      function pad(number, length) {
-        const str = number + ''
-        const pad = '0000'
-        return pad.substring(0, (length || 2) - str.length) + str
-      }
-
-      const d = new Date(value)
-      let date = ''
-      if (this.hasDate) {
-        const Y = d.getFullYear()
-        const M = d.getMonth() + 1
-        const D = d.getDate()
-        date = `${pad(Y, 4)}-${pad(M)}-${pad(D)}`
-      }
-      let time = ''
-      if (this.hasTime) {
-        const h = d.getHours()
-        const m = d.getMinutes()
-        const s = d.getSeconds()
-        time = `${pad(h)}:${pad(m)}`
-        // Only add seconds if they're not zero to reflect chrome behavior
-        if (this.schema.seconds && s) {
-          time = `${time}:${pad(s)}`
-        }
-      }
-      return date ? time ? `${date}T${time}` : date : time
+    processValue(value) {
+      // Convert to string for JSON
+      return value ? value.toISOString() : value
     }
   }
 })

@@ -32,7 +32,7 @@
   $tag-icon-size: 1.8em
   $tag-margin: 2px
   $tag-padding: 3px
-  $tag-line-height: 1.2em
+  $tag-line-height: 1.1em
   $tag-icon-scale: 1.2
 
   .dito-multiselect
@@ -64,15 +64,20 @@
     .multiselect__single,
     .multiselect__input
       font-size: inherit
+      min-height: 0
       padding: $input-padding
+      margin: -1px // Adjust for the border
       // So input can float next to tags and have proper margins with
       // .multiselect__tags:
       padding-bottom: 0
-      margin: 0
+      margin-bottom: 0
       line-height: $line-height
       background: none
-      &::placeholder
-        color: $color-placeholder
+    // Unfortunatley .multiselect__single is used for place placeholder text
+    // also, but luckily it is then nested in an nother span so wen ca match it:
+    span span.multiselect__single,
+    .multiselect__input::placeholder
+      color: $color-placeholder
 
     &.dito-mutiple
       // Only srink and float the input field if we have mutliple values (tags).
@@ -122,9 +127,13 @@
       line-height: $tag-line-height
       padding: $input-padding
       &::after
+        // Instruction text for options
         padding: $input-padding
+        line-height: $tag-line-height
     .multiselect__option--highlight
       &::after
+        diplay: block
+        position: absolute
         background: transparent
         color: $color-white
     .multiselect__option--disabled
