@@ -7,7 +7,9 @@ import {
   ManyToManyRelation
 } from 'objection'
 import { RelationError } from '@/errors'
-import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
+import {
+  isObject, isArray, isString, asArray, capitalize, camelize
+} from '@ditojs/utils'
 
 const relationLookup = {
   // one:
@@ -119,7 +121,11 @@ class ModelReference {
 }
 
 export function getRelationClass(relation) {
-  return relationLookup[relation] || relationClasses[relation] || relation
+  return (
+    relationLookup[camelize(relation)] ||
+    relationClasses[relation] ||
+    relation
+  )
 }
 
 export function isThroughRelationClass(relationClass) {

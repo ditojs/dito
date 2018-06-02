@@ -117,6 +117,13 @@ export class Validator extends objection.Validator {
     return errorHash
   }
 
+  prefixDataPaths(errors, dataPathPrefix) {
+    return errors.map(error => ({
+      ...error,
+      dataPath: `${dataPathPrefix}${error.dataPath}`
+    }))
+  }
+
   // @override
   validate(args) {
     let { json, model, options, ctx } = args

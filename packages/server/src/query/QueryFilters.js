@@ -7,13 +7,11 @@ QueryFilters.register({
   @parameters(
     {
       name: 'operator',
-      type: 'string',
-      required: true
+      type: 'string'
     },
     {
       name: 'text',
-      type: 'string',
-      required: true
+      type: 'string'
     }
   )
   text(builder, property, operator, text) {
@@ -36,13 +34,11 @@ QueryFilters.register({
   @parameters(
     {
       name: 'from',
-      type: 'date',
-      required: true
+      type: 'date'
     },
     {
       name: 'to',
-      type: 'date',
-      required: true
+      type: 'date'
     }
   )
   'date-range'(builder, property, from, to) {

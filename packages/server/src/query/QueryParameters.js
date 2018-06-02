@@ -1,4 +1,4 @@
-import { QueryBuilderError } from '@/errors'
+import { ResponseError, QueryBuilderError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import { QueryWhereFilters } from './QueryWhereFilters'
 import { createLookup } from '@/utils'
@@ -37,9 +37,11 @@ QueryParameters.register({
         builder.applyFilter(name, ...args)
       }
     } catch (error) {
-      throw new QueryBuilderError(
-        `Invalid Query filter parameters: ${error.message}.`
-      )
+      throw error instanceof ResponseError
+        ? error
+        : new QueryBuilderError(
+          `Invalid Query filter parameters: ${error.message}.`
+        )
     }
   },
 

@@ -161,7 +161,7 @@ export class Model extends objection.Model {
         if (isFunction(scope)) {
           namedFilters[name] = scope
         } else {
-          throw new ModelError(this, `Invalid scope: '${name}'.`)
+          throw new ModelError(this, `Invalid scope '${name}': ($}{scope}).`)
         }
       }
       return namedFilters
@@ -555,11 +555,19 @@ const definitionHandlers = {
       const functions = array
         .reverse() // Reverse to go from super-class to sub-class.
         .map(
-          value => isFunction(value)
-            ? value
-            : isObject(value)
-              ? query => query.find(value)
-              : () => value
+          value => {
+            let func
+            if (isFunction(value)) {
+              func = value
+            } else if (isObject(value)) {
+              func = query => query.find(value)
+            } else {
+              throw new ModelError(this,
+                `Invalid scope '${name}': Invalid scope type: ${value}.`
+              )
+            }
+            return func
+          }
         )
       // Now define the scope as a function that calls all inherited scope
       // functions.
@@ -591,12 +599,12 @@ const definitionHandlers = {
             parameters = func.parameters
           } else if (isObject(filter)) {
             // Convert QueryFilters to normal filter functions
-            const queryFilter = QueryFilters.get(filter.type)
-            parameters = queryFilter.parameters
+            const queryFilter = QueryFilters.get(filter.filter)
             if (queryFilter) {
+              parameters = queryFilter.parameters
               const { properties } = filter
-              func = (builder, ...args) => {
-                if (properties) {
+              func = properties
+                ? (builder, ...args) => {
                   // When the filter provides multiple properties, match them
                   // all, but combine the expressions with OR.
                   for (const property of properties) {
@@ -604,10 +612,15 @@ const definitionHandlers = {
                       queryFilter(this, property, ...args)
                     })
                   }
-                } else {
+                }
+                : (builder, ...args) => {
                   queryFilter(builder, name, ...args)
                 }
-              }
+            } else {
+              throw new ModelError(this,
+                `Invalid filter '${name}': Unknown filter type '${
+                  filter.filter}'.`
+              )
             }
           }
           // If parameters are defined, wrap the function in a closure that
@@ -628,7 +641,10 @@ const definitionHandlers = {
                   type: 'FilterValidation',
                   message:
                     `The provided data for query filter '${name}' is not valid`,
-                  errors: validate.errors
+                  errors: this.app.validator.prefixDataPaths(
+                    validate.errors,
+                    `.${name}`
+                  )
                 })
               }
               return func(query, ...args)
