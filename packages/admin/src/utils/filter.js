@@ -55,9 +55,9 @@ export const filterComponents = {
 export function convertFiltersSchema(filters) {
   const comps = {}
   for (const filter of Object.values(filters || {})) {
-    const { type } = filter
+    const { filter: type } = filter
     const components = type
-      ? filterComponents[type](filter)
+      ? filterComponents[type]?.(filter)
       : filter.components
     if (components) {
       const form = type
@@ -65,10 +65,10 @@ export function convertFiltersSchema(filters) {
         : { ...filter }
       form.components = {}
       // Convert labels to placeholders:
-      for (const [key, schema] of Object.entries(components)) {
-        const label = schema.label || labelize(schema.name || key)
+      for (const [key, component] of Object.entries(components)) {
+        const label = component.label || labelize(component.name || key)
         form.components[key] = {
-          ...schema,
+          ...component,
           label: false,
           placeholder: label
         }
@@ -80,6 +80,10 @@ export function convertFiltersSchema(filters) {
         nested: true,
         inline: true
       }
+    } else {
+      throw new Error(
+        `Invalid filter '${filter.name}': Unknown filter type '${type}'.`
+      )
     }
   }
   return {
