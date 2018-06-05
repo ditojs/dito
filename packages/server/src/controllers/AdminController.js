@@ -35,24 +35,23 @@ export class AdminController extends Controller {
     return mount(this.url, this.koa)
   }
 
-  setupWebpack() {
-    this.koa.use(historyApiFallback())
-    this.koa.use(koaWebpack({
+  async setupWebpack() {
+    // https://webpack.js.org/configuration/stats/#stats
+    const stats = {
+      all: false
+    }
+    const middleware = await koaWebpack({
       config: this.getWebpackConfig('development'),
-      dev: {
+      devMiddleware: {
         publicPath: '/',
-        // https://webpack.js.org/configuration/stats/#stats
-        stats: 'minimal'
+        stats
       },
-      hot: {
-        // Real hot-reloading doesn't quite seem to work yet, but it wasn't
-        // too far away from functioning, see:
-        // https://github.com/ditojs/dito-admin/tree/hot-reload
-        hot: false,
-        reload: true,
-        stats: 'minimal'
+      hotClient: {
+        stats
       }
-    }))
+    })
+    this.koa.use(historyApiFallback())
+    this.koa.use(middleware)
   }
 
   getWebpackConfig(mode) {
