@@ -1,0 +1,14 @@
+.dito-scroll
+  flex: 1
+  overflow-x: hidden
+  overflow-y: auto
+
+.dito-parent
+  // To make vertical scrolling in .dito-scroll work:
+  flex: 1
+  display: flex
+  position: relative
+  flex-flow: column
+
+.dito-content
+  max-width: $content-width

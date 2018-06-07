@@ -1,0 +1,26 @@
+ul.dito-pulldown
+  display: none
+  position: absolute
+  top: 0
+  z-index: 2
+  border-radius: $pulldown-radius
+  box-shadow: $shadow-window
+  &.dito-open
+    display: block
+  li
+    a
+      display: block
+      cursor: pointer
+      text-align: center
+      padding: $pulldown-padding
+      height: 1em
+      background: $button-color
+      &:hover
+        background: $color-active
+        color: $color-white
+    &:first-child a
+      border-top-left-radius: $pulldown-radius
+      border-top-right-radius: $pulldown-radius
+    &:last-child a
+      border-bottom-left-radius: $pulldown-radius
+      border-bottom-right-radius: $pulldown-radius

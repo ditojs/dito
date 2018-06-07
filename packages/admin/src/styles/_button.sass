@@ -1,0 +1,77 @@
+.dito-button
+  // .dito-button with order-arrows:
+  .dito-order-arrows
+    display: inline-block
+    width: round($button-order-arrow-size * $math-sqrt2)
+    padding-left: $form-spacing
+    $arrow-offset: $button-order-arrow-size / 2 + $border-width
+    &::before
+      +arrow($button-order-arrow-size, 'up')
+      bottom: $arrow-offset
+    &::after
+      +arrow($button-order-arrow-size, 'down')
+      top: $arrow-offset
+  &.dito-order-asc .dito-order-arrows
+    &::before
+      bottom: 0
+    &::after
+      display: none
+  &.dito-order-desc .dito-order-arrows
+    &::before
+      display: none
+    &::after
+      top: 0
+
+.dito-button-add:empty::before
+  content: 'Add'
+.dito-button-create:empty::before
+  content: 'Create'
+.dito-button-delete:empty::before
+  content: 'Delete'
+.dito-button-remove:empty::before
+  content: 'Remove'
+.dito-button-edit:empty::before
+  content: 'Edit'
+.dito-button-save:empty::before
+  content: 'Save'
+.dito-button-apply:empty::before
+  content: 'Apply'
+.dito-button-cancel:empty::before
+  content: 'Cancel'
+.dito-button-close:empty::before
+  content: 'Close'
+.dito-button-drag:empty::before
+  content: 'Drag'
+.dito-button-copy:empty::before
+  content: 'Copy'
+.dito-button-paste:empty::before
+  content: 'Paste'
+.dito-button-clear:empty::before
+  content: 'Clear'
+.dito-button-filter:empty::before
+  content: 'Filter'
+
+.dito-buttons.dito-form-buttons
+  text-align: center
+  font-size: $menu-font-size
+  button
+    margin-top: $content-padding
+    border-radius: 2em
+    padding: 0.3em 0.9em
+
+.dito-buttons-round,
+.dito-buttons-small
+  .dito-button-add:empty::before,
+  .dito-button-create:empty::before
+    +icon-add
+  .dito-button-delete:empty::before,
+  .dito-button-remove:empty::before
+    +icon-remove
+  .dito-button-edit:empty::before
+    +icon-edit
+  .dito-button-drag:empty::before
+    +icon-drag
+  .dito-button-copy:empty::before
+    +icon-copy
+  .dito-button-paste:empty::before
+    +icon-paste

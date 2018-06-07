@@ -1,0 +1,58 @@
+<template lang="pug">
+  toggle-button.dito-switch(
+    :id="dataPath"
+    :sync="true"
+    :cssColors="true"
+    :labels="schema.labels"
+    :width="size.width"
+    :height="size.height"
+    v-model="value"
+    v-validate="validations"
+    v-bind="getAttributes()"
+    v-on="getEvents()"
+  )
+</template>
+
+<style lang="sass">
+  .dito-switch
+    display: inline-block
+    vertical-align: baseline
+    // TODO: Fix vue-js-toggle-button to allow more flexible style overrides
+    font-size: inherit !important // override vue-js-toggle-button
+    height: 2em
+    .v-switch-core
+      position: relative !important // override vue-js-toggle-button
+      background-color: $color-light
+      top: 50%
+      transform: translateY(-50%)
+    &.toggled
+      .v-switch-core
+        background-color: $color-active
+    .v-switch-label
+      font-size: 0.8em
+      text-transform: uppercase
+      top: 50% !important // override vue-js-toggle-button
+      transform: translateY(-50%)
+</style>
+
+<script>
+import TypeComponent from '@/TypeComponent'
+import DitoComponent from '@/DitoComponent'
+import VueToggleButton from 'vue-js-toggle-button'
+
+// Use `VueToggleButton` as a local dependency
+DitoComponent.use(VueToggleButton)
+
+export default TypeComponent.register('switch', {
+  defaultValue: false,
+
+  computed: {
+    size() {
+      return this.schema.size || {
+        width: 50,
+        height: 22
+      }
+    }
+  }
+})
+</script>

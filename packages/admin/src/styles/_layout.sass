@@ -1,0 +1,18 @@
+// TODO: Convert to flexbox
+
+.dito-layout-vertical
+  display: table
+  > *
+    display: table-row
+    > *
+      display: table-cell
+    // Do not display inputs as table-cell...
+    > .dito-input
+      display: block
+
+.dito-layout-horizontal
+  display: table-row
+  > *
+    display: table-cell
+    & + *
+      padding-left: $form-spacing

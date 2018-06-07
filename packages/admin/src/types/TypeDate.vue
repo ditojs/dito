@@ -1,0 +1,56 @@
+<template lang="pug">
+  .dito-date
+    component(
+      :is="getComponent(type)"
+      :id="dataPath"
+      v-model="dateValue"
+      v-validate="validations"
+      v-bind="getAttributes()"
+      v-on="getEvents()"
+    )
+</template>
+
+<script>
+import TypeComponent from '@/TypeComponent'
+import DatePicker from '@ditojs/ui/src/components/DatePicker'
+import TimePicker from '@ditojs/ui/src/components/TimePicker'
+import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
+import { isDate } from '@ditojs/utils'
+
+export default TypeComponent.register(['date', 'datetime', 'time'], {
+  components: { DatePicker, TimePicker, DateTimePicker },
+  // TODO: This is only here so we get placeholder added. Come up with a better
+  // way to support attributes per component (a list of actually supported
+  // attributes)
+  nativeField: true,
+  textField: true,
+
+  computed: {
+    dateValue: {
+      get() {
+        const { value } = this
+        return value ? new Date(value) : value
+      },
+
+      set(value) {
+        this.value = value
+      }
+    }
+  },
+
+  methods: {
+    getComponent(type) {
+      return {
+        date: 'date-picker',
+        time: 'time-picker',
+        datetime: 'date-time-picker'
+      }[type]
+    },
+
+    processValue(value) {
+      // Convert to string for JSON
+      return isDate(value) ? value.toISOString() : value
+    }
+  }
+})
+</script>

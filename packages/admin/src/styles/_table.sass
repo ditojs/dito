@@ -1,0 +1,119 @@
+table.dito-table
+  width: 100%
+  height: 100% // To stretch table > thead > th > button
+  border-radius: $border-radius
+
+  .dito-buttons
+    width: 1%
+    text-align: right
+    vertical-align: top // For vertical-align: baseline in normal td to work.
+    line-height: 1em
+    .dito-button-drag
+      cursor: grab
+      &:active,
+        cursor: grabbing
+
+  > tbody,
+  > tfoot
+    > tr
+      vertical-align: baseline
+      > td
+        border-top: 1px solid $color-white
+        padding: $table-spacing
+        background: $table-color-background
+        border-radius: 0
+        &.dito-buttons
+          padding-left: 0
+        // Add rounded corners in first & last headers.
+        &:first-child
+          border-top-left-radius: $border-radius
+          border-bottom-left-radius: $border-radius
+        &:last-child
+          border-top-right-radius: $border-radius
+          border-bottom-right-radius: $border-radius
+  > tbody
+    > tr:first-child
+      > td
+        // Top row does not need a border at the top...
+        // But to make vuedraggable happy, hide it with background color.
+        border-top-color: $table-color-background
+  > thead + tbody
+    > tr
+      &:first-child
+        > td
+          // ...except if there is a thead as well, then they need it again.
+          border-top-color: $color-white
+      > td
+        padding: $table-spacing
+        & + td
+          // Also, only add horizontal borders if there is a heaader
+          border-top-color: $color-white
+    &,
+    & + tfoot
+      > tr
+        > td.dito-buttons
+          padding: $button-margin
+  // Without <thead> and an empty <tbody> there's no need for the <tfoot> border
+  > tbody:first-child:empty + tfoot
+    > tr
+      > td
+        border-top-color: $table-color-background
+  // Nested .dito-table:
+  table.dito-table
+    // Give nested lists a bit of shadow
+    box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
+    margin: $form-spacing-half 0
+    > tbody,
+    > tfoot
+      > tr
+        // Change corner rounding in nested lists, so that only the four
+        // outer corners are rounded to go with the shadow.
+        > td
+          border-radius: 0
+        &:first-child
+          > td:first-child
+            border-top-left-radius: $border-radius
+          > td:last-child
+            border-top-right-radius: $border-radius
+        &:last-child
+          > td:first-child
+            border-bottom-left-radius: $border-radius
+          > td:last-child
+            border-bottom-right-radius: $border-radius
+
+thead.dito-table-head
+  +user-select(none)
+  tr
+    height: 100% // To stretch table > thead > th > button
+  th
+    padding: 0
+    background: $button-color
+    font-weight: normal
+    text-align: left
+    height: 100% // To stretch table > thead > th > button
+    & + th
+      border-left: $border-style
+    // Convention: Nested spans handle margin and spacing
+    span
+      display: inline-block
+      padding: $button-padding-ver 0
+      margin: 0 $form-spacing
+      // When there's no sort-button, add a 1px border to get same height
+      &:first-child
+        border: 1px solid transparent
+    &:first-child
+      &,
+      button
+        border-top-left-radius: $border-radius
+        border-bottom-left-radius: $border-radius
+    &:last-child
+      &,
+      button
+        border-top-right-radius: $border-radius
+        border-bottom-right-radius: $border-radius
+    .dito-button
+      padding: 0
+      width: 100%
+      height: 100% // To stretch table > thead > th > button
+      text-align: inherit
+      border-radius: 0

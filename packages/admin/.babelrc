@@ -1,0 +1,17 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "modules": false,
+      "targets": {
+        "browsers": ["last 2 versions", "safari >= 7"]
+      }
+    }],
+    ["@babel/preset-stage-1", {
+      "decoratorsLegacy": true
+    }]
+  ],
+  "plugins": [
+    "@babel/plugin-transform-runtime"
+  ],
+  "comments": false
+}
