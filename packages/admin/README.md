@@ -1,6 +1,12 @@
 # Dito.js Admin
 
-Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js
+Dito.js is a minimal and modern web framework, based on Objection.js, Koa.js and
+Vue.js
+
+Released in 2018 under the MIT license, with support by https://lineto.com/
+
+Dito.js Admin is a schema based admin interface for Dito.js, featuring auto-
+generated views and forms and built with Vue.js
 
 ## Build Setup
 
