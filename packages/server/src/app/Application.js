@@ -22,6 +22,7 @@ import errorHandler from './errorHandler'
 import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
+import { Service } from '@/services'
 import { Validator } from './Validator'
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
@@ -30,7 +31,7 @@ import {
 } from '@ditojs/utils'
 
 export class Application extends Koa {
-  constructor(config = {}, { validator, models, controllers }) {
+  constructor(config = {}, { validator, models, controllers, services }) {
     super()
     // Override Koa's events with our own EventEmitter that adds support for
     // asynchronous events.
@@ -41,10 +42,11 @@ export class Application extends Koa {
     this.config = { ...config, app }
     this.keys = keys
     this.proxy = !!app.proxy
+    this.validator = validator || new Validator()
     this.models = Object.create(null)
     this.controllers = Object.create(null)
-    this.validator = validator || new Validator()
-    this.storage = {}
+    this.services = Object.create(null)
+    this.storage = Object.create(null)
     this.setupMiddleware()
     this.setupKnex()
     if (config.storage) {
@@ -55,6 +57,9 @@ export class Application extends Koa {
     }
     if (controllers) {
       this.addControllers(controllers)
+    }
+    if (services) {
+      this.addServices(services)
     }
   }
 
@@ -154,23 +159,54 @@ export class Application extends Koa {
     if (Controller.isPrototypeOf(controller)) {
       // eslint-disable-next-line new-cap
       controller = new controller(this, namespace)
-      // Inheritance of action methods cannot happen in the constructor itself,
-      // so call separate initialize() method after in order to take care of it.
-      controller.initialize()
     }
-    if (controller instanceof Controller) {
-      const middleware = controller.compose()
-      if (middleware) {
-        this.use(middleware)
-      }
-      this.controllers[controller.url] = controller
-    } else {
-      throw new Error(`Unknown controller: ${controller}`)
+    if (!(controller instanceof Controller)) {
+      throw new Error(`Invalid controller: ${controller}`)
+    }
+    // Inheritance of action methods cannot happen in the constructor itself,
+    // so call separate initialize() method after in order to take care of it.
+    controller.initialize()
+    this.controllers[controller.url] = controller
+    const middleware = controller.compose()
+    if (middleware) {
+      this.use(middleware)
     }
   }
 
   getController(url) {
     return this.controllers[url]
+  }
+
+  addServices(services) {
+    for (const [name, service] of Object.entries(services)) {
+      this.addService(service, name)
+    }
+  }
+
+  addService(service, name) {
+    // Auto-instantiate controller classes:
+    if (Service.isPrototypeOf(service)) {
+      // eslint-disable-next-line new-cap
+      service = new service(this, name)
+    }
+    if (!(service instanceof Service)) {
+      throw new Error(`Invalid service: ${service}`)
+    }
+    // Only after the constructor is called, `service.name` is guaranteed to be
+    // set to the correct value, e.g. with an after-constructor class property.
+    service.initialize(this.config.services[service.name])
+    this.services[service.name] = service
+  }
+
+  getService(name) {
+    return this.services[name]
+  }
+
+  async callServices(method, ...args) {
+    return Promise.map(
+      Object.values(this.services),
+      service => service[method](...args)
+    )
   }
 
   setupStorage(config) {
@@ -456,6 +492,7 @@ export class Application extends Koa {
       this.on('error', this.onError)
     }
     await this.emit('before:start')
+    await this.callServices('start')
     const {
       server: { host, port },
       env
@@ -491,6 +528,7 @@ export class Application extends Koa {
         reject(new Error('Server is not running'))
       }
     })
+    await this.callServices('stop')
     await this.emit('after:stop')
   }
 

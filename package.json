@@ -1,4 +1,10 @@
 {
+  "name": "dito",
+  "private": true,
+  "description": "Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js",
+  "repository": "https://github.com/ditojs/dito",
+  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
+  "license": "MIT",
   "scripts": {
     "watch": "lerna run --parallel watch",
     "lint": "lerna run --parallel lint",
