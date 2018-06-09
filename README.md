@@ -1,6 +1,6 @@
 # Dito.js
 
-Dito.js is a minimal and modern web framework with a strong focus on API driven
+Dito.js is a minimal and modern web framework with a focus on API driven
 development, based on Koa.js, Objection.js and Vue.js
 
 Dito.js consists of two main components: **Dito.js Server**, providing all
