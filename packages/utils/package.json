@@ -15,8 +15,7 @@
     "watch": "yarn build --watch",
     "prepare": "yarn build",
     "lint": "cross-env NODE_ENV=production eslint src",
-    "lint:fix": "eslint --fix src",
-    "precommit": "yarn lint"
+    "lint:fix": "eslint --fix src"
   },
   "engines": {
     "node": ">= 9.0.0",

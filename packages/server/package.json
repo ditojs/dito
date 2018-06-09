@@ -17,8 +17,7 @@
     "prepare": "yarn build",
     "posttest": "yarn lint && nsp check",
     "lint": "cross-env NODE_ENV=production eslint src",
-    "lint:fix": "eslint --fix src",
-    "precommit": "yarn lint"
+    "lint:fix": "eslint --fix src"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
@@ -28,6 +27,7 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
+    "@ditojs/utils": "^0.8.2",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.5.0",
     "babel-loader": "^8.0.0-beta.2",

@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "watch": "lerna run --parallel watch",
+    "lint": "lerna run --parallel lint",
+    "lint:fix": "lerna run --parallel lint:fix",
+    "precommit": "yarn lint"
+  },
   "devDependencies": {
     "@babel/cli": "^7.0.0-beta.49",
     "@babel/core": "^7.0.0-beta.49",

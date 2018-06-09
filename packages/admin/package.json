@@ -17,9 +17,8 @@
     "start": "yarn dev",
     "build": "node build/build.js",
     "prepare": "yarn build",
-    "lint": "NODE_ENV=production eslint --ext .js,.vue src",
-    "lint:fix": "eslint --fix --ext .js,.vue src",
-    "precommit": "yarn lint"
+    "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue src",
+    "lint:fix": "eslint --fix --ext .js,.vue src"
   },
   "engines": {
     "node": ">= 9.0.0",
