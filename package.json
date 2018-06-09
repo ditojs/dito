@@ -1,5 +1,29 @@
 {
-	"devDependencies": {
-		"lerna": "^2.11.0"
-	}
+  "devDependencies": {
+    "@babel/cli": "^7.0.0-beta.49",
+    "@babel/core": "^7.0.0-beta.49",
+    "@babel/plugin-transform-runtime": "^7.0.0-beta.49",
+    "@babel/preset-env": "^7.0.0-beta.49",
+    "@babel/preset-stage-1": "^7.0.0-beta.49",
+    "@babel/register": "^7.0.0-beta.49",
+    "@babel/runtime": "^7.0.0-beta.49",
+    "babel-eslint": "8.2.1",
+    "babel-plugin-dynamic-import-node-babel-7": "^2.0.7",
+    "babel-plugin-module-resolver": "^3.1.1",
+    "babel-plugin-transform-promise-to-bluebird": "^2.0.0-beta.1",
+    "cross-env": "^5.1.6",
+    "eslint": "npm:eslint-nullish-coalescing",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-friendly-formatter": "^4.0.1",
+    "eslint-loader": "^2.0.0",
+    "eslint-plugin-html": "^4.0.2",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "eslint-plugin-vue": "^4.5.0",
+    "husky": "^0.14.3",
+    "lerna": "^2.11.0",
+    "vue-eslint-parser": "^2.0.3"
+  }
 }

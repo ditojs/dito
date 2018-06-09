@@ -64,7 +64,7 @@ export default {
       }
     },
 
-    label: getSchemaAccessor('label', function () {
+    label: getSchemaAccessor('label', function() {
       return this.getLabel(this.schema)
     }),
 
@@ -73,18 +73,18 @@ export default {
     required: getSchemaAccessor('required'),
     decimals: getSchemaAccessor('decimals'),
 
-    step: getSchemaAccessor('step', function () {
+    step: getSchemaAccessor('step', function() {
       const step = this.getSchemaValue('step')
       return this.isInteger && step !== undefined ? Math.ceil(step) : step
     }),
 
-    min: getSchemaAccessor('min', function () {
+    min: getSchemaAccessor('min', function() {
       const { schema } = this
       const min = schema.range ? schema.range[0] : schema.min
       return this.isInteger && min != null ? Math.floor(min) : min
     }),
 
-    max: getSchemaAccessor('max', function () {
+    max: getSchemaAccessor('max', function() {
       const { schema } = this
       const max = schema.range ? schema.range[1] : schema.max
       return this.isInteger && max !== undefined ? Math.ceil(max) : max

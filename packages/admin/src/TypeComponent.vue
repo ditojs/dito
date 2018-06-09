@@ -38,7 +38,7 @@ const TypeComponent = DitoComponent.component('typo-component', {
 // `resolveTypeComponent()`
 typeComponents.component = TypeComponent
 
-TypeComponent.register = function (type, options = {}) {
+TypeComponent.register = function(type, options = {}) {
   const types = asArray(type)
   const component = this.component(`type-${types[0]}`, options)
   // If nothing is specified, the default value for `defaultValue` is null:
@@ -51,7 +51,7 @@ TypeComponent.register = function (type, options = {}) {
   return component
 }
 
-TypeComponent.get = function (type) {
+TypeComponent.get = function(type) {
   return typeComponents[type]
 }
 

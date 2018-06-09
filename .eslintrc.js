@@ -10,9 +10,9 @@ module.exports = {
     sourceType: 'module'
   },
   env: {
-    browser: true,
     es6: true
   },
+  // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: [
     // https://github.com/standard/standard/blob/master/docs/RULES-en.md#javascript-standard-style
     'standard',
@@ -57,13 +57,14 @@ module.exports = {
     }],
     'quote-props': ['error', 'as-needed'],
     'space-before-function-paren': ['error', {
-      anonymous: 'always',
+      anonymous: 'never',
       named: 'never',
       asyncArrow: 'always'
     }],
     'space-in-parens': ['error', 'never'],
     'indent': ['error', 2, {
-      flatTernaryExpressions: true
+      flatTernaryExpressions: true,
+      ignoredNodes: ['TemplateLiteral > *']
     }]
   }
 }

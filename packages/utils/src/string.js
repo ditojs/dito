@@ -45,7 +45,7 @@ export function labelize(str) {
   // console.log(labelize('test33test'))
   return str
     ? str.replace(/([-_ ]|^)(\w)|([a-z])(?=[A-Z0-9])|(\d)([a-zA-Z])/g,
-      function (all, hyphen, hyphenated, camel, decimal, decimalNext) {
+      function(all, hyphen, hyphenated, camel, decimal, decimalNext) {
         return hyphenated ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
           : camel ? `${camel} `
           : decimal ? `${decimal} ${decimalNext.toUpperCase()}`

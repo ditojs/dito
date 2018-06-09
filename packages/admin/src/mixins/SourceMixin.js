@@ -170,7 +170,7 @@ export default {
       return this.getSchemaValue('inline', true)
     },
 
-    creatable: getSchemaAccessor('creatable', function () {
+    creatable: getSchemaAccessor('creatable', function() {
       return hasForms(this.schema) && this.getSchemaValue('creatable', true)
         ? this.isObjectSource
           ? !this.value
@@ -178,15 +178,15 @@ export default {
         : false
     }),
 
-    editable: getSchemaAccessor('editable', function () {
+    editable: getSchemaAccessor('editable', function() {
       return !this.inline && !!this.getSchemaValue('editable', true)
     }),
 
-    deletable: getSchemaAccessor('deletable', function () {
+    deletable: getSchemaAccessor('deletable', function() {
       return !!this.getSchemaValue('deletable', true)
     }),
 
-    draggable: getSchemaAccessor('draggable', function () {
+    draggable: getSchemaAccessor('draggable', function() {
       return this.isListSource &&
         !!this.getSchemaValue('draggable', true) &&
         this.listData.length > 1

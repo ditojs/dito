@@ -3,7 +3,7 @@
   "version": "0.8.0",
   "description": "Dito.js Server – Dito.js is a minimal and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "main": "lib/index.js",
-  "repository": "https://github.com/ditojs/dito-server",
+  "repository": "https://github.com/ditojs/dito/tree/master/packages/server",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "files": [
@@ -28,13 +28,6 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@babel/cli": "^7.0.0-beta.49",
-    "@babel/core": "^7.0.0-beta.49",
-    "@babel/node": "^7.0.0-beta.49",
-    "@babel/preset-env": "^7.0.0-beta.49",
-    "@babel/preset-stage-1": "^7.0.0-beta.49",
-    "@ditojs/admin": "^0.8.0",
-    "@ditojs/utils": "^0.8.1",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.5.0",
     "babel-loader": "^8.0.0-beta.2",
@@ -83,18 +76,6 @@
     "knex": "^0.14.2"
   },
   "devDependencies": {
-    "babel-eslint": "8.2.1",
-    "babel-plugin-dynamic-import-node-babel-7": "^2.0.7",
-    "babel-plugin-module-resolver": "^3.1.1",
-    "babel-plugin-transform-promise-to-bluebird": "^2.0.0-beta.1",
-    "cross-env": "^5.1.6",
-    "eslint": "npm:eslint-nullish-coalescing",
-    "eslint-config-standard": "^11.0.0-beta.0",
-    "eslint-plugin-import": "^2.12.0",
-    "eslint-plugin-node": "^6.0.1",
-    "eslint-plugin-promise": "^3.8.0",
-    "eslint-plugin-standard": "^3.1.0",
-    "husky": "^0.14.3",
     "knex": "^0.14.6",
     "pg": "^7.4.3",
     "sqlite3": "^4.0.0"

@@ -2,7 +2,8 @@
   "javascript.validate.enable": false,
   "eslint.enable": true,
   "files.exclude": {
-    "dist": true
+    "packages/*/dist/": true,
+    "packages/*/lib/": true
   },
   "vetur.validation.script": false,
   "eslint.validate": [

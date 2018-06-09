@@ -42,7 +42,7 @@ const DitoComponent = Vue.extend({
 
 DitoComponent.typeComponents = typeComponents
 
-DitoComponent.component = function (name, options) {
+DitoComponent.component = function(name, options) {
   if (options) {
     const ctor = this.extend(options)
     components[name] = ctor

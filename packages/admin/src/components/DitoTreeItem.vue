@@ -280,16 +280,16 @@ export default DitoComponent.component('dito-tree-item', {
         numChildren === 1 ? 'item' : 'items'}`
     },
 
-    creatable: getSchemaAccessor('creatable', function () {
+    creatable: getSchemaAccessor('creatable', function() {
       // TODO: Support creatable!
       return hasForms(this.schema) && !!this.getSchemaValue('creatable', true)
     }),
 
-    editable: getSchemaAccessor('editable', function () {
+    editable: getSchemaAccessor('editable', function() {
       return hasForms(this.schema) && !!this.getSchemaValue('editable', true)
     }),
 
-    deletable: getSchemaAccessor('deletable', function () {
+    deletable: getSchemaAccessor('deletable', function() {
       return !!this.getSchemaValue('deletable', true)
     }),
 
