@@ -38,7 +38,9 @@ export class AdminController extends Controller {
   async setupWebpack() {
     // https://webpack.js.org/configuration/stats/#stats
     const stats = {
-      all: false
+      all: false,
+      errors: true,
+      errorDetails: true
     }
     const middleware = await koaWebpack({
       config: this.getWebpackConfig('development'),
