@@ -9,7 +9,7 @@ export class Service {
     this.config = null
   }
 
-  initialize(config = {}) {
+  initialize(config) {
     this.config = config
     // Now that config is set, call `setup()` which can be overridden by
     // implementing services.

@@ -194,8 +194,17 @@ export class Application extends Koa {
     }
     // Only after the constructor is called, `service.name` is guaranteed to be
     // set to the correct value, e.g. with an after-constructor class property.
-    service.initialize(this.config.services[service.name])
-    this.services[service.name] = service
+    ({ name } = service)
+    const config = this.config.services[name]
+    if (config === undefined) {
+      throw new Error(`Configuration missing for service '${name}'`)
+    }
+    // As a convention, the configuration of a service can be set to `false`
+    // in order to entirely deactivate the service.
+    if (config !== false) {
+      service.initialize(config)
+      this.services[name] = service
+    }
   }
 
   getService(name) {
