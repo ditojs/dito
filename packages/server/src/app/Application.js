@@ -550,7 +550,7 @@ export class Application extends Koa {
     try {
       await this.start()
     } catch (err) {
-      console.error(err)
+      this.onError(err)
       process.exit(-1)
     }
   }
