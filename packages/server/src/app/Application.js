@@ -179,7 +179,12 @@ export class Application extends Koa {
 
   addServices(services) {
     for (const [name, service] of Object.entries(services)) {
-      this.addService(service, name)
+      // Handle ES6 module weirdness that can happen, apparently:
+      if (name === 'default' && isPlainObject(service)) {
+        this.addServices(service)
+      } else {
+        this.addService(service, name)
+      }
     }
   }
 
