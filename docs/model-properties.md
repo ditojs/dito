@@ -29,7 +29,7 @@ keywords can be registered with a custom validator, see
 
 | Keywords                   | Description
 | -------------------------- | -------------------------------------------------
-| `type`: `string`           | The type of the property. Possible values are:<br>`'string'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'date'`, `'datetime'` and `'timestamp'`.
+| `type`: `string`           | The type of the property. Possible values are:<br>`'string'`, `'text'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'date'`, `'datetime'` and `'timestamp'`.
 | `format`: `string`         | The requried format of the property.<br>Any standard JSON schema formats are supported, such as `'date-time'`, `'email'`, `'hostname'`, `'ipv4'`, `'ipv6'`, `'uri'`. Additional formats can be registered with a custom validator, see [Validator](./validator.md).
 | `default`: `any`           | Sets the property's default value.<br>This impacts both validation as well as migrations: For validation unless when using `patch` operations, missing properties are replaced with their default values. In migrations, the `.defaultTo()` method is called for the database column.
 | `required`: `boolean`      | Defines if the property is required.<br>This impacts both validation as well as migrations: Validation errors are thrown for missing required properties. In migrations, the `.notNullable()` method is called for the database column.

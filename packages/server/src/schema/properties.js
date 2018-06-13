@@ -16,8 +16,10 @@ export function convertSchema(schema, options = {}) {
     const { type } = schema
     if (isString(type)) {
       // Convert schema property notation to JSON schema
-      if (jsonTypes[type]) {
-        if (type === 'object') {
+      const jsonType = jsonTypes[type]
+      if (jsonType) {
+        schema.type = jsonType
+        if (jsonType === 'object') {
           if (schema.properties) {
             const properties = {}
             const required = []
@@ -34,7 +36,7 @@ export function convertSchema(schema, options = {}) {
             }
           }
           // TODO: convertSchema() on patternProperties
-        } else if (type === 'array') {
+        } else if (jsonType === 'array') {
           const { items } = schema
           if (items) {
             schema.items = convertSchema(items, options)
@@ -156,14 +158,17 @@ function makeNullable(schema) {
       }
 }
 
-// JSON types, used to determine when to use `$ref` instead of `type`.
+// Table to translate schema types to JSON schema types. Other types are allowed
+// also, e.g. 'date', 'datetime', 'timestamp', but they need special treatment.
+// Anything not recognized as a type is used as a $ref instead.
 const jsonTypes = {
-  string: true,
-  number: true,
-  integer: true,
-  boolean: true,
-  object: true,
-  array: true
+  string: 'string',
+  text: 'string',
+  number: 'number',
+  integer: 'integer',
+  boolean: 'boolean',
+  object: 'object',
+  array: 'array'
 }
 
 const excludeDefaults = {
