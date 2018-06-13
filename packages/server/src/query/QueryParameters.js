@@ -47,7 +47,9 @@ QueryParameters.register({
 
   range(builder, key, value) {
     if (value) {
-      const [start, end] = isString(value) ? value.split(/\s*,s*/) : value
+      const [from, to] = isString(value) ? value.split(/\s*,s*/) : value
+      const start = +from
+      const end = +to
       if (isNaN(start) || isNaN(end) || end < start) {
         throw new QueryBuilderError(`Invalid range: [${start}, ${end}].`)
       }
