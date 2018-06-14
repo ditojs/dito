@@ -18,11 +18,11 @@ export class AdminController extends Controller {
     }
     this.koa = new Koa()
 
-    const authorize = this.processAuthorize(this.authorize)
+    const authorization = this.processAuthorize(this.authorize)
     // Shield admin views against unauthorized access.
     this.koa.use(async (ctx, next) => {
       if (/\/views/.test(ctx.request.url)) {
-        await this.handleAuthorization(authorize, ctx)
+        await this.handleAuthorization(authorization, ctx)
       }
       return next()
     })

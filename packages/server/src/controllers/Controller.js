@@ -4,6 +4,7 @@ import multer from 'koa-multer'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
 import ControllerAction from './ControllerAction'
+import MemberAction from './MemberAction'
 import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
@@ -249,6 +250,14 @@ export class Controller {
     }
   }
 
+  /**
+   * Converts the authorize config settings into an authorization function that
+   * can be passed to `handleAuthorization()`.
+   *
+   * @param {boolean|function|string|string[]} authorize the authorize config
+   * settings
+   * @return {function} the authorization function
+   */
   processAuthorize(authorize) {
     if (authorize == null) {
       return () => true
@@ -292,14 +301,14 @@ export class Controller {
     }
   }
 
-  async handleAuthorization(authorize, ...args) {
-    const ok = await authorize(...args)
+  async handleAuthorization(authorization, ...args) {
+    const ok = await authorization(...args)
     if (ok !== true) {
       throw new AuthorizationError()
     }
   }
 
-  setupRoute({ url, verb, authorize, handlers }) {
+  setupRoute(url, verb, authorize, handlers) {
     const authorizeStr = isFunction(authorize)
       ? describeFunction(authorize)
       : isString(authorize)
@@ -333,35 +342,37 @@ export class Controller {
     return actions
   }
 
-  setupAction(type, name, action, authorize) {
+  setupAction(type, name, handler, authorize) {
+    // Custom member actions have their own class so they can fetch the members
+    // ahead of their call.
+    const ActionClass = type === 'member' ? MemberAction : ControllerAction
     this.setupActionRoute(
       type,
-      action.verb || 'get',
-      // Use ?? instead of || to allow '' to override the path.
-      action.path ?? this.app.normalizePath(name),
-      action.authorize || authorize,
-      new ControllerAction(this, action, authorize)
+      new ActionClass(
+        this,
+        handler,
+        'get',
+        // The default path for actions is the normalized name
+        this.app.normalizePath(name),
+        authorize
+      )
     )
   }
 
-  setupActionRoute(type, verb, path, authorize, controllerAction) {
-    this.setupRoute({
-      url: this.getUrl(type, path),
-      verb,
-      authorize,
-      handlers: [
-        async ctx => {
-          try {
-            const res = await controllerAction.callAction(ctx)
-            if (res !== undefined) {
-              ctx.body = res
-            }
-          } catch (err) {
-            throw err instanceof ResponseError ? err : new WrappedError(err)
+  setupActionRoute(type, action) {
+    const url = this.getUrl(type, action.path)
+    this.setupRoute(url, action.verb, action.authorize, [
+      async ctx => {
+        try {
+          const res = await action.callAction(ctx)
+          if (res !== undefined) {
+            ctx.body = res
           }
+        } catch (err) {
+          throw err instanceof ResponseError ? err : new WrappedError(err)
         }
-      ]
-    })
+      }
+    ])
   }
 
   setupUpload() {
@@ -412,32 +423,27 @@ export class Controller {
     const upload = multer({
       storage
     })
-    const authorizeFunc = this.processAuthorize(authorize)
-    this.setupRoute({
-      url,
-      verb: 'post',
-      authorize,
-      handlers: [
-        async (ctx, next) => {
-          await this.handleAuthorization(authorizeFunc, ctx)
-          // Give the multer callbacks access to `ctx` through `req`.
-          ctx.req.ctx = ctx
-          return next()
-        },
+    const authorization = this.processAuthorize(authorize)
+    this.setupRoute(url, 'post', authorize, [
+      async (ctx, next) => {
+        await this.handleAuthorization(authorization, ctx)
+        // Give the multer callbacks access to `ctx` through `req`.
+        ctx.req.ctx = ctx
+        return next()
+      },
 
-        upload.fields([{
-          ...settings,
-          name: dataPath
-        }]),
+      upload.fields([{
+        ...settings,
+        name: dataPath
+      }]),
 
-        async (ctx, next) => {
-          const files = this.app.convertUploads(ctx.req.files[dataPath])
-          await this.app.rememberUploads(this.url, dataPath, files)
-          ctx.body = files
-          return next()
-        }
-      ]
-    })
+      async (ctx, next) => {
+        const files = this.app.convertUploads(ctx.req.files[dataPath])
+        await this.app.rememberUploads(this.url, dataPath, files)
+        ctx.body = files
+        return next()
+      }
+    ])
     return config
   }
 

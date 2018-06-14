@@ -1,10 +1,16 @@
 import { isObject, asArray, isString } from '@ditojs/utils'
 
 export default class ControllerAction {
-  constructor(controller, handler, authorize) {
+  constructor(controller, handler, verb, path, authorize) {
     this.controller = controller
     this.handler = handler
-    this.authorize = controller.processAuthorize(authorize || handler.authorize)
+    // Allow decorators on actions to override the predetermined defaults for
+    // `verb`, `path` and `authorize`:
+    this.verb = handler.verb || verb
+    // Use ?? instead of || to allow '' to override the path.
+    this.path = handler.path ?? path
+    this.authorize = handler.authorize || authorize
+    this.authorization = controller.processAuthorize(this.authorize)
     this.parameters = handler.parameters
     this.returns = handler.returns
     this.app = controller.app
@@ -34,7 +40,8 @@ export default class ControllerAction {
     }
 
     const args = await this.collectArguments(ctx, this.parameters)
-    await this.controller.handleAuthorization(this.authorize, ...args)
+    await this.controller.handleAuthorization(this.authorization, ...args)
+
     const result = await this.handler.call(this.controller, ...args)
     const resultName = this.returns?.name
     // Use 'root' if no name is given, see:

@@ -93,8 +93,8 @@ index() {
 
 ### `@parameters(parameters)`
 
-By default, Dito.js actions receive the full
-[Koa.js `ctx` object](http://koajs.com/#context):
+All Dito.js actions receive the full
+[Koa.js `ctx` object](http://koajs.com/#context) as their first argument:
 
 ```js
 sayHello(ctx) {
@@ -119,7 +119,7 @@ For information on property schema and validation, see
     required: true
   }
 ])
-sayHello(message) {
+sayHello(ctx, message) {
   return `Just sayin' hello: ${message}`
 }
 ```
@@ -143,7 +143,7 @@ the argument, and is validated against its schema:
   type: 'object',
   required: true
 })
-querySomething(query) {
+querySomething(ctx, query) {
   return `Just queryin': ${query}`
 }
 ```
