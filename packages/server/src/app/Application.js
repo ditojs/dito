@@ -44,8 +44,8 @@ export class Application extends Koa {
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
     this.models = Object.create(null)
-    this.controllers = Object.create(null)
     this.services = Object.create(null)
+    this.controllers = Object.create(null)
     this.storage = Object.create(null)
     this.setupMiddleware()
     this.setupKnex()
@@ -55,11 +55,11 @@ export class Application extends Koa {
     if (models) {
       this.addModels(models)
     }
-    if (controllers) {
-      this.addControllers(controllers)
-    }
     if (services) {
       this.addServices(services)
+    }
+    if (controllers) {
+      this.addControllers(controllers)
     }
   }
 
@@ -144,39 +144,6 @@ export class Application extends Koa {
       !name.endsWith('Model') && this.models[`${name}Model`]
   }
 
-  addControllers(controllers, namespace) {
-    for (const [key, value] of Object.entries(controllers)) {
-      if (isPlainObject(value)) {
-        this.addControllers(value, namespace ? `${namespace}/${key}` : key)
-      } else {
-        this.addController(value, namespace)
-      }
-    }
-  }
-
-  addController(controller, namespace) {
-    // Auto-instantiate controller classes:
-    if (Controller.isPrototypeOf(controller)) {
-      // eslint-disable-next-line new-cap
-      controller = new controller(this, namespace)
-    }
-    if (!(controller instanceof Controller)) {
-      throw new Error(`Invalid controller: ${controller}`)
-    }
-    // Inheritance of action methods cannot happen in the constructor itself,
-    // so call separate initialize() method after in order to take care of it.
-    controller.initialize()
-    this.controllers[controller.url] = controller
-    const middleware = controller.compose()
-    if (middleware) {
-      this.use(middleware)
-    }
-  }
-
-  getController(url) {
-    return this.controllers[url]
-  }
-
   addServices(services) {
     for (const [name, service] of Object.entries(services)) {
       // Handle ES6 module weirdness that can happen, apparently:
@@ -221,6 +188,39 @@ export class Application extends Koa {
       Object.values(this.services),
       service => service[method](...args)
     )
+  }
+
+  addControllers(controllers, namespace) {
+    for (const [key, value] of Object.entries(controllers)) {
+      if (isPlainObject(value)) {
+        this.addControllers(value, namespace ? `${namespace}/${key}` : key)
+      } else {
+        this.addController(value, namespace)
+      }
+    }
+  }
+
+  addController(controller, namespace) {
+    // Auto-instantiate controller classes:
+    if (Controller.isPrototypeOf(controller)) {
+      // eslint-disable-next-line new-cap
+      controller = new controller(this, namespace)
+    }
+    if (!(controller instanceof Controller)) {
+      throw new Error(`Invalid controller: ${controller}`)
+    }
+    // Inheritance of action methods cannot happen in the constructor itself,
+    // so call separate initialize() method after in order to take care of it.
+    controller.initialize()
+    this.controllers[controller.url] = controller
+    const middleware = controller.compose()
+    if (middleware) {
+      this.use(middleware)
+    }
+  }
+
+  getController(url) {
+    return this.controllers[url]
   }
 
   setupStorage(config) {
