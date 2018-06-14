@@ -15,6 +15,15 @@ export default class ControllerAction {
     this.returns = handler.returns
     this.app = controller.app
     this.validators = null
+    this.queryName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
+  }
+
+  getQuery(ctx) {
+    return ctx.request[this.queryName]
+  }
+
+  setQuery(ctx, query) {
+    ctx.request[this.queryName] = query
   }
 
   async callAction(ctx) {
@@ -32,8 +41,9 @@ export default class ControllerAction {
       const errors = this.validateParameters(ctx)
       if (errors) {
         throw this.createValidationError({
-          message:
-            `The provided data is not valid: ${JSON.stringify(ctx.query)}`,
+          message: `The provided data is not valid: ${
+            JSON.stringify(this.getQuery(ctx))
+          }`,
           errors
         })
       }
@@ -68,8 +78,8 @@ export default class ControllerAction {
   }
 
   validateParameters(ctx) {
-    const { query } = ctx
-    // NOTE: `validators.parameters(query)` coerces data in `ctx.query` to the
+    const query = this.getQuery(ctx)
+    // NOTE: `validators.parameters(query)` coerces data in the query to the
     // required formats, according to the rules specified here:
     // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
     // Coercion isn't currently offered for `type: 'object'`, so handle this
@@ -99,7 +109,7 @@ export default class ControllerAction {
           if (name) {
             query[name] = converted
           } else {
-            ctx.query = converted
+            this.setQuery(ctx, converted)
           }
         }
       }
@@ -112,7 +122,7 @@ export default class ControllerAction {
 
   collectConsumedArguments(ctx, parameters, consumed) {
     // `consumed` is used in MemberAction.collectArguments()
-    const { query } = ctx
+    const query = this.getQuery(ctx)
     return [
       // Always pass `ctx` as first argument.
       ctx,

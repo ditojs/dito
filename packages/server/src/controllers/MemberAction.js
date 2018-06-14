@@ -13,7 +13,7 @@ export default class MemberAction extends ControllerAction {
     const consumed = parameters && {}
     const args = this.collectConsumedArguments(ctx, parameters, consumed)
     let memberCtx = ctx
-    if (consumed) {
+    if (consumed && this.queryName === 'query') {
       // Create a copy of ctx that inherits from the real one but overrides
       // query with a version that has all consumed query params removed so it
       // can be passed on to `getMember()` which calls `actions.find(ctx)`:
