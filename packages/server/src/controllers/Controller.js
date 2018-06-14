@@ -77,7 +77,9 @@ export class Controller {
 
     const addAction = key => {
       const value = this[key]
-      if (isFunction(value) && !['constructor', 'modelClass'].includes(key)) {
+      // NOTE: Only add instance methods that have a @action() decorator,
+      // which in turn sets the `verb` property on the method:
+      if (isFunction(value) && value.verb) {
         controller[key] = value
       }
     }
