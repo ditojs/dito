@@ -1,4 +1,4 @@
-import { isObject, asArray, isString } from '@ditojs/utils'
+import { isObject } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, verb, path, authorize) {
@@ -11,59 +11,55 @@ export default class ControllerAction {
     this.path = handler.path ?? path
     this.authorize = handler.authorize || authorize
     this.authorization = controller.processAuthorize(this.authorize)
-    this.parameters = handler.parameters
-    this.returns = handler.returns
     this.app = controller.app
-    this.validators = null
-    this.queryName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
+    const { parameters, returns } = this.handler
+    this.parameters = this.app.compileParametersValidator(parameters)
+    this.returns = this.app.compileParametersValidator(returns, {
+      // Use instanceof checks instead of $ref to check returned values.
+      instanceof: true
+    })
+    this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
   }
 
-  getQuery(ctx) {
-    return ctx.request[this.queryName]
+  getParams(ctx) {
+    return ctx.request[this.paramsName]
   }
 
-  setQuery(ctx, query) {
-    ctx.request[this.queryName] = query
+  setParams(ctx, query) {
+    ctx.request[this.paramsName] = query
+  }
+
+  hasQueryParams() {
+    return this.parameters && this.paramsName === 'query'
   }
 
   async callAction(ctx) {
-    if (!this.validators && (this.parameters || this.returns)) {
-      this.validators = {
-        parameters: this.app.compileParametersValidator(this.parameters),
-        returns: this.app.compileParametersValidator(this.returns, {
-          // Use instanceof checks instead of $ref to check returned values.
-          instanceof: true
-        })
-      }
+    const paramsErrors = this.validateParameters(ctx)
+    if (paramsErrors) {
+      throw this.createValidationError({
+        message: `The provided data is not valid: ${
+          JSON.stringify(this.getParams(ctx))
+        }`,
+        errors: paramsErrors
+      })
     }
 
-    if (this.validators) {
-      const errors = this.validateParameters(ctx)
-      if (errors) {
-        throw this.createValidationError({
-          message: `The provided data is not valid: ${
-            JSON.stringify(this.getQuery(ctx))
-          }`,
-          errors
-        })
-      }
-    }
-
-    const args = await this.collectArguments(ctx, this.parameters)
+    const args = await this.collectArguments(ctx)
     await this.controller.handleAuthorization(this.authorization, ...args)
 
     const result = await this.handler.call(this.controller, ...args)
-    const resultName = this.returns?.name
+    const resultName = this.handler.returns?.name
     // Use 'root' if no name is given, see:
     // Application.compileParametersValidator()
     const resultData = {
       [resultName || 'root']: result
     }
     // Use `call()` to pass `result` as context to Ajv, see passContext:
-    if (this.validators && !this.validators.returns.call(result, resultData)) {
+    const resultErrors = this.returns?.validate.call(result, resultData)
+    if (resultErrors) {
       throw this.createValidationError({
         message: `Invalid result of action: ${JSON.stringify(result)}`,
-        errors: this.validators.returns.errors
+        errors: resultErrors
       })
     }
     return resultName ? resultData : result
@@ -78,17 +74,17 @@ export default class ControllerAction {
   }
 
   validateParameters(ctx) {
-    const query = this.getQuery(ctx)
-    // NOTE: `validators.parameters(query)` coerces data in the query to the
+    if (!this.parameters) return null
+    const params = this.getParams(ctx)
+    // NOTE: `parameters.validate(query)` coerces data in the query to the
     // required formats, according to the rules specified here:
     // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
     // Coercion isn't currently offered for `type: 'object'`, so handle this
-    // case prior to the call of `validators.parameters()`:
+    // case prior to the call of `parameters.validate()`:
     const errors = []
-    for (const param of asArray(this.parameters)) {
-      const { name, type } = isString(param) ? { type: param } : param
+    for (const { name, type } of this.parameters.list) {
       if (type === 'object') {
-        const value = name ? query[name] : query
+        const value = name ? params[name] : params
         let converted = value
         if (value && !isObject(value)) {
           try {
@@ -107,37 +103,39 @@ export default class ControllerAction {
         }
         if (converted !== value) {
           if (name) {
-            query[name] = converted
+            params[name] = converted
           } else {
-            this.setQuery(ctx, converted)
+            this.setParams(ctx, converted)
           }
         }
       }
     }
-    if (!this.validators.parameters(query)) {
-      errors.push(...this.validators.parameters.errors)
+    const errs = this.parameters.validate(params)
+    if (errs) {
+      errors.push(...errs)
     }
     return errors.length > 0 ? errors : null
   }
 
-  collectConsumedArguments(ctx, parameters, consumed) {
+  collectConsumedArguments(ctx, consumed) {
     // `consumed` is used in MemberAction.collectArguments()
-    const query = this.getQuery(ctx)
-    return [
-      // Always pass `ctx` as first argument.
-      ctx,
-      ...(parameters?.map(
-        ({ name }) => {
-          if (consumed) {
-            consumed[name] = true
-          }
-          return name ? query[name] : query
+    // Always pass `ctx` as first argument:
+    const args = [ctx]
+    if (this.parameters) {
+      // If we have parameters, add them to the arguments now,
+      // while also keeping track of consumed parameters:
+      const params = this.getParams(ctx)
+      for (const { name } of this.parameters.list) {
+        if (name && consumed) {
+          consumed[name] = true
         }
-      ) || [])
-    ]
+        args.push(name ? params[name] : params)
+      }
+    }
+    return args
   }
 
-  async collectArguments(ctx, parameters) {
-    return this.collectConsumedArguments(ctx, parameters, null)
+  async collectArguments(ctx) {
+    return this.collectConsumedArguments(ctx, null)
   }
 }

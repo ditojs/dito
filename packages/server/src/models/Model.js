@@ -593,15 +593,12 @@ const definitionHandlers = {
         .reverse() // Reverse to go from super-class to sub-class.
         .map(filter => {
           let func
-          let parameters
           if (isFunction(filter)) {
             func = filter
-            parameters = func.parameters
           } else if (isObject(filter)) {
             // Convert QueryFilters to normal filter functions
             const queryFilter = QueryFilters.get(filter.filter)
             if (queryFilter) {
-              parameters = queryFilter.parameters
               const { properties } = filter
               func = properties
                 ? (builder, ...args) => {
@@ -616,6 +613,8 @@ const definitionHandlers = {
                 : (builder, ...args) => {
                   queryFilter(builder, name, ...args)
                 }
+              // Copy over @parameters() settings
+              func.parameters = queryFilter.parameters
             } else {
               throw new ModelError(this,
                 `Invalid filter '${name}': Unknown filter type '${
@@ -625,29 +624,33 @@ const definitionHandlers = {
           }
           // If parameters are defined, wrap the function in a closure that
           // performs parameter validation...
-          if (func && parameters) {
-            const validate = this.app.compileParametersValidator(parameters)
-            return (query, ...args) => {
-              // Convert args to object for validation:
-              const object = {}
-              let index = 0
-              for (const param of parameters) {
-                // Use 'root' if no name is given, see:
-                // Application.compileParametersValidator()
-                object[param?.name || 'root'] = args[index++]
+          if (func) {
+            const { parameters } = func
+            const validator = this.app.compileParametersValidator(parameters)
+            if (validator) {
+              return (query, ...args) => {
+                // Convert args to object for validation:
+                const object = {}
+                let index = 0
+                for (const param of parameters) {
+                  // Use 'root' if no name is given, see:
+                  // Application.compileParametersValidator()
+                  object[param?.name || 'root'] = args[index++]
+                }
+                const errors = validator.validate(object)
+                if (errors) {
+                  throw this.app.createValidationError({
+                    type: 'FilterValidation',
+                    message: `The provided data for query filter '${
+                      name}' is not valid`,
+                    errors: this.app.validator.prefixDataPaths(
+                      errors,
+                      `.${name}`
+                    )
+                  })
+                }
+                return func(query, ...args)
               }
-              if (!validate(object)) {
-                throw this.app.createValidationError({
-                  type: 'FilterValidation',
-                  message:
-                    `The provided data for query filter '${name}' is not valid`,
-                  errors: this.app.validator.prefixDataPaths(
-                    validate.errors,
-                    `.${name}`
-                  )
-                })
-              }
-              return func(query, ...args)
             }
           }
           // ...otherwise use the defined function unmodified.

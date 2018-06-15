@@ -354,22 +354,29 @@ export class Application extends Koa {
     return this.validator.compile(jsonSchema)
   }
 
-  compileParametersValidator(parameters = [], options = {}) {
-    parameters = asArray(parameters)
-    if (parameters.length > 0) {
-      let properties = null
-      for (const param of parameters) {
-        const property = isString(param) ? { type: param } : param
-        const { name, type, ...rest } = property
-        properties = properties || {}
-        properties[name || 'root'] = type ? { type, ...rest } : rest
-      }
-      if (properties) {
-        const jsonSchema = convertSchema(properties, options)
-        return this.compileValidator(jsonSchema)
+  compileParametersValidator(parameters, options = {}) {
+    let properties = null
+    const list = []
+    for (const param of asArray(parameters)) {
+      const schema = isString(param) ? { type: param } : param
+      list.push(schema)
+      const { name, type, ...rest } = schema
+      properties = properties || {}
+      // TODO: Is the type distinction even needed???
+      properties[name || 'root'] = type ? { type, ...rest } : rest
+    }
+    if (properties) {
+      const jsonSchema = convertSchema(properties, options)
+      const validate = this.compileValidator(jsonSchema)
+      return {
+        list,
+        validate(data) {
+          // Returns `null` if successful, `validate.errors` otherwise.
+          // Use `call()` to pass `result` as context to Ajv, see passContext:
+          return validate.call(this, data) ? null : validate.errors
+        }
       }
     }
-    return () => true
   }
 
   createValidationError({ type, message, errors, options }) {
