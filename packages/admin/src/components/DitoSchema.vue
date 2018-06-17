@@ -19,6 +19,7 @@
       dito-components.dito-tab-components(
         v-for="(tabSchema, key) in tabs"
         v-show="selectedTab === key"
+        ref="components"
         :key="key"
         :tab="key"
         :schema="tabSchema"
@@ -31,6 +32,7 @@
       )
       dito-components.dito-main-components(
         v-if="schema.components"
+        ref="mainComponents"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
@@ -95,8 +97,11 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import MountedMixin from '@/mixins/MountedMixin'
 
 export default DitoComponent.component('dito-schema', {
+  mixins: [MountedMixin],
+
   props: {
     schema: { type: Object },
     dataPath: { type: String, default: '' },
@@ -110,6 +115,21 @@ export default DitoComponent.component('dito-schema', {
   },
 
   computed: {
+    components() {
+      // Return a dictionary of all components that are part of this schema,
+      // both in tabs and outside of them.
+      const components = {}
+      if (this.isMounted) {
+        for (const comp of [
+          ...(this.$refs.components || []),
+          this.$refs.mainComponents
+        ]) {
+          Object.assign(components, comp?.components)
+        }
+      }
+      return components
+    },
+
     tabs() {
       return this.schema?.tabs
     },

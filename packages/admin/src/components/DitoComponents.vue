@@ -1,9 +1,9 @@
 <template lang="pug">
   ul.dito-components(
-    v-if="components"
+    v-if="componentSchemas"
   )
     li.dito-component-container(
-      v-for="(compSchema, compDataPath) in components"
+      v-for="(compSchema, compDataPath) in componentSchemas"
       v-if="shouldRender(compSchema)"
       v-show="isVisible(compSchema)"
       :style="getStyle(compSchema)"
@@ -16,6 +16,7 @@
       )
       component.dito-component(
         :is="getTypeComponent(compSchema.type)"
+        ref="components"
         :schema="compSchema"
         :dataPath="compDataPath"
         :data="data"
@@ -62,8 +63,10 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import MountedMixin from '@/mixins/MountedMixin'
 
 export default DitoComponent.component('dito-components', {
+  mixins: [MountedMixin],
   inject: ['$validator'],
 
   props: {
@@ -78,7 +81,7 @@ export default DitoComponent.component('dito-components', {
   },
 
   computed: {
-    components() {
+    componentSchemas() {
       // Compute a components list which has the dataPath baked into its keys
       // and adds the key as the name to each component, used for labels, etc.
       const {
@@ -87,14 +90,26 @@ export default DitoComponent.component('dito-components', {
         // because only the avialble data will determine the type of form.
         schema = {}
       } = this
-      const components = {}
+      const schemas = {}
       for (const [name, component] of Object.entries(schema.components || {})) {
-        components[dataPath ? `${dataPath}/${name}` : name] = {
+        schemas[dataPath ? `${dataPath}/${name}` : name] = {
           name,
           ...component
         }
       }
-      return components
+      return schemas
+    },
+
+    components() {
+      // Return a dictionary of all components that are part of this schema.
+      // We need `isMounted` and MountedMixin to only access `$refs` when they
+      // are ready, see: https://stackoverflow.com/questions/43531755
+      return this.isMounted
+        ? this.$refs.components.reduce((components, comp) => {
+          components[comp.dataPath] = comp
+          return components
+        }, {})
+        : {}
     }
   },
 

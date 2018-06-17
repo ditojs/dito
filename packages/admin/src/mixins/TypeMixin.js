@@ -23,33 +23,6 @@ export default {
     }
   },
 
-  // Register and unregister all type components on their parent forms for easy
-  // lookup.
-  created() {
-    const { routeComponent, dataRouteComponent, dataPath } = this
-    if (routeComponent) {
-      routeComponent.components[dataPath] = this
-      // If this component is nested, also register its components with the root
-      // route component.
-      // This is needed for processValue() to be able to correctly process all
-      // nested data, even if the nested form was already closed on submit.
-      if (dataRouteComponent !== routeComponent) {
-        dataRouteComponent.components[dataPath] = this
-      }
-    }
-  },
-
-  destroyed() {
-    // Perform the reverse of `created()`:
-    const { routeComponent, dataRouteComponent, dataPath } = this
-    if (routeComponent) {
-      delete routeComponent.components[dataPath]
-      if (dataRouteComponent !== routeComponent) {
-        delete dataRouteComponent.components[dataPath]
-      }
-    }
-  },
-
   computed: {
     name() {
       return this.schema.name

@@ -14,6 +14,7 @@
       div Inherited {{ `${inheritedData}` }}
       div Loaded {{ `${loadedData}` }}
     dito-schema.dito-scroll(
+      ref="schema"
       :schema="schema"
       :dataPath="dataPath"
       :data="data || {}"
@@ -63,13 +64,14 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
+import MountedMixin from '@/mixins/MountedMixin'
 import { isObjectSource } from '@/utils/schema'
 import {
   isArray, isObject, clone, capitalize, parseDataPath, deepMerge
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [DataMixin, RouteMixin],
+  mixins: [DataMixin, RouteMixin, MountedMixin],
 
   data() {
     return {
@@ -120,6 +122,18 @@ export default DitoComponent.component('dito-form', {
 
     sourceSchema() {
       return this.meta.schema
+    },
+
+    components() {
+      const components = {}
+      if (this.isMounted) {
+        Object.assign(components, this.$refs.schema.components)
+      }
+      // Also merge in all components of nested forms
+      for (const form of this.nestedFormComponents) {
+        Object.assign(components, form.components)
+      }
+      return components
     },
 
     isActive() {
@@ -328,7 +342,7 @@ export default DitoComponent.component('dito-form', {
     addSourceData(data) {
       return isObjectSource(this.sourceSchema)
         ? this.setSourceData(data)
-        : this.sourceData?.push(data) || false
+        : !!this.sourceData?.push(data)
     },
 
     filterData(data) {

@@ -1,6 +1,7 @@
 export default {
   data() {
     return {
+      // TODO: Rename to `isLoading`
       loading: false
     }
   },
