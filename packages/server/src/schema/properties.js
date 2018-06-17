@@ -44,14 +44,14 @@ export function convertSchema(schema, options = {}) {
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
         // date properties can be submitted both as a string or a Date object.
-        // Provide validation through date-time format, which in AJV appears
+        // Provide validation through date-time format, which in Ajv appears
         // to handle both types correctly.
         schema.type = ['string', 'object']
         schema = addFormat(schema, 'date-time')
       } else {
         // A reference to another model as nested JSON data, use $ref or
         // instanceof instead of type, based on the passed option:
-        if (options.instanceof) {
+        if (options.useInstanceOf) {
           schema.type = 'object'
           schema.instanceof = type
         } else {

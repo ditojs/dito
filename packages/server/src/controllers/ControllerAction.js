@@ -12,11 +12,12 @@ export default class ControllerAction {
     this.authorize = handler.authorize || authorize
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
-    const { parameters, returns } = this.handler
-    this.parameters = this.app.compileParametersValidator(parameters)
+    const { parameters, returns, options } = this.handler
+    this.parameters = this.app.compileParametersValidator(parameters, options)
     this.returns = this.app.compileParametersValidator(returns, {
       // Use instanceof checks instead of $ref to check returned values.
-      instanceof: true
+      useInstanceOf: true,
+      ...options
     })
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
   }

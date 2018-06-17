@@ -350,8 +350,8 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  compileValidator(jsonSchema) {
-    return this.validator.compile(jsonSchema)
+  compileValidator(jsonSchema, options) {
+    return this.validator.compile(jsonSchema, options)
   }
 
   compileParametersValidator(parameters, options = {}) {
@@ -367,7 +367,10 @@ export class Application extends Koa {
     }
     if (properties) {
       const jsonSchema = convertSchema(properties, options)
-      const validate = this.compileValidator(jsonSchema)
+      const validate = this.compileValidator(jsonSchema, {
+        coerceTypes: 'array',
+        ...options.validator
+      })
       return {
         list,
         validate(data) {

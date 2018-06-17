@@ -120,7 +120,7 @@ To highlight a few details, particularly the validation keywords in the `email`
 and `age` property:
 
 - The `format: 'email'` is a standard JSON schema format, supported by the
-  [AJV](https://github.com/epoberezkin/ajv) validation library which Dito.js
+  [Ajv](https://github.com/epoberezkin/ajv) validation library which Dito.js
   uses for validation.
 - The `range: [0, 100]` is a custom keyword that Dito.js adds to its validator
   by default.

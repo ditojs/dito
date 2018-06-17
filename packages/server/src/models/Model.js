@@ -624,33 +624,33 @@ const definitionHandlers = {
           }
           // If parameters are defined, wrap the function in a closure that
           // performs parameter validation...
-          if (func) {
-            const { parameters } = func
-            const validator = this.app.compileParametersValidator(parameters)
-            if (validator) {
-              return (query, ...args) => {
-                // Convert args to object for validation:
-                const object = {}
-                let index = 0
-                for (const param of parameters) {
-                  // Use 'root' if no name is given, see:
-                  // Application.compileParametersValidator()
-                  object[param?.name || 'root'] = args[index++]
-                }
-                const errors = validator.validate(object)
-                if (errors) {
-                  throw this.app.createValidationError({
-                    type: 'FilterValidation',
-                    message: `The provided data for query filter '${
-                      name}' is not valid`,
-                    errors: this.app.validator.prefixDataPaths(
-                      errors,
-                      `.${name}`
-                    )
-                  })
-                }
-                return func(query, ...args)
+          const validator = func && this.app.compileParametersValidator(
+            func.parameters,
+            func.options
+          )
+          if (validator) {
+            return (query, ...args) => {
+              // Convert args to object for validation:
+              const object = {}
+              let index = 0
+              for (const { name } of validator.list) {
+                // Use 'root' if no name is given, see:
+                // Application.compileParametersValidator()
+                object[name || 'root'] = args[index++]
               }
+              const errors = validator.validate(object)
+              if (errors) {
+                throw this.app.createValidationError({
+                  type: 'FilterValidation',
+                  message:
+                    `The provided data for query filter '${name}' is not valid`,
+                  errors: this.app.validator.prefixDataPaths(
+                    errors,
+                    `.${name}`
+                  )
+                })
+              }
+              return func(query, ...args)
             }
           }
           // ...otherwise use the defined function unmodified.

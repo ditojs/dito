@@ -4,9 +4,9 @@ import { isArray, isObject, clone } from '@ditojs/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
-// validator instance that is shared across the whole app and  handles schema
+// validator instance that is shared across the whole app and handles schema
 // compilation and caching differently:
-// It relies on AJV's addSchema() / getSchema() pattern in conjunction with the
+// It relies on Ajv's addSchema() / getSchema() pattern in conjunction with the
 // `schemaId: '$id'` option, and each schema is assigned an $id based on the
 // model class name. That way, schemas can reference each other, and they can
 // easily validate nested structures.
@@ -28,49 +28,73 @@ export class Validator extends objection.Validator {
       ...options
     }
 
-    const createAjv = options => {
-      const ajv = new Ajv(options)
-      addKeywords(ajv, clearOverrides(schema.keywords, keywords))
-      addFormats(ajv, clearOverrides(schema.formats, formats))
-      addKeywords(ajv, keywords)
-      addFormats(ajv, formats)
-      return ajv
+    this.keywords = {
+      ...schema.keywords,
+      ...keywords
     }
 
-    // Create a shared Ajv validator instance that is used for validation in
-    // remote methods and other validations outside Objection.
-    // NOTE: Use `coerceTypes: 'array'` option for controllers / actions.
-    this.ajv = createAjv({
-      ...this.options,
-      coerceTypes: 'array'
-    })
-
-    // Create a Ajv instance that sets default values.
-    this.ajvDefaults = createAjv({
-      ...this.options,
-      useDefaults: true
-    })
-
-    // Create an Ajv instance that doesn't set default values. We need this one
-    // to validate `patch` objects (objects that have a subset of properties).
-    this.ajvNoDefaults = createAjv({
-      ...this.options,
-      useDefaults: false
-    })
-
-    // Also keep the merged format definitions for getFormat()
     this.formats = {
       ...schema.formats,
       ...formats
     }
+
+    this.schemas = []
+
+    // Ajv instance that uses default values, used for most model validation.
+    this.ajvDefaults = this.createAjv({
+      useDefaults: true
+    })
+
+    // Ajv instance that doesn't use default values, needed to validate `patch`
+    // objects (objects that have a subset of properties).
+    this.ajvNoDefaults = this.createAjv({
+      useDefaults: false
+    })
+
+    // Dictionary to hold additionally created Ajv instances, using the
+    // stringified options with which they were created as their keys.
+    this.ajvs = {}
   }
 
-  compile(jsonSchema) {
-    return this.ajv.compile(jsonSchema)
+  createAjv(options) {
+    const ajv = new Ajv({
+      ...this.options,
+      ...options
+    })
+
+    const add = (schemas, method) => {
+      for (const [name, schema] of Object.entries(schemas)) {
+        if (schema) {
+          // Ajv appears to not copy the schema before modifying it,
+          // so let's make shallow clones here.
+          // Remove leading '_' to simplify special keywords (e.g. instanceof)
+          ajv[method](name.replace(/^_/, ''), { ...schema })
+        }
+      }
+    }
+
+    add(this.keywords, 'addKeyword')
+    add(this.formats, 'addFormat')
+
+    // Also add all model schemas that were already compiled so far.
+    for (const schema of this.schemas) {
+      ajv.addSchema(schema)
+    }
+
+    return ajv
+  }
+
+  getAjv(options = {}) {
+    const key = JSON.stringify(options)
+    return this.ajvs[key] || (this.ajvs[key] = this.createAjv(options))
+  }
+
+  compile(jsonSchema, options) {
+    return this.getAjv(options).compile(jsonSchema)
   }
 
   getKeyword(keyword) {
-    return this.ajv.getKeyword(keyword)
+    return this.keywords[keyword]
   }
 
   getFormat(format) {
@@ -78,17 +102,21 @@ export class Validator extends objection.Validator {
   }
 
   addSchema(jsonSchema) {
-    this.ajv.addSchema(jsonSchema)
+    this.schemas.push(jsonSchema)
     this.ajvDefaults.addSchema(jsonSchema)
     // Remove required fields from schema.
     this.ajvNoDefaults.addSchema({ ...jsonSchema, required: [] })
+    // Add schema also to all other already created Ajv instances,
+    // so they can reference models as well.
+    for (const ajv of Object.values(this.ajvs)) {
+      ajv.addSchema(jsonSchema)
+    }
   }
 
   parseErrors(errors, options) {
     // Convert from Ajv errors array to Objection-style errorHash,
     // with additional parsing and processing.
     const errorHash = {}
-    // Ajv produces duplicate validation errors sometimes, filter them out here.
     const duplicates = {}
     for (const error of errors) {
       // Adjust dataPaths to reflect nested validation in Objection.
@@ -97,20 +125,21 @@ export class Validator extends objection.Validator {
       // so replace those with dot-notation, see:
       // https://github.com/epoberezkin/ajv/issues/671
       const key = dataPath.replace(/\['([^']*)'\]/g, '.$1').substring(1)
-      let { message, keyword, params } = error
-      // Allow custom formats and keywords to override error messages
+      const { message, keyword, params } = error
       const definition = keyword === 'format'
         ? this.getFormat(params.format)
         : this.getKeyword(keyword)
-      if (definition?.macro) {
-        // Skip keywords that are only delegating to other keywords.
-        continue
-      }
-      message = definition?.message || message
+      // Ajv produces duplicate validation errors sometimes, filter them out.
+      // Also skip keywords that are only delegating to other keywords.
       const identifier = `${key}_${keyword}`
-      if (!duplicates[identifier]) {
+      if (!duplicates[identifier] || !definition?.macro) {
         const array = errorHash[key] || (errorHash[key] = [])
-        array.push({ message, keyword, params })
+        array.push({
+          // Allow custom formats and keywords to override error messages.
+          message: definition?.message || message,
+          keyword,
+          params
+        })
         duplicates[identifier] = true
       }
     }
@@ -184,39 +213,4 @@ function hasDefaults(obj) {
     }
   }
   return false
-}
-
-function addKeywords(ajv, keywords = {}) {
-  for (const [keyword, schema] of Object.entries(keywords)) {
-    if (schema) {
-      // Ajv appears to not copy the schema before modifying it,
-      // so let's make shallow clones here.
-      // Remove leading '_' to simplify special keywords (e.g. instanceof)
-      ajv.addKeyword(keyword.replace(/^_/, ''), { ...schema })
-    }
-  }
-}
-
-function addFormats(ajv, formats = {}) {
-  for (const [format, schema] of Object.entries(formats)) {
-    if (schema) {
-      // See addKeywords() for explanation of regexp and copying here:
-      ajv.addFormat(format.replace(/^_/, ''), { ...schema })
-    }
-  }
-}
-
-function clearOverrides(defaults, overrides) {
-  // Create a new version of `defaults` where all values defined in
-  // `overrides` are set to null, so they can be redefined after without
-  // causing errors. This allows apps to override default keywords and
-  // formats with their own definitions, while still use the not-touched
-  // default formats and keywords in their metaSchema definitions.
-  return {
-    ...defaults,
-    ...Object.keys(overrides).reduce((cleared, key) => {
-      cleared[key] = null
-      return cleared
-    }, {})
-  }
 }
