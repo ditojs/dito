@@ -25,6 +25,7 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
+    "@babel/runtime": "^7.0.0-beta.51",
     "@ditojs/ui": "^0.8.4",
     "@ditojs/utils": "^0.8.4",
     "axios": "^0.18.0",

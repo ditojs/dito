@@ -11,6 +11,7 @@
     }]
   ],
   "plugins": [
+    "@babel/plugin-transform-runtime",
     "dynamic-import-node-babel-7",
     ["module-resolver", {
       "cwd": "babelrc",
