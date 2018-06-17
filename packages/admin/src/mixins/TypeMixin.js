@@ -40,9 +40,13 @@ export default {
   },
 
   destroyed() {
-    const form = this.formComponent
-    if (form) {
-      delete form.components[this.dataPath]
+    // Perform the reverse of `created()`:
+    const { routeComponent, dataRouteComponent, dataPath } = this
+    if (routeComponent) {
+      delete routeComponent.components[dataPath]
+      if (dataRouteComponent !== routeComponent) {
+        delete dataRouteComponent.components[dataPath]
+      }
     }
   },
 
