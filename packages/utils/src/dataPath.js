@@ -2,7 +2,7 @@ import { isArray } from './base'
 
 export function parseDataPath(path) {
   return isArray(path)
-    ? path
+    ? [...path] // Alway return new arrays (clones).
     : path
       // Convert from JavaScript property access notation to JSON pointers:
       .replace(/\.([^.]*)/g, '/$1')

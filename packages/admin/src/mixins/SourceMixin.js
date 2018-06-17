@@ -325,7 +325,7 @@ export default {
     },
 
     navigateToComponent(dataPath, onComplete) {
-      const dataPathParts = [...parseDataPath(dataPath)]
+      const dataPathParts = parseDataPath(dataPath)
       // Use collection/id pairs (even numbers of parts) to determine the route.
       // What's left is the property dataPath, and will be handled by the form.
       const property = dataPathParts.length & 1 ? dataPathParts.pop() : null
