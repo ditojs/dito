@@ -5,7 +5,7 @@ import {
 } from '@ditojs/utils'
 
 export default {
-  inject: ['api'],
+  inject: ['api', 'parentSchema'],
 
   data() {
     return {
@@ -146,14 +146,8 @@ export default {
       return !!schema && this.getSchemaValue('if', true, schema) ?? true
     },
 
-    appendDataPath(dataPath = '', token) {
-      return dataPath !== ''
-        ? `${dataPath}/${token}`
-        : token
-    },
-
-    getFormComponent(dataPathOrKey) {
-      return this.formComponent.getComponent(dataPathOrKey)
+    getComponent(dataPathOrKey) {
+      return this.parentSchema.getComponent(dataPathOrKey)
     },
 
     showDialog(options, config) {

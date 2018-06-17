@@ -20,8 +20,11 @@ export default {
         const value = isArray(this.value)
           ? this.value.map(convert)
           : convert(this.value)
-        if (this.relate && this.hasOptions() &&
-            this.formComponent.isReference(this.value)) {
+        if (
+          this.relate &&
+          this.hasOptions() &&
+          this.parentSchema.isReference(this.value)
+        ) {
           // When relating, and as soon as the options are available, replace
           // the original, shallow value with its option version, so that it'll
           // hold actually data, not just an reference id.
@@ -122,7 +125,7 @@ export default {
           // we're currently editing.
           for (const option of options) {
             if (!('id' in option)) {
-              this.formComponent.setTemporaryId(option)
+              this.parentSchema.setTemporaryId(option)
             }
           }
         }

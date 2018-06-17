@@ -63,10 +63,8 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import MountedMixin from '@/mixins/MountedMixin'
 
 export default DitoComponent.component('dito-components', {
-  mixins: [MountedMixin],
   inject: ['$validator'],
 
   props: {
@@ -98,18 +96,6 @@ export default DitoComponent.component('dito-components', {
         }
       }
       return schemas
-    },
-
-    components() {
-      // Return a dictionary of all components that are part of this schema.
-      // We need `isMounted` and MountedMixin to only access `$refs` when they
-      // are ready, see: https://stackoverflow.com/questions/43531755
-      return this.isMounted
-        ? this.$refs.components.reduce((components, comp) => {
-          components[comp.dataPath] = comp
-          return components
-        }, {})
-        : {}
     }
   },
 

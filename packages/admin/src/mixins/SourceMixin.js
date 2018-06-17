@@ -338,9 +338,9 @@ export default {
             onComplete(route, property)
           }
         })
-      } else {
-        throw new Error(`Cannot find component for field ${dataPath}.`)
+        return true
       }
+      return false
     }
   }, // end of `methods`
 

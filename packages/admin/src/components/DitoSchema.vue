@@ -97,11 +97,9 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import MountedMixin from '@/mixins/MountedMixin'
+import { isObject, isArray, parseDataPath } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-schema', {
-  mixins: [MountedMixin],
-
   props: {
     schema: { type: Object },
     dataPath: { type: String, default: '' },
@@ -114,22 +112,20 @@ export default DitoComponent.component('dito-schema', {
     menuHeader: { type: Boolean, default: false }
   },
 
-  computed: {
-    components() {
-      // Return a dictionary of all components that are part of this schema,
-      // both in tabs and outside of them.
-      const components = {}
-      if (this.isMounted) {
-        for (const comp of [
-          ...(this.$refs.components || []),
-          this.$refs.mainComponents
-        ]) {
-          Object.assign(components, comp?.components)
-        }
-      }
-      return components
-    },
+  data() {
+    return {
+      components: {},
+      temporaryId: 0
+    }
+  },
 
+  provide() {
+    return {
+      parentSchema: this
+    }
+  },
+
+  computed: {
     tabs() {
       return this.schema?.tabs
     },
@@ -141,6 +137,174 @@ export default DitoComponent.component('dito-schema', {
 
     clipboard() {
       return this.schema?.clipboard
+    },
+
+    clipboardData() {
+      return this.processData({
+        removeIds: true
+      })
+    }
+  },
+
+  methods: {
+    registerComponent(comp, register) {
+      if (register) {
+        this.$set(this.components, comp.dataPath, comp)
+      } else {
+        this.$delete(this.components, comp.dataPath)
+      }
+      // Hierarchically loop up the nested schema chain
+      // and register components with all parents.
+      this.parentSchema?.registerComponent(comp, register)
+    },
+
+    getComponent(dataPathOrKey) {
+      if (isArray(dataPathOrKey)) {
+        dataPathOrKey = dataPathOrKey.join('/')
+      }
+      // See if the argument starts with this form's dataPath. If not, then it's
+      // a key or subDataPath and needs to be prepended with the full path:
+      const dataPath = !dataPathOrKey.startsWith(this.dataPath)
+        ? this.appendDataPath(this.dataPath, dataPathOrKey)
+        : dataPathOrKey
+      return this.components[dataPath] || null
+    },
+
+    focus(dataPathOrKey) {
+      this.getComponent(dataPathOrKey)?.focus()
+    },
+
+    addErrors(errors, focus) {
+      for (const [dataPath, errs] of Object.entries(errors)) {
+        const component = this.getComponent(dataPath)
+        if (component) {
+          component.addErrors(errs, focus)
+        } else {
+          throw new Error(`Cannot add errors for field ${dataPath}: ${
+            JSON.stringify(errors)}`)
+        }
+      }
+    },
+
+    showErrors(errors, focus) {
+      let first = true
+      for (const [dataPath, errs] of Object.entries(errors)) {
+        // Convert from JavaScript property access notation, to our own form
+        // of relative JSON pointers as data-paths:
+        const dataPathParts = parseDataPath(dataPath)
+        const component = this.getComponent(dataPathParts)
+        if (component) {
+          component.addErrors(errs, first && focus)
+        } else {
+          // Couldn't find a component in an active form for the given dataPath.
+          // See if we have a component serving a part of the dataPath, and take
+          // it from there:
+          let found = false
+          while (!found && dataPathParts.length > 1) {
+            // Keep removing the last part until we find a match.
+            dataPathParts.pop()
+            const component = this.getComponent(dataPathParts)
+            if (component?.navigateToErrors(dataPath, errs)) {
+              found = true
+            }
+          }
+          if (!found) {
+            throw new Error(
+              `Cannot find component for field ${dataPath}, errors: ${
+                JSON.stringify(errs)}`)
+          }
+        }
+        first = false
+      }
+      return !first
+    },
+
+    filterData(data) {
+      // Filters out arrays that aren't considered nested data, as those are
+      // already taking care of themselves through their own end-points and
+      // shouldn't be set.
+      const copy = {}
+      for (const [key, value] of Object.entries(data)) {
+        if (isArray(value)) {
+          const component = this.getComponent(key)
+          // Only check for isNested on source items that actually load data,
+          // since other components can have array values too.
+          if (component && component.isSource && !component.isNested) {
+            continue
+          }
+        }
+        copy[key] = value
+      }
+      return copy
+    },
+
+    processData(options = {}) {
+      const {
+        processIds = false,
+        removeIds = false
+      } = options
+      // @ditojs/server specific handling of relates within graphs:
+      // Find entries with temporary ids, and convert them to #id / #ref pairs.
+      // Also handle items with relate and convert them to only contain ids.
+      const process = (data, dataPath = '') => {
+        // First, see if there's an associated component requiring processing.
+        // See TypeMixin.processValue(), OptionsMixin.processValue():
+        const component = this.getComponent(dataPath)
+        if (component) {
+          data = component.processValue(data, dataPath)
+        }
+        // Special handling is required for temporary ids when procssing non
+        // transient data: Replace id with #id, so '#ref' can be used for
+        // relates, see OptionsMixin:
+        if (!this.isTransient && processIds && this.hasTemporaryId(data)) {
+          const { id, ...rest } = data
+          // A refeference is a shallow copy that hold nothing more than ids.
+          // Use #ref instead of #id for these:
+          data = this.isReference(data)
+            ? { '#ref': id }
+            : { '#id': id, ...rest }
+        }
+        if (isObject(data) || isArray(data)) {
+          // Use reduce() for both arrays and objects thanks to Object.entries()
+          data = Object.entries(data).reduce(
+            (processed, [key, entry]) => {
+              const value = process(entry, this.appendDataPath(dataPath, key))
+              if (value !== undefined) {
+                processed[key] = value
+              }
+              return processed
+            },
+            isArray(data) ? [] : {}
+          )
+        }
+        if (removeIds && data?.id) {
+          delete data.id
+        }
+        return data
+      }
+
+      return process(this.data, this.dataPath)
+    },
+
+    appendDataPath(dataPath = '', token) {
+      return dataPath !== ''
+        ? `${dataPath}/${token}`
+        : token
+    },
+
+    hasTemporaryId(data) {
+      return /^@/.test(data?.id)
+    },
+
+    setTemporaryId(data) {
+      // Temporary ids are marked with a '@' at the beginning.
+      data.id = `@${++this.temporaryId}`
+    },
+
+    isReference(data) {
+      // Returns true if value is an object that holds nothing more than an id.
+      const keys = data && Object.keys(data)
+      return keys?.length === 1 && keys[0] === 'id'
     }
   }
 })

@@ -99,7 +99,8 @@ export default class DitoAdmin {
         options
       },
       provide: {
-        api
+        api,
+        parentSchema: null
       },
       template: '<dito-root :views="views" :options="options" />'
     })

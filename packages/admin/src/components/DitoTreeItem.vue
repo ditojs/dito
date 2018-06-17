@@ -136,9 +136,9 @@ $tree-indent: 1.2em
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { isFunction } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { hasForms } from '@/utils/schema'
+import { isFunction } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-tree-item', {
   mixins: [OrderedMixin],
@@ -255,7 +255,7 @@ export default DitoComponent.component('dito-tree-item', {
         // Build a children list with child meta information for the template.
         return this.childrenList?.map((data, index) => {
           const path = children.path && `${this.path}/${children.path}/${index}`
-          const dataPath = this.appendDataPath(
+          const dataPath = this.parentSchema.appendDataPath(
             this.dataPath,
             `${children.name}/${index}`
           )

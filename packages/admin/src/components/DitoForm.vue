@@ -64,14 +64,13 @@
 import DitoComponent from '@/DitoComponent'
 import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
-import MountedMixin from '@/mixins/MountedMixin'
 import { isObjectSource } from '@/utils/schema'
 import {
-  isArray, isObject, clone, capitalize, parseDataPath, deepMerge
+  isObject, clone, capitalize, parseDataPath, deepMerge
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [DataMixin, RouteMixin, MountedMixin],
+  mixins: [DataMixin, RouteMixin],
 
   data() {
     return {
@@ -81,8 +80,7 @@ export default DitoComponent.component('dito-form', {
       isForm: true,
       loadCache: {}, // See TypeMixin.load()
       formTag: 'form',
-      formClass: null,
-      temporaryId: 0
+      formClass: null
     }
   },
 
@@ -92,17 +90,14 @@ export default DitoComponent.component('dito-form', {
     create: 'initData'
   },
 
-  created() {
+  mounted() {
     // Errors can get passed on through the meta object, so add them now.
-    // See TypeMixin.showErrors()
+    // See TypeMixin.navigateToErrors()
     const { meta } = this
-    const { errors } = meta
-    if (errors) {
-      delete meta.errors
+    if (meta.errors) {
       // Add the errors after initialization of $validator
-      this.$nextTick(() => {
-        this.addErrors(errors, true)
-      })
+      this.$refs.schema.addErrors(meta.errors, true)
+      delete meta.errors
     }
   },
 
@@ -122,18 +117,6 @@ export default DitoComponent.component('dito-form', {
 
     sourceSchema() {
       return this.meta.schema
-    },
-
-    components() {
-      const components = {}
-      if (this.isMounted) {
-        Object.assign(components, this.$refs.schema.components)
-      }
-      // Also merge in all components of nested forms
-      for (const form of this.nestedFormComponents) {
-        Object.assign(components, form.components)
-      }
-      return components
     },
 
     isActive() {
@@ -276,12 +259,6 @@ export default DitoComponent.component('dito-form', {
       return this.clonedData
     },
 
-    clipboardData() {
-      return this.processData({
-        removeIds: true
-      })
-    },
-
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see computed data():
@@ -289,6 +266,8 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
+      // TODO: Consider adding isDirty() to TypeMixin for each component and
+      // DitoSchema, for easer version of this, without nestedFormComponents.
       for (const form of [this, ...this.nestedFormComponents]) {
         if (!form.doesMutate && Object.keys(form.$fields).some(
           key => form.$fields[key].dirty)
@@ -308,18 +287,6 @@ export default DitoComponent.component('dito-form', {
         .substring((route.isView ? 0 : route.path.length) + 1))
     },
 
-    getComponent(dataPathOrKey) {
-      if (isArray(dataPathOrKey)) {
-        dataPathOrKey = dataPathOrKey.join('/')
-      }
-      // See if the argument starts with this form's dataPath. If not, then it's
-      // a key or subDataPath and needs to be prepended with the full path:
-      const dataPath = !dataPathOrKey.startsWith(this.dataPath)
-        ? this.appendDataPath(this.dataPath, dataPathOrKey)
-        : dataPathOrKey
-      return this.components[dataPath] || null
-    },
-
     // @override DataMixin.initData()
     initData() {
       if (this.create) {
@@ -333,7 +300,11 @@ export default DitoComponent.component('dito-form', {
 
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
-        this.$set(this.sourceData, this.sourceKey, this.filterData(data))
+        this.$set(
+          this.sourceData,
+          this.sourceKey,
+          this.$refs.schema.filterData(data)
+        )
         return true
       }
       return false
@@ -343,25 +314,6 @@ export default DitoComponent.component('dito-form', {
       return isObjectSource(this.sourceSchema)
         ? this.setSourceData(data)
         : !!this.sourceData?.push(data)
-    },
-
-    filterData(data) {
-      // Filters out arrays that aren't considered nested data, as those are
-      // already taking care of themselves through their own end-points and
-      // shouldn't be set.
-      const copy = {}
-      for (const [key, value] of Object.entries(data)) {
-        if (isArray(value)) {
-          const component = this.getComponent(key)
-          // Only check for isNested on source items that actually load data,
-          // since other components can have array values too.
-          if (component && component.isSource && !component.isNested) {
-            continue
-          }
-        }
-        copy[key] = value
-      }
-      return copy
     },
 
     setData(data) {
@@ -381,22 +333,6 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    addErrors(errors, focus) {
-      for (const [dataPath, errs] of Object.entries(errors || {})) {
-        const component = this.getComponent(dataPath)
-        if (component) {
-          component.addErrors(errs, focus)
-        } else {
-          throw new Error(`Cannot add errors for field ${dataPath}: ${
-            JSON.stringify(errors)}`)
-        }
-      }
-    },
-
-    focus(dataPath) {
-      this.getComponent(dataPath)?.focus()
-    },
-
     notifyValidationErrors() {
       this.notify('error', 'Validation Errors',
         'Please correct the highlighted errors.')
@@ -410,7 +346,7 @@ export default DitoComponent.component('dito-form', {
       if (await this.$validator.validateAll()) {
         this.submit(button)
       } else {
-        this.focus(this.$errors.items[0].field)
+        this.$refs.schema.focus(this.$errors.items[0].field)
         this.notifyValidationErrors()
       }
     },
@@ -451,9 +387,8 @@ export default DitoComponent.component('dito-form', {
         ? this.getItemLabel(this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
-      const payload = ['post', 'patch'].includes(method) && this.processData({
-        processIds: true
-      })
+      const payload = ['post', 'patch'].includes(method) &&
+        this.$refs.schema.processData({ processIds: true })
       if (payload && this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
         // with transient objects. When editing nested transient, nothing needs
@@ -489,7 +424,7 @@ export default DitoComponent.component('dito-form', {
             const errors = this.hasValidationError(response) && data.errors
             if (errors) {
               try {
-                if (this.showErrors(errors, true)) {
+                if (this.$refs.schema.showErrors(errors, true)) {
                   this.notifyValidationErrors()
                 }
               } catch (err) {
@@ -527,103 +462,6 @@ export default DitoComponent.component('dito-form', {
           return true // Errors were already handled.
         })
       }
-    },
-
-    setTemporaryId(data) {
-      // Temporary ids are marked with a '@' at the beginning.
-      data.id = `@${++this.temporaryId}`
-    },
-
-    hasTemporaryId(data) {
-      return /^@/.test(data?.id)
-    },
-
-    isReference(data) {
-      // Returns true if value is an object that holds nothing more than an id.
-      const keys = data && Object.keys(data)
-      return keys?.length === 1 && keys[0] === 'id'
-    },
-
-    processData(options = {}) {
-      const {
-        processIds = false,
-        removeIds = false
-      } = options
-      // @ditojs/server specific handling of relates within graphs:
-      // Find entries with temporary ids, and convert them to #id / #ref pairs.
-      // Also handle items with relate and convert them to only contain ids.
-      const process = (data, dataPath = '') => {
-        // First, see if there's an associated component requiring processing.
-        // See TypeMixin.processValue(), OptionsMixin.processValue():
-        const component = this.getComponent(dataPath)
-        if (component) {
-          data = component.processValue(data, dataPath)
-        }
-        // Special handling is required for temporary ids when procssing non
-        // transient data: Replace id with #id, so '#ref' can be used for
-        // relates, see OptionsMixin:
-        if (!this.isTransient && processIds && this.hasTemporaryId(data)) {
-          const { id, ...rest } = data
-          // A refeference is a shallow copy that hold nothing more than ids.
-          // Use #ref instead of #id for these:
-          data = this.isReference(data)
-            ? { '#ref': id }
-            : { '#id': id, ...rest }
-        }
-        if (isObject(data) || isArray(data)) {
-          // Use reduce() for both arrays and objects thanks to Object.entries()
-          data = Object.entries(data).reduce(
-            (processed, [key, entry]) => {
-              const value = process(entry, this.appendDataPath(dataPath, key))
-              if (value !== undefined) {
-                processed[key] = value
-              }
-              return processed
-            },
-            isArray(data) ? [] : {}
-          )
-        }
-        if (removeIds && data?.id) {
-          delete data.id
-        }
-        return data
-      }
-
-      return process(this.data, this.dataPath)
-    },
-
-    showErrors(errors, focus) {
-      let first = true
-      for (const [dataPath, errs] of Object.entries(errors)) {
-        // Convert from JavaScript property access notation, to our own form
-        // of relative JSON pointers as data-paths:
-        const dataPathParts = parseDataPath(dataPath)
-        const component = this.getComponent(dataPathParts)
-        if (component?.formComponent?.isActive) {
-          component.addErrors(errs, first && focus)
-        } else {
-          // Couldn't find a component in an active form for the given dataPath.
-          // See if we have a component serving a part of the dataPath, and take
-          // it from there:
-          let found = false
-          while (!found && dataPathParts.length > 1) {
-            // Keep removing the last part until we find a match.
-            dataPathParts.pop()
-            const component = this.getComponent(dataPathParts)
-            if (component) {
-              component.navigateToErrors(dataPath, errs)
-              found = true
-            }
-          }
-          if (!found) {
-            throw new Error(
-              `Cannot find component for field ${dataPath}, errors: ${
-                JSON.stringify(errs)}`)
-          }
-        }
-        first = false
-      }
-      return !first
     }
   }
 })

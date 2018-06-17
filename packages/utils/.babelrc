@@ -2,8 +2,12 @@
   "presets": [
     ["@babel/preset-env", {
       "targets": {
-        "browsers": ["last 2 versions"],
-        "node": "9"
+        "node": "9",
+        "browsers": [
+          "> 1%",
+          "last 2 versions",
+          "not ie <= 8"
+        ]
       },
       "useBuiltIns": "usage"
     }],

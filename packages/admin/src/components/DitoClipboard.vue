@@ -28,11 +28,9 @@ export default DitoComponent.component('dito-clipboard', {
   mounted() {
     this.clipboard = new Clipboard(this.$refs.copyData, {
       text: () => {
-        if (this.formComponent) {
-          const data = this.formComponent.clipboardData
-          this.appState.clipboardData = clone(data)
-          return JSON.stringify(data)
-        }
+        const data = this.parentSchema?.clipboardData
+        this.appState.clipboardData = clone(data)
+        return JSON.stringify(data)
       },
       action: 'copy'
     })
@@ -45,10 +43,12 @@ export default DitoComponent.component('dito-clipboard', {
   methods: {
     pasteData() {
       const { clipboardData } = this.appState
-      const targetData = this.formComponent?.data
+      const targetData = this.parentSchema?.data
       if (clipboardData && targetData) {
         for (const key in clipboardData) {
-          this.$set(targetData, key, clipboardData[key])
+          if (key in targetData) {
+            this.$set(targetData, key, clipboardData[key])
+          }
         }
       }
     }

@@ -6,7 +6,7 @@ export default {
   // See: https://github.com/logaretm/vee-validate/issues/468
   // NOTE: We can't do this in DitoMixin for all components, as it would
   // override the $validates: true` setting there.
-  inject: ['$validator'],
+  inject: ['$validator', 'parentSchema'],
 
   props: {
     schema: { type: Object, required: true },
@@ -21,6 +21,14 @@ export default {
     return {
       focused: false
     }
+  },
+
+  created() {
+    this.parentSchema?.registerComponent(this, true)
+  },
+
+  destroyed() {
+    this.parentSchema?.registerComponent(this, false)
   },
 
   computed: {
@@ -234,22 +242,17 @@ export default {
     },
 
     navigateToErrors(dataPath, errors) {
-      const navigate = this.navigateToComponent
-      if (navigate) {
-        navigate.call(this, dataPath, (route, property) => {
-          const { matched } = route
-          const { meta } = matched[matched.length - 1]
-          // Pass on the errors to the instance through the meta object,
-          // see DitoForm.created()
-          if (property) {
-            meta.errors = {
-              [property]: errors
-            }
+      return this.navigateToComponent?.(dataPath, (route, property) => {
+        const { matched } = route
+        const { meta } = matched[matched.length - 1]
+        // Pass on the errors to the instance through the meta object,
+        // see DitoForm.created()
+        if (property) {
+          meta.errors = {
+            [property]: errors
           }
-        })
-      } else {
-        throw new Error(`Cannot show errors for field ${dataPath}: ${errors}`)
-      }
+        }
+      }) || false
     },
 
     focus() {
