@@ -23,6 +23,7 @@
         @submit.prevent="applyFilters"
       )
         dito-schema.dito-filters-schema(
+          ref="filtersSchema"
           :schema="filtersSchema"
           :data="filtersData"
           dataPath=""
@@ -207,6 +208,12 @@ export default TypeComponent.register([
       const { listData } = this
       return listData.length > 0 &&
         (this.editable || this.deletable || this.draggable)
+    }
+  },
+
+  methods: {
+    onFilterErrors(errors) {
+      this.$refs.filtersSchema.showErrors(errors, true)
     }
   }
 })

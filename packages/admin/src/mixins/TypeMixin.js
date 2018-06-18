@@ -210,17 +210,12 @@ export default {
     },
 
     getEvents() {
-      const {
-        nativeField = false
-      } = this.constructor.options
-
-      const events = {}
-      if (nativeField) {
-        events.change = event => this.onChange(event)
-        events.focus = event => this.onFocus(event)
-        events.blur = event => this.onBlur(event)
+      return {
+        input: event => this.onChange(event),
+        change: event => this.onChange(event),
+        focus: event => this.onFocus(event),
+        blur: event => this.onBlur(event)
       }
-      return events
     },
 
     load({ cache, ...options }) {
@@ -264,8 +259,14 @@ export default {
     addError(error) {
       // Convert to the same sentence structure as vee-validate:
       const prefix = `The ${this.label || this.placeholder} field`
-      this.$errors.add(this.dataPath,
-        error.startsWith(prefix) ? error : `${prefix} ${error}.`)
+      this.$errors.add({
+        field: this.dataPath,
+        msg: error.startsWith(prefix) ? error : `${prefix} ${error}.`
+      })
+      // Remove the error as soon as the field is changed.
+      this.$once('change', () => {
+        this.$errors.remove(this.dataPath)
+      })
     },
 
     addErrors(errors, focus) {

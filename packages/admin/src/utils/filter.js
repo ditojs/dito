@@ -135,7 +135,7 @@ export function getFiltersQuery(filtersSchema, filtersData) {
     const entry = filtersData[name]
     if (Object.keys(entry).length) {
       const args = Object.keys(getComponentsForFilter(filtersSchema, name)).map(
-        key => JSON.stringify(entry[key])
+        key => JSON.stringify(entry[key] ?? null)
       )
       filters.push(`${name}:${args.join(',')}`)
     }

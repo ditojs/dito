@@ -213,8 +213,14 @@ export default {
       const params = this.getQueryParams()
       this.request('get', { params }, (err, response) => {
         if (err) {
-          if (response?.status === 401) {
-            return true
+          if (response) {
+            const { data } = response
+            if (data?.type === 'FilterValidation' && this.onFilterErrors) {
+              this.onFilterErrors(data.errors)
+              return true
+            } else if (response.status === 401) {
+              return true
+            }
           }
         } else {
           this.setData(response.data)
