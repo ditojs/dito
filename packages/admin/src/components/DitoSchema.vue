@@ -155,7 +155,7 @@ export default DitoComponent.component('dito-schema', {
         this.$set(this.components, dataPath, comp)
         // Store the `dataProcessor` closure for this dataPath, for processing
         // of the data at later time when the component may not exist anymore:
-        this.$set(this.dataProcessors, dataPath, comp.dataProcessor)
+        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
       } else {
         this.$delete(this.components, dataPath)
         // NOTE: We don't remove the dataProcessors here!

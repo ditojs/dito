@@ -38,13 +38,7 @@ export default TypeComponent.register(['date', 'datetime', 'time'], {
     },
 
     dataProcessor() {
-      const { defaultDataProcessor } = this
-      return (value, data) => {
-        if (isDate(value)) {
-          value = value.toISOString()
-        }
-        return defaultDataProcessor(value, data)
-      }
+      return value => isDate(value) ? value.toISOString() : value
     }
   },
 

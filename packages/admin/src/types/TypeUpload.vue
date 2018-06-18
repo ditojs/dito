@@ -154,16 +154,15 @@ export default TypeComponent.register('upload', {
     },
 
     dataProcessor() {
-      const { defaultDataProcessor, multiple } = this
-      return (value, data) => {
+      const { multiple } = this
+      return value => {
         // Filter out all newly added files that weren't actually uploaded.
         const files = asArray(value)
           .map(
             ({ upload, ...file }) => !upload || upload.success ? file : null
           )
           .filter(file => file)
-        value = multiple ? files : files[0] || null
-        return defaultDataProcessor(value, data)
+        return multiple ? files : files[0] || null
       }
     }
   },

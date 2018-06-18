@@ -109,18 +109,14 @@ export default {
     },
 
     dataProcessor() {
-      const { defaultDataProcessor, relate } = this
-      return (value, data) => {
-        if (relate) {
-          // Convert object to a shallow copy with only id.
-          const processRelate = data => data ? { id: data.id } : data
-          // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
-          value = isArray(value)
-            ? value.map(entry => processRelate(entry))
-            : processRelate(value)
-        }
-        return defaultDataProcessor(value, data)
-      }
+      // Convert object to a shallow copy with only id.
+      const processRelate = data => data ? { id: data.id } : data
+      return this.relate
+        // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
+        ? value => isArray(value)
+          ? value.map(entry => processRelate(entry))
+          : processRelate(value)
+        : null
     }
   },
 

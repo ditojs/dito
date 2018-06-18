@@ -105,23 +105,24 @@ export default {
       return this.formComponent.verbs
     },
 
-    defaultDataProcessor() {
-      // Process a `dataProcessor` that can exist without the component still
-      // being around, by pulling all required schema settings into the local
-      // scope and generating a closure that processes the data using them:
+    mergedDataProcessor() {
+      // Produces a `dataProcessor` closure that can exist without the component
+      // still being around, by pulling all required schema settings into the
+      // local scope and generating a closure that processes the data.
+      // It also supports a 'override' `dataProcessor` property on type
+      // components than can provide further behavior.
+      const { dataProcessor } = this
       const { exclude, process } = this.schema
-      return (value, data) => exclude
-        ? undefined
-        : process
-          ? process(value, data) ?? value
-          : value
-    },
-
-    dataProcessor() {
-      // This computed property can be overridden by type components to provide
-      // their own `dataProcessor` closures, while still being able to access
-      // `defaultDataProcessor`.
-      return this.defaultDataProcessor
+      return (value, data) => {
+        if (dataProcessor) {
+          value = dataProcessor(value, data)
+        }
+        return exclude
+          ? undefined
+          : process
+            ? process(value, data) ?? value
+            : value
+      }
     }
   },
 
