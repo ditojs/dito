@@ -164,14 +164,17 @@ export default {
   },
 
   watch: {
+    show(show) {
+      this.showPopup = show || this.alwaysShow
+    },
+
     showPopup(newVal, oldVal) {
       if (!newVal !== !oldVal) {
         this.$emit('update:show', newVal)
+        if (newVal) {
+          this.$nextTick(() => this.updatePosition())
+        }
       }
-    },
-
-    show(show) {
-      this.showPopup = show || this.alwaysShow
     }
   },
 
@@ -181,14 +184,11 @@ export default {
       const target = trigger.querySelector('input, textarea')
       if (target) {
         this.focusEvents = addEvents(target, {
-          focus() {
+          focus: () => {
             this.showPopup = true
-            this.$nextTick(() => this.updatePosition())
           },
-          blur() {
-            setTimeout(() => {
-              this.showPopup = false
-            }, 100)
+          blur: () => {
+            this.showPopup = false
           }
         })
       }
@@ -203,7 +203,6 @@ export default {
 
     if (this.alwaysShow) {
       this.showPopup = true
-      this.$nextTick(() => this.updatePosition())
     }
   },
 
@@ -334,39 +333,33 @@ export default {
     },
 
     clickHandler() {
-      if (this.disabled) return
-      this.showPopup = !this.showPopup
-      if (this.showPopup) {
-        this.$nextTick(() => this.updatePosition())
+      if (!this.disabled) {
+        this.showPopup = !this.showPopup
       }
     },
 
     hoverHandler(event) {
-      if (this.disabled) return
-      if (this.mouseLeaveTimer) {
-        this.mouseLeaveTimer = clearTimeout(this.mouseLeaveTimer)
-      }
-      if (event.type === 'mouseenter') {
-        this.showPopup = true
-        this.$nextTick(() => this.updatePosition())
-      } else {
-        if (this.hideDelay) {
-          this.mouseLeaveTimer = setTimeout(() => {
-            this.showPopup = false
-          }, this.hideDelay)
+      if (!this.disabled) {
+        if (this.mouseLeaveTimer) {
+          this.mouseLeaveTimer = clearTimeout(this.mouseLeaveTimer)
+        }
+        if (event.type === 'mouseenter') {
+          this.showPopup = true
         } else {
-          this.showPopup = false
+          if (this.hideDelay) {
+            this.mouseLeaveTimer = setTimeout(() => {
+              this.showPopup = false
+            }, this.hideDelay)
+          } else {
+            this.showPopup = false
+          }
         }
       }
     },
 
     focusHandler(event) {
-      if (this.disabled) return
-      if (event.type === 'focus') {
-        this.showPopup = true
-        this.$nextTick(() => this.updatePosition())
-      } else {
-        this.showPopup = false
+      if (!this.disabled) {
+        this.showPopup = event.type === 'focus'
       }
     }
   }

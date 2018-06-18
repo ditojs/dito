@@ -6,18 +6,24 @@
       :class="{ 'dito-focus': showDate || showTime }"
     )
       date-picker(
+        ref="date"
         v-model="date"
         placement="bottom-left"
         :target="$refs.picker"
         :show.sync="showDate"
+        @focus="$emit('focus')"
+        @blur="$emit('blur')"
         v-bind="{ transition, placeholder, format, locale, disabled }"
       )
       time-picker(
+        ref="time"
         v-model="date"
         placeholder=""
         placement="bottom-right"
         :target="$refs.picker"
         :show.sync="showTime"
+        @focus="$emit('focus')"
+        @blur="$emit('blur')"
         v-bind="{ transition, disabled }"
       )
 </template>
@@ -101,6 +107,17 @@ export default {
       if (+date !== +this.value) {
         this.$emit('input', date)
       }
+    }
+  },
+
+  methods: {
+    focus() {
+      this.$refs.date.focus()
+    },
+
+    blur() {
+      this.$refs.date.blur()
+      this.$refs.time.blur()
     }
   }
 }

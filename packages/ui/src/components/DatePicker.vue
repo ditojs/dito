@@ -9,10 +9,14 @@
   )
     input.dito-input.dito-date-picker-input(
       slot="trigger"
+      ref="input"
       type="text"
       :value="text"
       readonly
+      :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
       v-bind="{ placeholder, disabled }"
     )
     // icon(type="calendar" :color="iconColor")
@@ -113,6 +117,10 @@ export default {
       }
     },
 
+    show(show) {
+      this.showPopup = show
+    },
+
     showPopup(newVal, oldVal) {
       if (!newVal !== !oldVal) {
         this.$emit('update:show', newVal)
@@ -140,6 +148,14 @@ export default {
       if (this.$refs.calendar.navigate(getKeyNavigation(event))) {
         event.preventDefault()
       }
+    },
+
+    focus() {
+      this.$refs.input.focus()
+    },
+
+    blur() {
+      this.$refs.input.blur()
     }
   }
 }

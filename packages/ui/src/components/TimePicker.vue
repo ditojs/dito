@@ -11,7 +11,10 @@
       slot="trigger"
       ref="input"
       :value="text"
+      :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
+      @focus="$emit('focus')"
+      @blur="$emit('blur')"
       v-bind="{ placeholder, disabled }"
     )
     // icon(type="time"
@@ -275,6 +278,10 @@ export default {
       this.updateSelection(false)
     },
 
+    show(show) {
+      this.showPopup = show
+    },
+
     showPopup(newVal, oldVal) {
       if (newVal) {
         this.updateSelection()
@@ -338,6 +345,14 @@ export default {
           event.preventDefault()
         }
       }
+    },
+
+    focus() {
+      this.$refs.input.focus()
+    },
+
+    blur() {
+      this.$refs.input.blur()
     }
   }
 }
