@@ -1,5 +1,4 @@
 import LoadingMixin from './LoadingMixin'
-import TypeMixin from './TypeMixin'
 import { isObject, isArray, isFunction, isPromise } from '@ditojs/utils'
 
 export default {
@@ -107,6 +106,21 @@ export default {
         this.relate && 'id' ||
         isObject(this.options[0]) && 'value' ||
         null
+    },
+
+    dataProcessor() {
+      const { defaultDataProcessor, relate } = this
+      return (value, data) => {
+        if (relate) {
+          // Convert object to a shallow copy with only id.
+          const processRelate = data => data ? { id: data.id } : data
+          // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
+          value = isArray(value)
+            ? value.map(entry => processRelate(entry))
+            : processRelate(value)
+        }
+        return defaultDataProcessor(value, data)
+      }
     }
   },
 
@@ -184,18 +198,6 @@ export default {
         ? this.optionLabel(option)
         : this.optionLabel ? option?.[this.optionLabel]
         : option
-    },
-
-    processValue(value, dataPath) {
-      if (this.relate) {
-        // Convert object to a shallow copy with only id.
-        const processRelate = data => data ? { id: data.id } : data
-        // Selected options can be both objects and arrays, e.g. TypeCheckboxes:
-        value = isArray(value)
-          ? value.map(entry => processRelate(entry))
-          : processRelate(value)
-      }
-      return TypeMixin.methods.processValue.call(this, value, dataPath)
     }
   }
 }

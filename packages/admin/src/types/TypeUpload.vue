@@ -151,24 +151,24 @@ export default TypeComponent.register('upload', {
         path: `upload/${this.name}`
       })
       return `${this.api.url}${url}`
+    },
+
+    dataProcessor() {
+      const { defaultDataProcessor, multiple } = this
+      return (value, data) => {
+        // Filter out all newly added files that weren't actually uploaded.
+        const files = asArray(value)
+          .map(
+            ({ upload, ...file }) => !upload || upload.success ? file : null
+          )
+          .filter(file => file)
+        value = multiple ? files : files[0] || null
+        return defaultDataProcessor(value, data)
+      }
     }
   },
 
   methods: {
-    processValue(value) {
-      // Filter out all newly added files that weren't actually uploaded.
-      const files = asArray(value)
-        .map(
-          ({ upload, ...file }) => !upload || upload.success ? file : null
-        )
-        .filter(file => file)
-      return this.toValue(files)
-    },
-
-    toValue(files) {
-      return this.multiple ? files : files[0] || null
-    },
-
     deleteFile(file, index) {
       const name = file.originalName
 

@@ -23,12 +23,19 @@ export default {
     }
   },
 
+  watch: {
+    dataPath(newDataPath, oldDataPath) {
+      this.parentSchema?.registerComponent(oldDataPath, null)
+      this.parentSchema?.registerComponent(newDataPath, this)
+    }
+  },
+
   created() {
-    this.parentSchema?.registerComponent(this, true)
+    this.parentSchema?.registerComponent(this.dataPath, this)
   },
 
   destroyed() {
-    this.parentSchema?.registerComponent(this, false)
+    this.parentSchema?.registerComponent(this.dataPath, null)
   },
 
   computed: {
@@ -96,6 +103,25 @@ export default {
 
     verbs() {
       return this.formComponent.verbs
+    },
+
+    defaultDataProcessor() {
+      // Process a `dataProcessor` that can exist without the component still
+      // being around, by pulling all required schema settings into the local
+      // scope and generating a closure that processes the data using them:
+      const { exclude, process } = this.schema
+      return (value, data) => exclude
+        ? undefined
+        : process
+          ? process(value, data) ?? value
+          : value
+    },
+
+    dataProcessor() {
+      // This computed property can be overridden by type components to provide
+      // their own `dataProcessor` closures, while still being able to access
+      // `defaultDataProcessor`.
+      return this.defaultDataProcessor
     }
   },
 
@@ -214,15 +240,6 @@ export default {
         loadCache[cacheKey] = res
       }
       return res
-    },
-
-    processValue(value, dataPath) {
-      const { schema } = this
-      return schema.exclude
-        ? undefined
-        : schema.process
-          ? schema.process(value, this.data, dataPath) ?? value
-          : value
     },
 
     addError(error) {

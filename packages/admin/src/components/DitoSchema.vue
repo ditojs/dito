@@ -115,6 +115,9 @@ export default DitoComponent.component('dito-schema', {
   data() {
     return {
       components: {},
+      // Register dataProcessors separate from copomonents, so they can survive
+      // their life-cycles and be used at the end in `processData()`.
+      dataProcessors: {},
       temporaryId: 0
     }
   },
@@ -147,15 +150,19 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    registerComponent(comp, register) {
-      if (register) {
-        this.$set(this.components, comp.dataPath, comp)
+    registerComponent(dataPath, comp) {
+      if (comp) {
+        this.$set(this.components, dataPath, comp)
+        // Store the `dataProcessor` closure for this dataPath, for processing
+        // of the data at later time when the component may not exist anymore:
+        this.$set(this.dataProcessors, dataPath, comp.dataProcessor)
       } else {
-        this.$delete(this.components, comp.dataPath)
+        this.$delete(this.components, dataPath)
+        // NOTE: We don't remove the dataProcessors here!
       }
       // Hierarchically loop up the nested schema chain
       // and register components with all parents.
-      this.parentSchema?.registerComponent(comp, register)
+      this.parentSchema?.registerComponent(dataPath, comp)
     },
 
     getComponent(dataPathOrKey) {
@@ -246,12 +253,14 @@ export default DitoComponent.component('dito-schema', {
       // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
-      const process = (data, dataPath = '') => {
+      const process = (dataPath, data, parentData) => {
         // First, see if there's an associated component requiring processing.
         // See TypeMixin.processValue(), OptionsMixin.processValue():
-        const component = this.getComponent(dataPath)
-        if (component) {
-          data = component.processValue(data, dataPath)
+        const dataProcessor = this.dataProcessors[dataPath]
+        if (dataProcessor) {
+          // NOTE: What we call `data` / `parentData` here is called
+          // `value` / `data` inside components!
+          data = dataProcessor(data, parentData)
         }
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
@@ -268,7 +277,11 @@ export default DitoComponent.component('dito-schema', {
           // Use reduce() for both arrays and objects thanks to Object.entries()
           data = Object.entries(data).reduce(
             (processed, [key, entry]) => {
-              const value = process(entry, this.appendDataPath(dataPath, key))
+              const value = process(
+                this.appendDataPath(dataPath, key),
+                entry,
+                data
+              )
               if (value !== undefined) {
                 processed[key] = value
               }
@@ -283,7 +296,7 @@ export default DitoComponent.component('dito-schema', {
         return data
       }
 
-      return process(this.data, this.dataPath)
+      return process(this.dataPath, this.data, this.parentData)
     },
 
     appendDataPath(dataPath = '', token) {

@@ -35,6 +35,16 @@ export default TypeComponent.register(['date', 'datetime', 'time'], {
       set(value) {
         this.value = value
       }
+    },
+
+    dataProcessor() {
+      const { defaultDataProcessor } = this
+      return (value, data) => {
+        if (isDate(value)) {
+          value = value.toISOString()
+        }
+        return defaultDataProcessor(value, data)
+      }
     }
   },
 
@@ -45,11 +55,6 @@ export default TypeComponent.register(['date', 'datetime', 'time'], {
         time: 'time-picker',
         datetime: 'date-time-picker'
       }[type]
-    },
-
-    processValue(value) {
-      // Convert to string for JSON
-      return isDate(value) ? value.toISOString() : value
     }
   }
 })
