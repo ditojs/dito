@@ -7,9 +7,6 @@ import { getSchemaAccessor } from '@/utils/accessor'
 import {
   processForms, hasForms, isObjectSource, isListSource
 } from '@/utils/schema'
-import {
-  convertFiltersSchema, getFiltersData, getFiltersQuery
-} from '@/utils/filter'
 
 export default {
   mixins: [DataMixin],
@@ -20,18 +17,13 @@ export default {
 
   data() {
     return {
-      isSource: true,
-      filtersData: {}
+      isSource: true
     }
   },
 
   created() {
     // Make sure filters are set correctly before initData() triggers request.
     this.addQuery(this.$route.query)
-  },
-
-  mounted() {
-    this.setupFiltersData(true)
   },
 
   watch: {
@@ -60,14 +52,6 @@ export default {
         this.addQuery(to.query)
         this.loadData(false)
       }
-    },
-
-    query() {
-      this.setupFiltersData(true)
-    },
-
-    filtersSchema() {
-      this.setupFiltersData(false)
     }
   },
 
@@ -134,10 +118,6 @@ export default {
 
     filters() {
       return this.getNamedSchemas(this.schema.filters)
-    },
-
-    filtersSchema() {
-      return convertFiltersSchema(this.filters)
     },
 
     defaultScope() {
@@ -294,34 +274,6 @@ export default {
           })
         }
       }
-    },
-
-    setupFiltersData(restore) {
-      this.filtersData = getFiltersData(
-        this.filtersSchema,
-        restore && this.query
-      )
-    },
-
-    clearFilters() {
-      this.setupFiltersData(false)
-      this.applyFilters()
-    },
-
-    applyFilters() {
-      const filter = getFiltersQuery(this.filtersSchema, this.filtersData)
-      this.$router.push({
-        query: {
-          ...this.query,
-          filter
-        },
-        hash: this.$route.hash
-      })
-    },
-
-    getComponentsForFilter(name) {
-      const filterComponent = this.filtersSchema.components[name]
-      return filterComponent?.form?.components
     },
 
     navigateToComponent(dataPath, onComplete) {

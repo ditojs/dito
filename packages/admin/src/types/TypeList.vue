@@ -15,31 +15,12 @@
         :limit="paginate"
         :total="total || 0"
       )
-    .dito-filters(
+    dito-filters(
       v-if="filters"
+      ref="filters"
+      :filters="filters"
+      :query="query"
     )
-      .dito-filters-title
-      form(
-        @submit.prevent="applyFilters"
-      )
-        dito-schema.dito-filters-schema(
-          ref="filtersSchema"
-          :schema="filtersSchema"
-          :data="filtersData"
-          dataPath=""
-          :meta="{}"
-          :store="{}"
-          :disabled="false"
-          :generateLabels="true"
-        )
-          .dito-buttons(slot="buttons")
-            button.dito-button.dito-button-clear(
-              type="button"
-              @click="clearFilters"
-            )
-            button.dito-button.dito-button-filter(
-              type="submit"
-            )
     table.dito-table
       dito-list-head(
         v-if="columns"
@@ -146,38 +127,6 @@
       // Only top-level inline rows (on white) should have margins
       tr.dito-inline-row
         margin-bottom: 0
-    .dito-filters
-      position: absolute
-      left: $content-width + $content-padding
-      min-width: 240px
-      .dito-filters-title
-        &::before
-          content: 'Filters'
-        height: 2em
-        line-height: 2em
-        padding: 0 $form-spacing
-        background: $button-color
-        border-radius: $border-radius
-      .dito-filters-schema
-        font-size: 11px
-        margin-top: 1px
-        background: $table-color-background
-        border-radius: $border-radius
-        padding: 0 $form-spacing
-        tr.dito-inline-row
-          // Clear trick above again, as it causes trouble on Chrome
-          display: table-row
-        td
-          padding: 0
-        .dito-label
-          margin: 0
-        .dito-components
-          margin: 0 (-$form-spacing-half)
-        .dito-component-container
-          padding: $form-spacing-half
-        .dito-buttons
-          text-align: right
-          padding: $form-spacing 0
 </style>
 
 <script>
@@ -213,7 +162,7 @@ export default TypeComponent.register([
 
   methods: {
     onFilterErrors(errors) {
-      this.$refs.filtersSchema.showErrors(errors, true)
+      this.$refs.filters.showErrors(errors, true)
     }
   }
 })

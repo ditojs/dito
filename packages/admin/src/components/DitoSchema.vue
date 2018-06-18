@@ -100,6 +100,8 @@ import DitoComponent from '@/DitoComponent'
 import { isObject, isArray, parseDataPath } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-schema', {
+  inject: ['$validator'],
+
   props: {
     schema: { type: Object },
     dataPath: { type: String, default: '' },
@@ -224,6 +226,10 @@ export default DitoComponent.component('dito-schema', {
         first = false
       }
       return !first
+    },
+
+    clearErrors() {
+      this.$errors.clear()
     },
 
     filterData(data) {
