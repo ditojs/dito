@@ -34,6 +34,10 @@ export function isDate(val) {
   return val && toString.call(val) === '[object Date]'
 }
 
+export function isRegExp(val) {
+  return val && toString.call(val) === '[object RegExp]'
+}
+
 export function isAsync(val) {
   return val?.[Symbol.toStringTag] === 'AsyncFunction'
 }

@@ -27,7 +27,8 @@
 .dito-pagination
   display: flex
   .dito-pagination-total
-    margin-right: 0.5em
+    white-space: nowrap
+    margin: 0 0.5em
     line-height: 2em
   .dito-pagination-items
     display: flex

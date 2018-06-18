@@ -1,7 +1,8 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
 import {
-  isObject, isArray, isString, isFunction, asArray, camelize, labelize
+  isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
+  isRegExp, asArray, camelize, labelize
 } from '@ditojs/utils'
 
 export default {
@@ -93,21 +94,50 @@ export default {
       return this.getStore(key) || this.setStore(key, {})
     },
 
-    getSchemaValue(key, matchRole = false, schema = this.schema) {
+    getSchemaValue(key, { type, default: def, schema = this.schema } = {}) {
       let value = schema?.[key]
+      if (value === undefined && def !== undefined) {
+        return def
+      }
+
+      const types = type && asArray(type)
+      const isMatchingType = value => {
+        // See if any of the expect types match, return immediately if they do:
+        if (types && value != null) {
+          for (const type of types) {
+            if (typeCheckers[type.name]?.(value)) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+
+      if (isMatchingType(value)) {
+        return value
+      }
+      // Any schema value handled through `getSchemaValue()` can provide
+      // a function that's resolved when the value is evaluated:
       if (isFunction(value)) {
         // Only call the callback if we actually have data already
         value = this.data ? value.call(this, this.data) : null
       }
-      if (matchRole && (isString(value) || isArray(value))) {
+      // For boolean values that are defined as strings or arrays,
+      // interpret the values as user roles and match against user:
+      if (type === Boolean && (isString(value) || isArray(value))) {
         value = this.user.hasRole(...asArray(value))
+      }
+      // Now finally see if we can convert to the expect types.
+      if (value != null && !isMatchingType(value)) {
+        const converter = types && typeConverters[types[0].name]
+        value = converter ? converter(value) : value
       }
       return value
     },
 
     getLabel(schema, name) {
       return schema
-        ? this.getSchemaValue('label', false, schema) ||
+        ? this.getSchemaValue('label', { type: String, schema }) ||
           labelize(schema.name || name)
         : ''
     },
@@ -143,7 +173,11 @@ export default {
     },
 
     shouldRender(schema = null) {
-      return !!schema && this.getSchemaValue('if', true, schema) ?? true
+      return !!schema && this.getSchemaValue('if', {
+        type: Boolean,
+        default: true,
+        schema
+      })
     },
 
     getComponent(dataPathOrKey) {
@@ -201,4 +235,28 @@ export default {
       }
     }
   }
+}
+
+const typeCheckers = {
+  Boolean: value => isBoolean(value),
+  Number: value => isNumber(value),
+  String: value => isString(value),
+  Date: value => isDate(value),
+  Array: value => isArray(value),
+  RegExp: value => isRegExp(value)
+}
+
+const typeConverters = {
+  Boolean: value => !!value,
+  Number: value => +value,
+  String: value => isString(value) ? value : `${value}`,
+  Date: value => isDate(value) ? value : new Date(value),
+  Array: value => isArray(value)
+    ? value
+    : isString(value)
+      ? value.split(',')
+      : asArray(value),
+  RegExp: value => isRegExp(value)
+    ? value
+    : new RegExp(value)
 }

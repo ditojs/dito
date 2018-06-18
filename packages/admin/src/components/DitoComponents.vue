@@ -101,12 +101,19 @@ export default DitoComponent.component('dito-components', {
 
   methods: {
     isVisible(schema) {
-      return this.getSchemaValue('visible', true, schema) ?? true
+      return this.getSchemaValue('visible', {
+        type: Boolean,
+        default: true,
+        schema
+      })
     },
 
     isDisabled(schema) {
-      return this.disabled ||
-        (this.getSchemaValue('disabled', true, schema) ?? false)
+      return this.disabled || this.getSchemaValue('disabled', {
+        type: Boolean,
+        default: false,
+        schema
+      })
     },
 
     hasLabel(schema) {

@@ -56,45 +56,70 @@ export default {
       }
     },
 
-    label: getSchemaAccessor('label', function() {
-      return this.getLabel(this.schema)
+    label: getSchemaAccessor('label', {
+      type: [String, Boolean],
+      get(label) {
+        return label ?? this.getLabel(this.schema)
+      }
     }),
 
-    width: getSchemaAccessor('width'),
-    visible: getSchemaAccessor('visible'),
-    required: getSchemaAccessor('required'),
-    decimals: getSchemaAccessor('decimals'),
+    width: getSchemaAccessor('width', { type: [String, Number] }),
+    visible: getSchemaAccessor('visible', { type: Boolean }),
+    exclude: getSchemaAccessor('exclude', { type: Boolean }),
+    required: getSchemaAccessor('required', { type: Boolean }),
 
-    step: getSchemaAccessor('step', function() {
-      const step = this.getSchemaValue('step')
-      return this.isInteger && step !== undefined ? Math.ceil(step) : step
+    // TODO: Move these to a sub-class component used for all text components?
+    readonly: getSchemaAccessor('readonly', { type: Boolean }),
+    autofocus: getSchemaAccessor('autofocus', { type: Boolean }),
+    placeholder: getSchemaAccessor('placeholder', { type: String }),
+
+    // TODO: Move these to a sub-class component used for all number components!
+    decimals: getSchemaAccessor('decimals', { type: Number }),
+
+    step: getSchemaAccessor('step', {
+      type: Number,
+      get(step) {
+        return this.isInteger && step !== undefined ? Math.ceil(step) : step
+      }
     }),
 
-    min: getSchemaAccessor('min', function() {
-      const { schema } = this
-      const min = schema.range ? schema.range[0] : schema.min
-      return this.isInteger && min != null ? Math.floor(min) : min
+    min: getSchemaAccessor('min', {
+      type: Number,
+      get(min) {
+        min = min === undefined
+          ? this.getSchemaValue('range', { type: Array })?.[0]
+          : min
+        return this.isInteger && min !== undefined ? Math.floor(min) : min
+      }
     }),
 
-    max: getSchemaAccessor('max', function() {
-      const { schema } = this
-      const max = schema.range ? schema.range[1] : schema.max
-      return this.isInteger && max !== undefined ? Math.ceil(max) : max
+    max: getSchemaAccessor('max', {
+      type: Number,
+      get(max) {
+        max = max === undefined
+          ? this.getSchemaValue('range', { type: Array })?.[1]
+          : max
+        return this.isInteger && max !== undefined ? Math.ceil(max) : max
+      }
     }),
 
-    range: getSchemaAccessor('range',
-      function get() {
+    range: getSchemaAccessor('range', {
+      type: Array,
+      get() {
+        // `this.min`, `this.max` already support `schema.range`,
+        // so redirect there.
         const { min, max } = this
         return min !== undefined && max !== undefined ? [min, max] : undefined
       },
-      // Provide a setter that delegates to `[this.min, this.max]`, since those
-      // already handle `schema.range`.
-      function set(range) {
+
+      set(range) {
+        // Provide a setter that delegates to `[this.min, this.max]`,
+        // since those already handle `schema.range`.
         if (isArray(range)) {
           [this.min, this.max] = range
         }
       }
-    ),
+    }),
 
     validations() {
       const rules = this.getValidationRules()
@@ -172,20 +197,13 @@ export default {
         disabled: this.disabled
       }
 
-      const addAttribute = (key, matchRole = false) => {
-        const value = this.getSchemaValue(key, matchRole)
-        if (value !== undefined) {
-          attributes[key] = value
-        }
-      }
-
       if (nativeField) {
         attributes.name = this.dataPath
         attributes.title = this.label
-        addAttribute('readonly', true)
-        addAttribute('autofocus')
+        attributes.readonly = this.readonly
+        attributes.autofocus = this.autofocus
         if (textField) {
-          addAttribute('placeholder')
+          attributes.placeholder = this.placeholder
         }
       }
       return attributes
@@ -245,7 +263,7 @@ export default {
 
     addError(error) {
       // Convert to the same sentence structure as vee-validate:
-      const prefix = `The ${this.label} field`
+      const prefix = `The ${this.label || this.placeholder} field`
       this.$errors.add(this.dataPath,
         error.startsWith(prefix) ? error : `${prefix} ${error}.`)
     },

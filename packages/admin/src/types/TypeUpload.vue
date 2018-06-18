@@ -88,12 +88,13 @@ import VueDraggable from 'vuedraggable'
 import formatFileSize from 'filesize'
 import parseFileSize from 'filesize-parser'
 import OrderedMixin from '@/mixins/OrderedMixin'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { isArray, asArray } from '@ditojs/utils'
 
 export default TypeComponent.register('upload', {
   mixins: [OrderedMixin],
   components: { VueUpload, VueDraggable },
-  filters: { formatFileSize, parseFileSize },
+  filters: { formatFileSize },
 
   data() {
     return {
@@ -110,31 +111,34 @@ export default TypeComponent.register('upload', {
       return asArray(this.value)
     },
 
-    extensions() {
-      return this.getSchemaValue('extensions')
-    },
+    multiple: getSchemaAccessor('multiple', { type: Boolean }),
 
-    accept() {
-      const accept = this.getSchemaValue('accept')
-      return isArray(accept) ? accept.join(',') : accept
-    },
+    extensions: getSchemaAccessor('extensions', {
+      type: [Array, String, RegExp]
+    }),
 
-    multiple() {
-      return this.getSchemaValue('multiple', true)
-    },
+    accept: getSchemaAccessor('accept', {
+      type: Array,
+      get(accept) {
+        return isArray(accept) ? accept.join(',') : accept
+      }
+    }),
 
-    maxSize() {
-      const maxSize = this.getSchemaValue('maxSize')
-      return maxSize ? parseFileSize(maxSize) : undefined
-    },
+    maxSize: getSchemaAccessor('maxSize', {
+      type: [String, Number],
+      get(maxSize) {
+        return maxSize ? parseFileSize(maxSize) : undefined
+      }
+    }),
 
-    draggable() {
-      return this.getSchemaValue('draggable', true) && this.files.length > 1
-    },
+    draggable: getSchemaAccessor('draggable', {
+      type: Boolean,
+      get(draggable) {
+        return draggable && this.files.length > 1
+      }
+    }),
 
-    deletable() {
-      return this.getSchemaValue('deletable', true)
-    },
+    deletable: getSchemaAccessor('deletable', { type: Boolean }),
 
     uploadable() {
       return this.uploads.length &&

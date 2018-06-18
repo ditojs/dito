@@ -199,6 +199,7 @@
 import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 export default TypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
@@ -229,17 +230,9 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    multiple() {
-      return this.getSchemaValue('multiple', true)
-    },
-
-    searchable() {
-      return this.getSchemaValue('searchable', true)
-    },
-
-    taggable() {
-      return this.getSchemaValue('taggable', true)
-    },
+    multiple: getSchemaAccessor('multiple', { type: Boolean }),
+    searchable: getSchemaAccessor('searchable', { type: Boolean }),
+    taggable: getSchemaAccessor('taggable', { type: Boolean }),
 
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema

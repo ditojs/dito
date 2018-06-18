@@ -184,7 +184,7 @@ export default DitoComponent.component('dito-root', {
         const views = await resolveViews(this.views)
         const filteredViews = {}
         for (const [name, view] of Object.entries(views)) {
-          if (this.getSchemaValue('if', true, view) ?? true) {
+          if (this.shouldRender(view)) {
             filteredViews[name] = view
           }
         }

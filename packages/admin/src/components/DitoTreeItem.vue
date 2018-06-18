@@ -225,10 +225,11 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     childrenDraggable() {
-      return !!(
-        this.childrenList?.length > 1 &&
-        this.getSchemaValue('draggable', true, this.children)
-      )
+      return this.childrenList?.length > 1 &&
+        this.getSchemaValue('draggable', {
+          type: Boolean,
+          schema: this.children
+        })
     },
 
     numChildren() {
@@ -280,18 +281,22 @@ export default DitoComponent.component('dito-tree-item', {
         numChildren === 1 ? 'item' : 'items'}`
     },
 
-    creatable: getSchemaAccessor('creatable', function() {
-      // TODO: Support creatable!
-      return hasForms(this.schema) && !!this.getSchemaValue('creatable', true)
+    // TODO: Support creatable!
+    creatable: getSchemaAccessor('creatable', {
+      type: Boolean,
+      get(creatable) {
+        return creatable && hasForms(this.schema)
+      }
     }),
 
-    editable: getSchemaAccessor('editable', function() {
-      return hasForms(this.schema) && !!this.getSchemaValue('editable', true)
+    editable: getSchemaAccessor('editable', {
+      type: Boolean,
+      get(editable) {
+        return editable && hasForms(this.schema)
+      }
     }),
 
-    deletable: getSchemaAccessor('deletable', function() {
-      return !!this.getSchemaValue('deletable', true)
-    }),
+    deletable: getSchemaAccessor('deletable', { type: Boolean }),
 
     hasButtons() {
       return this.draggable || this.editable || this.deletable

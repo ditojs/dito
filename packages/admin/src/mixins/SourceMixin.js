@@ -3,10 +3,10 @@ import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
 import { isObject, isArray, parseDataPath } from '@ditojs/utils'
+import { getSchemaAccessor } from '@/utils/accessor'
 import {
   processForms, hasForms, isObjectSource, isListSource
 } from '@/utils/schema'
-import { getSchemaAccessor } from '@/utils/accessor'
 import {
   convertFiltersSchema, getFiltersData, getFiltersQuery
 } from '@/utils/filter'
@@ -162,34 +162,34 @@ export default {
       }
     },
 
-    paginate() {
-      return this.getSchemaValue('paginate', true)
-    },
+    paginate: getSchemaAccessor('paginate', { type: Number }),
+    inline: getSchemaAccessor('inline', { type: Boolean }),
 
-    inline() {
-      return this.getSchemaValue('inline', true)
-    },
-
-    creatable: getSchemaAccessor('creatable', function() {
-      return hasForms(this.schema) && this.getSchemaValue('creatable', true)
-        ? this.isObjectSource
-          ? !this.value
-          : true
-        : false
+    creatable: getSchemaAccessor('creatable', {
+      type: Boolean,
+      get(creatable) {
+        return creatable && hasForms(this.schema)
+          ? this.isObjectSource
+            ? !this.value
+            : true
+          : false
+      }
     }),
 
-    editable: getSchemaAccessor('editable', function() {
-      return !this.inline && !!this.getSchemaValue('editable', true)
+    editable: getSchemaAccessor('editable', {
+      type: Boolean,
+      get(editable) {
+        return editable && !this.inline
+      }
     }),
 
-    deletable: getSchemaAccessor('deletable', function() {
-      return !!this.getSchemaValue('deletable', true)
-    }),
+    deletable: getSchemaAccessor('deletable', { type: Boolean }),
 
-    draggable: getSchemaAccessor('draggable', function() {
-      return this.isListSource &&
-        !!this.getSchemaValue('draggable', true) &&
-        this.listData.length > 1
+    draggable: getSchemaAccessor('draggable', {
+      type: Boolean,
+      get(draggable) {
+        return draggable && this.isListSource && this.listData.length > 1
+      }
     })
   },
 
