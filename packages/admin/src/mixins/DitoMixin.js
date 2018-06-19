@@ -180,8 +180,16 @@ export default {
       })
     },
 
-    getComponent(dataPathOrKey) {
-      return this.parentSchema.getComponent(dataPathOrKey)
+    getSchemaComponent(dataPathOrKey) {
+      let schema = this.parentSchema
+      while (schema) {
+        const comp = schema.getComponent(dataPathOrKey)
+        if (comp) {
+          return comp
+        }
+        schema = schema.parentSchema
+      }
+      return null
     },
 
     showDialog(options, config) {
