@@ -1,14 +1,21 @@
 {
-  "javascript.validate.enable": false,
-  "eslint.enable": true,
+  // Exclude Babel build folders:
   "files.exclude": {
     "packages/*/dist/": true,
     "packages/*/lib/": true
   },
+  // Disable VSCode's and Vetur's own validator in favor of ESLint:
+  "javascript.validate.enable": false,
   "vetur.validation.script": false,
+  // Enable ESLint validation:
+  "eslint.enable": true,
+  // Enable ESLint and autoFix in Vue files:
+  // https://github.com/vuejs/eslint-plugin-vue/issues/327
   "eslint.validate": [
-    "javascript", {
-      "language": "vue"
+    "javascript",
+    {
+      "language": "vue",
+      "autoFix": true
     }
   ]
 }
