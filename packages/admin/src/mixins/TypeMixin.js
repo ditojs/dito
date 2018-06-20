@@ -256,12 +256,12 @@ export default {
       return res
     },
 
-    addError(error) {
+    addError(error, addPrefix) {
       // Convert to the same sentence structure as vee-validate:
-      const prefix = `The ${this.label || this.placeholder} field`
+      const prefix = addPrefix && `The ${this.label || this.placeholder} field`
       this.$errors.add({
         field: this.dataPath,
-        msg: error.startsWith(prefix) ? error : `${prefix} ${error}.`
+        msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
       })
       // Remove the error as soon as the field is changed.
       this.$once('change', () => {
@@ -271,7 +271,7 @@ export default {
 
     addErrors(errors, focus) {
       for (const { message } of errors) {
-        this.addError(message)
+        this.addError(message, true)
       }
       if (focus) {
         this.focus()

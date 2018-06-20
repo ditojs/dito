@@ -65,7 +65,7 @@ export default {
             })
             .catch(error => {
               this.setLoading(false)
-              this.addError(error.message)
+              this.addError(error.message, false)
               this.resolvedData = []
             })
           // Use an empty array for now, until resolved.
