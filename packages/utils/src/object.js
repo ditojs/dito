@@ -84,6 +84,13 @@ export function groupBy(items, propertyGetter) {
   }, {})
 }
 
+export function mapKeys(obj, mapper) {
+  return Object.keys(obj).reduce((mapped, key) => {
+    mapped[mapper(key)] = obj[key]
+    return mapped
+  }, {})
+}
+
 export function mapValues(obj, mapper) {
   return Object.keys(obj).reduce((mapped, key) => {
     mapped[key] = mapper(obj[key], key)
