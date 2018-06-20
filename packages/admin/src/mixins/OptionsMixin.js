@@ -100,7 +100,7 @@ export default {
     },
 
     optionValue() {
-      // If no valueKey was provided but the options are objects, assume a
+      // If no `label` was provided but the options are objects, assume a
       // default value of 'value':
       return this.schema.options.value ||
         this.relate && 'id' ||

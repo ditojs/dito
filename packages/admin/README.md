@@ -160,7 +160,7 @@ country: {
       })
     },
     label: 'name',
-    valueKey: 'alpha-2',
+    value: 'alpha-2',
     groupBy: 'sub-region'
   }
 }
