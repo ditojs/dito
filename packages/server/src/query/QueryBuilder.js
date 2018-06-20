@@ -29,6 +29,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     const copy = super.clone()
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
+    copy._ignoreScopes = this._ignoreScopes
     copy._appliedScopes = { ...this._appliedScopes }
     copy._allowFilters = { ...this._allowFilters }
     return copy
