@@ -17,7 +17,8 @@
     "prepare": "yarn build",
     "_posttest": "nsp check",
     "lint": "cross-env NODE_ENV=production eslint src",
-    "lint:fix": "eslint --fix src"
+    "lint:fix": "eslint --fix src",
+    "test": "jest --colors 2>&1"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
@@ -81,5 +82,10 @@
     "knex": "^0.14.6",
     "pg": "^7.4.3",
     "sqlite3": "^4.0.0"
+  },
+  "jest": {
+    "testMatch": [
+      "**/src/**/?(*.)+(test).js"
+    ]
   }
 }

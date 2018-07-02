@@ -3,7 +3,7 @@ import dbErrors from 'db-errors'
 import { QueryBuilder, QueryFilters } from '@/query'
 import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
-import { mergeWithoutOverride, mergeAsArrays } from '@/utils'
+import { mergeReversed, mergeAsArrays } from '@/utils'
 import {
   convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
 } from '@/schema'
@@ -406,11 +406,11 @@ export class Model extends objection.Model {
 
       const getDefinition = name => {
         let modelClass = this
-        // Collect ancestor values for proper inheritance. Note: values are
-        // collected in sequence of inheritance, from sub-class to super-class,
-        // so when merging, mergeWithoutOverride() needs to be used to prevent
-        // overrides in the wrong direction. mergeAsArrays() can be used to keep
-        // arrays of inherited values per key, see `definitionHandlers.scopes`.
+        // Collect ancestor values for proper inheritance.
+        // NOTE: values are collected in sequence of inheritance, from sub-class
+        // to super-class, so when merging, `mergeReversed()` is used to prevent
+        // wrong overrides. `mergeAsArrays()` can be used to keep arrays of
+        // inherited values per key, see `definitionHandlers.scopes`.
         const values = []
         while (modelClass !== objection.Model) {
           // Only consider model classes that actually define `name` property.
@@ -436,7 +436,7 @@ export class Model extends objection.Model {
         const handler = definitionHandlers[name]
         const merged = handler
           ? handler.call(this, values)
-          : mergeWithoutOverride({}, ...values)
+          : mergeReversed(values)
         // Once calculated, override definition getter with final merged value.
         setDefinition(name, {
           configurable: false,
@@ -479,7 +479,7 @@ const getMeta = (modelClass, key, value) => {
 
 const definitionHandlers = {
   properties(values) {
-    const properties = mergeWithoutOverride({}, ...values)
+    const properties = mergeReversed(values)
     // Include auto-generated 'id' properties for models and relations.
     const addIdProperty = (name, schema) => {
       if (!(name in properties)) {
@@ -548,7 +548,7 @@ const definitionHandlers = {
   scopes(values) {
     // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
     // so they can be called in sequence.
-    const scopeArrays = mergeAsArrays({}, ...values)
+    const scopeArrays = mergeAsArrays(values)
     const scopes = {}
     for (const [name, array] of Object.entries(scopeArrays)) {
       // Convert array of inherited scope definitions to scope functions.
@@ -584,7 +584,7 @@ const definitionHandlers = {
   filters(values) {
     // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
     // so they can be called in sequence.
-    const filterArrays = mergeAsArrays({}, ...values)
+    const filterArrays = mergeAsArrays(values)
     const filters = {}
     for (const [name, array] of Object.entries(filterArrays)) {
       // Convert array of inherited filter definitions to filter functions,
