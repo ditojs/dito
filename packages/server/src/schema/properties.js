@@ -132,28 +132,24 @@ function makeNullable(schema) {
   const {
     type,
     $ref,
-    instanceof: _instanceof,
-    format,
+    nullable,
     ...rest
   } = schema
   return isArray(type) && type.includes('null')
     ? schema
-    : $ref || _instanceof || format
+    : $ref || Object.keys(rest).length > 0
       ? {
         oneOf: [
           $ref
             ? { $ref }
-            : {
-              type,
-              ...(_instanceof && { instanceof: _instanceof }),
-              ...(format && { format })
-            },
+            : { type, ...rest },
           { type: 'null' }
         ],
-        ...rest
+        nullable
       }
       : {
         type: [...asArray(type), 'null'],
+        nullable,
         ...rest
       }
 }
