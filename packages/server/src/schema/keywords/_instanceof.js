@@ -1,4 +1,4 @@
-import { asArray } from '@ditojs/utils'
+import { isString, isFunction, asArray } from '@ditojs/utils'
 
 export const _instanceof = {
   metaSchema: {
@@ -6,23 +6,26 @@ export const _instanceof = {
       { type: 'string' },
       {
         type: 'array',
-        items: { type: 'string' }
+        items: {
+          type: ['string', 'object']
+        }
       }
     ]
   },
 
   validate(schema, data) {
-    if (this) {
-      // Support instanceof for dito models. The trick is simple: If the
-      // instance is a model, then we can access the models and check. If not,
-      // then it's fine if it fails in case the check wants a model.
-      const { $app } = this
-      const models = $app?.models
-      for (const name of asArray(schema)) {
-        const ctor = constructors[name] || models?.[name]
-        if (data instanceof ctor) {
-          return true
-        }
+    // Support instanceof for dito models. The trick is simple: If the
+    // instance is a model, then we can access the models and check. If not,
+    // then it's fine if it fails in case the check wants a model.
+    const models = this.$app?.models
+    for (const entry of asArray(schema)) {
+      const ctor = isString(entry)
+        ? constructors[entry] || models?.[entry]
+        : isFunction(entry)
+          ? entry
+          : null
+      if (ctor && data instanceof ctor) {
+        return true
       }
     }
     return false
@@ -33,8 +36,9 @@ const constructors = {
   Object,
   Array,
   Function,
-  Number,
   String,
+  Number,
+  Boolean,
   Date,
   RegExp,
   Buffer
