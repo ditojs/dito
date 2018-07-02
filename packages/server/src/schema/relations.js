@@ -121,18 +121,18 @@ class ModelReference {
 }
 
 export function getRelationClass(relation) {
-  return (
-    relationLookup[camelize(relation)] ||
-    relationClasses[relation] ||
-    relation
-  )
+  return isString(relation)
+    ? relationLookup[camelize(relation)] || relationClasses[relation]
+    : Relation.isPrototypeOf(relation)
+      ? relation
+      : null
 }
 
 export function isThroughRelationClass(relationClass) {
   return throughRelationClasses[relationClass.name]
 }
 
-function convertRelation(schema, models) {
+export function convertRelation(schema, models) {
   let {
     relation,
     // Dito.js-style relation description:
@@ -142,7 +142,7 @@ function convertRelation(schema, models) {
     ...rest
   } = schema || {}
   const relationClass = getRelationClass(relation)
-  if (!Relation.isPrototypeOf(relationClass)) {
+  if (!relationClass) {
     throw new RelationError(`Unrecognized relation: ${relation}`)
   } else if (join && !isString(relation)) {
     // Original Objection.js-style relation, just pass through
@@ -203,9 +203,9 @@ function convertRelation(schema, models) {
       join: {
         from: from.toValue(),
         to: to.toValue(),
-        through
+        ...(through && { through })
       },
-      modify,
+      ...(modify && { modify }),
       ...rest
     }
   }
@@ -225,7 +225,7 @@ export function convertRelations(ownerModelClass, relations, models) {
 }
 
 /**
- * Adds json schema properties for each of the modelClass' relations.
+ * Adds JSON schema properties for each of the modelClass' relations.
  */
 export function addRelationSchemas(modelClass, jsonSchema) {
   const { properties } = jsonSchema
