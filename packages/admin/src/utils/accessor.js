@@ -1,4 +1,4 @@
-export function getSchemaAccessor(name, { type, get, set } = {}) {
+export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
   return {
     get() {
       // Only determine schema value if we have no getter, or the getter
@@ -9,7 +9,7 @@ export function getSchemaAccessor(name, { type, get, set } = {}) {
         // `set()` stores changed values in the separate `overrides` object.
         ? this.overrides && name in this.overrides
           ? this.overrides[name]
-          : this.getSchemaValue(name, { type })
+          : this.getSchemaValue(name, { type, default: def })
         : undefined
       return get ? get.call(this, value) : value
     },

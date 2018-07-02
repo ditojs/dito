@@ -125,7 +125,7 @@ export async function resolveForms(forms) {
 
 export function hasForms(schema) {
   // Support both single form and multiple forms notation.
-  return isObject(schema) && (schema.form || schema.forms)
+  return isObject(schema) && !!(schema.form || schema.forms)
 }
 
 function getSourceType(schemaOrType) {

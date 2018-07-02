@@ -147,6 +147,7 @@ export default {
 
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,
+      default: false,
       get(creatable) {
         return creatable && hasForms(this.schema)
           ? this.isObjectSource
@@ -158,15 +159,20 @@ export default {
 
     editable: getSchemaAccessor('editable', {
       type: Boolean,
+      default: false,
       get(editable) {
         return editable && !this.inline
       }
     }),
 
-    deletable: getSchemaAccessor('deletable', { type: Boolean }),
+    deletable: getSchemaAccessor('deletable', {
+      type: Boolean,
+      default: false
+    }),
 
     draggable: getSchemaAccessor('draggable', {
       type: Boolean,
+      default: false,
       get(draggable) {
         return draggable && this.isListSource && this.listData.length > 1
       }

@@ -228,6 +228,7 @@ export default DitoComponent.component('dito-tree-item', {
       return this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
           type: Boolean,
+          default: false,
           schema: this.children
         })
     },
@@ -284,6 +285,7 @@ export default DitoComponent.component('dito-tree-item', {
     // TODO: Support creatable!
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,
+      default: false,
       get(creatable) {
         return creatable && hasForms(this.schema)
       }
@@ -291,6 +293,7 @@ export default DitoComponent.component('dito-tree-item', {
 
     editable: getSchemaAccessor('editable', {
       type: Boolean,
+      default: false,
       get(editable) {
         return editable && hasForms(this.schema)
       }
