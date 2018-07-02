@@ -1,4 +1,8 @@
-export function formatDate(date, options = { date: true, time: true }) {
+export function formatDate(date, options = {
+  locale: 'en-GB',
+  date: true,
+  time: true
+}) {
   const defaults = {
     date: { day: 'numeric', month: 'long', year: 'numeric' },
     time: { hour: '2-digit', minute: '2-digit', second: '2-digit' }
@@ -6,7 +10,8 @@ export function formatDate(date, options = { date: true, time: true }) {
 
   const getOptions = name => {
     const def = defaults[name]
-    const opt = options[name]
+    // Default option for both date and time is: `true` (see signature)
+    const opt = options[name] ?? true
     return opt === true ? def
       : opt === false || opt === undefined ? {}
       : Object.entries({ ...def, ...opt }).reduce((opt, [key, value]) => {
@@ -16,7 +21,6 @@ export function formatDate(date, options = { date: true, time: true }) {
         return opt
       }, {})
   }
-
   return new Date(date).toLocaleString(options.locale || 'en-GB', {
     ...getOptions('date'),
     ...getOptions('time')

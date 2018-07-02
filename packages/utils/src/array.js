@@ -1,12 +1,14 @@
 import { isArray } from './base'
 
-export function flatten(array) {
-  return array.reduce((res, entry) => {
-    if (isArray(entry)) {
-      res.push(...flatten(entry))
+export function flatten(array, maxDepth = Infinity, _depth = 0) {
+  const res = []
+  for (let i = 0, l = array.length; i < l; i++) {
+    const value = array[i]
+    if (_depth < maxDepth && isArray(value)) {
+      res.push(...flatten(value, maxDepth, _depth + 1))
     } else {
-      res.push(entry)
+      res.push(value)
     }
-    return res
-  }, [])
+  }
+  return res
 }

@@ -1,13 +1,16 @@
-import { isArray } from './base'
+import { isArray, isString } from './base'
 
 export function parseDataPath(path) {
-  return isArray(path)
-    ? [...path] // Alway return new arrays (clones).
-    : path
+  if (isArray(path)) {
+    return [...path] // Alway return new arrays (clones).
+  } else if (isString(path)) {
+    const str = path
       // Convert from JavaScript property access notation to JSON pointers:
       .replace(/\.([^.]*)/g, '/$1')
-      .replace(/\[([^\]]*)\]/g, '/$1')
-      .split('/')
+      // Expand array property access notation ([])
+      .replace(/\[['"]?([^'"\]]*)['"]?\]/g, '/$1')
+    return /^\//.test(str) ? str.substr(1).split('/') : str.split('/')
+  }
 }
 
 export function getDataPath(obj, path) {

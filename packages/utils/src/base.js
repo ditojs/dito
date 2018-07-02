@@ -1,6 +1,5 @@
 export const { isArray } = Array
-
-const { toString, valueOf } = Object.prototype
+const { toString } = Object.prototype
 
 export function isPlainObject(val) {
   const ctor = val?.constructor
@@ -11,44 +10,53 @@ export function isPlainObject(val) {
 }
 
 export function isObject(val) {
-  return val && typeof val === 'object' && !isArray(val)
+  return !!val && typeof val === 'object' && !isArray(val)
 }
 
 export function isFunction(val) {
-  return val && typeof val === 'function'
+  return !!val && typeof val === 'function'
 }
 
-export function isString(val) {
-  return typeof val === 'string'
+function getPrimitiveCheck(name) {
+  // Create checking function for all primitive types (number, string, boolean)
+  // that also matches their Object wrappers. We can't check `valueOf()` returns
+  // here because `new Date().valueOf()` also returns a number.
+  const toStringName = `[object ${name}]`
+  const typeName = name.toLowerCase()
+  return function(val) {
+    const type = typeof val
+    return (
+      type === typeName ||
+      !!val && type === 'object' && toString.call(val) === toStringName
+    )
+  }
 }
 
-export function isBoolean(val) {
-  return typeof val === 'boolean'
-}
+export const isNumber = getPrimitiveCheck('Number')
 
-export function isNumber(val) {
-  return typeof val === 'number'
-}
+export const isString = getPrimitiveCheck('String')
+
+export const isBoolean = getPrimitiveCheck('Boolean')
 
 export function isDate(val) {
-  return val && toString.call(val) === '[object Date]'
+  return !!val && toString.call(val) === '[object Date]'
 }
 
 export function isRegExp(val) {
-  return val && toString.call(val) === '[object RegExp]'
+  return !!val && toString.call(val) === '[object RegExp]'
+}
+
+export function isPromise(val) {
+  return !!val && isFunction(val.then)
 }
 
 export function isAsync(val) {
   return val?.[Symbol.toStringTag] === 'AsyncFunction'
 }
 
-export function isPromise(val) {
-  return val && isFunction(val.then)
-}
-
 export function asObject(val) {
   // http://2ality.com/2011/04/javascript-converting-any-value-to.html
-  return val != null ? valueOf.call(val) : val
+  return val != null ? Object(val) : val
 }
 
 export function asArray(val) {

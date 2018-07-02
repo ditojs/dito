@@ -14,7 +14,7 @@
     ["@babel/preset-stage-1", {
       "decoratorsLegacy": true
     }]
-],
+  ],
   "plugins": [
     ["module-resolver", {
       "cwd": "babelrc",
@@ -23,5 +23,16 @@
         "@": "./src"
       }
     }]
-  ]
+  ],
+  "env": {
+    "test": {
+      "presets": [
+        ["@babel/preset-env", {
+          "targets": {
+            "node": "9"
+          }
+        }]
+      ]
+    }
+  }
 }

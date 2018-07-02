@@ -1,20 +1,33 @@
 import { asArray } from './base'
 import os from 'os'
 
-export function camelize(str, upper = false) {
+export function camelize(str, pascalCase = false) {
   return str
-    ? str.replace(/(^|[-_\s]+)(\w)/g, (all, sep, chr) => (
-      upper || sep ? chr.toUpperCase() : chr.toLowerCase()
-    ))
+    ? str
+      // Trim beginnings and ends
+      .replace(/^[-_\s]+|[-_\s]+$/g, '')
+      .replace(
+        /(^|[-_\s]+)(\w)([A-Z]*)([a-z]*)/g,
+        (all, sep, first, upperRest, lowerRest) => `${
+          pascalCase || sep ? first.toUpperCase() : first.toLowerCase()
+        }${upperRest.toLowerCase()}${lowerRest}`
+      )
     : ''
 }
 
 export function decamelize(str, sep = ' ') {
-  // TODO: Once JavaScript supports Unicode properties in regexps, switch to
-  // better parsing that matches non-ASCII uppercase letters:
-  // /([\p{Ll}\d])(\p{Lu})/gu
   return str
-    ? str.replace(/([a-z\d])([A-Z])/g, `$1${sep}$2`).toLowerCase()
+    ? str
+      .replace(
+        // TODO: Once JavaScript supports Unicode properties in regexps, switch
+        // to better parsing that matches non-ASCII uppercase letters:
+        // /([\p{Ll}\d])(\p{Lu})/gu
+        /([a-z\d])([A-Z])|(\S)(?:\s+)(\S)/g,
+        (all, lower, upper, beforeSpace, afterSpace) => upper
+          ? `${lower}${sep}${upper}`
+          : `${beforeSpace}${sep}${afterSpace}`
+      )
+      .toLowerCase()
     : ''
 }
 
@@ -35,14 +48,7 @@ export function capitalize(str) {
 
 export function labelize(str) {
   // Handle hyphenated, underscored and camel-cased property names and
-  // expand them to title cased labels if no label was provided:
-  // console.log(labelize('some-hyphenated-label'))
-  // console.log(labelize('one_underscored_label'))
-  // console.log(labelize('MyCamelCasedLabel'))
-  // console.log(labelize('hello world'))
-  // console.log(labelize('test1'))
-  // console.log(labelize('test2test'))
-  // console.log(labelize('test33test'))
+  // expand them to title cased labels.
   return str
     ? str.replace(/([-_ ]|^)(\w)|([a-z])(?=[A-Z0-9])|(\d)([a-zA-Z])/g,
       function(all, hyphen, hyphenated, camel, decimal, decimalNext) {
