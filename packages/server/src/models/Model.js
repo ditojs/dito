@@ -155,9 +155,8 @@ export class Model extends objection.Model {
   static get namedFilters() {
     // Convert Dito's scopes to Objection's namedFilters and cache result.
     return this.getCached('namedFilters', () => {
-      const { scopes } = this.definition
       const namedFilters = {}
-      for (const [name, scope] of Object.entries(scopes)) {
+      for (const [name, scope] of Object.entries(this.definition.scopes)) {
         if (isFunction(scope)) {
           namedFilters[name] = scope
         } else {
@@ -179,8 +178,8 @@ export class Model extends objection.Model {
 
   static get jsonSchema() {
     return this.getCached('jsonSchema', () => {
-      const { properties } = this.definition
-      const schema = addRelationSchemas(this, convertSchema(properties))
+      const schema = convertSchema(this.definition.properties)
+      addRelationSchemas(this, schema.properties)
       return {
         $id: this.name,
         $schema: 'http://json-schema.org/draft-07/schema#',

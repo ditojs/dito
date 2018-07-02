@@ -136,10 +136,8 @@ describe('addRelationSchemas()', () => {
     models: { ModelOne, ModelTwo }
   }
 
-  it('adds correct schema for a has-many relation', () => {
-    const schema = { properties: {} }
-    addRelationSchemas(ModelOne, schema)
-    expect(schema.properties).toEqual({
+  it('adds correct property schema for a has-many relation', () => {
+    expect(addRelationSchemas(ModelOne, {})).toEqual({
       modelTwo: {
         oneOf: [
           {
@@ -153,10 +151,8 @@ describe('addRelationSchemas()', () => {
     })
   })
 
-  it('adds correct schema for a belongs-to relation', () => {
-    const schema = { properties: {} }
-    addRelationSchemas(ModelTwo, schema)
-    expect(schema.properties).toEqual({
+  it('adds correct property schema for a belongs-to relation', () => {
+    expect(addRelationSchemas(ModelTwo, {})).toEqual({
       modelOnes: {
         type: 'array',
         items: {
