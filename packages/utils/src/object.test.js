@@ -1,4 +1,62 @@
-import { equals, merge, groupBy, mapKeys, mapValues } from './object'
+import {
+  pick, clone, equals, merge, groupBy, mapKeys, mapValues
+} from './object'
+
+describe('pick()', () => {
+  it(`should return the first value that isn't undefined`, () => {
+    expect(pick(10)).toBe(10)
+    expect(pick(10, undefined)).toBe(10)
+    expect(pick(undefined, 10)).toBe(10)
+    expect(pick(undefined, undefined, 10)).toBe(10)
+  })
+
+  it(`should consider null as defined`, () => {
+    expect(pick(null)).toBeNull()
+    expect(pick(undefined, null)).toBeNull()
+  })
+
+  it(`should return undefined if nothing is defined`, () => {
+    expect(pick()).toBeUndefined()
+    expect(pick(undefined)).toBeUndefined()
+  })
+})
+
+describe('clone()', () => {
+  it(`should clone objects`, () => {
+    const object = { a: 1, b: 2 }
+    const copy = clone(object)
+    expect(copy).toEqual(object)
+    expect(copy).not.toBe(object)
+  })
+
+  it(`should clone arrays`, () => {
+    const array = [1, 2, 3]
+    const copy = clone(array)
+    expect(copy).toStrictEqual(array)
+    expect(copy).not.toBe(array)
+  })
+
+  it(`should clone dates`, () => {
+    const date = new Date()
+    const copy = clone(date)
+    expect(copy).toStrictEqual(date)
+    expect(copy).not.toBe(date)
+  })
+
+  it(`should return functions unmodified`, () => {
+    const func = () => {}
+    expect(clone(func)).toBe(func)
+  })
+
+  it(`should clone nested objects and arrays`, () => {
+    const object = { a: [1, 2, 3], b: { c: 4, d: 5 } }
+    const copy = clone(object)
+    expect(copy).toStrictEqual(object)
+    expect(copy).not.toBe(object)
+    expect(copy.a).not.toBe(object.a)
+    expect(copy.b).not.toBe(object.b)
+  })
+})
 
 describe('equals()', () => {
   const symbol1 = Symbol('a')

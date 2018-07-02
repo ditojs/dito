@@ -1,4 +1,4 @@
-import { isArray, isObject, isFunction } from './base'
+import { isArray, isObject, isFunction, isDate } from './base'
 
 export const is = Object.is || (
   // SameValue algorithm:
@@ -18,8 +18,24 @@ export function pick(...args) {
   }
 }
 
-export function clone(obj) {
-  return obj != null ? JSON.parse(JSON.stringify(obj)) : obj
+export function clone(val) {
+  let copy
+  if (isObject(val)) {
+    copy = new val.constructor()
+    for (const key in val) {
+      copy[key] = clone(val[key])
+    }
+  } else if (isArray(val)) {
+    copy = new val.constructor(val.length)
+    for (let i = 0, l = val.length; i < l; i++) {
+      copy[i] = clone(val[i])
+    }
+  } else if (isDate(val)) {
+    copy = new val.constructor(+val)
+  } else {
+    copy = val
+  }
+  return copy
 }
 
 export function equals(val1, val2) {
