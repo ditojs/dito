@@ -1,4 +1,4 @@
-import { equals, deepMerge, groupBy, mapKeys, mapValues } from './object'
+import { equals, merge, groupBy, mapKeys, mapValues } from './object'
 
 describe('equals()', () => {
   const symbol1 = Symbol('a')
@@ -225,19 +225,19 @@ describe('equals()', () => {
   })
 })
 
-describe('deepMerge()', () => {
+describe('merge()', () => {
   it('should override keys in target with different types', () => {
     const source1 = { a: { b: 1 } }
     const source2 = { a: { b: [] } }
-    expect(deepMerge({}, source1, source2)).toStrictEqual(source2)
-    expect(deepMerge({}, source2, source1)).toStrictEqual(source1)
+    expect(merge({}, source1, source2)).toStrictEqual(source2)
+    expect(merge({}, source2, source1)).toStrictEqual(source1)
   })
 
   it('should merge objects at the same indices inside arrays', () => {
     const source1 = [{ a: 1 }, { b: 2 }]
     const source2 = [{ c: 3 }, { d: 4 }]
     const expected = [{ a: 1, c: 3 }, { b: 2, d: 4 }]
-    expect(deepMerge([], source1, source2)).toStrictEqual(expected)
+    expect(merge([], source1, source2)).toStrictEqual(expected)
   })
 
   it('should merge `source` into `object`', () => {
@@ -269,12 +269,12 @@ describe('deepMerge()', () => {
       ]
     }
 
-    expect(deepMerge(names, ages, heights)).toEqual(expected)
+    expect(merge(names, ages, heights)).toEqual(expected)
   })
 
   it('should work with multiple arguments', () => {
     const expected = { a: 4 }
-    const actual = deepMerge({ a: 1 }, { a: 2 }, { a: 3 }, expected)
+    const actual = merge({ a: 1 }, { a: 2 }, { a: 3 }, expected)
 
     expect(actual).toStrictEqual(expected)
   })
@@ -283,7 +283,7 @@ describe('deepMerge()', () => {
     class Foo {}
 
     const object = new Foo()
-    const actual = deepMerge(object, { a: 1 })
+    const actual = merge(object, { a: 1 })
 
     expect(actual).toStrictEqual(object)
     expect(object.a).toEqual(1)
@@ -292,7 +292,7 @@ describe('deepMerge()', () => {
   it('should not augment source objects', () => {
     const source1 = { a: [{ a: 1 }] }
     const source2 = { a: [{ b: 2 }] }
-    const actual1 = deepMerge({}, source1, source2)
+    const actual1 = merge({}, source1, source2)
 
     expect(source1.a).toStrictEqual([{ a: 1 }])
     expect(source2.a).toStrictEqual([{ b: 2 }])
@@ -300,7 +300,7 @@ describe('deepMerge()', () => {
 
     const source3 = { a: [[1, 2, 3]] }
     const source4 = { a: [[4, 5]] }
-    const actual2 = deepMerge({}, source3, source4)
+    const actual2 = merge({}, source3, source4)
 
     expect(source3.a).toStrictEqual([[1, 2, 3]])
     expect(source4.a).toStrictEqual([[4, 5]])
@@ -311,30 +311,30 @@ describe('deepMerge()', () => {
     class Foo {}
 
     const object = { a: 1 }
-    const actual1 = deepMerge(new Foo(), object)
+    const actual1 = merge(new Foo(), object)
 
     expect(actual1).toBeInstanceOf(Foo)
     expect(actual1).toEqual(object)
 
-    const actual2 = deepMerge([new Foo()], [object])
+    const actual2 = merge([new Foo()], [object])
     expect(actual2[0]).toBeInstanceOf(Foo)
     expect(actual2).toEqual([object])
   })
 
   it('should not overwrite existing values with `undefined` in objects', () => {
-    const actual = deepMerge({ a: 1 }, { a: undefined, b: undefined })
+    const actual = merge({ a: 1 }, { a: undefined, b: undefined })
     expect(actual).toStrictEqual({ a: 1, b: undefined })
   })
 
   it('should not overwrite existing values with `undefined` in arrays', () => {
     const array1 = [1]
     array1[2] = 3
-    const actual1 = deepMerge([4, 5, 6], array1)
+    const actual1 = merge([4, 5, 6], array1)
     const expected1 = [1, 5, 3]
     expect(actual1).toStrictEqual(expected1)
 
     const array2 = [1, undefined, 3]
-    const actual2 = deepMerge([4, 5, 6], array2)
+    const actual2 = merge([4, 5, 6], array2)
     expect(actual2).toStrictEqual(expected1)
   })
 })

@@ -57,7 +57,7 @@ export function equals(val1, val2) {
   return false
 }
 
-export function deepMerge(target, ...sources) {
+export function merge(target, ...sources) {
   const merge = (target, source) => {
     if (target && source && (
       isObject(target) && isObject(source) ||
@@ -83,6 +83,9 @@ export function deepMerge(target, ...sources) {
   }
   return target
 }
+
+// TODO: Deprecate in 2019:
+export const deepMerge = merge
 
 function getCallback(iteratee) {
   return isFunction(iteratee)

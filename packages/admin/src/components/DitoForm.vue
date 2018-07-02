@@ -66,7 +66,7 @@ import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
 import { isObjectSource } from '@/utils/schema'
 import {
-  isObject, clone, capitalize, parseDataPath, deepMerge
+  isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
@@ -161,7 +161,7 @@ export default DitoComponent.component('dito-form', {
 
     buttons() {
       return this.getNamedSchemas(
-        deepMerge(
+        merge(
           {
             cancel: {},
             submit: {}
