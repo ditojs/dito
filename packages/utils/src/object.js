@@ -74,7 +74,7 @@ export function equals(val1, val2) {
 }
 
 export function merge(target, ...sources) {
-  const merge = (target, source) => {
+  const _merge = (target, source) => {
     if (target && source && (
       isObject(target) && isObject(source) ||
       isArray(target) && isArray(source)
@@ -83,7 +83,7 @@ export function merge(target, ...sources) {
         const value = source[key]
         if (
           source.hasOwnProperty(key) &&
-          !merge(target[key], value) &&
+          !_merge(target[key], value) &&
           (value !== undefined || !(key in target))
         ) {
           target[key] = clone(value)
@@ -95,7 +95,7 @@ export function merge(target, ...sources) {
   }
 
   for (const source of sources) {
-    merge(target, source)
+    _merge(target, source)
   }
   return target
 }

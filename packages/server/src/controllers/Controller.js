@@ -16,7 +16,7 @@ export class Controller {
   constructor(app, namespace) {
     this.app = app
     this.namespace = this.namespace || namespace
-    this.logging = this.app?.config.log.routes
+    this.logging = this.app.config.log.routes
     this.level = 0
   }
 
