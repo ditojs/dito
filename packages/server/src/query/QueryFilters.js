@@ -11,7 +11,8 @@ QueryFilters.register({
     },
     {
       name: 'text',
-      type: 'string'
+      type: 'string',
+      required: true
     }
   )
   text(builder, property, operator, text) {
@@ -25,7 +26,7 @@ QueryFilters.register({
       'starts-with': text => `${text}%`,
       'ends-with': text => `%${text}`
     }
-    const operand = templates[operator]?.(text) || ''
+    const operand = templates[operator]?.(text)
     if (operand) {
       builder.where(property, 'ilike', operand)
     }
@@ -34,14 +35,24 @@ QueryFilters.register({
   @parameters(
     {
       name: 'from',
-      type: 'date'
+      type: 'datetime',
+      nullable: true
     },
     {
       name: 'to',
-      type: 'date'
+      type: 'datetime',
+      nullable: true
     }
   )
   'date-range'(builder, property, from, to) {
-    builder.whereBetween(property, [new Date(from), new Date(to)])
+    if (from && to) {
+      builder.whereBetween(property, [new Date(from), new Date(to)])
+    } else if (from) {
+      builder.where(property, '>=', new Date(from))
+    } else if (to) {
+      builder.where(property, '<=', new Date(to))
+    } else {
+      // TODO: Can we get validation to catch the case where both are empty?
+    }
   }
 })
