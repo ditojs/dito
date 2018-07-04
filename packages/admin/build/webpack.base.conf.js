@@ -39,8 +39,11 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.vue', '.json'],
     alias: {
-      'vue$': 'vue/dist/vue.esm.js',
+      vue$: 'vue/dist/vue.esm.js',
       '@': resolve('src'),
+      // This is required for the resolution of ~@ditojs/ui in Sass files
+      // to work with Yarn workspaces:
+      '@ditojs/ui': resolve('../ui'),
       // This is required for sym-linked dev folder to work:
       '@ditojs/admin': resolve('src')
     },
