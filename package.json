@@ -16,6 +16,9 @@
     "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
     "@babel/cli": "^7.0.0-beta.51",
     "@babel/core": "^7.0.0-beta.51",
