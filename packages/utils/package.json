@@ -15,16 +15,10 @@
     "watch": "yarn build --watch",
     "prepare": "yarn build",
     "lint": "cross-env NODE_ENV=production eslint src",
-    "lint:fix": "eslint --fix src",
-    "test": "jest --colors 2>&1"
+    "lint:fix": "eslint --fix src"
   },
   "engines": {
     "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
-  },
-  "jest": {
-    "testMatch": [
-      "**/src/**/?(*.)+(test).js"
-    ]
   }
 }

@@ -4,5 +4,6 @@
 /packages/*/lib
 /packages/*/dist
 /packages/*/dev
+yarn.lock
 *.log
 *.cache
