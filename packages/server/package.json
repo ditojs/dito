@@ -75,10 +75,10 @@
     "webpack": "^4.11.0"
   },
   "peerDependencies": {
-    "knex": "^0.14.2"
+    "knex": "^0.14.0"
   },
   "devDependencies": {
-    "knex": "^0.14.6",
+    "knex": "^0.15.0",
     "pg": "^7.4.3",
     "sqlite3": "^4.0.0"
   }
