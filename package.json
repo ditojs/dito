@@ -7,8 +7,8 @@
   "license": "MIT",
   "scripts": {
     "watch": "lerna run --parallel watch",
-    "lint": "lerna run --parallel lint",
-    "lint:fix": "lerna run --parallel lint:fix",
+    "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
+    "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src",
     "test": "jest",
     "precommit": "yarn lint"
   },
@@ -46,6 +46,6 @@
     "husky": "^0.14.3",
     "jest": "^23.2.0",
     "lerna": "^2.11.0",
-    "vue-eslint-parser": "^2.0.3"
+    "vue-eslint-parser": "^3.0.0"
   }
 }

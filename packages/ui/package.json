@@ -11,8 +11,6 @@
     "dist/"
   ],
   "scripts": {
-    "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue src",
-    "lint:fix": "eslint --fix --ext .js,.vue src"
   },
   "engines": {
     "node": ">= 9.0.0",

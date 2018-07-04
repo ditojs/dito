@@ -16,9 +16,7 @@
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "yarn dev",
     "build": "node build/build.js",
-    "prepare": "yarn build",
-    "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue src",
-    "lint:fix": "eslint --fix --ext .js,.vue src"
+    "prepare": "yarn build"
   },
   "engines": {
     "node": ">= 9.0.0",

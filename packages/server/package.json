@@ -15,9 +15,7 @@
     "build": "babel src --out-dir lib --copy-files --source-maps inline",
     "watch": "yarn build --watch",
     "prepare": "yarn build",
-    "_posttest": "nsp check",
-    "lint": "cross-env NODE_ENV=production eslint src",
-    "lint:fix": "eslint --fix src"
+    "_posttest": "nsp check"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
