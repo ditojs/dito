@@ -1,9 +1,10 @@
 .DS_Store
+yarn.lock
+*.log
+*.cache
 /node_modules
 /packages/*/node_modules
 /packages/*/lib
 /packages/*/dist
 /packages/*/dev
-yarn.lock
-*.log
-*.cache
+/coverage
