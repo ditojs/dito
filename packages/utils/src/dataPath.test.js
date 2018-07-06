@@ -34,6 +34,17 @@ describe('parseDataPath()', () => {
     expect(parseDataPath(`.object["property name"]`)).toStrictEqual(expected)
     expect(parseDataPath(`.object['property name']`)).toStrictEqual(expected)
   })
+
+  it('should return a clone if argument is already an array', () => {
+    const array = ['object', 'array', '1']
+    const actual = parseDataPath(array)
+    expect(actual).toStrictEqual(array)
+    expect(actual).not.toBe(array)
+  })
+
+  it('should return undefined for values other than array / string', () => {
+    expect(parseDataPath({})).toBe(undefined)
+  })
 })
 
 describe('getDataPath()', () => {
@@ -71,7 +82,8 @@ describe('setDataPath()', () => {
     object: {
       array: [
         {}
-      ]
+      ],
+      number: 10
     }
   }
 
@@ -89,5 +101,10 @@ describe('setDataPath()', () => {
 
   it(`should throw an error with faulty paths`, () => {
     expect(() => setDataPath(data, 'object/unknown/prop', add)).toThrow()
+  })
+
+  it(`should throw an error with invalid target`, () => {
+    expect(() => setDataPath(data, 'object/number/invalid', add))
+      .toThrow('Invalid path: object/number/invalid')
   })
 })

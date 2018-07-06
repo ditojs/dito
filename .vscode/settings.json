@@ -18,5 +18,6 @@
       "language": "vue",
       "autoFix": true
     }
-  ]
+  ],
+  "jest.autoEnable": true
 }

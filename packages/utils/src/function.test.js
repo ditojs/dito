@@ -31,9 +31,9 @@ describe('toCallback()', () => {
 describe('toAsync()', () => {
   it('should convert callback functions to async', async () => {
     expect.assertions(1)
-    const asyncFunc = toAsync(function(result, callback) {
+    const asyncFunc = toAsync(function(toResolve, callback) {
       process.nextTick(() => {
-        callback(null, result)
+        callback(null, toResolve)
       })
     })
     const expected = 10
@@ -42,12 +42,18 @@ describe('toAsync()', () => {
   })
 
   it('should convert callback errors to exceptions', async () => {
+    expect.assertions(1)
     const error = new Error(`This error is intentional`)
-    const asyncFunc = toAsync(function(callback) {
+    const throwError = toAsync(function(toReject, callback) {
       process.nextTick(() => {
-        callback(error)
+        callback(toReject)
       })
     })
-    expect(asyncFunc()).rejects.toThrow(error)
+
+    try {
+      await throwError(error)
+    } catch (err) {
+      expect(err).toBe(error)
+    }
   })
 })
