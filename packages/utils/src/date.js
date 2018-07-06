@@ -1,5 +1,5 @@
 export function formatDate(date, options = {
-  locale: 'en-GB',
+  locale: 'en-US',
   date: true,
   time: true
 }) {
@@ -21,7 +21,7 @@ export function formatDate(date, options = {
         return opt
       }, {})
   }
-  return new Date(date).toLocaleString(options.locale || 'en-GB', {
+  return new Date(date).toLocaleString(options.locale || 'en-US', {
     ...getOptions('date'),
     ...getOptions('time')
   })
