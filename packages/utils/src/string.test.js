@@ -8,6 +8,7 @@ const strings = [
 
 describe('camelize()', () => {
   describe.each([
+    [undefined, 'fooBar'],
     [false, 'fooBar'],
     [true, 'FooBar']
   ])(
@@ -26,6 +27,12 @@ describe('camelize()', () => {
       )
     }
   )
+
+  it('should return an empty string if nothing can be processed', () => {
+    expect(camelize()).toBe('')
+    expect(camelize(null)).toBe('')
+    expect(camelize('')).toBe('')
+  })
 })
 
 describe('decamelize()', () => {
@@ -38,6 +45,12 @@ describe('decamelize()', () => {
       })
     }
   )
+
+  it('should return an empty string if nothing can be processed', () => {
+    expect(decamelize()).toBe('')
+    expect(decamelize(null)).toBe('')
+    expect(decamelize('')).toBe('')
+  })
 })
 
 describe('hyphenate()', () => {
@@ -88,6 +101,12 @@ describe('capitalize()', () => {
   it('should support umlauts', () => {
     expect(capitalize('mäuse häuschen')).toBe('Mäuse Häuschen')
   })
+
+  it('should return an empty string if nothing can be processed', () => {
+    expect(capitalize()).toBe('')
+    expect(capitalize(null)).toBe('')
+    expect(capitalize('')).toBe('')
+  })
 })
 
 describe('labelize()', () => {
@@ -117,6 +136,12 @@ describe('labelize()', () => {
 
   it('should keep multiple numbers together', () => {
     expect(labelize('one234five')).toBe('One 234 Five')
+  })
+
+  it('should return an empty string if nothing can be processed', () => {
+    expect(labelize()).toBe('')
+    expect(labelize(null)).toBe('')
+    expect(labelize('')).toBe('')
   })
 })
 
@@ -149,6 +174,108 @@ describe('deindent()', () => {
     )
   })
 
+  it('should only swallow the first line-break, not those following', () => {
+    expect(
+      deindent`
+
+
+        some
+          indented
+            text
+      `
+    ).toBe(
+`
+
+some
+  indented
+    text
+`
+    )
+  })
+
+  it('should not swallow the empty line-breaks at the end', () => {
+    expect(
+      deindent`
+        some
+          indented
+            text
+
+
+      `
+    ).toBe(
+`some
+  indented
+    text
+
+
+`
+    )
+  })
+
+  it('should handle multi-line strings without first or last line', () => {
+    expect(
+      deindent`some
+  indented
+    text
+some
+  indented
+    text`
+    ).toBe(
+`some
+  indented
+    text
+some
+  indented
+    text`
+    )
+  })
+
+  it('should handle multi-line strings without first or last line', () => {
+    expect(
+      deindent`  some
+    indented
+      text`
+    ).toBe(
+`some
+  indented
+    text`
+    )
+  })
+
+  it('should correctly indent nested single-line string values', () => {
+    const singleLineText = 'single-line text'
+    expect(
+      deindent`
+        some
+          indented
+            ${singleLineText}
+      `
+    ).toBe(
+`some
+  indented
+    single-line text
+`
+    )
+  })
+
+  it('should correctly indent unnested multi-line string values', () => {
+    const multiLineText = 'multi-\nline\ntext'
+    expect(
+      deindent`
+some
+indented
+${multiLineText}
+`
+    ).toBe(
+`some
+indented
+multi-
+line
+text
+`
+    )
+  })
+
   it('should correctly indent nested multi-line string values', () => {
     const multiLineText = 'multi-\nline\ntext'
     expect(
@@ -164,6 +291,36 @@ describe('deindent()', () => {
     line
     text
 `
+    )
+  })
+
+  it('should maintain the indent of prefixed multi-line string values', () => {
+    const multiLineText = 'multi-\nline\ntext'
+    expect(
+      deindent`
+        some
+          indented
+            content: ${multiLineText}
+      `
+    ).toBe(
+`some
+  indented
+    content: multi-
+    line
+    text
+`
+    )
+  })
+
+  it('should not deindent if the first line starts with text', () => {
+    expect(
+      deindent`some
+        indented
+          text`
+    ).toBe(
+`some
+        indented
+          text`
     )
   })
 })

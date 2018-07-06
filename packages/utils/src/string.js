@@ -52,10 +52,11 @@ export function labelize(str) {
   return str
     ? str.replace(/([-_ ]|^)(\w)|([a-z])(?=[A-Z0-9])|(\d)([a-zA-Z])/g,
       function(all, hyphen, hyphenated, camel, decimal, decimalNext) {
-        return hyphenated ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
-          : camel ? `${camel} `
-          : decimal ? `${decimal} ${decimalNext.toUpperCase()}`
-          : ''
+        return hyphenated
+          ? `${hyphen ? ' ' : ''}${hyphenated.toUpperCase()}`
+          : camel
+            ? `${camel} `
+            : `${decimal} ${decimalNext.toUpperCase()}`
       })
     : ''
 }
@@ -80,20 +81,15 @@ export function deindent(strings, ...values) {
       if (lines.length > 1) {
         // Determine the indent by finding the immediately preceding white-space
         // up to the previous line-break or the beginning of the string.
-        // (?:^|[\n\r]) # Start at either the beginning or the prev line break.
-        // (?:[\n\r]*)  # Skip the line break
-        // (\s+)        # Collect the indenting white-space...
-        // ([^\n\r]*)$  # ...up to the end or the next word, but in last line,
-        // by making sure no line breaks follow until the end. Also keep a
-        // reference to the part that follows the indent to decide first line.
+        // (?:^|[\n\r])  # Start at either the beginning or the prev line break.
+        // (?:[\n\r]*)   # Skip the line break
+        // (\s+)         # Collect the indenting white-space...
+        // (?:[^\n\r]*)$ # ...up to the end or the next word, but in last line,
+        // by making sure no line breaks follow until the end.
         const str = parts.join('')
-        const match = str.match(/(?:^|[\n\r])(?:[\n\r]*)(\s+)([^\n\r]*)$/)
+        const match = str.match(/(?:^|[\n\r])(?:[\n\r]*)(\s+)(?:[^\n\r]*)$/)
         parts = [str]
-        const indentFirst = match && !match[2]
         const indent = match?.[1] || ''
-        if (indent && !indentFirst) {
-          parts.push(`${lines.shift()}${os.EOL}`)
-        }
         parts.push(lines.join(`${os.EOL}${indent}`))
       } else {
         parts.push(value)
@@ -114,7 +110,5 @@ export function deindent(strings, ...values) {
       indent = Math.min(indent, match[1].length)
     }
   }
-  return indent > 0
-    ? lines.map(line => line.slice(indent)).join(os.EOL)
-    : str
+  return lines.map(line => line.slice(indent)).join(os.EOL)
 }
