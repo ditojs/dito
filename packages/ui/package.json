@@ -18,7 +18,7 @@
   "dependencies": {
     "@ditojs/utils": "^0.12.0",
     "hint.css": "^2.5.0",
-    "node-sass": "^4.9.0",
+    "node-sass": "^4.9.1",
     "sass-svg": "^1.2.0",
     "vue": "^2.5.16"
   }

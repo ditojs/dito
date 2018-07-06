@@ -58,7 +58,7 @@
     "koa-router": "^7.4.0",
     "koa-session": "^5.8.1",
     "koa-webpack": "^5.0.2",
-    "node-sass": "^4.9.0",
+    "node-sass": "^4.9.1",
     "nodemon": "^1.17.5",
     "nsp": "^3.2.1",
     "objection": "^1.1.10",
@@ -71,7 +71,7 @@
     "uuid": "^3.2.1",
     "vue-loader": "^14.2.2",
     "vue-template-compiler": "^2.5.16",
-    "webpack": "^4.11.0"
+    "webpack": "^4.15.1"
   },
   "peerDependencies": {
     "knex": "^0.14.0"
