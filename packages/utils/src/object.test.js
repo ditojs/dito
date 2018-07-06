@@ -37,7 +37,7 @@ describe('clone()', () => {
   })
 
   it(`should clone dates`, () => {
-    const date = new Date()
+    const date = new Date(2012, 5, 9)
     const copy = clone(date)
     expect(copy).toStrictEqual(date)
     expect(copy).not.toBe(date)

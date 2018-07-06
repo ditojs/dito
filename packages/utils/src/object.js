@@ -2,6 +2,7 @@ import { isArray, isObject, isFunction, isDate } from './base'
 
 export const is = Object.is || (
   // SameValue algorithm:
+  // istanbul ignore next
   // eslint-disable-next-line no-self-compare
   (x, y) => x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y
 )
@@ -20,7 +21,9 @@ export function pick(...args) {
 
 export function clone(val) {
   let copy
-  if (isObject(val)) {
+  if (isDate(val)) {
+    copy = new val.constructor(+val)
+  } else if (isObject(val)) {
     copy = new val.constructor()
     for (const key in val) {
       copy[key] = clone(val[key])
@@ -30,8 +33,6 @@ export function clone(val) {
     for (let i = 0, l = val.length; i < l; i++) {
       copy[i] = clone(val[i])
     }
-  } else if (isDate(val)) {
-    copy = new val.constructor(+val)
   } else {
     copy = val
   }
