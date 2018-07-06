@@ -2,18 +2,23 @@ import { formatDate } from './date'
 
 describe('formatDate()', () => {
   const date = new Date(2012, 5, 9, 22, 45, 30)
-  const locale = 'en-US' // TODO: Test other locales once we move to Node 10
+  const locale = 'de-DE'
 
-  it('should format dates with default settings for date and time', () => {
-    expect(formatDate(date, { locale })).toBe('June 9, 2012, 10:45:30 PM')
+  it('should use the en-US locale by default', () => {
+    expect(formatDate(date)).toBe('June 9, 2012, 10:45:30 PM')
+    expect(formatDate(date, {})).toBe('June 9, 2012, 10:45:30 PM')
+  })
+
+  it('should format dates with different locale and default options', () => {
+    expect(formatDate(date, { locale })).toBe('9. Juni 2012, 22:45:30')
   })
 
   it('should omit time when `options.time = false`', () => {
-    expect(formatDate(date, { locale, time: false })).toBe('June 9, 2012')
+    expect(formatDate(date, { locale, time: false })).toBe('9. Juni 2012')
   })
 
   it('should omit date when `options.date = false`', () => {
-    expect(formatDate(date, { locale, date: false })).toBe('10:45:30 PM')
+    expect(formatDate(date, { locale, date: false })).toBe('22:45:30')
   })
 
   it('should support fine-grained control of `options.date`', () => {
@@ -26,7 +31,7 @@ describe('formatDate()', () => {
         },
         time: false
       })
-    ).toBe('Jun 2012')
+    ).toBe('Juni 2012')
   })
   expect(
     formatDate(date, {
@@ -37,5 +42,5 @@ describe('formatDate()', () => {
       },
       time: false
     })
-  ).toBe('June 09')
+  ).toBe('09. Juni')
 })
