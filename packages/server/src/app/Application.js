@@ -43,6 +43,7 @@ export class Application extends Koa {
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
+    this.validator.app = this
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
@@ -373,10 +374,10 @@ export class Application extends Koa {
       })
       return {
         list,
-        validate(data) {
+        validate: data => {
           // Returns `null` if successful, `validate.errors` otherwise.
-          // Use `call()` to pass `result` as context to Ajv, see passContext:
-          return validate.call(this, data) ? null : validate.errors
+          // Use `call()` to pass validator as context to Ajv, see passContext:
+          return validate.call(this.validator, data) ? null : validate.errors
         }
       }
     }

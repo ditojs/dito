@@ -164,9 +164,10 @@ export class Validator extends objection.Validator {
       }
       // Decide which validator to use based on options.patch:
       const ajv = options.patch ? this.ajvNoDefaults : this.ajvDefaults
-      const validator = ajv.getSchema(ctx.jsonSchema.$id)
-      validator.call(model, json)
-      const { errors } = validator
+      const validate = ajv.getSchema(ctx.jsonSchema.$id)
+      // Use `call()` to pass validator as context to Ajv, see passContext:
+      validate.call(this, json)
+      const { errors } = validate
       if (errors) {
         // NOTE: The conversion from Ajv errors to Objection errors happen in
         // Model.createValidationError(), through Validator.parseError()

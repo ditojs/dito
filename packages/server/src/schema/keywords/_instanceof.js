@@ -14,15 +14,15 @@ export const _instanceof = {
   },
 
   validate(schema, data) {
-    // Support instanceof for dito models. The trick is simple: If the
-    // instance is a model, then we can access the models and check. If not,
-    // then it's fine if it fails in case the check wants a model.
-    const models = this.$app?.models
-    for (const entry of asArray(schema)) {
-      const ctor = isString(entry)
-        ? constructors[entry] || models?.[entry]
-        : isFunction(entry)
-          ? entry
+    // Support instanceof for basic JS types and Dito models.
+    // If `this` is the app's validator (see passContext), then we can access
+    // the models and check.
+    const models = this?.app.models
+    for (const type of asArray(schema)) {
+      const ctor = isString(type)
+        ? constructors[type] || models[type]
+        : isFunction(type)
+          ? type
           : null
       if (ctor && data instanceof ctor) {
         return true

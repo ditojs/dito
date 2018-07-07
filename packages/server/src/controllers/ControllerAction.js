@@ -55,8 +55,7 @@ export default class ControllerAction {
     const resultData = {
       [resultName || 'root']: result
     }
-    // Use `call()` to pass `result` as context to Ajv, see passContext:
-    const resultErrors = this.returns?.validate.call(result, resultData)
+    const resultErrors = this.returns?.validate(resultData)
     if (resultErrors) {
       throw this.createValidationError({
         message: `Invalid result of action: ${JSON.stringify(result)}`,
