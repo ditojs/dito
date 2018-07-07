@@ -130,9 +130,13 @@ export class Validator extends objection.Validator {
         ? this.getFormat(params.format)
         : this.getKeyword(keyword)
       // Ajv produces duplicate validation errors sometimes, filter them out.
-      // Also skip keywords that are only delegating to other keywords.
+      // Also skip macro keywords that are only delegating to other keywords.
       const identifier = `${key}_${keyword}`
-      if (!duplicates[identifier] || !definition?.macro) {
+      if (
+        !duplicates[identifier] &&
+        !definition?.macro &&
+        !definition?.silent
+      ) {
         const array = errorHash[key] || (errorHash[key] = [])
         array.push({
           // Allow custom formats and keywords to override error messages.
