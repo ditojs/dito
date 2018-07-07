@@ -139,12 +139,22 @@ describe('addRelationSchemas()', () => {
   it('adds correct property schema for a has-many relation', () => {
     expect(addRelationSchemas(ModelOne, {})).toEqual({
       modelTwo: {
-        oneOf: [
-          {
-            $ref: 'ModelTwo'
-          },
+        anyOf: [
           {
             type: 'null'
+          },
+          {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'integer',
+                primary: true,
+                reference: true
+              }
+            }
+          },
+          {
+            $ref: 'ModelTwo'
           }
         ]
       }
@@ -156,8 +166,23 @@ describe('addRelationSchemas()', () => {
       modelOnes: {
         type: 'array',
         items: {
-          $ref: 'ModelOne'
-        }
+          anyOf: [
+            {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'integer',
+                  primary: true,
+                  reference: true
+                }
+              }
+            },
+            {
+              $ref: 'ModelOne'
+            }
+          ]
+        },
+        additionalItems: false
       }
     })
   })

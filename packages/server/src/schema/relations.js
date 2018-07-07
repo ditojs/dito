@@ -229,17 +229,40 @@ export function convertRelations(ownerModelClass, relations, models) {
  */
 export function addRelationSchemas(modelClass, properties) {
   for (const relation of modelClass.getRelationArray()) {
-    const $ref = relation.relatedModelClass.name
+    const { relatedModelClass } = relation
+    const $ref = relatedModelClass.name
+    const idName = relatedModelClass.getIdProperty()
+    const idProperty = relatedModelClass.definition.properties[idName]
+    // A schema to validate pure id-reference objects against.
+    // NOTE: We're not using `additionalProperties: false` here because that
+    // would populate the validation errors if the `$ref` schema fails, but the
+    // data is populated.
+    const idReference = {
+      type: 'object',
+      properties: {
+        [idName]: {
+          ...idProperty,
+          reference: true
+        }
+      }
+    }
     properties[relation.name] = relation.isOneToOne()
       ? {
-        oneOf: [
-          { $ref },
-          { type: 'null' }
+        anyOf: [
+          { type: 'null' },
+          idReference,
+          { $ref }
         ]
       }
       : {
         type: 'array',
-        items: { $ref }
+        items: {
+          anyOf: [
+            idReference,
+            { $ref }
+          ]
+        },
+        additionalItems: false
       }
   }
   return properties
