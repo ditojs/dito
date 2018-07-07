@@ -1,4 +1,4 @@
-import { isObject } from '@ditojs/utils'
+import { isObject, asArray } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, verb, path, authorize) {
@@ -84,12 +84,20 @@ export default class ControllerAction {
     // case prior to the call of `parameters.validate()`:
     const errors = []
     for (const { name, type } of this.parameters.list) {
-      if (type === 'object') {
+      // See if the defined type(s) require coercion to objects:
+      if (asArray(type).some(
+        // Coerce to object if type is 'object' or a known model name
+        value => value === 'object' || value in this.app.models
+      )) {
         const value = name ? params[name] : params
-        let converted = value
         if (value && !isObject(value)) {
           try {
-            converted = JSON.parse(value)
+            const converted = JSON.parse(value)
+            if (name) {
+              params[name] = converted
+            } else {
+              this.setParams(ctx, converted)
+            }
           } catch (err) {
             errors.push({
               dataPath: `.${name}`, // JavaScript property access notation
@@ -100,13 +108,6 @@ export default class ControllerAction {
                 json: true
               }
             })
-          }
-        }
-        if (converted !== value) {
-          if (name) {
-            params[name] = converted
-          } else {
-            this.setParams(ctx, converted)
           }
         }
       }
