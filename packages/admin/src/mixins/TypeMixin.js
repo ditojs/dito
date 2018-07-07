@@ -148,6 +148,10 @@ export default {
             ? process(value, data) ?? value
             : value
       }
+    },
+
+    processedData() {
+      return this.parentSchema.processData({ processIds: true })
     }
   },
 
