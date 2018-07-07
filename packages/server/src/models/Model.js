@@ -22,6 +22,7 @@ export class Model extends objection.Model {
     } catch (error) {
       throw error instanceof RelationError ? error : new RelationError(error)
     }
+    this.referenceValidator = null
   }
 
   static initializeRelation(relation) {
@@ -99,6 +100,39 @@ export class Model extends objection.Model {
 
   static transaction(handler) {
     return objection.transaction(this.knex(), handler)
+  }
+
+  static isReference(data) {
+    let validator = this.referenceValidator
+    if (!validator) {
+      const idName = this.getIdProperty()
+      const { type } = this.definition.properties[idName]
+      // For `data` to be considered a reference, it needs to hold only one
+      // value that is either the target's id, or an Objection.js #ref value:
+      validator = this.referenceValidator = this.app.compileValidator({
+        oneOf: [
+          {
+            type: 'object',
+            properties: {
+              [idName]: {
+                type
+              }
+            },
+            additionalProperties: false
+          },
+          {
+            type: 'object',
+            properties: {
+              '#ref': {
+                type: 'string'
+              }
+            },
+            additionalProperties: false
+          }
+        ]
+      })
+    }
+    return validator(data)
   }
 
   static query(trx) {

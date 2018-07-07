@@ -228,40 +228,50 @@ export function convertRelations(ownerModelClass, relations, models) {
  * Adds JSON schema properties for each of the modelClass' relations.
  */
 export function addRelationSchemas(modelClass, properties) {
-  for (const relation of modelClass.getRelationArray()) {
-    const { relatedModelClass } = relation
+  for (const relationInstance of modelClass.getRelationArray()) {
+    const { name, ownerModelClass, relatedModelClass } = relationInstance
+    const relationDefinition = ownerModelClass.definition.relations[name]
+    const isOneToOne = relationInstance.isOneToOne()
+    const { owner } = relationDefinition
     const $ref = relatedModelClass.name
-    const idName = relatedModelClass.getIdProperty()
-    const idProperty = relatedModelClass.definition.properties[idName]
-    // A schema to validate pure id-reference objects against.
-    // NOTE: We're not using `additionalProperties: false` here because that
-    // would populate the validation errors if the `$ref` schema fails, but the
-    // data is populated.
-    const idReference = {
-      type: 'object',
-      properties: {
-        [idName]: {
-          ...idProperty,
-          reference: true
+    const anyOf = []
+    if (isOneToOne) {
+      // Allow null-value on one-to-one relations
+      anyOf.push({
+        type: 'null'
+      })
+    }
+    if (!owner) {
+      // Allow reference objects for relations that don't own their data.
+      anyOf.push({
+        relate: $ref
+      })
+    }
+    // Finally the most complex validation, the model itself
+    anyOf.push(owner
+      // Support Objection.js #id references on owned data:
+      ? {
+        $merge: {
+          source: { $ref },
+          with: {
+            properties: {
+              '#id': {
+                type: 'string'
+              }
+            }
+          }
         }
       }
-    }
-    properties[relation.name] = relation.isOneToOne()
-      ? {
-        anyOf: [
-          { type: 'null' },
-          idReference,
-          { $ref }
-        ]
-      }
+      : { $ref }
+    )
+    const items = anyOf.length > 1
+      ? { anyOf }
+      : anyOf[0]
+    properties[name] = isOneToOne
+      ? items
       : {
         type: 'array',
-        items: {
-          anyOf: [
-            idReference,
-            { $ref }
-          ]
-        },
+        items,
         additionalItems: false
       }
   }

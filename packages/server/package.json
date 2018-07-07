@@ -30,6 +30,7 @@
     "@ditojs/utils": "^0.12.0",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.5.0",
+    "ajv-merge-patch": "^4.1.0",
     "autoprefixer": "^8.6.5",
     "babel-loader": "^8.0.0-beta.2",
     "bcryptjs": "^2.4.3",

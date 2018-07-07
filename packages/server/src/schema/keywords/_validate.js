@@ -11,15 +11,14 @@ export const validate = {
     parentSchema,
     dataPath,
     parentData,
-    property,
+    parentDataProperty,
     rootData
   ) {
     let result = schema.call(this, {
       data,
-      parentSchema,
       dataPath,
       parentData,
-      property,
+      parentDataProperty,
       rootData
     })
     if (isArray(result)) {

@@ -1,5 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
+import ajvMergePatch from 'ajv-merge-patch'
 import { isArray, isObject, clone } from '@ditojs/utils'
 import * as schema from '@/schema'
 
@@ -61,6 +62,7 @@ export class Validator extends objection.Validator {
       ...this.options,
       ...options
     })
+    ajvMergePatch(ajv)
 
     const add = (schemas, method) => {
       for (const [name, schema] of Object.entries(schemas)) {
@@ -129,12 +131,15 @@ export class Validator extends objection.Validator {
       const definition = keyword === 'format'
         ? this.getFormat(params.format)
         : this.getKeyword(keyword)
-      // Ajv produces duplicate validation errors sometimes, filter them out.
-      // Also skip macro keywords that are only delegating to other keywords.
       const identifier = `${key}_${keyword}`
       if (
+        // Ajv produces duplicate validation errors sometimes, filter them out.
         !duplicates[identifier] &&
+        // Skip keywords that start with $ such as $merge and $patch.
+        !/^\$/.test(keyword) &&
+        // Skip macro keywords that are only delegating to other keywords.
         !definition?.macro &&
+        // Filter out all custom keywords and formats that want to be silent.
         !definition?.silent
       ) {
         const array = errorHash[key] || (errorHash[key] = [])

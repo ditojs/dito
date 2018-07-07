@@ -126,7 +126,8 @@ describe('addRelationSchemas()', () => {
       modelOnes: {
         relation: 'has-many',
         from: 'ModelTwo.id',
-        to: 'ModelOne.modelTwoId'
+        to: 'ModelOne.modelTwoId',
+        owner: true
       }
     }
   }
@@ -136,51 +137,33 @@ describe('addRelationSchemas()', () => {
     models: { ModelOne, ModelTwo }
   }
 
-  it('adds correct property schema for a has-many relation', () => {
+  it('adds correct property schema for a belongs-to relation', () => {
     expect(addRelationSchemas(ModelOne, {})).toEqual({
       modelTwo: {
         anyOf: [
-          {
-            type: 'null'
-          },
-          {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'integer',
-                primary: true,
-                reference: true
-              }
-            }
-          },
-          {
-            $ref: 'ModelTwo'
-          }
+          { type: 'null' },
+          { relate: 'ModelTwo' },
+          { $ref: 'ModelTwo' }
         ]
       }
     })
   })
 
-  it('adds correct property schema for a belongs-to relation', () => {
+  it('adds correct property schema for a has-many owner relation', () => {
     expect(addRelationSchemas(ModelTwo, {})).toEqual({
       modelOnes: {
         type: 'array',
         items: {
-          anyOf: [
-            {
-              type: 'object',
+          $merge: {
+            source: { $ref: 'ModelOne' },
+            with: {
               properties: {
-                id: {
-                  type: 'integer',
-                  primary: true,
-                  reference: true
+                '#id': {
+                  type: 'string'
                 }
               }
-            },
-            {
-              $ref: 'ModelOne'
             }
-          ]
+          }
         },
         additionalItems: false
       }

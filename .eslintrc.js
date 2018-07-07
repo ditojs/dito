@@ -29,6 +29,10 @@ module.exports = {
     'arrow-parens': ['error', 'as-needed'],
     // Allow async-await.
     'generator-star-spacing': 'off',
+    'indent': ['error', 2, {
+      flatTernaryExpressions: true,
+      ignoredNodes: ['TemplateLiteral > *']
+    }],
     'max-len': ['error', 80, 2, {
       ignoreUrls: true,
       ignoreTemplateLiterals: true,
@@ -61,10 +65,6 @@ module.exports = {
       named: 'never',
       asyncArrow: 'always'
     }],
-    'space-in-parens': ['error', 'never'],
-    'indent': ['error', 2, {
-      flatTernaryExpressions: true,
-      ignoredNodes: ['TemplateLiteral > *']
-    }]
+    'space-in-parens': ['error', 'never']
   }
 }
