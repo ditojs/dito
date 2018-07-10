@@ -164,8 +164,7 @@ describe('addRelationSchemas()', () => {
               }
             }
           }
-        },
-        additionalItems: false
+        }
       }
     })
   })

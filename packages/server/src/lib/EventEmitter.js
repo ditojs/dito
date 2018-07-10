@@ -35,7 +35,7 @@ EventEmitter.mixin = function(target) {
 }
 
 EventEmitter.deferred = function(target) {
-  // Installs all public-facing methods except `emit()` as triggers that when
+  // Installs all public-facing methods except `emit()` as triggers, which when
   // first called fully install the EventEmitter functionality, by which they
   // get replaced. If no listeners are installed, `emit()` can do nothing until
   // EventEmitter.mixin() gets called in one of the triggers:

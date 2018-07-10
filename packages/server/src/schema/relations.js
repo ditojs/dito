@@ -271,8 +271,7 @@ export function addRelationSchemas(modelClass, properties) {
       ? items
       : {
         type: 'array',
-        items,
-        additionalItems: false
+        items
       }
   }
   return properties
