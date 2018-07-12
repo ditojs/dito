@@ -14,10 +14,12 @@ export default {
     selectValue: {
       get() {
         const convert = value => this.relate
-          ? this.getValueForOption(value)
+          ? this.hasOption(value)
+            ? this.getValueForOption(value)
+            : null
           : value
         const value = isArray(this.value)
-          ? this.value.map(convert)
+          ? this.value.map(convert).filter(value => value !== null)
           : convert(this.value)
         if (
           this.relate &&
@@ -160,6 +162,10 @@ export default {
         }
       }
       return options
+    },
+
+    hasOption(option) {
+      return !!this.getOptionForValue(this.getValueForOption(option))
     },
 
     getOptionForValue(value) {
