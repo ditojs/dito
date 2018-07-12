@@ -115,7 +115,7 @@ export default {
 
     getItemLabel(item, index = null, extended = false) {
       const { itemLabel } = this.sourceSchema
-      if (itemLabel === false) return null
+      if (!extended && itemLabel === false) return null
       const getFormLabel = () => this.getLabel(this.getFormSchema(item))
       let label = null
       if (isFunction(itemLabel)) {
