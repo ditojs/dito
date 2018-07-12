@@ -218,6 +218,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     })
   }
 
+  modify(arg, ...args) {
+    // Preserve Objection.js functionality of modify(), by delegating to
+    // super.applyFilter() instead of this.applyFilter()
+    // TODO: Move away from applyFilter() in Objection.js
+    return isString(arg)
+      ? super.applyFilter(arg, ...args)
+      : super.modify(arg, ...args)
+  }
+
   allowFilter(...filters) {
     this._allowFilters = this._allowFilters || {}
     for (const filter of filters) {
