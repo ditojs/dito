@@ -430,8 +430,11 @@ export class Model extends objection.Model {
       // Filter out the items that aren't references,
       // and collect ids to be loaded for references.
       if (modify.length > 0 || modelClass.isReference(item)) {
-        group.references.push(item)
-        group.ids.push(item[group.idProperty])
+        const id = item[group.idProperty]
+        if (id != null) {
+          group.references.push(item)
+          group.ids.push(id)
+        }
       }
     }
 
@@ -455,7 +458,7 @@ export class Model extends objection.Model {
             const modelClass = modelClasses[i]
             items = items.reduce((items, item) => {
               if (modelClass.isReference(item)) {
-                // Detected a reference item that isn't a leave: We need to
+                // Detected a reference item that isn't a leaf: We need to
                 // eager-load the rest of the path, and respect modify settings:
                 const eager = path.slice(i).map(
                   ({ relation, modify }) => modify.length > 0
@@ -480,7 +483,7 @@ export class Model extends objection.Model {
       }
     }
 
-    const groups = Object.values(grouped)
+    const groups = Object.values(grouped).filter(({ ids }) => ids.length > 0)
 
     // Load all found models by ids asynchronously.
     await Promise.map(
