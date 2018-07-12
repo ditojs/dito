@@ -284,6 +284,14 @@ describe('equals()', () => {
 })
 
 describe('merge()', () => {
+  it('should merge nested objects', () => {
+    const source1 = { a: { b: [] } }
+    const source2 = { a: { c: [] } }
+    const expected = { a: { b: [], c: [] } }
+    expect(merge({}, source1, source2)).toStrictEqual(expected)
+    expect(merge({}, source2, source1)).toStrictEqual(expected)
+  })
+
   it('should override keys in target with different types', () => {
     const source1 = { a: { b: 1 } }
     const source2 = { a: { b: [] } }
