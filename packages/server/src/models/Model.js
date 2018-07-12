@@ -456,8 +456,12 @@ export class Model extends objection.Model {
             items = items.reduce((items, item) => {
               if (modelClass.isReference(item)) {
                 // Detected a reference item that isn't a leave: We need to
-                // eager-load the rest of the path:
-                const eager = path.slice(i).map(({ relation }) => relation)
+                // eager-load the rest of the path, and respect modify settings:
+                const eager = path.slice(i).map(
+                  ({ relation, modify }) => modify.length > 0
+                    ? `${relation}(${modify.join(', ')})`
+                    : relation
+                )
                 addToGroup(item, modelClass, entry.modify, eager.join('.'))
               } else {
                 const value = item[entry.relation]
@@ -507,6 +511,8 @@ export class Model extends objection.Model {
         }
       }
     }
+
+    return graph
   }
 
   static createNotFoundError(ctx) {
