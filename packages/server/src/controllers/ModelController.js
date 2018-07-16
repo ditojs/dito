@@ -6,8 +6,8 @@ import { RelationController } from './RelationController'
 import { setupPropertyInheritance } from '@/utils'
 
 export class ModelController extends CollectionController {
-  initialize() {
-    super.initialize(true)
+  setup() {
+    super.setup(true)
     this.modelClass = this.modelClass ||
       this.app.models[camelize(pluralize.singular(this.name), true)]
     this.relations = this.setupRelations()

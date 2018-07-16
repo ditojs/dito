@@ -80,6 +80,9 @@ export class Application extends Koa {
     // model, getRelatedRelations() returns the full list of relating relations.
     for (const modelClass of sortedModels) {
       if (models[modelClass.name] === modelClass) {
+        modelClass.setup(this.knex)
+        // Now that the modelClass is set up, call `initialize()`, which can be
+        // overridden by sub-classes,without having to call `super.initialize()`
         modelClass.initialize()
         this.validator.addSchema(modelClass.getJsonSchema())
       }
@@ -100,7 +103,6 @@ export class Application extends Koa {
   addModel(modelClass) {
     modelClass.app = this
     this.models[modelClass.name] = modelClass
-    modelClass.knex(this.knex)
   }
 
   sortModels(models) {
@@ -175,8 +177,11 @@ export class Application extends Koa {
     // As a convention, the configuration of a service can be set to `false`
     // in order to entirely deactivate the service.
     if (config !== false) {
-      service.initialize(config)
+      service.setup(config)
       this.services[name] = service
+      // Now that the service is set up, call `initialize()` which can be
+      // overridden by services.
+      service.initialize()
     }
   }
 
@@ -211,9 +216,12 @@ export class Application extends Koa {
       throw new Error(`Invalid controller: ${controller}`)
     }
     // Inheritance of action methods cannot happen in the constructor itself,
-    // so call separate initialize() method after in order to take care of it.
-    controller.initialize()
+    // so call separate `setup()` method after in order to take care of it.
+    controller.setup()
     this.controllers[controller.url] = controller
+    // Now that the controller is set up, call `initialize()` which can be
+    // overridden by controllers.
+    controller.initialize()
     const middleware = controller.compose()
     if (middleware) {
       this.use(middleware)

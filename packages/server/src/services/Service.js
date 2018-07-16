@@ -9,19 +9,19 @@ export class Service {
     this.config = null
   }
 
-  initialize(config) {
+  setup(config) {
     this.config = config
-    // Now that config is set, call `setup()` which can be overridden by
-    // implementing services.
-    this.setup()
   }
 
-  setup() {
+  initialize() {
+    // Overridable in sub-classes
   }
 
   async start() {
+    // Overridable in sub-classes
   }
 
   async stop() {
+    // Overridable in sub-classes
   }
 }

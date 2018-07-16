@@ -11,8 +11,8 @@ export class CollectionController extends Controller {
     this.unrelate = false
   }
 
-  initialize(isRoot) {
-    super.initialize(isRoot, false)
+  setup(isRoot) {
+    super.setup(isRoot, false)
     this.idParam = this.level ? `id${this.level}` : 'id'
     this.graph = !!this.graph
     this.scope = this.scope || null

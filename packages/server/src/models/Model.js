@@ -14,10 +14,11 @@ import {
 import RelationAccessor from './RelationAccessor'
 
 export class Model extends objection.Model {
-  static initialize() {
+  static setup(knex) {
+    this.knex(knex)
     try {
       for (const relation of this.getRelationArray()) {
-        this.initializeRelation(relation)
+        this.setupRelation(relation)
       }
     } catch (error) {
       throw error instanceof RelationError ? error : new RelationError(error)
@@ -25,7 +26,7 @@ export class Model extends objection.Model {
     this.referenceValidator = null
   }
 
-  static initializeRelation(relation) {
+  static setupRelation(relation) {
     // Add this relation to the related model's relatedRelations, so it can
     // register all required foreign keys in its properties.
     relation.relatedModelClass.getRelatedRelations().push(relation)
@@ -68,8 +69,12 @@ export class Model extends objection.Model {
     defineAccessor(this.prototype, false)
   }
 
+  static initialize() {
+    // Overridable in sub-classes
+  }
+
   $initialize() {
-    // Do nothing by default.
+    // Overridable in sub-classes
   }
 
   get $app() {

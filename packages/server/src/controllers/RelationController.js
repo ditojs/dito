@@ -30,14 +30,14 @@ export class RelationController extends CollectionController {
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.path)}${chalk.white(':')}`, this.level)
     // Copy over all fields in the relation object except the ones that are
-    // going to be inherited in `initialize()` (relation, member, allow),
-    // for settings like scope, eagerScope, etc.
+    // going to be inherited in `setup()` (relation, member, allow), for
+    // settings like scope, eagerScope, etc.
     for (const key in this.object) {
       if (!['relation', 'member', 'allow'].includes(key)) {
         this[key] = this.object[key]
       }
     }
-    this.initialize(false)
+    this.setup(false)
   }
 
   // @override

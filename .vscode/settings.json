@@ -1,8 +1,8 @@
 {
   // Exclude Babel build folders:
   "files.exclude": {
-    "packages/*/dist/": true,
-    "packages/*/lib/": true
+    "packages/*/dist/**": true,
+    "packages/*/lib/**": true
   },
   // Disable VSCode's and Vetur's own validator in favor of ESLint:
   "javascript.validate.enable": false,

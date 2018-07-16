@@ -20,7 +20,11 @@ export class Controller {
     this.level = 0
   }
 
-  initialize(isRoot = true, setupControllerObject = true) {
+  initialize() {
+    // Overridable in sub-classes
+  }
+
+  setup(isRoot = true, setupControllerObject = true) {
     // If the class name ends in 'Controller', remove it from controller name.
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
