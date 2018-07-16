@@ -15,6 +15,8 @@ export class UserController extends ModelController {
         // user.lastLogin = new Date()
         // await user.$store()
       } catch (err) {
+        this.app.emit('error', err, ctx)
+        user = null
         error = err.data?.message || err.message
         ctx.status = err.status || 401
       }
