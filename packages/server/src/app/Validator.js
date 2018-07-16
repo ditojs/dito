@@ -17,6 +17,7 @@ export class Validator extends objection.Validator {
     super()
 
     this.options = {
+      useDefaults: true,
       allErrors: true,
       errorDataPath: 'property',
       validateSchema: true,
@@ -41,26 +42,22 @@ export class Validator extends objection.Validator {
 
     this.schemas = []
 
-    // Ajv instance that uses default values, used for most model validation.
-    this.ajvDefaults = this.createAjv({
-      useDefaults: true
-    })
-
-    // Ajv instance that doesn't use default values, needed to validate `patch`
-    // objects (objects that have a subset of properties).
-    this.ajvNoDefaults = this.createAjv({
-      useDefaults: false
-    })
-
-    // Dictionary to hold additionally created Ajv instances, using the
-    // stringified options with which they were created as their keys.
-    this.ajvs = {}
+    // Dictionary to hold all created Ajv instances, using the stringified
+    // options with which they were created as their keys.
+    this.ajvCache = Object.create(null)
+    // Default Ajv instance used for most model validation.
+    this.ajvFull = this.getAjv()
+    // Default Ajv instance use to validate `patch` objects.
+    this.ajvPatch = this.getAjv({ patch: true })
   }
 
   createAjv(options) {
+    const { patch, ...opts } = options
     const ajv = new Ajv({
       ...this.options,
-      ...options
+      ...opts,
+      // Patch-validators don't use default values:
+      ...(patch && { useDefaults: false })
     })
     ajvMergePatch(ajv)
 
@@ -80,7 +77,7 @@ export class Validator extends objection.Validator {
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
-      ajv.addSchema(schema)
+      addSchema(ajv, schema, options)
     }
 
     return ajv
@@ -88,7 +85,11 @@ export class Validator extends objection.Validator {
 
   getAjv(options = {}) {
     const key = JSON.stringify(options)
-    return this.ajvs[key] || (this.ajvs[key] = this.createAjv(options))
+    const { ajv } = this.ajvCache[key] || (this.ajvCache[key] = {
+      ajv: this.createAjv(options),
+      options
+    })
+    return ajv
   }
 
   compile(jsonSchema, options) {
@@ -105,13 +106,10 @@ export class Validator extends objection.Validator {
 
   addSchema(jsonSchema) {
     this.schemas.push(jsonSchema)
-    this.ajvDefaults.addSchema(jsonSchema)
-    // Remove required fields from schema.
-    this.ajvNoDefaults.addSchema({ ...jsonSchema, required: [] })
-    // Add schema also to all other already created Ajv instances,
-    // so they can reference models as well.
-    for (const ajv of Object.values(this.ajvs)) {
-      ajv.addSchema(jsonSchema)
+    // Add schema to all previously created Ajv instances, so they can reference
+    // the models.
+    for (const { ajv, options } of Object.values(this.ajvCache)) {
+      addSchema(ajv, jsonSchema, options)
     }
   }
 
@@ -172,7 +170,7 @@ export class Validator extends objection.Validator {
         json = clone(json)
       }
       // Decide which validator to use based on options.patch:
-      const ajv = options.patch ? this.ajvNoDefaults : this.ajvDefaults
+      const ajv = options.patch ? this.ajvPatch : this.ajvFull
       const validate = ajv.getSchema(ctx.jsonSchema.$id)
       // Use `call()` to pass validator as context to Ajv, see passContext:
       validate.call(this, json)
@@ -223,4 +221,17 @@ function hasDefaults(obj) {
     }
   }
   return false
+}
+
+function addSchema(ajv, jsonSchema, options) {
+  ajv.addSchema(
+    options.patch
+      // Remove all required keywords from schema for patch validation.
+      ? clone(jsonSchema, value => {
+        if (isObject(value)) {
+          delete value.required
+        }
+      })
+      : jsonSchema
+  )
 }
