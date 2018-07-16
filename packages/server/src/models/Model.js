@@ -385,6 +385,16 @@ export class Model extends objection.Model {
   }
 
   static async populateGraph(graph, expr) {
+    // TODO: Optimize the scenario where an item that isn't a leaf is a
+    // reference and has multiple sub-paths to be populated. We may need to
+    // move away from graph path handling and directly process the expression
+    // tree, composing paths to the current place on the fly, and process data
+    // with addToGroup(). Then use the sub-tree as eager expression when
+    // encountering references (needs toString() for caching also?)
+    // TODO: Better idea: First cache groups by the path up to their location in
+    // the graph, and collect modify + eager statements there for references
+    // that are not leaves. Then use the resulting nodes to create new groups by
+    // model name / modify / eager.
     expr = objection.RelationExpression.create(expr)
     // Convert RelationExpression to an array of paths, that themselves contain
     // path entries with relation names and modify settings.
@@ -394,10 +404,10 @@ export class Model extends objection.Model {
         if (expr.hasOwnProperty(key)) {
           const child = expr[key]
           if (isObject(child)) {
-            const entry = {
-              relation: child.$relation || key,
-              modify: child.$modify
-            }
+            const relation = child.$relation || key
+            const alias = relation !== key ? key : undefined
+            const modify = child.$modify
+            const entry = { relation, alias, modify }
             const subPaths = collectPaths(child)
             if (subPaths.length > 0) {
               // The child has itself children.
@@ -461,9 +471,12 @@ export class Model extends objection.Model {
                 // Detected a reference item that isn't a leaf: We need to
                 // eager-load the rest of the path, and respect modify settings:
                 const eager = path.slice(i).map(
-                  ({ relation, modify }) => modify.length > 0
-                    ? `${relation}(${modify.join(', ')})`
-                    : relation
+                  ({ relation, alias, modify }) => {
+                    const expr = alias ? `${relation} as ${alias}` : relation
+                    return modify.length > 0
+                      ? `${expr}(${modify.join(', ')})`
+                      : expr
+                  }
                 )
                 addToGroup(item, modelClass, entry.modify, eager.join('.'))
               } else {
