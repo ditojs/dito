@@ -19,24 +19,24 @@ export function pick(...args) {
   }
 }
 
-export function clone(val) {
+export function clone(val, iteratee = null) {
   let copy
   if (isDate(val)) {
     copy = new val.constructor(+val)
   } else if (isObject(val)) {
     copy = new val.constructor()
     for (const key in val) {
-      copy[key] = clone(val[key])
+      copy[key] = clone(val[key], iteratee)
     }
   } else if (isArray(val)) {
     copy = new val.constructor(val.length)
     for (let i = 0, l = val.length; i < l; i++) {
-      copy[i] = clone(val[i])
+      copy[i] = clone(val[i], iteratee)
     }
   } else {
     copy = val
   }
-  return copy
+  return iteratee?.(copy) ?? copy
 }
 
 export function equals(val1, val2) {
