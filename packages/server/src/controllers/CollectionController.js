@@ -114,9 +114,13 @@ export class CollectionController extends Controller {
 
     async find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
-      return this.execute(false, ctx, query =>
+      const result = await this.execute(false, ctx, query =>
         query[find](ctx.query, this.findOptions).modify(modify)
       )
+      // This method doesn't always return an array:
+      // For RelationControllers where `isOneToOne` is true, it can return
+      // `undefined`. Cast to `null` for such cases:
+      return result || null
     },
 
     async delete(ctx, modify) {
