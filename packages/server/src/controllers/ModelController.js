@@ -42,7 +42,7 @@ export class ModelController extends CollectionController {
   }
 
   // @override
-  execute(transacted, ctx, execute) {
+  async execute(transacted, ctx, execute) {
     // NOTE: `ctx` is required by RelationController.execute()
     const executeQuery = trx => {
       const query = this.modelClass.query(trx)

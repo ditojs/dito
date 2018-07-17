@@ -87,11 +87,11 @@ export class CollectionController extends Controller {
     return query
   }
 
-  execute(/* transaction, ctx, execute(query, trx) {} */) {
+  async execute(/* transaction, ctx, execute(query, trx) {} */) {
     // Does nothing in base class.
   }
 
-  executeAndFetch(action, ctx, modify) {
+  async executeAndFetch(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
     return this.execute(this.graph, ctx, query =>
       query[name](ctx.request.body)
@@ -99,7 +99,7 @@ export class CollectionController extends Controller {
     )
   }
 
-  executeAndFetchById(action, ctx, modify) {
+  async executeAndFetchById(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     return this.execute(this.graph, ctx, query =>
       query[name](this.getId(ctx), ctx.request.body)
