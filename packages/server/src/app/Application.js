@@ -31,12 +31,12 @@ import {
 } from '@ditojs/utils'
 
 export class Application extends Koa {
-  constructor(config = {}, { validator, models, controllers, services }) {
+  constructor(
+    config = {},
+    { validator, events, models, controllers, services }
+  ) {
     super()
-    // Override Koa's events with our own EventEmitter that adds support for
-    // asynchronous events.
-    // TODO: Test if Koa's internal events still behave the same (they should!)
-    EventEmitter.mixin(this)
+    this.setupEmitter(events)
     // Pluck keys out of `config.app` to keep them secret
     const { keys, ...app } = config.app || {}
     this.config = { ...config, app }
@@ -574,3 +574,7 @@ export class Application extends Koa {
     }
   }
 }
+
+// Override Koa's events with our own EventEmitter that adds support for
+// asynchronous events.
+EventEmitter.mixin(Application.prototype)

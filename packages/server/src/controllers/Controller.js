@@ -3,6 +3,7 @@ import Router from 'koa-router'
 import multer from 'koa-multer'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
+import { EventEmitter } from '@/lib'
 import ControllerAction from './ControllerAction'
 import MemberAction from './MemberAction'
 import {
@@ -25,6 +26,7 @@ export class Controller {
   }
 
   setup(isRoot = true, setupControllerObject = true) {
+    this.setupEmitter(this.hooks)
     // If the class name ends in 'Controller', remove it from controller name.
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
@@ -254,6 +256,16 @@ export class Controller {
     }
   }
 
+  async emitHook(type, ctx, result) {
+    for (const handler of this.listeners(type)) {
+      const res = await handler.call(this, ctx, result)
+      if (res !== undefined) {
+        result = res
+      }
+    }
+    return result
+  }
+
   /**
    * Converts the authorize config settings into an authorization function that
    * can be passed to `handleAuthorization()`.
@@ -350,16 +362,11 @@ export class Controller {
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
     const ActionClass = type === 'member' ? MemberAction : ControllerAction
+    // The default path for actions is the normalized name.
+    const path = this.app.normalizePath(name)
     this.setupActionRoute(
       type,
-      new ActionClass(
-        this,
-        handler,
-        'get',
-        // The default path for actions is the normalized name
-        this.app.normalizePath(name),
-        authorize
-      )
+      new ActionClass(this, handler, type, name, 'get', path, authorize)
     )
   }
 
@@ -457,5 +464,7 @@ export class Controller {
     }
   }
 }
+
+EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()

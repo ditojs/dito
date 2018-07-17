@@ -552,7 +552,6 @@ export class Model extends objection.Model {
   static createValidationError({ type, message, errors, options }) {
     switch (type) {
     case 'ModelValidation':
-    case 'ControllerValidation':
       return this.app.createValidationError({
         type,
         message: message ||

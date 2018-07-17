@@ -1,8 +1,8 @@
 import ControllerAction from './ControllerAction'
 
 export default class MemberAction extends ControllerAction {
-  constructor(controller, handler, verb, path, authorize) {
-    super(controller, handler, verb, path, authorize)
+  constructor(controller, handler, type, name, verb, path, authorize) {
+    super(controller, handler, type, name, verb, path, authorize)
     // Copy over fields set by @scope() and @eagerScope() decorators
     this.scope = handler.scope
     this.eagerScope = handler.eagerScope

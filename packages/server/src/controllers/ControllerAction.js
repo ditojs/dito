@@ -1,9 +1,12 @@
 import { isObject, asArray } from '@ditojs/utils'
 
 export default class ControllerAction {
-  constructor(controller, handler, verb, path, authorize) {
+  constructor(controller, handler, type, name, verb, path, authorize) {
     this.controller = controller
     this.handler = handler
+    this.type = type
+    this.name = name
+    this.identifier = `${type}:${name}`
     // Allow decorators on actions to override the predetermined defaults for
     // `verb`, `path` and `authorize`:
     this.verb = handler.verb || verb
@@ -35,34 +38,13 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    const paramsErrors = this.validateParameters(ctx)
-    if (paramsErrors) {
-      throw this.createValidationError({
-        message: `The provided data is not valid: ${
-          JSON.stringify(this.getParams(ctx))
-        }`,
-        errors: paramsErrors
-      })
-    }
-
+    await this.controller.emitHook(`before:${this.identifier}`, ctx)
+    this.validateParameters(ctx)
     const args = await this.collectArguments(ctx)
     await this.controller.handleAuthorization(this.authorization, ...args)
-
-    const result = await this.handler.call(this.controller, ...args)
-    const resultName = this.handler.returns?.name
-    // Use 'root' if no name is given, see:
-    // Application.compileParametersValidator()
-    const resultData = {
-      [resultName || 'root']: result
-    }
-    const resultErrors = this.returns?.validate(resultData)
-    if (resultErrors) {
-      throw this.createValidationError({
-        message: `Invalid result of action: ${JSON.stringify(result)}`,
-        errors: resultErrors
-      })
-    }
-    return resultName ? resultData : result
+    let result = await this.handler.call(this.controller, ...args)
+    result = this.validateResult(result)
+    return this.controller.emitHook(`after:${this.identifier}`, ctx, result)
   }
 
   createValidationError({ message, errors }) {
@@ -74,7 +56,7 @@ export default class ControllerAction {
   }
 
   validateParameters(ctx) {
-    if (!this.parameters) return null
+    if (!this.parameters) return
     const params = this.getParams(ctx)
     // NOTE: `parameters.validate(query)` coerces data in the query to the
     // required formats, according to the rules specified here:
@@ -98,6 +80,7 @@ export default class ControllerAction {
               this.setParams(ctx, converted)
             }
           } catch (err) {
+            // Convert error to Ajv validation error format:
             errors.push({
               dataPath: `.${name}`, // JavaScript property access notation
               keyword: 'type',
@@ -115,7 +98,31 @@ export default class ControllerAction {
     if (errs) {
       errors.push(...errs)
     }
-    return errors.length > 0 ? errors : null
+    if (errors.length > 0) {
+      throw this.createValidationError({
+        message: `The provided data is not valid: ${
+          JSON.stringify(this.getParams(ctx))
+        }`,
+        errors
+      })
+    }
+  }
+
+  validateResult(result) {
+    const resultName = this.handler.returns?.name
+    // Use 'root' if no name is given, see:
+    // Application.compileParametersValidator()
+    const resultData = {
+      [resultName || 'root']: result
+    }
+    const errors = this.returns?.validate(resultData)
+    if (errors) {
+      throw this.createValidationError({
+        message: `Invalid result of action: ${JSON.stringify(result)}`,
+        errors
+      })
+    }
+    return resultName ? resultData : result
   }
 
   collectConsumedArguments(ctx, consumed) {

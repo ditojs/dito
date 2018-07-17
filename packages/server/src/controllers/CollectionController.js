@@ -29,9 +29,10 @@ export class CollectionController extends Controller {
     if (name in actionToVerb) {
       // NOTE: `ControllerAction` is used even for the default member actions,
       // since they don't need to fetch members ahead of their call.
+      const verb = actionToVerb[name]
       this.setupActionRoute(
         type,
-        new ControllerAction(this, handler, actionToVerb[name], '', authorize)
+        new ControllerAction(this, handler, type, name, verb, '', authorize)
       )
     } else {
       return super.setupAction(type, name, handler, authorize)
@@ -111,47 +112,44 @@ export class CollectionController extends Controller {
     // Mark action object as $core, so `filterValues()` can correctly filter.
     $core: true,
 
-    find(ctx, modify) {
+    async find(ctx, modify) {
       const find = this.isOneToOne ? 'findOne' : 'find'
       return this.execute(false, ctx, query =>
-        query[find](ctx.query, this.findOptions)
-          .modify(modify)
-          .then(result => result || null)
+        query[find](ctx.query, this.findOptions).modify(modify)
       )
     },
 
-    delete(ctx, modify) {
-      return this.execute(false, ctx, query => query
+    async delete(ctx, modify) {
+      const count = await this.execute(false, ctx, query => query
         .clearScope()
         .find(ctx.query, this.findOptions)
         .modify(query => this.isOneToOne && query.throwIfNotFound())
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
-        .then(count => ({ count }))
       )
+      return { count }
     },
 
-    insert(ctx, modify) {
-      const query = this.relate
+    async insert(ctx, modify) {
+      const result = this.relate
         // Use patchGraphAndFetch() to handle relates for us.
-        ? this.execute(true, ctx, query => query
+        ? await this.execute(true, ctx, query => query
           .patchGraphAndFetch(ctx.request.body, { relate: true })
           .modify(modify)
         )
-        : this.executeAndFetch('insert', ctx, modify)
-      return query.then(result => {
-        ctx.status = 201
-        if (isObject(result)) {
-          ctx.set('Location', this.getUrl('collection', result.id))
-        }
-      })
+        : await this.executeAndFetch('insert', ctx, modify)
+      ctx.status = 201
+      if (isObject(result)) {
+        ctx.set('Location', this.getUrl('collection', result.id))
+      }
+      return result
     },
 
-    update(ctx, modify) {
+    async update(ctx, modify) {
       return this.executeAndFetch('update', ctx, modify)
     },
 
-    patch(ctx, modify) {
+    async patch(ctx, modify) {
       return this.executeAndFetch('patch', ctx, modify)
     }
   }
@@ -160,7 +158,7 @@ export class CollectionController extends Controller {
     // See collection.$core:
     $core: true,
 
-    find(ctx, modify) {
+    async find(ctx, modify) {
       return this.execute(false, ctx, query => query
         .findById(this.getId(ctx), ctx.query, this.findOptions)
         .throwIfNotFound()
@@ -168,22 +166,22 @@ export class CollectionController extends Controller {
       )
     },
 
-    delete(ctx, modify) {
-      return this.execute(false, ctx, query => query
+    async delete(ctx, modify) {
+      const count = await this.execute(false, ctx, query => query
         .clearScope()
         .findById(this.getId(ctx), ctx.query, this.findOptions)
         .throwIfNotFound()
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
-        .then(count => ({ count }))
       )
+      return { count }
     },
 
-    update(ctx, modify) {
+    async update(ctx, modify) {
       return this.executeAndFetchById('update', ctx, modify)
     },
 
-    patch(ctx, modify) {
+    async patch(ctx, modify) {
       return this.executeAndFetchById('patch', ctx, modify)
     }
   }
