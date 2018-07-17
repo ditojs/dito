@@ -6,7 +6,8 @@ export default {
 
   data() {
     return {
-      resolvedData: null
+      resolvedData: null,
+      hasOptions: false
     }
   },
 
@@ -22,13 +23,15 @@ export default {
           ? this.value.map(convert).filter(value => value !== null)
           : convert(this.value)
         if (
-          this.relate &&
-          this.hasOptions() &&
-          this.parentSchema.isReference(this.value)
+          // When relating and as soon as the options are available...
+          this.relate && this.hasOptions && (
+            // ...if the value is forced to null because a disappeared option...
+            value === null && this.value !== null ||
+            // ...or if the value is a reference, replace it with its option
+            // value, so that it'll hold actual data, not just a reference id.
+            this.parentSchema.isReference(this.value)
+          )
         ) {
-          // When relating, and as soon as the options are available, replace
-          // the original, shallow value with its option version, so that it'll
-          // hold actually data, not just an reference id.
           this.selectValue = value
         }
         return value
@@ -51,10 +54,12 @@ export default {
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
           const { rootData } = this
-          data = rootData &&
-            data.call(this, this.data, rootData, this.dataPath)
+          // Only evaluate the function once `rootData` is available.
+          data = rootData && data.call(this, this.data, rootData, this.dataPath)
         }
-        if (isPromise(data)) {
+        if (isArray(data)) {
+          this.hasOptions = true
+        } else if (isPromise(data)) {
           // If the data is asynchronous, we can't return it straight away.
           // But we can "cheat" using computed properties and `resolvedData`,
           // which is going to receive the loaded data asynchronously,
@@ -64,17 +69,18 @@ export default {
             .then(data => {
               this.setLoading(false)
               this.resolvedData = data
+              this.hasOptions = true
             })
             .catch(error => {
               this.setLoading(false)
               this.addError(error.message, false)
               this.resolvedData = []
             })
-          // Use an empty array for now, until resolved.
-          data = []
+          // Clear until promise is resolved.
+          data = null
         }
       }
-      return this.processOptions(data)
+      return this.processOptions(data || [])
     },
 
     relate() {
@@ -123,11 +129,7 @@ export default {
   },
 
   methods: {
-    hasOptions() {
-      return this.options.length > 0
-    },
-
-    processOptions(options = []) {
+    processOptions(options) {
       if (options.length) {
         if (this.relate) {
           // If ids are missing and we want to relate, set temporary ids.
