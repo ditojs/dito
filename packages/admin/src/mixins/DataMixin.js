@@ -1,7 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import LoadingMixin from './LoadingMixin'
 import { isListSource } from '@/utils/schema'
-import { isString, isFunction, clone } from '@ditojs/utils'
+import { isString, isFunction, clone, labelize } from '@ditojs/utils'
 
 export default {
   mixins: [LoadingMixin],
@@ -218,7 +218,9 @@ export default {
             if (data?.type === 'FilterValidation' && this.onFilterErrors) {
               this.onFilterErrors(data.errors)
               return true
-            } else if (response.status === 401) {
+            } else if (this.isUnauthorizedError(response)) {
+              // TODO: Can we really swallow these errors?
+              // Is calling `ensureUser()` in `onBeforeRequest()` enough?
               return true
             }
           }
@@ -228,8 +230,12 @@ export default {
       })
     },
 
-    hasValidationError(response) {
+    isValidationError(response) {
       return response?.status === 400
+    },
+
+    isUnauthorizedError(response) {
+      return response?.status === 401
     },
 
     async request(method, options, callback) {
@@ -244,8 +250,14 @@ export default {
         callback?.(null, response)
       } catch (error) {
         // If callback returns true, errors were already handled.
-        if (!callback?.(error, error.response)) {
-          this.notify('error', 'Request Error', error)
+        const { response } = error
+        if (!callback?.(error, response)) {
+          const data = response?.data
+          if (data && isString(data.type)) {
+            this.notify('error', labelize(data.type), data.message || error)
+          } else {
+            this.notify('error', 'Request Error', error)
+          }
         }
       }
       this.setLoading(false)

@@ -421,7 +421,7 @@ export default DitoComponent.component('dito-form', {
           if (err) {
             // See if we're dealing with a Dito validation error:
             let error = null
-            const errors = this.hasValidationError(response) && data.errors
+            const errors = this.isValidationError(response) && data.errors
             if (errors) {
               try {
                 if (this.$refs.schema.showErrors(errors, true)) {
