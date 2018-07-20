@@ -21,8 +21,13 @@ export class DatabaseError extends WrappedError {
     // https://gitter.im/Vincit/objection.js?at=5a68728f5a9ebe4f75ca40b0
     const [, sql, message] = error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
       [null, null, error.message]
-    super(Object.setPrototypeOf({ message, sql }, error),
-      { message: 'Database error', status })
+    const converted = Object.setPrototypeOf({
+      type: error.constructor.name,
+      message,
+      sql,
+      status
+    }, error)
+    super(converted, { message: 'Database error', status })
   }
 
   toJSON() {

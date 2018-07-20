@@ -1,14 +1,17 @@
 import { isPlainObject, isString } from '@ditojs/utils'
 
 export class ResponseError extends Error {
-  constructor(error, defaults = { Message: 'Response error', status: 400 }) {
+  constructor(error, defaults = { message: 'Response error', status: 400 }) {
     error = isPlainObject(error)
       ? error
       : error instanceof Error
-        ? Object.setPrototypeOf({
+        ? { // Copy error into object so they can be merged with defaults after.
+          // First copy everything that is enumerable:
+          ...error,
+          // Also explicitly copy message and status.
           message: error.message,
           status: error.status
-        }, error)
+        }
         : isString(error)
           ? { message: error }
           : error || {}
