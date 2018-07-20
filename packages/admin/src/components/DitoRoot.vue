@@ -99,10 +99,7 @@ export default DitoComponent.component('dito-root', {
             }
           }
         },
-        data: {
-          username: 'me',
-          password: 'secret'
-        }
+        data: {}
       }, {
         width: '480px',
         height: 'auto',
