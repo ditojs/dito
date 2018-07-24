@@ -4,7 +4,7 @@
     :id="dataPath"
     :name="dataPath"
     type="text"
-    :value="computedValue"
+    :value="value"
     :disabled="disabled"
     :readonly="true"
   )
@@ -13,15 +13,5 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
-export default TypeComponent.register('computed', {
-  computed: {
-    computedValue() {
-      const value = this.schema.compute(this.data, this.rootData)
-      if (value !== undefined) {
-        this.value = value
-      }
-      return this.value
-    }
-  }
-})
+export default TypeComponent.register('computed')
 </script>

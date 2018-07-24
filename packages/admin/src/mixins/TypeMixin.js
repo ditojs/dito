@@ -49,7 +49,16 @@ export default {
 
     value: {
       get() {
-        return this.data[this.name]
+        const { compute } = this.schema
+        if (compute) {
+          const value = compute.call(this, this.data, this.rootData)
+          if (value !== undefined) {
+            this.value = value
+          }
+          return value
+        } else {
+          return this.data[this.name]
+        }
       },
       set(value) {
         this.$set(this.data, this.name, value)
