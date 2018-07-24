@@ -50,15 +50,15 @@ export default {
     value: {
       get() {
         const { compute } = this.schema
+        let value = this.data[this.name]
         if (compute) {
-          const value = compute.call(this, this.data, this.rootData)
-          if (value !== undefined) {
-            this.value = value
+          const computed = compute.call(this, this.data, this.rootData)
+          if (computed !== undefined) {
+            // Trigger sett tot update computed value.
+            this.value = value = computed
           }
-          return value
-        } else {
-          return this.data[this.name]
         }
+        return value
       },
       set(value) {
         this.$set(this.data, this.name, value)
