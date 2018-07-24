@@ -259,8 +259,9 @@ export default {
         .then(response => response.data)
         .catch(error => {
           // Convert axios errors to normal errors
-          throw error.response
-            ? new Error(error.response?.data)
+          const data = error.response?.data
+          throw data
+            ? Object.assign(new Error(data.message), data)
             : error
         })
       if (loadCache) {
