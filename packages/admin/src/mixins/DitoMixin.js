@@ -6,7 +6,11 @@ import {
 } from '@ditojs/utils'
 
 export default {
-  inject: ['api', 'parentSchema'],
+  inject: [
+    'api',
+    '$routeComponent',
+    '$schemaComponent'
+  ],
 
   data() {
     return {
@@ -25,31 +29,20 @@ export default {
     },
 
     routeComponent() {
-      // Only return this if it's still in the route (has a `routeRecord`).
-      if (this.isRoute && this.routeRecord) {
-        return this
-      }
-      // Skip to the parent that defines the `routeComponent` computed property,
-      // and defer to it. This filtering is required due to the use of non-Dito
-      // components such as VueDraggable, which don't inherit the DitoMixin.
-      let parent = this.$parent
-      while (parent && !('routeComponent' in parent)) {
-        parent = parent.$parent
-      }
-      return parent?.routeComponent
+      // Use computed properties as links to injects, so RouteMixin can
+      // override the property and return `this` instead of the parent.
+      return this.$routeComponent
+    },
+
+    schemaComponent() {
+      // Use computed properties as links to injects, so DitoSchema can
+      // override the property and return `this` instead of the parent.
+      return this.$schemaComponent
     },
 
     formComponent() {
       const comp = this.routeComponent
       return comp?.isForm ? comp : null
-    },
-
-    parentRouteComponent() {
-      return (this.isRoute ? this.$parent : this)?.routeComponent
-    },
-
-    parentFormComponent() {
-      return (this.isForm ? this.$parent : this)?.formComponent
     },
 
     // Returns the first route component in the chain of parents that doesn't
@@ -62,14 +55,27 @@ export default {
       return routeComponent
     },
 
+    parentRouteComponent() {
+      return this.routeComponent?.$parent.routeComponent
+    },
+
+    parentFormComponent() {
+      return this.formComponent?.$parent.formComponent
+    },
+
+    parentSchemaComponent() {
+      return this.schemaComponent?.$parent.schemaComponent
+    },
+
     // Returns the data of the first route component in the chain of parents
     // that doesn't hold nested data.
     rootData() {
       return this.dataRouteComponent?.data
     },
 
+    // Returns the parent schema's data.
     parentData() {
-      return this.parentRouteComponent?.data
+      return this.parentSchemaComponent?.data
     }
   },
 
@@ -180,14 +186,14 @@ export default {
       })
     },
 
-    getSchemaComponent(dataPathOrKey) {
-      let schema = this.parentSchema
+    getComponent(dataPathOrKey) {
+      let schema = this.schemaComponent
       while (schema) {
         const comp = schema.getComponent(dataPathOrKey)
         if (comp) {
           return comp
         }
-        schema = schema.parentSchema
+        schema = schema.parentSchemaComponent
       }
       return null
     },

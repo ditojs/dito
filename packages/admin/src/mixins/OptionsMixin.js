@@ -29,7 +29,7 @@ export default {
             value === null && this.value !== null ||
             // ...or if the value is a reference, replace it with its option
             // value, so that it'll hold actual data, not just a reference id.
-            this.parentSchema.isReference(this.value)
+            this.schemaComponent.isReference(this.value)
           )
         ) {
           this.selectValue = value
@@ -139,7 +139,7 @@ export default {
           // we're currently editing.
           for (const option of options) {
             if (!('id' in option)) {
-              this.parentSchema.setTemporaryId(option)
+              this.schemaComponent.setTemporaryId(option)
             }
           }
         }

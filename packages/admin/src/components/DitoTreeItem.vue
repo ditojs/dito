@@ -257,7 +257,7 @@ export default DitoComponent.component('dito-tree-item', {
         // Build a children list with child meta information for the template.
         return this.childrenList?.map((data, index) => {
           const path = children.path && `${this.path}/${children.path}/${index}`
-          const dataPath = this.parentSchema.appendDataPath(
+          const dataPath = this.schemaComponent.appendDataPath(
             this.dataPath,
             `${children.name}/${index}`
           )

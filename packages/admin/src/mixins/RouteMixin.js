@@ -6,9 +6,14 @@ export default {
     validator: 'new'
   },
 
+  provide() {
+    return {
+      $routeComponent: this
+    }
+  },
+
   data() {
     return {
-      isRoute: true,
       reload: false,
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
@@ -40,6 +45,11 @@ export default {
   },
 
   computed: {
+    routeComponent() {
+      // Override DitoMixin's routeComponent() which uses the injected value.
+      return this
+    },
+
     routeRecord() {
       // Retrieve the route-record to which this component was mapped to:
       // https://github.com/vuejs/vue-router/issues/1338#issuecomment-296381459

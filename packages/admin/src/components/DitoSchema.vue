@@ -126,11 +126,16 @@ export default DitoComponent.component('dito-schema', {
 
   provide() {
     return {
-      parentSchema: this
+      $schemaComponent: this
     }
   },
 
   computed: {
+    schemaComponent() {
+      // Override DitoMixin's schemaComponent() which uses the injected value.
+      return this
+    },
+
     tabs() {
       return this.schema?.tabs
     },
@@ -162,9 +167,7 @@ export default DitoComponent.component('dito-schema', {
         this.$delete(this.components, dataPath)
         // NOTE: We don't remove the dataProcessors here!
       }
-      // Hierarchically loop up the nested schema chain
-      // and register components with all parents.
-      this.parentSchema?.registerComponent(dataPath, comp)
+      this.parentSchemaComponent?.registerComponent(dataPath, comp)
     },
 
     getComponent(dataPathOrKey) {

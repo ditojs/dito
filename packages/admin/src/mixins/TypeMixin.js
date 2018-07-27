@@ -6,7 +6,7 @@ export default {
   // See: https://github.com/logaretm/vee-validate/issues/468
   // NOTE: We can't do this in DitoMixin for all components, as it would
   // override the $validates: true` setting there.
-  inject: ['$validator', 'parentSchema'],
+  inject: ['$validator'],
 
   props: {
     schema: { type: Object, required: true },
@@ -25,17 +25,17 @@ export default {
 
   watch: {
     dataPath(newDataPath, oldDataPath) {
-      this.parentSchema?.registerComponent(oldDataPath, null)
-      this.parentSchema?.registerComponent(newDataPath, this)
+      this.schemaComponent?.registerComponent(oldDataPath, null)
+      this.schemaComponent?.registerComponent(newDataPath, this)
     }
   },
 
   created() {
-    this.parentSchema?.registerComponent(this.dataPath, this)
+    this.schemaComponent?.registerComponent(this.dataPath, this)
   },
 
   destroyed() {
-    this.parentSchema?.registerComponent(this.dataPath, null)
+    this.schemaComponent?.registerComponent(this.dataPath, null)
   },
 
   computed: {
@@ -160,7 +160,7 @@ export default {
     },
 
     processedData() {
-      return this.parentSchema.processData({ processIds: true })
+      return this.schemaComponent.processData({ processIds: true })
     }
   },
 

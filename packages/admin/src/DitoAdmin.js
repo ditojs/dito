@@ -100,7 +100,10 @@ export default class DitoAdmin {
       },
       provide: {
         api,
-        parentSchema: null
+        // Placeholder provides so DitoMixin can inject them for all components:
+        // inject: [ '$routeComponent', '$schemaComponent' ]
+        $routeComponent: null,
+        $schemaComponent: null
       },
       template: '<dito-root :views="views" :options="options" />'
     })
