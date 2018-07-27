@@ -49,7 +49,7 @@ export default {
 
     value: {
       get() {
-        const { compute } = this.schema
+        const { compute, format } = this.schema
         let value = this.data[this.name]
         if (compute) {
           const computed = compute.call(this, this.data)
@@ -58,9 +58,16 @@ export default {
             this.value = value = computed
           }
         }
+        if (format) {
+          value = format.call(this, value)
+        }
         return value
       },
       set(value) {
+        const { parse } = this.schema
+        if (parse) {
+          value = parse.call(this, value)
+        }
         this.$set(this.data, this.name, value)
       }
     },
