@@ -5,13 +5,13 @@ import { KnexHelper } from '@/lib'
 import { isFunction, asArray } from '@ditojs/utils'
 import { mergeReversed } from '@/utils'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
+import { populateGraph } from '@/graph'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
 import RelationAccessor from './RelationAccessor'
 import definitionHandlers from './definitions'
-import { getMeta, populateGraph } from './functions'
 
 export class Model extends objection.Model {
   static setup(knex) {
@@ -504,3 +504,16 @@ export class Model extends objection.Model {
 KnexHelper.mixin(Model)
 // Expose a selection of QueryBuilder methods as static methods on model classes
 QueryBuilder.mixin(Model)
+
+const metaMap = new WeakMap()
+
+function getMeta(modelClass, key, value) {
+  let meta = metaMap.get(modelClass)
+  if (!meta) {
+    metaMap.set(modelClass, meta = {})
+  }
+  if (!(key in meta)) {
+    meta[key] = isFunction(value) ? value() : value
+  }
+  return meta[key]
+}

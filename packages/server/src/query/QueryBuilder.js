@@ -4,7 +4,7 @@ import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
 import { QueryWhereFilters } from './QueryWhereFilters'
 import PropertyRef from './PropertyRef'
-import GraphProcessor from './GraphProcessor'
+import { GraphProcessor } from '@/graph'
 import { isPlainObject, isString, isArray, clone } from '@ditojs/utils'
 import { createLookup } from '@/utils'
 

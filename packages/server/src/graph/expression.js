@@ -1,6 +1,6 @@
-import { isObject } from '@ditojs/utils'
+import { isObject, asArray } from '@ditojs/utils'
 
-export default function collectExpressionPaths(expr) {
+export function collectExpressionPaths(expr) {
   const paths = []
   for (const key in expr) {
     if (expr.hasOwnProperty(key)) {
@@ -24,4 +24,18 @@ export default function collectExpressionPaths(expr) {
     }
   }
   return paths
+}
+
+export function modelGraphToExpression(graph, node) {
+  if (graph) {
+    node = node || {}
+    for (const model of asArray(graph)) {
+      for (const { name } of model.constructor.getRelationArray()) {
+        if (model.hasOwnProperty(name)) {
+          node[name] = modelGraphToExpression(model[name], node[name])
+        }
+      }
+    }
+  }
+  return node
 }

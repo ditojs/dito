@@ -1,8 +1,21 @@
-import { RelationExpression } from 'objection'
 import { asArray } from '@ditojs/utils'
-import collectExpressionPaths from './collectExpressionPaths.js'
+import { RelationExpression } from 'objection'
+import { collectExpressionPaths } from './expression.js'
 
-export default async function populateGraph(rootModelClass, graph, expr) {
+// The same as Objection's private `rootModelClass.ensureModelArray(data)`:
+export function ensureModelArray(rootModelClass, data) {
+  return data
+    ? asArray(data).map(
+      model => !model
+        ? null
+        : model instanceof rootModelClass
+          ? model
+          : rootModelClass.fromJson(model, { skipValidation: true })
+    )
+    : []
+}
+
+export async function populateGraph(rootModelClass, graph, expr) {
   // TODO: Optimize the scenario where an item that isn't a leaf is a
   // reference and has multiple sub-paths to be populated. We may need to
   // move away from graph path handling and directly process the expression

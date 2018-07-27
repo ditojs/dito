@@ -1,16 +1,10 @@
 import { isArray, asArray, getDataPath } from '@ditojs/utils'
+import { modelGraphToExpression, ensureModelArray } from '.'
 
-export default class GraphProcessor {
+export class GraphProcessor {
   constructor(rootModelClass, data, options, settings) {
     this.rootModelClass = rootModelClass
-    // Performs the same as `this.data = rootModelClass.ensureModelArray(data)`:
-    this.data = data
-      ? asArray(data).map(
-        model => !model ? null
-        : model instanceof rootModelClass ? model
-        : rootModelClass.fromJson(model, { skipValidation: true })
-      )
-      : []
+    this.data = ensureModelArray(rootModelClass, data)
     this.isArray = isArray(data)
     this.options = options
     this.overrides = {}
@@ -62,8 +56,8 @@ export default class GraphProcessor {
   collectOverrides() {
     // TODO: we may want optimize this code to only collect the overrides for
     // the relations that are actually used in the graph, e.g. through
-    // `modelGraphToNode(data)`. Should we ever switch to our own implementation
-    // of *AndFetch() methods, we already have to call this.
+    // `modelGraphToExpression(data)`. Should we ever switch to our own
+    // implementation of *AndFetch() methods, we already have to call this.
     const processed = {}
     const processModelClass = modelClass => {
       const { name } = modelClass
@@ -105,7 +99,7 @@ export default class GraphProcessor {
    * building relation paths for them.
    */
   processOverrides() {
-    const node = modelGraphToNode(this.data)
+    const node = modelGraphToExpression(this.data)
 
     const processExpression =
       (node, modelClass, relation, relationPath = '') => {
@@ -226,18 +220,4 @@ export default class GraphProcessor {
 
 function appendPath(path, separator, token) {
   return path !== '' ? `${path}${separator}${token}` : token
-}
-
-function modelGraphToNode(graph, node) {
-  if (graph) {
-    node = node || {}
-    for (const model of asArray(graph)) {
-      for (const { name } of model.constructor.getRelationArray()) {
-        if (model.hasOwnProperty(name)) {
-          node[name] = modelGraphToNode(model[name], node[name])
-        }
-      }
-    }
-  }
-  return node
 }
