@@ -228,7 +228,7 @@ export default {
       return {
         path: this.isObjectSource
           ? this.path
-          : `${this.path}/${this.getItemId(item, index)}`
+          : `${this.path}/${this.getItemId(this.schema, item, index)}`
       }
     },
 
@@ -255,7 +255,7 @@ export default {
     },
 
     deleteItem(item, index) {
-      const label = item && this.getItemLabel(item, index, true)
+      const label = item && this.getItemLabel(this.schema, item, index, true)
 
       const notify = transient => this.notify(transient ? 'info' : 'success',
         'Successfully Removed', `${label} was ${this.verbs.deleted}.`)
@@ -269,7 +269,7 @@ export default {
         } else {
           const resource = {
             type: 'member',
-            id: this.getItemId(item)
+            id: this.getItemId(this.schema, item)
           }
           this.request('delete', { resource }, err => {
             if (!err) {

@@ -1,10 +1,10 @@
 import TypeComponent from '@/TypeComponent'
+import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
-import { isListSource } from '@/utils/schema'
 import { isString, isFunction, clone, labelize } from '@ditojs/utils'
 
 export default {
-  mixins: [LoadingMixin],
+  mixins: [ItemMixin, LoadingMixin],
 
   data() {
     return {
@@ -13,7 +13,7 @@ export default {
   },
 
   created() {
-    // Give other mixins the change to receive created() events first, e.g.
+    // Give other mixins the chance to receive created() events first, e.g.
     // SourceMixin to set up query:
     this.$nextTick(() => this.initData())
   },
@@ -91,63 +91,15 @@ export default {
         : url
     },
 
-    getFormSchema(item) {
-      const { form, forms } = this.sourceSchema
-      const type = item?.type
-      return forms && type ? forms[type] : form
-    },
-
-    getItemId(item, index) {
-      const { idName = 'id' } = this.sourceSchema
-      const id = this.isTransient ? index : item[idName]
-      return id === undefined ? id : String(id)
-    },
-
     findItemIdIndex(data, itemId) {
       const index = this.isTransient
         // For transient data, the index is used as the id
         ? itemId
         : data?.findIndex(
-          (item, index) => this.getItemId(item, index) === itemId
+          (item, index) =>
+            this.getItemId(this.sourceSchema, item, index) === itemId
         )
       return index !== -1 ? index : null
-    },
-
-    getItemLabel(item, index = null, extended = false) {
-      const { itemLabel } = this.sourceSchema
-      if (!extended && itemLabel === false) return null
-      const getFormLabel = () => this.getLabel(this.getFormSchema(item))
-      let label = null
-      if (isFunction(itemLabel)) {
-        label = itemLabel.length > 1 // See if callback wants 2nd argument
-          ? itemLabel(item, getFormLabel())
-          : itemLabel(item)
-        // It's up to `itemLabel()` entirely to produce the name:
-        extended = false
-      } else {
-        const { columns } = this.sourceSchema
-        // Look up the name on the item, by these rules:
-        // 1. If `itemLabel` is a string, use it as the property key
-        // 2. Otherwise, if there are columns, use the value of the first
-        // 3. Otherwise, see if the item has a property named 'name'
-        const key = isString(itemLabel) && itemLabel ||
-          columns && Object.keys(columns)[0] ||
-          'name'
-        label = item[key]
-      }
-      // If no label was found so far, try to produce one from the id or index.
-      if (label == null) {
-        const id = this.getItemId(item)
-        label = id ? `(id: ${id})`
-          : isListSource(this.sourceSchema) && index !== null ? `${index + 1}`
-          : ''
-        extended = true
-      } else if (extended) {
-        label = `'${label}'`
-      }
-      return extended
-        ? label ? `${getFormLabel()} ${label}` : getFormLabel()
-        : label || ''
     },
 
     setData(data) {

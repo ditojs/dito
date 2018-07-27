@@ -23,12 +23,12 @@
         :meta="meta"
         :store="getChildStore(compSchema.name)"
         :disabled="isDisabled(compSchema)"
-        :class="{ \
-          'dito-disabled': isDisabled(compSchema), \
-          'dito-fill': hasFill(compSchema), \
-          'dito-fixed': isFixed(compSchema), \
-          'dito-has-errors': $errors.has(compDataPath) \
-        }"
+        :class=`{
+          'dito-disabled': isDisabled(compSchema),
+          'dito-fill': hasFill(compSchema),
+          'dito-fixed': isFixed(compSchema),
+          'dito-has-errors': $errors.has(compDataPath)
+        }`
       )
       dito-errors(
         v-if="$errors.has(compDataPath)"

@@ -62,15 +62,15 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import DataMixin from '@/mixins/DataMixin'
 import RouteMixin from '@/mixins/RouteMixin'
+import DataMixin from '@/mixins/DataMixin'
 import { isObjectSource } from '@/utils/schema'
 import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-form', {
-  mixins: [DataMixin, RouteMixin],
+  mixins: [RouteMixin, DataMixin],
 
   data() {
     return {
@@ -103,16 +103,12 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     schema() {
-      // Determine the current form schema through the sourceSchema, with multi-
-      // form schema support.
-      let form = this.getFormSchema(this.data)
-      if (!form) {
-        // If the right form couldn't be determined from the data, see if
-        // there's a query parameter defining it (see `this.type`).
-        const { type } = this
-        form = type && this.getFormSchema({ type })
-      }
-      return form
+      return this.getItemFormSchema(
+        this.sourceSchema,
+        // If there is no data yet, provide an empty object with just the right
+        // type set, so the form can always be determined.
+        this.data || { type: this.type }
+      )
     },
 
     sourceSchema() {
@@ -384,7 +380,7 @@ export default DitoComponent.component('dito-form', {
         }
         : this.resource
       const itemLabel = this.data
-        ? this.getItemLabel(this.data, null, true)
+        ? this.getItemLabel(this.sourceSchema, this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
       const payload = ['post', 'patch'].includes(method) &&

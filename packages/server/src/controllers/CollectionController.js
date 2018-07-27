@@ -89,6 +89,7 @@ export class CollectionController extends Controller {
 
   async execute(/* transaction, ctx, execute(query, trx) {} */) {
     // Does nothing in base class.
+    // Overrides are in ModelController and RelationController.
   }
 
   async executeAndFetch(action, ctx, modify) {

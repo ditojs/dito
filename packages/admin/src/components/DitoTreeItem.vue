@@ -1,17 +1,17 @@
 <template lang="pug">
   .dito-tree-item(
-    :class="{ \
-      'dito-dragging': dragging, \
-      'dito-editing': editing \
-    }"
+    :class=`{
+      'dito-dragging': dragging,
+      'dito-editing': editing
+    }`
   )
-    .dito-tree-title(v-if="title")
+    .dito-tree-header(v-if="label")
       .dito-tree-branch(v-if="numEntries" @click.stop="opened = !opened")
         .dito-tree-chevron(v-if="numEntries" :class="{ 'dito-opened': opened }")
-        .dito-tree-name(v-html="title")
+        .dito-tree-label(v-html="label")
         .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
-        .dito-tree-name(v-html="title")
+        .dito-tree-label(v-html="label")
       .dito-buttons.dito-buttons-small(v-if="hasButtons")
         button.dito-button(
           v-if="draggable"
@@ -64,13 +64,14 @@
       dito-tree-item(
         v-for="(item, index) in childrenItems"
         :key="index"
+        :schema="children"
+        :dataPath="item.dataPath"
         :data="item.data"
         :path="item.path"
-        :dataPath="item.dataPath"
         :open="item.open"
         :editing="item.editing"
-        :schema="children"
         :draggable="childrenDraggable"
+        :label="getItemLabel(children, item.data, index)"
       )
 </template>
 
@@ -110,16 +111,16 @@ $tree-indent: 1.2em
       float: right
       margin-left: 1em
       margin-bottom: -1em // so float don't push each other away
-    .dito-tree-title:hover
+    .dito-tree-header:hover
       > .dito-buttons
         visibility: visible
     // Hide buttons during dragging
     &.dito-dragging
-      .dito-tree-title
+      .dito-tree-header
         > .dito-buttons
           visibility: hidden
     &.dito-editing
-      > .dito-tree-title
+      > .dito-tree-header
         background: $color-lightest
         border-radius: $border-radius
     .dito-properties
@@ -135,23 +136,24 @@ $tree-indent: 1.2em
 <script>
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
+import ItemMixin from '@/mixins/ItemMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { hasForms } from '@/utils/schema'
-import { isFunction } from '@ditojs/utils'
 
 export default DitoComponent.component('dito-tree-item', {
-  mixins: [OrderedMixin],
+  mixins: [ItemMixin, OrderedMixin],
   inject: ['container'],
 
   props: {
+    schema: { type: Object, required: true },
+    dataPath: { type: String, default: '' },
     data: { type: [Array, Object] },
     path: { type: String, default: '' },
-    dataPath: { type: String, default: '' },
     open: { type: Boolean, default: false },
     editing: { type: Boolean, default: false },
-    schema: { type: Object, required: true },
-    draggable: { type: Boolean, default: false }
+    draggable: { type: Boolean, default: false },
+    label: { type: String, required: false }
   },
 
   components: { VueDraggable },
@@ -183,15 +185,6 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   computed: {
-    title() {
-      const { itemLabel } = this.schema
-      return itemLabel === false
-        ? null
-        : isFunction(itemLabel)
-          ? itemLabel(this.data)
-          : this.data?.[itemLabel]
-    },
-
     meta() {
       return this.container.meta
     },
@@ -216,6 +209,7 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     children() {
+      // TODO: Should this be named `sourceSchema` instead? Use SourceMixin?
       return this.schema.children
     },
 

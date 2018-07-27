@@ -37,7 +37,7 @@
       )
         tr(
           v-for="item, index in listData || []"
-          :key="getItemId(item, index)"
+          :key="getItemId(schema, item, index)"
           :class="{ 'dito-inline-row': inline }"
         )
           template(v-if="columns")
@@ -56,8 +56,8 @@
             td
               dito-inline-schema(
                 v-if="inline"
-                :label="getItemLabel(item, index)"
-                :schema="getFormSchema(item)"
+                :label="getItemLabel(schema, item, index)"
+                :schema="getItemFormSchema(schema, item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"
@@ -75,7 +75,7 @@
               )
               span(
                 v-else
-                v-html="getItemLabel(item, index)"
+                v-html="getItemLabel(schema, item, index)"
               )
           td.dito-buttons.dito-buttons-round(v-if="hasButtons")
             button.dito-button(
