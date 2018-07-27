@@ -1,6 +1,7 @@
 import LoadingMixin from './LoadingMixin'
 import { isObject, isArray, isFunction, isPromise } from '@ditojs/utils'
 
+// @vue/component
 export default {
   mixins: [LoadingMixin],
 

@@ -3,6 +3,7 @@ import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
 import { isString, isFunction, clone, labelize } from '@ditojs/utils'
 
+// @vue/component
 export default {
   mixins: [ItemMixin, LoadingMixin],
 
@@ -10,12 +11,6 @@ export default {
     return {
       loadedData: null
     }
-  },
-
-  created() {
-    // Give other mixins the chance to receive created() events first, e.g.
-    // SourceMixin to set up query:
-    this.$nextTick(() => this.initData())
   },
 
   computed: {
@@ -49,6 +44,12 @@ export default {
       // this computed property in components that use the DataMixin.
       return this.getVerbs()
     }
+  },
+
+  created() {
+    // Give other mixins the chance to receive created() events first, e.g.
+    // SourceMixin to set up query:
+    this.$nextTick(() => this.initData())
   },
 
   methods: {

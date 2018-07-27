@@ -5,6 +5,7 @@ import {
   isRegExp, asArray, camelize, labelize
 } from '@ditojs/utils'
 
+// @vue/component
 export default {
   inject: [
     'api',

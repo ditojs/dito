@@ -1,6 +1,6 @@
 import { isObject } from '@ditojs/utils'
 
-// TODO: Share functionality with lineto-frontend through module
+// @vue/component
 export default {
   data() {
     return {

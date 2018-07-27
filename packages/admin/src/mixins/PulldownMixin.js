@@ -1,5 +1,6 @@
 import DomMixin from './DomMixin'
 
+// @vue/component
 export default {
   mixins: [DomMixin],
 

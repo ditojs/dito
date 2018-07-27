@@ -1,3 +1,4 @@
+// @vue/component
 export default {
   $_veeValidate: {
     // Each route-component shall provide a vee-validate $validator object,
@@ -19,28 +20,6 @@ export default {
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoComponents, SourceMixin
       store: {}
-    }
-  },
-
-  created() {
-    // Keep a shared stack of root components for DitoTrail to use to render
-    // labels. Can't rely on $route.matched[i].instances.default unfortunately,
-    // as instances aren't immediately ready, and instances is not reactive.
-    this.appState.routeComponents.push(this)
-  },
-
-  destroyed() {
-    const { routeComponents } = this.appState
-    routeComponents.splice(routeComponents.indexOf(this), 1)
-  },
-
-  methods: {
-    getRoutePath(templatePath) {
-      // Maps the route's actual path to the matched routes by counting its
-      // parts separated by '/', splitting the path into the mapped parts
-      // containing actual parameters.
-      return this.$route.path.split('/')
-        .slice(0, templatePath.split('/').length).join('/')
     }
   },
 
@@ -108,6 +87,28 @@ export default {
 
     nestedFormComponents() {
       return this.nestedRouteComponents.filter(component => component.isForm)
+    }
+  },
+
+  created() {
+    // Keep a shared stack of root components for DitoTrail to use to render
+    // labels. Can't rely on $route.matched[i].instances.default unfortunately,
+    // as instances aren't immediately ready, and instances is not reactive.
+    this.appState.routeComponents.push(this)
+  },
+
+  destroyed() {
+    const { routeComponents } = this.appState
+    routeComponents.splice(routeComponents.indexOf(this), 1)
+  },
+
+  methods: {
+    getRoutePath(templatePath) {
+      // Maps the route's actual path to the matched routes by counting its
+      // parts separated by '/', splitting the path into the mapped parts
+      // containing actual parameters.
+      return this.$route.path.split('/')
+        .slice(0, templatePath.split('/').length).join('/')
     }
   }
 }

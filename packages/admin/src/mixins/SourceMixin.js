@@ -8,6 +8,7 @@ import {
   processForms, hasForms, isObjectSource, isListSource
 } from '@/utils/schema'
 
+// @vue/component
 export default {
   mixins: [DataMixin],
 
@@ -18,40 +19,6 @@ export default {
   data() {
     return {
       isSource: true
-    }
-  },
-
-  created() {
-    // Make sure filters are set correctly before initData() triggers request.
-    this.addQuery(this.$route.query)
-  },
-
-  watch: {
-    $route(to, from) {
-      let path1 = from.path
-      let path2 = to.path
-      if (path2.length < path1.length) {
-        [path1, path2] = [path2, path1]
-      }
-      // See if the routes changes completely.
-      if (!path2.startsWith(path1)) {
-        // The paths change, but we may still be within the same component since
-        // tree lists use a part of the path to edit nested data.
-        // Compare against component path to rule out such path changes:
-        const { path } = this.routeComponent
-        if (!(path1.startsWith(path) && path2.startsWith(path))) {
-          // Complete change from one view to the next but TypeList is reused,
-          // so clear the filters and load data with clearing.
-          this.setQuery({})
-          this.loadData(true)
-          this.closeNotifications()
-        }
-      } else if (path1 === path2 && from.hash === to.hash) {
-        // Paths and hashes remain the same, so only queries have changed.
-        // Update filter and reload data without clearing.
-        this.addQuery(to.query)
-        this.loadData(false)
-      }
     }
   },
 
@@ -177,6 +144,40 @@ export default {
         return draggable && this.isListSource && this.listData.length > 1
       }
     })
+  },
+
+  watch: {
+    $route(to, from) {
+      let path1 = from.path
+      let path2 = to.path
+      if (path2.length < path1.length) {
+        [path1, path2] = [path2, path1]
+      }
+      // See if the routes changes completely.
+      if (!path2.startsWith(path1)) {
+        // The paths change, but we may still be within the same component since
+        // tree lists use a part of the path to edit nested data.
+        // Compare against component path to rule out such path changes:
+        const { path } = this.routeComponent
+        if (!(path1.startsWith(path) && path2.startsWith(path))) {
+          // Complete change from one view to the next but TypeList is reused,
+          // so clear the filters and load data with clearing.
+          this.setQuery({})
+          this.loadData(true)
+          this.closeNotifications()
+        }
+      } else if (path1 === path2 && from.hash === to.hash) {
+        // Paths and hashes remain the same, so only queries have changed.
+        // Update filter and reload data without clearing.
+        this.addQuery(to.query)
+        this.loadData(false)
+      }
+    }
+  },
+
+  created() {
+    // Make sure filters are set correctly before initData() triggers request.
+    this.addQuery(this.$route.query)
   },
 
   methods: {

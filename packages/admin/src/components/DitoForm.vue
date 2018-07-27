@@ -182,7 +182,6 @@ export default DitoComponent.component('dito-form', {
         // parts that need to be treated like ids and mapped to indices in data.
         const pathParts = this.routeRecord.path.split('/')
         const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         this.sourceKey = null
         const lastDataPart = dataParts[dataParts.length - 1]
         if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
@@ -202,7 +201,6 @@ export default DitoComponent.component('dito-form', {
           // Skip the final lookup but remember `sourceKey`, as we want the
           // parent data so we can replace the entry at `sourceKey` on it.
           if (i === l - 1) {
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.sourceKey = key
           } else {
             data = data[key]
@@ -226,7 +224,6 @@ export default DitoComponent.component('dito-form', {
         if (!this.doesMutate) {
           // Use a trick to store cloned inherited data in clonedData, to make
           // it reactive and prevent it from being cloned multiple times.
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.clonedData = data = clone(data)
         }
         if (
@@ -235,7 +232,6 @@ export default DitoComponent.component('dito-form', {
           isObjectSource(this.sourceSchema)
         ) {
           // If data of an object source is null, redirect to its create route.
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.$router.push({ path: 'create', append: true })
         }
         return data

@@ -64,6 +64,8 @@ module.exports = {
       named: 'never',
       asyncArrow: 'always'
     }],
-    'space-in-parens': ['error', 'never']
+    'space-in-parens': ['error', 'never'],
+    'vue/no-async-in-computed-properties': 'off',
+    'vue/no-side-effects-in-computed-properties': 'off'
   }
 }

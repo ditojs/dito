@@ -1,6 +1,7 @@
 import { isArray, isAbsoluteUrl } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 
+// @vue/component
 export default {
   // Inherit the $validator from the parent.
   // See: https://github.com/logaretm/vee-validate/issues/468
@@ -14,28 +15,13 @@ export default {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: false }
+    disabled: { type: Boolean, default: false }
   },
 
   data() {
     return {
       focused: false
     }
-  },
-
-  watch: {
-    dataPath(newDataPath, oldDataPath) {
-      this.schemaComponent?.registerComponent(oldDataPath, null)
-      this.schemaComponent?.registerComponent(newDataPath, this)
-    }
-  },
-
-  created() {
-    this.schemaComponent?.registerComponent(this.dataPath, this)
-  },
-
-  destroyed() {
-    this.schemaComponent?.registerComponent(this.dataPath, null)
   },
 
   computed: {
@@ -169,6 +155,21 @@ export default {
     processedData() {
       return this.schemaComponent.processData({ processIds: true })
     }
+  },
+
+  watch: {
+    dataPath(newDataPath, oldDataPath) {
+      this.schemaComponent?.registerComponent(oldDataPath, null)
+      this.schemaComponent?.registerComponent(newDataPath, this)
+    }
+  },
+
+  created() {
+    this.schemaComponent?.registerComponent(this.dataPath, this)
+  },
+
+  destroyed() {
+    this.schemaComponent?.registerComponent(this.dataPath, null)
   },
 
   methods: {

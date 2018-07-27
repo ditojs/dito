@@ -1,6 +1,7 @@
 import { isString, isFunction } from '@ditojs/utils'
 import { isListSource } from '@/utils/schema'
 
+// @vue/component
 export default {
   methods: {
     getItemFormSchema(sourceSchema, item) {
