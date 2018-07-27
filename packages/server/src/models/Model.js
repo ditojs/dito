@@ -1,17 +1,16 @@
 import objection from 'objection'
 import dbErrors from 'db-errors'
-import { QueryBuilder, QueryFilters } from '@/query'
+import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
 import { isObject, isFunction, asArray } from '@ditojs/utils'
-import { mergeReversed, mergeAsArrays } from '@/utils'
-import {
-  convertSchema, expandSchemaShorthand, addRelationSchemas, convertRelations
-} from '@/schema'
+import { mergeReversed } from '@/utils'
+import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
 import RelationAccessor from './RelationAccessor'
+import definitionHandlers from './definitions'
 
 export class Model extends objection.Model {
   static setup(knex) {
@@ -659,196 +658,4 @@ const getMeta = (modelClass, key, value) => {
     meta[key] = isFunction(value) ? value() : value
   }
   return meta[key]
-}
-
-const definitionHandlers = {
-  properties(values) {
-    const properties = mergeReversed(values)
-    // Include auto-generated 'id' properties for models and relations.
-    const addIdProperty = (name, schema) => {
-      if (!(name in properties)) {
-        properties[name] = {
-          type: 'integer',
-          ...schema
-        }
-      }
-    }
-
-    addIdProperty(this.getIdProperty(), {
-      primary: true
-    })
-
-    const addRelationProperties = (relation, propName) => {
-      const modelClass = relation.ownerModelClass
-      const { nullable } = modelClass.definition.relations[relation.name]
-      for (const property of relation[propName].props) {
-        addIdProperty(property, {
-          unsigned: true,
-          foreign: true,
-          index: true,
-          ...(nullable && { nullable })
-        })
-      }
-    }
-
-    for (const relation of this.getRelationArray()) {
-      addRelationProperties(relation, 'ownerProp')
-    }
-
-    for (const relation of this.getRelatedRelations()) {
-      addRelationProperties(relation, 'relatedProp')
-    }
-
-    // Convert root-level short-forms, for easier properties handling in
-    // getAttributes() and idColumn() & co:
-    // - `name: type` to `name: { type }`
-    // - `name: [...items]` to `name: { type: 'array', items }
-    // NOTE: Substitutions on all other levels happen in convertSchema()
-    const ids = []
-    const rest = []
-    for (let [name, property] of Object.entries(properties)) {
-      property = expandSchemaShorthand(property)
-      // Also sort properties by kind: primary id > foreign id > rest:
-      const entry = [name, property]
-      if (property.primary) {
-        ids.unshift(entry)
-      } else if (property.foreign) {
-        ids.push(entry)
-      } else {
-        rest.push(entry)
-      }
-    }
-    // Finally recompile a new properties object out of the sorted properties.
-    return [...ids, ...rest].reduce((merged, [name, property]) => {
-      merged[name] = property
-      return merged
-    }, {})
-  },
-
-  // No special treatment needed for relations, but we still need to define it
-  // so it will be recognized as a definition:
-  relations: null,
-
-  scopes(values) {
-    // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
-    // so they can be called in sequence.
-    const scopeArrays = mergeAsArrays(values)
-    const scopes = {}
-    for (const [name, array] of Object.entries(scopeArrays)) {
-      // Convert array of inherited scope definitions to scope functions.
-      const functions = array
-        .reverse() // Reverse to go from super-class to sub-class.
-        .map(
-          value => {
-            let func
-            if (isFunction(value)) {
-              func = value
-            } else if (isObject(value)) {
-              func = query => query.find(value)
-            } else {
-              throw new ModelError(this,
-                `Invalid scope '${name}': Invalid scope type: ${value}.`
-              )
-            }
-            return func
-          }
-        )
-      // Now define the scope as a function that calls all inherited scope
-      // functions.
-      scopes[name] = query => {
-        for (const func of functions) {
-          func(query)
-        }
-        return query
-      }
-    }
-    return scopes
-  },
-
-  filters(values) {
-    // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
-    // so they can be called in sequence.
-    const filterArrays = mergeAsArrays(values)
-    const filters = {}
-    for (const [name, array] of Object.entries(filterArrays)) {
-      // Convert array of inherited filter definitions to filter functions,
-      // including parameter validation.
-      const functions = array
-        .reverse() // Reverse to go from super-class to sub-class.
-        .map(filter => {
-          let func
-          if (isFunction(filter)) {
-            func = filter
-          } else if (isObject(filter)) {
-            // Convert QueryFilters to normal filter functions
-            const queryFilter = QueryFilters.get(filter.filter)
-            if (queryFilter) {
-              const { properties } = filter
-              func = properties
-                ? (builder, ...args) => {
-                  // When the filter provides multiple properties, match them
-                  // all, but combine the expressions with OR.
-                  for (const property of properties) {
-                    builder.orWhere(function() {
-                      queryFilter(this, property, ...args)
-                    })
-                  }
-                }
-                : (builder, ...args) => {
-                  queryFilter(builder, name, ...args)
-                }
-              // Copy over @parameters() settings
-              func.parameters = queryFilter.parameters
-            } else {
-              throw new ModelError(this,
-                `Invalid filter '${name}': Unknown filter type '${
-                  filter.filter}'.`
-              )
-            }
-          }
-          // If parameters are defined, wrap the function in a closure that
-          // performs parameter validation...
-          const validator = func && this.app.compileParametersValidator(
-            func.parameters,
-            func.options
-          )
-          if (validator) {
-            return (query, ...args) => {
-              // Convert args to object for validation:
-              const object = {}
-              let index = 0
-              for (const { name } of validator.list) {
-                // Use 'root' if no name is given, see:
-                // Application.compileParametersValidator()
-                object[name || 'root'] = args[index++]
-              }
-              const errors = validator.validate(object)
-              if (errors) {
-                throw this.app.createValidationError({
-                  type: 'FilterValidation',
-                  message:
-                    `The provided data for query filter '${name}' is not valid`,
-                  errors: this.app.validator.prefixDataPaths(
-                    errors,
-                    `.${name}`
-                  )
-                })
-              }
-              return func(query, ...args)
-            }
-          }
-          // ...otherwise use the defined function unmodified.
-          return func
-        })
-      // Now define the filter as a function that calls all inherited filter
-      // functions.
-      filters[name] = (query, ...args) => {
-        for (const func of functions) {
-          func(query, ...args)
-        }
-        return query
-      }
-    }
-    return filters
-  }
 }
