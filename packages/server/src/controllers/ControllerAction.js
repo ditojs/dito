@@ -38,13 +38,14 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    await this.controller.emitHook(`before:${this.identifier}`, ctx)
     this.validateParameters(ctx)
     const args = await this.collectArguments(ctx)
-    await this.controller.handleAuthorization(this.authorization, ...args)
-    let result = await this.handler.call(this.controller, ...args)
+    await this.controller.handleAuthorization(this.authorization, ctx, ...args)
+    const { identifier } = this
+    await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
+    let result = await this.handler.call(this.controller, ctx, ...args)
     result = this.validateResult(result)
-    return this.controller.emitHook(`after:${this.identifier}`, ctx, result)
+    return this.controller.emitHook(`after:${identifier}`, true, ctx, result)
   }
 
   createValidationError({ message, errors }) {
@@ -127,8 +128,7 @@ export default class ControllerAction {
 
   collectConsumedArguments(ctx, consumed) {
     // `consumed` is used in MemberAction.collectArguments()
-    // Always pass `ctx` as first argument:
-    const args = [ctx]
+    const args = []
     if (this.parameters) {
       // If we have parameters, add them to the arguments now,
       // while also keeping track of consumed parameters:

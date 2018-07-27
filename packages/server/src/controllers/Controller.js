@@ -256,11 +256,16 @@ export class Controller {
     }
   }
 
-  async emitHook(type, ctx, result) {
+  async emitHook(type, handleResult, ctx, ...args) {
+    let result = handleResult ? args.shift() : undefined
     for (const handler of this.listeners(type)) {
-      const res = await handler.call(this, ctx, result)
-      if (res !== undefined) {
-        result = res
+      if (handleResult) {
+        const res = await handler.call(this, ctx, result, ...args)
+        if (res !== undefined) {
+          result = res
+        }
+      } else {
+        await handler.call(this, ctx, ...args)
       }
     }
     return result
