@@ -53,9 +53,8 @@ export default {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
-          const { rootData } = this
-          // Only evaluate the function once `rootData` is available.
-          data = rootData && data.call(this, this.data, rootData, this.dataPath)
+          // Only evaluate the function once `this.data` is available.
+          data = this.data && data.call(this, this.data, this.dataPath)
         }
         if (isArray(data)) {
           this.hasOptions = true

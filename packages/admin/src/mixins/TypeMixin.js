@@ -52,7 +52,7 @@ export default {
         const { compute } = this.schema
         let value = this.data[this.name]
         if (compute) {
-          const computed = compute.call(this, this.data, this.rootData)
+          const computed = compute.call(this, this.data)
           if (computed !== undefined) {
             // Trigger sett tot update computed value.
             this.value = value = computed
