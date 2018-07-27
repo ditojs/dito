@@ -352,7 +352,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     onClick(button) {
-      return button.onClick.call(this, this.data, button)
+      return button.onClick.call(this, this.data, this.parentData)
     },
 
     onCancel() {

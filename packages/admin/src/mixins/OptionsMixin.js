@@ -54,7 +54,7 @@ export default {
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
           // Only evaluate the function once `this.data` is available.
-          data = this.data && data.call(this, this.data, this.dataPath)
+          data = this.data && data.call(this, this.data, this.parentData)
         }
         if (isArray(data)) {
           this.hasOptions = true
