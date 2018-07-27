@@ -17,7 +17,7 @@ export function collectExpressionPaths(expr) {
             paths.push([entry, ...subPath])
           }
         } else {
-          // The child is a leaf, add $modify
+          // The child is a leaf.
           paths.push([entry])
         }
       }

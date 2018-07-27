@@ -54,6 +54,9 @@ export async function populateGraph(rootModelClass, graph, expr) {
     }
   }
 
+  // Clone the full graph so we can directly modify it after:
+  const modelArray = asArray(graph).map(model => model?.$clone() || null)
+
   for (const path of collectExpressionPaths(expr)) {
     let modelClass = rootModelClass
     const modelClasses = []
@@ -63,7 +66,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
       modelClass = modelClass.getRelation(entry.relation).relatedModelClass
       modify = entry.modify
     }
-    for (const model of asArray(graph)) {
+    for (const model of modelArray) {
       if (model) {
         let items = asArray(model)
         // Collect all graph items described by the current relation path in
@@ -134,5 +137,5 @@ export async function populateGraph(rootModelClass, graph, expr) {
     }
   }
 
-  return graph
+  return isArray(graph) ? modelArray : modelArray[0]
 }
