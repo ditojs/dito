@@ -34,20 +34,18 @@
     "babel-plugin-module-resolver": "^3.1.1",
     "babel-plugin-transform-promise-to-bluebird": "^2.0.0-beta.1",
     "cross-env": "^5.2.0",
-    "eslint": "npm:eslint-nullish-coalescing",
-    "eslint-config-standard": "^11.0.0",
+    "eslint": "^5.2.0",
+    "eslint-config-standard": "next",
     "eslint-friendly-formatter": "^4.0.1",
-    "eslint-loader": "^2.0.0",
-    "eslint-plugin-html": "^4.0.2",
+    "eslint-loader": "^2.1.0",
     "eslint-plugin-import": "^2.12.0",
-    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "eslint-plugin-vue": "^4.5.0",
+    "eslint-plugin-vue": "next",
     "full-icu": "^1.2.1",
     "husky": "^0.14.3",
     "jest": "^23.2.0",
-    "lerna": "^2.11.0",
-    "vue-eslint-parser": "^3.1.0"
+    "lerna": "^2.11.0"
   }
 }

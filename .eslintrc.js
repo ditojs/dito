@@ -3,7 +3,6 @@ var isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
   root: true,
-  parser: 'vue-eslint-parser',
   parserOptions: {
     parser: 'babel-eslint',
     ecmaVersion: 2017,
