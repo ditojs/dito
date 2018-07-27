@@ -123,11 +123,7 @@ export class QueryBuilder extends objection.QueryBuilder {
               )
             }
             this._appliedScopes[scope] = true
-            // Use Objection's applyFilter() to apply our scope.
-            // NOTE: Our applyFilter() does something else, but this may be OK,
-            // since Objection.js is considering switching to `modifiers`
-            // instead of `namedFilters`.
-            super.applyFilter(scope)
+            this.modify(scope)
           }
         }
       } finally {
@@ -204,11 +200,12 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyFilter(name, ...args) {
+    // NOTE: Dito's applyFilter() does something else than Objection's, but this
+    // is OK as Objection is going to switch to `modifiers` from `namedFilters`.
     if (this._allowFilters && !this._allowFilters[name]) {
       throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
     }
-    const { filters } = this.modelClass().definition
-    const filter = filters[name]
+    const filter = this.modelClass().definition.filters[name]
     if (!filter) {
       throw new QueryBuilderError(`Query filter '${name}' is not defined.`)
     }
