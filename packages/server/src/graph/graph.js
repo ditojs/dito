@@ -1,4 +1,4 @@
-import { asArray } from '@ditojs/utils'
+import { isArray, asArray } from '@ditojs/utils'
 import { RelationExpression } from 'objection'
 import { collectExpressionPaths } from './expression.js'
 
@@ -13,6 +13,33 @@ export function ensureModelArray(rootModelClass, data) {
           : rootModelClass.fromJson(model, { skipValidation: true })
     )
     : []
+}
+
+export function filterGraph(graph, expr) {
+  expr = RelationExpression.create(expr)
+  const modelArray = asArray(graph).map(model => {
+    if (model) {
+      const clone = new model.constructor()
+      const relations = model.constructor.getRelations()
+      // Loop through original data and check against relations,
+      // to prevent key sequence in created clone:
+      for (const key in model) {
+        if (model.hasOwnProperty(key)) {
+          if (relations[key]) {
+            const child = expr[key]
+            if (child) {
+              clone[key] = filterGraph(model[key], child)
+            }
+          } else {
+            clone[key] = model[key]
+          }
+        }
+      }
+      return clone
+    }
+    return model
+  })
+  return isArray(graph) ? modelArray : modelArray[0]
 }
 
 export async function populateGraph(rootModelClass, graph, expr) {

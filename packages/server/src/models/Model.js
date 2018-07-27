@@ -5,7 +5,7 @@ import { KnexHelper } from '@/lib'
 import { isFunction, asArray } from '@ditojs/utils'
 import { mergeReversed } from '@/utils'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
-import { populateGraph } from '@/graph'
+import { populateGraph, filterGraph } from '@/graph'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
@@ -387,6 +387,10 @@ export class Model extends objection.Model {
       delete json[key]
     }
     return json
+  }
+
+  static filterGraph(graph, expr) {
+    return filterGraph(graph, expr)
   }
 
   static async populateGraph(graph, expr) {
