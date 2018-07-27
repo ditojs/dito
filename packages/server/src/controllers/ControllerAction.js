@@ -1,4 +1,4 @@
-import { isObject, asArray } from '@ditojs/utils'
+import { isString, isObject, asArray } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, type, name, verb, path, authorize) {
@@ -67,21 +67,18 @@ export default class ControllerAction {
     const errors = []
     for (const { name, type } of this.parameters.list) {
       // See if the defined type(s) require coercion to objects:
-      if (asArray(type).some(
-        // Coerce to object if type is 'object' or a known model name
-        value => value === 'object' || value in this.app.models
-      )) {
+      const objectType = asArray(type).find(
+        // Coerce to object if type is 'object' or a known model name.
+        type => type === 'object' || type in this.app.models
+      )
+      if (objectType) {
         const value = name ? params[name] : params
-        if (value && !isObject(value)) {
+        let object = value
+        if (value && isString(value)) {
           try {
-            const converted = JSON.parse(value)
-            if (name) {
-              params[name] = converted
-            } else {
-              this.setParams(ctx, converted)
-            }
+            object = JSON.parse(value)
           } catch (err) {
-            // Convert error to Ajv validation error format:
+            // Convert JSON error to Ajv validation error format:
             errors.push({
               dataPath: `.${name}`, // JavaScript property access notation
               keyword: 'type',
@@ -91,6 +88,23 @@ export default class ControllerAction {
                 json: true
               }
             })
+          }
+        }
+        if (objectType !== 'object' && isObject(object)) {
+          // Convert the Pojo to the desired Dito model:
+          const modelClass = this.app.models[objectType]
+          if (modelClass && !(object instanceof modelClass)) {
+            object = modelClass.fromJson(object, {
+              // The model validation is handled separately through `$ref`.
+              skipValidation: true
+            })
+          }
+        }
+        if (object !== value) {
+          if (name) {
+            params[name] = object
+          } else {
+            this.setParams(ctx, object)
           }
         }
       }
