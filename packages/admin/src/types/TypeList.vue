@@ -136,6 +136,7 @@ import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
 
+// @vue/component
 export default TypeComponent.register([
   'list', 'object'
 ], {

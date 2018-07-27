@@ -33,6 +33,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-menu', {
   props: {
     views: { type: Object, required: true }

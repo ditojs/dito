@@ -201,9 +201,10 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '@/utils/accessor'
 
+// @vue/component
 export default TypeComponent.register('multiselect', {
-  mixins: [OptionsMixin],
   components: { VueMultiselect },
+  mixins: [OptionsMixin],
 
   computed: {
     multiSelectValue: {

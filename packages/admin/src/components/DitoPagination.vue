@@ -11,6 +11,7 @@
 import DitoComponent from '@/DitoComponent'
 import Pagination from '@ditojs/ui/src/components/Pagination'
 
+// @vue/component
 export default DitoComponent.component('dito-pagination', {
   components: { Pagination },
 

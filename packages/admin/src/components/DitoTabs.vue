@@ -37,10 +37,11 @@ $tab-color-active: $tab-color-inactive
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-tabs', {
   props: {
-    tabs: { type: Object, required: false },
-    selectedTab: { type: String, required: false }
+    tabs: { type: Object, default: null },
+    selectedTab: { type: String, default: null }
   }
 })
 </script>

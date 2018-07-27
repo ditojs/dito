@@ -29,6 +29,7 @@
 import DitoComponent from '@/DitoComponent'
 import { escapeHtml } from '@ditojs/utils'
 
+// @vue/component
 export default DitoComponent.component('dito-list-cell', {
   props: {
     cell: { type: Object, required: true },
@@ -37,7 +38,7 @@ export default DitoComponent.component('dito-list-cell', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: false }
+    disabled: { type: Boolean, default: false }
   },
 
   computed: {

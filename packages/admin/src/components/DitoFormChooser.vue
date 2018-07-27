@@ -29,11 +29,12 @@
 import DitoComponent from '@/DitoComponent'
 import PulldownMixin from '@/mixins/PulldownMixin'
 
+// @vue/component
 export default DitoComponent.component('dito-form-chooser', {
   mixins: [PulldownMixin],
 
   props: {
-    schema: { type: Object },
+    schema: { type: Object, default: null },
     path: { type: String, required: true },
     verb: { type: String, required: true }
   },

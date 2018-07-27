@@ -32,6 +32,7 @@ import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/utils/schema'
 
+// @vue/component
 export default DitoComponent.component('dito-root', {
   props: {
     views: { type: [Object, Function, Promise], required: true },
@@ -42,6 +43,12 @@ export default DitoComponent.component('dito-root', {
     return {
       allowLogin: false,
       resolvedViews: {}
+    }
+  },
+
+  computed: {
+    notifications() {
+      return this.$refs.notifications
     }
   },
 
@@ -61,12 +68,6 @@ export default DitoComponent.component('dito-root', {
       console.error(err)
     }
     this.allowLogin = true
-  },
-
-  computed: {
-    notifications() {
-      return this.$refs.notifications
-    }
   },
 
   methods: {

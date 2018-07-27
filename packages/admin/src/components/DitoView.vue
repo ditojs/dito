@@ -18,6 +18,7 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 
+// @vue/component
 export default DitoComponent.component('dito-view', {
   mixins: [RouteMixin],
 

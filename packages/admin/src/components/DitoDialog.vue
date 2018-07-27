@@ -26,20 +26,13 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-dialog', {
   props: {
     components: { type: Object, required: true },
     buttons: { type: Object, required: true },
     promise: { type: Object, required: true },
     data: { type: Object, default: () => {} }
-  },
-
-  created() {
-    for (const key in this.components) {
-      if (!(key in this.data)) {
-        this.data[key] = null
-      }
-    }
   },
 
   computed: {
@@ -50,6 +43,14 @@ export default DitoComponent.component('dito-dialog', {
     schema() {
       return {
         components: this.components
+      }
+    }
+  },
+
+  created() {
+    for (const key in this.components) {
+      if (!(key in this.data)) {
+        this.data[key] = null
       }
     }
   },

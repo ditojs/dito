@@ -99,16 +99,17 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 import DitoComponent from '@/DitoComponent'
 import { isObject, isArray, parseDataPath } from '@ditojs/utils'
 
+// @vue/component
 export default DitoComponent.component('dito-schema', {
   inject: ['$validator'],
 
   props: {
-    schema: { type: Object },
+    schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    label: { type: String, required: false },
+    label: { type: String, default: null },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: true },
     menuHeader: { type: Boolean, default: false }

@@ -14,6 +14,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-label', {
   props: {
     dataPath: { type: String, required: true },

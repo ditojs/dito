@@ -66,6 +66,7 @@ import {
   convertFiltersSchema, getFiltersData, getFiltersQuery
 } from '@/utils/filter'
 
+// @vue/component
 export default DitoComponent.component('dito-filters', {
   $_veeValidate: {
     // DitoFilters needs a separate $errors object:

@@ -17,6 +17,7 @@ import TimePicker from '@ditojs/ui/src/components/TimePicker'
 import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
 import { isDate } from '@ditojs/utils'
 
+// @vue/component
 export default TypeComponent.register(['date', 'datetime', 'time'], {
   components: { DatePicker, TimePicker, DateTimePicker },
   // TODO: This is only here so we get placeholder added. Come up with a better

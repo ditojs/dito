@@ -69,6 +69,7 @@ import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
 
+// @vue/component
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
 
@@ -81,23 +82,6 @@ export default DitoComponent.component('dito-form', {
       loadCache: {}, // See TypeMixin.load()
       formTag: 'form',
       formClass: null
-    }
-  },
-
-  watch: {
-    sourceData: 'clearClonedData',
-    // Needed for the 'create' redirect in `inheritedData()` to work:
-    create: 'initData'
-  },
-
-  mounted() {
-    // Errors can get passed on through the meta object, so add them now.
-    // See TypeMixin.navigateToErrors()
-    const { meta } = this
-    if (meta.errors) {
-      // Add the errors after initialization of $validator
-      this.$refs.schema.addErrors(meta.errors, true)
-      delete meta.errors
     }
   },
 
@@ -198,6 +182,7 @@ export default DitoComponent.component('dito-form', {
         // parts that need to be treated like ids and mapped to indices in data.
         const pathParts = this.routeRecord.path.split('/')
         const routeParts = pathParts.slice(pathParts.length - dataParts.length)
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         this.sourceKey = null
         const lastDataPart = dataParts[dataParts.length - 1]
         if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
@@ -217,6 +202,7 @@ export default DitoComponent.component('dito-form', {
           // Skip the final lookup but remember `sourceKey`, as we want the
           // parent data so we can replace the entry at `sourceKey` on it.
           if (i === l - 1) {
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.sourceKey = key
           } else {
             data = data[key]
@@ -240,6 +226,7 @@ export default DitoComponent.component('dito-form', {
         if (!this.doesMutate) {
           // Use a trick to store cloned inherited data in clonedData, to make
           // it reactive and prevent it from being cloned multiple times.
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.clonedData = data = clone(data)
         }
         if (
@@ -248,6 +235,7 @@ export default DitoComponent.component('dito-form', {
           isObjectSource(this.sourceSchema)
         ) {
           // If data of an object source is null, redirect to its create route.
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.$router.push({ path: 'create', append: true })
         }
         return data
@@ -272,6 +260,23 @@ export default DitoComponent.component('dito-form', {
         }
       }
       return false
+    }
+  },
+
+  watch: {
+    sourceData: 'clearClonedData',
+    // Needed for the 'create' redirect in `inheritedData()` to work:
+    create: 'initData'
+  },
+
+  mounted() {
+    // Errors can get passed on through the meta object, so add them now.
+    // See TypeMixin.navigateToErrors()
+    const { meta } = this
+    if (meta.errors) {
+      // Add the errors after initialization of $validator
+      this.$refs.schema.addErrors(meta.errors, true)
+      delete meta.errors
     }
   },
 

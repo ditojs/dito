@@ -29,6 +29,7 @@
 import DitoComponent from '@/DitoComponent'
 import PulldownMixin from '@/mixins/PulldownMixin'
 
+// @vue/component
 export default DitoComponent.component('dito-account', {
   mixins: [PulldownMixin],
 

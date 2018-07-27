@@ -64,12 +64,13 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-components', {
   inject: ['$validator'],
 
   props: {
-    tab: { type: String },
-    schema: { type: Object },
+    tab: { type: String, default: null },
+    schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },

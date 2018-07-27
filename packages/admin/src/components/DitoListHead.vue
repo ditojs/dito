@@ -22,6 +22,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-list-head', {
   props: {
     query: { type: Object, required: true },

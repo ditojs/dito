@@ -18,6 +18,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-errors', {
   inject: ['$validator'],
 

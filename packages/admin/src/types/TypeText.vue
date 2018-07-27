@@ -14,6 +14,7 @@ import TypeComponent from '@/TypeComponent'
 
 const maskedPassword = '****************'
 
+// @vue/component
 export default TypeComponent.register([
   'text', 'email', 'url', 'tel', 'password', 'creditcard'
 ], {

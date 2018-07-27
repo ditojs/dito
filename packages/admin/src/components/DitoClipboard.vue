@@ -18,6 +18,7 @@ import DitoComponent from '@/DitoComponent'
 import Clipboard from 'clipboard'
 import { clone } from '@ditojs/utils'
 
+// @vue/component
 export default DitoComponent.component('dito-clipboard', {
   data() {
     return {

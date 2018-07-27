@@ -72,19 +72,10 @@ import PulseLoader from 'vue-spinner/src/PulseLoader'
 
 const Spinner = DitoComponent.component('spinner', PulseLoader)
 
+// @vue/component
 export default DitoComponent.component('dito-header', {
   props: {
-    spinner: { type: Object }
-  },
-
-  created() {
-    const {
-      size = '8px',
-      color = '#999'
-    } = this.spinner || {}
-    const { props } = Spinner.options
-    props.size.default = size
-    props.color.default = color
+    spinner: { type: Object, default: null }
   },
 
   computed: {
@@ -98,6 +89,16 @@ export default DitoComponent.component('dito-header', {
       }
       return trail
     }
+  },
+
+  created() {
+    const {
+      size = '8px',
+      color = '#999'
+    } = this.spinner || {}
+    const { props } = Spinner.options
+    props.size.default = size
+    props.color.default = color
   }
 })
 </script>

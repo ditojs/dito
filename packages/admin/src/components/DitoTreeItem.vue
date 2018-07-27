@@ -141,46 +141,26 @@ import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { hasForms } from '@/utils/schema'
 
+// @vue/component
 export default DitoComponent.component('dito-tree-item', {
+  components: { VueDraggable },
   mixins: [ItemMixin, OrderedMixin],
   inject: ['container'],
 
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
-    data: { type: [Array, Object] },
+    data: { type: [Array, Object], default: null },
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     editing: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
-    label: { type: String, required: false }
+    label: { type: String, default: null }
   },
-
-  components: { VueDraggable },
 
   data() {
     return {
       opened: this.open || this.schema.open
-    }
-  },
-
-  methods: {
-    getDataPath(cell) {
-      return `${this.dataPath}/${cell.name}`
-    },
-
-    onEdit() {
-      // All we got to do is push the right edit path to the router, the rest
-      // is handled by our routes, allowing reloads as well.
-      this.$router.push({
-        path: `${this.container.path}${this.path}`,
-        // Preserve current query
-        query: this.$route.query
-      })
-    },
-
-    onDelete() {
-      // TODO: Implement!
     }
   },
 
@@ -297,6 +277,26 @@ export default DitoComponent.component('dito-tree-item', {
 
     hasButtons() {
       return this.draggable || this.editable || this.deletable
+    }
+  },
+
+  methods: {
+    getDataPath(cell) {
+      return `${this.dataPath}/${cell.name}`
+    },
+
+    onEdit() {
+      // All we got to do is push the right edit path to the router, the rest
+      // is handled by our routes, allowing reloads as well.
+      this.$router.push({
+        path: `${this.container.path}${this.path}`,
+        // Preserve current query
+        query: this.$route.query
+      })
+    },
+
+    onDelete() {
+      // TODO: Implement!
     }
   }
 })

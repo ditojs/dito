@@ -12,6 +12,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
+// @vue/component
 export default TypeComponent.register('textarea', {
   nativeField: true,
   textField: true

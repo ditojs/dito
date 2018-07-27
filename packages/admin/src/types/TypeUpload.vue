@@ -91,10 +91,11 @@ import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isArray, asArray } from '@ditojs/utils'
 
+// @vue/component
 export default TypeComponent.register('upload', {
-  mixins: [OrderedMixin],
   components: { VueUpload, VueDraggable },
   filters: { formatFileSize },
+  mixins: [OrderedMixin],
 
   data() {
     return {

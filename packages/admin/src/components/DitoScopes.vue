@@ -36,6 +36,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 
+// @vue/component
 export default DitoComponent.component('dito-scopes', {
   props: {
     query: { type: Object, required: true },

@@ -9,6 +9,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
+// @vue/component
 export default TypeComponent.register('button', {
   defaultValue: undefined
 })

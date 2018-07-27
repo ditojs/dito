@@ -40,7 +40,18 @@
 import TypeComponent from '@/TypeComponent'
 import CodeFlask from 'codeflask'
 
+// @vue/component
 export default TypeComponent.register('code', {
+  computed: {
+    lines() {
+      return this.schema.lines || 3
+    },
+
+    style() {
+      return `height: ${this.lines * 1.5}em`
+    }
+  },
+
   mounted() {
     const flask = new CodeFlask(this.$refs.code, {
       language: this.schema.language || 'javascript',
@@ -51,16 +62,6 @@ export default TypeComponent.register('code', {
       this.value = value
     })
     this.$watch('value', value => flask.updateCode(value || ''))
-  },
-
-  computed: {
-    lines() {
-      return this.schema.lines || 3
-    },
-
-    style() {
-      return `height: ${this.lines * 1.5}em`
-    }
   },
 
   methods: {
