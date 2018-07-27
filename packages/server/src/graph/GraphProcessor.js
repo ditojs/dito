@@ -155,23 +155,23 @@ export class GraphProcessor {
   processRelates(data, relationPath = '', dataPath = '') {
     if (data) {
       if (data.$isObjectionModel) {
-        const relations = data.constructor.getRelations()
+        const relations = data.constructor.getRelationArray()
         const relate = this.shouldRelate(relationPath)
         const clone = data.$clone({ shallow: relate })
         if (relate) {
+          // TODO: Remove not only relations, but also all fields from graph
+          // that aren't owning their data, and convert them to references.
           // Fill removedRelations with json-pointer -> relation-value pairs,
           // so that we can restore the relations again after the operation in
           // restoreRelations():
           if (this.removedRelations) {
             const values = {}
             let hasRelations = false
-            for (const key in relations) {
-              if (key in data) {
-                const value = data[key]
-                if (value !== undefined) {
-                  values[key] = value
-                  hasRelations = true
-                }
+            for (const { name } of relations) {
+              const value = data[name]
+              if (value !== undefined) {
+                values[name] = value
+                hasRelations = true
               }
             }
             if (hasRelations) {
@@ -179,14 +179,14 @@ export class GraphProcessor {
             }
           }
         } else {
-          for (const key in relations) {
+          for (const { name } of relations) {
             const value = this.processRelates(
-              clone[key],
-              appendPath(relationPath, '.', key),
-              appendPath(dataPath, '/', key)
+              clone[name],
+              appendPath(relationPath, '.', name),
+              appendPath(dataPath, '/', name)
             )
             if (value !== undefined) {
-              clone[key] = value
+              clone[name] = value
             }
           }
         }
