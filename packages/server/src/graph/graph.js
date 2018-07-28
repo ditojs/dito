@@ -65,6 +65,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
       modelClass,
       modify,
       eager,
+      // TODO: Support composite keys where getIdProperty() returns an array.
       idProperty: modelClass.getIdProperty(),
       references: [],
       ids: [],
@@ -72,7 +73,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
     })
     // Filter out the items that aren't references,
     // and collect ids to be loaded for references.
-    if (modify.length > 0 || modelClass.isReference(item)) {
+    if (modify.length > 0 || modelClass.isIdReference(item)) {
       const id = item[group.idProperty]
       if (id != null) {
         group.references.push(item)
@@ -103,7 +104,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
           if (items.length === 0) break
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
-            if (modelClass.isReference(item)) {
+            if (modelClass.isIdReference(item)) {
               // Detected a reference item that isn't a leaf: We need to
               // eager-load the rest of the path, and respect modify settings:
               const eager = path.slice(i).map(

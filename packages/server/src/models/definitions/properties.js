@@ -13,6 +13,7 @@ export default function properties(values) {
     }
   }
 
+  // TODO: Support composite keys where getIdProperty() returns an array.
   addIdProperty(this.getIdProperty(), {
     primary: true
   })

@@ -107,39 +107,6 @@ export class Model extends objection.Model {
     return objection.transaction(this.knex(), handler)
   }
 
-  static isReference(data) {
-    let validator = this.referenceValidator
-    if (!validator) {
-      const idProperty = this.getIdProperty()
-      const { type } = this.definition.properties[idProperty]
-      // For `data` to be considered a reference, it needs to hold only one
-      // value that is either the target's id, or an Objection.js #ref value:
-      validator = this.referenceValidator = this.app.compileValidator({
-        oneOf: [
-          {
-            type: 'object',
-            properties: {
-              [idProperty]: {
-                type
-              }
-            },
-            additionalProperties: false
-          },
-          {
-            type: 'object',
-            properties: {
-              '#ref': {
-                type: 'string'
-              }
-            },
-            additionalProperties: false
-          }
-        ]
-      })
-    }
-    return validator(data)
-  }
-
   static query(trx) {
     // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
@@ -185,6 +152,42 @@ export class Model extends objection.Model {
       obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
     }
     return obj
+  }
+
+  static isIdReference(data) {
+    let validator = this.referenceValidator
+    if (!validator) {
+      // For `data` to be considered a reference, it needs to hold only one
+      // value that is either the target's id, or an Objection.js #ref value:
+      validator = this.referenceValidator = this.app.compileValidator({
+        oneOf: [
+          {
+            type: 'object',
+            // Support composite keys and add a property for each key:
+            properties: this.getIdPropertyArray().reduce(
+              (idProperties, idProperty) => {
+                idProperties[idProperty] = {
+                  type: this.definition.properties[idProperty].type
+                }
+                return idProperties
+              },
+              {}
+            ),
+            additionalProperties: false
+          },
+          {
+            type: 'object',
+            properties: {
+              '#ref': {
+                type: 'string'
+              }
+            },
+            additionalProperties: false
+          }
+        ]
+      })
+    }
+    return validator(data)
   }
 
   static hasScope(name) {

@@ -30,7 +30,7 @@ export default {
             value === null && this.value !== null ||
             // ...or if the value is a reference, replace it with its option
             // value, so that it'll hold actual data, not just a reference id.
-            this.schemaComponent.isReference(this.value)
+            this.schemaComponent.isIdReference(this.value)
           )
         ) {
           this.selectValue = value
