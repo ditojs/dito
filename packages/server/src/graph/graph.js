@@ -64,26 +64,24 @@ export async function populateGraph(rootModelClass, graph, expr) {
 
   const grouped = {}
   const addToGroup = (item, modelClass, modify, eager) => {
-    // Group models by model-name + modify + eager, for faster loading:
-    const key = `${modelClass.name}_${modify}_${eager || ''}`
-    const group = grouped[key] || (grouped[key] = {
-      modelClass,
-      modify,
-      eager,
-      // TODO: Support composite keys where getIdProperty() returns an array.
-      idProperty: modelClass.getIdProperty(),
-      references: [],
-      ids: [],
-      modelsById: {}
-    })
-    // Filter out the items that aren't references,
-    // and collect ids to be loaded for references.
-    if (modify.length > 0 || modelClass.isIdReference(item)) {
-      const id = item[group.idProperty]
-      if (id != null) {
-        group.references.push(item)
-        group.ids.push(id)
-      }
+    // TODO: Support composite keys where getIdProperty() returns an array.
+    const idProperty = modelClass.getIdProperty()
+    const id = item[idProperty]
+    if (id != null) {
+      // Group models by model-name + modify + eager, for faster loading:
+      const key = `${modelClass.name}_${modify}_${eager || ''}`
+      const group = grouped[key] || (grouped[key] = {
+        modelClass,
+        modify,
+        eager,
+        idProperty,
+        references: [],
+        ids: [],
+        modelsById: {}
+      })
+      group.references.push(item)
+      // Collect ids to be loaded for the references.
+      group.ids.push(id)
     }
   }
 
@@ -107,7 +105,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
         // Collect all graph items described by the current relation path in
         // one loop:
         for (let i = 0, l = path.length; i < l; i++) {
-          const entry = path[i]
+          const part = path[i]
           if (items.length === 0) break
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
@@ -122,9 +120,11 @@ export async function populateGraph(rootModelClass, graph, expr) {
                     : expr
                 }
               )
-              addToGroup(item, modelClass, entry.modify, eager.join('.'))
+              addToGroup(item, modelClass, part.modify, eager.join('.'))
             } else {
-              const value = item[entry.relation]
+              const value = item[part.relation]
+              // Add the values of this relation to items, so they can be
+              // filtered further in the next iteration of this loop.
               if (value != null) {
                 items.push(...asArray(value))
               }
@@ -134,7 +134,11 @@ export async function populateGraph(rootModelClass, graph, expr) {
         }
         // Add all encountered leaf-references to groups to be loaded.
         for (const item of items) {
-          addToGroup(item, modelClass, modify)
+          // Filter out items that aren't references, but always load when there
+          // are modify statements, as we can't be sure if it's already there.
+          if (modify.length > 0 || modelClass.isIdReference(item)) {
+            addToGroup(item, modelClass, modify)
+          }
         }
       }
     }
