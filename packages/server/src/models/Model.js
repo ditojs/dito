@@ -2,7 +2,7 @@ import objection from 'objection'
 import dbErrors from 'db-errors'
 import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
-import { isFunction, asArray } from '@ditojs/utils'
+import { isFunction, isArray, asArray } from '@ditojs/utils'
 import { mergeReversed } from '@/utils'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
@@ -152,6 +152,10 @@ export class Model extends objection.Model {
       obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
     }
     return obj
+  }
+
+  static hasCompositeId() {
+    return isArray(this.getIdProperty())
   }
 
   static isIdReference(data) {

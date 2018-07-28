@@ -64,9 +64,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
 
   const grouped = {}
   const addToGroup = (item, modelClass, modify, eager) => {
-    // TODO: Support composite keys where getIdProperty() returns an array.
-    const idProperty = modelClass.getIdProperty()
-    const id = item[idProperty]
+    const id = item.$id()
     if (id != null) {
       // Group models by model-name + modify + eager, for faster loading:
       const key = `${modelClass.name}_${modify}_${eager || ''}`
@@ -74,7 +72,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
         modelClass,
         modify,
         eager,
-        idProperty,
+        hasCompositeId: modelClass.hasCompositeId(),
         references: [],
         ids: [],
         modelsById: {}
@@ -149,8 +147,10 @@ export async function populateGraph(rootModelClass, graph, expr) {
   // Load all found models by ids asynchronously.
   await Promise.map(
     groups,
-    async ({ modelClass, modify, eager, idProperty, ids, modelsById }) => {
-      const query = modelClass.whereIn('id', ids)
+    async ({ modelClass, modify, eager, hasCompositeId, ids, modelsById }) => {
+      const query = hasCompositeId
+        ? modelClass.whereInComposite('id', ids)
+        : modelClass.whereIn('id', ids)
       if (eager) {
         query.mergeEager(eager)
       }
@@ -160,16 +160,15 @@ export async function populateGraph(rootModelClass, graph, expr) {
       const models = await query.execute()
       // Fill the group.modelsById lookup:
       for (const model of models) {
-        modelsById[model[idProperty]] = model
+        modelsById[model.$id()] = model
       }
     }
   )
 
   // Finally populate the references with the loaded models.
-  for (const { idProperty, references, modelsById } of groups) {
+  for (const { references, modelsById } of groups) {
     for (const item of references) {
-      const id = item[idProperty]
-      const model = modelsById[id]
+      const model = modelsById[item.$id()]
       if (model) {
         Object.assign(item, model)
       }
