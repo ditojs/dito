@@ -353,20 +353,26 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   upsertGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.upsertGraphAndFetch(
-      this.modelClass().getIdValues(id, { ...data }), options)
+    return this.upsertGraphAndFetch({
+      ...data,
+      ...this.modelClass().getIdReference(id)
+    }, options)
   }
 
   updateGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.updateGraphAndFetch(
-      this.modelClass().getIdValues(id, { ...data }), options)
+    return this.updateGraphAndFetch({
+      ...data,
+      ...this.modelClass().getIdReference(id)
+    }, options)
   }
 
   patchGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.patchGraphAndFetch(
-      this.modelClass().getIdValues(id, { ...data }), options)
+    return this.patchGraphAndFetch({
+      ...data,
+      ...this.modelClass().getIdReference(id)
+    }, options)
   }
 
   // @override

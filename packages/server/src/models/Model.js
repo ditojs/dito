@@ -143,22 +143,22 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static getIdValues(id, obj = {}) {
-    const ids = asArray(id)
-    const { properties } = this.definition
-    for (const [index, name] of this.getIdPropertyArray().entries()) {
-      const property = properties[name]
-      const id = ids[index]
-      obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
-    }
-    return obj
-  }
-
   static hasCompositeId() {
     return isArray(this.getIdProperty())
   }
 
-  static isIdReference(data) {
+  static getIdReference(id) {
+    const ids = asArray(id)
+    const { properties } = this.definition
+    return this.getIdPropertyArray().reduce((obj, name, index) => {
+      const property = properties[name]
+      const id = ids[index]
+      obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
+      return obj
+    }, {})
+  }
+
+  static isIdReference(obj) {
     let validator = this.referenceValidator
     if (!validator) {
       // For `data` to be considered a reference, it needs to hold only one
@@ -191,7 +191,7 @@ export class Model extends objection.Model {
         ]
       })
     }
-    return validator(data)
+    return validator(obj)
   }
 
   static hasScope(name) {

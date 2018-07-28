@@ -54,7 +54,7 @@ export class CollectionController extends Controller {
       // eslint-disable-next-line new-cap
       (validatorsCache[name] = new this.modelClass())
     validator.$validate(
-      this.modelClass.getIdValues(id),
+      this.modelClass.getIdReference(id),
       { patch: true }
     )
     return id
