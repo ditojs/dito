@@ -393,7 +393,7 @@ export class Model extends objection.Model {
   }
 
   static filterGraph(graph, expr) {
-    return filterGraph(graph, expr)
+    return filterGraph(this, graph, expr)
   }
 
   static async populateGraph(graph, expr) {

@@ -15,9 +15,9 @@ export function ensureModelArray(rootModelClass, data) {
     : []
 }
 
-export function filterGraph(graph, expr) {
+export function filterGraph(rootModelClass, graph, expr) {
   expr = RelationExpression.create(expr)
-  const modelArray = asArray(graph).map(model => {
+  const modelArray = ensureModelArray(rootModelClass, graph).map(model => {
     if (model) {
       const copy = new model.constructor()
       const relations = model.constructor.getRelations()
@@ -25,10 +25,15 @@ export function filterGraph(graph, expr) {
       // to prevent key sequence in created clone:
       for (const key in model) {
         if (model.hasOwnProperty(key)) {
-          if (key in relations) {
+          const relation = relations[key]
+          if (relation) {
             const child = expr[key]
             if (child) {
-              copy[key] = filterGraph(model[key], child)
+              copy[key] = filterGraph(
+                relation.relatedModelClass,
+                model[key],
+                child
+              )
             }
           } else {
             copy[key] = clone(model[key])
@@ -83,7 +88,9 @@ export async function populateGraph(rootModelClass, graph, expr) {
   }
 
   // Clone the full graph so we can directly modify it after:
-  const modelArray = asArray(graph).map(model => model?.$clone() || null)
+  const modelArray = ensureModelArray(rootModelClass, graph).map(
+    model => model?.$clone() || null
+  )
 
   for (const path of collectExpressionPaths(expr)) {
     let modelClass = rootModelClass
