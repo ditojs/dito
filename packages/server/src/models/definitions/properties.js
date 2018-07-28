@@ -13,10 +13,11 @@ export default function properties(values) {
     }
   }
 
-  // TODO: Support composite keys where getIdProperty() returns an array.
-  addIdProperty(this.getIdProperty(), {
-    primary: true
-  })
+  for (const name of this.getIdPropertyArray()) {
+    addIdProperty(name, {
+      primary: true
+    })
+  }
 
   const addRelationProperties = (relation, propName) => {
     const modelClass = relation.ownerModelClass
