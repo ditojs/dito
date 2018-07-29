@@ -2,11 +2,12 @@ import { isArray, asArray, getDataPath } from '@ditojs/utils'
 import { modelGraphToExpression, ensureModelArray } from '.'
 
 export class GraphProcessor {
-  constructor(rootModelClass, data, options, settings) {
+  constructor(rootModelClass, data, options = {}, settings = {}) {
     this.rootModelClass = rootModelClass
     this.data = ensureModelArray(rootModelClass, data)
     this.isArray = isArray(data)
     this.options = options
+    this.settings = settings
     this.overrides = {}
     this.numOptions = Object.keys(options).length
     this.numOverrides = 0
@@ -16,7 +17,7 @@ export class GraphProcessor {
         this.processOverrides()
       }
     }
-    this.removedRelations = settings.restoreRelations && {}
+    this.relateProperties = {}
   }
 
   getOptions() {
@@ -26,11 +27,9 @@ export class GraphProcessor {
   }
 
   getData() {
-    // If setting.restoreRelations is used, call processRelate() to filter out
-    // nested relations of models that are used for relates, but keep the
-    // removed relations to restore them again on the results.
-    // See: restoreRelations()
-    const data = this.removedRelations
+    // If setting.processRelates is used, call processRelate() to filter out
+    // nested relations of models that are used for relates.
+    const data = this.settings.processRelates
       ? this.processRelates(this.data)
       : this.data
     return this.isArray ? data : data[0]
@@ -155,44 +154,35 @@ export class GraphProcessor {
   processRelates(data, relationPath = '', dataPath = '') {
     if (data) {
       if (data.$isObjectionModel) {
-        const relations = data.constructor.getRelationArray()
-        const relate = this.shouldRelate(relationPath)
-        const clone = data.$clone({ shallow: relate })
-        if (relate) {
-          // TODO: Remove not only relations, but also all fields from graph
-          // that aren't owning their data, and convert them to references.
-          // Fill removedRelations with json-pointer -> relation-value pairs,
-          // so that we can restore the relations again after the operation in
-          // restoreRelations():
-          if (this.removedRelations) {
-            const values = {}
-            let hasRelations = false
-            for (const { name } of relations) {
-              const value = data[name]
-              if (value !== undefined) {
-                values[name] = value
-                hasRelations = true
-              }
-            }
-            if (hasRelations) {
-              this.removedRelations[dataPath] = values
+        // Start with a reference model instance that only contains the
+        // id / #ref fields:
+        const copy = data.constructor.getReference(data)
+        if (this.shouldRelate(relationPath)) {
+          if (this.settings.restoreRelates) {
+            // Fill relateProperties with entries mapping dataPath->properties,
+            // so we can restore these again at the end of in restoreRelates():
+            const properties = {}
+            if (this.copyProperties(properties, data, copy)) {
+              this.relateProperties[dataPath] = properties
             }
           }
         } else {
-          for (const { name } of relations) {
-            const value = this.processRelates(
-              clone[name],
-              appendPath(relationPath, '.', name),
-              appendPath(dataPath, '/', name)
-            )
-            if (value !== undefined) {
-              clone[name] = value
+          // This isn't a relate, so copy over the full properties of data now:
+          this.copyProperties(copy, data, copy)
+          // Follow all relations and keep processing:
+          for (const { name } of data.constructor.getRelationArray()) {
+            if (name in data) {
+              copy[name] = this.processRelates(
+                data[name],
+                appendPath(relationPath, '.', name),
+                appendPath(dataPath, '/', name)
+              )
             }
           }
         }
-        return clone
+        return copy
       } else if (isArray(data)) {
-        // Pass on relate for hasMany arrays.
+        // Potentially a has-many relation, so keep processing relates:
         return data.map((entry, index) => this.processRelates(
           entry,
           relationPath,
@@ -206,15 +196,31 @@ export class GraphProcessor {
   /**
    * Restores relations in the final result removed by processRelates()
    */
-  restoreRelations(result) {
-    const data = asArray(result)
-    for (const [path, values] of Object.entries(this.removedRelations || {})) {
-      const obj = getDataPath(data, path)
-      for (const key in values) {
-        obj[key] = values[key]
+  restoreRelates(result) {
+    // `this.data` is always an array, hence the dataPaths always point into
+    // arrays. Convert the result to an array so the same paths can be used.
+    if (this.settings.restoreRelates) {
+      const data = asArray(result)
+      for (const entry of Object.entries(this.relateProperties)) {
+        const [dataPath, properties] = entry
+        const obj = getDataPath(data, dataPath)
+        for (const key in properties) {
+          obj[key] = properties[key]
+        }
       }
     }
     return result
+  }
+
+  copyProperties(target, source, exclude) {
+    let copied = false
+    for (const [key, value] of Object.entries(source)) {
+      if (!exclude || !(key in exclude)) {
+        target[key] = value
+        copied = true
+      }
+    }
+    return copied
   }
 }
 

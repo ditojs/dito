@@ -148,28 +148,34 @@ export class Model extends objection.Model {
   }
 
   static getReference(modelOrId) {
+    // Creates a reference model that takes over the id / #ref properties from
+    // the passed  id value/array or model, omitting any other properties in it.
+    const ref = new this()
+    let addProperty
     if (isObject(modelOrId)) {
-      return this.getIdPropertyArray().reduce((obj, name) => {
+      addProperty = name => {
         const value = modelOrId[name]
         if (value !== undefined) {
-          obj[name] = value
+          ref[name] = value
         }
-        return obj
-      }, new this())
+      }
+      // Also support #ref type references next to the id properties.
+      addProperty('#ref')
     } else {
       const ids = asArray(modelOrId)
       const { properties } = this.definition
-      return this.getIdPropertyArray().reduce((obj, name, index) => {
+      addProperty = (name, index) => {
         const id = ids[index]
         if (id !== undefined) {
-          const property = properties[name]
+          const { type } = properties[name]
           // On-the-fly coercion of numeric ids to numbers, so they can pass the
           // model validation in `CollectionController.getId()`
-          obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
+          ref[name] = ['integer', 'number'].includes(type) ? +id : id
         }
-        return obj
-      }, new this())
+      }
     }
+    this.getIdPropertyArray().forEach(addProperty)
+    return ref
   }
 
   static isReference(obj) {

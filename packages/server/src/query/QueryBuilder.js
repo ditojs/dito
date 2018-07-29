@@ -298,13 +298,22 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _handleGraph(method, data, defaultOptions, options = defaultOptions) {
-    const graph = new GraphProcessor(this.modelClass(), data, options, {
-      // Only process option overrides if the user doesn't override options:
-      processOverrides: options === defaultOptions,
-      restoreRelations: true
-    })
+    const graph = new GraphProcessor(
+      this.modelClass(),
+      data,
+      options,
+      // Only process overrides and relates if the options aren't overridden,
+      // to still allow Objection.js-style graph calls with detailed options.
+      options === defaultOptions
+        ? {
+          processOverrides: true,
+          processRelates: true,
+          restoreRelates: true
+        }
+        : {}
+    )
     const builder = super[method](graph.getData(), graph.getOptions())
-    return builder.runAfter(result => graph.restoreRelations(result))
+    return builder.runAfter(result => graph.restoreRelates(result))
   }
 
   // @override
