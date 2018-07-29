@@ -31,7 +31,7 @@
     "@koa/cors": "^2.2.1",
     "ajv": "^6.5.0",
     "ajv-merge-patch": "^4.1.0",
-    "autoprefixer": "^9.0.0",
+    "autoprefixer": "^9.0.1",
     "babel-loader": "^8.0.0-beta.2",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.1",
@@ -60,9 +60,9 @@
     "koa-session": "^5.8.1",
     "koa-webpack": "^5.0.2",
     "node-sass": "^4.9.1",
-    "nodemon": "^1.17.5",
+    "nodemon": "^1.18.3",
     "nsp": "^3.2.1",
-    "objection": "^1.1.10",
+    "objection": "^1.2.2",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "postcss-loader": "^2.1.5",
@@ -72,7 +72,7 @@
     "uuid": "^3.2.1",
     "vue-loader": "^14.2.2",
     "vue-template-compiler": "^2.5.16",
-    "webpack": "^4.15.1"
+    "webpack": "^4.16.3"
   },
   "peerDependencies": {
     "knex": "^0.14.0"
