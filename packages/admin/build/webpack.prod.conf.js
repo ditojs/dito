@@ -10,6 +10,7 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin')
 const OptimizeCSSPlugin = require('optimize-css-assets-webpack-plugin')
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const toPascalCase = require('to-pascal-case')
+const safeParser = require('postcss-safe-parser')
 
 const env = require('../config/prod.env')
 
@@ -109,9 +110,15 @@ const webpackMinifiedConfig = merge(webpackConfig, {
     // Compress extracted CSS. We are using this plugin so that possible
     // duplicated CSS from different components can be deduped.
     new OptimizeCSSPlugin({
-      cssProcessorOptions: config.build.productionSourceMap
-        ? { safe: true, map: { inline: false } }
-        : { safe: true }
+      cssProcessorOptions: {
+        ssProcessorOptions: {
+          parser: safeParser,
+          discardComments: {
+            removeAll: true
+          },
+          ...(config.build.productionSourceMap && { map: { inline: false }})
+        }
+      }
     })
   ]
 })
