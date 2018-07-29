@@ -151,8 +151,10 @@ export class Model extends objection.Model {
     const ids = asArray(id)
     const { properties } = this.definition
     return this.getIdPropertyArray().reduce((obj, name, index) => {
-      const property = properties[name]
       const id = ids[index]
+      const property = properties[name]
+      // On-the-fly coercion of numeric ids to numbers, so they can pass the
+      // model validation in `CollectionController.getId()`
       obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
       return obj
     }, {})

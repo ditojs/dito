@@ -48,12 +48,10 @@ export class CollectionController extends Controller {
 
   getId(ctx) {
     const id = ctx.params[this.idParam]
-    const { name } = this.modelClass
-    // Use a cached dummy instance to validate the format of the passed id.
-    const validator = validatorsCache[name] ||
-      // eslint-disable-next-line new-cap
-      (validatorsCache[name] = new this.modelClass())
-    validator.$validate(
+    // Create a dummy model instance to validate the requested id against.
+    // eslint-disable-next-line new-cap
+    const model = new this.modelClass()
+    model.$validate(
       this.modelClass.getIdReference(id),
       { patch: true }
     )
@@ -199,5 +197,3 @@ const actionToVerb = {
   update: 'put',
   patch: 'patch'
 }
-
-const validatorsCache = {}
