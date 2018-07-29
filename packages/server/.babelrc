@@ -1,6 +1,6 @@
 {
   "presets": [
-    "@ditojs/dito",
+    "@ditojs/babel-preset",
     ["@babel/preset-env", {
       "targets": {
         "node": "9"
