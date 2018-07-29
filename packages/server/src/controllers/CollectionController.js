@@ -52,7 +52,7 @@ export class CollectionController extends Controller {
     // eslint-disable-next-line new-cap
     const model = new this.modelClass()
     model.$validate(
-      this.modelClass.getIdReference(id),
+      this.modelClass.getReference(id),
       { patch: true }
     )
     return id

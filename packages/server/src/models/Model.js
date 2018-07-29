@@ -2,7 +2,7 @@ import objection from 'objection'
 import dbErrors from 'db-errors'
 import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
-import { isFunction, isArray, asArray } from '@ditojs/utils'
+import { isObject, isFunction, isArray, asArray } from '@ditojs/utils'
 import { mergeReversed } from '@/utils'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
@@ -147,20 +147,32 @@ export class Model extends objection.Model {
     return isArray(this.getIdProperty())
   }
 
-  static getIdReference(id) {
-    const ids = asArray(id)
-    const { properties } = this.definition
-    return this.getIdPropertyArray().reduce((obj, name, index) => {
-      const id = ids[index]
-      const property = properties[name]
-      // On-the-fly coercion of numeric ids to numbers, so they can pass the
-      // model validation in `CollectionController.getId()`
-      obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
-      return obj
-    }, {})
+  static getReference(modelOrId) {
+    if (isObject(modelOrId)) {
+      return this.getIdPropertyArray().reduce((obj, name) => {
+        const value = modelOrId[name]
+        if (value !== undefined) {
+          obj[name] = value
+        }
+        return obj
+      }, new this())
+    } else {
+      const ids = asArray(modelOrId)
+      const { properties } = this.definition
+      return this.getIdPropertyArray().reduce((obj, name, index) => {
+        const id = ids[index]
+        if (id !== undefined) {
+          const property = properties[name]
+          // On-the-fly coercion of numeric ids to numbers, so they can pass the
+          // model validation in `CollectionController.getId()`
+          obj[name] = ['integer', 'number'].includes(property.type) ? +id : id
+        }
+        return obj
+      }, new this())
+    }
   }
 
-  static isIdReference(obj) {
+  static isReference(obj) {
     let validator = this.referenceValidator
     if (!validator) {
       // For `data` to be considered a reference, it needs to hold only one

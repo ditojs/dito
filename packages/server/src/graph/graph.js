@@ -72,7 +72,6 @@ export async function populateGraph(rootModelClass, graph, expr) {
         modelClass,
         modify,
         eager,
-        hasCompositeId: modelClass.hasCompositeId(),
         references: [],
         ids: [],
         modelsById: {}
@@ -107,7 +106,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
           if (items.length === 0) break
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
-            if (modelClass.isIdReference(item)) {
+            if (modelClass.isReference(item)) {
               // Detected a reference item that isn't a leaf: We need to
               // eager-load the rest of the path, and respect modify settings:
               const eager = path.slice(i).map(
@@ -134,7 +133,7 @@ export async function populateGraph(rootModelClass, graph, expr) {
         for (const item of items) {
           // Filter out items that aren't references, but always load when there
           // are modify statements, as we can't be sure if it's already there.
-          if (modify.length > 0 || modelClass.isIdReference(item)) {
+          if (modify.length > 0 || modelClass.isReference(item)) {
             addToGroup(item, modelClass, modify)
           }
         }
@@ -147,8 +146,8 @@ export async function populateGraph(rootModelClass, graph, expr) {
   // Load all found models by ids asynchronously.
   await Promise.map(
     groups,
-    async ({ modelClass, modify, eager, hasCompositeId, ids, modelsById }) => {
-      const query = hasCompositeId
+    async ({ modelClass, modify, eager, ids, modelsById }) => {
+      const query = modelClass.hasCompositeId()
         ? modelClass.whereInComposite('id', ids)
         : modelClass.whereIn('id', ids)
       if (eager) {

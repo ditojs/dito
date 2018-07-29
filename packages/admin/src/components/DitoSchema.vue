@@ -279,7 +279,7 @@ export default DitoComponent.component('dito-schema', {
           const { id, ...rest } = data
           // A refeference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
-          data = this.isIdReference(data)
+          data = this.isReference(data)
             ? { '#ref': id }
             : { '#id': id, ...rest }
         }
@@ -324,7 +324,7 @@ export default DitoComponent.component('dito-schema', {
       data.id = `@${++this.temporaryId}`
     },
 
-    isIdReference(data) {
+    isReference(data) {
       // Returns true if value is an object that holds nothing more than an id.
       const keys = data && Object.keys(data)
       return keys?.length === 1 && keys[0] === 'id'

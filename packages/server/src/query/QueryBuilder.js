@@ -355,7 +355,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this.context({ byId: id })
     return this.upsertGraphAndFetch({
       ...data,
-      ...this.modelClass().getIdReference(id)
+      ...this.modelClass().getReference(id)
     }, options)
   }
 
@@ -363,7 +363,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this.context({ byId: id })
     return this.updateGraphAndFetch({
       ...data,
-      ...this.modelClass().getIdReference(id)
+      ...this.modelClass().getReference(id)
     }, options)
   }
 
@@ -371,7 +371,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this.context({ byId: id })
     return this.patchGraphAndFetch({
       ...data,
-      ...this.modelClass().getIdReference(id)
+      ...this.modelClass().getReference(id)
     }, options)
   }
 

@@ -8,6 +8,6 @@ export const relate = {
   },
 
   validate(schema, data) {
-    return this.app?.models[schema]?.isIdReference(data) || false
+    return this.app?.models[schema]?.isReference(data) || false
   }
 }
