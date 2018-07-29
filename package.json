@@ -21,6 +21,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@ditojs/babel-preset-dito": "^0.22.0",
     "babel-core": "^7.0.0-0",
     "babel-eslint": "8.2.1",
     "babel-jest": "^23.4.2",
