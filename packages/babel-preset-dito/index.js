@@ -24,7 +24,10 @@ module.exports = function() {
       [
         require('@babel/plugin-proposal-class-properties'),
         { loose: false }
-      ]
+      ],
+
+      // Stage 4
+      require('@babel/plugin-proposal-optional-catch-binding')
     ]
   }
 }
