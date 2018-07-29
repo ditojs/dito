@@ -1,5 +1,6 @@
 {
   "presets": [
+    "@ditojs/dito",
     ["@babel/preset-env", {
       "targets": {
         "browsers": [
@@ -10,9 +11,6 @@
       },
       "useBuiltIns": "usage",
       "modules": false
-    }],
-    ["@babel/preset-stage-1", {
-      "decoratorsLegacy": true
     }]
   ],
   "plugins": [

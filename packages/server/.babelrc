@@ -1,18 +1,14 @@
 {
   "presets": [
+    "@ditojs/dito",
     ["@babel/preset-env", {
       "targets": {
         "node": "9"
       },
       "useBuiltIns": "usage"
-    }],
-    ["@babel/preset-stage-1", {
-      "decoratorsLegacy": true
     }]
   ],
   "plugins": [
-    "@babel/plugin-transform-runtime",
-    "dynamic-import-node-babel-7",
     ["module-resolver", {
       "cwd": "babelrc",
       "alias": {
@@ -20,6 +16,8 @@
         "@": "./src"
       }
     }],
+    "@babel/plugin-transform-runtime",
+    "dynamic-import-node-babel-7",
     "transform-promise-to-bluebird"
   ],
   "comments": false
