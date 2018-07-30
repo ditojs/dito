@@ -16,7 +16,6 @@
       )
       component.dito-component(
         :is="getTypeComponent(compSchema.type)"
-        ref="components"
         :schema="compSchema"
         :dataPath="compDataPath"
         :data="data"

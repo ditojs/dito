@@ -1,11 +1,12 @@
 <template lang="pug">
   input.dito-text.dito-input(
+    ref="element"
     :id="dataPath"
     :type="inputType"
     v-model="inputValue"
     v-validate="validations"
-    v-bind="getAttributes()"
-    v-on="getEvents()"
+    v-bind="attributes"
+    v-on="events"
   )
 </template>
 

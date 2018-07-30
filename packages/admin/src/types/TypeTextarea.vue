@@ -1,10 +1,11 @@
 <template lang="pug">
   textarea.dito-textarea.dito-input(
+    ref="element"
     :id="dataPath"
     v-model="value"
     v-validate="validations"
-    v-bind="getAttributes()"
-    v-on="getEvents()"
+    v-bind="attributes"
+    v-on="events"
     :rows="schema.lines || 4"
   )
 </template>

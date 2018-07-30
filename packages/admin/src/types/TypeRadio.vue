@@ -6,12 +6,13 @@
     li(v-for="option in options")
       label
         input.dito-radio-button(
+          ref="element"
           type="radio"
           :value="getValueForOption(option)"
           v-model="selectValue"
           v-validate="validations"
-          v-bind="getAttributes()"
-          v-on="getEvents()"
+          v-bind="attributes"
+          v-on="events"
         )
         | {{ getLabelForOption(option) }}
 </template>

@@ -19,7 +19,6 @@
       dito-components.dito-tab-components(
         v-for="(tabSchema, key) in tabs"
         v-show="selectedTab === key"
-        ref="components"
         :key="key"
         :tab="key"
         :schema="tabSchema"
@@ -32,7 +31,6 @@
       )
       dito-components.dito-main-components(
         v-if="schema.components"
-        ref="mainComponents"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"

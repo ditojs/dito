@@ -41,7 +41,7 @@ export default function properties(values) {
   }
 
   // Convert root-level short-forms, for easier properties handling in
-  // getAttributes() and idColumn() & co:
+  // attributes and idColumn() & co:
   // - `name: type` to `name: { type }`
   // - `name: [...items]` to `name: { type: 'array', items }
   // NOTE: Substitutions on all other levels happen in convertSchema()

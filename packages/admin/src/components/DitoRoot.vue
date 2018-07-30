@@ -1,8 +1,13 @@
 <template lang="pug">
   .dito
     modals-container
-    notifications(position="top right" ref="notifications")
-    dito-menu(:views="resolvedViews")
+    notifications(
+      position="top right"
+      ref="notifications"
+    )
+    dito-menu(
+      :views="resolvedViews"
+    )
     main.dito-page.dito-parent
       dito-header(
         :spinner="options.spinner"

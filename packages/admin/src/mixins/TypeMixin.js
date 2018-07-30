@@ -128,6 +128,42 @@ export default {
       return { rules }
     },
 
+    attributes() {
+      const {
+        nativeField = false,
+        textField = false
+      } = this.constructor.options
+
+      const attributes = {
+        'data-vv-name': this.dataPath,
+        'data-vv-as': this.label,
+        // Validate with a little delay. This is mainly needed for password
+        // handling in TypeText, but may be of use in other places also.
+        'data-vv-delay': 1,
+        disabled: this.disabled
+      }
+
+      if (nativeField) {
+        attributes.name = this.dataPath
+        attributes.title = this.label
+        attributes.readonly = this.readonly
+        attributes.autofocus = this.autofocus
+        if (textField) {
+          attributes.placeholder = this.placeholder
+        }
+      }
+      return attributes
+    },
+
+    events() {
+      return {
+        input: event => this.onChange(event),
+        change: event => this.onChange(event),
+        focus: event => this.onFocus(event),
+        blur: event => this.onBlur(event)
+      }
+    },
+
     verbs() {
       return this.formComponent.verbs
     },
@@ -200,43 +236,6 @@ export default {
         rules.numeric = true
       }
       return rules
-    },
-
-    getAttributes() {
-      const {
-        nativeField = false,
-        textField = false
-      } = this.constructor.options
-
-      const attributes = {
-        ref: 'element',
-        'data-vv-name': this.dataPath,
-        'data-vv-as': this.label,
-        // Validate with a little delay. This is mainly needed for password
-        // handling in TypeText, but may be of use in other places also.
-        'data-vv-delay': 1,
-        disabled: this.disabled
-      }
-
-      if (nativeField) {
-        attributes.name = this.dataPath
-        attributes.title = this.label
-        attributes.readonly = this.readonly
-        attributes.autofocus = this.autofocus
-        if (textField) {
-          attributes.placeholder = this.placeholder
-        }
-      }
-      return attributes
-    },
-
-    getEvents() {
-      return {
-        input: event => this.onChange(event),
-        change: event => this.onChange(event),
-        focus: event => this.onFocus(event),
-        blur: event => this.onBlur(event)
-      }
     },
 
     load({ cache, ...options }) {

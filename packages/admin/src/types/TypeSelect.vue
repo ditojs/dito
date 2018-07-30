@@ -2,11 +2,12 @@
   // In order to make an arrow appear over the select item, we need nesting:
   .dito-select
     select(
+      ref="element"
       :id="dataPath"
       v-model="selectValue"
       v-validate="validations"
-      v-bind="getAttributes()"
-      v-on="getEvents()"
+      v-bind="attributes"
+      v-on="events"
     )
       template(
         v-for="option in options"

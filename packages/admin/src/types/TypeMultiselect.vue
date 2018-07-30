@@ -1,10 +1,11 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
+    ref="element"
     :class="{ 'dito-mutiple': multiple }"
     v-model="multiSelectValue"
     v-validate="validations"
-    v-bind="getAttributes()"
-    v-on="getEvents()"
+    v-bind="attributes"
+    v-on="events"
     :show-labels="false"
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",

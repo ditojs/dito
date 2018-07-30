@@ -1,6 +1,5 @@
 <template lang="pug">
   pagination(
-    ref="pagination"
     :pageSize="limit"
     :total="total"
     :page.sync="page"

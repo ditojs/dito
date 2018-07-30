@@ -2,11 +2,12 @@
   .dito-date
     component(
       :is="getComponent(type)"
+      ref="element"
       :id="dataPath"
       v-model="dateValue"
       v-validate="validations"
-      v-bind="getAttributes()"
-      v-on="getEvents()"
+      v-bind="attributes"
+      v-on="events"
     )
 </template>
 
