@@ -5,8 +5,11 @@ module.exports = {
   root: true,
   parserOptions: {
     parser: 'babel-eslint',
-    ecmaVersion: 2017,
-    sourceType: 'module'
+    sourceType: 'module',
+    ecmaVersion: 2018,
+    ecmaFeatures: {
+      legacyDecorators: true
+    }
   },
   env: {
     es6: true
@@ -26,6 +29,9 @@ module.exports = {
     'array-bracket-spacing': ['error', 'never'],
     // Allow paren-less arrow functions.
     'arrow-parens': ['error', 'as-needed'],
+    'eqeqeq': ['error', 'always', {
+      null: 'ignore'
+    }],
     // Allow async-await.
     'generator-star-spacing': 'off',
     'indent': ['error', 2, {
@@ -37,20 +43,30 @@ module.exports = {
       ignoreTemplateLiterals: true,
       ignoreRegExpLiterals: true
     }],
+    'new-cap': ['error', {
+      newIsCap: true,
+      capIsNew: true,
+      capIsNewExceptions: ['Knex'],
+      capIsNewExceptionPattern: 'Mixin$'
+    }],
+
+    'no-cond-assign': 'error',
+    'no-const-assign': 'error',
+    'no-constant-condition': isProduction ? 'error' : 'warn',
     // Allow debugger during development.
     'no-debugger': isProduction ? 'error' : 'warn',
-    'no-constant-condition': isProduction ? 'error' : 'warn',
+    'no-mixed-operators': 'off',
+    'no-new': 'off',
+    'no-new-func': 'off',
+    'no-return-assign': 'error',
+    'no-this-before-super': 'error',
     'no-undef': isProduction ? 'error' : 'warn',
+    'no-unreachable':isProduction ? 'error' : 'warn',
     'no-unused-vars': [isProduction ? 'error' : 'warn', {
       args: 'after-used',
       argsIgnorePattern: '^_',
       ignoreRestSiblings: true
     }],
-    'no-cond-assign': 'error',
-    'no-new': 'off',
-    'no-new-func': 'off',
-    'no-mixed-operators': 'off',
-    'no-return-assign': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
     'standard/object-curly-even-spacing': ['off'],
@@ -65,6 +81,7 @@ module.exports = {
       asyncArrow: 'always'
     }],
     'space-in-parens': ['error', 'never'],
+    'valid-typeof': 'error',
     'vue/no-async-in-computed-properties': 'off',
     'vue/no-side-effects-in-computed-properties': 'off'
   }
