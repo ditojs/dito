@@ -8,6 +8,9 @@
       "@ditojs/*": ["../*/src/index.js"]
     }
   },
+  "include": [
+    "./src/**/*"
+  ],
   "exclude": [
     "node_modules"
   ]

@@ -37,8 +37,11 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import { hasForms } from '@/utils/schema'
 
+export default TypeComponent.register([
+  'tree-list', 'tree-object'
+],
 // @vue/component
-export default TypeComponent.register(['tree-list', 'tree-object'], {
+{
   mixins: [SourceMixin],
 
   provide() {
