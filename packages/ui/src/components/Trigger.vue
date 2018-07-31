@@ -51,7 +51,7 @@
 </template>
 
 <style lang="sass">
-  @import '../styles/index'
+  @import '../styles/imports'
   @import '../styles/transitions/index'
 
   .dito-trigger-container

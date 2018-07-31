@@ -29,7 +29,7 @@
 </template>
 
 <style lang="sass">
-  @import '../styles/index'
+  @import '../styles/imports'
   .dito-date-time-picker
     // display: inline-block
     .dito-pickers
