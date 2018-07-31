@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/server",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Dito.js Server – Dito.js is a minimal and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/server",
@@ -26,8 +26,8 @@
   },
   "dependencies": {
     "@babel/runtime": "7.0.0-beta.55",
-    "@ditojs/admin": "^0.24.0",
-    "@ditojs/utils": "^0.23.0",
+    "@ditojs/admin": "^0.25.0",
+    "@ditojs/utils": "^0.25.0",
     "@koa/cors": "^2.2.1",
     "ajv": "^6.5.0",
     "ajv-merge-patch": "^4.1.0",
