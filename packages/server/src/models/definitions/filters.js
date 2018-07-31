@@ -46,9 +46,10 @@ export default function filters(values) {
         }
         // If parameters are defined, wrap the function in a closure that
         // performs parameter validation...
+        const rootName = 'query'
         const validator = func && this.app.compileParametersValidator(
           func.parameters,
-          func.options
+          { ...func.options, rootName }
         )
         if (validator) {
           return (query, ...args) => {
@@ -56,9 +57,9 @@ export default function filters(values) {
             const object = {}
             let index = 0
             for (const { name } of validator.list) {
-              // Use 'root' if no name is given, see:
+              // Use rootName if no name is given, see:
               // Application.compileParametersValidator()
-              object[name || 'root'] = args[index++]
+              object[name || rootName] = args[index++]
             }
             const errors = validator.validate(object)
             if (errors) {

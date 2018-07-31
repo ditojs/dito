@@ -15,14 +15,20 @@ export default class ControllerAction {
     this.authorize = handler.authorize || authorize
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
+    this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
     const { parameters, returns, options } = this.handler
-    this.parameters = this.app.compileParametersValidator(parameters, options)
+    this.parameters = this.app.compileParametersValidator(parameters, {
+      ...options,
+      rootName: this.paramsName
+    })
     this.returns = this.app.compileParametersValidator(returns, {
       // Use instanceof checks instead of $ref to check returned values.
+      // TODO: That doesn't guarantee the validity though.. Should always be
+      // $ref checks, I think?
       useInstanceOf: true,
-      ...options
+      ...options,
+      rootName: 'result'
     })
-    this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
   }
 
   getParams(ctx) {
@@ -58,20 +64,23 @@ export default class ControllerAction {
 
   validateParameters(ctx) {
     if (!this.parameters) return
-    const params = this.getParams(ctx)
-    // NOTE: `parameters.validate(query)` coerces data in the query to the
-    // required formats, according to the rules specified here:
+    let params = this.getParams(ctx)
+    // `parameters.validate(query)` coerces data in the query to the required
+    // formats, according to the rules specified here:
     // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
     // Coercion isn't currently offered for `type: 'object'`, so handle this
     // case prior to the call of `parameters.validate()`:
     const errors = []
+    let needsRoot = false
     for (const { name, type } of this.parameters.list) {
+      needsRoot = needsRoot || !name
       // See if the defined type(s) require coercion to objects:
       const objectType = asArray(type).find(
         // Coerce to object if type is 'object' or a known model name.
         type => type === 'object' || type in this.app.models
       )
       if (objectType) {
+        // If no name is provided, use the body object (params)
         const value = name ? params[name] : params
         let object = value
         if (value && isString(value)) {
@@ -109,6 +118,14 @@ export default class ControllerAction {
         }
       }
     }
+    if (needsRoot) {
+      // Add root object (params) under `rootName`, so validation can be
+      // performed against it, see: Application.compileParametersValidator()
+      params = {
+        ...params,
+        [this.parameters.rootName]: params
+      }
+    }
     const errs = this.parameters.validate(params)
     if (errs) {
       errors.push(...errs)
@@ -124,20 +141,24 @@ export default class ControllerAction {
   }
 
   validateResult(result) {
-    const resultName = this.handler.returns?.name
-    // Use 'root' if no name is given, see:
-    // Application.compileParametersValidator()
-    const resultData = {
-      [resultName || 'root']: result
+    if (this.returns) {
+      const resultName = this.handler.returns.name
+      // Use rootName if no name is given, see:
+      // Application.compileParametersValidator(returns, { rootName })
+      const resultData = {
+        [resultName || this.returns.rootName]: result
+      }
+      const errors = this.returns.validate(resultData)
+      if (errors) {
+        throw this.createValidationError({
+          message: `Invalid result of action: ${JSON.stringify(result)}`,
+          errors
+        })
+      }
+      // If no resultName was given, return the full root object (result).
+      return resultName ? resultData : result
     }
-    const errors = this.returns?.validate(resultData)
-    if (errors) {
-      throw this.createValidationError({
-        message: `Invalid result of action: ${JSON.stringify(result)}`,
-        errors
-      })
-    }
-    return resultName ? resultData : result
+    return result
   }
 
   collectConsumedArguments(ctx, consumed) {
@@ -151,6 +172,7 @@ export default class ControllerAction {
         if (name && consumed) {
           consumed[name] = true
         }
+        // If no name is provided, use the body object (params)
         args.push(name ? params[name] : params)
       }
     }

@@ -366,13 +366,13 @@ export class Application extends Koa {
   compileParametersValidator(parameters, options = {}) {
     let properties = null
     const list = []
+    const rootName = options.rootName || 'root'
     for (const param of asArray(parameters)) {
       const schema = isString(param) ? { type: param } : param
       list.push(schema)
       const { name, type, ...rest } = schema
       properties = properties || {}
-      // TODO: Is the type distinction even needed???
-      properties[name || 'root'] = type ? { type, ...rest } : rest
+      properties[name || rootName] = type ? { type, ...rest } : rest
     }
     if (properties) {
       const jsonSchema = convertSchema(properties, options)
@@ -382,6 +382,7 @@ export class Application extends Koa {
       })
       return {
         list,
+        rootName,
         validate: data => {
           // Returns `null` if successful, `validate.errors` otherwise.
           // Use `call()` to pass validator as context to Ajv, see passContext:
