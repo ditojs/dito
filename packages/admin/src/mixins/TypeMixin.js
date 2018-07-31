@@ -193,15 +193,29 @@ export default {
     }
   },
 
-  watch: {
-    dataPath(newDataPath, oldDataPath) {
-      this.schemaComponent?.registerComponent(oldDataPath, null)
-      this.schemaComponent?.registerComponent(newDataPath, this)
-    }
-  },
-
   created() {
     this.schemaComponent?.registerComponent(this.dataPath, this)
+    const { watch, onChange } = this.schema
+    if (watch || onChange) {
+      // Install the watch callbacks in the next ticks, so all components are
+      // initialized and we can check against their names.
+      this.$nextTick(() => {
+        for (const [key, callback] of Object.entries(watch || {})) {
+          const expr = key in this.schemaComponent.components
+            ? `data.${key}`
+            : key
+          this.$watch(expr, callback)
+        }
+        if (onChange) {
+          this.$watch(`data.${this.name}`, (newValue, oldValue) => {
+            // Do not fire onChange for the initial setting of values:
+            if (oldValue !== undefined) {
+              onChange.call(this, newValue, oldValue)
+            }
+          })
+        }
+      })
+    }
   },
 
   destroyed() {
