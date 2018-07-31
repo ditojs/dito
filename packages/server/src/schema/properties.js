@@ -55,8 +55,8 @@ export function convertSchema(schema, options = {}) {
           schema.type = 'object'
           schema.instanceof = type
         } else {
-          delete schema.type
-          schema.$ref = type
+          // $ref keywords can't be combined with anything else
+          schema = { $ref: type }
         }
       }
     } else {
