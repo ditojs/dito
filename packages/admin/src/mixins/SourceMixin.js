@@ -175,12 +175,12 @@ export default {
     }
   },
 
-  created() {
-    // Make sure filters are set correctly before initData() triggers request.
-    this.addQuery(this.$route.query)
-  },
-
   methods: {
+    setupData() {
+      this.addQuery(this.$route.query)
+      this.ensureData()
+    },
+
     setQuery(query) {
       // Always keep the displayed query parameters in sync with the store.
       // Use scope and page from the list schema as defaults, but allow the

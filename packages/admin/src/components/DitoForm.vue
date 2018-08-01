@@ -262,7 +262,7 @@ export default DitoComponent.component('dito-form', {
   watch: {
     sourceData: 'clearClonedData',
     // Needed for the 'create' redirect in `inheritedData()` to work:
-    create: 'initData'
+    create: 'setupData'
   },
 
   mounted() {
@@ -284,14 +284,13 @@ export default DitoComponent.component('dito-form', {
         .substring((route.isView ? 0 : route.path.length) + 1))
     },
 
-    // @override DataMixin.initData()
-    initData() {
+    // @override DataMixin.setupData()
+    setupData() {
       if (this.create) {
         this.createdData = this.createdData ||
           this.createData(this.schema, this.type)
       } else {
-        // super.initData()
-        DataMixin.methods.initData.call(this)
+        this.ensureData()
       }
     },
 

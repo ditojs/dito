@@ -47,9 +47,7 @@ export default {
   },
 
   created() {
-    // Give other mixins the chance to receive created() events first, e.g.
-    // SourceMixin to set up query:
-    this.$nextTick(() => this.initData())
+    this.setupData()
   },
 
   methods: {
@@ -107,7 +105,12 @@ export default {
       this.loadedData = data
     },
 
-    initData() {
+    setupData() {
+      // Actual code is in separate function so it's easer to override and call:
+      this.ensureData()
+    },
+
+    ensureData() {
       if (this.shouldReload) {
         this.reloadData()
       } else if (this.shouldLoad) {
