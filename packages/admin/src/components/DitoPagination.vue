@@ -27,10 +27,12 @@ export default DitoComponent.component('dito-pagination', {
       },
 
       set(page) {
-        this.$router.push({
-          query: { ...this.query, page: (page - 1) },
-          hash: this.$route.hash
-        })
+        if (this.page !== page) {
+          this.$router.push({
+            query: { ...this.query, page: (page - 1) },
+            hash: this.$route.hash
+          })
+        }
       }
     }
   }

@@ -129,6 +129,8 @@ export default DitoComponent.component('dito-filters', {
       this.$router.push({
         query: {
           ...this.query,
+          // Reset pagination when applying new filters:
+          page: undefined,
           filter
         },
         hash: this.$route.hash
