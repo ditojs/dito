@@ -1,4 +1,4 @@
-import { isArray, isAbsoluteUrl } from '@ditojs/utils'
+import { isObject, isArray, isFunction, isAbsoluteUrl } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
@@ -193,26 +193,7 @@ export default {
 
   created() {
     this.schemaComponent?.registerComponent(this.dataPath, this)
-    // Install onChange handler by watching `value` for change.
-    this.$watch('value', (newValue, oldValue) => {
-      // Do not fire onChange for the initial setting of values:
-      if (oldValue !== undefined) {
-        this.onChange(newValue, oldValue)
-      }
-    })
-    const { watch } = this.schema
-    if (watch) {
-      // Install the watch callbacks in the next tick, so all components are
-      // initialized and we can check against their names.
-      this.$nextTick(() => {
-        for (const [key, callback] of Object.entries(watch)) {
-          const expr = key in this.schemaComponent.components
-            ? `data.${key}`
-            : key
-          this.$watch(expr, callback)
-        }
-      })
-    }
+    this.setupWatchHandlers()
   },
 
   destroyed() {
@@ -220,6 +201,46 @@ export default {
   },
 
   methods: {
+    setupWatchHandlers() {
+      // Install onChange handler by watching `value` for change.
+      this.$watch('value', (newValue, oldValue) => {
+        // Ignore changes triggered by the loading of actual data.
+        // See LoadingMixin for details on hasLoaded:
+        if (!this.dataRouteComponent.hasLoaded) {
+          this.onChange(newValue, oldValue)
+        }
+      })
+      const { watch } = this.schema
+      if (watch) {
+        // Install the watch callbacks in the next tick, so all components are
+        // initialized and we can check against their names.
+        this.$nextTick(() => {
+          for (const [key, value] of Object.entries(watch)) {
+            const expr = key in this.schemaComponent.components
+              ? `data.${key}`
+              : key
+            // Support watch functions and `{ handler, ...options }` objects:
+            let handler
+            let options
+            if (isObject(value)) {
+              ({ handler, ...options } = value)
+            } else {
+              handler = value
+            }
+            if (isFunction(handler)) {
+              this.$watch(expr, (newValue, oldValue) => {
+                // Ignore changes triggered by the loading of actual data.
+                // See LoadingMixin for details on hasLoaded:
+                if (!this.dataRouteComponent.hasLoaded) {
+                  handler.call(this, newValue, oldValue)
+                }
+              }, options)
+            }
+          }
+        })
+      }
+    },
+
     getValidationRules() {
       // This method exists to make it easier to override `validations` computed
       // property in type components.

@@ -106,7 +106,9 @@ export default {
     },
 
     setupData() {
-      // Actual code is in separate function so it's easer to override and call:
+      // Actual code is in separate function so it's easer to override
+      // `setupData()` and and call `ensureData()` from the overrides,
+      // see DitoForm and SourceMixin.
       this.ensureData()
     },
 
