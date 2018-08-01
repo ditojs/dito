@@ -157,8 +157,6 @@ export default {
 
     events() {
       return {
-        input: event => this.onChange(event),
-        change: event => this.onChange(event),
         focus: event => this.onFocus(event),
         blur: event => this.onBlur(event)
       }
@@ -195,24 +193,23 @@ export default {
 
   created() {
     this.schemaComponent?.registerComponent(this.dataPath, this)
-    const { watch, onChange } = this.schema
-    if (watch || onChange) {
-      // Install the watch callbacks in the next ticks, so all components are
+    // Install onChange handler by watching `value` for change.
+    this.$watch('value', (newValue, oldValue) => {
+      // Do not fire onChange for the initial setting of values:
+      if (oldValue !== undefined) {
+        this.onChange(newValue, oldValue)
+      }
+    })
+    const { watch } = this.schema
+    if (watch) {
+      // Install the watch callbacks in the next tick, so all components are
       // initialized and we can check against their names.
       this.$nextTick(() => {
-        for (const [key, callback] of Object.entries(watch || {})) {
+        for (const [key, callback] of Object.entries(watch)) {
           const expr = key in this.schemaComponent.components
             ? `data.${key}`
             : key
           this.$watch(expr, callback)
-        }
-        if (onChange) {
-          this.$watch(`data.${this.name}`, (newValue, oldValue) => {
-            // Do not fire onChange for the initial setting of values:
-            if (oldValue !== undefined) {
-              onChange.call(this, newValue, oldValue)
-            }
-          })
         }
       })
     }
@@ -347,8 +344,9 @@ export default {
       this.$emit('blur', event)
     },
 
-    onChange(event) {
-      this.$emit('change', event)
+    onChange(newVal, oldVal) {
+      this.$emit('change', newVal, oldVal)
+      this.schema.onChange?.call(this, newVal, oldVal)
     }
   }
 }
