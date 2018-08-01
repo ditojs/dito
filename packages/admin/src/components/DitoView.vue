@@ -8,7 +8,7 @@
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"
-      :disabled="loading"
+      :disabled="isLoading"
       :generateLabels="false"
       :menuHeader="true"
     )
@@ -55,9 +55,9 @@ export default DitoComponent.component('dito-view', {
         : schema
     },
 
-    loading() {
+    isLoading() {
       for (const component of Object.values(this.schema.components || {})) {
-        if (component.loading) {
+        if (component.isLoading) {
           return true
         }
       }

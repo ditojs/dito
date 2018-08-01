@@ -50,7 +50,7 @@
               :data="item"
               :meta="nestedMeta"
               :store="store"
-              :disabled="disabled || loading"
+              :disabled="disabled || isLoading"
             )
           template(v-else)
             td
@@ -62,7 +62,7 @@
                 :data="item"
                 :meta="nestedMeta"
                 :store="store"
-                :disabled="disabled || loading"
+                :disabled="disabled || isLoading"
               )
               component(
                 v-else-if="component"

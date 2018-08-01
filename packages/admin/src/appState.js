@@ -1,6 +1,6 @@
 export default {
   title: '',
-  loading: 0,
+  loadingCounter: 0,
   routeComponents: [],
   user: null,
   clipboardData: null,

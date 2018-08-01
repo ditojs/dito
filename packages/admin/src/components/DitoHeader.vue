@@ -9,7 +9,7 @@
             span {{ entry.breadcrumb }}
           router-link.dito-breadcrumb(v-else, :to="entry.path")
             span {{ entry.breadcrumb }}
-      spinner.dito-spinner(v-if="appState.loading > 0")
+      spinner.dito-spinner(v-if="isLoading")
     slot
 </template>
 
@@ -75,7 +75,14 @@ const Spinner = DitoComponent.component('spinner', PulseLoader)
 // @vue/component
 export default DitoComponent.component('dito-header', {
   props: {
-    spinner: { type: Object, default: null }
+    spinner: {
+      type: Object,
+      default: null
+    },
+    isLoading: {
+      type: Boolean,
+      default: false
+    }
   },
 
   computed: {

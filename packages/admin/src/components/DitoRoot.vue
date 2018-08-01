@@ -11,6 +11,7 @@
     main.dito-page.dito-parent
       dito-header(
         :spinner="options.spinner"
+        :isLoading="appState.loadingCounter > 0"
       )
         dito-account(
           v-if="user"

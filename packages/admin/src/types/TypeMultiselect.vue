@@ -19,7 +19,7 @@
     :taggable="taggable"
     :internal-search="true"
     :close-on-select="true"
-    :loading="loading"
+    :loading="isLoading"
     @tag="addTag"
   )
 </template>

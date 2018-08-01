@@ -20,7 +20,7 @@
       :data="data || {}"
       :meta="meta"
       :store="store"
-      :disabled="loading"
+      :disabled="isLoading"
       :menuHeader="true"
     )
       .dito-buttons.dito-form-buttons(
@@ -242,7 +242,7 @@ export default DitoComponent.component('dito-form', {
     shouldLoad() {
       // Only load data if this component is the last one in the route and we
       // can't inherit the data from the parent already, see computed data():
-      return !this.isTransient && !this.data && !this.loading
+      return !this.isTransient && !this.data && !this.isLoading
     },
 
     isDirty() {

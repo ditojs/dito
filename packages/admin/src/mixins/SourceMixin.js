@@ -49,8 +49,8 @@ export default {
       // If the route-component (view, form) that this list belongs to also
       // loads data, depend on this first.
       const { routeComponent } = this
-      return !this.isTransient && !this.loading && !this.value &&
-        !(routeComponent.shouldLoad || routeComponent.loading)
+      return !this.isTransient && !this.isLoading && !this.value &&
+        !(routeComponent.shouldLoad || routeComponent.isLoading)
     },
 
     sourceSchema() {
