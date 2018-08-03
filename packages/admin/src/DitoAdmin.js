@@ -105,7 +105,12 @@ export default class DitoAdmin {
         $routeComponent: null,
         $schemaComponent: null
       },
-      template: '<dito-root :views="views" :options="options" />'
+      render: createElement => createElement(DitoRoot, {
+        props: {
+          views,
+          options
+        }
+      })
     })
   }
 

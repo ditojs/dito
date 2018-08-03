@@ -1,8 +1,6 @@
-// https://github.com/michael-ciniawsky/postcss-load-config
-
+// https://github.com/vuejs/vue-cli/issues/1462
 module.exports = {
   "plugins": {
-    // to edit target browsers: use "browserlist" field in package.json
     "autoprefixer": {}
   }
 }

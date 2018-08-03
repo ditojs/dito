@@ -25,8 +25,6 @@
 </template>
 
 <style lang="sass">
-@import '~vue-multiselect/dist/vue-multiselect.min.css'
-
 .dito
   $spinner-size: 1.3em
   $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
@@ -197,6 +195,7 @@
 </style>
 
 <script>
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'

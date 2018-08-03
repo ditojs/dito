@@ -27,7 +27,7 @@
 <style lang="sass">
 .dito
   // Import everything name-spaced in .dito
-  @import "dito"
+  @import 'dito.sass'
 
   height: 100%
   display: flex

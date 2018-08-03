@@ -2,7 +2,7 @@
   "name": "@ditojs/admin",
   "version": "0.26.0",
   "description": "Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js",
-  "main": "dist/dito-admin.js",
+  "main": "dist/dito-admin.umd.min.js",
   "style": "dist/dito-admin.css",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/admin",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
@@ -13,10 +13,11 @@
     "static/"
   ],
   "scripts": {
-    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
-    "start": "yarn dev",
-    "build": "node build/build.js",
-    "prepare": "yarn build"
+    "serve": "vue-cli-service serve dev",
+    "build": "vue-cli-service build --target lib --name dito-admin src/index.js",
+    "lint": "vue-cli-service lint src/index.js",
+    "prepare": "yarn build",
+    "test": "node test.js"
   },
   "engines": {
     "node": ">= 9.0.0",
@@ -45,44 +46,21 @@
     "vuedraggable": "^2.16.0"
   },
   "devDependencies": {
-    "autoprefixer": "^9.0.1",
-    "babel-helper-vue-jsx-merge-props": "^2.0.3",
-    "babel-loader": "^8.0.0-beta.2",
-    "chalk": "^2.4.1",
-    "copy-webpack-plugin": "^4.5.1",
-    "css-loader": "^1.0.0",
-    "extract-text-webpack-plugin": "^4.0.0-beta.0",
-    "file-loader": "^1.1.11",
-    "friendly-errors-webpack-plugin": "^1.7.0",
-    "html-webpack-plugin": "^3.2.0",
-    "node-notifier": "^5.2.1",
+    "@vue/cli-plugin-babel": "^3.0.0-rc.10",
+    "@vue/cli-plugin-eslint": "^3.0.0-rc.10",
+    "@vue/cli-service": "^3.0.0-rc.10",
+    "babel-loader": "^8.0.0-beta.4",
     "node-sass": "4.9.2",
-    "opn": "^5.3.0",
-    "optimize-css-assets-webpack-plugin": "^5.0.0",
-    "ora": "^3.0.0",
-    "portfinder": "^1.0.13",
-    "postcss-import": "^11.1.0",
-    "postcss-loader": "^2.1.5",
-    "postcss-safe-parser": "^4.0.1",
-    "postcss-url": "^7.3.2",
     "pug": "^2.0.3",
-    "pug-loader": "^2.4.0",
-    "raw-loader": "^0.5.1",
-    "rimraf": "^2.6.2",
-    "sass-loader": "^7.0.2",
+    "pug-plain-loader": "^1.0.0",
+    "sass-loader": "^7.1.0",
     "sass-svg": "^1.2.0",
-    "semver": "^5.5.0",
-    "shelljs": "^0.8.2",
-    "uglifyjs-webpack-plugin": "^1.2.5",
-    "url-loader": "^1.0.1",
-    "vue-loader": "^14.2.2",
-    "vue-style-loader": "^4.1.1",
-    "vue-template-compiler": "^2.5.16",
-    "webpack": "^4.16.3",
-    "webpack-bundle-analyzer": "^2.13.1",
-    "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5",
-    "webpack-merge": "^4.1.2"
+    "vue-template-compiler": "^2.5.16"
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
   },
   "browserslist": [
     "> 1%",

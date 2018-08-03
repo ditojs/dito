@@ -3,10 +3,9 @@ import Koa from 'koa'
 import mount from 'koa-mount'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
-import webpack from 'webpack'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import ExtractTextPlugin from 'extract-text-webpack-plugin'
-import autoprefixer from 'autoprefixer'
+import VueCliService from '@vue/cli-service'
+import VueCliPluginBabel from '@vue/cli-plugin-babel'
+import VueCliPluginEslint from '@vue/cli-plugin-eslint'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 
@@ -59,172 +58,59 @@ export class AdminController extends Controller {
   getWebpackConfig(mode) {
     const { config } = this
     const resolvedPath = path.resolve(config.path)
-    return {
-      mode,
-      entry: [
-        '@ditojs/admin/dist/dito-admin.css',
-        ...(config.include || []),
-        resolvedPath
-      ],
-      output: {
-        filename: '[name].[hash].js',
-        path: resolvedPath,
-        publicPath: `${this.url}/`
-      },
-      resolve: {
-        extensions: ['.js', '.vue', '.json'],
-        alias: {
-          vue$: 'vue/dist/vue.esm.js',
-          '@': resolvedPath
-        },
-        // Preserve names of `yarn link` modules, for `splitChunks` to work.
-        symlinks: false
-      },
-      optimization: {
-        splitChunks: {
-          // Split dependencies into two chunks, one for all common libraries,
-          // and one for all views, so they can be loaded separately, and only
-          // once authentication was successful.
-          cacheGroups: {
-            common: {
-              name: 'common',
-              test: /\/node_modules\//,
-              chunks: 'all'
-            },
-            views: {
-              name: 'views',
-              test: /\/views\//,
-              chunks: 'all'
+    // Use VueCliService to create full webpack config for us:
+    const plugins = [
+      { id: '@vue/cli-plugin-babel', apply: VueCliPluginBabel }
+    ]
+    if (config.eslint) {
+      plugins.push({ id: '@vue/cli-plugin-eslint', apply: VueCliPluginEslint })
+    }
+    const service = new VueCliService(resolvedPath, {
+      inlineOptions: {
+        runtimeCompiler: true,
+        configureWebpack: {
+          entry: [
+            '@ditojs/admin/dist/dito-admin.css',
+            ...(config.include || []).map(include => path.resolve(include)),
+            resolvedPath
+          ],
+          output: {
+            filename: '[name].[hash].js',
+            publicPath: `${this.url}/`
+          },
+          optimization: {
+            splitChunks: {
+              // Split dependencies into two chunks, one for all common
+              // libraries, and one for all views, so they can be loaded
+              // separately, and only once authentication was successful.
+              cacheGroups: {
+                common: {
+                  name: 'common',
+                  test: /\/node_modules\//,
+                  chunks: 'all'
+                },
+                views: {
+                  name: 'views',
+                  test: /\/views\//,
+                  chunks: 'all'
+                }
+              }
             }
           }
-        }
-      },
-      module: {
-        rules: [
-          {
-            test: /\.vue$/,
-            loader: 'vue-loader',
-            options: vueLoaderConfig
-          },
-          {
-            test: /\.js$/,
-            loader: 'babel-loader',
-            include: resolvedPath
-          },
-          ...styleLoaders({
-            sourceMap: true,
-            usePostCSS: true
+        },
+        chainWebpack: conf => {
+          // Change the location of the template:
+          conf.plugin('html').tap(args => {
+            args[0].template = path.resolve(config.template)
+            return args
           })
-        ]
-      },
-      plugins: [
-        // HMR shows correct file names in console on update:
-        new webpack.NamedModulesPlugin(),
-        new webpack.NoEmitOnErrorsPlugin(),
-        // https://github.com/ampedandwired/html-webpack-plugin
-        new HtmlWebpackPlugin({
-          template: config.template,
-          inject: true
-        })
-      ]
-    }
-  }
-}
-
-const vueLoaderConfig = {
-  loaders: cssLoaders({
-    sourceMap: true,
-    extract: false
-  }),
-  cssSourceMap: true,
-  cacheBusting: true,
-  transformToRequire: {
-    video: ['src', 'poster'],
-    source: 'src',
-    img: 'src',
-    image: 'xlink:href'
-  }
-}
-
-function cssLoaders(options = {}) {
-  const cssLoader = {
-    loader: 'css-loader',
-    options: {
-      sourceMap: options.sourceMap
-    }
-  }
-
-  // https://github.com/michael-ciniawsky/postcss-load-config
-  const postcssLoader = {
-    loader: 'postcss-loader',
-    options: {
-      sourceMap: options.sourceMap,
-      plugins: [
-        autoprefixer({
-          browsers: [
-            '> 1%',
-            'last 2 versions',
-            'not ie <= 8'
-          ]
-        })
-      ]
-    }
-  }
-
-  // generate loader string to be used with extract text plugin
-  function generateLoaders(loader, loaderOptions) {
-    const loaders = options.usePostCSS
-      ? [cssLoader, postcssLoader]
-      : [cssLoader]
-
-    if (loader) {
-      loaders.push({
-        loader: loader + '-loader',
-        options: {
-          ...loaderOptions,
-          sourceMap: options.sourceMap
+          // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
+          conf.plugins.delete('hmr')
         }
-      })
-    }
-
-    // Extract CSS when that option is specified
-    // (which is the case during production build)
-    if (options.extract) {
-      return ExtractTextPlugin.extract({
-        use: loaders,
-        fallback: 'vue-style-loader'
-      })
-    } else {
-      return ['vue-style-loader', ...loaders]
-    }
-  }
-
-  // https://vue-loader.vuejs.org/en/configurations/extract-css.html
-  return {
-    css: generateLoaders(),
-    postcss: generateLoaders(),
-    less: generateLoaders('less'),
-    sass: generateLoaders('sass', {
-      indentedSyntax: true
-    }),
-    scss: generateLoaders('sass'),
-    stylus: generateLoaders('stylus'),
-    styl: generateLoaders('stylus')
-  }
-}
-
-// Generate loaders for standalone style files (outside of .vue)
-function styleLoaders(options) {
-  const output = []
-  const loaders = cssLoaders(options)
-
-  for (const extension in loaders) {
-    const loader = loaders[extension]
-    output.push({
-      test: new RegExp('\\.' + extension + '$'),
-      use: loader
+      },
+      plugins
     })
+    service.init(mode)
+    return service.resolveWebpackConfig()
   }
-
-  return output
 }

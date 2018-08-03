@@ -18,8 +18,18 @@
   "dependencies": {
     "@ditojs/utils": "^0.26.0",
     "hint.css": "^2.5.0",
-    "node-sass": "^4.9.1",
+    "node-sass": "^4.9.2",
     "sass-svg": "^1.2.0",
     "vue": "^2.5.16"
-  }
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
 }
