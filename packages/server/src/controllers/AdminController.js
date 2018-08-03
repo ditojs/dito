@@ -3,9 +3,9 @@ import Koa from 'koa'
 import mount from 'koa-mount'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
-import VueCliService from '@vue/cli-service'
-import VueCliPluginBabel from '@vue/cli-plugin-babel'
-import VueCliPluginEslint from '@vue/cli-plugin-eslint'
+import VueService from '@vue/cli-service'
+import vuePluginBabel from '@vue/cli-plugin-babel'
+import vuePluginEslint from '@vue/cli-plugin-eslint'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 
@@ -60,12 +60,12 @@ export class AdminController extends Controller {
     const resolvedPath = path.resolve(config.path)
     // Use VueCliService to create full webpack config for us:
     const plugins = [
-      { id: '@vue/cli-plugin-babel', apply: VueCliPluginBabel }
+      { id: '@vue/cli-plugin-babel', apply: vuePluginBabel }
     ]
     if (config.eslint) {
-      plugins.push({ id: '@vue/cli-plugin-eslint', apply: VueCliPluginEslint })
+      plugins.push({ id: '@vue/cli-plugin-eslint', apply: vuePluginEslint })
     }
-    const service = new VueCliService(resolvedPath, {
+    const service = new VueService(resolvedPath, {
       inlineOptions: {
         runtimeCompiler: true,
         configureWebpack: {
@@ -103,11 +103,13 @@ export class AdminController extends Controller {
           }
         },
         chainWebpack: conf => {
-          // Change the location of the template:
-          conf.plugin('html').tap(args => {
-            args[0].template = path.resolve(config.template)
-            return args
-          })
+          if (config.template) {
+            // Change the location of the HTML template:
+            conf.plugin('html').tap(args => {
+              args[0].template = path.resolve(config.template)
+              return args
+            })
+          }
           // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
           conf.plugins.delete('hmr')
         }
