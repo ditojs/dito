@@ -15,7 +15,7 @@ generated views and forms and built with Vue.js
 yarn install
 
 # serve your admin folder sym-linked into `dev` with hot reload at localhost:8080
-yarn dev
+yarn serer
 
 # build library for production, with and without minification
 yarn build

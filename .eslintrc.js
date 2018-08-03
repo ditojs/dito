@@ -83,6 +83,7 @@ module.exports = {
     'space-in-parens': ['error', 'never'],
     'valid-typeof': 'error',
     'vue/no-async-in-computed-properties': 'off',
-    'vue/no-side-effects-in-computed-properties': 'off'
+    'vue/no-side-effects-in-computed-properties': 'off',
+    'vue/require-default-prop': 'off'
   }
 }
