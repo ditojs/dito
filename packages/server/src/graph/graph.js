@@ -47,7 +47,7 @@ export function filterGraph(rootModelClass, graph, expr) {
   return isArray(graph) ? modelArray : modelArray[0]
 }
 
-export async function populateGraph(rootModelClass, graph, expr) {
+export async function populateGraph(rootModelClass, graph, expr, trx) {
   // TODO: Optimize the scenario where an item that isn't a leaf is a
   // reference and has multiple sub-paths to be populated. We may need to
   // move away from graph path handling and directly process the expression
@@ -142,34 +142,40 @@ export async function populateGraph(rootModelClass, graph, expr) {
   }
 
   const groups = Object.values(grouped).filter(({ ids }) => ids.length > 0)
+  if (groups.length > 0) {
+    // Load all found models by ids asynchronously, within provided transaction.
+    // NOTE: Using the same for the transaction means that all involved tables
+    // need to be in the same DB.
+    await Promise.map(
+      groups,
+      async ({ modelClass, modify, eager, ids, modelsById }) => {
+        const query = modelClass.query(trx)
+        if (modelClass.hasCompositeId()) {
+          modelClass.whereInComposite('id', ids)
+        } else {
+          modelClass.whereIn('id', ids)
+        }
+        if (eager) {
+          query.mergeEager(eager)
+        }
+        for (const mod of modify) {
+          query.modify(mod)
+        }
+        const models = await query.execute()
+        // Fill the group.modelsById lookup:
+        for (const model of models) {
+          modelsById[model.$id()] = model
+        }
+      }
+    )
 
-  // Load all found models by ids asynchronously.
-  await Promise.map(
-    groups,
-    async ({ modelClass, modify, eager, ids, modelsById }) => {
-      const query = modelClass.hasCompositeId()
-        ? modelClass.whereInComposite('id', ids)
-        : modelClass.whereIn('id', ids)
-      if (eager) {
-        query.mergeEager(eager)
-      }
-      for (const mod of modify) {
-        query.modify(mod)
-      }
-      const models = await query.execute()
-      // Fill the group.modelsById lookup:
-      for (const model of models) {
-        modelsById[model.$id()] = model
-      }
-    }
-  )
-
-  // Finally populate the references with the loaded models.
-  for (const { references, modelsById } of groups) {
-    for (const item of references) {
-      const model = modelsById[item.$id()]
-      if (model) {
-        Object.assign(item, model)
+    // Finally populate the references with the loaded models.
+    for (const { references, modelsById } of groups) {
+      for (const item of references) {
+        const model = modelsById[item.$id()]
+        if (model) {
+          Object.assign(item, model)
+        }
       }
     }
   }

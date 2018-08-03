@@ -420,8 +420,8 @@ export class Model extends objection.Model {
     return filterGraph(this, graph, expr)
   }
 
-  static async populateGraph(graph, expr) {
-    return populateGraph(this, graph, expr)
+  static async populateGraph(graph, expr, trx) {
+    return populateGraph(this, graph, expr, trx)
   }
 
   static createNotFoundError(ctx) {
