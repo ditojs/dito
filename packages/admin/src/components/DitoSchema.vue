@@ -75,6 +75,8 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
       display: flex
       align-self: flex-end
     .dito-clipboard
+      &:only-child
+        margin-left: auto
       .dito-button
         margin: 0 0 $tab-margin $tab-margin
     &.dito-schema-menu-header
