@@ -55,16 +55,21 @@ export function convertSchema(schema, options = {}) {
           schema.type = 'object'
           schema.instanceof = type
         } else {
-          // $ref keywords can't be combined with anything else
-          schema = { $ref: type }
+          // Move `type` to `$ref`, but still keep other properties for now,
+          // to support `nullable` below.
+          delete schema.type
+          // TODO: Consider moving to `model` keyword instead that would support
+          // model validation and still could be combined with other keywords.
+          schema.$ref = type
         }
       }
     } else {
-      // Root properties schema or nested object without type that needs
-      // expanding.
+      // This is a root properties schema or nested object without type that
+      // may need expanding.
       schema = convertSchema(expandSchemaShorthand(schema), options)
     }
     if (schema.type !== 'object') {
+      // Handle `required` and `default` on schemas other than objects.
       const {
         required,
         default: _default,
@@ -82,6 +87,10 @@ export function convertSchema(schema, options = {}) {
     }
     if (schema.nullable) {
       schema = makeNullable(schema)
+    } else if (schema.$ref) {
+      // $ref keywords can't be combined with anything else, but we can't clear
+      // them earlier as it would break support for nullable.
+      schema = { $ref: schema.$ref }
     }
   }
   return schema
@@ -99,7 +108,11 @@ export function expandSchemaShorthand(schema) {
       // The array short-forms sets an empty array as the default.
       default: []
     }
-  } else if (isObject(schema) && !isString(schema.type)) {
+  } else if (
+    isObject(schema) &&
+    !isString(schema.type) &&
+    !isString(schema.$ref)
+  ) {
     schema = {
       type: 'object',
       properties: {
