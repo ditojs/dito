@@ -134,7 +134,7 @@ import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
+import { DateTimePicker } from '@ditojs/ui'
 
 // @vue/component
 export default TypeComponent.register([

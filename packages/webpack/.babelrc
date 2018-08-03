@@ -3,12 +3,7 @@
     "@ditojs/babel-preset",
     ["@babel/preset-env", {
       "targets": {
-        "node": "9",
-        "browsers": [
-          "> 1%",
-          "last 2 versions",
-          "not ie <= 8"
-        ]
+        "node": "9"
       },
       "useBuiltIns": "usage"
     }]
@@ -22,16 +17,5 @@
       }
     }]
   ],
-  "env": {
-    "test": {
-      "presets": [
-        ["@babel/preset-env", {
-          "targets": {
-            "node": "9"
-          }
-        }]
-      ]
-    }
-  },
   "comments": false
 }

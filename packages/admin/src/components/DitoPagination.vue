@@ -8,7 +8,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import Pagination from '@ditojs/ui/src/components/Pagination'
+import { Pagination } from '@ditojs/ui'
 
 // @vue/component
 export default DitoComponent.component('dito-pagination', {

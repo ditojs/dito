@@ -23,57 +23,56 @@
 </template>
 
 <style lang="sass">
-
-.dito-pagination
-  display: flex
-  .dito-pagination-total
-    white-space: nowrap
-    margin: 0 0.5em
-    line-height: 2em
-  .dito-pagination-items
+  .dito-pagination
     display: flex
-    padding: 0
-    li
-      list-style: none
-    .dito-pagination-item
-      display: block
-      transition: all .3s ease, color 0s, background 0s, border 0s
-      font-variant-numeric: tabular-nums
-      +user-select(none)
-      height: 2em
-      min-width: 2em
-      padding: 0 0.5em
-      text-align: center
-      margin: 0 $button-margin
-      border-radius: 1em
-      &.dito-active
-        background: $color-active
-        color: $color-text-inverted
-        &:active
-          border-color: darken($color-active, 10%)
-      &-prev::before
-        +icon-arrow
-        transform: scaleX(-1)
-      &-next::before
-        +icon-arrow
-      &-ellipsis-prev,
-      &-ellipsis-next
-        &::before
-          +icon-ellipsis
-        background: none
-        border: 0
-        padding: 0
-        margin: 0
-        color: $color-text
-        &:focus
-          color: $color-active
-        &:active
-          box-shadow: none
-      &-ellipsis-prev:hover::before
-        +icon-arrow-double
-        transform: scaleX(-1)
-      &-ellipsis-next:hover::before
-        +icon-arrow-double
+    .dito-pagination-total
+      white-space: nowrap
+      margin: 0 0.5em
+      line-height: 2em
+    .dito-pagination-items
+      display: flex
+      padding: 0
+      li
+        list-style: none
+      .dito-pagination-item
+        display: block
+        transition: all .3s ease, color 0s, background 0s, border 0s
+        font-variant-numeric: tabular-nums
+        +user-select(none)
+        height: 2em
+        min-width: 2em
+        padding: 0 0.5em
+        text-align: center
+        margin: 0 $button-margin
+        border-radius: 1em
+        &.dito-active
+          background: $color-active
+          color: $color-text-inverted
+          &:active
+            border-color: darken($color-active, 10%)
+        &-prev::before
+          +icon-arrow
+          transform: scaleX(-1)
+        &-next::before
+          +icon-arrow
+        &-ellipsis-prev,
+        &-ellipsis-next
+          &::before
+            +icon-ellipsis
+          background: none
+          border: 0
+          padding: 0
+          margin: 0
+          color: $color-text
+          &:focus
+            color: $color-active
+          &:active
+            box-shadow: none
+        &-ellipsis-prev:hover::before
+          +icon-arrow-double
+          transform: scaleX(-1)
+        &-ellipsis-next:hover::before
+          +icon-arrow-double
 </style>
 
 <script>

@@ -25,15 +25,15 @@
 </template>
 
 <style lang="sass">
-.dito
-  // Import everything name-spaced in .dito
-  @import 'dito.sass'
-
-  height: 100%
-  display: flex
+  .dito
+    // Import everything name-spaced in .dito
+    @import 'dito.sass'
+    height: 100%
+    display: flex
 </style>
 
 <script>
+import '@ditojs/ui/dist/dito-ui.css'
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/utils/schema'

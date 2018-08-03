@@ -1,12 +1,11 @@
 const path = require('path')
-const { camelize } = require('@ditojs/utils')
+const { getExternalsFromDependencies } = require('@ditojs/webpack')
 
-const env = process.env.NODE_ENV || 'development'
 const maxSize = 1024 * 1024
 
 module.exports = {
   configureWebpack: {
-    externals: env === 'production'
+    externals: process.env.NODE_ENV === 'production'
       ? getExternalsFromDependencies()
       : {},
     performance: {
@@ -26,39 +25,8 @@ module.exports = {
     loaderOptions: {
       sass: {
         includePaths: ['./src/styles'],
-        data: `@import '_imports';`
+        data: `@import './src/styles/_imports';`
       }
     }
   }
-}
-
-function getExternalsFromDependencies() {
-  const externals = {}
-  const addDependencies = dependencies => {
-    for (const dependency in dependencies) {
-      addDependency(dependency)
-    }
-  }
-  const addDependency = dependency => {
-    if (!externals[dependency]) {
-      externals[dependency] = {
-        root: camelize(dependency, true),
-        amd: dependency,
-        commonjs: dependency,
-        commonjs2: dependency
-      }
-      try {
-        // Attempt loading the dependency's own dependencies and recursively
-        // mark these as externals as well:
-        const packageJson = require(`${dependency}/package.json`)
-        addDependencies(packageJson.dependencies)
-        addDependencies(packageJson.peerDependencies)
-        addDependencies(packageJson.devDependencies)
-      } catch (err) {
-      }
-    }
-  }
-  // Start with '.' to read from './package.json' and take it from there.
-  addDependency('.')
-  return externals
 }

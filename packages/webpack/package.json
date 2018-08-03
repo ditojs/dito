@@ -1,0 +1,22 @@
+{
+  "name": "@ditojs/webpack",
+  "version": "0.0.0",
+  "private": true,
+  "main": "lib/index.js",
+  "repository": "https://github.com/ditojs/dito/tree/master/packages/webpack",
+  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
+  "license": "MIT",
+  "files": [
+    "src/",
+    "lib/"
+  ],
+  "scripts": {
+    "build": "babel src --out-dir lib --copy-files --source-maps inline",
+    "watch": "yarn build --watch",
+    "prepare": "yarn build"
+  },
+  "engines": {
+    "node": ">= 9.0.0",
+    "yarn": ">= 1.0.0"
+  }
+}

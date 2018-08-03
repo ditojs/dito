@@ -16,8 +16,7 @@
     "serve": "vue-cli-service serve dev",
     "build": "vue-cli-service build --target lib --name dito-admin src/index.js",
     "lint": "vue-cli-service lint src/index.js",
-    "prepare": "yarn build",
-    "test": "node test.js"
+    "prepare": "yarn build"
   },
   "engines": {
     "node": ">= 9.0.0",

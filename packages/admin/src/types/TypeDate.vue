@@ -13,9 +13,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import DatePicker from '@ditojs/ui/src/components/DatePicker'
-import TimePicker from '@ditojs/ui/src/components/TimePicker'
-import DateTimePicker from '@ditojs/ui/src/components/DateTimePicker'
+import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
 import { isDate } from '@ditojs/utils'
 
 export default TypeComponent.register([
