@@ -33,7 +33,6 @@
 </style>
 
 <script>
-import '@ditojs/ui/dist/dito-ui.css'
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/utils/schema'

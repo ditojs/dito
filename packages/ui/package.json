@@ -3,7 +3,6 @@
   "version": "0.27.0",
   "description": "Dito.js UI is a simple UI library, built with Vue.js for use in Dito.js Admin and elsewhere",
   "main": "dist/dito-ui.umd.min.js",
-  "style": "dist/dito-ui.css",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
@@ -14,6 +13,7 @@
   "scripts": {
     "serve": "vue-cli-service serve dev",
     "build": "vue-cli-service build --target lib --name dito-ui src/index.js",
+    "watch": "yarn build --watch",
     "lint": "vue-cli-service lint src/index.js",
     "prepare": "yarn build"
   },

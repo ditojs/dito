@@ -70,10 +70,7 @@ export class AdminController extends Controller {
       inlineOptions: {
         runtimeCompiler: true,
         configureWebpack: {
-          entry: [
-            '@ditojs/admin/dist/dito-admin.css',
-            resolvedPath
-          ],
+          entry: [resolvedPath],
           output: {
             filename: '[name].[hash].js',
             publicPath: `${this.url}/`
