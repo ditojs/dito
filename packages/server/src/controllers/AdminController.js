@@ -71,7 +71,11 @@ export class AdminController extends Controller {
         configureWebpack: {
           entry: [
             '@ditojs/admin/dist/dito-admin.css',
-            ...(config.include || []).map(include => path.resolve(include)),
+            ...(config.include || []).map(
+              include => include.startsWith('.')
+                ? path.resolve(include)
+                : include
+            ),
             resolvedPath
           ],
           output: {
