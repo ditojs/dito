@@ -58,6 +58,7 @@ export class AdminController extends Controller {
   getWebpackConfig(mode) {
     const { config } = this
     const resolvedPath = path.resolve(config.path)
+    const template = config.template || 'index.html'
     // Use VueCliService to create full webpack config for us:
     const plugins = [
       { id: '@vue/cli-plugin-babel', apply: vuePluginBabel }
@@ -71,11 +72,6 @@ export class AdminController extends Controller {
         configureWebpack: {
           entry: [
             '@ditojs/admin/dist/dito-admin.css',
-            ...(config.include || []).map(
-              include => include.startsWith('.')
-                ? path.resolve(include)
-                : include
-            ),
             resolvedPath
           ],
           output: {
@@ -103,13 +99,13 @@ export class AdminController extends Controller {
           }
         },
         chainWebpack: conf => {
-          if (config.template) {
-            // Change the location of the HTML template:
-            conf.plugin('html').tap(args => {
-              args[0].template = path.resolve(config.template)
-              return args
-            })
-          }
+          // Change the location of the HTML template:
+          conf.plugin('html').tap(args => {
+            args[0].template = /^[./]/.test(template)
+              ? path.resolve(template)
+              : path.join(resolvedPath, template)
+            return args
+          })
           // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
           conf.plugins.delete('hmr')
         }
