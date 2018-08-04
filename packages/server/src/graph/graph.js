@@ -2,7 +2,7 @@ import { isArray, asArray, clone } from '@ditojs/utils'
 import { RelationExpression } from 'objection'
 import { collectExpressionPaths } from './expression.js'
 
-// The same as Objection's private `rootModelClass.ensureModelArray(data)`:
+// Similar to Objection's private `rootModelClass.ensureModelArray(data)`:
 export function ensureModelArray(rootModelClass, data) {
   return data
     ? asArray(data).map(

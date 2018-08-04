@@ -17,7 +17,7 @@ export class GraphProcessor {
         this.processOverrides()
       }
     }
-    this.relateProperties = {}
+    this.relatedData = {}
   }
 
   getOptions() {
@@ -156,19 +156,21 @@ export class GraphProcessor {
       if (data.$isObjectionModel) {
         // Start with a reference model instance that only contains the
         // id / #ref fields:
-        const copy = data.constructor.getReference(data)
+        let copy
         if (this.shouldRelate(relationPath)) {
+          copy = data.constructor.getReference(data)
           if (this.settings.restoreRelates) {
-            // Fill relateProperties with entries mapping dataPath->properties,
-            // so we can restore these again at the end of in restoreRelates():
-            const properties = {}
-            if (this.copyProperties(properties, data, copy)) {
-              this.relateProperties[dataPath] = properties
+            // Fill relatedData with entries mapping dataPath -> data, so we
+            // can restore these again at the end of in restoreRelates():
+            if (Object.keys(data).length > 0) {
+              this.relatedData[dataPath] = data
             }
           }
         } else {
-          // This isn't a relate, so copy over the full properties of data now:
-          this.copyProperties(copy, data, copy)
+          // This isn't a relate, so create a proper shallow clone:
+          // NOTE: This also copies `$$queryProps`, which is crucial for more
+          // advanced Objection.js features to work, e.g. LiteralBuilder:
+          copy = data.$clone({ shallow: true })
           // Follow all relations and keep processing:
           for (const { name } of data.constructor.getRelationArray()) {
             if (name in data) {
@@ -201,26 +203,13 @@ export class GraphProcessor {
     // arrays. Convert the result to an array so the same paths can be used.
     if (this.settings.restoreRelates) {
       const data = asArray(result)
-      for (const entry of Object.entries(this.relateProperties)) {
-        const [dataPath, properties] = entry
-        const obj = getDataPath(data, dataPath)
-        for (const key in properties) {
-          obj[key] = properties[key]
-        }
+      for (const entry of Object.entries(this.relatedData)) {
+        const [dataPath, source] = entry
+        const target = getDataPath(data, dataPath)
+        Object.assign(target, source)
       }
     }
     return result
-  }
-
-  copyProperties(target, source, exclude) {
-    let copied = false
-    for (const [key, value] of Object.entries(source)) {
-      if (!exclude || !(key in exclude)) {
-        target[key] = value
-        copied = true
-      }
-    }
-    return copied
   }
 }
 
