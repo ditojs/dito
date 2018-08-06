@@ -1,7 +1,7 @@
 import { toCallback, toAsync } from './function'
 
-describe('toCallback()', () => {
-  it('should convert async functions to callbacks', () => {
+describe('toCallback()', async () => {
+  it('should convert async functions to callbacks', async () => {
     expect.assertions(2)
     const callback = toCallback(async result => {
       await Promise.resolve()
@@ -14,7 +14,7 @@ describe('toCallback()', () => {
     })
   })
 
-  it('should convert async exceptions to callback errors', () => {
+  it('should convert async exceptions to callback errors', async () => {
     expect.assertions(2)
     const error = new Error(`This error is intentional`)
     const callback = toCallback(async error => {
@@ -28,7 +28,7 @@ describe('toCallback()', () => {
   })
 })
 
-describe('toAsync()', () => {
+describe('toAsync()', async () => {
   it('should convert callback functions to async', async () => {
     expect.assertions(1)
     const asyncFunc = toAsync(function(toResolve, callback) {

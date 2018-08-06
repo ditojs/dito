@@ -19,6 +19,9 @@
     "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
   },
+  "dependencies": {
+    "@babel/runtime": "7.0.0-beta.55"
+  },
   "browserslist": [
     "> 1%",
     "last 2 versions",

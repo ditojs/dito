@@ -15,7 +15,8 @@
         "~": ".",
         "@": "./src"
       }
-    }]
+    }],
+    "@babel/plugin-transform-runtime"
   ],
   "comments": false
 }
