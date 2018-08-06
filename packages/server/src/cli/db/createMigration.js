@@ -73,7 +73,7 @@ async function collectModelTables(modelClass, app, tables) {
     const knexType = typeToKnex[type] || type
     if (!computed) {
       if (description) {
-        statements.push(`// ${description}`)
+        statements.push(`// ${description.replace(/\s{2,}/g, ' ').trim()}`)
       }
       if (isString(unique)) {
         // To declare composite foreign keys as unique, you can give each
