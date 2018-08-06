@@ -341,8 +341,22 @@ export class Model extends objection.Model {
   }
 
   $setJson(json, options) {
-    super.$setJson(json, options)
-    this.$initialize()
+    options = options || {}
+    if (
+      options.skipValidation ||
+      this.$initialize === Model.prototype.$initialize
+    ) {
+      super.$setJson(json, options)
+      this.$initialize()
+    } else {
+      // If validation isn't skipped or the model provides its own $initialize()
+      // method, call $setJson() with patch validation first to not complain
+      // about missing fields, then perform a full validation after calling
+      // $initialize(), to give the model a chance to configure itself.
+      super.$setJson(json, { ...options, patch: true })
+      this.$initialize()
+      this.$validate(this, options)
+    }
     return this
   }
 
