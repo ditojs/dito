@@ -342,12 +342,14 @@ export class Model extends objection.Model {
 
   $setJson(json, options) {
     options = options || {}
-    if (
-      options.skipValidation ||
-      this.$initialize === Model.prototype.$initialize
-    ) {
+    const hasInitialize = this.$initialize !== Model.prototype.$initialize
+    // Do not call $initialize() on model data that is just a reference.
+    const isReference = this.constructor.isReference(json)
+    if (options.skipValidation || !hasInitialize || isReference) {
       super.$setJson(json, options)
-      this.$initialize()
+      if (hasInitialize && !isReference) {
+        this.$initialize()
+      }
     } else {
       // If validation isn't skipped or the model provides its own $initialize()
       // method, call $setJson() with patch validation first to not complain
