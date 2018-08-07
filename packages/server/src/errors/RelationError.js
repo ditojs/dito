@@ -3,15 +3,16 @@ import { isObject } from '@ditojs/utils'
 
 export class RelationError extends WrappedError {
   constructor(error) {
+    let overrides
     if (isObject(error)) {
       // Adjust Objection.js error messages to point to the right property.
       const parse = str => str?.replace(/\brelationMappings\b/g, 'relations')
       const { message, stack } = error
-      error = Object.setPrototypeOf({
+      overrides = {
         message: parse(message),
         stack: parse(stack)
-      }, error)
+      }
     }
-    super(error, { message: 'Relation error', status: 400 })
+    super(error, overrides, { message: 'Relation error', status: 400 })
   }
 }

@@ -1,8 +1,16 @@
 import { ResponseError } from './ResponseError'
 
 export class WrappedError extends ResponseError {
-  constructor(error, defaults = { message: 'Wrapped error', status: 400 }) {
-    super(error, defaults)
+  constructor(error, overrides, defaults = {
+    message: 'Wrapped error',
+    status: 400
+  }) {
+    super(
+      overrides
+        ? Object.setPrototypeOf({ ...overrides }, error)
+        : error,
+      defaults
+    )
     if (error?.stack) {
       this.stack = error.stack
     }

@@ -2,7 +2,7 @@ import { isPlainObject, isString } from '@ditojs/utils'
 
 export class ResponseError extends Error {
   constructor(error, defaults = { message: 'Response error', status: 400 }) {
-    error = isPlainObject(error)
+    const object = isPlainObject(error)
       ? error
       : error instanceof Error
         ? { // Copy error into object so they can be merged with defaults after.
@@ -15,12 +15,14 @@ export class ResponseError extends Error {
         : isString(error)
           ? { message: error }
           : error || {}
-    const { status, ...data } = { ...defaults, ...error }
+    const { status, ...data } = { ...defaults, ...object }
     let { message } = data
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'test' && error === object) {
       // Include full JSON error in message during tests, for better reporting.
       const { message: _, ...rest } = data
-      message = `${message}\nError Data:\n${JSON.stringify(rest, null, '  ')}`
+      if (Object.keys(rest).length > 0) {
+        message = `${message}\nError Data:\n${JSON.stringify(rest, null, '  ')}`
+      }
     }
     super(message)
     this.name = this.constructor.name
