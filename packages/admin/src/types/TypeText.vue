@@ -43,10 +43,12 @@ export default TypeComponent.register([
       set(value) {
         this.value = value
       }
-    },
+    }
+  },
 
-    validations() {
-      const rules = this.getValidationRules()
+  methods: {
+    getValidationRules() {
+      const rules = {}
       const rule = {
         email: 'email',
         url: ['url', 'require_protocol'],
@@ -57,7 +59,7 @@ export default TypeComponent.register([
         const [key, value] = asArray(rule)
         rules[key] = value
       }
-      return { rules }
+      return rules
     }
   }
 })

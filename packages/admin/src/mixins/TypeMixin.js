@@ -70,63 +70,10 @@ export default {
     exclude: getSchemaAccessor('exclude', { type: Boolean }),
     required: getSchemaAccessor('required', { type: Boolean }),
 
-    // TODO: Move these to a sub-class component used for all text components?
+    // TODO: Move these to a sub-class component used for all input components?
     readonly: getSchemaAccessor('readonly', { type: Boolean }),
     autofocus: getSchemaAccessor('autofocus', { type: Boolean }),
     placeholder: getSchemaAccessor('placeholder', { type: String }),
-
-    // TODO: Move these to a sub-class component used for all number components!
-    decimals: getSchemaAccessor('decimals', { type: Number }),
-
-    step: getSchemaAccessor('step', {
-      type: Number,
-      get(step) {
-        return this.isInteger && step !== undefined ? Math.ceil(step) : step
-      }
-    }),
-
-    min: getSchemaAccessor('min', {
-      type: Number,
-      get(min) {
-        min = min === undefined
-          ? this.getSchemaValue('range', { type: Array })?.[0]
-          : min
-        return this.isInteger && min !== undefined ? Math.floor(min) : min
-      }
-    }),
-
-    max: getSchemaAccessor('max', {
-      type: Number,
-      get(max) {
-        max = max === undefined
-          ? this.getSchemaValue('range', { type: Array })?.[1]
-          : max
-        return this.isInteger && max !== undefined ? Math.ceil(max) : max
-      }
-    }),
-
-    range: getSchemaAccessor('range', {
-      type: Array,
-      get() {
-        // `this.min`, `this.max` already support `schema.range`,
-        // so redirect there.
-        const { min, max } = this
-        return min !== undefined && max !== undefined ? [min, max] : undefined
-      },
-
-      set(range) {
-        // Provide a setter that delegates to `[this.min, this.max]`,
-        // since those already handle `schema.range`.
-        if (isArray(range)) {
-          [this.min, this.max] = range
-        }
-      }
-    }),
-
-    validations() {
-      const rules = this.getValidationRules()
-      return { rules }
-    },
 
     attributes() {
       const {
@@ -160,6 +107,14 @@ export default {
         focus: event => this.onFocus(event),
         blur: event => this.onBlur(event)
       }
+    },
+
+    validations() {
+      const rules = this.getValidationRules()
+      if (this.required) {
+        rules.required = true
+      }
+      return { rules }
     },
 
     verbs() {
@@ -225,32 +180,9 @@ export default {
     },
 
     getValidationRules() {
-      // This method exists to make it easier to override `validations` computed
-      // property in type components.
-      const rules = {}
-      if (this.required) {
-        rules.required = true
-      }
-      if (this.min) {
-        rules.min_value = this.min
-      }
-      if (this.max) {
-        rules.max_value = this.max
-      }
-      if (this.decimals) {
-        rules.decimal = this.decimals
-      } else if (this.step) {
-        const decimals = (`${this.step}`.split('.')[1] || '').length
-        if (decimals > 0) {
-          rules.decimal = decimals
-        } else {
-          rules.numeric = true
-        }
-      }
-      if (this.isInteger) {
-        rules.numeric = true
-      }
-      return rules
+      // This method exists to make it easier to extend validations in type
+      // components.
+      return {}
     },
 
     load({ cache, ...options }) {
