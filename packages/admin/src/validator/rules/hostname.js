@@ -1,6 +1,6 @@
-import { isHostName } from '@ditojs/utils'
+import { isHostname } from '@ditojs/utils'
 
 export const hostname = {
-  validate: value => isHostName(value),
+  validate: value => isHostname(value),
   getMessage: field => `The ${field} field is not a host name.`
 }

@@ -25,6 +25,7 @@ Object {
   "isBoolean": [Function],
   "isDate": [Function],
   "isFunction": [Function],
+  "isHostname": [Function],
   "isNumber": [Function],
   "isObject": [Function],
   "isPlainObject": [Function],

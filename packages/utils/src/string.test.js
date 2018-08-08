@@ -1,6 +1,29 @@
 import {
-  camelize, decamelize, hyphenate, underscore, capitalize, labelize, deindent
+  isAbsoluteUrl, isHostname, camelize, decamelize, hyphenate, underscore,
+  capitalize, labelize, deindent
 } from './string'
+
+describe('isAbsoluteUrl()', () => {
+  it('should return true for absolute URLs starting with schemas', () => {
+    expect(isAbsoluteUrl('http://lineto.com')).toBe(true)
+    expect(isAbsoluteUrl('https://lineto.com')).toBe(true)
+    expect(isAbsoluteUrl('ftp://lineto.com')).toBe(true)
+    expect(isAbsoluteUrl('file:///Users/lineto')).toBe(true)
+    expect(isAbsoluteUrl('//lineto.com')).toBe(true)
+    expect(isAbsoluteUrl('/static/index.html')).toBe(false)
+    expect(isAbsoluteUrl('../index.html')).toBe(false)
+  })
+})
+
+describe('isHostname()', () => {
+  it('should return true for absolute URLs starting with schemas', () => {
+    expect(isHostname('lineto.com')).toBe(true)
+    expect(isHostname('www.lineto.com')).toBe(true)
+    expect(isHostname('lineto_com')).toBe(false)
+    expect(isHostname('line-to.com')).toBe(true)
+    expect(isHostname('line_to.com')).toBe(false)
+  })
+})
 
 const strings = [
   'foo bar', 'Foo bar', 'foo Bar', 'Foo Bar', 'FOO BAR', 'FooBar', 'fooBar'
