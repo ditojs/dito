@@ -114,6 +114,14 @@ export default {
       if (this.required) {
         rules.required = true
       }
+      // Allow schema to override default rules and add any new ones:
+      for (const [key, value] of Object.entries(this.schema.rules || {})) {
+        if (value === undefined) {
+          delete rules[key]
+        } else {
+          rules[key] = value
+        }
+      }
       return { rules }
     },
 
