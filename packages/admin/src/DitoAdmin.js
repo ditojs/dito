@@ -2,10 +2,10 @@ import Vue from 'vue'
 import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
-import VeeValidate from 'vee-validate'
 import axios from 'axios'
 import './components'
 import './types'
+import './validator'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
@@ -14,13 +14,6 @@ Vue.config.productionTip = false
 
 // All global plugins that need to be registered on `Vue`:
 Vue.use(VueRouter)
-Vue.use(VeeValidate, {
-  // See: https://github.com/logaretm/vee-validate/issues/468
-  inject: false,
-  // Prefix `errors` and `fields with $ to make it clear they're special props:
-  errorBagName: '$errors',
-  fieldsBagName: '$fields'
-})
 Vue.use(VueModal, {
   dynamic: true
 })

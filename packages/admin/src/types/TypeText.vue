@@ -12,11 +12,12 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { asArray } from '@ditojs/utils'
 
 const maskedPassword = '****************'
 
 export default TypeComponent.register([
-  'text', 'email', 'url', 'tel', 'password', 'creditcard'
+  'text', 'email', 'url', 'hostname', 'tel', 'password', 'creditcard'
 ],
 // @vue/component
 {
@@ -29,7 +30,7 @@ export default TypeComponent.register([
     },
 
     inputType() {
-      return this.type === 'creditcard' ? 'text' : this.type
+      return ['creditcard', 'hostname'].includes(this.type) ? 'text' : this.type
     },
 
     inputValue: {
@@ -48,11 +49,13 @@ export default TypeComponent.register([
       const rules = this.getValidationRules()
       const rule = {
         email: 'email',
-        url: 'url',
+        url: ['url', 'require_protocol'],
+        hostname: 'hostname',
         creditcard: 'credit_card'
       }[this.type]
       if (rule) {
-        rules[rule] = true
+        const [key, value] = asArray(rule)
+        rules[key] = value
       }
       return { rules }
     }
