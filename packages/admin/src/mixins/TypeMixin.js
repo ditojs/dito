@@ -74,6 +74,7 @@ export default {
     readonly: getSchemaAccessor('readonly', { type: Boolean }),
     autofocus: getSchemaAccessor('autofocus', { type: Boolean }),
     placeholder: getSchemaAccessor('placeholder', { type: String }),
+    autocomplete: getSchemaAccessor('autocomplete', { type: String }),
 
     attributes() {
       const {
@@ -97,6 +98,7 @@ export default {
         attributes.autofocus = this.autofocus
         if (textField) {
           attributes.placeholder = this.placeholder
+          attributes.autocomplete = this.autocomplete
         }
       }
       return attributes
