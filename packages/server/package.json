@@ -25,13 +25,13 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0-beta.55",
+    "@babel/runtime": "7.0.0-rc.1",
     "@ditojs/admin": "^0.29.0",
     "@ditojs/utils": "^0.29.0",
     "@koa/cors": "^2.2.1",
-    "@vue/cli-plugin-babel": "^3.0.0-rc.10",
-    "@vue/cli-plugin-eslint": "^3.0.0-rc.10",
-    "@vue/cli-service": "^3.0.0-rc.10",
+    "@vue/cli-plugin-babel": "^3.0.0",
+    "@vue/cli-plugin-eslint": "^3.0.0",
+    "@vue/cli-service": "^3.0.0",
     "ajv": "^6.5.0",
     "ajv-merge-patch": "^4.1.0",
     "babel-loader": "^8.0.0-beta.4",

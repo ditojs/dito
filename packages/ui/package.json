@@ -21,16 +21,16 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0-beta.55",
+    "@babel/runtime": "7.0.0-rc.1",
     "@ditojs/utils": "^0.29.0"
   },
   "devDependencies": {
     "@ditojs/webpack": "^0.29.0",
-    "@vue/cli-plugin-babel": "^3.0.0-rc.10",
-    "@vue/cli-plugin-eslint": "^3.0.0-rc.10",
-    "@vue/cli-service": "^3.0.0-rc.10",
+    "@vue/cli-plugin-babel": "^3.0.0",
+    "@vue/cli-plugin-eslint": "^3.0.0",
+    "@vue/cli-service": "^3.0.0",
     "babel-loader": "^8.0.0-beta.4",
-    "node-sass": "4.9.2",
+    "node-sass": "4.9.3",
     "pug": "^2.0.3",
     "pug-plain-loader": "^1.0.0",
     "sass-loader": "^7.1.0",
