@@ -525,7 +525,7 @@ for (const key of [
   'havingBetween', 'orHavingBetween',
   'havingNotBetween', 'orHavingNotBetween',
 
-  'select', 'column', 'columns', 'first', 'pluck',
+  'select', 'column', 'columns', 'first',
 
   'groupBy', 'orderBy'
 ]) {
