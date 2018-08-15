@@ -77,10 +77,7 @@ export default {
     autocomplete: getSchemaAccessor('autocomplete', { type: String }),
 
     attributes() {
-      const {
-        nativeField = false,
-        textField = false
-      } = this.constructor.options
+      const { nativeField, textField } = this.constructor.options
 
       const attributes = {
         'data-vv-name': this.dataPath,
@@ -106,8 +103,10 @@ export default {
 
     events() {
       return {
-        focus: event => this.onFocus(event),
-        blur: event => this.onBlur(event)
+        focus: () => this.onFocus(),
+        blur: () => this.onBlur(),
+        input: () => this.onInput(),
+        change: () => this.onChange()
       }
     },
 
@@ -167,16 +166,9 @@ export default {
 
   methods: {
     setupWatchHandlers() {
-      // Install onChange handler by watching `value` for change.
-      this.$watch('value', (newValue, oldValue) => {
-        // Ignore initial change triggered by the loading of actual data.
-        if (oldValue !== undefined) {
-          this.onChange(newValue, oldValue)
-        }
-      })
       const { watch } = this.schema
       if (watch) {
-        // Install the watch callbacks in the next tick, so all components are
+        // Install the watch handlers in the next tick, so all components are
         // initialized and we can check against their names.
         this.$nextTick(() => {
           for (const [key, callback] of Object.entries(watch)) {
@@ -242,7 +234,7 @@ export default {
         msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
       })
       // Remove the error as soon as the field is changed.
-      this.$once('change', () => {
+      this.$once('input', () => {
         this.$errors.remove(this.dataPath)
       })
     },
@@ -280,19 +272,26 @@ export default {
       }
     },
 
-    onFocus(event) {
+    onFocus() {
       this.focused = true
-      this.$emit('focus', event)
+      this.$emit('focus')
+      this.schema.onFocus?.call(this)
     },
 
-    onBlur(event) {
+    onBlur() {
       this.focused = false
-      this.$emit('blur', event)
+      this.$emit('blur')
+      this.schema.onBlur?.call(this)
     },
 
-    onChange(newVal, oldVal) {
-      this.$emit('change', newVal, oldVal)
-      this.schema.onChange?.call(this, newVal, oldVal)
+    onInput() {
+      this.$emit('input')
+      this.schema.onInput?.call(this, this.value)
+    },
+
+    onChange(event) {
+      this.$emit('change', event)
+      this.schema.onChange?.call(this, this.value)
     }
   }
 }
