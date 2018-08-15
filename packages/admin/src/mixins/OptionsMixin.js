@@ -1,5 +1,7 @@
 import LoadingMixin from './LoadingMixin'
-import { isObject, isArray, isFunction, isPromise } from '@ditojs/utils'
+import {
+  isObject, isArray, isFunction, isPromise, labelize
+} from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -201,7 +203,7 @@ export default {
       return isFunction(this.optionLabel)
         ? this.optionLabel(option)
         : this.optionLabel ? option?.[this.optionLabel]
-        : option
+        : labelize(option)
     }
   }
 }
