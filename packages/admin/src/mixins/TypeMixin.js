@@ -36,19 +36,22 @@ export default {
     value: {
       get() {
         const { compute, format } = this.schema
-        let value = this.data[this.name]
         if (compute) {
-          const computed = compute.call(this, this.data, this.parentData)
-          if (computed !== undefined) {
-            // Trigger sett tot update computed value.
-            this.value = value = computed
+          const value = compute.call(this, this.data, this.parentData)
+          if (value !== undefined) {
+            // Trigger setter to update computed value, without parse():
+            this.$set(this.data, this.name, value)
           }
         }
+        // For Vue's change tracking to always work, we need to access the
+        // property once it's set (e.g. computed)
+        let value = this.data[this.name]
         if (format) {
           value = format.call(this, value)
         }
         return value
       },
+
       set(value) {
         const { parse } = this.schema
         if (parse) {
