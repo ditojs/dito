@@ -148,7 +148,7 @@ export default {
         return exclude
           ? undefined
           : process
-            ? process(value, data) ?? value
+            ? process(value, data)
             : value
       }
     },
