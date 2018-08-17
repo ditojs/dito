@@ -59,27 +59,30 @@ table.dito-table
       > td
         border-top-color: $table-color-background
   // Nested .dito-table:
-  table.dito-table
-    // Give nested lists a bit of shadow
-    box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
-    margin: $form-spacing-half 0
-    > tbody,
-    > tfoot
-      > tr
-        // Change corner rounding in nested lists, so that only the four
-        // outer corners are rounded to go with the shadow.
-        > td
-          border-radius: 0
-        &:first-child
-          > td:first-child
-            border-top-left-radius: $border-radius
-          > td:last-child
-            border-top-right-radius: $border-radius
-        &:last-child
-          > td:first-child
-            border-bottom-left-radius: $border-radius
-          > td:last-child
-            border-bottom-right-radius: $border-radius
+table.dito-table table.dito-table,
+.dito-nested-form table.dito-table,
+  // Give nested tables a bit of shadow
+  box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
+  margin: $form-spacing-half 0
+  // Nested .dito-table don't have border-spacing
+  border-spacing: 0
+  > tbody,
+  > tfoot
+    > tr
+      // Change corner rounding in nested lists, so that only the four
+      // outer corners are rounded to go with the shadow.
+      > td
+        border-radius: 0
+      &:first-child
+        > td:first-child
+          border-top-left-radius: $border-radius
+        > td:last-child
+          border-top-right-radius: $border-radius
+      &:last-child
+        > td:first-child
+          border-bottom-left-radius: $border-radius
+        > td:last-child
+          border-bottom-right-radius: $border-radius
 
 thead.dito-table-head
   +user-select(none)

@@ -2,10 +2,10 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { isObject, isArray, parseDataPath } from '@ditojs/utils'
+import { isObject, isArray, parseDataPath, asArray } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import {
-  processForms, hasForms, isObjectSource, isListSource
+  processForms, hasForms, hasLabels, isObjectSource, isListSource
 } from '@/utils/schema'
 
 // @vue/component
@@ -107,6 +107,29 @@ export default {
         ...this.meta,
         schema: this.schema
       }
+    },
+
+    forms() {
+      const { form, forms } = this.schema
+      return forms && Object.values(forms) || asArray(form)
+    },
+
+    hasLabels() {
+      for (const form of this.forms) {
+        if (hasLabels(form)) {
+          return true
+        }
+      }
+      return false
+    },
+
+    isCompact() {
+      for (const form of this.forms) {
+        if (!form.compact) {
+          return false
+        }
+      }
+      return true
     },
 
     paginate: getSchemaAccessor('paginate', { type: Number }),

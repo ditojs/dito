@@ -128,6 +128,25 @@ export function hasForms(schema) {
   return isObject(schema) && !!(schema.form || schema.forms)
 }
 
+export function hasLabels(schema) {
+  const check = components => {
+    for (const component of Object.values(components || {})) {
+      if (component.label !== false) {
+        return true
+      }
+    }
+  }
+  if (check(schema.components)) {
+    return true
+  }
+  for (const tab of Object.values(schema.tabs || {})) {
+    if (check(tab)) {
+      return true
+    }
+  }
+  return false
+}
+
 function getSourceType(schemaOrType) {
   // NOTE: `null` is returned for type components that do not define a
   // `getSourceType()` method.

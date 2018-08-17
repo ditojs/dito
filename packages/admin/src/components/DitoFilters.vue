@@ -44,9 +44,6 @@
       background: $table-color-background
       border-radius: $border-radius
       padding: 0 $form-spacing
-      tr.dito-inline-row
-        // Clear trick above again, as it causes trouble on Chrome
-        display: table-row
       td
         padding: 0
       .dito-label

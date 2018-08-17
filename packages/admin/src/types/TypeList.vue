@@ -21,7 +21,9 @@
       :filters="filters"
       :query="query"
     )
-    table.dito-table
+    table.dito-table(
+      :class="{ 'dito-table-spaced': hasSpacing }"
+    )
       dito-list-head(
         v-if="columns"
         :query="query"
@@ -38,7 +40,6 @@
         tr(
           v-for="item, index in listData || []"
           :key="getItemId(schema, item, index)"
-          :class="{ 'dito-inline-row': inline }"
         )
           template(v-if="columns")
             dito-list-cell(
@@ -119,14 +120,8 @@
       padding-bottom: $content-padding-half
       margin-top: -$content-padding-half
       +user-select(none)
-    // Inline Rows
-    tr.dito-inline-row
-      // Turn the rows into blocks, so we can add margins:
-      display: block
-      margin-bottom: $form-spacing
-      // Only top-level inline rows (on white) should have margins
-      tr.dito-inline-row
-        margin-bottom: 0
+  .dito-table-spaced
+    border-spacing: 0 $form-spacing
 </style>
 
 <script>
@@ -158,6 +153,12 @@ export default TypeComponent.register([
       const { listData } = this
       return listData.length > 0 &&
         (this.editable || this.deletable || this.draggable)
+    },
+
+    hasSpacing() {
+      return this.isListSource && this.inline &&
+        // If there are only compact forms with no labels, don't add spacing
+        (!this.isCompact || this.hasLabels)
     }
   },
 
