@@ -6,8 +6,10 @@
 .dito
   .dito-label
     display: block
-    white-space: nowrap
     margin: 0 0 $form-spacing-half 0
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
     +user-select(none)
 </style>
 

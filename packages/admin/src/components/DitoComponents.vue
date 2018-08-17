@@ -47,6 +47,9 @@
       flex: 1 1 auto
       align-self: stretch
       box-sizing: border-box
+      // Allow the endles shrinking of content
+      // (needed for `text-overflow: ellipsis` on labels)
+      min-width: 0
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $form-spacing-half
