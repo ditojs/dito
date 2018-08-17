@@ -72,6 +72,7 @@ import {
 // @vue/component
 export default DitoComponent.component('dito-form', {
   mixins: [RouteMixin, DataMixin],
+  inject: ['$validator'],
 
   data() {
     return {
@@ -335,6 +336,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     async onSubmit(button) {
+      this.$errors.clear()
       if (await this.$validator.validateAll()) {
         this.submit(button)
       } else {
