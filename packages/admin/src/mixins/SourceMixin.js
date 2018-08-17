@@ -18,7 +18,9 @@ export default {
 
   data() {
     return {
-      isSource: true
+      isSource: true,
+      wrappedPrimitives: null,
+      unwrappingPrimitives: false
     }
   },
 
@@ -36,13 +38,17 @@ export default {
       if (this.isObjectSource) {
         // Convert to list array.
         data = data != null ? [data] : []
-      } else if (isObject(data)) {
+      } else if (isObject(data) && isArray(data.results)) {
         // If @ditojs/server sends data in the form of `{ results, total }`
         // replace the value with result, but remember the total in the store.
         this.setStore('total', data.total)
         this.value = data = data.results
       }
-      return data || []
+      data = data || []
+      if (this.schema.primitives) {
+        data = this.wrapPrimitives(data)
+      }
+      return data
     },
 
     shouldLoad() {
@@ -195,10 +201,32 @@ export default {
         this.addQuery(to.query)
         this.loadData(false)
       }
+    },
+
+    wrappedPrimitives: {
+      deep: true,
+      handler(newValue, oldValue) {
+        // Skip the initial setting of wrappedPrimitives array
+        if (oldValue !== null) {
+          // Whenever the wrappedPrimitives change, map their values back to
+          // the array of primitives, in a primitive way :)
+          // But set `unwrappingPrimitives = true`, so the `listData()`
+          // computed property knows about it through `wrapPrimitives()`.
+          this.unwrappingPrimitives = true
+          this.value = newValue.map(({ value }) => value)
+        }
+      }
     }
   },
 
   methods: {
+    wrapPrimitives(data) {
+      if (!this.unwrappingPrimitives) {
+        this.wrappedPrimitives = data.map(value => ({ value }))
+      }
+      return this.wrappedPrimitives
+    },
+
     setupData() {
       this.addQuery(this.$route.query)
       this.ensureData()
