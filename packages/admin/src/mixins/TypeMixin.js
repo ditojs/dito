@@ -84,7 +84,7 @@ export default {
 
       const attributes = {
         'data-vv-name': this.dataPath,
-        'data-vv-as': this.label,
+        'data-vv-as': this.label || this.placeholder || this.name,
         // Validate with a little delay. This is mainly needed for password
         // handling in TypeText, but may be of use in other places also.
         'data-vv-delay': 1,
@@ -231,7 +231,9 @@ export default {
 
     addError(error, addPrefix) {
       // Convert to the same sentence structure as vee-validate:
-      const prefix = addPrefix && `The ${this.label || this.placeholder} field`
+      const field = this.label || this.placeholder || this.name
+      const prefix = addPrefix && `The ${field} field`
+      console.log('adding', error)
       this.$errors.add({
         field: this.dataPath,
         msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
