@@ -95,10 +95,6 @@ export default DitoComponent.component('dito-form', {
       )
     },
 
-    sourceSchema() {
-      return this.meta.schema
-    },
-
     isActive() {
       return this.isLastRoute || this.isLastUnnestedRoute
     },

@@ -21,6 +21,10 @@ export default {
   },
 
   computed: {
+    sourceSchema() {
+      return this.meta?.schema
+    },
+
     user() {
       return appState.user
     },

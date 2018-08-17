@@ -40,7 +40,7 @@ export default DitoComponent.component('dito-inline-schema', {
   computed: {
     compact() {
       // The default is true for object sources:
-      return this.schema.compact ?? isObjectSource(this.meta.schema)
+      return this.schema.compact ?? isObjectSource(this.sourceSchema)
     }
   }
 })
