@@ -1,5 +1,6 @@
 <template lang="pug">
   .dito-tree-item(
+    :id="dataPath"
     :class=`{
       'dito-dragging': dragging,
       'dito-editing': editing
@@ -149,7 +150,7 @@ export default DitoComponent.component('dito-tree-item', {
 
   props: {
     schema: { type: Object, required: true },
-    dataPath: { type: String, default: '' },
+    dataPath: { type: String, required: true },
     data: { type: [Array, Object], default: null },
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },

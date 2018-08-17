@@ -29,7 +29,7 @@ import { isObjectSource } from '@/utils/schema'
 export default DitoComponent.component('dito-inline-schema', {
   props: {
     schema: { type: Object, default: null },
-    dataPath: { type: String, default: '' },
+    dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },

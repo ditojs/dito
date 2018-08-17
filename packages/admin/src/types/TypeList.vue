@@ -23,6 +23,7 @@
     )
     table.dito-table(
       :class="{ 'dito-table-spaced': hasSpacing }"
+      :id="getDataPath()"
     )
       dito-list-head(
         v-if="columns"
@@ -40,11 +41,13 @@
         tr(
           v-for="item, index in listData || []"
           :key="getItemId(schema, item, index)"
+          :id="getDataPath(index)"
         )
           template(v-if="columns")
             dito-list-cell(
               v-for="cell in columns"
               :key="cell.name"
+              :class="getCellClass(cell)"
               :cell="cell"
               :schema="schema"
               :dataPath="getDataPath(index)"
@@ -131,6 +134,7 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
+import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register([
@@ -164,6 +168,10 @@ export default TypeComponent.register([
   },
 
   methods: {
+    getCellClass(cell) {
+      return `dito-cell-${hyphenate(cell.name)}`
+    },
+
     onFilterErrors(errors) {
       this.$refs.filters.showErrors(errors, true)
     }

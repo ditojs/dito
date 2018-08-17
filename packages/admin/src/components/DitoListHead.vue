@@ -3,13 +3,14 @@
     tr
       th(
         v-for="(column, index) in columns"
+        :class="getColumnClass(column)"
       )
         router-link.dito-button(
           v-if="column.sortable"
-          :to="getSortLink(column.name)"
+          :to="getSortLink(column)"
           tag="button"
           type="button"
-          :class="getSortClass(column.name)"
+          :class="getSortClass(column)"
         )
           .dito-order-arrows
           span {{ getLabel(column) }}
@@ -21,6 +22,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-list-head', {
@@ -41,21 +43,25 @@ export default DitoComponent.component('dito-list-head', {
   },
 
   methods: {
-    getSortClass(name) {
-      return this.sort.name === name
+    getColumnClass(column) {
+      return `dito-column-${hyphenate(column.name)}`
+    },
+
+    getSortClass(column) {
+      return this.sort.name === column.name
         ? `dito-selected dito-order-${this.sort.order}`
         : null
     },
 
-    getSortLink(name) {
+    getSortLink(column) {
       // Toggle order if the same column is clicked again.
-      const order = this.sort.name === name && this.sort.order === 'asc'
+      const order = this.sort.name === column.name && this.sort.order === 'asc'
         ? 'desc'
         : 'asc'
       return {
         query: {
           ...this.query,
-          order: `${name} ${order}`
+          order: `${column.name} ${order}`
         }
       }
     }

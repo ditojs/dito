@@ -244,8 +244,10 @@ export default {
 
     getDataPath(index) {
       return this.isObjectSource
-        ? this.dataPath
-        : `${this.dataPath}/${index}`
+        // For objects, use no path to list, and normal path to the item:
+        ? index == null ? undefined : this.dataPath
+        // For lists, use normal path to list, and concatenated path to item:
+        : index == null ? this.dataPath : `${this.dataPath}/${index}`
     },
 
     getEditLink(item, index) {
