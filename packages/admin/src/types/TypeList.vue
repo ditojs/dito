@@ -3,7 +3,7 @@
     :class="schema.class"
     :style="schema.style"
   )
-    .dito-navigation(v-if="scopes || paginate")
+    .dito-navigation
       dito-scopes(
         v-if="scopes"
         :query="query"
@@ -118,8 +118,9 @@
       display: flex
       justify-content: space-between
       padding-bottom: $content-padding-half
-      margin-top: -$content-padding-half
       +user-select(none)
+      &:empty
+        display: none
   .dito-table-spaced
     border-spacing: 0 $form-spacing
 </style>

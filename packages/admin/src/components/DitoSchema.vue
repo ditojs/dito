@@ -46,7 +46,8 @@
 $tab-height: $menu-font-size + 2 * $tab-padding-ver
 .dito
   .dito-schema
-    padding: $content-padding
+    // Use $content-padding-half at the top, for .dito-navigation
+    padding: $content-padding-half $content-padding $content-padding
     box-sizing: border-box
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
