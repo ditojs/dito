@@ -44,12 +44,12 @@ export async function createMigration(app, name, ...modelNames) {
   }
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${name}.js`)
   await fs.writeFile(file, deindent`
-    export function up(knex) {
+    export async function up(knex) {
       return knex.schema
         ${createTables.join('\n')}
     }
 
-    export function down(knex) {
+    export async function down(knex) {
       return knex.schema
         ${dropTables.join('\n')}
     }

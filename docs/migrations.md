@@ -10,7 +10,7 @@ used to undo the migration in case of a rollback. Both function take the knex
 instance as an input. An example looks like this:
 
 ```js
-export function up(knex) {
+export async function up(knex) {
   return knex.schema
     .createTable('test', table => {
       table.increments('id').primary()
@@ -19,7 +19,7 @@ export function up(knex) {
     })
 }
 
-export function down(knex) {
+export async function down(knex) {
   return knex.schema
     .dropTableIfExists('test')
 }
