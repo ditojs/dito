@@ -253,6 +253,8 @@ export class Model extends objection.Model {
     return this.getCached('jsonSchema', () => {
       const schema = convertSchema(this.definition.properties)
       addRelationSchemas(this, schema.properties)
+      // Mix in root-level schema additions
+      Object.assign(schema, this.definition.schema)
       return {
         $id: this.name,
         $schema: 'http://json-schema.org/draft-07/schema#',
