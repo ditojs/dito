@@ -1,4 +1,4 @@
-import { isArray } from '@ditojs/utils'
+import { isString, isArray } from '@ditojs/utils'
 
 export const validate = {
   metaSchema: {
@@ -6,7 +6,7 @@ export const validate = {
   },
 
   validate: function validate(
-    schema,
+    func,
     data,
     parentSchema,
     dataPath,
@@ -14,13 +14,21 @@ export const validate = {
     parentDataProperty,
     rootData
   ) {
-    let result = schema.call(this, {
+    let result = func.call(this, {
+      // TODO: Use the same naming as in the rest of Dito here
       data,
       dataPath,
       parentData,
       parentDataProperty,
       rootData
     })
+    if (isString(result)) {
+      result = [{
+        keyword: 'validate',
+        message: result,
+        params: {}
+      }]
+    }
     if (isArray(result)) {
       // An array of error was returned. Prefix them with the current dataPath,
       // and pass them through:
@@ -28,5 +36,7 @@ export const validate = {
       result = false
     }
     return result
-  }
+  },
+
+  errors: 'full'
 }
