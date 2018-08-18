@@ -99,6 +99,13 @@ export class Model extends objection.Model {
     return this
   }
 
+  $validateGraph(options = {}) {
+    // Work-around to prevent Objection.js from removing relations, as we want
+    // $ref style validation applied to all relation data here.
+    // By copying the model into a Pojo, nested relations are not removed:
+    return this.$validate({ ...this }, { ...options, mutable: true })
+  }
+
   async $transaction(handler) {
     return this.constructor.transaction(handler)
   }
