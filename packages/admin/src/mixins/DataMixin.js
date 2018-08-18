@@ -140,7 +140,10 @@ export default {
     },
 
     createData(schema, type) {
-      const data = type ? { type } : {}
+      return this.setDefaults(schema, type ? { type } : {})
+    },
+
+    setDefaults(schema, data = {}) {
       // Sets up a data object that has keys with default values for all
       // form fields, so they can be correctly watched for changes.
       const processComponents = (components = {}) => {
