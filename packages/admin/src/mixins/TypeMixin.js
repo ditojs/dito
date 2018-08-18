@@ -253,20 +253,6 @@ export default {
       }
     },
 
-    navigateToErrors(dataPath, errors) {
-      return this.navigateToComponent?.(dataPath, (route, property) => {
-        const { matched } = route
-        const { meta } = matched[matched.length - 1]
-        // Pass on the errors to the instance through the meta object,
-        // see DitoForm.created()
-        if (property) {
-          meta.errors = {
-            [property]: errors
-          }
-        }
-      }) || false
-    },
-
     focus() {
       // Also focus this component's panel in case it's a tab.
       this.$parent.focus()

@@ -98,7 +98,9 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObject, isArray, parseDataPath } from '@ditojs/utils'
+import {
+  isObject, isArray, parseDataPath, normalizeDataPath, labelize
+} from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {
@@ -173,35 +175,25 @@ export default DitoComponent.component('dito-schema', {
     },
 
     getComponent(dataPathOrKey) {
-      if (isArray(dataPathOrKey)) {
-        dataPathOrKey = dataPathOrKey.join('/')
-      }
+      const normalizedPath = normalizeDataPath(dataPathOrKey)
       // See if the argument starts with this form's dataPath. If not, then it's
       // a key or subDataPath and needs to be prepended with the full path:
-      const dataPath = !dataPathOrKey.startsWith(this.dataPath)
-        ? this.appendDataPath(this.dataPath, dataPathOrKey)
-        : dataPathOrKey
+      const dataPath = !normalizedPath.startsWith(this.dataPath)
+        ? this.appendDataPath(this.dataPath, normalizedPath)
+        : normalizedPath
       return this.components[dataPath] || null
     },
 
-    focus(dataPathOrKey) {
+    focus(dataPathOrKey, notify = false) {
       this.getComponent(dataPathOrKey)?.focus()
-    },
-
-    addErrors(errors, focus) {
-      for (const [dataPath, errs] of Object.entries(errors)) {
-        const component = this.getComponent(dataPath)
-        if (component) {
-          component.addErrors(errs, focus)
-        } else {
-          throw new Error(`Cannot add errors for field ${dataPath}: ${
-            JSON.stringify(errors)}`)
-        }
+      if (notify) {
+        this.notifyErrors()
       }
     },
 
     showErrors(errors, focus) {
       let first = true
+      const unmatched = []
       for (const [dataPath, errs] of Object.entries(errors)) {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
@@ -211,26 +203,54 @@ export default DitoComponent.component('dito-schema', {
           component.addErrors(errs, first && focus)
         } else {
           // Couldn't find a component in an active form for the given dataPath.
-          // See if we have a component serving a part of the dataPath, and take
-          // it from there:
-          let found = false
-          while (!found && dataPathParts.length > 1) {
+          // See if we can find a component serving a part of the dataPath,
+          // and take it from there:
+          const property = dataPathParts.pop()
+          while (dataPathParts.length > 0) {
+            const component = this.getComponent(dataPathParts)
+            if (component?.navigateToComponent?.(dataPath, routeRecord => {
+              // Filter the errors to only contain those that belong to the
+              // matched dataPath:
+              const normalizedPath = normalizeDataPath(dataPathParts)
+              routeRecord.meta.errors = Object.entries(errors).reduce(
+                (filtered, [dataPath, errs]) => {
+                  if (normalizeDataPath(dataPath).startsWith(normalizedPath)) {
+                    filtered[dataPath] = errs
+                  }
+                  return filtered
+                },
+                {}
+              )
+            })) {
+              // We found some nested form to display at least parts fo the
+              // errors. We can't display all errors at once, so we're done.
+              // Don't call notifyErrors() yet, as we can only display it
+              // once showErrors() was called from DitoForm.mounted()
+              return
+            }
             // Keep removing the last part until we find a match.
             dataPathParts.pop()
-            const component = this.getComponent(dataPathParts)
-            if (component?.navigateToErrors(dataPath, errs)) {
-              found = true
-            }
           }
-          if (!found) {
-            throw new Error(
-              `Cannot find component for field ${dataPath}, errors: ${
-                JSON.stringify(errs)}`)
+          // When the error can't be matched, add it to a list of unmatched
+          // errors with decent message, to report at the end.
+          const field = labelize(property)
+          for (const err of errs) {
+            unmatched.push(`The field ${field} ${err.message}`)
           }
         }
         first = false
       }
-      return !first
+      if (!first) {
+        this.notifyErrors(unmatched.join('\n'))
+      }
+    },
+
+    notifyErrors(message) {
+      this.notify(
+        'error',
+        'Validation Errors',
+        message || 'Please correct the highlighted errors.'
+      )
     },
 
     clearErrors() {

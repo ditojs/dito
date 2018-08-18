@@ -13,6 +13,10 @@ export function parseDataPath(path) {
   }
 }
 
+export function normalizeDataPath(path) {
+  return parseDataPath(path).join('/')
+}
+
 export function getDataPath(obj, path) {
   for (const part of parseDataPath(path)) {
     if (!(obj && typeof obj === 'object' && part in obj)) {

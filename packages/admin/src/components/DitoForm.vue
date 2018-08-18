@@ -264,12 +264,11 @@ export default DitoComponent.component('dito-form', {
 
   mounted() {
     // Errors can get passed on through the meta object, so add them now.
-    // See TypeMixin.navigateToErrors()
-    const { meta } = this
-    if (meta.errors) {
-      // Add the errors after initialization of $validator
-      this.$refs.schema.addErrors(meta.errors, true)
-      delete meta.errors
+    // See DitoSchema.showErrors() / SourceMixin.navigateToComponent()
+    const { errors } = this.meta
+    if (errors) {
+      delete this.meta.errors
+      this.showErrors(errors, true)
     }
   },
 
@@ -326,9 +325,8 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    notifyValidationErrors() {
-      this.notify('error', 'Validation Errors',
-        'Please correct the highlighted errors.')
+    showErrors(errors, focus) {
+      this.$refs.schema.showErrors(errors, focus)
     },
 
     isDefaultButton(button) {
@@ -340,8 +338,7 @@ export default DitoComponent.component('dito-form', {
       if (await this.$validator.validateAll()) {
         this.submit(button)
       } else {
-        this.$refs.schema.focus(this.$errors.items[0].field)
-        this.notifyValidationErrors()
+        this.$refs.schema.focus(this.$errors.items[0].field, true)
       }
     },
 
@@ -414,25 +411,18 @@ export default DitoComponent.component('dito-form', {
           const data = response?.data
           if (err) {
             // See if we're dealing with a Dito validation error:
-            let error = null
             const errors = this.isValidationError(response) && data.errors
             if (errors) {
-              try {
-                if (this.$refs.schema.showErrors(errors, true)) {
-                  this.notifyValidationErrors()
-                }
-              } catch (err) {
-                error = err
-              }
+              this.showErrors(errors, true)
             } else {
-              error = isObject(data) ? data : err
-            }
-            if (error) {
-              if (onError) {
-                onError.call(this, error, itemLabel)
-              } else {
-                this.notify('error', 'Request Error',
-                  `Error submitting ${itemLabel}:\n${error.message || error}`)
+              const error = isObject(data) ? data : err
+              if (error) {
+                if (onError) {
+                  onError.call(this, error, itemLabel)
+                } else {
+                  this.notify('error', 'Request Error',
+                    `Error submitting ${itemLabel}:\n${error.message || error}`)
+                }
               }
             }
           } else {

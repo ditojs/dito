@@ -2,11 +2,13 @@ import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
-import { isObject, isArray, parseDataPath, asArray } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import {
   processForms, hasForms, hasLabels, isObjectSource, isListSource
 } from '@/utils/schema'
+import {
+  isObject, isArray, asArray, parseDataPath, normalizeDataPath
+} from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -341,19 +343,23 @@ export default {
 
     navigateToComponent(dataPath, onComplete) {
       const dataPathParts = parseDataPath(dataPath)
-      // Use collection/id pairs (even numbers of parts) to determine the route.
-      // What's left is the property dataPath, and will be handled by the form.
-      const property = dataPathParts.length & 1 ? dataPathParts.pop() : null
-      const path = this.api.normalizePath(dataPathParts.join('/'))
-      const location = `${this.$route.path}/${path}`
-      const { matched } = this.$router.match(location)
-      if (matched.length) {
-        this.$router.push({ path: location, append: true }, route => {
-          if (onComplete) {
-            onComplete(route, property)
-          }
-        })
-        return true
+      // See if we can find a route that can serve part of the given dataPath,
+      // and take it from there:
+      while (dataPathParts.length > 0) {
+        const path = this.api.normalizePath(normalizeDataPath(dataPathParts))
+        const location = `${this.$route.path}/${path}`
+        const { matched } = this.$router.match(location)
+        if (matched.length) {
+          this.$router.push({ path: location, append: true }, route => {
+            if (onComplete) {
+              const { matched } = route
+              onComplete(matched[matched.length - 1])
+            }
+          })
+          return true
+        }
+        // Keep removing the last part until we find a match.
+        dataPathParts.pop()
       }
       return false
     }
