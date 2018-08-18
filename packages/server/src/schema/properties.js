@@ -146,6 +146,7 @@ function makeNullable(schema) {
     type,
     $ref,
     nullable,
+    validate, // Keep validate() at root level, to apply to both.
     ...rest
   } = schema
   return isArray(type) && type.includes('null')
@@ -158,11 +159,13 @@ function makeNullable(schema) {
             : { type, ...rest },
           { type: 'null' }
         ],
-        nullable
+        nullable,
+        validate
       }
       : {
         type: [...asArray(type), 'null'],
         nullable,
+        validate,
         ...rest
       }
 }

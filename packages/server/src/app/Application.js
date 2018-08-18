@@ -380,13 +380,18 @@ export class Application extends Koa {
         coerceTypes: 'array',
         ...options.validator
       })
+      const ctx = {
+        app: this,
+        validator: this.validator,
+        options: {}
+      }
       return {
         list,
         rootName,
         validate: data => {
           // Returns `null` if successful, `validate.errors` otherwise.
-          // Use `call()` to pass validator as context to Ajv, see passContext:
-          return validate.call(this.validator, data) ? null : validate.errors
+          // Use `call()` to pass ctx as context to Ajv, see passContext:
+          return validate.call(ctx, data) ? null : validate.errors
         }
       }
     }

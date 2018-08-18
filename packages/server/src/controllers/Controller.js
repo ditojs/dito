@@ -10,7 +10,7 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, parseDataPath
+  isObject, isString, isArray, isBoolean, isFunction, asArray, normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -400,7 +400,7 @@ export class Controller {
       ? Object.entries(values).reduce(
         (upload, [key, value]) => {
           // Convert dataPath to '/'-notation.
-          const dataPath = parseDataPath(key).join('/')
+          const dataPath = normalizeDataPath(key)
           // Collect the converted configuration, so that from here on out, the
           // object notation can be assumed, see: `getUploadConfig()`
           upload[dataPath] = this.setupUploadRoute(

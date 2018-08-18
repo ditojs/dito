@@ -189,36 +189,12 @@ export class Validator extends objection.Validator {
   }
 
   // @override
-  validate(args) {
-    let { json, model, options, ctx } = args
-    if (ctx.jsonSchema) {
-      // We need to clone the input json if we are about to set default values.
-      if (!options.mutable && !options.patch &&
-        hasDefaults(ctx.jsonSchema.properties)) {
-        json = clone(json)
-      }
-      // Decide which validator to use based on options.patch:
-      const ajv = options.patch ? this.ajvPatch : this.ajvFull
-      const validate = ajv.getSchema(ctx.jsonSchema.$id)
-      // Use `call()` to pass validator as context to Ajv, see passContext:
-      validate.call(this, json)
-      const { errors } = validate
-      if (errors) {
-        // NOTE: The conversion from Ajv errors to Objection errors happen in
-        // Model.createValidationError(), through Validator.parseError()
-        throw model.constructor.createValidationError({
-          type: 'ModelValidation',
-          errors,
-          options
-        })
-      }
-    }
-    return json
-  }
-
-  // @override
   beforeValidate(args) {
     const { json, model, options, ctx } = args
+    // Add validator instance, app and options to context
+    ctx.validator = this
+    ctx.app = this.app
+    ctx.options = options
     ctx.jsonSchema = model.constructor.getJsonSchema()
     const { $beforeValidate } = model
     if ($beforeValidate !== objection.Model.prototype.$beforeValidate) {
@@ -231,6 +207,34 @@ export class Validator extends objection.Validator {
         ctx.jsonSchema = ret
       }
     }
+  }
+
+  // @override
+  validate(args) {
+    let { json, model, options, ctx } = args
+    if (ctx.jsonSchema) {
+      // We need to clone the input json if we are about to set default values.
+      if (!options.mutable && !options.patch &&
+        hasDefaults(ctx.jsonSchema.properties)) {
+        json = clone(json)
+      }
+      // Decide which validator to use based on options.patch:
+      const ajv = options.patch ? this.ajvPatch : this.ajvFull
+      const validate = ajv.getSchema(ctx.jsonSchema.$id)
+      // Use `call()` to pass ctx as context to Ajv, see passContext:
+      validate.call(ctx, json)
+      const { errors } = validate
+      if (errors) {
+        // NOTE: The conversion from Ajv errors to Objection errors happen in
+        // Model.createValidationError(), through Validator.parseError()
+        throw model.constructor.createValidationError({
+          type: 'ModelValidation',
+          errors,
+          options
+        })
+      }
+    }
+    return json
   }
 }
 
