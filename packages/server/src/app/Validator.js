@@ -150,13 +150,41 @@ export class Validator extends objection.Validator {
         duplicates[identifier] = true
       }
     }
+    // Now filter through the resulting errors and perform some post-processing:
+    for (const [dataPath, errors] of Object.entries(errorHash)) {
+      // When we get these errors (caused by `nullable: true`), it means that we
+      // have data that isn't null and is causing other errors, and we shouldn't
+      // display the 'null' path:
+      // [dataPath]: [
+      //   {
+      //     message: 'should be null',
+      //     keyword: 'type',
+      //     params: { type: 'null' }
+      //   },
+      //   {
+      //     message: 'should match exactly one schema in oneOf',
+      //     keyword: 'oneOf'
+      //   }
+      // ]
+      if (errors.length === 2) {
+        const [error1, error2] = errors
+        if (
+          error1.keyword === 'type' && error1.params.type === 'null' &&
+          error2.keyword === 'oneOf'
+        ) {
+          delete errorHash[dataPath]
+        }
+      }
+    }
     return errorHash
   }
 
   prefixDataPaths(errors, dataPathPrefix) {
     return errors.map(error => ({
       ...error,
-      dataPath: `${dataPathPrefix}${error.dataPath}`
+      dataPath: error.dataPath
+        ? `${dataPathPrefix}${error.dataPath}`
+        : dataPathPrefix
     }))
   }
 
