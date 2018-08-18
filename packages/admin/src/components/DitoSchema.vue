@@ -212,6 +212,8 @@ export default DitoComponent.component('dito-schema', {
               // Filter the errors to only contain those that belong to the
               // matched dataPath:
               const normalizedPath = normalizeDataPath(dataPathParts)
+              // Pass on the errors to the instance through the meta object,
+              // see DitoForm.created()
               routeRecord.meta.errors = Object.entries(errors).reduce(
                 (filtered, [dataPath, errs]) => {
                   if (normalizeDataPath(dataPath).startsWith(normalizedPath)) {

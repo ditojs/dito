@@ -374,7 +374,7 @@ export default DitoComponent.component('dito-form', {
           path: button.path
         }
         : this.resource
-      const itemLabel = this.data
+      const label = this.data
         ? this.getItemLabel(this.sourceSchema, this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
@@ -395,10 +395,10 @@ export default DitoComponent.component('dito-form', {
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
           if (onSuccess) {
-            onSuccess.call(this, payload, itemLabel)
+            onSuccess.call(this, payload, label)
           } else {
             this.notify('info', 'Change Applied',
-              `<p>Changes in ${itemLabel} were applied.</p>` +
+              `<p>Changes in ${label} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
               'in order to persist this change.</p>')
           }
@@ -418,20 +418,20 @@ export default DitoComponent.component('dito-form', {
               const error = isObject(data) ? data : err
               if (error) {
                 if (onError) {
-                  onError.call(this, error, itemLabel)
+                  onError.call(this, error, label)
                 } else {
                   this.notify('error', 'Request Error',
-                    `Error submitting ${itemLabel}:\n${error.message || error}`)
+                    `Error submitting ${label}:\n${error.message || error}`)
                 }
               }
             }
           } else {
             if (onSuccess) {
-              onSuccess.call(this, payload, itemLabel)
+              onSuccess.call(this, payload, label)
             } else {
               const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
-                `${itemLabel} was ${submitted}.`)
+                `${label} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
