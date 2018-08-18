@@ -1,4 +1,6 @@
-import { parseDataPath, getDataPath, setDataPath } from './dataPath'
+import {
+  parseDataPath, normalizeDataPath, getDataPath, setDataPath
+} from './dataPath'
 
 describe('parseDataPath()', () => {
   it('should parse JSON pointers', () => {
@@ -44,6 +46,22 @@ describe('parseDataPath()', () => {
 
   it('should return undefined for values other than array / string', () => {
     expect(parseDataPath({})).toBe(undefined)
+  })
+})
+
+describe('normalizeDataPath()', () => {
+  it('should normalize JSON pointers', () => {
+    expect(normalizeDataPath('/object/array/1/prop'))
+      .toStrictEqual('object/array/1/prop')
+  })
+
+  it('should normalize property access notation', () => {
+    const expected = 'object/array/1/prop'
+    expect(normalizeDataPath('.object.array[1].prop')).toStrictEqual(expected)
+    expect(normalizeDataPath(`.object["array"][1].prop`))
+      .toStrictEqual(expected)
+    expect(normalizeDataPath(`['object']['array'][1]['prop']`))
+      .toStrictEqual(expected)
   })
 })
 

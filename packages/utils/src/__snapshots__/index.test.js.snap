@@ -36,6 +36,7 @@ Object {
   "mapKeys": [Function],
   "mapValues": [Function],
   "merge": [Function],
+  "normalizeDataPath": [Function],
   "parseDataPath": [Function],
   "pick": [Function],
   "setDataPath": [Function],
