@@ -44,11 +44,7 @@ export default {
         this.setStore('total', data.total)
         this.value = data = data.results
       }
-      data = data || []
-      if (this.schema.primitives) {
-        data = this.wrapPrimitives(data)
-      }
-      return data
+      return this.wrapPrimitives(data || [])
     },
 
     shouldLoad() {
@@ -206,14 +202,15 @@ export default {
     wrappedPrimitives: {
       deep: true,
       handler(newValue, oldValue) {
+        const { wrapPrimitives } = this.schema
         // Skip the initial setting of wrappedPrimitives array
-        if (oldValue !== null) {
+        if (wrapPrimitives && oldValue !== null) {
           // Whenever the wrappedPrimitives change, map their values back to
           // the array of primitives, in a primitive way :)
           // But set `unwrappingPrimitives = true`, so the `listData()`
-          // computed property knows about it through `wrapPrimitives()`.
+          // computed property knows about it, see `wrapPrimitives()`
           this.unwrappingPrimitives = true
-          this.value = newValue.map(({ value }) => value)
+          this.value = newValue.map(object => object[wrapPrimitives])
         }
       }
     }
@@ -221,10 +218,16 @@ export default {
 
   methods: {
     wrapPrimitives(data) {
-      if (!this.unwrappingPrimitives) {
-        this.wrappedPrimitives = data.map(value => ({ value }))
+      const { wrapPrimitives } = this.schema
+      if (wrapPrimitives) {
+        if (!this.unwrappingPrimitives) {
+          this.wrappedPrimitives = data.map(value => ({
+            [wrapPrimitives]: value
+          }))
+        }
+        return this.wrappedPrimitives
       }
-      return this.wrappedPrimitives
+      return data
     },
 
     setupData() {
