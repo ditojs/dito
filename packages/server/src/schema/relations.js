@@ -247,23 +247,8 @@ export function addRelationSchemas(modelClass, properties) {
         relate: $ref
       })
     }
-    // Finally the most complex validation, the model itself
-    anyOf.push(owner
-      // Support Objection.js #id references on owned data:
-      ? {
-        $merge: {
-          source: { $ref },
-          with: {
-            properties: {
-              '#id': {
-                type: 'string'
-              }
-            }
-          }
-        }
-      }
-      : { $ref }
-    )
+    // Finally the model itself
+    anyOf.push({ $ref })
     const items = anyOf.length > 1
       ? { anyOf }
       : anyOf[0]

@@ -160,12 +160,12 @@ function makeNullable(schema) {
           { type: 'null' }
         ],
         nullable,
-        validate
+        ...(validate && { validate })
       }
       : {
         type: [...asArray(type), 'null'],
         nullable,
-        validate,
+        ...(validate && { validate }),
         ...rest
       }
 }

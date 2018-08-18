@@ -1,6 +1,5 @@
 import objection from 'objection'
 import Ajv from 'ajv'
-import ajvMergePatch from 'ajv-merge-patch'
 import { isArray, isObject, clone } from '@ditojs/utils'
 import * as schema from '@/schema'
 
@@ -59,7 +58,6 @@ export class Validator extends objection.Validator {
       // Patch-validators don't use default values:
       ...(patch && { useDefaults: false })
     })
-    ajvMergePatch(ajv)
 
     const add = (schemas, method) => {
       for (const [name, schema] of Object.entries(schemas)) {

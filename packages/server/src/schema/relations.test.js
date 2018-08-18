@@ -153,18 +153,7 @@ describe('addRelationSchemas()', () => {
     expect(addRelationSchemas(ModelTwo, {})).toEqual({
       modelOnes: {
         type: 'array',
-        items: {
-          $merge: {
-            source: { $ref: 'ModelOne' },
-            with: {
-              properties: {
-                '#id': {
-                  type: 'string'
-                }
-              }
-            }
-          }
-        }
+        items: { $ref: 'ModelOne' }
       }
     })
   })
