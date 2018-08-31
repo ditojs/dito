@@ -22,7 +22,7 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0-rc.1",
+    "@babel/runtime": "7.0.0",
     "@ditojs/ui": "^0.30.0",
     "@ditojs/utils": "^0.30.0",
     "axios": "^0.18.0",
@@ -44,13 +44,13 @@
     "vuedraggable": "^2.16.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.0.0-rc.1",
-    "@babel/core": "7.0.0-rc.1",
-    "@babel/node": "7.0.0-rc.1",
+    "@babel/cli": "7.0.0",
+    "@babel/core": "7.0.0",
+    "@babel/node": "7.0.0",
     "@vue/cli-plugin-babel": "^3.0.1",
     "@vue/cli-plugin-eslint": "^3.0.1",
     "@vue/cli-service": "^3.0.1",
-    "babel-loader": "^8.0.0-beta.4",
+    "babel-loader": "^8.0.0",
     "eslint-plugin-promise": "^4.0.0",
     "node-sass": "4.9.3",
     "pug": "^2.0.3",

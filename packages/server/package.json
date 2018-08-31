@@ -25,7 +25,7 @@
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0-rc.1",
+    "@babel/runtime": "7.0.0",
     "@ditojs/admin": "^0.30.0",
     "@ditojs/utils": "^0.30.0",
     "@koa/cors": "^2.2.1",
@@ -34,7 +34,7 @@
     "@vue/cli-service": "^3.0.1",
     "ajv": "^6.5.3",
     "ajv-merge-patch": "^4.1.0",
-    "babel-loader": "^8.0.0-beta.4",
+    "babel-loader": "^8.0.0",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.1",
     "chalk": "^2.4.1",
