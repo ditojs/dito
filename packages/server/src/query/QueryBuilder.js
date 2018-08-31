@@ -45,8 +45,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     // If this isn't a find query, meaning if it defines any write operations or
     // special selects, then 'eager' and 'orderBy' operations need to be
     // cleared. This is to not mess with special selects such as count(), etc...
-    if (!this.isFind() ||
-        this.hasSelects() && !this.has(/^(select|column|columns)$/)) {
+    if (
+      !this.isFind() ||
+      this.hasSelects() && !this.has(/^(select|columns?)$/)
+    ) {
       this.clearEager()
       this.clear('orderBy')
     }
