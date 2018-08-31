@@ -1,3 +1,4 @@
+import Ajv from 'ajv'
 import Koa from 'koa'
 import Knex from 'knex'
 import util from 'util'
@@ -376,24 +377,31 @@ export class Application extends Koa {
     }
     if (properties) {
       const jsonSchema = convertSchema(properties, options)
-      const validate = this.compileValidator(jsonSchema, {
+      const validator = this.compileValidator(jsonSchema, {
+        // For parameters, always coerce types, including arrays.
         coerceTypes: 'array',
-        ...options.validator
+        ...options
       })
       const ctx = {
         app: this,
         validator: this.validator,
-        options: {}
+        options
       }
-      return {
-        list,
-        rootName,
-        validate: data => {
-          // Returns `null` if successful, `validate.errors` otherwise.
+      const { async } = options
+      const validate = async
+        // Use `call()` to pass ctx as context to Ajv, see passContext:
+        ? data => validator.call(ctx, data)
+        : data => {
+          // Emulate same behavior as $async validation:
+          // Return data if successful, throw ValidationError otherwise.
           // Use `call()` to pass ctx as context to Ajv, see passContext:
-          return validate.call(ctx, data) ? null : validate.errors
+          if (validator.call(ctx, data)) {
+            return data
+          } else {
+            throw new Ajv.ValidationError(validator.errors)
+          }
         }
-      }
+      return { list, rootName, validate }
     }
   }
 

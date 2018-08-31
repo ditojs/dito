@@ -16,17 +16,19 @@ export default class ControllerAction {
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
-    const { parameters, returns, options } = this.handler
+    const { parameters, returns, validate } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
-      ...options,
+      async: true,
+      ...validate?.parameters,
       rootName: this.paramsName
     })
     this.returns = this.app.compileParametersValidator(returns, {
+      async: true,
       // Use instanceof checks instead of $ref to check returned values.
-      // TODO: That doesn't guarantee the validity though.. Should always be
-      // $ref checks, I think?
+      // TODO: That doesn't guarantee the validity though...
+      // This should always be $ref checks, I think?
       useInstanceOf: true,
-      ...options,
+      ...validate?.returns,
       rootName: 'result'
     })
   }
@@ -44,13 +46,13 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    this.validateParameters(ctx)
+    await this.validateParameters(ctx)
     const args = await this.collectArguments(ctx)
     await this.controller.handleAuthorization(this.authorization, ctx, ...args)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     let result = await this.handler.call(this.controller, ctx, ...args)
-    result = this.validateResult(result)
+    result = await this.validateResult(result)
     return this.controller.emitHook(`after:${identifier}`, true, ctx, result)
   }
 
@@ -62,7 +64,7 @@ export default class ControllerAction {
     })
   }
 
-  validateParameters(ctx) {
+  async validateParameters(ctx) {
     if (!this.parameters) return
     let params = this.getParams(ctx)
     // `parameters.validate(query)` coerces data in the query to the required
@@ -126,9 +128,10 @@ export default class ControllerAction {
         [this.parameters.rootName]: params
       }
     }
-    const errs = this.parameters.validate(params)
-    if (errs) {
-      errors.push(...errs)
+    try {
+      await this.parameters.validate(params)
+    } catch (error) {
+      errors.push(...error.errors)
     }
     if (errors.length > 0) {
       throw this.createValidationError({
@@ -140,7 +143,7 @@ export default class ControllerAction {
     }
   }
 
-  validateResult(result) {
+  async validateResult(result) {
     if (this.returns) {
       const resultName = this.handler.returns.name
       // Use rootName if no name is given, see:
@@ -148,11 +151,12 @@ export default class ControllerAction {
       const resultData = {
         [resultName || this.returns.rootName]: result
       }
-      const errors = this.returns.validate(resultData)
-      if (errors) {
+      try {
+        await this.returns.validate(resultData)
+      } catch (error) {
         throw this.createValidationError({
           message: `Invalid result of action: ${JSON.stringify(result)}`,
-          errors
+          errors: error.errors
         })
       }
       // If no resultName was given, return the full root object (result).

@@ -99,19 +99,44 @@ export class Model extends objection.Model {
     return this
   }
 
-  $validateGraph(options = {}) {
-    // Work-around to prevent Objection.js from removing relations, as we want
-    // $ref style validation applied to all relation data here.
-    // By copying the model into a Pojo, nested relations are not removed:
-    return this.$validate({ ...this }, { ...options, mutable: true })
-  }
-
   async $transaction(handler) {
     return this.constructor.transaction(handler)
   }
 
   static transaction(handler) {
     return objection.transaction(this.knex(), handler)
+  }
+
+  async $validateAsync(json, options = {}) {
+    json = json || this
+    if (!options.skipValidation) {
+      const modelClass = this.constructor
+      const validator = modelClass.getValidator()
+      const args = {
+        options,
+        model: this,
+        json,
+        ctx: Object.create(null)
+      }
+      validator.beforeValidate(args)
+      json = await validator.validateAsync(args)
+      validator.afterValidate(args)
+    }
+    return json
+  }
+
+  static async fromJsonAsync(json, options = {}) {
+    const model = new this()
+    if (!options.skipValidation) {
+      json = await model.$validateAsync(json, options)
+    }
+    if (json) {
+      model.$setJson(json, {
+        ...options,
+        skipValidation: true
+      })
+    }
+    return model
   }
 
   static query(trx) {

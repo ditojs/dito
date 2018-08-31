@@ -35,8 +35,9 @@ export default function filters(values) {
               : (builder, ...args) => {
                 queryFilter(builder, name, ...args)
               }
-            // Copy over @parameters() settings
+            // Copy over @parameters() and @validate() settings
             func.parameters = queryFilter.parameters
+            func.validate = queryFilter.validate
           } else {
             throw new ModelError(this,
               `Invalid filter '${name}': Unknown filter type '${
@@ -49,7 +50,7 @@ export default function filters(values) {
         const rootName = 'query'
         const validator = func && this.app.compileParametersValidator(
           func.parameters,
-          { ...func.options, rootName }
+          { ...func.validate, rootName }
         )
         if (validator) {
           return (query, ...args) => {
@@ -61,14 +62,15 @@ export default function filters(values) {
               // Application.compileParametersValidator()
               object[name || rootName] = args[index++]
             }
-            const errors = validator.validate(object)
-            if (errors) {
+            try {
+              validator.validate(object)
+            } catch (error) {
               throw this.app.createValidationError({
                 type: 'FilterValidation',
                 message:
                   `The provided data for query filter '${name}' is not valid`,
                 errors: this.app.validator.prefixDataPaths(
-                  errors,
+                  error.errors,
                   `.${name}`
                 )
               })

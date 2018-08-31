@@ -1,6 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
-import { isArray, isObject, clone } from '@ditojs/utils'
+import { isArray, isObject, clone, isAsync } from '@ditojs/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
@@ -16,16 +16,7 @@ export class Validator extends objection.Validator {
     super()
 
     this.options = {
-      useDefaults: true,
-      allErrors: true,
-      errorDataPath: 'property',
-      validateSchema: true,
-      ownProperties: true,
-      passContext: true,
-      schemaId: '$id',
-      missingRefs: true,
-      extendRefs: 'fail',
-      format: 'full',
+      ...defaultOptions,
       ...options
     }
 
@@ -44,14 +35,11 @@ export class Validator extends objection.Validator {
     // Dictionary to hold all created Ajv instances, using the stringified
     // options with which they were created as their keys.
     this.ajvCache = Object.create(null)
-    // Default Ajv instance used for most model validation.
-    this.ajvFull = this.getAjv()
-    // Default Ajv instance use to validate `patch` objects.
-    this.ajvPatch = this.getAjv({ patch: true })
   }
 
   createAjv(options) {
-    const { patch, ...opts } = options
+    // Split options into native Ajv options and our additions (async, patch):
+    const { async, patch, ...opts } = options
     const ajv = new Ajv({
       ...this.options,
       ...opts,
@@ -75,23 +63,31 @@ export class Validator extends objection.Validator {
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
-      addSchema(ajv, schema, options)
+      ajv.addSchema(this.processSchema(schema, options))
     }
 
     return ajv
   }
 
   getAjv(options = {}) {
-    const key = JSON.stringify(options)
-    const { ajv } = this.ajvCache[key] || (this.ajvCache[key] = {
-      ajv: this.createAjv(options),
+    // Cache Ajv instances by keys that represent their options. For improved
+    // matching, convert options to a version with all default values missing:
+    const opts = Object.entries(options).reduce((opts, [key, value]) => {
+      if (key in validatorOptions && value !== validatorOptions[key]) {
+        opts[key] = value
+      }
+      return opts
+    }, {})
+    const cacheKey = JSON.stringify(opts)
+    const { ajv } = this.ajvCache[cacheKey] || (this.ajvCache[cacheKey] = {
+      ajv: this.createAjv(opts),
       options
     })
     return ajv
   }
 
-  compile(jsonSchema, options) {
-    return this.getAjv(options).compile(jsonSchema)
+  compile(jsonSchema, options = {}) {
+    return this.getAjv(options).compile(this.processSchema(jsonSchema, options))
   }
 
   getKeyword(keyword) {
@@ -107,11 +103,41 @@ export class Validator extends objection.Validator {
     // Add schema to all previously created Ajv instances, so they can reference
     // the models.
     for (const { ajv, options } of Object.values(this.ajvCache)) {
-      addSchema(ajv, jsonSchema, options)
+      ajv.addSchema(this.processSchema(jsonSchema, options))
     }
   }
 
-  parseErrors(errors, options) {
+  processSchema(jsonSchema, options = {}) {
+    const { patch, async } = options
+    const schema = clone(jsonSchema, value => {
+      if (isObject(value)) {
+        if (patch) {
+          // Remove all required keywords from schema for patch validation.
+          delete value.required
+        }
+        // Convert async `validate()` keywords to `validateAsync()`:
+        if (isAsync(value.validate)) {
+          value.validateAsync = value.validate
+          delete value.validate
+        }
+        if (!async) {
+          // Remove all async keywords for synchronous validation.
+          for (const key in value) {
+            const keyword = this.getKeyword(key)
+            if (keyword?.async) {
+              delete value[key]
+            }
+          }
+        }
+      }
+    })
+    if (async) {
+      schema.$async = true
+    }
+    return schema
+  }
+
+  parseErrors(errors, options = {}) {
     // Convert from Ajv errors array to Objection-style errorHash,
     // with additional parsing and processing.
     const errorHash = {}
@@ -187,8 +213,7 @@ export class Validator extends objection.Validator {
   }
 
   // @override
-  beforeValidate(args) {
-    const { json, model, options, ctx } = args
+  beforeValidate({ json, model, ctx, options }) {
     // Add validator instance, app and options to context
     ctx.validator = this
     ctx.app = this.app
@@ -208,31 +233,57 @@ export class Validator extends objection.Validator {
   }
 
   // @override
-  validate(args) {
-    let { json, model, options, ctx } = args
+  validate({ json, model, ctx, options }) {
     if (ctx.jsonSchema) {
-      // We need to clone the input json if we are about to set default values.
-      if (!options.mutable && !options.patch &&
-        hasDefaults(ctx.jsonSchema.properties)) {
-        json = clone(json)
-      }
-      // Decide which validator to use based on options.patch:
-      const ajv = options.patch ? this.ajvPatch : this.ajvFull
-      const validate = ajv.getSchema(ctx.jsonSchema.$id)
+      json = this._processJson(json, ctx, options)
+      const validate = this._getValidate(ctx, false, options)
       // Use `call()` to pass ctx as context to Ajv, see passContext:
       validate.call(ctx, json)
-      const { errors } = validate
-      if (errors) {
-        // NOTE: The conversion from Ajv errors to Objection errors happen in
-        // Model.createValidationError(), through Validator.parseError()
-        throw model.constructor.createValidationError({
-          type: 'ModelValidation',
-          errors,
-          options
-        })
+      this._handleErrors(validate, model, options)
+    }
+    return json
+  }
+
+  async validateAsync({ json, model, ctx, options }) {
+    if (ctx.jsonSchema) {
+      json = this._processJson(json, ctx, options)
+      const validate = this._getValidate(ctx, true, options)
+      try {
+        // Use `call()` to pass ctx as context to Ajv, see passContext:
+        await validate.call(ctx, json)
+      } catch (error) {
+        this._handleErrors(error, model, options)
       }
     }
     return json
+  }
+
+  _processJson(json, ctx, options) {
+    // We need to clone the input json if we are about to set default values.
+    return (
+      !options.mutable &&
+      !options.patch &&
+      hasDefaults(ctx.jsonSchema.properties)
+    ) ? clone(json) : json
+  }
+
+  _getValidate(ctx, async, options) {
+    // Get the right Ajv instance for the given patch and async options
+    const { patch } = options
+    const ajv = this.getAjv({ async, patch })
+    return ajv.getSchema(ctx.jsonSchema.$id)
+  }
+
+  _handleErrors({ errors }, model, options) {
+    if (errors) {
+      // NOTE: The conversion from Ajv errors to Objection errors happen in
+      // Model.createValidationError(), through Validator.parseError()
+      throw model.constructor.createValidationError({
+        type: 'ModelValidation',
+        errors,
+        options
+      })
+    }
   }
 }
 
@@ -253,15 +304,33 @@ function hasDefaults(obj) {
   return false
 }
 
-function addSchema(ajv, jsonSchema, options) {
-  ajv.addSchema(
-    options.patch
-      // Remove all required keywords from schema for patch validation.
-      ? clone(jsonSchema, value => {
-        if (isObject(value)) {
-          delete value.required
-        }
-      })
-      : jsonSchema
-  )
+const defaultOptions = {
+  allErrors: true,
+  errorDataPath: 'property',
+  extendRefs: 'fail',
+  format: 'full',
+  missingRefs: true,
+  ownProperties: true,
+  passContext: true,
+  schemaId: '$id',
+  useDefaults: true,
+  validateSchema: true
+}
+
+// Options that are allowed to be passed on to the created Ajv instances, with
+// their default settings (some defaults are from Ajv, some from defaultOptions)
+const validatorOptions = {
+  // Our extensions:
+  async: false,
+  patch: false,
+  // Ajv Options:
+  $data: false,
+  $comment: false,
+  coerceTypes: false,
+  multipleOfPrecision: false,
+  ownProperties: true,
+  removeAdditional: false,
+  uniqueItems: true,
+  useDefaults: true,
+  verbose: false
 }
