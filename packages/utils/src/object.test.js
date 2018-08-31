@@ -74,6 +74,23 @@ describe('clone()', () => {
     }
     expect(copy).toStrictEqual(expected)
   })
+
+  it('should call `iteratee` after cloning all children', () => {
+    const array = [
+      { a: 1, b: 2 },
+      { a: 3, b: 4 }
+    ]
+    const copy = clone(array, value => {
+      if (typeof value === 'object') {
+        delete value.b
+      }
+    })
+    const expected = [
+      { a: 1 },
+      { a: 3 }
+    ]
+    expect(copy).toStrictEqual(expected)
+  })
 })
 
 describe('equals()', () => {
