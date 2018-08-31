@@ -416,8 +416,7 @@ export class Model extends objection.Model {
         }
       }
     }
-    // Now call $parseJson() to remove potential computed properties.
-    return this.$parseJson(json)
+    return json
   }
 
   $formatJson(json) {
