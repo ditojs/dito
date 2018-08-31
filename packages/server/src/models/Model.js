@@ -2,14 +2,14 @@ import objection from 'objection'
 import dbErrors from 'db-errors'
 import { QueryBuilder } from '@/query'
 import { KnexHelper } from '@/lib'
-import { isObject, isFunction, isArray, asArray } from '@ditojs/utils'
-import { mergeReversed } from '@/utils'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
+import { mergeReversed } from '@/utils'
+import { isObject, isFunction, isArray, asArray, merge } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitionHandlers from './definitions'
 
@@ -253,8 +253,8 @@ export class Model extends objection.Model {
     return this.getCached('jsonSchema', () => {
       const schema = convertSchema(this.definition.properties)
       addRelationSchemas(this, schema.properties)
-      // Mix in root-level schema additions
-      Object.assign(schema, this.definition.schema)
+      // Merge in root-level schema additions
+      merge(schema, this.definition.schema)
       return {
         $id: this.name,
         $schema: 'http://json-schema.org/draft-07/schema#',
