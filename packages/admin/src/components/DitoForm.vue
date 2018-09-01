@@ -60,6 +60,11 @@
           ) {{ getLabel(button) }}
 </template>
 
+<style lang="sass">
+  .dito-form
+    padding-top: $content-padding-half
+</style>
+
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
