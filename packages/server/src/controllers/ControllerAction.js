@@ -16,10 +16,10 @@ export default class ControllerAction {
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
-    const { parameters, returns, validate } = this.handler
+    const { parameters, returns, options } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
       async: true,
-      ...validate?.parameters,
+      ...options?.parameters, // See @parameters() decorator
       rootName: this.paramsName
     })
     this.returns = this.app.compileParametersValidator(returns, {
@@ -28,7 +28,7 @@ export default class ControllerAction {
       // TODO: That doesn't guarantee the validity though...
       // This should always be $ref checks, I think?
       useInstanceOf: true,
-      ...validate?.returns,
+      ...options?.returns, // See @returns() decorator
       rootName: 'result'
     })
   }

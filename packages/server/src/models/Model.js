@@ -9,7 +9,9 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import { mergeReversed } from '@/utils'
-import { isObject, isFunction, isArray, asArray, merge, isPromise } from '@ditojs/utils'
+import {
+  isObject, isFunction, isArray, isPromise, asArray, merge
+} from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitionHandlers from './definitions'
 

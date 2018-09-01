@@ -26,12 +26,7 @@ export default class MemberAction extends ControllerAction {
       memberCtx = Object.setPrototypeOf({ query }, ctx)
     }
     // Resolve member and add as first argument to list:
-    const member = await this.getMember(memberCtx)
-    const options = this.handler.validate?.member
-    if (options) {
-      await member.$validateAsync(null, options)
-    }
-    args.unshift(member)
+    args.unshift(await this.getMember(memberCtx))
     return args
   }
 
