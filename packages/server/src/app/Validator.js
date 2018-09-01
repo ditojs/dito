@@ -1,6 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
-import { isArray, isObject, clone, isAsync } from '@ditojs/utils'
+import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
@@ -234,55 +234,40 @@ export class Validator extends objection.Validator {
 
   // @override
   validate({ json, model, ctx, options }) {
-    if (ctx.jsonSchema) {
-      json = this._processJson(json, ctx, options)
-      const validate = this._getValidate(ctx, false, options)
-      // Use `call()` to pass ctx as context to Ajv, see passContext:
-      validate.call(ctx, json)
-      this._handleErrors(validate, model, options)
-    }
-    return json
-  }
-
-  async validateAsync({ json, model, ctx, options }) {
-    if (ctx.jsonSchema) {
-      json = this._processJson(json, ctx, options)
-      const validate = this._getValidate(ctx, true, options)
-      try {
-        // Use `call()` to pass ctx as context to Ajv, see passContext:
-        await validate.call(ctx, json)
-      } catch (error) {
-        this._handleErrors(error, model, options)
+    const { jsonSchema } = ctx
+    if (jsonSchema) {
+      // We need to clone the input json if we are about to set default values.
+      if (
+        !options.mutable &&
+        !options.patch &&
+        hasDefaults(jsonSchema.properties)
+      ) {
+        json = clone(json)
       }
-    }
-    return json
-  }
-
-  _processJson(json, ctx, options) {
-    // We need to clone the input json if we are about to set default values.
-    return (
-      !options.mutable &&
-      !options.patch &&
-      hasDefaults(ctx.jsonSchema.properties)
-    ) ? clone(json) : json
-  }
-
-  _getValidate(ctx, async, options) {
-    // Get the right Ajv instance for the given patch and async options
-    const { patch } = options
-    const ajv = this.getAjv({ async, patch })
-    return ajv.getSchema(ctx.jsonSchema.$id)
-  }
-
-  _handleErrors({ errors }, model, options) {
-    if (errors) {
-      // NOTE: The conversion from Ajv errors to Objection errors happen in
-      // Model.createValidationError(), through Validator.parseError()
-      throw model.constructor.createValidationError({
-        type: 'ModelValidation',
-        errors,
-        options
-      })
+      // Get the right Ajv instance for the given patch and async options
+      const validate = this.getAjv(options).getSchema(jsonSchema.$id)
+      // Use `call()` to pass ctx as context to Ajv, see passContext:
+      const res = validate.call(ctx, json)
+      const handleErrors = errors => {
+        if (errors) {
+          // NOTE: The conversion from Ajv errors to Objection errors happen in
+          // Model.createValidationError(), which calls Validator.parseError()
+          throw model.constructor.createValidationError({
+            type: 'ModelValidation',
+            errors,
+            options
+          })
+        }
+      }
+      // Handle both async and sync validation here:
+      if (isPromise(res)) {
+        return res
+          .catch(error => handleErrors(error.errors))
+          .then(() => json)
+      } else {
+        handleErrors(validate.errors)
+        return json
+      }
     }
   }
 }

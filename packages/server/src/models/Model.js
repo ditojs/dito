@@ -113,13 +113,16 @@ export class Model extends objection.Model {
       const modelClass = this.constructor
       const validator = modelClass.getValidator()
       const args = {
-        options,
+        options: {
+          async: true,
+          ...options
+        },
         model: this,
         json,
         ctx: Object.create(null)
       }
       validator.beforeValidate(args)
-      json = await validator.validateAsync(args)
+      json = await validator.validate(args)
       validator.afterValidate(args)
     }
     return json
