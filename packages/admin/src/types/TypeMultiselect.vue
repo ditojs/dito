@@ -25,7 +25,9 @@
 </template>
 
 <style lang="sass">
-@import '~vue-multiselect/dist/vue-multiselect.min.css'
+// Temporary fix for this vue-cli issue:
+// https://github.com/vuejs/vue-cli/issues/2055#issuecomment-417817527
+// @import '~vue-multiselect/dist/vue-multiselect.min.css'
 
 .dito
   $spinner-size: 1.3em
@@ -201,6 +203,7 @@ import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '@/utils/accessor'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 // @vue/component
 export default TypeComponent.register('multiselect', {
