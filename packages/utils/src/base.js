@@ -21,8 +21,8 @@ function getPrimitiveCheck(name) {
   // Create checking function for all primitive types (number, string, boolean)
   // that also matches their Object wrappers. We can't check `valueOf()` returns
   // here because `new Date().valueOf()` also returns a number.
-  const toStringName = `[object ${name}]`
   const typeName = name.toLowerCase()
+  const toStringName = `[object ${name}]`
   return function(val) {
     const type = typeof val
     return (
@@ -47,7 +47,7 @@ export function isRegExp(val) {
 }
 
 export function isPromise(val) {
-  return !!val && isFunction(val.then)
+  return !!val && isFunction(val.then) && isFunction(val.catch)
 }
 
 export function isAsync(val) {

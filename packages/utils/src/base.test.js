@@ -258,6 +258,14 @@ describe('isRegExp()', () => {
 })
 
 describe('isPromise()', () => {
+  const thenable = {
+    then() {}
+  }
+  const thenableCatchable = {
+    then() {},
+    catch() {}
+  }
+
   describe.each([
     [object, false],
     [array, false],
@@ -269,6 +277,8 @@ describe('isPromise()', () => {
     [symbol, false],
     [instance, false],
     [promise, true],
+    [thenable, false],
+    [thenableCatchable, true],
     [func, false],
     [lambda, false],
     [asyncFunc, false],
