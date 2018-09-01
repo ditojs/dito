@@ -1,16 +1,26 @@
 <template lang="pug">
-  label.dito-label(:for="dataPath") {{ text }}
+  .dito-label
+    label(:for="dataPath") {{ text }}
 </template>
 
 <style lang="sass">
 .dito
   .dito-label
-    display: block
+    // In order for ellipsis to work on labels without affecting other layout,
+    // we need to position it absolutely inside its container.
     margin: 0 0 $form-spacing-half 0
-    white-space: nowrap
-    overflow: hidden
-    text-overflow: ellipsis
+    position: relative
     +user-select(none)
+    &::before
+      // Use &nbsp; to enforce the right text height in the container
+      content: '\00a0'
+    label
+      position: absolute
+      white-space: nowrap
+      overflow: hidden
+      text-overflow: ellipsis
+      left: 0
+      right: 0
 </style>
 
 <script>
