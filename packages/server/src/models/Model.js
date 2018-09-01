@@ -9,7 +9,7 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import { mergeReversed } from '@/utils'
-import { isObject, isFunction, isArray, asArray, merge } from '@ditojs/utils'
+import { isObject, isFunction, isArray, asArray, merge, isPromise } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitionHandlers from './definitions'
 
@@ -107,41 +107,75 @@ export class Model extends objection.Model {
     return objection.transaction(this.knex(), handler)
   }
 
-  async $validateAsync(json, options = {}) {
-    json = json || this
-    if (!options.skipValidation) {
-      const modelClass = this.constructor
-      const validator = modelClass.getValidator()
-      const args = {
-        options: {
-          async: true,
-          ...options
-        },
-        model: this,
-        json,
-        ctx: Object.create(null)
-      }
-      validator.beforeValidate(args)
-      json = await validator.validate(args)
-      validator.afterValidate(args)
+  // @override
+  $validate(json, options = {}) {
+    if (options.skipValidation) {
+      return json
     }
-    return json
+    if (!options.graph && !options.async) {
+      // Fall back to Objection's $validate() if we don't need any of our
+      // extensions (async and graph for now):
+      return super.$validate(json, options)
+    }
+    json = json || this
+    const inputJson = json
+    const shallow = json.$isObjectionModel && !options.graph
+    if (shallow) {
+      // Strip away relations and other internal stuff.
+      json = json.clone({ shallow: true })
+      // We can mutate `json` now that we took a copy of it.
+      options = { ...options, mutable: true }
+    }
+
+    const modelClass = this.constructor
+    const validator = modelClass.getValidator()
+    const args = {
+      options,
+      model: this,
+      json,
+      ctx: Object.create(null)
+    }
+
+    validator.beforeValidate(args)
+    json = validator.validate(args)
+    const handleResult = json => {
+      validator.afterValidate(args)
+      // If `json` was shallow-cloned, copy over the possible default values.
+      return shallow ? inputJson.$set(json) : json
+    }
+    // Handle both async and sync validation here:
+    return isPromise(json)
+      ? json.then(json => handleResult(json))
+      : handleResult(json)
   }
 
-  static async fromJsonAsync(json, options = {}) {
-    const model = new this()
-    if (!options.skipValidation) {
-      json = await model.$validateAsync(json, options)
+  async $validateGraph(options = {}) {
+    await this.$validate(null, {
+      ...options,
+      graph: true,
+      // Always use `async: true` option here for simplicity:
+      async: true
+    })
+    return this
+  }
+
+  // @override
+  static fromJson(json, options = {}) {
+    if (options.skipValidation || !options.async) {
+      // Fall back to Objection's fromJson() if we don't need async handling:
+      return super.fromJson(json, options)
     }
-    if (json) {
-      model.$setJson(json, {
+    // From here on, we only need to handle options.async:
+    const model = new this()
+    return model.$validate(json, options).then(
+      json => model.$setJson(json, {
         ...options,
         skipValidation: true
       })
-    }
-    return model
+    )
   }
 
+  // @override
   static query(trx) {
     // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
@@ -158,11 +192,13 @@ export class Model extends objection.Model {
     return res && +res[Object.keys(res)[0]] || 0
   }
 
+  // @override
   static get tableName() {
     // If the class name ends in 'Model', remove that from the table name.
     return this.name.match(/^(.*?)(?:Model|)$/)[1]
   }
 
+  // @override
   static get idColumn() {
     // Try extracting the id column name from the raw properties definitions,
     // not the resolved `definition.properties` which aren't ready at this point
@@ -369,14 +405,18 @@ export class Model extends objection.Model {
   // conventions but assume simply that they're always the same.
   // This is fine since we can now change naming at Knex level.
   // See knexSnakeCaseMappers()
+
+  // @override
   static propertyNameToColumnName(propertyName) {
     return propertyName
   }
 
+  // @override
   static columnNameToPropertyName(columnName) {
     return columnName
   }
 
+  // @override
   $setJson(json, options) {
     options = options || {}
     const hasInitialize = this.$initialize !== Model.prototype.$initialize
@@ -399,6 +439,7 @@ export class Model extends objection.Model {
     return this
   }
 
+  // @override
   $formatDatabaseJson(json) {
     const { constructor } = this
     for (const key of constructor.dateAttributes) {
@@ -426,6 +467,7 @@ export class Model extends objection.Model {
     return super.$formatDatabaseJson(json)
   }
 
+  // @override
   $parseDatabaseJson(json) {
     json = super.$parseDatabaseJson(json)
     const { constructor } = this
@@ -447,6 +489,7 @@ export class Model extends objection.Model {
     return json
   }
 
+  // @override
   $formatJson(json) {
     json = super.$formatJson(json)
     const { constructor } = this
@@ -476,12 +519,14 @@ export class Model extends objection.Model {
     return populateGraph(this, graph, expr, trx)
   }
 
+  // @override
   static createNotFoundError(ctx) {
     return new NotFoundError(ctx.byId
       ? `'${this.name}' model with id ${ctx.byId} not found`
       : `'${this.name}' model not found`)
   }
 
+  // @override
   static createValidator() {
     // Use a shared validator per app, so model schema can reference each other.
     // NOTE: The Dito Validator class creates and manages this shared Objection
@@ -489,6 +534,7 @@ export class Model extends objection.Model {
     return this.app.validator
   }
 
+  // @override
   static createValidationError({ type, message, errors, options }) {
     switch (type) {
     case 'ModelValidation':
@@ -509,6 +555,7 @@ export class Model extends objection.Model {
     }
   }
 
+  // @override
   static QueryBuilder = QueryBuilder
 
   // Only pick properties for database JSON that is mentioned in the schema.
