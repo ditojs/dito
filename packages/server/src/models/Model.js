@@ -232,8 +232,6 @@ export class Model extends objection.Model {
           ref[name] = value
         }
       }
-      // Also support #ref type references next to the id properties.
-      addProperty('#ref')
     } else {
       const ids = asArray(modelOrId)
       const { properties } = this.definition
@@ -247,6 +245,8 @@ export class Model extends objection.Model {
         }
       }
     }
+    // Also support Objection's #ref type references next to the id properties.
+    addProperty(this.uidRefProp)
     this.getIdPropertyArray().forEach(addProperty)
     return ref
   }

@@ -40,8 +40,8 @@ export default function properties(values) {
     addRelationProperties(relation, 'relatedProp')
   }
 
-  // Support Objection.js #id references on all models:
-  properties['#id'] = {
+  // Support Objection's #id references on all models:
+  properties[this.uidProp] = {
     type: 'string'
   }
 
