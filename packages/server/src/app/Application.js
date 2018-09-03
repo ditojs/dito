@@ -1,4 +1,3 @@
-import Ajv from 'ajv'
 import Koa from 'koa'
 import Knex from 'knex'
 import util from 'util'

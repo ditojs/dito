@@ -21,8 +21,8 @@ module.exports = {
     // https://github.com/vuejs/eslint-plugin-vue#priority-c-recommended-minimizing-arbitrary-choices-and-cognitive-overhead
     'plugin:vue/recommended'
   ],
-  // Required to lint *.vue files
   plugins: [
+    'babel',
     'vue'
   ],
   rules: {
@@ -49,7 +49,6 @@ module.exports = {
       capIsNewExceptions: ['Knex'],
       capIsNewExceptionPattern: 'Mixin$'
     }],
-
     'no-cond-assign': 'error',
     'no-const-assign': 'error',
     'no-constant-condition': isProduction ? 'error' : 'warn',
@@ -67,9 +66,12 @@ module.exports = {
       argsIgnorePattern: '^_',
       ignoreRestSiblings: true
     }],
+    // https://github.com/babel/eslint-plugin-babel/pull/158
+    'no-unused-expressions': 'off',
+    'babel/no-unused-expressions': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
-    'standard/object-curly-even-spacing': ['off'],
+    'standard/object-curly-even-spacing': 'off',
     'object-curly-spacing': ['error', 'always'],
     'prefer-const': ['error', {
       destructuring: 'all'
