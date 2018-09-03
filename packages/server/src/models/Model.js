@@ -282,7 +282,7 @@ export class Model extends objection.Model {
             additionalProperties: false
           }
         ]
-      })
+      }, { dontThrow: true })
     }
     return validator(obj)
   }

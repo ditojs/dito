@@ -1,5 +1,5 @@
 import Ajv from 'ajv'
-import { isString, isArray } from '@ditojs/utils'
+import { isString, isArray, isNumber } from '@ditojs/utils'
 
 export const validate = {
   metaSchema: {
@@ -18,8 +18,10 @@ export const validate = {
     }
     const errors = getErrorsArray(result, params)
     if (errors) {
-      result = false
+      // In sync validation, we have to pass the errors back to Ajv through
+      // `validate.errors`.
       validate.errors = errors
+      result = false
     }
     return result
   }
@@ -31,7 +33,7 @@ export const validateAsync = {
   ...validate,
   async: true,
 
-  validate: async function validate(func, ...args) {
+  async validate(func, ...args) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
     const params = getParams(this, ...args)
     let result
@@ -51,6 +53,7 @@ export const validateAsync = {
 
 function getParams(
   ctx,
+  // This is the sequence by which these parameters are received from Ajv.
   data,
   parentSchema,
   dataPath,
@@ -59,12 +62,13 @@ function getParams(
   rootData
 ) {
   return {
-    // TODO: Use the same naming as in the rest of Dito here
     data,
-    dataPath,
     parentData,
-    parentDataProperty,
     rootData,
+    dataPath,
+    // NOTE: We rename parentDataProperty to parentKey / parentIndex:
+    [isNumber(parentDataProperty) ? 'parentIndex' : 'parentKey']:
+      parentDataProperty,
     ctx,
     app: ctx.app,
     validator: ctx.validator,

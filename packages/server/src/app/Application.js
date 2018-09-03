@@ -377,7 +377,7 @@ export class Application extends Koa {
     }
     if (properties) {
       const jsonSchema = convertSchema(properties, options)
-      const validator = this.compileValidator(jsonSchema, {
+      const validate = this.compileValidator(jsonSchema, {
         // For parameters, always coerce types, including arrays.
         coerceTypes: 'array',
         ...options
@@ -387,21 +387,14 @@ export class Application extends Koa {
         validator: this.validator,
         options
       }
-      const { async } = options
-      const validate = async
-        // Use `call()` to pass ctx as context to Ajv, see passContext:
-        ? data => validator.call(ctx, data)
-        : data => {
-          // Emulate same behavior as $async validation:
-          // Return data if successful, throw ValidationError otherwise.
+      return {
+        list,
+        rootName,
+        validate(data) {
           // Use `call()` to pass ctx as context to Ajv, see passContext:
-          if (validator.call(ctx, data)) {
-            return data
-          } else {
-            throw new Ajv.ValidationError(validator.errors)
-          }
+          return validate.call(ctx, data)
         }
-      return { list, rootName, validate }
+      }
     }
   }
 

@@ -87,7 +87,21 @@ export class Validator extends objection.Validator {
   }
 
   compile(jsonSchema, options = {}) {
-    return this.getAjv(options).compile(this.processSchema(jsonSchema, options))
+    const ajv = this.getAjv(options)
+    const validate = ajv.compile(this.processSchema(jsonSchema, options))
+    return options.async || options.dontThrow
+      ? validate
+      : function(data) {
+        // Emulate the same behavior for sync validation as for async. Setting
+        // `options.dontThrow` restores original behavior for sync validation.
+        // Return data if successful, throw Ajv.ValidationError otherwise.
+        // Use `call()` to pass `this` as context to Ajv, see passContext:
+        if (validate.call(this, data)) {
+          return data
+        } else {
+          throw new Ajv.ValidationError(validate.errors)
+        }
+      }
   }
 
   getKeyword(keyword) {
