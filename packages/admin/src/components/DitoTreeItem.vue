@@ -66,7 +66,7 @@
         v-for="(item, index) in childrenItems"
         :key="index"
         :schema="children"
-        :dataPath="item.dataPath"
+        :dataPath="getItemDataPath(item, index)"
         :data="item.data"
         :path="item.path"
         :open="item.open"
@@ -232,10 +232,6 @@ export default DitoComponent.component('dito-tree-item', {
         // Build a children list with child meta information for the template.
         return this.childrenList?.map((data, index) => {
           const path = children.path && `${this.path}/${children.path}/${index}`
-          const dataPath = this.schemaComponent.appendDataPath(
-            this.dataPath,
-            `${children.name}/${index}`
-          )
           const open = childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
             editPath.startsWith(path) && path.length < editPath.length
@@ -243,7 +239,6 @@ export default DitoComponent.component('dito-tree-item', {
           return {
             data,
             path,
-            dataPath,
             open,
             editing
           }

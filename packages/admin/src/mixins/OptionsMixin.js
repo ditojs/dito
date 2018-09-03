@@ -1,4 +1,5 @@
 import LoadingMixin from './LoadingMixin'
+import { getDataParams } from '@/utils/data'
 import {
   isObject, isArray, isFunction, isPromise, labelize
 } from '@ditojs/utils'
@@ -56,8 +57,8 @@ export default {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
-          // Only evaluate the function once `this.data` is available.
-          data = this.data && data.call(this, this.data, this.parentData)
+          // Only evaluate the function once `this.rootData` is available.
+          data = this.rootData && data.call(this, getDataParams(this))
         }
         if (isArray(data)) {
           this.hasOptions = true

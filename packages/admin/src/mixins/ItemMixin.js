@@ -1,5 +1,6 @@
 import { isString, isFunction } from '@ditojs/utils'
 import { isListSource } from '@/utils/schema'
+import { getDataParams } from '@/utils/data'
 
 // @vue/component
 export default {
@@ -16,6 +17,15 @@ export default {
       return id === undefined ? id : String(id)
     },
 
+    getItemDataPath(sourceSchema, index = null) {
+      return this.schemaComponent.appendDataPath(
+        this.dataPath,
+        index !== null
+          ? `${sourceSchema.name}/${index}`
+          : sourceSchema.name
+      )
+    },
+
     getItemLabel(sourceSchema, item, index = null, extended = false) {
       const { itemLabel } = sourceSchema
       if (!extended && itemLabel === false) return null
@@ -23,11 +33,21 @@ export default {
         this.getLabel(this.getItemFormSchema(sourceSchema, item))
       let label = null
       if (isFunction(itemLabel)) {
+        let dataPath
         label = itemLabel.call(
           this,
-          item,
-          // Only call getFormLabel if callback wants 2nd argument
-          itemLabel.length > 1 ? getFormLabel() : undefined
+          getDataParams({
+            data: item,
+            rootData: this.rootData,
+            get dataPath() {
+              return dataPath ||
+                (dataPath = this.getItemDataPath(sourceSchema, index))
+            }
+          }, {
+            get formLabel() {
+              return getFormLabel()
+            }
+          })
         )
         // It's up to `itemLabel()` entirely to produce the name:
         extended = false

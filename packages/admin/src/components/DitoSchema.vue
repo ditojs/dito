@@ -278,58 +278,53 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData(options = {}) {
-      const {
-        processIds = false,
-        removeIds = false
-      } = options
+    processData({ processIds = false, removeIds = false } = {}) {
       // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
-      const process = (dataPath, data, parentData) => {
+      const process = (value, dataPath) => {
         // First, see if there's an associated component requiring processing.
-        // See TypeMixin.processValue(), OptionsMixin.processValue():
+        // See TypeMixin.mergedDataProcessor(), OptionsMixin.dataProcessor():
         const dataProcessor = this.dataProcessors[dataPath]
         if (dataProcessor) {
-          // NOTE: What we call `data` / `parentData` here is called
-          // `value` / `data` inside components!
-          data = dataProcessor(data, parentData)
+          value = dataProcessor(value, this.rootData, dataPath)
         }
         // Special handling is required for temporary ids when procssing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
-        if (!this.isTransient && processIds && this.hasTemporaryId(data)) {
-          const { id, ...rest } = data
+        const isObj = isObject(value)
+        if (
+          isObj &&
+          processIds &&
+          !this.isTransient &&
+          this.hasTemporaryId(value)
+        ) {
+          const { id, ...rest } = value
           // A refeference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
-          data = this.isReference(data)
+          value = this.isReference(value)
             ? { '#ref': id }
             : { '#id': id, ...rest }
         }
-        if (isObject(data) || isArray(data)) {
+        if (isObj || isArray(value)) {
           // Use reduce() for both arrays and objects thanks to Object.entries()
-          data = Object.entries(data).reduce(
-            (processed, [key, entry]) => {
-              const value = process(
-                this.appendDataPath(dataPath, key),
-                entry,
-                data
-              )
-              if (value !== undefined) {
-                processed[key] = value
+          value = Object.entries(value).reduce(
+            (processed, [key, val]) => {
+              val = process(val, this.appendDataPath(dataPath, key))
+              if (val !== undefined) {
+                processed[key] = val
               }
               return processed
             },
-            isArray(data) ? [] : {}
+            isArray(value) ? [] : {}
           )
         }
-        if (removeIds && data?.id) {
-          delete data.id
+        if (isObj && removeIds && value.id) {
+          delete value.id
         }
-        return data
+        return value
       }
-
-      return process(this.dataPath, this.data, this.parentData)
+      return process(this.data, this.dataPath)
     },
 
     appendDataPath(dataPath = '', token) {

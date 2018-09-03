@@ -70,6 +70,7 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import { isObjectSource } from '@/utils/schema'
+import { getDataParams } from '@/utils/data'
 import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
@@ -348,7 +349,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     onClick(button) {
-      return button.onClick.call(this, this.data, this.parentData)
+      return button.onClick.call(this, getDataParams(this))
     },
 
     onCancel() {
@@ -379,7 +380,7 @@ export default DitoComponent.component('dito-form', {
           path: button.path
         }
         : this.resource
-      const label = this.data
+      const itemLabel = this.data
         ? this.getItemLabel(this.sourceSchema, this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
@@ -400,10 +401,13 @@ export default DitoComponent.component('dito-form', {
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
           if (onSuccess) {
-            onSuccess.call(this, payload, label)
+            onSuccess.call(this, getDataParams(this, {
+              data: payload,
+              itemLabel
+            }))
           } else {
             this.notify('info', 'Change Applied',
-              `<p>Changes in ${label} were applied.</p>` +
+              `<p>Changes in ${itemLabel} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
               'in order to persist this change.</p>')
           }
@@ -423,20 +427,27 @@ export default DitoComponent.component('dito-form', {
               const error = isObject(data) ? data : err
               if (error) {
                 if (onError) {
-                  onError.call(this, error, label)
+                  onError.call(this, getDataParams(this, {
+                    data: payload,
+                    error,
+                    itemLabel
+                  }))
                 } else {
                   this.notify('error', 'Request Error',
-                    `Error submitting ${label}:\n${error.message || error}`)
+                    `Error submitting ${itemLabel}:\n${error.message || error}`)
                 }
               }
             }
           } else {
             if (onSuccess) {
-              onSuccess.call(this, payload, label)
+              onSuccess.call(this, getDataParams(this, {
+                data: payload,
+                itemLabel
+              }))
             } else {
               const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
-                `${label} was ${submitted}.`)
+                `${itemLabel} was ${submitted}.`)
             }
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:

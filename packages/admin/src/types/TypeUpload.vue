@@ -159,6 +159,8 @@ export default TypeComponent.register('upload', {
     },
 
     dataProcessor() {
+      // Since the returned dataProcess will be used after the life-time of this
+      // component, we can't access `this` form inside the returned closure:
       const { multiple } = this
       return value => {
         // Filter out all newly added files that weren't actually uploaded.

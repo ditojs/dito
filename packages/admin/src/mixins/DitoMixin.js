@@ -1,5 +1,6 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
+import { getDataParams } from '@/utils/data'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
   isRegExp, asArray, camelize, labelize
@@ -76,11 +77,6 @@ export default {
     // that doesn't hold nested data.
     rootData() {
       return this.dataRouteComponent?.data
-    },
-
-    // Returns the parent schema's data.
-    parentData() {
-      return this.parentSchemaComponent?.data
     }
   },
 
@@ -131,7 +127,7 @@ export default {
       // a function that's resolved when the value is evaluated:
       if (isFunction(value)) {
         // Only call the callback if we actually have data already
-        value = this.data ? value.call(this, this.data, this.parentData) : null
+        value = this.data ? value.call(this, getDataParams(this)) : null
       }
       // For boolean values that are defined as strings or arrays,
       // interpret the values as user roles and match against user:
