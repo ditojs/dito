@@ -256,33 +256,37 @@ export class Model extends objection.Model {
     if (!validator) {
       // For `data` to be considered a reference, it needs to hold only one
       // value that is either the target's id, or an Objection.js #ref value:
-      validator = this.referenceValidator = this.app.compileValidator({
-        oneOf: [
-          {
-            type: 'object',
-            // Support composite keys and add a property for each key:
-            properties: this.getIdPropertyArray().reduce(
-              (idProperties, idProperty) => {
-                idProperties[idProperty] = {
-                  type: this.definition.properties[idProperty].type
-                }
-                return idProperties
-              },
-              {}
-            ),
-            additionalProperties: false
-          },
-          {
-            type: 'object',
-            properties: {
-              '#ref': {
-                type: 'string'
-              }
+      validator = this.referenceValidator = this.app.compileValidator(
+        {
+          oneOf: [
+            {
+              type: 'object',
+              // Support composite keys and add a property for each key:
+              properties: this.getIdPropertyArray().reduce(
+                (idProperties, idProperty) => {
+                  idProperties[idProperty] = {
+                    type: this.definition.properties[idProperty].type
+                  }
+                  return idProperties
+                },
+                {}
+              ),
+              additionalProperties: false
             },
-            additionalProperties: false
-          }
-        ]
-      }, { dontThrow: true })
+            {
+              type: 'object',
+              properties: {
+                '#ref': {
+                  type: 'string'
+                }
+              },
+              additionalProperties: false
+            }
+          ]
+        },
+        // Receive `false` instead of thrown exceptions when validation fails:
+        { throw: false }
+      )
     }
     return validator(obj)
   }

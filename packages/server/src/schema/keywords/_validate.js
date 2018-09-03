@@ -1,5 +1,5 @@
 import Ajv from 'ajv'
-import { isString, isArray, isNumber } from '@ditojs/utils'
+import { isNumber, isArray } from '@ditojs/utils'
 
 export const validate = {
   metaSchema: {
@@ -14,13 +14,9 @@ export const validate = {
     try {
       result = func(params) ?? true
     } catch (error) {
-      result = getErrorResult(error)
-    }
-    const errors = getErrorsArray(result, params)
-    if (errors) {
       // In sync validation, we have to pass the errors back to Ajv through
       // `validate.errors`.
-      validate.errors = errors
+      validate.errors = getErrors(error, params)
       result = false
     }
     return result
@@ -40,12 +36,8 @@ export const validateAsync = {
     try {
       result = (await func(params)) ?? true
     } catch (error) {
-      result = getErrorResult(error)
-    }
-    const errors = getErrorsArray(result, params)
-    if (errors) {
       // Async validate methods need to throw their errors.
-      throw new Ajv.ValidationError(errors)
+      throw new Ajv.ValidationError(getErrors(error, params))
     }
     return result
   }
@@ -76,25 +68,16 @@ function getParams(
   }
 }
 
-function getErrorResult(error) {
-  return isArray(error.errors)
+function getErrors(error, { validator, dataPath }) {
+  const errors = isArray(error.errors)
     // Ajv errors array:
     ? error.errors
-    // String error messages:
-    : error.message || error.toString()
-}
-
-function getErrorsArray(result, { validator, dataPath }) {
-  if (isString(result)) {
     // Convert string error message to errors array:
-    result = [{
+    : [{
       keyword: 'validate',
-      message: result,
+      message: error.message || error.toString(),
       params: {}
     }]
-  }
-  if (isArray(result)) {
-    // Prefix errors with the current dataPath and pass through:
-    return validator.prefixDataPaths(result, dataPath)
-  }
+  // Return errors prefixed with the current dataPath:
+  return validator.prefixDataPaths(errors, dataPath)
 }

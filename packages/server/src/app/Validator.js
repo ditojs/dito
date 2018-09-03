@@ -88,20 +88,44 @@ export class Validator extends objection.Validator {
 
   compile(jsonSchema, options = {}) {
     const ajv = this.getAjv(options)
-    const validate = ajv.compile(this.processSchema(jsonSchema, options))
-    return options.async || options.dontThrow
-      ? validate
-      : function(data) {
-        // Emulate the same behavior for sync validation as for async. Setting
-        // `options.dontThrow` restores original behavior for sync validation.
-        // Return data if successful, throw Ajv.ValidationError otherwise.
-        // Use `call()` to pass `this` as context to Ajv, see passContext:
-        if (validate.call(this, data)) {
-          return data
-        } else {
-          throw new Ajv.ValidationError(validate.errors)
+    const validator = ajv.compile(this.processSchema(jsonSchema, options))
+    // Assume `options.throw = true` as the default.
+    const dontThrow = options.throw === false
+    return options.async
+      // For async:
+      ? dontThrow
+        ? async function validate(data) {
+          // Emulate `options.throw == false` behavior for async validation:
+          // Return `true` or `false`, and store errors on `validate.errors`
+          // if validation failed.
+          let result
+          try {
+            // Use `call()` to pass `this` as context to Ajv, see passContext:
+            result = await validator.call(this, data)
+          } catch (error) {
+            if (error.errors) {
+              validate.errors = error.errors
+              result = false
+            } else {
+              throw error
+            }
+          }
+          return result
         }
-      }
+        : validator // The default for async is to throw.
+      // For sync:
+      : dontThrow
+        ? validator // The default for sync is to not throw.
+        : function(data) {
+          // Emulate `options.throw == true` behavior for sync validation:
+          // Return `true` if successful, throw `Ajv.ValidationError` otherwise.
+          // Use `call()` to pass `this` as context to Ajv, see passContext:
+          const result = validator.call(this, data)
+          if (!result) {
+            throw new Ajv.ValidationError(validator.errors)
+          }
+          return result
+        }
   }
 
   getKeyword(keyword) {
