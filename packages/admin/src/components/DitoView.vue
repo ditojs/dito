@@ -4,7 +4,8 @@
   .dito-view.dito-parent(v-else)
     dito-schema.dito-scroll(
       :schema="viewSchema"
-      :dataPath="name"
+      :dataPath="dataPath"
+      :key="dataPath"
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"
@@ -35,6 +36,10 @@ export default DitoComponent.component('dito-view', {
     },
 
     name() {
+      return this.schema.name
+    },
+
+    dataPath() {
       return this.schema.name
     },
 

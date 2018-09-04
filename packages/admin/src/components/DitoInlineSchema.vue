@@ -2,6 +2,7 @@
   dito-schema.dito-inline-schema(
     :schema="schema"
     :dataPath="dataPath"
+    :key="dataPath"
     :data="data"
     :meta="meta"
     :store="store"

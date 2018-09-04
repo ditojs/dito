@@ -8,7 +8,6 @@
         ref="filtersSchema"
         :schema="filtersSchema"
         :data="filtersData"
-        dataPath=""
         :meta="{}"
         :store="{}"
         :disabled="false"

@@ -9,14 +9,11 @@
     :class="formClass"
     @submit.prevent="onSubmit(buttons.submit)"
   )
-    // .debug
-      div Created {{ `${createdData}` }}
-      div Inherited {{ `${inheritedData}` }}
-      div Loaded {{ `${loadedData}` }}
     dito-schema.dito-scroll(
       ref="schema"
       :schema="schema"
       :dataPath="dataPath"
+      :key="dataPath"
       :data="data || {}"
       :meta="meta"
       :store="store"

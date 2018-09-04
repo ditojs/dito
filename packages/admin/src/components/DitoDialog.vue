@@ -2,7 +2,6 @@
   form.dito-dialog(@submit.prevent="")
     dito-schema.dito-scroll(
       :schema="schema"
-      dataPath=""
       :data="data"
       :meta="{}"
       :store="{}"
