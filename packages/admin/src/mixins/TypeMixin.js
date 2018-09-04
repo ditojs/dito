@@ -1,4 +1,4 @@
-import { isArray } from '@ditojs/utils'
+import { isObject, isArray, isFunction } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getParentItem, getItemParams } from '@/utils/item'
 
@@ -194,18 +194,24 @@ export default {
 
   methods: {
     setupWatchHandlers() {
-      const { watch } = this.schema
+      let { watch } = this.schema
       if (watch) {
-        // Install the watch handlers in the next tick, so all components are
-        // initialized and we can check against their names.
-        this.$nextTick(() => {
-          for (const [key, callback] of Object.entries(watch)) {
-            const expr = key in this.schemaComponent.components
-              ? `data.${key}`
-              : key
-            this.$watch(expr, callback)
-          }
-        })
+        if (isFunction(watch)) {
+          watch = watch.call(this)
+        }
+        if (isObject(watch)) {
+          // Install the watch handlers in the next tick, so all components are
+          // initialized and we can check against their names.
+          this.$nextTick(() => {
+            for (const [key, callback] of Object.entries(watch)) {
+              // Expand property names to 'data.property':
+              const expr = key in this.schemaComponent.components
+                ? `data.${key}`
+                : key
+              this.$watch(expr, callback)
+            }
+          })
+        }
       }
     },
 
