@@ -86,7 +86,6 @@ export default DitoComponent.component('dito-form', {
       clonedData: undefined,
       sourceKey: null,
       isForm: true,
-      loadCache: {}, // See TypeMixin.load()
       formTag: 'form',
       formClass: null
     }

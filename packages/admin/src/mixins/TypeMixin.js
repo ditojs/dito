@@ -1,4 +1,4 @@
-import { isArray, isAbsoluteUrl } from '@ditojs/utils'
+import { isArray } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getParentItem, getItemParams } from '@/utils/item'
 
@@ -216,25 +216,21 @@ export default {
     },
 
     load({ cache, ...options }) {
-      // See if we need to consult the cache first, and allow caching on global
-      // level ('global') and form level ('form').
-      // If no cache setting was provided, use different defaults for relative
-      // api calls ('form'), and absolute url calls ('global').
-      // Provide `cache: false` to explicitly disable caching.
-      const cacheType = cache === undefined
-        ? isAbsoluteUrl(options.url) ? 'global' : 'form'
-        : cache
-      // Build a cache key from the config.
-      const cacheKey = cacheType && `${
+      // Allow caching of loaded data on two levels:
+      // - 'global': cache globally, for the entire admin session
+      // - 'local': cache locally within the current editing schema
+      const cacheParent = {
+        global: this.appState,
+        local: this.schemaComponent
+      }[cache]
+      const loadCache = cacheParent?.loadCache
+      // Build a cache key from the config:
+      const cacheKey = loadCache && `${
         options.method || 'get'} ${
         options.url} ${
         JSON.stringify(options.params || '')} ${
         JSON.stringify(options.data || '')
       }`
-      const loadCache =
-        cacheType === 'global' ? this.appState.loadCache
-        : cacheType === 'form' ? this.formComponent.loadCache
-        : null
       if (loadCache && (cacheKey in loadCache)) {
         return loadCache[cacheKey]
       }

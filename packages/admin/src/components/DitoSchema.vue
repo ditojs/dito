@@ -124,6 +124,7 @@ export default DitoComponent.component('dito-schema', {
       // Register dataProcessors separate from copomonents, so they can survive
       // their life-cycles and be used at the end in `processData()`.
       dataProcessors: {},
+      loadCache: {}, // See TypeMixin.load()
       temporaryId: 0
     }
   },
