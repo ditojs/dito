@@ -44,7 +44,7 @@
               :dataPath="getDataPath(cell)"
               :text="getLabel(cell)"
             )
-          dito-list-cell(
+          dito-table-cell(
             :key="cell.name"
             :cell="cell"
             :schema="schema"

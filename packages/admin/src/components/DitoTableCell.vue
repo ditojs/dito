@@ -30,7 +30,7 @@ import DitoComponent from '@/DitoComponent'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-list-cell', {
+export default DitoComponent.component('dito-table-cell', {
   props: {
     cell: { type: Object, required: true },
     schema: { type: Object, required: true },

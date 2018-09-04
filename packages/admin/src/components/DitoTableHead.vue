@@ -25,7 +25,7 @@ import DitoComponent from '@/DitoComponent'
 import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-list-head', {
+export default DitoComponent.component('dito-table-head', {
   props: {
     query: { type: Object, required: true },
     columns: { type: Object, required: true },

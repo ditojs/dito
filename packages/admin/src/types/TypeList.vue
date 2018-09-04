@@ -25,7 +25,7 @@
       :class="{ 'dito-table-spaced': hasSpacing }"
       :id="getDataPath()"
     )
-      dito-list-head(
+      dito-table-head(
         v-if="columns"
         :query="query"
         :columns="columns"
@@ -44,7 +44,7 @@
           :id="getDataPath(index)"
         )
           template(v-if="columns")
-            dito-list-cell(
+            dito-table-cell(
               v-for="cell in columns"
               :key="cell.name"
               :class="getCellClass(cell)"
