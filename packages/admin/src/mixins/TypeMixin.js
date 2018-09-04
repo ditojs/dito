@@ -1,6 +1,6 @@
 import { isArray, isAbsoluteUrl } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getParentData, getDataParams } from '@/utils/data'
+import { getParentItem, getItemParams } from '@/utils/item'
 
 // @vue/component
 export default {
@@ -12,6 +12,8 @@ export default {
 
   props: {
     schema: { type: Object, required: true },
+    // NOTE: While `dataPath` points to the actual `value`, `data` represents
+    // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
@@ -40,8 +42,9 @@ export default {
         if (compute) {
           const value = compute.call(
             this,
-            // Override value to prevent endless recursion through `this.value`:
-            getDataParams(this, { value: this.data[this.name] })
+            // Override value to prevent endless recursion through calling the
+            // getter for `this.value` in `getItemParams()`:
+            getItemParams(this, { value: this.data[this.name] })
           )
           if (value !== undefined) {
             // Trigger setter to update computed value, without calling parse():
@@ -52,7 +55,7 @@ export default {
         // property once it's set (e.g. computed)
         let value = this.data[this.name]
         if (format) {
-          value = format.call(this, getDataParams(this, { value }))
+          value = format.call(this, getItemParams(this, { value }))
         }
         return value
       },
@@ -60,7 +63,7 @@ export default {
       set(value) {
         const { parse } = this.schema
         if (parse) {
-          value = parse.call(this, getDataParams(this, { value }))
+          value = parse.call(this, getItemParams(this, { value }))
         }
         this.$set(this.data, this.name, value)
       }
@@ -73,8 +76,45 @@ export default {
       }
     }),
 
-    parentData() {
-      return getParentData(this.rootData, this.dataPath)
+    // Similar to getItemParams(), so we can access these on `this` as well:
+    // NOTE: While internally, we speak of `data`, in the API surface, the term
+    // `item` is used for the data that relates to editing objects.
+
+    item() {
+      return this.data
+    },
+
+    rootItem() {
+      return this.rootData
+    },
+
+    parentItem() {
+      return getParentItem(this.rootData, this.dataPath)
+    },
+
+    processedItem() {
+      return this.schemaComponent.processData({ processIds: true })
+    },
+
+    mergedDataProcessor() {
+      // Produces a `dataProcessor` closure that can exist without the component
+      // still being around, by pulling all required schema settings into the
+      // local scope and generating a closure that processes the data.
+      // It also supports a 'override' `dataProcessor` property on type
+      // components than can provide further behavior.
+      const { dataProcessor } = this
+      const { exclude, process } = this.schema
+      return (value, rootData, dataPath) => {
+        if (exclude) {
+          return undefined
+        }
+        if (dataProcessor) {
+          value = dataProcessor(value)
+        }
+        return process
+          ? process(getItemParams({ value, rootData, dataPath }))
+          : value
+      }
     },
 
     width: getSchemaAccessor('width', { type: [String, Number] }),
@@ -140,31 +180,6 @@ export default {
 
     verbs() {
       return this.formComponent.verbs
-    },
-
-    mergedDataProcessor() {
-      // Produces a `dataProcessor` closure that can exist without the component
-      // still being around, by pulling all required schema settings into the
-      // local scope and generating a closure that processes the data.
-      // It also supports a 'override' `dataProcessor` property on type
-      // components than can provide further behavior.
-      const { dataProcessor } = this
-      const { exclude, process } = this.schema
-      return (value, rootData, dataPath) => {
-        if (exclude) {
-          return undefined
-        }
-        if (dataProcessor) {
-          value = dataProcessor(value)
-        }
-        return process
-          ? process(getDataParams({ value, rootData, dataPath }))
-          : value
-      }
-    },
-
-    processedData() {
-      return this.schemaComponent.processData({ processIds: true })
     }
   },
 
@@ -276,23 +291,23 @@ export default {
     onFocus() {
       this.focused = true
       this.$emit('focus')
-      this.schema.onFocus?.call(this, getDataParams(this))
+      this.schema.onFocus?.call(this, getItemParams(this))
     },
 
     onBlur() {
       this.focused = false
       this.$emit('blur')
-      this.schema.onBlur?.call(this, getDataParams(this))
+      this.schema.onBlur?.call(this, getItemParams(this))
     },
 
     onInput() {
       this.$emit('input')
-      this.schema.onInput?.call(this, getDataParams(this))
+      this.schema.onInput?.call(this, getItemParams(this))
     },
 
     onChange(event) {
       this.$emit('change', event)
-      this.schema.onChange?.call(this, getDataParams(this))
+      this.schema.onChange?.call(this, getItemParams(this))
     }
   }
 }

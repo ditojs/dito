@@ -1,5 +1,5 @@
 import LoadingMixin from './LoadingMixin'
-import { getDataParams } from '@/utils/data'
+import { getItemParams } from '@/utils/item'
 import {
   isObject, isArray, isFunction, isPromise, labelize
 } from '@ditojs/utils'
@@ -58,7 +58,7 @@ export default {
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
           // Only evaluate the function once `this.rootData` is available.
-          data = this.rootData && data.call(this, getDataParams(this))
+          data = this.rootData && data.call(this, getItemParams(this))
         }
         if (isArray(data)) {
           this.hasOptions = true

@@ -1,6 +1,6 @@
 import { isString, isFunction } from '@ditojs/utils'
 import { isListSource } from '@/utils/schema'
-import { getDataParams } from '@/utils/data'
+import { getItemParams } from '@/utils/item'
 
 // @vue/component
 export default {
@@ -36,7 +36,7 @@ export default {
         let dataPath
         label = itemLabel.call(
           this,
-          getDataParams({
+          getItemParams({
             data: item,
             rootData: this.rootData,
             get dataPath() {

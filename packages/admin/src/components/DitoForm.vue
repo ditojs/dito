@@ -70,7 +70,7 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import { isObjectSource } from '@/utils/schema'
-import { getDataParams } from '@/utils/data'
+import { getItemParams } from '@/utils/item'
 import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
@@ -349,7 +349,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     onClick(button) {
-      return button.onClick.call(this, getDataParams(this))
+      return button.onClick.call(this, getItemParams(this))
     },
 
     onCancel() {
@@ -401,7 +401,7 @@ export default DitoComponent.component('dito-form', {
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
           if (onSuccess) {
-            onSuccess.call(this, getDataParams(this, {
+            onSuccess.call(this, getItemParams(this, {
               data: payload,
               itemLabel
             }))
@@ -427,7 +427,7 @@ export default DitoComponent.component('dito-form', {
               const error = isObject(data) ? data : err
               if (error) {
                 if (onError) {
-                  onError.call(this, getDataParams(this, {
+                  onError.call(this, getItemParams(this, {
                     data: payload,
                     error,
                     itemLabel
@@ -440,7 +440,7 @@ export default DitoComponent.component('dito-form', {
             }
           } else {
             if (onSuccess) {
-              onSuccess.call(this, getDataParams(this, {
+              onSuccess.call(this, getItemParams(this, {
                 data: payload,
                 itemLabel
               }))
