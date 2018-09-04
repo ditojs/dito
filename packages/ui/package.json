@@ -20,6 +20,16 @@
     "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
   },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 9"
+  ],
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
   "dependencies": {
     "@babel/runtime": "7.0.0",
     "@ditojs/utils": "^0.30.0"
@@ -37,15 +47,5 @@
     "sass-svg": "^1.2.0",
     "sassdash": "^0.9.0",
     "vue-template-compiler": "^2.5.16"
-  },
-  "postcss": {
-    "plugins": {
-      "autoprefixer": {}
-    }
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ]
+  }
 }

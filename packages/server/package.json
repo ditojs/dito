@@ -24,6 +24,9 @@
     "node": ">= 9.0.0",
     "yarn": ">= 1.0.0"
   },
+  "browserslist": [
+    "node 9"
+  ],
   "dependencies": {
     "@babel/runtime": "7.0.0",
     "@ditojs/admin": "^0.30.0",
