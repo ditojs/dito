@@ -218,41 +218,6 @@ export default {
       return {}
     },
 
-    load({ cache, ...options }) {
-      // Allow caching of loaded data on two levels:
-      // - 'global': cache globally, for the entire admin session
-      // - 'local': cache locally within the current editing schema
-      const cacheParent = {
-        global: this.appState,
-        local: this.schemaComponent
-      }[cache]
-      const loadCache = cacheParent?.loadCache
-      // Build a cache key from the config:
-      const cacheKey = loadCache && `${
-        options.method || 'get'} ${
-        options.url} ${
-        JSON.stringify(options.params || '')} ${
-        JSON.stringify(options.data || '')
-      }`
-      if (loadCache && (cacheKey in loadCache)) {
-        return loadCache[cacheKey]
-      }
-      // NOTE: No await here, res is a promise that we can easily cache.
-      const res = this.api.request(options)
-        .then(response => response.data)
-        .catch(error => {
-          // Convert axios errors to normal errors
-          const data = error.response?.data
-          throw data
-            ? Object.assign(new Error(data.message), data)
-            : error
-        })
-      if (loadCache) {
-        loadCache[cacheKey] = res
-      }
-      return res
-    },
-
     addError(error, addPrefix) {
       // Convert to the same sentence structure as vee-validate:
       const field = this.label || this.placeholder || this.name
