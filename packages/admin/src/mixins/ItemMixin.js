@@ -34,6 +34,7 @@ export default {
       let label = null
       if (isFunction(itemLabel)) {
         let dataPath
+        const that = this
         label = itemLabel.call(
           this,
           getItemParams({
@@ -41,7 +42,7 @@ export default {
             rootData: this.rootData,
             get dataPath() {
               return dataPath ||
-                (dataPath = this.getItemDataPath(sourceSchema, index))
+                (dataPath = that.getItemDataPath(sourceSchema, index))
             }
           }, {
             get formLabel() {

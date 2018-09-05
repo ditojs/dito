@@ -399,7 +399,7 @@ export default DitoComponent.component('dito-form', {
           this.setSourceData(payload)
           if (onSuccess) {
             onSuccess.call(this, getItemParams(this, {
-              data: payload,
+              item: payload,
               itemLabel
             }))
           } else {
@@ -425,7 +425,7 @@ export default DitoComponent.component('dito-form', {
               if (error) {
                 if (onError) {
                   onError.call(this, getItemParams(this, {
-                    data: payload,
+                    item: payload,
                     error,
                     itemLabel
                   }))
@@ -438,7 +438,7 @@ export default DitoComponent.component('dito-form', {
           } else {
             if (onSuccess) {
               onSuccess.call(this, getItemParams(this, {
-                data: payload,
+                item: payload,
                 itemLabel
               }))
             } else {
