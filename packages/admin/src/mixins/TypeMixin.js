@@ -1,6 +1,6 @@
 import { isObject, isArray, isFunction } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getParentItem, getItemParams } from '@/utils/item'
+import { getItemParams } from '@/utils/item'
 
 // @vue/component
 export default {
@@ -77,23 +77,20 @@ export default {
     }),
 
     // Similar to getItemParams(), so we can access these on `this` as well:
-    // NOTE: While internally, we speak of `data`, in the API surface, the term
-    // `item` is used for the data that relates to editing objects.
-
     item() {
-      return this.data
+      return this.schemaComponent.item
     },
 
     rootItem() {
-      return this.rootData
+      return this.schemaComponent.rootItem
     },
 
     parentItem() {
-      return getParentItem(this.rootData, this.dataPath)
+      return this.schemaComponent.parentItem
     },
 
     processedItem() {
-      return this.schemaComponent.processData({ processIds: true })
+      return this.schemaComponent.processedItem
     },
 
     mergedDataProcessor() {

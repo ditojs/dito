@@ -1,23 +1,24 @@
 import { parseDataPath, getDataPath } from '@ditojs/utils'
 
-export function getItem(rootData, dataPath) {
+export function getItem(rootData, dataPath, isValue) {
   const path = parseDataPath(dataPath)
-  // Remove the path token for the value, and see if it's valid:
-  return path && path.pop() != null
+  // Remove the first path token if it's value, and see if it's valid:
+  return path && (!isValue || path.pop() != null)
     ? getDataPath(rootData, path)
     : null
 }
 
-export function getParentItem(rootData, dataPath) {
+export function getParentItem(rootData, dataPath, isValue) {
   const path = parseDataPath(dataPath)
-  // Remove the path token for the value, and see if it's valid:
-  if (path && path.pop() != null) {
+  if (path) {
+    // Remove the path token if it's a value:
+    if (isValue) path.pop()
     // Remove the parent token. If it's a number, then we're dealing with an
-    // array and need to remove more tokens until we meet the parent:
+    // array and need to remove more tokens until we meet the actual parent:
     let token
     do {
       token = path.pop()
-    } while (!isNaN(token))
+    } while (token != null && !isNaN(token))
     // If the removed token is valid, we can get the parent data:
     if (token != null) {
       return getDataPath(rootData, path)
@@ -46,7 +47,7 @@ export function getItemParams(params, overrides) {
     // `item` is used for the data that relates to editing objects:
     get item() {
       // If `data` isn't provided, we can determine it from rootData & dataPath:
-      return params.data || getItem(params.rootData, params.dataPath)
+      return params.data || getItem(params.rootData, params.dataPath, true)
     },
 
     set item(item) {
@@ -62,7 +63,7 @@ export function getItemParams(params, overrides) {
     // parent. If needed, we could expose this data here too, as we can do all
     // sorts of data processing with `rootData` and `dataPath`.
     get parentItem() {
-      return getParentItem(params.rootData, params.dataPath)
+      return getParentItem(params.rootData, params.dataPath, true)
     },
 
     get rootItem() {

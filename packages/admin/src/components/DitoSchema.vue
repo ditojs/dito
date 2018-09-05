@@ -98,6 +98,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { getItemParams } from '@/utils/item'
 import {
   isObject, isArray, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
@@ -158,6 +159,25 @@ export default DitoComponent.component('dito-schema', {
       return this.processData({
         removeIds: true
       })
+    },
+
+    // Similar to getItemParams(), so we can access these on `this` as well:
+    // NOTE: While internally, we speak of `data`, in the API surface, the term
+    // `item` is used for the data that relates to editing objects.
+    item() {
+      return this.data
+    },
+
+    rootItem() {
+      return this.rootData
+    },
+
+    parentItem() {
+      return getParentItem(this.rootData, this.dataPath, false)
+    },
+
+    processedItem() {
+      return this.processData({ processIds: true })
     }
   },
 
