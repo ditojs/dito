@@ -98,7 +98,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { getParentItem, getItemParams } from '@/utils/item'
+import { getParentItem } from '@/utils/item'
 import {
   isObject, isArray, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
@@ -161,10 +161,11 @@ export default DitoComponent.component('dito-schema', {
       })
     },
 
-    // Similar to getItemParams(), so we can access these on `this` as well:
-    // NOTE: While internally, we speak of `data`, in the API surface, the term
-    // `item` is used for the data that relates to editing objects.
+    // The following computed properties are similar to the fields returned by
+    // getItemParams(), so that we can access these on `this` as well:
     item() {
+      // NOTE: While internally, we speak of `data`, in the API surface the
+      // term `item` is used for the data that relates to editing objects.
       return this.data
     },
 
@@ -184,10 +185,8 @@ export default DitoComponent.component('dito-schema', {
   created() {
     this.setupHandlers()
     if (this.parentSchemaComponent) {
-      // Pass changes through to parent schemas:
-      this.$on('change', param => {
-        this.parentSchemaComponent.$emit('change', param)
-      })
+      // Pass change events through to parent schema:
+      this.$on('change', arg => this.parentSchemaComponent.$emit('change', arg))
     }
   },
 
@@ -217,13 +216,6 @@ export default DitoComponent.component('dito-schema', {
 
     onLoad() {
       this.emitEvent('load')
-    },
-
-    emitEvent(event) {
-      if (this.$responds(event)) {
-        // Only call getItemParams() if the event is actually received somewhere
-        this.$emit(event, getItemParams(this))
-      }
     },
 
     focus(dataPathOrKey, notify = false) {

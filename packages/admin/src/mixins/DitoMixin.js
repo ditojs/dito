@@ -314,6 +314,19 @@ export default {
           this.$on(hyphenate(key.substring(2)), value)
         }
       }
+    },
+
+    emitEvent(event, parent = null) {
+      if (this.$responds(event) || parent?.$responds(event)) {
+        // The effects of some events need some time to propagate through Vue.
+        // Always use $nextTick() to make sure our handlers see these changes.
+        // This is needed for 'change' on selects, 'load' events, etc.
+        this.$nextTick(() => {
+          const params = getItemParams(this)
+          this.$emit(event, params)
+          parent?.$emit(event, params)
+        })
+      }
     }
   }
 }

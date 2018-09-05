@@ -245,21 +245,8 @@ export default {
     },
 
     onChange() {
-      this.emitEvent('change', true)
-    },
-
-    emitEvent(event, notifySchema = false) {
-      if (
-        this.$responds(event) ||
-        notifySchema && this.schemaComponent.$responds(event)
-      ) {
-        // Only call getItemParams() if the event is actually received somewhere
-        const params = getItemParams(this)
-        this.$emit(event, params)
-        if (notifySchema) {
-          this.schemaComponent.$emit(event, params)
-        }
-      }
+      // Pass `schemaComponent` as parent, so change events can propagate up.
+      this.emitEvent('change', this.schemaComponent)
     }
   }
 }
