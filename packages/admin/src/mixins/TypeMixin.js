@@ -1,6 +1,6 @@
-import { isObject, isArray, isFunction } from '@ditojs/utils'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItemParams } from '@/utils/item'
+import { isArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -182,7 +182,7 @@ export default {
 
   created() {
     this.schemaComponent?.registerComponent(this.dataPath, this)
-    this.setupWatchHandlers()
+    this.setupHandlers()
   },
 
   destroyed() {
@@ -190,28 +190,6 @@ export default {
   },
 
   methods: {
-    setupWatchHandlers() {
-      let { watch } = this.schema
-      if (watch) {
-        if (isFunction(watch)) {
-          watch = watch.call(this)
-        }
-        if (isObject(watch)) {
-          // Install the watch handlers in the next tick, so all components are
-          // initialized and we can check against their names.
-          this.$nextTick(() => {
-            for (const [key, callback] of Object.entries(watch)) {
-              // Expand property names to 'data.property':
-              const expr = key in this.schemaComponent.components
-                ? `data.${key}`
-                : key
-              this.$watch(expr, callback)
-            }
-          })
-        }
-      }
-    },
-
     getValidationRules() {
       // This method exists to make it easier to extend validations in type
       // components.
@@ -254,24 +232,34 @@ export default {
 
     onFocus() {
       this.focused = true
-      this.$emit('focus')
-      this.schema.onFocus?.call(this, getItemParams(this))
+      this.emitEvent('focus')
     },
 
     onBlur() {
       this.focused = false
-      this.$emit('blur')
-      this.schema.onBlur?.call(this, getItemParams(this))
+      this.emitEvent('blur')
     },
 
     onInput() {
-      this.$emit('input')
-      this.schema.onInput?.call(this, getItemParams(this))
+      this.emitEvent('input')
     },
 
-    onChange(event) {
-      this.$emit('change', event)
-      this.schema.onChange?.call(this, getItemParams(this))
+    onChange() {
+      this.emitEvent('change', true)
+    },
+
+    emitEvent(event, notifySchema = false) {
+      if (
+        this.$responds(event) ||
+        notifySchema && this.schemaComponent.$responds(event)
+      ) {
+        // Only call getItemParams() if the event is actually received somewhere
+        const params = getItemParams(this)
+        this.$emit(event, params)
+        if (notifySchema) {
+          this.schemaComponent.$emit(event, params)
+        }
+      }
     }
   }
 }

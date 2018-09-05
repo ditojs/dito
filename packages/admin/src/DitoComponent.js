@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
-import { isFunction, isPromise } from '@ditojs/utils'
+import { isArray, isFunction, isPromise, isString } from '@ditojs/utils'
 
 const components = {}
 const typeComponents = {}
@@ -36,6 +36,62 @@ const DitoComponent = Vue.extend({
           return comp
         }
         : component
+    }
+  }
+})
+
+// Extend Vue's $on() and $off() methods so that we can independently keep track
+// of the events added / removed, and add a $responds() method that checks if
+// the component responds to a given event.
+// NOTE: We don't need to handle $once(), as that delegates to $on() and $off()
+// See: https://github.com/vuejs/vue/issues/8757
+const { $on, $off } = Vue.prototype
+
+Object.assign(DitoComponent.prototype, {
+  // eslint-disable-next-line vue/no-reserved-keys
+  $on(event, callback) {
+    if (isString(event)) {
+      const events = this.$events || (this.$events = Object.create(null))
+      ;(events[event] || (events[event] = [])).push(callback)
+    }
+    return $on.call(this, event, callback)
+  },
+
+  // eslint-disable-next-line vue/no-reserved-keys
+  $off(event, callback) {
+    if (!arguments.length) {
+      // All events
+      delete this.$events
+    } else if (isString(event)) {
+      // Specific event
+      const callbacks = this.$events && this.$events[event]
+      if (callbacks) {
+        if (!callback) {
+          // All handlers
+          delete this.$events[event]
+        } else {
+          // Specific handler
+          const index = callbacks.indexOf(callback)
+          if (index !== -1) {
+            callbacks.splice(index, 1)
+          }
+        }
+      }
+    }
+    return $off.call(this, event, callback)
+  },
+
+  // Checks if the components responds to a given event type:
+  $responds(event) {
+    if (isArray(event)) {
+      for (const ev of event) {
+        if (this.$responds(ev)) {
+          return true
+        }
+      }
+      return false
+    } else {
+      return !!this.$events && event in this.$events
     }
   }
 })

@@ -98,7 +98,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { getItemParams } from '@/utils/item'
+import { getParentItem, getItemParams } from '@/utils/item'
 import {
   isObject, isArray, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
@@ -181,6 +181,16 @@ export default DitoComponent.component('dito-schema', {
     }
   },
 
+  created() {
+    this.setupHandlers()
+    if (this.parentSchemaComponent) {
+      // Pass changes through to parent schemas:
+      this.$on('change', param => {
+        this.parentSchemaComponent.$emit('change', param)
+      })
+    }
+  },
+
   methods: {
     registerComponent(dataPath, comp) {
       if (comp) {
@@ -203,6 +213,17 @@ export default DitoComponent.component('dito-schema', {
         ? this.appendDataPath(this.dataPath, normalizedPath)
         : normalizedPath
       return this.components[dataPath] || null
+    },
+
+    onLoad() {
+      this.emitEvent('load')
+    },
+
+    emitEvent(event) {
+      if (this.$responds(event)) {
+        // Only call getItemParams() if the event is actually received somewhere
+        this.$emit(event, getItemParams(this))
+      }
     },
 
     focus(dataPathOrKey, notify = false) {

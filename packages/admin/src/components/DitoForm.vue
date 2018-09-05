@@ -318,6 +318,8 @@ export default DitoComponent.component('dito-form', {
       } else {
         this.loadedData = data
       }
+      // Allow data to propagate through to the schema before emitting 'load'
+      this.$nextTick(() => this.$refs.schema.onLoad())
     },
 
     clearClonedData(newValue, oldValue) {

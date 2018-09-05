@@ -3,7 +3,7 @@ import DitoComponent from '@/DitoComponent'
 import { getItemParams } from '@/utils/item'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, camelize, labelize
+  isRegExp, asArray, camelize, labelize, hyphenate
 } from '@ditojs/utils'
 
 // @vue/component
@@ -282,6 +282,37 @@ export default {
         disabled: !draggable,
         handle: '.dito-button-drag',
         ghostClass: 'dito-drag-ghost'
+      }
+    },
+
+    setupHandlers() {
+      const { watch, events } = this.schema
+      if (watch) {
+        const handlers = isFunction(watch) ? watch.call(this) : watch
+        if (isObject(handlers)) {
+          // Install the watch handlers in the next tick, so all components are
+          // initialized and we can check against their names.
+          this.$nextTick(() => {
+            for (const [key, callback] of Object.entries(handlers)) {
+              // Expand property names to 'data.property':
+              const expr = key in this.schemaComponent.components
+                ? `data.${key}`
+                : key
+              this.$watch(expr, callback)
+            }
+          })
+        }
+      }
+      if (events) {
+        for (const [key, callback] of Object.entries(events)) {
+          this.$on(key, callback)
+        }
+      }
+      // Also scan schema for `on[A-Z]`-style callbacks and add them
+      for (const [key, value] of Object.entries(this.schema)) {
+        if (/^on[A-Z]/.test(key)) {
+          this.$on(hyphenate(key.substring(2)), value)
+        }
       }
     }
   }
