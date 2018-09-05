@@ -10,8 +10,12 @@
     "watch": "lerna run watch",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src",
-    "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
-    "precommit": "yarn lint"
+    "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint"
+    }
   },
   "engines": {
     "node": ">= 9.0.0",
@@ -42,7 +46,7 @@
     "eslint-plugin-standard": "^4.0.0",
     "eslint-plugin-vue": "^5.0.0-beta.3",
     "full-icu": "^1.2.1",
-    "husky": "^0.14.3",
+    "husky": "^1.0.0-rc.13",
     "jest": "^23.4.2",
     "lerna": "^3.1.0"
   }
