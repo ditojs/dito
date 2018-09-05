@@ -28,50 +28,74 @@ export function getParentItem(rootData, dataPath, isValue) {
 }
 
 export function getItemParams(params, overrides) {
-  return Object.assign({
-    get value() {
-      return params.value
-    },
+  return Object.assign(new ItemParams(params), overrides)
+}
 
-    set value(value) {
-      // Allow overriding of `value`, so overrides can provide their own:
-      delete this.value
-      this.value = value
-    },
+const paramsMap = new WeakMap()
 
-    get name() {
-      return params.name
-    },
+class ItemParams {
+  constructor(params) {
+    paramsMap.set(
+      this,
+      // Create a new object that inherits from `params`, so we can override.
+      Object.setPrototypeOf({}, params)
+    )
+  }
 
-    // NOTE: While internally, we speak of `data`, in the API surface, the term
-    // `item` is used for the data that relates to editing objects:
-    get item() {
-      // If `data` isn't provided, we can determine it from rootData & dataPath:
-      return params.data || getItem(params.rootData, params.dataPath, true)
-    },
+  get value() {
+    return get(this, 'value')
+  }
 
-    set item(item) {
-      // Allow overriding of `item`, so overrides can provide their own:
-      delete this.item
-      this.item = item
-    },
+  set value(value) {
+    // Allow overriding of `value`, so overrides can provide their own:
+    set(this, 'value', value)
+  }
 
-    // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
-    // closest parent that isn't an array, e.g. for relations or nested JSON
-    // data.  This is why the term `item` was chosen over `data`, e.g. VS the
-    // use of `parentData` in server-sided validation, which is the closest
-    // parent. If needed, we could expose this data here too, as we can do all
-    // sorts of data processing with `rootData` and `dataPath`.
-    get parentItem() {
-      return getParentItem(params.rootData, params.dataPath, true)
-    },
+  get name() {
+    return get(this, 'name')
+  }
 
-    get rootItem() {
-      return params.rootData
-    },
+  get item() {
+    // NOTE: While internally, we speak of `data`, in the API surface the
+    // term `item` is used for the data that relates to editing objects:
+    // If `data` isn't provided, we can determine it from rootData & dataPath:
+    return get(this, 'data') || getItem(this.rootItem, this.dataPath, true)
+  }
 
-    get dataPath() {
-      return params.dataPath
-    }
-  }, overrides)
+  set item(item) {
+    // Allow overriding of `item`, so overrides can provide their own:
+    set(this, 'data', item)
+  }
+
+  // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
+  // closest parent that isn't an array, e.g. for relations or nested JSON
+  // data.  This is why the term `item` was chosen over `data`, e.g. VS the
+  // use of `parentData` in server-sided validation, which is the closest
+  // parent. If needed, we could expose this data here too, as we can do all
+  // sorts of data processing with `rootData` and `dataPath`.
+  get parentItem() {
+    return getParentItem(this.rootItem, this.dataPath, true)
+  }
+
+  get rootItem() {
+    return get(this, 'rootData')
+  }
+
+  get dataPath() {
+    return get(this, 'dataPath')
+  }
+}
+
+function get(that, key) {
+  return paramsMap.get(that)[key]
+}
+
+function set(that, key, value) {
+  const params = paramsMap.get(that)
+  // Temporarily break inheritance chain with original params, so we can
+  // override value locally, without triggering setters above.
+  const origParams = Object.getPrototypeOf(params)
+  Object.setPrototypeOf(params, null)
+  params.value = value
+  Object.setPrototypeOf(params, origParams)
 }
