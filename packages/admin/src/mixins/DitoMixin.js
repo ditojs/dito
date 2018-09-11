@@ -187,18 +187,6 @@ export default {
       })
     },
 
-    getComponent(dataPathOrKey) {
-      let schema = this.schemaComponent
-      while (schema) {
-        const comp = schema.getComponent(dataPathOrKey)
-        if (comp) {
-          return comp
-        }
-        schema = schema.parentSchemaComponent
-      }
-      return null
-    },
-
     showDialog(options, config) {
       // Shows a dito-dialog component through vue-js-modal, and wraps it in a
       // promise so that the buttons in the dialog can use `dialog.resolve()`
