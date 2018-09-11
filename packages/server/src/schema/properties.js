@@ -66,7 +66,11 @@ export function convertSchema(schema, options = {}) {
     } else {
       // This is a root properties schema or nested object without type that
       // may need expanding.
-      schema = convertSchema(expandSchemaShorthand(schema), options)
+      const expanded = expandSchemaShorthand(schema)
+      schema = expanded !== schema
+        // Only call convertSchema() if it actually changed...
+        ? convertSchema(expanded, options)
+        : expanded
     }
     if (schema.type !== 'object') {
       // Handle `required` and `default` on schemas other than objects.
@@ -109,9 +113,17 @@ export function expandSchemaShorthand(schema) {
       default: []
     }
   } else if (
+    // Expand objects to `type: 'object'`...
     isObject(schema) &&
-    !isString(schema.type) &&
-    !isString(schema.$ref)
+    !(
+      // ...but only if they don't define any of these properties:
+      isString(schema.type) ||
+      isString(schema.$ref) ||
+      isArray(schema.allOf) ||
+      isArray(schema.anyOf) ||
+      isArray(schema.oneOf) ||
+      isObject(schema.not)
+    )
   ) {
     schema = {
       type: 'object',

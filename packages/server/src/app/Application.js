@@ -375,8 +375,8 @@ export class Application extends Koa {
       properties[name || rootName] = type ? { type, ...rest } : rest
     }
     if (properties) {
-      const jsonSchema = convertSchema(properties, options)
-      const validate = this.compileValidator(jsonSchema, {
+      const schema = convertSchema(properties, options)
+      const validate = this.compileValidator(schema, {
         // For parameters, always coerce types, including arrays.
         coerceTypes: 'array',
         ...options
@@ -389,6 +389,7 @@ export class Application extends Koa {
       return {
         list,
         rootName,
+        schema,
         validate(data) {
           // Use `call()` to pass ctx as context to Ajv, see passContext:
           return validate.call(ctx, data)
