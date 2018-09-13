@@ -25,8 +25,10 @@ export default class MemberAction extends ControllerAction {
       }
       memberCtx = Object.setPrototypeOf({ query }, ctx)
     }
-    // Resolve member and add as first argument to list:
-    args.unshift(await this.getMember(memberCtx))
+    if (this.receivesArguments()) {
+      // Resolve member and add as first argument to list:
+      args.unshift(await this.getMember(memberCtx))
+    }
     return args
   }
 

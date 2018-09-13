@@ -41,8 +41,14 @@ export default class ControllerAction {
     ctx.request[this.paramsName] = query
   }
 
+  // Returns true if the action receives parameters from `ctx.query`
   hasQueryParams() {
     return this.parameters && this.paramsName === 'query'
+  }
+
+  // Returns true if the action receives any arguments beyond `ctx`
+  receivesArguments() {
+    return this.handler.length > 1 // The first argument is always `ctx`
   }
 
   async callAction(ctx) {
