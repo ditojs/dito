@@ -87,15 +87,15 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
-  async $update(attributes) {
-    if (await this.$query().update(attributes)) {
+  async $update(attributes, trx) {
+    if (await this.$query(trx).update(attributes)) {
       this.$set(attributes)
     }
     return this
   }
 
-  async $patch(attributes) {
-    if (await this.$query().patch(attributes)) {
+  async $patch(attributes, trx) {
+    if (await this.$query(trx).patch(attributes)) {
       this.$set(attributes)
     }
     return this
