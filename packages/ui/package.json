@@ -31,14 +31,14 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0",
+    "@babel/runtime": "^7.0.0",
     "@ditojs/utils": "^0.31.0"
   },
   "devDependencies": {
     "@ditojs/webpack": "^0.31.0",
-    "@vue/cli-plugin-babel": "^3.0.1",
-    "@vue/cli-plugin-eslint": "^3.0.1",
-    "@vue/cli-service": "^3.0.1",
+    "@vue/cli-plugin-babel": "^3.0.3",
+    "@vue/cli-plugin-eslint": "^3.0.3",
+    "@vue/cli-service": "^3.0.3",
     "babel-loader": "^8.0.2",
     "node-sass": "4.9.3",
     "pug": "^2.0.3",
