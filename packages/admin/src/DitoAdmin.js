@@ -21,8 +21,8 @@ Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
-    api = {},
-    base = '/',
+    api = window.dito?.api || {},
+    url = window.dito?.url || '/',
     views = {},
     ...options
   } = {}) {
@@ -35,9 +35,9 @@ export default class DitoAdmin {
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
     api.normalizePath = api.normalizePath ||
-      api.normalizePaths === true ? hyphenate : val => val
+      api.normalizePaths ? hyphenate : val => val
     api.denormalizePath = api.denormalizePath ||
-      api.normalizePaths === true ? camelize : val => val
+      api.normalizePaths ? camelize : val => val
 
     // Allow overriding of resource paths:
     // api: {
@@ -84,7 +84,7 @@ export default class DitoAdmin {
       el,
       router: new VueRouter({
         mode: 'history',
-        base
+        base: url
       }),
       components: { DitoRoot },
       data: {

@@ -12,8 +12,9 @@ import { Controller } from './Controller'
 export class AdminController extends Controller {
   // @override
   compose() {
-    if (!this.config) {
-      throw new ControllerError(this, 'Missing config field.')
+    const config = { ...this.app.config.admin, ...this.config }
+    if (!config.build) {
+      throw new ControllerError(this, 'Missing build configuration.')
     }
     this.koa = new Koa()
 
@@ -25,16 +26,18 @@ export class AdminController extends Controller {
       }
       return next()
     })
-    if (this.app.config.env === 'development') {
-      this.app.once('after:start', () => this.setupWebpack())
-    } else {
-      // TODO: Implement static serving of built resources from `config.path`,
-      // for production hosting.
-    }
+    this.app.once('after:start', () => this.setupWebpack(config))
+    // TODO: Consider implementing static serving of built resources from
+    // `config.path`, for production hosting:
+    // if (this.app.config.env === 'development') {
+    //   this.app.once('after:start', () => this.setupWebpack())
+    // } else {
+    //    ...
+    // }
     return mount(this.url, this.koa)
   }
 
-  async setupWebpack() {
+  async setupWebpack(config) {
     // https://webpack.js.org/configuration/stats/#stats
     const stats = {
       all: false,
@@ -42,7 +45,7 @@ export class AdminController extends Controller {
       errorDetails: true
     }
     const middleware = await koaWebpack({
-      config: this.getWebpackConfig('development'),
+      config: this.getWebpackConfig(config),
       devMiddleware: {
         publicPath: '/',
         stats
@@ -55,15 +58,12 @@ export class AdminController extends Controller {
     this.koa.use(middleware)
   }
 
-  getWebpackConfig(mode) {
-    const { config } = this
-    const resolvedPath = path.resolve(config.path)
-    const template = config.template || 'index.html'
+  getWebpackConfig(config, mode = 'development') {
+    const { build = {}, api = {}, settings } = config
+    const resolvedPath = path.resolve(build.path)
     // Use VueCliService to create full webpack config for us:
-    const plugins = [
-      { id: '@vue/cli-plugin-babel', apply: vuePluginBabel }
-    ]
-    if (config.eslint) {
+    const plugins = [{ id: '@vue/cli-plugin-babel', apply: vuePluginBabel }]
+    if (build.eslint) {
       plugins.push({ id: '@vue/cli-plugin-eslint', apply: vuePluginEslint })
     }
     const service = new VueService(resolvedPath, {
@@ -97,10 +97,22 @@ export class AdminController extends Controller {
         },
         chainWebpack: conf => {
           // Change the location of the HTML template:
+          const { template = 'index.html' } = build
           conf.plugin('html').tap(args => {
             args[0].template = /^[./]/.test(template)
               ? path.resolve(template)
               : path.join(resolvedPath, template)
+            return args
+          })
+          // Expose api config and definitions to browser side:
+          // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
+          api.normalizePaths = this.app.config.app.normalizePaths
+          conf.plugin('define').tap(args => {
+            args[0]['window.dito'] = JSON.stringify({
+              url: this.url,
+              api,
+              settings
+            })
             return args
           })
           // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
