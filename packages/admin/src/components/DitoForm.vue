@@ -29,12 +29,14 @@
           type="button"
           @click="onCancel"
           :class="`dito-button-${verbs.cancel}`"
+          :title="labelize(verbs.cancel)"
         ) {{ buttons.cancel.label }}
         // Render submit button
         button.dito-button(
           v-if="shouldRender(buttons.submit) && !doesMutate"
           type="submit"
           :class="`dito-button-${verbs.submit}`"
+          :title="labelize(verbs.submit)"
         ) {{ buttons.submit.label }}
         // Render all other buttons
         template(
@@ -48,12 +50,14 @@
             type="button"
             @click="onClick(button)"
             :class="`dito-button-${button.name}`"
+            :title="labelize(button.name)"
           ) {{ getLabel(button) }}
           button.dito-button(
             v-else
             type="submit"
             @click.prevent="onSubmit(button)"
             :class="`dito-button-${button.name}`"
+            :title="labelize(button.name)"
           ) {{ getLabel(button) }}
 </template>
 
