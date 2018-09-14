@@ -179,6 +179,12 @@ export default DitoComponent.component('dito-schema', {
 
     processedItem() {
       return this.processData({ processIds: true })
+    },
+
+    formLabel() {
+      return this.getLabel(
+        this.getItemFormSchema(this.sourceSchema, this.data)
+      )
     }
   },
 
@@ -271,7 +277,10 @@ export default DitoComponent.component('dito-schema', {
           // errors with decent message, to report at the end.
           const field = labelize(property)
           for (const err of errs) {
-            unmatched.push(`The field ${field} ${err.message}`)
+            const prefix = field
+              ? `The field ${field}`
+              : `The ${this.formLabel}`
+            unmatched.push(`${prefix} ${err.message}`)
           }
         }
         first = false
