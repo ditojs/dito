@@ -418,7 +418,7 @@ export class Application extends Koa {
   }
 
   setupMiddleware() {
-    const { log, app } = this.config
+    const { log = {}, app = {} } = this.config
 
     const isTruthy = name => !!app[name]
     const isntFalse = name => app[name] !== false
@@ -428,7 +428,8 @@ export class Application extends Koa {
       true: koaLogger,
       // TODO: Implement logging to actual file instead of console for Pino.
       file: pinoLogger
-    }[log?.request]
+    }[log.requests || log.request]
+    // TODO: `log.request` is deprecated, remove later.
 
     this.use(
       compose([

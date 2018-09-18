@@ -14,9 +14,10 @@ export default {
     port: env.NODE_PORT || env.PORT || 8080
   },
   log: {
-    request: false,
-    schema: false,
+    requests: false,
     routes: false,
+    relations: false,
+    schema: false,
     sql: false
   },
   app: {
