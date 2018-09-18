@@ -17,10 +17,10 @@ export default {
       return id === undefined ? id : String(id)
     },
 
-    getItemDataPath(sourceSchema, index = null) {
+    getItemDataPath(sourceSchema, index) {
       return this.schemaComponent.appendDataPath(
         this.dataPath,
-        index !== null
+        index != null
           ? `${sourceSchema.name}/${index}`
           : sourceSchema.name
       )

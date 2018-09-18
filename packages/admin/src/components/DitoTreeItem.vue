@@ -69,7 +69,7 @@
         v-for="(item, index) in childrenItems"
         :key="index"
         :schema="children"
-        :dataPath="getItemDataPath(item, index)"
+        :dataPath="getItemDataPath(children, index)"
         :data="item.data"
         :path="item.path"
         :open="item.open"

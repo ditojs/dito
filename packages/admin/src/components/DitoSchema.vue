@@ -370,8 +370,8 @@ export default DitoComponent.component('dito-schema', {
       return process(this.data, this.dataPath)
     },
 
-    appendDataPath(dataPath = '', token) {
-      return dataPath !== ''
+    appendDataPath(dataPath, token) {
+      return dataPath != null && dataPath !== ''
         ? `${dataPath}/${token}`
         : token
     },
