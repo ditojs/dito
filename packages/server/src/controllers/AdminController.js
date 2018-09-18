@@ -110,7 +110,7 @@ export class AdminController extends Controller {
           // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
           api.normalizePaths = this.app.config.app.normalizePaths
           conf.plugin('define').tap(args => {
-            args[0]['window.dito'] = JSON.stringify({
+            args[0].dito = args[0]['window.dito'] = JSON.stringify({
               url: this.url,
               api,
               settings

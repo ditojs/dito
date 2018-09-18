@@ -21,8 +21,9 @@ Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
-    api = window.dito?.api || {},
-    url = window.dito?.url || '/',
+    dito, // Contains the url and api settings as passed from AdminController
+    api = dito?.api || {},
+    url = dito?.url || '/',
     views = {},
     ...options
   } = {}) {
