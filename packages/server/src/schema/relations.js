@@ -139,6 +139,8 @@ export function convertRelation(schema, models) {
     from, to, through, inverse, scope,
     // Objection.js-style relation description
     join, modify, filter,
+    // Pluck Dito.js-related properties that should not end up in `rest`:
+    nullable, owner,
     ...rest
   } = schema || {}
   const relationClass = getRelationClass(relation)
