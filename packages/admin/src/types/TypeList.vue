@@ -85,7 +85,7 @@
             button.dito-button(
               v-if="draggable"
               type="button"
-              class="dito-button-drag"
+              :class="`dito-button-${verbs.drag}`"
               :title="labelize(verbs.drag)"
             )
             router-link.dito-button(

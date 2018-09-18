@@ -17,18 +17,21 @@
         button.dito-button(
           v-if="draggable"
           type="button"
-          class="dito-button-drag"
+          :class="`dito-button-${verbs.drag}`"
+          :title="labelize(verbs.drag)"
         )
         button.dito-button(
           v-if="editable"
           type="button"
-          class="dito-button-edit"
+          :class="`dito-button-${verbs.edit}`"
+          :title="labelize(verbs.edit)"
           @click="onEdit"
         )
         button.dito-button(
           v-if="deletable"
           type="button"
-          class="dito-button-delete"
+          :class="`dito-button-${verbs.delete}`"
+          :title="labelize(verbs.delete)"
           @click="onDelete"
         )
       table.dito-properties(

@@ -37,14 +37,14 @@
             button.dito-button(
               v-if="draggable"
               type="button"
-              class="dito-button-drag"
+              :class="`dito-button-${verbs.drag}`"
               :title="labelize(verbs.drag)"
             )
             button.dito-button(
               v-if="deletable"
               type="button"
               @click="deleteFile(file, index)"
-              :class="`dito-button-delete`"
+              :class="`dito-button-${verbs.delete}`"
               :title="labelize(verbs.delete)"
             )
     .dito-buttons
