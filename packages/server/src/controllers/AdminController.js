@@ -26,14 +26,16 @@ export class AdminController extends Controller {
       }
       return next()
     })
-    this.app.once('after:start', () => this.setupWebpack(config))
-    // TODO: Consider implementing static serving of built resources from
-    // `config.path`, for production hosting:
-    // if (this.app.config.env === 'development') {
-    //   this.app.once('after:start', () => this.setupWebpack())
-    // } else {
-    //    ...
-    // }
+    if (config.build.disabled !== true) {
+      this.app.once('after:start', () => this.setupWebpack(config))
+      // TODO: Consider implementing static serving of built resources from
+      // `config.path`, for production hosting:
+      // if (this.app.config.env === 'development') {
+      //   this.app.once('after:start', () => this.setupWebpack())
+      // } else {
+      //    ...
+      // }
+    }
     return mount(this.url, this.koa)
   }
 
