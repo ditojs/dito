@@ -19,7 +19,7 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import errorHandler from './errorHandler'
-import { BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
+import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Service } from '@/services'
@@ -27,7 +27,7 @@ import { Validator } from './Validator'
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate
+  isObject, isString, asArray, isPlainObject, hyphenate, clone
 } from '@ditojs/utils'
 
 export class Application extends Koa {
@@ -87,10 +87,21 @@ export class Application extends Koa {
         this.validator.addSchema(modelClass.getJsonSchema())
       }
     }
-    if (this.config.log.schema) {
+    const { log } = this.config
+    if (log.schema || log.relations) {
       for (const modelClass of sortedModels) {
-        console.log(`\n${modelClass.name}:`,
-          util.inspect(modelClass.getJsonSchema(), {
+        const data = {}
+        if (log.schema) {
+          data.jsonSchema = modelClass.getJsonSchema()
+        }
+        if (log.relations) {
+          data.relationMappings = clone(modelClass.relationMappings, value =>
+            Model.isPrototypeOf(value) ? `[Model: ${value.name}]` : value
+          )
+        }
+        console.log(
+          chalk.yellow.bold(`\n${modelClass.name}:\n`),
+          util.inspect(data, {
             colors: true,
             depth: null,
             maxArrayLength: null
