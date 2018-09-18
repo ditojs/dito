@@ -136,9 +136,9 @@ export function convertRelation(schema, models) {
   let {
     relation,
     // Dito.js-style relation description:
-    from, to, through, inverse, scope,
-    // Objection.js-style relation description
-    join, modify, filter,
+    from, to, through, inverse, modify, scope, eagerScope,
+    // Objection.js-style relation description (`modify` is shared)
+    join, filter,
     // Pluck Dito.js-related properties that should not end up in `rest`:
     nullable, owner,
     ...rest
@@ -193,11 +193,27 @@ export function convertRelation(schema, models) {
     } else if (through) {
       throw new RelationError('Unsupported through join definition')
     }
-    modify = scope || modify || filter
+    // Combine `modify` and `filter`. Setting both together is not supported.
+    modify = modify || filter
     if (isObject(modify)) {
       // Convert a find-filter object to a filter function, same as in the
       // handling of definition.scopes, see Model.js
       modify = query => query.find(modify)
+    }
+    if (scope || eagerScope) {
+      // Convert or merge scope/eagerScope with modify:
+      const origModify = modify
+      modify = query => {
+        if (scope) {
+          query.scope(scope)
+        }
+        if (eagerScope) {
+          query.eagerScope(eagerScope)
+        }
+        if (origModify) {
+          query.modify(origModify)
+        }
+      }
     }
     return {
       relation: relationClass,
