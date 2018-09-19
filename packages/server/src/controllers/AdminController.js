@@ -30,13 +30,17 @@ export class AdminController extends Controller {
       this.app.once('after:start', () => this.setupWebpack(config))
       // TODO: Consider implementing static serving of built resources from
       // `config.path`, for production hosting:
-      // if (this.app.config.env === 'development') {
+      // if (this.isDevelopmentEnv()) {
       //   this.app.once('after:start', () => this.setupWebpack())
       // } else {
       //    ...
       // }
     }
     return mount(this.url, this.koa)
+  }
+
+  isDevelopmentEnv() {
+    return this.app.config.env === 'development'
   }
 
   async setupWebpack(config) {
@@ -119,6 +123,14 @@ export class AdminController extends Controller {
           })
           // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
           conf.plugins.delete('hmr')
+          // - Disable the 'compact' option in babel-loader during development
+          //   to prevent complaints when working with the `yarn watch` versions
+          //   of dito-admin.umd.min.js and dito-ui.umd.min.js
+          if (this.isDevelopmentEnv()) {
+            conf.module.rule('js')
+              .use('babel-loader')
+              .options({ compact: false })
+          }
         }
       },
       plugins
