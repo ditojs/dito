@@ -1,19 +1,3 @@
-const { getExternalsFromDependencies } = require('@ditojs/webpack')
+const { getVueConfig } = require('@ditojs/build')
 
-module.exports = {
-  configureWebpack: {
-    externals: process.env.NODE_ENV === 'production'
-      ? getExternalsFromDependencies()
-      : {}
-  },
-
-  css: {
-    extract: false,
-    loaderOptions: {
-      sass: {
-        includePaths: ['./src/styles'],
-        data: `@import './src/styles/imports';`
-      }
-    }
-  }
-}
+module.exports = getVueConfig()

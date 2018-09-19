@@ -1,4 +1,4 @@
-# Dito.js Utility Functions
+# Dito.js Build Helper Functions
 
 Dito.js is a minimal and modern web framework with a focus on API driven
 development, based on Koa.js, Objection.js and Vue.js

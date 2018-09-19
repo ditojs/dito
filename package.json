@@ -6,8 +6,8 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
-    "build": "lerna run build",
-    "watch": "lerna run watch",
+    "build": "lerna run build --stream",
+    "watch": "lerna run watch --stream --no-sort --concurrency 5",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest"

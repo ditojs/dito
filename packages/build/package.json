@@ -1,5 +1,5 @@
 {
-  "name": "@ditojs/webpack",
+  "name": "@ditojs/build",
   "version": "0.33.0",
   "private": true,
   "main": "lib/index.js",
