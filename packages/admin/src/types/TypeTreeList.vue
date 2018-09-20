@@ -12,6 +12,7 @@
         :dataPath="treeDataPath"
         :open="true"
       )
+      // Include a router-view for the optional DitoNestedForm
       router-view
 </template>
 

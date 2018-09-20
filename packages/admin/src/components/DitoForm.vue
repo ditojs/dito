@@ -6,7 +6,7 @@
   // `v-if` here, so event handling and other things stil work with nested
   // editing.
   router-view(
-    v-if="!isLastRoute"
+    v-if="!(isNestedRoute || isLastUnnestedRoute)"
     v-show="!isActive"
   )
   component.dito-scroll(

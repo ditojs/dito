@@ -41,6 +41,10 @@ export default {
       return this.routeRecord === matched[matched.length - 1]
     },
 
+    isNestedRoute() {
+      return !!this.routeRecord.meta.nested
+    },
+
     isLastUnnestedRoute() {
       const { matched } = this.$route
       for (let i = matched.length - 1; i >= 0; i--) {
