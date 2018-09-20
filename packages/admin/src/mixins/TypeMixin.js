@@ -1,5 +1,5 @@
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getItemParams } from '@/utils/item'
+import { getItemParams, getItem, getParentItem } from '@/utils/item'
 import { isArray } from '@ditojs/utils'
 
 // @vue/component
@@ -15,6 +15,7 @@ export default {
     // NOTE: While `dataPath` points to the actual `value`, `data` represents
     // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
+    dataPathIsValue: { type: Boolean, default: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -76,21 +77,29 @@ export default {
       }
     }),
 
-    // Similar to getItemParams(), so we can access these on `this` as well:
+    // The following computed properties are similar to the fields returned by
+    // getItemParams(), so that we can access these on `this` as well:
     item() {
-      return this.schemaComponent.item
-    },
-
-    rootItem() {
-      return this.schemaComponent.rootItem
+      return getItem(this.rootItem, this.dataPath, this.dataPathIsValue)
     },
 
     parentItem() {
-      return this.schemaComponent.parentItem
+      return getParentItem(this.rootItem, this.dataPath, this.dataPathIsValue)
+    },
+
+    rootItem() {
+      return this.rootData
     },
 
     processedItem() {
-      return this.schemaComponent.processedItem
+      // We can only get the processed items through the schemaComponent, but
+      // that's not necessarily the item represented by this component.
+      // Solution: Find the relative path and the processed sub-item from there:
+      const { schemaComponent } = this
+      const relativeDataPath = this.dataPath.substring(
+        schemaComponent.dataPath.length
+      )
+      return getItem(schemaComponent.processedItem, relativeDataPath)
     },
 
     mergedDataProcessor() {

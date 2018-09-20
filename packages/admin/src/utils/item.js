@@ -1,17 +1,18 @@
 import { parseDataPath, getDataPath } from '@ditojs/utils'
 
-export function getItem(rootData, dataPath, isValue) {
+export function getItem(rootItem, dataPath, isValue) {
   const path = parseDataPath(dataPath)
-  // Remove the first path token if it's value, and see if it's valid:
+  // Remove the first path token if the path is not to an item's value, and see
+  // if it's valid:
   return path && (!isValue || path.pop() != null)
-    ? getDataPath(rootData, path)
+    ? getDataPath(rootItem, path)
     : null
 }
 
-export function getParentItem(rootData, dataPath, isValue) {
+export function getParentItem(rootItem, dataPath, isValue) {
   const path = parseDataPath(dataPath)
   if (path) {
-    // Remove the path token if it's a value:
+    // Remove the first path token if the path is not to an item's value:
     if (isValue) path.pop()
     // Remove the parent token. If it's a number, then we're dealing with an
     // array and need to remove more tokens until we meet the actual parent:
@@ -21,7 +22,7 @@ export function getParentItem(rootData, dataPath, isValue) {
     } while (token != null && !isNaN(token))
     // If the removed token is valid, we can get the parent data:
     if (token != null) {
-      return getDataPath(rootData, path)
+      return getDataPath(rootItem, path)
     }
   }
   return null

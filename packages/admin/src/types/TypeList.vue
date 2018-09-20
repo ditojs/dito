@@ -51,6 +51,7 @@
               :cell="cell"
               :schema="schema"
               :dataPath="getDataPath(index)"
+              :dataPathIsValue="false"
               :data="item"
               :meta="nestedMeta"
               :store="store"
@@ -71,6 +72,8 @@
               component(
                 v-else-if="component"
                 :is="component"
+                :dataPath="getDataPath(index)"
+                :dataPathIsValue="false"
                 :data="item"
               )
               span(

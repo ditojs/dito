@@ -1,8 +1,10 @@
 <template lang="pug">
-  // When used to nest arbitrary vue components in a schema, see below.
-  // For values of $props, see TypeMixin.props
+  // This template is needed to render arbitrary vue components in a schema
+  // for a given value through `type: 'component'`, see below.
+  // For values of $props, see TypeMixin.props.
   component(
     :is="component"
+    :dataPathIsValue="true"
     v-bind="$props"
   )
 </template>
