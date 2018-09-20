@@ -96,10 +96,12 @@ export default {
       // that's not necessarily the item represented by this component.
       // Solution: Find the relative path and the processed sub-item from there:
       const { schemaComponent } = this
-      const relativeDataPath = this.dataPath.substring(
-        schemaComponent.dataPath.length
+      return getItem(
+        schemaComponent.processedItem,
+        // Get the dataPath relative to the schemaComponent's data:
+        this.dataPath.substring(schemaComponent.dataPath.length),
+        this.dataPathIsValue
       )
-      return getItem(schemaComponent.processedItem, relativeDataPath)
     },
 
     mergedDataProcessor() {
