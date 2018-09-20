@@ -466,10 +466,7 @@ export class Application extends Koa {
   setupKnex() {
     let { knex, log } = this.config
     const snakeCaseOptions = knex.normalizeDbNames === true
-      ? {
-        upperCase: false,
-        underscoreBeforeDigits: true
-      }
+      ? {}
       : knex.normalizeDbNames
     if (snakeCaseOptions) {
       knex = {
