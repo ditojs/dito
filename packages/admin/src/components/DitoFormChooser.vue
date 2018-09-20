@@ -3,8 +3,7 @@
     button.dito-button(
       type="button"
       @mousedown="handlePulldownClick($event)"
-      :class="`dito-button-${verb}`"
-      :title="labelize(verb)"
+      v-bind="getButtonAttributes(verb)"
     )
     ul.dito-pulldown(
       v-if="schema.forms"

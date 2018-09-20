@@ -85,23 +85,20 @@
             button.dito-button(
               v-if="draggable"
               type="button"
-              :class="`dito-button-${verbs.drag}`"
-              :title="labelize(verbs.drag)"
+              v-bind="getButtonAttributes(verbs.drag)"
             )
             router-link.dito-button(
               v-if="editable"
               :to="getEditLink(item, index)" append
               tag="button"
               type="button"
-              :class="`dito-button-${verbs.edit}`"
-              :title="labelize(verbs.edit)"
+              v-bind="getButtonAttributes(verbs.edit)"
             )
             button.dito-button(
               v-if="deletable"
               type="button"
               @click="deleteItem(item, index)"
-              :class="`dito-button-${verbs.delete}`"
-              :title="labelize(verbs.delete)"
+              v-bind="getButtonAttributes(verbs.delete)"
             )
       tfoot(v-if="creatable")
         tr

@@ -6,6 +6,7 @@ import axios from 'axios'
 import './components'
 import './types'
 import './validator'
+import verbs from './verbs'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
@@ -94,12 +95,15 @@ export default class DitoAdmin {
       },
       provide: {
         api,
+        // A default list of verbs are provided as $verbs, can be overridden at
+        // any point in the component hierarchy.
+        $verbs: verbs,
         // Placeholder provides so DitoMixin can inject them for all components:
         // inject: [ '$routeComponent', '$schemaComponent' ]
         $routeComponent: null,
         $schemaComponent: null
       },
-      render: createElement => createElement(DitoRoot, {
+      render: h => h(DitoRoot, {
         props: {
           views,
           options

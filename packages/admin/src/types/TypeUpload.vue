@@ -37,15 +37,13 @@
             button.dito-button(
               v-if="draggable"
               type="button"
-              :class="`dito-button-${verbs.drag}`"
-              :title="labelize(verbs.drag)"
+              v-bind="getButtonAttributes(verbs.drag)"
             )
             button.dito-button(
               v-if="deletable"
               type="button"
               @click="deleteFile(file, index)"
-              :class="`dito-button-${verbs.delete}`"
-              :title="labelize(verbs.delete)"
+              v-bind="getButtonAttributes(verbs.delete)"
             )
     .dito-buttons
       vue-upload.dito-button.dito-upload-button(

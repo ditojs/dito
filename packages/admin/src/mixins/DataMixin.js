@@ -8,6 +8,13 @@ import { isString, isFunction, clone, labelize, asArray } from '@ditojs/utils'
 export default {
   mixins: [ItemMixin, LoadingMixin],
 
+  provide() {
+    return {
+      // Pass local verbs overrides on to children, see verbs()
+      $verbs: this.verbs
+    }
+  },
+
   data() {
     return {
       loadedData: null
@@ -53,8 +60,10 @@ export default {
 
   methods: {
     getVerbs() {
-      const verbs = this.isTransient
+      return this.isTransient
         ? {
+          ...this.$verbs,
+          // Override default verbs with their transient versions:
           create: 'add',
           created: 'added',
           save: 'apply',
@@ -62,25 +71,7 @@ export default {
           delete: 'remove',
           deleted: 'removed'
         }
-        : {
-          create: 'create',
-          created: 'created',
-          save: 'save',
-          saved: 'saved',
-          delete: 'delete',
-          deleted: 'deleted'
-        }
-      return {
-        ...verbs,
-        edit: 'edit',
-        edited: 'edited',
-        cancel: 'cancel',
-        cancelled: 'cancelled',
-        drag: 'drag',
-        dragged: 'dragged',
-        submit: this.create ? verbs.create : verbs.save,
-        submitted: this.create ? verbs.created : verbs.saved
-      }
+        : this.$verbs
     },
 
     getResourcePath(resource) {

@@ -10,6 +10,7 @@ import {
 export default {
   inject: [
     'api',
+    '$verbs',
     '$routeComponent',
     '$schemaComponent'
   ],
@@ -28,6 +29,10 @@ export default {
 
     user() {
       return appState.user
+    },
+
+    verbs() {
+      return this.$verbs
     },
 
     rootComponent() {
@@ -177,6 +182,13 @@ export default {
               }
           )
           : null
+    },
+
+    getButtonAttributes(name) {
+      return {
+        class: `dito-button-${name}`,
+        title: labelize(name)
+      }
     },
 
     shouldRender(schema = null) {

@@ -107,6 +107,12 @@ import {
 export default DitoComponent.component('dito-schema', {
   inject: ['$validator'],
 
+  provide() {
+    return {
+      $schemaComponent: this
+    }
+  },
+
   props: {
     schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
@@ -127,12 +133,6 @@ export default DitoComponent.component('dito-schema', {
       dataProcessors: {},
       loadCache: {}, // See TypeMixin.load()
       temporaryId: 0
-    }
-  },
-
-  provide() {
-    return {
-      $schemaComponent: this
     }
   },
 

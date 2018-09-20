@@ -28,15 +28,13 @@
           v-if="shouldRender(buttons.cancel)"
           type="button"
           @click="onCancel"
-          :class="`dito-button-${verbs.cancel}`"
-          :title="labelize(verbs.cancel)"
+          v-bind="getButtonAttributes(verbs.cancel)"
         ) {{ buttons.cancel.label }}
         // Render submit button
         button.dito-button(
           v-if="shouldRender(buttons.submit) && !doesMutate"
           type="submit"
-          :class="`dito-button-${verbs.submit}`"
-          :title="labelize(verbs.submit)"
+          v-bind="getButtonAttributes(verbs.submit)"
         ) {{ buttons.submit.label }}
         // Render all other buttons
         template(
@@ -49,15 +47,13 @@
             v-if="button.onClick"
             type="button"
             @click="onClick(button)"
-            :class="`dito-button-${button.name}`"
-            :title="labelize(button.name)"
+            v-bind="getButtonAttributes(button.name)"
           ) {{ getLabel(button) }}
           button.dito-button(
             v-else
             type="submit"
             @click.prevent="onSubmit(button)"
-            :class="`dito-button-${button.name}`"
-            :title="labelize(button.name)"
+            v-bind="getButtonAttributes(button.name)"
           ) {{ getLabel(button) }}
 </template>
 
@@ -93,6 +89,16 @@ export default DitoComponent.component('dito-form', {
   },
 
   computed: {
+    verbs() {
+      // Add submit / submitted to the verbs returned by DataMixin
+      const verbs = this.getVerbs()
+      return {
+        ...verbs,
+        submit: this.create ? verbs.create : verbs.save,
+        submitted: this.create ? verbs.created : verbs.saved
+      }
+    },
+
     schema() {
       return this.getItemFormSchema(
         this.sourceSchema,

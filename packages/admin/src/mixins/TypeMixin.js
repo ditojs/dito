@@ -173,10 +173,6 @@ export default {
         }
       }
       return { rules }
-    },
-
-    verbs() {
-      return this.formComponent.verbs
     }
   },
 
