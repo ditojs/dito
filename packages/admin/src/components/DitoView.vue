@@ -1,11 +1,13 @@
 <template lang="pug">
-  // If view is not active, render router-view to nest further route components
+  // Only render DitoView when it is active, otherwise a normal router-view
+  // instead, to nest further route components.
+  // NOTE: This is different from the handling in DitoForm, where `v-show` is
+  // used to always render forms even when other nested forms are present.
   router-view(v-if="!isLastRoute")
   .dito-view.dito-parent(v-else)
     dito-schema.dito-scroll(
       :schema="viewSchema"
-      :dataPath="dataPath"
-      :key="dataPath"
+      :key="name"
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"
@@ -36,10 +38,6 @@ export default DitoComponent.component('dito-view', {
     },
 
     name() {
-      return this.schema.name
-    },
-
-    dataPath() {
       return this.schema.name
     },
 
