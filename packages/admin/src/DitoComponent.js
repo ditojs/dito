@@ -23,7 +23,7 @@ const DitoComponent = Vue.extend({
       //   instead, they can be directly provided: `component: import(...)`
       // - The properties passed to such components don't need to be defined.
       //   Instead, the TypeMixin props are automatically inherited.
-      // - The component can use all internal components known to dito-admin.
+      // - The component can use all internal components known to Dito.js Admin.
       return component
         ? async () => {
           // At first, resolve component is it is loaded asynchronously.
@@ -100,6 +100,10 @@ DitoComponent.typeComponents = typeComponents
 
 DitoComponent.component = function(name, options) {
   if (options) {
+    options = {
+      name,
+      ...options
+    }
     const ctor = this.extend(options)
     components[name] = ctor
     return ctor
