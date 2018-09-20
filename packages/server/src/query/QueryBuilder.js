@@ -133,12 +133,12 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
       if (eager) {
         if (this._eagerExpression) {
-          // Add a new filter to the existing eager expression that recursively
-          // applies the eager-scope to the resulting queries. This even works
-          // if nested scopes expand the eager expression, because it re-applies
-          // itself to the result.
+          // Add a new modifier to the existing eager expression that
+          // recursively applies the eager-scope to the resulting queries. This
+          // even works if nested scopes expand the eager expression, because it
+          // re-applies itself to the result.
           const name = `_eagerScope${++this._eagerScopeId}_`
-          const filters = {
+          const modifiers = {
             [name]: query => query._applyScopes(scopes, eager)
           }
           this.eager(
@@ -146,11 +146,11 @@ export class QueryBuilder extends objection.QueryBuilder {
               this.modelClass(),
               this._eagerExpression,
               [name],
-              filters
+              modifiers
             ),
             {
-              ...this._eagerFilters,
-              ...filters
+              ...this._eagerModifiers,
+              ...modifiers
             }
           )
         }
@@ -202,8 +202,8 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyFilter(name, ...args) {
-    // NOTE: Dito's applyFilter() does something else than Objection's, but this
-    // is OK as Objection is going to switch to `modifiers` from `namedFilters`.
+    // NOTE: Dito's `applyFilter()` does something else than Objection's
+    // deprecated `applyFilter()`, use `applyModifier()` instead!
     if (this._allowFilters && !this._allowFilters[name]) {
       throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
     }
@@ -217,13 +217,14 @@ export class QueryBuilder extends objection.QueryBuilder {
     })
   }
 
+  // Work-around for Objection's issue in modify() introduced in v1.3.0
+  // See: https://github.com/Vincit/objection.js/issues/1085
   modify(arg, ...args) {
-    // Preserve Objection.js functionality of modify(), by delegating to
-    // super.applyFilter() instead of this.applyFilter()
-    // TODO: Move away from applyFilter() in Objection.js
-    return isString(arg)
-      ? super.applyFilter(arg, ...args)
-      : super.modify(arg, ...args)
+    return arg === undefined
+      ? this
+      : isString(arg)
+        ? this.applyModifier(arg, ...args)
+        : super.modify(arg, ...args)
   }
 
   allowFilter(...filters) {
@@ -590,15 +591,15 @@ const updateGraphOptions = {
   insertMissing: false
 }
 
-function addEagerScope(modelClass, expr, scopes, filters, isRoot = true) {
+function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
   if (isRoot) {
     expr = expr.clone ? expr.clone() : clone(expr)
   } else {
     // Only add the scope if it's not already defined by the eager statement and
-    // if it's actually available as a filter in the model's namedFilters list.
+    // if it's actually available as a modifier in the model's modifiers list.
     for (const scope of scopes) {
       if (!expr.$modify?.includes(scope) &&
-          (modelClass.namedFilters[scope] || filters?.[scope])) {
+          (modelClass.modifiers[scope] || modifiers?.[scope])) {
         expr.$modify.push(scope)
       }
     }
@@ -612,7 +613,7 @@ function addEagerScope(modelClass, expr, scopes, filters, isRoot = true) {
       if (!relation) {
         throw new RelationError(`Invalid child expression: '${key}'`)
       }
-      addEagerScope(relation.relatedModelClass, child, scopes, filters, false)
+      addEagerScope(relation.relatedModelClass, child, scopes, modifiers, false)
     }
   }
   return expr

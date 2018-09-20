@@ -5,10 +5,10 @@ receives a query builder as its argument, on which it then calls the desired
 query functions.
 
 Objection.js knows a similar concept called
-[`namedFilters`](http://vincit.github.io/objection.js/#namedfilters), and
-underneath, Dito.js leverages this concept to implement its concept of scopes.
-But Dito.js scopes go further in a variety of ways. See
-[Differences to Objection.js](#differences-to-objectionjs) for details.
+[`modifiers`](http://vincit.github.io/objection.js/#modifiers), and underneath,
+Dito.js leverages this concept to implement its concept of scopes.  But Dito.js
+scopes go further in a variety of ways. See [Differences to
+Objection.js](#differences-to-objectionjs) for details.
  
 Scopes are defined in the static `scopes` field, an object where the key is the
 name of the scope, and the value is a function describing the query to be
@@ -132,10 +132,11 @@ TODO:
 
 ## Differences to Objection.js
 
--  Objection.js doesn't inherit and merge scope definitions.
-- In Objection.js, `scopes` are basically called `namedFilters`. But Dito.js'
-  scopes do a few things more than Objection.js' named filters:
-    - Dito.js scopes can be eager-applied.
-    - Defined `default scopes are automatically eager-applied to find queries.
-    - Dito.js scopes can be query objects rather than filter methods that are
-      converted to methods through Dito.js' `QueryBuilder.find(query)`.
+- Objection.js doesn't inherit and merge scope definitions.
+- In Objection.js, `scopes` are basically called `modifiers` (previously called
+  named filters). But Dito.js' scopes do a few things more than Objection.js'
+  modifiers:
+  - Dito.js scopes can be eager-applied.
+  - Defined `default scopes are automatically eager-applied to find queries.
+  - Dito.js scopes can be query objects rather than filter methods that are
+    converted to methods through Dito.js' `QueryBuilder.find(query)`.

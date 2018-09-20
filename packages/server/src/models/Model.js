@@ -292,21 +292,21 @@ export class Model extends objection.Model {
   }
 
   static hasScope(name) {
-    return name in this.namedFilters
+    return name in this.modifiers
   }
 
-  static get namedFilters() {
-    // Convert Dito's scopes to Objection's namedFilters and cache result.
-    return this.getCached('namedFilters', () => {
-      const namedFilters = {}
+  static get modifiers() {
+    // Convert Dito's scopes to Objection's modifiers and cache result.
+    return this.getCached('modifiers', () => {
+      const modifiers = {}
       for (const [name, scope] of Object.entries(this.definition.scopes)) {
         if (isFunction(scope)) {
-          namedFilters[name] = scope
+          modifiers[name] = scope
         } else {
           throw new ModelError(this, `Invalid scope '${name}': ($}{scope}).`)
         }
       }
-      return namedFilters
+      return modifiers
     })
   }
 
