@@ -303,7 +303,7 @@ export class Model extends objection.Model {
         if (isFunction(scope)) {
           modifiers[name] = scope
         } else {
-          throw new ModelError(this, `Invalid scope '${name}': ($}{scope}).`)
+          throw new ModelError(this, `Invalid scope '${name}': (${scope}).`)
         }
       }
       return modifiers
