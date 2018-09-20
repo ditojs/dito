@@ -1,15 +1,20 @@
 <template lang="pug">
-  // If form is not active, render router-view to nest further route components
+.dito-form.dito-parent(
+  :class="formClass"
+)
+  // NOTE: Nested form components are kept alive by using `v-show` instead of
+  // `v-if` here, so event handling and other things stil work with nested
+  // editing.
   router-view(
-    v-if="!isActive"
+    v-if="!isLastRoute"
+    v-show="!isActive"
   )
-  component.dito-form.dito-parent(
-    v-else
+  component.dito-scroll(
+    v-show="isActive"
     :is="formTag"
-    :class="formClass"
     @submit.prevent="onSubmit(buttons.submit)"
   )
-    dito-schema.dito-scroll(
+    dito-schema(
       ref="schema"
       :schema="schema"
       :dataPath="dataPath"
@@ -105,7 +110,7 @@ export default DitoComponent.component('dito-form', {
         // If there is no data yet, provide an empty object with just the right
         // type set, so the form can always be determined.
         this.data || { type: this.type }
-      )
+      ) || {} // Always return a schema object so we don't need to check for it.
     },
 
     isActive() {
