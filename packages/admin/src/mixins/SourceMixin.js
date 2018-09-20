@@ -35,6 +35,18 @@ export default {
       return isListSource(this.type)
     },
 
+    hasData() {
+      // Used by shouldReload(): Returns true if component has data.
+      return !!this.value
+    },
+
+    parentDataComponent() {
+      // Used by shouldReload(): Returns the parent dataRouteComponent that may
+      // load data for this component. We can't return parentDataRouteComponent
+      // here as in DataMixin, because that would be the parent's parent.
+      return this.dataRouteComponent
+    },
+
     listData() {
       let data = this.value
       if (this.isObjectSource) {
@@ -47,14 +59,6 @@ export default {
         this.value = data = data.results
       }
       return this.wrapPrimitives(data || [])
-    },
-
-    shouldLoad() {
-      // If the route-component (view, form) that this list belongs to also
-      // loads data, depend on this first.
-      const { routeComponent } = this
-      return !this.isTransient && !this.isLoading && !this.value &&
-        !(routeComponent.shouldLoad || routeComponent.isLoading)
     },
 
     sourceSchema() {

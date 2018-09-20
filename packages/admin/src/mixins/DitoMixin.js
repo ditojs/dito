@@ -45,19 +45,19 @@ export default {
       return this.$routeComponent
     },
 
+    formComponent() {
+      const comp = this.routeComponent
+      return comp?.isForm ? comp : null
+    },
+
     schemaComponent() {
       // Use computed properties as links to injects, so DitoSchema can
       // override the property and return `this` instead of the parent.
       return this.$schemaComponent
     },
 
-    formComponent() {
-      const comp = this.routeComponent
-      return comp?.isForm ? comp : null
-    },
-
-    // Returns the first route component in the chain of parents that doesn't
-    // hold nested data.
+    // Returns the first route component in the chain of parents, including
+    // this current component, that doesn't hold nested data.
     dataRouteComponent() {
       let { routeComponent } = this
       while (routeComponent?.isNested) {
@@ -76,6 +76,10 @@ export default {
 
     parentSchemaComponent() {
       return this.schemaComponent?.$parent.schemaComponent
+    },
+
+    parentDataRouteComponent() {
+      return this.dataRouteComponent?.$parent.dataRouteComponent
     },
 
     // Returns the data of the first route component in the chain of parents

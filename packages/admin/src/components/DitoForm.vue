@@ -248,12 +248,6 @@ export default DitoComponent.component('dito-form', {
       return this.clonedData
     },
 
-    shouldLoad() {
-      // Only load data if this component is the last one in the route and we
-      // can't inherit the data from the parent already, see computed data():
-      return !this.isTransient && !this.data && !this.isLoading
-    },
-
     isDirty() {
       // TODO: Consider adding isDirty() to TypeMixin for each component and
       // DitoSchema, for easer version of this, without nestedFormComponents.

@@ -36,7 +36,11 @@ export default {
     },
 
     shouldLoad() {
-      return !this.isTransient && !this.isLoading
+      // If the parent data-component (view, form) that this list belongs to
+      // also loads data, depend on this first.
+      const parent = this.parentDataComponent
+      return !this.hasData && !this.isTransient && !this.isLoading &&
+        !(parent && (parent.shouldLoad || parent.isLoading))
     },
 
     shouldReload() {
@@ -45,6 +49,19 @@ export default {
       // this.parentRouteComponent in DitoForm.close(). Instead, we use a
       // reload flag on the closest routeComponent and respect it in created()
       return !this.isTransient && this.routeComponent.reload
+    },
+
+    hasData() {
+      // Used by shouldReload(): Returns true if component has data.
+      return !!this.data
+    },
+
+    parentDataComponent() {
+      // Used by shouldReload(): Returns the parent dataRouteComponent that may
+      // load data for this component. We need to use parentDataRouteComponent
+      // here to get to the actual parent, as `this === this.dataRouteComponent`
+      // if `this` is a route component:
+      return this.parentDataRouteComponent
     },
 
     verbs() {
