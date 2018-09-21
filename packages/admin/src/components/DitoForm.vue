@@ -33,13 +33,13 @@
           v-if="shouldRender(buttons.cancel)"
           type="button"
           @click="onCancel"
-          v-bind="getButtonAttributes(verbs.cancel)"
+          v-bind="getButtonAttributes(verbs.cancel, buttons.cancel)"
         ) {{ buttons.cancel.label }}
         // Render submit button
         button.dito-button(
           v-if="shouldRender(buttons.submit) && !doesMutate"
           type="submit"
-          v-bind="getButtonAttributes(verbs.submit)"
+          v-bind="getButtonAttributes(verbs.submit, buttons.submit)"
         ) {{ buttons.submit.label }}
         // Render all other buttons
         template(
@@ -52,13 +52,13 @@
             v-if="button.onClick"
             type="button"
             @click="onClick(button)"
-            v-bind="getButtonAttributes(button.name)"
+            v-bind="getButtonAttributes(button.name, button)"
           ) {{ getLabel(button) }}
           button.dito-button(
             v-else
             type="submit"
             @click.prevent="onSubmit(button)"
-            v-bind="getButtonAttributes(button.name)"
+            v-bind="getButtonAttributes(button.name, button)"
           ) {{ getLabel(button) }}
 </template>
 

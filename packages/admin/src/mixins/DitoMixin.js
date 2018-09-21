@@ -154,8 +154,8 @@ export default {
     getLabel(schema, name) {
       return schema
         ? this.getSchemaValue('label', { type: String, schema }) ||
-          labelize(schema.name || name)
-        : ''
+          labelize(name || schema.name)
+        : labelize(name) || ''
     },
 
     labelize,
@@ -188,10 +188,10 @@ export default {
           : null
     },
 
-    getButtonAttributes(name) {
+    getButtonAttributes(name, button) {
       return {
         class: `dito-button-${name}`,
-        title: labelize(name)
+        title: this.getLabel(button, name)
       }
     },
 
