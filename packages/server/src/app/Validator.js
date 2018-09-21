@@ -150,8 +150,12 @@ export class Validator extends objection.Validator {
     const schema = clone(jsonSchema, value => {
       if (isObject(value)) {
         if (patch) {
-          // Remove all required keywords from schema for patch validation.
+          // Remove all required keywords and formats from schema for patch
+          // validation.
           delete value.required
+          if (value.format === 'required') {
+            delete value.format
+          }
         }
         // Convert async `validate()` keywords to `validateAsync()`:
         if (isAsync(value.validate)) {
