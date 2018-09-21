@@ -2,16 +2,19 @@ import { isArray, asArray, clone, merge } from '@ditojs/utils'
 import { RelationExpression } from 'objection'
 import { collectExpressionPaths } from './expression.js'
 
-// Similar to Objection's private `rootModelClass.ensureModelArray(data)`:
-export function ensureModelArray(rootModelClass, data) {
+// Similar to Objection's private `modelClass.ensureModel(model)`:
+export function ensureModel(modelClass, model) {
+  return !model
+    ? null
+    : model instanceof modelClass
+      ? model
+      : modelClass.fromJson(model, { skipValidation: true })
+}
+
+// Similar to Objection's private `modelClass.ensureModelArray(data)`:
+export function ensureModelArray(modelClass, data) {
   return data
-    ? asArray(data).map(
-      model => !model
-        ? null
-        : model instanceof rootModelClass
-          ? model
-          : rootModelClass.fromJson(model, { skipValidation: true })
-    )
+    ? asArray(data).map(model => ensureModel(modelClass, model))
     : []
 }
 
@@ -125,6 +128,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
               // eager-load the rest of the path, and respect modify settings.
               add = true
             } else {
+              item = ensureModel(modelClass, item)
               const value = item[part.relation]
               // Add the values of this relation to items, so they can be
               // filtered further in the next iteration of this loop.
