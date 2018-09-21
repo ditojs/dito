@@ -1,4 +1,4 @@
-import { isArray, asArray, clone } from '@ditojs/utils'
+import { isArray, asArray, clone, merge } from '@ditojs/utils'
 import { RelationExpression } from 'objection'
 import { collectExpressionPaths } from './expression.js'
 
@@ -82,6 +82,19 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     }
   }
 
+  const pathToEager = (path, start = 0) => {
+    return (start ? path.slice(start) : path)
+      .map(
+        ({ relation, alias, modify }) => {
+          const expr = alias ? `${relation} as ${alias}` : relation
+          return modify.length > 0
+            ? `${expr}(${modify.join(', ')})`
+            : expr
+        }
+      )
+      .join('.')
+  }
+
   // Clone the full graph so we can directly modify it after:
   const modelArray = ensureModelArray(rootModelClass, graph).map(
     model => model?.$clone() || null
@@ -106,25 +119,25 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
           if (items.length === 0) break
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
+            let add = false
             if (modelClass.isReference(item)) {
               // Detected a reference item that isn't a leaf: We need to
-              // eager-load the rest of the path, and respect modify settings:
-              const eager = path.slice(i).map(
-                ({ relation, alias, modify }) => {
-                  const expr = alias ? `${relation} as ${alias}` : relation
-                  return modify.length > 0
-                    ? `${expr}(${modify.join(', ')})`
-                    : expr
-                }
-              )
-              addToGroup(item, modelClass, part.modify, eager.join('.'))
+              // eager-load the rest of the path, and respect modify settings.
+              add = true
             } else {
               const value = item[part.relation]
               // Add the values of this relation to items, so they can be
               // filtered further in the next iteration of this loop.
               if (value != null) {
                 items.push(...asArray(value))
+              } else if (item.$id()) {
+                // If the full relation is missing, but the current item has
+                // a database id, simply eager-load the relation.
+                add = true
               }
+            }
+            if (add) {
+              addToGroup(item, modelClass, part.modify, pathToEager(path, i))
             }
             return items
           }, [])
@@ -151,9 +164,9 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
       async ({ modelClass, modify, eager, ids, modelsById }) => {
         const query = modelClass.query(trx)
         if (modelClass.hasCompositeId()) {
-          modelClass.whereInComposite('id', ids)
+          query.whereInComposite('id', ids)
         } else {
-          modelClass.whereIn('id', ids)
+          query.whereIn('id', ids)
         }
         if (eager) {
           query.mergeEager(eager)
@@ -172,10 +185,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     // Finally populate the references with the loaded models.
     for (const { references, modelsById } of groups) {
       for (const item of references) {
-        const model = modelsById[item.$id()]
-        if (model) {
-          Object.assign(item, model)
-        }
+        merge(item, modelsById[item.$id()])
       }
     }
   }
