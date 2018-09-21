@@ -2,8 +2,9 @@
   .dito-form-chooser
     button.dito-button(
       type="button"
-      @mousedown="handlePulldownClick($event)"
-      v-bind="getButtonAttributes(verb)"
+      @mousedown.stop="onPulldownSelect()"
+      :class="`dito-button-${verb}`"
+      :title="labelize(verb)"
     )
     ul.dito-pulldown(
       v-if="schema.forms"
@@ -12,8 +13,8 @@
       li(v-for="(form, type) in schema.forms")
         a(
           :class="`dito-type-${type}`"
-          @mousedown="handlePulldownSelect(type)"
-          @mouseup="handlePulldownSelect(type)"
+          @mousedown.stop="handlePulldownSelect(type)"
+          @mouseup="handlePulldownSelect(type, true)"
         ) {{ getLabel(form) }}
 </template>
 
@@ -40,11 +41,6 @@ export default DitoComponent.component('dito-form-chooser', {
   },
 
   methods: {
-    handlePulldownClick(event) {
-      this.onPulldownSelect()
-      event.stopPropagation()
-    },
-
     onPulldownSelect(type) {
       const { schema } = this
       const { forms, inline } = schema
