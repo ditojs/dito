@@ -2,7 +2,7 @@
   input.dito-text.dito-input(
     ref="element"
     :id="dataPath"
-    :name="dataPath"
+    :name="name"
     type="text"
     :value="value"
     :disabled="disabled"

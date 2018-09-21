@@ -149,7 +149,7 @@ export default {
       }
 
       if (nativeField) {
-        attributes.name = this.dataPath
+        attributes.name = this.name
         attributes.title = this.label
         attributes.readonly = this.readonly
         attributes.autofocus = this.autofocus

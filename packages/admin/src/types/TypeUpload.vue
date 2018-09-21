@@ -48,7 +48,7 @@
     .dito-buttons
       vue-upload.dito-button.dito-upload-button(
         :id="dataPath"
-        :name="dataPath"
+        :name="name"
         :disabled="disabled"
         :post-action="uploadPath"
         :extensions="extensions"
