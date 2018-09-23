@@ -167,10 +167,11 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
       groups,
       async ({ modelClass, modify, eager, ids, modelsById }) => {
         const query = modelClass.query(trx)
-        if (modelClass.hasCompositeId()) {
-          query.whereInComposite('id', ids)
+        const idColumn = modelClass.getIdColumn()
+        if (isArray(idColumn)) {
+          query.whereInComposite(idColumn, ids)
         } else {
-          query.whereIn('id', ids)
+          query.whereIn(idColumn, ids)
         }
         if (eager) {
           query.mergeEager(eager)

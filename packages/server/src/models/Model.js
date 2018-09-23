@@ -216,10 +216,6 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static hasCompositeId() {
-    return isArray(this.getIdProperty())
-  }
-
   static getReference(modelOrId) {
     // Creates a reference model that takes over the id / #ref properties from
     // the passed  id value/array or model, omitting any other properties in it.
