@@ -26,6 +26,19 @@ export function collectExpressionPaths(expr) {
   return paths
 }
 
+export function expressionPathToEager(path, start = 0) {
+  return (start ? path.slice(start) : path)
+    .map(
+      ({ relation, alias, modify }) => {
+        const expr = alias ? `${relation} as ${alias}` : relation
+        return modify.length > 0
+          ? `${expr}(${modify.join(', ')})`
+          : expr
+      }
+    )
+    .join('.')
+}
+
 export function modelGraphToExpression(graph, node) {
   if (graph) {
     node = node || {}
