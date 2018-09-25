@@ -307,6 +307,7 @@ export default DitoComponent.component('dito-form', {
           this.sourceKey,
           this.$refs.schema.filterData(data)
         )
+        this.$refs.schema.onChange()
         return true
       }
       return false

@@ -228,6 +228,10 @@ export default DitoComponent.component('dito-schema', {
       this.emitEvent('load')
     },
 
+    onChange() {
+      this.emitEvent('change')
+    },
+
     focus(dataPathOrKey, notify = false) {
       this.getComponent(dataPathOrKey)?.focus()
       if (notify) {

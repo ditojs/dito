@@ -302,17 +302,20 @@ export default {
       } else {
         this.value.push(item)
       }
+      this.onChange()
       return item
     },
 
     removeItem(item) {
       if (this.isObjectSource) {
         this.value = null
+        this.onChange()
       } else {
         const list = this.value
         const index = list && list.indexOf(item)
         if (index >= 0) {
           list.splice(index, 1)
+          this.onChange()
         }
       }
     },
