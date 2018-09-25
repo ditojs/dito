@@ -43,7 +43,10 @@ const DitoComponent = Vue.extend({
 // Extend Vue's $on() and $off() methods so that we can independently keep track
 // of the events added / removed, and add a $responds() method that checks if
 // the component responds to a given event.
-// Also adds proper handling of async events, with event queueing.
+
+// Also adds proper handling of async events, including a new async $emit() that
+// deals with proper event queueing.
+
 // NOTE: We don't need to handle $once(), as that delegates to $on() and $off()
 // See: https://github.com/vuejs/vue/issues/8757
 const { $on, $off, $emit } = Vue.prototype
@@ -126,13 +129,16 @@ Object.assign(DitoComponent.prototype, {
             // If the previous event is done, remove it from the queue.
             const entry = queue.shift()
             if (entry) {
-              // Resolve the promise that was added to the queue for this event.
+              // Resolve the promise that was added to the queue for the event
+              // that was just completed by the wrapper that called `next()`
               entry.resolve()
             }
           }
           // Emit the next event in the queue with its params.
           // Note that it only gets removed once `next()` is called.
           if (queue.length > 0) {
+            // Pass on `next()` to the callback wrapper function that was
+            // installed by the overridden `$on()` function above:
             $emit.call(this, event, ...queue[0].args, next)
           }
         }
