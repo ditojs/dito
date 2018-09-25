@@ -43,16 +43,33 @@ const DitoComponent = Vue.extend({
 // Extend Vue's $on() and $off() methods so that we can independently keep track
 // of the events added / removed, and add a $responds() method that checks if
 // the component responds to a given event.
+// Also adds proper handling of async events, with event queueing.
 // NOTE: We don't need to handle $once(), as that delegates to $on() and $off()
 // See: https://github.com/vuejs/vue/issues/8757
-const { $on, $off } = Vue.prototype
+const { $on, $off, $emit } = Vue.prototype
 
 Object.assign(DitoComponent.prototype, {
   // eslint-disable-next-line vue/no-reserved-keys
   $on(event, callback) {
     if (isString(event)) {
       const events = this.$events || (this.$events = Object.create(null))
-      ;(events[event] || (events[event] = [])).push(callback)
+      // Install an async-aware wrapper of the callback that awaits and calls
+      // `next()` once its execution is done. See `$emit()` for details.
+      const wrapper = async function(...args) {
+        const next = args.pop()
+        try {
+          await wrapper.callback.call(this, ...args)
+        } finally {
+          next()
+        }
+      }
+      wrapper.callback = callback
+      const { wrappers } = events[event] || (events[event] = {
+        wrappers: [],
+        queue: []
+      })
+      wrappers.push(wrapper)
+      callback = wrapper // Swap for the call below
     }
     return $on.call(this, event, callback)
   },
@@ -60,20 +77,23 @@ Object.assign(DitoComponent.prototype, {
   // eslint-disable-next-line vue/no-reserved-keys
   $off(event, callback) {
     if (!arguments.length) {
-      // All events
+      // Remove all events
       delete this.$events
     } else if (isString(event)) {
-      // Specific event
-      const callbacks = this.$events && this.$events[event]
-      if (callbacks) {
+      // Remove specific event
+      const entry = this.$events?.[event]
+      if (entry) {
         if (!callback) {
-          // All handlers
+          // Remove all handlers for this event
           delete this.$events[event]
         } else {
-          // Specific handler
-          const index = callbacks.indexOf(callback)
+          // Remove a specific handler: find the index of its wrapper
+          const { wrappers } = entry
+          const index = wrappers.findIndex(
+            wrapper => wrapper.callback === callback
+          )
           if (index !== -1) {
-            callbacks.splice(index, 1)
+            wrappers.splice(index, 1)
           }
         }
       }
@@ -91,7 +111,38 @@ Object.assign(DitoComponent.prototype, {
       }
       return false
     } else {
-      return !!this.$events && event in this.$events
+      return !!this.$events?.[event]
+    }
+  },
+
+  async $emit(event, ...args) {
+    // Only queue if it actually responds to it.
+    const entry = this.$events?.[event]
+    if (entry) {
+      const { queue } = entry
+      return new Promise(resolve => {
+        const next = (first = false) => {
+          if (!first) {
+            // If the previous event is done, remove it from the queue.
+            const entry = queue.shift()
+            if (entry) {
+              // Resolve the promise that was added to the queue for this event.
+              entry.resolve()
+            }
+          }
+          // Emit the next event in the queue with its params.
+          // Note that it only gets removed once `next()` is called.
+          if (queue.length > 0) {
+            $emit.call(this, event, ...queue[0].args, next)
+          }
+        }
+        queue.push({ args, resolve })
+        // With new queues (= only one entry), emit the first event immediately,
+        // to get the queue running.
+        if (queue.length === 1) {
+          next(true)
+        }
+      })
     }
   }
 })
