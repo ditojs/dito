@@ -18,7 +18,8 @@ export default {
   data() {
     return {
       appState,
-      overrides: null
+      overrides: null,
+      eventQueue: {}
     }
   },
 
@@ -289,7 +290,40 @@ export default {
       }
     },
 
-    setupHandlers() {
+    setupSchemaFields() {
+      this.setupMethods()
+      this.setupComputed()
+      this.setupEvents()
+    },
+
+    setupMethods() {
+      for (const [key, value] of Object.entries(this.schema.methods || {})) {
+        if (isFunction(value)) {
+          this[key] = value
+        } else {
+          console.error(`Invalid method definition: ${key}: ${value}`)
+        }
+      }
+    },
+
+    setupComputed() {
+      for (const [key, value] of Object.entries(this.schema.computed || {})) {
+        const accessor = isFunction(value)
+          ? { get: value }
+          : isObject(value) && isFunction(value.get)
+            ? value
+            : null
+        if (accessor) {
+          Object.defineProperty(this, key, accessor)
+        } else {
+          console.error(
+            `Invalid computed property definition: ${key}: ${value}`
+          )
+        }
+      }
+    },
+
+    setupEvents() {
       const { watch, events } = this.schema
       if (watch) {
         const handlers = isFunction(watch) ? watch.call(this) : watch
@@ -307,15 +341,24 @@ export default {
           })
         }
       }
+
+      const addEvent = (key, event, callback) => {
+        if (isFunction(callback)) {
+          this.$on(event, callback)
+        } else {
+          console.error(`Invalid event definition: ${key}: ${callback}`)
+        }
+      }
+
       if (events) {
-        for (const [key, callback] of Object.entries(events)) {
-          this.$on(key, callback)
+        for (const [key, value] of Object.entries(events)) {
+          addEvent(key, key, value)
         }
       }
       // Also scan schema for `on[A-Z]`-style callbacks and add them
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {
-          this.$on(hyphenate(key.substring(2)), value)
+          addEvent(key, hyphenate(key.substring(2)), value)
         }
       }
     },

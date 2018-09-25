@@ -189,7 +189,7 @@ export default {
 
   created() {
     this.schemaComponent?.registerComponent(this.dataPath, this)
-    this.setupHandlers()
+    this.setupSchemaFields()
   },
 
   destroyed() {
@@ -207,7 +207,6 @@ export default {
       // Convert to the same sentence structure as vee-validate:
       const field = this.label || this.placeholder || this.name
       const prefix = addPrefix && `The ${field} field`
-      console.log('adding', error)
       this.$errors.add({
         field: this.dataPath,
         msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
