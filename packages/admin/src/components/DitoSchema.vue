@@ -98,6 +98,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getParentItem } from '@/utils/item'
 import {
   isObject, isArray, parseDataPath, normalizeDataPath, labelize
@@ -105,6 +106,7 @@ import {
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {
+  mixins: [ValidatorMixin],
   inject: ['$validator'],
 
   provide() {
@@ -298,10 +300,6 @@ export default DitoComponent.component('dito-schema', {
         'Validation Errors',
         message || 'Please correct the highlighted errors.'
       )
-    },
-
-    clearErrors() {
-      this.$errors.clear()
     },
 
     filterData(data) {

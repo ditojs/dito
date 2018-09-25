@@ -71,6 +71,7 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { isObjectSource } from '@/utils/schema'
 import { getItemParams } from '@/utils/item'
 import {
@@ -79,7 +80,7 @@ import {
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, DataMixin],
+  mixins: [RouteMixin, DataMixin, ValidatorMixin],
   inject: ['$validator'],
 
   data() {
@@ -257,9 +258,7 @@ export default DitoComponent.component('dito-form', {
       // TODO: Consider adding isDirty() to TypeMixin for each component and
       // DitoSchema, for easer version of this, without nestedFormComponents.
       for (const form of [this, ...this.nestedFormComponents]) {
-        if (!form.doesMutate && Object.keys(form.$fields).some(
-          key => form.$fields[key].dirty)
-        ) {
+        if (!form.doesMutate && form.isDirty) {
           return true
         }
       }
@@ -346,11 +345,14 @@ export default DitoComponent.component('dito-form', {
     },
 
     async onSubmit(button) {
-      this.$errors.clear()
-      if (await this.$validator.validateAll()) {
+      this.clearErrors()
+      if (await this.validateAll()) {
         this.submit(button)
       } else {
-        this.$refs.schema.focus(this.$errors.items[0].field, true)
+        // Focus first error field
+        const errors = this.getErrors()
+        // TODO: Move to DitoSchema instead?
+        this.$refs.schema.focus(Object.keys(errors)[0], true)
       }
     },
 
