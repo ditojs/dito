@@ -62,12 +62,8 @@ export default class ControllerAction {
     return this.controller.emitHook(`after:${identifier}`, true, ctx, result)
   }
 
-  createValidationError({ message, errors }) {
-    return this.app.createValidationError({
-      type: 'ControllerValidation',
-      message,
-      errors
-    })
+  createValidationError(options) {
+    return this.app.createValidationError(options)
   }
 
   async validateParameters(ctx) {
@@ -141,6 +137,7 @@ export default class ControllerAction {
     }
     if (errors.length > 0) {
       throw this.createValidationError({
+        type: 'ParameterValidation',
         message: `The provided data is not valid: ${
           JSON.stringify(this.getParams(ctx))
         }`,
@@ -161,6 +158,7 @@ export default class ControllerAction {
         await this.returns.validate(resultData)
       } catch (error) {
         throw this.createValidationError({
+          type: 'ResultValidation',
           message: `Invalid result of action: ${JSON.stringify(result)}`,
           errors: error.errors
         })
