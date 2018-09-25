@@ -344,7 +344,16 @@ export default {
 
       const addEvent = (key, event, callback) => {
         if (isFunction(callback)) {
-          this.$on(event, callback)
+          // Install a async-aware version of the callback that awaits and
+          // calls `next()` once its execution is done. See `emitQueued()`
+          // for details.
+          this.$on(event, async function(params, next) {
+            try {
+              await callback.call(this, params)
+            } finally {
+              next()
+            }
+          })
         } else {
           console.error(`Invalid event definition: ${key}: ${callback}`)
         }
@@ -363,6 +372,27 @@ export default {
       }
     },
 
+    emitQueued(event, params) {
+      const queue = this.eventQueue[event] || (this.eventQueue[event] = [])
+      const next = (first = false) => {
+        // If the previous event is done, remove it from the queue.
+        if (!first) {
+          queue.shift()
+        }
+        // Emit the next event in the queue with its params.
+        // Note that it only gets removed once `next()` is called.
+        if (queue.length > 0) {
+          this.$emit(event, queue[0], next)
+        }
+      }
+      queue.push(params)
+      // With new queues (= only one entry), emit the first event immediately,
+      // to get the queue running.
+      if (queue.length === 1) {
+        next(true)
+      }
+    },
+
     emitEvent(event, parent = null) {
       if (this.$responds(event) || parent?.$responds(event)) {
         // The effects of some events need some time to propagate through Vue.
@@ -370,8 +400,8 @@ export default {
         // This is needed for 'change' on selects, 'load' events, etc.
         this.$nextTick(() => {
           const params = getItemParams(this)
-          this.$emit(event, params)
-          parent?.$emit(event, params)
+          this.emitQueued(event, params)
+          parent?.emitQueued(event, params)
         })
       }
     }
