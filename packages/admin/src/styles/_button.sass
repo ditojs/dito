@@ -22,10 +22,10 @@
     &::after
       top: 0
 
-.dito-button-add:empty::before
-  content: 'Add'
 .dito-button-create:empty::before
   content: 'Create'
+.dito-button-add:empty::before,
+  content: 'Add'
 .dito-button-delete:empty::before
   content: 'Delete'
 .dito-button-remove:empty::before
@@ -61,8 +61,10 @@
 
 .dito-buttons-round,
 .dito-buttons-small
+  .dito-button-create:empty::before,
   .dito-button-add:empty::before,
-  .dito-button-create:empty::before
+  // Special .dito-button-add without :empty:
+  .dito-button-add-upload::before
     +icon-add
   .dito-button-delete:empty::before,
   .dito-button-remove:empty::before

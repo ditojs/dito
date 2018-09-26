@@ -45,31 +45,33 @@
               @click="deleteFile(file, index)"
               v-bind="getButtonAttributes(verbs.delete)"
             )
-    .dito-buttons
-      vue-upload.dito-button.dito-upload-button(
-        :input-id="dataPath"
-        :name="dataPath"
-        :disabled="disabled"
-        :post-action="uploadPath"
-        :extensions="extensions"
-        :accept="accept"
-        :multiple="multiple"
-        :size="maxSize"
-        v-model="uploads"
-        @input-filter="inputFilter"
-        @input-file="inputFile"
-        ref="upload"
-      ) Select files
-      button.dito-button(
-        v-if="uploadable"
-        type="button"
-        @click.prevent="upload.active = true"
-      ) Upload
-      button.dito-button(
-        v-else-if="cancelable"
-        type="button"
-        @click.prevent="upload.active = false"
-      ) Cancel
+      tfoot
+        tr
+          td.dito-buttons.dito-buttons-round(:colspan="4")
+            button.dito-button.dito-button-text(
+              v-if="uploadable"
+              type="button"
+              @click.prevent="upload.active = true"
+            ) Upload All
+            button.dito-button.dito-button-text(
+              v-else-if="cancelable"
+              type="button"
+              @click.prevent="upload.active = false"
+            ) Cancel All
+            vue-upload.dito-button.dito-button-add-upload(
+              :input-id="dataPath"
+              :name="dataPath"
+              :disabled="disabled"
+              :post-action="uploadPath"
+              :extensions="extensions"
+              :accept="accept"
+              :multiple="multiple"
+              :size="maxSize"
+              v-model="uploads"
+              @input-filter="inputFilter"
+              @input-file="inputFile"
+              ref="upload"
+            )
 </template>
 
 <style lang="sass">
@@ -77,6 +79,8 @@
   .dito-upload
     .dito-button
       vertical-align: top
+    .dito-button-add-upload
+      border: 0
 </style>
 
 <script>
