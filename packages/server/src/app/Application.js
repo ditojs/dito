@@ -112,8 +112,12 @@ export class Application extends Koa {
   }
 
   addModel(modelClass) {
-    modelClass.app = this
-    this.models[modelClass.name] = modelClass
+    if (Model.isPrototypeOf(modelClass)) {
+      modelClass.app = this
+      this.models[modelClass.name] = modelClass
+    } else {
+      throw new Error(`Invalid model class: ${modelClass}`)
+    }
   }
 
   sortModels(models) {
