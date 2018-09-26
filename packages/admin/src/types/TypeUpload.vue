@@ -47,8 +47,8 @@
             )
     .dito-buttons
       vue-upload.dito-button.dito-upload-button(
-        :id="dataPath"
-        :name="name"
+        :input-id="dataPath"
+        :name="dataPath"
         :disabled="disabled"
         :post-action="uploadPath"
         :extensions="extensions"
@@ -192,6 +192,10 @@ export default TypeComponent.register('upload', {
       }
     },
 
+    getFileIndex(file) {
+      return this.multiple ? this.value.findIndex(it => it.id === file.id) : -1
+    },
+
     inputFile(newFile, oldFile) {
       if (newFile && !oldFile) {
         const file = {
@@ -207,18 +211,34 @@ export default TypeComponent.register('upload', {
         }
       }
       if (newFile && oldFile) {
-        if (newFile.success) {
+        const { success, error } = newFile
+        if (success) {
           const file = newFile.response[0]
           file.upload = newFile
           if (this.multiple) {
             // Replace the upload file object with the file object received from
             // the upload response.
-            const index = this.value.findIndex(file => file.id === newFile.id)
+            const index = this.getFileIndex(newFile)
             if (index >= 0) {
               this.$set(this.value, index, file)
             }
           } else {
             this.value = file
+          }
+        } else if (error) {
+          const message = {
+            extension: `Unsupported file-type: ${newFile.name}`
+          }[error] || `Unknown error: ${error}`
+          this.notify('error', 'Upload Error', message)
+          if (this.multiple) {
+            // Replace the upload file object with the file object received from
+            // the upload response.
+            const index = this.getFileIndex(newFile)
+            if (index >= 0) {
+              this.value.splice(index, 1)
+            }
+          } else {
+            this.value = null
           }
         } else {
           // TODO: Implement progress bar for uploads
