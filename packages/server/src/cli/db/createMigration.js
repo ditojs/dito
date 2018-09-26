@@ -42,16 +42,19 @@ export async function createMigration(app, name, ...modelNames) {
     dropTables.unshift(deindent`
       .dropTableIfExists('${tableName}')`)
   }
+  const getCode = tables => tables.length > 0
+    ? deindent`
+      await knex.schema
+        ${tables.join('\n')}`
+    : ''
   const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${name}.js`)
   await fs.writeFile(file, deindent`
     export async function up(knex) {
-      return knex.schema
-        ${createTables.join('\n')}
+      ${getCode(createTables)}
     }
 
     export async function down(knex) {
-      return knex.schema
-        ${dropTables.join('\n')}
+      ${getCode(dropTables)}
     }
   `)
   return true // done
