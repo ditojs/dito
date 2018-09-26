@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@ditojs/build": "^0.38.0",
-    "@vue/cli-plugin-babel": "^3.0.3",
-    "@vue/cli-plugin-eslint": "^3.0.3",
-    "@vue/cli-service": "^3.0.3",
+    "@vue/cli-plugin-babel": "^3.0.4",
+    "@vue/cli-plugin-eslint": "^3.0.4",
+    "@vue/cli-service": "^3.0.4",
     "babel-loader": "^8.0.2",
     "node-sass": "4.9.3",
     "pug": "^2.0.3",
