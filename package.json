@@ -8,13 +8,16 @@
   "scripts": {
     "build": "lerna run build --stream",
     "watch": "lerna run watch --stream --no-sort --concurrency 5",
+    "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
-    "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src",
-    "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest"
+    "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src"
+  },
+  "lint-staged": {
+    "packages/**/src/**/*.{js,vue}": "cross-env NODE_ENV=production eslint"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "yarn lint"
+      "pre-commit": "yarn lint-staged"
     }
   },
   "engines": {
@@ -53,6 +56,7 @@
     "full-icu": "^1.2.1",
     "husky": "^1.0.0",
     "jest": "^23.6.0",
-    "lerna": "^3.4.0"
+    "lerna": "^3.4.0",
+    "lint-staged": "^7.3.0"
   }
 }
