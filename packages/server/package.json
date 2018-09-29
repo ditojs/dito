@@ -1,7 +1,7 @@
 {
   "name": "@ditojs/server",
   "version": "0.38.0",
-  "description": "Dito.js Server – Dito.js is a minimal and modern web framework, based on Objection.js, Koa.js and Vue.js",
+  "description": "Dito.js Server – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/server",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
