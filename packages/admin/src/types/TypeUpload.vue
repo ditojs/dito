@@ -71,6 +71,7 @@
               @input-filter="inputFilter"
               @input-file="inputFile"
               ref="upload"
+              title="Upload Files"
             )
 </template>
 
