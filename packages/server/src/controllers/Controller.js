@@ -56,23 +56,6 @@ export class Controller {
     }
   }
 
-  compose() {
-    const middleware = [
-      (ctx, next) => {
-        // Expose the handling controller through `ctx.state`.
-        ctx.state.controller = this
-        return next()
-      }
-    ]
-    if (this.router) {
-      middleware.push(
-        this.router.routes(),
-        this.router.allowedMethods()
-      )
-    }
-    return compose(middleware)
-  }
-
   reflectControllerObject() {
     // On base controllers, the actions can be defined directly in the class
     // instead of inside an actions object, as is done with model and relation
@@ -99,7 +82,159 @@ export class Controller {
     return controller
   }
 
+  setupRoute(url, verb, authorize, handlers) {
+    const authorizeStr = isFunction(authorize)
+      ? describeFunction(authorize)
+      : isString(authorize)
+        ? `'${authorize}'`
+        : isArray(authorize)
+          ? `[${authorize.map(value => `'${value}'`).join(', ')}]`
+          : ''
+    this.log(
+      `${
+        chalk.magenta(verb.toUpperCase())} ${
+        chalk.green(this.url)}${
+        chalk.cyan(url.substring(this.url.length))} ${
+        chalk.white(authorizeStr)
+      }`,
+      this.level + 1
+    )
+    if (!this.router) {
+      this.router = new Router()
+    }
+    this.router[verb](url, ...handlers)
+  }
+
+  setupActions(type) {
+    const {
+      values: actions,
+      authorize
+    } = this.processValues(this.inheritValues(type))
+    for (const name in actions) {
+      this.setupAction(type, name, actions[name], authorize[name])
+    }
+    return actions
+  }
+
+  setupAction(type, name, handler, authorize) {
+    // Custom member actions have their own class so they can fetch the members
+    // ahead of their call.
+    const ActionClass = type === 'member' ? MemberAction : ControllerAction
+    // The default path for actions is the normalized name.
+    const path = this.app.normalizePath(name)
+    this.setupActionRoute(
+      type,
+      new ActionClass(this, handler, type, name, 'get', path, authorize)
+    )
+  }
+
+  setupActionRoute(type, action) {
+    const url = this.getUrl(type, action.path)
+    this.setupRoute(url, action.verb, action.authorize, [
+      async ctx => {
+        try {
+          const res = await action.callAction(ctx)
+          if (res !== undefined) {
+            ctx.body = res
+          }
+        } catch (err) {
+          throw err instanceof ResponseError ? err : new WrappedError(err)
+        }
+      }
+    ])
+  }
+
+  setupUpload() {
+    const {
+      values,
+      authorize
+    } = this.processValues(this.inheritValues('upload'))
+    return values
+      ? Object.entries(values).reduce(
+        (upload, [key, value]) => {
+          // Convert dataPath to '/'-notation.
+          const dataPath = normalizeDataPath(key)
+          // Collect the converted configuration, so that from here on out, the
+          // object notation can be assumed, see: `getUploadConfig()`
+          upload[dataPath] = this.setupUploadRoute(
+            dataPath,
+            value,
+            authorize[key]
+          )
+          return upload
+        },
+        {}
+      )
+      : null
+  }
+
+  getUploadConfig(dataPath) {
+    return this.upload?.[dataPath] || null
+  }
+
+  setupUploadRoute(dataPath, config = {}, authorize) {
+    if (isString(config)) {
+      config = {
+        storage: config
+      }
+    }
+    const {
+      storage: storageName,
+      ...settings
+    } = config
+    const storage = this.app.getStorage(storageName)
+    if (!storage) {
+      throw new ControllerError(this,
+        `Unknown storage configuration: '${storageName}'`
+      )
+    }
+    const url = this.getUrl('controller', `upload/${dataPath}`)
+    const upload = multer({
+      storage
+    })
+    const authorization = this.processAuthorize(authorize)
+    this.setupRoute(url, 'post', authorize, [
+      async (ctx, next) => {
+        await this.handleAuthorization(authorization, ctx)
+        // Give the multer callbacks access to `ctx` through `req`.
+        ctx.req.ctx = ctx
+        return next()
+      },
+
+      upload.fields([{
+        ...settings,
+        name: dataPath
+      }]),
+
+      async (ctx, next) => {
+        const files = this.app.convertUploads(ctx.req.files[dataPath])
+        await this.app.rememberUploads(this.url, dataPath, files)
+        ctx.body = files
+        return next()
+      }
+    ])
+    return config
+  }
+
+  compose() {
+    const middleware = [
+      (ctx, next) => {
+        // Expose the handling controller through `ctx.state`.
+        ctx.state.controller = this
+        return next()
+      }
+    ]
+    if (this.router) {
+      middleware.push(
+        this.router.routes(),
+        this.router.allowedMethods()
+      )
+    }
+    return compose(middleware)
+  }
+
   getPath(type, path) {
+    // To be overridden by subclasses.
     return path
   }
 
@@ -327,140 +462,6 @@ export class Controller {
     if (ok !== true) {
       throw new AuthorizationError()
     }
-  }
-
-  setupRoute(url, verb, authorize, handlers) {
-    const authorizeStr = isFunction(authorize)
-      ? describeFunction(authorize)
-      : isString(authorize)
-        ? `'${authorize}'`
-        : isArray(authorize)
-          ? `[${authorize.map(value => `'${value}'`).join(', ')}]`
-          : ''
-    this.log(
-      `${
-        chalk.magenta(verb.toUpperCase())} ${
-        chalk.green(this.url)}${
-        chalk.cyan(url.substring(this.url.length))} ${
-        chalk.white(authorizeStr)
-      }`,
-      this.level + 1
-    )
-    if (!this.router) {
-      this.router = new Router()
-    }
-    this.router[verb](url, ...handlers)
-  }
-
-  setupActions(type) {
-    const {
-      values: actions,
-      authorize
-    } = this.processValues(this.inheritValues(type))
-    for (const name in actions) {
-      this.setupAction(type, name, actions[name], authorize[name])
-    }
-    return actions
-  }
-
-  setupAction(type, name, handler, authorize) {
-    // Custom member actions have their own class so they can fetch the members
-    // ahead of their call.
-    const ActionClass = type === 'member' ? MemberAction : ControllerAction
-    // The default path for actions is the normalized name.
-    const path = this.app.normalizePath(name)
-    this.setupActionRoute(
-      type,
-      new ActionClass(this, handler, type, name, 'get', path, authorize)
-    )
-  }
-
-  setupActionRoute(type, action) {
-    const url = this.getUrl(type, action.path)
-    this.setupRoute(url, action.verb, action.authorize, [
-      async ctx => {
-        try {
-          const res = await action.callAction(ctx)
-          if (res !== undefined) {
-            ctx.body = res
-          }
-        } catch (err) {
-          throw err instanceof ResponseError ? err : new WrappedError(err)
-        }
-      }
-    ])
-  }
-
-  setupUpload() {
-    const {
-      values,
-      authorize
-    } = this.processValues(this.inheritValues('upload'))
-    return values
-      ? Object.entries(values).reduce(
-        (upload, [key, value]) => {
-          // Convert dataPath to '/'-notation.
-          const dataPath = normalizeDataPath(key)
-          // Collect the converted configuration, so that from here on out, the
-          // object notation can be assumed, see: `getUploadConfig()`
-          upload[dataPath] = this.setupUploadRoute(
-            dataPath,
-            value,
-            authorize[key]
-          )
-          return upload
-        },
-        {}
-      )
-      : null
-  }
-
-  getUploadConfig(dataPath) {
-    return this.upload?.[dataPath] || null
-  }
-
-  setupUploadRoute(dataPath, config = {}, authorize) {
-    if (isString(config)) {
-      config = {
-        storage: config
-      }
-    }
-    const {
-      storage: storageName,
-      ...settings
-    } = config
-    const storage = this.app.getStorage(storageName)
-    if (!storage) {
-      throw new ControllerError(this,
-        `Unknown storage configuration: '${storageName}'`
-      )
-    }
-    const url = this.getUrl('controller', `upload/${dataPath}`)
-    const upload = multer({
-      storage
-    })
-    const authorization = this.processAuthorize(authorize)
-    this.setupRoute(url, 'post', authorize, [
-      async (ctx, next) => {
-        await this.handleAuthorization(authorization, ctx)
-        // Give the multer callbacks access to `ctx` through `req`.
-        ctx.req.ctx = ctx
-        return next()
-      },
-
-      upload.fields([{
-        ...settings,
-        name: dataPath
-      }]),
-
-      async (ctx, next) => {
-        const files = this.app.convertUploads(ctx.req.files[dataPath])
-        await this.app.rememberUploads(this.url, dataPath, files)
-        ctx.body = files
-        return next()
-      }
-    ])
-    return config
   }
 
   log(str, indent = 0) {
