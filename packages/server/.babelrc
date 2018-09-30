@@ -17,5 +17,16 @@
     "dynamic-import-node-babel-7",
     "transform-promise-to-bluebird"
   ],
+  "env": {
+    "test": {
+      "presets": [
+        ["@babel/preset-env", {
+          "targets": {
+            "node": "current"
+          }
+        }]
+      ]
+    }
+  },
   "comments": false
 }
