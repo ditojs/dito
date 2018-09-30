@@ -40,6 +40,7 @@ Object {
   "parseDataPath": [Function],
   "pick": [Function],
   "setDataPath": [Function],
+  "shuffle": [Function],
   "stripTags": [Function],
   "toAsync": [Function],
   "toCallback": [Function],
