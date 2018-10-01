@@ -19,15 +19,17 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
-import errorHandler from './errorHandler'
-import routerHandler from './routerHandler'
 import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Service } from '@/services'
-import { Validator } from './Validator'
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
+import {
+  handleError, findRoute, handleRoute, handleTransaction
+} from './middleware'
+import SessionStore from './SessionStore'
+import { Validator } from './Validator'
 import {
   isObject, isString, asArray, isPlainObject, hyphenate, clone
 } from '@ditojs/utils'
@@ -68,7 +70,7 @@ export class Application extends Koa {
     }
   }
 
-  addRoute(verb, path, handlers) {
+  addRoute(verb, path, transacted, handlers, controller = null) {
     handlers = asArray(handlers)
     const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
     // Instead of directly passing `handler`, pass a `route` object that also
@@ -76,7 +78,9 @@ export class Application extends Koa {
     const route = {
       verb,
       path,
-      handler
+      transacted,
+      handler,
+      controller
     }
     this.router[verb](path, route)
   }
@@ -456,7 +460,7 @@ export class Application extends Koa {
     }[log.requests || log.request]
     // TODO: `log.request` is deprecated, remove later.
 
-    this.use(errorHandler())
+    this.use(handleError())
     if (app.responseTime !== false) {
       this.use(responseTime())
     }
@@ -488,19 +492,34 @@ export class Application extends Koa {
       // Sequence is important:
       // 1. body parser
       this.use(bodyParser())
-      // 2. session
+      // 2. find route from routes installed by controllers.
+      this.use(findRoute(this.router))
+      // 3. respect transacted settings, create and handle transactions.
+      this.use(handleTransaction())
+      // 4. session
       if (app.session) {
-        this.use(session(isObject(app.session) ? app.session : {}, this))
+        const {
+          modelClass,
+          ...options
+        } = isObject(app.session) ? app.session : {}
+        if (modelClass) {
+          // Create a ContextStore that resolved the specified model class,
+          // uses it to persist and retrieve the session, and automatically
+          // binds all db operations to `ctx.transaction`, if it is set.
+          // eslint-disable-next-line new-cap
+          options.ContextStore = SessionStore(modelClass)
+        }
+        this.use(session(options, this))
       }
-      // 3. passport
+      // 5. passport
       if (app.passport) {
         this.use(passport.initialize())
         if (app.session) {
           this.use(passport.session())
         }
       }
-      // 4. app router, handling all installed controllers
-      this.use(routerHandler(this.router))
+      // 6. finally handle the found route, or set status / allow accordingly.
+      this.use(handleRoute())
       this.hasControllerMiddleware = true
     }
   }

@@ -1,6 +1,6 @@
 import { ResponseError } from '@/errors'
 
-export default function errorHandler() {
+export function handleError() {
   return async (ctx, next) => {
     try {
       await next()

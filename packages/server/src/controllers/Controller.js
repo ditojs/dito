@@ -31,6 +31,7 @@ export class Controller {
     if (this.path === undefined) {
       this.path = this.app.normalizePath(this.name)
     }
+    this.transacted = !!this.transacted
     if (isRoot) {
       const { path, namespace } = this
       // TODO: The distinction between  `url` and `path` is a bit tricky, since
@@ -46,7 +47,6 @@ export class Controller {
         }`,
         this.level
       )
-      this.router = null
       if (setupControllerObject) {
         this.controller = this.reflectControllerObject()
         // Now that the instance fields are reflected in the `controller` object
@@ -83,7 +83,7 @@ export class Controller {
     return controller
   }
 
-  setupRoute(url, verb, authorize, handlers) {
+  setupRoute(verb, url, transacted, authorize, handlers) {
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
@@ -93,7 +93,7 @@ export class Controller {
       }`,
       this.level + 1
     )
-    this.app.addRoute(verb, url, handlers)
+    this.app.addRoute(verb, url, transacted, handlers, this)
   }
 
   setupActions(type) {
@@ -121,7 +121,8 @@ export class Controller {
 
   setupActionRoute(type, action) {
     const url = this.getUrl(type, action.path)
-    this.setupRoute(url, action.verb, action.authorize, [
+    const { verb, transacted, authorize } = action
+    this.setupRoute(verb, url, transacted, authorize, [
       async ctx => {
         try {
           const res = await action.callAction(ctx)
@@ -171,6 +172,7 @@ export class Controller {
     }
     const {
       storage: storageName,
+      transacted,
       ...settings
     } = config
     const storage = this.app.getStorage(storageName)
@@ -184,7 +186,7 @@ export class Controller {
       storage
     })
     const authorization = this.processAuthorize(authorize)
-    this.setupRoute(url, 'post', authorize, [
+    this.setupRoute('post', url, transacted, authorize, [
       async (ctx, next) => {
         await this.handleAuthorization(authorization, ctx)
         // Give the multer callbacks access to `ctx` through `req`.
@@ -251,7 +253,7 @@ export class Controller {
       entry[type] = values
     }
     // If there are no values defined on `this` that differ from the parent,
-    // set to an empty object so inheritance can be set up and `filterValues()`
+    // set to an empty object so inheritance can be set up and `processValues()`
     // can still be called.
     // NOTE: We can't check with `this.hasOwnProperty(type)` because the
     // field can be on the class prototype as well, in case of accessors.
@@ -312,7 +314,7 @@ export class Controller {
 
     const handleAuthorize = authorize => {
       const add = (key, value) => {
-        // Since we're walking up in the inheritance change, only take on an
+        // Since we're walking up in the inheritance chain, only take on an
         // authorize setting for a given key if it wasn't already defined before
         if (
           key in values &&

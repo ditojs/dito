@@ -21,7 +21,7 @@ export class RelationController extends CollectionController {
     this.unrelate = !relationDefinition.owner
     // Inherit parent values:
     this.graph = parent.graph
-    this.router = parent.router
+    this.transacted = parent.transacted
     this.level = parent.level + 1
     // Inherit eagerScope since it's in its nature to propagate to relations.
     this.eagerScope = parent.eagerScope
@@ -65,9 +65,9 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  async execute(transacted, ctx, execute) {
+  async execute(ctx, execute) {
     const id = this.parent.getId(ctx)
-    return this.parent.execute(transacted, ctx,
+    return this.parent.execute(ctx,
       async (parentQuery, trx) => {
         const model = await parentQuery
           .clearScope()
@@ -84,13 +84,9 @@ export class RelationController extends CollectionController {
     )
   }
 
-  collection = {
-    // See CollectionController.collection.$core:
-    $core: true
-  }
+  collection = this.toCoreActions({
+  })
 
-  member = {
-    // See CollectionController.member.$core:
-    $core: true
-  }
+  member = this.toCoreActions({
+  })
 }

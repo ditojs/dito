@@ -1,13 +1,6 @@
 import ControllerAction from './ControllerAction'
 
 export default class MemberAction extends ControllerAction {
-  constructor(controller, handler, type, name, verb, path, authorize) {
-    super(controller, handler, type, name, verb, path, authorize)
-    // Copy over fields set by @scope() and @eagerScope() decorators
-    this.scope = handler.scope
-    this.eagerScope = handler.eagerScope
-  }
-
   // @override
   async collectArguments(ctx) {
     const consumed = {}
@@ -36,9 +29,10 @@ export default class MemberAction extends ControllerAction {
     return this.controller.member.find.call(
       this.controller,
       ctx,
-      // Provide a `modify()` function for `find()` to handle the setting of
-      // `this.scope` and `this.eagerScope` on the query, see constructor()
-      query => this.controller.setupQuery(query, this)
+      // Provide a `modify()` function for `find()`, to handle the setting of
+      // `handler.scope` and `handler.eagerScope` on the query, see the `base`
+      // argument in `setupQuery()`
+      query => this.controller.setupQuery(query, this.handler)
     )
   }
 }

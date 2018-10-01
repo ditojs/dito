@@ -13,6 +13,12 @@ export default class ControllerAction {
     // Use ?? instead of || to allow '' to override the path.
     this.path = handler.path ?? path
     this.authorize = handler.authorize || authorize
+    this.transacted = !!(
+      handler.transacted ||
+      controller.transacted ||
+      // Core graph operations are always transacted:
+      controller.graph && handler.core
+    )
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
