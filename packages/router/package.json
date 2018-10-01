@@ -1,0 +1,38 @@
+{
+  "name": "@ditojs/router",
+  "version": "0.38.0",
+  "description": "Dito.js Router – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
+  "main": "lib/index.js",
+  "repository": "https://github.com/ditojs/dito/tree/master/packages/router",
+  "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
+  "license": "MIT",
+  "files": [
+    "src/",
+    "lib/"
+  ],
+  "scripts": {
+    "build": "babel src --out-dir lib --copy-files --source-maps inline",
+    "watch": "yarn build --watch",
+    "prepare": "yarn build"
+  },
+  "engines": {
+    "node": ">= 9.0.0",
+    "yarn": ">= 1.0.0"
+  },
+  "browserslist": [
+    "node 9"
+  ],
+  "dependencies": {
+    "@babel/runtime": "^7.0.0"
+  },
+  "devDependencies": {
+    "@ditojs/utils": "^0.38.0"
+  },
+  "keywords": [
+    "route",
+    "router",
+    "routing",
+    "koa",
+    "dito"
+  ]
+}

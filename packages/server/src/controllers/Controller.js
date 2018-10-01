@@ -1,5 +1,3 @@
-import compose from 'koa-compose'
-import Router from 'koa-router'
 import multer from 'koa-multer'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
@@ -35,6 +33,9 @@ export class Controller {
     }
     if (isRoot) {
       const { path, namespace } = this
+      // TODO: The distinction between  `url` and `path` is a bit tricky, since
+      // what we call `url` here is called `path` in Router, and may contain
+      // mapped parameters or wildcards. Consider `path` / `route` instead?
       const url = path ? `/${path}` : ''
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
@@ -83,26 +84,16 @@ export class Controller {
   }
 
   setupRoute(url, verb, authorize, handlers) {
-    const authorizeStr = isFunction(authorize)
-      ? describeFunction(authorize)
-      : isString(authorize)
-        ? `'${authorize}'`
-        : isArray(authorize)
-          ? `[${authorize.map(value => `'${value}'`).join(', ')}]`
-          : ''
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
         chalk.green(this.url)}${
         chalk.cyan(url.substring(this.url.length))} ${
-        chalk.white(authorizeStr)
+        chalk.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1
     )
-    if (!this.router) {
-      this.router = new Router()
-    }
-    this.router[verb](url, ...handlers)
+    this.app.addRoute(verb, url, handlers)
   }
 
   setupActions(type) {
@@ -217,24 +208,12 @@ export class Controller {
   }
 
   compose() {
-    const middleware = [
-      (ctx, next) => {
-        // Expose the handling controller through `ctx.state`.
-        ctx.state.controller = this
-        return next()
-      }
-    ]
-    if (this.router) {
-      middleware.push(
-        this.router.routes(),
-        this.router.allowedMethods()
-      )
-    }
-    return compose(middleware)
+    // To be overridden in sub-classes, if the controller needs to install
+    // middleware. For normal routes, use `this.app.addRoute()` instead.
   }
 
   getPath(type, path) {
-    // To be overridden by subclasses.
+    // To be overridden by sub-classes.
     return path
   }
 
@@ -455,6 +434,16 @@ export class Controller {
         `Unsupported authorize setting: '${authorize}'`
       )
     }
+  }
+
+  describeAuthorize(authorize) {
+    return isFunction(authorize)
+      ? describeFunction(authorize)
+      : isString(authorize)
+        ? `'${authorize}'`
+        : isArray(authorize)
+          ? `[${authorize.map(value => `'${value}'`).join(', ')}]`
+          : ''
   }
 
   async handleAuthorization(authorization, ...args) {

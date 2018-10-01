@@ -2,6 +2,7 @@ module.exports = {
   projects: [
     // '<rootDir>/packages/*' <- Use this once all projects have tests.
     '<rootDir>/packages/utils',
+    '<rootDir>/packages/router',
     '<rootDir>/packages/server'
   ],
   collectCoverage: true,

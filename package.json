@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "lerna run build --stream",
-    "watch": "lerna run watch --stream --no-sort --concurrency 5",
+    "watch": "lerna run watch --stream --no-sort --concurrency 6",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src"

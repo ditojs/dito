@@ -1,0 +1,19 @@
+{
+  "presets": [
+    "@ditojs/babel-preset",
+    ["@babel/preset-env", {
+      "useBuiltIns": "usage"
+    }]
+  ],
+  "plugins": [
+    ["module-resolver", {
+      "cwd": "babelrc",
+      "alias": {
+        "~": ".",
+        "@": "./src"
+      }
+    }],
+    "@babel/plugin-transform-runtime"
+  ],
+  "comments": false
+}

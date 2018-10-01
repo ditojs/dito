@@ -18,7 +18,9 @@ import helmet from 'koa-helmet'
 import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
+import Router from '@ditojs/router'
 import errorHandler from './errorHandler'
+import routerHandler from './routerHandler'
 import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
@@ -33,7 +35,7 @@ import {
 export class Application extends Koa {
   constructor(
     config = {},
-    { validator, events, models, controllers, services }
+    { validator, router, events, models, controllers, services }
   ) {
     super()
     this.setupEmitter(events)
@@ -43,12 +45,14 @@ export class Application extends Koa {
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
+    this.router = router || new Router()
     this.validator.app = this
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
     this.storage = Object.create(null)
-    this.setupMiddleware()
+    this.hasControllerMiddleware = false
+    this.setupGlobalMiddleware()
     this.setupKnex()
     if (config.storage) {
       this.setupStorage(config.storage)
@@ -62,6 +66,19 @@ export class Application extends Koa {
     if (controllers) {
       this.addControllers(controllers)
     }
+  }
+
+  addRoute(verb, path, handlers) {
+    handlers = asArray(handlers)
+    const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
+    // Instead of directly passing `handler`, pass a `route` object that also
+    // will be exposed through `ctx.route`, see `routerHandler()`:
+    const route = {
+      verb,
+      path,
+      handler
+    }
+    this.router[verb](path, route)
   }
 
   addModels(models) {
@@ -222,6 +239,8 @@ export class Application extends Koa {
   }
 
   addController(controller, namespace) {
+    // Controllers require additional middleware to be installed once.
+    this.setupControllerMiddleware()
     // Auto-instantiate controller classes:
     if (Controller.isPrototypeOf(controller)) {
       // eslint-disable-next-line new-cap
@@ -237,6 +256,8 @@ export class Application extends Koa {
     // Now that the controller is set up, call `initialize()` which can be
     // overridden by controllers.
     controller.initialize()
+    // Each controller can also provide further middleware, e.g.
+    // `AdminController`:
     const middleware = controller.compose()
     if (middleware) {
       this.use(middleware)
@@ -421,11 +442,11 @@ export class Application extends Koa {
     })
   }
 
-  setupMiddleware() {
-    const { log = {}, app = {} } = this.config
-
-    const isTruthy = name => !!app[name]
-    const isntFalse = name => app[name] !== false
+  setupGlobalMiddleware() {
+    const {
+      log = {},
+      app = {}
+    } = this.config
 
     const logger = {
       console: koaLogger,
@@ -435,36 +456,53 @@ export class Application extends Koa {
     }[log.requests || log.request]
     // TODO: `log.request` is deprecated, remove later.
 
-    this.use(
-      compose([
-        errorHandler(),
-        isntFalse('responseTime') && responseTime(),
-        logger?.(),
-        isntFalse('helmet') && helmet(),
-        isntFalse('cors') && cors(isObject(app.cors) ? app.cors : {}),
-        isTruthy('compress') && compress(app.compress),
-        ...(isTruthy('etag') && [
-          conditional(),
-          etag()
-        ] || []),
-        bodyParser(),
-        isTruthy('session') && session(
-          isObject(app.session) ? app.session : {},
-          this
-        )
-      ].filter(val => val))
-    )
+    this.use(errorHandler())
+    if (app.responseTime !== false) {
+      this.use(responseTime())
+    }
+    if (logger) {
+      this.use(logger())
+    }
+    if (app.helmet !== false) {
+      this.use(helmet())
+    }
+    if (app.cors !== false) {
+      this.use(cors(isObject(app.cors) ? app.cors : {}))
+    }
+    if (app.compress) {
+      this.use(compress(app.compress))
+    }
+    if (app.etag) {
+      this.use(conditional())
+      this.use(etag())
+    }
   }
 
-  usePassport() {
-    // NOTE: This is not part of the automatic `setupMiddleware()` so that apps
-    // can set up the static serving of assets before installing the passport
-    // middleware. If `usePassport()` is called before the assets, then logged
-    // in users would be resolved for every loaded resource.
-    this.use(compose([
-      passport.initialize(),
-      passport.session()
-    ]))
+  setupControllerMiddleware() {
+    // NOTE: This is not part of the automatic `setupGlobalMiddleware()` so that
+    // apps can set up the static serving of assets before installing the
+    // session and passport middleware. It is called from `addController()`.
+    // Use a flag to only install the middleware once:
+    if (!this.hasControllerMiddleware) {
+      const { app = {} } = this.config
+      // Sequence is important:
+      // 1. body parser
+      this.use(bodyParser())
+      // 2. session
+      if (app.session) {
+        this.use(session(isObject(app.session) ? app.session : {}, this))
+      }
+      // 3. passport
+      if (app.passport) {
+        this.use(passport.initialize())
+        if (app.session) {
+          this.use(passport.session())
+        }
+      }
+      // 4. app router, handling all installed controllers
+      this.use(routerHandler(this.router))
+      this.hasControllerMiddleware = true
+    }
   }
 
   setupKnex() {
