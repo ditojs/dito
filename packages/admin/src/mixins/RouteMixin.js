@@ -30,6 +30,7 @@ export default {
     },
 
     routeRecord() {
+      // TODO: Can this.$route.currentRoute be of use somewhere here?
       // Retrieve the route-record to which this component was mapped to:
       // https://github.com/vuejs/vue-router/issues/1338#issuecomment-296381459
       return this.$route.matched[this.$vnode.data.routerViewDepth]
