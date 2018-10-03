@@ -400,41 +400,50 @@ export class Application extends Koa {
   }
 
   compileValidator(jsonSchema, options) {
-    return this.validator.compile(jsonSchema, options)
+    return jsonSchema
+      ? this.validator.compile(jsonSchema, options)
+      : null
   }
 
   compileParametersValidator(parameters, options = {}) {
-    let properties = null
     const list = []
+    let properties = null
+    let member = null
     const rootName = options.rootName || 'root'
+    let first = true
     for (const param of asArray(parameters)) {
       const schema = isString(param) ? { type: param } : param
-      list.push(schema)
-      const { name, type, ...rest } = schema
-      properties = properties || {}
-      properties[name || rootName] = type ? { type, ...rest } : rest
+      if (first && options.member && schema.member) {
+        member = schema
+      } else {
+        list.push(schema)
+        const { name, type, ...rest } = schema
+        properties = properties || {}
+        properties[name || rootName] = type ? { type, ...rest } : rest
+      }
+      first = false
     }
-    if (properties) {
-      const schema = convertSchema(properties, options)
-      const validate = this.compileValidator(schema, {
-        // For parameters, always coerce types, including arrays.
-        coerceTypes: 'array',
-        ...options
-      })
-      const ctx = {
-        app: this,
-        validator: this.validator,
-        options
-      }
-      return {
-        list,
-        rootName,
-        schema,
-        validate(data) {
-          // Use `call()` to pass ctx as context to Ajv, see passContext:
-          return validate.call(ctx, data)
-        }
-      }
+    // NOTE: If properties is null, schema and validate will become null too:
+    const schema = convertSchema(properties, options)
+    const validate = this.compileValidator(schema, {
+      // For parameters, always coerce types, including arrays.
+      coerceTypes: 'array',
+      ...options
+    })
+    const ctx = {
+      app: this,
+      validator: this.validator,
+      options
+    }
+    return {
+      list,
+      member,
+      schema,
+      rootName,
+      validate: validate
+        // Use `call()` to pass ctx as context to Ajv, see passContext:
+        ? data => validate.call(ctx, data)
+        : null
     }
   }
 

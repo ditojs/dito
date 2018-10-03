@@ -5,24 +5,33 @@ export default class MemberAction extends ControllerAction {
   async collectArguments(ctx) {
     const consumed = {}
     const args = this.collectConsumedArguments(ctx, consumed)
-    let memberCtx = ctx
-    if (this.hasQueryParams()) {
-      // Create a copy of ctx that inherits from the real one but overrides
-      // query with a version that has all consumed query params removed so it
-      // can be passed on to `getMember()` which calls `actions.find(ctx)`:
+    if (this.parameters.member) {
+      // Resolve member and add it as first argument to list, but nly passed the
+      // unconsumed arguments to `getMember()`, which calls `actions.find(ctx)`:
+      args.unshift(
+        await this.getMember(this.removeConsumedArguments(ctx, consumed))
+      )
+    }
+    return args
+  }
+
+  removeConsumedArguments(ctx, consumed) {
+    // If the action receives parameters from `ctx.query`, create a copy of
+    // `ctx` that inherits from the real one but overrides query with a version
+    // that has all consumed query params removed.
+    if (
+      this.parameters.rootName === 'query' &&
+      Object.keys(consumed).length > 0
+    ) {
       const query = {}
       for (const key in ctx.query) {
         if (!consumed[key]) {
           query[key] = ctx.query[key]
         }
       }
-      memberCtx = Object.setPrototypeOf({ query }, ctx)
+      ctx = Object.setPrototypeOf({ query }, ctx)
     }
-    if (this.receivesArguments()) {
-      // Resolve member and add as first argument to list:
-      args.unshift(await this.getMember(memberCtx))
-    }
-    return args
+    return ctx
   }
 
   getMember(ctx) {

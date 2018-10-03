@@ -24,6 +24,8 @@ export default class ControllerAction {
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
     const { parameters, returns, options } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
+      // Check for special first member parameter:
+      member: true,
       async: true,
       ...options?.parameters, // See @parameters() decorator
       rootName: this.paramsName
@@ -47,16 +49,6 @@ export default class ControllerAction {
     ctx.request[this.paramsName] = query
   }
 
-  // Returns true if the action receives parameters from `ctx.query`
-  hasQueryParams() {
-    return this.parameters && this.paramsName === 'query'
-  }
-
-  // Returns true if the action receives any arguments beyond `ctx`
-  receivesArguments() {
-    return this.handler.length > 1 // The first argument is always `ctx`
-  }
-
   async callAction(ctx) {
     await this.validateParameters(ctx)
     const args = await this.collectArguments(ctx)
@@ -73,7 +65,7 @@ export default class ControllerAction {
   }
 
   async validateParameters(ctx) {
-    if (!this.parameters) return
+    if (!this.parameters.validate) return
     let params = this.getParams(ctx)
     // `parameters.validate(query)` coerces data in the query to the required
     // formats, according to the rules specified here:
@@ -153,7 +145,7 @@ export default class ControllerAction {
   }
 
   async validateResult(result) {
-    if (this.returns) {
+    if (this.returns.validate) {
       const resultName = this.handler.returns.name
       // Use rootName if no name is given, see:
       // Application.compileParametersValidator(returns, { rootName })
@@ -178,11 +170,12 @@ export default class ControllerAction {
   collectConsumedArguments(ctx, consumed) {
     // `consumed` is used in MemberAction.collectArguments()
     const args = []
-    if (this.parameters) {
+    const { list } = this.parameters
+    if (list.length > 0) {
       // If we have parameters, add them to the arguments now,
       // while also keeping track of consumed parameters:
       const params = this.getParams(ctx)
-      for (const { name } of this.parameters.list) {
+      for (const { name } of list) {
         if (name && consumed) {
           consumed[name] = true
         }

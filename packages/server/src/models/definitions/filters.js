@@ -52,7 +52,7 @@ export default function filters(values) {
           func.parameters,
           { ...func.validate, rootName }
         )
-        if (validator) {
+        if (validator?.validate) {
           return (query, ...args) => {
             // Convert args to object for validation:
             const object = {}
