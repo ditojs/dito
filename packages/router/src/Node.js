@@ -9,7 +9,7 @@ export default class Node {
 
   initialize(
     prefix = '/',
-    children = [],
+    children = {},
     handler = null,
     paramNames = null
   ) {
@@ -19,24 +19,15 @@ export default class Node {
     this.handler = handler
     this.paramNames = paramNames
     this.paramName = null
-    this.childrenByLabel = null
   }
 
   addChild(child) {
-    this.children.push(child)
-    this.childrenByLabel = null // Cache needs re-calculating after changes.
+    // No two children can have the same label in a prefix-tree so this is fine:
+    this.children[child.label] = child
   }
 
   findChild(label) {
-    let { childrenByLabel } = this
-    if (!childrenByLabel) {
-      // Build a by-label cache for faster subsequent lookups:
-      childrenByLabel = this.childrenByLabel = {}
-      for (const child of this.children) {
-        childrenByLabel[child.label] = child
-      }
-    }
-    return childrenByLabel[label]
+    return this.children[label]
   }
 
   add(path, handler) {
@@ -191,6 +182,7 @@ export default class Node {
     const handler = this.handler && `${this.handler.name || 'ƒ'}()`
     const format = (prefix, tail, on, off) =>
       root ? '' : `${prefix}${tail ? on : off}`
+    const children = Object.values(this.children)
     const lines = [
       `${format(prefix, tail, '└── ', '├── ')}${
         this.label === PARAM
@@ -199,12 +191,12 @@ export default class Node {
       }${
         handler ? ` ${handler}` : ''
       } children=${
-        this.children.length
+        children.length
       }`
     ]
 
     const str = format(prefix, tail, '    ', '│   ')
-    const { children } = this
+
     for (let i = 0, l = children.length - 1; i <= l; i++) {
       lines.push(children[i].toString(str, i === l, false))
     }
