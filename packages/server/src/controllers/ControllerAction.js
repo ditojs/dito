@@ -72,8 +72,8 @@ export default class ControllerAction {
     // case prior to the call of `parameters.validate()`:
     const errors = []
     let needsRoot = false
-    for (const { name, type } of this.parameters.list) {
-      needsRoot = needsRoot || !name
+    for (const { name, type, member } of this.parameters.list) {
+      needsRoot = needsRoot || !name && !member
       // See if the defined type(s) require coercion to objects:
       const objectType = asArray(type).find(
         // Coerce to object if type is 'object' or a known model name.
