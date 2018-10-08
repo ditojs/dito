@@ -1,7 +1,6 @@
-// Node Types:
-const STATIC = 0
-const PARAM = 1
-const MATCH_ANY = 2
+// Special Labels:
+const PARAM = ':'
+const MATCH_ANY = '*'
 
 export default class Node {
   constructor(...args) {
@@ -10,54 +9,42 @@ export default class Node {
 
   initialize(
     prefix = '/',
-    type = STATIC,
     children = [],
     handler = null,
     paramNames = null
   ) {
-    this.label = prefix.charCodeAt(0)
+    this.label = prefix[0]
     this.prefix = prefix
-    this.type = type
     this.children = children
     this.handler = handler
     this.paramNames = paramNames
     this.paramName = null
+    this.childrenByLabel = null
   }
 
   addChild(child) {
     this.children.push(child)
+    this.childrenByLabel = null // Cache needs re-calculating after changes.
   }
 
-  findChild(label, type) {
-    for (const child of this.children) {
-      if (child.label === label && child.type === type) {
-        return child
+  findChild(label) {
+    let { childrenByLabel } = this
+    if (!childrenByLabel) {
+      // Build a by-label cache for faster subsequent lookups:
+      childrenByLabel = this.childrenByLabel = {}
+      for (const child of this.children) {
+        childrenByLabel[child.label] = child
       }
     }
-  }
-
-  findChildWithLabel(label) {
-    for (const child of this.children) {
-      if (child.label === label) {
-        return child
-      }
-    }
-  }
-
-  findChildWithType(type) {
-    for (const child of this.children) {
-      if (child.type === type) {
-        return child
-      }
-    }
+    return childrenByLabel[label]
   }
 
   add(path, handler) {
     const paramNames = []
     for (let pos = 0, length = path.length; pos < length; pos++) {
       const ch = path[pos]
-      if (ch === ':') {
-        this.insert(path.substring(0, pos), STATIC)
+      if (ch === PARAM) {
+        this.insert(path.substring(0, pos))
         pos++ // Skip colon.
         const start = pos
         // Move pos to the next occurrence of the slash or the end:
@@ -69,34 +56,34 @@ export default class Node {
         length = path.length // Update length after changing path.
 
         if (start === length) {
-          return this.insert(path, PARAM, paramNames, handler)
+          return this.insert(path, paramNames, handler)
         }
         pos = start
-        this.insert(path.substring(0, pos), PARAM, paramNames)
-      } else if (ch === '*') {
-        this.insert(path.substring(0, pos), STATIC)
-        paramNames.push('*')
-        return this.insert(path, MATCH_ANY, paramNames, handler)
+        // We need to include paramNames here for toString() and nested queries.
+        this.insert(path.substring(0, pos), paramNames)
+      } else if (ch === MATCH_ANY) {
+        this.insert(path.substring(0, pos))
+        paramNames.push(MATCH_ANY)
+        return this.insert(path, paramNames, handler)
       }
     }
-    this.insert(path, STATIC, paramNames, handler)
+    this.insert(path, paramNames, handler)
   }
 
-  insert(path, type, paramNames, handler) {
+  insert(path, paramNames, handler) {
     let current = this
     while (true) {
-      // Find the position where the path and the node's prefix start diverging.
+      // Find the position where the path and the node's prefix start diverging
       const { prefix } = current
       let pos = 0
       const max = path.length < prefix.length ? path.length : prefix.length
-      while (pos < max && path.charCodeAt(pos) === prefix.charCodeAt(pos)) {
+      while (pos < max && path[pos] === prefix[pos]) {
         pos++
       }
       if (pos < prefix.length) {
         // Split node
         const node = new Node(
           prefix.substring(pos),
-          current.type,
           current.children,
           current.handler,
           current.paramNames
@@ -104,25 +91,22 @@ export default class Node {
         // Reset parent node and add new node as child to it:
         current.initialize(prefix.substring(0, pos))
         current.addChild(node)
-        if (pos === path.length) {
-          // At parent node
-          current.type = type
-        } else {
+        if (pos < path.length) {
           // Create child node
-          const node = new Node(path.substring(pos), type)
+          const node = new Node(path.substring(pos))
           current.addChild(node)
           current = node // Switch to child to set handler
         }
       } else if (pos < path.length) {
         path = path.substring(pos)
-        const child = current.findChildWithLabel(path.charCodeAt(0))
+        const child = current.findChild(path[0])
         if (child !== undefined) {
           // Go deeper
           current = child
           continue
         }
         // Create child node
-        const node = new Node(path, type)
+        const node = new Node(path)
         current.addChild(node)
         current = node // Switch to child to set handler
       }
@@ -158,7 +142,7 @@ export default class Node {
     const fullMatch = path.startsWith(this.prefix)
     if (fullMatch) {
       path = path.substring(this.prefix.length)
-    } else if (this.type !== PARAM) {
+    } else if (this.label !== PARAM) {
       // If the path doesn't fully match the prefix, we only need to look
       // further on param nodes, which can have overlapping static children.
       return null
@@ -167,7 +151,7 @@ export default class Node {
     // Search order: Static > Param > Match-any
 
     // Static node
-    const staticChild = this.findChild(path.charCodeAt(0), STATIC)
+    const staticChild = this.findChild(path[0])
     if (staticChild) {
       const result = staticChild.find(path, paramValues)
       if (result) {
@@ -181,7 +165,7 @@ export default class Node {
     }
 
     // Param node
-    const paramChild = this.findChildWithType(PARAM)
+    const paramChild = this.findChild(PARAM)
     if (paramChild) {
       // Find the position of the next slash:
       const pos = path.match(/^([^/]*)/)[1].length
@@ -194,10 +178,10 @@ export default class Node {
     }
 
     // Match-any node
-    const anyChild = this.findChildWithType(MATCH_ANY)
-    if (anyChild) {
+    const matchAnyChild = this.findChild(MATCH_ANY)
+    if (matchAnyChild) {
       paramValues.push(path)
-      return anyChild.find('', paramValues) // '' == End
+      return matchAnyChild.find('', paramValues) // '' == End
     }
 
     return null
@@ -209,7 +193,7 @@ export default class Node {
       root ? '' : `${prefix}${tail ? on : off}`
     const lines = [
       `${format(prefix, tail, '└── ', '├── ')}${
-        this.type === PARAM
+        this.label === PARAM
           ? `${this.prefix}${this.paramName}`
           : this.prefix
       }${
