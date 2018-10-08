@@ -408,20 +408,15 @@ export class Application extends Koa {
   compileParametersValidator(parameters, options = {}) {
     const list = []
     let properties = null
-    let member = null
     const rootName = options.rootName || 'root'
-    let first = true
     for (const param of asArray(parameters)) {
       const schema = isString(param) ? { type: param } : param
-      if (first && options.member && schema.member) {
-        member = schema
-      } else {
-        list.push(schema)
+      list.push(schema)
+      if (!(schema.member)) {
         const { name, type, ...rest } = schema
         properties = properties || {}
         properties[name || rootName] = type ? { type, ...rest } : rest
       }
-      first = false
     }
     // NOTE: If properties is null, schema and validate will become null too:
     const schema = convertSchema(properties, options)
@@ -437,7 +432,6 @@ export class Application extends Koa {
     }
     return {
       list,
-      member,
       schema,
       rootName,
       validate: validate

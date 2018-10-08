@@ -24,8 +24,6 @@ export default class ControllerAction {
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
     const { parameters, returns, options } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
-      // Check for special first member parameter:
-      member: true,
       async: true,
       ...options?.parameters, // See @parameters() decorator
       rootName: this.paramsName
@@ -167,26 +165,33 @@ export default class ControllerAction {
     return result
   }
 
-  collectConsumedArguments(ctx, consumed) {
-    // `consumed` is used in MemberAction.collectArguments()
+  async collectArguments(ctx) {
     const args = []
     const { list } = this.parameters
     if (list.length > 0) {
       // If we have parameters, add them to the arguments now,
       // while also keeping track of consumed parameters:
       const params = this.getParams(ctx)
-      for (const { name } of list) {
-        if (name && consumed) {
-          consumed[name] = true
+      for (const entry of list) {
+        // Handle `{ member: true }` parameters separately, by delegating to
+        // `getMember()` to resolve to the given member.
+        if (entry.member) {
+          // member entries can provide special query parameters as well:
+          // `{ member: true, query: { ... } }`
+          args.push(await this.getMember(ctx, entry.query))
+        } else {
+          const { name } = entry
+          // If no name is provided, use the body object (params)
+          args.push(name ? params[name] : params)
         }
-        // If no name is provided, use the body object (params)
-        args.push(name ? params[name] : params)
       }
     }
     return args
   }
 
-  async collectArguments(ctx) {
-    return this.collectConsumedArguments(ctx, null)
+  async getMember(/* ctx, query */) {
+    // This is only defined in MemberAction, where it resolves to the member
+    // represented by the given action route.
+    return null
   }
 }
