@@ -1,5 +1,8 @@
-import Node from './Node'
 import http from 'http'
+import Node from './Node'
+import Result from './Result'
+
+const CHAR_SLASH = '/'.charCodeAt(0)
 
 export default class Router {
   constructor(options) {
@@ -8,7 +11,6 @@ export default class Router {
   }
 
   add(method, path, handler) {
-    method = method.toUpperCase()
     path = this.normalizePath(path)
     const tree = this.trees[method] || (this.trees[method] = new Node())
     tree.add(path, handler)
@@ -16,39 +18,9 @@ export default class Router {
   }
 
   find(method, path) {
-    method = method.toUpperCase()
     path = this.normalizePath(path)
     const tree = this.trees[method]
-    let result = tree?.find(path)
-    if (!result) {
-      // Send 405 / 501 errors, except for 'GET' (404) and 'OPTIONS' (200).
-      // 405: 'Method Not Allowed' (tree was found, but node was not)
-      // 501: 'Method Not Implemented' (there is no tree for that method)
-      result = {
-        status: (
-          { GET: 404, OPTIONS: 200 }[method] ||
-          (tree ? 405 : 501)
-        )
-      }
-      // Define a computed `allowed` property that is cached after first call.
-      Object.defineProperty(result, 'allowed', {
-        get: () => {
-          const allowed = tree
-            ? this.getAllowedMethods(path, method)
-            : this.getAllowedMethods()
-          // Redefine `allowed` property with computed value.
-          Object.defineProperty(result, 'allowed', {
-            value: allowed,
-            configurable: true,
-            enumerable: true
-          })
-          return allowed
-        },
-        configurable: true,
-        enumerable: true
-      })
-    }
-    return result
+    return tree && tree.find(path) || new Result(method, path, tree)
   }
 
   getAllowedMethods(path = null, exclude = null) {
@@ -115,10 +87,16 @@ export default class Router {
 
   normalizePath(path) {
     const { strict, prefix } = this._options
-    if (!strict) {
+    if (!strict && path !== '/') {
       // When not in strict mode, remove trailing slash from any path except
       // '/', and make sure path starts with '/'
-      path = `/${path.match(/^\/?(.*?)\/?$/)[1]}`
+      const { length } = path
+      if (path.charCodeAt(length - 1) === CHAR_SLASH) {
+        path = path.substring(0, length - 1)
+      }
+      if (path.charCodeAt(0) !== CHAR_SLASH) {
+        path = '/' + path
+      }
     }
     return prefix ? prefix + path : path
   }
