@@ -20,6 +20,7 @@
     :internal-search="true"
     :close-on-select="true"
     :loading="isLoading"
+    @input="onChange()"
     @tag="addTag"
   )
 </template>

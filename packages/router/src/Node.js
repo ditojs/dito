@@ -109,7 +109,7 @@ export default class Node {
           // Create child node
           const node = new Node(path.substring(pos), type)
           current.addChild(node)
-          current = node // Switch to child to set handler
+          current = node // Switch to child to set handler and paramNames
         }
       } else if (pos < path.length) {
         path = path.substring(pos)
@@ -122,7 +122,7 @@ export default class Node {
         // Create child node
         const node = new Node(path, type)
         current.addChild(node)
-        current = node // Switch to child to set handler
+        current = node // Switch to child to set handler and paramNames
       }
       if (handler) {
         current.handler = handler
