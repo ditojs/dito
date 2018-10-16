@@ -1,7 +1,7 @@
 import objection from 'objection'
 import dbErrors from 'db-errors'
 import { QueryBuilder } from '@/query'
-import { KnexHelper } from '@/lib'
+import { EventEmitter, KnexHelper } from '@/lib'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
 import {
@@ -71,6 +71,7 @@ export class Model extends objection.Model {
 
   static initialize() {
     // Overridable in sub-classes
+    this.setupEmitter(this.definition.hooks)
   }
 
   $initialize() {
@@ -97,6 +98,38 @@ export class Model extends objection.Model {
       this.$set(attributes)
     }
     return this
+  }
+
+  $emit(type, ...args) {
+    return this.constructor.emit(type, this, ...args)
+  }
+
+  $beforeInsert(queryContext) {
+    return this.$emit('before:insert', queryContext)
+  }
+
+  $afterInsert(queryContext) {
+    return this.$emit('after:insert', queryContext)
+  }
+
+  $beforeUpdate(opt, queryContext) {
+    return this.$emit('before:update', opt, queryContext)
+  }
+
+  $afterUpdate(opt, queryContext) {
+    return this.$emit('after:update', opt, queryContext)
+  }
+
+  $afterGet(queryContext) {
+    return this.$emit('after:get', queryContext)
+  }
+
+  $beforeDelete(queryContext) {
+    return this.$emit('before:delete', queryContext)
+  }
+
+  $afterDelete(queryContext) {
+    return this.$emit('after:delete', queryContext)
   }
 
   async $transaction(handler) {
@@ -632,6 +665,7 @@ export class Model extends objection.Model {
   }
 }
 
+EventEmitter.mixin(Model)
 KnexHelper.mixin(Model)
 // Expose a selection of QueryBuilder methods as static methods on model classes
 QueryBuilder.mixin(Model)

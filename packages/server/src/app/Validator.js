@@ -263,6 +263,10 @@ export class Validator extends objection.Validator {
     ctx.jsonSchema = model.constructor.getJsonSchema()
     const { $beforeValidate } = model
     if ($beforeValidate !== objection.Model.prototype.$beforeValidate) {
+      // TODO: Consider adding hooks for 'before:validate' and 'after:validate',
+      // and if so, decide what to do about modifying / returning json-schema.
+      // Probably we shouldn't allow it there.
+
       // Only clone jsonSchema if the handler actually receives it.
       if ($beforeValidate.length > 0) {
         ctx.jsonSchema = clone(ctx.jsonSchema)

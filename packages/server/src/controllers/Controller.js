@@ -24,7 +24,10 @@ export class Controller {
   }
 
   setup(isRoot = true, setupControllerObject = true) {
-    this.setupEmitter(this.hooks)
+    this.setupEmitter(this.hooks, {
+      // Support wildcard hooks only on controllers:
+      wildcard: true
+    })
     // If the class name ends in 'Controller', remove it from controller name.
     this.name = this.name ||
       this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]

@@ -15,6 +15,18 @@ export const TimeStampedMixin = Model => class extends Model {
       .select('createdAt', 'updatedAt')
   }
 
+  // TODO: Consider converting hooks to dito format:
+  //
+  // static hooks = {
+  //   'before:insert'(model) {
+  //     model.createdAt = model.updatedAt = new Date()
+  //   },
+  //
+  //   'before:update'(model) {
+  //     model.updatedAt = new Date()
+  //   }
+  // }
+
   $beforeInsert(ctx) {
     this.createdAt = this.updatedAt = new Date()
     return super.$beforeInsert(ctx)
