@@ -20,7 +20,7 @@ export default class Router {
   find(method, path) {
     path = this.normalizePath(path)
     const tree = this.trees[method]
-    return tree && tree.find(path) || new Result(method, path, tree)
+    return tree && tree.find(path) || new Result(this, method, path, tree)
   }
 
   getAllowedMethods(path = null, exclude = null) {
