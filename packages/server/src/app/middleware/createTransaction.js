@@ -1,4 +1,4 @@
-export function handleTransaction() {
+export function createTransaction() {
   return async (ctx, next) => {
     const { route } = ctx
     if (route.transacted) {

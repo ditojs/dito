@@ -26,7 +26,7 @@ import { Service } from '@/services'
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
 import {
-  handleError, findRoute, handleRoute, handleTransaction
+  handleError, findRoute, handleRoute, createTransaction, emitUserEvents
 } from './middleware'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
@@ -498,7 +498,7 @@ export class Application extends Koa {
       // 2. find route from routes installed by controllers.
       this.use(findRoute(this.router))
       // 3. respect transacted settings, create and handle transactions.
-      this.use(handleTransaction())
+      this.use(createTransaction())
       // 4. session
       if (app.session) {
         const {
@@ -520,6 +520,7 @@ export class Application extends Koa {
         if (app.session) {
           this.use(passport.session())
         }
+        this.use(emitUserEvents())
       }
       // 6. finally handle the found route, or set status / allow accordingly.
       this.use(handleRoute())
