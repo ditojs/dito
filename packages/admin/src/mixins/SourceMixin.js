@@ -214,7 +214,8 @@ export default {
           // Whenever the wrappedPrimitives change, map their values back to
           // the array of primitives, in a primitive way :)
           // But set `unwrappingPrimitives = true`, so the `listData()`
-          // computed property knows about it, see `wrapPrimitives()`
+          // computed property knows about it, which calls `wrapPrimitives()`,
+          // which then turns sets it to `false` again.
           this.unwrappingPrimitives = true
           this.value = newValue.map(object => object[wrapPrimitives])
         }
@@ -226,7 +227,12 @@ export default {
     wrapPrimitives(data) {
       const { wrapPrimitives } = this.schema
       if (wrapPrimitives) {
-        if (!this.unwrappingPrimitives) {
+        if (this.unwrappingPrimitives) {
+          // We're done unwrapping once `wrapPrimitives()` is called, so set
+          // this to `false` again. See `wrappedPrimitives` watcher above.
+          this.unwrappingPrimitives = false
+        } else {
+          // Convert data to a list of wrapped primitives, and return it.
           this.wrappedPrimitives = data.map(value => ({
             [wrapPrimitives]: value
           }))
