@@ -1,5 +1,5 @@
 import {
-  getAllKeys, getOwnProperty, createLookup, mergeReversed, mergeAsArrays
+  getAllKeys, getOwnProperty, createLookup, mergeReversed, mergeAsReversedArrays
 } from './object'
 
 const object = Object.create({ a: 1 })
@@ -59,10 +59,10 @@ describe('mergeReversed()', () => {
   })
 })
 
-describe('mergeAsArrays()', () => {
+describe('mergeAsReversedArrays()', () => {
   it('merges property values into arrays', () => {
     expect(
-      mergeAsArrays([
+      mergeAsReversedArrays([
         {
           a: 1,
           b: 1,
@@ -77,8 +77,8 @@ describe('mergeAsArrays()', () => {
         }
       ])
     ).toEqual({
-      a: [1, 2, 3],
-      b: [1, 2],
+      a: [3, 2, 1],
+      b: [2, 1],
       c: [1]
     })
   })

@@ -1,16 +1,15 @@
 import { isObject, isFunction } from '@ditojs/utils'
-import { mergeAsArrays } from '@/utils'
+import { mergeAsReversedArrays } from '@/utils'
 import { ModelError } from '@/errors'
 
 export default function scopes(values) {
-  // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
-  // so they can be called in sequence.
-  const scopeArrays = mergeAsArrays(values)
+  // Use mergeAsReversedArrays() to keep lists of filters to be inherited per
+  // scope, so they can be called in sequence.
+  const scopeArrays = mergeAsReversedArrays(values)
   const scopes = {}
   for (const [name, array] of Object.entries(scopeArrays)) {
     // Convert array of inherited scope definitions to scope functions.
     const functions = array
-      .reverse() // Reverse to go from super-class to sub-class.
       .map(
         value => {
           let func

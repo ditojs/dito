@@ -26,13 +26,13 @@ export function mergeReversed(objects) {
   return Object.assign({}, ...objects.slice().reverse())
 }
 
-export function mergeAsArrays(objects) {
+export function mergeAsReversedArrays(objects) {
   const res = {}
   for (const object of objects) {
     for (const key in object) {
       const value = object[key]
       if (key in res) {
-        res[key].push(value)
+        res[key].unshift(value)
       } else {
         res[key] = [value]
       }

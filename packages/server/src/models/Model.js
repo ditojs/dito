@@ -579,9 +579,10 @@ export class Model extends objection.Model {
         let modelClass = this
         // Collect ancestor values for proper inheritance.
         // NOTE: values are collected in sequence of inheritance, from sub-class
-        // to super-class, so when merging, `mergeReversed()` is used to prevent
-        // wrong overrides. `mergeAsArrays()` can be used to keep arrays of
-        // inherited values per key, see `definitionHandlers.scopes`.
+        // to super-class. To go from super-class to sub-class when merging,
+        // `mergeReversed()` is used to prevent wrong overrides.
+        // `mergeAsReversedArrays()` can be used to keep arrays of inherited
+        // values per key, see `definitionHandlers.scopes`.
         const values = []
         while (modelClass !== objection.Model) {
           // Only consider model classes that actually define `name` property.

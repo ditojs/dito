@@ -1,18 +1,17 @@
 import { isObject, isFunction } from '@ditojs/utils'
 import { QueryFilters } from '@/query'
-import { mergeAsArrays } from '@/utils'
+import { mergeAsReversedArrays } from '@/utils'
 import { ModelError } from '@/errors'
 
 export default function filters(values) {
-  // Use mergeAsArrays() to keep lists of filters to be inherited per scope,
-  // so they can be called in sequence.
-  const filterArrays = mergeAsArrays(values)
+  // Use mergeAsReversedArrays() to keep lists of filters to be inherited per
+  // scope, so they can be called in sequence.
+  const filterArrays = mergeAsReversedArrays(values)
   const filters = {}
   for (const [name, array] of Object.entries(filterArrays)) {
     // Convert array of inherited filter definitions to filter functions,
     // including parameter validation.
     const functions = array
-      .reverse() // Reverse to go from super-class to sub-class.
       .map(filter => {
         let func
         if (isFunction(filter)) {
