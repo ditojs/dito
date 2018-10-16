@@ -5,31 +5,37 @@ import { AuthenticationError } from '@/errors'
 import { toCallback } from '@ditojs/utils'
 
 export const UserMixin = Model => class extends Model {
-  static properties = {
-    username: {
-      type: 'string',
-      required: true
-    },
+  static options = {
+    usernameProperty: 'username',
+    passwordProperty: 'password'
+  }
 
-    email: {
-      type: 'string',
-      format: 'email'
-    },
+  static get properties() {
+    const {
+      usernameProperty,
+      passwordProperty
+    } = this.definition.options
+    return {
+      [usernameProperty]: {
+        type: 'string',
+        required: true
+      },
 
-    hash: {
-      type: 'string',
-      hidden: true
-    },
+      // `password` isn't stored, but this is required for validation:
+      [passwordProperty]: {
+        type: 'string',
+        computed: true
+      },
 
-    // `password` isn't stored, but this is required for validation:
-    password: {
-      type: 'string',
-      computed: true
-    },
+      hash: {
+        type: 'string',
+        hidden: true
+      },
 
-    lastLogin: {
-      type: 'timestamp',
-      nullable: true
+      lastLogin: {
+        type: 'timestamp',
+        nullable: true
+      }
     }
   }
 
@@ -57,14 +63,18 @@ export const UserMixin = Model => class extends Model {
   static initialize() {
     super.initialize()
     userClasses[this.name] = this
+    const {
+      usernameProperty,
+      passwordProperty
+    } = this.definition.options
     passport.use(this.name,
       new LocalStrategy(
         {
-          usernameField: 'username',
-          passwordField: 'password'
+          usernameField: usernameProperty,
+          passwordField: passwordProperty
         },
         toCallback(async (username, password) => {
-          const user = await this.where({ username }).first()
+          const user = await this.where(usernameProperty, username).first()
           return user && await user.$verifyPassword(password) ? user : null
         })
       )
