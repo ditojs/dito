@@ -81,7 +81,7 @@ export const UserMixin = Model => class extends Model {
     )
   }
 
-  static async login(ctx) {
+  static async login(ctx, options) {
     // Unfortunately koa-passport isn't promisified yet, so do some wrapping:
     return new Promise((resolve, reject) => {
       // Use a custom callback to handle authentication, see:
@@ -91,7 +91,7 @@ export const UserMixin = Model => class extends Model {
           reject(err)
         } else if (user) {
           try {
-            await ctx.login(user)
+            await ctx.login(user, options)
             resolve(user)
           } catch (err) {
             reject(err)
