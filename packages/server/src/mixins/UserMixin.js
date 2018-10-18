@@ -77,7 +77,8 @@ export const UserMixin = Model => class extends Model {
           passwordField: passwordProperty
         },
         toCallback(async (username, password) => {
-          const user = await this.where(usernameProperty, username).first()
+          const user = await this.sessionQuery()
+            .findOne(usernameProperty, username)
           return user && await user.$verifyPassword(password) ? user : null
         })
       )
@@ -106,6 +107,12 @@ export const UserMixin = Model => class extends Model {
       })(ctx)
     })
   }
+
+  static sessionQuery() {
+    return this.query().scope(
+      ...asArray(this.definition.options.sessionScope)
+    )
+  }
 }
 
 const userClasses = {}
@@ -121,10 +128,6 @@ passport.deserializeUser(toCallback(async identifier => {
   const [modelName, userId] = identifier.split('-')
   const userClass = userClasses[modelName]
   return (
-    userClass && (
-      await userClass.findById(userId).scope(
-        ...asArray(userClass.definition.options.sessionScope)
-      )
-    ) || null
+    (userClass && await userClass.sessionQuery().findById(userId)) || null
   )
 }))
