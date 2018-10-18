@@ -6,7 +6,7 @@ import { QueryWhereFilters } from './QueryWhereFilters'
 import PropertyRef from './PropertyRef'
 import { GraphProcessor } from '@/graph'
 import { isPlainObject, isString, isArray, clone } from '@ditojs/utils'
-import { createLookup } from '@/utils'
+import { createLookup, getScope } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -39,7 +39,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   execute() {
     if (!this._ignoreScopes) {
       for (const { scope, eager } of this._scopes) {
-        this._applyScopes([scope], eager)
+        this._applyScope(scope, eager)
       }
     }
     // If this isn't a find query, meaning if it defines any write operations or
@@ -87,22 +87,9 @@ export class QueryBuilder extends objection.QueryBuilder {
         ? { ...query._allowScopes }
         : null
     }
-    return this
   }
 
-  _mergeScopes(scopes, eager) {
-    for (const scope of scopes) {
-      const entry = this._scopes.find(entry => entry.scope === scope)
-      if (entry) {
-        entry.eager = entry.eager || eager
-      } else {
-        this._scopes.push({ scope, eager })
-      }
-    }
-    return this
-  }
-
-  _applyScopes(scopes, eager) {
+  _applyScope(scope, eager) {
     if (!this._ignoreScopes) {
       const modelClass = this.modelClass()
       // When a scope itself is allowed, it should be able to apply all other
@@ -111,35 +98,29 @@ export class QueryBuilder extends objection.QueryBuilder {
       const { _allowScopes } = this
       this._allowScopes = null
       try {
-        for (const scope of scopes) {
-          if (
-            // Prevent multiple application of scopes. This can easily occur
-            // with the nesting of eager scopes, see below.
-            !this._appliedScopes[scope] &&
-            // Only eager-apply scopes that are actually defined on the model:
-            (!eager || modelClass.hasScope(scope))
-          ) {
-            if (_allowScopes && !_allowScopes[scope]) {
-              throw new QueryBuilderError(
-                `Query scope '${scope}' is not allowed.`
-              )
-            }
-            this._appliedScopes[scope] = true
-            this.modify(scope)
+        if (
+          // Prevent multiple application of scopes. This can easily occur
+          // with the nesting of eager scopes, see below.
+          !this._appliedScopes[scope] &&
+          // Only eager-apply scopes that are actually defined on the model:
+          (!eager || modelClass.hasScope(scope))
+        ) {
+          if (_allowScopes && !_allowScopes[scope]) {
+            throw new QueryBuilderError(
+              `Query scope '${scope}' is not allowed.`
+            )
           }
+          this._appliedScopes[scope] = true
+          this.modify(scope)
         }
-      } finally {
-        this._allowScopes = _allowScopes
-      }
-      if (eager) {
-        if (this._eagerExpression) {
+        if (eager && this._eagerExpression) {
           // Add a new modifier to the existing eager expression that
-          // recursively applies the eager-scope to the resulting queries. This
-          // even works if nested scopes expand the eager expression, because it
-          // re-applies itself to the result.
+          // recursively applies the eager-scope to the resulting queries.
+          // This even works if nested scopes expand the eager expression,
+          // because it re-applies itself to the result.
           const name = `_eagerScope${++this._eagerScopeId}_`
           const modifiers = {
-            [name]: query => query._applyScopes(scopes, eager)
+            [name]: query => query._applyScope(scope, eager)
           }
           this.eager(
             addEagerScope(
@@ -154,9 +135,10 @@ export class QueryBuilder extends objection.QueryBuilder {
             }
           )
         }
+      } finally {
+        this._allowScopes = _allowScopes
       }
     }
-    return this
   }
 
   clearScope() {
@@ -182,23 +164,28 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   mergeScope(...scopes) {
-    return this._mergeScopes(scopes, false)
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope, eager } = getScope(expr)
+        const existing = this._scopes.find(entry => entry.scope === scope)
+        if (existing) {
+          existing.eager = existing.eager || eager
+        } else {
+          this._scopes.push({ scope, eager })
+        }
+      }
+    }
+    return this
   }
 
   applyScope(...scopes) {
-    return this._applyScopes(scopes, false)
-  }
-
-  eagerScope(...scopes) {
-    return this._clearScopes(true).mergeEagerScope(...scopes)
-  }
-
-  mergeEagerScope(...scopes) {
-    return this._mergeScopes(scopes, true)
-  }
-
-  applyEagerScope(...scopes) {
-    return this._applyScopes(scopes, true)
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope, eager } = getScope(expr)
+        this._applyScope(scope, eager)
+      }
+    }
+    return this
   }
 
   applyFilter(name, ...args) {
@@ -631,8 +618,6 @@ const mixinMethods = [
   'mergeScope',
   'applyScope',
   'eagerScope',
-  'mergeEagerScope',
-  'applyEagerScope',
   'clearScope',
   'clear',
   'pick',

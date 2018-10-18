@@ -30,11 +30,8 @@ You can use `.debug()` on any query to directly log SQL statement to console.
 ## Scope Methods
 
 ### `scope(name, …)`
-### `eagerScope(name, …)`
 ### `mergeScope(name, …)`
-### `mergeEagerScope(name, …)`
 ### `applyScope(name, …)`
-### `applyEagerScope(name, …)`
 ### `allowScope(name, …)`
 ### `clearScope()`
 ### `ignoreScope()`

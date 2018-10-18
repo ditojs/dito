@@ -10,8 +10,7 @@ export default class MemberAction extends ControllerAction {
       // route params in `ctx.params`, so fining the member by id still works.
       Object.setPrototypeOf({ query }, ctx),
       // Provide a `modify()` function for `find()`, to handle the setting of
-      // `handler.scope` and `handler.eagerScope` on the query, see the `base`
-      // argument in `setupQuery()`
+      // `handler.scope` on the query, see the `base` argument in `setupQuery()`
       query => this.controller.setupQuery(query, this.handler)
     )
   }

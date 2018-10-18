@@ -1,7 +1,8 @@
 import chalk from 'chalk'
 import { ControllerError } from '@/errors'
 import { CollectionController } from './CollectionController'
-import { setupPropertyInheritance } from '@/utils'
+import { setupPropertyInheritance, getScope } from '@/utils'
+import { asArray } from '@ditojs/utils'
 
 export class RelationController extends CollectionController {
   constructor(parent, object, relationInstance, relationDefinition) {
@@ -23,15 +24,18 @@ export class RelationController extends CollectionController {
     this.graph = parent.graph
     this.transacted = parent.transacted
     this.level = parent.level + 1
-    // Inherit eagerScope since it's in its nature to propagate to relations.
-    this.eagerScope = parent.eagerScope
+    if (parent.scope) {
+      // Inherit only the eager scopes since it's in its nature to propagate to
+      // relations:
+      this.scope = asArray(parent.scope).filter(scope => getScope(scope).eager)
+    }
     // Initialize:
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
     this.log(`${chalk.blue(this.path)}${chalk.white(':')}`, this.level)
     // Copy over all fields in the relation object except the ones that are
     // going to be inherited in `setup()` (relation, member, allow), for
-    // settings like scope, eagerScope, etc.
+    // settings like scope, etc.
     for (const key in this.object) {
       if (!['relation', 'member', 'allow'].includes(key)) {
         this[key] = this.object[key]

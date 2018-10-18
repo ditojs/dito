@@ -17,7 +17,6 @@ export class CollectionController extends Controller {
     this.graph = !!this.graph
     this.transacted = !!this.transacted
     this.scope = this.scope || null
-    this.eagerScope = this.eagerScope || null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
     this.findOptions = {
@@ -61,7 +60,7 @@ export class CollectionController extends Controller {
   }
 
   setupQuery(query, base = this) {
-    const { scope, eagerScope } = base
+    const { scope } = base
     const { allowScope, allowFilter } = this
 
     const asAllowArray = value => value === false ? [] : asArray(value)
@@ -69,10 +68,8 @@ export class CollectionController extends Controller {
     if (allowScope !== undefined && allowScope !== true) {
       query.allowScope(
         ...asAllowArray(allowScope),
-        // Also include the scopes defined by scope and eagerScope so these can
-        // pass through.
-        ...asArray(scope),
-        ...asArray(eagerScope)
+        // Also include the scopes defined by scope so these can pass through.
+        ...asArray(scope)
       )
     }
     if (allowFilter !== undefined && allowFilter !== true) {
@@ -80,9 +77,6 @@ export class CollectionController extends Controller {
     }
     if (scope) {
       query.mergeScope(...asArray(scope))
-    }
-    if (eagerScope) {
-      query.mergeEagerScope(...asArray(eagerScope))
     }
     return query
   }
