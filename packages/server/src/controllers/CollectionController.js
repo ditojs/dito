@@ -19,10 +19,6 @@ export class CollectionController extends Controller {
     this.scope = this.scope || null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
-    this.findOptions = {
-      allowParam: this.allowParam,
-      checkRootWhere: false
-    }
   }
 
   // @override
@@ -117,10 +113,10 @@ export class CollectionController extends Controller {
 
   collection = this.toCoreActions({
     async find(ctx, modify) {
-      const find = this.isOneToOne ? 'findOne' : 'find'
-      const result = await this.execute(ctx, query =>
-        query[find](ctx.query, this.findOptions).modify(modify)
-      )
+      const result = await this.execute(ctx, query => {
+        query.find(ctx.query, this.allowParam).modify(modify)
+        return this.isOneToOne ? query.first() : query
+      })
       // This method doesn't always return an array:
       // For RelationControllers where `isOneToOne` is true, it can return
       // `undefined`. Cast to `null` for such cases:
@@ -130,7 +126,7 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, query => query
         .clearScope()
-        .find(ctx.query, this.findOptions)
+        .find(ctx.query, this.allowParam)
         .modify(query => this.isOneToOne && query.throwIfNotFound())
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
@@ -165,7 +161,8 @@ export class CollectionController extends Controller {
   member = this.toCoreActions({
     async find(ctx, modify) {
       return this.execute(ctx, query => query
-        .findById(this.getId(ctx), ctx.query, this.findOptions)
+        .findById(this.getId(ctx))
+        .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(modify)
       )
@@ -174,7 +171,8 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, query => query
         .clearScope()
-        .findById(this.getId(ctx), ctx.query, this.findOptions)
+        .findById(this.getId(ctx))
+        .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(modify)
         .modify(query => this.unrelate ? query.unrelate() : query.delete())

@@ -53,7 +53,6 @@ In addition to Objection.js' many database methods, ...:
 ## Find Methods
 
 ### `find(query, options)`
-### `findOne(query, options)`
 
 ## Graph Methods
 

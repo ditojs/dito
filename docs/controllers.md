@@ -327,7 +327,7 @@ member actions and the database methods they execute:
 
 | Verb       | Member Action | Database Method
 | ---------- | ------------- | -------------------------------------------------
-| `'get'`    | `find()`      | `findOne()`
+| `'get'`    | `find()`      | `findById().find()`
 | `'delete'` | `delete()`    | `deleteById()`
 | `'put'`    | `update()`    | `updateAndFetchById()` or `updateGraphAndFetchById()`
 | `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchGraphAndFetchById()`

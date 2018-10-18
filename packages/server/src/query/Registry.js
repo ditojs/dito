@@ -1,26 +1,31 @@
 import { isObject } from '@ditojs/utils'
 
-export default function() {
-  const registry = Object.create(null)
-  return {
-    get(name) {
-      return registry[name]
-    },
+export default class Registry {
+  constructor() {
+    this._registry = Object.create(null)
+    this._allowed = Object.create(null)
+  }
 
-    has(name) {
-      return name in registry
-    },
+  get(name) {
+    return this._registry[name]
+  }
 
-    keys() {
-      return Object.keys(registry)
-    },
+  has(name) {
+    return name in this._registry
+  }
 
-    register(name, handler) {
-      if (isObject(name)) {
-        Object.assign(registry, name)
-      } else {
-        registry[name] = handler
+  register(name, handler) {
+    if (isObject(name)) {
+      for (const key in name) {
+        this.register(key, name[key])
       }
+    } else {
+      this._registry[name] = handler
+      this._allowed[name] = true
     }
+  }
+
+  allowed() {
+    return this._allowed
   }
 }

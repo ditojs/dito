@@ -1,7 +1,6 @@
 import { ResponseError, QueryBuilderError } from '@/errors'
 import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
 import { QueryWhereFilters } from './QueryWhereFilters'
-import { createLookup } from '@/utils'
 import Registry from './Registry'
 
 export const QueryParameters = new Registry()
@@ -86,14 +85,6 @@ QueryParameters.register({
   omit: applyPropertiesExpression,
   pick: applyPropertiesExpression
 })
-
-QueryParameters.getAllowed = function(exclude) {
-  return createLookup(this.keys(), exclude && (key => !exclude.includes(key)))
-}
-
-QueryParameters.getAllowedFindOne = function() {
-  return this.getAllowed(['order', 'range'])
-}
 
 function processWhereFilters(builder, where, key, value, parts) {
   // Recursively translate object based where filters to string based ones for

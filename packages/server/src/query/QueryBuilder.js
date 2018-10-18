@@ -393,32 +393,18 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  findById(id, query, options) {
+  findById(id) {
     // Remember id so Model.createNotFoundError() can report it:
     this.context({ byId: id })
-    // Add support for optional query to findById()
-    super.findById(id)
-    return query ? this.findOne(query, options) : this
+    return super.findById(id)
   }
 
-  find(query, { allowParam, checkRootWhere = true } = {}) {
-    // Use `true` as default for `checkRootWhere` on findOne() to emulate and
-    // remain compatible with Objection's `findOne()`
+  find(query, allowParam) {
     if (!query) return this
     const allowed = !allowParam
-      ? QueryParameters.getAllowed()
+      ? QueryParameters.allowed()
       // If it's already a lookup object just use it, otherwise convert it:
       : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
-    if (checkRootWhere) {
-      // If there are no known handlers in the query, use the whole query object
-      // for the `where` handler to fall-back on Objection's format of findOne()
-      const hasParams = !!Object.keys(query).find(key => allowed[key])
-      if (!hasParams) {
-        query = {
-          where: query
-        }
-      }
-    }
     this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
@@ -437,17 +423,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       relation.join(this, { joinOperation: 'leftJoin' })
     }
     return this
-  }
-
-  // @override
-  findOne(query, { allowParam, checkRootWhere = true } = {}) {
-    if (!query) return this
-    // Only allow the suitable query handlers on find-one queries:
-    const allowedParams = QueryParameters.getAllowedFindOne()
-    allowParam = allowParam
-      ? allowParam.filter(str => allowedParams[str])
-      : allowedParams // Passed on as lookup object.
-    return this.find(query, { allowParam, checkRootWhere }).first()
   }
 
   getPropertyRef(ref, options) {

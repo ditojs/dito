@@ -13,11 +13,9 @@ export function getOwnProperty(object, key) {
   return object.hasOwnProperty(key) ? object[key] : undefined
 }
 
-export function createLookup(keys, filter) {
+export function createLookup(keys) {
   return asArray(keys).reduce((obj, key) => {
-    if (!filter || filter(key)) {
-      obj[key] = true
-    }
+    obj[key] = true
     return obj
   }, Object.create(null))
 }
