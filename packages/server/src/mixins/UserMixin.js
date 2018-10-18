@@ -2,12 +2,15 @@ import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
 import { AuthenticationError } from '@/errors'
-import { toCallback } from '@ditojs/utils'
+import { asArray, toCallback } from '@ditojs/utils'
 
 export const UserMixin = Model => class extends Model {
   static options = {
     usernameProperty: 'username',
-    passwordProperty: 'password'
+    passwordProperty: 'password',
+    // This option can be used to specify (eager) scopes to be applied when
+    // the user is deserialized from the session.
+    sessionScope: undefined
   }
 
   static get properties() {
@@ -116,5 +119,12 @@ passport.serializeUser(toCallback(user => {
 
 passport.deserializeUser(toCallback(async identifier => {
   const [modelName, userId] = identifier.split('-')
-  return await userClasses[modelName]?.findById(userId) || null
+  const userClass = userClasses[modelName]
+  return (
+    userClass && (
+      await userClass.findById(userId).scope(
+        ...asArray(userClass.definition.options.sessionScope)
+      )
+    ) || null
+  )
 }))
