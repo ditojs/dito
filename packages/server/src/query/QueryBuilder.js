@@ -154,8 +154,11 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._allowScopes = this._allowScopes || {
       default: true // The default scope is always allowed.
     }
-    for (const scope of scopes) {
-      this._allowScopes[scope] = true
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope } = getScope(expr)
+        this._allowScopes[scope] = true
+      }
     }
   }
 
