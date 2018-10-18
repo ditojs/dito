@@ -25,10 +25,6 @@ QueryParameters.register({
     builder.mergeScope(...asArray(value))
   },
 
-  eagerScope(builder, key, value) {
-    builder.mergeEagerScope(...asArray(value))
-  },
-
   filter(builder, key, value) {
     try {
       for (const filter of asArray(value)) {

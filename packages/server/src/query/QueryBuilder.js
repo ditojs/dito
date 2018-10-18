@@ -617,7 +617,6 @@ const mixinMethods = [
   'scope',
   'mergeScope',
   'applyScope',
-  'eagerScope',
   'clearScope',
   'clear',
   'pick',

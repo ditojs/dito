@@ -136,7 +136,7 @@ export function convertRelation(schema, models) {
   let {
     relation,
     // Dito.js-style relation description:
-    from, to, through, inverse, modify, scope, eagerScope,
+    from, to, through, inverse, modify, scope,
     // Objection.js-style relation description (`modify` is shared)
     join, filter,
     // Pluck Dito.js-related properties that should not end up in `rest`:
@@ -200,19 +200,16 @@ export function convertRelation(schema, models) {
       // handling of definition.scopes, see Model.js
       modify = query => query.find(modify)
     }
-    if (scope || eagerScope) {
-      // Convert or merge scope/eagerScope with modify:
+    if (scope) {
+      // Convert or merge scope with modify:
       const origModify = modify
-      modify = !(eagerScope || origModify)
+      modify = !origModify
         // If only scope is set, we can use Objection's support for modify: '..'
         ? scope
         // Otherwise, create a new modify function that merges them:
         : query => {
           if (scope) {
             query.scope(scope)
-          }
-          if (eagerScope) {
-            query.eagerScope(eagerScope)
           }
           if (origModify) {
             query.modify(origModify)
