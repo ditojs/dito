@@ -68,13 +68,54 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.childQueryOf(query, fork)
   }
 
-  _clearScopes(addDefault) {
-    this._scopes = addDefault
-      ? [{
-        scope: 'default',
-        eager: true
-      }]
-      : []
+  scope(...scopes) {
+    return this._clearScopes(true).mergeScope(...scopes)
+  }
+
+  mergeScope(...scopes) {
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope, eager } = getScope(expr)
+        // Merge with existing matching scope statements, or add a new one.
+        const existing = this._scopes.find(entry => entry.scope === scope)
+        if (existing) {
+          existing.eager = existing.eager || eager
+        } else {
+          this._scopes.push({ scope, eager })
+        }
+      }
+    }
+    return this
+  }
+
+  applyScope(...scopes) {
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope, eager } = getScope(expr)
+        this._applyScope(scope, eager)
+      }
+    }
+    return this
+  }
+
+  allowScope(...scopes) {
+    this._allowScopes = this._allowScopes || {
+      default: true // The default scope is always allowed.
+    }
+    for (const expr of scopes) {
+      if (expr) {
+        const { scope } = getScope(expr)
+        this._allowScopes[scope] = true
+      }
+    }
+  }
+
+  clearScope() {
+    return this._clearScopes(false)
+  }
+
+  ignoreScope() {
+    this._ignoreScopes = true
     return this
   }
 
@@ -141,53 +182,13 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
   }
 
-  clearScope() {
-    return this._clearScopes(false)
-  }
-
-  ignoreScope() {
-    this._ignoreScopes = true
-    return this
-  }
-
-  allowScope(...scopes) {
-    this._allowScopes = this._allowScopes || {
-      default: true // The default scope is always allowed.
-    }
-    for (const expr of scopes) {
-      if (expr) {
-        const { scope } = getScope(expr)
-        this._allowScopes[scope] = true
-      }
-    }
-  }
-
-  scope(...scopes) {
-    return this._clearScopes(true).mergeScope(...scopes)
-  }
-
-  mergeScope(...scopes) {
-    for (const expr of scopes) {
-      if (expr) {
-        const { scope, eager } = getScope(expr)
-        const existing = this._scopes.find(entry => entry.scope === scope)
-        if (existing) {
-          existing.eager = existing.eager || eager
-        } else {
-          this._scopes.push({ scope, eager })
-        }
-      }
-    }
-    return this
-  }
-
-  applyScope(...scopes) {
-    for (const expr of scopes) {
-      if (expr) {
-        const { scope, eager } = getScope(expr)
-        this._applyScope(scope, eager)
-      }
-    }
+  _clearScopes(addDefault) {
+    this._scopes = addDefault
+      ? [{
+        scope: 'default',
+        eager: true
+      }]
+      : []
     return this
   }
 
