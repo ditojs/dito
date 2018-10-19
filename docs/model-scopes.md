@@ -81,7 +81,7 @@ that should or should not be loaded in certain situations, e.g. when editing
 models through the admin interface: For such a scenario, an  `admin` scope can
 be defined on any model that wants to limit the properties to be included, and
 the `ModelController` class for the admin routes can then define the `scope
-= '~admin'` setting, so that the `admin` scope is eagerly applied to all loaded
+= '^admin'` setting, so that the `admin` scope is eagerly applied to all loaded
 data whenever the models of that given model class are loaded through this
 controller.
 
