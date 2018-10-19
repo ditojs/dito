@@ -616,16 +616,16 @@ export class Application extends Koa {
       server: { host, port },
       env
     } = this.config
-    await new Promise(resolve => {
-      this.server = this.listen(port, host, () => {
-        const { port } = this.server.address()
+    this.server = await new Promise((resolve, reject) => {
+      const server = this.listen(port, host, () => {
+        const { port } = server.address()
         console.log(
           `${env} server started at http://${host}:${port}`
         )
-        resolve(this.server)
+        resolve(server)
       })
-      if (!this.server) {
-        resolve(new Error(`Unable to start server at http://${host}:${port}`))
+      if (!server) {
+        reject(new Error(`Unable to start server at http://${host}:${port}`))
       }
     })
     await this.emit('after:start')
@@ -633,14 +633,13 @@ export class Application extends Koa {
 
   async stop() {
     await this.emit('before:stop')
-    await new Promise((resolve, reject) => {
+    this.server = await new Promise((resolve, reject) => {
       if (this.server) {
         this.server.close(err => {
-          this.server = null
           if (err) {
             reject(err)
           } else {
-            resolve()
+            resolve(null)
           }
         })
       } else {
