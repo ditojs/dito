@@ -33,6 +33,9 @@ export default function scopes(values) {
       }
       return query
     }
+    // Also register the eagerly applied versions of each scope as modifiers:
+    const eager = `^${name}`
+    scopes[eager] = query => query.applyScope(eager)
   }
   return scopes
 }
