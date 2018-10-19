@@ -5,8 +5,9 @@ export function handleError() {
     try {
       await next()
     } catch (err) {
+      ctx.body = undefined
       ctx.status = err.status || 500
-      if (ctx.accepts('json') && !ctx.request.path.endsWith('.js')) {
+      if (ctx.accepts('json') && !ctx.accepts('js')) {
         // Format error as JSON
         ctx.body = err instanceof ResponseError
           ? err.toJSON()
@@ -18,7 +19,6 @@ export function handleError() {
         // https://github.com/strongloop/strong-error-handler/blob/master/lib/send-html.js
         // https://github.com/strongloop/strong-error-handler/blob/master/lib/send-xml.js
         // https://github.com/strongloop/strong-error-handler/blob/master/views/default-error.ejs
-        ctx.body = null
       }
       ctx.app.emit('error', err, ctx)
     }
