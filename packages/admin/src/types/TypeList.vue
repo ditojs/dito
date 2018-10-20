@@ -121,6 +121,7 @@
       display: flex
       justify-content: space-between
       padding-bottom: $content-padding-half
+      margin-top: -$content-padding-half
       +user-select(none)
       &:empty
         display: none
