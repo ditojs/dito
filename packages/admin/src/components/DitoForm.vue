@@ -64,7 +64,8 @@
 
 <style lang="sass">
   .dito-form
-    padding-top: $content-padding-half
+    .dito-scroll
+      padding-top: $content-padding-half
 </style>
 
 <script>
