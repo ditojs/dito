@@ -28,13 +28,15 @@ export async function processView(api, schema, name, routes) {
     const path = `/${schema.path}`
     const children = []
     await processSchemaComponents(api, schema, children, meta, 0)
-    const [route] = children
-    if (route?.component === DitoView) {
-      // The view contains a list that already produced the route for this view,
-      // just adjust it to reflect its nesting in the view:
-      route.meta.schema = schema
-      route.path = path
-      routes.push(route)
+    const viewRoute = children.find(
+      route => route.component === DitoView && route.path === path
+    )
+    if (viewRoute) {
+      // The view contains a source component that already produced the route
+      // for it, see `processSchema.processSchema()`. Just adjust the route to
+      // reflect the component's nesting in the view:
+      viewRoute.meta.schema = schema
+      routes.push(...children)
     } else {
       routes.push({
         path,

@@ -383,6 +383,7 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
+    if (!hasForms(schema)) return
     const path = schema.path = schema.path || api.normalizePath(name)
     schema.name = name
     const { inline } = schema
