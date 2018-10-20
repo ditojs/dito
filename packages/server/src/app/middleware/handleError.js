@@ -7,7 +7,9 @@ export function handleError() {
     } catch (err) {
       ctx.body = undefined
       ctx.status = err.status || 500
-      if (ctx.accepts('json') && !ctx.accepts('js')) {
+      // If the browser accepts json, return a JSON representation of the
+      // error. But don't do so if the request actually went to js file.
+      if (ctx.accepts('json') && !ctx.request.path.endsWith('.js')) {
         // Format error as JSON
         ctx.body = err instanceof ResponseError
           ? err.toJSON()
