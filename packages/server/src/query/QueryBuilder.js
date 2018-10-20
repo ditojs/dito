@@ -16,7 +16,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
     this._propertyRefsCache = {}
-    this._eagerScopeId = 0
     this._allowScopes = null
     this._ignoreScopes = false
     this._appliedScopes = {}
@@ -159,7 +158,11 @@ export class QueryBuilder extends objection.QueryBuilder {
           // recursively applies the eager-scope to the resulting queries.
           // This even works if nested scopes expand the eager expression,
           // because it re-applies itself to the result.
-          const name = `_eagerScope${++this._eagerScopeId}_`
+
+          // TODO: Once `modifierNotFound()`is implemented, we could use it to
+          // handle the application of eager scopes globally without having to
+          // provide local modifiers here:
+          const name = `^${scope}`
           const modifiers = {
             [name]: query => query._applyScope(scope, eager)
           }
