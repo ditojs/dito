@@ -46,29 +46,27 @@ export async function processView(api, schema, name, routes) {
   }
 }
 
-export function processComponent(api, schema, name, routes,
-  parentMeta = null, level = 0) {
+export function processComponent(
+  api, schema, name, routes, parentMeta = null, level = 0
+) {
   // Delegate schema processing to the actual type components.
   return TypeComponent.get(schema.type)?.options.processSchema?.(
     api, schema, name, routes, parentMeta, level
   )
 }
 
-export function processSchemaComponents(api, schema, routes,
-  parentMeta = null, level = 0) {
-  const promises = []
-  const process = components => {
+export async function processSchemaComponents(
+  api, schema, routes, parentMeta = null, level = 0
+) {
+  const process = async components => {
     for (const [name, component] of Object.entries(components || {})) {
-      promises.push(
-        processComponent(api, component, name, routes, parentMeta, level)
-      )
+      await processComponent(api, component, name, routes, parentMeta, level)
     }
   }
   for (const tab of Object.values(schema?.tabs || {})) {
-    process(tab.components, processComponent)
+    await process(tab.components, processComponent)
   }
-  process(schema?.components, processComponent)
-  return Promise.all(promises)
+  await process(schema?.components, processComponent)
 }
 
 export async function processForms(api, schema, parentMeta, level) {
@@ -82,12 +80,9 @@ export async function processForms(api, schema, parentMeta, level) {
   }
   const children = []
   if (forms) {
-    const promises = Object.values(forms).map(
-      form => processSchemaComponents(
-        api, form, children, parentMeta, level + 1
-      )
-    )
-    await Promise.all(promises)
+    for (const form of Object.values(forms)) {
+      await processSchemaComponents(api, form, children, parentMeta, level + 1)
+    }
   }
   return children
 }
