@@ -184,6 +184,26 @@ export default {
         }
       }
       return { rules }
+    },
+
+    $field() {
+      return this.$fields[this.name]
+    },
+
+    isDirty() {
+      return this.$field?.dirty
+    },
+
+    isTouched() {
+      return this.$field?.touched
+    },
+
+    isValid() {
+      return this.$field?.valid
+    },
+
+    isValidated() {
+      return this.$field?.validated
     }
   },
 

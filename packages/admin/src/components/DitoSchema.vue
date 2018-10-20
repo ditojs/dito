@@ -189,6 +189,26 @@ export default DitoComponent.component('dito-schema', {
       return this.getLabel(
         this.getItemFormSchema(this.sourceSchema, this.data)
       )
+    },
+
+    isDirty() {
+      return this.hasComponent(it => it.isDirty)
+    },
+
+    isTouched() {
+      return this.hasComponent(it => it.isTouched)
+    },
+
+    isValid() {
+      // Comoponents without vlaidation have `isValid` return undefined.
+      // Don't count those as invalid.
+      return this.everyComponent(it => it.isValid !== false)
+    },
+
+    isValidated() {
+      // Comoponents without vlaidation have `isValid` return undefined.
+      // Don't count those as not validated.
+      return this.everyComponent(it => it.isValidated !== false)
     }
   },
 
@@ -224,6 +244,18 @@ export default DitoComponent.component('dito-schema', {
         ? this.appendDataPath(this.dataPath, normalizedPath)
         : normalizedPath
       return this.components[dataPath] || null
+    },
+
+    findComponent(callback) {
+      return Object.values(this.components).find(callback)
+    },
+
+    hasComponent(callback) {
+      return Object.values(this.components).some(callback)
+    },
+
+    everyComponent(callback) {
+      return Object.values(this.components).every(callback)
     },
 
     onLoad() {

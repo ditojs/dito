@@ -255,14 +255,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      // TODO: Consider adding isDirty() to TypeMixin for each component and
-      // DitoSchema, for easer version of this, without nestedFormComponents.
-      for (const form of [this, ...this.nestedFormComponents]) {
-        if (!form.doesMutate && form.isDirty) {
-          return true
-        }
-      }
-      return false
+      return this.$refs.schema.isDirty
     }
   },
 

@@ -2,12 +2,6 @@ import { isFunction, isRegExp, isArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  computed: {
-    isDirty() {
-      return Object.keys(this.$fields).some(key => this.$fields[key].dirty)
-    }
-  },
-
   methods: {
     getErrors() {
       return this.$errors.collect()
