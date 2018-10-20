@@ -11,6 +11,10 @@ export default {
       this.$errors.clear()
     },
 
+    resetValidator() {
+      this.$validator.reset()
+    },
+
     addError(dataPath, message) {
       this.$errors.add({
         field: dataPath,

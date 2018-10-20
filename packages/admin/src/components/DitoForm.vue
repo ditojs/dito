@@ -446,6 +446,7 @@ export default DitoComponent.component('dito-form', {
               this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${itemLabel} was ${submitted}.`)
             }
+            this.$refs.schema.resetValidator()
             // After submitting, navigate back to the parent form or view,
             // except if a button turns it off:
             if (button.back === false) {
