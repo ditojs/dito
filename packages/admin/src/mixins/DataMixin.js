@@ -44,20 +44,16 @@ export default {
     },
 
     shouldReload() {
-      // NOTE: Not all route components have the DataMixin (DitoView delegates
-      // loading to TypeList), so we can't directly force a reload on
-      // this.parentRouteComponent in DitoForm.close(). Instead, we use a
-      // reload flag on the closest routeComponent and respect it in created()
-      return !this.isTransient && this.routeComponent.reload
+      return this.hasData && !this.isTransient
     },
 
     hasData() {
-      // Used by shouldReload(): Returns true if component has data.
+      // Used by `shouldLoad()`: Returns true if component has data.
       return !!this.data
     },
 
     parentDataComponent() {
-      // Used by shouldReload(): Returns the parent dataRouteComponent that may
+      // Used by `shouldLoad()`: Returns the parent dataRouteComponent that may
       // load data for this component. We need to use parentDataRouteComponent
       // here to get to the actual parent, as `this === this.dataRouteComponent`
       // if `this` is a route component:

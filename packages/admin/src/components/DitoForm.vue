@@ -358,18 +358,13 @@ export default DitoComponent.component('dito-form', {
       if (!this.isDirty || confirm(
         `You have unsaved changed. Do you really want to ${this.verbs.cancel}?`
       )) {
-        this.close(false)
+        this.close()
       }
     },
 
-    close(reload) {
+    close() {
       const parent = this.parentRouteComponent
       this.$router.push({ path: parent.path })
-      // Tell the parent to reload its data if this was a submit()
-      // See DataMixin.shouldReload:
-      if (reload && !parent.isTransient) {
-        parent.reload = true
-      }
     },
 
     submit(button) {
@@ -415,7 +410,7 @@ export default DitoComponent.component('dito-form', {
           }
         }
         if (ok) {
-          this.close(false)
+          this.close()
         }
       } else {
         this.request(method, { payload, resource }, (err, response) => {
@@ -458,7 +453,7 @@ export default DitoComponent.component('dito-form', {
                 this.setData(data)
               }
             } else {
-              this.close(true)
+              this.close()
             }
           }
           return true // Errors were already handled.
