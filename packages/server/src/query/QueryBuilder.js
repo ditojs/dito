@@ -562,7 +562,9 @@ const updateGraphOptions = {
 
 function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
   if (isRoot) {
-    expr = expr.clone ? expr.clone() : clone(expr)
+    // Try cloning Objection's RelationExpression object through its own
+    // clone() function first, otherwise use our clone on normal objects.
+    expr = expr?.clone ? expr.clone() : clone(expr)
   } else {
     // Only add the scope if it's not already defined by the eager statement and
     // if it's actually available as a modifier in the model's modifiers list.
@@ -576,7 +578,7 @@ function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
   const relations = modelClass.getRelations()
   for (const key in expr) {
     // All enumerable properties that don't start with '$' are child nodes.
-    if (!key.startsWith('$')) {
+    if (key[0] !== '$') {
       const child = expr[key]
       const relation = relations[child.$relation || key]
       if (!relation) {
