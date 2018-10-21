@@ -41,9 +41,10 @@ export default {
     },
 
     parentDataComponent() {
-      // Used by `shouldLoad()`: Returns the parent dataRouteComponent that may
-      // load data for this component. We can't return parentDataRouteComponent
-      // here as in DataMixin, because that would be the parent's parent.
+      // Used by `shouldLoad()`: Returns the parent `dataRouteComponent`
+      // that may load data for this component.
+      // We can't return `parentDataRouteComponent` here as in DataMixin,
+      // because that would be the parent's parent.
       return this.dataRouteComponent
     },
 
@@ -387,7 +388,6 @@ export default {
     const path = schema.path = schema.path || api.normalizePath(name)
     schema.name = name
     const { inline } = schema
-    const addRoutes = !inline
     if (inline) {
       if (schema.nested === false) {
         throw new Error(
@@ -415,7 +415,8 @@ export default {
     if (process) {
       await process(childRoutes, formMeta, level + 1)
     }
-    if (addRoutes) {
+    // Inline forms don't need actually add routes.
+    if (!inline) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`

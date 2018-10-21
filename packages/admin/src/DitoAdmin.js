@@ -99,9 +99,9 @@ export default class DitoAdmin {
         // any point in the component hierarchy.
         $verbs: verbs,
         // Placeholder provides so DitoMixin can inject them for all components:
-        // inject: [ '$routeComponent', '$schemaComponent' ]
-        $routeComponent: null,
-        $schemaComponent: null
+        // inject: [ '$schemaComponent', '$routeComponent' ]
+        $schemaComponent: null,
+        $routeComponent: null
       },
       render: h => h(DitoRoot, {
         props: {

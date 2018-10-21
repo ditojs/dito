@@ -5,8 +5,10 @@
   // NOTE: Nested form components are kept alive by using `v-show` instead of
   // `v-if` here, so event handling and other things stil work with nested
   // editing.
+  // Only render a router-view here if this isn't the last data-loading route,
+  // and not a nested route, wich will appear elsewhere in its own router-view.
   router-view(
-    v-if="!(isNestedRoute || isLastUnnestedRoute)"
+    v-if="!(isLastDataRoute || isNestedDataRoute)"
     v-show="!isActive"
   )
   component.dito-scroll(
@@ -110,7 +112,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isActive() {
-      return this.isLastRoute || this.isLastUnnestedRoute
+      return this.isLastRoute || this.isLastDataRoute
     },
 
     doesMutate() {

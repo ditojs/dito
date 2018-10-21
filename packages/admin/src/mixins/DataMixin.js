@@ -53,10 +53,10 @@ export default {
     },
 
     parentDataComponent() {
-      // Used by `shouldLoad()`: Returns the parent dataRouteComponent that may
-      // load data for this component. We need to use parentDataRouteComponent
-      // here to get to the actual parent, as `this === this.dataRouteComponent`
-      // if `this` is a route component:
+      // Used by `shouldLoad()`: Returns the parent `dataRouteComponent` that
+      // may load data for this component. We need to use
+      // `parentDataRouteComponent` here to get to the actual parent, as `this
+      // === this.dataRouteComponent` if `this` is a route component:
       return this.parentDataRouteComponent
     },
 

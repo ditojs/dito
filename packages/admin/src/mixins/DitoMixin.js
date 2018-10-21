@@ -11,15 +11,18 @@ export default {
   inject: [
     'api',
     '$verbs',
-    '$routeComponent',
-    '$schemaComponent'
+    '$schemaComponent',
+    '$routeComponent'
   ],
 
   data() {
+    // TODO: Move schema based stuff to SchemaMixin and only inject where used.
+    const data = this.schema?.data
     return {
+      // Allow schema to provide more data, vue-style:
+      ...(data && (isFunction(data) ? data() : data)),
       appState,
-      overrides: null,
-      eventQueue: {}
+      overrides: null // See accessor.js
     }
   },
 
@@ -40,6 +43,12 @@ export default {
       return this.$root.$children[0]
     },
 
+    schemaComponent() {
+      // Use computed properties as links to injects, so DitoSchema can
+      // override the property and return `this` instead of the parent.
+      return this.$schemaComponent
+    },
+
     routeComponent() {
       // Use computed properties as links to injects, so RouteMixin can
       // override the property and return `this` instead of the parent.
@@ -49,12 +58,6 @@ export default {
     formComponent() {
       const comp = this.routeComponent
       return comp?.isForm ? comp : null
-    },
-
-    schemaComponent() {
-      // Use computed properties as links to injects, so DitoSchema can
-      // override the property and return `this` instead of the parent.
-      return this.$schemaComponent
     },
 
     // Returns the first route component in the chain of parents, including
@@ -67,16 +70,16 @@ export default {
       return routeComponent
     },
 
+    parentSchemaComponent() {
+      return this.schemaComponent?.$parent.schemaComponent
+    },
+
     parentRouteComponent() {
       return this.routeComponent?.$parent.routeComponent
     },
 
     parentFormComponent() {
       return this.formComponent?.$parent.formComponent
-    },
-
-    parentSchemaComponent() {
-      return this.schemaComponent?.$parent.schemaComponent
     },
 
     parentDataRouteComponent() {

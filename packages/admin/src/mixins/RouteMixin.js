@@ -42,16 +42,18 @@ export default {
       return this.routeRecord === matched[matched.length - 1]
     },
 
-    isNestedRoute() {
+    isNestedDataRoute() {
       return !!this.routeRecord.meta.nested
     },
 
-    isLastUnnestedRoute() {
+    isLastDataRoute() {
+      // Returns true if this route component is the last one in the route that
+      // loads data (= is not nested).
       const { matched } = this.$route
       for (let i = matched.length - 1; i >= 0; i--) {
-        const match = matched[i]
-        if (!match.meta.nested) {
-          return this.routeRecord === match
+        const record = matched[i]
+        if (!record.meta.nested) {
+          return this.routeRecord === record
         }
       }
       return false
@@ -83,15 +85,6 @@ export default {
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
       return this.$route.params[this.meta.param]
-    },
-
-    nestedRouteComponents() {
-      const { routeComponents } = this.appState
-      return routeComponents.slice(routeComponents.indexOf(this) + 1)
-    },
-
-    nestedFormComponents() {
-      return this.nestedRouteComponents.filter(component => component.isForm)
     }
   },
 
