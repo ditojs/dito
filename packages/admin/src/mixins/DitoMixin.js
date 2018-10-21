@@ -226,10 +226,10 @@ export default {
     load({ cache, ...options }) {
       // Allow caching of loaded data on two levels:
       // - 'global': cache globally, for the entire admin session
-      // - 'local': cache locally within the current editing schema
+      // - 'local': cache locally within the data-loading route component
       const cacheParent = {
         global: this.appState,
-        local: this.schemaComponent
+        local: this.dataRouteComponent
       }[cache]
       const loadCache = cacheParent?.loadCache
       // Build a cache key from the config:
