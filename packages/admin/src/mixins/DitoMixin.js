@@ -16,7 +16,6 @@ export default {
   ],
 
   data() {
-    // TODO: Move schema based stuff to SchemaMixin and only inject where used.
     const data = this.schema?.data
     return {
       // Allow schema to provide more data, vue-style:

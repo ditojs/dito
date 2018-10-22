@@ -544,6 +544,14 @@ export class Model extends objection.Model {
     return json
   }
 
+  $filterGraph(graph, expr) {
+    return this.constructor.filterGraph(this, expr)
+  }
+
+  async $populateGraph(graph, expr, trx) {
+    return this.constructor.populateGraph(this, expr, trx)
+  }
+
   static filterGraph(graph, expr) {
     return filterGraph(this, graph, expr)
   }

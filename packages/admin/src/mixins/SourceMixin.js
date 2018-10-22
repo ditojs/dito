@@ -48,18 +48,65 @@ export default {
       return this.dataRouteComponent
     },
 
-    listData() {
-      let data = this.value
-      if (this.isObjectSource) {
-        // Convert to list array.
-        data = data != null ? [data] : []
-      } else if (isObject(data) && isArray(data.results)) {
-        // If @ditojs/server sends data in the form of `{ results, total }`
-        // replace the value with result, but remember the total in the store.
-        this.setStore('total', data.total)
-        this.value = data = data.results
+    wrapPrimitives() {
+      return this.schema.wrapPrimitives
+    },
+
+    listData: {
+      get() {
+        let data = this.value
+        if (this.isObjectSource) {
+          // Convert to list array.
+          data = data != null ? [data] : []
+        } else if (isObject(data) && isArray(data.results)) {
+          // If @ditojs/server sends data in the form of `{ results, total }`
+          // replace the value with result, but remember the total in the store.
+          this.setStore('total', data.total)
+          this.value = data = data.results
+        }
+        data = data || []
+        const { wrapPrimitives } = this
+        if (wrapPrimitives) {
+          if (this.unwrappingPrimitives) {
+            // We're done unwrapping once `listData()` is reevaluated, so set
+            // this to `false` again. See `wrappedPrimitives` watcher above.
+            this.unwrappingPrimitives = false
+          } else {
+            // Convert data to a list of wrapped primitives, and return it.
+            this.wrappedPrimitives = data.map(value => ({
+              [wrapPrimitives]: value
+            }))
+          }
+          return this.wrappedPrimitives
+        }
+        return data
+      },
+
+      set(data) {
+        if (this.wrapPrimitives) {
+          this.wrappedPrimitives = data
+        } else {
+          this.value = data
+        }
       }
-      return this.wrapPrimitives(data || [])
+    },
+
+    objectData: {
+      get() {
+        return this.isObjectSource
+          ? this.listData[0]
+          : undefined
+      },
+
+      set(data) {
+        if (this.isObjectSource) {
+          if (data) {
+            this.listData = [data]
+          } else {
+            this.listData = null
+          }
+        }
+      }
     },
 
     sourceSchema() {
@@ -209,14 +256,13 @@ export default {
     wrappedPrimitives: {
       deep: true,
       handler(newValue, oldValue) {
-        const { wrapPrimitives } = this.schema
+        const { wrapPrimitives } = this
         // Skip the initial setting of wrappedPrimitives array
         if (wrapPrimitives && oldValue !== null) {
           // Whenever the wrappedPrimitives change, map their values back to
           // the array of primitives, in a primitive way :)
           // But set `unwrappingPrimitives = true`, so the `listData()`
-          // computed property knows about it, which calls `wrapPrimitives()`,
-          // which then turns sets it to `false` again.
+          // computed property knows about it, which sets it to `false` again.
           this.unwrappingPrimitives = true
           this.value = newValue.map(object => object[wrapPrimitives])
         }
@@ -225,24 +271,6 @@ export default {
   },
 
   methods: {
-    wrapPrimitives(data) {
-      const { wrapPrimitives } = this.schema
-      if (wrapPrimitives) {
-        if (this.unwrappingPrimitives) {
-          // We're done unwrapping once `wrapPrimitives()` is called, so set
-          // this to `false` again. See `wrappedPrimitives` watcher above.
-          this.unwrappingPrimitives = false
-        } else {
-          // Convert data to a list of wrapped primitives, and return it.
-          this.wrappedPrimitives = data.map(value => ({
-            [wrapPrimitives]: value
-          }))
-        }
-        return this.wrappedPrimitives
-      }
-      return data
-    },
-
     setupData() {
       this.addQuery(this.$route.query)
       this.ensureData()
@@ -305,9 +333,9 @@ export default {
     createItem(schema, type) {
       const item = this.createData(schema, type)
       if (this.isObjectSource) {
-        this.value = item
+        this.objectData = item
       } else {
-        this.value.push(item)
+        this.listData.push(item)
       }
       this.onChange()
       return item
@@ -315,13 +343,13 @@ export default {
 
     removeItem(item) {
       if (this.isObjectSource) {
-        this.value = null
+        this.objectData = null
         this.onChange()
       } else {
-        const list = this.value
-        const index = list && list.indexOf(item)
+        const { listData } = this
+        const index = listData && listData.indexOf(item)
         if (index >= 0) {
-          list.splice(index, 1)
+          listData.splice(index, 1)
           this.onChange()
         }
       }
