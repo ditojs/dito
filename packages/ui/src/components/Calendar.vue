@@ -121,7 +121,7 @@
         color: white
     .dito-calendar-item-disabled
       background: white
-      cursor: not-allowed
+      cursor: default
     .dito-calendar-item-disabled,
     .dito-calendar-item-gray
       color: #999

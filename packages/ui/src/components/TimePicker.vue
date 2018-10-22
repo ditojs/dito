@@ -132,19 +132,10 @@
           color: $color-text-inverted
           background: $color-active
         &.disabled
-          cursor: not-allowed
+          cursor: default
           color: #ccc
         &.disabled:hover
           background: transparent
-
-  .dito-time-picker-popup .dito-icon-clear
-    position: absolute
-    right: 10px
-    top: 4px
-    cursor: pointer
-    opacity: .6
-    &:hover
-      opacity: 8
 </style>
 
 <script>

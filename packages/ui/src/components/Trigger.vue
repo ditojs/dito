@@ -59,12 +59,12 @@
   .dito-trigger-disabled
     color: #ccc
     border-color: #e6e6e6
-    cursor: not-allowed
+    cursor: default
     *
-      cursor: not-allowed !important
+      cursor: default !important
       +user-select(none)
       &:focus
-        box-shadow: none !important
+        box-shadow: none
 
   .dito-popup
     position: absolute
