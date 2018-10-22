@@ -12,15 +12,15 @@
       v-else-if="trigger === 'click'"
       ref="trigger"
       :class="triggerClass"
-      @click="clickHandler"
+      @click="onClick"
     )
       slot(name="trigger")
     .dito-trigger(
       v-else-if="trigger === 'hover'"
       ref="trigger"
       :class="triggerClass"
-      @mouseenter="hoverHandler"
-      @mouseleave="hoverHandler"
+      @mouseenter="onHover"
+      @mouseleave="onHover"
     )
       slot(name="trigger")
     .dito-trigger(
@@ -36,8 +36,8 @@
         v-show="showPopup"
         :class="popupClass"
         :style="popupStyle"
-        @mouseenter="hoverHandler"
-        @mouseleave="hoverHandler"
+        @mouseenter="onHover"
+        @mouseleave="onHover"
       )
         slot(name="popup")
       .dito-popup(
@@ -195,8 +195,12 @@ export default {
 
     if (this.hideWhenClickOutside && !this.alwaysShow) {
       this.closeEvent = addEvent(window, 'click', event => {
-        this.showPopup =
-          popup.contains(event.target) || trigger.contains(event.target)
+        if (
+          !popup.contains(event.target) &&
+          !trigger.contains(event.target)
+        ) {
+          this.showPopup = false
+        }
       })
     }
 
@@ -331,13 +335,13 @@ export default {
       })
     },
 
-    clickHandler() {
+    onClick() {
       if (!this.disabled) {
         this.showPopup = !this.showPopup
       }
     },
 
-    hoverHandler(event) {
+    onHover(event) {
       if (!this.disabled) {
         if (this.mouseLeaveTimer) {
           this.mouseLeaveTimer = clearTimeout(this.mouseLeaveTimer)
@@ -353,12 +357,6 @@ export default {
             this.showPopup = false
           }
         }
-      }
-    },
-
-    focusHandler(event) {
-      if (!this.disabled) {
-        this.showPopup = event.type === 'focus'
       }
     }
   }
