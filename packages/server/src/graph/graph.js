@@ -1,4 +1,4 @@
-import { isArray, asArray, clone } from '@ditojs/utils'
+import { isArray, asArray } from '@ditojs/utils'
 import { RelationExpression } from 'objection'
 import { collectExpressionPaths, expressionPathToEager } from './expression.js'
 
@@ -20,34 +20,31 @@ export function ensureModelArray(modelClass, data) {
 
 export function filterGraph(rootModelClass, graph, expr) {
   expr = RelationExpression.create(expr)
-  const modelArray = ensureModelArray(rootModelClass, graph).map(model => {
+  for (const model of ensureModelArray(rootModelClass, graph)) {
     if (model) {
-      const copy = new model.constructor()
       const relations = model.constructor.getRelations()
-      // Loop through original data and check against relations,
-      // to prevent key sequence in created clone:
       for (const key in model) {
         if (model.hasOwnProperty(key)) {
           const relation = relations[key]
           if (relation) {
             const child = expr[key]
             if (child) {
-              copy[key] = filterGraph(
+              // Allowed relation, keep filtering recursively:
+              filterGraph(
                 relation.relatedModelClass,
                 model[key],
                 child
               )
+            } else {
+              // Disallowed relation, delete:
+              delete model[key]
             }
-          } else {
-            copy[key] = clone(model[key])
           }
         }
       }
-      return copy
     }
-    return model
-  })
-  return isArray(graph) ? modelArray : modelArray[0]
+  }
+  return graph
 }
 
 export async function populateGraph(rootModelClass, graph, expr, trx) {
