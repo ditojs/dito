@@ -115,6 +115,10 @@ export default DitoComponent.component('dito-form', {
       return this.isLastRoute || this.isLastDataRoute
     },
 
+    isTransient() {
+      return this.isNested
+    },
+
     doesMutate() {
       // When `sourceSchema.mutate` is true, the form edits the inherited data
       // directly instead of making a copy for application upon submit.

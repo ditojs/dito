@@ -36,7 +36,6 @@ export default {
     },
 
     hasData() {
-      // Used by `shouldLoad()`: Returns true if component has data.
       return !!this.value
     },
 

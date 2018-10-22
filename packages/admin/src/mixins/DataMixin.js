@@ -27,28 +27,36 @@ export default {
     },
 
     isTransient() {
-      let transient = this.isNested
-      if (!transient) {
-        const parent = this.parentFormComponent
-        transient = parent?.isTransient || parent?.create
-      }
-      return transient
+      // Check the form that this component belongs to as well, since it may be
+      // in creation mode, which makes it transient.
+      // NOTE: This does not loop endlessly because DitoForm redefines
+      // `isTransient()` to only return `this.isNested`.
+      const form = this.formComponent
+      return (
+        this.isNested ||
+        form && (
+          form.isTransient ||
+          form.create
+        )
+      )
     },
 
     shouldLoad() {
       // If the parent data-component (view, form) that this list belongs to
       // also loads data, depend on this first.
       const parent = this.parentDataComponent
-      return !this.hasData && !this.isTransient && !this.isLoading &&
-        !(parent && (parent.shouldLoad || parent.isLoading))
-    },
-
-    shouldReload() {
-      return this.hasData && !this.isTransient
+      return (
+        !this.isTransient &&
+        !this.isLoading && !(
+          parent && (
+            parent.shouldLoad ||
+            parent.isLoading
+          )
+        )
+      )
     },
 
     hasData() {
-      // Used by `shouldLoad()`: Returns true if component has data.
       return !!this.data
     },
 
@@ -118,18 +126,20 @@ export default {
     },
 
     ensureData() {
-      if (this.shouldReload) {
-        this.reloadData()
-      } else if (this.shouldLoad) {
-        this.loadData(true)
+      if (this.shouldLoad) {
+        if (this.hasData) {
+          this.reloadData()
+        } else {
+          this.loadData(true)
+        }
       }
     },
 
     reloadData() {
       if (!this.isTransient) {
+        console.log('reloading')
         this.loadData(false)
       }
-      this.routeComponent.reload = false
     },
 
     loadData(clear) {
