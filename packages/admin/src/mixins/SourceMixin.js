@@ -68,7 +68,7 @@ export default {
         const { wrapPrimitives } = this
         if (wrapPrimitives) {
           if (this.unwrappingPrimitives) {
-            // We're done unwrapping once `listData()` is reevaluated, so set
+            // We're done unwrapping once `listData` is reevaluated, so set
             // this to `false` again. See `wrappedPrimitives` watcher above.
             this.unwrappingPrimitives = false
           } else {
@@ -86,26 +86,23 @@ export default {
         if (this.wrapPrimitives) {
           this.wrappedPrimitives = data
         } else {
-          this.value = data
+          this.value = this.isObjectSource
+            ? (data ? data[0] : data)
+            : data
         }
       }
     },
 
     objectData: {
       get() {
-        return this.isObjectSource
-          ? this.listData[0]
-          : undefined
+        // Always go through `listData` internally, which does all the
+        // processing of `wrapPrimitives`, etc.
+        const { listData } = this
+        return listData ? listData[0] : listData
       },
 
       set(data) {
-        if (this.isObjectSource) {
-          if (data) {
-            this.listData = [data]
-          } else {
-            this.listData = null
-          }
-        }
+        this.listData = data ? [data] : data
       }
     },
 
@@ -261,8 +258,8 @@ export default {
         if (wrapPrimitives && oldValue !== null) {
           // Whenever the wrappedPrimitives change, map their values back to
           // the array of primitives, in a primitive way :)
-          // But set `unwrappingPrimitives = true`, so the `listData()`
-          // computed property knows about it, which sets it to `false` again.
+          // But set `unwrappingPrimitives = true`, so the `listData` computed
+          // property knows about it, which sets it to `false` again.
           this.unwrappingPrimitives = true
           this.value = newValue.map(object => object[wrapPrimitives])
         }
@@ -304,9 +301,9 @@ export default {
       // - Array: `[...]`
       // - Object: `{ results: [...], total }`
       if (isArray(data) || isObject(data) && data.results) {
-        // NOTE: Conversion of object format happens in `listData()`, so the
-        // same format can be returned in controllers that return data for the
-        // full view, see below.
+        // NOTE: Conversion of object format happens in `listData`, so the same
+        // format can be returned in controllers that return data for the full
+        // view, see below.
         this.value = data
       } else if (this.routeComponent.isView) {
         // The controller is sending data for the view, including the list data.
