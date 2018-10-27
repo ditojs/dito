@@ -10,23 +10,23 @@
           v-if="currMode === 'day'"
         )
           .dito-calendar-header
-            a.dito-calendar-button-year.dito-calendar-button-prev(
+            a.dito-calendar-button-prev.dito-calendar-button-more(
               @click="stepYear(-1)"
             )
             a.dito-calendar-button-prev(
               @click="stepMonth(-1)"
             )
             span
-              a(
+              a.dito-calendar-button-year(
                 @click="currMode = 'year'"
               ) {{ dateToString(date, { year: 1 }) }}
-              a(
+              a.dito-calendar-button-month(
                 @click="currMode = 'month'"
               ) {{ dateToString(date, { month: 1 }) }}
             a.dito-calendar-button-next(
               @click="stepMonth(1)"
             )
-            a.dito-calendar-button-year.dito-calendar-button-next(
+            a.dito-calendar-button-next.dito-calendar-button-more(
               @click="stepYear(1)"
             )
           .dito-calendar-body
@@ -54,7 +54,7 @@
               @click="stepYear(-1)"
             )
             span
-              a(
+              a.dito-calendar-button-year(
                 @click="currMode ='year'"
               ) {{ dateToString(date, { year: 1 }) }}
             a.dito-calendar-button-next(
@@ -199,13 +199,13 @@
   .dito-calendar-button-prev
     &::after
       content: '‹'
-    &.dito-calendar-button-year::after
+    &.dito-calendar-button-more::after
       content: '«'
 
   .dito-calendar-button-next
     &::after
       content: '›'
-    &.dito-calendar-button-year::after
+    &.dito-calendar-button-more::after
       content: '»'
 </style>
 
