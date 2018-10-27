@@ -24,37 +24,37 @@
       slot="popup"
     )
       .dito-time-picker-panel
-        ul.time-hours(
-          ref="hours"
+        ul.dito-time-picker-hour(
+          ref="hour"
           @mouseover="selection = 0"
         )
           li(
             v-for="index in 24"
             v-if="!disabledHour(index - 1)"
-            :class="{ selected: hours === index - 1 }"
-            @click="hours = index - 1"
+            :class="{ selected: hour === index - 1 }"
+            @click="hour = index - 1"
           ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.time-minute(
-          ref="minutes"
+        ul.dito-time-picker-minute(
+          ref="minute"
           @mouseover="selection = 1"
         )
           li(
             v-for="index in 60"
             v-if="!disabledMinute(index - 1)"
-            :class="{ selected: minutes === index - 1 }"
-            @click="minutes = index - 1"
+            :class="{ selected: minute === index - 1 }"
+            @click="minute = index - 1"
           ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.time-seconds(
-          ref="seconds"
+        ul.dito-time-picker-second(
+          ref="second"
           @mouseover="selection = 2"
         )
           li(
             v-for="index in 60"
             v-if="!disabledSecond(index - 1)"
-            :class="{ selected: seconds === index - 1 }"
-            @click="seconds = index - 1"
+            :class="{ selected: second === index - 1 }"
+            @click="second = index - 1"
           ) {{ leftPad(index - 1) }}
 </template>
 
@@ -202,9 +202,9 @@ export default {
     text() {
       return this.date
         ? `${
-          leftPad(this.hours)}:${
-          leftPad(this.minutes)}:${
-          leftPad(this.seconds)}`
+          leftPad(this.hour)}:${
+          leftPad(this.minute)}:${
+          leftPad(this.second)}`
         : ''
     },
 
@@ -212,36 +212,36 @@ export default {
       // Create a new Date() object with the time set to 0, to be used when
       // first setting any of the times, for meaningful dates in case the
       // object is shared with a DatePicker.
-      return copyDate(new Date(), { hours: 0, minutes: 0, seconds: 0 })
+      return copyDate(new Date(), { hour: 0, minute: 0, second: 0 })
     },
 
-    hours: {
+    hour: {
       get() {
         return this.date ? this.date.getHours() : 0
       },
 
-      set(hours) {
-        this.date = copyDate(this.date || this.today, { hours })
+      set(hour) {
+        this.date = copyDate(this.date || this.today, { hour })
       }
     },
 
-    minutes: {
+    minute: {
       get() {
         return this.date ? this.date.getMinutes() : 0
       },
 
-      set(minutes) {
-        this.date = copyDate(this.date || this.today, { minutes })
+      set(minute) {
+        this.date = copyDate(this.date || this.today, { minute })
       }
     },
 
-    seconds: {
+    second: {
       get() {
         return this.date ? this.date.getSeconds() : 0
       },
 
-      set(seconds) {
-        this.date = copyDate(this.date || this.today, { seconds })
+      set(second) {
+        this.date = copyDate(this.date || this.today, { second })
       }
     }
   },
@@ -303,14 +303,14 @@ export default {
         }
       }
       this.$nextTick(() => {
-        scroll('hours', this.hours)
-        scroll('minutes', this.minutes)
-        scroll('seconds', this.seconds)
+        scroll('hour', this.hour)
+        scroll('minute', this.minute)
+        scroll('second', this.second)
       })
     },
 
     onKeyDown(event) {
-      const selected = ['hours', 'minutes', 'seconds'][this.selection]
+      const selected = ['hour', 'minute', 'second'][this.selection]
       if (selected) {
         const { hor, ver, enter } = getKeyNavigation(event)
         if (hor) {

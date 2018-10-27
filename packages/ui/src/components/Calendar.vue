@@ -285,7 +285,7 @@ export default {
       this.date = this.value
     } else {
       // clear time fields, since `new Date()` is being used
-      this.setDate({ hours: 0, minutes: 0, seconds: 0 })
+      this.setDate({ hour: 0, minute: 0, second: 0 })
     }
   },
 
