@@ -7,11 +7,12 @@
     :show.sync="showPopup"
     v-bind="{ transition, placement, disabled, target }"
   )
-    input.dito-input(
+    input.dito-input.dito-time-picker-input(
       slot="trigger"
       ref="input"
       type="text"
       :value="currentText"
+      readonly
       :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
       v-on="$listeners"
