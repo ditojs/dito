@@ -58,7 +58,11 @@ export default TypeComponent.register([
     step: getSchemaAccessor('step', {
       type: Number,
       get(step) {
-        return this.isInteger && step != null ? Math.ceil(step) : step
+        return this.isInteger
+          // For integers, round the steps to the next bigger integer value:
+          ? (step != null ? Math.ceil(step) : step)
+          // For floats, use 'any' if no steps are provided:
+          : (step != null ? step : 'any')
       }
     }),
 
@@ -106,7 +110,7 @@ export default TypeComponent.register([
       const rules = {}
       // TODO: Create a base class for all number based tyes (e.g. TypeSlider)
       // and move these vlaidations there.
-      const { range, min, max, decimals } = this
+      const { range, min, max, decimals, step } = this
       if (range) {
         rules.between = range
       } else {
@@ -119,8 +123,8 @@ export default TypeComponent.register([
       }
       if (decimals != null) {
         rules.decimal = decimals
-      } else if (this.step) {
-        const decimals = (`${this.step}`.split('.')[1] || '').length
+      } else if (step && step !== 'any') {
+        const decimals = (`${step}`.split('.')[1] || '').length
         if (decimals > 0) {
           rules.decimal = decimals
         } else {
