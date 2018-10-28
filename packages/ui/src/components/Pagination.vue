@@ -102,18 +102,18 @@ export default {
       showPrev: true,
       showNext: true,
       numPages: 0,
-      currPageSize: this.pageSize,
-      currPage: this.page
+      currentPageSize: this.pageSize,
+      currentPage: this.page
     }
   },
 
   computed: {
     first() {
-      return (this.currPage - 1) * this.currPageSize + 1
+      return (this.currentPage - 1) * this.currentPageSize + 1
     },
 
     last() {
-      return Math.min(this.first + this.currPageSize - 1, this.total)
+      return Math.min(this.first + this.currentPageSize - 1, this.total)
     }
   },
 
@@ -123,23 +123,23 @@ export default {
     showNext: 'updatePageRange',
 
     page(page) {
-      this.currPage = page
+      this.currentPage = page
     },
 
     pageSize(pageSize) {
-      this.currPageSize = pageSize
+      this.currentPageSize = pageSize
     },
 
-    currPageSize(currPageSize) {
-      this.numPages = Math.ceil(this.total / currPageSize)
-      if (this.currPage > this.numPages) {
-        this.currPage = this.numPages
+    currentPageSize(currentPageSize) {
+      this.numPages = Math.ceil(this.total / currentPageSize)
+      if (this.currentPage > this.numPages) {
+        this.currentPage = this.numPages
       }
       this.updatePageRange()
-      this.$emit('size-change', this.page, currPageSize)
+      this.$emit('size-change', this.page, currentPageSize)
     },
 
-    currPage(newVal, oldVal) {
+    currentPage(newVal, oldVal) {
       if (newVal !== oldVal) {
         this.updatePageRange()
         this.$emit('update:page', newVal)
@@ -148,8 +148,8 @@ export default {
   },
 
   created() {
-    this.currPage = this.page
-    this.currPageSize = this.pageSize
+    this.currentPage = this.page
+    this.currentPageSize = this.pageSize
   },
 
   mounted() {
@@ -158,8 +158,8 @@ export default {
 
   methods: {
     onClickPage(page) {
-      if (page.index && !page.disabled && page.index !== this.currPage) {
-        this.currPage = page.index
+      if (page.index && !page.disabled && page.index !== this.currentPage) {
+        this.currentPage = page.index
       }
     },
 
@@ -174,9 +174,9 @@ export default {
     },
 
     updatePageRange() {
-      const { showPrev, showNext, total, currPageSize, currPage } = this
+      const { showPrev, showNext, total, currentPageSize, currentPage } = this
       const showLen = showPrev + showNext + 1
-      const numPages = this.numPages = Math.ceil(total / currPageSize)
+      const numPages = this.numPages = Math.ceil(total / currentPageSize)
 
       let start = 0
       let end = 0
@@ -186,30 +186,30 @@ export default {
         start = 1
         end = numPages
       } else {
-        if (currPage <= showPrev + 1) {
+        if (currentPage <= showPrev + 1) {
           start = 1
           end = showLen
-        } else if (currPage >= numPages - showNext) {
+        } else if (currentPage >= numPages - showNext) {
           end = numPages
           start = numPages - showLen + 1
         } else {
-          start = currPage - showPrev
-          end = currPage + showNext
+          start = currentPage - showPrev
+          end = currentPage + showNext
         }
       }
 
       const pageRange = []
       pageRange.push({
-        index: currPage - 1,
+        index: currentPage - 1,
         type: 'prev',
-        disabled: currPage <= 1
+        disabled: currentPage <= 1
       })
       if (start >= 2) {
         pageRange.push({ index: 1, text: 1 })
       }
       if (start > 2) {
         pageRange.push({
-          index: Math.max(1, currPage - 10),
+          index: Math.max(1, currentPage - 10),
           type: 'ellipsis-prev'
         })
       }
@@ -217,12 +217,12 @@ export default {
         pageRange.push({
           index: i,
           text: i,
-          active: i === currPage
+          active: i === currentPage
         })
       }
       if (end < numPages - 1) {
         pageRange.push({
-          index: Math.min(numPages, currPage + 10),
+          index: Math.min(numPages, currentPage + 10),
           type: 'ellipsis-next'
         })
       }
@@ -230,9 +230,9 @@ export default {
         pageRange.push({ index: numPages, text: numPages })
       }
       pageRange.push({
-        index: currPage + 1,
+        index: currentPage + 1,
         type: 'next',
-        disabled: currPage >= numPages
+        disabled: currentPage >= numPages
       })
 
       this.pageRange = pageRange

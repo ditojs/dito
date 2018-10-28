@@ -11,7 +11,7 @@
       slot="trigger"
       ref="input"
       type="text"
-      :value="text"
+      :value="currentText"
       readonly
       :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
@@ -24,7 +24,7 @@
       slot="popup"
       ref="calendar"
       @input="selectDate"
-      :value="date"
+      :value="currentValue"
       v-bind="{ format, locale, disabledDate }"
     )
 </template>
@@ -63,10 +63,7 @@ export default {
       type: String,
       default: 'bottom-left'
     },
-    placeholder: {
-      type: String,
-      default: null
-    },
+    placeholder: String,
     format: {
       type: String,
       default: 'yyyy-MM-dd'
@@ -95,22 +92,20 @@ export default {
 
   data() {
     return {
-      date: this.value,
-      text: null,
-      showPopup: this.show,
-      iconColor: '#bfbfbf'
+      currentValue: this.value,
+      currentText: null,
+      showPopup: this.show
     }
   },
 
   watch: {
     value(newVal, oldVal) {
       if (+newVal !== +oldVal) {
-        this.date = newVal
-        this.iconColor = newVal ? '#666' : '#bfbfbf'
+        this.currentValue = newVal
       }
     },
 
-    date(date) {
+    currentValue(date) {
       this.updateText()
       if (+date !== +this.value) {
         this.$emit('input', date)
@@ -128,19 +123,15 @@ export default {
     }
   },
 
-  mounted() {
-    this.updateText()
-  },
-
   methods: {
     updateText() {
-      this.text = this.date
-        ? this.$refs.calendar.stringify(this.date, this.format)
+      this.currentText = this.currentValue
+        ? this.$refs.calendar.stringify(this.currentValue, this.format)
         : ''
     },
 
     selectDate(date) {
-      this.date = date
+      this.currentValue = date
       this.showPopup = false
     },
 

@@ -10,7 +10,8 @@
     input.dito-input(
       slot="trigger"
       ref="input"
-      :value="text"
+      type="text"
+      :value="currentText"
       :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
       @focus="$emit('focus')"
@@ -152,10 +153,7 @@ export default {
       type: Date,
       default: null
     },
-    placeholder: {
-      type: String,
-      default: null
-    },
+    placeholder: String,
     transition: {
       type: String,
       default: 'slide'
@@ -192,15 +190,15 @@ export default {
 
   data() {
     return {
-      date: this.value,
+      currentValue: this.value,
       showPopup: this.show,
       selection: 0
     }
   },
 
   computed: {
-    text() {
-      return this.date
+    currentText() {
+      return this.currentValue
         ? `${
           leftPad(this.hour)}:${
           leftPad(this.minute)}:${
@@ -208,40 +206,43 @@ export default {
         : ''
     },
 
-    today() {
-      // Create a new Date() object with the time set to 0, to be used when
-      // first setting any of the times, for meaningful dates in case the
-      // object is shared with a DatePicker.
-      return copyDate(new Date(), { hour: 0, minute: 0, second: 0 })
+    currentDate() {
+      return (
+        this.currentValue ||
+        // Create a new Date() object with the time set to 0, to be used when
+        // first setting any of the times, for meaningful dates in case the
+        // object is shared with a DatePicker, e.g. through DateTimePicker.
+        copyDate(new Date(), { hour: 0, minute: 0, second: 0 })
+      )
     },
 
     hour: {
       get() {
-        return this.date ? this.date.getHours() : 0
+        return this.currentDate.getHours()
       },
 
       set(hour) {
-        this.date = copyDate(this.date || this.today, { hour })
+        this.setTime({ hour })
       }
     },
 
     minute: {
       get() {
-        return this.date ? this.date.getMinutes() : 0
+        return this.currentDate.getMinutes()
       },
 
       set(minute) {
-        this.date = copyDate(this.date || this.today, { minute })
+        this.setTime({ minute })
       }
     },
 
     second: {
       get() {
-        return this.date ? this.date.getSeconds() : 0
+        return this.currentDate.getSeconds()
       },
 
       set(second) {
-        this.date = copyDate(this.date || this.today, { second })
+        this.setTime({ second })
       }
     }
   },
@@ -249,24 +250,20 @@ export default {
   watch: {
     value(newVal, oldVal) {
       if (+newVal !== +oldVal) {
-        this.date = newVal
+        this.currentValue = newVal
       }
     },
 
-    date(date) {
+    currentValue(date) {
       if (+date !== +this.value) {
         this.$emit('input', date)
         this.scrollAll()
       }
     },
 
-    selection() {
-      this.updateSelection(false)
-    },
+    currentText: 'updateSelection',
 
-    text() {
-      this.updateSelection(false)
-    },
+    selection: 'updateSelection',
 
     show(show) {
       this.showPopup = show
@@ -286,7 +283,11 @@ export default {
   methods: {
     leftPad,
 
-    updateSelection(force) {
+    setTime(param) {
+      this.currentValue = copyDate(this.currentDate, param)
+    },
+
+    updateSelection(force = false) {
       if (this.showPopup || force) {
         const start = 3 * this.selection
         this.$nextTick(() => setSelection(this.$refs.input, start, start + 2))

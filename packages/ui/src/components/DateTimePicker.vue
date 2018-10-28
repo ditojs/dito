@@ -7,7 +7,7 @@
     )
       date-picker(
         ref="date"
-        v-model="date"
+        v-model="currentValue"
         placement="bottom-left"
         :target="$refs.picker"
         :show.sync="showDate"
@@ -17,7 +17,7 @@
       )
       time-picker(
         ref="time"
-        v-model="date"
+        v-model="currentValue"
         placeholder=""
         placement="bottom-right"
         :target="$refs.picker"
@@ -69,10 +69,7 @@ export default {
       type: String,
       default: 'slide'
     },
-    placeholder: {
-      type: String,
-      default: null
-    },
+    placeholder: String,
     format: {
       type: String,
       default: 'yyyy-MM-dd'
@@ -89,7 +86,7 @@ export default {
 
   data() {
     return {
-      date: this.value,
+      currentValue: this.value,
       showDate: false,
       showTime: false
     }
@@ -98,11 +95,11 @@ export default {
   watch: {
     value(newVal, oldVal) {
       if (+newVal !== +oldVal) {
-        this.date = newVal
+        this.currentValue = newVal
       }
     },
 
-    date(date) {
+    currentValue(date) {
       if (+date !== +this.value) {
         this.$emit('input', date)
       }

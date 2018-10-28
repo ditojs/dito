@@ -7,7 +7,7 @@
     .dito-calendar-popup
       .dito-calendar-inner
         template(
-          v-if="currMode === 'day'"
+          v-if="currentMode === 'day'"
         )
           .dito-calendar-header
             a.dito-calendar-button-prev.dito-calendar-button-more(
@@ -18,11 +18,11 @@
             )
             span
               a.dito-calendar-button-year(
-                @click="currMode = 'year'"
-              ) {{ dateToString(date, { year: 1 }) }}
+                @click="currentMode = 'year'"
+              ) {{ dateToString(currentValue, { year: 1 }) }}
               a.dito-calendar-button-month(
-                @click="currMode = 'month'"
-              ) {{ dateToString(date, { month: 1 }) }}
+                @click="currentMode = 'month'"
+              ) {{ dateToString(currentValue, { month: 1 }) }}
             a.dito-calendar-button-next(
               @click="stepMonth(1)"
             )
@@ -47,7 +47,7 @@
               :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
             )
         template(
-          v-if="currMode === 'month'"
+          v-if="currentMode === 'month'"
         )
           .dito-calendar-header
             a.dito-calendar-button-prev(
@@ -55,8 +55,8 @@
             )
             span
               a.dito-calendar-button-year(
-                @click="currMode ='year'"
-              ) {{ dateToString(date, { year: 1 }) }}
+                @click="currentMode ='year'"
+              ) {{ dateToString(currentValue, { year: 1 }) }}
             a.dito-calendar-button-next(
               @click="stepYear(1)"
             )
@@ -68,13 +68,13 @@
                 @click="selectMonth(index)"
               ) {{ month.short }}
         template(
-          v-if="currMode === 'year'"
+          v-if="currentMode === 'year'"
         )
           .dito-calendar-header
             a.dito-calendar-button-prev(
               @click="stepDecade(-1)"
             )
-            span {{ decadeToString(date) }}
+            span {{ decadeToString(currentValue) }}
             a.dito-calendar-button-next(
               @click="stepDecade(1)"
             )
@@ -262,45 +262,45 @@ export default {
       monthNames,
       dateRange: [],
       yearRange: [],
-      date: new Date(),
-      currMode: this.mode
+      currentValue:
+        this.value ||
+        // If no value is provided, use curernt date but clear time fields:
+        copyDate(new Date(), { hour: 0, minute: 0, second: 0 }),
+      currentMode: this.mode
     }
   },
 
   watch: {
-    date: 'updateDateRange',
+    currentValue: 'updateDateRange',
     disabledDate: 'updateDateRange',
 
-    value(value) {
-      this.date = value || new Date()
+    value(newVal, oldVal) {
+      if (+newVal !== +oldVal) {
+        this.currentValue = newVal || new Date()
+      }
     },
 
     mode(mode) {
-      this.currMode = mode
+      this.currentMode = mode
     }
   },
 
   mounted() {
-    if (this.value) {
-      this.date = this.value
-    } else {
-      // clear time fields, since `new Date()` is being used
-      this.setDate({ hour: 0, minute: 0, second: 0 })
-    }
+    this.updateDateRange()
   },
 
   methods: {
     close() {
-      this.currMode = null
+      this.currentMode = null
     },
 
     getMonthClass(month) {
       return {
         'dito-calendar-item-active':
           this.value && month === this.value.getMonth() &&
-          this.date.getFullYear() === this.value.getFullYear(),
+          this.currentValue.getFullYear() === this.value.getFullYear(),
         'dito-calendar-item-current':
-          month === this.date.getMonth()
+          month === this.currentValue.getMonth()
       }
     },
 
@@ -309,31 +309,39 @@ export default {
         'dito-calendar-item-active':
           this.value && year === this.value.getFullYear(),
         'dito-calendar-item-current':
-          year === this.date.getFullYear()
+          year === this.currentValue.getFullYear()
       }
     },
 
     setDate(overrides) {
-      this.date = copyDate(this.date, overrides)
+      this.currentValue = copyDate(this.currentValue, overrides)
     },
 
     stepDecade(step) {
-      this.setDate({ year: this.date.getFullYear() + step * 10 })
+      this.setDate({
+        year: this.currentValue.getFullYear() + step * 10
+      })
     },
 
     stepMonth(step) {
+      const { currentValue } = this
       const { year, month } = this.getYearMonth(
-        this.date.getFullYear(),
-        this.date.getMonth() + step
+        currentValue.getFullYear(),
+        currentValue.getMonth() + step
       )
       this.setDate({
         month,
-        day: Math.min(this.getDayCount(year, month), this.date.getDate())
+        day: Math.min(
+          this.getDayCount(year, month),
+          this.currentValue.getDate()
+        )
       })
     },
 
     stepYear(step) {
-      this.setDate({ year: this.date.getFullYear() + step })
+      this.setDate({
+        year: this.currentValue.getFullYear() + step
+      })
     },
 
     selectDate(date, state, copy = false) {
@@ -345,19 +353,19 @@ export default {
             day: date.getDate()
           })
         } else {
-          this.date = date
+          this.currentValue = date
         }
-        this.$emit('input', this.date)
+        this.$emit('input', this.currentValue)
       }
     },
 
     selectMonth(month) {
-      this.currMode = 'day'
+      this.currentMode = 'day'
       this.setDate({ month })
     },
 
     selectYear(year) {
-      this.currMode = 'month'
+      this.currentMode = 'month'
       this.setDate({ year })
     },
 
@@ -421,29 +429,36 @@ export default {
     },
 
     navigate({ hor, ver, enter }) {
+      const { currentMode, currentValue } = this
       if (hor || ver) {
-        switch (this.currMode) {
+        switch (currentMode) {
         case 'day':
-          this.setDate({ day: this.date.getDate() + hor + ver * 7 })
+          this.setDate({
+            day: currentValue.getDate() + hor + ver * 7
+          })
           break
         case 'month':
-          this.setDate({ month: this.date.getMonth() + hor + ver * 6 })
+          this.setDate({
+            month: currentValue.getMonth() + hor + ver * 6
+          })
           break
         case 'year':
-          this.setDate({ year: this.date.getFullYear() + hor + ver * 5 })
+          this.setDate({
+            year: currentValue.getFullYear() + hor + ver * 5
+          })
           break
         }
         return true
       } else if (enter) {
-        switch (this.currMode) {
+        switch (currentMode) {
         case 'day':
-          this.selectDate(this.date)
+          this.selectDate(currentValue)
           break
         case 'month':
-          this.currMode = 'day'
+          this.currentMode = 'day'
           break
         case 'year':
-          this.currMode = 'month'
+          this.currentMode = 'month'
           break
         }
         return true
@@ -454,9 +469,9 @@ export default {
       this.dateRange = []
       this.yearRange = []
 
-      const today = new Date()
-      const year = this.date.getFullYear()
-      const month = this.date.getMonth()
+      const { currentValue } = this
+      const year = currentValue.getFullYear()
+      const month = currentValue.getMonth()
       const startYear = this.getFirstYearOfDecade(year)
       for (let i = 0; i < 10; i++) {
         this.yearRange.push(startYear + i)
@@ -484,6 +499,7 @@ export default {
         }
       }
 
+      const today = new Date()
       for (let i = 1; i <= dayCount; i++) {
         const date = new Date(year, month, i)
         const isDay = date => date &&
@@ -493,7 +509,7 @@ export default {
         const state = isDay(this.value) ? 'active'
           : isDay(today) ? 'today'
           : this.disabledDate(date) ? 'disabled'
-          : isDay(this.date) ? 'current'
+          : isDay(currentValue) ? 'current'
           : null
         this.dateRange.push({
           text: i,
