@@ -160,8 +160,7 @@ export class Model extends objection.Model {
       options = { ...options, mutable: true }
     }
 
-    const modelClass = this.constructor
-    const validator = modelClass.getValidator()
+    const validator = this.constructor.getValidator()
     const args = {
       options,
       model: this,
@@ -558,6 +557,17 @@ export class Model extends objection.Model {
 
   static async populateGraph(graph, expr, trx) {
     return populateGraph(this, graph, expr, trx)
+  }
+
+  // @override
+  static modifierNotFound(builder, modifier) {
+    if (modifier[0] === '^') {
+      // Apply the unknown scope eagerly, as it may still be known in
+      // eager-loaded relations.
+      builder.applyScope(modifier)
+    } else {
+      super.modifierNotFound(builder, modifier)
+    }
   }
 
   // @override

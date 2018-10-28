@@ -34,9 +34,6 @@ export default function scopes(values) {
       return query
     }
     // Also register the eagerly applied versions of each scope as modifiers:
-    // TODO: Once `modifierNotFound()`is implemented, we could use it to handle
-    // the application of eager scopes globally without having to provide eager
-    // modifiers here. See `QueryBuilder._applyScope()`:
     const name = `^${scope}`
     scopes[name] = query => query.applyScope(name)
   }
