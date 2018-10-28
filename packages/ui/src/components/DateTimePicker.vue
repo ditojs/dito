@@ -11,8 +11,7 @@
         placement="bottom-left"
         :target="$refs.picker"
         :show.sync="showDate"
-        @focus="$emit('focus')"
-        @blur="$emit('blur')"
+        v-on="$listeners"
         v-bind="{ transition, placeholder, format, locale, disabled }"
       )
       time-picker(
@@ -22,8 +21,7 @@
         placement="bottom-right"
         :target="$refs.picker"
         :show.sync="showTime"
-        @focus="$emit('focus')"
-        @blur="$emit('blur')"
+        v-on="$listeners"
         v-bind="{ transition, disabled }"
       )
 </template>

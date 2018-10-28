@@ -15,8 +15,7 @@
       readonly
       :class="{ 'dito-focus': showPopup }"
       @keydown="onKeyDown"
-      @focus="$emit('focus')"
-      @blur="$emit('blur')"
+      v-on="$listeners"
       v-bind="{ placeholder, disabled }"
     )
     // icon(type="calendar" :color="iconColor")
