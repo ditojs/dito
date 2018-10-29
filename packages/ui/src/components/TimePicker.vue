@@ -92,7 +92,7 @@
 
   .dito-time-picker-popup .dito-time-picker-panel
     float: left
-    border: 1px solid #e9e9e9 // TODO: $border-style
+    border: $border-style
     border-width: 0 1px 0
     margin-left: -1px
     box-sizing: border-box

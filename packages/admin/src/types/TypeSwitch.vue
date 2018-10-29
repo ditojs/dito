@@ -21,6 +21,7 @@
     // TODO: Fix vue-js-toggle-button to allow more flexible style overrides
     font-size: inherit !important // override vue-js-toggle-button
     height: 2em
+    +user-select(none)
     .v-switch-core
       position: relative !important // override vue-js-toggle-button
       background-color: $color-light
