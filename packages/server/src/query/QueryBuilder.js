@@ -291,6 +291,9 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _handleGraph(method, data, defaultOptions, options = defaultOptions) {
+    if (options.skipProcessing) {
+      return super[method](data, options)
+    }
     const graph = new GraphProcessor(
       this.modelClass(),
       data,
@@ -305,8 +308,8 @@ export class QueryBuilder extends objection.QueryBuilder {
         }
         : {}
     )
-    const builder = super[method](graph.getData(), graph.getOptions())
-    return builder.runAfter(result => graph.restoreRelates(result))
+    super[method](graph.getData(), graph.getOptions())
+    return this.runAfter(result => graph.restoreRelates(result))
   }
 
   // @override
