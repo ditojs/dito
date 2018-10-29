@@ -10,7 +10,6 @@
     // we need to position it absolutely inside its container.
     margin: 0 0 $form-spacing-half 0
     position: relative
-    +user-select(none)
     &::before
       // Use &nbsp; to enforce the right text height in the container
       content: '\00a0'
