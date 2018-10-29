@@ -1,5 +1,5 @@
 <template lang="pug">
-  input.dito-text.dito-input(
+  input-field.dito-text(
     ref="element"
     :id="dataPath"
     :type="inputType"
@@ -12,6 +12,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { InputField } from '@ditojs/ui'
 import { asArray } from '@ditojs/utils'
 
 const maskedPassword = '****************'
@@ -21,6 +22,7 @@ export default TypeComponent.register([
 ],
 // @vue/component
 {
+  components: { InputField },
   nativeField: true,
   textField: true,
 

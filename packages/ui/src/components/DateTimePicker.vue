@@ -34,19 +34,17 @@
       padding: 0
       display: flex
       .dito-input
+        background: none
         border: 0
-        box-shadow: none
     .dito-date-picker
       width: 60%
       min-width: 6.9em
       .dito-input
-        background: none
         padding-right: 0
     .dito-time-picker
       width: 40%
       min-width: 5.4em
       .dito-input
-        background: none
         padding-left: 0
         text-align: right
 </style>

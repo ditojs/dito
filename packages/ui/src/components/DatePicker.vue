@@ -7,7 +7,7 @@
     :show.sync="showPopup"
     v-bind="{ transition, placement, disabled, target }"
   )
-    input.dito-input.dito-date-picker-input(
+    input-field.dito-date-picker-input(
       slot="trigger"
       ref="input"
       type="text"
@@ -42,12 +42,11 @@
 <script>
 import Trigger from './Trigger'
 import Calendar from './Calendar'
+import InputField from './InputField'
 import { getKeyNavigation } from '../utils'
 
 export default {
-  components: {
-    Trigger, Calendar
-  },
+  components: { Trigger, Calendar, InputField },
 
   props: {
     value: {

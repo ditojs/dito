@@ -6,6 +6,7 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
+    "bootstrap": "lerna bootstrap",
     "build": "lerna run build --stream",
     "watch": "lerna run watch --stream --no-sort --concurrency 6",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",

@@ -150,7 +150,9 @@ export default {
 
       if (nativeField) {
         attributes.name = this.name
-        attributes.title = this.label
+        if (this.label) {
+          attributes.title = this.label
+        }
         attributes.readonly = this.readonly
         attributes.autofocus = this.autofocus
         if (textField) {

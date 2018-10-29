@@ -1,15 +1,7 @@
-import Calendar from './Calendar'
-import DatePicker from './DatePicker'
-import DateTimePicker from './DateTimePicker'
-import Pagination from './Pagination'
-import TimePicker from './TimePicker'
-import Trigger from './Trigger'
-
-export {
-  Calendar,
-  DatePicker,
-  DateTimePicker,
-  Pagination,
-  TimePicker,
-  Trigger
-}
+export Calendar from './Calendar'
+export DatePicker from './DatePicker'
+export DateTimePicker from './DateTimePicker'
+export InputField from './InputField'
+export Pagination from './Pagination'
+export TimePicker from './TimePicker'
+export Trigger from './Trigger'

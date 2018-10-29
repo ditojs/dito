@@ -1,5 +1,5 @@
 <template lang="pug">
-  input.dito-number.dito-input(
+  input-field.dito-number(
     ref="element"
     :id="dataPath"
     type="number"
@@ -25,14 +25,16 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import { isArray } from '@ditojs/utils'
+import { InputField } from '@ditojs/ui'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { isArray } from '@ditojs/utils'
 
 export default TypeComponent.register([
   'number', 'integer'
 ],
 // @vue/component
 {
+  components: { InputField },
   nativeField: true,
   textField: true,
 

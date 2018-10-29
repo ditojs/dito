@@ -7,7 +7,7 @@
     :show.sync="showPopup"
     v-bind="{ transition, placement, disabled, target }"
   )
-    input.dito-input.dito-time-picker-input(
+    input-field.dito-time-picker-input(
       slot="trigger"
       ref="input"
       type="text"
@@ -141,12 +141,13 @@
 
 <script>
 import Trigger from './Trigger'
+import InputField from './InputField'
 import {
   copyDate, scrollTo, setSelection, getKeyNavigation, leftPad
 } from '../utils'
 
 export default {
-  components: { Trigger },
+  components: { Trigger, InputField },
 
   props: {
     value: {
