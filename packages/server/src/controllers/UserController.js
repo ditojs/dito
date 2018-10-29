@@ -10,7 +10,7 @@ export class UserController extends ModelController {
       let error
       try {
         user = await this.modelClass.login(ctx)
-        await user.$patch({ lastLogin: new Date() })
+        await user.$patch({ lastLogin: new Date() }, ctx.transaction)
         // Or, if we activate `change-tracking`: (but is it better?)
         // user.lastLogin = new Date()
         // await user.$store()
