@@ -15,6 +15,7 @@
 <style lang="sass">
   @import '../styles/imports'
   .dito-input
+    display: inline-block
     @extend %input
     input
       // Inherit all styling from .dito-input
