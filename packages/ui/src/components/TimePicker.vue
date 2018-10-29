@@ -134,7 +134,7 @@
           background: $color-active
         &.disabled
           cursor: default
-          color: #ccc
+          color: $color-disabled
         &.disabled:hover
           background: transparent
 </style>

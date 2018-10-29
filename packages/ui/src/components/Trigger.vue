@@ -57,8 +57,8 @@
     position: relative
 
   .dito-trigger-disabled
-    color: #ccc
-    border-color: #e6e6e6
+    color: $color-disabled
+    border-color: $border-color
     cursor: default
     *
       cursor: default !important
