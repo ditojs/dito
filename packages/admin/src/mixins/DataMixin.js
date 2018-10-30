@@ -137,7 +137,6 @@ export default {
 
     reloadData() {
       if (!this.isTransient) {
-        console.log('reloading')
         this.loadData(false)
       }
     },

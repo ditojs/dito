@@ -57,11 +57,10 @@ export default {
         if (this.isObjectSource) {
           // Convert to list array.
           data = data != null ? [data] : []
-        } else if (isObject(data) && isArray(data.results)) {
-          // If @ditojs/server sends data in the form of `{ results, total }`
-          // replace the value with result, but remember the total in the store.
-          this.setStore('total', data.total)
-          this.value = data = data.results
+        } else {
+          // If data gets inherited from parent, unwrapping is not happening
+          // at the root in `setData()`, but here instead.
+          data = this.unwrapListData(data) || data
         }
         data = data || []
         const { wrapPrimitives } = this
@@ -298,15 +297,28 @@ export default {
       // view or form that created this list component.
       // Support two formats for list data:
       // - Array: `[...]`
-      // - Object: `{ results: [...], total }`
-      if (isArray(data) || isObject(data) && data.results) {
-        // NOTE: Conversion of object format happens in `listData`, so the same
-        // format can be returned in controllers that return data for the full
-        // view, see below.
+      // - Object: `{ results: [...], total }`, see `unwrapListData()`
+      if (
+        this.isListSource && isArray(data) ||
+        this.isObjectSource && isObject(data)
+      ) {
         this.value = data
+      } else if (this.unwrapListData(data)) {
+        // `this.value` was already set by `unwrapListData()`, we're done.
       } else if (this.routeComponent.isView) {
         // The controller is sending data for the view, including the list data.
         this.routeComponent.data = data
+      }
+    },
+
+    unwrapListData(data) {
+      if (isObject(data)) {
+        if (this.isListSource && isArray(data.results)) {
+          // If @ditojs/server sends data in the form of `{ results, total }`
+          // replace the value with result, but remember the total in the store.
+          this.setStore('total', data.total)
+          return (this.value = data.results)
+        }
       }
     },
 
