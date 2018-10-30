@@ -112,16 +112,17 @@
       padding: 0 17px 0 0
       height: 7 * $time-picker-line-height
       & > li
-        font-variant-numeric: tabular-nums
+        box-sizing: content-box
+        background: $color-white
+        width: 100%
+        height: $time-picker-line-height
+        line-height: $time-picker-line-height
         text-align: center
+        font-variant-numeric: tabular-nums
         cursor: pointer
         white-space: nowrap
         overflow: hidden
-        height: $time-picker-line-height
-        line-height: $time-picker-line-height
         +user-select(none)
-        box-sizing: content-box
-        width: 100%
         &:first-child
           margin-top: 3 * $time-picker-line-height
         &:last-child

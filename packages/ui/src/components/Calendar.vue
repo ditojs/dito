@@ -10,23 +10,23 @@
           v-if="currentMode === 'day'"
         )
           .dito-calendar-header
-            a.dito-calendar-button-prev.dito-calendar-button-more(
+            a.dito-calendar-step-prev.dito-calendar-step-year(
               @click="stepYear(-1)"
             )
-            a.dito-calendar-button-prev(
+            a.dito-calendar-step-prev.dito-calendar-step-month(
               @click="stepMonth(-1)"
             )
             span
-              a.dito-calendar-button-year(
+              a.dito-calendar-select-year(
                 @click="currentMode = 'year'"
               ) {{ dateToString(currentValue, { year: 1 }) }}
-              a.dito-calendar-button-month(
+              a.dito-calendar-select-month(
                 @click="currentMode = 'month'"
               ) {{ dateToString(currentValue, { month: 1 }) }}
-            a.dito-calendar-button-next(
+            a.dito-calendar-step-next.dito-calendar-step-month(
               @click="stepMonth(1)"
             )
-            a.dito-calendar-button-next.dito-calendar-button-more(
+            a.dito-calendar-step-next.dito-calendar-step-year(
               @click="stepYear(1)"
             )
           .dito-calendar-body
@@ -41,7 +41,7 @@
                 @click="selectDate(date.date, date.state, true)"
               ) {{ date.text }}
           .dito-calendar-footer
-            a.dito-calendar-button-today(
+            a.dito-calendar-select-today(
               role="button"
               @click="selectDate(new Date())"
               :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
@@ -50,14 +50,14 @@
           v-if="currentMode === 'month'"
         )
           .dito-calendar-header
-            a.dito-calendar-button-prev(
+            a.dito-calendar-step-prev(
               @click="stepYear(-1)"
             )
             span
-              a.dito-calendar-button-year(
+              a.dito-calendar-select-year(
                 @click="currentMode ='year'"
               ) {{ dateToString(currentValue, { year: 1 }) }}
-            a.dito-calendar-button-next(
+            a.dito-calendar-step-next(
               @click="stepYear(1)"
             )
           .dito-calendar-body
@@ -71,11 +71,11 @@
           v-if="currentMode === 'year'"
         )
           .dito-calendar-header
-            a.dito-calendar-button-prev(
+            a.dito-calendar-step-prev(
               @click="stepDecade(-1)"
             )
             span {{ decadeToString(currentValue) }}
-            a.dito-calendar-button-next(
+            a.dito-calendar-step-next(
               @click="stepDecade(1)"
             )
           .dito-calendar-body
@@ -180,8 +180,8 @@
       &:hover
         color: $color-active
 
-  .dito-calendar-button-prev,
-  .dito-calendar-button-next
+  .dito-calendar-step-prev,
+  .dito-calendar-step-next
     position: relative
     width: 5%
     min-width: 2em
@@ -191,22 +191,20 @@
       left: 0
       right: 0
       font-size: 1.25em
-
-  .dito-calendar-button-today
-    &::after
-      content: 'Now'
-
-  .dito-calendar-button-prev
+  .dito-calendar-step-prev
     &::after
       content: '‹'
-    &.dito-calendar-button-more::after
+    &.dito-calendar-step-year::after
       content: '«'
-
-  .dito-calendar-button-next
+  .dito-calendar-step-next
     &::after
       content: '›'
-    &.dito-calendar-button-more::after
+    &.dito-calendar-step-year::after
       content: '»'
+
+  .dito-calendar-select-today
+    &::after
+      content: 'Now'
 </style>
 
 <script>
