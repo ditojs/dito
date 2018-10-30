@@ -26,6 +26,10 @@ export default {
       return !!this.sourceSchema.nested
     },
 
+    isExcluded() {
+      return !!this.sourceSchema.exclude
+    },
+
     isTransient() {
       // Check the form that this component belongs to as well, since it may be
       // in creation mode, which makes it transient.
@@ -34,6 +38,7 @@ export default {
       const form = this.formComponent
       return (
         this.isNested ||
+        this.isExcluded ||
         form && (
           form.isTransient ||
           form.create
