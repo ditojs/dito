@@ -9,7 +9,7 @@
     v-on="events"
     :min="min"
     :max="max"
-    :step="step"
+    :step="stepValue"
   )
 </template>
 
@@ -55,16 +55,17 @@ export default TypeComponent.register([
       return this.type === 'integer'
     },
 
+    stepValue() {
+      return this.step == null && !this.isInteger ? 'any' : this.step
+    },
+
     decimals: getSchemaAccessor('decimals', { type: Number }),
 
     step: getSchemaAccessor('step', {
       type: Number,
       get(step) {
-        return this.isInteger
-          // For integers, round the steps to the next bigger integer value:
-          ? (step != null ? Math.ceil(step) : step)
-          // For floats, use 'any' if no steps are provided:
-          : (step != null ? step : 'any')
+        // For integers, round the steps to the next bigger integer value:
+        return this.isInteger && step != null ? Math.ceil(step) : step
       }
     }),
 
@@ -125,7 +126,7 @@ export default TypeComponent.register([
       }
       if (decimals != null) {
         rules.decimal = decimals
-      } else if (step && step !== 'any') {
+      } else if (step) {
         const decimals = (`${step}`.split('.')[1] || '').length
         if (decimals > 0) {
           rules.decimal = decimals
