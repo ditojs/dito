@@ -77,6 +77,12 @@ export class AdminController extends Controller {
         runtimeCompiler: true,
         configureWebpack: {
           entry: [resolvedPath],
+          resolve: {
+            // Local Lerna dependencies need their symbolic links unresolved,
+            // so that `node_modules` does not disappear from their name,
+            // and re-transpilation would be triggered.
+            symlinks: false
+          },
           output: {
             filename: '[name].[hash].js',
             publicPath: `${this.url}/`
@@ -101,6 +107,7 @@ export class AdminController extends Controller {
             }
           }
         },
+
         chainWebpack: conf => {
           // Change the location of the HTML template:
           const { template = 'index.html' } = build
