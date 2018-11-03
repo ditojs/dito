@@ -118,10 +118,10 @@ export default DitoComponent.component('dito-schema', {
     schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
-    store: { type: Object, required: true },
+    meta: { type: Object, default: () => ({}) },
+    store: { type: Object, default: () => ({}) },
     label: { type: String, default: null },
-    disabled: { type: Boolean, required: true },
+    disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: true },
     menuHeader: { type: Boolean, default: false }
   },

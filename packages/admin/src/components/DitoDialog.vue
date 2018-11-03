@@ -3,9 +3,6 @@
     dito-schema.dito-scroll(
       :schema="schema"
       :data="data"
-      :meta="{}"
-      :store="{}"
-      :disabled="false"
       :generateLabels="true"
     )
       .dito-buttons.dito-form-buttons(slot="buttons")
@@ -31,7 +28,7 @@ export default DitoComponent.component('dito-dialog', {
     components: { type: Object, required: true },
     buttons: { type: Object, required: true },
     promise: { type: Object, required: true },
-    data: { type: Object, default: () => {} }
+    data: { type: Object, default: () => ({}) }
   },
 
   computed: {

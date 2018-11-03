@@ -41,7 +41,7 @@ import { processView, resolveViews } from '@/utils/schema'
 export default DitoComponent.component('dito-root', {
   props: {
     views: { type: [Object, Function, Promise], required: true },
-    options: { type: Object, default: () => {} }
+    options: { type: Object, default: () => ({}) }
   },
 
   data() {

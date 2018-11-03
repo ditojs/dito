@@ -8,9 +8,6 @@
         ref="filtersSchema"
         :schema="filtersSchema"
         :data="filtersData"
-        :meta="{}"
-        :store="{}"
-        :disabled="false"
         :generateLabels="true"
       )
         .dito-buttons(slot="buttons")
