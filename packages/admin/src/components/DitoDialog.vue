@@ -1,16 +1,16 @@
 <template lang="pug">
   form.dito-dialog(@submit.prevent="")
     dito-schema.dito-scroll(
+      ref="schema"
       :schema="schema"
       :data="data"
-      :generateLabels="true"
     )
-      .dito-buttons.dito-form-buttons(slot="buttons")
-        button.dito-button(
-          v-for="(button, key) in buttons"
-          :type="button.type || 'button'"
-          @click="onClick(button)"
-        ) {{ getLabel(button, key) }}
+      dito-buttons.dito-form-buttons(
+        slot="buttons"
+        :buttons="namedButtons"
+        :data="data"
+        :params="buttonParams"
+      )
 </template>
 
 <style lang="sass">
@@ -40,10 +40,23 @@ export default DitoComponent.component('dito-dialog', {
       return {
         components: this.components
       }
+    },
+
+    namedButtons() {
+      return this.getNamedSchemas(
+        this.buttons,
+        { type: 'button' } // Defaults
+      )
+    },
+
+    buttonParams() {
+      // Additional parameters to be passed to button events:
+      return { dialog: this }
     }
   },
 
   created() {
+    // Make sure data contains all the expected keys
     for (const key in this.components) {
       if (!(key in this.data)) {
         this.data[key] = null

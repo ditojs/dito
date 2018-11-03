@@ -274,7 +274,7 @@ export default {
 
     onChange() {
       // Pass `schemaComponent` as parent, so change events can propagate up.
-      this.emitEvent('change', null, this.schemaComponent)
+      this.emitEvent('change', { parent: this.schemaComponent })
     }
   }
 }

@@ -163,10 +163,10 @@ export default {
 
     labelize,
 
-    getNamedSchemas(descriptions) {
+    getNamedSchemas(descriptions, defaults) {
       const toObject = (array, toSchema) => array.reduce((object, value) => {
         const schema = toSchema(value)
-        object[schema.name] = schema
+        object[schema.name] = defaults ? { ...defaults, ...schema } : schema
         return object
       }, {})
 
@@ -192,9 +192,10 @@ export default {
     },
 
     getButtonAttributes(name, button) {
+      const verb = this.verbs[name] || name
       return {
-        class: `dito-button-${name}`,
-        title: this.getLabel(button, name)
+        class: `dito-button-${verb}`,
+        title: button?.text || labelize(verb)
       }
     },
 
@@ -371,17 +372,22 @@ export default {
       }
     },
 
-    async emitEvent(event, params = null, parent = null) {
-      if (this.responds(event) || parent?.responds(event)) {
+    async emitEvent(event, { params = null, parent = null } = {}) {
+      const responds = this.responds(event)
+      const parentResponds = parent?.responds(event)
+      if (responds || parentResponds) {
         // The effects of some events need some time to propagate through Vue.
         // Always use $nextTick() to make sure our handlers see these changes.
         // This is needed for 'change' on selects, 'load' events, etc.
         await this.$nextTick()
         const itemParams = getItemParams(this, params)
-        await Promise.all([
-          this.emit(event, itemParams),
-          parent?.emit(event, itemParams)
-        ])
+        const res = responds
+          ? await this.emit(event, itemParams)
+          : null
+        // Don't bubble to parent if handled event returned `false`
+        if (parentResponds && res !== false) {
+          await parent.emit(event, itemParams)
+        }
         return true
       }
       return false

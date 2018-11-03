@@ -1,4 +1,4 @@
-import { parseDataPath, getDataPath } from '@ditojs/utils'
+import { parseDataPath, getDataPath, isPlainObject } from '@ditojs/utils'
 
 export function getItem(rootItem, dataPath, isValue) {
   const path = parseDataPath(dataPath)
@@ -28,19 +28,27 @@ export function getParentItem(rootItem, dataPath, isValue) {
   return null
 }
 
-export function getItemParams(params, overrides) {
-  return Object.assign(new ItemParams(params), overrides)
+export function getItemParams(source, overrides) {
+  // Overrides are set on the created instance, after instantiation:
+  return Object.assign(new ItemParams(source), overrides)
 }
 
+// Use WeakMap for ItemParams objects, so we don't pollute the actual ItemParams
+// instance with it.
 const paramsMap = new WeakMap()
 
 class ItemParams {
-  constructor(params) {
+  constructor(source) {
     paramsMap.set(
       this,
-      // Create a new object that inherits from `params`, so we can override.
-      Object.setPrototypeOf({}, params)
+      // Create a new object that inherits from `source`, so we can override
+      // without changing `source`:
+      Object.setPrototypeOf({}, source)
     )
+    // If `source` is not a plain object, assume it's the target of this event.
+    if (!isPlainObject(source)) {
+      this.target = source
+    }
   }
 
   get value() {
@@ -75,15 +83,19 @@ class ItemParams {
   // parent. If needed, we could expose this data here too, as we can do all
   // sorts of data processing with `rootData` and `dataPath`.
   get parentItem() {
-    return getParentItem(this.rootItem, this.dataPath, true)
+    return getParentItem(this.rootItem, this.dataPath, true) || null
   }
 
   get rootItem() {
-    return get(this, 'rootData')
+    return get(this, 'rootData') || null
   }
 
   get dataPath() {
-    return get(this, 'dataPath')
+    return get(this, 'dataPath') || ''
+  }
+
+  get formComponent() {
+    return get(this, 'formComponent') || null
   }
 }
 

@@ -14,54 +14,28 @@
   component.dito-scroll(
     v-show="isActive"
     :is="formTag"
-    @submit.prevent="onSubmit(buttons.submit)"
+    @submit.prevent
   )
     dito-schema(
       ref="schema"
       :schema="schema"
       :dataPath="dataPath"
       :key="dataPath"
-      :data="data || {}"
+      :data="data"
       :meta="meta"
       :store="store"
       :disabled="isLoading"
       :menuHeader="true"
     )
-      .dito-buttons.dito-form-buttons(
+      dito-buttons.dito-form-buttons(
         slot="buttons"
+        :buttons="buttons"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="isLoading"
       )
-        // Render cancel button
-        button.dito-button(
-          v-if="shouldRender(buttons.cancel)"
-          type="button"
-          @click="onCancel"
-          v-bind="getButtonAttributes(verbs.cancel, buttons.cancel)"
-        ) {{ buttons.cancel.label }}
-        // Render submit button
-        button.dito-button(
-          v-if="shouldRender(buttons.submit) && !doesMutate"
-          type="submit"
-          v-bind="getButtonAttributes(verbs.submit, buttons.submit)"
-        ) {{ buttons.submit.label }}
-        // Render all other buttons
-        template(
-          v-for="button in buttons"
-          v-if="!isDefaultButton(button) && shouldRender(button)"
-        )
-          // Distinguish between buttons thata fire onClick events and those
-          // that submit the form.
-          button.dito-button(
-            v-if="button.onClick"
-            type="button"
-            @click="onClick(button)"
-            v-bind="getButtonAttributes(button.name, button)"
-          ) {{ getLabel(button) }}
-          button.dito-button(
-            v-else
-            type="submit"
-            @click.prevent="onSubmit(button)"
-            v-bind="getButtonAttributes(button.name, button)"
-          ) {{ getLabel(button) }}
 </template>
 
 <script>
@@ -70,7 +44,6 @@ import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { isObjectSource } from '@/utils/schema'
-import { getItemParams } from '@/utils/item'
 import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
@@ -94,6 +67,8 @@ export default DitoComponent.component('dito-form', {
   computed: {
     verbs() {
       // Add submit / submitted to the verbs returned by DataMixin
+      // NOTE: These get passed on to children through:
+      // `provide() ... { $verbs: this.verbs }` in DataMixin
       const verbs = this.getVerbs()
       return {
         ...verbs,
@@ -109,6 +84,29 @@ export default DitoComponent.component('dito-form', {
         // type set, so the form can always be determined.
         this.data || { type: this.type }
       ) || {} // Always return a schema object so we don't need to check for it.
+    },
+
+    buttons() {
+      return this.getNamedSchemas(
+        merge(
+          {
+            cancel: {
+              type: 'button',
+              events: {
+                click: () => this.cancel()
+              }
+            },
+            submit: {
+              type: 'submit',
+              events: {
+                click: ({ target }) => this.submit(target)
+              }
+            }
+          },
+          this.schema.buttons
+        ),
+        { type: 'button' } // Defaults
+      )
     },
 
     isActive() {
@@ -155,18 +153,6 @@ export default DitoComponent.component('dito-form', {
       return capitalize(this.create ? this.verbs.create : this.verbs.edit)
     },
 
-    buttons() {
-      return this.getNamedSchemas(
-        merge(
-          {
-            cancel: {},
-            submit: {}
-          },
-          this.schema.buttons
-        )
-      )
-    },
-
     data() {
       // Return different data "containers" based on different scenarios:
       // 1. createdData, if we're in a form for a newly created object.
@@ -176,7 +162,7 @@ export default DitoComponent.component('dito-form', {
       //    view that loaded the data, or a form that either loaded the data, or
       //    also inherited it from its parent. Note that we use a clone of it,
       //    so, data changes aren't applied until setSourceData() is called.
-      return this.createdData || this.loadedData || this.inheritedData
+      return this.createdData || this.loadedData || this.inheritedData || {}
     },
 
     dataPath() {
@@ -274,6 +260,14 @@ export default DitoComponent.component('dito-form', {
       delete this.meta.errors
       this.showErrors(errors, true)
     }
+    // Handle button clicks and see if the buttons define methods or paths to
+    // call, and if so, delegate to `submit()`:
+    this.$refs.schema.on('click', ({ target: button }) => {
+      const { schema } = button
+      if (schema.method || schema.path) {
+        this.submit(button)
+      }
+    })
   },
 
   methods: {
@@ -335,27 +329,7 @@ export default DitoComponent.component('dito-form', {
       this.$refs.schema.showErrors(errors, focus)
     },
 
-    isDefaultButton(button) {
-      return ['submit', 'cancel'].includes(button.name)
-    },
-
-    async onSubmit(button) {
-      this.clearErrors()
-      if (await this.validateAll()) {
-        this.submit(button)
-      } else {
-        // Focus first error field
-        const errors = this.getErrors()
-        // TODO: Move to DitoSchema instead?
-        this.$refs.schema.focus(Object.keys(errors)[0], true)
-      }
-    },
-
-    onClick(button) {
-      return button.onClick.call(this, getItemParams(this))
-    },
-
-    onCancel() {
+    cancel() {
       if (!this.isDirty || confirm(
         `You have unsaved changed. Do you really want to ${this.verbs.cancel}?`
       )) {
@@ -368,14 +342,22 @@ export default DitoComponent.component('dito-form', {
       this.$router.push({ path: parent.path })
     },
 
-    submit(button) {
-      const { onSuccess, onError } = button
+    async submit(button) {
+      this.clearErrors()
+      if (!(await this.validateAll())) {
+        // Focus first error field
+        const errors = this.getErrors()
+        // TODO: Move to DitoSchema instead?
+        this.$refs.schema.focus(Object.keys(errors)[0], true)
+        return
+      }
+      const { schema: buttonSchema } = button
       // Allow buttons to override both method (verb) and resource path:
-      const method = button.method || button.verb || this.method
-      const resource = button.path
+      const method = buttonSchema.method || this.method
+      const resource = buttonSchema.path
         ? {
           ...this.resource,
-          path: button.path
+          path: buttonSchema.path
         }
         : this.resource
       const itemLabel = this.data
@@ -398,12 +380,12 @@ export default DitoComponent.component('dito-form', {
           }
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
-          if (onSuccess) {
-            onSuccess.call(this, getItemParams(this, {
+          if (!button.emitEvent('success', {
+            params: {
               item: payload,
               itemLabel
-            }))
-          } else {
+            }
+          })) {
             this.notify('info', 'Change Applied',
               `<p>Changes in ${itemLabel} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
@@ -424,33 +406,32 @@ export default DitoComponent.component('dito-form', {
             } else {
               const error = isObject(data) ? data : err
               if (error) {
-                if (onError) {
-                  onError.call(this, getItemParams(this, {
+                if (!button.emitEvent('error', {
+                  params: {
                     item: payload,
-                    error,
-                    itemLabel
-                  }))
-                } else {
+                    itemLabel,
+                    error
+                  }
+                })) {
                   this.notify('error', 'Request Error',
                     `Error submitting ${itemLabel}:\n${error.message || error}`)
                 }
               }
             }
           } else {
-            if (onSuccess) {
-              onSuccess.call(this, getItemParams(this, {
+            if (!button.emitEvent('success', {
+              params: {
                 item: payload,
                 itemLabel
-              }))
-            } else {
+              }
+            })) {
               const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${itemLabel} was ${submitted}.`)
             }
             this.$refs.schema.resetValidator()
-            // After submitting, navigate back to the parent form or view,
-            // except if a button turns it off:
-            if (button.back === false) {
+            // After submitting, close the form except if a button turns it off:
+            if (buttonSchema.close === false) {
               if (data) {
                 this.setData(data)
               }

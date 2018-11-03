@@ -1,6 +1,6 @@
 // NOTE: index.js exports nothing, but type components will be registered in
 // DitoComponent and can be retrieved through TypeComponent.get(type) and
-// rendered through their tag-names (e.g. type-list).
+// rendered through their component-names (e.g. dito-type-list).
 
 import './TypeButton'
 import './TypeCheckbox'

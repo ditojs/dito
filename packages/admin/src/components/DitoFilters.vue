@@ -8,7 +8,6 @@
         ref="filtersSchema"
         :schema="filtersSchema"
         :data="filtersData"
-        :generateLabels="true"
       )
         .dito-buttons(slot="buttons")
           button.dito-button.dito-button-clear(

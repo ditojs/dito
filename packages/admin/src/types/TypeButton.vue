@@ -2,7 +2,11 @@
   button.dito-button(
     ref="element"
     :id="dataPath"
-    :type="schema.type"
+    :type="type"
+    :title="schema.text || labelize(verb)"
+    :class="`dito-button-${verb}`"
+    v-bind="attributes"
+    v-on="listeners"
   ) {{ schema.text }}
 </template>
 
@@ -10,7 +14,34 @@
 import TypeComponent from '@/TypeComponent'
 
 // @vue/component
-export default TypeComponent.register('button', {
-  defaultValue: undefined
+export default TypeComponent.register(['button', 'submit'], {
+  defaultValue: undefined,
+
+  props: {
+    params: { type: Object, default: null }
+  },
+
+  computed: {
+    verb() {
+      return this.verbs[this.name] || this.name
+    },
+
+    listeners() {
+      return {
+        focus: () => this.onFocus(),
+        blur: () => this.onBlur(),
+        click: () => this.onClick()
+      }
+    }
+  },
+
+  methods: {
+    onClick() {
+      this.emitEvent('click', {
+        params: this.params,
+        parent: this.schemaComponent
+      })
+    }
+  }
 })
 </script>

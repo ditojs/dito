@@ -92,20 +92,25 @@ export default DitoComponent.component('dito-root', {
             type: 'password'
           }
         },
+
         buttons: {
           login: {
             type: 'submit',
-            onClick(dialog) {
-              dialog.resolve(dialog.data)
+            events: {
+              click({ dialog }) {
+                dialog.resolve(dialog.data)
+              }
             }
           },
+
           cancel: {
-            onClick(dialog) {
-              dialog.resolve(false)
+            events: {
+              click({ dialog }) {
+                dialog.resolve(false)
+              }
             }
           }
-        },
-        data: {}
+        }
       }, {
         width: '480px',
         height: 'auto',
