@@ -5,7 +5,7 @@
     v-model="value"
     v-validate="validations"
     v-bind="attributes"
-    v-on="events"
+    v-on="listeners"
     :rows="schema.lines || 4"
   )
 </template>

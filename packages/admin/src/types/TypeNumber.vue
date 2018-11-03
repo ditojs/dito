@@ -6,7 +6,7 @@
     v-model="inputValue"
     v-validate="validations"
     v-bind="attributes"
-    v-on="events"
+    v-on="listeners"
     :min="min"
     :max="max"
     :step="stepValue"

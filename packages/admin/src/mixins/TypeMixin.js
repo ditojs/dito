@@ -163,7 +163,7 @@ export default {
       return attributes
     },
 
-    events() {
+    listeners() {
       return {
         focus: () => this.onFocus(),
         blur: () => this.onBlur(),

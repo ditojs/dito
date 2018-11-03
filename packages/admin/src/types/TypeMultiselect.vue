@@ -5,7 +5,7 @@
     v-model="multiSelectValue"
     v-validate="validations"
     v-bind="attributes"
-    v-on="events"
+    v-on="listeners"
     :show-labels="false"
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",

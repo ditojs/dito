@@ -7,7 +7,7 @@
       :type="type"
       v-model="currentValue"
       v-bind="attributes"
-      v-on="events"
+      v-on="listeners"
       :aria-label="title"
     )
 </template>
@@ -64,10 +64,10 @@ export default {
       return { title, disabled, readonly, placeholder, autocomplete, ...$attrs }
     },
 
-    events() {
-      // Remove 'input' event, but pass on all others.
-      const { input, ...events } = this.$listeners
-      return events
+    listeners() {
+      // Remove 'input' listener, but pass on all others.
+      const { input, ...listeners } = this.$listeners
+      return listeners
     }
   },
 

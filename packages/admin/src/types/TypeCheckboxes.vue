@@ -12,7 +12,7 @@
           v-model="selectValue"
           v-validate="validations"
           v-bind="attributes"
-          v-on="events"
+          v-on="listeners"
         )
         | {{ getLabelForOption(option) }}
 </template>
