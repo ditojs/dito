@@ -198,6 +198,21 @@ export default {
       }
     },
 
+    appendDataPath(dataPath, token) {
+      return dataPath != null && dataPath !== ''
+        ? `${dataPath}/${token}`
+        : token
+    },
+
+    getDragOptions(draggable) {
+      return {
+        animation: 150,
+        disabled: !draggable,
+        handle: '.dito-button-drag',
+        ghostClass: 'dito-drag-ghost'
+      }
+    },
+
     shouldRender(schema = null) {
       return !!schema && this.getSchemaValue('if', {
         type: Boolean,
@@ -281,15 +296,6 @@ export default {
 
     closeNotifications() {
       this.rootComponent.closeNotifications()
-    },
-
-    getDragOptions(draggable) {
-      return {
-        animation: 150,
-        disabled: !draggable,
-        handle: '.dito-button-drag',
-        ghostClass: 'dito-drag-ghost'
-      }
     },
 
     setupSchemaFields() {

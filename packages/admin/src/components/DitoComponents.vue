@@ -95,7 +95,7 @@ export default DitoComponent.component('dito-components', {
       for (const [name, component] of Object.entries(schema.components || {})) {
         const path = wrapPrimitives
           ? dataPath
-          : dataPath ? `${dataPath}/${name}` : name
+          : this.appendDataPath(dataPath, name)
         schemas[path] = {
           name,
           ...component

@@ -18,7 +18,7 @@ export default {
     },
 
     getItemDataPath(sourceSchema, index) {
-      return this.schemaComponent.appendDataPath(
+      return this.appendDataPath(
         this.dataPath,
         index != null
           ? `${sourceSchema.name}/${index}`
