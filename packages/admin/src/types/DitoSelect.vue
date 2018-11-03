@@ -50,11 +50,11 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
 // @vue/component
-export default TypeComponent.register('select', {
+export default DitoTypeComponent.register('select', {
   mixins: [OptionsMixin],
 
   nativeField: true

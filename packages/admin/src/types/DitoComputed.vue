@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 
 // @vue/component
-export default TypeComponent.register('computed')
+export default DitoTypeComponent.register('computed')
 </script>

@@ -2,7 +2,7 @@
   .dito-buttons(
     slot="buttons"
   )
-    dito-type-button(
+    dito-button(
       v-for="button in buttons"
       v-if="shouldRender(button)"
       :schema="button"

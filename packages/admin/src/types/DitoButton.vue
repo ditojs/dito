@@ -11,10 +11,10 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 
 // @vue/component
-export default TypeComponent.register(['button', 'submit'], {
+export default DitoTypeComponent.register(['button', 'submit'], {
   defaultValue: undefined,
 
   props: {

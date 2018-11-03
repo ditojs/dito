@@ -38,7 +38,7 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import DitoComponent from '@/DitoComponent'
 import VueToggleButton from 'vue-js-toggle-button'
 
@@ -46,7 +46,7 @@ import VueToggleButton from 'vue-js-toggle-button'
 DitoComponent.use(VueToggleButton)
 
 // @vue/component
-export default TypeComponent.register('switch', {
+export default DitoTypeComponent.register('switch', {
   defaultValue: false,
 
   computed: {

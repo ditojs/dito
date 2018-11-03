@@ -37,11 +37,11 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import CodeFlask from 'codeflask'
 
 // @vue/component
-export default TypeComponent.register('code', {
+export default DitoTypeComponent.register('code', {
   computed: {
     lines() {
       return this.schema.lines || 3

@@ -24,12 +24,12 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import { InputField } from '@ditojs/ui'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isArray } from '@ditojs/utils'
 
-export default TypeComponent.register([
+export default DitoTypeComponent.register([
   'number', 'integer'
 ],
 // @vue/component

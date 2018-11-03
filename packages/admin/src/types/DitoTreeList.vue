@@ -34,11 +34,11 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import { hasForms } from '@/utils/schema'
 
-export default TypeComponent.register([
+export default DitoTypeComponent.register([
   'tree-list', 'tree-object'
 ],
 // @vue/component

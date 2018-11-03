@@ -10,11 +10,10 @@
 </template>
 
 <script>
-// TypeComponent is the base component for all other type components inside the
-// types/ folder.
-// It is also registered as a type component itself, registered with
+// DitoTypeComponent is the base component for all other type components inside
+// the types/ folder.
+// It is also registered as a type component itself in `typeComponents` as
 // type="component", and can be used to nest arbitrary vue components in schema:
-//
 // {
 //   type: 'component',
 //   component: import('./component')
@@ -25,7 +24,7 @@ import { asArray } from '@ditojs/utils'
 
 const { typeComponents } = DitoComponent
 
-const TypeComponent = DitoComponent.component('typo-component', {
+const DitoTypeComponent = DitoComponent.component('dito-component', {
   mixins: [TypeMixin],
 
   computed: {
@@ -38,11 +37,11 @@ const TypeComponent = DitoComponent.component('typo-component', {
 // Expose this component as the general purpose 'component' type, which can
 // resolves to any provided custom component, through `schema.component`, see
 // `resolveTypeComponent()`
-typeComponents.component = TypeComponent
+typeComponents.component = DitoTypeComponent
 
-TypeComponent.register = function(type, options = {}) {
+DitoTypeComponent.register = function(type, options = {}) {
   const types = asArray(type)
-  const component = this.component(`dito-type-${types[0]}`, options)
+  const component = this.component(`dito-${types[0]}`, options)
   // If nothing is specified, the default value for `defaultValue` is null:
   if (!('defaultValue' in component.options)) {
     component.options.defaultValue = null
@@ -53,9 +52,9 @@ TypeComponent.register = function(type, options = {}) {
   return component
 }
 
-TypeComponent.get = function(type) {
+DitoTypeComponent.get = function(type) {
   return typeComponents[type]
 }
 
-export default TypeComponent
+export default DitoTypeComponent
 </script>

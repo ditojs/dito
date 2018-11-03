@@ -12,11 +12,11 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
 import { isDate } from '@ditojs/utils'
 
-export default TypeComponent.register([
+export default DitoTypeComponent.register([
   'date', 'datetime', 'time'
 ],
 // @vue/component

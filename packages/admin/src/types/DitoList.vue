@@ -131,14 +131,14 @@
 
 <script>
 import VueDraggable from 'vuedraggable'
-import TypeComponent from '@/TypeComponent'
+import DitoTypeComponent from '@/DitoTypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
 import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
-export default TypeComponent.register([
+export default DitoTypeComponent.register([
   'list', 'object'
 ], {
   mixins: [SourceMixin, OrderedMixin],
