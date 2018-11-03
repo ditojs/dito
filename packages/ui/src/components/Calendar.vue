@@ -212,30 +212,12 @@ import { copyDate } from '../utils'
 
 export default {
   props: {
-    value: {
-      type: Date,
-      default: null
-    },
-    locale: {
-      type: String,
-      default: 'en-US'
-    },
-    format: {
-      type: String,
-      default: 'yyyy-MM-dd'
-    },
-    disabledDate: {
-      type: Function,
-      default: () => false
-    },
-    show: {
-      type: Boolean,
-      default: true
-    },
-    mode: {
-      type: String,
-      default: 'day'
-    }
+    value: { type: Date, default: null },
+    locale: { type: String, default: 'en-US' },
+    format: { type: String, default: 'yyyy-MM-dd' },
+    disabledDate: { type: Function, default: () => false },
+    show: { type: Boolean, default: true },
+    mode: { type: String, default: 'day' }
   },
 
   data() {

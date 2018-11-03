@@ -32,31 +32,19 @@
 <script>
 export default {
   props: {
-    type: {
-      type: String,
-      default: 'text'
-    },
-    value: {
-      type: [String, Number],
-      default: null
-    },
-    id: String,
-    name: String,
-    disabled: Boolean,
-    readonly: Boolean,
-    title: String,
-    placeholder: String,
-    autocomplete: {
-      type: String,
-      default: 'off'
-    },
-    clearable: {
-      type: Boolean,
-      default: false
-    }
+    type: { type: String, default: 'text' },
+    value: { type: [String, Number], default: null },
+    id: { type: String, default: null },
+    name: { type: String, default: null },
+    disabled: { type: Boolean, default: false },
+    readonly: { type: Boolean, default: false },
+    title: { type: String, default: null },
+    placeholder: { type: String, default: null },
+    autocomplete: { type: String, default: 'off' }
     /*
-    suffixIcon: String,
-    prefixIcon: String
+    clearable: { type: Boolean, default: false }
+    suffixIcon: { type: String, default: null },
+    prefixIcon: { type: String, default: null }
     */
   },
 

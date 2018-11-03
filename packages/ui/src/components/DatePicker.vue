@@ -49,43 +49,16 @@ export default {
   components: { Trigger, Calendar, InputField },
 
   props: {
-    value: {
-      type: Date,
-      default: null
-    },
-    transition: {
-      type: String,
-      default: 'slide'
-    },
-    placement: {
-      type: String,
-      default: 'bottom-left'
-    },
-    placeholder: String,
-    format: {
-      type: String,
-      default: 'yyyy-MM-dd'
-    },
-    locale: {
-      type: String,
-      default: 'en-US'
-    },
-    show: {
-      type: Boolean,
-      default: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    target: {
-      type: [String, HTMLElement],
-      default: 'trigger'
-    },
-    disabledDate: {
-      type: Function,
-      default: () => false
-    }
+    value: { type: Date, default: null },
+    transition: { type: String, default: 'slide' },
+    placement: { type: String, default: 'bottom-left' },
+    placeholder: { type: String, default: null },
+    format: { type: String, default: 'yyyy-MM-dd' },
+    locale: { type: String, default: 'en-US' },
+    show: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+    target: { type: [String, HTMLElement], default: 'trigger' },
+    disabledDate: { type: Function, default: () => false }
   },
 
   data() {

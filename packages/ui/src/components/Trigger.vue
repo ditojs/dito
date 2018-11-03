@@ -79,58 +79,19 @@ import { addEvent, addEvents } from '../utils'
 
 export default {
   props: {
-    trigger: {
-      type: String,
-      default: 'click'
-    },
-    transition: {
-      type: String,
-      default: 'slide'
-    },
-    placement: {
-      type: String,
-      default: 'bottom'
-    },
-    show: {
-      type: Boolean,
-      default: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    target: {
-      type: [String, HTMLElement],
-      default: null
-    },
-    customClass: {
-      type: String,
-      default: null
-    },
-    zIndex: {
-      type: Number,
-      default: 0
-    },
-    keepInView: {
-      type: Boolean,
-      default: true
-    },
-    hideWhenClickOutside: {
-      type: Boolean,
-      default: true
-    },
-    alwaysShow: {
-      type: Boolean,
-      default: false
-    },
-    cover: {
-      type: Boolean,
-      default: false
-    },
-    hideDelay: {
-      type: Number,
-      default: 0
-    }
+    trigger: { type: String, default: 'click' },
+    transition: { type: String, default: 'slide' },
+    placement: { type: String, default: 'bottom' },
+    show: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+    target: { type: [String, HTMLElement], default: null },
+    customClass: { type: String, default: null },
+    zIndex: { type: Number, default: 0 },
+    keepInView: { type: Boolean, default: true },
+    hideWhenClickOutside: { type: Boolean, default: true },
+    alwaysShow: { type: Boolean, default: false },
+    cover: { type: Boolean, default: false },
+    hideDelay: { type: Number, default: 0 }
   },
 
   data() {

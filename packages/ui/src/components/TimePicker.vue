@@ -151,43 +151,16 @@ export default {
   components: { Trigger, InputField },
 
   props: {
-    value: {
-      type: Date,
-      default: null
-    },
-    placeholder: String,
-    transition: {
-      type: String,
-      default: 'slide'
-    },
-    placement: {
-      type: String,
-      default: 'bottom-left'
-    },
-    show: {
-      type: Boolean,
-      default: false
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    target: {
-      type: [String, HTMLElement],
-      default: 'trigger'
-    },
-    disabledHour: {
-      type: Function,
-      default: () => false
-    },
-    disabledMinute: {
-      type: Function,
-      default: () => false
-    },
-    disabledSecond: {
-      type: Function,
-      default: () => false
-    }
+    value: { type: Date, default: null },
+    transition: { type: String, default: 'slide' },
+    placement: { type: String, default: 'bottom-left' },
+    placeholder: { type: String, default: null },
+    show: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+    target: { type: [String, HTMLElement], default: 'trigger' },
+    disabledHour: { type: Function, default: () => false },
+    disabledMinute: { type: Function, default: () => false },
+    disabledSecond: { type: Function, default: () => false }
   },
 
   data() {

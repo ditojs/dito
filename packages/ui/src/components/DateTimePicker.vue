@@ -57,27 +57,12 @@ export default {
   components: { DatePicker, TimePicker },
 
   props: {
-    value: {
-      type: Date,
-      default: null
-    },
-    transition: {
-      type: String,
-      default: 'slide'
-    },
-    placeholder: String,
-    format: {
-      type: String,
-      default: 'yyyy-MM-dd'
-    },
-    locale: {
-      type: String,
-      default: 'en-US'
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    }
+    value: { type: Date, default: null },
+    transition: { type: String, default: 'slide' },
+    placeholder: { type: String, default: null },
+    format: { type: String, default: 'yyyy-MM-dd' },
+    locale: { type: String, default: 'en-US' },
+    disabled: { type: Boolean, default: false }
   },
 
   data() {

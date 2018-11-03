@@ -12,7 +12,10 @@ import { Controller } from './Controller'
 export class AdminController extends Controller {
   // @override
   compose() {
-    const config = { ...this.app.config.admin, ...this.config }
+    const config = {
+      ...this.app.config.admin,
+      ...this.config
+    }
     if (!config.build) {
       throw new ControllerError(this, 'Missing build configuration.')
     }

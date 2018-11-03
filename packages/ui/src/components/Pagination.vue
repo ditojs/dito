@@ -78,22 +78,10 @@
 <script>
 export default {
   props: {
-    total: {
-      type: Number,
-      default: 0
-    },
-    page: {
-      type: Number,
-      default: 1
-    },
-    pageSize: {
-      type: Number,
-      default: 10
-    },
-    showTotal: {
-      type: Boolean,
-      default: true
-    }
+    total: { type: Number, default: 0 },
+    page: { type: Number, default: 1 },
+    pageSize: { type: Number, default: 10 },
+    showTotal: { type: Boolean, default: true }
   },
 
   data() {
