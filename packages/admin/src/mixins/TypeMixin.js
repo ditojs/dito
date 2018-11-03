@@ -234,7 +234,7 @@ export default {
         msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
       })
       // Remove the error as soon as the field is changed.
-      this.$once('input', () => {
+      this.once('input', () => {
         this.$errors.remove(this.dataPath)
       })
     },
@@ -274,7 +274,7 @@ export default {
 
     onChange() {
       // Pass `schemaComponent` as parent, so change events can propagate up.
-      this.emitEvent('change', this.schemaComponent)
+      this.emitEvent('change', null, this.schemaComponent)
     }
   }
 }

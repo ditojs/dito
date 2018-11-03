@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
-import { isArray, isFunction, isPromise, isString } from '@ditojs/utils'
+import { isArray, isFunction, isPromise } from '@ditojs/utils'
 
 const components = {}
 const typeComponents = {}
@@ -36,119 +36,121 @@ const DitoComponent = Vue.extend({
           return comp
         }
         : component
-    }
-  }
-})
+    },
 
-// Extend Vue's $on() and $off() methods so that we can independently keep track
-// of the events added / removed, and add a $responds() method that checks if
-// the component responds to a given event.
+    // Async versions of Vue's $on() and $off() methods that keep track of the
+    // events added / removed, and provide a responds() method that checks if
+    // the component responds to a given event.
 
-// Also adds proper handling of async events, including a new async $emit() that
-// deals with proper event queueing.
-
-// NOTE: We don't need to handle $once(), as that delegates to $on() and $off()
-// See: https://github.com/vuejs/vue/issues/8757
-const { $on, $off, $emit } = Vue.prototype
-
-Object.assign(DitoComponent.prototype, {
-  // eslint-disable-next-line vue/no-reserved-keys
-  $on(event, callback) {
-    if (isString(event)) {
-      const events = this.$events || (this.$events = Object.create(null))
-      // Install an async-aware wrapper of the callback that awaits and calls
-      // `next()` once its execution is done. See `$emit()` for details.
-      const wrapper = async function(...args) {
-        const next = args.pop()
-        try {
-          await wrapper.callback.call(this, ...args)
-        } finally {
-          next()
+    // Also adds proper handling of async events, including a async emit() that
+    // deals with proper event queueing.
+    on(event, callback) {
+      if (isArray(event)) {
+        for (const ev of event) {
+          this.on(ev, callback)
         }
+      } else {
+        const events = this.events || (this.events = Object.create(null))
+        const { callbacks } = events[event] || (events[event] = {
+          callbacks: [],
+          queue: []
+        })
+        callbacks.push(callback)
       }
-      wrapper.callback = callback
-      const { wrappers } = events[event] || (events[event] = {
-        wrappers: [],
-        queue: []
-      })
-      wrappers.push(wrapper)
-      callback = wrapper // Swap for the call below
-    }
-    return $on.call(this, event, callback)
-  },
+      return this
+    },
 
-  // eslint-disable-next-line vue/no-reserved-keys
-  $off(event, callback) {
-    if (!arguments.length) {
-      // Remove all events
-      delete this.$events
-    } else if (isString(event)) {
-      // Remove specific event
-      const entry = this.$events?.[event]
-      if (entry) {
-        if (!callback) {
-          // Remove all handlers for this event
-          delete this.$events[event]
-        } else {
-          // Remove a specific handler: find the index of its wrapper
-          const { wrappers } = entry
-          const index = wrappers.findIndex(
-            wrapper => wrapper.callback === callback
-          )
-          if (index !== -1) {
-            wrappers.splice(index, 1)
-          }
+    once(event, callback) {
+      const on = (...args) => {
+        this.off(event, on)
+        return callback.apply(this, args)
+      }
+      on.callback = callback // Needed for `off()`, see below.
+      this.on(event, on)
+      return this
+    },
+
+    off(event, callback) {
+      if (!arguments.length) {
+        // Remove all events
+        delete this.events
+      } else if (isArray(event)) {
+        for (const ev of event) {
+          this.off(ev, callback)
         }
-      }
-    }
-    return $off.call(this, event, callback)
-  },
-
-  // Checks if the components responds to a given event type:
-  $responds(event) {
-    if (isArray(event)) {
-      for (const ev of event) {
-        if (this.$responds(ev)) {
-          return true
-        }
-      }
-      return false
-    } else {
-      return !!this.$events?.[event]
-    }
-  },
-
-  async $emit(event, ...args) {
-    // Only queue if it actually responds to it.
-    const entry = this.$events?.[event]
-    if (entry) {
-      const { queue } = entry
-      return new Promise(resolve => {
-        const next = (first = false) => {
-          if (!first) {
-            // If the previous event is done, remove it from the queue.
-            const entry = queue.shift()
-            if (entry) {
-              // Resolve the promise that was added to the queue for the event
-              // that was just completed by the wrapper that called `next()`
-              entry.resolve()
+      } else {
+        // Remove specific event
+        const entry = this.events?.[event]
+        if (entry) {
+          if (!callback) {
+            // Remove all handlers for this event
+            delete this.events[event]
+          } else {
+            // Remove a specific handler: find the index of its wrapper
+            const { wrappers } = entry
+            const index = wrappers.findIndex(
+              // Match `cb.callback` also, as used by `once()`, see  above:
+              ({ callback: cb }) => cb === callback || cb.callback === callback
+            )
+            if (index !== -1) {
+              wrappers.splice(index, 1)
             }
           }
-          // Emit the next event in the queue with its params.
-          // Note that it only gets removed once `next()` is called.
-          if (queue.length > 0) {
-            // Pass on `next()` to the callback wrapper function that was
-            // installed by the overridden `$on()` function above:
-            $emit.call(this, event, ...queue[0].args, next)
+        }
+      }
+      return this
+    },
+
+    async emit(event, ...args) {
+      // Only queue if it actually responds to it.
+      const entry = this.events?.[event]
+      if (entry) {
+        const { queue, callbacks } = entry
+        return new Promise(resolve => {
+          const next = async () => {
+            // Emit the next event in the queue with its params.
+            // Note that it only gets removed once `next()` is called.
+            const entry = queue.shift()
+            if (entry) {
+              let result
+              for (const callback of callbacks) {
+                try {
+                  const res = await callback.apply(this, entry.args)
+                  if (res !== undefined) {
+                    result = res
+                  }
+                } catch (err) {
+                  console.error(`event handler for '${event}': `, err)
+                }
+              }
+              // Resolve the promise that was added to the queue for the event
+              // that was just completed by the wrapper that called `next()`
+              entry.resolve(result)
+              next()
+            }
+          }
+          queue.push({ args, resolve })
+          // For new queues (= only one entry) emit the first event immediately,
+          // to get the queue running.
+          if (queue.length === 1) {
+            next()
+          }
+        })
+      }
+    },
+
+    // Checks if the components responds to a given event type:
+    responds(event) {
+      if (isArray(event)) {
+        for (const ev of event) {
+          if (this.responds(ev)) {
+            return true
           }
         }
-        queue.push({ args, resolve })
-        // With new queues (= only one entry), emit the first event immediately,
-        // to get the queue running.
-        if (queue.length === 1) {
-          next(true)
-        }
-      })
+        return false
+      } else {
+        return !!this.events?.[event]
+      }
     }
   }
 })

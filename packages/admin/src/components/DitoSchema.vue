@@ -214,8 +214,8 @@ export default DitoComponent.component('dito-schema', {
     this.setupSchemaFields()
     if (this.parentSchemaComponent) {
       // Pass change events through to parent schema:
-      this.$on('change', (...args) =>
-        this.parentSchemaComponent.$emit('change', ...args)
+      this.on('change', (...args) =>
+        this.parentSchemaComponent.emit('change', ...args)
       )
     }
   },

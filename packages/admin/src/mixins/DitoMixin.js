@@ -352,7 +352,7 @@ export default {
 
       const addEvent = (key, event, callback) => {
         if (isFunction(callback)) {
-          this.$on(event, callback)
+          this.on(event, callback)
         } else {
           console.error(`Invalid event definition: ${key}: ${callback}`)
         }
@@ -371,18 +371,20 @@ export default {
       }
     },
 
-    async emitEvent(event, parent = null) {
-      if (this.$responds(event) || parent?.$responds(event)) {
+    async emitEvent(event, params = null, parent = null) {
+      if (this.responds(event) || parent?.responds(event)) {
         // The effects of some events need some time to propagate through Vue.
         // Always use $nextTick() to make sure our handlers see these changes.
         // This is needed for 'change' on selects, 'load' events, etc.
         await this.$nextTick()
-        const params = getItemParams(this)
+        const itemParams = getItemParams(this, params)
         await Promise.all([
-          this.$emit(event, params),
-          parent?.$emit(event, params)
+          this.emit(event, itemParams),
+          parent?.emit(event, itemParams)
         ])
+        return true
       }
+      return false
     }
   }
 }
