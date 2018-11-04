@@ -13,8 +13,11 @@
 <script>
 import DitoTypeComponent from '@/DitoTypeComponent'
 
+export default DitoTypeComponent.register([
+  'button', 'submit'
+],
 // @vue/component
-export default DitoTypeComponent.register(['button', 'submit'], {
+{
   defaultValue: undefined,
 
   props: {

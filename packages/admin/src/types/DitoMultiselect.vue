@@ -47,6 +47,7 @@
     color: $color-black
 
     .multiselect__tags
+      font-size: inherit
       overflow: auto
       min-height: inherit
       padding: 0 $spinner-width 0 0
@@ -68,14 +69,14 @@
     .multiselect__single,
     .multiselect__input
       font-size: inherit
+      line-height: inherit
       min-height: 0
       padding: $input-padding
-      margin: -1px // Adjust for the border
+      margin: 0 -1px -1px // Adjust for the border
       // So input can float next to tags and have proper margins with
       // .multiselect__tags:
       padding-bottom: 0
       margin-bottom: 0
-      line-height: $line-height
       background: none
     // Unfortunatley .multiselect__single is used for place placeholder text
     // also, but luckily it is then nested in an nother span so wen ca match it:
