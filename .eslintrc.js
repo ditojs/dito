@@ -38,6 +38,7 @@ module.exports = {
       flatTernaryExpressions: true,
       ignoredNodes: ['TemplateLiteral > *']
     }],
+    'lines-between-class-members': ['error', 'always'],
     'max-len': ['error', 80, 2, {
       ignoreUrls: true,
       ignoreTemplateLiterals: true,
