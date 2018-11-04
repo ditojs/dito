@@ -95,7 +95,7 @@ export default {
   methods: {
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
-    // `query` & `total` on TypeList, so that when the user navigates back from
+    // `query` & `total` on DitoList, so that when the user navigates back from
     // editing an item in the list, the state of the list is still the same.
     // We can't store this in `data`, as this is already the pure data from the
     // API server. That's what the `store` is for: Memory that's available as

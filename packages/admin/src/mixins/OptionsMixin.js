@@ -123,7 +123,7 @@ export default {
       // Convert object to a shallow copy with only id.
       const processRelate = data => data ? { id: data.id } : data
       return this.relate
-        // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
+        // Selected options can be both objects & arrays, e.g. DitoCheckboxes:
         ? value => isArray(value)
           ? value.map(entry => processRelate(entry))
           : processRelate(value)

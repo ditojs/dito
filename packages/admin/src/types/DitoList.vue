@@ -145,7 +145,7 @@ export default DitoTypeComponent.register([
   components: { VueDraggable, DateTimePicker },
 
   getSourceType(type) {
-    // No need for transformation here. See TypeTreeList for details.
+    // No need for transformation here. See DitoTreeList for details.
     return type
   },
 

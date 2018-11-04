@@ -1,4 +1,4 @@
-// DitoListCell needed to be split off from TypeList because of the need of
+// DitoListCell needed to be split off from DitoList because of the need of
 // its own `component` computed property to call `resolveTypeComponent()`.
 // Direclty calling `resolveTypeComponent()` from the template was leading to
 // infinite recursions and stack-overflows.

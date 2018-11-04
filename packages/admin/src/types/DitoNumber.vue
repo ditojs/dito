@@ -111,7 +111,7 @@ export default DitoTypeComponent.register([
   methods: {
     getValidationRules() {
       const rules = {}
-      // TODO: Create a base class for all number based tyes (e.g. TypeSlider)
+      // TODO: Create a base class for all number based tyes (e.g. DitoSlider)
       // and move these vlaidations there.
       const { range, min, max, decimals, step } = this
       if (range) {
