@@ -1,48 +1,66 @@
 <template lang="pug">
-  ul.dito-components(
+  .dito-components(
     v-if="componentSchemas"
   )
-    li.dito-component-container(
-      v-for="(compSchema, compDataPath) in componentSchemas"
-      v-if="shouldRender(compSchema)"
-      v-show="isVisible(compSchema)"
-      :style="getStyle(compSchema)"
-      :key="compDataPath"
+    .dito-components-container.dito-schema-content
+      .dito-component-container(
+        v-for="(compSchema, compDataPath) in componentSchemas"
+        v-if="shouldRender(compSchema)"
+        v-show="isVisible(compSchema)"
+        :class="getClass(compSchema)"
+        :style="getStyle(compSchema)"
+        :key="compDataPath"
+      )
+        dito-label(
+          v-if="hasLabel(compSchema)"
+          :dataPath="compDataPath"
+          :text="getLabel(compSchema)"
+        )
+        component.dito-component(
+          :is="getTypeComponent(compSchema.type)"
+          :schema="compSchema"
+          :dataPath="compDataPath"
+          :data="data"
+          :meta="meta"
+          :store="getChildStore(compSchema.name)"
+          :disabled="disabled || isDisabled(compSchema)"
+          :class=`{
+            'dito-disabled': disabled || isDisabled(compSchema),
+            'dito-fill': hasFill(compSchema),
+            'dito-fixed': isFixed(compSchema),
+            'dito-has-errors': $errors.has(compDataPath)
+          }`
+        )
+        dito-errors(
+          v-if="$errors.has(compDataPath)"
+          :dataPath="compDataPath"
+        )
+    dito-panels(
+      v-if="panelSchemas"
+      :panels="panelSchemas"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
     )
-      dito-label(
-        v-if="hasLabel(compSchema)"
-        :dataPath="compDataPath"
-        :text="getLabel(compSchema)"
-      )
-      component.dito-component(
-        :is="getTypeComponent(compSchema.type)"
-        :schema="compSchema"
-        :dataPath="compDataPath"
-        :data="data"
-        :meta="meta"
-        :store="getChildStore(compSchema.name)"
-        :disabled="isDisabled(compSchema)"
-        :class=`{
-          'dito-disabled': isDisabled(compSchema),
-          'dito-fill': hasFill(compSchema),
-          'dito-fixed': isFixed(compSchema),
-          'dito-has-errors': $errors.has(compDataPath)
-        }`
-      )
-      dito-errors(
-        v-if="$errors.has(compDataPath)"
-        :dataPath="compDataPath"
-      )
 </template>
 
 <style lang="sass">
 .dito
   .dito-components
     display: flex
-    flex-flow: row wrap
-    position: relative
-    align-items: baseline
-    margin: (-$form-spacing) (-$form-spacing-half)
+    .dito-components-container,
+    .dito-panels
+      flex: auto
+    .dito-components-container
+      // Remove padding added by .dito-component-container below
+      margin: (-$form-spacing) (-$form-spacing-half)
+      // Add removed horizontal margin again to max-width:
+      max-width: $content-width + 2 * $form-spacing-half
+      display: flex
+      flex-flow: row wrap
+      position: relative
+      align-items: baseline
     .dito-component-container
       flex: 1 1 auto
       align-self: stretch
@@ -50,6 +68,11 @@
       // Cannot use margin here as it needs to be part of box-sizing for
       // percentages in flex-basis to work.
       padding: $form-spacing $form-spacing-half
+      &.no-padding,
+      &:empty,
+        padding: 0
+  // NOTE: This is not nested inside .dito-component-container so that other
+  // type components can override `.dito-fill` behavior (filter precedence).
   .dito-component.dito-fill
     display: block
     width: 100%
@@ -62,6 +85,9 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import {
+  shouldRenderLabel, getContainerClass, getPanelSchema
+} from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -82,48 +108,48 @@ export default DitoComponent.component('dito-components', {
     componentSchemas() {
       // Compute a components list which has the dataPath baked into its keys
       // and adds the key as the name to each component, used for labels, etc.
-      const {
-        dataPath,
-        // NOTE: schema can be null while multi-form lists load their data,
-        // because only the avialble data will determine the type of form.
-        schema = {}
-      } = this
-      const schemas = {}
+      // NOTE: schema can be null while multi-form lists load their data,
+      // because only the avialble data will determine the type of form.
+      const { dataPath, schema = {} } = this
       // When editing primitive values through a form, do not append 'value' to
       // the component's dataPath so it can be mapped to from validation errors.
       const wrapPrimitives = this.sourceSchema?.wrapPrimitives
-      for (const [name, component] of Object.entries(schema.components || {})) {
-        const path = wrapPrimitives
-          ? dataPath
-          : this.appendDataPath(dataPath, name)
-        schemas[path] = {
-          name,
-          ...component
+      return Object.entries(schema.components || {}).reduce(
+        (schemas, [name, component]) => {
+          const path = wrapPrimitives
+            ? dataPath
+            : this.appendDataPath(dataPath, name)
+          schemas[path] = {
+            name,
+            ...component
+          }
+          return schemas
+        },
+        {}
+      )
+    },
+
+    panelSchemas() {
+      const panels = {}
+      for (const [path, schema] of Object.entries(this.componentSchemas)) {
+        const panel = getPanelSchema(schema)
+        if (panel) {
+          panels[path] = panel
         }
       }
-      return schemas
+      return Object.keys(panels).length ? panels : null
     }
   },
 
   methods: {
-    isVisible(schema) {
-      return this.getSchemaValue('visible', {
-        type: Boolean,
-        default: true,
-        schema
-      })
-    },
-
-    isDisabled(schema) {
-      return this.disabled || this.getSchemaValue('disabled', {
-        type: Boolean,
-        default: false,
-        schema
-      })
-    },
-
     hasLabel(schema) {
-      return (schema.label || this.generateLabels) && schema.label !== false
+      return (
+        schema.label !== false &&
+        shouldRenderLabel(schema) && (
+          schema.label ||
+          this.generateLabels
+        )
+      )
     },
 
     hasFill(schema) {
@@ -141,6 +167,10 @@ export default DitoComponent.component('dito-components', {
         : !width ? 100 // default = 100%
         : /%/.test(width) ? parseFloat(width) // percentage
         : width * 100 // fraction
+    },
+
+    getClass(schema) {
+      return getContainerClass(schema)
     },
 
     getStyle(schema) {

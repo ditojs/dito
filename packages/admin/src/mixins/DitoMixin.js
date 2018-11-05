@@ -154,6 +154,22 @@ export default {
       return value
     },
 
+    isVisible(schema) {
+      return this.getSchemaValue('visible', {
+        type: Boolean,
+        default: true,
+        schema
+      })
+    },
+
+    isDisabled(schema) {
+      return this.getSchemaValue('disabled', {
+        type: Boolean,
+        default: false,
+        schema
+      })
+    },
+
     getLabel(schema, name) {
       return schema
         ? this.getSchemaValue('label', { type: String, schema }) ||
@@ -189,6 +205,13 @@ export default {
               }
           )
           : null
+    },
+
+    getButtonSchemas(buttons) {
+      return this.getNamedSchemas(
+        buttons,
+        { type: 'button' } // Defaults
+      )
     },
 
     getButtonAttributes(name, button) {

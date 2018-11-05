@@ -144,6 +144,20 @@ export function hasLabels(schema) {
   return false
 }
 
+export function getPanelSchema(schema) {
+  return (
+    TypeComponent.get(schema.type)?.options.getPanelSchema?.(schema) ?? null
+  )
+}
+
+export function shouldRenderLabel(schema) {
+  return TypeComponent.get(schema.type)?.options.renderLabel ?? true
+}
+
+export function getContainerClass(schema) {
+  return TypeComponent.get(schema.type)?.options.containerClass
+}
+
 function getSourceType(schemaOrType) {
   // NOTE: `null` is returned for type components that do not define a
   // `getSourceType()` method.

@@ -87,7 +87,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     buttons() {
-      return this.getNamedSchemas(
+      return this.getButtonSchemas(
         merge(
           {
             cancel: {
@@ -104,8 +104,7 @@ export default DitoComponent.component('dito-form', {
             }
           },
           this.schema.buttons
-        ),
-        { type: 'button' } // Defaults
+        )
       )
     },
 

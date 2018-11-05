@@ -7,7 +7,7 @@
     )
       dito-buttons.dito-form-buttons(
         slot="buttons"
-        :buttons="namedButtons"
+        :buttons="buttonSchemas"
         :data="data"
         :meta="meta"
       )
@@ -42,11 +42,8 @@ export default DitoComponent.component('dito-dialog', {
       }
     },
 
-    namedButtons() {
-      return this.getNamedSchemas(
-        this.buttons,
-        { type: 'button' } // Defaults
-      )
+    buttonSchemas() {
+      return this.getButtonSchemas(this.buttons)
     },
 
     meta() {
