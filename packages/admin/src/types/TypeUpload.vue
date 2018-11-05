@@ -85,7 +85,7 @@
 </style>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import VueUpload from 'vue-upload-component'
 import VueDraggable from 'vuedraggable'
 import formatFileSize from 'filesize'
@@ -95,7 +95,7 @@ import { getSchemaAccessor } from '@/utils/accessor'
 import { isArray, asArray } from '@ditojs/utils'
 
 // @vue/component
-export default DitoTypeComponent.register('upload', {
+export default TypeComponent.register('upload', {
   components: { VueUpload, VueDraggable },
   filters: { formatFileSize },
   mixins: [OrderedMixin],

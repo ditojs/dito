@@ -11,13 +11,13 @@
 </template>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import { InputField } from '@ditojs/ui'
 import { asArray } from '@ditojs/utils'
 
 const maskedPassword = '****************'
 
-export default DitoTypeComponent.register([
+export default TypeComponent.register([
   'text', 'email', 'url', 'hostname', 'tel', 'password', 'creditcard'
 ],
 // @vue/component

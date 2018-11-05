@@ -1,20 +1,21 @@
 <template lang="pug">
-  input.dito-checkbox(
+  textarea.dito-textarea.dito-input(
     ref="element"
     :id="dataPath"
-    type="checkbox"
     v-model="value"
     v-validate="validations"
     v-bind="attributes"
     v-on="listeners"
+    :rows="schema.lines || 4"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 
 // @vue/component
-export default DitoTypeComponent.register('checkbox', {
-  nativeField: true
+export default TypeComponent.register('textarea', {
+  nativeField: true,
+  textField: true
 })
 </script>

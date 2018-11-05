@@ -12,7 +12,7 @@
     )
       li(v-for="(form, type) in schema.forms")
         a(
-          :class="`dito-${type}`"
+          :class="`dito-type-${type}`"
           @mousedown.stop="handlePulldownSelect(type)"
           @mouseup="handlePulldownSelect(type, true)"
         ) {{ getLabel(form) }}

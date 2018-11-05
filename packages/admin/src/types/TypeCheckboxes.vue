@@ -25,11 +25,11 @@
 </style>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 
 // @vue/component
-export default DitoTypeComponent.register('checkboxes', {
+export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
   nativeField: true,

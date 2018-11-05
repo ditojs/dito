@@ -200,14 +200,14 @@
 </style>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '@/utils/accessor'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 // @vue/component
-export default DitoTypeComponent.register('multiselect', {
+export default TypeComponent.register('multiselect', {
   components: { VueMultiselect },
   mixins: [OptionsMixin],
 

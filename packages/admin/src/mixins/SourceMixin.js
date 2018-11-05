@@ -234,7 +234,7 @@ export default {
         // Compare against component path to rule out such path changes:
         const { path } = this.routeComponent
         if (!(path1.startsWith(path) && path2.startsWith(path))) {
-          // Complete change from one view to the next but DitoList is reused,
+          // Complete change from one view to the next but TypeList is reused,
           // so clear the filters and load data with clearing.
           this.setQuery({})
           this.loadData(true)

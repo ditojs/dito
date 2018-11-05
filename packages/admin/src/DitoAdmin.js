@@ -7,7 +7,7 @@ import './components'
 import './types'
 import './validator'
 import verbs from './verbs'
-import DitoTypeComponent from './DitoTypeComponent'
+import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
 
@@ -113,7 +113,7 @@ export default class DitoAdmin {
   }
 
   register(type, options) {
-    return DitoTypeComponent.register(type, options)
+    return TypeComponent.register(type, options)
   }
 
   request({

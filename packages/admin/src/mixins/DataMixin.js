@@ -1,4 +1,4 @@
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
 import { hasForms } from '@/utils/schema'
@@ -173,7 +173,7 @@ export default {
           // and then to the defaultValue from there. That's why defaultValue is
           // a 'static' value on the component definitions:
           if (!(key in data)) {
-            const component = DitoTypeComponent.get(componentSchema.type)
+            const component = TypeComponent.get(componentSchema.type)
             const defaultValue =
               componentSchema.default ??
               component?.options.defaultValue

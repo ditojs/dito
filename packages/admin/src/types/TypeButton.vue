@@ -11,9 +11,9 @@
 </template>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 
-export default DitoTypeComponent.register([
+export default TypeComponent.register([
   'button', 'submit'
 ],
 // @vue/component

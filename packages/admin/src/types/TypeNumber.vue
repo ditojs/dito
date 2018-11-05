@@ -24,12 +24,12 @@
 </style>
 
 <script>
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import { InputField } from '@ditojs/ui'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isArray } from '@ditojs/utils'
 
-export default DitoTypeComponent.register([
+export default TypeComponent.register([
   'number', 'integer'
 ],
 // @vue/component
@@ -111,7 +111,7 @@ export default DitoTypeComponent.register([
   methods: {
     getValidationRules() {
       const rules = {}
-      // TODO: Create a base class for all number based tyes (e.g. DitoSlider)
+      // TODO: Create a base class for all number based tyes (e.g. TypeSlider)
       // and move these vlaidations there.
       const { range, min, max, decimals, step } = this
       if (range) {

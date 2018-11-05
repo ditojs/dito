@@ -131,21 +131,21 @@
 
 <script>
 import VueDraggable from 'vuedraggable'
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
 import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
-export default DitoTypeComponent.register([
+export default TypeComponent.register([
   'list', 'object'
 ], {
   mixins: [SourceMixin, OrderedMixin],
   components: { VueDraggable, DateTimePicker },
 
   getSourceType(type) {
-    // No need for transformation here. See DitoTreeList for details.
+    // No need for transformation here. See TypeTreeList for details.
     return type
   },
 

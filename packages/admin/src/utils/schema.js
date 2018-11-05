@@ -1,4 +1,4 @@
-import DitoTypeComponent from '@/DitoTypeComponent'
+import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
 import { isObject, isFunction, isPromise } from '@ditojs/utils'
 
@@ -52,7 +52,7 @@ export function processComponent(
   api, schema, name, routes, parentMeta = null, level = 0
 ) {
   // Delegate schema processing to the actual type components.
-  return DitoTypeComponent.get(schema.type)?.options.processSchema?.(
+  return TypeComponent.get(schema.type)?.options.processSchema?.(
     api, schema, name, routes, parentMeta, level
   )
 }
@@ -148,7 +148,7 @@ function getSourceType(schemaOrType) {
   // NOTE: `null` is returned for type components that do not define a
   // `getSourceType()` method.
   const type = isObject(schemaOrType) ? schemaOrType.type : schemaOrType
-  return DitoTypeComponent.get(type)?.options.getSourceType?.(type) ?? null
+  return TypeComponent.get(type)?.options.getSourceType?.(type) ?? null
 }
 
 export function isObjectSource(schemaOrType) {
