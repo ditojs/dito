@@ -45,6 +45,7 @@ export default class ControllerAction {
 
   setParams(ctx, query) {
     ctx.request[this.paramsName] = query
+    return query
   }
 
   async callAction(ctx) {
@@ -64,24 +65,27 @@ export default class ControllerAction {
 
   async validateParameters(ctx) {
     if (!this.parameters.validate) return
-    let params = this.getParams(ctx)
+    const root = this.getParams(ctx)
+    // Start with root for params, but maybe we have to switch later, see below:
+    let params = root
     // `parameters.validate(query)` coerces data in the query to the required
     // formats, according to the rules specified here:
     // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
     // Coercion isn't currently offered for `type: 'object'`, so handle this
     // case prior to the call of `parameters.validate()`:
     const errors = []
-    let needsRoot = false
     for (const { name, type, member } of this.parameters.list) {
-      needsRoot = needsRoot || !name && !member
+      // Don't validate member parameters as they get resolved separately after.
+      if (member) continue
       // See if the defined type(s) require coercion to objects:
       const objectType = asArray(type).find(
         // Coerce to object if type is 'object' or a known model name.
         type => type === 'object' || type in this.app.models
       )
       if (objectType) {
-        // If no name is provided, use the body object (params)
-        const value = name ? params[name] : params
+        // If no name is provided, use the full root object as value:
+        const useRoot = !name
+        const value = useRoot ? root : params[name]
         let object = value
         if (value && isString(value)) {
           try {
@@ -109,21 +113,13 @@ export default class ControllerAction {
             })
           }
         }
-        if (object !== value) {
-          if (name) {
-            params[name] = object
-          } else {
-            this.setParams(ctx, object)
-          }
+        // If root is to be used, replace `params` with a new object on which
+        // to set the root object to validate under `parameters.rootName`
+        // See: Application.compileParametersValidator()
+        if (useRoot && params === root) {
+          params = this.setParams(ctx, {})
         }
-      }
-    }
-    if (needsRoot) {
-      // Add root object (params) under `rootName`, so validation can be
-      // performed against it, see: Application.compileParametersValidator()
-      params = {
-        ...params,
-        [this.parameters.rootName]: params
+        params[useRoot ? this.parameters.rootName : name] = object
       }
     }
     try {
