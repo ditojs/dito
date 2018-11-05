@@ -61,15 +61,15 @@ export default DitoComponent.component('dito-panels', {
       for (const dataPath of Object.keys(this.panels)) {
         const el = document.getElementById(dataPath)
         let comp = el && el.closest('.dito-component')
-        // For TypePanel components (.dito-panel-anchor), skip to the
-        // next component that is not a TypePanel for positioning of the panel:
+        // For TypePanel components (.dito-panel-anchor), skip to the previuous
+        // component that is not a TypePanel for positioning of the panel:
         if (comp && comp.classList.contains('dito-panel-anchor')) {
-          let container = comp.parentNode.nextSibling
+          let container = comp.parentNode.previousSibling
           while (
             container &&
             container.querySelector('.dito-panel-anchor')
           ) {
-            container = container.nextSibling
+            container = container.previousSibling
           }
           if (container) {
             comp = container.querySelector('.dito-component')

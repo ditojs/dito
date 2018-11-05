@@ -31,12 +31,14 @@
       line-height: 2em
       padding: 0 $form-spacing
       background: $button-color
-      border-radius: $border-radius
+      border-top-left-radius: $border-radius
+      border-top-right-radius: $border-radius
     .dito-panel-schema
       font-size: 11px
       margin-top: 1px
       background: $table-color-background
-      border-radius: $border-radius
+      border-bottom-left-radius: $border-radius
+      border-bottom-right-radius: $border-radius
       padding: $form-spacing
       .dito-table td
         padding: 0
