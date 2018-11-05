@@ -143,9 +143,7 @@
 <script>
 import Trigger from './Trigger'
 import InputField from './InputField'
-import {
-  copyDate, scrollTo, setSelection, getKeyNavigation, leftPad
-} from '../utils'
+import { copyDate, scrollTo, setSelection, getKeyNavigation } from '../utils'
 
 export default {
   components: { Trigger, InputField },
@@ -175,9 +173,9 @@ export default {
     currentText() {
       return this.currentValue
         ? `${
-          leftPad(this.hour)}:${
-          leftPad(this.minute)}:${
-          leftPad(this.second)}`
+          this.leftPad(this.hour)}:${
+          this.leftPad(this.minute)}:${
+          this.leftPad(this.second)}`
         : ''
     },
 
@@ -256,7 +254,9 @@ export default {
   },
 
   methods: {
-    leftPad,
+    leftPad(value) {
+      return ('0' + value).slice(-2)
+    },
 
     setTime(param) {
       this.currentValue = copyDate(this.currentDate, param)
