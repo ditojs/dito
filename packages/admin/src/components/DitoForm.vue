@@ -380,12 +380,12 @@ export default DitoComponent.component('dito-form', {
           }
         } else if (!this.doesMutate) {
           this.setSourceData(payload)
-          if (!button.emitEvent('success', {
+          if (!(await button.emitEvent('success', {
             params: {
               item: payload,
               itemLabel
             }
-          })) {
+          }))) {
             this.notify('info', 'Change Applied',
               `<p>Changes in ${itemLabel} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
@@ -396,7 +396,7 @@ export default DitoComponent.component('dito-form', {
           this.close()
         }
       } else {
-        this.request(method, { payload, resource }, (err, response) => {
+        this.request(method, { payload, resource }, async (err, response) => {
           const data = response?.data
           if (err) {
             // See if we're dealing with a Dito validation error:
@@ -406,25 +406,25 @@ export default DitoComponent.component('dito-form', {
             } else {
               const error = isObject(data) ? data : err
               if (error) {
-                if (!button.emitEvent('error', {
+                if (!(await button.emitEvent('error', {
                   params: {
                     item: payload,
                     itemLabel,
                     error
                   }
-                })) {
+                }))) {
                   this.notify('error', 'Request Error',
                     `Error submitting ${itemLabel}:\n${error.message || error}`)
                 }
               }
             }
           } else {
-            if (!button.emitEvent('success', {
+            if (!(await button.emitEvent('success', {
               params: {
                 item: payload,
                 itemLabel
               }
-            })) {
+            }))) {
               const submitted = this.verbs.submitted
               this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${itemLabel} was ${submitted}.`)

@@ -213,10 +213,8 @@ export default DitoComponent.component('dito-schema', {
   created() {
     this.setupSchemaFields()
     if (this.parentSchemaComponent) {
-      // Pass change events through to parent schema:
-      this.on('change', (...args) =>
-        this.parentSchemaComponent.emit('change', ...args)
-      )
+      // Delegate change events through to parent schema:
+      this.delegate('change', this.parentSchemaComponent)
     }
   },
 

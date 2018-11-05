@@ -372,21 +372,27 @@ export default {
       }
     },
 
-    async emitEvent(event, { params = null, parent = null } = {}) {
+    async emitEvent(event, {
+      params = null,
+      parent = null
+    } = {}) {
       const responds = this.responds(event)
       const parentResponds = parent?.responds(event)
       if (responds || parentResponds) {
         // The effects of some events need some time to propagate through Vue.
-        // Always use $nextTick() to make sure our handlers see these changes.
-        // This is needed for 'change' on selects, 'load' events, etc.
-        await this.$nextTick()
+        // Use $nextTick() to make sure our handlers see these changes.
+        // For example, `processedData` is only correct after components that
+        // are newly rendered due to data changes have registered themselves.
+        if (['load', 'change'].includes(event)) {
+          await this.$nextTick()
+        }
         const itemParams = getItemParams(this, params)
         const res = responds
           ? await this.emit(event, itemParams)
           : null
         // Don't bubble to parent if handled event returned `false`
         if (parentResponds && res !== false) {
-          await parent.emit(event, itemParams)
+          parent.emit(event, itemParams)
         }
         return true
       }

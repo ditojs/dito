@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
-import { isArray, isFunction, isPromise } from '@ditojs/utils'
+import { isArray, isPlainObject, isFunction, isPromise } from '@ditojs/utils'
 
 const components = {}
 const typeComponents = {}
@@ -49,6 +49,10 @@ const DitoComponent = Vue.extend({
         for (const ev of event) {
           this.on(ev, callback)
         }
+      } else if (isPlainObject(event)) {
+        for (const key in event) {
+          this.on(key, event[key])
+        }
       } else {
         const events = this.events || (this.events = Object.create(null))
         const { callbacks } = events[event] || (events[event] = {
@@ -78,6 +82,10 @@ const DitoComponent = Vue.extend({
         for (const ev of event) {
           this.off(ev, callback)
         }
+      } else if (isPlainObject(event)) {
+        for (const key in event) {
+          this.off(key, event[key])
+        }
       } else {
         // Remove specific event
         const entry = this.events?.[event]
@@ -101,7 +109,7 @@ const DitoComponent = Vue.extend({
       return this
     },
 
-    async emit(event, ...args) {
+    emit(event, ...args) {
       // Only queue if it actually responds to it.
       const entry = this.events?.[event]
       if (entry) {
@@ -151,6 +159,19 @@ const DitoComponent = Vue.extend({
       } else {
         return !!this.events?.[event]
       }
+    },
+
+    delegate(event, target) {
+      if (isArray(event)) {
+        for (const ev of event) {
+          this.delegate(ev, target)
+        }
+      } else {
+        this.on(event, (...args) => {
+          target.emit(event, ...args)
+        })
+      }
+      return this
     }
   }
 })
