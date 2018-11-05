@@ -75,7 +75,7 @@
 
 <script>
 import { isString, hyphenate } from '@ditojs/utils'
-import { addEvent, addEvents } from '../utils'
+import { addEvent, addEvents, getAbsoluteBoundingRect } from '../utils'
 
 export default {
   props: {
@@ -201,9 +201,9 @@ export default {
         el.style.width = window.getComputedStyle(target).width
       }
 
-      const bounds = (target || trigger).getBoundingClientRect()
-      const triggerLeft = bounds.left + window.scrollX
-      const triggerTop = bounds.top + window.scrollY
+      const bounds = getAbsoluteBoundingRect(target || trigger)
+      const triggerLeft = bounds.left
+      const triggerTop = bounds.top
       const triggerWidth = bounds.width
       const triggerHeight = bounds.height
       const popupWidth = popup.offsetWidth
