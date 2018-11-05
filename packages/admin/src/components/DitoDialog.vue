@@ -9,7 +9,7 @@
         slot="buttons"
         :buttons="namedButtons"
         :data="data"
-        :params="buttonParams"
+        :meta="meta"
       )
 </template>
 
@@ -49,9 +49,11 @@ export default DitoComponent.component('dito-dialog', {
       )
     },
 
-    buttonParams() {
-      // Additional parameters to be passed to button events:
-      return { dialog: this }
+    meta() {
+      return {
+        // Additional parameters to be passed to button events:
+        params: { dialog: this }
+      }
     }
   },
 

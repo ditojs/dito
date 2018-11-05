@@ -20,10 +20,6 @@ export default DitoTypeComponent.register([
 {
   defaultValue: undefined,
 
-  props: {
-    params: { type: Object, default: null }
-  },
-
   computed: {
     verb() {
       return this.verbs[this.name] || this.name
@@ -41,7 +37,7 @@ export default DitoTypeComponent.register([
   methods: {
     onClick() {
       this.emitEvent('click', {
-        params: this.params,
+        params: this.meta.params,
         parent: this.schemaComponent
       })
     }
