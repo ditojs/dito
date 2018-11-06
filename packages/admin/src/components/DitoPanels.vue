@@ -22,10 +22,6 @@
     margin: (-$content-padding) 0 0 ($content-padding)
     max-width: $content-sidebar-width
     min-width: $content-sidebar-width * 3 / 4
-    .dito-panel
-      position: absolute
-      left: 0
-      right: 0
 </style>
 
 <script>

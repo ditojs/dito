@@ -27,6 +27,10 @@
 <style lang="sass">
 .dito
   .dito-panel
+    position: absolute
+    left: 0
+    right: 0
+    z-index: 1
     padding-bottom: $content-padding
     .dito-panel-title
       box-sizing: border-box
