@@ -102,7 +102,7 @@ import DitoComponent from '@/DitoComponent'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getParentItem } from '@/utils/item'
 import {
-  isObject, isArray, parseDataPath, normalizeDataPath, labelize
+  isObject, isArray, isFunction, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
 
 // @vue/component
@@ -129,7 +129,14 @@ export default DitoComponent.component('dito-schema', {
   },
 
   data() {
+    const { data } = this.schema
     return {
+      // Allow schema to provide more data, vue-style:
+      ...(
+        data && isFunction(data)
+          ? data.call(this)
+          : data
+      ),
       components: {},
       // Register dataProcessors separate from copomonents, so they can survive
       // their life-cycles and be used at the end in `processData()`.

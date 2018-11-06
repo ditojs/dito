@@ -16,10 +16,7 @@ export default {
   ],
 
   data() {
-    const data = this.schema?.data
     return {
-      // Allow schema to provide more data, vue-style:
-      ...(data && (isFunction(data) ? data() : data)),
       appState,
       overrides: null // See accessor.js
     }
