@@ -4,6 +4,7 @@
       ref="schema"
       :schema="schema"
       :data="data"
+      :meta="meta"
     )
       dito-buttons.dito-form-buttons(
         slot="buttons"
@@ -49,8 +50,8 @@ export default DitoComponent.component('dito-dialog', {
 
     meta() {
       return {
-        // Additional parameters to be passed to button events:
-        params: { dialog: this }
+        // Additional parameters to be passed to all events:
+        params: { dialogComponent: this }
       }
     }
   },
@@ -69,18 +70,26 @@ export default DitoComponent.component('dito-dialog', {
       button.onClick?.(this)
     },
 
-    close() {
+    hide() {
       this.$modal.hide(this.name)
     },
 
     resolve(value) {
       this.promise.resolve(value)
-      this.close()
+      this.hide()
     },
 
     reject(value) {
       this.promise.reject(value)
-      this.close()
+      this.hide()
+    },
+
+    accept() {
+      this.resolve(this.data)
+    },
+
+    cancel() {
+      this.resolve(null)
     }
   }
 })

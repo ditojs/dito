@@ -97,16 +97,16 @@ export default DitoComponent.component('dito-root', {
           login: {
             type: 'submit',
             events: {
-              click({ dialog }) {
-                dialog.resolve(dialog.data)
+              click({ dialogComponent }) {
+                dialogComponent.accept()
               }
             }
           },
 
           cancel: {
             events: {
-              click({ dialog }) {
-                dialog.resolve(false)
+              click({ dialogComponent }) {
+                dialogComponent.cancel()
               }
             }
           }
