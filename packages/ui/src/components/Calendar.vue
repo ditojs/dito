@@ -221,22 +221,7 @@ export default {
   },
 
   data() {
-    const weekdayNames = []
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(0, 0, i)
-      weekdayNames.push({
-        long: this.toLocaleString(date, { weekday: 'long' }),
-        short: this.toLocaleString(date, { weekday: 'short' })
-      })
-    }
-    const monthNames = []
-    for (let i = 1; i <= 12; i++) {
-      const date = new Date(0, i, 0)
-      monthNames.push({
-        long: this.toLocaleString(date, { month: 'long' }),
-        short: this.toLocaleString(date, { month: 'short' })
-      })
-    }
+    const { weekdayNames, monthNames } = getLocaleNames(this.locale)
     return {
       weekdayNames,
       monthNames,
@@ -360,12 +345,8 @@ export default {
       return { year, month }
     },
 
-    toLocaleString(date, options) {
-      return date.toLocaleString(this.locale, options)
-    },
-
     dateToString(date, { year, month, day }) {
-      return this.toLocaleString(date, {
+      return date.toLocaleString(this.locale, {
         year: year && 'numeric',
         month: month && 'long',
         day: day && 'numeric'
@@ -513,5 +494,35 @@ export default {
       }
     }
   }
+}
+
+const localeNames = {}
+
+// Calling `toLocaleString()` this much appears to be expensive, so cache it:
+function getLocaleNames(locale) {
+  let names = localeNames[locale]
+  if (!names) {
+    const weekdayNames = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(0, 0, i)
+      weekdayNames.push({
+        long: date.toLocaleString(locale, { weekday: 'long' }),
+        short: date.toLocaleString(locale, { weekday: 'short' })
+      })
+    }
+    const monthNames = []
+    for (let i = 1; i <= 12; i++) {
+      const date = new Date(0, i, 0)
+      monthNames.push({
+        long: date.toLocaleString(locale, { month: 'long' }),
+        short: date.toLocaleString(locale, { month: 'short' })
+      })
+    }
+    names = localeNames[locale] = {
+      weekdayNames,
+      monthNames
+    }
+  }
+  return names
 }
 </script>
