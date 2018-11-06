@@ -14,7 +14,7 @@ export default TypeComponent.register('panel', {
 
   getPanelSchema(schema) {
     // For a TypePanel, the component schema is also the panel schema, but
-    // remove the added name, so it doesn't get appeneded to data-path twice.
+    // remove the added name, so it doesn't get appeneded twice to data-path.
     const { name, ...panel } = schema
     return panel
   }

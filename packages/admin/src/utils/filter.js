@@ -55,8 +55,13 @@ export const filterComponents = {
 export function getFiltersPanel(filters, dataPath, proxy) {
   const panel = {
     label: 'Filters',
-    name: 'filters',
+    name: '$filters',
     target: dataPath,
+    // Override the default value
+    disabled: false,
+    // NOTE: On panels, the data() callback does something else than on normal
+    // schema: It produces the `data` property to be passed to the panel's
+    // schema, not the data to be used for the panel component directly.
     data() {
       return parseFiltersData(
         panel,
@@ -87,21 +92,19 @@ export function getFiltersPanel(filters, dataPath, proxy) {
     },
     methods: {
       applyFilters() {
-        const filter = formatFiltersData(this.schema, this.data)
-        const query = {
+        proxy.query = {
           ...proxy.query,
-          filter
+          filter: formatFiltersData(this.schema, this.data),
+          // Clear pagination when applying or clearing filters:
+          page: undefined
         }
-        // Reset pagination when applying or clearing filters:
-        query.page = undefined
-        proxy.query = query
       }
     }
   }
   return panel
 }
 
-export function getFiltersComponents(filters) {
+function getFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(filters || {})) {
     const { filter: type } = filter
@@ -139,12 +142,30 @@ export function getFiltersComponents(filters) {
   return comps
 }
 
-export function getComponentsForFilter(filtersSchema, name) {
-  const filterComponent = filtersSchema.components[name]
-  return filterComponent?.form?.components
+function getComponentsForFilter(schema, name) {
+  const component = schema.components[name]
+  return component?.form?.components
 }
 
-export function parseFiltersData(filtersSchema, query) {
+function formatFiltersData(schema, data) {
+  const filters = []
+  for (const name in data) {
+    const entry = data[name]
+    if (entry) {
+      // Map components sequence to arguments:
+      const args = Object.keys(getComponentsForFilter(schema, name)).map(
+        key => entry[key] ?? null
+      )
+      // Only apply filter if there are some arguments that aren't null:
+      if (args.some(value => value !== null)) {
+        filters.push(`${name}:${args.map(JSON.stringify).join(',')}`)
+      }
+    }
+  }
+  return filters.length ? filters : undefined
+}
+
+function parseFiltersData(schema, query) {
   const filters = {}
   // Same as @ditojs/server's QueryParameters.filter: Translate the string data
   // from $route.query back to param lists per filter:
@@ -158,16 +179,16 @@ export function parseFiltersData(filtersSchema, query) {
     }
   }
   const filtersData = {}
-  for (const name in filtersSchema.components) {
+  for (const name in schema.components) {
     const data = {}
     // If we have retrieved params from the query, fetch the associated
     // form components so we can map the values back to object keys:
     const args = filters[name]
     if (args) {
-      const filterComponents = getComponentsForFilter(filtersSchema, name)
-      if (filterComponents) {
+      const components = getComponentsForFilter(schema, name)
+      if (components) {
         let index = 0
-        for (const key in filterComponents) {
+        for (const key in components) {
           data[key] = args[index++]
         }
       }
@@ -175,22 +196,4 @@ export function parseFiltersData(filtersSchema, query) {
     filtersData[name] = data
   }
   return filtersData
-}
-
-export function formatFiltersData(filtersSchema, filtersData) {
-  const filters = []
-  for (const name in filtersData) {
-    const entry = filtersData[name]
-    if (entry) {
-      // Map components sequence to arguments:
-      const args = Object.keys(getComponentsForFilter(filtersSchema, name)).map(
-        key => entry[key] ?? null
-      )
-      // Only apply filter if there are some arguments that aren't null:
-      if (args.some(value => value !== null)) {
-        filters.push(`${name}:${args.map(JSON.stringify).join(',')}`)
-      }
-    }
-  }
-  return filters
 }

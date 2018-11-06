@@ -2,8 +2,8 @@
   .dito
     modals-container
     notifications(
-      position="top right"
       ref="notifications"
+      position="top right"
     )
     dito-menu(
       :views="resolvedViews"

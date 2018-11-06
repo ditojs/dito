@@ -1,6 +1,7 @@
 <template lang="pug">
   .dito-panels
     dito-panel(
+      v-if="panels"
       v-for="(schema, dataPath) in panels"
       ref="panels"
       :key="dataPath"
@@ -9,7 +10,7 @@
       :data="data"
       :meta="meta"
       :store="getChildStore(schema.name)"
-      :disabled="disabled"
+      :disabled="schema.disabled != null ? schema.disabled : disabled"
       :top="offsets[dataPath]"
     )
 </template>
@@ -34,7 +35,7 @@ import { getAbsoluteBoundingRect } from '@ditojs/ui'
 // @vue/component
 export default DitoComponent.component('dito-panels', {
   props: {
-    panels: { type: Object, required: true },
+    panels: { type: Object, default: null },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -48,18 +49,23 @@ export default DitoComponent.component('dito-panels', {
   },
 
   mounted() {
-    // Whenever the layout changes (e.g. on data load or change), recalculate
-    // the vertical offets of all panels, taking into account their anchor
-    // components, as well as their own height.
-    this.schemaComponent.on('layout', () => {
-      const scrollTop = this.$el
-        .closest('.dito-scroll')
-        .getBoundingClientRect().top
+    if (this.panels) {
+      this.schemaComponent.on('layout', () => this.updateLayout())
+    }
+  },
+
+  methods: {
+    updateLayout() {
+      // Whenever the layout changes (e.g. on data load or change), recalculate
+      // the vertical offets of all panels, taking into account their anchor
+      // components, as well as their own height.
+      const scroll = this.$el.closest('.dito-scroll')
+      const scrollTop = scroll.getBoundingClientRect().top
       let bottom = 0
       for (const panel of this.$refs.panels) {
         const target = document.getElementById(panel.panelTarget)
         let component = target && target.closest('.dito-component')
-        // For TypePanel components (.dito-panel-anchor), skip to the previuous
+        // For TypePanel components (.dito-panel-anchor), skip to the previous
         // component that is not a TypePanel for positioning of the panel:
         if (component && component.classList.contains('dito-panel-anchor')) {
           let container = component.parentNode.previousSibling
@@ -90,7 +96,7 @@ export default DitoComponent.component('dito-panels', {
           bottom = top + panel.$el.getBoundingClientRect().height
         }
       }
-    })
+    }
   }
 })
 </script>

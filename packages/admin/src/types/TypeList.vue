@@ -16,11 +16,6 @@
         :limit="paginate"
         :total="total || 0"
       )
-    // dito-filters(
-      v-if="filters"
-      ref="filters"
-      :filters="filters"
-      :query="query")
     table.dito-table.dito-anchor(
       :class="{ 'dito-table-spaced': hasSpacing }"
     )
@@ -135,7 +130,7 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
-import { hyphenate } from '@ditojs/utils'
+import { pickBy, equals, hyphenate } from '@ditojs/utils'
 import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
@@ -154,6 +149,8 @@ export default TypeComponent.register([
 
   getPanelSchema(schema, dataPath, schemaComponent) {
     const { filters } = schema
+    // See if this list component wants to display a filter panel, and if so,
+    // create the panel schema for it through `getFiltersPanel()`.
     if (filters) {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
@@ -163,15 +160,20 @@ export default TypeComponent.register([
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
-        { // Create a simple proxy to get / set the query, getFiltersPanel()
+        { // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
             return getComponent()?.query
           },
           set query(query) {
             const comp = getComponent()
             if (comp) {
-              comp.query = query
-              comp.loadData(false)
+              // Filter out undefined values before comparing with equals()
+              const filter = obj => pickBy(obj, value => value !== undefined)
+              const changed = !equals(filter(query), filter(comp.query))
+              comp.query = query // This stops working if we don't always set.
+              if (changed) {
+                comp.loadData(false)
+              }
             }
           }
         }
@@ -204,7 +206,7 @@ export default TypeComponent.register([
     },
 
     onFilterErrors(errors) {
-      const filterDataPath = appendDataPath(this.dataPath, 'filters')
+      const filterDataPath = appendDataPath(this.dataPath, '$filters')
       const filterPanel = this.schemaComponent.getComponent(filterDataPath)
       filterPanel.schemaComponent.showErrors(errors, true, filterDataPath)
     }

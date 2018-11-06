@@ -17,6 +17,7 @@
       )
     dito-components.dito-tab-components(
       v-for="(tabSchema, key) in tabs"
+      ref="tabs"
       v-show="selectedTab === key"
       :key="key"
       :tab="key"
@@ -26,16 +27,19 @@
       :meta="meta"
       :store="store"
       :disabled="disabled"
+      :showPanels="showPanels"
       :generateLabels="generateLabels"
     )
     dito-components.dito-main-components(
       v-if="schema.components"
+      ref="components"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
       :meta="meta"
       :store="store"
       :disabled="disabled"
+      :showPanels="showPanels"
       :generateLabels="generateLabels"
     )
     slot(name="buttons")
@@ -140,6 +144,7 @@ export default DitoComponent.component('dito-schema', {
           : data
       ),
       components: {},
+      showPanels: false,
       // Register dataProcessors separate from copomonents, so they can survive
       // their life-cycles and be used at the end in `processData()`.
       dataProcessors: {},
@@ -223,21 +228,35 @@ export default DitoComponent.component('dito-schema', {
     }
   },
 
+  watch: {
+    selectedTab() {
+      this.$nextTick(() => this.onLayout())
+    }
+  },
+
   created() {
     this.setupSchemaFields()
     // Emit 'layout' events right after creation, and whenever data changes:
-    this.on(['change', 'load'], () => this.emitEvent('layout'))
+    this.on(['change', 'load'], () => this.onLayout())
     this.$nextTick(() => {
-      // If we're loading, don't trigger 'layout' yet, wait for 'load' instead,
-      // to avoid unnecessary jumping around of panels.
+      // Trigger a 'layout' event right after creation, unless when loading:
+      // Then don't trigger 'layout' yet, wait for 'load' instead, to avoid
+      // unnecessary jumping around of panels.
       if (!this.dataRouteComponent.isLoading) {
-        this.emitEvent('layout')
+        this.onLayout()
       }
     })
     // Delegate change events through to parent schema:
     if (this.parentSchemaComponent) {
       this.delegate('change', this.parentSchemaComponent)
     }
+  },
+
+  mounted() {
+    this.showPanels = !!(
+      this.$refs.components.hasPanels ||
+      this.$refs.tabs?.some(tab => tab.hasPanels)
+    )
   },
 
   methods: {
@@ -282,6 +301,10 @@ export default DitoComponent.component('dito-schema', {
 
     onChange() {
       this.emitEvent('change')
+    },
+
+    onLayout() {
+      this.emitEvent('layout')
     },
 
     focus(dataPathOrKey, notify = false) {

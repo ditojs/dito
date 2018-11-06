@@ -123,7 +123,7 @@ export default {
 
     query: {
       get() {
-        return this.getStore('query')
+        return this.getStore('query') || {}
       },
 
       set(query) {
@@ -133,9 +133,10 @@ export default {
         const {
           scope = this.defaultScope?.name,
           page = this.schema.page
-        } = this.query || {}
+        } = this.query
         // Preserve / merge currently stored values.
         query = {
+          ...this.query,
           ...(scope != null && { scope }),
           ...(page != null && { page }),
           ...query
@@ -145,7 +146,7 @@ export default {
           this.ignoreRouteChange = true
           this.$router.replace({ query, hash: this.$route.hash })
         }
-        return this.setStore('query', query)
+        this.setStore('query', query)
       }
     },
 

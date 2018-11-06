@@ -123,6 +123,16 @@ export function groupBy(collection, iteratee) {
   }, {})
 }
 
+export function pickBy(object, iteratee) {
+  const callback = getCallback(iteratee)
+  return Object.entries(object).reduce((result, [key, value]) => {
+    if (callback(value, key, object)) {
+      result[key] = value
+    }
+    return result
+  }, {})
+}
+
 export function mapKeys(object, iteratee) {
   const callback = getCallback(iteratee)
   return Object.keys(object).reduce((mapped, key) => {

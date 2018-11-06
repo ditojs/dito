@@ -35,8 +35,10 @@
           v-if="$errors.has(compDataPath)"
           :dataPath="compDataPath"
         )
+    // If showPanels is true it means that any tab or main components has panels
+    // and all other should render .dito-panels as well for proper layout.
     dito-panels(
-      v-if="panelSchemas"
+      v-if="showPanels"
       :panels="panelSchemas"
       :data="data"
       :meta="meta"
@@ -49,7 +51,6 @@
 .dito
   .dito-components
     display: flex
-    .dito-components-container,
     .dito-panels
       flex: auto
     .dito-components-container
@@ -59,6 +60,7 @@
       max-width: $content-width + 2 * $form-spacing-half
       display: flex
       flex-flow: row wrap
+      flex: 100%
       position: relative
       align-items: baseline
     .dito-component-container
@@ -102,6 +104,7 @@ export default DitoComponent.component('dito-components', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
+    showPanels: { type: Boolean, required: false },
     generateLabels: { type: Boolean, default: true }
   },
 
@@ -131,10 +134,14 @@ export default DitoComponent.component('dito-components', {
     },
 
     panelSchemas() {
+      // Gather all panel schemas from all component schemas, by finding those
+      // that want to provide a panel. See `getPanelSchema()` for details.
       const panels = {}
       for (const [dataPath, schema] of Object.entries(this.componentSchemas)) {
         const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
         if (panel) {
+          // If the pannel provides its own name, append it to the dataPath.
+          // This is used for $filters panels
           const path = panel.name
             ? appendDataPath(dataPath, panel.name)
             : dataPath
@@ -142,6 +149,10 @@ export default DitoComponent.component('dito-components', {
         }
       }
       return Object.keys(panels).length ? panels : null
+    },
+
+    hasPanels() {
+      return !!this.panelSchemas
     }
   },
 

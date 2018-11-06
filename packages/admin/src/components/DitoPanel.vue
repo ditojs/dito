@@ -83,6 +83,8 @@ export default DitoComponent.component('dito-panel', {
     },
 
     panelSchema() {
+      // Remvoe `data` from the schema, so that DitoSchema isn't using it
+      // to produce its own data. See $filters panel for more details on data.
       const { data, ...schema } = this.schema
       return schema
     },
@@ -99,8 +101,8 @@ export default DitoComponent.component('dito-panel', {
     },
 
     panelDataPath() {
-      // If the panel shares data with the schema, then it doesn't need to
-      // prefix its own dataPath
+      // If the panel shares data with the schema component, then it does not
+      // need to prefix its own dataPath to its components.
       return this.schema.data ? this.dataPath : ''
     },
 
@@ -127,6 +129,8 @@ export default DitoComponent.component('dito-panel', {
   },
 
   created() {
+    // Register the panels so that other components can find them by their
+    // data-path, e.g. TypeList for display of errors.
     this.registerComponent(this.panelDataPath, this)
   },
 
