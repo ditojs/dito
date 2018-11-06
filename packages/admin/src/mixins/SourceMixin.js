@@ -222,6 +222,10 @@ export default {
 
   watch: {
     $route(to, from) {
+      if (this.ignoreRouteChange) {
+        this.ignoreRouteChange = false
+        return
+      }
       let path1 = from.path
       let path2 = to.path
       if (path2.length < path1.length) {
@@ -284,7 +288,10 @@ export default {
         ...(page != null && { page }),
         ...query
       }
-      this.$router.replace({ query, hash: this.$route.hash })
+      if (!equals(query, this.$route.query)) {
+        this.ignoreRouteChange = true
+        this.$router.replace({ query, hash: this.$route.hash })
+      }
       this.setStore('query', query)
     },
 
