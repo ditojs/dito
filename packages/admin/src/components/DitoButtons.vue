@@ -24,6 +24,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { appendDataPath } from '@/utils/data'
 
 // @vue/component
 export default DitoComponent.component('dito-buttons', {
@@ -44,7 +45,7 @@ export default DitoComponent.component('dito-buttons', {
       // Compute a buttons list which has the dataPath baked into its keys.
       const { dataPath, buttons } = this
       return Object.values(buttons || {}).reduce((schemas, button) => {
-        schemas[this.appendDataPath(dataPath, button.name)] = button
+        schemas[appendDataPath(dataPath, button.name)] = button
         return schemas
       }, {})
     }

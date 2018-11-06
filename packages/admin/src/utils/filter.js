@@ -52,25 +52,49 @@ export const filterComponents = {
   }
 }
 
-export function getFiltersPanel(target, filters, query) {
+export function getFiltersPanel(filters, dataPath, proxy) {
   const panel = {
     label: 'Filters',
     name: 'filters',
-    target,
-    data: () => getFiltersData(panel, query),
+    target: dataPath,
+    data() {
+      return parseFiltersData(
+        panel,
+        proxy.query
+      )
+    },
     components: getFiltersComponents(filters),
     buttons: {
       clear: {
         text: 'Clear',
         events: {
-          click() {
-            alert('clear')
+          click({ schemaComponent }) {
+            schemaComponent.resetData()
+            schemaComponent.applyFilters()
           }
         }
       },
+
       filter: {
         type: 'submit',
-        text: 'Filter'
+        text: 'Filter',
+        events: {
+          click({ schemaComponent }) {
+            schemaComponent.applyFilters()
+          }
+        }
+      }
+    },
+    methods: {
+      applyFilters() {
+        const filter = formatFiltersData(this.schema, this.data)
+        const query = {
+          ...proxy.query,
+          filter
+        }
+        // Reset pagination when applying or clearing filters:
+        query.page = undefined
+        proxy.query = query
       }
     }
   }
@@ -101,6 +125,7 @@ export function getFiltersComponents(filters) {
       comps[filter.name] = {
         label: form.label,
         type: 'object',
+        default: () => ({}),
         form,
         nested: true,
         inline: true
@@ -119,10 +144,10 @@ export function getComponentsForFilter(filtersSchema, name) {
   return filterComponent?.form?.components
 }
 
-export function getFiltersData(filtersSchema, query) {
+export function parseFiltersData(filtersSchema, query) {
   const filters = {}
-  // Same as @ditojs/server's QueryParameters.filter: Translate the data
-  // from the query string back to param lists per filter:
+  // Same as @ditojs/server's QueryParameters.filter: Translate the string data
+  // from $route.query back to param lists per filter:
   if (query) {
     for (const filter of asArray(query.filter)) {
       const [, name, json] = filter.match(/^(\w+):(.*)$/)
@@ -152,15 +177,19 @@ export function getFiltersData(filtersSchema, query) {
   return filtersData
 }
 
-export function getFiltersQuery(filtersSchema, filtersData) {
+export function formatFiltersData(filtersSchema, filtersData) {
   const filters = []
   for (const name in filtersData) {
     const entry = filtersData[name]
-    if (Object.keys(entry).length) {
+    if (entry) {
+      // Map components sequence to arguments:
       const args = Object.keys(getComponentsForFilter(filtersSchema, name)).map(
-        key => JSON.stringify(entry[key] ?? null)
+        key => entry[key] ?? null
       )
-      filters.push(`${name}:${args.join(',')}`)
+      // Only apply filter if there are some arguments that aren't null:
+      if (args.some(value => value !== null)) {
+        filters.push(`${name}:${args.map(JSON.stringify).join(',')}`)
+      }
     }
   }
   return filters

@@ -1,15 +1,11 @@
 import { isString, isFunction } from '@ditojs/utils'
-import { isListSource } from '@/utils/schema'
-import { getItemParams } from '@/utils/item'
+import { getItemFormSchema, isListSource } from '@/utils/schema'
+import { appendDataPath, getItemParams } from '@/utils/data'
 
 // @vue/component
 export default {
   methods: {
-    getItemFormSchema(sourceSchema, item) {
-      const { form, forms } = sourceSchema
-      const type = item?.type
-      return forms && type ? forms[type] : form
-    },
+    getItemFormSchema,
 
     getItemId(sourceSchema, item, index) {
       const { idName = 'id' } = sourceSchema
@@ -18,7 +14,7 @@ export default {
     },
 
     getItemDataPath(sourceSchema, index) {
-      return this.appendDataPath(
+      return appendDataPath(
         this.dataPath,
         index != null
           ? `${sourceSchema.name}/${index}`
@@ -30,7 +26,7 @@ export default {
       const { itemLabel } = sourceSchema
       if (!extended && itemLabel === false) return null
       const getFormLabel = () =>
-        this.getLabel(this.getItemFormSchema(sourceSchema, item))
+        this.getLabel(getItemFormSchema(sourceSchema, item))
       let label = null
       if (isFunction(itemLabel)) {
         let dataPath
@@ -53,14 +49,16 @@ export default {
         // It's up to `itemLabel()` entirely to produce the name:
         extended = false
       } else {
-        const { columns } = sourceSchema
         // Look up the name on the item, by these rules:
         // 1. If `itemLabel` is a string, use it as the property key
         // 2. Otherwise, if there are columns, use the value of the first
         // 3. Otherwise, see if the item has a property named 'name'
-        const key = isString(itemLabel) && itemLabel ||
-          columns && Object.keys(columns)[0] ||
+        const { columns } = sourceSchema
+        const key = (
+          isString(itemLabel) && itemLabel ||
+          isListSource(sourceSchema) && columns && Object.keys(columns)[0] ||
           'name'
+        )
         label = item[key]
       }
       // If no label was found so far, try to produce one from the id or index.

@@ -1,5 +1,11 @@
 import { parseDataPath, getDataPath, isPlainObject } from '@ditojs/utils'
 
+export function appendDataPath(dataPath, token) {
+  return dataPath != null && dataPath !== ''
+    ? `${dataPath}/${token}`
+    : token
+}
+
 export function getItem(rootItem, dataPath, isValue) {
   const path = parseDataPath(dataPath)
   // Remove the first path token if the path is not to an item's value, and see
@@ -92,6 +98,10 @@ class ItemParams {
 
   get dataPath() {
     return get(this, 'dataPath') || ''
+  }
+
+  get schemaComponent() {
+    return get(this, 'schemaComponent') || null
   }
 
   get formComponent() {

@@ -6,10 +6,10 @@
   )
     .dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
-      :schema="schema"
+      :schema="panelSchema"
       :dataPath="panelDataPath"
       :data="panelData"
-      :meta="meta"
+      :meta="panelMeta"
       :store="store"
       :disabled="disabled"
     )
@@ -18,7 +18,7 @@
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
-        :meta="meta"
+        :meta="panelMeta"
         :store="store"
         :disabled="disabled"
       )
@@ -59,6 +59,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getButtonSchemas } from '@/utils/schema'
+import { isFunction } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {
@@ -81,14 +82,34 @@ export default DitoComponent.component('dito-panel', {
       return this.schema.target || this.dataPath
     },
 
+    panelSchema() {
+      const { data, ...schema } = this.schema
+      return schema
+    },
+
     panelData() {
-      return this.schema.data ? this.schema.data() : this.data
+      // NOTE: This is not the same as `schema.data` handling in DitoSchema,
+      // where the data is added to the actual component.
+      const { data } = this.schema
+      return (
+        isFunction(data)
+          ? data.call(this)
+          : data || this.data
+      )
     },
 
     panelDataPath() {
       // If the panel shares data with the schema, then it doesn't need to
       // prefix its own dataPath
       return this.schema.data ? this.dataPath : ''
+    },
+
+    panelMeta() {
+      return {
+        ...this.meta,
+        // Additional parameters to be passed to all events:
+        params: { panelComponent: this }
+      }
     },
 
     panelTag() {
@@ -103,6 +124,14 @@ export default DitoComponent.component('dito-panel', {
         top: top != null ? `${top}px` : null
       }
     }
+  },
+
+  created() {
+    this.registerComponent(this.panelDataPath, this)
+  },
+
+  destroyed() {
+    this.registerComponent(this.panelDataPath, null)
   }
 })
 </script>

@@ -1,5 +1,5 @@
 import LoadingMixin from './LoadingMixin'
-import { getItemParams } from '@/utils/item'
+import { getItemParams } from '@/utils/data'
 import {
   isObject, isArray, isFunction, isPromise, labelize
 } from '@ditojs/utils'

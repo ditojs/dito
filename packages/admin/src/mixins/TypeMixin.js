@@ -1,5 +1,5 @@
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getItemParams, getItem, getParentItem } from '@/utils/item'
+import { getItemParams, getItem, getParentItem } from '@/utils/data'
 import { isArray } from '@ditojs/utils'
 
 // @vue/component
@@ -210,12 +210,12 @@ export default {
   },
 
   created() {
-    this.schemaComponent?.registerComponent(this.dataPath, this)
+    this.registerComponent(this.dataPath, this)
     this.setupSchemaFields()
   },
 
   destroyed() {
-    this.schemaComponent?.registerComponent(this.dataPath, null)
+    this.registerComponent(this.dataPath, null)
   },
 
   methods: {

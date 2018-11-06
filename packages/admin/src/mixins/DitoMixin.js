@@ -1,6 +1,6 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
-import { getItemParams } from '@/utils/item'
+import { getItemParams } from '@/utils/data'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
   isRegExp, asArray, labelize, hyphenate
@@ -95,6 +95,10 @@ export default {
   },
 
   methods: {
+    registerComponent(dataPath, component) {
+      this.schemaComponent.registerComponent(dataPath, component)
+    },
+
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
     // `query` & `total` on TypeList, so that when the user navigates back from
@@ -187,12 +191,6 @@ export default {
         class: `dito-button-${verb}`,
         title: button?.text || labelize(verb)
       }
-    },
-
-    appendDataPath(dataPath, token) {
-      return dataPath != null && dataPath !== ''
-        ? `${dataPath}/${token}`
-        : token
     },
 
     getDragOptions(draggable) {

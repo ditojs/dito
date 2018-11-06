@@ -1,8 +1,7 @@
-import TypeComponent from '@/TypeComponent'
 import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
-import { hasForms } from '@/utils/schema'
-import { isString, isFunction, clone, labelize, asArray } from '@ditojs/utils'
+import { setDefaults } from '@/utils/schema'
+import { isString, labelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -164,46 +163,7 @@ export default {
     },
 
     createData(schema, type) {
-      return this.setDefaults(schema, type ? { type } : {})
-    },
-
-    setDefaults(schema, data = {}) {
-      // Sets up a data object that has keys with default values for all
-      // form fields, so they can be correctly watched for changes.
-      const processComponents = (components = {}) => {
-        for (const [key, componentSchema] of Object.entries(components)) {
-          // Support default values both on schema and on component level.
-          // NOTE: At the time of creation, components may not be instantiated,
-          // (e.g. if entries are created through nested forms, the parent form
-          // isn't mounted) so we can't use `dataPath` to get to components,
-          // and then to the defaultValue from there. That's why defaultValue is
-          // a 'static' value on the component definitions:
-          if (!(key in data)) {
-            const component = TypeComponent.get(componentSchema.type)
-            const defaultValue =
-              componentSchema.default ??
-              component?.options.defaultValue
-            data[key] = isFunction(defaultValue)
-              ? defaultValue(componentSchema)
-              : clone(defaultValue)
-          }
-          // Recursively set defaults on nested forms
-          if (hasForms(componentSchema)) {
-            asArray(data[key]).forEach(item => {
-              const formSchema = this.getItemFormSchema(componentSchema, item)
-              if (item && formSchema) {
-                this.setDefaults(formSchema, item)
-              }
-            })
-          }
-        }
-      }
-
-      processComponents(schema.components)
-      if (schema.tabs) {
-        Object.values(schema.tabs).forEach(processComponents)
-      }
-      return data
+      return setDefaults(schema, type ? { type } : {})
     },
 
     requestData() {

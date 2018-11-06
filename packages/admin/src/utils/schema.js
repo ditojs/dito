@@ -1,7 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
 import {
-  isObject, isArray, isFunction, isPromise, camelize
+  isObject, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
 
 export async function resolveViews(views) {
@@ -127,6 +127,12 @@ export function hasForms(schema) {
   return isObject(schema) && !!(schema.form || schema.forms)
 }
 
+export function getItemFormSchema(schema, item) {
+  const { form, forms } = schema
+  const type = item?.type
+  return forms && type ? forms[type] : form
+}
+
 export function hasLabels(schema) {
   const check = components => {
     for (const component of Object.values(components || {})) {
@@ -144,6 +150,45 @@ export function hasLabels(schema) {
     }
   }
   return false
+}
+
+export function setDefaults(schema, data = {}) {
+  // Sets up a data object that has keys with default values for all
+  // form fields, so they can be correctly watched for changes.
+  const processComponents = (components = {}) => {
+    for (const [key, componentSchema] of Object.entries(components)) {
+      // Support default values both on schema and on component level.
+      // NOTE: At the time of creation, components may not be instantiated,
+      // (e.g. if entries are created through nested forms, the parent form
+      // isn't mounted) so we can't use `dataPath` to get to components,
+      // and then to the defaultValue from there. That's why defaultValue is
+      // a 'static' value on the component definitions:
+      if (!(key in data)) {
+        const component = TypeComponent.get(componentSchema.type)
+        const defaultValue =
+          componentSchema.default ??
+          component?.options.defaultValue
+        data[key] = isFunction(defaultValue)
+          ? defaultValue(componentSchema)
+          : clone(defaultValue)
+      }
+      // Recursively set defaults on nested forms
+      if (hasForms(componentSchema)) {
+        asArray(data[key]).forEach(item => {
+          const formSchema = getItemFormSchema(componentSchema, item)
+          if (item && formSchema) {
+            setDefaults(formSchema, item)
+          }
+        })
+      }
+    }
+  }
+
+  processComponents(schema.components)
+  if (schema.tabs) {
+    Object.values(schema.tabs).forEach(processComponents)
+  }
+  return data
 }
 
 export function getNamedSchemas(descriptions, defaults) {
@@ -181,25 +226,34 @@ export function getButtonSchemas(buttons) {
   )
 }
 
-export function getPanelSchema(schema) {
-  return (
-    TypeComponent.get(schema.type)?.options.getPanelSchema?.(schema) ?? null
-  )
+function getType(schemaOrType) {
+  return isObject(schemaOrType) ? schemaOrType.type : schemaOrType
 }
 
-export function shouldRenderLabel(schema) {
-  return TypeComponent.get(schema.type)?.options.renderLabel ?? true
-}
-
-export function getContainerClass(schema) {
-  return TypeComponent.get(schema.type)?.options.containerClass
+function getTypeOptions(schemaOrType) {
+  return TypeComponent.get(getType(schemaOrType))?.options
 }
 
 function getSourceType(schemaOrType) {
-  // NOTE: `null` is returned for type components that do not define a
-  // `getSourceType()` method.
-  const type = isObject(schemaOrType) ? schemaOrType.type : schemaOrType
-  return TypeComponent.get(type)?.options.getSourceType?.(type) ?? null
+  return getTypeOptions(schemaOrType)?.getSourceType?.(
+    getType(schemaOrType)
+  ) ?? null
+}
+
+export function getPanelSchema(schema, dataPath, schemaComponent) {
+  return getTypeOptions(schema)?.getPanelSchema?.(
+    schema,
+    dataPath,
+    schemaComponent
+  ) ?? null
+}
+
+export function shouldRenderLabel(schema) {
+  return getTypeOptions(schema)?.renderLabel ?? true
+}
+
+export function getContainerClass(schema) {
+  return getTypeOptions(schema)?.containerClass
 }
 
 export function isObjectSource(schemaOrType) {

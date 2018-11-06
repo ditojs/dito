@@ -100,14 +100,16 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 <script>
 import DitoComponent from '@/DitoComponent'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
-import { getParentItem } from '@/utils/item'
+import ItemMixin from '@/mixins/ItemMixin'
+import { appendDataPath, getParentItem } from '@/utils/data'
+import { setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {
-  mixins: [ValidatorMixin],
+  mixins: [ValidatorMixin, ItemMixin],
   inject: ['$validator'],
 
   provide() {
@@ -131,7 +133,7 @@ export default DitoComponent.component('dito-schema', {
   data() {
     const { data } = this.schema
     return {
-      // Allow schema to provide more data, vue-style:
+      // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
           ? data.call(this)
@@ -193,9 +195,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     formLabel() {
-      return this.getLabel(
-        this.getItemFormSchema(this.sourceSchema, this.data)
-      )
+      return this.getLabel(this.getItemFormSchema(this.sourceSchema, this.data))
     },
 
     isLoading() {
@@ -259,7 +259,7 @@ export default DitoComponent.component('dito-schema', {
       // See if the argument starts with this form's dataPath. If not, then it's
       // a key or subDataPath and needs to be prepended with the full path:
       const dataPath = !normalizedPath.startsWith(this.dataPath)
-        ? this.appendDataPath(this.dataPath, normalizedPath)
+        ? appendDataPath(this.dataPath, normalizedPath)
         : normalizedPath
       return this.components[dataPath] || null
     },
@@ -291,13 +291,15 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    showErrors(errors, focus) {
+    showErrors(errors, focus, dataPathPrefix) {
+      this.clearErrors()
       let first = true
       const unmatched = []
       for (const [dataPath, errs] of Object.entries(errors)) {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
-        const dataPathParts = parseDataPath(dataPath)
+        const prefixedDataPath = appendDataPath(dataPathPrefix, dataPath)
+        const dataPathParts = parseDataPath(prefixedDataPath)
         const component = this.getComponent(dataPathParts)
         if (component) {
           component.addErrors(errs, first && focus)
@@ -308,22 +310,24 @@ export default DitoComponent.component('dito-schema', {
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
             const component = this.getComponent(dataPathParts)
-            if (component?.navigateToComponent?.(dataPath, routeRecord => {
-              // Filter the errors to only contain those that belong to the
-              // matched dataPath:
-              const normalizedPath = normalizeDataPath(dataPathParts)
-              // Pass on the errors to the instance through the meta object,
-              // see DitoForm.created()
-              routeRecord.meta.errors = Object.entries(errors).reduce(
-                (filtered, [dataPath, errs]) => {
-                  if (normalizeDataPath(dataPath).startsWith(normalizedPath)) {
-                    filtered[dataPath] = errs
-                  }
-                  return filtered
-                },
-                {}
-              )
-            })) {
+            if (component?.navigateToComponent?.(prefixedDataPath,
+              routeRecord => {
+                // Filter the errors to only contain those that belong to the
+                // matched dataPath:
+                const normalizedPath = normalizeDataPath(dataPathParts)
+                // Pass on the errors to the instance through the meta object,
+                // see DitoForm.created()
+                routeRecord.meta.errors = Object.entries(errors).reduce(
+                  (filtered, [path, errs]) => {
+                    if (normalizeDataPath(path).startsWith(normalizedPath)) {
+                      filtered[path] = errs
+                    }
+                    return filtered
+                  },
+                  {}
+                )
+              }
+            )) {
               // We found some nested form to display at least parts fo the
               // errors. We can't display all errors at once, so we're done.
               // Don't call notifyErrors() yet, as we can only display it
@@ -356,6 +360,14 @@ export default DitoComponent.component('dito-schema', {
         'Validation Errors',
         message || 'Please correct the highlighted errors.'
       )
+    },
+
+    resetData() {
+      // We can't set `this.data = `because it's a property, but we can reset
+      // all known properties on it from `setDefaults()`, as they are all
+      // reactive already.
+      Object.assign(this.data, setDefaults(this.schema, {}))
+      this.clearErrors()
     },
 
     filterData(data) {
@@ -409,7 +421,7 @@ export default DitoComponent.component('dito-schema', {
           // Use reduce() for both arrays and objects thanks to Object.entries()
           value = Object.entries(value).reduce(
             (processed, [key, val]) => {
-              val = process(val, this.appendDataPath(dataPath, key))
+              val = process(val, appendDataPath(dataPath, key))
               if (val !== undefined) {
                 processed[key] = val
               }

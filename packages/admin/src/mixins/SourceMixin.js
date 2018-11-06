@@ -125,7 +125,26 @@ export default {
       get() {
         return this.getStore('query')
       },
+
       set(query) {
+        // Always keep the displayed query parameters in sync with the stored
+        // ones. Use scope and page from the list schema as defaults, but allow
+        // the route query parameters to override them.
+        const {
+          scope = this.defaultScope?.name,
+          page = this.schema.page
+        } = this.query || {}
+        // Preserve / merge currently stored values.
+        query = {
+          ...(scope != null && { scope }),
+          ...(page != null && { page }),
+          ...query
+        }
+        if (!equals(query, this.$route.query)) {
+          // Tell the `$route` watcher to ignore the changed triggered here:
+          this.ignoreRouteChange = true
+          this.$router.replace({ query, hash: this.$route.hash })
+        }
         return this.setStore('query', query)
       }
     },
@@ -134,6 +153,7 @@ export default {
       get() {
         return this.getStore('total')
       },
+
       set(total) {
         return this.setStore('total', total)
       }
@@ -240,7 +260,7 @@ export default {
       if (path1 === path2 && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
-        this.setQuery(to.query)
+        this.query = to.query
         this.loadData(false)
       } else if (!isFullyContained(path1, path2)) {
         // The routes change completely, but we may still be within the same
@@ -250,7 +270,7 @@ export default {
         if (!(path1.startsWith(path) && path2.startsWith(path))) {
           // Complete change from one view to the next but TypeList is reused,
           // so clear the filters and load data with clearing.
-          this.setQuery({})
+          this.query = {}
           this.loadData(true)
           this.closeNotifications()
         }
@@ -276,32 +296,8 @@ export default {
 
   methods: {
     setupData() {
-      this.setQuery(this.$route.query)
+      this.query = this.$route.query
       this.ensureData()
-    },
-
-    setQuery(query) {
-      // Always keep the displayed query parameters in sync with the stored one.
-      // Use scope and page from the list schema as defaults,
-      // but allow the route query parameters to override them.
-      const {
-        scope = this.defaultScope?.name,
-        page = this.schema.page
-      } = this.query || {}
-      // Preserve / merge currently stored values.
-      this.query = {
-        ...(scope != null && { scope }),
-        ...(page != null && { page }),
-        ...query
-      }
-      if (!equals(this.query, this.$route.query)) {
-        // Tell the `$route` watcher to ignore the changed triggered here:
-        this.ignoreRouteChange = true
-        this.$router.replace({
-          query: this.query,
-          hash: this.$route.hash
-        })
-      }
     },
 
     // @override

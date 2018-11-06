@@ -138,6 +138,7 @@ import { DateTimePicker } from '@ditojs/ui'
 import { hyphenate } from '@ditojs/utils'
 import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
+import { appendDataPath } from '@/utils/data'
 
 // @vue/component
 export default TypeComponent.register([
@@ -151,12 +152,31 @@ export default TypeComponent.register([
     return type
   },
 
-  getPanelSchema(schema) {
+  getPanelSchema(schema, dataPath, schemaComponent) {
     const { filters } = schema
-    return filters && getFiltersPanel(
-      schema.name,
-      getNamedSchemas(filters, this.query)
-    )
+    if (filters) {
+      // At the time of the creation of the panel schema, the schemaComponent is
+      // not filled yet, so we can't get the target component (dataPath) right
+      // away. Use a proxy and a getter intead, to get around this:
+      const getComponent = () => schemaComponent.getComponent(dataPath)
+
+      return getFiltersPanel(
+        getNamedSchemas(filters),
+        dataPath,
+        { // Create a simple proxy to get / set the query, getFiltersPanel()
+          get query() {
+            return getComponent()?.query
+          },
+          set query(query) {
+            const comp = getComponent()
+            if (comp) {
+              comp.query = query
+              comp.loadData(false)
+            }
+          }
+        }
+      )
+    }
   },
 
   computed: {
@@ -184,7 +204,9 @@ export default TypeComponent.register([
     },
 
     onFilterErrors(errors) {
-      this.$refs.filters.showErrors(errors, true)
+      const filterDataPath = appendDataPath(this.dataPath, 'filters')
+      const filterPanel = this.schemaComponent.getComponent(filterDataPath)
+      filterPanel.schemaComponent.showErrors(errors, true, filterDataPath)
     }
   }
 })

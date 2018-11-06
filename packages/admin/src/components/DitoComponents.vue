@@ -85,6 +85,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { appendDataPath } from '@/utils/data'
 import {
   shouldRenderLabel, getContainerClass, getPanelSchema
 } from '@/utils/schema'
@@ -118,7 +119,7 @@ export default DitoComponent.component('dito-components', {
         (schemas, [name, component]) => {
           const path = wrapPrimitives
             ? dataPath
-            : this.appendDataPath(dataPath, name)
+            : appendDataPath(dataPath, name)
           schemas[path] = {
             name,
             ...component
@@ -132,10 +133,10 @@ export default DitoComponent.component('dito-components', {
     panelSchemas() {
       const panels = {}
       for (const [dataPath, schema] of Object.entries(this.componentSchemas)) {
-        const panel = getPanelSchema(schema)
+        const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
         if (panel) {
           const path = panel.name
-            ? this.appendDataPath(dataPath, panel.name)
+            ? appendDataPath(dataPath, panel.name)
             : dataPath
           panels[path] = panel
         }
