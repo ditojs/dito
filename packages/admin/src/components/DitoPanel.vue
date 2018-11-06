@@ -73,6 +73,12 @@ export default DitoComponent.component('dito-panel', {
     top: { type: Number, default: null }
   },
 
+  data() {
+    return {
+      panelData: this.data
+    }
+  },
+
   computed: {
     buttonSchemas() {
       return getButtonSchemas(this.schema.buttons)
@@ -87,17 +93,6 @@ export default DitoComponent.component('dito-panel', {
       // to produce its own data. See $filters panel for more details on data.
       const { data, ...schema } = this.schema
       return schema
-    },
-
-    panelData() {
-      // NOTE: This is not the same as `schema.data` handling in DitoSchema,
-      // where the data is added to the actual component.
-      const { data } = this.schema
-      return (
-        isFunction(data)
-          ? data.call(this)
-          : data || this.data
-      )
     },
 
     panelDataPath() {
@@ -132,6 +127,14 @@ export default DitoComponent.component('dito-panel', {
     // Register the panels so that other components can find them by their
     // data-path, e.g. TypeList for display of errors.
     this.registerComponent(this.panelDataPath, this)
+    // NOTE: This is not the same as `schema.data` handling in DitoSchema,
+    // where the data is added to the actual component.
+    const { data } = this.schema
+    if (data) {
+      this.panelData = isFunction(data)
+        ? data.call(this)
+        : data
+    }
   },
 
   destroyed() {

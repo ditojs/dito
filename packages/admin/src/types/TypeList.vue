@@ -167,11 +167,10 @@ export default TypeComponent.register([
           set query(query) {
             const comp = getComponent()
             if (comp) {
-              // Filter out undefined values before comparing with equals()
+              // Filter out undefined values for comparing with equals()
               const filter = obj => pickBy(obj, value => value !== undefined)
-              const changed = !equals(filter(query), filter(comp.query))
-              comp.query = query // This stops working if we don't always set.
-              if (changed) {
+              if (!equals(filter(query), filter(comp.query))) {
+                comp.query = query
                 comp.loadData(false)
               }
             }
