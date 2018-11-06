@@ -1,19 +1,23 @@
 <template lang="pug">
-  .dito-panel(:style="style")
+  component.dito-panel(
+    :is="panelTag"
+    :style="panelStyle"
+    @submit.prevent
+  )
     .dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
       :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
+      :dataPath="panelDataPath"
+      :data="panelData"
       :meta="meta"
       :store="store"
       :disabled="disabled"
     )
       dito-buttons(
         slot="buttons"
-        :buttons="buttons"
-        :dataPath="dataPath"
-        :data="data"
+        :buttons="buttonSchemas"
+        :dataPath="panelDataPath"
+        :data="panelData"
         :meta="meta"
         :store="store"
         :disabled="disabled"
@@ -23,8 +27,7 @@
 <style lang="sass">
 .dito
   .dito-panel
-    padding-top: $form-spacing
-    padding-bottom: $content-padding - $form-spacing
+    padding-bottom: $content-padding
     .dito-panel-title
       box-sizing: border-box
       height: 2em
@@ -55,6 +58,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { getButtonSchemas } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {
@@ -69,11 +73,30 @@ export default DitoComponent.component('dito-panel', {
   },
 
   computed: {
-    buttons() {
-      return this.getButtonSchemas(this.schema.buttons)
+    buttonSchemas() {
+      return getButtonSchemas(this.schema.buttons)
     },
 
-    style() {
+    panelTarget() {
+      return this.schema.target || this.dataPath
+    },
+
+    panelData() {
+      return this.schema.data ? this.schema.data() : this.data
+    },
+
+    panelDataPath() {
+      // If the panel shares data with the schema, then it doesn't need to
+      // prefix its own dataPath
+      return this.schema.data ? this.dataPath : ''
+    },
+
+    panelTag() {
+      // Panels that provide their own data need their own form
+      return this.schema.data ? 'form' : 'div'
+    },
+
+    panelStyle() {
       const { top } = this
       return {
         visibility: top != null ? 'visible' : 'hidden',

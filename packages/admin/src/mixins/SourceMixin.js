@@ -3,11 +3,13 @@ import DitoForm from '@/components/DitoForm'
 import DitoNestedForm from '@/components/DitoNestedForm'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { isFullyContained } from '@/utils/string'
 import {
-  processForms, hasForms, hasLabels, isObjectSource, isListSource
+  processForms, hasForms, hasLabels, getNamedSchemas,
+  isObjectSource, isListSource
 } from '@/utils/schema'
 import {
-  isObject, isArray, asArray, parseDataPath, normalizeDataPath
+  isObject, isArray, isNumber, asArray, parseDataPath, normalizeDataPath, equals
 } from '@ditojs/utils'
 
 // @vue/component
@@ -22,7 +24,8 @@ export default {
     return {
       isSource: true,
       wrappedPrimitives: null,
-      unwrappingPrimitives: false
+      unwrappingPrimitives: false,
+      ignoreRouteChange: false
     }
   },
 
@@ -118,24 +121,30 @@ export default {
       return isView ? path : `${path}/${this.schema.path}`
     },
 
-    query() {
-      return this.getStore('query')
+    query: {
+      get() {
+        return this.getStore('query')
+      },
+      set(query) {
+        return this.setStore('query', query)
+      }
     },
 
-    total() {
-      return this.getStore('total')
+    total: {
+      get() {
+        return this.getStore('total')
+      },
+      set(total) {
+        return this.setStore('total', total)
+      }
     },
 
     columns() {
-      return this.getNamedSchemas(this.schema.columns)
+      return getNamedSchemas(this.schema.columns)
     },
 
     scopes() {
-      return this.getNamedSchemas(this.schema.scopes)
-    },
-
-    filters() {
-      return this.getNamedSchemas(this.schema.filters)
+      return getNamedSchemas(this.schema.scopes)
     },
 
     defaultScope() {
@@ -226,16 +235,17 @@ export default {
         this.ignoreRouteChange = false
         return
       }
-      let path1 = from.path
-      let path2 = to.path
-      if (path2.length < path1.length) {
-        [path1, path2] = [path2, path1]
-      }
-      // See if the routes changes completely.
-      if (!path2.startsWith(path1)) {
-        // The paths change, but we may still be within the same component since
-        // tree lists use a part of the path to edit nested data.
-        // Compare against component path to rule out such path changes:
+      const path1 = from.path
+      const path2 = to.path
+      if (path1 === path2 && from.hash === to.hash) {
+        // Paths and hashes remain the same, so only queries have changed.
+        // Update filter and reload data without clearing.
+        this.setQuery(to.query)
+        this.loadData(false)
+      } else if (!isFullyContained(path1, path2)) {
+        // The routes change completely, but we may still be within the same
+        // component since tree lists use a part of the path to edit nested
+        // data.  Compare against component path to rule out such path changes:
         const { path } = this.routeComponent
         if (!(path1.startsWith(path) && path2.startsWith(path))) {
           // Complete change from one view to the next but TypeList is reused,
@@ -244,11 +254,6 @@ export default {
           this.loadData(true)
           this.closeNotifications()
         }
-      } else if (path1 === path2 && from.hash === to.hash) {
-        // Paths and hashes remain the same, so only queries have changed.
-        // Update filter and reload data without clearing.
-        this.addQuery(to.query)
-        this.loadData(false)
       }
     },
 
@@ -271,34 +276,41 @@ export default {
 
   methods: {
     setupData() {
-      this.addQuery(this.$route.query)
+      this.setQuery(this.$route.query)
       this.ensureData()
     },
 
     setQuery(query) {
-      // Always keep the displayed query parameters in sync with the store.
-      // Use scope and page from the list schema as defaults, but allow the
-      // route query parameters to override them.
-      const { store } = this
-      // Preserve / merge currently stored values
-      const scope = store.query?.scope || this.defaultScope?.name
-      const page = store.query?.page || this.schema.page
-      query = {
+      // Always keep the displayed query parameters in sync with the stored one.
+      // Use scope and page from the list schema as defaults,
+      // but allow the route query parameters to override them.
+      const {
+        scope = this.defaultScope?.name,
+        page = this.schema.page
+      } = this.query || {}
+      // Preserve / merge currently stored values.
+      this.query = {
         ...(scope != null && { scope }),
         ...(page != null && { page }),
         ...query
       }
-      if (!equals(query, this.$route.query)) {
+      if (!equals(this.query, this.$route.query)) {
+        // Tell the `$route` watcher to ignore the changed triggered here:
         this.ignoreRouteChange = true
-        this.$router.replace({ query, hash: this.$route.hash })
+        this.$router.replace({
+          query: this.query,
+          hash: this.$route.hash
+        })
       }
-      this.setStore('query', query)
     },
 
-    addQuery(query) {
-      this.setQuery({ ...this.query, ...query })
+    // @override
+    clearData() {
+      this.total = 0
+      this.value = null
     },
 
+    // @override
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
@@ -306,26 +318,39 @@ export default {
       // - Array: `[...]`
       // - Object: `{ results: [...], total }`, see `unwrapListData()`
       if (
+        !data ||
         this.isListSource && isArray(data) ||
         this.isObjectSource && isObject(data)
       ) {
         this.value = data
       } else if (this.unwrapListData(data)) {
-        // `this.value` was already set by `unwrapListData()`, we're done.
-      } else if (this.routeComponent.isView) {
-        // The controller is sending data for the view, including the list data.
-        this.routeComponent.data = data
+        // The format didn't match, see if we received a `{ results, total }`
+        // object, in which case `this.value` was already set by
+        // `unwrapListData()` and we're done now.
+      } else if (
+        isObject(data) &&
+        this.viewComponent &&
+        !this.viewComponent.isSingleComponent
+      ) {
+        // The controller is sending data for a full multi-component view,
+        // including the nested list data.
+        this.viewComponent.data = data
       }
+      this.schemaComponent.onLoad()
     },
 
     unwrapListData(data) {
-      if (isObject(data)) {
-        if (this.isListSource && isArray(data.results)) {
-          // If @ditojs/server sends data in the form of `{ results, total }`
-          // replace the value with result, but remember the total in the store.
-          this.setStore('total', data.total)
-          return (this.value = data.results)
-        }
+      if (
+        this.isListSource &&
+        isObject(data) &&
+        isNumber(data.total) &&
+        isArray(data.results)
+      ) {
+        // If @ditojs/server sends data in the form of `{ results, total }`
+        // replace the value with result, but remember the total in the store.
+        this.total = data.total
+        this.value = data.results
+        return this.value
       }
     },
 

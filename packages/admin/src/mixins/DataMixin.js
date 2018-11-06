@@ -81,7 +81,9 @@ export default {
   },
 
   created() {
-    this.setupData()
+    if (!this.isNested) {
+      this.setupData()
+    }
   },
 
   methods: {
@@ -119,6 +121,12 @@ export default {
       return index !== -1 ? index : null
     },
 
+    // @override
+    clearData() {
+      this.loadedData = null
+    },
+
+    // @override
     setData(data) {
       this.loadedData = data
     },
@@ -149,9 +157,7 @@ export default {
     loadData(clear) {
       if (!this.isTransient) {
         if (clear) {
-          this.loadedData = null
-          // See DitoMixin for an explanation of `store.total` & co.
-          this.setStore('total', 0)
+          this.clearData()
         }
         this.requestData()
       }

@@ -13,8 +13,10 @@ export default TypeComponent.register('panel', {
   containerClass: 'no-padding',
 
   getPanelSchema(schema) {
-    // For a TypePanel, the component schema is also the panel schema:
-    return schema
+    // For a TypePanel, the component schema is also the panel schema, but
+    // remove the added name, so it doesn't get appeneded to data-path twice.
+    const { name, ...panel } = schema
+    return panel
   }
 })
 </script>

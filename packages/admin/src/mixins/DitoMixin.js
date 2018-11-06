@@ -3,7 +3,7 @@ import DitoComponent from '@/DitoComponent'
 import { getItemParams } from '@/utils/item'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, camelize, labelize, hyphenate
+  isRegExp, asArray, labelize, hyphenate
 } from '@ditojs/utils'
 
 // @vue/component
@@ -57,6 +57,11 @@ export default {
     formComponent() {
       const comp = this.routeComponent
       return comp?.isForm ? comp : null
+    },
+
+    viewComponent() {
+      const comp = this.routeComponent
+      return comp?.isView ? comp : null
     },
 
     // Returns the first route component in the chain of parents, including
@@ -178,41 +183,6 @@ export default {
     },
 
     labelize,
-
-    getNamedSchemas(descriptions, defaults) {
-      const toObject = (array, toSchema) => array.reduce((object, value) => {
-        const schema = toSchema(value)
-        object[schema.name] = defaults ? { ...defaults, ...schema } : schema
-        return object
-      }, {})
-
-      return isArray(descriptions)
-        ? toObject(descriptions, value => (
-          isObject(value) ? value : {
-            name: camelize(value, false)
-          }
-        ))
-        : isObject(descriptions)
-          ? toObject(Object.entries(descriptions),
-            ([name, value]) => isObject(value)
-              ? {
-                name,
-                ...value
-              }
-              : {
-                name,
-                label: value
-              }
-          )
-          : null
-    },
-
-    getButtonSchemas(buttons) {
-      return this.getNamedSchemas(
-        buttons,
-        { type: 'button' } // Defaults
-      )
-    },
 
     getButtonAttributes(name, button) {
       const verb = this.verbs[name] || name

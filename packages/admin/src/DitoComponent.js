@@ -167,9 +167,7 @@ const DitoComponent = Vue.extend({
           this.delegate(ev, target)
         }
       } else {
-        this.on(event, (...args) => {
-          target.emit(event, ...args)
-        })
+        this.on(event, (...args) => target.emit(event, ...args))
       }
       return this
     }

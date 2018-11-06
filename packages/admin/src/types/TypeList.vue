@@ -1,5 +1,6 @@
 <template lang="pug">
   .dito-list(
+    :id="getDataPath()"
     :class="schema.class"
     :style="schema.style"
   )
@@ -15,15 +16,13 @@
         :limit="paginate"
         :total="total || 0"
       )
-    dito-filters(
+    // dito-filters(
       v-if="filters"
       ref="filters"
       :filters="filters"
-      :query="query"
-    )
-    table.dito-table(
+      :query="query")
+    table.dito-table.dito-anchor(
       :class="{ 'dito-table-spaced': hasSpacing }"
-      :id="getDataPath()"
     )
       dito-table-head(
         v-if="columns"
@@ -127,6 +126,7 @@
         display: none
   .dito-table-spaced
     border-spacing: 0 $form-spacing
+    margin-top: -$form-spacing
 </style>
 
 <script>
@@ -136,6 +136,8 @@ import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
 import { hyphenate } from '@ditojs/utils'
+import { getNamedSchemas } from '@/utils/schema'
+import { getFiltersPanel } from '@/utils/filter'
 
 // @vue/component
 export default TypeComponent.register([
@@ -147,6 +149,14 @@ export default TypeComponent.register([
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
     return type
+  },
+
+  getPanelSchema(schema) {
+    const { filters } = schema
+    return filters && getFiltersPanel(
+      schema.name,
+      getNamedSchemas(filters, this.query)
+    )
   },
 
   computed: {

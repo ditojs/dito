@@ -21,6 +21,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { getButtonSchemas } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
@@ -43,7 +44,7 @@ export default DitoComponent.component('dito-dialog', {
     },
 
     buttonSchemas() {
-      return this.getButtonSchemas(this.buttons)
+      return getButtonSchemas(this.buttons)
     },
 
     meta() {

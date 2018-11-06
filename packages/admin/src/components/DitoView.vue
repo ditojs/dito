@@ -6,6 +6,7 @@
   router-view(v-if="!isLastRoute")
   .dito-view.dito-parent(v-else)
     dito-schema.dito-scroll(
+      ref="schema"
       :schema="viewSchema"
       :key="name"
       :data="data"
@@ -20,6 +21,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
+import { isFullyContained } from '@/utils/string'
 
 // @vue/component
 export default DitoComponent.component('dito-view', {
@@ -28,6 +30,10 @@ export default DitoComponent.component('dito-view', {
   data() {
     return {
       isView: true,
+      // This is updated from LoadingMixin:
+      isLoading: false,
+      // NOTE: Data is shared across all views bacause the router recycles the
+      // DitoView component.
       data: {}
     }
   },
@@ -41,11 +47,16 @@ export default DitoComponent.component('dito-view', {
       return this.schema.name
     },
 
+    isSingleComponent() {
+      // If the schema has a type, it is a single-component view.
+      return !!this.schema.type
+    },
+
     viewSchema() {
       const { schema } = this
-      // If the schema has a type, it is a single-component view. Translate it
-      // into a muli-component schema, so it can be handled by DitoSchema also:
-      return schema.type
+      // Translate single-component schemas into muli-component schemas,
+      // so they can be rendered directly through DitoSchema also:
+      return this.isSingleComponent
         ? {
           name: schema.name,
           components: {
@@ -56,15 +67,15 @@ export default DitoComponent.component('dito-view', {
           }
         }
         : schema
-    },
+    }
+  },
 
-    isLoading() {
-      for (const component of Object.values(this.schema.components || {})) {
-        if (component.isLoading) {
-          return true
-        }
+  watch: {
+    $route(to, from) {
+      // See if the route changes completely, and clear the data if it does.
+      if (!isFullyContained(from.path, to.path)) {
+        this.data = {}
       }
-      return false
     }
   }
 })

@@ -131,9 +131,12 @@ export default DitoComponent.component('dito-components', {
 
     panelSchemas() {
       const panels = {}
-      for (const [path, schema] of Object.entries(this.componentSchemas)) {
+      for (const [dataPath, schema] of Object.entries(this.componentSchemas)) {
         const panel = getPanelSchema(schema)
         if (panel) {
+          const path = panel.name
+            ? this.appendDataPath(dataPath, panel.name)
+            : dataPath
           panels[path] = panel
         }
       }

@@ -3,7 +3,7 @@
     .dito-panel
       .dito-filters-title.dito-panel-title
       form(
-        @submit.prevent="applyFilters"
+        @submit.prevent="applyFilters(false)"
       )
         dito-schema.dito-panel-schema(
           ref="filtersSchema"
@@ -34,7 +34,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import {
-  convertFiltersSchema, getFiltersData, getFiltersQuery
+  getFiltersPanel, getFiltersData, getFiltersQuery
 } from '@/utils/filter'
 
 // @vue/component
@@ -63,47 +63,47 @@ export default DitoComponent.component('dito-filters', {
 
   computed: {
     filtersSchema() {
-      return convertFiltersSchema(this.filters)
+      return getFiltersPanel(this.filters)
     }
   },
 
   watch: {
     query() {
-      this.setupFiltersData(true)
+      this.setupFiltersData(this.query)
     },
 
     filtersSchema() {
-      this.setupFiltersData(false)
+      this.setupFiltersData(this.query)
     }
   },
 
   mounted() {
-    this.setupFiltersData(true)
+    this.setupFiltersData(this.query)
   },
 
   methods: {
-    setupFiltersData(restore) {
-      this.filtersData = getFiltersData(
-        this.filtersSchema,
-        restore && this.query
-      )
+    setupFiltersData(query) {
+      this.filtersData = getFiltersData(this.filtersSchema, query)
     },
 
     clearFilters() {
-      this.setupFiltersData(false)
+      this.setupFiltersData()
       this.$refs.filtersSchema.clearErrors()
-      this.applyFilters()
+      this.applyFilters(true)
     },
 
-    applyFilters() {
+    applyFilters(clear) {
       const filter = getFiltersQuery(this.filtersSchema, this.filtersData)
+      const query = {
+        ...this.query,
+        filter
+      }
+      if (!clear) {
+        // Reset pagination when applying new filters:
+        query.page = undefined
+      }
       this.$router.push({
-        query: {
-          ...this.query,
-          // Reset pagination when applying new filters:
-          page: undefined,
-          filter
-        },
+        query,
         hash: this.$route.hash
       })
     },

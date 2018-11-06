@@ -1,6 +1,8 @@
 import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
-import { isObject, isFunction, isPromise } from '@ditojs/utils'
+import {
+  isObject, isArray, isFunction, isPromise, camelize
+} from '@ditojs/utils'
 
 export async function resolveViews(views) {
   if (isFunction(views)) {
@@ -142,6 +144,41 @@ export function hasLabels(schema) {
     }
   }
   return false
+}
+
+export function getNamedSchemas(descriptions, defaults) {
+  const toObject = (array, toSchema) => array.reduce((object, value) => {
+    const schema = toSchema(value)
+    object[schema.name] = defaults ? { ...defaults, ...schema } : schema
+    return object
+  }, {})
+
+  return isArray(descriptions) && descriptions.length
+    ? toObject(descriptions, value => (
+      isObject(value) ? value : {
+        name: camelize(value, false)
+      }
+    ))
+    : isObject(descriptions) && Object.keys(descriptions).length
+      ? toObject(Object.entries(descriptions),
+        ([name, value]) => isObject(value)
+          ? {
+            name,
+            ...value
+          }
+          : {
+            name,
+            label: value
+          }
+      )
+      : null
+}
+
+export function getButtonSchemas(buttons) {
+  return getNamedSchemas(
+    buttons,
+    { type: 'button' } // Defaults
+  )
 }
 
 export function getPanelSchema(schema) {

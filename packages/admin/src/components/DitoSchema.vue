@@ -191,12 +191,16 @@ export default DitoComponent.component('dito-schema', {
       )
     },
 
+    isLoading() {
+      return this.someComponent(it => it.isLoading)
+    },
+
     isDirty() {
-      return this.hasComponent(it => it.isDirty)
+      return this.someComponent(it => it.isDirty)
     },
 
     isTouched() {
-      return this.hasComponent(it => it.isTouched)
+      return this.someComponent(it => it.isTouched)
     },
 
     isValid() {
@@ -214,8 +218,17 @@ export default DitoComponent.component('dito-schema', {
 
   created() {
     this.setupSchemaFields()
+    // Emit 'layout' events right after creation, and whenever data changes:
+    this.on(['change', 'load'], () => this.emitEvent('layout'))
+    this.$nextTick(() => {
+      // If we're loading, don't trigger 'layout' yet, wait for 'load' instead,
+      // to avoid unnecessary jumping around of panels.
+      if (!this.dataRouteComponent.isLoading) {
+        this.emitEvent('layout')
+      }
+    })
+    // Delegate change events through to parent schema:
     if (this.parentSchemaComponent) {
-      // Delegate change events through to parent schema:
       this.delegate('change', this.parentSchemaComponent)
     }
   },
@@ -248,7 +261,7 @@ export default DitoComponent.component('dito-schema', {
       return Object.values(this.components).find(callback)
     },
 
-    hasComponent(callback) {
+    someComponent(callback) {
       return Object.values(this.components).some(callback)
     },
 

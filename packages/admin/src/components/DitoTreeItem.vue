@@ -140,7 +140,7 @@ import DitoComponent from '@/DitoComponent'
 import ItemMixin from '@/mixins/ItemMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { hasForms } from '@/utils/schema'
+import { getNamedSchemas, hasForms } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
@@ -186,7 +186,7 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     properties() {
-      return this.getNamedSchemas(this.schema.properties)
+      return getNamedSchemas(this.schema.properties)
     },
 
     children() {

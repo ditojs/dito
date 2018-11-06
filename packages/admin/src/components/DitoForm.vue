@@ -29,7 +29,7 @@
     )
       dito-buttons.dito-form-buttons(
         slot="buttons"
-        :buttons="buttons"
+        :buttons="buttonSchemas"
         :dataPath="dataPath"
         :data="data"
         :meta="meta"
@@ -43,7 +43,7 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
-import { isObjectSource } from '@/utils/schema'
+import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import {
   isObject, clone, capitalize, parseDataPath, merge
 } from '@ditojs/utils'
@@ -86,8 +86,8 @@ export default DitoComponent.component('dito-form', {
       ) || {} // Always return a schema object so we don't need to check for it.
     },
 
-    buttons() {
-      return this.getButtonSchemas(
+    buttonSchemas() {
+      return getButtonSchemas(
         merge(
           {
             cancel: {
@@ -306,7 +306,13 @@ export default DitoComponent.component('dito-form', {
         : !!this.sourceData?.push(data)
     },
 
-    setData(data) {
+    // @override
+    clearData() {
+      this.setData(null, true)
+    },
+
+    // @override
+    setData(data, clear = false) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {
         // For components with transient data, modify this.sourceData.
@@ -314,7 +320,9 @@ export default DitoComponent.component('dito-form', {
       } else {
         this.loadedData = data
       }
-      this.$refs.schema.onLoad()
+      if (!clear) {
+        this.$refs.schema.onLoad()
+      }
     },
 
     clearClonedData(newValue, oldValue) {

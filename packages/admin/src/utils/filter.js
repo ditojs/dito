@@ -52,7 +52,32 @@ export const filterComponents = {
   }
 }
 
-export function convertFiltersSchema(filters) {
+export function getFiltersPanel(target, filters, query) {
+  const panel = {
+    label: 'Filters',
+    name: 'filters',
+    target,
+    data: () => getFiltersData(panel, query),
+    components: getFiltersComponents(filters),
+    buttons: {
+      clear: {
+        text: 'Clear',
+        events: {
+          click() {
+            alert('clear')
+          }
+        }
+      },
+      filter: {
+        type: 'submit',
+        text: 'Filter'
+      }
+    }
+  }
+  return panel
+}
+
+export function getFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(filters || {})) {
     const { filter: type } = filter
@@ -86,9 +111,7 @@ export function convertFiltersSchema(filters) {
       )
     }
   }
-  return {
-    components: comps
-  }
+  return comps
 }
 
 export function getComponentsForFilter(filtersSchema, name) {

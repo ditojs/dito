@@ -51,20 +51,18 @@ export default DitoComponent.component('dito-panels', {
     // Whenever the layout changes (e.g. on data load or change), recalculate
     // the vertical offets of all panels, taking into account their anchor
     // components, as well as their own height.
-    this.schemaComponent.on(['load', 'change'], () => {
+    this.schemaComponent.on('layout', () => {
       const scrollTop = this.$el
         .closest('.dito-scroll')
         .getBoundingClientRect().top
-      const { panels } = this.$refs
-      let index = 0
       let bottom = 0
-      for (const dataPath of Object.keys(this.panels)) {
-        const el = document.getElementById(dataPath)
-        let comp = el && el.closest('.dito-component')
+      for (const panel of this.$refs.panels) {
+        const target = document.getElementById(panel.panelTarget)
+        let component = target && target.closest('.dito-component')
         // For TypePanel components (.dito-panel-anchor), skip to the previuous
         // component that is not a TypePanel for positioning of the panel:
-        if (comp && comp.classList.contains('dito-panel-anchor')) {
-          let container = comp.parentNode.previousSibling
+        if (component && component.classList.contains('dito-panel-anchor')) {
+          let container = component.parentNode.previousSibling
           while (
             container &&
             container.querySelector('.dito-panel-anchor')
@@ -72,18 +70,23 @@ export default DitoComponent.component('dito-panels', {
             container = container.previousSibling
           }
           if (container) {
-            comp = container.querySelector('.dito-component')
+            component = container.querySelector('.dito-component')
           }
         }
-        const panel = panels[index++]
-        if (comp) {
+        if (component) {
+          // Allow components to define an internal element as the anchor for
+          // panels, e.g. TypeList, to take .dito-navigation into account.
+          const anchor = component.querySelector('.dito-anchor') || component
           // Make sure panels don't cover each other, by taking the bottom of
           // the previous panel into account.
+          const margin = parseFloat(
+            window.getComputedStyle(anchor, '').marginTop
+          )
           const top = Math.max(
             bottom,
-            getAbsoluteBoundingRect(comp).top - scrollTop
+            getAbsoluteBoundingRect(anchor).top - scrollTop - margin
           )
-          this.$set(this.offsets, dataPath, top)
+          this.$set(this.offsets, panel.dataPath, top)
           bottom = top + panel.$el.getBoundingClientRect().height
         }
       }
