@@ -131,6 +131,7 @@ export default DitoComponent.component('dito-schema', {
     label: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: true },
+    hasOwnData: { type: Boolean, default: false },
     menuHeader: { type: Boolean, default: false }
   },
 
@@ -235,6 +236,7 @@ export default DitoComponent.component('dito-schema', {
   },
 
   created() {
+    this.registerComponent(this.dataPath, this, true)
     this.setupSchemaFields()
     // Emit 'layout' events right after creation, and whenever data changes:
     this.on(['change', 'load'], () => this.onLayout())
@@ -252,6 +254,10 @@ export default DitoComponent.component('dito-schema', {
     }
   },
 
+  destroyed() {
+    this.registerComponent(this.dataPath, null, true)
+  },
+
   mounted() {
     this.showPanels = !!(
       this.$refs.components.hasPanels ||
@@ -260,15 +266,19 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    registerComponent(dataPath, comp) {
-      if (comp) {
-        this.$set(this.components, dataPath, comp)
-        // Store the `dataProcessor` closure for this dataPath, for processing
-        // of the data at later time when the component may not exist anymore:
-        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
-      } else {
-        this.$delete(this.components, dataPath)
-        // NOTE: We don't remove the dataProcessors here!
+    registerComponent(dataPath, comp, self = false) {
+      if (!self) {
+        if (comp) {
+          this.$set(this.components, dataPath, comp)
+          // Store the `dataProcessor` closure for this dataPath, for processing
+          // of the data at later time when the component may not exist anymore:
+          this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
+        } else {
+          this.$delete(this.components, dataPath)
+          // NOTE: We don't remove the dataProcessors here! They may still be
+          // required after the life-cycle of the component itself, which is
+          // why they are constructed to have no reference to their component.
+        }
       }
       this.parentSchemaComponent?.registerComponent(dataPath, comp)
     },
@@ -314,15 +324,19 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    showErrors(errors, focus, dataPathPrefix) {
+    showErrors(errors, focus) {
       this.clearErrors()
       let first = true
       const unmatched = []
       for (const [dataPath, errs] of Object.entries(errors)) {
+        // If the schema is a data-root, prefix its own dataPath to all errors,
+        // since the data that it sends and validate swill be unprefixed.
+        const fullDataPath = this.hasOwnData
+          ? appendDataPath(this.dataPath, dataPath)
+          : dataPath
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
-        const prefixedDataPath = appendDataPath(dataPathPrefix, dataPath)
-        const dataPathParts = parseDataPath(prefixedDataPath)
+        const dataPathParts = parseDataPath(fullDataPath)
         const component = this.getComponent(dataPathParts)
         if (component) {
           component.addErrors(errs, first && focus)
@@ -333,24 +347,22 @@ export default DitoComponent.component('dito-schema', {
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
             const component = this.getComponent(dataPathParts)
-            if (component?.navigateToComponent?.(prefixedDataPath,
-              routeRecord => {
-                // Filter the errors to only contain those that belong to the
-                // matched dataPath:
-                const normalizedPath = normalizeDataPath(dataPathParts)
-                // Pass on the errors to the instance through the meta object,
-                // see DitoForm.created()
-                routeRecord.meta.errors = Object.entries(errors).reduce(
-                  (filtered, [path, errs]) => {
-                    if (normalizeDataPath(path).startsWith(normalizedPath)) {
-                      filtered[path] = errs
-                    }
-                    return filtered
-                  },
-                  {}
-                )
-              }
-            )) {
+            if (component?.navigateToComponent?.(fullDataPath, routeRecord => {
+              // Filter the errors to only contain those that belong to the
+              // matched dataPath:
+              const normalizedPath = normalizeDataPath(dataPathParts)
+              // Pass on the errors to the instance through the meta object,
+              // see DitoForm.created()
+              routeRecord.meta.errors = Object.entries(errors).reduce(
+                (filtered, [dataPath, errs]) => {
+                  if (normalizeDataPath(dataPath).startsWith(normalizedPath)) {
+                    filtered[dataPath] = errs
+                  }
+                  return filtered
+                },
+                {}
+              )
+            })) {
               // We found some nested form to display at least parts fo the
               // errors. We can't display all errors at once, so we're done.
               // Don't call notifyErrors() yet, as we can only display it

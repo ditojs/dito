@@ -16,5 +16,6 @@
     "javascript",
     "javascriptreact",
     "vue"
-  ]
+  ],
+  "cSpell.enabled": true
 }

@@ -206,8 +206,8 @@ export default TypeComponent.register([
 
     onFilterErrors(errors) {
       const filterDataPath = appendDataPath(this.dataPath, '$filters')
-      const filterPanel = this.schemaComponent.getComponent(filterDataPath)
-      filterPanel.schemaComponent.showErrors(errors, true, filterDataPath)
+      const filterSchema = this.schemaComponent.getComponent(filterDataPath)
+      filterSchema.showErrors(errors, true, filterDataPath)
     }
   }
 })
