@@ -145,7 +145,7 @@ export default DitoComponent.component('dito-schema', {
       ),
       components: {},
       showPanels: false,
-      // Register dataProcessors separate from copomonents, so they can survive
+      // Register dataProcessors separate from components, so they can survive
       // their life-cycles and be used at the end in `processData()`.
       dataProcessors: {},
       temporaryId: 0
@@ -216,13 +216,13 @@ export default DitoComponent.component('dito-schema', {
     },
 
     isValid() {
-      // Comoponents without vlaidation have `isValid` return undefined.
+      // Components without validation have `isValid` return undefined.
       // Don't count those as invalid.
       return this.everyComponent(it => it.isValid !== false)
     },
 
     isValidated() {
-      // Comoponents without vlaidation have `isValid` return undefined.
+      // Components without validation have `isValid` return undefined.
       // Don't count those as not validated.
       return this.everyComponent(it => it.isValidated !== false)
     }
@@ -275,8 +275,8 @@ export default DitoComponent.component('dito-schema', {
 
     getComponent(dataPathOrKey) {
       const normalizedPath = normalizeDataPath(dataPathOrKey)
-      // See if the argument starts with this form's dataPath. If not, then it's
-      // a key or subDataPath and needs to be prepended with the full path:
+      // See if the argument starts with this form's data-path. If not, then it
+      // is a key or sub data-path and needs to be prefixed with the full path:
       const dataPath = !normalizedPath.startsWith(this.dataPath)
         ? appendDataPath(this.dataPath, normalizedPath)
         : normalizedPath
@@ -386,9 +386,9 @@ export default DitoComponent.component('dito-schema', {
     },
 
     resetData() {
-      // We can't set `this.data = `because it's a property, but we can reset
-      // all known properties on it from `setDefaults()`, as they are all
-      // reactive already.
+      // We can't set `this.data = ...` because it's a property, but we can
+      // set all known properties on it to the values returned by
+      // `setDefaults()`, as they are all reactive already from the starts:
       Object.assign(this.data, setDefaults(this.schema, {}))
       this.clearErrors()
     },
@@ -423,7 +423,7 @@ export default DitoComponent.component('dito-schema', {
         if (dataProcessor) {
           value = dataProcessor(value, this.rootData, dataPath)
         }
-        // Special handling is required for temporary ids when procssing non
+        // Special handling is required for temporary ids when processing non
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
         const isObj = isObject(value)
@@ -434,7 +434,7 @@ export default DitoComponent.component('dito-schema', {
           this.hasTemporaryId(value)
         ) {
           const { id, ...rest } = value
-          // A refeference is a shallow copy that hold nothing more than ids.
+          // A reference is a shallow copy that hold nothing more than ids.
           // Use #ref instead of #id for these:
           value = this.isReference(value)
             ? { '#ref': id }

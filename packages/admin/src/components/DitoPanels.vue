@@ -53,7 +53,7 @@ export default DitoComponent.component('dito-panels', {
   methods: {
     updateLayout() {
       // Whenever the layout changes (e.g. on data load or change), recalculate
-      // the vertical offets of all panels, taking into account their anchor
+      // the vertical offsets of all panels, taking into account their anchor
       // components, as well as their own height.
       const scroll = this.$el.closest('.dito-scroll')
       const scrollTop = scroll.getBoundingClientRect().top
