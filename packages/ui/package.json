@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/ui",
-  "version": "0.51.0",
+  "version": "0.51.1",
   "description": "Dito.js UI is a simple UI library, built with Vue.js for use in Dito.js Admin and elsewhere",
   "main": "dist/dito-ui.umd.min.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
