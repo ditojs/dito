@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
 import { AuthenticationError } from '@/errors'
-import { asArray, toCallback } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 
 export const UserMixin = Model => class extends Model {
   static options = {
@@ -74,13 +74,23 @@ export const UserMixin = Model => class extends Model {
       new LocalStrategy(
         {
           usernameField: usernameProperty,
-          passwordField: passwordProperty
+          passwordField: passwordProperty,
+          // Wee need the `req` object, so we can get the active database
+          // transaction through `req.ctx.transaction`:
+          passReqToCallback: true
         },
-        toCallback(async (username, password) => {
-          const user = await this.sessionQuery()
-            .findOne(usernameProperty, username)
-          return user && await user.$verifyPassword(password) ? user : null
-        })
+        async (req, username, password, done) => {
+          try {
+            const user = await this.sessionQuery(req.ctx.transaction)
+              .findOne(usernameProperty, username)
+            const res = user && await user.$verifyPassword(password)
+              ? user
+              : null
+            done(null, res)
+          } catch (err) {
+            done(err)
+          }
+        }
       )
     )
   }
@@ -108,8 +118,8 @@ export const UserMixin = Model => class extends Model {
     })
   }
 
-  static sessionQuery() {
-    return this.query().scope(
+  static sessionQuery(trx) {
+    return this.query(trx).scope(
       ...asArray(this.definition.options.sessionScope)
     )
   }
@@ -117,17 +127,27 @@ export const UserMixin = Model => class extends Model {
 
 const userClasses = {}
 
-passport.serializeUser(toCallback(user => {
+// NOTE: We can't use toCallback() here since passport checks function arity to
+// determine sequence of arguments received, and `req` would not be included:
+passport.serializeUser(function(req, user, done) {
   // To support multiple user model classes, use both the model class name and
   // id as identifier.
   const modelName = user?.constructor.name
-  return userClasses[modelName] ? `${modelName}-${user.id}` : null
-}))
+  const identifier = modelName && userClasses[modelName]
+    ? `${modelName}-${user.id}`
+    : null
+  done(null, identifier)
+})
 
-passport.deserializeUser(toCallback(async identifier => {
+passport.deserializeUser(async function(req, identifier, done) {
   const [modelName, userId] = identifier.split('-')
   const userClass = userClasses[modelName]
-  return (
-    (userClass && await userClass.sessionQuery().findById(userId)) || null
-  )
-}))
+  try {
+    const user = userClass
+      ? await userClass.sessionQuery(req.ctx.transaction).findById(userId)
+      : null
+    done(null, user)
+  } catch (err) {
+    done(err)
+  }
+})
