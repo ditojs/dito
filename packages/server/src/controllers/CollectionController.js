@@ -6,6 +6,7 @@ import { isObject, asArray } from '@ditojs/utils'
 export class CollectionController extends Controller {
   constructor(app, namespace) {
     super(app, namespace)
+    this.modelClass = null // To be defined by sub-classes
     this.isOneToOne = false
     this.relate = false
     this.unrelate = false
@@ -53,6 +54,10 @@ export class CollectionController extends Controller {
       { patch: true }
     )
     return id
+  }
+
+  query(trx) {
+    return this.setupQuery(this.modelClass.query(trx))
   }
 
   setupQuery(query, base = this) {
