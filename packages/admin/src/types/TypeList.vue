@@ -209,8 +209,8 @@ export default TypeComponent.register([
       // with a filter and there's an error, the panel doesn't get positioned:
       this.schemaComponent.onLayout()
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      // TODO: Consider registering panels separately, getPanel()?
-      // They're the only data structures that aren't type components right now.
+      // TODO: Consider registering schemas separately instead and make them
+      // available through `getSchema(dataPath)`?
       const filtersPanel = this.schemaComponent.getComponent(filtersDataPath)
       filtersPanel.showErrors(errors, true)
     }
