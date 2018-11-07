@@ -172,9 +172,7 @@ export default class ControllerAction {
         // Handle `{ member: true }` parameters separately, by delegating to
         // `getMember()` to resolve to the given member.
         if (entry.member) {
-          // member entries can provide special query parameters as well:
-          // `{ member: true, query: { ... } }`
-          args.push(await this.getMember(ctx, entry.query))
+          args.push(await this.getMember(ctx, entry))
         } else {
           const { name } = entry
           // If no name is provided, use the body object (params)
@@ -185,7 +183,7 @@ export default class ControllerAction {
     return args
   }
 
-  async getMember(/* ctx, query */) {
+  async getMember(/* ctx, param */) {
     // This is only defined in MemberAction, where it resolves to the member
     // represented by the given action route.
     return null
