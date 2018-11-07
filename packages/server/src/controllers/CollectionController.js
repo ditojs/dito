@@ -84,18 +84,18 @@ export class CollectionController extends Controller {
 
   async executeAndFetch(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
-    return this.execute(ctx, query =>
+    return this.execute(ctx, (query, trx) =>
       query[name](ctx.request.body)
-        .modify(modify)
+        .modify(getModify(modify, trx))
     )
   }
 
   async executeAndFetchById(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
-    return this.execute(ctx, query =>
+    return this.execute(ctx, (query, trx) =>
       query[name](this.getId(ctx), ctx.request.body)
         .throwIfNotFound()
-        .modify(modify)
+        .modify(getModify(modify, trx))
     )
   }
 
@@ -113,8 +113,8 @@ export class CollectionController extends Controller {
 
   collection = this.toCoreActions({
     async find(ctx, modify) {
-      const result = await this.execute(ctx, query => {
-        query.find(ctx.query, this.allowParam).modify(modify)
+      const result = await this.execute(ctx, (query, trx) => {
+        query.find(ctx.query, this.allowParam).modify(getModify(modify, trx))
         return this.isOneToOne ? query.first() : query
       })
       // This method doesn't always return an array:
@@ -124,11 +124,11 @@ export class CollectionController extends Controller {
     },
 
     async delete(ctx, modify) {
-      const count = await this.execute(ctx, query => query
+      const count = await this.execute(ctx, (query, trx) => query
         .clearScope()
         .find(ctx.query, this.allowParam)
         .modify(query => this.isOneToOne && query.throwIfNotFound())
-        .modify(modify)
+        .modify(getModify(modify, trx))
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
       )
       return { count }
@@ -137,9 +137,9 @@ export class CollectionController extends Controller {
     async insert(ctx, modify) {
       const result = this.relate
         // Use patchGraphAndFetch() to handle relates for us.
-        ? await this.execute(ctx, query => query
+        ? await this.execute(ctx, (query, trx) => query
           .patchGraphAndFetch(ctx.request.body, { relate: true })
-          .modify(modify)
+          .modify(getModify(modify, trx))
         )
         : await this.executeAndFetch('insert', ctx, modify)
       ctx.status = 201
@@ -160,21 +160,21 @@ export class CollectionController extends Controller {
 
   member = this.toCoreActions({
     async find(ctx, modify) {
-      return this.execute(ctx, query => query
+      return this.execute(ctx, (query, trx) => query
         .findById(this.getId(ctx))
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
-        .modify(modify)
+        .modify(getModify(modify, trx))
       )
     },
 
     async delete(ctx, modify) {
-      const count = await this.execute(ctx, query => query
+      const count = await this.execute(ctx, (query, trx) => query
         .clearScope()
         .findById(this.getId(ctx))
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
-        .modify(modify)
+        .modify(getModify(modify, trx))
         .modify(query => this.unrelate ? query.unrelate() : query.delete())
       )
       return { count }
@@ -188,6 +188,12 @@ export class CollectionController extends Controller {
       return this.executeAndFetchById('patch', ctx, modify)
     }
   })
+}
+
+function getModify(modify, trx) {
+  return modify
+    ? query => modify(query, trx)
+    : null
 }
 
 const actionToVerb = {
