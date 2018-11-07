@@ -263,7 +263,7 @@ export default DitoComponent.component('dito-form', {
     // call, and if so, delegate to `submit()`:
     this.$refs.schema.on('click', ({ target: button }) => {
       const { schema } = button
-      if (schema.method || schema.path) {
+      if ((schema.method || schema.path) && !button.responds('click')) {
         this.submit(button)
       }
     })
