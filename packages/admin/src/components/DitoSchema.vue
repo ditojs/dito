@@ -244,14 +244,12 @@ export default DitoComponent.component('dito-schema', {
       // Trigger a 'layout' event right after creation, unless when loading:
       // Then don't trigger 'layout' yet, wait for 'load' instead, to avoid
       // unnecessary jumping around of panels.
-      if (!this.dataRouteComponent.isLoading) {
+      if (!this.dataRouteComponent?.isLoading) {
         this.onLayout()
       }
     })
     // Delegate change events through to parent schema:
-    if (this.parentSchemaComponent) {
-      this.delegate('change', this.parentSchemaComponent)
-    }
+    this.delegate('change', this.parentSchemaComponent)
   },
 
   destroyed() {

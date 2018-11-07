@@ -436,7 +436,9 @@ export default DitoComponent.component('dito-form', {
               this.notify('success', `Successfully ${capitalize(submitted)}`,
                 `${itemLabel} was ${submitted}.`)
             }
-            this.$refs.schema.resetValidator()
+            // Since the  above is async, the schema may already be destroyed by
+            // now...
+            this.$refs.schema?.resetValidator()
             // After submitting, close the form except if a button turns it off:
             if (buttonSchema.close === false) {
               if (data) {

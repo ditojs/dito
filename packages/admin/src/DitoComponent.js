@@ -162,12 +162,14 @@ const DitoComponent = Vue.extend({
     },
 
     delegate(event, target) {
-      if (isArray(event)) {
-        for (const ev of event) {
-          this.delegate(ev, target)
+      if (target) {
+        if (isArray(event)) {
+          for (const ev of event) {
+            this.delegate(ev, target)
+          }
+        } else {
+          this.on(event, (...args) => target.emit(event, ...args))
         }
-      } else {
-        this.on(event, (...args) => target.emit(event, ...args))
       }
       return this
     }
