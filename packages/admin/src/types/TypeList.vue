@@ -205,9 +205,14 @@ export default TypeComponent.register([
     },
 
     onFilterErrors(errors) {
-      const filterDataPath = appendDataPath(this.dataPath, '$filters')
-      const filterSchema = this.schemaComponent.getComponent(filterDataPath)
-      filterSchema.showErrors(errors, true, filterDataPath)
+      // TODO: Fix this properly in requestData(): When loading the full admin
+      // with a filter and there's an error, the panel doesn't get positioned:
+      this.schemaComponent.onLayout()
+      const filtersDataPath = appendDataPath(this.dataPath, '$filters')
+      // TODO: Consider registering panels separately, getPanel()?
+      // They're the only data structures that aren't type components right now.
+      const filtersPanel = this.schemaComponent.getComponent(filtersDataPath)
+      filtersPanel.showErrors(errors, true)
     }
   }
 })

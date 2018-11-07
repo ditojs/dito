@@ -6,12 +6,14 @@
   )
     .dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
+      ref="schema"
       :schema="panelSchema"
       :dataPath="panelDataPath"
       :data="panelData"
       :meta="panelMeta"
       :store="store"
       :disabled="disabled"
+      :hasOwnData="hasOwnData"
     )
       dito-buttons(
         slot="buttons"
@@ -89,7 +91,7 @@ export default DitoComponent.component('dito-panel', {
     },
 
     hasOwnData() {
-      return this.panelData !== this.data
+      return !!this.schema.data
     },
 
     target() {
@@ -137,6 +139,9 @@ export default DitoComponent.component('dito-panel', {
   },
 
   created() {
+    // Register the panels so that other components can find them by their
+    // data-path, e.g. TypeList for display of errors.
+    this.registerComponent(this.panelDataPath, this)
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
     // where the data is added to the actual component.
     const { data } = this.schema
@@ -144,6 +149,20 @@ export default DitoComponent.component('dito-panel', {
       this.panelData = isFunction(data)
         ? data.call(this)
         : data
+    }
+  },
+
+  destroyed() {
+    this.registerComponent(this.panelDataPath, null)
+  },
+
+  methods: {
+    showErrors(errors, focus) {
+      this.$refs.schema.showErrors(errors, focus)
+    },
+
+    clearErrors() {
+      this.$refs.schema.clearErrors()
     }
   }
 })

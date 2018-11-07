@@ -236,7 +236,6 @@ export default DitoComponent.component('dito-schema', {
   },
 
   created() {
-    this.registerComponent(this.dataPath, this, true)
     this.setupSchemaFields()
     // Emit 'layout' events right after creation, and whenever data changes:
     this.on(['change', 'load'], () => this.onLayout())
@@ -252,10 +251,6 @@ export default DitoComponent.component('dito-schema', {
     this.delegate('change', this.parentSchemaComponent)
   },
 
-  destroyed() {
-    this.registerComponent(this.dataPath, null, true)
-  },
-
   mounted() {
     this.showPanels = !!(
       this.$refs.components.hasPanels ||
@@ -264,19 +259,17 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    registerComponent(dataPath, comp, self = false) {
-      if (!self) {
-        if (comp) {
-          this.$set(this.components, dataPath, comp)
-          // Store the `dataProcessor` closure for this dataPath, for processing
-          // of the data at later time when the component may not exist anymore:
-          this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
-        } else {
-          this.$delete(this.components, dataPath)
-          // NOTE: We don't remove the dataProcessors here! They may still be
-          // required after the life-cycle of the component itself, which is
-          // why they are constructed to have no reference to their component.
-        }
+    registerComponent(dataPath, comp) {
+      if (comp) {
+        this.$set(this.components, dataPath, comp)
+        // Store the `dataProcessor` closure for this dataPath, for processing
+        // of the data at later time when the component may not exist anymore:
+        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
+      } else {
+        this.$delete(this.components, dataPath)
+        // NOTE: We don't remove the dataProcessors here! They may still be
+        // required after the life-cycle of the component itself, which is
+        // why they are constructed to have no reference to their component.
       }
       this.parentSchemaComponent?.registerComponent(dataPath, comp)
     },
@@ -332,6 +325,7 @@ export default DitoComponent.component('dito-schema', {
         const fullDataPath = this.hasOwnData
           ? appendDataPath(this.dataPath, dataPath)
           : dataPath
+        // console.log(this, this.dataPath, this.hasOwnData, fullDataPath)
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
