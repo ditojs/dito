@@ -129,7 +129,7 @@ const userClasses = {}
 
 // NOTE: We can't use toCallback() here since passport checks function arity to
 // determine sequence of arguments received, and `req` would not be included:
-passport.serializeUser(function(req, user, done) {
+passport.serializeUser((req, user, done) => {
   // To support multiple user model classes, use both the model class name and
   // id as identifier.
   const modelName = user?.constructor.name
@@ -139,7 +139,7 @@ passport.serializeUser(function(req, user, done) {
   done(null, identifier)
 })
 
-passport.deserializeUser(async function(req, identifier, done) {
+passport.deserializeUser(async (req, identifier, done) => {
   const [modelName, userId] = identifier.split('-')
   const userClass = userClasses[modelName]
   try {
