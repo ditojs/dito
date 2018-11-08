@@ -13,7 +13,7 @@
       :meta="panelMeta"
       :store="store"
       :disabled="disabled"
-      :hasOwnData="hasOwnData"
+      :hasOwnData="!!ownData"
     )
       dito-buttons(
         slot="buttons"
@@ -81,7 +81,7 @@ export default DitoComponent.component('dito-panel', {
 
   data() {
     return {
-      panelData: this.data
+      ownData: null
     }
   },
 
@@ -90,16 +90,16 @@ export default DitoComponent.component('dito-panel', {
       return getButtonSchemas(this.schema.buttons)
     },
 
-    hasOwnData() {
-      return !!this.schema.data
-    },
-
     target() {
       return this.schema.target || this.dataPath
     },
 
+    panelData() {
+      return this.ownData || this.data
+    },
+
     panelSchema() {
-      if (this.hasOwnData) {
+      if (this.ownData) {
         return this.schema
       } else {
         // Remove `data` from the schema, so that DitoSchema isn't using it to
@@ -113,12 +113,12 @@ export default DitoComponent.component('dito-panel', {
       // If the panel provides its own data, then it needs to prefix all
       // components  with its data-path, but if it shares data with the schema
       // component, then it should share the data-path name space too.
-      return this.hasOwnData ? this.dataPath : ''
+      return this.ownData ? this.dataPath : ''
     },
 
     panelTag() {
       // Panels that provide their own data need their own form.
-      return this.hasOwnData ? 'form' : 'div'
+      return this.ownData ? 'form' : 'div'
     },
 
     panelMeta() {
@@ -146,7 +146,7 @@ export default DitoComponent.component('dito-panel', {
     // where the data is added to the actual component.
     const { data } = this.schema
     if (data) {
-      this.panelData = isFunction(data)
+      this.ownData = isFunction(data)
         ? data.call(this)
         : data
     }

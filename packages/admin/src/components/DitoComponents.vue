@@ -113,7 +113,7 @@ export default DitoComponent.component('dito-components', {
       // Compute a components list which has the dataPath baked into its keys
       // and adds the key as the name to each component, used for labels, etc.
       // NOTE: schema can be null while multi-form lists load their data,
-      // because only the avialble data will determine the type of form.
+      // because only the available data will determine the type of form.
       const { dataPath, schema = {} } = this
       // When editing primitive values through a form, do not append 'value' to
       // the component's dataPath so it can be mapped to from validation errors.
@@ -140,8 +140,8 @@ export default DitoComponent.component('dito-components', {
       for (const [dataPath, schema] of Object.entries(this.componentSchemas)) {
         const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
         if (panel) {
-          // If the pannel provides its own name, append it to the dataPath.
-          // This is used for $filters panels
+          // If the panel provides its own name, append it to the dataPath.
+          // This is used for $filters panels.
           const path = panel.name
             ? appendDataPath(dataPath, panel.name)
             : dataPath
