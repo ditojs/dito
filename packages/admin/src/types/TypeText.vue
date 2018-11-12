@@ -27,17 +27,20 @@ export default TypeComponent.register([
   textField: true,
 
   computed: {
-    isPassword() {
-      return this.type === 'password'
-    },
-
     inputType() {
-      return ['creditcard', 'hostname'].includes(this.type) ? 'text' : this.type
+      return {
+        creditcard: 'text',
+        hostname: 'text'
+      }[this.type] || this.type
     },
 
     inputValue: {
       get() {
-        return this.isPassword && this.value === undefined && !this.focused
+        return (
+          this.type === 'password' &&
+          this.value === undefined &&
+          !this.focused
+        )
           ? maskedPassword
           : this.value
       },
@@ -50,14 +53,16 @@ export default TypeComponent.register([
 
   methods: {
     getValidationRules() {
-      const rules = {}
       const rule = {
         email: 'email',
         url: ['url', 'require_protocol'],
         hostname: 'hostname',
         creditcard: 'credit_card'
       }[this.type]
+      const rules = {}
       if (rule) {
+        // Some rules simply need to be set (e.g. to undefined), other needs
+        // a config value, e.g. `url: 'require_protocol'`, see above.
         const [key, value] = asArray(rule)
         rules[key] = value
       }
