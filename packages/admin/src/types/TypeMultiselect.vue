@@ -1,7 +1,7 @@
 <template lang="pug">
   vue-multiselect.dito-multiselect(
     ref="element"
-    :class="{ 'dito-mutiple': multiple }"
+    :class="{ 'dito-multiple': multiple }"
     v-model="multiSelectValue"
     v-validate="validations"
     v-bind="attributes"
@@ -77,14 +77,14 @@
       // .multiselect__tags:
       padding-bottom: 0
       background: none
-    // Unfortunatley .multiselect__single is used for place placeholder text
+    // Unfortunately .multiselect__single is used for place placeholder text
     // also, but luckily it is then nested in an nother span so wen ca match it:
     span span.multiselect__single,
     .multiselect__input::placeholder
       color: $color-placeholder
 
-    &.dito-mutiple
-      // Only srink and float the input field if we have mutliple values (tags).
+    &.dito-multiple
+      // Only shrink and float the input field if we have multiple values (tags)
       .multiselect__single,
       .multiselect__input
         float: left
