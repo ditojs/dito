@@ -17,7 +17,7 @@ export class Model extends objection.Model {
   static setup(knex) {
     this.knex(knex)
     try {
-      for (const relation of this.getRelationArray()) {
+      for (const relation of Object.values(this.getRelations())) {
         this.setupRelation(relation)
       }
     } catch (error) {

@@ -146,7 +146,7 @@ export class Application extends Koa {
       for (const modelClass of list) {
         const { name } = modelClass
         if (!collected[name] && !excluded[name]) {
-          for (const relation of modelClass.getRelationArray()) {
+          for (const relation of Object.values(modelClass.getRelations())) {
             if (!(relation instanceof BelongsToOneRelation)) {
               const { relatedModelClass, joinTableModelClass } = relation
               for (const related of [joinTableModelClass, relatedModelClass]) {

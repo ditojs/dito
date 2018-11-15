@@ -32,7 +32,7 @@ export default function properties(values) {
     }
   }
 
-  for (const relation of this.getRelationArray()) {
+  for (const relation of Object.values(this.getRelations())) {
     addRelationProperties(relation, 'ownerProp')
   }
 

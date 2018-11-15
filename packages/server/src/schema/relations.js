@@ -247,7 +247,7 @@ export function convertRelations(ownerModelClass, relations, models) {
  * Adds JSON schema properties for each of the modelClass' relations.
  */
 export function addRelationSchemas(modelClass, properties) {
-  for (const relationInstance of modelClass.getRelationArray()) {
+  for (const relationInstance of Object.values(modelClass.getRelations())) {
     const { name, ownerModelClass, relatedModelClass } = relationInstance
     const relationDefinition = ownerModelClass.definition.relations[name]
     const isOneToOne = relationInstance.isOneToOne()

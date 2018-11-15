@@ -154,11 +154,12 @@ export class GraphProcessor {
   processRelates(data, relationPath = '', dataPath = '') {
     if (data) {
       if (data.$isObjectionModel) {
+        const { constructor } = data
         // Start with a reference model instance that only contains the
         // id / #ref fields:
         let copy
         if (this.shouldRelate(relationPath)) {
-          copy = data.constructor.getReference(data)
+          copy = constructor.getReference(data)
           if (this.settings.restoreRelates) {
             // Fill relatedData with entries mapping dataPath -> data, so we
             // can restore these again at the end of in restoreRelates():
@@ -172,7 +173,7 @@ export class GraphProcessor {
           // advanced Objection.js features to work, e.g. LiteralBuilder:
           copy = data.$clone({ shallow: true })
           // Follow all relations and keep processing:
-          for (const { name } of data.constructor.getRelationArray()) {
+          for (const { name } of Object.values(constructor.getRelations())) {
             if (name in data) {
               copy[name] = this.processRelates(
                 data[name],
