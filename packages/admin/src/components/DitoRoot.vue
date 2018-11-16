@@ -190,13 +190,8 @@ export default DitoComponent.component('dito-root', {
     async resolveViews() {
       try {
         const views = await resolveViews(this.views)
-        const filteredViews = {}
-        for (const [name, view] of Object.entries(views)) {
-          if (this.shouldRender(view)) {
-            filteredViews[name] = view
-          }
-        }
-        this.resolvedViews = filteredViews
+        // Copy views to convert from module to a plain object:
+        this.resolvedViews = { ...views }
       } catch (error) {
         if (!error.request) {
           console.error(error)

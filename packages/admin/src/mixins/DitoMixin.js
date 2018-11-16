@@ -144,8 +144,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (isFunction(value)) {
-        // Only call the callback if we actually have data already
-        value = this.data ? value.call(this, getItemParams(this)) : null
+        value = value.call(this, getItemParams(this))
       }
       // For boolean values that are defined as strings or arrays,
       // interpret the values as user roles and match against user:

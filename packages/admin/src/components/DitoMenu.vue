@@ -3,7 +3,10 @@
     h1 {{ appState.title }}
     ul
       li(v-for="view in views")
-        router-link(:to="`/${view.path}`") {{ getLabel(view) }}
+        router-link(
+          :to="`/${view.path}`"
+          v-if="shouldRender(view)"
+        ) {{ getLabel(view) }}
 </template>
 
 <style lang="sass">

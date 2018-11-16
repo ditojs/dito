@@ -4,7 +4,7 @@
   // NOTE: This is different from the handling in DitoForm, where `v-show` is
   // used to always render forms even when other nested forms are present.
   router-view(v-if="!isLastRoute")
-  .dito-view.dito-parent(v-else)
+  .dito-view.dito-parent(v-else-if="shouldRender(viewSchema)")
     dito-schema.dito-scroll(
       ref="schema"
       :schema="viewSchema"
@@ -32,7 +32,7 @@ export default DitoComponent.component('dito-view', {
       isView: true,
       // This is updated from LoadingMixin:
       isLoading: false,
-      // NOTE: Data is shared across all views bacause the router recycles the
+      // NOTE: Data is shared across all views because the router recycles the
       // DitoView component.
       data: {}
     }
@@ -54,7 +54,7 @@ export default DitoComponent.component('dito-view', {
 
     viewSchema() {
       const { schema } = this
-      // Translate single-component schemas into muli-component schemas,
+      // Translate single-component schemas into multi-component schemas,
       // so they can be rendered directly through DitoSchema also:
       return this.isSingleComponent
         ? {
