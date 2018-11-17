@@ -77,49 +77,57 @@ export default class ControllerAction {
     for (const { name, type, member } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
-      // See if the defined type(s) require coercion to objects:
-      const objectType = asArray(type).find(
-        // Coerce to object if type is 'object' or a known model name.
-        type => type === 'object' || type in this.app.models
-      )
-      if (objectType) {
-        // If no name is provided, use the full root object as value:
-        const useRoot = !name
-        const value = useRoot ? root : params[name]
-        let object = value
-        if (value && isString(value)) {
-          try {
-            object = JSON.parse(value)
-          } catch (err) {
-            // Convert JSON error to Ajv validation error format:
-            errors.push({
-              dataPath: `.${name}`, // JavaScript property access notation
-              keyword: 'type',
-              message: err.message || err.toString(),
-              params: {
-                type,
-                json: true
-              }
-            })
+      // If no name is provided, use the full root object as value:
+      const useRoot = !name
+      const param = useRoot ? root : params[name]
+      let value = param
+      // See if param needs additional coercion:
+      if (['date', 'datetime', 'timestamp'].includes(type)) {
+        value = new Date(param)
+      } else {
+        // See if the defined type(s) require coercion to objects:
+        const objectType = asArray(type).find(
+          // Coerce to object if type is 'object' or a known model name.
+          type => type === 'object' || type in this.app.models
+        )
+        if (objectType) {
+          if (param && isString(param)) {
+            try {
+              value = JSON.parse(param)
+            } catch (err) {
+              // Convert JSON error to Ajv validation error format:
+              errors.push({
+                dataPath: `.${name}`, // JavaScript property access notation
+                keyword: 'type',
+                message: err.message || err.toString(),
+                params: {
+                  type,
+                  json: true
+                }
+              })
+            }
+          }
+          if (objectType !== 'object' && isObject(value)) {
+            // Convert the Pojo to the desired Dito model:
+            const modelClass = this.app.models[objectType]
+            if (modelClass && !(value instanceof modelClass)) {
+              value = modelClass.fromJson(value, {
+                // The model validation is handled separately through `$ref`.
+                skipValidation: true
+              })
+            }
           }
         }
-        if (objectType !== 'object' && isObject(object)) {
-          // Convert the Pojo to the desired Dito model:
-          const modelClass = this.app.models[objectType]
-          if (modelClass && !(object instanceof modelClass)) {
-            object = modelClass.fromJson(object, {
-              // The model validation is handled separately through `$ref`.
-              skipValidation: true
-            })
-          }
-        }
+      }
+      // See if coercion happened, and replace value in params with coerced one:
+      if (value !== param) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.rootName`
         // See: Application.compileParametersValidator()
         if (useRoot && params === root) {
           params = this.setParams(ctx, {})
         }
-        params[useRoot ? this.parameters.rootName : name] = object
+        params[useRoot ? this.parameters.rootName : name] = value
       }
     }
     try {
