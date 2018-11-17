@@ -1,5 +1,6 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
+import EmitterMixin from './EmitterMixin'
 import { getItemParams } from '@/utils/data'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
@@ -8,6 +9,8 @@ import {
 
 // @vue/component
 export default {
+  mixins: [EmitterMixin],
+
   inject: [
     'api',
     '$verbs',
