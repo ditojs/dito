@@ -543,6 +543,13 @@ export class Model extends objection.Model {
     return json
   }
 
+  $loadEager(expr, modifiers, trx) {
+    return this.constructor.query(trx)
+      .findById(this.$id())
+      .eager(expr, modifiers)
+      .runAfter(result => Object.assign(this, result))
+  }
+
   $filterGraph(graph, expr) {
     return this.constructor.filterGraph(this, expr)
   }
