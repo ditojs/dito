@@ -88,6 +88,9 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyScope(...scopes) {
+    // When directly applying a scope, still merge it into the list of scopes
+    // `this._scopes`, so it can still be passed on to forked child queries:
+    this.mergeScope(...scopes)
     for (const expr of scopes) {
       if (expr) {
         const { scope, eager } = getScope(expr)
