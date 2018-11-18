@@ -67,6 +67,7 @@
       line-height: 0
 
     .multiselect__single,
+    .multiselect__placeholder,
     .multiselect__input
       font-size: inherit
       line-height: inherit
