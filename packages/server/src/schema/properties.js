@@ -157,25 +157,37 @@ function makeNullable(schema) {
   const {
     type,
     $ref,
-    nullable,
-    validate, // Keep validate() at root level, to apply to both.
+    nullable, // Keep `nullable` at root level, outside of `anyOf`.
+    validate, // Keep `validate()` at root level, to apply to both.
     ...rest
   } = schema
+  // Determine if any of the encountered keywords need separate schema for
+  // not-null / null. The check used to be: Object.keys(rest).length > 0, but
+  // this caused issued with coercing validation, `oneOf`, and null/integer.
+  const needsSeparateSchema = $ref || Object.keys(rest).some(
+    key => ![
+      // Known keywords without side-effects to not-null / null values:
+      'primary', 'foreign', 'nullable', 'unique', 'unsigned',
+      'computed', 'hidden'
+    ].includes(key)
+  )
+
   return isArray(type) && type.includes('null')
     ? schema
-    : $ref || Object.keys(rest).length > 0
+    : needsSeparateSchema
       ? {
-        oneOf: [
+        anyOf: [
+          { type: 'null' },
           $ref
             ? { $ref }
-            : { type, ...rest },
-          { type: 'null' }
+            : { type, ...rest }
         ],
         nullable,
         ...(validate && { validate })
       }
       : {
-        type: [...asArray(type), 'null'],
+        // For coercing validation, null needs to come first:
+        type: ['null', ...asArray(type)],
         nullable,
         ...(validate && { validate }),
         ...rest
