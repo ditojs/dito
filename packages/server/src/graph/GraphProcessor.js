@@ -1,4 +1,4 @@
-import { isArray, asArray, getDataPath } from '@ditojs/utils'
+import { isArray } from '@ditojs/utils'
 import { modelGraphToExpression, ensureModelArray } from '.'
 
 export class GraphProcessor {
@@ -17,7 +17,6 @@ export class GraphProcessor {
         this.processOverrides()
       }
     }
-    this.relatedData = {}
   }
 
   getOptions() {
@@ -160,13 +159,6 @@ export class GraphProcessor {
         let copy
         if (this.shouldRelate(relationPath)) {
           copy = constructor.getReference(data)
-          if (this.settings.restoreRelates) {
-            // Fill relatedData with entries mapping dataPath -> data, so we
-            // can restore these again at the end of in restoreRelates():
-            if (Object.keys(data).length > 0) {
-              this.relatedData[dataPath] = data
-            }
-          }
         } else {
           // This isn't a relate, so create a proper shallow clone:
           // NOTE: This also copies `$$queryProps`, which is crucial for more
@@ -194,23 +186,6 @@ export class GraphProcessor {
       }
     }
     return data
-  }
-
-  /**
-   * Restores relations in the final result removed by processRelates()
-   */
-  restoreRelates(result) {
-    // `this.data` is always an array, hence the dataPaths always point into
-    // arrays. Convert the result to an array so the same paths can be used.
-    if (this.settings.restoreRelates) {
-      const data = asArray(result)
-      for (const entry of Object.entries(this.relatedData)) {
-        const [dataPath, source] = entry
-        const target = getDataPath(data, dataPath)
-        Object.assign(target, source)
-      }
-    }
-    return result
   }
 }
 

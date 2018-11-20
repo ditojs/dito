@@ -306,13 +306,11 @@ export class QueryBuilder extends objection.QueryBuilder {
       options === defaultOptions
         ? {
           processOverrides: true,
-          processRelates: true,
-          restoreRelates: true
+          processRelates: true
         }
         : {}
     )
-    super[method](graph.getData(), graph.getOptions())
-    return this.runAfter(result => graph.restoreRelates(result))
+    return super[method](graph.getData(), graph.getOptions())
   }
 
   // @override
