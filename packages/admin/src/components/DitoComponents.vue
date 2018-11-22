@@ -8,7 +8,7 @@
         v-if="shouldRender(compSchema)"
         v-show="isVisible(compSchema)"
         :class="getClass(compSchema)"
-        :style="getStyle(compSchema)"
+        :style="getContainerStyle(compSchema)"
         :key="compDataPath"
       )
         dito-label(
@@ -24,12 +24,7 @@
           :meta="meta"
           :store="getChildStore(compSchema.name)"
           :disabled="disabled || isDisabled(compSchema)"
-          :class=`{
-            'dito-disabled': disabled || isDisabled(compSchema),
-            'dito-fill': hasFill(compSchema),
-            'dito-fixed': isFixed(compSchema),
-            'dito-has-errors': $errors.has(compDataPath)
-          }`
+          :class="getComponentClass(compSchema, compDataPath)"
         )
         dito-errors(
           v-if="$errors.has(compDataPath)"
@@ -167,14 +162,6 @@ export default DitoComponent.component('dito-components', {
       )
     },
 
-    hasFill(schema) {
-      return this.getPercentage(schema) > 0 || schema.width === 'fill'
-    },
-
-    isFixed(schema) {
-      return schema.width === 'fixed'
-    },
-
     getPercentage(schema) {
       const { width } = schema
       // 'auto' = no fitting:
@@ -188,12 +175,22 @@ export default DitoComponent.component('dito-components', {
       return getContainerClass(schema)
     },
 
-    getStyle(schema) {
+    getContainerStyle(schema) {
       const percentage = this.getPercentage(schema)
-      const fixed = this.isFixed(schema)
       return {
         'flex-basis': percentage && `${percentage}%`,
-        'flex-grow': fixed && 0
+        'flex-grow': ['fixed', 'auto'].includes(schema.width) ? 0 : 1
+      }
+    },
+
+    getComponentClass(schema, dataPath) {
+      const { width } = schema
+      return {
+        'dito-disabled': this.disabled || this.isDisabled(schema),
+        'dito-fill': width === 'fill' || this.getPercentage(schema) > 0,
+        'dito-fixed': width === 'fixed',
+        'dito-auto': width === 'auto',
+        'dito-has-errors': this.$errors.has(dataPath)
       }
     },
 
