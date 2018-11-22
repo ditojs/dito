@@ -107,14 +107,15 @@ export function getFiltersPanel(filters, dataPath, proxy) {
 function getFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(filters || {})) {
-    const { filter: type } = filter
+    // Support both custom forms and default filter components, through the
+    // `filterComponents` registry. Even for default filters, still use the
+    // properties in `filter` as the base for `form`, so things like `label`
+    // can be changed on the resulting form.
+    const { filter: type, ...form } = filter
     const components = type
       ? filterComponents[type]?.(filter)
       : filter.components
     if (components) {
-      const form = type
-        ? {}
-        : { ...filter }
       form.components = {}
       // Convert labels to placeholders:
       for (const [key, component] of Object.entries(components)) {
