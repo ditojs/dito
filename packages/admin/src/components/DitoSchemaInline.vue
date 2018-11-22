@@ -1,5 +1,5 @@
 <template lang="pug">
-  dito-schema.dito-inline-schema(
+  dito-schema.dito-schema-inline(
     :schema="schema"
     :dataPath="dataPath"
     :key="dataPath"
@@ -8,12 +8,13 @@
     :store="store"
     :label="compact ? null : label"
     :disabled="disabled"
+    :class="{ 'dito-schema-compact': compact }"
   )
 </template>
 
 <style lang="sass">
 .dito
-  .dito-inline-schema
+  .dito-schema-inline
     padding: 0
     .dito-schema-header
       padding-bottom: $form-spacing
@@ -27,7 +28,7 @@ import DitoComponent from '@/DitoComponent'
 import { isObjectSource } from '@/utils/schema'
 
 // @vue/component
-export default DitoComponent.component('dito-inline-schema', {
+export default DitoComponent.component('dito-schema-inline', {
   props: {
     schema: { type: Object, default: null },
     dataPath: { type: String, required: true },

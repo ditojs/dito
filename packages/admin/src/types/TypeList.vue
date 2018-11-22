@@ -53,7 +53,7 @@
             )
           template(v-else)
             td
-              dito-inline-schema(
+              dito-schema-inline(
                 v-if="inline"
                 :label="getItemLabel(schema, item, index)"
                 :schema="getItemFormSchema(schema, item)"

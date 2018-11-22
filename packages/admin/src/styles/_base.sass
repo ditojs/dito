@@ -10,4 +10,5 @@
   max-width: 100%
 
   label
-    +user-select(none)
+    &, * // Match &::after also
+      +user-select(none)

@@ -20,6 +20,15 @@
       text-overflow: ellipsis
       left: 0
       right: 0
+  .dito-schema-compact .dito-label
+    display: inline-block
+    // To align with content in selects:
+    padding: ($input-padding-ver + $border-width) 0.35em 0 0
+    label
+      position: relative
+      overflow: none
+      &::after
+        content: ':'
 </style>
 
 <script>
