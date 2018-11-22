@@ -23,7 +23,7 @@ export class Controller {
     // Overridable in sub-classes
   }
 
-  setup(isRoot = true, setupControllerObject = true) {
+  setup(isRoot = true, setupActionsObject = true) {
     this.setupEmitter(this.hooks, {
       // Support wildcard hooks only on controllers:
       wildcard: true
@@ -50,22 +50,22 @@ export class Controller {
         }`,
         this.level
       )
-      if (setupControllerObject) {
-        this.controller = this.reflectControllerObject()
+      if (setupActionsObject) {
+        this.actions = this.actions || this.reflectActionsObject()
         // Now that the instance fields are reflected in the `controller` object
         // we can use the normal inheritance mechanism through `setupActions()`:
-        this.controller = this.setupActions('controller')
+        this.actions = this.setupActions('actions')
       }
       this.upload = this.setupUpload()
     }
   }
 
-  reflectControllerObject() {
+  reflectActionsObject() {
     // On base controllers, the actions can be defined directly in the class
     // instead of inside an actions object, as is done with model and relation
     // controllers. But in order to use the same structure for inheritance as
     // these other controllers, we reflect these instance fields in a separate
-    // `controller` object.
+    // `actions` object.
     const { allow } = this
     const controller = allow ? { allow } : {}
 
