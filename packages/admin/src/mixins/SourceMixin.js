@@ -1,6 +1,6 @@
 import DitoView from '@/components/DitoView'
 import DitoForm from '@/components/DitoForm'
-import DitoNestedForm from '@/components/DitoNestedForm'
+import DitoFormNested from '@/components/DitoFormNested'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFullyContained } from '@/utils/string'
@@ -496,7 +496,7 @@ export default {
         // Object sources don't need id params in their form paths, as they
         // directly edit one object.
         path: getPathWithParam(formPath, isListSource(schema) && param),
-        component: nested ? DitoNestedForm : DitoForm,
+        component: nested ? DitoFormNested : DitoForm,
         meta: formMeta
       }
       const formRoutes = [formRoute]

@@ -12,7 +12,7 @@
         :dataPath="treeDataPath"
         :open="true"
       )
-      // Include a router-view for the optional DitoNestedForm
+      // Include a router-view for the optional DitoFormNested
       router-view
 </template>
 
@@ -24,7 +24,7 @@
       justify-content: space-between
       > .dito-tree-item
         flex: 0 1 auto
-      > .dito-nested-form
+      > .dito-form-nested
         background: $color-lightest
         border-radius: $border-radius
         margin-left: $content-padding

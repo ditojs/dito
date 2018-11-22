@@ -1,6 +1,6 @@
 <style lang="sass">
 .dito
-  .dito-nested-form
+  .dito-form-nested
     .dito-scroll
       // No nested scrolling:
       overflow: visible
@@ -12,8 +12,8 @@ import DitoForm from './DitoForm'
 export default DitoForm.extend({
   data() {
     return {
-      formTag: 'div', // Use a <div> as we shouldn't nest acutal <form> tags.
-      formClass: 'dito-nested-form'
+      formTag: 'div', // Use a <div> as we shouldn't nest actual <form> tags.
+      formClass: 'dito-form-nested'
     }
   },
 
