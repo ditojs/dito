@@ -3,33 +3,18 @@
     v-if="componentSchemas"
   )
     .dito-components-container.dito-schema-content
-      .dito-component-container(
+      dito-component-container(
         v-for="(compSchema, compDataPath) in componentSchemas"
         v-if="shouldRender(compSchema)"
-        v-show="isVisible(compSchema)"
-        :class="getClass(compSchema)"
-        :style="getContainerStyle(compSchema)"
         :key="compDataPath"
+        :schema="compSchema"
+        :dataPath="compDataPath"
+        :data="data"
+        :meta="meta"
+        :store="getChildStore(compSchema.name)"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
       )
-        dito-label(
-          v-if="hasLabel(compSchema)"
-          :dataPath="compDataPath"
-          :text="getLabel(compSchema)"
-        )
-        component.dito-component(
-          :is="getTypeComponent(compSchema.type)"
-          :schema="compSchema"
-          :dataPath="compDataPath"
-          :data="data"
-          :meta="meta"
-          :store="getChildStore(compSchema.name)"
-          :disabled="disabled || isDisabled(compSchema)"
-          :class="getComponentClass(compSchema, compDataPath)"
-        )
-        dito-errors(
-          v-if="$errors.has(compDataPath)"
-          :dataPath="compDataPath"
-        )
     // If showPanels is true it means that any tab or main components has panels
     // and all other should render .dito-panels as well for proper layout.
     dito-panels(
@@ -58,34 +43,12 @@
       flex: 100%
       position: relative
       align-items: baseline
-    .dito-component-container
-      flex: 1 1 auto
-      align-self: stretch
-      box-sizing: border-box
-      // Cannot use margin here as it needs to be part of box-sizing for
-      // percentages in flex-basis to work.
-      padding: $form-spacing $form-spacing-half
-      &.no-padding,
-      &:empty,
-        padding: 0
-  // NOTE: This is not nested inside .dito-component-container so that other
-  // type components can override `.dito-fill` behavior (filter precedence).
-  .dito-component.dito-fill
-    display: block
-    width: 100%
-    &.dito-checkbox,
-    &.dito-radio-button
-      // WebKit doesn't like changed width on checkboxes and radios, override:
-      display: inline-block
-      width: auto
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
-import {
-  shouldRenderLabel, getContainerClass, getPanelSchema
-} from '@/utils/schema'
+import { getPanelSchema } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -152,48 +115,6 @@ export default DitoComponent.component('dito-components', {
   },
 
   methods: {
-    hasLabel(schema) {
-      return (
-        schema.label !== false &&
-        shouldRenderLabel(schema) && (
-          schema.label ||
-          this.generateLabels
-        )
-      )
-    },
-
-    getPercentage(schema) {
-      const { width } = schema
-      // 'auto' = no fitting:
-      return ['auto', 'fixed', 'fill'].includes(width) ? null
-        : !width ? 100 // default = 100%
-        : /%/.test(width) ? parseFloat(width) // percentage
-        : width * 100 // fraction
-    },
-
-    getClass(schema) {
-      return getContainerClass(schema)
-    },
-
-    getContainerStyle(schema) {
-      const percentage = this.getPercentage(schema)
-      return {
-        'flex-basis': percentage && `${percentage}%`,
-        'flex-grow': ['fixed', 'auto'].includes(schema.width) ? 0 : 1
-      }
-    },
-
-    getComponentClass(schema, dataPath) {
-      const { width } = schema
-      return {
-        'dito-disabled': this.disabled || this.isDisabled(schema),
-        'dito-fill': width === 'fill' || this.getPercentage(schema) > 0,
-        'dito-fixed': width === 'fixed',
-        'dito-auto': width === 'auto',
-        'dito-has-errors': this.$errors.has(dataPath)
-      }
-    },
-
     focus() {
       if (this.tab) {
         this.$router.push({ hash: this.tab })
