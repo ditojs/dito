@@ -9,7 +9,7 @@
 <script>
 import DitoForm from './DitoForm'
 
-export default DitoForm.extend({
+export default DitoForm.component('dito-form-nested', {
   data() {
     return {
       formTag: 'div', // Use a <div> as we shouldn't nest actual <form> tags.

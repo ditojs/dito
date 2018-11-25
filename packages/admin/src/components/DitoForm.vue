@@ -3,10 +3,10 @@
   :class="formClass"
 )
   // NOTE: Nested form components are kept alive by using `v-show` instead of
-  // `v-if` here, so event handling and other things stil work with nested
+  // `v-if` here, so event handling and other things still work with nested
   // editing.
   // Only render a router-view here if this isn't the last data-loading route,
-  // and not a nested route, wich will appear elsewhere in its own router-view.
+  // and not a nested route, which will appear elsewhere in its own router-view.
   router-view(
     v-if="!(isLastDataRoute || isNestedDataRoute)"
     v-show="!isActive"

@@ -1,26 +1,31 @@
 <template lang="pug">
   .dito-buttons
-    // Add `.dito-schema-content` for handling of max-width and rules,
-    // see `.dito-schema-content::before` in DitoSchema.
-    .dito-schema-content
-      component.dito-component(
+    // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
+    // sub-class as the component container for different layout:
+    .dito-buttons-container.dito-schema-content
+      dito-button-container(
         v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
         v-if="shouldRender(buttonSchema)"
         :key="buttonDataPath"
-        :is="getTypeComponent(buttonSchema.type)"
         :schema="buttonSchema"
         :dataPath="buttonDataPath"
         :data="data"
         :meta="meta"
-        :store="store"
-        :params="params"
-        :disabled="disabled || isDisabled(buttonSchema)"
-        :class=`{
-          'dito-disabled': disabled || isDisabled(buttonSchema),
-          'dito-has-errors': $errors.has(buttonDataPath)
-        }`
+        :store="getChildStore(buttonSchema.name)"
+        :disabled="disabled"
+        :generateLabels="false"
       )
 </template>
+
+<style lang="sass">
+.dito
+  .dito-buttons-container
+    display: flex
+    flex-flow: row wrap
+    flex: 100%
+    align-items: baseline
+    justify-content: center
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
@@ -36,7 +41,6 @@ export default DitoComponent.component('dito-buttons', {
     data: { type: Object, required: true },
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
-    params: { type: Object, default: null },
     disabled: { type: Boolean, default: false }
   },
 

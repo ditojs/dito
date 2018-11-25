@@ -1,5 +1,6 @@
 <template lang="pug">
-  .dito-component-container(
+  // See `containerClass` for the assignment of the class-names to this div:
+  div(
     v-if="shouldRender(schema)"
     v-show="isVisible(schema)"
     :class="containerClass"
@@ -83,20 +84,25 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     width() {
-      return this.schema.width
+      // Use 100% == 1.0 as default width when nothing is set:
+      return this.schema.width ?? 1.0
     },
 
     percentage() {
       const { width } = this
       // 'auto' = no fitting:
-      return ['auto', 'fixed', 'fill'].includes(width) ? null
-        : !width ? 100 // default = 100%
+      return width == null || ['auto', 'fixed', 'fill'].includes(width) ? null
         : /%/.test(width) ? parseFloat(width) // percentage
         : width * 100 // fraction
     },
 
     containerClass() {
-      return getContainerClass(this.schema)
+      return [
+        // Use the component name as its class, so the extended
+        // dito-button-container automatically works too.
+        this.$options.name,
+        getContainerClass(this.schema)
+      ]
     },
 
     containerStyle() {

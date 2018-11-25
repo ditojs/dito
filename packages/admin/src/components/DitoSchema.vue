@@ -67,7 +67,6 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
       .dito-schema-content::before
         // Add removed $form-spacing again to the ruler
         margin: $form-spacing-half
-    > .dito-buttons
   .dito-schema-header
     display: flex
     box-sizing: border-box

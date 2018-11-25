@@ -57,9 +57,9 @@
         margin: 0 (-$form-spacing-half)
       .dito-component-container
         padding: $form-spacing-half
-      .dito-buttons
-        text-align: right
-        padding: $form-spacing 0 0
+      .dito-buttons-container
+        justify-content: flex-end
+        padding-top: $form-spacing
 </style>
 
 <script>
