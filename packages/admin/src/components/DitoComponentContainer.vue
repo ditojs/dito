@@ -1,8 +1,7 @@
 <template lang="pug">
   // See `containerClass` for the assignment of the class-names to this div:
   div(
-    v-if="shouldRender(schema)"
-    v-show="isVisible(schema)"
+    v-show="componentVisible"
     :class="containerClass"
     :style="containerStyle"
     :key="dataPath"
@@ -19,7 +18,7 @@
       :data="data"
       :meta="meta"
       :store="store"
-      :disabled="disabled || isDisabled(schema)"
+      :disabled="componentDisabled"
       :class="componentClass"
     )
     dito-errors(
@@ -54,6 +53,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { shouldRenderLabel, getContainerClass } from '@/utils/schema'
 
 // @vue/component
@@ -115,12 +115,25 @@ export default DitoComponent.component('dito-component-container', {
     componentClass() {
       const { width } = this
       return {
-        'dito-disabled': this.disabled || this.isDisabled(this.schema),
+        'dito-disabled': this.componentDisabled,
         'dito-fill': width === 'fill' || this.percentage > 0,
         'dito-auto': width === 'auto',
         'dito-has-errors': this.$errors.has(this.dataPath)
       }
-    }
+    },
+
+    componentVisible: getSchemaAccessor('visible', {
+      type: Boolean,
+      default: true
+    }),
+
+    componentDisabled: getSchemaAccessor('disabled', {
+      type: Boolean,
+      default: false,
+      get(disabled) {
+        return disabled || this.disabled
+      }
+    })
   }
 })
 </script>
