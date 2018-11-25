@@ -91,7 +91,7 @@ export default DitoComponent.component('dito-component-container', {
     percentage() {
       const { width } = this
       // 'auto' = no fitting:
-      return width == null || ['auto', 'fixed', 'fill'].includes(width) ? null
+      return width == null || ['auto', 'fill'].includes(width) ? null
         : /%/.test(width) ? parseFloat(width) // percentage
         : width * 100 // fraction
     },
@@ -108,7 +108,7 @@ export default DitoComponent.component('dito-component-container', {
     containerStyle() {
       return {
         'flex-basis': this.percentage && `${this.percentage}%`,
-        'flex-grow': ['fixed', 'auto'].includes(this.width) ? 0 : 1
+        'flex-grow': this.width === 'auto' ? 0 : 1
       }
     },
 
@@ -117,7 +117,6 @@ export default DitoComponent.component('dito-component-container', {
       return {
         'dito-disabled': this.disabled || this.isDisabled(this.schema),
         'dito-fill': width === 'fill' || this.percentage > 0,
-        'dito-fixed': width === 'fixed',
         'dito-auto': width === 'auto',
         'dito-has-errors': this.$errors.has(this.dataPath)
       }
