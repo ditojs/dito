@@ -1,6 +1,6 @@
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItemParams, getItem, getParentItem } from '@/utils/data'
-import { isArray } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -8,7 +8,10 @@ export default {
   // See: https://github.com/logaretm/vee-validate/issues/468
   // NOTE: We can't do this in DitoMixin for all components, as it would
   // override the $validates: true` setting there.
-  inject: ['$validator'],
+  inject: [
+    '$validator',
+    'tabComponent'
+  ],
 
   props: {
     schema: { type: Object, required: true },
@@ -250,9 +253,8 @@ export default {
 
     focus() {
       // Also focus this component's panel in case it's a tab.
-      this.$parent.focus()
-      const { element } = this.$refs
-      const focus = isArray(element) ? element[0] : element
+      this.tabComponent?.focus()
+      const [focus] = asArray(this.$refs.element)
       if (focus) {
         this.$nextTick(() => focus.focus())
       }

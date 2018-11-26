@@ -54,6 +54,12 @@ import { getPanelSchema } from '@/utils/schema'
 export default DitoComponent.component('dito-components', {
   inject: ['$validator'],
 
+  provide() {
+    return {
+      tabComponent: this.tab ? this : null
+    }
+  },
+
   props: {
     tab: { type: String, default: null },
     schema: { type: Object, default: null },

@@ -35,6 +35,10 @@ import { appendDataPath } from '@/utils/data'
 export default DitoComponent.component('dito-buttons', {
   inject: ['$validator'],
 
+  provide: {
+    tabComponent: null
+  },
+
   props: {
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
