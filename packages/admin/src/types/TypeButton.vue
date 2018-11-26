@@ -36,8 +36,12 @@ export default TypeComponent.register([
 
   methods: {
     onClick() {
+      const { params } = this.meta
       this.emitEvent('click', {
-        params: this.meta.params,
+        // Provide a params function that creates a copy of the params when
+        // needed, since they will be directly used as the item params object,
+        // see `getItemParams()`:
+        params: params ? () => ({ ...params }) : null,
         parent: this.schemaComponent
       })
     }

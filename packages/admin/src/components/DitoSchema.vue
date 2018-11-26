@@ -419,12 +419,12 @@ export default DitoComponent.component('dito-schema', {
       // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
-      const process = (value, dataPath) => {
+      const process = (value, name, dataPath) => {
         // First, see if there's an associated component requiring processing.
         // See TypeMixin.mergedDataProcessor(), OptionsMixin.dataProcessor():
         const dataProcessor = this.dataProcessors[dataPath]
         if (dataProcessor) {
-          value = dataProcessor(value, this.rootData, dataPath)
+          value = dataProcessor(value, name, dataPath, this.rootData)
         }
         // Special handling is required for temporary ids when processing non
         // transient data: Replace id with #id, so '#ref' can be used for
@@ -447,7 +447,7 @@ export default DitoComponent.component('dito-schema', {
           // Use reduce() for both arrays and objects thanks to Object.entries()
           value = Object.entries(value).reduce(
             (processed, [key, val]) => {
-              val = process(val, appendDataPath(dataPath, key))
+              val = process(val, key, appendDataPath(dataPath, key))
               if (val !== undefined) {
                 processed[key] = val
               }
@@ -461,7 +461,7 @@ export default DitoComponent.component('dito-schema', {
         }
         return value
       }
-      return process(this.data, this.dataPath)
+      return process(this.data, null, this.dataPath)
     },
 
     hasTemporaryId(data) {

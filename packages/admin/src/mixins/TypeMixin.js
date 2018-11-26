@@ -115,7 +115,7 @@ export default {
       // components than can provide further behavior.
       const { dataProcessor } = this
       const { exclude, process } = this.schema
-      return (value, rootData, dataPath) => {
+      return (value, name, dataPath, rootData) => {
         if (exclude) {
           return undefined
         }
@@ -123,7 +123,7 @@ export default {
           value = dataProcessor(value)
         }
         return process
-          ? process(getItemParams({ value, rootData, dataPath }))
+          ? process(getItemParams(this, { value, name, dataPath, rootData }))
           : value
       }
     },

@@ -1,4 +1,4 @@
-import { parseDataPath, getDataPath, isPlainObject } from '@ditojs/utils'
+import { parseDataPath, getDataPath, isFunction } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
   return dataPath != null && dataPath !== ''
@@ -34,40 +34,40 @@ export function getParentItem(rootItem, dataPath, isValue) {
   return null
 }
 
-export function getItemParams(source, overrides) {
-  // Overrides are set on the created instance, after instantiation:
-  return Object.assign(new ItemParams(source), overrides)
+export function getItemParams(target, params) {
+  return new ItemParams(target, params)
 }
 
-// Use WeakMap for ItemParams objects, so we don't pollute the actual ItemParams
-// instance with it.
+// Use WeakMap for ItemParams objects, so we don't have to pollute the actual
+// ItemParams instance with it.
 const paramsMap = new WeakMap()
 
+function get(that, key) {
+  return paramsMap.get(that)[key]
+}
+
 class ItemParams {
-  constructor(source) {
-    paramsMap.set(
-      this,
-      // Create a new object that inherits from `source`, so we can override
-      // without changing `source`:
-      Object.setPrototypeOf({}, source)
-    )
-    // If `source` is not a plain object, assume it's the target of this event.
-    if (!isPlainObject(source)) {
-      this.target = source
-    }
+  constructor(target, params) {
+    // Use the provided params object / function, or create a new one:
+    params = params
+      ? (isFunction(params) ? params() : params)
+      : {}
+    params.target = target
+    // Have `params` inherit from `target`, so it can override its values and
+    // still retrieve from it, and associate it with `this` through `paramsMap`:
+    paramsMap.set(this, Object.setPrototypeOf(params, target))
   }
 
   get value() {
     return get(this, 'value')
   }
 
-  set value(value) {
-    // Allow overriding of `value`, so overrides can provide their own:
-    set(this, 'value', value)
-  }
-
   get name() {
     return get(this, 'name')
+  }
+
+  get dataPath() {
+    return get(this, 'dataPath') || ''
   }
 
   get item() {
@@ -75,11 +75,6 @@ class ItemParams {
     // term `item` is used for the data that relates to editing objects:
     // If `data` isn't provided, we can determine it from rootData & dataPath:
     return get(this, 'data') || getItem(this.rootItem, this.dataPath, true)
-  }
-
-  set item(item) {
-    // Allow overriding of `item`, so overrides can provide their own:
-    set(this, 'data', item)
   }
 
   // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
@@ -96,8 +91,16 @@ class ItemParams {
     return get(this, 'rootData') || null
   }
 
-  get dataPath() {
-    return get(this, 'dataPath') || ''
+  get target() {
+    return get(this, 'target') || null
+  }
+
+  get user() {
+    return get(this, 'user') || null
+  }
+
+  get api() {
+    return get(this, 'api') || null
   }
 
   get schemaComponent() {
@@ -107,18 +110,16 @@ class ItemParams {
   get formComponent() {
     return get(this, 'formComponent') || null
   }
-}
 
-function get(that, key) {
-  return paramsMap.get(that)[key]
-}
+  get viewComponent() {
+    return get(this, 'viewComponent') || null
+  }
 
-function set(that, key, value) {
-  const params = paramsMap.get(that)
-  // Temporarily break inheritance chain with original params, so we can
-  // override value locally, without triggering setters above.
-  const origParams = Object.getPrototypeOf(params)
-  Object.setPrototypeOf(params, null)
-  params.value = value
-  Object.setPrototypeOf(params, origParams)
+  get dialogComponent() {
+    return get(this, 'dialogComponent') || null
+  }
+
+  get panelComponent() {
+    return get(this, 'panelComponent') || null
+  }
 }

@@ -33,14 +33,16 @@ export default {
         const that = this
         label = itemLabel.call(
           this,
-          getItemParams({
+          getItemParams(this, {
+            name: undefined,
+            value: undefined,
             data: item,
-            rootData: this.rootData,
+
             get dataPath() {
               return dataPath ||
                 (dataPath = that.getItemDataPath(sourceSchema, index))
-            }
-          }, {
+            },
+
             get formLabel() {
               return getFormLabel()
             }
