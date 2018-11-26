@@ -128,16 +128,43 @@ export default {
       }
     },
 
-    width: getSchemaAccessor('width', { type: [String, Number] }),
-    visible: getSchemaAccessor('visible', { type: Boolean }),
-    exclude: getSchemaAccessor('exclude', { type: Boolean }),
-    required: getSchemaAccessor('required', { type: Boolean }),
+    width: getSchemaAccessor('width', {
+      type: [String, Number]
+    }),
+
+    visible: getSchemaAccessor('visible', {
+      type: Boolean,
+      default: false
+    }),
+
+    exclude: getSchemaAccessor('exclude', {
+      type: Boolean,
+      default: false
+    }),
+
+    required: getSchemaAccessor('required', {
+      type: Boolean,
+      default: false
+    }),
 
     // TODO: Move these to a sub-class component used for all input components?
-    readonly: getSchemaAccessor('readonly', { type: Boolean }),
-    autofocus: getSchemaAccessor('autofocus', { type: Boolean }),
-    placeholder: getSchemaAccessor('placeholder', { type: String }),
-    autocomplete: getSchemaAccessor('autocomplete', { type: String }),
+    readonly: getSchemaAccessor('readonly', {
+      type: Boolean,
+      default: false
+    }),
+
+    autofocus: getSchemaAccessor('autofocus', {
+      type: Boolean,
+      default: false
+    }),
+
+    placeholder: getSchemaAccessor('placeholder', {
+      type: String
+    }),
+
+    autocomplete: getSchemaAccessor('autocomplete', {
+      type: String
+    }),
 
     attributes() {
       const { nativeField, textField } = this.constructor.options

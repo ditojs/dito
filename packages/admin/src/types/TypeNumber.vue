@@ -59,7 +59,9 @@ export default TypeComponent.register([
       return this.step == null && !this.isInteger ? 'any' : this.step
     },
 
-    decimals: getSchemaAccessor('decimals', { type: Number }),
+    decimals: getSchemaAccessor('decimals', {
+      type: Number
+    }),
 
     step: getSchemaAccessor('step', {
       type: Number,

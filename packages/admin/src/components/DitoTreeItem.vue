@@ -269,7 +269,10 @@ export default DitoComponent.component('dito-tree-item', {
       }
     }),
 
-    deletable: getSchemaAccessor('deletable', { type: Boolean }),
+    deletable: getSchemaAccessor('deletable', {
+      type: Boolean,
+      default: false
+    }),
 
     hasButtons() {
       return this.draggable || this.editable || this.deletable

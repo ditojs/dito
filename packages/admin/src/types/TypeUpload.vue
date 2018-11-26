@@ -115,7 +115,10 @@ export default TypeComponent.register('upload', {
       return this.asFiles(this.value)
     },
 
-    multiple: getSchemaAccessor('multiple', { type: Boolean }),
+    multiple: getSchemaAccessor('multiple', {
+      type: Boolean,
+      default: false
+    }),
 
     extensions: getSchemaAccessor('extensions', {
       type: [Array, String, RegExp]
@@ -137,12 +140,16 @@ export default TypeComponent.register('upload', {
 
     draggable: getSchemaAccessor('draggable', {
       type: Boolean,
+      default: false,
       get(draggable) {
         return draggable && this.files.length > 1
       }
     }),
 
-    deletable: getSchemaAccessor('deletable', { type: Boolean }),
+    deletable: getSchemaAccessor('deletable', {
+      type: Boolean,
+      default: false
+    }),
 
     uploadable() {
       return this.uploads.length &&

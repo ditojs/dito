@@ -214,8 +214,14 @@ export default {
       return true
     },
 
-    paginate: getSchemaAccessor('paginate', { type: Number }),
-    inline: getSchemaAccessor('inline', { type: Boolean }),
+    paginate: getSchemaAccessor('paginate', {
+      type: Number
+    }),
+
+    inline: getSchemaAccessor('inline', {
+      type: Boolean,
+      default: false
+    }),
 
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,

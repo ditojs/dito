@@ -237,9 +237,20 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    multiple: getSchemaAccessor('multiple', { type: Boolean }),
-    searchable: getSchemaAccessor('searchable', { type: Boolean }),
-    taggable: getSchemaAccessor('taggable', { type: Boolean }),
+    multiple: getSchemaAccessor('multiple', {
+      type: Boolean,
+      default: false
+    }),
+
+    searchable: getSchemaAccessor('searchable', {
+      type: Boolean,
+      default: false
+    }),
+
+    taggable: getSchemaAccessor('taggable', {
+      type: Boolean,
+      default: false
+    }),
 
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema
