@@ -25,12 +25,18 @@ export default {
     getItemLabel(sourceSchema, item, index = null, extended = false) {
       const { itemLabel } = sourceSchema
       if (!extended && itemLabel === false) return null
-      const getFormLabel = () =>
-        this.getLabel(getItemFormSchema(sourceSchema, item))
+      let dataPath
+      const getDataPath = () => (
+        dataPath ||
+        (dataPath = this.getItemDataPath(sourceSchema, index))
+      )
+      let formLabel
+      const getFormLabel = () => (
+        formLabel ||
+        (formLabel = this.getLabel(getItemFormSchema(sourceSchema, item)))
+      )
       let label = null
       if (isFunction(itemLabel)) {
-        let dataPath
-        const that = this
         label = itemLabel.call(
           this,
           getItemParams(this, {
@@ -39,8 +45,7 @@ export default {
             data: item,
 
             get dataPath() {
-              return dataPath ||
-                (dataPath = that.getItemDataPath(sourceSchema, index))
+              return getDataPath()
             },
 
             get formLabel() {
