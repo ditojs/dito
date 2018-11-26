@@ -1,4 +1,4 @@
-import { isArray, isObject, isFunction, isDate } from './base'
+import { isArray, isObject, isFunction, isDate, isRegExp } from './base'
 
 export const is = Object.is || (
   // SameValue algorithm:
@@ -23,6 +23,8 @@ export function clone(val, iteratee = null) {
   let copy
   if (isDate(val)) {
     copy = new val.constructor(+val)
+  } else if (isRegExp(val)) {
+    copy = new RegExp(val)
   } else if (isObject(val)) {
     copy = new val.constructor()
     for (const key in val) {

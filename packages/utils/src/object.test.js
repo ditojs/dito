@@ -43,6 +43,13 @@ describe('clone()', () => {
     expect(copy).not.toBe(date)
   })
 
+  it('should clone regular expressions', () => {
+    const regexp = /regexp/gi
+    const copy = clone(regexp)
+    expect(copy).toStrictEqual(regexp)
+    expect(copy).not.toBe(regexp)
+  })
+
   it('should return functions unmodified', () => {
     const func = () => {}
     expect(clone(func)).toBe(func)
