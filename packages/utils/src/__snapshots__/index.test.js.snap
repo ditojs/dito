@@ -39,6 +39,7 @@ Object {
   "normalizeDataPath": [Function],
   "parseDataPath": [Function],
   "pick": [Function],
+  "pickBy": [Function],
   "setDataPath": [Function],
   "shuffle": [Function],
   "stripTags": [Function],

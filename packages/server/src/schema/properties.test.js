@@ -168,7 +168,7 @@ describe('convertSchema()', () => {
       }
     })).toEqual(getPropertySchema({
       myString: {
-        type: ['string', 'null'],
+        type: ['null', 'string'],
         nullable: true
       }
     }))
@@ -182,12 +182,12 @@ describe('convertSchema()', () => {
       }
     })).toEqual(getPropertySchema({
       myModel: {
-        oneOf: [
-          {
-            $ref: 'MyModel'
-          },
+        anyOf: [
           {
             type: 'null'
+          },
+          {
+            $ref: 'MyModel'
           }
         ],
         nullable: true
@@ -203,13 +203,13 @@ describe('convertSchema()', () => {
       }
     })).toEqual(getPropertySchema({
       myDate: {
-        oneOf: [
+        anyOf: [
+          {
+            type: 'null'
+          },
           {
             type: ['string', 'object'],
             format: 'date-time'
-          },
-          {
-            type: 'null'
           }
         ],
         nullable: true

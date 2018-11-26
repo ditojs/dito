@@ -25,13 +25,6 @@ describe('createLookup()', () => {
       b: true
     })
   })
-
-  it('supports filtering', () => {
-    expect(createLookup(['a', 'b', 'c'], key => key !== 'c')).toEqual({
-      a: true,
-      b: true
-    })
-  })
 })
 
 describe('mergeReversed()', () => {
