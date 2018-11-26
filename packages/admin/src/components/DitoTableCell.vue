@@ -1,6 +1,6 @@
 // DitoTableCell needed to be split off from TypeList because of the need of
 // its own `component` computed property to call `resolveTypeComponent()`.
-// Direclty calling `resolveTypeComponent()` from the template was leading to
+// Directly calling `resolveTypeComponent()` from the template was leading to
 // infinite recursions and stack-overflows.
 
 <template lang="pug">
@@ -28,6 +28,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { getItemParams, appendDataPath } from '@/utils/data'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component
@@ -53,7 +54,14 @@ export default DitoComponent.component('dito-table-cell', {
     renderCell(cell, item) {
       const { name, render } = cell
       const value = item[name]
-      return render ? render(value, item) : escapeHtml(value)
+      return render
+        ? render(getItemParams(this, {
+          name,
+          value,
+          data: item,
+          dataPath: appendDataPath(this.dataPath, name)
+        }))
+        : escapeHtml(value)
     }
   }
 })

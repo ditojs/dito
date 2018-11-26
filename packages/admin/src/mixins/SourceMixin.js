@@ -4,6 +4,7 @@ import DitoFormNested from '@/components/DitoFormNested'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFullyContained } from '@/utils/string'
+import { getItemParams } from '@/utils/data'
 import {
   processForms, hasForms, hasLabels, getNamedSchemas,
   isObjectSource, isListSource
@@ -365,6 +366,15 @@ export default {
           ? this.path
           : `${this.path}/${this.getItemId(this.schema, item, index)}`
       }
+    },
+
+    renderItem(item, index) {
+      return this.schema.render(getItemParams(this, {
+        name: undefined,
+        value: undefined,
+        data: item,
+        dataPath: this.getDataPath(index)
+      }))
     },
 
     createItem(schema, type) {

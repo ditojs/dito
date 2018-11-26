@@ -72,7 +72,7 @@
               )
               span(
                 v-else-if="schema.render"
-                v-html="schema.render(item)"
+                v-html="renderItem(item, index)"
               )
               span(
                 v-else
