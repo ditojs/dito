@@ -87,7 +87,7 @@ export default {
     },
 
     relate() {
-      return this.schema.options.relate
+      return this.schema.relate
     },
 
     groupBy() {
