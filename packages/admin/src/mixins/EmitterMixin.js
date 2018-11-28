@@ -35,8 +35,7 @@ export default {
         return callback.apply(this, args)
       }
       on.callback = callback // Needed for `off()`, see below.
-      this.on(event, on)
-      return this
+      return this.on(event, on)
     },
 
     off(event, callback) {
@@ -59,14 +58,14 @@ export default {
             // Remove all handlers for this event
             delete this.events[event]
           } else {
-            // Remove a specific handler: find the index of its wrapper
-            const { wrappers } = entry
-            const index = wrappers.findIndex(
+            // Remove a specific handler: find the index in callbacks
+            const { callbacks } = entry
+            const index = callbacks.findIndex(
               // Match `cb.callback` also, as used by `once()`, see  above:
               ({ callback: cb }) => cb === callback || cb.callback === callback
             )
             if (index !== -1) {
-              wrappers.splice(index, 1)
+              callbacks.splice(index, 1)
             }
           }
         }
