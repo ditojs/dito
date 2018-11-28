@@ -13,7 +13,7 @@ export const UploadMixin = Model => class extends Model {
       // required: true
     },
 
-    controllerUrl: {
+    controller: {
       type: 'string',
       required: true
     },

@@ -204,7 +204,7 @@ export class Controller {
 
       async (ctx, next) => {
         const files = this.app.convertUploads(ctx.req.files[dataPath])
-        await this.app.rememberUploads(this.url, dataPath, files)
+        await this.app.rememberUploads(this, dataPath, files)
         ctx.body = files
         return next()
       }

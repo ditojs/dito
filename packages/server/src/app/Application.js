@@ -333,13 +333,15 @@ export class Application extends Koa {
   getUploadStorage({
     storageName,
     // or:
-    controllerUrl,
+    controller,
     dataPath
   }) {
-    // If controllerUrl & uploadName are provided get the storageName from them.
-    if (controllerUrl && dataPath) {
-      const controller = this.getController(controllerUrl)
-      const uploadConfig = controller?.getUploadConfig(dataPath)
+    // If controller & dataPath are provided get the storageName from them.
+    if (controller && dataPath) {
+      const instance = isString(controller)
+        ? this.getController(controller)
+        : controller
+      const uploadConfig = instance?.getUploadConfig(dataPath)
       storageName = uploadConfig?.storage
     }
     return storageName ? this.getStorage(storageName) : null
@@ -370,7 +372,7 @@ export class Application extends Koa {
     return false
   }
 
-  async rememberUploads(controllerUrl, dataPath, files) {
+  async rememberUploads(controller, dataPath, files) {
     const UploadModel = this.getModel('Upload')
     if (UploadModel) {
       const uploads = []
@@ -378,7 +380,7 @@ export class Application extends Koa {
         uploads.push({
           fileName: file.fileName,
           file,
-          controllerUrl,
+          controller: controller.url,
           dataPath
         })
       }
