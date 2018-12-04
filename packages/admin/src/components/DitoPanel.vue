@@ -1,6 +1,7 @@
 <template lang="pug">
   component.dito-panel(
     :is="panelTag"
+    v-show="visible"
     :style="panelStyle"
     @submit.prevent
   )
@@ -65,6 +66,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getButtonSchemas } from '@/utils/schema'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { isFunction } from '@ditojs/utils'
 
 // @vue/component
@@ -135,6 +137,19 @@ export default DitoComponent.component('dito-panel', {
         visibility: top != null ? 'visible' : 'hidden',
         top: top != null ? `${top}px` : null
       }
+    },
+
+    visible: getSchemaAccessor('visible', {
+      type: Boolean,
+      default: true
+    })
+  },
+
+  watch: {
+    visible(newVal, oldVal) {
+      if (!newVal ^ !oldVal) {
+        this.$nextTick(() => this.onLayout())
+      }
     }
   },
 
@@ -163,6 +178,10 @@ export default DitoComponent.component('dito-panel', {
 
     clearErrors() {
       this.$refs.schema.clearErrors()
+    },
+
+    onLayout() {
+      this.schemaComponent.onLayout()
     }
   }
 })

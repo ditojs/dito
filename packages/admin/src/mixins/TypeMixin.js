@@ -134,7 +134,7 @@ export default {
 
     visible: getSchemaAccessor('visible', {
       type: Boolean,
-      default: false
+      default: true
     }),
 
     exclude: getSchemaAccessor('exclude', {

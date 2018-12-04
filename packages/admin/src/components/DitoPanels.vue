@@ -1,8 +1,8 @@
 <template lang="pug">
   .dito-panels
     dito-panel(
-      v-if="panels"
       v-for="(schema, dataPath) in panels"
+      v-if="shouldRender(schema)"
       ref="panels"
       :key="dataPath"
       :schema="schema"
@@ -66,8 +66,12 @@ export default DitoComponent.component('dito-panels', {
         if (component && component.classList.contains('dito-panel-anchor')) {
           let container = component.parentNode.previousSibling
           while (
-            container &&
-            container.querySelector('.dito-panel-anchor')
+            container && (
+              // When using `if`, we can end up with text nodes containing
+              // empty HTML comments here, handle these separately:
+              container.nodeType !== 1 ||
+              container.querySelector('.dito-panel-anchor')
+            )
           ) {
             container = container.previousSibling
           }
