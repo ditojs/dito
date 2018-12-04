@@ -186,7 +186,9 @@ export function setDefaults(schema, data = {}) {
 
   processComponents(schema.components)
   if (schema.tabs) {
-    Object.values(schema.tabs).forEach(processComponents)
+    for (const tab of Object.values(schema.tabs)) {
+      processComponents(tab.components)
+    }
   }
   return data
 }
