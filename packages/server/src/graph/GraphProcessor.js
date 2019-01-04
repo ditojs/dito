@@ -9,6 +9,7 @@ export class GraphProcessor {
     this.options = options
     this.settings = settings
     this.overrides = {}
+    this.extras = {}
     this.numOptions = Object.keys(options).length
     this.numOverrides = 0
     if (settings.processOverrides) {
@@ -112,6 +113,11 @@ export class GraphProcessor {
               this.overrides[key].push(relationPath)
             }
           }
+
+          // Also collect any many-to-many pivot table extra properties.
+          if (relation.through?.extra?.length > 0) {
+            this.extras[relationPath] = relation.through.extra
+          }
         }
 
         const { relations } = modelClass.definition
@@ -155,10 +161,10 @@ export class GraphProcessor {
       if (data.$isObjectionModel) {
         const { constructor } = data
         // Start with a reference model instance that only contains the
-        // id / #ref fields:
+        // id / #ref fields, and any many-to-many pivot table extra values:
         let copy
         if (this.shouldRelate(relationPath)) {
-          copy = constructor.getReference(data)
+          copy = constructor.getReference(data, this.extras[relationPath])
         } else {
           // This isn't a relate, so create a proper shallow clone:
           // NOTE: This also copies `$$queryProps`, which is crucial for more

@@ -246,9 +246,10 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static getReference(modelOrId) {
+  static getReference(modelOrId, extraPropertiesToTake) {
     // Creates a reference model that takes over the id / #ref properties from
-    // the passed  id value/array or model, omitting any other properties in it.
+    // the passed  id value/array or model, omitting any other properties in it,
+    // except for anything mentioned in the optional extraPropertiesToTake arg.
     const ref = new this()
     let addProperty
     if (isObject(modelOrId)) {
@@ -274,6 +275,9 @@ export class Model extends objection.Model {
     // Also support Objection's #ref type references next to the id properties.
     addProperty(this.uidRefProp)
     this.getIdPropertyArray().forEach(addProperty)
+    if (extraPropertiesToTake) {
+      extraPropertiesToTake.forEach(addProperty)
+    }
     return ref
   }
 
