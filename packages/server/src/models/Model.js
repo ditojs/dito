@@ -372,6 +372,12 @@ export class Model extends objection.Model {
     })
   }
 
+  static get virtualAttributes() {
+    // Leverage Objection's own mechanism called `virtualAttributes` to handle
+    // `computedAttributes` when setting JSON data.
+    return this.computedAttributes
+  }
+
   static get jsonAttributes() {
     return this.getCached('jsonSchema:jsonAttributes', () => (
       this.getAttributes(({ type, computed }) =>
