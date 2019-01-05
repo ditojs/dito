@@ -246,37 +246,46 @@ export class Model extends objection.Model {
     return length > 1 ? ids : length > 0 ? ids[0] : super.idColumn
   }
 
-  static getReference(modelOrId, extraPropertiesToTake) {
+  static getReference(modelOrId, includeProperties) {
     // Creates a reference model that takes over the id / #ref properties from
-    // the passed  id value/array or model, omitting any other properties in it,
-    // except for anything mentioned in the optional extraPropertiesToTake arg.
+    // the passed model or id value/array, omitting any other properties in it,
+    // except for anything mentioned in the optional `includeProperties` arg.
     const ref = new this()
-    let addProperty
+    const idProperties = this.getIdPropertyArray()
     if (isObject(modelOrId)) {
-      addProperty = name => {
-        const value = modelOrId[name]
+      const addProperty = key => {
+        const value = modelOrId[key]
         if (value !== undefined) {
-          ref[name] = value
+          ref[key] = value
         }
       }
+      // Also support Objection's #ref type references next to id properties.
+      addProperty(this.uidRefProp)
+      idProperties.forEach(addProperty)
+      includeProperties?.forEach(addProperty)
     } else {
+      // An id value/array: Map it to the properties in `getIdPropertyArray()`:
       const ids = asArray(modelOrId)
+      if (ids.length !== idProperties.length) {
+        throw new ModelError(
+          this,
+          `Invalid amount of id values provided for reference: Unable to map ${
+            JSON.stringify(modelOrId)
+          } to ${
+            JSON.stringify(idProperties)
+          }.`
+        )
+      }
       const { properties } = this.definition
-      addProperty = (name, index) => {
+      idProperties.forEach((key, index) => {
         const id = ids[index]
         if (id !== undefined) {
-          const { type } = properties[name]
+          const { type } = properties[key]
           // On-the-fly coercion of numeric ids to numbers, so they can pass the
           // model validation in `CollectionController.getId()`
-          ref[name] = ['integer', 'number'].includes(type) ? +id : id
+          ref[key] = ['integer', 'number'].includes(type) ? +id : id
         }
-      }
-    }
-    // Also support Objection's #ref type references next to the id properties.
-    addProperty(this.uidRefProp)
-    this.getIdPropertyArray().forEach(addProperty)
-    if (extraPropertiesToTake) {
-      extraPropertiesToTake.forEach(addProperty)
+      })
     }
     return ref
   }

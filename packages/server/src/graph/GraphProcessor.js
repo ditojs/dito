@@ -160,10 +160,10 @@ export class GraphProcessor {
     if (data) {
       if (data.$isObjectionModel) {
         const { constructor } = data
-        // Start with a reference model instance that only contains the
-        // id / #ref fields, and any many-to-many pivot table extra values:
         let copy
         if (this.shouldRelate(relationPath)) {
+          // For relates, start with a reference model that only contains the
+          // id / #ref fields, and any many-to-many pivot table extra values:
           copy = constructor.getReference(data, this.extras[relationPath])
         } else {
           // This isn't a relate, so create a proper shallow clone:
