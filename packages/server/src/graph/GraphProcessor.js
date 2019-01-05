@@ -37,7 +37,7 @@ export class GraphProcessor {
 
   getGraphOptions(relation) {
     // When a relation is owner of its data, then a fall-back for `graphOptions`
-    // is provided where both `relate` and `unrelate` id disabled, resulting in
+    // is provided where both `relate` and `unrelate` is disabled, resulting in
     // inserts and deletes instead.
     const ownerOptions = {
       relate: false,
@@ -115,8 +115,9 @@ export class GraphProcessor {
           }
 
           // Also collect any many-to-many pivot table extra properties.
-          if (relation.through?.extra?.length > 0) {
-            this.extras[relationPath] = relation.through.extra
+          const extra = relation.through?.extra
+          if (extra?.length > 0) {
+            this.extras[relationPath] = extra
           }
         }
 

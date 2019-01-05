@@ -509,7 +509,7 @@ export class Model extends objection.Model {
       }
     }
     // Remove the computed properties so they don't attempt to get set.
-    for (const key of this.constructor.computedAttributes) {
+    for (const key of constructor.computedAttributes) {
       delete json[key]
     }
     // NOTE: No need to normalize the identifiers in the JSON in case of
