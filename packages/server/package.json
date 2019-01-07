@@ -62,7 +62,7 @@
     "koa-session": "^5.10.0",
     "koa-webpack": "^5.1.1",
     "nodemon": "^1.18.6",
-    "objection": "~1.4.0",
+    "objection": "1.5.0-rc.4",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3",
