@@ -55,16 +55,17 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  childQueryOf(query, fork) {
-    if (fork) {
-      // Forked queries shouldn't apply or inherit any scopes.
+  childQueryOf(query, options) {
+    super.childQueryOf(query, options)
+    if (this.isInternal()) {
+      // Internal queries shouldn't apply or inherit any scopes.
       this._clearScopes(false)
     } else {
       // Inherit the scopes from the parent query, but only include non-eager
       // scopes if this query is for the same model-class as the parent query.
       this._copyScopes(query, this.modelClass() !== query.modelClass())
     }
-    return super.childQueryOf(query, fork)
+    return this
   }
 
   scope(...scopes) {
