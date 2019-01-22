@@ -262,6 +262,14 @@ export default TypeComponent.register('multiselect', {
     }
   },
 
+  mounted() {
+    if (this.autofocus) {
+      // vue-multiselect doesn't support the autofocus attribute. We need to
+      // handle it here.
+      this.focus()
+    }
+  },
+
   methods: {
     addTagOption(tag) {
       if (this.taggable) {
