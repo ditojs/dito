@@ -182,6 +182,7 @@ export default {
         }
         return first
       }
+      return undefined
     },
 
     nestedMeta() {

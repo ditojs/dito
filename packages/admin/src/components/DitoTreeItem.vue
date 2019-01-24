@@ -244,6 +244,7 @@ export default DitoComponent.component('dito-tree-item', {
           }
         }) || []
       }
+      return undefined
     },
 
     details() {
