@@ -105,6 +105,7 @@ import DitoComponent from '@/DitoComponent'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, parseDataPath, normalizeDataPath, labelize
@@ -164,7 +165,7 @@ export default DitoComponent.component('dito-schema', {
 
     selectedTab() {
       const { hash } = this.$route
-      return hash?.substring(1) || this.tabs && Object.keys(this.tabs)[0] || ''
+      return hash?.substring(1) || this.defaultTab
     },
 
     clipboard() {
@@ -225,7 +226,16 @@ export default DitoComponent.component('dito-schema', {
       // Components without validation have `isValid` return undefined.
       // Don't count those as not validated.
       return this.everyComponent(it => it.isValidated !== false)
-    }
+    },
+
+    defaultTab: getSchemaAccessor('defaultTab', {
+      type: String,
+      default: null,
+
+      get(defaultTab) {
+        return defaultTab || (this.tabs && Object.keys(this.tabs)[0]) || ''
+      }
+    })
   },
 
   watch: {
