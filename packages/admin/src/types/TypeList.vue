@@ -199,12 +199,8 @@ export default TypeComponent.register([
     },
 
     defaultQuery() {
-      const { defaultOrder, defaultOrderDirection } = this.schema
-      return defaultOrder
-        ? {
-          order: `${defaultOrder} ${defaultOrderDirection || 'asc'}`
-        }
-        : {}
+      const { defaultOrder: order } = this.schema
+      return order ? { order } : {}
     }
   },
 
