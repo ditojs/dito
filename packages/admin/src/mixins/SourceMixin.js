@@ -122,9 +122,17 @@ export default {
       return isView ? path : `${path}/${this.schema.path}`
     },
 
+    // This can be overridden by components that use this mixin.
+    defaultQuery() {
+      return {}
+    },
+
     query: {
       get() {
-        return this.getStore('query') || {}
+        return {
+          ...this.defaultQuery,
+          ...this.getStore('query')
+        }
       },
 
       set(query) {
