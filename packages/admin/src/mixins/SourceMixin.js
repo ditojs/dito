@@ -181,7 +181,7 @@ export default {
       if (this.scopes) {
         let first = null
         for (const scope of Object.values(this.scopes)) {
-          if (scope.default) {
+          if (scope.defaultScope) {
             return scope
           }
           if (!first) {
