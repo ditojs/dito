@@ -105,8 +105,7 @@ import DitoComponent from '@/DitoComponent'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { setDefaults } from '@/utils/schema'
+import { getNamedSchemas, setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
@@ -160,12 +159,27 @@ export default DitoComponent.component('dito-schema', {
     },
 
     tabs() {
-      return this.schema?.tabs
+      return getNamedSchemas(this.schema.tabs)
     },
 
     selectedTab() {
       const { hash } = this.$route
-      return hash?.substring(1) || this.defaultTab
+      return hash?.substring(1) || this.defaultTab?.name || ''
+    },
+
+    defaultTab() {
+      if (this.tabs) {
+        let first = null
+        for (const tab of Object.values(this.tabs)) {
+          if (tab.defaultTab) {
+            return tab
+          }
+          if (!first) {
+            first = tab
+          }
+        }
+        return first
+      }
     },
 
     clipboard() {
@@ -226,16 +240,7 @@ export default DitoComponent.component('dito-schema', {
       // Components without validation have `isValid` return undefined.
       // Don't count those as not validated.
       return this.everyComponent(it => it.isValidated !== false)
-    },
-
-    defaultTab: getSchemaAccessor('defaultTab', {
-      type: String,
-      default: null,
-
-      get(defaultTab) {
-        return defaultTab || (this.tabs && Object.keys(this.tabs)[0]) || ''
-      }
-    })
+    }
   },
 
   watch: {
