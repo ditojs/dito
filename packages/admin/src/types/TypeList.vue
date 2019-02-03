@@ -196,11 +196,6 @@ export default TypeComponent.register([
       return this.isListSource && this.inline &&
         // If there are only compact forms with no labels, don't add spacing
         (!this.isCompact || this.hasLabels)
-    },
-
-    defaultQuery() {
-      const { defaultOrder: order } = this.schema
-      return order ? { order } : {}
     }
   },
 

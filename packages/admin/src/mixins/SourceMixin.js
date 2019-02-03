@@ -10,7 +10,8 @@ import {
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
-  isObject, isArray, isNumber, asArray, parseDataPath, normalizeDataPath, equals
+  isObject, isString, isArray, isNumber, asArray,
+  parseDataPath, normalizeDataPath, equals
 } from '@ditojs/utils'
 
 // @vue/component
@@ -122,9 +123,9 @@ export default {
       return isView ? path : `${path}/${this.schema.path}`
     },
 
-    // This can be overridden by components that use this mixin.
     defaultQuery() {
-      return {}
+      const { defaultOrder: order } = this
+      return order ? { order } : {}
     },
 
     query: {
@@ -189,6 +190,18 @@ export default {
           }
         }
         return first
+      }
+    },
+
+    defaultOrder() {
+      if (this.columns) {
+        for (const column of Object.values(this.columns)) {
+          const { defaultSort } = column
+          if (defaultSort) {
+            const direction = isString(defaultSort) ? defaultSort : 'asc'
+            return `${column.name} ${direction}`
+          }
+        }
       }
     },
 
