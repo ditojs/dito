@@ -55,16 +55,17 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  childQueryOf(query, fork) {
-    if (fork) {
-      // Forked queries shouldn't apply or inherit any scopes.
+  childQueryOf(query, options) {
+    super.childQueryOf(query, options)
+    if (this.isInternal()) {
+      // Internal queries shouldn't apply or inherit any scopes.
       this._clearScopes(false)
     } else {
       // Inherit the scopes from the parent query, but only include non-eager
       // scopes if this query is for the same model-class as the parent query.
       this._copyScopes(query, this.modelClass() !== query.modelClass())
     }
-    return super.childQueryOf(query, fork)
+    return this
   }
 
   scope(...scopes) {
@@ -156,7 +157,8 @@ export class QueryBuilder extends objection.QueryBuilder {
           this._appliedScopes[scope] = true
           this.modify(scope)
         }
-        if (eager && this._eagerExpression) {
+        const eagerObject = eager && this.eagerObject()
+        if (eagerObject) {
           // Add a new modifier to the existing eager expression that
           // recursively applies the eager-scope to the resulting queries.
           // This even works if nested scopes expand the eager expression,
@@ -168,12 +170,12 @@ export class QueryBuilder extends objection.QueryBuilder {
           this.eager(
             addEagerScope(
               this.modelClass(),
-              this._eagerExpression,
+              eagerObject,
               [name],
               modifiers
             ),
             {
-              ...this._eagerModifiers,
+              ...this.eagerModifiers(),
               ...modifiers
             }
           )
@@ -562,9 +564,7 @@ const updateGraphOptions = {
 
 function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
   if (isRoot) {
-    // Try cloning Objection's RelationExpression object through its own
-    // clone() function first, otherwise use our clone on normal objects.
-    expr = expr?.clone ? expr.clone() : clone(expr)
+    expr = clone(expr)
   } else {
     // Only add the scope if it's not already defined by the eager statement and
     // if it's actually available as a modifier in the model's modifiers list.

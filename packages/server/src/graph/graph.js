@@ -1,5 +1,5 @@
 import { isArray, asArray } from '@ditojs/utils'
-import { RelationExpression } from 'objection'
+import { QueryBuilder } from '@/query'
 import { collectExpressionPaths, expressionPathToEager } from './expression.js'
 
 // Similar to Objection's private `modelClass.ensureModel(model)`:
@@ -19,7 +19,7 @@ export function ensureModelArray(modelClass, data) {
 }
 
 export function filterGraph(rootModelClass, graph, expr) {
-  expr = RelationExpression.create(expr)
+  expr = QueryBuilder.parseRelationExpression(expr)
   for (const model of ensureModelArray(rootModelClass, graph)) {
     if (model) {
       const relations = model.constructor.getRelations()
@@ -58,9 +58,9 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
   // the graph, and collect modify + eager statements there for references
   // that are not leaves. Then use the resulting nodes to create new groups by
   // model name / modify / eager.
-  expr = RelationExpression.create(expr)
-  // Convert RelationExpression to an array of paths, that themselves contain
-  // path entries with relation names and modify settings.
+  expr = QueryBuilder.parseRelationExpression(expr)
+  // Convert the relation expression to an array of paths, that themselves
+  // contain path entries with relation names and modify settings.
 
   const grouped = {}
   const addToGroup =
