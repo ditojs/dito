@@ -1,4 +1,4 @@
-import { isArray, asArray } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 import { QueryBuilder } from '@/query'
 import { collectExpressionPaths, expressionPathToEager } from './expression.js'
 
@@ -148,13 +148,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     await Promise.map(
       groups,
       async ({ modelClass, modify, eager, ids, modelsById }) => {
-        const query = modelClass.query(trx)
-        const idColumn = modelClass.getIdColumn()
-        if (isArray(idColumn)) {
-          query.whereInComposite(idColumn, ids)
-        } else {
-          query.whereIn(idColumn, ids)
-        }
+        const query = modelClass.query(trx).findByIds(ids)
         if (eager) {
           query.mergeEager(eager)
         }
