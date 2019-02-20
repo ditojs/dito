@@ -8,8 +8,7 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray,
-  toCallback, normalizeDataPath
+  isObject, isString, isArray, isBoolean, isFunction, asArray, normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -171,15 +170,17 @@ export class Controller {
     // against, but convert wildcards (*) to match both numeric ids and words,
     // e.g. 'create':
     const matchDataPath = new RegExp(
-      `^${normalizePath.replace(/\*/g, '\\w+')}$`,
-      'g'
+      `^${normalizePath.replace(/\*/g, '\\w+')}$`
     )
     const upload = multer({
       storage,
       ...settings,
       // Only let uploads pass that match the normalizePath + wildcards:
-      fileFilter: toCallback((req, file) => matchDataPath.test(file.fieldname))
+      fileFilter: (req, file, cb) => {
+        cb(null, matchDataPath.test(file.fieldname))
+      }
     })
+
     const authorization = this.processAuthorize(authorize)
     this.setupRoute('post', url, transacted, authorize, null, [
       async (ctx, next) => {
@@ -198,6 +199,8 @@ export class Controller {
           storageName,
           ctx.transaction
         )
+        // Send the file objects back for the upload component to store in the
+        // data.
         ctx.body = files
         return next()
       }
