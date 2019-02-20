@@ -8,7 +8,8 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, normalizeDataPath
+  isObject, isString, isArray, isBoolean, isFunction, asArray,
+  toCallback, normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -56,7 +57,7 @@ export class Controller {
         // we can use the normal inheritance mechanism through `setupActions()`:
         this.actions = this.setupActions('actions')
       }
-      this.upload = this.setupUpload()
+      this.assets = this.setupAssets()
     }
   }
 
@@ -86,7 +87,7 @@ export class Controller {
     return controller
   }
 
-  setupRoute(verb, url, transacted, authorize, handlers) {
+  setupRoute(verb, url, transacted, authorize, action, handlers) {
     this.log(
       `${
         chalk.magenta(verb.toUpperCase())} ${
@@ -96,7 +97,7 @@ export class Controller {
       }`,
       this.level + 1
     )
-    this.app.addRoute(verb, url, transacted, handlers, this)
+    this.app.addRoute(verb, url, transacted, handlers, this, action)
   }
 
   setupActions(type) {
@@ -125,7 +126,7 @@ export class Controller {
   setupActionRoute(type, action) {
     const url = this.getUrl(type, action.path)
     const { verb, transacted, authorize } = action
-    this.setupRoute(verb, url, transacted, authorize, [
+    this.setupRoute(verb, url, transacted, authorize, action, [
       async ctx => {
         try {
           const res = await action.callAction(ctx)
@@ -139,42 +140,21 @@ export class Controller {
     ])
   }
 
-  setupUpload() {
+  setupAssets() {
     const {
-      values,
+      values: assets,
       authorize
-    } = this.processValues(this.inheritValues('upload'))
-    return values
-      ? Object.entries(values).reduce(
-        (upload, [key, value]) => {
-          // Convert dataPath to '/'-notation.
-          const dataPath = normalizeDataPath(key)
-          // Collect the converted configuration, so that from here on out, the
-          // object notation can be assumed, see: `getUploadConfig()`
-          upload[dataPath] = this.setupUploadRoute(
-            dataPath,
-            value,
-            authorize[key]
-          )
-          return upload
-        },
-        {}
-      )
-      : null
-  }
-
-  getUploadConfig(dataPath) {
-    return this.upload?.[dataPath] || null
-  }
-
-  setupUploadRoute(dataPath, config = {}, authorize) {
-    if (isString(config)) {
-      config = {
-        storage: config
-      }
+    } = this.processValues(this.inheritValues('assets'))
+    for (const [dataPath, config] of Object.entries(assets || {})) {
+      this.setupAssetRoute(dataPath, config, authorize[dataPath])
     }
+    return assets
+  }
+
+  setupAssetRoute(dataPath, config = {}, authorize) {
     const {
       storage: storageName,
+      // TODO: What exactly should control the use of `transacted`?
       transacted,
       ...settings
     } = config
@@ -184,12 +164,24 @@ export class Controller {
         `Unknown storage configuration: '${storageName}'`
       )
     }
-    const url = this.getUrl('controller', `upload/${dataPath}`)
+    // Convert dataPath to '/'-notation:
+    const normalizePath = normalizeDataPath(dataPath)
+    const url = this.getUrl('controller', `upload/${normalizePath}`)
+    // Convert `normalizePath` to a regular expression to match field names
+    // against, but convert wildcards (*) to match both numeric ids and words,
+    // e.g. 'create':
+    const matchDataPath = new RegExp(
+      `^${normalizePath.replace(/\*/g, '\\w+')}$`,
+      'g'
+    )
     const upload = multer({
-      storage
+      storage,
+      ...settings,
+      // Only let uploads pass that match the normalizePath + wildcards:
+      fileFilter: toCallback((req, file) => matchDataPath.test(file.fieldname))
     })
     const authorization = this.processAuthorize(authorize)
-    this.setupRoute('post', url, transacted, authorize, [
+    this.setupRoute('post', url, transacted, authorize, null, [
       async (ctx, next) => {
         await this.handleAuthorization(authorization, ctx)
         // Give the multer callbacks access to `ctx` through `req`.
@@ -197,19 +189,19 @@ export class Controller {
         return next()
       },
 
-      upload.fields([{
-        ...settings,
-        name: dataPath
-      }]),
+      upload.any(),
 
       async (ctx, next) => {
-        const files = this.app.convertUploads(ctx.req.files[dataPath])
-        await this.app.rememberUploads(this, dataPath, files)
+        const files = this.app.convertAssets(ctx.req.files)
+        await this.app.createAssets(
+          files,
+          storageName,
+          ctx.transaction
+        )
         ctx.body = files
         return next()
       }
     ])
-    return config
   }
 
   compose() {
@@ -266,7 +258,7 @@ export class Controller {
       currentValues = this[type] = {}
     }
     // Combine parentValues and currentValues with correct inheritance.
-    return parentValues
+    return isObject(parentValues) && isObject(currentValues)
       ? Object.setPrototypeOf(currentValues, parentValues)
       : currentValues
   }
@@ -333,7 +325,7 @@ export class Controller {
           add(key, authorize[key])
         }
       } else if (authorize != null) {
-        // This is an values-wide setting. Loop through all values, not just
+        // This is a values-wide setting. Loop through all values, not just
         // current ones, and apply to any action that doesn't already have one:
         for (const key in values) {
           add(key, authorize)

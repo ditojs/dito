@@ -1,4 +1,4 @@
-export const UploadMixin = Model => class extends Model {
+export const AssetMixin = Model => class extends Model {
   static properties = {
     fileName: {
       type: 'string',
@@ -13,14 +13,15 @@ export const UploadMixin = Model => class extends Model {
       // required: true
     },
 
-    controller: {
+    storageName: {
       type: 'string',
       required: true
     },
 
-    dataPath: {
-      type: 'string',
-      required: true
+    refCount: {
+      type: 'integer',
+      unsigned: true,
+      default: 0
     }
   }
 }

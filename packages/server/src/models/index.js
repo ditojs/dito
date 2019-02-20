@@ -1,5 +1,5 @@
 export * from './Model'
+export * from './AssetModel'
 export * from './SessionModel'
 export * from './TimeStampedModel'
-export * from './UploadModel'
 export * from './UserModel'

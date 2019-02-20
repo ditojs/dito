@@ -70,7 +70,7 @@ export class Application extends Koa {
     }
   }
 
-  addRoute(verb, path, transacted, handlers, controller = null) {
+  addRoute(verb, path, transacted, handlers, controller = null, action = null) {
     handlers = asArray(handlers)
     const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
     // Instead of directly passing `handler`, pass a `route` object that also
@@ -80,7 +80,8 @@ export class Application extends Koa {
       path,
       transacted,
       handler,
-      controller
+      controller,
+      action
     }
     this.router[verb](path, route)
   }
@@ -312,7 +313,7 @@ export class Application extends Koa {
     return this.storage[name]
   }
 
-  convertUpload(file) {
+  convertAsset(file) {
     // Convert multer-file object to our own file object format.
     // TODO: Figure out how to handle s3.
     return {
@@ -324,35 +325,18 @@ export class Application extends Koa {
     }
   }
 
-  convertUploads(files) {
+  convertAssets(files) {
     return files.map(
-      file => this.convertUpload(file)
+      file => this.convertAsset(file)
     )
   }
 
-  getUploadStorage({
-    storageName,
-    // or:
-    controller,
-    dataPath
-  }) {
-    // If controller & dataPath are provided get the storageName from them.
-    if (controller && dataPath) {
-      const instance = isString(controller)
-        ? this.getController(controller)
-        : controller
-      const uploadConfig = instance?.getUploadConfig(dataPath)
-      storageName = uploadConfig?.storage
-    }
-    return storageName ? this.getStorage(storageName) : null
-  }
-
-  getUploadPath(file, config) {
+  getAssetPath(file, storageName) {
     // TODO: Figure out how to handle s3.
     const filePath = path.join(file.destination, file.fileName)
-    // If the upload config is provided, make sure that the file actually
+    // If the asset config is provided, make sure that the file actually
     // resides in its storage.
-    const storage = this.getUploadStorage(config)
+    const storage = this.getStorage(storageName)
     if (
       storage?.dest &&
       !path.resolve(filePath).startsWith(path.resolve(storage.dest))
@@ -362,39 +346,91 @@ export class Application extends Koa {
     return filePath
   }
 
-  async removeUpload(file, config) {
+  async removeAsset(file, storageName) {
     // TODO: Figure out how to handle s3.
-    const filePath = this.getUploadPath(file, config)
+    const filePath = this.getAssetPath(file, storageName)
     if (filePath) {
       await fs.unlink(filePath)
+      const removeIfEmpty = async dir => {
+        if ((await fs.readdir(dir)).length === 0) {
+          await fs.rmdir(dir)
+        }
+      }
+      // Clean up nested folders created with first two chars of filename also:
+      const dir = path.dirname(filePath)
+      const parentDir = path.dirname(dir)
+      await (removeIfEmpty(dir))
+      await (removeIfEmpty(parentDir))
       return true
     }
     return false
   }
 
-  async rememberUploads(controller, dataPath, files) {
-    const UploadModel = this.getModel('Upload')
-    if (UploadModel) {
-      const uploads = []
-      for (const file of files) {
-        uploads.push({
-          fileName: file.fileName,
-          file,
-          controller: controller.url,
-          dataPath
-        })
-      }
-      return UploadModel.insert(uploads)
+  async createAssets(files, storageName, trx) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      const assets = files.map(file => ({
+        fileName: file.fileName,
+        file,
+        storageName,
+        refCount: 0
+      }))
+      return AssetModel
+        .query(trx)
+        .insert(assets)
     }
     return null
   }
 
-  async releaseUploads(files) {
-    const UploadModel = this.getModel('Upload')
-    if (UploadModel) {
-      const fileNames = files.map(file => file.fileName)
-      return UploadModel.delete().whereIn('fileName', fileNames)
+  async changeAssetsRefCount(fileNames, increment, trx) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      return AssetModel
+        .query(trx)
+        .increment('refCount', increment)
+        .whereIn('fileName', fileNames)
     }
+    return null
+  }
+
+  async releaseUnusedAssets(trx) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      // TODO: Only remove old orphans, e.g. older than a day, to prevent
+      // removing somebody else's fresh upload that wasn't referenced yet.
+      const orphans = await AssetModel
+        .query(trx)
+        .where('refCount', 0)
+      await Promise.map(
+        orphans,
+        ({ file, storageName }) => {
+          try {
+            this.removeAsset(file, storageName)
+          } catch (error) {
+            console.error(error)
+          }
+        }
+      )
+      // TODO: Only delete the ones found as orphans above! (collect fileNames?)
+      await AssetModel
+        .query(trx)
+        .delete()
+        .where('refCount', 0)
+    }
+    return null
+  }
+
+  async deleteAssets(fileNames, trx) {
+    // TODO: This should work on model level, and reduce reference counts, see
+    // changeAssetsRefCount() / releaseUnusedAssets()
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      return AssetModel
+        .query(trx)
+        .delete()
+        .whereIn('fileName', fileNames)
+    }
+    return null
   }
 
   normalizePath(path) {

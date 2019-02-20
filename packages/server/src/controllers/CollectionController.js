@@ -1,6 +1,6 @@
 import { Controller } from './Controller'
 import ControllerAction from './ControllerAction'
-import { isObject, asArray } from '@ditojs/utils'
+import { isObject, isArray, asArray, flatten, getDataPath } from '@ditojs/utils'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -20,6 +20,9 @@ export class CollectionController extends Controller {
     this.scope = this.scope || null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
+    // Create a dummy model instance to validate the requested id against.
+    // eslint-disable-next-line new-cap
+    this.idValidator = new this.modelClass()
   }
 
   // @override
@@ -38,18 +41,128 @@ export class CollectionController extends Controller {
   }
 
   // @override
+  setupAssets() {
+    const { modelClass } = this
+    // Merge in the assets definition from the model into the uploads config.
+    // That way, we can still use `allow` and `authorize` to controll the upload
+    // access, while keeping the assets definitions in one central location on
+    // the model.
+    if (this.assets === true || isObject(this.assets)) {
+      this.assets = {
+        ...modelClass.definition.assets,
+        ...this.assets
+      }
+    } else {
+      this.assets = null
+    }
+    // Now call `super.setupAssets()` which performs the usual inheritance /
+    // allow / authorize tricks:
+    const assets = super.setupAssets()
+    if (assets) {
+      const dataPaths = Object.keys(assets)
+
+      const loadDataPaths = query => dataPaths.reduce(
+        (query, dataPath) => query.loadDataPath(dataPath),
+        query
+      )
+
+      const getFiles = models => dataPaths.reduce(
+        (allFiles, dataPath) => {
+          allFiles[dataPath] = asArray(models).reduce(
+            (files, model) => {
+              // Use flatten() as dataPath may contain wildcards, resulting in
+              // nested files arrays.
+              const modelFiles = flatten(asArray(getDataPath(model, dataPath)))
+              for (const { fileName } of modelFiles) {
+                files.push(fileName)
+              }
+              return files
+            },
+            []
+          )
+          return allFiles
+        },
+        {}
+      )
+
+      this.on([
+        'before:*:update',
+        'before:*:patch',
+        'before:*:delete'
+      ], async ctx => {
+        ctx.uploads = {
+          before: getFiles(
+            await loadDataPaths(
+              modelClass.query(ctx.transaction).findByIds(this.getIds(ctx))
+            )
+          )
+        }
+      })
+
+      this.on([
+        'after:*:insert',
+        'after:*:update',
+        'after:*:patch',
+        'after:*:delete'
+      ], async (ctx, result) => {
+        const before = ctx.uploads?.before || {}
+        const after = ctx.action.name === 'delete' ? {} : getFiles(result)
+        const added = []
+        const removed = []
+        for (const dataPath of Object.keys(assets)) {
+          const _before = before[dataPath] || []
+          const _after = after[dataPath] || []
+          added.push(..._after.filter(file => !_before.includes(file)))
+          removed.push(..._before.filter(file => !_after.includes(file)))
+        }
+        console.log('added', added)
+        console.log('removed', removed)
+        const trx = ctx.transaction
+        await Promise.all([
+          added.length && this.app.changeAssetsRefCount(added, 1, trx),
+          removed.length && this.app.changeAssetsRefCount(removed, -1, trx)
+        ])
+        await this.app.releaseUnusedAssets(trx)
+      })
+    }
+    return assets
+  }
+
+  // @override
   getPath(type, path) {
     return type === 'member'
       ? path ? `:${this.idParam}/${path}` : `:${this.idParam}`
       : path
   }
 
-  getId(ctx) {
-    const id = ctx.params[this.idParam]
-    // Create a dummy model instance to validate the requested id against.
-    // eslint-disable-next-line new-cap
-    const model = new this.modelClass()
-    model.$validate(
+  getMemberId(ctx) {
+    return this.validateId(ctx.params[this.idParam])
+  }
+
+  getCollectionIds(ctx) {
+    const idProperty = this.modelClass.getIdProperty()
+    // Handle both composite keys and normal ones.
+    const getId = isArray(idProperty)
+      ? model => idProperty.reduce(
+        (id, key) => {
+          id.push(model[key])
+          return id
+        }, [])
+      : model => model[idProperty]
+    return asArray(ctx.request.body).map(model => this.validateId(getId(model)))
+  }
+
+  getIds(ctx) {
+    // Returns the model ids that this request concerns, read from the param
+    // for member ids, and from the payload for collection ids:
+    const { type } = ctx.action
+    return type === 'member' ? [this.getMemberId(ctx)]
+      : type === 'collection' ? this.getCollectionIds(ctx)
+      : []
+  }
+
+  validateId(id) {
+    this.idValidator.$validate(
       this.modelClass.getReference(id),
       { patch: true }
     )
@@ -98,7 +211,7 @@ export class CollectionController extends Controller {
   async executeAndFetchById(action, ctx, modify) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
-      query[name](this.getId(ctx), ctx.request.body)
+      query[name](this.getMemberId(ctx), ctx.request.body)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )
@@ -166,7 +279,7 @@ export class CollectionController extends Controller {
   member = this.toCoreActions({
     async find(ctx, modify) {
       return this.execute(ctx, (query, trx) => query
-        .findById(this.getId(ctx))
+        .findById(this.getMemberId(ctx))
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
@@ -176,7 +289,7 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) => query
         .clearScope()
-        .findById(this.getId(ctx))
+        .findById(this.getMemberId(ctx))
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(getModify(modify, trx))

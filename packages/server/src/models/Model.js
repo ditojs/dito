@@ -282,7 +282,7 @@ export class Model extends objection.Model {
         if (id !== undefined) {
           const { type } = properties[key]
           // On-the-fly coercion of numeric ids to numbers, so they can pass the
-          // model validation in `CollectionController.getId()`
+          // model validation in `CollectionController.getMemberId()`
           ref[key] = ['integer', 'number'].includes(type) ? +id : id
         }
       })
@@ -449,6 +449,12 @@ export class Model extends objection.Model {
 
   static getRelatedRelations() {
     return getMeta(this, 'relatedRelations', [])
+  }
+
+  // Assets handling
+
+  getAssetConfig(dataPath) {
+    return this.definition.assets?.[dataPath] || null
   }
 
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not

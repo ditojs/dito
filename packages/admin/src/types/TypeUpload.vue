@@ -163,7 +163,7 @@ export default TypeComponent.register('upload', {
     uploadPath() {
       const url = this.formComponent.getResourcePath({
         type: 'collection',
-        path: `upload/${this.name}`
+        path: `upload/${this.dataPath}`
       })
       return `${this.api.url}${url}`
     },
@@ -209,7 +209,9 @@ export default TypeComponent.register('upload', {
     },
 
     getFileIndex(file) {
-      return this.multiple ? this.value.findIndex(it => it.id === file.id) : -1
+      return this.multiple && this.value
+        ? this.value.findIndex(it => it.id === file.id)
+        : -1
     },
 
     inputFile(newFile, oldFile) {
@@ -221,7 +223,11 @@ export default TypeComponent.register('upload', {
           upload: newFile
         }
         if (this.multiple) {
-          this.value.push(file)
+          if (this.value) {
+            this.value.push(file)
+          } else {
+            this.value = [file]
+          }
         } else {
           this.value = file
         }

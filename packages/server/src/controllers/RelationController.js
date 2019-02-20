@@ -70,7 +70,7 @@ export class RelationController extends CollectionController {
 
   // @override
   async execute(ctx, execute) {
-    const id = this.parent.getId(ctx)
+    const id = this.parent.getMemberId(ctx)
     return this.parent.execute(ctx,
       async (parentQuery, trx) => {
         const model = await parentQuery
