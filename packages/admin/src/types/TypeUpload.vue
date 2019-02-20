@@ -161,7 +161,7 @@ export default TypeComponent.register('upload', {
     },
 
     uploadPath() {
-      const url = this.formComponent.getResourcePath({
+      const url = this.dataRouteComponent.getResourcePath({
         type: 'collection',
         path: `upload/${this.dataPath}`
       })
