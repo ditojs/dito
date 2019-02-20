@@ -93,6 +93,20 @@ describe('getDataPath()', () => {
     expect(() => getDataPath(data, 'object/unknown/prop'))
       .toThrow('Invalid path: object/unknown/prop')
   })
+
+  it(`should return wildcard matches`, () => {
+    const data = {
+      object: {
+        array: [
+          { prop: 'one' },
+          { prop: 'two' }
+        ]
+      }
+    }
+
+    expect(getDataPath(data, 'object/array/*/prop')).toEqual(['one', 'two'])
+    expect(getDataPath(data, 'object.array[*].prop')).toEqual(['one', 'two'])
+  })
 })
 
 describe('setDataPath()', () => {

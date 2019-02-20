@@ -18,11 +18,21 @@ export function normalizeDataPath(path) {
 }
 
 export function getDataPath(obj, path) {
-  for (const part of parseDataPath(path)) {
-    if (!(obj && typeof obj === 'object' && part in obj)) {
-      throw new Error(`Invalid path: ${path}`)
+  const parsedPath = parseDataPath(path)
+  let next = 0
+  for (const part of parsedPath) {
+    next++
+    if (obj && typeof obj === 'object') {
+      if (part in obj) {
+        obj = obj[part]
+        continue
+      } else if (part === '*' && isArray(obj)) {
+        // Support wildcards on arrays
+        const subPath = parsedPath.slice(next)
+        return obj.map(value => getDataPath(value, subPath))
+      }
     }
-    obj = obj[part]
+    throw new Error(`Invalid path: ${path}`)
   }
   return obj
 }
