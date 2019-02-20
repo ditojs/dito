@@ -4,7 +4,7 @@ import util from 'util'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import path from 'path'
-import uuidv1 from 'uuid/v1'
+import uuidv4 from 'uuid/v4'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
@@ -281,7 +281,7 @@ export class Application extends Koa {
         if (dest) {
           storage = multer.diskStorage({
             destination(req, file, cb) {
-              const uuid = uuidv1()
+              const uuid = uuidv4()
               file.filename = `${uuid}${path.extname(file.originalname)}`
               const dir = path.join(dest, uuid[0], uuid[1])
               fs.ensureDir(dir)
