@@ -214,54 +214,64 @@ export default TypeComponent.register('upload', {
         : -1
     },
 
+    addFile(file) {
+      if (this.multiple) {
+        if (this.value) {
+          this.value.push(file)
+        } else {
+          this.value = [file]
+        }
+      } else {
+        this.value = file
+      }
+    },
+
+    replaceFile(file, newFile) {
+      if (this.multiple) {
+        const index = this.getFileIndex(file)
+        if (index >= 0) {
+          if (newFile) {
+            this.$set(this.value, index, newFile)
+          } else {
+            this.value.splice(index, 1)
+          }
+        }
+      } else {
+        this.value = newFile
+      }
+    },
+
+    removeFile(file) {
+      this.replaceFile(file, null)
+    },
+
     inputFile(newFile, oldFile) {
       if (newFile && !oldFile) {
-        const file = {
+        this.addFile({
           id: newFile.id,
           originalName: newFile.name,
           size: newFile.size,
           upload: newFile
-        }
-        if (this.multiple) {
-          if (this.value) {
-            this.value.push(file)
-          } else {
-            this.value = [file]
-          }
-        } else {
-          this.value = file
-        }
+        })
       }
       if (newFile && oldFile) {
         const { success, error } = newFile
         if (success) {
           const file = newFile.response[0]
-          file.upload = newFile
-          if (this.multiple) {
-            // Replace the upload file object with the file object received from
-            // the upload response.
-            const index = this.getFileIndex(newFile)
-            if (index >= 0) {
-              this.$set(this.value, index, file)
-            }
+          if (file) {
+            file.upload = newFile
+            // Replace the upload file object with the file object received
+            // from the upload response.
+            this.replaceFile(newFile, file)
           } else {
-            this.value = file
+            this.removeFile(newFile)
           }
         } else if (error) {
           const message = {
             extension: `Unsupported file-type: ${newFile.name}`
           }[error] || `Unknown error: ${error}`
           this.notify('error', 'Upload Error', message)
-          if (this.multiple) {
-            // Replace the upload file object with the file object received from
-            // the upload response.
-            const index = this.getFileIndex(newFile)
-            if (index >= 0) {
-              this.value.splice(index, 1)
-            }
-          } else {
-            this.value = null
-          }
+          this.removeFile(newFile)
         } else {
           // TODO: Implement progress bar for uploads
           console.log('update', newFile)
