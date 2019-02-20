@@ -56,7 +56,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
     .dito-components + .dito-form-buttons
-      .dito-schema-content::before
+      > .dito-schema-content::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
         content: ''
