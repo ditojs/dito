@@ -5,7 +5,9 @@ import { QueryParameters } from './QueryParameters'
 import { QueryWhereFilters } from './QueryWhereFilters'
 import PropertyRef from './PropertyRef'
 import { GraphProcessor } from '@/graph'
-import { isPlainObject, isString, isArray, clone } from '@ditojs/utils'
+import {
+  isPlainObject, isString, isArray, clone, parseDataPath
+} from '@ditojs/utils'
 import { createLookup, getScope } from '@/utils'
 
 // This code is based on objection-find, and simplified.
@@ -235,6 +237,76 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   selectRaw(...args) {
     return this.select(this.raw(...args))
+  }
+
+  loadDataPath(dataPath) {
+    // Loads the dataPath from the graph of the queried model, by parsing the
+    // dataPath, matching it to its relations and properties, and supporting
+    // wildcard `*` options to load all data from an array.
+    const parsedDataPath = parseDataPath(dataPath)
+
+    const throwUnlessFullMatch = (index, property) => {
+      if (index < parsedDataPath.length - 1) {
+        // Support wildcard loading/matching into json data types, which is
+        // fine, since the full json will simply be loaded with the property.
+        const next = parsedDataPath[index + 1]
+        if (
+          next !== '*' ||
+          !(property && ['object', 'array'].includes(property.type))
+        ) {
+          const unmatched = parsedDataPath.slice(index + 1).join('/')
+          throw new QueryBuilderError(
+            `Unable to load full data-path '${dataPath}' ('${unmatched}').`
+          )
+        }
+      }
+    }
+
+    const modelClass = this.modelClass()
+    const [first, ...rest] = parsedDataPath
+    const property = modelClass.definition.properties[first]
+    if (property) {
+      throwUnlessFullMatch(0, property)
+      this.select(first)
+    } else {
+      let relation = modelClass.getRelations()[first]
+      if (relation) {
+        let eager = first
+        const modifiers = []
+        let { relatedModelClass } = relation
+        let index = 1 // `first` is at `index = 0`
+        for (const token of rest) {
+          const property = relatedModelClass.definition.properties[token]
+          if (property) {
+            // A property to load. We should be done here:
+            throwUnlessFullMatch(index, property)
+            // Create a modifier that loads the property, then use it in the
+            // eager statement to actually load it along with the relation:
+            const modifier = `@${token}`
+            modifiers[modifier] = query => query.select(token)
+            eager = `${eager}(${modifier})`
+            break
+          } else if (token === '*') {
+            // Do not support wildcards on one-to-one relations:
+            if (relation.isOneToOne()) {
+              throwUnlessFullMatch(index - 1)
+            }
+          } else {
+            // A relation to load. Add it to eager, and keep looping.
+            relation = relatedModelClass.getRelations()[token]
+            if (relation) {
+              eager = `${eager}.${token}`
+              relatedModelClass = relation.relatedModelClass
+            } else {
+              throwUnlessFullMatch(index - 1)
+            }
+          }
+          index++
+        }
+        this.mergeEager(eager, modifiers)
+      }
+    }
+    return this
   }
 
   // @override
