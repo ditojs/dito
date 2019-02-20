@@ -87,6 +87,7 @@ module.exports = {
     'valid-typeof': 'error',
     'vue/no-async-in-computed-properties': 'off',
     'vue/no-side-effects-in-computed-properties': 'off',
-    'vue/require-default-prop': 'off'
+    'vue/require-default-prop': 'off',
+    'vue/return-in-computed-property': 'off'
   }
 }
