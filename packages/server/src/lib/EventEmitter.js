@@ -1,5 +1,5 @@
 import EventEmitter2 from 'eventemitter2'
-import { asArray } from '@ditojs/utils'
+import { isPlainObject, isString, isArray, asArray } from '@ditojs/utils'
 
 export class EventEmitter extends EventEmitter2 {
   // Method for classes that use `EventEmitter.mixin()` to setup the emitter.
@@ -13,29 +13,56 @@ export class EventEmitter extends EventEmitter2 {
     })
     for (const key in events) {
       for (const part of key.split(',')) {
-        const type = part.trim()
-        for (const event of asArray(events[key])) {
-          this.on(type, event)
+        const event = part.trim()
+        for (const callback of asArray(events[key])) {
+          this.on(event, callback)
         }
       }
     }
   }
 
-  responds(type) {
+  responds(event) {
     // TODO: See if this can be added to EventEmitter2 directly?
     // Related: https://github.com/EventEmitter2/EventEmitter2/pull/238
-    return this._events && this._events[type]
+    return this._events && this._events[event]
   }
 
-  emit(type, ...args) {
+  emit(event, ...args) {
     // Only call emit if emitter actually responds to event. This prevents
     //  `_events` from being created when no events are installed.
     // See: https://github.com/EventEmitter2/EventEmitter2/pull/238
-    return this.responds(type)
+    return this.responds(event)
       // Always use async version to emit events: It will perform the same as
       // the normal one when the methods aren't actually async.
-      ? this.emitAsync(type, ...args)
+      ? this.emitAsync(event, ...args)
       : undefined
+  }
+
+  _handle(method, event, callback) {
+    if (isString(event)) {
+      super[method](event, callback)
+    } else if (isArray(event)) {
+      for (const ev of event) {
+        super[method](ev, callback)
+      }
+    } else if (isPlainObject(event)) {
+      for (const key in event) {
+        super[method](key, event[key])
+      }
+    }
+    return this
+  }
+
+  on(event, callback) {
+    return this._handle('on', event, callback)
+  }
+
+  off(event, callback) {
+    return this._handle('off', event, callback)
+  }
+
+  once(event, callback) {
+    return this._handle('once', event, callback)
   }
 
   static mixin(target) {
