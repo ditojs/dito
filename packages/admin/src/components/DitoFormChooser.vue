@@ -4,8 +4,8 @@
       type="button"
       @mousedown.stop="onPulldownSelect()"
       :class="`dito-button-${verb}`"
-      :title="labelize(verb)"
-    )
+      :title="labelize(text || verb)"
+    ) {{text}}
     ul.dito-pulldown(
       v-if="schema.forms"
       :class="{ 'dito-open': pulldown.open }"
@@ -37,7 +37,8 @@ export default DitoComponent.component('dito-form-chooser', {
   props: {
     schema: { type: Object, default: null },
     path: { type: String, required: true },
-    verb: { type: String, required: true }
+    verb: { type: String, required: true },
+    text: { type: String, default: null }
   },
 
   methods: {

@@ -104,6 +104,7 @@
               :schema="schema"
               :path="path"
               :verb="verbs.create"
+              :text="createButtonText"
             )
 </template>
 
@@ -134,6 +135,7 @@ import { pickBy, equals, hyphenate } from '@ditojs/utils'
 import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
 export default TypeComponent.register([
@@ -196,7 +198,12 @@ export default TypeComponent.register([
       return this.isListSource && this.inline &&
         // If there are only compact forms with no labels, don't add spacing
         (!this.isCompact || this.hasLabels)
-    }
+    },
+
+    createButtonText: getSchemaAccessor('createButtonText', {
+      type: String,
+      default: null
+    })
   },
 
   methods: {
