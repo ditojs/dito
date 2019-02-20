@@ -80,7 +80,8 @@ export default {
   },
 
   created() {
-    if (!this.isNested) {
+    // When creating nested data, we still need to call setupData()
+    if (!this.isNested || this.create) {
       this.setupData()
     }
   },
