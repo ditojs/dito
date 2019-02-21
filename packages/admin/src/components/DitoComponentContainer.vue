@@ -30,7 +30,7 @@
 <style lang="sass">
 .dito
   .dito-component-container
-    flex: 1 1 auto
+    flex: auto
     align-self: stretch
     box-sizing: border-box
     // Cannot use margin here as it needs to be part of box-sizing for

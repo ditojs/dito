@@ -23,7 +23,7 @@
       display: flex
       justify-content: space-between
       > .dito-tree-item
-        flex: 0 1 auto
+        flex: initial
       > .dito-form-nested
         background: $color-lightest
         border-radius: $border-radius
