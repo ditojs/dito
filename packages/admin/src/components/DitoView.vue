@@ -3,8 +3,12 @@
   // instead, to nest further route components.
   // NOTE: This is different from the handling in DitoForm, where `v-show` is
   // used to always render forms even when other nested forms are present.
-  router-view(v-if="!isLastRoute")
-  .dito-view.dito-parent(v-else-if="shouldRender(viewSchema)")
+  router-view(
+    v-if="!isLastRoute"
+  )
+  .dito-view.dito-scroll-parent(
+    v-else-if="shouldRender(viewSchema)"
+  )
     dito-schema.dito-scroll(
       ref="schema"
       :schema="viewSchema"

@@ -8,7 +8,7 @@
     dito-menu(
       :views="resolvedViews"
     )
-    main.dito-page.dito-parent
+    main.dito-page.dito-scroll-parent
       dito-header(
         :spinner="options.spinner"
         :isLoading="appState.loadingCounter > 0"

@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-form.dito-parent(
+.dito-form.dito-scroll-parent(
   :class="formClass"
 )
   // NOTE: Nested form components are kept alive by using `v-show` instead of

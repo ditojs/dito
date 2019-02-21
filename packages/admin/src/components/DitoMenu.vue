@@ -1,7 +1,7 @@
 <template lang="pug">
-  nav.dito-menu
+  nav.dito-menu.dito-scroll-parent
     h1 {{ appState.title }}
-    ul
+    ul.dito-scroll
       li(v-for="view in views")
         router-link(
           :to="`/${view.path}`"
@@ -13,6 +13,7 @@
 .dito
   .dito-menu
     background: $color-lightest
+    flex: initial
     font-size: $menu-font-size
     white-space: nowrap
     +user-select(none)
