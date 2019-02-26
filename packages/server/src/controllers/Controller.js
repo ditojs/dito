@@ -1,4 +1,3 @@
-import multer from 'koa-multer'
 import chalk from 'chalk'
 import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
 import { EventEmitter } from '@/lib'
@@ -172,8 +171,7 @@ export class Controller {
     const matchDataPath = new RegExp(
       `^${normalizePath.replace(/\*/g, '\\w+')}$`
     )
-    const upload = multer({
-      storage,
+    const upload = storage.getUploadHandler({
       ...settings,
       // Only let uploads pass that match the normalizePath + wildcards:
       fileFilter: (req, file, cb) => {
@@ -190,7 +188,7 @@ export class Controller {
         return next()
       },
 
-      upload.any(),
+      upload,
 
       async (ctx, next) => {
         const files = this.app.convertAssets(ctx.req.files)

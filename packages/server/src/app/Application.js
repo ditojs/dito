@@ -2,15 +2,11 @@ import Koa from 'koa'
 import Knex from 'knex'
 import util from 'util'
 import chalk from 'chalk'
-import fs from 'fs-extra'
-import path from 'path'
-import uuidv4 from 'uuid/v4'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
-import multer from 'koa-multer'
 import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
@@ -23,6 +19,7 @@ import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller } from '@/controllers'
 import { Service } from '@/services'
+import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
 import {
@@ -49,15 +46,15 @@ export class Application extends Koa {
     this.validator = validator || new Validator()
     this.router = router || new Router()
     this.validator.app = this
+    this.storages = Object.create(null)
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
-    this.storage = Object.create(null)
     this.hasControllerMiddleware = false
     this.setupGlobalMiddleware()
     this.setupKnex()
-    if (config.storage) {
-      this.setupStorage(config.storage)
+    if (config.storages) {
+      this.addStorages(config.storages)
     }
     if (models) {
       this.addModels(models)
@@ -180,8 +177,11 @@ export class Application extends Koa {
   }
 
   getModel(name) {
-    return this.models[name] ||
-      !name.endsWith('Model') && this.models[`${name}Model`]
+    return (
+      this.models[name] ||
+      !name.endsWith('Model') && this.models[`${name}Model`] ||
+      null
+    )
   }
 
   addServices(services) {
@@ -223,7 +223,7 @@ export class Application extends Koa {
   }
 
   getService(name) {
-    return this.services[name]
+    return this.services[name] || null
   }
 
   async callServices(method, ...args) {
@@ -270,47 +270,38 @@ export class Application extends Koa {
   }
 
   getController(url) {
-    return this.controllers[url]
+    return this.controllers[url] || null
   }
 
-  setupStorage(config) {
-    for (const [name, settings] of Object.entries(config)) {
-      let storage = null
-      if (isPlainObject(settings)) {
-        const { dest, s3 } = settings
-        if (dest) {
-          storage = multer.diskStorage({
-            destination(req, file, cb) {
-              const uuid = uuidv4()
-              file.filename = `${uuid}${path.extname(file.originalname)}`
-              const dir = path.join(dest, uuid[0], uuid[1])
-              fs.ensureDir(dir)
-                .then(() => cb(null, dir))
-                .catch(cb)
-            },
-
-            filename(req, file, cb) {
-              cb(null, file.filename)
-            }
-          })
-          storage.dest = dest
-        } else if (s3) {
-          // TODO: Implement multer-s3
-          // storage.s3 = s3
-        }
-      } else if (isObject(settings)) {
-        // Assume that this is already a multer storage instance.
-        storage = settings
-      }
-      if (storage) {
-        storage.name = name
-        this.storage[name] = storage
-      }
+  addStorages(storages) {
+    for (const [name, config] of Object.entries(storages)) {
+      this.addStorage(config, name)
     }
   }
 
+  addStorage(config, name) {
+    let storage = null
+    if (isPlainObject(config)) {
+      const storageClass = Storage.get(config.type)
+      if (!storageClass) {
+        throw new Error(`Unsupported storage: ${config}`)
+      }
+      // eslint-disable-next-line new-cap
+      storage = new storageClass(config)
+    } else if (config instanceof Storage) {
+      storage = config
+    }
+    if (storage) {
+      if (name) {
+        storage.name = name
+      }
+      this.storages[storage.name] = storage
+    }
+    return storage
+  }
+
   getStorage(name) {
-    return this.storage[name]
+    return this.storages[name] || null
   }
 
   convertAsset(file) {
@@ -326,44 +317,11 @@ export class Application extends Koa {
   }
 
   convertAssets(files) {
-    return files.map(
-      file => this.convertAsset(file)
-    )
-  }
-
-  getAssetPath(file, storageName) {
-    // TODO: Figure out how to handle s3.
-    const filePath = path.join(file.destination, file.fileName)
-    // If the asset config is provided, make sure that the file actually
-    // resides in its storage.
-    const storage = this.getStorage(storageName)
-    if (
-      storage?.dest &&
-      !path.resolve(filePath).startsWith(path.resolve(storage.dest))
-    ) {
-      return null
-    }
-    return filePath
+    return files.map(file => this.convertAsset(file))
   }
 
   async removeAsset(file, storageName) {
-    // TODO: Figure out how to handle s3.
-    const filePath = this.getAssetPath(file, storageName)
-    if (filePath) {
-      await fs.unlink(filePath)
-      const removeIfEmpty = async dir => {
-        if ((await fs.readdir(dir)).length === 0) {
-          await fs.rmdir(dir)
-        }
-      }
-      // Clean up nested folders created with first two chars of filename also:
-      const dir = path.dirname(filePath)
-      const parentDir = path.dirname(dir)
-      await (removeIfEmpty(dir))
-      await (removeIfEmpty(parentDir))
-      return true
-    }
-    return false
+    return this.getStorage(storageName)?.removeFile(file) ?? false
   }
 
   async createAssets(files, storageName, trx) {
