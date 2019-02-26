@@ -82,6 +82,10 @@
       vertical-align: top
     .dito-button-add-upload
       border: 0
+      padding: 0
+      > *
+        position: absolute
+        cursor: pointer
 </style>
 
 <script>
