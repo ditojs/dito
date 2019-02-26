@@ -21,11 +21,6 @@ export class S3Storage extends Storage {
       bucket,
       contentType: contentType || multerS3.AUTO_CONTENT_TYPE,
       ...options,
-
-      metadata: (req, file, cb) => cb(null, {
-        fieldName: file.fieldname
-      }),
-
       key: (req, file, cb) => cb(null, this.getFilename(file))
     })
   }

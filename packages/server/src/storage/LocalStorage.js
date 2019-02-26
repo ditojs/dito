@@ -16,6 +16,8 @@ export class LocalStorage extends Storage {
       destination(req, file, cb) {
         const filename = this.getFilename(file)
         file.filename = filename
+        // Store files in nested folders created with the first two chars of
+        // filename, for faster access & management with large amounts of files.
         const dir = path.join(dest, filename[0], filename[1])
         fs.ensureDir(dir)
           .then(() => cb(null, dir))
@@ -53,7 +55,7 @@ export class LocalStorage extends Storage {
     // Clean up nested folders created with first two chars of filename also:
     const dir = path.dirname(filePath)
     const parentDir = path.dirname(dir)
-    await (removeIfEmpty(dir))
-    await (removeIfEmpty(parentDir))
+    await removeIfEmpty(dir)
+    await removeIfEmpty(parentDir)
   }
 }
