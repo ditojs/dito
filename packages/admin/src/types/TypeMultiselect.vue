@@ -10,7 +10,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="options || []"
+      :options="customMatchedOptions || options || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -18,9 +18,10 @@
       :multiple="multiple"
       :searchable="searchable"
       :taggable="taggable"
-      :internal-search="true"
+      :internal-search="!customMatch"
       :close-on-select="true"
       :loading="isLoading"
+      @search-change="onSearchChange"
       @input="onChange()"
       @tag="addTag"
     )
@@ -227,6 +228,10 @@ export default TypeComponent.register('multiselect', {
   components: { VueMultiselect },
   mixins: [OptionsMixin],
 
+  data: () => ({
+    customMatchedOptions: null
+  }),
+
   computed: {
     multiSelectValue: {
       get() {
@@ -265,6 +270,10 @@ export default TypeComponent.register('multiselect', {
     taggable: getSchemaAccessor('taggable', {
       type: Boolean,
       default: false
+    }),
+
+    customMatch: getSchemaAccessor('customMatch', {
+      type: Function
     }),
 
     placeholder() {
@@ -315,6 +324,14 @@ export default TypeComponent.register('multiselect', {
 
     unselect() {
       this.value = null
+    },
+
+    onSearchChange(query) {
+      if (this.customMatch) {
+        this.customMatchedOptions = this.customMatch(query, this.options)
+      } else {
+        this.customMatchedOptions = null
+      }
     }
   }
 })
