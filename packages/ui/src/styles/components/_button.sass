@@ -44,6 +44,9 @@
     min-width: 2em
     height: 2em
     border-radius: 1em
+    // This padding even works for icons, since 2 * 0.8em < 2em and icons are
+    // positioned absolutely:
+    padding: 0.2em 0.8em
 
 .dito-buttons-small
   .dito-button
@@ -58,6 +61,5 @@
     display: inline-block
     text-align: center
     white-space: nowrap
-    padding: 0
   .dito-button-text
     padding: 0 0.7em
