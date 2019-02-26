@@ -55,7 +55,7 @@ yarn db:reset
 Dito can create migrations for you automatically. Use the following command:
 
 ```sh
-yarn db:create_migration fileName modelName1 modelName2 ...
+yarn db:create_migration filename modelName1 modelName2 ...
 ```
 
 The migration is based on the properties and relations in the model definitions.

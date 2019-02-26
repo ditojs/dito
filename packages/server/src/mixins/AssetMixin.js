@@ -1,6 +1,6 @@
 export const AssetMixin = Model => class extends Model {
   static properties = {
-    fileName: {
+    name: {
       type: 'string',
       required: true,
       unique: true,
@@ -13,12 +13,12 @@ export const AssetMixin = Model => class extends Model {
       // required: true
     },
 
-    storageName: {
+    storage: {
       type: 'string',
       required: true
     },
 
-    refCount: {
+    count: {
       type: 'integer',
       unsigned: true,
       default: 0

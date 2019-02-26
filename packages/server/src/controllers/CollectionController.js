@@ -73,8 +73,8 @@ export class CollectionController extends Controller {
               // Use flatten() as dataPath may contain wildcards, resulting in
               // nested files arrays.
               const modelFiles = flatten(asArray(getDataPath(model, dataPath)))
-              for (const { fileName } of modelFiles) {
-                files.push(fileName)
+              for (const { name } of modelFiles) {
+                files.push(name)
               }
               return files
             },
@@ -119,8 +119,8 @@ export class CollectionController extends Controller {
         console.log('removed', removed)
         const trx = ctx.transaction
         await Promise.all([
-          added.length && this.app.changeAssetsRefCount(added, 1, trx),
-          removed.length && this.app.changeAssetsRefCount(removed, -1, trx)
+          added.length && this.app.changeAssetsCount(added, 1, trx),
+          removed.length && this.app.changeAssetsCount(removed, -1, trx)
         ])
         await this.app.releaseUnusedAssets(trx)
       })

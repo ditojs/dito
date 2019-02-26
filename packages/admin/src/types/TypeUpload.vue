@@ -19,7 +19,7 @@
       )
         tr(
           v-for="(file, index) in files"
-          :key=" file.id || file.fileName"
+          :key=" file.id || file.name"
         )
           td {{ file.originalName }}
           td {{ file.size | formatFileSize }}

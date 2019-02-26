@@ -191,7 +191,7 @@ export class Controller {
       upload,
 
       async (ctx, next) => {
-        const files = this.app.convertAssets(ctx.req.files)
+        const files = storage.convertFiles(ctx.req.files)
         await this.app.createAssets(
           files,
           storageName,

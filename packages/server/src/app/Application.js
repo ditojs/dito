@@ -304,34 +304,18 @@ export class Application extends Koa {
     return this.storages[name] || null
   }
 
-  convertAsset(file) {
-    // Convert multer-file object to our own file object format.
-    // TODO: Figure out how to handle s3.
-    return {
-      mimeType: file.mimetype,
-      destination: file.destination,
-      fileName: file.filename,
-      originalName: file.originalname,
-      size: file.size
-    }
-  }
-
-  convertAssets(files) {
-    return files.map(file => this.convertAsset(file))
-  }
-
-  async removeAsset(file, storageName) {
-    return this.getStorage(storageName)?.removeFile(file) ?? false
+  async removeAsset(file, storage) {
+    return this.getStorage(storage)?.removeFile(file)
   }
 
   async createAssets(files, storageName, trx) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const assets = files.map(file => ({
-        fileName: file.fileName,
+        name: file.name,
         file,
-        storageName,
-        refCount: 0
+        storage: storageName,
+        count: 0
       }))
       return AssetModel
         .query(trx)
@@ -340,13 +324,13 @@ export class Application extends Koa {
     return null
   }
 
-  async changeAssetsRefCount(fileNames, increment, trx) {
+  async changeAssetsCount(assetNames, increment, trx) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       return AssetModel
         .query(trx)
-        .increment('refCount', increment)
-        .whereIn('fileName', fileNames)
+        .increment('count', increment)
+        .whereIn('name', assetNames)
     }
     return null
   }
@@ -358,35 +342,35 @@ export class Application extends Koa {
       // removing somebody else's fresh upload that wasn't referenced yet.
       const orphans = await AssetModel
         .query(trx)
-        .where('refCount', 0)
+        .where('count', 0)
       await Promise.map(
         orphans,
-        ({ file, storageName }) => {
+        async ({ file, storage: storageName }) => {
           try {
-            this.removeAsset(file, storageName)
+            await this.removeAsset(file, storageName)
           } catch (error) {
             console.error(error)
           }
         }
       )
-      // TODO: Only delete the ones found as orphans above! (collect fileNames?)
+      // TODO: Only delete the ones found as orphans above! (collect filenames?)
       await AssetModel
         .query(trx)
         .delete()
-        .where('refCount', 0)
+        .where('count', 0)
     }
     return null
   }
 
-  async deleteAssets(fileNames, trx) {
+  async deleteAssets(assetNames, trx) {
     // TODO: This should work on model level, and reduce reference counts, see
-    // changeAssetsRefCount() / releaseUnusedAssets()
+    // changeAssetsCount() / releaseUnusedAssets()
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       return AssetModel
         .query(trx)
         .delete()
-        .whereIn('fileName', fileNames)
+        .whereIn('name', assetNames)
     }
     return null
   }
