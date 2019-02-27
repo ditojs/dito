@@ -305,7 +305,7 @@ export class Application extends Koa {
   }
 
   async removeAsset(file, storage) {
-    return this.getStorage(storage)?.removeFile(file)
+    await this.getStorage(storage)?.removeFile(file)
   }
 
   async createAssets(files, storageName, trx) {

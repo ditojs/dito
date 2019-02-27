@@ -12,23 +12,28 @@ export class LocalStorage extends Storage {
     if (!dest) {
       throw new Error(`Missing configuration (dest) for storage ${this.name}`)
     }
-    this.storage = multer.diskStorage({
-      destination(req, file, cb) {
+    this.dest = dest
+    this.setStorage(multer.diskStorage({
+      destination: (req, file, cb) => {
         const filename = this.getFilename(file)
         file.filename = filename
-        // Store files in nested folders created with the first two chars of
-        // filename, for faster access & management with large amounts of files.
-        const dir = path.join(dest, filename[0], filename[1])
+        const dir = this.getNestedFolder(file)
         fs.ensureDir(dir)
           .then(() => cb(null, dir))
           .catch(cb)
       },
 
-      filename(req, file, cb) {
+      filename: (req, file, cb) => {
         cb(null, file.filename)
       }
-    })
-    this.dest = dest
+    }))
+  }
+
+  getNestedFolder(file) {
+    // Store files in nested folders created with the first two chars of
+    // filename, for faster access & management with large amounts of files.
+    const { filename } = file
+    return `${this.dest}${path.sep}${filename[0]}${path.sep}${filename[1]}`
   }
 
   getFileIdentifiers(file) {

@@ -16,13 +16,28 @@ export class S3Storage extends Storage {
     } = config
     this.s3 = new aws.S3(s3)
     this.bucket = bucket
-    this.storage = multerS3({
+    this.setStorage(multerS3({
       s3: this.s3,
       bucket,
       contentType: contentType || multerS3.AUTO_CONTENT_TYPE,
       ...options,
-      key: (req, file, cb) => cb(null, this.getFilename(file))
-    })
+
+      key: (req, file, cb) => {
+        cb(null, this.getFilename(file))
+      },
+
+      metadata: (req, file, cb) => {
+        const { width, height } = file
+        if (width != null || height != null) {
+          cb(null, {
+            width: `${width}`,
+            height: `${height}`
+          })
+        } else {
+          cb(null, {})
+        }
+      }
+    }))
   }
 
   getFileIdentifiers(file) {
@@ -34,7 +49,7 @@ export class S3Storage extends Storage {
   }
 
   managesFile(file) {
-    return file.path === this.bucket
+    return file && file.path === this.bucket
   }
 
   async deleteFile(file) {

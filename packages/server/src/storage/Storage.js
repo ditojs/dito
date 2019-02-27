@@ -1,6 +1,8 @@
 import path from 'path'
+import Stream from 'stream'
 import multer from 'koa-multer'
 import uuidv4 from 'uuid/v4'
+import imageSizeStream from 'image-size-stream'
 import { hyphenate } from '@ditojs/utils'
 import { NotImplementedError } from '@/errors'
 
@@ -10,6 +12,22 @@ export class Storage {
   constructor(config) {
     this.config = config
     this.name = config.name
+    this.storage = null
+  }
+
+  setStorage(storage) {
+    this.storage = storage
+    // Monkey-patch _handleFile to also read image size from the stream and
+    // set the file fields accordingly.
+    const { _handleFile } = storage
+    storage._handleFile = async (req, file, cb) => {
+      if (this.isImageFile(file)) {
+        const { width, height } = await this.getImageSize(file)
+        file.width = width
+        file.height = height
+      }
+      return _handleFile.call(storage, req, file, cb)
+    }
   }
 
   getUploadHandler(config) {
@@ -28,7 +46,9 @@ export class Storage {
       ...this.getFileIdentifiers(file),
       originalName: file.originalname,
       mimeType: file.mimetype,
-      size: file.size
+      size: file.size,
+      width: file.width,
+      height: file.height
     }
   }
 
@@ -43,6 +63,32 @@ export class Storage {
       )
     }
     await this.deleteFile(file)
+  }
+
+  isImageFile(file) {
+    return file.mimetype.startsWith('image/')
+  }
+
+  async getImageSize(file) {
+    // Copy source stream into two PassThrough streams, so one can determine
+    // image size while the other can continue processing the upload.
+    const stream1 = new Stream.PassThrough()
+    const stream2 = new Stream.PassThrough()
+    file.stream.pipe(stream1)
+    file.stream.pipe(stream2)
+    // Override `file.stream` with the copied stream.
+    Object.defineProperty(file, 'stream', {
+      configurable: true,
+      enumerable: false,
+      value: stream1
+    })
+    return new Promise((resolve, reject) => {
+      stream2.pipe(
+        imageSizeStream()
+          .on('size', size => resolve(size))
+          .on('error', error => reject(error))
+      )
+    })
   }
 
   getFileIdentifiers(_file) {
