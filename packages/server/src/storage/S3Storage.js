@@ -16,6 +16,7 @@ export class S3Storage extends Storage {
     } = config
     this.s3 = new aws.S3(s3)
     this.bucket = bucket
+
     this.setStorage(multerS3({
       s3: this.s3,
       bucket,
@@ -43,18 +44,13 @@ export class S3Storage extends Storage {
   getFileIdentifiers(file) {
     return {
       name: file.key,
-      path: file.bucket,
-      location: file.location
+      url: file.location
     }
   }
 
-  managesFile(file) {
-    return file && file.path === this.bucket
-  }
-
-  async deleteFile(file) {
+  async removeFile(file) {
     await this.execute('deleteObject', {
-      Bucket: file.path,
+      Bucket: this.bucket,
       Key: file.name
     })
   }

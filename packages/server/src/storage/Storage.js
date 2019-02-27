@@ -56,15 +56,6 @@ export class Storage {
     return files.map(file => this.convertFile(file))
   }
 
-  async removeFile(file) {
-    if (!this.managesFile(file)) {
-      throw new Error(
-        `File ${file.name} is not managed by storage ${this.name}`
-      )
-    }
-    await this.deleteFile(file)
-  }
-
   isImageFile(file) {
     return file.mimetype.startsWith('image/')
   }
@@ -101,7 +92,7 @@ export class Storage {
     throw new NotImplementedError()
   }
 
-  async deleteFile(_file) {
+  async removeFile(_file) {
     // To be implemented in sub-classes.
     throw new NotImplementedError()
   }

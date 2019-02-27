@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
+import { URL } from 'url'
 import multer from 'koa-multer'
 import { Storage } from './Storage'
 
@@ -8,16 +9,17 @@ export class LocalStorage extends Storage {
 
   constructor(config) {
     super(config)
-    const { dest } = config
-    if (!dest) {
-      throw new Error(`Missing configuration (dest) for storage ${this.name}`)
+    if (!config.path) {
+      throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
-    this.dest = dest
+    this.path = config.path
+    this.url = config.url
+
     this.setStorage(multer.diskStorage({
       destination: (req, file, cb) => {
         const filename = this.getFilename(file)
         file.filename = filename
-        const dir = this.getNestedFolder(file)
+        const dir = path.join(this.path, this.getNestedFolder(filename))
         fs.ensureDir(dir)
           .then(() => cb(null, dir))
           .catch(cb)
@@ -29,28 +31,32 @@ export class LocalStorage extends Storage {
     }))
   }
 
-  getNestedFolder(file) {
+  getNestedFolder(name, posix = false) {
     // Store files in nested folders created with the first two chars of
     // filename, for faster access & management with large amounts of files.
-    const { filename } = file
-    return `${this.dest}${path.sep}${filename[0]}${path.sep}${filename[1]}`
+    return (posix ? path.posix : path).join(name[0], name[1])
+  }
+
+  getFilePath(name) {
+    return path.join(this.path, this.getNestedFolder(name), name)
   }
 
   getFileIdentifiers(file) {
+    const name = file.filename
     return {
-      name: file.filename,
-      path: file.destination,
-      // TODO:
-      location: ''
+      name,
+      url: (
+        this.url &&
+        new URL(
+          path.posix.join(this.getNestedFolder(name, true), name),
+          this.url
+        )
+      )
     }
   }
 
-  managesFile(file) {
-    return file && file.path.startsWith(this.dest)
-  }
-
-  async deleteFile(file) {
-    const filePath = path.join(file.path, file.name)
+  async removeFile(file) {
+    const filePath = this.getFilePath(file.name)
     await fs.unlink(filePath)
     const removeIfEmpty = async dir => {
       if ((await fs.readdir(dir)).length === 0) {
