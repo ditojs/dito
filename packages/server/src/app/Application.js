@@ -304,10 +304,6 @@ export class Application extends Koa {
     return this.storages[name] || null
   }
 
-  async removeAsset(file, storage) {
-    await this.getStorage(storage)?.removeFile(file)
-  }
-
   async createAssets(files, storageName, trx) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
@@ -347,9 +343,9 @@ export class Application extends Koa {
         orphans,
         async ({ file, storage: storageName }) => {
           try {
-            await this.removeAsset(file, storageName)
+            await this.getStorage(storageName).removeFile(file)
           } catch (error) {
-            console.error(error)
+            this.emit('error', error)
           }
         }
       )
@@ -358,19 +354,6 @@ export class Application extends Koa {
         .query(trx)
         .delete()
         .where('count', 0)
-    }
-    return null
-  }
-
-  async deleteAssets(assetNames, trx) {
-    // TODO: This should work on model level, and reduce reference counts, see
-    // changeAssetsCount() / releaseUnusedAssets()
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      return AssetModel
-        .query(trx)
-        .delete()
-        .whereIn('name', assetNames)
     }
     return null
   }
@@ -634,7 +617,7 @@ export class Application extends Koa {
     try {
       await this.start()
     } catch (err) {
-      this.onError(err)
+      this.emit('error', err)
       process.exit(-1)
     }
   }

@@ -17,8 +17,8 @@ export class Storage {
 
   setStorage(storage) {
     this.storage = storage
-    // Monkey-patch _handleFile to also read image size from the stream and
-    // set the file fields accordingly.
+    // Monkey-patch storage._handleFile to also read image size from the stream
+    // and set the file fields accordingly.
     const { _handleFile } = storage
     storage._handleFile = async (req, file, cb) => {
       if (this.isImageFile(file)) {

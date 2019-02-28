@@ -28,6 +28,8 @@ export class S3Storage extends Storage {
       },
 
       metadata: (req, file, cb) => {
+        // Store the determined width and height as meta-data on the s3 object
+        // as well. You never know, it may become useful :)
         const { width, height } = file
         if (width != null || height != null) {
           cb(null, {
