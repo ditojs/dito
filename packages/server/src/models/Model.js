@@ -132,12 +132,27 @@ export class Model extends objection.Model {
     return this.$emit('after:delete', queryContext)
   }
 
-  async $transaction(handler) {
-    return this.constructor.transaction(handler)
+  // @override
+  $transaction(trx, handler) {
+    return this.constructor.transaction(trx, handler)
   }
 
-  static transaction(handler) {
-    return objection.transaction(this.knex(), handler)
+  // @override
+  static transaction(trx, handler) {
+    // Support both `transaction(trx, handler)` & `transaction(handler)`
+    if (!handler) {
+      handler = trx
+      trx = null
+    }
+    if (handler) {
+      // Use existing transaction, or create new one, to execute handler with:
+      return trx
+        ? handler(trx)
+        : this.knex().transaction(handler)
+    } else {
+      // No arguments, simply delegate to objection's transaction()
+      return super.transaction()
+    }
   }
 
   // @override
