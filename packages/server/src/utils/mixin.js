@@ -1,11 +1,35 @@
+const mixinsMap = new WeakMap()
+
 export function mixin(mixin) {
   return function(Class) {
-    // Prevent multi-inheritance of the same mixins:
-    if (Class && !Class.mixins?.includes(mixin)) {
-      Class = mixin(Class)
-      Class.mixins = Class.mixins || []
-      Class.mixins.push(mixin)
+    if (Class) {
+      // Prevent multiple application of the same mixins in nested inheritance
+      // through keeping track of what was already applied in weak-maps:
+      if (!hasMixin(Class, mixin)) {
+        Class = mixin(Class)
+        addMixin(Class, mixin)
+      }
     }
     return Class
   }
+}
+
+function hasMixin(Class, mixin) {
+  // We need to walk up the inheritance chain and check on every level.
+  while (Class) {
+    const mixins = mixinsMap.get(Class)
+    if (mixins?.get(mixin)) {
+      return true
+    }
+    Class = Object.getPrototypeOf(Class)
+  }
+  return false
+}
+
+function addMixin(Class, mixin) {
+  let mixins = mixinsMap.get(Class)
+  if (!mixins) {
+    mixinsMap.set(Class, mixins = new WeakMap())
+  }
+  mixins.set(mixin, true)
 }
