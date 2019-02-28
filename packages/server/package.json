@@ -27,7 +27,7 @@
     "node 9"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.3.1",
+    "@babel/runtime": "^7.3.4",
     "@ditojs/admin": "^0.65.0",
     "@ditojs/router": "^0.65.0",
     "@ditojs/utils": "^0.65.0",
@@ -35,9 +35,9 @@
     "@vue/cli-plugin-babel": "^3.4.1",
     "@vue/cli-plugin-eslint": "^3.4.1",
     "@vue/cli-service": "^3.4.1",
-    "ajv": "^6.5.5",
+    "ajv": "^6.9.2",
     "ajv-merge-patch": "^4.1.0",
-    "aws-sdk": "^2.410.0",
+    "aws-sdk": "^2.411.0",
     "babel-loader": "^8.0.5",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.3",
@@ -65,12 +65,12 @@
     "koa-webpack": "^5.2.1",
     "multer-s3": "^2.9.0",
     "nodemon": "^1.18.6",
-    "objection": "^1.6.1",
+    "objection": "^1.6.3",
     "passport-local": "^1.0.0",
     "pluralize": "^7.0.0",
     "repl": "^0.1.3",
     "uuid": "^3.2.1",
-    "vue-template-compiler": "^2.6.6"
+    "vue-template-compiler": "^2.6.7"
   },
   "peerDependencies": {
     "knex": "^0.15.2"
