@@ -304,7 +304,7 @@ export class Application extends Koa {
     return this.storages[name] || null
   }
 
-  async createAssets(files, storageName, trx) {
+  async createAssets(files, storageName, trx = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const assets = files.map(file => ({
@@ -320,42 +320,73 @@ export class Application extends Koa {
     return null
   }
 
-  async changeAssetsCount(assetNames, increment, trx) {
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      return AssetModel
-        .query(trx)
-        .increment('count', increment)
-        .whereIn('name', assetNames)
-    }
-    return null
-  }
+  async changeAssets(added, removed, trx = null) {
+    // console.log('added', added)
+    // console.log('removed', removed)
+    // Only remove unused assets that haven't seen changes for given timeframe.
+    // TODO: Make timeThreshold an optional configuration setting?
+    // const timeThreshold = 5 * 1000 // 5s
+    const timeThreshold = 12 * 60 * 60 * 1000 // 12h
 
-  async releaseUnusedAssets(trx) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      // TODO: Only remove old orphans, e.g. older than a day, to prevent
-      // removing somebody else's fresh upload that wasn't referenced yet.
-      const orphans = await AssetModel
-        .query(trx)
-        .where('count', 0)
-      await Promise.map(
-        orphans,
-        async ({ file, storage: storageName }) => {
-          try {
-            await this.getStorage(storageName).removeFile(file)
-          } catch (error) {
-            this.emit('error', error)
+      await AssetModel.transaction(trx, async trx => {
+        const changeCount = (assetNames, increment) => AssetModel
+          .query(trx)
+          .whereIn('name', assetNames)
+          .increment('count', increment)
+        if (added.length > 0 || removed.length > 0) {
+          await Promise.all([
+            added.length && changeCount(added, 1),
+            removed.length && changeCount(removed, -1)
+          ])
+          if (timeThreshold) {
+            setTimeout(
+              // Don't pass `trx` here, as we want this delayed execution to
+              // create its own transaction.
+              () => this.releaseUnusedAssets(timeThreshold),
+              timeThreshold
+            )
           }
         }
-      )
-      // TODO: Only delete the ones found as orphans above! (collect filenames?)
-      await AssetModel
-        .query(trx)
-        .delete()
-        .where('count', 0)
+        // Also execute releaseUnusedAssets() immediately in the same
+        // transaction, to potentially clean up other pending assets.
+        await this.releaseUnusedAssets(timeThreshold, trx)
+      })
     }
-    return null
+  }
+
+  async releaseUnusedAssets(timeThreshold = 0, trx = null) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      await AssetModel.transaction(trx, async trx => {
+        // Determine the time threshold in JS instead of SQL, as there is no
+        // easy cross-SQL way to do `now() - interval X hours`:
+        const date = new Date()
+        date.setMilliseconds(date.getMilliseconds() - timeThreshold)
+        const orphans = await AssetModel
+          .query(trx)
+          .where('count', 0)
+          .andWhere('updatedAt', '<=', date)
+        if (orphans.length > 0) {
+          const assetNames = await Promise.map(
+            orphans,
+            async ({ name, file, storage: storageName }) => {
+              try {
+                await this.getStorage(storageName).removeFile(file)
+              } catch (error) {
+                this.emit('error', error)
+              }
+              return name
+            }
+          )
+          await AssetModel
+            .query(trx)
+            .delete()
+            .whereIn('name', assetNames)
+        }
+      })
+    }
   }
 
   normalizePath(path) {

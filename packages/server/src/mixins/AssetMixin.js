@@ -1,6 +1,8 @@
 import { mixin } from '@/utils'
+import { TimeStampedMixin } from './TimeStampedMixin'
 
-export const AssetMixin = mixin(Model => class extends Model {
+// Asset models are always to be time-stamped:
+export const AssetMixin = mixin(Model => class extends TimeStampedMixin(Model) {
   static properties = {
     name: {
       type: 'string',

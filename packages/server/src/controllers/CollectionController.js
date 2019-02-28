@@ -115,14 +115,7 @@ export class CollectionController extends Controller {
           added.push(..._after.filter(file => !_before.includes(file)))
           removed.push(..._before.filter(file => !_after.includes(file)))
         }
-        console.log('added', added)
-        console.log('removed', removed)
-        const trx = ctx.transaction
-        await Promise.all([
-          added.length && this.app.changeAssetsCount(added, 1, trx),
-          removed.length && this.app.changeAssetsCount(removed, -1, trx)
-        ])
-        await this.app.releaseUnusedAssets(trx)
+        await this.app.changeAssets(added, removed, ctx.transaction)
       })
     }
     return assets
