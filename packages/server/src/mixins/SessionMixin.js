@@ -1,4 +1,6 @@
-export const SessionMixin = Model => class extends Model {
+import { mixin } from '@/utils'
+
+export const SessionMixin = mixin(Model => class extends Model {
   static properties = {
     id: {
       type: 'string',
@@ -9,4 +11,4 @@ export const SessionMixin = Model => class extends Model {
       type: 'object'
     }
   }
-}
+})

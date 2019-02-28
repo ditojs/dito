@@ -3,8 +3,9 @@ import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
 import { AuthenticationError } from '@/errors'
 import { asArray } from '@ditojs/utils'
+import { mixin } from '@/utils'
 
-export const UserMixin = Model => class extends Model {
+export const UserMixin = mixin(Model => class extends Model {
   static options = {
     usernameProperty: 'username',
     passwordProperty: 'password',
@@ -123,7 +124,7 @@ export const UserMixin = Model => class extends Model {
       ...asArray(this.definition.options.sessionScope)
     )
   }
-}
+})
 
 const userClasses = {}
 

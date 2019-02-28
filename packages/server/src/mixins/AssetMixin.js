@@ -1,4 +1,6 @@
-export const AssetMixin = Model => class extends Model {
+import { mixin } from '@/utils'
+
+export const AssetMixin = mixin(Model => class extends Model {
   static properties = {
     name: {
       type: 'string',
@@ -24,4 +26,4 @@ export const AssetMixin = Model => class extends Model {
       default: 0
     }
   }
-}
+})

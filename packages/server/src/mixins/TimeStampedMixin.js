@@ -1,9 +1,12 @@
-export const TimeStampedMixin = Model => class extends Model {
+import { mixin } from '@/utils'
+
+export const TimeStampedMixin = mixin(Model => class extends Model {
   static properties = {
     createdAt: {
       type: 'timestamp',
       default: 'now()'
     },
+
     updatedAt: {
       type: 'timestamp',
       default: 'now()'
@@ -15,7 +18,9 @@ export const TimeStampedMixin = Model => class extends Model {
       .select('createdAt', 'updatedAt')
   }
 
-  // TODO: Consider converting hooks to dito format:
+  // TODO: Consider converting hooks to dito format.
+  // This would also be future proof since objection is moving to static
+  // callbacks for hooks:
   //
   // static hooks = {
   //   'before:insert'(model) {
@@ -36,4 +41,4 @@ export const TimeStampedMixin = Model => class extends Model {
     this.updatedAt = new Date()
     return super.$beforeUpdate(opt, ctx)
   }
-}
+})
