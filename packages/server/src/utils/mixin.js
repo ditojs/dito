@@ -17,8 +17,7 @@ export function mixin(mixin) {
 function hasMixin(Class, mixin) {
   // We need to walk up the inheritance chain and check on every level.
   while (Class) {
-    const mixins = mixinsMap.get(Class)
-    if (mixins?.get(mixin)) {
+    if (mixinsMap.get(Class)?.get(mixin)) {
       return true
     }
     Class = Object.getPrototypeOf(Class)
