@@ -4,8 +4,8 @@ import { URL } from 'url'
 import multer from 'koa-multer'
 import { Storage } from './Storage'
 
-export class LocalStorage extends Storage {
-  static type = 'local'
+export class DiskStorage extends Storage {
+  static type = 'disk'
 
   constructor(config) {
     super(config)
@@ -29,16 +29,6 @@ export class LocalStorage extends Storage {
         cb(null, file.filename)
       }
     }))
-  }
-
-  getNestedFolder(name, posix = false) {
-    // Store files in nested folders created with the first two chars of
-    // filename, for faster access & management with large amounts of files.
-    return (posix ? path.posix : path).join(name[0], name[1])
-  }
-
-  getFilePath(name) {
-    return path.join(this.path, this.getNestedFolder(name), name)
   }
 
   getFileIdentifiers(file) {
@@ -68,5 +58,15 @@ export class LocalStorage extends Storage {
     const parentDir = path.dirname(dir)
     await removeIfEmpty(dir)
     await removeIfEmpty(parentDir)
+  }
+
+  getNestedFolder(name, posix = false) {
+    // Store files in nested folders created with the first two chars of
+    // filename, for faster access & management with large amounts of files.
+    return (posix ? path.posix : path).join(name[0], name[1])
+  }
+
+  getFilePath(name) {
+    return path.join(this.path, this.getNestedFolder(name), name)
   }
 }

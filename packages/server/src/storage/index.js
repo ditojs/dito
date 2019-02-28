@@ -1,8 +1,8 @@
 import { Storage } from './Storage'
-import { LocalStorage } from './LocalStorage'
+import { DiskStorage } from './DiskStorage'
 import { S3Storage } from './S3Storage'
 
-Storage.register(LocalStorage)
+Storage.register(DiskStorage)
 Storage.register(S3Storage)
 
 export { Storage }
