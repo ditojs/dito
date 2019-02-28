@@ -8,7 +8,7 @@
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "build": "lerna run build --stream",
-    "watch": "lerna run watch --stream --no-sort --concurrency 6",
+    "watch": "lerna run watch --parallel",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src"
@@ -57,7 +57,7 @@
     "full-icu": "^1.2.1",
     "husky": "^1.1.4",
     "jest": "^24.1.0",
-    "lerna": "^3.4.3",
+    "lerna": "^3.13.1",
     "lint-staged": "^8.0.5"
   }
 }
