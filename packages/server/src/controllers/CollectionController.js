@@ -43,7 +43,7 @@ export class CollectionController extends Controller {
   // @override
   setupAssets() {
     const { modelClass } = this
-    // Merge in the assets definition from the model into the uploads config.
+    // Merge in the assets definition from the model into the assets config.
     // That way, we can still use `allow` and `authorize` to controll the upload
     // access, while keeping the assets definitions in one central location on
     // the model.
@@ -90,7 +90,7 @@ export class CollectionController extends Controller {
         'before:*:patch',
         'before:*:delete'
       ], async ctx => {
-        ctx.uploads = {
+        ctx.assets = {
           before: getFiles(
             await loadDataPaths(
               modelClass.query(ctx.transaction).findByIds(this.getIds(ctx))
@@ -105,7 +105,7 @@ export class CollectionController extends Controller {
         'after:*:patch',
         'after:*:delete'
       ], async (ctx, result) => {
-        const before = ctx.uploads?.before || {}
+        const before = ctx.assets?.before || {}
         const after = ctx.action.name === 'delete' ? {} : getFiles(result)
         const added = []
         const removed = []
