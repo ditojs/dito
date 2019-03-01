@@ -381,7 +381,8 @@ const typeCheckers = {
   String: value => isString(value),
   Date: value => isDate(value),
   Array: value => isArray(value),
-  RegExp: value => isRegExp(value)
+  RegExp: value => isRegExp(value),
+  Function: value => isFunction(value)
 }
 
 const typeConverters = {

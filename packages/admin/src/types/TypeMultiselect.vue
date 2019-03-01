@@ -1,28 +1,34 @@
 <template lang="pug">
-  vue-multiselect.dito-multiselect(
-    ref="element"
-    :class="{ 'dito-multiple': multiple }"
-    v-model="multiSelectValue"
-    v-validate="validations"
-    v-bind="attributes"
-    v-on="listeners"
-    :show-labels="false"
-    :placeholder="placeholder"
-    tag-placeholder="Press enter to add new tag",
-    :options="options || []"
-    :custom-label="getLabelForOption"
-    :track-by="optionValue"
-    :group-label="groupByLabel"
-    :group-values="groupByOptions"
-    :multiple="multiple"
-    :searchable="searchable"
-    :taggable="taggable"
-    :internal-search="true"
-    :close-on-select="true"
-    :loading="isLoading"
-    @input="onChange()"
-    @tag="addTag"
-  )
+  .dito-multiselect-wrapper
+    vue-multiselect.dito-multiselect(
+      ref="element"
+      :class="{ 'dito-multiple': multiple }"
+      v-model="multiSelectValue"
+      v-validate="validations"
+      v-bind="attributes"
+      v-on="listeners"
+      :show-labels="false"
+      :placeholder="placeholder"
+      tag-placeholder="Press enter to add new tag",
+      :options="customMatchedOptions || options || []"
+      :custom-label="getLabelForOption"
+      :track-by="optionValue"
+      :group-label="groupByLabel"
+      :group-values="groupByOptions"
+      :multiple="multiple"
+      :searchable="searchable"
+      :taggable="taggable"
+      :internal-search="!customMatch"
+      :close-on-select="true"
+      :loading="isLoading"
+      @search-change="onSearchChange"
+      @input="onChange()"
+      @tag="addTag"
+    )
+    .dito-buttons.dito-buttons-round.dito-multiselect-unselect(
+      v-if="!multiple && !required"
+    )
+      button.dito-button(@click="unselect()") X
 </template>
 
 <style lang="sass">
@@ -39,7 +45,13 @@
   $tag-line-height: 1.2em
   $tag-icon-scale: 1.2
 
+  .dito-fill > .dito-multiselect
+    flex: 1
+
   .dito-multiselect
+    &-wrapper, &-wrapper.dito-fill
+      display: flex
+
     display: inline-block
     font-size: inherit
     min-height: inherit
@@ -198,6 +210,10 @@
           border-radius: $border-radius
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
+
+    &-unselect.dito-buttons
+      width: auto !important
+      flex: 0
 </style>
 
 <script>
@@ -211,6 +227,10 @@ import 'vue-multiselect/dist/vue-multiselect.min.css'
 export default TypeComponent.register('multiselect', {
   components: { VueMultiselect },
   mixins: [OptionsMixin],
+
+  data: () => ({
+    customMatchedOptions: null
+  }),
 
   computed: {
     multiSelectValue: {
@@ -250,6 +270,10 @@ export default TypeComponent.register('multiselect', {
     taggable: getSchemaAccessor('taggable', {
       type: Boolean,
       default: false
+    }),
+
+    customMatch: getSchemaAccessor('customMatch', {
+      type: Function
     }),
 
     placeholder() {
@@ -296,6 +320,18 @@ export default TypeComponent.register('multiselect', {
 
     focus() {
       this.$refs.element.activate()
+    },
+
+    unselect() {
+      this.value = null
+    },
+
+    onSearchChange(query) {
+      if (this.customMatch) {
+        this.customMatchedOptions = this.customMatch(query, this.options)
+      } else {
+        this.customMatchedOptions = null
+      }
     }
   }
 })
