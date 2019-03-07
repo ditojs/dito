@@ -97,7 +97,7 @@
               @click="deleteItem(item, index)"
               v-bind="getButtonAttributes(verbs.delete)"
             )
-      tfoot(v-if="creatable")
+      tfoot(v-if="creatable && !hasCreateButton")
         tr
           td.dito-buttons.dito-buttons-round(:colspan="numColumns")
             dito-form-chooser(
@@ -105,6 +105,13 @@
               :path="path"
               :verb="verbs.create"
             )
+    .dito-buttons.dito-form-buttons(v-if="hasCreateButton")
+      dito-form-chooser(
+        :schema="schema"
+        :path="path"
+        :verb="verbs.create"
+        :text="`Create ${getLabel(schema.form)}`"
+      )
 </template>
 
 <style lang="sass">
@@ -196,6 +203,11 @@ export default TypeComponent.register([
       return this.isListSource && this.inline &&
         // If there are only compact forms with no labels, don't add spacing
         (!this.isCompact || this.hasLabels)
+    },
+
+    hasCreateButton() {
+      const { schema } = this
+      return this.creatable && (schema.form && !schema.nested)
     }
   },
 

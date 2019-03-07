@@ -6,6 +6,7 @@
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
     )
+      span(v-if="text") {{ text }}
     ul.dito-pulldown(
       v-if="schema.forms"
       :class="{ 'dito-open': pulldown.open }"
@@ -37,7 +38,8 @@ export default DitoComponent.component('dito-form-chooser', {
   props: {
     schema: { type: Object, default: null },
     path: { type: String, required: true },
-    verb: { type: String, required: true }
+    verb: { type: String, required: true },
+    text: { type: String, default: null }
   },
 
   methods: {
