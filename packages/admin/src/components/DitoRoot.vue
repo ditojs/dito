@@ -1,9 +1,10 @@
 <template lang="pug">
   .dito
     modals-container
-    notifications(
+    notifications.dito-notifications(
       ref="notifications"
       position="top right"
+      classes="dito-notification"
     )
     dito-menu(
       :views="resolvedViews"
