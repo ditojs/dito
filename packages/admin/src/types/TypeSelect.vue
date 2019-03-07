@@ -26,6 +26,11 @@
           :value="getValueForOption(option)"
         )
           | {{ getLabelForOption(option) }}
+    button.dito-button-overlay.dito-button-clear(
+      v-if="clearable && value"
+      @click="clear"
+      :disabled="disabled"
+    )
 </template>
 
 <style lang="sass">
@@ -35,7 +40,7 @@
     display: inline-block
     position: relative
     select
-      padding-right: 2.5em
+      padding-right: 2 * $select-right-margin
     // Handle .dito-fill separately due to required nesting in .dito-select
     &.dito-fill
       select
@@ -43,7 +48,7 @@
     &::after
       +arrow($select-arrow-size)
       bottom: 2px
-      right: $select-right-margin
+      right: $select-right-margin - $select-arrow-size / 2
     &.dito-disabled::after
       border-color: $border-color
 </style>

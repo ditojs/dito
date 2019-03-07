@@ -48,10 +48,6 @@
   content: 'Copy'
 .dito-button-paste:empty::before
   content: 'Paste'
-.dito-button-clear:empty::before
-  content: 'Clear'
-.dito-button-filter:empty::before
-  content: 'Filter'
 
 .dito-buttons.dito-form-buttons
   text-align: center
@@ -79,3 +75,25 @@
     +icon-copy
   .dito-button-paste:empty::before
     +icon-paste
+
+.dito-button-overlay
+  position: absolute
+  right: $border-width
+  top: $border-width
+  bottom: $border-width
+  border: 0
+  border-radius: $border-radius
+  cursor: pointer
+
+.dito-button-overlay.dito-button-clear
+  display: none
+  width: 2em
+  z-index: 1
+  background: $color-white
+  &::before
+    +icon-clear($color-grey)
+  &:hover::before
+    +icon-clear($color-black)
+
+.dito-component:hover > .dito-button-overlay.dito-button-clear
+  display: block

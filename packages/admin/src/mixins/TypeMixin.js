@@ -158,6 +158,12 @@ export default {
       default: false
     }),
 
+    // To be used for selects and inputs only?
+    clearable: getSchemaAccessor('clearable', {
+      type: Boolean,
+      default: false
+    }),
+
     placeholder: getSchemaAccessor('placeholder', {
       type: String
     }),
@@ -285,6 +291,10 @@ export default {
       if (focus) {
         this.$nextTick(() => focus.focus())
       }
+    },
+
+    clear() {
+      this.value = null
     },
 
     onFocus() {

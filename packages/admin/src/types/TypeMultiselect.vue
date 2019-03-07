@@ -1,6 +1,6 @@
 <template lang="pug">
-  .dito-multiselect-wrapper
-    vue-multiselect.dito-multiselect(
+  .dito-multiselect
+    vue-multiselect(
       ref="element"
       :class="{ 'dito-multiple': multiple }"
       v-model="multiSelectValue"
@@ -24,10 +24,11 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
-    .dito-buttons.dito-buttons-round.dito-multiselect-unselect(
-      v-if="!multiple && !required"
+    button.dito-button-overlay.dito-button-clear(
+      v-if="clearable && value"
+      @click="clear"
+      :disabled="disabled"
     )
-      button.dito-button(@click="unselect()") X
 </template>
 
 <style lang="sass">
@@ -44,18 +45,13 @@
   $tag-line-height: 1.2em
   $tag-icon-scale: 1.2
 
-  .dito-fill > .dito-multiselect
-    flex: 1
-
   .dito-multiselect
-    &-wrapper, &-wrapper.dito-fill
-      display: flex
+    position: relative
 
-    display: inline-block
-    font-size: inherit
-    min-height: inherit
-    width: auto
-    color: $color-black
+    .multiselect
+      font-size: inherit
+      min-height: inherit
+      color: $color-black
 
     .multiselect__tags
       font-size: inherit
@@ -90,21 +86,10 @@
       padding-bottom: 0
       background: none
     // Unfortunately .multiselect__single is used for place placeholder text
-    // also, but luckily it is then nested in an nother span so wen ca match it:
+    // also, but as it is then nested in an nother span so wen can match it:
     span span.multiselect__single,
     .multiselect__input::placeholder
       color: $color-placeholder
-
-    &.dito-multiple
-      // Only shrink and float the input field if we have multiple values (tags)
-      .multiselect__single,
-      .multiselect__input
-        float: left
-        width: auto
-
-    &.dito-has-errors
-      .multiselect__tags
-        border-color: $color-error
 
     .multiselect__select,
     .multiselect__spinner
@@ -210,9 +195,23 @@
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
 
-    &-unselect.dito-buttons
-      width: auto !important
-      flex: 0
+      .multiselect__input
+        // For crying out loud vue-select, why set style="width: auto;" here?
+        width: 100% !important
+
+    &.dito-has-errors
+      .multiselect__tags
+        border-color: $color-error
+
+    &.dito-multiple
+      // Only shrink & float the input field if we have multiple values (tags)
+      .multiselect__single,
+      .multiselect__input
+        float: left
+        width: auto
+
+    .dito-button-clear
+      width: $spinner-width
 </style>
 
 <script>
@@ -317,10 +316,6 @@ export default TypeComponent.register('multiselect', {
 
     focus() {
       this.$refs.element.activate()
-    },
-
-    unselect() {
-      this.value = null
     },
 
     onAddTag(tag) {

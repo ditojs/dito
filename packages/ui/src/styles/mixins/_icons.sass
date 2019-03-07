@@ -1,5 +1,6 @@
 $plus-size: 20
 $arrow-size: 8
+$clear-size: 16
 $arrow-left: $arrow-size
 $arrow-double-step: 4
 $ellipsis-step: 8
@@ -15,6 +16,11 @@ $ellipsis-radius: 0.75
 =icon-remove($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
     +svg('line', (x1: 12 - $plus-size / 2, y1: 12, x2: 12 + $plus-size / 2, y2: 12))
+
+=icon-clear($color: $color-black, $background: transparent)
+  +svg-icon($color, $background)
+    +svg('line', (x1: 12 - $clear-size / 2, y1: 12 - $clear-size / 2, x2: 12 + $clear-size / 2, y2: 12 + $clear-size / 2))
+    +svg('line', (x1: 12 + $clear-size / 2, y1: 12 - $clear-size / 2, x2: 12 - $clear-size / 2, y2: 12 + $clear-size / 2))
 
 =icon-edit($color: $color-black, $background: transparent)
   +svg-icon($color, $background)
