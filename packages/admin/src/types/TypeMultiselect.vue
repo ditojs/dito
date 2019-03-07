@@ -10,7 +10,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="customMatchedOptions || options || []"
+      :options="matchedOptions || options || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -18,12 +18,11 @@
       :multiple="multiple"
       :searchable="searchable"
       :taggable="taggable"
-      :internal-search="!customMatch"
+      :internal-search="!searchFilter"
       :close-on-select="true"
       :loading="isLoading"
+      @tag="onAddTag"
       @search-change="onSearchChange"
-      @input="onChange()"
-      @tag="addTag"
     )
     .dito-buttons.dito-buttons-round.dito-multiselect-unselect(
       v-if="!multiple && !required"
@@ -229,7 +228,7 @@ export default TypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
 
   data: () => ({
-    customMatchedOptions: null
+    matchedOptions: null
   }),
 
   computed: {
@@ -272,9 +271,14 @@ export default TypeComponent.register('multiselect', {
       default: false
     }),
 
-    customMatch: getSchemaAccessor('customMatch', {
-      type: Function
-    }),
+    listeners() {
+      // override TypeMixin's listeners to re-route input to onChange()
+      return {
+        focus: () => this.onFocus(),
+        blur: () => this.onBlur(),
+        input: () => this.onChange()
+      }
+    },
 
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema
@@ -311,13 +315,6 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    addTag(tag) {
-      const option = this.addTagOption(tag)
-      if (option) {
-        this.value.push(this.getValueForOption(option))
-      }
-    },
-
     focus() {
       this.$refs.element.activate()
     },
@@ -326,12 +323,15 @@ export default TypeComponent.register('multiselect', {
       this.value = null
     },
 
-    onSearchChange(query) {
-      if (this.customMatch) {
-        this.customMatchedOptions = this.customMatch(query, this.options)
-      } else {
-        this.customMatchedOptions = null
+    onAddTag(tag) {
+      const option = this.addTagOption(tag)
+      if (option) {
+        this.value.push(this.getValueForOption(option))
       }
+    },
+
+    onSearchChange(query) {
+      this.matchedOptions = this.searchFilter?.(query, this.options) || null
     }
   }
 })

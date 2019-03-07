@@ -119,6 +119,10 @@ export default {
         null
     },
 
+    searchFilter() {
+      return this.schema.options.search
+    },
+
     dataProcessor() {
       // Convert object to a shallow copy with only id.
       const processRelate = data => data ? { id: data.id } : data
