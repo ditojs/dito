@@ -1,8 +1,12 @@
 <template lang="pug">
-  .dito-multiselect
+  .dito-multiselect(
+    :class=`{
+      'dito-multiselect-single': !multiple,
+      'dito-multiselect-multiple': multiple
+    }`
+  )
     vue-multiselect(
       ref="element"
-      :class="{ 'dito-multiple': multiple }"
       v-model="multiSelectValue"
       v-validate="validations"
       v-bind="attributes"
@@ -37,8 +41,7 @@
 // @import '~vue-multiselect/dist/vue-multiselect.min.css'
 
 .dito
-  $spinner-size: 1.3em
-  $spinner-width: $spinner-size + $select-right-margin - $select-arrow-size / 2
+  $spinner-width: $select-arrow-width
   $tag-icon-size: 1.8em
   $tag-margin: 2px
   $tag-padding: 3px
@@ -94,26 +97,25 @@
     .multiselect__select,
     .multiselect__spinner
       padding: 0
-      // 2px to prevent masking border with .multiselect__spinner
-      top: 2px
-      right: 2px
-      bottom: 2px
+      // $border-width to prevent masking border with .multiselect__spinner
+      top: $border-width
+      right: $border-width
+      bottom: $border-width
       height: inherit
 
     .multiselect__select
       width: 0
-      margin-right: $select-right-margin
+      margin-right: $select-arrow-width / 2
       &::before
         +arrow($select-arrow-size)
-        bottom: 2px
+        bottom: $select-arrow-bottom
         right: -$select-arrow-size / 2
 
     .multiselect__spinner
       width: $spinner-width
       &::before,
       &::after
-        width: $spinner-size
-        height: $spinner-size
+        // Change the width of the loading spinner
         border-width: 3px
         border-top-color: $color-active
         top: 0
@@ -170,7 +172,7 @@
       border: $border-style
       border-radius: $border-radius
 
-    &.multiselect--active
+    .multiselect--active
       .multiselect__tags
         border-color: $color-active
         border-bottom-left-radius: 0
@@ -182,7 +184,7 @@
         border-top-left-radius: 0
         border-top-right-radius: 0
 
-      &.multiselect--above
+      .multiselect--above
         .multiselect__tags
           border-radius: $border-radius
           border-top-left-radius: 0
@@ -195,20 +197,22 @@
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
 
-      .multiselect__input
-        // For crying out loud vue-select, why set style="width: auto;" here?
-        width: 100% !important
+    &.dito-multiselect-single
+      .multiselect--active
+        .multiselect__input
+          // For crying out loud vue-select, why set style="width: auto;" here?
+          width: 100% !important
 
-    &.dito-has-errors
-      .multiselect__tags
-        border-color: $color-error
-
-    &.dito-multiple
+    &.dito-multiselect-multiple
       // Only shrink & float the input field if we have multiple values (tags)
       .multiselect__single,
       .multiselect__input
         float: left
         width: auto
+
+    &.dito-has-errors
+      .multiselect__tags
+        border-color: $color-error
 
     .dito-button-clear
       width: $spinner-width

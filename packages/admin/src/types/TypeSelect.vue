@@ -36,19 +36,21 @@
 <style lang="sass">
 .dito
   // TODO: Move to dito-ui
+  $select-arrow-right: ($select-arrow-width - $select-arrow-size) / 2
   .dito-select
     display: inline-block
     position: relative
     select
-      padding-right: 2 * $select-right-margin
+      padding-right: $select-arrow-width
     // Handle .dito-fill separately due to required nesting in .dito-select
     &.dito-fill
       select
         width: 100%
     &::after
+      position: absolute
       +arrow($select-arrow-size)
-      bottom: 2px
-      right: $select-right-margin - $select-arrow-size / 2
+      bottom: $select-arrow-bottom
+      right: calc(#{$select-arrow-right} + #{$border-width})
     &.dito-disabled::after
       border-color: $border-color
 </style>
