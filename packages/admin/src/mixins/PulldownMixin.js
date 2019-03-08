@@ -9,6 +9,7 @@ export default {
       pulldown: {
         open: false,
         startTime: 0,
+        checkTime: true,
         documentHandlers: {
           mousedown: () => {
             this.showPulldown(false)
@@ -26,13 +27,18 @@ export default {
   },
 
   methods: {
-    onPulldownMouseDown() {
-      this.showPulldown(true)
+    onPulldownMouseDown(value) {
+      if (!value) {
+        this.showPulldown(true)
+        this.checkTime = true
+      } else {
+        this.checkTime = false
+      }
     },
 
     onPulldownMouseUp(value) {
       const { startTime } = this.pulldown
-      if (startTime && (Date.now() - startTime > 250)) {
+      if (!this.checkTime || startTime && (Date.now() - startTime > 250)) {
         this.showPulldown(false)
         if (value) {
           this.onPulldownSelect(value)

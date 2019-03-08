@@ -3,7 +3,7 @@
     template(v-if="hasPulldown")
       button.dito-button(
         type="button"
-        @mousedown.stop="onPulldownMouseDown"
+        @mousedown.stop="onPulldownMouseDown()"
         :class="`dito-button-${verb}`"
         :title="labelize(verb)"
       ) {{ text }}
@@ -13,7 +13,7 @@
         li(v-for="(form, type) in schema.forms")
           a(
             :class="`dito-type-${type}`"
-            @mousedown.stop
+            @mousedown.stop="onPulldownMouseDown(type)"
             @mouseup="onPulldownMouseUp(type)"
           ) {{ getLabel(form) }}
     button.dito-button(

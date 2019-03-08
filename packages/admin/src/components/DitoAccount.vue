@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-account
     a(
-      @mousedown.stop="onPulldownMouseDown"
+      @mousedown.stop="onPulldownMouseDown()"
     )
       span {{ user.username }}
     ul.dito-pulldown(
@@ -9,7 +9,7 @@
     )
       li(
         v-for="(label, value) of items"
-        @mousedown.stop
+        @mousedown.stop="onPulldownMouseDown(value)"
         @mouseup="onPulldownMouseUp(value)"
       )
         a {{ label }}
