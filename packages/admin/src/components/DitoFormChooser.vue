@@ -1,22 +1,28 @@
 <template lang="pug">
   .dito-form-chooser
+    template(v-if="hasPulldown")
+      button.dito-button(
+        type="button"
+        @mousedown.stop="onPulldownMouseDown"
+        :class="`dito-button-${verb}`"
+        :title="labelize(verb)"
+      ) {{ text }}
+      ul.dito-pulldown(
+        :class="{ 'dito-open': pulldown.open }"
+      )
+        li(v-for="(form, type) in schema.forms")
+          a(
+            :class="`dito-type-${type}`"
+            @mousedown.stop
+            @mouseup="onPulldownMouseUp(type)"
+          ) {{ getLabel(form) }}
     button.dito-button(
-      type="button"
-      @mousedown.stop="onPulldownSelect()"
+      v-else
+      :type="schema.inline ? 'button' : 'submit'"
+      @click="createItem"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
-    )
-      span(v-if="text") {{ text }}
-    ul.dito-pulldown(
-      v-if="schema.forms"
-      :class="{ 'dito-open': pulldown.open }"
-    )
-      li(v-for="(form, type) in schema.forms")
-        a(
-          :class="`dito-type-${type}`"
-          @mousedown.stop="handlePulldownSelect(type)"
-          @mouseup="handlePulldownSelect(type, true)"
-        ) {{ getLabel(form) }}
+    ) {{ text }}
 </template>
 
 <style lang="sass">
@@ -42,27 +48,28 @@ export default DitoComponent.component('dito-form-chooser', {
     text: { type: String, default: null }
   },
 
+  computed: {
+    hasPulldown() {
+      return !!this.schema.forms
+    }
+  },
+
   methods: {
-    onPulldownSelect(type) {
-      const { schema } = this
-      const { forms, inline } = schema
-      const form = type
-        ? forms?.[type]
-        : schema.form
-      if (form) {
-        if (inline) {
-          this.$parent.createItem(form, type)
-        } else {
-          this.$router.push({
-            path: `${this.path}/create`,
-            query: { type },
-            append: true
-          })
-        }
-        this.showPulldown(false)
-      } else if (forms) {
-        this.showPulldown(true)
+    createItem(form = this.schema.form, type) {
+      if (this.schema.inline) {
+        this.$parent.createItem(form, type)
+      } else {
+        this.$router.push({
+          path: `${this.path}/create`,
+          query: { type },
+          append: true
+        })
       }
+    },
+
+    onPulldownSelect(type) {
+      this.createItem(this.schema.forms[type], type)
+      this.showPulldown(false)
     }
   }
 })

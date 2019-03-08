@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-account
     a(
-      @mousedown.stop="showPulldown(true)"
+      @mousedown.stop="onPulldownMouseDown"
     )
       span {{ user.username }}
     ul.dito-pulldown(
@@ -9,8 +9,8 @@
     )
       li(
         v-for="(label, value) of items"
-        @mousedown.stop="handlePulldownSelect(value)"
-        @mouseup="handlePulldownSelect(value, true)"
+        @mousedown.stop
+        @mouseup="onPulldownMouseUp(value)"
       )
         a {{ label }}
 </template>
@@ -49,9 +49,9 @@ export default DitoComponent.component('dito-account', {
         this.rootComponent.logout()
         break
       case 'settings':
+        console.log('TODO: Implement Settings')
         break
       }
-      this.showPulldown(false)
     }
   }
 })

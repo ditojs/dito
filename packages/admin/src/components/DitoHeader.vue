@@ -62,6 +62,7 @@
     .dito-login
       position: absolute
       top: 0
+      cursor: pointer
     .dito-account
       left: $content-width + $content-padding * 2
 </style>

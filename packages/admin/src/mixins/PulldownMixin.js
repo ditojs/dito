@@ -16,7 +16,7 @@ export default {
           },
 
           mouseup: () => {
-            if (this.handlePulldownSelect(null, true)) {
+            if (this.onPulldownMouseUp(null)) {
               this.domOff(document, this.pulldown.documentHandlers)
             }
           }
@@ -26,9 +26,13 @@ export default {
   },
 
   methods: {
-    handlePulldownSelect(value, checkTime = false) {
+    onPulldownMouseDown() {
+      this.showPulldown(true)
+    },
+
+    onPulldownMouseUp(value) {
       const { startTime } = this.pulldown
-      if (!checkTime || startTime && (Date.now() - startTime > 250)) {
+      if (startTime && (Date.now() - startTime > 250)) {
         this.showPulldown(false)
         if (value) {
           this.onPulldownSelect(value)
