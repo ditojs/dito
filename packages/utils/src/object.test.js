@@ -1,6 +1,9 @@
 import {
-  pick, clone, equals, merge, groupBy, mapKeys, mapValues
+  pick, clone, equals, merge, groupBy, pickBy, mapKeys, mapValues
 } from './object'
+
+// Partially based on:
+// https://github.com/lodash/lodash/blob/4.17.11/test/test.js
 
 describe('pick()', () => {
   it(`should return the first value that isn't undefined`, () => {
@@ -477,6 +480,14 @@ describe('groupBy()', () => {
   it('should work with an object for `collection`', () => {
     const actual = groupBy({ a: 6.1, b: 4.2, c: 6.3 }, Math.floor)
     expect(actual).toStrictEqual({ 4: [4.2], 6: [6.1, 6.3] })
+  })
+})
+
+describe('pickBy()', () => {
+  it('should work with a predicate argument', () => {
+    const object = { a: 1, b: 2, c: 3, d: 4 }
+    const actual = pickBy(object, n => n === 1 || n === 3)
+    expect(actual).toStrictEqual({ a: 1, c: 3 })
   })
 })
 
