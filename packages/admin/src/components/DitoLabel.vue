@@ -11,6 +11,7 @@
     margin: 0 0 $form-spacing-half 0
     position: relative
     label
+      font-weight: bold
       white-space: nowrap
     &::before
       // Use &nbsp; to enforce the right text height in the container
