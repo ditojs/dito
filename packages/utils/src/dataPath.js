@@ -17,10 +17,15 @@ export function normalizeDataPath(path) {
   return parseDataPath(path).join('/')
 }
 
-export function getDataPath(obj, path) {
+export function getDataPath(
+  obj,
+  path,
+  handleError = () => { throw new Error(`Invalid path: ${path}`) }
+) {
   const parsedPath = parseDataPath(path)
   let next = 0
   for (const part of parsedPath) {
+    const index = next
     next++
     if (obj && typeof obj === 'object') {
       if (part in obj) {
@@ -32,7 +37,7 @@ export function getDataPath(obj, path) {
         return obj.map(value => getDataPath(value, subPath))
       }
     }
-    throw new Error(`Invalid path: ${path}`)
+    return handleError?.(obj, part, index)
   }
   return obj
 }

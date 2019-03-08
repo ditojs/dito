@@ -94,6 +94,17 @@ describe('getDataPath()', () => {
       .toThrow('Invalid path: object/unknown/prop')
   })
 
+  it(`should throw an error with nullish objects`, () => {
+    expect(() => getDataPath(null, 'object'))
+      .toThrow('Invalid path: object')
+  })
+
+  it(`should support custom error handler`, () => {
+    const handleError = (object, part, index) => `${part}, ${index}: err`
+    expect(getDataPath(data, 'object/unknown/prop', handleError))
+      .toBe('unknown, 1: err')
+  })
+
   it(`should return wildcard matches`, () => {
     const data = {
       object: {
