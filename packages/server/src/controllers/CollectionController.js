@@ -72,7 +72,8 @@ export class CollectionController extends Controller {
             (files, model) => {
               // Use flatten() as dataPath may contain wildcards, resulting in
               // nested files arrays.
-              const modelFiles = flatten(asArray(getDataPath(model, dataPath)))
+              const modelData = getDataPath(model, dataPath, () => null)
+              const modelFiles = flatten(asArray(modelData))
               for (const { name } of modelFiles) {
                 files.push(name)
               }

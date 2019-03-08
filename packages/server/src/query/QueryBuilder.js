@@ -247,13 +247,10 @@ export class QueryBuilder extends objection.QueryBuilder {
 
     const throwUnlessFullMatch = (index, property) => {
       if (index < parsedDataPath.length - 1) {
-        // Support wildcard loading/matching into json data types, which is
-        // fine, since the full json will simply be loaded with the property.
-        const next = parsedDataPath[index + 1]
-        if (
-          next !== '*' ||
-          !(property && ['object', 'array'].includes(property.type))
-        ) {
+        // once a json data type is reached, load it and assume we're done with
+        // the loading part, even if there s more to the data-path. This also
+        // supports wildcard `*` matching.
+        if (!(property && ['object', 'array'].includes(property.type))) {
           const unmatched = parsedDataPath.slice(index + 1).join('/')
           throw new QueryBuilderError(
             `Unable to load full data-path '${dataPath}' ('${unmatched}').`
