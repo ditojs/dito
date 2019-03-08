@@ -12,8 +12,8 @@
           th
       vue-draggable(
         element="tbody"
+        v-bind="getDragOptions(draggable)"
         :list="files"
-        :options="getDragOptions(draggable)"
         @start="onStartDrag"
         @end="onEndDrag"
       )

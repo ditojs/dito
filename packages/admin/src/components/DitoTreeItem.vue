@@ -57,8 +57,8 @@
     vue-draggable(
       v-if="children"
       v-show="opened"
+      v-bind="childrenDragOptions"
       :list="childrenList"
-      :options="childrenDragOptions"
       @start="onStartDrag"
       @end="onEndDrag($event, childrenList, children)"
     )
