@@ -26,7 +26,7 @@
         :hasButtons="hasButtons"
       )
       vue-draggable(
-        element="tbody"
+        tag="tbody"
         v-bind="getDragOptions(draggable)"
         :list="listData"
         @start="onStartDrag"

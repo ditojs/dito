@@ -11,7 +11,7 @@
             span Status
           th
       vue-draggable(
-        element="tbody"
+        tag="tbody"
         v-bind="getDragOptions(draggable)"
         :list="files"
         @start="onStartDrag"
