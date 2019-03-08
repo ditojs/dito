@@ -19,7 +19,7 @@
     button.dito-button(
       v-else
       :type="schema.inline ? 'button' : 'submit'"
-      @click="createItem"
+      @click="createItem()"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
     ) {{ text }}
