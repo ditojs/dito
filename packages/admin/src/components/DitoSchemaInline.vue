@@ -6,9 +6,9 @@
     :data="data"
     :meta="meta"
     :store="store"
-    :label="compact ? null : label"
+    :label="label"
     :disabled="disabled"
-    :class="{ 'dito-schema-compact': compact }"
+    :class="{ 'dito-schema-compact': schema.compact }"
   )
 </template>
 
@@ -25,7 +25,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObjectSource } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-schema-inline', {
@@ -37,13 +36,6 @@ export default DitoComponent.component('dito-schema-inline', {
     store: { type: Object, required: true },
     label: { type: String, default: null },
     disabled: { type: Boolean, required: true }
-  },
-
-  computed: {
-    compact() {
-      // The default is true for object sources:
-      return this.schema.compact ?? isObjectSource(this.sourceSchema)
-    }
   }
 })
 </script>

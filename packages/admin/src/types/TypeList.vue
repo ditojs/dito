@@ -55,7 +55,7 @@
             td
               dito-schema-inline(
                 v-if="inline"
-                :label="getItemLabel(schema, item, index)"
+                :label="isListSource ? getItemLabel(schema, item, index) : null"
                 :schema="getItemFormSchema(schema, item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
