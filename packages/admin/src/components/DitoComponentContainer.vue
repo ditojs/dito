@@ -10,6 +10,7 @@
       v-if="label"
       :dataPath="dataPath"
       :text="label"
+      :class="componentClass"
     )
     component.dito-component(
       :is="getTypeComponent(schema.type)"
@@ -40,8 +41,8 @@
     &:empty,
       padding: 0
   // NOTE: This is not nested inside .dito-component-container so that other
-  // type components can override `.dito-fill` behavior (filter precedence).
-  .dito-component.dito-fill
+  // type components can override `.dito-width-fill` class (filter precedence).
+  .dito-component.dito-width-fill
     display: block
     width: 100%
     &.dito-checkbox,
@@ -116,8 +117,8 @@ export default DitoComponent.component('dito-component-container', {
       const { width } = this
       return {
         'dito-disabled': this.componentDisabled,
-        'dito-fill': width === 'fill' || this.percentage > 0,
-        'dito-auto': width === 'auto',
+        'dito-width-fill': width === 'fill' || this.percentage > 0,
+        'dito-width-auto': width === 'auto',
         'dito-has-errors': this.$errors.has(this.dataPath)
       }
     },

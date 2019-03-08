@@ -42,8 +42,8 @@
     position: relative
     select
       padding-right: $select-arrow-width
-    // Handle .dito-fill separately due to required nesting in .dito-select
-    &.dito-fill
+    // Handle .dito-width-fill separately due to required nesting of select:
+    &.dito-width-fill
       select
         width: 100%
     &::after

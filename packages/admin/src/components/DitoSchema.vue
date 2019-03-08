@@ -6,7 +6,8 @@
     )
       .dito-label(
         v-if="label"
-      ) {{ label }}
+      )
+        label {{ label }}
       dito-tabs(
         v-if="tabs"
         :tabs="tabs"

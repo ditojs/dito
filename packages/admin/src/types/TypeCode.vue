@@ -13,7 +13,7 @@
     // For propper sizing of content along sith :style="style" setting above,
     // for proper line-height calculation.
     padding: $input-padding
-    &.dito-fill
+    &.dito-width-fill
       width: auto
     .codeflask
       background: none
