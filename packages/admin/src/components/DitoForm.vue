@@ -99,7 +99,7 @@ export default DitoComponent.component('dito-form', {
                 click: () => this.cancel()
               }
             },
-            submit: {
+            submit: !this.doesMutate && {
               type: 'submit',
               events: {
                 click: ({ target }) => this.submit(target)

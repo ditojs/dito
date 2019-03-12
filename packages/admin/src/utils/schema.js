@@ -1,7 +1,7 @@
 import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
 import {
-  isObject, isArray, isFunction, isPromise, asArray, clone, camelize
+  isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
 
 export async function resolveViews(views) {
@@ -196,7 +196,11 @@ export function setDefaults(schema, data = {}) {
 export function getNamedSchemas(descriptions, defaults) {
   const toObject = (array, toSchema) => array.reduce((object, value) => {
     const schema = toSchema(value)
-    object[schema.name] = defaults ? { ...defaults, ...schema } : schema
+    if (schema) {
+      object[schema.name] = schema && defaults
+        ? { ...defaults, ...schema }
+        : schema
+    }
     return object
   }, {})
 
@@ -207,16 +211,18 @@ export function getNamedSchemas(descriptions, defaults) {
       }
     ))
     : isObject(descriptions) && Object.keys(descriptions).length
-      ? toObject(Object.entries(descriptions),
-        ([name, value]) => isObject(value)
-          ? {
+      ? toObject(
+        Object.entries(descriptions),
+        ([name, value]) =>
+          isObject(value) ? {
             name,
             ...value
           }
-          : {
+          : isString(value) ? {
             name,
             label: value
           }
+          : null
       )
       : null
 }
