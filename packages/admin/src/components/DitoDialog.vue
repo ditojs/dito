@@ -6,7 +6,7 @@
       :data="data"
       :meta="meta"
     )
-      dito-buttons.dito-form-buttons(
+      dito-buttons.dito-buttons-large(
         slot="buttons"
         :buttons="buttonSchemas"
         :data="data"

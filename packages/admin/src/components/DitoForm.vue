@@ -27,7 +27,7 @@
       :disabled="isLoading"
       :menuHeader="true"
     )
-      dito-buttons.dito-form-buttons(
+      dito-buttons.dito-form-buttons.dito-buttons-large(
         slot="buttons"
         :buttons="buttonSchemas"
         :dataPath="dataPath"
