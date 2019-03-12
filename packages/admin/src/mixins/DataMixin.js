@@ -88,9 +88,10 @@ export default {
 
   methods: {
     getVerbs() {
+      const { $verbs } = this
       return this.isTransient
         ? {
-          ...this.$verbs,
+          ...$verbs,
           // Override default verbs with their transient versions:
           create: 'add',
           created: 'added',
@@ -99,7 +100,7 @@ export default {
           delete: 'remove',
           deleted: 'removed'
         }
-        : this.$verbs
+        : $verbs
     },
 
     getResourcePath(resource) {

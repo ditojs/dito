@@ -42,14 +42,6 @@ export default DitoForm.component('dito-form-nested', {
   computed: {
     isNested() {
       return true
-    },
-
-    verbs() {
-      return {
-        ...this.$verbs,
-        cancel: 'close',
-        cancelled: 'closed'
-      }
     }
   }
 })

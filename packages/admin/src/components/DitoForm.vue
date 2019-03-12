@@ -70,10 +70,13 @@ export default DitoComponent.component('dito-form', {
       // NOTE: These get passed on to children through:
       // `provide() ... { $verbs: this.verbs }` in DataMixin
       const verbs = this.getVerbs()
+      const { create, isNested } = this
       return {
         ...verbs,
-        submit: this.create ? verbs.create : verbs.save,
-        submitted: this.create ? verbs.created : verbs.saved
+        submit: create ? verbs.create : verbs.save,
+        submitted: create ? verbs.created : verbs.saved,
+        cancel: isNested ? verbs.close : verbs.cancel,
+        cancelled: isNested ? verbs.closed : verbs.cancelled
       }
     },
 
