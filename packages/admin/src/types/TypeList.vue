@@ -97,21 +97,20 @@
               @click="deleteItem(item, index)"
               v-bind="getButtonAttributes(verbs.delete)"
             )
-      tfoot(v-if="creatable && !hasCreateButton")
+      tfoot(
+        v-if="creatable"
+      )
         tr
-          td.dito-buttons.dito-buttons-round(:colspan="numColumns")
+          td.dito-buttons.dito-buttons-round(
+            :colspan="numColumns"
+            :class="{ 'dito-buttons-large': !!viewComponent }"
+          )
             dito-form-chooser(
               :schema="schema"
               :path="path"
               :verb="verbs.create"
+              :text="createButtonText"
             )
-    .dito-buttons.dito-form-buttons(v-if="hasCreateButton")
-      dito-form-chooser(
-        :schema="schema"
-        :path="path"
-        :verb="verbs.create"
-        :text="`Create ${getLabel(schema.form)}`"
-      )
 </template>
 
 <style lang="sass">
@@ -126,6 +125,10 @@
       +user-select(none)
       &:empty
         display: none
+    tfoot
+      .dito-buttons-large
+        background: none
+        text-align: center
   .dito-table-spaced
     border-spacing: 0 $form-spacing
     margin-top: -$form-spacing
@@ -137,7 +140,7 @@ import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
-import { pickBy, equals, hyphenate } from '@ditojs/utils'
+import { pickBy, equals, capitalize, hyphenate } from '@ditojs/utils'
 import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
@@ -205,9 +208,21 @@ export default TypeComponent.register([
         (!this.isCompact || this.hasLabels)
     },
 
-    hasCreateButton() {
-      const { schema } = this
-      return this.creatable && (schema.form && !schema.nested)
+    createButtonText() {
+      return (
+        // Allow schema to override create button through creatable object:
+        this.schema.creatable.label ||
+        // Auto-generate create button labels from from labels for list
+        // sources with only one form:
+        this.isListSource && this.formLabel &&
+          `${capitalize(this.verbs.create)} ${this.formLabel}` ||
+        null
+      )
+    },
+
+    formLabel() {
+      const { form } = this.schema
+      return form && this.getLabel(form)
     }
   },
 
