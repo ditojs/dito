@@ -6,9 +6,9 @@
     :data="data"
     :meta="meta"
     :store="store"
-    :label="label"
+    :label="compact ? null: label"
     :disabled="disabled"
-    :class="{ 'dito-schema-compact': schema.compact }"
+    :class="{ 'dito-schema-compact': compact }"
   )
 </template>
 
@@ -37,6 +37,12 @@ export default DitoComponent.component('dito-schema-inline', {
     store: { type: Object, required: true },
     label: { type: String, default: null },
     disabled: { type: Boolean, required: true }
+  },
+
+  computed: {
+    compact() {
+      return this.schema.compact
+    }
   }
 })
 </script>
