@@ -18,10 +18,6 @@
     padding: 0
     .dito-schema-header
       padding-bottom: $form-spacing
-    .dito-component.dito-width-fill
-      // When nested, reset the width style in the `.dito-width-fill` class from
-      // above again.
-      width: auto
 </style>
 
 <script>
