@@ -272,8 +272,9 @@ export default TypeComponent.register('upload', {
           }
         } else if (error) {
           const message = {
-            extension: `Unsupported file-type: ${newFile.name}`
-          }[error] || `Unknown error: ${error}`
+            extension: `Unsupported file-type: ${newFile.name}`,
+            size: `File is too large: ${formatFileSize(newFile.size)}`
+          }[error] || `Unknown Upload Error: '${error}'`
           this.notify('error', 'Upload Error', message)
           this.removeFile(newFile)
         } else {
