@@ -45,7 +45,7 @@
     "db-errors": "^0.1.0",
     "eventemitter2": "^5.0.1",
     "fs-extra": "^7.0.1",
-    "image-size-stream": "^1.1.0",
+    "image-size": "^0.7.2",
     "koa": "^2.7.0",
     "koa-bodyparser": "^4.2.1",
     "koa-compose": "^4.1.0",

@@ -7,8 +7,8 @@ import { Storage } from './Storage'
 export class DiskStorage extends Storage {
   static type = 'disk'
 
-  constructor(config) {
-    super(config)
+  constructor(app, config) {
+    super(app, config)
     if (!config.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }

@@ -1,15 +1,16 @@
 import path from 'path'
-import Stream from 'stream'
 import multer from 'koa-multer'
 import uuidv4 from 'uuid/v4'
-import imageSizeStream from 'image-size-stream'
+import { PassThrough } from 'stream'
 import { hyphenate } from '@ditojs/utils'
 import { NotImplementedError } from '@/errors'
+import { ImageSizeTransform } from './ImageSizeTransform'
 
 const storageClasses = {}
 
 export class Storage {
-  constructor(config) {
+  constructor(app, config) {
+    this.app = app
     this.config = config
     this.name = config.name
     this.storage = null
@@ -22,9 +23,13 @@ export class Storage {
     const { _handleFile } = storage
     storage._handleFile = async (req, file, cb) => {
       if (this.isImageFile(file)) {
-        const { width, height } = await this.getImageSize(file)
-        file.width = width
-        file.height = height
+        try {
+          const { width, height } = await this.getImageSize(file)
+          file.width = width
+          file.height = height
+        } catch (err) {
+          this.app.emit('error', err)
+        }
       }
       return _handleFile.call(storage, req, file, cb)
     }
@@ -63,8 +68,8 @@ export class Storage {
   async getImageSize(file) {
     // Copy source stream into two PassThrough streams, so one can determine
     // image size while the other can continue processing the upload.
-    const stream1 = new Stream.PassThrough()
-    const stream2 = new Stream.PassThrough()
+    const stream1 = new PassThrough()
+    const stream2 = new PassThrough()
     file.stream.pipe(stream1)
     file.stream.pipe(stream2)
     // Override `file.stream` with the copied stream.
@@ -74,11 +79,10 @@ export class Storage {
       value: stream1
     })
     return new Promise((resolve, reject) => {
-      stream2.pipe(
-        imageSizeStream()
-          .on('size', size => resolve(size))
-          .on('error', error => reject(error))
-      )
+      stream2
+        .pipe(new ImageSizeTransform())
+        .on('size', size => resolve(size))
+        .on('error', error => reject(error))
     })
   }
 

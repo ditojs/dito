@@ -287,7 +287,7 @@ export class Application extends Koa {
         throw new Error(`Unsupported storage: ${config}`)
       }
       // eslint-disable-next-line new-cap
-      storage = new storageClass(config)
+      storage = new storageClass(this, config)
     } else if (config instanceof Storage) {
       storage = config
     }
