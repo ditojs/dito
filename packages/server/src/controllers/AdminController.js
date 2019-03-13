@@ -59,7 +59,7 @@ export class AdminController extends Controller {
         publicPath: '/',
         stats
       },
-      hotClient: {
+      hotClient: !config.build.disableHotReload && {
         stats
       }
     })
