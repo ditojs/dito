@@ -34,7 +34,7 @@ export function getDataPath(
       } else if (part === '*' && isArray(obj)) {
         // Support wildcards on arrays
         const subPath = parsedPath.slice(next)
-        return obj.map(value => getDataPath(value, subPath))
+        return obj.map(value => getDataPath(value, subPath, handleError))
       }
     }
     return handleError?.(obj, part, index)
