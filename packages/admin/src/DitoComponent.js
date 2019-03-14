@@ -5,6 +5,7 @@ import { isFunction, isPromise } from '@ditojs/utils'
 
 const components = {}
 const typeComponents = {}
+const unknownTypeReported = {}
 
 const DitoComponent = Vue.extend({
   // Make sure that registered components are present in all DitoComponent.
@@ -13,7 +14,13 @@ const DitoComponent = Vue.extend({
 
   methods: {
     getTypeComponent(type) {
-      return typeComponents[type] || null
+      const component = typeComponents[type] || null
+      if (!component && !unknownTypeReported[type]) {
+        // Report each missing type only once, to avoid flooding the console:
+        unknownTypeReported[type] = true
+        throw new Error(`Unknown Dito component type: '${type}'`)
+      }
+      return component
     },
 
     resolveTypeComponent(component) {
