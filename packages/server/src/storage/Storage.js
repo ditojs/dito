@@ -1,10 +1,10 @@
 import path from 'path'
 import multer from 'koa-multer'
 import uuidv4 from 'uuid/v4'
-import { PassThrough } from 'stream'
 import { hyphenate } from '@ditojs/utils'
 import { NotImplementedError } from '@/errors'
 import { ImageSizeTransform } from './ImageSizeTransform'
+import { CloneableReadable } from './CloneableReadable'
 
 const storageClasses = {}
 
@@ -21,17 +21,55 @@ export class Storage {
     // Monkey-patch storage._handleFile to also read image size from the stream
     // and set the file fields accordingly.
     const { _handleFile } = storage
-    storage._handleFile = async (req, file, cb) => {
+    storage._handleFile = async (req, file, callback) => {
       if (this.isImageFile(file)) {
+        // Handle image size detection in parallel with multer file upload:
         try {
-          const { width, height } = await this.getImageSize(file)
-          file.width = width
-          file.height = height
+          // Override `file.stream` with a cloneable stream.
+          const { stream } = file
+          Object.defineProperty(file, 'stream', {
+            configurable: true,
+            enumerable: false,
+            value: new CloneableReadable(stream)
+          })
+          const [size, res] = await Promise.all([
+            // Image detection in a promise:
+            new Promise(resolve => {
+              new CloneableReadable(stream)
+                .pipe(new ImageSizeTransform())
+                .on('size', resolve)
+                .on('error', err => {
+                  // Do not reject with this error, but log it:
+                  this.app.emit(
+                    'error',
+                    `Unable to determine image size: ${err}`
+                  )
+                  resolve(null)
+                })
+            }),
+            // The original `_handleFile()` as a promise:
+            new Promise((resolve, reject) => {
+              _handleFile.call(storage, req, file, (err, file) => {
+                if (err) {
+                  reject(err)
+                } else {
+                  resolve(file)
+                }
+              })
+            })
+          ])
+          if (size) {
+            const { width, height } = size
+            res.width = width
+            res.height = height
+          }
+          callback(null, res)
         } catch (err) {
-          this.app.emit('error', err)
+          callback(err)
         }
+      } else {
+        return _handleFile.call(storage, req, file, callback)
       }
-      return _handleFile.call(storage, req, file, cb)
     }
   }
 
@@ -63,27 +101,6 @@ export class Storage {
 
   isImageFile(file) {
     return file.mimetype.startsWith('image/')
-  }
-
-  async getImageSize(file) {
-    // Copy source stream into two PassThrough streams, so one can determine
-    // image size while the other can continue processing the upload.
-    const stream1 = new PassThrough()
-    const stream2 = new PassThrough()
-    file.stream.pipe(stream1)
-    file.stream.pipe(stream2)
-    // Override `file.stream` with the copied stream.
-    Object.defineProperty(file, 'stream', {
-      configurable: true,
-      enumerable: false,
-      value: stream1
-    })
-    return new Promise((resolve, reject) => {
-      stream2
-        .pipe(new ImageSizeTransform())
-        .on('size', size => resolve(size))
-        .on('error', error => reject(error))
-    })
   }
 
   getFileIdentifiers(_file) {

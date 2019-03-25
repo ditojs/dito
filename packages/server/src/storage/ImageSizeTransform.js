@@ -28,9 +28,10 @@ export class ImageSizeTransform extends Transform {
           ? Buffer.concat([this.buffer, chunk])
           : chunk
         try {
-          this.emit('size', imageSize(this.buffer))
+          const size = imageSize(this.buffer)
           this.error = null
           this.done = true
+          this.emit('size', size)
         } catch (err) {
           // Do not emit the error right away. Instead keep trying when new
           // data is received until either the image size can be determined,
@@ -39,8 +40,7 @@ export class ImageSizeTransform extends Transform {
         }
       }
     }
-    this.push(chunk)
-    callback()
+    callback(null, chunk)
   }
 
   _flush(callback) {
