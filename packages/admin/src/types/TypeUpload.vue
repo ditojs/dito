@@ -272,10 +272,16 @@ export default TypeComponent.register('upload', {
           }
         } else if (error) {
           const message = {
+            abort: `Upload aborted`,
+            denied: `Upload denied`,
             extension: `Unsupported file-type: ${newFile.name}`,
-            size: `File is too large: ${formatFileSize(newFile.size)}`
-          }[error] || `Unknown Upload Error: '${error}'`
-          this.notify('error', 'Upload Error', message)
+            network: `Network error encountered during upload`,
+            server: `Server error occurred during upload`,
+            size: `File is too large: ${formatFileSize(newFile.size)}`,
+            timeout: `Timeout occurred during upload`
+
+          }[error] || `Unknown File Upload Error: '${error}'`
+          this.notify('error', 'File Upload Error', message)
           this.removeFile(newFile)
         } else {
           // TODO: Implement progress bar for uploads
