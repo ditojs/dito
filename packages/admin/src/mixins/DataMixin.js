@@ -26,6 +26,8 @@ export default {
     },
 
     isExcluded() {
+      // TODO: Remove this once we switch to explicitly specifying
+      // `resourceUrlPath` settings for componets that load their data.
       return !!this.sourceSchema.exclude
     },
 
@@ -37,6 +39,8 @@ export default {
       const form = this.formComponent
       return (
         this.isNested ||
+        // TODO: Remove this once we switch to explicitly specifying
+        // `resourceUrlPath` settings for componets that load their data.
         this.isExcluded ||
         form && (
           form.isTransient ||

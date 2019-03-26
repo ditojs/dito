@@ -1,6 +1,6 @@
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItemParams, getItem, getParentItem } from '@/utils/data'
-import { asArray } from '@ditojs/utils'
+import { isFunction, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -116,15 +116,22 @@ export default {
       const { dataProcessor } = this
       const { exclude, process } = this.schema
       return (value, name, dataPath, rootData) => {
-        if (exclude) {
+        let params = null
+        const getParams = () => (
+          params ||
+          (params = getItemParams(null, { value, name, dataPath, rootData }))
+        )
+        if (
+          exclude === true ||
+          // Support functions next to booleans for `schema.exclude`:
+          isFunction(exclude) && exclude(getParams())
+        ) {
           return undefined
         }
         if (dataProcessor) {
           value = dataProcessor(value)
         }
-        return process
-          ? process(getItemParams(this, { value, name, dataPath, rootData }))
-          : value
+        return process ? process(getParams()) : value
       }
     },
 
