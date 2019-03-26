@@ -1,10 +1,10 @@
 import path from 'path'
 import multer from 'koa-multer'
 import uuidv4 from 'uuid/v4'
-import { hyphenate } from '@ditojs/utils'
 import { NotImplementedError } from '@/errors'
 import { ImageSizeTransform } from './ImageSizeTransform'
 import { ReadableClone } from './ReadableClone'
+import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 
 const storageClasses = {}
 
@@ -57,13 +57,10 @@ export class Storage {
             }),
             // The original `_handleFile()`:
             new Promise((resolve, reject) => {
-              _handleFile.call(storage, req, file, (err, file) => {
-                if (err) {
-                  reject(err)
-                } else {
-                  resolve(file)
-                }
-              })
+              _handleFile.call(
+                storage, req, file,
+                toPromiseCallback(resolve, reject)
+              )
             })
           ])
           if (size) {

@@ -1,6 +1,7 @@
 import aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
 import { Storage } from './Storage'
+import { toPromiseCallback } from '@ditojs/utils'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -59,13 +60,7 @@ export class S3Storage extends Storage {
 
   execute(method, params) {
     return new Promise((resolve, reject) => {
-      this.s3[method](params, (err, res) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(res)
-        }
-      })
+      this.s3[method](params, toPromiseCallback(resolve, reject))
     })
   }
 }
