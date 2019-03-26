@@ -4,7 +4,7 @@ import uuidv4 from 'uuid/v4'
 import { hyphenate } from '@ditojs/utils'
 import { NotImplementedError } from '@/errors'
 import { ImageSizeTransform } from './ImageSizeTransform'
-import { CloneableReadable } from './CloneableReadable'
+import { ReadableClone } from './ReadableClone'
 
 const storageClasses = {}
 
@@ -25,29 +25,37 @@ export class Storage {
       if (this.isImageFile(file)) {
         // Handle image size detection in parallel with multer file upload:
         try {
-          // Override `file.stream` with a cloneable stream.
+          // Create two readable clones of the stream that can be read from
+          // simultaneously: The first to override `file.stream` with,
+          // the second to run the image size detection on:
           const { stream } = file
+          const stream1 = new ReadableClone(stream)
+          const stream2 = new ReadableClone(stream)
           Object.defineProperty(file, 'stream', {
             configurable: true,
             enumerable: false,
-            value: new CloneableReadable(stream)
+            value: stream1
           })
           const [size, res] = await Promise.all([
-            // Image detection in a promise:
+            // Image size detection:
             new Promise(resolve => {
-              new CloneableReadable(stream)
+              stream2
                 .pipe(new ImageSizeTransform())
-                .on('size', resolve)
+                .on('size', size => {
+                  stream2.destroy()
+                  resolve(size)
+                })
                 .on('error', err => {
                   // Do not reject with this error, but log it:
                   this.app.emit(
                     'error',
                     `Unable to determine image size: ${err}`
                   )
+                  stream2.destroy()
                   resolve(null)
                 })
             }),
-            // The original `_handleFile()` as a promise:
+            // The original `_handleFile()`:
             new Promise((resolve, reject) => {
               _handleFile.call(storage, req, file, (err, file) => {
                 if (err) {
