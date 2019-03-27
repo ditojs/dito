@@ -1,8 +1,9 @@
 <template lang="pug">
   .dito-tabs
-    a(
+    router-link(
       v-for="(tabSchema, key) in tabs"
-      :href="`#${key}`"
+      :key="key"
+      :to="{ hash: key }"
       :class="{ selected: selectedTab === key }"
     )
       | {{ getLabel(tabSchema, key) }}
