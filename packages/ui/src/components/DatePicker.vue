@@ -14,8 +14,9 @@
       :value="currentText"
       readonly
       :class="{ 'dito-focus': showPopup }"
+      @focus="inputFocused = true"
+      @blur="inputFocused = false"
       @keydown="onKeyDown"
-      v-on="$listeners"
       v-bind="{ placeholder, disabled }"
     )
     // icon(type="calendar" :color="iconColor")
@@ -65,7 +66,15 @@ export default {
     return {
       currentValue: this.value,
       currentText: null,
-      showPopup: this.show
+      showPopup: this.show,
+      inputFocused: false,
+      changed: false
+    }
+  },
+
+  computed: {
+    focused() {
+      return this.inputFocused || this.showPopup
     }
   },
 
@@ -79,6 +88,7 @@ export default {
     currentValue(date) {
       this.updateText()
       if (+date !== +this.value) {
+        this.changed = true
         this.$emit('input', date)
       }
     },
@@ -91,7 +101,21 @@ export default {
       if (!newVal !== !oldVal) {
         this.$emit('update:show', newVal)
       }
+    },
+
+    focused(newVal, oldVal) {
+      if (!newVal !== !oldVal) {
+        this.$emit(newVal ? 'focus' : 'blur')
+      }
     }
+  },
+
+  mounted() {
+    this.$on('blur', () => {
+      if (this.changed) {
+        this.$emit('change', this.currentValue)
+      }
+    })
   },
 
   methods: {

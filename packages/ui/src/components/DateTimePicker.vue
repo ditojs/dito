@@ -3,7 +3,7 @@
     ref="picker"
   )
     .dito-pickers(
-      :class="{ 'dito-focus': showDate || showTime }"
+      :class="{ 'dito-focus': focused }"
     )
       date-picker(
         ref="date"
@@ -11,7 +11,8 @@
         placement="bottom-left"
         :target="$refs.picker"
         :show.sync="showDate"
-        v-on="$listeners"
+        @focus="dateFocused = true"
+        @blur="dateFocused = false"
         v-bind="{ transition, placeholder, format, locale, disabled }"
       )
       time-picker(
@@ -21,7 +22,8 @@
         placement="bottom-right"
         :target="$refs.picker"
         :show.sync="showTime"
-        v-on="$listeners"
+        @focus="timeFocused = true"
+        @blur="timeFocused = false"
         v-bind="{ transition, disabled }"
       )
 </template>
@@ -69,7 +71,16 @@ export default {
     return {
       currentValue: this.value,
       showDate: false,
-      showTime: false
+      showTime: false,
+      dateFocused: false,
+      timeFocused: false,
+      changed: false
+    }
+  },
+
+  computed: {
+    focused() {
+      return this.dateFocused || this.timeFocused
     }
   },
 
@@ -82,9 +93,24 @@ export default {
 
     currentValue(date) {
       if (+date !== +this.value) {
+        this.changed = true
         this.$emit('input', date)
       }
+    },
+
+    focused(newVal, oldVal) {
+      if (!newVal !== !oldVal) {
+        this.$emit(newVal ? 'focus' : 'blur')
+      }
     }
+  },
+
+  mounted() {
+    this.$on('blur', () => {
+      if (this.changed) {
+        this.$emit('change', this.currentValue)
+      }
+    })
   },
 
   methods: {

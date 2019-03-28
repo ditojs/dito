@@ -65,7 +65,8 @@ export default {
     },
 
     listeners() {
-      // Remove 'input' listener, but pass on all others.
+      // Remove 'input' listener because we're handling it separately below,
+      // but pass on all others to the wrapped native element:
       const { input, ...listeners } = this.$listeners
       return listeners
     }
