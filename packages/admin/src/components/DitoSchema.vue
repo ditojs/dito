@@ -238,7 +238,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     isValidated() {
-      // Components without validation have `isValid` return undefined.
+      // Components without validation have `isValidated` return undefined.
       // Don't count those as not validated.
       return this.everyComponent(it => it.isValidated !== false)
     }

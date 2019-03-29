@@ -119,6 +119,22 @@ export default DitoComponent.component('dito-form', {
       return this.isNested
     },
 
+    isDirty() {
+      return this.$refs.schema.isDirty
+    },
+
+    isTouched() {
+      return this.$refs.schema.isTouched
+    },
+
+    isValid() {
+      return this.$refs.schema.isTouched
+    },
+
+    isValidated() {
+      return this.$refs.schema.isValidated
+    },
+
     doesMutate() {
       // When `sourceSchema.mutate` is true, the form edits the inherited data
       // directly instead of making a copy for application upon submit.
@@ -241,10 +257,6 @@ export default DitoComponent.component('dito-form', {
         return data
       }
       return this.clonedData
-    },
-
-    isDirty() {
-      return this.$refs.schema.isDirty
     }
   },
 
