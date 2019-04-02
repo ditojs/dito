@@ -21,59 +21,35 @@ export default {
   },
 
   computed: {
-    isNested() {
-      return !!this.sourceSchema.nested
-    },
-
-    isExcluded() {
-      // TODO: Remove this once we switch to explicitly specifying
-      // `resourceUrlPath` settings for componets that load their data.
-      return !!this.sourceSchema.exclude
+    hasResource() {
+      // This component is a data-source if it has an associated API resource:
+      return !!this.sourceSchema?.resource
     },
 
     isTransient() {
       // Check the form that this component belongs to as well, since it may be
       // in creation mode, which makes it transient.
       // NOTE: This does not loop endlessly because DitoForm redefines
-      // `isTransient()` to only return `this.isNested`.
+      // `isTransient()` to only return `!this.hasResource`.
       const form = this.formComponent
       return (
-        this.isNested ||
-        // TODO: Remove this once we switch to explicitly specifying
-        // `resourceUrlPath` settings for componets that load their data.
-        this.isExcluded ||
+        !this.hasResource ||
         form && (
           form.isTransient ||
-          form.create
+          form.isCreating
         )
       )
     },
 
     shouldLoad() {
-      // If the parent data-component (view, form) that this list belongs to
-      // also loads data, depend on this first.
-      const parent = this.parentDataComponent
       return (
         !this.isTransient &&
-        !this.isLoading && !(
-          parent && (
-            parent.shouldLoad ||
-            parent.isLoading
-          )
-        )
+        !this.isLoading
       )
     },
 
     hasData() {
       return !!this.data
-    },
-
-    parentDataComponent() {
-      // Used by `shouldLoad()`: Returns the parent `dataRouteComponent` that
-      // may load data for this component. We need to use
-      // `parentDataRouteComponent` here to get to the actual parent, as `this
-      // === this.dataRouteComponent` if `this` is a route component:
-      return this.parentDataRouteComponent
     },
 
     verbs() {
@@ -85,17 +61,16 @@ export default {
 
   created() {
     // When creating nested data, we still need to call setupData()
-    if (!this.isNested || this.create) {
+    if (this.hasResource || this.isCreating) {
       this.setupData()
     }
   },
 
   methods: {
     getVerbs() {
-      const { $verbs } = this
       return this.isTransient
         ? {
-          ...$verbs,
+          ...this.$verbs,
           // Override default verbs with their transient versions:
           create: 'add',
           created: 'added',
@@ -104,15 +79,7 @@ export default {
           delete: 'remove',
           deleted: 'removed'
         }
-        : $verbs
-    },
-
-    getResourcePath(resource) {
-      const { type, id, path } = resource
-      const url = this.api.resources[type](this, id)
-      return path
-        ? /^\//.test(path) ? path : `${url}/${path}`
-        : url
+        : this.$verbs
     },
 
     findItemIdIndex(data, itemId) {
@@ -202,14 +169,19 @@ export default {
     },
 
     async request(method, options, callback) {
-      const { resource, payload: data, params } = options
-      const url = this.getResourcePath(resource || this.resource)
       this.setLoading(true)
-      const request = { method, url, data, params }
+      const {
+        resource = this.resource,
+        payload: data,
+        params
+      } = options
       try {
-        await this.rootComponent.onBeforeRequest(request)
-        const response = await this.api.request(request)
-        await this.rootComponent.onAfterRequest(request)
+        const response = await this.rootComponent.request({
+          method,
+          resource,
+          data,
+          params
+        })
         callback?.(null, response)
       } catch (error) {
         // If callback returns true, errors were already handled.

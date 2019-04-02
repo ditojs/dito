@@ -2,6 +2,7 @@ import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
 import EmitterMixin from './EmitterMixin'
 import { getItemParams } from '@/utils/data'
+import { getResource } from '@/utils/resource'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
   isRegExp, asArray, labelize, hyphenate
@@ -65,10 +66,11 @@ export default {
     },
 
     // Returns the first route component in the chain of parents, including
-    // this current component, that doesn't hold nested data.
-    dataRouteComponent() {
+    // this current component, that is linked to a resource (and thus doesn't
+    // hold nested data).
+    resourceComponent() {
       let { routeComponent } = this
-      while (routeComponent?.isNested) {
+      while (routeComponent && !routeComponent.hasResource) {
         routeComponent = routeComponent.parentRouteComponent
       }
       return routeComponent
@@ -86,14 +88,29 @@ export default {
       return this.formComponent?.$parent.formComponent
     },
 
-    parentDataRouteComponent() {
-      return this.dataRouteComponent?.$parent.dataRouteComponent
+    parentResourceComponent() {
+      return this.resourceComponent?.$parent.resourceComponent
     },
 
     // Returns the data of the first route component in the chain of parents
-    // that doesn't hold nested data.
+    // that loads its own data from an associated API resource.
     rootData() {
-      return this.dataRouteComponent?.data
+      return this.resourceComponent?.data
+    },
+
+    sourceResource() {
+      // Returns the resource object representing the resource for the
+      // associated source schema.
+      return {
+        type: 'collection',
+        ...getResource(this.sourceSchema.resource),
+        parent: this.parentFormComponent?.resource
+      }
+    },
+
+    resource() {
+      // Returns the associated resource component's resource object.
+      return this.resourceComponent.resource
     }
   },
 
@@ -212,13 +229,22 @@ export default {
       })
     },
 
+    getResourcePath(resource) {
+      return this.api.getResourcePath(getResource(resource))
+    },
+
+    getResourceUrl(resource) {
+      return `${this.api.url}${this.getResourcePath(resource)}`
+    },
+
     load({ cache, ...options }) {
       // Allow caching of loaded data on two levels:
       // - 'global': cache globally, for the entire admin session
-      // - 'local': cache locally within the data-loading route component
+      // - 'local': cache locally within the closest route component that is
+      //    associated with a resource and loads its own data.
       const cacheParent = {
         global: this.appState,
-        local: this.dataRouteComponent
+        local: this.resourceComponent
       }[cache]
       const loadCache = cacheParent?.loadCache
       // Build a cache key from the config:
@@ -232,7 +258,7 @@ export default {
         return loadCache[cacheKey]
       }
       // NOTE: No await here, res is a promise that we can easily cache.
-      const res = this.api.request(options)
+      const res = this.rootComponent.request(options)
         .then(response => response.data)
         .catch(error => {
           // Convert axios errors to normal errors

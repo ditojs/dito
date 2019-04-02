@@ -53,7 +53,7 @@
             )
           template(v-else)
             td
-              dito-schema-inline(
+              dito-schema-inlined(
                 v-if="inline"
                 :label="isListSource ? getItemLabel(schema, item, index) : null"
                 :schema="getItemFormSchema(schema, item)"

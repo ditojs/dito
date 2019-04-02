@@ -37,6 +37,7 @@
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { processView, resolveViews } from '@/utils/schema'
+import { isAbsoluteUrl } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
@@ -119,10 +120,10 @@ export default DitoComponent.component('dito-root', {
       })
       if (loginData) {
         try {
-          const response = await this.api.request({
-            method: 'post',
-            url: `${this.api.authPath}/login`,
-            data: loginData
+          const response = await this.request({
+            resource: this.api.auth.login,
+            data: loginData,
+            internal: true
           })
           this.setUser(response.data.user)
           await this.resolveViews()
@@ -141,9 +142,9 @@ export default DitoComponent.component('dito-root', {
 
     async logout() {
       try {
-        const response = await this.api.request({
-          method: 'post',
-          url: `${this.api.authPath}/logout`
+        const response = await this.request({
+          resource: this.api.auth.logout,
+          internal: true
         })
         if (response.data.success) {
           this.setUser(null)
@@ -158,10 +159,9 @@ export default DitoComponent.component('dito-root', {
     async fetchUser() {
       let user = null
       try {
-        const response = await this.api.request({
-          method: 'get',
-          // TODO: Convert to `${this.api.authPath}/session`?
-          url: `${this.api.authPath}/session`
+        const response = await this.request({
+          resource: this.api.auth.session,
+          internal: true
         })
         user = response.data.user || null
       } catch (err) {
@@ -209,17 +209,38 @@ export default DitoComponent.component('dito-root', {
       this.$router.addRoutes(routes)
     },
 
-    onBeforeRequest() {
-      return this.ensureUser()
+    async request({ method, url, resource, data, params, internal }) {
+      url = url || this.getResourcePath(resource)
+      method = method || resource?.method
+      const request = { method, url, data, params }
+      if (!internal) {
+        await this.onBeforeRequest(request)
+      }
+      const response = await this.api.request(request)
+      if (!internal) {
+        await this.onAfterRequest(request)
+      }
+      return response
     },
 
-    onAfterRequest({ method, url }) {
+    async onBeforeRequest({ url }) {
+      if (!isAbsoluteUrl(url)) {
+        await this.ensureUser()
+      }
+    },
+
+    async onAfterRequest({ method, url }) {
       // Detect change of the own user, and reload it if necessary.
       if (
+        this.user &&
         method === 'patch' &&
-        url === `${this.api.authPath}/${this.user?.id}`
+        url === this.getResourcePath({
+          type: 'member',
+          id: this.user.id,
+          parent: this.api.auth.users
+        })
       ) {
-        return this.fetchUser()
+        await this.fetchUser()
       }
     }
   }

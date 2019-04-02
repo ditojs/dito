@@ -25,6 +25,8 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
+import { someSchemaComponent, isSingleComponentView } from '@/utils/schema'
+import { hasResource } from '@/utils/resource'
 import { isFullyContained } from '@/utils/string'
 
 // @vue/component
@@ -51,16 +53,15 @@ export default DitoComponent.component('dito-view', {
       return this.schema.name
     },
 
-    isSingleComponent() {
-      // If the schema has a type, it is a single-component view.
-      return !!this.schema.type
+    isSingleComponentView() {
+      return isSingleComponentView(this.schema)
     },
 
     viewSchema() {
       const { schema } = this
       // Translate single-component schemas into multi-component schemas,
       // so they can be rendered directly through DitoSchema also:
-      return this.isSingleComponent
+      return this.isSingleComponentView
         ? {
           name: schema.name,
           components: {
@@ -71,6 +72,13 @@ export default DitoComponent.component('dito-view', {
           }
         }
         : schema
+    },
+
+    hasResource() {
+      return someSchemaComponent(
+        this.viewSchema,
+        component => hasResource(component)
+      )
     }
   },
 
@@ -81,6 +89,15 @@ export default DitoComponent.component('dito-view', {
         this.isLoading = false
         this.data = {}
       }
+    }
+  },
+
+  methods: {
+    getChildPath(schema) {
+      // Lists inside single-component views use the view's path for sub-paths:
+      return this.isSingleComponentView
+        ? this.path
+        : `${this.path}/${schema.path}`
     }
   }
 })

@@ -258,7 +258,7 @@ export default DitoComponent.component('dito-schema', {
       // Trigger a 'layout' event right after creation, unless when loading:
       // Then don't trigger 'layout' yet, wait for 'load' instead, to avoid
       // unnecessary jumping around of panels.
-      if (!this.dataRouteComponent?.isLoading) {
+      if (!this.resourceComponent?.isLoading) {
         this.onLayout()
       }
     })
@@ -413,16 +413,13 @@ export default DitoComponent.component('dito-schema', {
     },
 
     filterData(data) {
-      // Filters out arrays that aren't considered nested data, as those are
-      // already taking care of themselves through their own end-points and
-      // shouldn't be set.
+      // Filters out arrays that are back by data resources themselves, as those
+      // are already taking care of through their own API resource end-points
+      // and shouldn't be set.
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value)) {
-          const component = this.getComponent(key)
-          // Only check for isNested on source items that actually load data,
-          // since other components can have array values too.
-          if (component && component.isSource && !component.isNested) {
+          if (this.getComponent(key)?.hasResource) {
             continue
           }
         }

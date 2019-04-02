@@ -1,19 +1,19 @@
 <template lang="pug">
 .dito-form.dito-scroll-parent(
-  :class="formClass"
+  :class="{ 'dito-form-nested': isNestedRoute }"
 )
   // NOTE: Nested form components are kept alive by using `v-show` instead of
   // `v-if` here, so event handling and other things still work with nested
-  // editing.
-  // Only render a router-view here if this isn't the last data-loading route,
-  // and not a nested route, which will appear elsewhere in its own router-view.
+  // editing. Only render a router-view here if this isn't the last data route
+  // and not a nested form route, which will appear elsewhere in its own view.
   router-view(
-    v-if="!(isLastDataRoute || isNestedDataRoute)"
+    v-if="!(isLastUnnestedRoute || isNestedRoute)"
     v-show="!isActive"
   )
+  // Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
   component.dito-scroll(
     v-show="isActive"
-    :is="formTag"
+    :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
     dito-schema(
@@ -43,6 +43,7 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
+import { hasResource, getNestedResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import {
   isObject, clone, capitalize, parseDataPath, merge
@@ -58,9 +59,7 @@ export default DitoComponent.component('dito-form', {
       createdData: null,
       clonedData: undefined,
       sourceKey: null,
-      isForm: true,
-      formTag: 'form',
-      formClass: null
+      isForm: true
     }
   },
 
@@ -70,13 +69,13 @@ export default DitoComponent.component('dito-form', {
       // NOTE: These get passed on to children through:
       // `provide() ... { $verbs: this.verbs }` in DataMixin
       const verbs = this.getVerbs()
-      const { create, isNested } = this
+      const { isCreating, hasResource } = this
       return {
         ...verbs,
-        submit: create ? verbs.create : verbs.save,
-        submitted: create ? verbs.created : verbs.saved,
-        cancel: isNested ? verbs.close : verbs.cancel,
-        cancelled: isNested ? verbs.closed : verbs.cancelled
+        submit: isCreating ? verbs.create : verbs.save,
+        submitted: isCreating ? verbs.created : verbs.saved,
+        cancel: hasResource ? verbs.cancel : verbs.close,
+        cancelled: hasResource ? verbs.cancelled : verbs.closed
       }
     },
 
@@ -112,11 +111,16 @@ export default DitoComponent.component('dito-form', {
     },
 
     isActive() {
-      return this.isLastRoute || this.isLastDataRoute
+      return this.isLastRoute || this.isLastUnnestedRoute
     },
 
     isTransient() {
-      return this.isNested
+      return !this.hasResource
+    },
+
+    isCreating() {
+      // this.param is inherited from RouteMixin
+      return this.param === 'create'
     },
 
     isDirty() {
@@ -147,28 +151,27 @@ export default DitoComponent.component('dito-form', {
       return this.$route.query.type
     },
 
-    create() {
-      // this.param is inherited from RouteMixin
-      return this.param === 'create'
-    },
-
     itemId() {
-      return this.create ? null : this.param ?? null
+      return !this.isCreating && this.param ?? null
     },
 
     method() {
-      return this.create ? 'post' : 'patch'
+      return this.isCreating ? 'post' : 'patch'
     },
 
     resource() {
-      return {
-        type: this.create ? 'collection' : 'member',
-        id: this.itemId
-      }
+      const { itemId, sourceResource } = this
+      return itemId
+        ? {
+          type: 'member',
+          id: itemId,
+          parent: sourceResource
+        }
+        : sourceResource
     },
 
     breadcrumbPrefix() {
-      return capitalize(this.create ? this.verbs.create : this.verbs.edit)
+      return capitalize(this.isCreating ? this.verbs.create : this.verbs.edit)
     },
 
     data() {
@@ -184,7 +187,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.dataRouteComponent)
+      return this.getDataPathFrom(this.resourceComponent)
     },
 
     sourceData() {
@@ -248,7 +251,7 @@ export default DitoComponent.component('dito-form', {
         }
         if (
           data === null &&
-          !this.create &&
+          !this.isCreating &&
           isObjectSource(this.sourceSchema)
         ) {
           // If data of an object source is null, redirect to its create route.
@@ -274,11 +277,10 @@ export default DitoComponent.component('dito-form', {
       delete this.meta.errors
       this.showErrors(errors, true)
     }
-    // Handle button clicks and see if the buttons define methods or paths to
-    // call, and if so, delegate to `submit()`:
+    // Handle button clicks and see if the buttons define a resource to submit
+    // to, and if so, delegate to `submit()`:
     this.$refs.schema.on('click', ({ target: button }) => {
-      const { schema } = button
-      if ((schema.method || schema.path) && !button.responds('click')) {
+      if (hasResource(button.resource) && !button.responds('click')) {
         this.submit(button)
       }
     })
@@ -294,7 +296,7 @@ export default DitoComponent.component('dito-form', {
 
     // @override DataMixin.setupData()
     setupData() {
-      if (this.create) {
+      if (this.isCreating) {
         this.createdData = this.createdData ||
           this.createData(this.schema, this.type)
       } else {
@@ -373,28 +375,27 @@ export default DitoComponent.component('dito-form', {
         this.$refs.schema.focus(Object.keys(errors)[0], true)
         return
       }
-      const { schema: buttonSchema } = button
-      // Allow buttons to override both method (verb) and resource path:
-      const method = buttonSchema.method || this.method
-      const resource = buttonSchema.path
-        ? {
-          ...this.resource,
-          path: buttonSchema.path
-        }
-        : this.resource
+      // Allow buttons to override both method and resource path to submit to:
+      const resource = getNestedResource(
+        button.schema.resource,
+        this.resource
+      ) || this.resource
+      const method = resource.method || this.method
       const itemLabel = this.data
         ? this.getItemLabel(this.sourceSchema, this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
-      const payload = ['post', 'patch'].includes(method) &&
+      const payload = (
+        ['post', 'patch'].includes(method) &&
         this.$refs.schema.processData({ processIds: true })
+      )
       if (payload && this.isTransient) {
         // We're dealing with a create form with nested forms, so have to deal
-        // with transient objects. When editing nested transient, nothing needs
-        // to be done as it just works, but when creating, we need to add to /
-        // create the parent list.
+        // with transient objects. When editing nested transient data, nothing
+        // needs to be done as it just works, but when creating, we need to add
+        // to / create the parent list.
         let ok = true
-        if (this.create) {
+        if (this.isCreating) {
           ok = this.addSourceData(payload)
           if (!ok) {
             this.notify('error', 'Request Error',
@@ -408,10 +409,13 @@ export default DitoComponent.component('dito-form', {
               itemLabel
             }
           }))) {
-            this.notify('info', 'Change Applied',
+            this.notify(
+              'info',
+              'Change Applied',
               `<p>Changes in ${itemLabel} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
-              'in order to persist this change.</p>')
+              'in order to persist this change.</p>'
+            )
           }
         }
         if (ok) {
@@ -435,8 +439,13 @@ export default DitoComponent.component('dito-form', {
                     error
                   }
                 }))) {
-                  this.notify('error', 'Request Error',
-                    `Error submitting ${itemLabel}:\n${error.message || error}`)
+                  this.notify(
+                    'error',
+                    'Request Error',
+                    `Error submitting ${itemLabel}:\n${
+                      error.message || error
+                    }`
+                  )
                 }
               }
             }
@@ -448,14 +457,17 @@ export default DitoComponent.component('dito-form', {
               }
             }))) {
               const submitted = this.verbs.submitted
-              this.notify('success', `Successfully ${capitalize(submitted)}`,
-                `${itemLabel} was ${submitted}.`)
+              this.notify(
+                'success',
+                `Successfully ${capitalize(submitted)}`,
+                `${itemLabel} was ${submitted}.`
+              )
             }
             // Since the  above is async, the schema may already be destroyed by
             // now...
             this.$refs.schema?.resetValidator()
             // After submitting, close the form except if a button turns it off:
-            if (buttonSchema.close === false) {
+            if (button.schema.close === false) {
               if (data) {
                 this.setData(data)
               }

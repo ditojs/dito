@@ -131,7 +131,6 @@ function getFiltersComponents(filters) {
         type: 'object',
         default: () => ({}),
         form,
-        nested: true,
         inline: true
       }
     } else {

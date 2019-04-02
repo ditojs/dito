@@ -2,7 +2,7 @@
 .dito
   .dito-form-nested
     .dito-scroll
-      // No nested scrolling:
+      // No scrolling inside nested forms:
       overflow: visible
 </style>
 
@@ -10,13 +10,6 @@
 import DitoForm from './DitoForm'
 
 export default DitoForm.component('dito-form-nested', {
-  data() {
-    return {
-      formTag: 'div', // Use a <div> as we shouldn't nest actual <form> tags.
-      formClass: 'dito-form-nested'
-    }
-  },
-
   watch: {
     $fields: {
       deep: true,
@@ -26,7 +19,7 @@ export default DitoForm.component('dito-form-nested', {
       // since closing the nested form would remove all its fields immediately,
       // and wee need them around to know if a direct editing form changed data.
       handler(fields) {
-        const validator = this.dataRouteComponent.$validator
+        const validator = this.resourceComponent.$validator
         if (validator) {
           for (const [name, field] of Object.entries(fields)) {
             if (!(name in validator.flags)) {
@@ -36,12 +29,6 @@ export default DitoForm.component('dito-form-nested', {
           }
         }
       }
-    }
-  },
-
-  computed: {
-    isNested() {
-      return true
     }
   }
 })

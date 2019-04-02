@@ -4,6 +4,45 @@ import {
   isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
 
+export function forEachSchemaComponent(schema, callback) {
+  const schemas = [
+    ...Object.values(schema?.tabs || {}),
+    schema
+  ]
+  for (const schema of schemas) {
+    for (const [name, component] of Object.entries(schema?.components || {})) {
+      const res = callback(component, name)
+      if (res !== undefined) {
+        return res
+      }
+    }
+  }
+}
+
+export function findSchemaComponent(schema, callback) {
+  return forEachSchemaComponent(schema, component => {
+    if (callback(component)) {
+      return component
+    }
+  }) || null
+}
+
+export function someSchemaComponent(schema, callback) {
+  return forEachSchemaComponent(schema, component => {
+    if (callback(component)) {
+      return true
+    }
+  }) === true
+}
+
+export function everySchemaComponent(schema, callback) {
+  return forEachSchemaComponent(schema, component => {
+    if (!callback(component)) {
+      return false
+    }
+  }) !== false
+}
+
 export async function resolveViews(views) {
   if (isFunction(views)) {
     views = views()
@@ -16,64 +55,47 @@ export async function resolveViews(views) {
 }
 
 export async function processView(api, schema, name, routes) {
-  if ('type' in schema) {
-    // A single-component view
-    await processComponent(api, schema, name, routes)
+  const children = []
+  processRouteSchema(api, schema, name)
+  if (isSingleComponentView(schema)) {
+    await processComponent(api, schema, name, children, 0)
   } else {
-    // A multi-component view
-    schema.path = schema.path || api.normalizePath(name)
-    schema.name = name
-    const meta = {
+    // A multi-component view, start at level 1
+    await processSchemaComponents(api, schema, children, 1)
+  }
+  routes.push({
+    path: `/${schema.path}`,
+    children,
+    component: DitoView,
+    meta: {
       api,
       schema
     }
-    const path = `/${schema.path}`
-    const children = []
-    await processSchemaComponents(api, schema, children, meta, 0)
-    const viewRoute = children.find(
-      route => route.component === DitoView && route.path === path
-    )
-    if (viewRoute) {
-      // The view contains a source component that already produced the route
-      // for it, see `processSchema.processSchema()`. Just adjust the route to
-      // reflect the component's nesting in the view:
-      viewRoute.meta.schema = schema
-      routes.push(...children)
-    } else {
-      routes.push({
-        path,
-        children,
-        component: DitoView,
-        meta
-      })
-    }
-  }
+  })
 }
 
-export function processComponent(
-  api, schema, name, routes, parentMeta = null, level = 0
-) {
+export function processComponent(api, schema, name, routes, level) {
   // Delegate schema processing to the actual type components.
   return TypeComponent.get(schema.type)?.options.processSchema?.(
-    api, schema, name, routes, parentMeta, level
+    api, schema, name, routes, level
   )
 }
 
-export async function processSchemaComponents(
-  api, schema, routes, parentMeta = null, level = 0
-) {
-  const process = async components => {
-    for (const [name, component] of Object.entries(components || {})) {
-      await processComponent(api, component, name, routes, parentMeta, level)
-    }
-  }
-  for (const tab of Object.values(schema?.tabs || {})) {
-    await process(tab.components, processComponent)
-  }
-  await process(schema?.components, processComponent)
+export function processRouteSchema(api, schema, name) {
+  // Used for view and source schemas, see SourceMixin
+  schema.name = name
+  schema.path = schema.path || api.normalizePath(name)
 }
 
-export async function processForms(api, schema, parentMeta, level) {
+export async function processSchemaComponents(api, schema, routes, level) {
+  const promises = []
+  forEachSchemaComponent(schema, (component, name) => {
+    promises.push(processComponent(api, component, name, routes, level))
+  })
+  await Promise.all(promises)
+}
+
+export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
   let { form, forms } = schema
   if (forms) {
@@ -85,7 +107,7 @@ export async function processForms(api, schema, parentMeta, level) {
   const children = []
   if (forms) {
     for (const form of Object.values(forms)) {
-      await processSchemaComponents(api, form, children, parentMeta, level + 1)
+      await processSchemaComponents(api, form, children, level + 1)
     }
   }
   return children
@@ -120,6 +142,11 @@ export async function resolveForms(forms) {
     },
     {}
   )
+}
+
+export function isSingleComponentView(schema) {
+  // If the schema has a type, it is a single-component view.
+  return !!schema.type
 }
 
 export function hasForms(schema) {

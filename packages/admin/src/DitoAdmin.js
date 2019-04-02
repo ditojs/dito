@@ -9,6 +9,7 @@ import './validator'
 import verbs from './verbs'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
+import { getResource, getNestedResource } from './utils/resource'
 import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -32,6 +33,34 @@ export default class DitoAdmin {
     this.api = api
     this.options = options
 
+    // Allow the configuration of all auth resources, like so:
+    // api.auth = {
+    //   path: 'admins',
+    //   // These are the defaults:
+    //   login: {
+    //     path: 'login',
+    //     method: 'post'
+    //   },
+    //   logout: {
+    //     path: 'logout',
+    //     method: 'post'
+    //   },
+    //   session: {
+    //     path: 'session',
+    //     method: 'get'
+    //   },
+    //   users: {
+    //     path: '..',
+    //     method: 'get'
+    //   }
+    // }
+    const auth = api.auth = getResource(api.auth) || {}
+    auth.users = getNestedResource(auth.users || '..', auth, 'get')
+    auth.login = getNestedResource(auth.login || 'login', auth, 'post')
+    auth.logout = getNestedResource(auth.logout || 'logout', auth, 'post')
+    auth.session = getNestedResource(auth.session || 'session', auth, 'get')
+    console.log(auth)
+
     api.request = api.request || ((...args) => this.request(...args))
 
     // Setting `api.normalizePaths = true (plural) sets both:
@@ -42,41 +71,52 @@ export default class DitoAdmin {
       api.normalizePaths ? camelize : val => val
 
     // Allow overriding of resource paths:
-    // api: {
-    //   resources: {
-    //     member(component, itemId) {
-    //       return `${component.schema.path}/${itemId}`
-    //     },
-    //     collection(component) {
-    //       const { parentFormComponent: parent, sourceSchema } = component
-    //       return parent
-    //         ? `${sourceSchema.path}?${parent.path}_id=${parent.itemId}`
-    //         : sourceSchema.path
-    //     }
-    //   },
-    //   headers: {
-    //     'Content-Type': 'application/json'
+    // api.resourcePath = {
+    //   collection(resource) {
+    //     return resource.parent
+    //       ? `${resource.path}?${resource.parent.path}_id=${
+    //          resource.parent.id}`
+    //       : resource.path
     //   }
     // }
-    api.resources = {
-      member(component, itemId) {
-        // If itemId is null, then this represents an object source, not a list,
-        // (an one-to-one relation on the backend), use the collection endpoint.
-        return itemId !== null
-          ? `${component.sourceSchema.path}/${itemId}`
-          : this.collection(component)
+
+    api.resourcePath = {
+      default(resource) {
+        const parentPath = api.getResourcePath(resource.parent)
+        return parentPath
+          ? `${parentPath}/${resource.path}`
+          : resource.path
       },
 
-      collection(component) {
-        const { parentFormComponent: parent, sourceSchema } = component
-        return parent
-          ? `${parent.sourceSchema.path}/${parent.itemId}/${sourceSchema.path}`
-          : sourceSchema.path
+      // NOTE: collection() is handled by default()
+
+      member(resource) {
+        // NOTE: We assume that all members have root-level collection routes,
+        // to avoid excessive nesting of (sub-)collection routes.
+        return `${resource.parent.path}/${resource.id}`
       },
 
-      ...api.resources
+      upload(resource) {
+        // Dito Server handles upload routes on the collection resource,
+        // which is the parent of the member resource:
+        const { parent } = resource
+        const collection = parent.type === 'member' ? parent.parent : parent
+        return `${api.getResourcePath(collection)}/upload/${resource.path}`
+      },
+
+      ...api.resourcePath
     }
 
+    api.getResourcePath = api.getResourcePath || (resource => {
+      const handlers = api.resourcePath
+      const handler = handlers[resource?.type] || handlers.default
+      return resource && handler(resource)
+    })
+
+    // Allow overriding / extending of headers:
+    // api.headers = {
+    //   'Content-Type': 'application/json'
+    // }
     api.headers = {
       'Content-Type': 'application/json',
       ...api.headers

@@ -12,7 +12,7 @@
         :dataPath="treeDataPath"
         :open="true"
       )
-      // Include a router-view for the optional DitoFormNested
+      // Include a router-view for the optional DitoFormInlined
       router-view
 </template>
 
@@ -93,23 +93,22 @@ export default TypeComponent.register([
   },
 
   async processSchema(
-    api, schema, name, routes, parentMeta, level,
+    api, schema, name, routes, level,
     nested = true, flatten = false,
     process = null
   ) {
     return SourceMixin.processSchema(
-      api, schema, name, routes, parentMeta, level,
+      api, schema, name, routes, level,
       nested, flatten,
       // Pass process() to add more routes to childRoutes:
-      (childRoutes, parentMeta, level) => {
+      (childRoutes, level) => {
         const { children } = schema
         if (hasForms(children)) {
           // Add `type` to the nested tree list.
           children.type = 'tree-list'
           return this.processSchema(
-            // Pass `true` for `flatten` in tree lists.
-            api, children, children.name, childRoutes, parentMeta, level,
-            nested, true,
+            api, children, children.name, childRoutes, level,
+            nested, true, // Pass `true` for `flatten` in tree lists.
             process
           )
         }

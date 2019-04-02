@@ -94,7 +94,6 @@ children: {
   type: 'list',
   form: import('./ChildrenForm')
   inline: true,
-  nested: true,
   creatable: true,
   editable: true,
   deletable: true

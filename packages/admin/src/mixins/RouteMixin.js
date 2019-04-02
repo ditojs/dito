@@ -43,13 +43,9 @@ export default {
       return this.routeRecord === matched[matched.length - 1]
     },
 
-    isNestedDataRoute() {
-      return !!this.routeRecord.meta.nested
-    },
-
-    isLastDataRoute() {
+    isLastUnnestedRoute() {
       // Returns true if this route component is the last one in the route that
-      // loads data (= is not nested).
+      // needs its own router-view (= is not nested).
       const { matched } = this.$route
       for (let i = matched.length - 1; i >= 0; i--) {
         const record = matched[i]
@@ -60,8 +56,12 @@ export default {
       return false
     },
 
+    isNestedRoute() {
+      return this.meta.nested
+    },
+
     meta() {
-      return this.routeRecord.meta
+      return this.routeRecord?.meta
     },
 
     path() {
@@ -86,6 +86,13 @@ export default {
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
       return this.$route.params[this.meta.param]
+    },
+
+    resource() {
+      // Override DitoMixin.resource() to prevent infinite loop, since
+      // `this.resourceComponent === this`. Note that DitoForm overrides
+      // `resource()` again to handle th collection / member scenario.
+      return this.sourceResource
     }
   },
 
@@ -110,6 +117,10 @@ export default {
         .split('/')
         .slice(0, templatePath.split('/').length)
         .join('/')
+    },
+
+    getChildPath(schema) {
+      return `${this.path}/${schema.path}`
     }
   }
 }

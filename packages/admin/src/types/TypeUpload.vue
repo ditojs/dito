@@ -165,11 +165,11 @@ export default TypeComponent.register('upload', {
     },
 
     uploadPath() {
-      const url = this.dataRouteComponent.getResourcePath({
-        type: 'collection',
-        path: `upload/${this.dataPath}`
+      return this.getResourceUrl({
+        type: 'upload',
+        path: this.dataPath,
+        parent: this.resource
       })
-      return `${this.api.url}${url}`
     },
 
     dataProcessor() {
