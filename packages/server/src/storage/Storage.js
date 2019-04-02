@@ -25,23 +25,24 @@ export class Storage {
       if (this.isImageFile(file)) {
         // Handle image size detection in parallel with multer file upload:
         try {
-          // Create a readable clone of the stream that can be read from
-          // separately from `stream.file`, to run the image size detection on:
-          const stream = new ReadableClone(file.stream)
-          const [res, size] = await Promise.all([
-            // The original `_handleFile()`:
-            new Promise((resolve, reject) => {
-              _handleFile.call(
-                storage, req, file,
-                toPromiseCallback(resolve, reject)
-              )
-            }),
+          // Create two readable clones of the stream that can be read from
+          // simultaneously: The first to override `file.stream` with,
+          // the second to run the image size detection on:
+          const { stream } = file
+          const stream1 = new ReadableClone(stream)
+          const stream2 = new ReadableClone(stream)
+          Object.defineProperty(file, 'stream', {
+            configurable: true,
+            enumerable: false,
+            value: stream1
+          })
+          const [size, res] = await Promise.all([
             // Image size detection:
             new Promise(resolve => {
-              stream
+              stream2
                 .pipe(new ImageSizeTransform())
                 .on('size', size => {
-                  stream.destroy()
+                  stream2.destroy()
                   resolve(size)
                 })
                 .on('error', err => {
@@ -50,9 +51,16 @@ export class Storage {
                     'error',
                     `Unable to determine image size: ${err}`
                   )
-                  stream.destroy()
+                  stream2.destroy()
                   resolve(null)
                 })
+            }),
+            // The original `_handleFile()`:
+            new Promise((resolve, reject) => {
+              _handleFile.call(
+                storage, req, file,
+                toPromiseCallback(resolve, reject)
+              )
             })
           ])
           if (size) {
