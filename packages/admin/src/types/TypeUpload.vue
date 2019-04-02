@@ -92,10 +92,10 @@
 import TypeComponent from '@/TypeComponent'
 import VueUpload from 'vue-upload-component'
 import VueDraggable from 'vuedraggable'
-import formatFileSize from 'filesize'
 import parseFileSize from 'filesize-parser'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { formatFileSize } from '@/utils/units'
 import { isArray, asArray } from '@ditojs/utils'
 
 // @vue/component
