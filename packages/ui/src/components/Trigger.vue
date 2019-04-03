@@ -39,7 +39,10 @@
         @mouseenter="onHover"
         @mouseleave="onHover"
       )
-        slot(name="popup")
+        slot(
+          name="popup"
+          v-if="showPopup"
+        )
       .dito-popup(
         v-else
         ref="popup"
@@ -47,7 +50,10 @@
         :class="popupClass"
         :style="popupStyle"
       )
-        slot(name="popup")
+        slot(
+          name="popup"
+          v-if="showPopup"
+        )
 </template>
 
 <style lang="sass">

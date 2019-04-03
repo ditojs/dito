@@ -140,7 +140,7 @@ export default {
     },
 
     onKeyDown(event) {
-      if (this.$refs.calendar.navigate(getKeyNavigation(event))) {
+      if (this.$refs.calendar?.navigate(getKeyNavigation(event))) {
         event.preventDefault()
       }
     },
