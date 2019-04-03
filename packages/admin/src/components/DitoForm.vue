@@ -41,7 +41,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
-import DataMixin from '@/mixins/DataMixin'
+import ResourceMixin from '@/mixins/ResourceMixin'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { hasResource, getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
@@ -51,7 +51,7 @@ import {
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, DataMixin, ValidatorMixin],
+  mixins: [RouteMixin, ResourceMixin, ValidatorMixin],
   inject: ['$validator'],
 
   data() {
@@ -65,9 +65,9 @@ export default DitoComponent.component('dito-form', {
 
   computed: {
     verbs() {
-      // Add submit / submitted to the verbs returned by DataMixin
+      // Add submit / submitted to the verbs returned by ResourceMixin
       // NOTE: These get passed on to children through:
-      // `provide() ... { $verbs: this.verbs }` in DataMixin
+      // `provide() ... { $verbs: this.verbs }` in ResourceMixin
       const verbs = this.getVerbs()
       const { isCreating, hasResource } = this
       return {
@@ -290,7 +290,7 @@ export default DitoComponent.component('dito-form', {
         .substring((route.isView ? 0 : route.path.length) + 1))
     },
 
-    // @override DataMixin.setupData()
+    // @override ResourceMixin.setupData()
     setupData() {
       if (this.isCreating) {
         this.createdData = this.createdData ||

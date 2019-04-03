@@ -252,7 +252,7 @@ export default {
     },
 
     hasResource() {
-      // NOTE: This is overridden in DataMixin, used by lists.
+      // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
     }
   },

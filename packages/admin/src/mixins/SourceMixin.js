@@ -1,5 +1,5 @@
 import DitoComponent from '@/DitoComponent'
-import DataMixin from './DataMixin'
+import ResourceMixin from './ResourceMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFullyContained } from '@/utils/string'
 import { getItemParams } from '@/utils/data'
@@ -15,7 +15,7 @@ import {
 
 // @vue/component
 export default {
-  mixins: [DataMixin],
+  mixins: [ResourceMixin],
 
   defaultValue(schema) {
     return isListSource(schema) ? [] : null
