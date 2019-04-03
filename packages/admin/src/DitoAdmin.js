@@ -59,7 +59,6 @@ export default class DitoAdmin {
     auth.login = getNestedResource(auth.login || 'login', auth, 'post')
     auth.logout = getNestedResource(auth.logout || 'logout', auth, 'post')
     auth.session = getNestedResource(auth.session || 'session', auth, 'get')
-    console.log(auth)
 
     api.request = api.request || ((...args) => this.request(...args))
 

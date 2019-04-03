@@ -164,27 +164,22 @@ export default DitoComponent.component('dito-root', {
           internal: true
         })
         user = response.data.user || null
-      } catch (err) {
-        console.error(err)
+      } finally {
+        this.setUser(user)
       }
-      this.setUser(user)
       return user
     },
 
     setUser(user) {
-      if (user) {
+      this.appState.user = (
+        user &&
         Object.setPrototypeOf(user, DitoUser.prototype)
-      }
-      this.appState.user = user
+      )
     },
 
     async ensureUser() {
-      try {
-        if (!(await this.fetchUser())) {
-          await this.login()
-        }
-      } catch (err) {
-        console.error(err)
+      if (!(await this.fetchUser())) {
+        await this.login()
       }
     },
 
@@ -213,26 +208,14 @@ export default DitoComponent.component('dito-root', {
       url = url || this.getResourcePath(resource)
       method = method || resource?.method
       const request = { method, url, data, params }
-      if (!internal) {
-        await this.onBeforeRequest(request)
-      }
-      const response = await this.api.request(request)
-      if (!internal) {
-        await this.onAfterRequest(request)
-      }
-      return response
-    },
-
-    async onBeforeRequest({ url }) {
-      if (!isAbsoluteUrl(url)) {
+      const checkUser = !internal && !isAbsoluteUrl(url)
+      if (checkUser) {
         await this.ensureUser()
       }
-    },
-
-    async onAfterRequest({ method, url }) {
-      // Detect change of the own user, and reload it if necessary.
+      const response = await this.api.request(request)
+      // Detect change of the own user, and fetch it again if it was changed.
       if (
-        this.user &&
+        checkUser &&
         method === 'patch' &&
         url === this.getResourcePath({
           type: 'member',
@@ -242,6 +225,7 @@ export default DitoComponent.component('dito-root', {
       ) {
         await this.fetchUser()
       }
+      return response
     }
   }
 })
