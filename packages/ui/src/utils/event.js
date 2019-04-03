@@ -1,20 +1,12 @@
-export function addEvent(target, type, callback) {
-  target.addEventListener(type, callback, false)
-  return {
-    remove() {
-      target.removeEventListener(type, callback, false)
-    }
-  }
-}
-
 export function addEvents(target, events) {
-  const remove = []
   for (const type in events) {
-    remove.push(addEvent(target, type, events[type]))
+    target.addEventListener(type, events[type], false)
   }
   return {
     remove() {
-      remove.forEach(remove => remove())
+      for (const type in events) {
+        target.removeEventListener(type, events[type], false)
+      }
     }
   }
 }

@@ -81,7 +81,7 @@
 
 <script>
 import { isString, hyphenate } from '@ditojs/utils'
-import { addEvent, addEvents } from '../utils'
+import { addEvents } from '../utils'
 
 export default {
   props: {
@@ -164,12 +164,18 @@ export default {
       // Use 'mouseup' instead of 'click', since click appears to happen after
       // the DOM inside of popups could change in a way so that the check
       // `popup.contains(event.target)` would fail:
-      this.closeEvent = addEvent(document, 'mouseup', event => {
-        if (
-          this.showPopup &&
-          !popup.contains(event.target) &&
-          !trigger.contains(event.target)
-        ) {
+      this.closeEvents = addEvents(window, {
+        mouseup: event => {
+          if (
+            this.showPopup &&
+            !popup.contains(event.target) &&
+            !trigger.contains(event.target)
+          ) {
+            this.showPopup = false
+          }
+        },
+
+        blur: () => {
           this.showPopup = false
         }
       })
@@ -185,12 +191,8 @@ export default {
   },
 
   beforeDestroy() {
-    if (this.focusEvents) {
-      this.focusEvents.remove()
-    }
-    if (this.focusEvents) {
-      this.closeEvent.remove()
-    }
+    this.focusEvents?.remove()
+    this.closeEvents?.remove()
     this.mouseLeaveTimer = null
   },
 
