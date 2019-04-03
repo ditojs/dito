@@ -8,7 +8,7 @@
     :class="cell.class"
     :style="cell.style"
   )
-    // TODO: Implement inline components in cell mode!
+    // TODO: Implement inlined components in cell mode!
     component(
       v-if="component"
       :is="component"

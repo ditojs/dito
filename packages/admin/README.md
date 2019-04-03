@@ -93,7 +93,7 @@ Also, a component can be a nested list. For example, if you are modelling people
 children: {
   type: 'list',
   form: import('./ChildrenForm')
-  inline: true,
+  inlined: true,
   creatable: true,
   editable: true,
   deletable: true

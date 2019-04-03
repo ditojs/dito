@@ -229,7 +229,7 @@ export default {
       type: Number
     }),
 
-    inline: getSchemaAccessor('inline', {
+    inlined: getSchemaAccessor('inlined', {
       type: Boolean,
       default: false
     }),
@@ -250,7 +250,7 @@ export default {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && !this.inline
+        return editable && !this.inlined
       }
     }),
 
@@ -478,7 +478,7 @@ export default {
   ) {
     if (!hasForms(schema)) return
     processRouteSchema(api, schema, name)
-    if (schema.inline && schema.resource) {
+    if (schema.inlined && schema.resource) {
       throw new Error(
         'Lists with nested forms cannot load data from their own resources'
       )
@@ -504,7 +504,7 @@ export default {
       await process(childRoutes, level + 1)
     }
     // Inline forms don't need to actually add routes.
-    if (!schema.inline) {
+    if (!schema.inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`

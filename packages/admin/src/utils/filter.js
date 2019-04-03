@@ -131,7 +131,7 @@ function getFiltersComponents(filters) {
         type: 'object',
         default: () => ({}),
         form,
-        inline: true
+        inlined: true
       }
     } else {
       throw new Error(

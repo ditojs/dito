@@ -60,7 +60,7 @@ export default DitoComponent.component('dito-form-chooser', {
 
   methods: {
     createItem(form = this.schema.form, type) {
-      if (this.schema.inline) {
+      if (this.schema.inlined) {
         this.$parent.createItem(form, type)
       } else {
         this.$router.push({

@@ -54,7 +54,7 @@
           template(v-else)
             td
               dito-schema-inlined(
-                v-if="inline"
+                v-if="inlined"
                 :label="isListSource ? getItemLabel(schema, item, index) : null"
                 :schema="getItemFormSchema(schema, item)"
                 :dataPath="getDataPath(index)"
@@ -203,7 +203,7 @@ export default TypeComponent.register([
     },
 
     hasSpacing() {
-      return this.isListSource && this.inline &&
+      return this.isListSource && this.inlined &&
         // If there are only compact forms with no labels, don't add spacing
         (!this.isCompact || this.hasLabels)
     },
