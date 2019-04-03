@@ -8,8 +8,7 @@ export default {
     getItemFormSchema,
 
     getItemId(sourceSchema, item, index) {
-      const { idName = 'id' } = sourceSchema
-      const id = this.isTransient ? index : item[idName]
+      const id = this.isTransient ? index : item[sourceSchema.idName || 'id']
       return id === undefined ? id : String(id)
     },
 
@@ -20,6 +19,17 @@ export default {
           ? `${sourceSchema.name}/${index}`
           : sourceSchema.name
       )
+    },
+
+    findItemIdIndex(sourceSchema, data, itemId) {
+      const index = this.isTransient
+        // For transient data, the index is used as the id
+        ? itemId
+        : data?.findIndex(
+          (item, index) =>
+            this.getItemId(sourceSchema, item, index) === itemId
+        )
+      return index !== -1 ? index : null
     },
 
     getItemLabel(sourceSchema, item, index = null, extended = false) {

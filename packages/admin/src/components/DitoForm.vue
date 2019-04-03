@@ -215,7 +215,7 @@ export default DitoComponent.component('dito-form', {
           const key = /^:id/.test(routeParts[i])
             ? dataPart === 'create'
               ? null // There's no index for entries about to be created
-              : this.findItemIdIndex(data, dataPart)
+              : this.findItemIdIndex(this.sourceSchema, data, dataPart)
             : dataPart
           // Skip the final lookup but remember `sourceKey`, as we want the
           // parent data so we can replace the entry at `sourceKey` on it.

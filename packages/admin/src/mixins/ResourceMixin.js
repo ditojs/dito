@@ -98,17 +98,6 @@ export default {
         : this.$verbs
     },
 
-    findItemIdIndex(data, itemId) {
-      const index = this.isTransient
-        // For transient data, the index is used as the id
-        ? itemId
-        : data?.findIndex(
-          (item, index) =>
-            this.getItemId(this.sourceSchema, item, index) === itemId
-        )
-      return index !== -1 ? index : null
-    },
-
     // @override
     clearData() {
       this.loadedData = null
