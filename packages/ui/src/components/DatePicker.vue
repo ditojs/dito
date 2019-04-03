@@ -66,7 +66,6 @@ export default {
   data() {
     return {
       currentValue: this.value,
-      currentText: null,
       showPopup: this.show,
       inputFocused: false,
       changed: false
@@ -76,6 +75,14 @@ export default {
   computed: {
     focused() {
       return this.inputFocused || this.showPopup
+    },
+
+    currentText() {
+      return formatDate(this.currentValue, {
+        locale: this.locale,
+        date: this.format,
+        time: false
+      }) || ''
     }
   },
 
@@ -87,7 +94,6 @@ export default {
     },
 
     currentValue(date) {
-      this.updateText()
       if (+date !== +this.value) {
         this.changed = true
         this.$emit('input', date)
@@ -120,20 +126,6 @@ export default {
   },
 
   methods: {
-    formatDate(date) {
-      return formatDate(date, {
-        locale: this.locale,
-        date: this.format,
-        time: false
-      })
-    },
-
-    updateText() {
-      this.currentText = this.currentValue
-        ? this.formatDate(this.currentValue)
-        : ''
-    },
-
     selectDate(date) {
       this.currentValue = date
       this.showPopup = false
