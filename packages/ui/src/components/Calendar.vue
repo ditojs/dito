@@ -1,9 +1,7 @@
 // Derived from ATUI, and further extended: https://aliqin.github.io/atui/
 
 <template lang="pug">
-  .dito-calendar(
-    v-show="show"
-  )
+  .dito-calendar
     .dito-calendar-popup
       .dito-calendar-inner
         template(
@@ -18,10 +16,10 @@
             )
             span
               a.dito-calendar-select-year(
-                @click="currentMode = 'year'"
+                @click="setMode('year')"
               ) {{ dateToString(currentValue, { year: 1 }) }}
               a.dito-calendar-select-month(
-                @click="currentMode = 'month'"
+                @click="setMode('month')"
               ) {{ dateToString(currentValue, { month: 1 }) }}
             a.dito-calendar-step-next.dito-calendar-step-month(
               @click="stepMonth(1)"
@@ -47,7 +45,7 @@
               :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
             )
         template(
-          v-if="currentMode === 'month'"
+          v-else-if="currentMode === 'month'"
         )
           .dito-calendar-header
             a.dito-calendar-step-prev(
@@ -55,7 +53,7 @@
             )
             span
               a.dito-calendar-select-year(
-                @click="currentMode ='year'"
+                @click="setMode('year')"
               ) {{ dateToString(currentValue, { year: 1 }) }}
             a.dito-calendar-step-next(
               @click="stepYear(1)"
@@ -68,7 +66,7 @@
                 @click="selectMonth(index)"
               ) {{ month.short }}
         template(
-          v-if="currentMode === 'year'"
+          v-else-if="currentMode === 'year'"
         )
           .dito-calendar-header
             a.dito-calendar-step-prev(
@@ -215,7 +213,6 @@ export default {
     value: { type: Date, default: null },
     locale: { type: String, default: 'en-US' },
     disabledDate: { type: Function, default: () => false },
-    show: { type: Boolean, default: true },
     mode: { type: String, default: 'day' }
   },
 
@@ -254,10 +251,6 @@ export default {
   },
 
   methods: {
-    close() {
-      this.currentMode = null
-    },
-
     getMonthClass(month) {
       return {
         'dito-calendar-item-active':
@@ -285,6 +278,10 @@ export default {
       this.setDate({
         year: this.currentValue.getFullYear() + step * 10
       })
+    },
+
+    setMode(mode) {
+      this.currentMode = mode
     },
 
     stepMonth(step) {
@@ -324,12 +321,12 @@ export default {
     },
 
     selectMonth(month) {
-      this.currentMode = 'day'
+      this.setMode('day')
       this.setDate({ month })
     },
 
     selectYear(year) {
-      this.currentMode = 'month'
+      this.setMode('month')
       this.setDate({ year })
     },
 
@@ -397,10 +394,10 @@ export default {
           this.selectDate(currentValue)
           break
         case 'month':
-          this.currentMode = 'day'
+          this.setMode('day')
           break
         case 'year':
-          this.currentMode = 'month'
+          this.setMode('month')
           break
         }
         return true

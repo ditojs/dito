@@ -161,8 +161,12 @@ export default {
     }
 
     if (this.hideWhenClickOutside && !this.alwaysShow) {
-      this.closeEvent = addEvent(window, 'click', event => {
+      // Use 'mouseup' instead of 'click', since click appears to happen after
+      // the DOM inside of popups could change in a way so that the check
+      // `popup.contains(event.target)` would fail:
+      this.closeEvent = addEvent(document, 'mouseup', event => {
         if (
+          this.showPopup &&
           !popup.contains(event.target) &&
           !trigger.contains(event.target)
         ) {
@@ -192,7 +196,7 @@ export default {
 
   methods: {
     updatePosition() {
-      const { popup, trigger } = this.$refs
+      const { trigger, popup } = this.$refs
       if (this.show && popup.offsetWidth === 0) {
         setTimeout(() => this.updatePosition(), 0)
         return
