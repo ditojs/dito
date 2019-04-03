@@ -19,8 +19,8 @@
       v-else-if="trigger === 'hover'"
       ref="trigger"
       :class="triggerClass"
-      @mouseenter="onHover"
-      @mouseleave="onHover"
+      @mouseenter="onHover(true)"
+      @mouseleave="onHover(false)"
     )
       slot(name="trigger")
     .dito-trigger(
@@ -36,8 +36,8 @@
         v-show="showPopup"
         :class="popupClass"
         :style="popupStyle"
-        @mouseenter="onHover"
-        @mouseleave="onHover"
+        @mouseenter="onHover(true)"
+        @mouseleave="onHover(false)"
       )
         slot(
           name="popup"
@@ -206,7 +206,7 @@ export default {
         ? this.$refs[this.target]
         : this.target
       if (target) {
-        // Actual resize the popup's first child, so they can set size limits.
+        // Actually resize the popup's first child, so they can set size limits.
         const el = target === popup ? trigger : popup.firstChild
         el.style.width = window.getComputedStyle(target).width
       }
@@ -312,12 +312,10 @@ export default {
       }
     },
 
-    onHover(event) {
+    onHover(enter) {
       if (!this.disabled) {
-        if (this.mouseLeaveTimer) {
-          this.mouseLeaveTimer = clearTimeout(this.mouseLeaveTimer)
-        }
-        if (event.type === 'mouseenter') {
+        clearTimeout(this.mouseLeaveTimer)
+        if (enter) {
           this.showPopup = true
         } else {
           if (this.hideDelay) {
