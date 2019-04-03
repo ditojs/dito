@@ -3,6 +3,7 @@ import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFullyContained } from '@/utils/string'
 import { getItemParams } from '@/utils/data'
+import { getMemberResource } from '@/utils/resource'
 import {
   processRouteSchema, processForms, hasForms, hasLabels, getNamedSchemas,
   isObjectSource, isListSource
@@ -102,10 +103,6 @@ export default {
     sourceSchema() {
       // The sourceSchema of a list is the list's schema itself.
       return this.schema
-    },
-
-    resource() {
-      return this.sourceResource
     },
 
     path() {
@@ -433,7 +430,7 @@ export default {
           notify(true)
         } else {
           const itemId = this.getItemId(this.schema, item)
-          const resource = this.getItemResource(itemId)
+          const resource = getMemberResource(itemId, this.resource)
           if (resource) {
             this.request('delete', { resource }, err => {
               if (!err) {

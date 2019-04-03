@@ -100,21 +100,6 @@ export default {
     // that loads its own data from an associated API resource.
     rootData() {
       return this.resourceComponent?.data
-    },
-
-    sourceResource() {
-      // Returns the resource object representing the resource for the
-      // associated source schema.
-      return {
-        type: 'collection',
-        ...getResource(this.sourceSchema.resource),
-        parent: this.parentFormComponent?.resource
-      }
-    },
-
-    resource() {
-      // Returns the associated resource component's resource object.
-      return this.resourceComponent.resource
     }
   },
 
@@ -238,7 +223,11 @@ export default {
     },
 
     getResourceUrl(resource) {
-      return `${this.api.url}${this.getResourcePath(resource)}`
+      const path = this.getResourcePath(resource)
+      // Use same approach as axios internally to join baseURL with path:
+      return path
+        ? `${this.api.url.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+        : null
     },
 
     load({ cache, ...options }) {

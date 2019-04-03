@@ -9,7 +9,7 @@ import './validator'
 import verbs from './verbs'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
-import { getResource, getNestedResource } from './utils/resource'
+import { getResource } from './utils/resource'
 import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -35,8 +35,8 @@ export default class DitoAdmin {
 
     api.locale = api.locale || 'en-US'
     // Allow the configuration of all auth resources, like so:
-    // api.auth = {
-    //   path: 'admins',
+    // api.users = {
+    //   path: '/admins',
     //   // These are the defaults:
     //   login: {
     //     path: 'login',
@@ -49,17 +49,23 @@ export default class DitoAdmin {
     //   session: {
     //     path: 'session',
     //     method: 'get'
-    //   },
-    //   users: {
-    //     path: '..',
-    //     method: 'get'
     //   }
     // }
-    const auth = api.auth = getResource(api.auth) || {}
-    auth.users = getNestedResource(auth.users || '..', auth, 'get')
-    auth.login = getNestedResource(auth.login || 'login', auth, 'post')
-    auth.logout = getNestedResource(auth.logout || 'logout', auth, 'post')
-    auth.session = getNestedResource(auth.session || 'session', auth, 'get')
+    const users = api.users = getResource(api.users, {
+      type: 'collection'
+    }) || {}
+    users.login = getResource(users.login || 'login', {
+      method: 'post',
+      parent: users
+    })
+    users.logout = getResource(users.logout || 'logout', {
+      method: 'post',
+      parent: users
+    })
+    users.session = getResource(users.session || 'session', {
+      method: 'get',
+      parent: users
+    })
 
     api.request = api.request || ((...args) => this.request(...args))
 
@@ -80,6 +86,7 @@ export default class DitoAdmin {
     //   }
     // }
 
+    // TODO: Rename api.resources.handlers?
     api.resourcePath = {
       default(resource) {
         const parentPath = api.getResourcePath(resource.parent)

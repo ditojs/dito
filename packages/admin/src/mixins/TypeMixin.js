@@ -249,6 +249,11 @@ export default {
 
     isValidated() {
       return this.$field?.validated
+    },
+
+    hasResource() {
+      // NOTE: This is overridden in DataMixin, used by lists.
+      return false
     }
   },
 

@@ -36,6 +36,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
+import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
 import { isAbsoluteUrl } from '@ditojs/utils'
 
@@ -121,7 +122,7 @@ export default DitoComponent.component('dito-root', {
       if (loginData) {
         try {
           const response = await this.request({
-            resource: this.api.auth.login,
+            resource: this.api.users.login,
             data: loginData,
             internal: true
           })
@@ -143,7 +144,7 @@ export default DitoComponent.component('dito-root', {
     async logout() {
       try {
         const response = await this.request({
-          resource: this.api.auth.logout,
+          resource: this.api.users.logout,
           internal: true
         })
         if (response.data.success) {
@@ -160,7 +161,7 @@ export default DitoComponent.component('dito-root', {
       let user = null
       try {
         const response = await this.request({
-          resource: this.api.auth.session,
+          resource: this.api.users.session,
           internal: true
         })
         user = response.data.user || null
@@ -217,11 +218,9 @@ export default DitoComponent.component('dito-root', {
       if (
         checkUser &&
         method === 'patch' &&
-        url === this.getResourcePath({
-          type: 'member',
-          id: this.user.id,
-          parent: this.api.auth.users
-        })
+        url === this.getResourcePath(
+          getMemberResource(this.user.id, this.api.users)
+        )
       ) {
         await this.fetchUser()
       }

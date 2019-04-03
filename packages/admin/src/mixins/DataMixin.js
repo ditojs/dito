@@ -2,6 +2,7 @@ import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
 import { setDefaults } from '@/utils/schema'
 import { isString, labelize } from '@ditojs/utils'
+import { getResource } from '@/utils/resource'
 
 // @vue/component
 export default {
@@ -21,9 +22,15 @@ export default {
   },
 
   computed: {
+    resource() {
+      // Returns the resource object representing the resource for the
+      // associated source schema.
+      return this.getResource()
+    },
+
     hasResource() {
       // This component is a data-source if it has an associated API resource:
-      return !!this.sourceSchema?.resource
+      return !!this.resource
     },
 
     isTransient() {
@@ -67,6 +74,15 @@ export default {
   },
 
   methods: {
+    getResource() {
+      // This is defined as a method so the computed `resource` getter can
+      // be overridden and `super` functionality can still be accessed.
+      return getResource(this.sourceSchema?.resource, {
+        type: 'collection',
+        parent: this.parentFormComponent?.resource
+      })
+    },
+
     getVerbs() {
       return this.isTransient
         ? {

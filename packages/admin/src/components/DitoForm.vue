@@ -43,7 +43,7 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import DataMixin from '@/mixins/DataMixin'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
-import { hasResource, getNestedResource } from '@/utils/resource'
+import { hasResource, getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import {
   isObject, clone, capitalize, parseDataPath, merge
@@ -162,7 +162,8 @@ export default DitoComponent.component('dito-form', {
     },
 
     resource() {
-      return this.getItemResource(this.itemId) || this.sourceResource
+      const resource = this.getResource()
+      return getMemberResource(this.itemId, resource) || resource
     },
 
     breadcrumbPrefix() {
@@ -371,10 +372,9 @@ export default DitoComponent.component('dito-form', {
         return
       }
       // Allow buttons to override both method and resource path to submit to:
-      const resource = getNestedResource(
-        button.schema.resource,
-        this.resource
-      ) || this.resource
+      const resource = getResource(button.schema.resource, {
+        parent: this.resource
+      }) || this.resource
       const method = resource.method || this.method
       const itemLabel = this.data
         ? this.getItemLabel(this.sourceSchema, this.data, null, true)

@@ -4,29 +4,31 @@ export function hasResource(resource) {
   return !!getResource(resource)
 }
 
-export function getResource(resource) {
-  return isObject(resource) ? resource
-    : isString(resource) ? { path: resource }
+export function getResource(resource, defaults = {}) {
+  const { parent, ...defs } = defaults
+  resource = isObject(resource) ? { ...defs, ...resource }
+    : isString(resource) ? { ...defs, path: resource }
     : null
-}
-
-export function getNestedResource(resource, parent, method) {
-  resource = getResource(resource)
-  if (resource) {
-    const { path, ...rest } = resource
-    resource = path === '..'
-      ? { // Merge with parent
-        ...parent,
-        ...rest
-      }
-      : { // Nest inside parent
-        ...resource,
-        parent
-      }
-    if (method) {
-      // Use passed method as default, but allow resource to override it.
-      resource.method = method
-    }
+  // Only set parent if path doesn't start with '/', so relative URLs are
+  // dealt with correctly.
+  if (
+    resource &&
+    parent &&
+    !resource.parent &&
+    parent.path &&
+    !/^\//.test(resource.path)
+  ) {
+    resource.parent = parent
   }
   return resource
+}
+
+export function getMemberResource(id, resource) {
+  return id != null && resource?.type === 'collection'
+    ? {
+      ...resource,
+      type: 'member',
+      id
+    }
+    : null
 }
