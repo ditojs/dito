@@ -29,6 +29,9 @@ export class Storage {
           // simultaneously: The first to override `file.stream` with,
           // the second to run the image size detection on:
           const { stream } = file
+          // Pause the original stream until the original _handleFile() is
+          // called, to preserve original stream event behavior.
+          stream.pause()
           const stream1 = new ReadableClone(stream)
           const stream2 = new ReadableClone(stream)
           Object.defineProperty(file, 'stream', {
@@ -36,32 +39,29 @@ export class Storage {
             enumerable: false,
             value: stream1
           })
-          const [size, res] = await Promise.all([
+          const [res, size] = await Promise.all([
+            // The original `_handleFile()`:
+            new Promise((resolve, reject) => {
+              stream.resume()
+              _handleFile.call(
+                storage, req, file,
+                toPromiseCallback(resolve, reject)
+              )
+            }).finally(() => stream1.destroy()),
             // Image size detection:
             new Promise(resolve => {
               stream2
                 .pipe(new ImageSizeTransform())
-                .on('size', size => {
-                  stream2.destroy()
-                  resolve(size)
-                })
+                .on('size', resolve)
                 .on('error', err => {
                   // Do not reject with this error, but log it:
                   this.app.emit(
                     'error',
                     `Unable to determine image size: ${err}`
                   )
-                  stream2.destroy()
                   resolve(null)
                 })
-            }),
-            // The original `_handleFile()`:
-            new Promise((resolve, reject) => {
-              _handleFile.call(
-                storage, req, file,
-                toPromiseCallback(resolve, reject)
-              )
-            })
+            }).finally(() => stream2.destroy())
           ])
           if (size) {
             const { width, height } = size
