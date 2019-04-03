@@ -95,7 +95,6 @@
     border-radius: $border-radius
     background: $color-white
     box-shadow: $shadow-window
-    // box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175)
     z-index: 1000
 
   .dito-calendar-body

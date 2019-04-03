@@ -37,7 +37,7 @@
       cursor: pointer
       width: 100%
   .dito-date-picker-popup
-    margin-top: 2px
+    margin: $popup-margin
 </style>
 
 <script>

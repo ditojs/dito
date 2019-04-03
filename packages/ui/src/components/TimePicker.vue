@@ -67,7 +67,7 @@
 
   .dito-time-picker-popup
     max-width: 160px
-    margin-top: 2px
+    margin: $popup-margin
 
   $time-picker-line-height: 24px
   .dito-time-picker
