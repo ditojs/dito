@@ -182,11 +182,11 @@
       .multiselect__content-wrapper
         border: $border-width solid $color-active
         border-top-color: $border-color
-        margin-top: -1px
+        margin: -1px 0 0
         border-top-left-radius: 0
         border-top-right-radius: 0
 
-      .multiselect--above
+      &.multiselect--above
         .multiselect__tags
           border-radius: $border-radius
           border-top-left-radius: 0
@@ -194,7 +194,7 @@
         .multiselect__content-wrapper
           border: $border-width solid $color-active
           border-bottom-color: $border-color
-          margin-bottom: -1px
+          margin: 0 0 -1px
           border-radius: $border-radius
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
