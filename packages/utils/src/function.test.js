@@ -1,6 +1,6 @@
 import { toCallback, toAsync } from './function'
 
-describe('toCallback()', async () => {
+describe('toCallback()', () => {
   it('should convert async functions to callbacks', async () => {
     expect.assertions(2)
     const callback = toCallback(async result => {
@@ -28,7 +28,7 @@ describe('toCallback()', async () => {
   })
 })
 
-describe('toAsync()', async () => {
+describe('toAsync()', () => {
   it('should convert callback functions to async', async () => {
     expect.assertions(1)
     const asyncFunc = toAsync(function(toResolve, callback) {

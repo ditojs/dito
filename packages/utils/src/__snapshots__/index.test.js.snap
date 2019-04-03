@@ -45,6 +45,7 @@ Object {
   "stripTags": [Function],
   "toAsync": [Function],
   "toCallback": [Function],
+  "toPromiseCallback": [Function],
   "underscore": [Function],
 }
 `;
