@@ -81,6 +81,16 @@ export default {
       return extended
         ? label ? `${getFormLabel()} ${label}` : getFormLabel()
         : label || ''
+    },
+
+    getItemResource(itemId) {
+      return itemId != null
+        ? {
+          ...this.sourceResource,
+          type: 'member',
+          id: itemId
+        }
+        : null
     }
   }
 }

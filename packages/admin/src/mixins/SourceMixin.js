@@ -432,17 +432,17 @@ export default {
           this.removeItem(item)
           notify(true)
         } else {
-          const resource = {
-            type: 'member',
-            id: this.getItemId(this.schema, item)
+          const itemId = this.getItemId(this.schema, item)
+          const resource = this.getItemResource(itemId)
+          if (resource) {
+            this.request('delete', { resource }, err => {
+              if (!err) {
+                this.removeItem(item)
+                notify(false)
+              }
+              this.reloadData()
+            })
           }
-          this.request('delete', { resource }, err => {
-            if (!err) {
-              this.removeItem(item)
-              notify(false)
-            }
-            this.reloadData()
-          })
         }
       }
     },

@@ -152,7 +152,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     itemId() {
-      return !this.isCreating && this.param ?? null
+      return this.isCreating
+        ? null
+        : (this.param ?? null)
     },
 
     method() {
@@ -160,14 +162,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     resource() {
-      const { itemId, sourceResource } = this
-      return itemId
-        ? {
-          type: 'member',
-          id: itemId,
-          parent: sourceResource
-        }
-        : sourceResource
+      return this.getItemResource(this.itemId) || this.sourceResource
     },
 
     breadcrumbPrefix() {

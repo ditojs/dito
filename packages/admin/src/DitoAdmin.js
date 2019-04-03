@@ -88,29 +88,30 @@ export default class DitoAdmin {
           : resource.path
       },
 
-      // NOTE: collection() is handled by default()
+      collection(resource) {
+        return this.default(resource)
+      },
 
       member(resource) {
         // NOTE: We assume that all members have root-level collection routes,
         // to avoid excessive nesting of (sub-)collection routes.
-        return `${resource.parent.path}/${resource.id}`
+        return `${resource.path}/${resource.id}`
       },
 
       upload(resource) {
-        // Dito Server handles upload routes on the collection resource,
-        // which is the parent of the member resource:
-        const { parent } = resource
-        const collection = parent.type === 'member' ? parent.parent : parent
-        return `${api.getResourcePath(collection)}/upload/${resource.path}`
+        // Dito Server handles upload routes on the collection resource:
+        return `${this.collection(resource.parent)}/upload/${resource.path}`
       },
 
       ...api.resourcePath
     }
 
     api.getResourcePath = api.getResourcePath || (resource => {
-      const handlers = api.resourcePath
-      const handler = handlers[resource?.type] || handlers.default
-      return resource && handler(resource)
+      if (resource) {
+        const handlers = api.resourcePath
+        const handler = handlers[resource?.type] || handlers.default
+        return resource && handler.call(handlers, resource)
+      }
     })
 
     // Allow overriding / extending of headers:
