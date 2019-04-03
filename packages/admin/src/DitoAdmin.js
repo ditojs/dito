@@ -33,6 +33,7 @@ export default class DitoAdmin {
     this.api = api
     this.options = options
 
+    api.locale = api.locale || 'en-US'
     // Allow the configuration of all auth resources, like so:
     // api.auth = {
     //   path: 'admins',

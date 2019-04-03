@@ -39,6 +39,10 @@ export default {
       return this.$verbs
     },
 
+    locale() {
+      return this.api.locale
+    },
+
     rootComponent() {
       return this.$root.$children[0]
     },

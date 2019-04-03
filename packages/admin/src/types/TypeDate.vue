@@ -4,6 +4,7 @@
       :is="getComponent(type)"
       ref="element"
       :id="dataPath"
+      :locale="locale"
       v-model="dateValue"
       v-validate="validations"
       v-bind="attributes"
