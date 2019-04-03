@@ -14,7 +14,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="matchedOptions || options || []"
+      :options="open && (matchedOptions || options) || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -25,6 +25,8 @@
       :internal-search="!searchFilter"
       :close-on-select="true"
       :loading="isLoading"
+      @open="open = true"
+      @close="open = false"
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
@@ -230,9 +232,12 @@ export default TypeComponent.register('multiselect', {
   components: { VueMultiselect },
   mixins: [OptionsMixin],
 
-  data: () => ({
-    matchedOptions: null
-  }),
+  data() {
+    return {
+      matchedOptions: null,
+      open: false
+    }
+  },
 
   computed: {
     multiSelectValue: {
