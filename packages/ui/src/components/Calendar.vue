@@ -214,7 +214,6 @@ export default {
   props: {
     value: { type: Date, default: null },
     locale: { type: String, default: 'en-US' },
-    format: { type: String, default: 'yyyy-MM-dd' },
     disabledDate: { type: Function, default: () => false },
     show: { type: Boolean, default: true },
     mode: { type: String, default: 'day' }
@@ -229,7 +228,7 @@ export default {
       yearRange: [],
       currentValue:
         this.value ||
-        // If no value is provided, use curernt date but clear time fields:
+        // If no value is provided, use current date but clear time fields:
         copyDate(new Date(), { hour: 0, minute: 0, second: 0 }),
       currentMode: this.mode
     }
@@ -356,24 +355,6 @@ export default {
     decadeToString(date) {
       const year = this.getFirstYearOfDecade(date.getFullYear())
       return `${year} – ${year + 9}`
-    },
-
-    stringify(date, format = this.format) {
-      if (date) {
-        const year = date.getFullYear()
-        const month = date.getMonth() + 1
-        const day = date.getDate()
-        const monthName = this.monthNames[date.getMonth()]
-        return format
-          .replace(/yyyy/g, year)
-          .replace(/MMMM/g, monthName.long)
-          .replace(/MMM/g, monthName.short)
-          .replace(/MM/g, ('0' + month).slice(-2))
-          .replace(/dd/g, ('0' + day).slice(-2))
-          .replace(/yy/g, year)
-          .replace(/M(?!a)/g, month)
-          .replace(/d/g, day)
-      }
     },
 
     getDayCount(year, month) {

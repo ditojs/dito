@@ -25,7 +25,7 @@
       ref="calendar"
       @input="selectDate"
       :value="currentValue"
-      v-bind="{ format, locale, disabledDate }"
+      v-bind="{ locale, disabledDate }"
     )
 </template>
 
@@ -45,6 +45,7 @@ import Trigger from './Trigger'
 import Calendar from './Calendar'
 import InputField from './InputField'
 import { getKeyNavigation } from '../utils'
+import { formatDate, defaultDateFormat } from '@ditojs/utils'
 
 export default {
   components: { Trigger, Calendar, InputField },
@@ -54,7 +55,7 @@ export default {
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
     placeholder: { type: String, default: null },
-    format: { type: String, default: 'yyyy-MM-dd' },
+    format: { type: Object, default: () => defaultDateFormat },
     locale: { type: String, default: 'en-US' },
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
@@ -119,9 +120,17 @@ export default {
   },
 
   methods: {
+    formatDate(date) {
+      return formatDate(date, {
+        locale: this.locale,
+        date: this.format,
+        time: false
+      })
+    },
+
     updateText() {
       this.currentText = this.currentValue
-        ? this.$refs.calendar.stringify(this.currentValue, this.format)
+        ? this.formatDate(this.currentValue)
         : ''
     },
 

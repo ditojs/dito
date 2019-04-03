@@ -54,6 +54,7 @@
 <script>
 import DatePicker from './DatePicker'
 import TimePicker from './TimePicker'
+import { defaultDateFormat } from '@ditojs/utils'
 
 export default {
   components: { DatePicker, TimePicker },
@@ -62,7 +63,7 @@ export default {
     value: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placeholder: { type: String, default: null },
-    format: { type: String, default: 'yyyy-MM-dd' },
+    format: { type: Object, default: () => defaultDateFormat },
     locale: { type: String, default: 'en-US' },
     disabled: { type: Boolean, default: false }
   },
