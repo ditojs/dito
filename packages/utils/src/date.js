@@ -1,11 +1,23 @@
+export const defaultDateFormat = {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+}
+
+export const defaultTimeFormat = {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit'
+}
+
 export function formatDate(date, options = {
   locale: 'en-US',
   date: true,
   time: true
 }) {
   const defaults = {
-    date: { day: 'numeric', month: 'long', year: 'numeric' },
-    time: { hour: '2-digit', minute: '2-digit', second: '2-digit' }
+    date: defaultDateFormat,
+    time: defaultTimeFormat
   }
 
   const getOptions = name => {
@@ -21,7 +33,7 @@ export function formatDate(date, options = {
         return opt
       }, {})
   }
-  return new Date(date).toLocaleString(options.locale || 'en-US', {
+  return date && new Date(date).toLocaleString(options.locale || 'en-US', {
     ...getOptions('date'),
     ...getOptions('time')
   })

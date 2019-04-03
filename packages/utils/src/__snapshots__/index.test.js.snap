@@ -10,6 +10,16 @@ Object {
   "clone": [Function],
   "decamelize": [Function],
   "deepMerge": [Function],
+  "defaultDateFormat": Object {
+    "day": "numeric",
+    "month": "long",
+    "year": "numeric",
+  },
+  "defaultTimeFormat": Object {
+    "hour": "2-digit",
+    "minute": "2-digit",
+    "second": "2-digit",
+  },
   "deindent": [Function],
   "equals": [Function],
   "escapeHtml": [Function],
