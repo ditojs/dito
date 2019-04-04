@@ -34,6 +34,15 @@ export default class DitoAdmin {
     this.options = options
 
     api.locale = api.locale || 'en-US'
+    api.request = api.request || ((...args) => this.request(...args))
+
+    // Setting `api.normalizePaths = true (plural) sets both:
+    // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
+    api.normalizePath = api.normalizePath ||
+      api.normalizePaths ? hyphenate : val => val
+    api.denormalizePath = api.denormalizePath ||
+      api.normalizePaths ? camelize : val => val
+
     // Allow the configuration of all auth resources, like so:
     // api.users = {
     //   path: '/admins',
@@ -67,17 +76,8 @@ export default class DitoAdmin {
       parent: users
     })
 
-    api.request = api.request || ((...args) => this.request(...args))
-
-    // Setting `api.normalizePaths = true (plural) sets both:
-    // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
-    api.normalizePath = api.normalizePath ||
-      api.normalizePaths ? hyphenate : val => val
-    api.denormalizePath = api.denormalizePath ||
-      api.normalizePaths ? camelize : val => val
-
-    // Allow overriding of resource paths:
-    // api.resourcePath = {
+    // Allow overriding of resource path handlers:
+    // api.resources = {
     //   collection(resource) {
     //     return resource.parent
     //       ? `${resource.path}?${resource.parent.path}_id=${
@@ -86,10 +86,14 @@ export default class DitoAdmin {
     //   }
     // }
 
-    // TODO: Rename api.resources.handlers?
-    api.resourcePath = {
+    api.resources = {
+      any(resource) {
+        const handler = this[resource?.type] || this.default
+        return resource && handler.call(this, resource)
+      },
+
       default(resource) {
-        const parentPath = api.getResourcePath(resource.parent)
+        const parentPath = this.any(resource.parent)
         return parentPath
           ? `${parentPath}/${resource.path}`
           : resource.path
@@ -110,16 +114,8 @@ export default class DitoAdmin {
         return `${this.collection(resource.parent)}/upload/${resource.path}`
       },
 
-      ...api.resourcePath
+      ...api.resources
     }
-
-    api.getResourcePath = api.getResourcePath || (resource => {
-      if (resource) {
-        const handlers = api.resourcePath
-        const handler = handlers[resource?.type] || handlers.default
-        return resource && handler.call(handlers, resource)
-      }
-    })
 
     // Allow overriding / extending of headers:
     // api.headers = {

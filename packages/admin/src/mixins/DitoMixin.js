@@ -219,7 +219,7 @@ export default {
     },
 
     getResourcePath(resource) {
-      return this.api.getResourcePath(getResource(resource))
+      return this.api.resources.any(getResource(resource))
     },
 
     getResourceUrl(resource) {
