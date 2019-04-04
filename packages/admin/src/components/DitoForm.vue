@@ -276,7 +276,7 @@ export default DitoComponent.component('dito-form', {
     // Handle button clicks and see if the buttons define a resource to submit
     // to, and if so, delegate to `submit()`:
     this.$refs.schema.on('click', ({ target: button }) => {
-      if (hasResource(button.resource) && !button.responds('click')) {
+      if (hasResource(button.schema.resource) && !button.responds('click')) {
         this.submit(button)
       }
     })
