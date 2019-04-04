@@ -1,4 +1,4 @@
-import { isObject, isString } from '@ditojs/utils'
+import { isObject, isString, pickBy } from '@ditojs/utils'
 
 export function hasResource(resource) {
   return !!getResource(resource)
@@ -16,7 +16,7 @@ export function getResource(resource, defaults = {}) {
     parent &&
     !resource.parent &&
     parent.path &&
-    !/^\//.test(resource.path)
+    !resource.path.startsWith('/')
   ) {
     resource.parent = parent
   }
@@ -26,9 +26,12 @@ export function getResource(resource, defaults = {}) {
 export function getMemberResource(id, resource) {
   return id != null && resource?.type === 'collection'
     ? {
-      ...resource,
       type: 'member',
-      id
+      ...pickBy(
+        resource,
+        (value, key) => ['method', 'path', 'parent'].includes(key)
+      ),
+      id: `${id}`
     }
     : null
 }

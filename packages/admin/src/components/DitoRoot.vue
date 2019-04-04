@@ -38,7 +38,7 @@ import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
-import { isAbsoluteUrl } from '@ditojs/utils'
+import { equals } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
@@ -206,21 +206,18 @@ export default DitoComponent.component('dito-root', {
     },
 
     async request({ method, url, resource, data, params, internal }) {
-      url = url || this.getResourcePath(resource)
+      url = url || this.getResourceUrl(resource)
       method = method || resource?.method
-      const request = { method, url, data, params }
-      const checkUser = !internal && !isAbsoluteUrl(url)
+      const checkUser = !internal && url.startsWith(this.api.url)
       if (checkUser) {
         await this.ensureUser()
       }
-      const response = await this.api.request(request)
+      const response = await this.api.request({ method, url, data, params })
       // Detect change of the own user, and fetch it again if it was changed.
       if (
         checkUser &&
         method === 'patch' &&
-        url === this.getResourcePath(
-          getMemberResource(this.user.id, this.api.users)
-        )
+        equals(resource, getMemberResource(this.user.id, this.api.users))
       ) {
         await this.fetchUser()
       }
