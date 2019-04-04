@@ -446,7 +446,6 @@ export default DitoComponent.component('dito-schema', {
         if (
           isObj &&
           processIds &&
-          !this.isTransient &&
           this.hasTemporaryId(value)
         ) {
           const { id, ...rest } = value
