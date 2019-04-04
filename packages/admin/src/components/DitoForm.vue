@@ -331,6 +331,7 @@ export default DitoComponent.component('dito-form', {
         // For components with transient data, modify this.sourceData.
         this.setSourceData(data)
       } else {
+        this.createdData = null
         this.loadedData = data
       }
       if (!clear) {
@@ -400,7 +401,7 @@ export default DitoComponent.component('dito-form', {
           this.setSourceData(payload)
           if (!(await button.emitEvent('success', {
             params: {
-              item: payload,
+              data: this.data,
               itemLabel
             }
           }))) {
@@ -417,61 +418,71 @@ export default DitoComponent.component('dito-form', {
           this.close()
         }
       } else {
-        this.request(method, { payload, resource }, async (err, response) => {
-          const data = response?.data
-          if (err) {
-            // See if we're dealing with a Dito validation error:
-            const errors = this.isValidationError(response) && data.errors
-            if (errors) {
-              this.showErrors(errors, true)
-            } else {
-              const error = isObject(data) ? data : err
-              if (error) {
-                if (!(await button.emitEvent('error', {
-                  params: {
-                    item: payload,
-                    itemLabel,
-                    error
+        this.request(
+          method,
+          { payload, resource },
+          async (err, { request, response }) => {
+            const data = response?.data
+            if (err) {
+              // See if we're dealing with a Dito validation error:
+              const errors = this.isValidationError(response) && data.errors
+              if (errors) {
+                this.showErrors(errors, true)
+              } else {
+                const error = isObject(data) ? data : err
+                if (error) {
+                  if (!(await button.emitEvent('error', {
+                    params: {
+                      data: this.data,
+                      request,
+                      response,
+                      itemLabel,
+                      error
+                    }
+                  }))) {
+                    this.notify(
+                      'error',
+                      'Request Error',
+                      `Error submitting ${itemLabel}:\n${
+                        error.message || error
+                      }`
+                    )
                   }
-                }))) {
-                  this.notify(
-                    'error',
-                    'Request Error',
-                    `Error submitting ${itemLabel}:\n${
-                      error.message || error
-                    }`
-                  )
                 }
               }
-            }
-          } else {
-            if (!(await button.emitEvent('success', {
-              params: {
-                item: payload,
-                itemLabel
-              }
-            }))) {
-              const submitted = this.verbs.submitted
-              this.notify(
-                'success',
-                `Successfully ${capitalize(submitted)}`,
-                `${itemLabel} was ${submitted}.`
-              )
-            }
-            // Since the  above is async, the schema may already be destroyed by
-            // now...
-            this.$refs.schema?.resetValidator()
-            // After submitting, close the form except if a button turns it off:
-            if (button.schema.close === false) {
+            } else {
               if (data) {
                 this.setData(data)
               }
-            } else {
-              this.close()
+              if (!(await button.emitEvent('success', {
+                params: {
+                  data: this.data,
+                  request,
+                  response,
+                  itemLabel
+                }
+              }))) {
+                const submitted = this.verbs.submitted
+                this.notify(
+                  'success',
+                  `Successfully ${capitalize(submitted)}`,
+                  `${itemLabel} was ${submitted}.`
+                )
+              }
+              // Since the  above is async, the schema may already be destroyed
+              // by now...
+              this.$refs.schema?.resetValidator()
+              // After submitting, close form except if a button turns it off:
+              if (button.schema.close === false) {
+                const id = this.getItemId(this.schema, this.data)
+                this.$router.push({ path: `../${id}`, append: true })
+              } else {
+                this.close()
+              }
             }
+            return true // Errors were already handled.
           }
-          return true // Errors were already handled.
-        })
+        )
       }
     }
   }

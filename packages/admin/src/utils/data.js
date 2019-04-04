@@ -126,4 +126,16 @@ class ItemParams {
   get panelComponent() {
     return get(this, 'panelComponent') || null
   }
+
+  get request() {
+    return get(this, 'request') || null
+  }
+
+  get response() {
+    return get(this, 'response') || null
+  }
+
+  get error() {
+    return get(this, 'error') || null
+  }
 }

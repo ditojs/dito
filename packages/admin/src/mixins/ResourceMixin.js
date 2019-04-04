@@ -146,7 +146,7 @@ export default {
 
     requestData() {
       const params = this.getQueryParams()
-      this.request('get', { params }, (err, response) => {
+      this.request('get', { params }, (err, { response }) => {
         if (err) {
           if (response) {
             const { data } = response
@@ -180,18 +180,21 @@ export default {
         payload: data,
         params
       } = options
+      const request = {
+        method,
+        resource,
+        data,
+        params
+      }
       try {
-        const response = await this.rootComponent.request({
-          method,
-          resource,
-          data,
-          params
-        })
-        callback?.(null, response)
+        const response = await this.rootComponent.request(request)
+        // Pass both request and response to the callback, so they can be
+        // exposed to further callbacks through ItemParams.
+        callback?.(null, { request, response })
       } catch (error) {
         // If callback returns true, errors were already handled.
         const { response } = error
-        if (!callback?.(error, response)) {
+        if (!callback?.(error, { request, response })) {
           const data = response?.data
           if (data && isString(data.type)) {
             this.notify('error', labelize(data.type), data.message || error)
