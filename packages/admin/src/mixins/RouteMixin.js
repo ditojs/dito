@@ -85,7 +85,7 @@ export default {
       // Workaround for vue-router not being able to map multiple url parameters
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
-      return this.$route.params[this.meta.param]
+      return this.$route.params[this.meta?.param] || null
     }
   },
 
