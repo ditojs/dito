@@ -377,7 +377,7 @@ export default DitoComponent.component('dito-form', {
         parent: this.resource
       }) || this.resource
       const method = resource.method || this.method
-      const itemLabel = this.data
+      const getItemLabel = () => this.data
         ? this.getItemLabel(this.sourceSchema, this.data, null, true)
         : 'form'
       // Convention: only post and patch requests pass the data as payload.
@@ -398,6 +398,7 @@ export default DitoComponent.component('dito-form', {
               `Unable to ${this.verbs.create} item.`)
           }
         } else if (!this.doesMutate) {
+          const itemLabel = getItemLabel()
           this.setSourceData(payload)
           if (!(await button.emitEvent('success', {
             params: {
@@ -431,6 +432,7 @@ export default DitoComponent.component('dito-form', {
               } else {
                 const error = isObject(data) ? data : err
                 if (error) {
+                  const itemLabel = getItemLabel()
                   if (!(await button.emitEvent('error', {
                     params: {
                       data: this.data,
@@ -454,6 +456,8 @@ export default DitoComponent.component('dito-form', {
               if (data) {
                 this.setData(data)
               }
+              // This needs to be called after `setData()` above:
+              const itemLabel = getItemLabel()
               if (!(await button.emitEvent('success', {
                 params: {
                   data: this.data,
