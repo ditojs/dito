@@ -10,8 +10,8 @@ export default {
 
   provide() {
     return {
-      // Pass local verbs overrides on to children, see verbs()
-      $verbs: this.verbs
+      // Pass local verbs overrides on to children, see verbs() computed prop.
+      $verbs: () => this.verbs
     }
   },
 
@@ -84,9 +84,10 @@ export default {
     },
 
     getVerbs() {
+      const verbs = this.$verbs()
       return this.isTransient
         ? {
-          ...this.$verbs,
+          ...verbs,
           // Override default verbs with their transient versions:
           create: 'add',
           created: 'added',
@@ -95,7 +96,7 @@ export default {
           delete: 'remove',
           deleted: 'removed'
         }
-        : this.$verbs
+        : verbs
     },
 
     // @override

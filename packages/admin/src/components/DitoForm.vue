@@ -67,7 +67,7 @@ export default DitoComponent.component('dito-form', {
     verbs() {
       // Add submit / submitted to the verbs returned by ResourceMixin
       // NOTE: These get passed on to children through:
-      // `provide() ... { $verbs: this.verbs }` in ResourceMixin
+      // `provide() ... { $verbs: () => this.verbs }` in ResourceMixin
       const verbs = this.getVerbs()
       const { isCreating, hasResource } = this
       return {

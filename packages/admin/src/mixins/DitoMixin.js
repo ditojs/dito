@@ -36,7 +36,7 @@ export default {
     },
 
     verbs() {
-      return this.$verbs
+      return this.$verbs()
     },
 
     locale() {
