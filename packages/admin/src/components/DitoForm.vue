@@ -478,9 +478,11 @@ export default DitoComponent.component('dito-form', {
               this.$refs.schema?.resetValidator()
               // After submitting, close form except if a button turns it off:
               if (button.schema.close === false) {
-                // Navigate to the form for the newly created item instead:
-                const id = this.getItemId(this.schema, this.data)
-                this.$router.push({ path: `../${id}`, append: true })
+                if (this.isCreating) {
+                  // Navigate to the form for the newly created item instead:
+                  const id = this.getItemId(this.schema, this.data)
+                  this.$router.push({ path: `../${id}`, append: true })
+                }
               } else {
                 this.close()
               }
