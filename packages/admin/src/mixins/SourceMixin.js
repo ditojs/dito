@@ -1,7 +1,6 @@
 import DitoComponent from '@/DitoComponent'
 import ResourceMixin from './ResourceMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { isFullyContained } from '@/utils/string'
 import { getItemParams } from '@/utils/data'
 import { getMemberResource } from '@/utils/resource'
 import {
@@ -271,25 +270,11 @@ export default {
         this.ignoreRouteChange = false
         return
       }
-      const path1 = from.path
-      const path2 = to.path
-      if (path1 === path2 && from.hash === to.hash) {
+      if (from.path === to.path && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
         this.query = to.query
         this.loadData(false)
-      } else if (!isFullyContained(path1, path2)) {
-        // The routes change completely, but we may still be within the same
-        // component since tree lists use a part of the path to edit nested
-        // data.  Compare against component path to rule out such path changes:
-        const { path } = this.routeComponent
-        if (!(path1.startsWith(path) && path2.startsWith(path))) {
-          // Complete change from one view to the next but TypeList is reused,
-          // so clear the filters and load data with clearing.
-          this.query = {}
-          this.loadData(true)
-          this.closeNotifications()
-        }
       }
     },
 
