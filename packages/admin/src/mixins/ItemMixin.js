@@ -34,7 +34,9 @@ export default {
 
     getItemLabel(sourceSchema, item, index = null, extended = false) {
       const { itemLabel } = sourceSchema
-      if (!extended && itemLabel === false) return null
+      if (!item || !extended && itemLabel === false) {
+        return null
+      }
       let dataPath
       const getDataPath = () => (
         dataPath ||

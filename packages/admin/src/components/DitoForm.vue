@@ -372,51 +372,61 @@ export default DitoComponent.component('dito-form', {
         this.$refs.schema.focus(Object.keys(errors)[0], true)
         return
       }
+
+      let itemLabel
+      const getItemLabel = () => (
+        itemLabel ||
+        (itemLabel = this.getItemLabel(
+          this.sourceSchema,
+          this.data,
+          null,
+          true
+        ))
+      )
+
+      const getEventParams = (request, response, error) => ({
+        data: this.data,
+        itemLabel: getItemLabel(),
+        request,
+        response,
+        error
+      })
+
       // Allow buttons to override both method and resource path to submit to:
-      const resource = getResource(button.schema.resource, {
+      const butttonResource = getResource(button.schema.resource, {
         parent: this.resource
-      }) || this.resource
-      const method = resource.method || this.method
-      const getItemLabel = () => this.data
-        ? this.getItemLabel(this.sourceSchema, this.data, null, true)
-        : 'form'
+      })
+      const resource = butttonResource || this.resource
+      const method = resource?.method || this.method
       // Convention: only post and patch requests pass the data as payload.
       const payload = (
         ['post', 'patch'].includes(method) &&
         this.$refs.schema.processData({ processIds: true })
       )
-      if (payload && this.isTransient) {
-        // We're dealing with a create form with nested forms, so have to deal
-        // with transient objects. When editing nested transient data, nothing
-        // needs to be done as it just works, but when creating, we need to add
-        // to / create the parent list.
-        let ok = true
-        if (this.isCreating) {
-          ok = this.addSourceData(payload)
-          if (!ok) {
-            this.notify('error', 'Request Error',
-              `Unable to ${this.verbs.create} item.`)
-          }
-        } else if (!this.doesMutate) {
-          const itemLabel = getItemLabel()
-          this.setSourceData(payload)
+      if (!butttonResource && this.isTransient) {
+        // Handle the default "submitting" of transient, nested data:
+        const changed = this.isCreating
+          ? this.addSourceData(payload)
+          : this.setSourceData(payload)
+        if (changed) {
           if (!(await button.emitEvent('success', {
-            params: {
-              data: this.data,
-              itemLabel
-            }
+            params: getEventParams()
           }))) {
             this.notify(
               'info',
               'Change Applied',
-              `<p>Changes in ${itemLabel} were applied.</p>` +
+              `<p>Changes to ${getItemLabel()} were applied.</p>` +
               '<p><b>Note</b>: the parent still needs to be saved ' +
               'in order to persist this change.</p>'
             )
           }
-        }
-        if (ok) {
           this.close()
+        } else {
+          this.notify(
+            'error',
+            'Request Error',
+            `Unable to ${this.verbs.create} ${getItemLabel()}.`
+          )
         }
       } else {
         this.request(
@@ -432,20 +442,13 @@ export default DitoComponent.component('dito-form', {
               } else {
                 const error = isObject(data) ? data : err
                 if (error) {
-                  const itemLabel = getItemLabel()
                   if (!(await button.emitEvent('error', {
-                    params: {
-                      data: this.data,
-                      request,
-                      response,
-                      itemLabel,
-                      error
-                    }
+                    params: getEventParams(request, response, error)
                   }))) {
                     this.notify(
                       'error',
                       'Request Error',
-                      `Error submitting ${itemLabel}:\n${
+                      `Unable to ${this.verbs.create} ${getItemLabel()}:\n${
                         error.message || error
                       }`
                     )
@@ -453,35 +456,30 @@ export default DitoComponent.component('dito-form', {
                 }
               }
             } else {
+              // Update the underlying data before calling `getEventParams()`
+              // or `getItemLabel()`, so id is set after creating new items.
               if (data) {
                 this.setData(data)
               }
-              // This needs to be called after `setData()` above:
-              const itemLabel = getItemLabel()
               if (!(await button.emitEvent('success', {
-                params: {
-                  data: this.data,
-                  request,
-                  response,
-                  itemLabel
-                }
+                params: getEventParams(request, response)
               }))) {
                 const submitted = this.verbs.submitted
                 this.notify(
                   'success',
                   `Successfully ${capitalize(submitted)}`,
-                  `${itemLabel} was ${submitted}.`
+                  `${getItemLabel()} was ${submitted}.`
                 )
               }
-              // Since the  above is async, the schema may already be destroyed
-              // by now...
+              // Since `emitEvent()` above is async, the schema may already be
+              // destroyed by now...
               this.$refs.schema?.resetValidator()
-              // After submitting, close form except if a button turns it off:
+              // After submitting, close form unless clicked button disables it:
               if (button.schema.close === false) {
                 if (this.isCreating) {
-                  // Navigate to the form for the newly created item instead:
+                  // Navigate to the form editing the newly created item:
                   const id = this.getItemId(this.schema, this.data)
-                  this.$router.push({ path: `../${id}`, append: true })
+                  this.$router.replace({ path: `../${id}`, append: true })
                 }
               } else {
                 this.close()
