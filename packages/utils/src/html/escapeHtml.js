@@ -4,7 +4,3 @@ export function escapeHtml(html) {
       chr => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' })[chr])
     : ''
 }
-
-export function stripTags(html) {
-  return html ? `${html}`.replace(/<[^>]+>/g, '') : ''
-}

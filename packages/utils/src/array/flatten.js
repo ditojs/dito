@@ -1,4 +1,4 @@
-import { isArray } from './base'
+import { isArray } from '@/base'
 
 export function flatten(array, maxDepth = Infinity, _depth = 0) {
   const res = []
@@ -9,18 +9,6 @@ export function flatten(array, maxDepth = Infinity, _depth = 0) {
     } else {
       res.push(value)
     }
-  }
-  return res
-}
-
-export function shuffle(array) {
-  // Do the Fisher-Yates (aka Knuth) Shuffle:
-  const res = array.slice()
-  for (let i = array.length; i;) {
-    const r = Math.floor(Math.random() * i)
-    const t = res[--i]
-    res[i] = res[r]
-    res[r] = t
   }
   return res
 }

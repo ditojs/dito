@@ -1,6 +1,13 @@
 export const { isArray } = Array
 const { toString } = Object.prototype
 
+export const is = Object.is || (
+  // SameValue algorithm:
+  // istanbul ignore next
+  // eslint-disable-next-line no-self-compare
+  (x, y) => x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y
+)
+
 export function isPlainObject(val) {
   const ctor = val?.constructor
   // We also need to check for ctor.name === 'Object', in case this is an object
