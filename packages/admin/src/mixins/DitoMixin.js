@@ -5,7 +5,7 @@ import { getItemParams } from '@/utils/data'
 import { getResource } from '@/utils/resource'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, labelize, hyphenate
+  isRegExp, asArray, labelize, hyphenate, stripTags
 } from '@ditojs/utils'
 
 // @vue/component
@@ -285,7 +285,7 @@ export default {
         info: 'log',
         success: 'log'
       }[type] || 'error'
-      console[log](content)
+      console[log](stripTags(content))
     },
 
     closeNotifications() {
