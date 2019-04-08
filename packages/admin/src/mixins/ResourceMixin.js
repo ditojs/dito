@@ -77,7 +77,7 @@ export default {
     getResource() {
       // This is defined as a method so the computed `resource` getter can
       // be overridden and `super` functionality can still be accessed.
-      return getResource(this.sourceSchema?.resource, {
+      return getResource(this.sourceSchema.resource, {
         type: 'collection',
         parent: this.parentFormComponent?.resource
       })

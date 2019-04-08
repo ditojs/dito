@@ -2,10 +2,10 @@
   dito-components.dito-section-components(
     v-if="schema.components"
     :schema="schema"
-    :dataPath="parentDataPath"
+    :dataPath="dataPath"
     :data="data"
     :meta="meta"
-    :store="parentStore"
+    :store="store"
     :disabled="disabled"
   )
 </template>
@@ -14,5 +14,7 @@
 import TypeComponent from '@/TypeComponent'
 
 // @vue/component
-export default TypeComponent.register('section')
+export default TypeComponent.register('section', {
+  flattenedType: true
+})
 </script>

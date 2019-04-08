@@ -76,7 +76,7 @@ export async function processView(api, schema, name, routes) {
 
 export function processComponent(api, schema, name, routes, level) {
   // Delegate schema processing to the actual type components.
-  return TypeComponent.get(schema.type)?.options.processSchema?.(
+  return getTypeOptions(schema)?.processSchema?.(
     api, schema, name, routes, level
   )
 }
@@ -191,10 +191,10 @@ export function setDefaults(schema, data = {}) {
       // and then to the defaultValue from there. That's why defaultValue is
       // a 'static' value on the component definitions:
       if (!(key in data)) {
-        const component = TypeComponent.get(componentSchema.type)
-        const defaultValue =
+        const defaultValue = (
           componentSchema.default ??
-          component?.options.defaultValue
+          getTypeOptions(componentSchema)?.defaultValue
+        )
         data[key] = isFunction(defaultValue)
           ? defaultValue(componentSchema)
           : clone(defaultValue)
@@ -265,11 +265,11 @@ function getType(schemaOrType) {
   return isObject(schemaOrType) ? schemaOrType.type : schemaOrType
 }
 
-function getTypeOptions(schemaOrType) {
+export function getTypeOptions(schemaOrType) {
   return TypeComponent.get(getType(schemaOrType))?.options
 }
 
-function getSourceType(schemaOrType) {
+export function getSourceType(schemaOrType) {
   return getTypeOptions(schemaOrType)?.getSourceType?.(
     getType(schemaOrType)
   ) ?? null
