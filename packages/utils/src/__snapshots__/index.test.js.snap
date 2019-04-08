@@ -25,6 +25,8 @@ Object {
   "escapeHtml": [Function],
   "flatten": [Function],
   "formatDate": [Function],
+  "getCommonOffset": [Function],
+  "getCommonPrefix": [Function],
   "getDataPath": [Function],
   "groupBy": [Function],
   "hyphenate": [Function],

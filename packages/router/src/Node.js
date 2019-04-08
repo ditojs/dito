@@ -1,3 +1,5 @@
+import { getCommonOffset } from '@ditojs/utils'
+
 // Node Types:
 const TYPE_STATIC = 0
 const TYPE_PARAM = 1
@@ -91,7 +93,7 @@ export default class Node {
     let current = this
     while (true) {
       // Find the position where the path and the node's prefix start diverging.
-      const pos = current.matchPrefix(path)
+      const pos = getCommonOffset(current.prefix, path)
       const { prefix } = current
       if (pos < prefix.length) {
         // Split node
@@ -154,7 +156,7 @@ export default class Node {
       return null
     }
 
-    const pos = this.matchPrefix(path)
+    const pos = getCommonOffset(this.prefix, path)
     const prefixLength = prefix.length
     const fullMatch = pos === prefixLength
     if (fullMatch) {
@@ -206,18 +208,6 @@ export default class Node {
     }
 
     return null
-  }
-
-  matchPrefix(path) {
-    const { prefix } = this
-    const prefixLength = prefix.length
-    const pathLength = path.length
-    const max = pathLength < prefixLength ? pathLength : prefixLength
-    let pos = 0
-    while (pos < max && path.charCodeAt(pos) === prefix.charCodeAt(pos)) {
-      pos++
-    }
-    return pos
   }
 
   toString(prefix = '', tail = true, root = true) {
