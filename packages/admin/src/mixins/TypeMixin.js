@@ -80,6 +80,14 @@ export default {
       }
     }),
 
+    parentDataPath() {
+      return this.$parent.dataPath
+    },
+
+    parentStore() {
+      return this.$parent.store
+    },
+
     // The following computed properties are similar to the fields returned by
     // getItemParams(), so that we can access these on `this` as well:
     item() {
