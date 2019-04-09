@@ -656,6 +656,9 @@ export class Model extends objection.Model {
   // @override
   static QueryBuilder = QueryBuilder
 
+  // https://vincit.github.io/objection.js/api/model/static-properties.html#static-cloneobjectattributes
+  static cloneObjectAttributes = false
+
   // Only pick properties for database JSON that is mentioned in the schema.
   static pickJsonSchemaProperties = true
 
