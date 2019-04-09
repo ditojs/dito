@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-panels
     dito-panel(
-      v-for="(schema, dataPath) in panels"
+      v-for="{ schema, dataPath } in panels"
       v-if="shouldRender(schema)"
       ref="panels"
       :key="dataPath"

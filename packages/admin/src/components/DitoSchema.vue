@@ -17,12 +17,12 @@
         v-if="clipboard"
       )
     dito-components.dito-tab-components(
-      v-for="(tabSchema, key) in tabs"
+      v-for="(schema, tab) in tabs"
       ref="tabs"
-      v-show="selectedTab === key"
-      :key="key"
-      :tab="key"
-      :schema="tabSchema"
+      v-show="selectedTab === tab"
+      :key="tab"
+      :tab="tab"
+      :schema="schema"
       :dataPath="dataPath"
       :data="data"
       :meta="meta"
@@ -267,10 +267,10 @@ export default DitoComponent.component('dito-schema', {
   },
 
   mounted() {
-    this.showPanels = !!(
-      this.$refs.components.hasPanels ||
-      this.$refs.tabs?.some(tab => tab.hasPanels)
-    )
+    this.showPanels = [
+      this.$refs.components,
+      ...(this.$refs.tabs || [])
+    ].some(({ hasPanels }) => hasPanels)
   },
 
   methods: {

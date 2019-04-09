@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-components(
-    v-if="componentSchemas"
+    v-if="hasComponents"
   )
     .dito-components-container.dito-schema-content
       dito-component-container(
@@ -102,23 +102,31 @@ export default DitoComponent.component('dito-components', {
     panelSchemas() {
       // Gather all panel schemas from all component schemas, by finding those
       // that want to provide a panel. See `getPanelSchema()` for details.
-      const panels = {}
-      for (const { schema, dataPath } of this.componentSchemas) {
-        const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
-        if (panel) {
-          // If the panel provides its own name, append it to the dataPath.
-          // This is used for $filters panels.
-          const path = panel.name
-            ? appendDataPath(dataPath, panel.name)
-            : dataPath
-          panels[path] = panel
-        }
-      }
-      return Object.keys(panels).length ? panels : null
+      return (this.componentSchemas || []).reduce(
+        (panels, { schema, dataPath }) => {
+          const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
+          if (panel) {
+            // If the panel provides its own name, append it to the dataPath.
+            // This is used for $filters panels.
+            panels.push({
+              schema: panel,
+              dataPath: panel.name
+                ? appendDataPath(dataPath, panel.name)
+                : dataPath
+            })
+          }
+          return panels
+        },
+        []
+      )
+    },
+
+    hasComponents() {
+      return this.componentSchemas.length > 0
     },
 
     hasPanels() {
-      return !!this.panelSchemas
+      return this.panelSchemas.length > 0
     }
   },
 
