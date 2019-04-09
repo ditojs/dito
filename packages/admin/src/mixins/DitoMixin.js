@@ -105,7 +105,10 @@ export default {
 
   methods: {
     registerComponent(dataPath, component) {
-      this.schemaComponent.registerComponent(dataPath, component)
+      // Prevent flattened type components from overriding parent data paths
+      if (!this.$options.flattenedType) {
+        this.schemaComponent.registerComponent(dataPath, component)
+      }
     },
 
     // The state of components is only available during the life-cycle of a

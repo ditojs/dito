@@ -188,7 +188,7 @@ export default {
     }),
 
     attributes() {
-      const { nativeField, textField } = this.constructor.options
+      const { nativeField, textField } = this.$options
 
       const attributes = {
         'data-vv-name': this.dataPath,
