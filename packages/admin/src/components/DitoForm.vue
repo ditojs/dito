@@ -139,6 +139,10 @@ export default DitoComponent.component('dito-form', {
       return this.$refs.schema.isValidated
     },
 
+    selectedTab() {
+      return this.$refs.schema.selectedTab
+    },
+
     doesMutate() {
       // When `sourceSchema.mutate` is true, the form edits the inherited data
       // directly instead of making a copy for application upon submit.
