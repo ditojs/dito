@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-components(
-    v-if="hasComponents"
+    v-if="componentSchemas.length > 0"
     v-show="visible"
   )
     dito-component-container(
@@ -96,29 +96,18 @@ export default DitoComponent.component('dito-components', {
             // If the panel provides its own name, append it to the dataPath.
             // This is used for $filters panels.
             panels.push({
+              ...panel,
               // Allow separate tabs to use panels of the same name, by
               // prefixing their key with the tab name.
               key: `${this.tab ? `${this.tab}_` : ''}${dataPath}`,
               // Only show panels when the components themselves are visible.
-              visible: () => this.visible,
-              schema: panel,
-              dataPath: panel.name
-                ? appendDataPath(dataPath, panel.name)
-                : dataPath
+              visible: () => this.visible
             })
           }
           return panels
         },
         []
       )
-    },
-
-    hasComponents() {
-      return this.componentSchemas.length > 0
-    },
-
-    hasPanels() {
-      return this.panelSchemas.length > 0
     }
   },
 

@@ -44,7 +44,7 @@
       )
       slot(name="buttons")
     dito-panels.dito-scroll(
-      v-if="hasPanels"
+      v-if="panelSchemas.length > 0"
       :panels="panelSchemas"
       :data="data"
       :meta="meta"
@@ -119,7 +119,7 @@ import DitoComponent from '@/DitoComponent'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
-import { getNamedSchemas, setDefaults } from '@/utils/schema'
+import { getNamedSchemas, getPanelSchema, setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
@@ -185,19 +185,17 @@ export default DitoComponent.component('dito-schema', {
     },
 
     panelSchemas() {
-      return this.componentsContainers.reduce(
-        (schemas, components) => {
-          if (components.hasPanels) {
-            schemas.push(...components.panelSchemas)
-          }
-          return schemas
-        },
-        []
-      )
-    },
-
-    hasPanels() {
-      return this.panelSchemas.length > 0
+      const schemas = []
+      for (const [key, schema] of Object.entries(this.schema.panels || [])) {
+        const panel = getPanelSchema(schema, key, this.schemaComponent)
+        if (panel) {
+          schemas.push(panel)
+        }
+      }
+      for (const componentContainer of this.componentsContainers) {
+        schemas.push(...componentContainer.panelSchemas)
+      }
+      return schemas
     },
 
     tabs() {

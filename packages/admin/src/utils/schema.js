@@ -1,5 +1,6 @@
 import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
+import { appendDataPath } from '@/utils/data'
 import {
   isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
@@ -276,11 +277,26 @@ export function getSourceType(schemaOrType) {
 }
 
 export function getPanelSchema(schema, dataPath, schemaComponent) {
-  return getTypeOptions(schema)?.getPanelSchema?.(
-    schema,
-    dataPath,
-    schemaComponent
-  ) ?? null
+  // If the schema doesn't represent a type, assume it's a panel schema already
+  // (.e.g directly from schema.panels):
+  const panel = schema.type
+    ? getTypeOptions(schema)?.getPanelSchema?.(
+      schema,
+      dataPath,
+      schemaComponent
+    )
+    : schema
+  return panel
+    ? {
+      // key and visible are overridden in DitoComponents to handle tabs:
+      key: dataPath,
+      visible: () => true,
+      schema: panel,
+      dataPath: panel.name
+        ? appendDataPath(dataPath, panel.name)
+        : dataPath
+    }
+    : null
 }
 
 export function shouldRenderLabel(schema) {
