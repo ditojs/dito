@@ -31,7 +31,7 @@ import { getAbsoluteBoundingRect } from '@ditojs/ui'
 // @vue/component
 export default DitoComponent.component('dito-panels', {
   props: {
-    panels: { type: Object, default: null },
+    panels: { type: Array, default: null },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -58,7 +58,7 @@ export default DitoComponent.component('dito-panels', {
       const scroll = this.$el.closest('.dito-scroll')
       const scrollTop = scroll.getBoundingClientRect().top
       let bottom = 0
-      for (const panel of this.$refs.panels) {
+      for (const panel of this.$refs.panels || []) {
         const target = document.getElementById(panel.target)
         let component = target && target.closest('.dito-component')
         // For TypePanel components (.dito-panel-anchor), skip to the previous
