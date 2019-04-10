@@ -70,14 +70,15 @@ export default {
           this.setLoading(true)
           data
             .then(data => {
-              this.setLoading(false)
               this.resolvedData = data
               this.hasOptions = true
             })
             .catch(error => {
-              this.setLoading(false)
               this.addError(error.message, false)
               this.resolvedData = []
+            })
+            .finally(() => {
+              this.setLoading(false)
             })
           // Clear until promise is resolved.
           data = null

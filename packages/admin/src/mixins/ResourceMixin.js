@@ -203,8 +203,9 @@ export default {
             this.notify('error', 'Request Error', error)
           }
         }
+      } finally {
+        this.setLoading(false)
       }
-      this.setLoading(false)
     },
 
     // @ditojs/server specific processing of parameters, payload and response:
