@@ -2,7 +2,6 @@
   component.dito-panel(
     :is="panelTag"
     v-show="visible"
-    :style="panelStyle"
     @submit.prevent
   )
     .dito-panel-title {{ getLabel(schema) }}
@@ -30,10 +29,6 @@
 <style lang="sass">
 .dito
   .dito-panel
-    position: absolute
-    left: 0
-    right: 0
-    z-index: 1
     padding-bottom: $content-padding
     .dito-panel-title
       box-sizing: border-box
@@ -78,8 +73,7 @@ export default DitoComponent.component('dito-panel', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: true },
-    top: { type: Number, default: null }
+    disabled: { type: Boolean, required: true }
   },
 
   data() {
@@ -132,26 +126,10 @@ export default DitoComponent.component('dito-panel', {
       }
     },
 
-    panelStyle() {
-      const { top } = this
-      return {
-        visibility: top != null ? 'visible' : 'hidden',
-        top: top != null ? `${top}px` : null
-      }
-    },
-
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default: true
     })
-  },
-
-  watch: {
-    visible(newVal, oldVal) {
-      if (!newVal ^ !oldVal) {
-        this.$nextTick(() => this.onLayout())
-      }
-    }
   },
 
   created() {
@@ -179,10 +157,6 @@ export default DitoComponent.component('dito-panel', {
 
     clearErrors() {
       this.$refs.schema.clearErrors()
-    },
-
-    onLayout() {
-      this.schemaComponent.onLayout()
     }
   }
 })

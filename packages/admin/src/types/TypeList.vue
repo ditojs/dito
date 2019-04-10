@@ -232,9 +232,6 @@ export default TypeComponent.register([
     },
 
     onFilterErrors(errors) {
-      // TODO: Fix this properly in requestData(): When loading the full admin
-      // with a filter and there's an error, the panel doesn't get positioned:
-      this.schemaComponent.onLayout()
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
       // TODO: Consider registering schemas separately instead and make them
       // available through `getSchema(dataPath)`?

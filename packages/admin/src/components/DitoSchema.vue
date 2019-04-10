@@ -244,24 +244,8 @@ export default DitoComponent.component('dito-schema', {
     }
   },
 
-  watch: {
-    selectedTab() {
-      this.$nextTick(() => this.onLayout())
-    }
-  },
-
   created() {
     this.setupSchemaFields()
-    // Emit 'layout' events right after creation, and whenever data changes:
-    this.on(['change', 'load'], () => this.onLayout())
-    this.$nextTick(() => {
-      // Trigger a 'layout' event right after creation, unless when loading:
-      // Then don't trigger 'layout' yet, wait for 'load' instead, to avoid
-      // unnecessary jumping around of panels.
-      if (!this.resourceComponent?.isLoading) {
-        this.onLayout()
-      }
-    })
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
   },
@@ -317,10 +301,6 @@ export default DitoComponent.component('dito-schema', {
 
     onChange() {
       this.emitEvent('change')
-    },
-
-    onLayout() {
-      this.emitEvent('layout')
     },
 
     focus(dataPathOrKey, notify = false) {
