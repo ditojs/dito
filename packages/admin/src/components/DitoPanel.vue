@@ -44,7 +44,8 @@
       background: $table-color-background
       border-bottom-left-radius: $border-radius
       border-bottom-right-radius: $border-radius
-      padding: $form-spacing
+      > .dito-schema-content
+        padding: $form-spacing
       .dito-table td
         padding: 0
       .dito-label

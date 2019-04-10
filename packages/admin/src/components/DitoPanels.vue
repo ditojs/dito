@@ -17,7 +17,6 @@
 <style lang="sass">
 .dito
   .dito-panels
-    margin-left: $content-padding
     max-width: $content-sidebar-width
     min-width: $content-sidebar-width * 3 / 4
 </style>

@@ -57,14 +57,16 @@
 $tab-height: $menu-font-size + 2 * $tab-padding-ver
 .dito
   .dito-schema
-    padding: $content-padding
     box-sizing: border-box
     display: flex
-    .dito-schema-content,
+    > .dito-schema-content,
     .dito-panels
       flex: auto
-    .dito-schema-content
+    > .dito-schema-content
       max-width: $content-width
+      padding: $content-padding
+    .dito-panels
+      padding-top: $content-padding
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
     .dito-components + .dito-form-buttons

@@ -15,7 +15,8 @@
 <style lang="sass">
 .dito
   .dito-schema-inlined
-    padding: 0
+    > .dito-schema-content
+      padding: 0
     .dito-schema-header
       padding-bottom: $form-spacing
 </style>
