@@ -81,7 +81,8 @@ export default DitoComponent.component('dito-components', {
       const { dataPath } = this
       // When editing primitive values through a form, do not append 'name' to
       // the component's dataPath so it can be mapped to from validation errors.
-      const { wrapPrimitives } = this.sourceSchema
+      // NOTE: Not all schemas / components have a sourceSchema, e.g. dialogs.
+      const wrapPrimitives = this.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema.components || {}).map(
         ([name, schema]) => {
           // Share dataPath and store with parent if flattenedType is true:
