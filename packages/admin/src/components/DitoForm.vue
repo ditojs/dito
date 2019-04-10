@@ -25,6 +25,7 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
+      :selectedTab="selectedTab"
       :menuHeader="true"
     )
       dito-buttons.dito-form-buttons.dito-buttons-large(
@@ -110,6 +111,11 @@ export default DitoComponent.component('dito-form', {
       )
     },
 
+    selectedTab() {
+      const { hash } = this.$route
+      return hash?.substring(1) || this.defaultTab?.name || ''
+    },
+
     isActive() {
       return this.isLastRoute || this.isLastUnnestedRoute
     },
@@ -137,10 +143,6 @@ export default DitoComponent.component('dito-form', {
 
     isValidated() {
       return this.$refs.schema.isValidated
-    },
-
-    selectedTab() {
-      return this.$refs.schema.selectedTab
     },
 
     doesMutate() {
