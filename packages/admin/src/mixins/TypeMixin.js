@@ -258,15 +258,25 @@ export default {
   },
 
   created() {
-    this.registerComponent(this.dataPath, this)
+    this.register(true)
     this.setupSchemaFields()
   },
 
   destroyed() {
-    this.registerComponent(this.dataPath, null)
+    this.register(false)
   },
 
   methods: {
+    register(register) {
+      // Prevent flattened type components from overriding parent data paths
+      if (!this.$options.flattenedType) {
+        this.schemaComponent.registerComponent(
+          this.dataPath,
+          register ? this : null
+        )
+      }
+    },
+
     getValidationRules() {
       // This method exists to make it easier to extend validations in type
       // components.

@@ -133,9 +133,7 @@ export default DitoComponent.component('dito-panel', {
   },
 
   created() {
-    // Register the panels so that other components can find them by their
-    // data-path, e.g. TypeList for display of errors.
-    this.registerComponent(this.dataPath, this)
+    this.register(true)
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
     // where the data is added to the actual component.
     const { data } = this.schema
@@ -147,10 +145,16 @@ export default DitoComponent.component('dito-panel', {
   },
 
   destroyed() {
-    this.registerComponent(this.dataPath, null)
+    this.register(false)
   },
 
   methods: {
+    register(register) {
+      // Register the panels so that other components can find them by their
+      // data-path, e.g. in TypeList.onFilterErrors()
+      this.schemaComponent.registerPanel(this.dataPath, register ? this : null)
+    },
+
     showErrors(errors, focus) {
       this.$refs.schema.showErrors(errors, focus)
     },

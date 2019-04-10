@@ -104,13 +104,6 @@ export default {
   },
 
   methods: {
-    registerComponent(dataPath, component) {
-      // Prevent flattened type components from overriding parent data paths
-      if (!this.$options.flattenedType) {
-        this.schemaComponent.registerComponent(dataPath, component)
-      }
-    },
-
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
     // `query` & `total` on TypeList, so that when the user navigates back from

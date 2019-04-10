@@ -232,9 +232,7 @@ export default TypeComponent.register([
 
     onFilterErrors(errors) {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      // TODO: Consider registering schemas separately instead and make them
-      // available through `getSchema(dataPath)`?
-      const filtersPanel = this.schemaComponent.getComponent(filtersDataPath)
+      const filtersPanel = this.schemaComponent.getPanel(filtersDataPath)
       if (filtersPanel) {
         filtersPanel.showErrors(errors, true)
         return true

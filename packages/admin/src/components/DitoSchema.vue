@@ -157,6 +157,7 @@ export default DitoComponent.component('dito-schema', {
       ),
       isMounted: false,
       components: {},
+      panels: {},
       // Register dataProcessors separate from components, so they can survive
       // their life-cycles and be used at the end in `processData()`.
       dataProcessors: {},
@@ -293,29 +294,47 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    registerComponent(dataPath, comp) {
-      if (comp) {
-        this.$set(this.components, dataPath, comp)
-        // Store the `dataProcessor` closure for this dataPath, for processing
-        // of the data at later time when the component may not exist anymore:
-        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
+    setRegister(register, key, value) {
+      if (value) {
+        this.$set(register, key, value)
       } else {
-        this.$delete(this.components, dataPath)
-        // NOTE: We don't remove the dataProcessors here! They may still be
-        // required after the life-cycle of the component itself, which is
-        // why they are constructed to have no reference to their component.
+        this.$delete(register, key)
       }
-      this.parentSchemaComponent?.registerComponent(dataPath, comp)
     },
 
-    getComponent(dataPathOrKey) {
+    getRegister(register, dataPathOrKey) {
       const normalizedPath = normalizeDataPath(dataPathOrKey)
       // See if the argument starts with this form's data-path. If not, then it
       // is a key or sub data-path and needs to be prefixed with the full path:
       const dataPath = !normalizedPath.startsWith(this.dataPath)
         ? appendDataPath(this.dataPath, normalizedPath)
         : normalizedPath
-      return this.components[dataPath] || null
+      return register[dataPath] || null
+    },
+
+    registerComponent(dataPath, comp) {
+      this.setRegister(this.components, dataPath, comp)
+      if (comp) {
+        // Store the `dataProcessor` closure for this dataPath, for processing
+        // of the data at later time when the component may not exist anymore:
+        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
+        // NOTE: We don't remove the dataProcessors when de-registering!
+        // They may still be required after the component itself is destroyed,
+        // which is why they are built with no reference to their component.
+      }
+      this.parentSchemaComponent?.registerComponent(dataPath, comp)
+    },
+
+    getComponent(dataPathOrKey) {
+      return this.getRegister(this.components, dataPathOrKey)
+    },
+
+    registerPanel(dataPath, panel) {
+      this.setRegister(this.panels, dataPath, panel)
+    },
+
+    getPanel(dataPathOrKey) {
+      return this.getRegister(this.panels, dataPathOrKey)
     },
 
     findComponent(callback) {
