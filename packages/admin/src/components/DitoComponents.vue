@@ -42,7 +42,7 @@ export default DitoComponent.component('dito-components', {
 
   provide() {
     return {
-      tabComponent: this.tab ? this : null
+      tabComponent: this.tabComponent
     }
   },
 
@@ -59,6 +59,10 @@ export default DitoComponent.component('dito-components', {
   },
 
   computed: {
+    tabComponent() {
+      return this.tab ? this : null
+    },
+
     componentSchemas() {
       // Compute a components list which has the dataPath baked into its keys
       // and adds the key as the name to each component, used for labels, etc.
@@ -93,15 +97,9 @@ export default DitoComponent.component('dito-components', {
         (panels, { schema, dataPath }) => {
           const panel = getPanelSchema(schema, dataPath, this.schemaComponent)
           if (panel) {
-            // If the panel provides its own name, append it to the dataPath.
-            // This is used for $filters panels.
             panels.push({
               ...panel,
-              // Allow separate tabs to use panels of the same name, by
-              // prefixing their key with the tab name.
-              key: `${this.tab ? `${this.tab}_` : ''}${dataPath}`,
-              // Only show panels when the components themselves are visible.
-              visible: () => this.visible
+              tabComponent: this.tabComponent
             })
           }
           return panels

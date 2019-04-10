@@ -1,7 +1,8 @@
 <template lang="pug">
+  // Only show panels in tabs when the tabs are also visible.
   component.dito-panel(
     :is="panelTag"
-    v-show="visible"
+    v-show="visible && (!tabComponent || tabComponent.visible)"
     @submit.prevent
   )
     .dito-panel-title {{ getLabel(schema) }}
@@ -74,7 +75,8 @@ export default DitoComponent.component('dito-panel', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    disabled: { type: Boolean, required: true }
+    disabled: { type: Boolean, required: true },
+    tabComponent: { type: DitoComponent, default: null }
   },
 
   data() {

@@ -288,10 +288,9 @@ export function getPanelSchema(schema, dataPath, schemaComponent) {
     : schema
   return panel
     ? {
-      // key and visible are overridden in DitoComponents to handle tabs:
-      key: dataPath,
-      visible: () => true,
       schema: panel,
+      // If the panel provides its own name, append it to the dataPath.
+      // This is used e.g. for $filters panels.
       dataPath: panel.name
         ? appendDataPath(dataPath, panel.name)
         : dataPath
