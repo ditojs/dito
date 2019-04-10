@@ -151,8 +151,9 @@ export default {
         if (err) {
           if (response) {
             const { data } = response
-            if (data?.type === 'FilterValidation' && this.onFilterErrors) {
-              this.onFilterErrors(data.errors)
+            if (
+              data?.type === 'FilterValidation' &&
+              this.onFilterErrors?.(data.errors)) {
               return true
             } else if (this.isUnauthorizedError(response)) {
               // TODO: Can we really swallow these errors?

@@ -325,9 +325,7 @@ export default DitoComponent.component('dito-schema', {
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
         const component = this.getComponent(dataPathParts)
-        if (component) {
-          component.addErrors(errs, first && focus)
-        } else {
+        if (!component?.addErrors?.(errs, first && focus)) {
           // Couldn't find a component in an active form for the given dataPath.
           // See if we can find a component serving a part of the dataPath,
           // and take it from there:

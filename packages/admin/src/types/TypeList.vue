@@ -221,8 +221,7 @@ export default TypeComponent.register([
     },
 
     formLabel() {
-      const { form } = this.schema
-      return form && this.getLabel(form)
+      return this.getLabel(this.schema.form)
     }
   },
 
@@ -236,7 +235,10 @@ export default TypeComponent.register([
       // TODO: Consider registering schemas separately instead and make them
       // available through `getSchema(dataPath)`?
       const filtersPanel = this.schemaComponent.getComponent(filtersDataPath)
-      filtersPanel.showErrors(errors, true)
+      if (filtersPanel) {
+        filtersPanel.showErrors(errors, true)
+        return true
+      }
     }
   }
 })

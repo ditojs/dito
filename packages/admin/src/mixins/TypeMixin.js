@@ -294,6 +294,7 @@ export default {
       if (focus) {
         this.focus()
       }
+      return true
     },
 
     focus() {
