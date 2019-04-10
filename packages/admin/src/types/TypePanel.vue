@@ -9,6 +9,7 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('panel', {
+  defaultValue: undefined,
   renderLabel: false,
   containerClass: 'no-padding',
 
