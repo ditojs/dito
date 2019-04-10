@@ -1,49 +1,56 @@
 <template lang="pug">
   .dito-schema
-    .dito-schema-header(
-      v-if="label || tabs || clipboard"
-      :class="{ 'dito-schema-menu-header': menuHeader }"
-    )
-      .dito-label(
-        v-if="label"
+    .dito-schema-content
+      .dito-schema-header(
+        v-if="label || tabs || clipboard"
+        :class="{ 'dito-schema-menu-header': menuHeader }"
       )
-        label {{ label }}
-      dito-tabs(
-        v-if="tabs"
-        :tabs="tabs"
-        :selectedTab="selectedTab"
+        .dito-label(
+          v-if="label"
+        )
+          label {{ label }}
+        dito-tabs(
+          v-if="tabs"
+          :tabs="tabs"
+          :selectedTab="selectedTab"
+        )
+        dito-clipboard(
+          v-if="clipboard"
+        )
+      dito-components.dito-tab-components(
+        v-for="(schema, tab) in tabs"
+        ref="tabs"
+        :key="tab"
+        :visible="selectedTab === tab"
+        :tab="tab"
+        :schema="schema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
       )
-      dito-clipboard(
-        v-if="clipboard"
+      dito-components.dito-main-components(
+        v-if="schema.components"
+        ref="components"
+        :schema="schema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
       )
-    dito-components.dito-tab-components(
-      v-for="(schema, tab) in tabs"
-      ref="tabs"
-      v-show="selectedTab === tab"
-      :key="tab"
-      :tab="tab"
-      :schema="schema"
-      :dataPath="dataPath"
+      slot(name="buttons")
+    dito-panels.dito-scroll(
+      v-if="hasPanels"
+      :panels="panelSchemas"
       :data="data"
       :meta="meta"
       :store="store"
       :disabled="disabled"
-      :showPanels="showPanels"
-      :generateLabels="generateLabels"
     )
-    dito-components.dito-main-components(
-      v-if="schema.components"
-      ref="components"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-      :showPanels="showPanels"
-      :generateLabels="generateLabels"
-    )
-    slot(name="buttons")
 </template>
 
 <style lang="sass">
@@ -52,12 +59,16 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
   .dito-schema
     padding: $content-padding
     box-sizing: border-box
+    display: flex
+    .dito-schema-content,
+    .dito-panels
+      flex: auto
     .dito-schema-content
       max-width: $content-width
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
     .dito-components + .dito-form-buttons
-      > .dito-schema-content::before
+      &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
         content: ''
@@ -65,7 +76,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
         padding-top: $content-padding
         border-bottom: $border-style
     .dito-tab-components + .dito-main-components
-      .dito-schema-content::before
+      &::before
         // Add removed $form-spacing again to the ruler
         margin: $form-spacing-half
   .dito-schema-header
@@ -144,8 +155,8 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this)
           : data
       ),
+      isMounted: false,
       components: {},
-      showPanels: false,
       // Register dataProcessors separate from components, so they can survive
       // their life-cycles and be used at the end in `processData()`.
       dataProcessors: {},
@@ -157,6 +168,33 @@ export default DitoComponent.component('dito-schema', {
     schemaComponent() {
       // Override DitoMixin's schemaComponent() which uses the injected value.
       return this
+    },
+
+    componentsContainers() {
+      // Use the `isMounted` trick to make `$refs` somewhat reactive:
+      return this.isMounted
+        ? [
+          // Tabs appear above the main schema, so use the same logic here too:
+          ...(this.$refs.tabs || []),
+          this.$refs.components
+        ]
+        : []
+    },
+
+    panelSchemas() {
+      return this.componentsContainers.reduce(
+        (schemas, components) => {
+          if (components.hasPanels) {
+            schemas.push(...components.panelSchemas)
+          }
+          return schemas
+        },
+        []
+      )
+    },
+
+    hasPanels() {
+      return this.panelSchemas.length > 0
     },
 
     tabs() {
@@ -251,10 +289,7 @@ export default DitoComponent.component('dito-schema', {
   },
 
   mounted() {
-    this.showPanels = [
-      this.$refs.components,
-      ...(this.$refs.tabs || [])
-    ].some(({ hasPanels }) => hasPanels)
+    this.isMounted = true
   },
 
   methods: {

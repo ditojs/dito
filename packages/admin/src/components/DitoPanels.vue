@@ -1,10 +1,10 @@
 <template lang="pug">
   .dito-panels
     dito-panel(
-      v-for="{ schema, dataPath } in panels"
+      v-for="{ schema, visible, key, dataPath } in panels"
       v-if="shouldRender(schema)"
-      ref="panels"
-      :key="dataPath"
+      v-show="visible()"
+      :key="key"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"

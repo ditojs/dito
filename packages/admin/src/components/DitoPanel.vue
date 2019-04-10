@@ -8,7 +8,7 @@
     dito-schema.dito-panel-schema(
       ref="schema"
       :schema="panelSchema"
-      :dataPath="panelDataPath"
+      :dataPath="ownDataPath"
       :data="panelData"
       :meta="panelMeta"
       :store="store"
@@ -18,7 +18,7 @@
       dito-buttons(
         slot="buttons"
         :buttons="buttonSchemas"
-        :dataPath="panelDataPath"
+        :dataPath="ownDataPath"
         :data="panelData"
         :meta="panelMeta"
         :store="store"
@@ -50,7 +50,7 @@
       .dito-label
         margin: 0
         font-weight: normal
-      .dito-components-container
+      .dito-components
         margin: 0 (-$form-spacing-half)
       .dito-component-container
         padding: $form-spacing-half
@@ -106,13 +106,6 @@ export default DitoComponent.component('dito-panel', {
       }
     },
 
-    panelDataPath() {
-      // If the panel provides its own data, then it needs to prefix all
-      // components  with its data-path, but if it shares data with the schema
-      // component, then it should share the data-path name space too.
-      return this.ownData ? this.dataPath : ''
-    },
-
     panelTag() {
       // Panels that provide their own data need their own form.
       return this.ownData ? 'form' : 'div'
@@ -126,6 +119,13 @@ export default DitoComponent.component('dito-panel', {
       }
     },
 
+    ownDataPath() {
+      // If the panel provides its own data, then it needs to prefix all
+      // components with its data-path, but if it shares data with the schema
+      // component, then it should share the data-path name space too.
+      return this.ownData ? this.dataPath : this.schemaComponent.dataPath
+    },
+
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default: true
@@ -135,7 +135,7 @@ export default DitoComponent.component('dito-panel', {
   created() {
     // Register the panels so that other components can find them by their
     // data-path, e.g. TypeList for display of errors.
-    this.registerComponent(this.panelDataPath, this)
+    this.registerComponent(this.dataPath, this)
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
     // where the data is added to the actual component.
     const { data } = this.schema
@@ -147,7 +147,7 @@ export default DitoComponent.component('dito-panel', {
   },
 
   destroyed() {
-    this.registerComponent(this.panelDataPath, null)
+    this.registerComponent(this.dataPath, null)
   },
 
   methods: {

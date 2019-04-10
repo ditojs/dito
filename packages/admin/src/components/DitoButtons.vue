@@ -2,7 +2,7 @@
   .dito-buttons
     // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
     // sub-class as the component container for different layout:
-    .dito-buttons-container.dito-schema-content
+    .dito-buttons-container
       dito-button-container(
         v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
         v-if="shouldRender(buttonSchema)"
