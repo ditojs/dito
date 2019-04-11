@@ -27,9 +27,10 @@ export default {
     responseTime: true,    // default: true
     helmet: true,          // default: true
     cors: true,            // default: true
-    compress: true,        // default: false
-    etag: true,            // default: false
-    session: true,         // default: false
+    compress: true,        // default: true
+    etag: true,            // default: true
+    session: true          // default: false,
+                           // optional: session: { modelClass: 'SessionModel' }
     passport: true,        // default: false
     csrf: true,            // TODO: Implement
     // keys to be used for session:

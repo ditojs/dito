@@ -470,10 +470,10 @@ export class Application extends Koa {
     if (app.cors !== false) {
       this.use(cors(isObject(app.cors) ? app.cors : {}))
     }
-    if (app.compress) {
+    if (app.compress !== false) {
       this.use(compress(app.compress))
     }
-    if (app.etag) {
+    if (app.etag !== false) {
       this.use(conditional())
       this.use(etag())
     }
