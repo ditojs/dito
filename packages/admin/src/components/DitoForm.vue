@@ -60,6 +60,7 @@ export default DitoComponent.component('dito-form', {
       createdData: null,
       clonedData: undefined,
       sourceKey: null,
+      isMounted: false,
       isForm: true
     }
   },
@@ -89,6 +90,14 @@ export default DitoComponent.component('dito-form', {
       ) || {} // Always return a schema object so we don't need to check for it.
     },
 
+    formSchemaComponent() {
+      // Name this `formSchemaComponent` instead of `schemaComponent` to not
+      // clash with DitoMixin.schemaComponent, which returns the schema in which
+      // this component is contained (needed for nested forms).
+      // Use the `isMounted` trick to make `$refs` somewhat reactive:
+      return this.isMounted && this.$refs.schema
+    },
+
     buttonSchemas() {
       return getButtonSchemas(
         merge(
@@ -113,7 +122,11 @@ export default DitoComponent.component('dito-form', {
 
     selectedTab() {
       const { hash } = this.$route
-      return hash?.substring(1) || this.defaultTab?.name || ''
+      return hash?.substring(1) || this.defaultTab || ''
+    },
+
+    defaultTab() {
+      return this.formSchemaComponent.defaultTab?.name || null
     },
 
     isActive() {
@@ -130,19 +143,19 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return this.$refs.schema.isDirty
+      return this.formSchemaComponent.isDirty
     },
 
     isTouched() {
-      return this.$refs.schema.isTouched
+      return this.formSchemaComponent.isTouched
     },
 
     isValid() {
-      return this.$refs.schema.isTouched
+      return this.formSchemaComponent.isTouched
     },
 
     isValidated() {
-      return this.$refs.schema.isValidated
+      return this.formSchemaComponent.isValidated
     },
 
     doesMutate() {
@@ -272,6 +285,7 @@ export default DitoComponent.component('dito-form', {
   },
 
   mounted() {
+    this.isMounted = true
     // Errors can get passed on through the meta object, so add them now.
     // See DitoSchema.showErrors() / SourceMixin.navigateToComponent()
     const { errors } = this.meta
@@ -281,7 +295,7 @@ export default DitoComponent.component('dito-form', {
     }
     // Handle button clicks and see if the buttons define a resource to submit
     // to, and if so, delegate to `submit()`:
-    this.$refs.schema.on('click', ({ target: button }) => {
+    this.formSchemaComponent.on('click', ({ target: button }) => {
       if (hasResource(button.schema.resource) && !button.responds('click')) {
         this.submit(button)
       }
@@ -311,9 +325,9 @@ export default DitoComponent.component('dito-form', {
         this.$set(
           this.sourceData,
           this.sourceKey,
-          this.$refs.schema.filterData(data)
+          this.formSchemaComponent.filterData(data)
         )
-        this.$refs.schema.onChange()
+        this.formSchemaComponent.onChange()
         return true
       }
       return false
@@ -341,7 +355,7 @@ export default DitoComponent.component('dito-form', {
         this.loadedData = data
       }
       if (!clear) {
-        this.$refs.schema.onLoad()
+        this.formSchemaComponent.onLoad()
       }
     },
 
@@ -353,7 +367,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     showErrors(errors, focus) {
-      this.$refs.schema.showErrors(errors, focus)
+      this.formSchemaComponent.showErrors(errors, focus)
     },
 
     cancel() {
@@ -375,7 +389,7 @@ export default DitoComponent.component('dito-form', {
         // Focus first error field
         const errors = this.getErrors()
         // TODO: Move to DitoSchema instead?
-        this.$refs.schema.focus(Object.keys(errors)[0], true)
+        this.formSchemaComponent.focus(Object.keys(errors)[0], true)
         return
       }
 
@@ -407,7 +421,7 @@ export default DitoComponent.component('dito-form', {
       // Convention: only post and patch requests pass the data as payload.
       const payload = (
         ['post', 'patch'].includes(method) &&
-        this.$refs.schema.processData({ processIds: true })
+        this.formSchemaComponent.processData({ processIds: true })
       )
       if (!butttonResource && this.isTransient) {
         // Handle the default "submitting" of transient, nested data:
@@ -479,7 +493,7 @@ export default DitoComponent.component('dito-form', {
               }
               // Since `emitEvent()` above is async, the schema may already be
               // destroyed by now...
-              this.$refs.schema?.resetValidator()
+              this.formSchemaComponent?.resetValidator()
               // After submitting, close form unless clicked button disables it:
               if (button.schema.close === false) {
                 if (this.isCreating) {
