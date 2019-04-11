@@ -134,19 +134,19 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return this.formSchemaComponent.isDirty
+      return !this.isLoading && this.formSchemaComponent.isDirty
     },
 
     isTouched() {
-      return this.formSchemaComponent.isTouched
+      return !this.isLoading && this.formSchemaComponent.isTouched
     },
 
     isValid() {
-      return this.formSchemaComponent.isValid
+      return !this.isLoading && this.formSchemaComponent.isValid
     },
 
     isValidated() {
-      return this.formSchemaComponent.isValidated
+      return !this.isLoading && this.formSchemaComponent.isValidated
     },
 
     selectedTab() {
