@@ -55,7 +55,9 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { shouldRenderLabel, getContainerClass } from '@/utils/schema'
+import {
+  shouldRenderLabel, getContainerClass, getTypeOptions
+} from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
@@ -107,9 +109,16 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerStyle() {
+      const basis = this.percentage && `${this.percentage}%`
+      const grow = (
+        // TODO: Switch back to `width === 'auto' ? 0 : 1`
+        // if `preventFlexGrowth` is never used.
+        this.width === 'fill' ||
+        this.width !== 'auto' && !getTypeOptions(this.schema)?.preventFlexGrowth
+      ) ? 1 : 0
       return {
-        'flex-basis': this.percentage && `${this.percentage}%`,
-        'flex-grow': this.width === 'auto' ? 0 : 1
+        'flex-basis': basis,
+        'flex-grow': grow
       }
     },
 

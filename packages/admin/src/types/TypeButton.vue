@@ -19,6 +19,8 @@ export default TypeComponent.register([
 // @vue/component
 {
   defaultValue: undefined,
+  // TODO: Consider making this work nicely:
+  // preventFlexGrowth: true,
 
   computed: {
     verb() {
