@@ -5,6 +5,7 @@
       ref="element"
       :id="dataPath"
       :locale="locale"
+      :dateFormat="dateFormat"
       v-model="dateValue"
       v-validate="validations"
       v-bind="attributes"
@@ -14,6 +15,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
 import { isDate } from '@ditojs/utils'
 
@@ -40,6 +42,11 @@ export default TypeComponent.register([
         this.value = value
       }
     },
+
+    dateFormat: getSchemaAccessor('dateFormat', {
+      type: Object,
+      default: null
+    }),
 
     dataProcessor() {
       return value => isDate(value) ? value.toISOString() : value

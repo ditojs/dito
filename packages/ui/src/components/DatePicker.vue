@@ -55,7 +55,7 @@ export default {
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
     placeholder: { type: String, default: null },
-    format: { type: Object, default: () => defaultDateFormat },
+    dateFormat: { type: Object, default: () => defaultDateFormat },
     locale: { type: String, default: 'en-US' },
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
@@ -80,7 +80,7 @@ export default {
     currentText() {
       return formatDate(this.currentValue, {
         locale: this.locale,
-        date: this.format,
+        date: this.dateFormat,
         time: false
       }) || ''
     }

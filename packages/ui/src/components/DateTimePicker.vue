@@ -13,7 +13,7 @@
         :show.sync="showDate"
         @focus="dateFocused = true"
         @blur="dateFocused = false"
-        v-bind="{ transition, placeholder, format, locale, disabled }"
+        v-bind="{ transition, placeholder, dateFormat, locale, disabled }"
       )
       time-picker(
         ref="time"
@@ -63,7 +63,7 @@ export default {
     value: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placeholder: { type: String, default: null },
-    format: { type: Object, default: () => defaultDateFormat },
+    dateFormat: { type: Object, default: () => defaultDateFormat },
     locale: { type: String, default: 'en-US' },
     disabled: { type: Boolean, default: false }
   },
