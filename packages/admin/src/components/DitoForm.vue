@@ -142,7 +142,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isValid() {
-      return this.formSchemaComponent.isTouched
+      return this.formSchemaComponent.isValid
     },
 
     isValidated() {
