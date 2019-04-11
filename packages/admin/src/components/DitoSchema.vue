@@ -43,7 +43,7 @@
         :generateLabels="generateLabels"
       )
       slot(name="buttons")
-    dito-panels.dito-scroll(
+    dito-panels(
       v-if="panelSchemas.length > 0"
       :panels="panelSchemas"
       :data="data"
@@ -66,7 +66,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
       max-width: $content-width
       padding: $content-padding
     .dito-panels
-      padding-top: $content-padding
+      padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
     .dito-components + .dito-form-buttons
