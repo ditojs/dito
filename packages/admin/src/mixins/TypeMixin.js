@@ -232,7 +232,7 @@ export default {
     },
 
     $field() {
-      return this.$fields[this.name]
+      return this.$fields[this.dataPath]
     },
 
     isDirty() {
