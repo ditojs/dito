@@ -120,15 +120,6 @@ export default DitoComponent.component('dito-form', {
       )
     },
 
-    selectedTab() {
-      const { hash } = this.$route
-      return hash?.substring(1) || this.defaultTab || ''
-    },
-
-    defaultTab() {
-      return this.formSchemaComponent.defaultTab?.name || null
-    },
-
     isActive() {
       return this.isLastRoute || this.isLastUnnestedRoute
     },
@@ -156,6 +147,10 @@ export default DitoComponent.component('dito-form', {
 
     isValidated() {
       return this.formSchemaComponent.isValidated
+    },
+
+    selectedTab() {
+      return this.formSchemaComponent.selectedTab
     },
 
     doesMutate() {

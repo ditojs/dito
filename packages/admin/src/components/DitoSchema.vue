@@ -143,7 +143,6 @@ export default DitoComponent.component('dito-schema', {
     store: { type: Object, default: () => ({}) },
     label: { type: String, default: null },
     disabled: { type: Boolean, default: false },
-    selectedTab: { type: String, default: null },
     generateLabels: { type: Boolean, default: true },
     hasOwnData: { type: Boolean, default: false },
     menuHeader: { type: Boolean, default: false }
@@ -201,6 +200,11 @@ export default DitoComponent.component('dito-schema', {
 
     tabs() {
       return getNamedSchemas(this.schema.tabs)
+    },
+
+    selectedTab() {
+      const { hash } = this.$route
+      return hash?.substring(1) || this.defaultTab?.name || ''
     },
 
     defaultTab() {
