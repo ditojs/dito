@@ -257,28 +257,20 @@ export default DitoComponent.component('dito-schema', {
       return this.getLabel(this.getItemFormSchema(this.sourceSchema, this.data))
     },
 
-    isLoading() {
-      return this.someComponent(it => it.isLoading)
-    },
-
     isDirty() {
-      return this.someComponent(it => it.isDirty)
+      return this.someField(it => it.dirty)
     },
 
     isTouched() {
-      return this.someComponent(it => it.isTouched)
+      return this.someField(it => it.touched)
     },
 
     isValid() {
-      // Components without validation have `isValid` return undefined.
-      // Don't count those as invalid.
-      return this.everyComponent(it => it.isValid !== false)
+      return this.everyField(it => it.valid)
     },
 
     isValidated() {
-      // Components without validation have `isValidated` return undefined.
-      // Don't count those as not validated.
-      return this.everyComponent(it => it.isValidated !== false)
+      return this.everyField(it => it.validated)
     }
   },
 
@@ -336,16 +328,12 @@ export default DitoComponent.component('dito-schema', {
       return this.getRegister(this.panels, dataPathOrKey)
     },
 
-    findComponent(callback) {
-      return Object.values(this.components).find(callback)
+    someField(callback) {
+      return Object.values(this.$fields).some(callback)
     },
 
-    someComponent(callback) {
-      return Object.values(this.components).some(callback)
-    },
-
-    everyComponent(callback) {
-      return Object.values(this.components).every(callback)
+    everyField(callback) {
+      return Object.values(this.$fields).every(callback)
     },
 
     onLoad() {
