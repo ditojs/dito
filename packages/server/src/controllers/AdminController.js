@@ -3,11 +3,13 @@ import Koa from 'koa'
 import mount from 'koa-mount'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
+import serialize from 'serialize-javascript'
 import VueService from '@vue/cli-service'
 import vuePluginBabel from '@vue/cli-plugin-babel'
 import vuePluginEslint from '@vue/cli-plugin-eslint'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
+import { isFunction, isDate, isRegExp, clone } from '@ditojs/utils'
 
 export class AdminController extends Controller {
   // @override
@@ -68,7 +70,7 @@ export class AdminController extends Controller {
   }
 
   getWebpackConfig(config, mode = 'development') {
-    const { build = {}, api = {}, settings } = config
+    const { build = {}, settings } = config
     const resolvedPath = path.resolve(build.path)
     // Use VueCliService to create full webpack config for us:
     const plugins = [{ id: '@vue/cli-plugin-babel', apply: vuePluginBabel }]
@@ -122,7 +124,14 @@ export class AdminController extends Controller {
           })
           // Expose api config and definitions to browser side:
           // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
-          api.normalizePaths = this.app.config.app.normalizePaths
+          const api = clone(config.api, value => (
+            isFunction(value) || isDate(value) || isRegExp(value)
+              ? `{{${serialize(value)}}}`
+              : value
+          )) || {}
+          if (api.normalizePaths == null) {
+            api.normalizePaths = this.app.config.app.normalizePaths
+          }
           conf.plugin('define').tap(args => {
             args[0].dito = args[0]['window.dito'] = JSON.stringify({
               url: this.url,

@@ -10,7 +10,9 @@ import verbs from './verbs'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { getResource } from './utils/resource'
-import { hyphenate, camelize, isAbsoluteUrl } from '@ditojs/utils'
+import {
+  isString, clone, hyphenate, camelize, isAbsoluteUrl, defaultDateFormat
+} from '@ditojs/utils'
 
 Vue.config.productionTip = false
 
@@ -29,19 +31,32 @@ export default class DitoAdmin {
     views = {},
     ...options
   } = {}) {
+    // Support serialized functions, dates and regexps, as produced on the
+    // server-side, see: AdminController.getWebpackConfig()
+    api = clone(api, value => deserialize(value))
+
     this.el = el
     this.api = api
     this.options = options
 
     api.locale = api.locale || 'en-US'
+    api.dateFormat = api.dateFormat || defaultDateFormat
     api.request = api.request || ((...args) => this.request(...args))
 
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
-    api.normalizePath = api.normalizePath ||
-      api.normalizePaths ? hyphenate : val => val
-    api.denormalizePath = api.denormalizePath ||
-      api.normalizePaths ? camelize : val => val
+    api.normalizePath = (
+      api.normalizePath ||
+      api.normalizePaths
+        ? hyphenate
+        : val => val
+    )
+    api.denormalizePath = (
+      api.denormalizePath ||
+      api.normalizePaths
+        ? camelize
+        : val => val
+    )
 
     // Allow the configuration of all auth resources, like so:
     // api.users = {
@@ -183,4 +198,13 @@ export default class DitoAdmin {
       withCredentials: isApiRequest && !!this.api.cors?.credentials
     })
   }
+}
+
+function deserialize(value) {
+  // Match the format '{{serialized-string}}', as produced by
+  // AdminController.getWebpackConfig():
+  const match = isString(value) && value.match(/^\{\{([\s\S]*)\}\}$/)
+  return match
+    ? (new Function('', `return (${match[1]})`))()
+    : value
 }
