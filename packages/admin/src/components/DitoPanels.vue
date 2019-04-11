@@ -18,7 +18,7 @@
 .dito
   .dito-panels
     max-width: $content-sidebar-width
-    min-width: $content-sidebar-width * 3 / 4
+    min-width: $content-sidebar-width / 2
 </style>
 
 <script>
