@@ -33,8 +33,36 @@ export function formatDate(date, options = {
         return opt
       }, {})
   }
-  return date && new Date(date).toLocaleString(options.locale || 'en-US', {
-    ...getOptions('date'),
-    ...getOptions('time')
-  })
+
+  if (date) {
+    const locale = options.locale || 'en-US'
+    const opts = {
+      date: getOptions('date'),
+      time: getOptions('time')
+    }
+    const mergedOpts = {
+      ...opts.date,
+      ...opts.time
+    }
+    if (mergedOpts.format) {
+      // Support custom post-formatting of both time and date formats, e.g.
+      // to replace separators and such:
+      const parts = new Intl.DateTimeFormat(locale, mergedOpts)
+        .formatToParts(new Date(date))
+      let modeOpts = null
+      return parts.map(({ type, value }) => {
+        if (type !== 'literal') {
+          const mode = ['weekday', 'day', 'month', 'year'].includes(type)
+            ? 'date'
+            : 'time'
+          modeOpts = opts[mode]
+        }
+        return modeOpts?.format
+          ? modeOpts.format(value, type, modeOpts)
+          : value
+      }).join('')
+    } else {
+      return new Date(date).toLocaleString(locale, mergedOpts)
+    }
+  }
 }
