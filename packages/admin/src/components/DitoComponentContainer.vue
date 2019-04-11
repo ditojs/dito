@@ -43,7 +43,6 @@
   // NOTE: This is not nested inside .dito-component-container so that other
   // type components can override `.dito-width-fill` class (filter precedence).
   .dito-component.dito-width-fill
-    display: block
     width: 100%
     &.dito-checkbox,
     &.dito-radio-button
