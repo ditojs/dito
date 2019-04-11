@@ -15,6 +15,7 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('section', {
-  flattenedType: true
+  flattenedType: true,
+  defaultValue: undefined
 })
 </script>
