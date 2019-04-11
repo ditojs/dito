@@ -38,21 +38,30 @@ export const filterComponents = {
     }
   },
 
-  'date-range'() {
+  'date-range'(filter, api) {
+    // Use shorter date format in date-range filters:
+    const dateFormat = {
+      ...api.dateFormat,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }
     return {
       from: {
         type: 'datetime',
-        width: '50%'
+        width: '50%',
+        dateFormat
       },
       to: {
         type: 'datetime',
-        width: '50%'
+        width: '50%',
+        dateFormat
       }
     }
   }
 }
 
-export function getFiltersPanel(filters, dataPath, proxy) {
+export function getFiltersPanel(filters, dataPath, api, proxy) {
   const panel = {
     label: 'Filters',
     name: '$filters',
@@ -68,7 +77,7 @@ export function getFiltersPanel(filters, dataPath, proxy) {
         proxy.query
       )
     },
-    components: getFiltersComponents(filters),
+    components: getFiltersComponents(filters, api),
     buttons: {
       clear: {
         text: 'Clear',
@@ -104,7 +113,7 @@ export function getFiltersPanel(filters, dataPath, proxy) {
   return panel
 }
 
-function getFiltersComponents(filters) {
+function getFiltersComponents(filters, api) {
   const comps = {}
   for (const filter of Object.values(filters || {})) {
     // Support both custom forms and default filter components, through the
@@ -113,7 +122,7 @@ function getFiltersComponents(filters) {
     // can be changed on the resulting form.
     const { filter: type, ...form } = filter
     const components = type
-      ? filterComponents[type]?.(filter)
+      ? filterComponents[type]?.(filter, api)
       : filter.components
     if (components) {
       form.components = {}
