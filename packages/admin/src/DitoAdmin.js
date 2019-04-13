@@ -156,11 +156,13 @@ export default class DitoAdmin {
         api,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
-        // Note: Work around lack of reactivity in Vue's provide/inject by using
-        // a callback instead of the $verbs value directly:
+        // Both $verbs and $isReady are defined as functions, to preserve
+        // reactiveness across provide/inject.
+        // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
         $verbs: () => verbs,
-        // Placeholder provides so DitoMixin can inject them for all components:
-        // inject: [ '$schemaComponent', '$routeComponent' ]
+        // Provide defaults so DitoMixin can inject them for all components:
+        //   inject: [  '$isReady', '$schemaComponent', '$routeComponent' ]
+        $isReady: () => true,
         $schemaComponent: null,
         $routeComponent: null
       },

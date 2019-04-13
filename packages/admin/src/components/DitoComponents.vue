@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-components(
-    v-if="componentSchemas.length > 0"
+    v-if="isReady && componentSchemas.length > 0"
     v-show="visible"
   )
     dito-component-container(

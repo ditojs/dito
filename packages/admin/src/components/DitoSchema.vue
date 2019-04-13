@@ -42,9 +42,12 @@
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
-      slot(name="buttons")
+      slot(
+        name="buttons"
+        v-if="isReady"
+      )
     dito-panels(
-      v-if="panelSchemas.length > 0"
+      v-if="isReady && panelSchemas.length > 0"
       :panels="panelSchemas"
       :data="data"
       :meta="meta"

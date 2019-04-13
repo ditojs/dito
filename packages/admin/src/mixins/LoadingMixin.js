@@ -6,6 +6,12 @@ export default {
     }
   },
 
+  provide() {
+    return {
+      $isReady: () => !this.isLoading
+    }
+  },
+
   methods: {
     setLoading(loading) {
       if (!this.isLoading ^ !loading) { // Boolean xor
