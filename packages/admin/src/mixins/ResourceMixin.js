@@ -12,7 +12,7 @@ export default {
     return {
       // Pass local verbs overrides on to children, see verbs() computed prop.
       $verbs: () => this.verbs,
-      $isPopulated: () => !!this.loadedData
+      $isPopulated: () => this.hasData
     }
   },
 
@@ -56,8 +56,10 @@ export default {
       )
     },
 
+    // @overridable
     hasData() {
-      return !!this.data
+      // Base definition, will be overridden by DitoForm and SourceMixin
+      return !!this.loadedData
     },
 
     verbs() {
@@ -100,12 +102,12 @@ export default {
         : verbs
     },
 
-    // @override
+    // @overridable
     clearData() {
       this.loadedData = null
     },
 
-    // @override
+    // @overridable
     setData(data) {
       this.loadedData = data
     },

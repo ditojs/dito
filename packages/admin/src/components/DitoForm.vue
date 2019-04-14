@@ -270,6 +270,11 @@ export default DitoComponent.component('dito-form', {
         return data
       }
       return this.clonedData
+    },
+
+    // @override ResourceMixin.hasData()
+    hasData() {
+      return !!this.data
     }
   },
 
@@ -334,12 +339,12 @@ export default DitoComponent.component('dito-form', {
         : !!this.sourceData?.push(data)
     },
 
-    // @override
+    // @override ResourceMixin.clearData()
     clearData() {
       this.setData(null, true)
     },
 
-    // @override
+    // @override ResourceMixin.setData()
     setData(data, clear = false) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {

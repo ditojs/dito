@@ -38,6 +38,7 @@ export default {
       return isListSource(this.type)
     },
 
+    // @override ResourceMixin.hasData()
     hasData() {
       return !!this.value
     },
@@ -301,13 +302,13 @@ export default {
       this.ensureData()
     },
 
-    // @override
+    // @override ResourceMixin.clearData()
     clearData() {
       this.total = 0
       this.value = null
     },
 
-    // @override
+    // @override ResourceMixin.setData()
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.
