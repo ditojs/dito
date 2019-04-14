@@ -11,7 +11,8 @@ export default {
   provide() {
     return {
       // Pass local verbs overrides on to children, see verbs() computed prop.
-      $verbs: () => this.verbs
+      $verbs: () => this.verbs,
+      $isPopulated: () => !!this.loadedData
     }
   },
 
@@ -176,7 +177,7 @@ export default {
     },
 
     async request(method, options, callback) {
-      this.setLoading(true)
+      this.setLoading(true, this.viewComponent)
       const {
         resource = this.resource,
         payload: data,
@@ -205,7 +206,7 @@ export default {
           }
         }
       } finally {
-        this.setLoading(false)
+        this.setLoading(false, this.viewComponent)
       }
     },
 

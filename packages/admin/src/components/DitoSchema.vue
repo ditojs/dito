@@ -44,10 +44,10 @@
       )
       slot(
         name="buttons"
-        v-if="isReady"
+        v-if="isPopulated"
       )
     dito-panels(
-      v-if="isReady && panelSchemas.length > 0"
+      v-if="isPopulated && panelSchemas.length > 0"
       :panels="panelSchemas"
       :data="data"
       :meta="meta"

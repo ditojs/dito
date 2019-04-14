@@ -6,21 +6,15 @@ export default {
     }
   },
 
-  provide() {
-    return {
-      $isReady: () => !this.isLoading
-    }
-  },
-
   methods: {
-    setLoading(loading) {
-      if (!this.isLoading ^ !loading) { // Boolean xor
-        this.isLoading = !!loading
-        this.appState.loadingCounter += loading ? 1 : -1
+    setLoading(isLoading, viewComponent = null) {
+      if (!this.isLoading ^ !isLoading) { // Boolean xor
+        this.isLoading = !!isLoading
+        this.appState.loadingCounter += isLoading ? 1 : -1
         // As SourceMixin handles loading for DitoView, control its `isLoading`
         // property from here:
-        if (this.viewComponent) {
-          this.viewComponent.isLoading = this.isLoading
+        if (viewComponent) {
+          viewComponent.isLoading = this.isLoading
         }
       }
     }
