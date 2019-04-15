@@ -1,5 +1,6 @@
 <template lang="pug">
   .dito-list(
+    v-if="hasData"
     :id="getDataPath()"
     :class="schema.class"
     :style="schema.style"
