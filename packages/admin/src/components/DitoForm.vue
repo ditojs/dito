@@ -193,7 +193,7 @@ export default DitoComponent.component('dito-form', {
       //    view that loaded the data, or a form that either loaded the data, or
       //    also inherited it from its parent. Note that we use a clone of it,
       //    so, data changes aren't applied until setSourceData() is called.
-      return this.createdData || this.loadedData || this.inheritedData || {}
+      return this.createdData || this.loadedData || this.inheritedData || null
     },
 
     dataPath() {
