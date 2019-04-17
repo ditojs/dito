@@ -7,6 +7,7 @@
       tag="button"
       type="button"
       :class="{ 'dito-selected': scope.name === query.scope }"
+      :title="getLabel(scope)"
     )
       | {{ getLabel(scope) }}
 </template>
@@ -15,8 +16,15 @@
 .dito
   .dito-scopes
     white-space: nowrap
+    display: flex
     .dito-button
       border-radius: 0
+      overflow: hidden
+      text-overflow: ellipsis
+      // A bit more than the width of ellipsis, to prevent replacing short words
+      // with ellipsis.
+      min-width: 3em
+      flex: 0 1 auto
       &:first-child
         border-top-left-radius: 1em
         border-bottom-left-radius: 1em

@@ -29,9 +29,12 @@
       white-space: nowrap
       margin: 0 0.5em
       line-height: 2em
+      overflow: hidden
+      text-overflow: ellipsis
     .dito-pagination-items
       display: flex
       padding: 0
+      margin-right: -$button-margin
       li
         list-style: none
       .dito-pagination-item

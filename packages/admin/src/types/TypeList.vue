@@ -126,6 +126,11 @@
       +user-select(none)
       &:empty
         display: none
+      .dito-scopes,
+      .dito-pagination
+        display: flex
+        flex: 0 1 auto
+        min-width: 0
     tfoot
       .dito-buttons-large
         background: none

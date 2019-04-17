@@ -34,6 +34,8 @@
     flex: auto
     align-self: stretch
     box-sizing: border-box
+    // To prevent list tables from blowing out of their flex box containers.
+    max-width: 100%
     // Cannot use margin here as it needs to be part of box-sizing for
     // percentages in flex-basis to work.
     padding: $form-spacing $form-spacing-half
