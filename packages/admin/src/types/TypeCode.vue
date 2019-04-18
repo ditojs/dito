@@ -2,7 +2,7 @@
   .dito-code(
     ref="code"
     :style="style"
-  ) {{ value }}
+  )
 </template>
 
 <style lang="sass">
@@ -58,10 +58,41 @@ export default TypeComponent.register('code', {
       tabSize: this.schema.indentSize || 2,
       lineNumbers: false
     })
+
+    let ignoreWatch = false
+    let ignoreUpdate = false
+
+    const setCode = code => {
+      if (code !== flask.code) {
+        ignoreUpdate = true
+        flask.updateCode(code)
+      }
+    }
+
+    const setValue = value => {
+      if (value !== this.value) {
+        ignoreWatch = true
+        this.value = value
+      }
+    }
+
     flask.onUpdate(value => {
-      this.value = value
+      if (ignoreUpdate) {
+        ignoreUpdate = false
+      } else {
+        setValue(value)
+      }
     })
-    this.$watch('value', value => flask.updateCode(value || ''))
+
+    this.$watch('value', value => {
+      if (ignoreWatch) {
+        ignoreWatch = false
+      } else {
+        setCode(value || '')
+      }
+    })
+
+    setCode(this.value || '')
   },
 
   methods: {
