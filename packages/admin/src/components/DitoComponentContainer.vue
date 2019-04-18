@@ -31,7 +31,6 @@
 <style lang="sass">
 .dito
   .dito-component-container
-    flex: auto
     align-self: stretch
     box-sizing: border-box
     // To prevent list tables from blowing out of their flex box containers.
