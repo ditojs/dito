@@ -36,7 +36,6 @@
     "@vue/cli-plugin-eslint": "^3.6.0",
     "@vue/cli-service": "^3.6.0",
     "ajv": "^6.10.0",
-    "ajv-merge-patch": "^4.1.0",
     "aws-sdk": "^2.440.0",
     "babel-loader": "^8.0.5",
     "bcryptjs": "^2.4.3",
