@@ -23,7 +23,8 @@
     "node 9"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.4.3"
+    "@babel/runtime": "^7.4.3",
+    "core-js": "^3.0.1"
   },
   "devDependencies": {
     "@ditojs/utils": "^0.87.0"
