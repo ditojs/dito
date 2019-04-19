@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.4.3",
-    "@ditojs/utils": "^0.86.0"
+    "@ditojs/utils": "^0.86.0",
+    "core-js": "^3.0.1"
   },
   "devDependencies": {
     "@ditojs/build": "^0.86.0",
