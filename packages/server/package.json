@@ -20,11 +20,11 @@
     "dito": "./lib/cli/index.js"
   },
   "engines": {
-    "node": ">= 9.0.0",
+    "node": ">= 10.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node 9"
+    "node 10"
   ],
   "dependencies": {
     "@babel/runtime": "^7.4.3",
