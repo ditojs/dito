@@ -113,8 +113,8 @@ export default TypeComponent.register([
   methods: {
     getValidationRules() {
       const rules = {}
-      // TODO: Create a base class for all number based tyes (e.g. TypeSlider)
-      // and move these vlaidations there.
+      // TODO: Create a base class for all number based types (e.g. TypeSlider)
+      // and move these validations there.
       const { range, min, max, decimals, step } = this
       if (range) {
         rules.between = range

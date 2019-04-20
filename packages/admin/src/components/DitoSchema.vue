@@ -332,11 +332,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     someField(callback) {
-      return Object.values(this.$fields).some(callback)
+      return this.isPopulated && Object.values(this.$fields).some(callback)
     },
 
     everyField(callback) {
-      return Object.values(this.$fields).every(callback)
+      return this.isPopulated && Object.values(this.$fields).every(callback)
     },
 
     onLoad() {
