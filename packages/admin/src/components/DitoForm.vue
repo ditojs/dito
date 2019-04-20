@@ -133,20 +133,16 @@ export default DitoComponent.component('dito-form', {
       return this.param === 'create'
     },
 
-    isDirty() {
-      return !this.isLoading && this.formSchemaComponent.isDirty
+    isTouched() {
+      return this.formSchemaComponent.isTouched
     },
 
-    isTouched() {
-      return !this.isLoading && this.formSchemaComponent.isTouched
+    isDirty() {
+      return this.formSchemaComponent.isDirty
     },
 
     isValid() {
-      return !this.isLoading && this.formSchemaComponent.isValid
-    },
-
-    isValidated() {
-      return !this.isLoading && this.formSchemaComponent.isValidated
+      return this.formSchemaComponent.isValid
     },
 
     selectedTab() {

@@ -235,20 +235,16 @@ export default {
       return this.$fields[this.dataPath]
     },
 
-    isDirty() {
-      return this.$field?.dirty
-    },
-
     isTouched() {
       return this.$field?.touched
     },
 
-    isValid() {
-      return this.$field?.valid
+    isDirty() {
+      return this.$field?.dirty
     },
 
-    isValidated() {
-      return this.$field?.validated
+    isValid() {
+      return this.$field?.valid
     },
 
     hasResource() {

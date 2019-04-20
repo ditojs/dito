@@ -270,10 +270,6 @@ export default DitoComponent.component('dito-schema', {
 
     isValid() {
       return this.everyField(it => it.valid)
-    },
-
-    isValidated() {
-      return this.everyField(it => it.validated)
     }
   },
 
