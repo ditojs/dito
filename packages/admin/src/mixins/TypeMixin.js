@@ -267,13 +267,10 @@ export default {
   },
 
   methods: {
-    register(register) {
+    register(add) {
       // Prevent flattened type components from overriding parent data paths
       if (!this.$options.flattenedType) {
-        this.schemaComponent.registerComponent(
-          this.dataPath,
-          register ? this : null
-        )
+        this.schemaComponent.registerComponent(this, add)
       }
     },
 

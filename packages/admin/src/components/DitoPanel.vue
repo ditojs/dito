@@ -152,10 +152,10 @@ export default DitoComponent.component('dito-panel', {
   },
 
   methods: {
-    register(register) {
+    register(add) {
       // Register the panels so that other components can find them by their
       // data-path, e.g. in TypeList.onFilterErrors()
-      this.schemaComponent.registerPanel(this.dataPath, register ? this : null)
+      this.schemaComponent.registerPanel(this, add)
     },
 
     showErrors(errors, focus) {

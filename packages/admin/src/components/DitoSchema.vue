@@ -288,47 +288,52 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    setRegister(register, key, value) {
-      if (value) {
-        this.$set(register, key, value)
+    _register(container, component, add) {
+      const { dataPath } = component
+      if (add) {
+        this.$set(container, dataPath, component)
       } else {
-        this.$delete(register, key)
+        this.$delete(container, dataPath)
       }
     },
 
-    getRegister(register, dataPathOrKey) {
-      const normalizedPath = normalizeDataPath(dataPathOrKey)
+    _get(container, dataPath) {
+      dataPath = normalizeDataPath(dataPath)
       // See if the argument starts with this form's data-path. If not, then it
       // is a key or sub data-path and needs to be prefixed with the full path:
-      const dataPath = !normalizedPath.startsWith(this.dataPath)
-        ? appendDataPath(this.dataPath, normalizedPath)
-        : normalizedPath
-      return register[dataPath] || null
+      dataPath = dataPath.startsWith(this.dataPath)
+        ? dataPath
+        : appendDataPath(this.dataPath, dataPath)
+      return container[dataPath] || null
     },
 
-    registerComponent(dataPath, comp) {
-      this.setRegister(this.components, dataPath, comp)
-      if (comp) {
+    registerComponent(component, add) {
+      this._register(this.components, component, add)
+      if (add) {
         // Store the `dataProcessor` closure for this dataPath, for processing
         // of the data at later time when the component may not exist anymore:
-        this.$set(this.dataProcessors, dataPath, comp.mergedDataProcessor)
+        this.$set(
+          this.dataProcessors,
+          component.dataPath,
+          component.mergedDataProcessor
+        )
         // NOTE: We don't remove the dataProcessors when de-registering!
         // They may still be required after the component itself is destroyed,
         // which is why they are built with no reference to their component.
       }
-      this.parentSchemaComponent?.registerComponent(dataPath, comp)
+      this.parentSchemaComponent?.registerComponent(component, add)
     },
 
-    getComponent(dataPathOrKey) {
-      return this.getRegister(this.components, dataPathOrKey)
+    getComponent(dataPath) {
+      return this._get(this.components, dataPath)
     },
 
-    registerPanel(dataPath, panel) {
-      this.setRegister(this.panels, dataPath, panel)
+    registerPanel(panel, add) {
+      this._register(this.panels, panel, add)
     },
 
-    getPanel(dataPathOrKey) {
-      return this.getRegister(this.panels, dataPathOrKey)
+    getPanel(dataPath) {
+      return this._get(this.panels, dataPath)
     },
 
     someField(callback) {
