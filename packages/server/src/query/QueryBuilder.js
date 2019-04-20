@@ -20,6 +20,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._propertyRefsCache = {}
     this._allowScopes = null
     this._ignoreScopes = false
+    this._ignoreEager = false
     this._appliedScopes = {}
     this._allowFilters = null
     this._clearScopes(true)
@@ -31,6 +32,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy._propertyRefsCache = this._propertyRefsCache
     copy._copyScopes(this)
     copy._ignoreScopes = this._ignoreScopes
+    copy._ignoreEager = this._ignoreEager
     copy._appliedScopes = { ...this._appliedScopes }
     copy._allowFilters = { ...this._allowFilters }
     return copy
@@ -45,16 +47,15 @@ export class QueryBuilder extends objection.QueryBuilder {
         this.isFind() &&
         !this.hasSpecialSelects()
       )
+      // If this isn't a normal find query, ignore all 'eager' operations,
+      // to not mess with special selects such as `count`, etc:
+      this._ignoreEager = !isNormalFind
       for (const { scope, eager } of this._scopes) {
         if (scope !== 'default' || isNormalFind) {
           this._applyScope(scope, eager)
         }
       }
-      // If this isn't a normal find query, then 'eager' operations need to be
-      // cleared, to not mess with special selects such as `count`, etc:
-      if (!isNormalFind) {
-        this.clearEager()
-      }
+      this._ignoreEager = false
     }
     return super.execute()
   }
@@ -561,6 +562,20 @@ export class QueryBuilder extends objection.QueryBuilder {
 }
 
 KnexHelper.mixin(QueryBuilder.prototype)
+
+// Override all eager methods to respect the `_ignoreEager` flag:
+for (const key of [
+  'eager', 'joinEager', 'naiveEager',
+  'mergeEager', 'mergeJoinEager', 'mergeNaiveEager'
+]) {
+  const method = QueryBuilder.prototype[key]
+  QueryBuilder.prototype[key] = function(...args) {
+    if (!this._ignoreEager) {
+      method.call(this, ...args)
+    }
+    return this
+  }
+}
 
 // Add conversion of identifiers to all `where` statements, as well as to
 // `select` and `orderBy`, by detecting use of model properties and expanding
