@@ -39,21 +39,37 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   execute() {
     if (!this._ignoreScopes) {
+      // Only apply default scopes if this is a normal find query, meaning it
+      // does not define any write operations or special selects, e.g. `count`:
+      const isNormalFind = (
+        this.isFind() &&
+        !this.hasSpecialSelects()
+      )
       for (const { scope, eager } of this._scopes) {
-        this._applyScope(scope, eager)
+        if (scope !== 'default' || isNormalFind) {
+          this._applyScope(scope, eager)
+        }
+      }
+      // If this isn't a normal find query, then 'eager' operations need to be
+      // cleared, to not mess with special selects such as `count`, etc:
+      if (!isNormalFind) {
+        this.clearEager()
       }
     }
-    // If this isn't a find query, meaning if it defines any write operations or
-    // special selects, then 'eager' and 'orderBy' operations need to be
-    // cleared. This is to not mess with special selects such as count(), etc...
-    if (
-      !this.isFind() ||
-      this.hasSelects() && !this.has(/^(select|columns?)$/)
-    ) {
-      this.clearEager()
-      this.clear('orderBy')
-    }
     return super.execute()
+  }
+
+  hasNormalSelects() {
+    // Returns true if the query defines normal selects:
+    //   select(), column(), columns()
+    return this.has(/^(select|columns?)$/)
+  }
+
+  hasSpecialSelects() {
+    // Returns true if the query defines special selects:
+    //   distinct(), count(), countDistinct(), min(), max(),
+    //   sum(), sumDistinct(), avg(), avgDistinct()
+    return this.hasSelects() && !this.hasNormalSelects()
   }
 
   // @override
