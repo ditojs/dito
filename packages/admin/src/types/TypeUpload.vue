@@ -116,7 +116,7 @@ export default TypeComponent.register('upload', {
     },
 
     files() {
-      return this.asFiles(this.value)
+      return asFiles(this.value)
     },
 
     multiple: getSchemaAccessor('multiple', {
@@ -178,7 +178,7 @@ export default TypeComponent.register('upload', {
       const { multiple } = this
       return value => {
         // Filter out all newly added files that weren't actually uploaded.
-        const files = this.asFiles(value)
+        const files = asFiles(value)
           .map(
             ({ upload, ...file }) => !upload || upload.success ? file : null
           )
@@ -189,10 +189,6 @@ export default TypeComponent.register('upload', {
   },
 
   methods: {
-    asFiles(value) {
-      return value ? asArray(value) : []
-    },
-
     deleteFile(file, index) {
       const name = file.originalName
 
@@ -298,4 +294,9 @@ export default TypeComponent.register('upload', {
     }
   }
 })
+
+function asFiles(value) {
+  return value ? asArray(value) : []
+}
+
 </script>
