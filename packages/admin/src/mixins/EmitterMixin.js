@@ -62,7 +62,7 @@ export default {
             const { callbacks } = entry
             const index = callbacks.findIndex(
               // Match `cb.callback` also, as used by `once()`, see  above:
-              ({ callback: cb }) => cb === callback || cb.callback === callback
+              cb => cb === callback || cb.callback === callback
             )
             if (index !== -1) {
               callbacks.splice(index, 1)
