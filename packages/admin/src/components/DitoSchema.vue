@@ -367,7 +367,7 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    async validateAll(match) {
+    async validateAll(match, notify = true) {
       const { fields } = this
       let dataPaths
       if (match) {
@@ -388,9 +388,9 @@ export default DitoComponent.component('dito-schema', {
         const field = fields[dataPath]
         if (field) {
           const value = getDataPath(this.rootData, dataPath, () => null)
-          if (!await field.validate(value)) {
+          if (!await field.validate(value, notify)) {
             // Focus first error field
-            if (first) {
+            if (notify && first) {
               field.focus()
             }
             first = false
@@ -398,10 +398,14 @@ export default DitoComponent.component('dito-schema', {
           }
         }
       }
-      if (!isValid) {
+      if (notify && !isValid) {
         this.notifyErrors()
       }
       return isValid
+    },
+
+    async verifyAll(match) {
+      return this.validateAll(match, false)
     },
 
     showValidationErrors(errors, focus) {

@@ -47,7 +47,7 @@ export default class Field {
     this.component.focus()
   }
 
-  async validate(value) {
+  async validate(value, notify) {
     let isValid = true
     const errors = []
     for (const [rule, setting] of Object.entries(this.validations)) {
@@ -56,17 +56,21 @@ export default class Field {
         const { validate, message } = validator
         if (!(await validate(value, setting))) {
           isValid = false
-          errors.push(
-            isFunction(message)
-              ? message(value, setting, this)
-              : message
-          )
+          if (notify) {
+            errors.push(
+              isFunction(message)
+                ? message(value, setting, this)
+                : message
+            )
+          }
         }
       }
     }
-    this.isValidated = true
-    this.isValid = isValid
-    this.errors = isValid ? null : errors
+    if (notify) {
+      this.isValidated = true
+      this.isValid = isValid
+      this.errors = isValid ? null : errors
+    }
     return isValid
   }
 
