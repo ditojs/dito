@@ -10,7 +10,6 @@
           type="radio"
           :value="getValueForOption(option)"
           v-model="selectValue"
-          v-validate="validations"
           v-bind="attributes"
           v-on="listeners"
         )

@@ -43,7 +43,6 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import ResourceMixin from '@/mixins/ResourceMixin'
-import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { hasResource, getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import {
@@ -52,8 +51,7 @@ import {
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, ResourceMixin, ValidatorMixin],
-  inject: ['$validator'],
+  mixins: [RouteMixin, ResourceMixin],
 
   data() {
     return {
@@ -96,6 +94,10 @@ export default DitoComponent.component('dito-form', {
       // this component is contained (needed for nested forms).
       // Use the `isMounted` trick to make `$refs` somewhat reactive:
       return this.isMounted && this.$refs.schema
+    },
+
+    errors() {
+      return this.formSchemaComponent?.errors
     },
 
     buttonSchemas() {
@@ -283,11 +285,11 @@ export default DitoComponent.component('dito-form', {
   mounted() {
     this.isMounted = true
     // Errors can get passed on through the meta object, so add them now.
-    // See DitoSchema.showErrors() / SourceMixin.navigateToComponent()
+    // See DitoSchema.showValidationErrors() / SourceMixin.navigateToComponent()
     const { errors } = this.meta
     if (errors) {
       delete this.meta.errors
-      this.showErrors(errors, true)
+      this.showValidationErrors(errors, true)
     }
     // Handle button clicks and see if the buttons define a resource to submit
     // to, and if so, delegate to `submit()`:
@@ -362,8 +364,8 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    showErrors(errors, focus) {
-      this.formSchemaComponent.showErrors(errors, focus)
+    showValidationErrors(errors, focus) {
+      this.formSchemaComponent.showValidationErrors(errors, focus)
     },
 
     cancel() {
@@ -380,12 +382,9 @@ export default DitoComponent.component('dito-form', {
     },
 
     async submit(button) {
-      this.clearErrors()
-      if (!(await this.validateAll())) {
-        // Focus first error field
-        const errors = this.getErrors()
-        // TODO: Move to DitoSchema instead?
-        this.formSchemaComponent.focus(Object.keys(errors)[0], true)
+      const { formSchemaComponent } = this
+      formSchemaComponent.clearErrors()
+      if (!(await formSchemaComponent.validateAll())) {
         return
       }
 
@@ -454,7 +453,7 @@ export default DitoComponent.component('dito-form', {
               // See if we're dealing with a Dito validation error:
               const errors = this.isValidationError(response) && data.errors
               if (errors) {
-                this.showErrors(errors, true)
+                this.showValidationErrors(errors, true)
               } else {
                 const error = isObject(data) ? data : err
                 if (error) {
@@ -489,7 +488,7 @@ export default DitoComponent.component('dito-form', {
               }
               // Since `emitEvent()` above is async, the schema may already be
               // destroyed by now...
-              this.formSchemaComponent?.resetValidator()
+              this.formSchemaComponent?.resetFields()
               // After submitting, close form unless clicked button disables it:
               if (button.schema.close === false) {
                 if (this.isCreating) {

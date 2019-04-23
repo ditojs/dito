@@ -5,7 +5,6 @@ import VueNotifications from 'vue-notification'
 import axios from 'axios'
 import './components'
 import './types'
-import './validator'
 import verbs from './verbs'
 import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
@@ -154,6 +153,7 @@ export default class DitoAdmin {
       },
       provide: {
         api,
+        $fields: null,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
         // Both $verbs and $isPopulated are defined as functions, to preserve

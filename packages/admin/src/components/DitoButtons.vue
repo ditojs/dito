@@ -33,8 +33,6 @@ import { appendDataPath } from '@/utils/data'
 
 // @vue/component
 export default DitoComponent.component('dito-buttons', {
-  inject: ['$validator'],
-
   provide: {
     tabComponent: null
   },

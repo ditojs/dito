@@ -38,8 +38,6 @@ import { getTypeOptions, getPanelSchema } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
-  inject: ['$validator'],
-
   provide() {
     return {
       tabComponent: this.tabComponent

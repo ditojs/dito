@@ -241,7 +241,7 @@ export default TypeComponent.register([
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
       const filtersPanel = this.schemaComponent.getPanel(filtersDataPath)
       if (filtersPanel) {
-        filtersPanel.showErrors(errors, true)
+        filtersPanel.showValidationErrors(errors, true)
         return true
       }
     }

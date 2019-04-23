@@ -158,8 +158,8 @@ export default DitoComponent.component('dito-panel', {
       this.schemaComponent.registerPanel(this, add)
     },
 
-    showErrors(errors, focus) {
-      this.$refs.schema.showErrors(errors, focus)
+    showValidationErrors(errors, focus) {
+      this.$refs.schema.showValidationErrors(errors, focus)
     },
 
     clearErrors() {

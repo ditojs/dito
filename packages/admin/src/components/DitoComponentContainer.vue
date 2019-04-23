@@ -23,8 +23,7 @@
       :class="componentClass"
     )
     dito-errors(
-      v-if="$errors.has(dataPath)"
-      :dataPath="dataPath"
+      :errors="errors"
     )
 </template>
 
@@ -61,8 +60,6 @@ import {
 
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
-  inject: ['$validator'],
-
   props: {
     schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
@@ -99,6 +96,11 @@ export default DitoComponent.component('dito-component-container', {
         : width * 100 // fraction
     },
 
+    errors() {
+      const field = this.$fields[this.dataPath]
+      return field?.getErrors()
+    },
+
     containerClass() {
       return [
         // Use the component name as its class, so the extended
@@ -128,7 +130,7 @@ export default DitoComponent.component('dito-component-container', {
         'dito-disabled': this.componentDisabled,
         'dito-width-fill': width === 'fill' || this.percentage > 0,
         'dito-width-auto': width === 'auto',
-        'dito-has-errors': this.$errors.has(this.dataPath)
+        'dito-has-errors': !!this.errors
       }
     },
 

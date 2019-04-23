@@ -5,7 +5,6 @@
       ref="element"
       :id="dataPath"
       v-model="selectValue"
-      v-validate="validations"
       v-bind="attributes"
       v-on="listeners"
     )

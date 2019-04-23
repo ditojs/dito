@@ -7,7 +7,6 @@
       :locale="locale"
       :dateFormat="dateFormat"
       v-model="dateValue"
-      v-validate="validations"
       v-bind="attributes"
       v-on="listeners"
     )

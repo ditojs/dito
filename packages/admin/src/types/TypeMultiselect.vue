@@ -8,7 +8,6 @@
     vue-multiselect(
       ref="element"
       v-model="multiSelectValue"
-      v-validate="validations"
       v-bind="attributes"
       v-on="listeners"
       :show-labels="false"

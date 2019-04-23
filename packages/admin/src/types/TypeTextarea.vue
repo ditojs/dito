@@ -3,7 +3,6 @@
     ref="element"
     :id="dataPath"
     v-model="value"
-    v-validate="validations"
     v-bind="attributes"
     v-on="listeners"
     :rows="schema.lines || 4"

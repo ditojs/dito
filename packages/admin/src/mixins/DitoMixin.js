@@ -14,6 +14,7 @@ export default {
 
   inject: [
     'api',
+    '$fields',
     '$verbs',
     '$isPopulated',
     '$schemaComponent',

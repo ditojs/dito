@@ -1,7 +1,9 @@
 <template lang="pug">
-  .dito-errors
+  .dito-errors(
+    v-if="errors"
+  )
     ul
-      li(v-for="error in $errors.collect(dataPath)")
+      li(v-for="error of errors")
         | {{ error }}
 </template>
 
@@ -20,10 +22,8 @@ import DitoComponent from '@/DitoComponent'
 
 // @vue/component
 export default DitoComponent.component('dito-errors', {
-  inject: ['$validator'],
-
   props: {
-    dataPath: { type: String, required: true }
+    errors: { type: Array, default: null }
   }
 })
 </script>

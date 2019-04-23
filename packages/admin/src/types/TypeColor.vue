@@ -13,7 +13,6 @@
         type="input"
         size="8"
         v-model="hexValue"
-        v-validate="validations"
         v-bind="attributes"
         v-on="listeners"
       )

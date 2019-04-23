@@ -4,7 +4,6 @@
     :id="dataPath"
     type="checkbox"
     v-model="value"
-    v-validate="validations"
     v-bind="attributes"
     v-on="listeners"
   )

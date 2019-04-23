@@ -4,12 +4,7 @@ import { isFunction, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  // Inherit the $validator from the parent.
-  // See: https://github.com/logaretm/vee-validate/issues/468
-  // NOTE: We can't do this in DitoMixin for all components, as it would
-  // override the $validates: true` setting there.
   inject: [
-    '$validator',
     'tabComponent'
   ],
 
@@ -80,6 +75,26 @@ export default {
       }
     }),
 
+    $field() {
+      return this.$fields[this.dataPath]
+    },
+
+    isTouched() {
+      return this.$field.isTouched
+    },
+
+    isDirty() {
+      return this.$field.isDirty
+    },
+
+    isValid() {
+      return this.$field.isValid
+    },
+
+    isValidated() {
+      return this.$field.isValidated
+    },
+
     // The following computed properties are similar to the fields returned by
     // getItemParams(), so that we can access these on `this` as well:
     item() {
@@ -105,6 +120,28 @@ export default {
         this.dataPath.substring(schemaComponent.dataPath.length),
         this.dataPathIsValue
       )
+    },
+
+    validations() {
+      // This computed property exists to make it easier to extend validations
+      // in type components.
+      return null
+    },
+
+    mergedValidations() {
+      const validations = { ...this.validations }
+      if (this.required) {
+        validations.required = true
+      }
+      // Allow schema to override default rules and add any new ones:
+      for (const [key, value] of Object.entries(this.schema.rules || {})) {
+        if (value === undefined) {
+          delete validations[key]
+        } else {
+          validations[key] = value
+        }
+      }
+      return validations
     },
 
     mergedDataProcessor() {
@@ -215,38 +252,6 @@ export default {
       }
     },
 
-    validations() {
-      const rules = this.getValidationRules()
-      if (this.required) {
-        rules.required = true
-      }
-      // Allow schema to override default rules and add any new ones:
-      for (const [key, value] of Object.entries(this.schema.rules || {})) {
-        if (value === undefined) {
-          delete rules[key]
-        } else {
-          rules[key] = value
-        }
-      }
-      return { rules }
-    },
-
-    $field() {
-      return this.$fields[this.dataPath]
-    },
-
-    isTouched() {
-      return this.$field?.touched
-    },
-
-    isDirty() {
-      return this.$field?.dirty
-    },
-
-    isValid() {
-      return this.$field?.valid
-    },
-
     hasResource() {
       // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
@@ -267,37 +272,11 @@ export default {
       // Prevent flattened type components from overriding parent data paths
       if (!this.$options.flattenedType) {
         this.schemaComponent.registerComponent(this, add)
+        // Install / remove the field events to watch of changes and handle
+        // validation flags. `this.$field` is defined once `registerComponent()`
+        // was called.
+        this[add ? 'on' : 'off'](this.$field.events)
       }
-    },
-
-    getValidationRules() {
-      // This method exists to make it easier to extend validations in type
-      // components.
-      return {}
-    },
-
-    addError(error, addPrefix) {
-      // Convert to the same sentence structure as vee-validate:
-      const field = this.label || this.placeholder || this.name
-      const prefix = addPrefix && `The ${field} field`
-      this.$errors.add({
-        field: this.dataPath,
-        msg: !prefix || error.startsWith(prefix) ? error : `${prefix} ${error}.`
-      })
-      // Remove the error as soon as the field is changed.
-      this.once('input', () => {
-        this.$errors.remove(this.dataPath)
-      })
-    },
-
-    addErrors(errors, focus) {
-      for (const { message } of errors) {
-        this.addError(message, true)
-      }
-      if (focus) {
-        this.focus()
-      }
-      return true
     },
 
     focus() {

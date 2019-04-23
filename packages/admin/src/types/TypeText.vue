@@ -4,7 +4,6 @@
     :id="dataPath"
     :type="inputType"
     v-model="inputValue"
-    v-validate="validations"
     v-bind="attributes"
     v-on="listeners"
   )
@@ -13,7 +12,6 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import { InputField } from '@ditojs/ui'
-import { asArray } from '@ditojs/utils'
 
 const maskedPassword = '****************'
 
@@ -48,25 +46,16 @@ export default TypeComponent.register([
       set(value) {
         this.value = value
       }
-    }
-  },
+    },
 
-  methods: {
-    getValidationRules() {
+    validations() {
       const rule = {
         email: 'email',
-        url: ['url', 'require_protocol'],
+        url: 'url',
         hostname: 'hostname',
-        creditcard: 'credit_card'
+        creditcard: 'creditcard'
       }[this.type]
-      const rules = {}
-      if (rule) {
-        // Some rules simply need to be set (e.g. to undefined), other needs
-        // a config value, e.g. `url: 'require_protocol'`, see above.
-        const [key, value] = asArray(rule)
-        rules[key] = value
-      }
-      return rules
+      return rule ? { [rule]: true } : {}
     }
   }
 })
