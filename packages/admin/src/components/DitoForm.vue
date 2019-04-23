@@ -369,9 +369,13 @@ export default DitoComponent.component('dito-form', {
     },
 
     cancel() {
-      if (!this.isDirty || confirm(
-        `You have unsaved changed. Do you really want to ${this.verbs.cancel}?`
-      )) {
+      if (
+        this.doesMutate ||
+        !this.isDirty ||
+        confirm(`You have unsaved changes. Do you really want to ${
+          this.verbs.cancel
+        }?`)
+      ) {
         this.close()
       }
     },
