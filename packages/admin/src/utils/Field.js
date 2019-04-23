@@ -52,7 +52,7 @@ export default class Field {
     const errors = []
     for (const [rule, setting] of Object.entries(this.validations)) {
       const validator = validations[rule]
-      if (validator) {
+      if (validator && (validator.nullish || value != null)) {
         const { validate, message } = validator
         if (!(await validate(value, setting))) {
           isValid = false
