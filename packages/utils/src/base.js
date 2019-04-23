@@ -57,6 +57,14 @@ export function isPromise(val) {
   return !!val && isFunction(val.then) && isFunction(val.catch)
 }
 
+export const isInteger = Number.isInteger || function isInteger(value) {
+  return (
+    isNumber(value) &&
+    isFinite(value) &&
+    Math.floor(value) === value
+  )
+}
+
 export function isAsync(val) {
   return val?.[Symbol.toStringTag] === 'AsyncFunction'
 }

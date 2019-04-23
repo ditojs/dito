@@ -1,6 +1,7 @@
 import {
   isPlainObject, isObject, isArray, isFunction, isString, isBoolean, isNumber,
-  isDate, isRegExp, isPromise, isAsync, asObject, asArray, asFunction
+  isDate, isRegExp, isPromise, isAsync, isInteger,
+  asObject, asArray, asFunction
 } from './base'
 
 const object = { a: 1 }
@@ -151,6 +152,62 @@ describe('isNumber()', () => {
     }
   )
 })
+
+describe('isInteger()', () => {
+  describe.each([
+    [object, false],
+    [array, false],
+    [number, true],
+    [string, false],
+    [boolean, false],
+    [date, false],
+    [regexp, false],
+    [symbol, false],
+    [instance, false],
+    [promise, false],
+    [func, false],
+    [lambda, false],
+    [asyncFunc, false],
+    [asyncLambda, false]
+  ])(
+    'isInteger(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isInteger(value)).toBe(expected)
+      })
+    }
+  )
+
+  describe.each([
+    13,
+    123,
+    0,
+    -0,
+    1,
+    -1,
+    +1
+  ])(
+    'isInteger(%o)',
+    str => {
+      it(`returns true`, () => {
+        expect(isInteger(str)).toBe(true)
+      })
+    }
+  )
+
+  describe.each([
+    -0.00000000001,
+    123.123
+  ])(
+    'isInteger(%o)',
+    str => {
+      it(`returns false`, () => {
+        expect(isInteger(str)).toBe(false)
+      })
+    }
+  )
+})
+
 describe('isString()', () => {
   describe.each([
     [object, false],
