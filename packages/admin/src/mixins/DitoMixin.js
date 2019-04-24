@@ -5,7 +5,7 @@ import { getItemParams } from '@/utils/data'
 import { getResource } from '@/utils/resource'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, labelize, hyphenate, stripTags
+  isRegExp, asArray, labelize, hyphenate
 } from '@ditojs/utils'
 
 // @vue/component
@@ -271,25 +271,11 @@ export default {
     },
 
     notify(...args) {
-      const type = args.length > 1 ? args[0] : 'info'
-      const title = args.length > 2 ? args[1] : {
-        warning: 'Warning',
-        error: 'Error',
-        info: 'Information',
-        success: 'Success'
-      }[type] || 'Notification'
-      const content = args[args.length - 1]
-      let text = type === 'error' && content.message || content.toString()
-      const duration = 1500 + (text.length + title.length) * 20
-      text = text.replace(/\r\n|\n|\r/g, '<br>')
-      this.$notify({ type, title, text, duration })
-      const log = {
-        warning: 'warn',
-        error: 'error',
-        info: 'log',
-        success: 'log'
-      }[type] || 'error'
-      console[log](stripTags(content))
+      this.rootComponent.notify(...args)
+    },
+
+    countNotifications(count) {
+      return this.rootComponent.countNotifications(count)
     },
 
     closeNotifications() {
@@ -386,14 +372,13 @@ export default {
         const itemParams = getItemParams(this, params)
         const res = responds
           ? await this.emit(event, itemParams)
-          : null
+          : undefined
         // Don't bubble to parent if handled event returned `false`
         if (parentResponds && res !== false) {
           parent.emit(event, itemParams)
         }
-        return true
+        return res
       }
-      return false
     }
   }
 }

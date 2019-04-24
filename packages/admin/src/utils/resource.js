@@ -16,9 +16,12 @@ export function getResource(resource, defaults = {}) {
     parent &&
     !resource.parent &&
     parent.path &&
-    !resource.path.startsWith('/')
+    !resource.path?.startsWith('/')
   ) {
     resource.parent = parent
+    if (!resource.path) {
+      resource.path = '.'
+    }
   }
   return resource
 }

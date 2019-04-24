@@ -112,7 +112,9 @@ export default DitoComponent.component('dito-form', {
             submit: !this.doesMutate && {
               type: 'submit',
               events: {
-                click: ({ target }) => this.submit(target)
+                click() {
+                  this.submit({ close: true })
+                }
               }
             }
           },
@@ -292,9 +294,13 @@ export default DitoComponent.component('dito-form', {
     }
     // Handle button clicks and see if the buttons define a resource to submit
     // to, and if so, delegate to `submit()`:
-    this.formSchemaComponent.on('click', ({ target: button }) => {
-      if (hasResource(button.schema.resource) && !button.responds('click')) {
-        this.submit(button)
+    this.formSchemaComponent.on('click', ({ target }) => {
+      if (
+        target.type === 'button' &&
+        hasResource(target.schema.resource) &&
+        !target.responds('click')
+      ) {
+        target.submit({ close: true })
       }
     })
   },
@@ -395,14 +401,19 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    close() {
-      const parent = this.parentRouteComponent
-      this.$router.push({ path: parent.path })
+    async close() {
+      return new Promise(resolve => {
+        this.$router.push(
+          { path: this.parentRouteComponent.path },
+          () => resolve(true),
+          () => resolve(false)
+        )
+      })
     },
 
-    async submit(button) {
+    async submit(button, { close = false } = {}) {
       if (!this.formSchemaComponent.validateAll()) {
-        return
+        return false
       }
 
       let itemLabel
@@ -416,13 +427,27 @@ export default DitoComponent.component('dito-form', {
         ))
       )
 
-      const getEventParams = (request, response, error) => ({
-        data: this.data,
-        itemLabel: getItemLabel(),
-        request,
-        response,
-        error
-      })
+      const notify = async (event, { request, response, error, notify }) => {
+        // Compare notification-count before/after the event emission to
+        // determine if a notification was already displayed.
+        const count = this.countNotifications()
+        if (
+          (await button.emitEvent(event, {
+            params: {
+              data: this.data,
+              itemLabel: getItemLabel(),
+              request,
+              response,
+              error
+            }
+          })) === undefined &&
+          notify &&
+          !this.countNotifications(count)
+        ) {
+          const [type, title, ...content] = notify()
+          this.notify(type, title, content.join(''))
+        }
+      }
 
       // Allow buttons to override both method and resource path to submit to:
       const butttonResource = getResource(button.schema.resource, {
@@ -441,85 +466,84 @@ export default DitoComponent.component('dito-form', {
           ? this.addSourceData(payload)
           : this.setSourceData(payload)
         if (changed) {
-          if (!(await button.emitEvent('success', {
-            params: getEventParams()
-          }))) {
-            this.notify(
+          notify('success', {
+            notify: () => [
               'info',
               'Change Applied',
-              `<p>Changes to ${getItemLabel()} were applied.</p>` +
-              '<p><b>Note</b>: the parent still needs to be saved ' +
+              `<p>Changes to ${getItemLabel()} were applied.</p>`,
+              '<p><b>Note</b>: the parent still needs to be saved ',
               'in order to persist this change.</p>'
-            )
-          }
-          this.close()
+            ]
+          })
+          return true
         } else {
-          this.notify(
-            'error',
-            'Request Error',
-            `Unable to ${this.verbs.create} ${getItemLabel()}.`
-          )
+          const error = `Unable to ${this.verbs.create} ${getItemLabel()}.`
+          notify('error', {
+            error,
+            notify: () => ['error', 'Request Error', error]
+          })
+          return false
         }
       } else {
-        this.request(
-          method,
-          { payload, resource },
-          async (err, { request, response }) => {
-            const data = response?.data
-            if (err) {
-              // See if we're dealing with a Dito validation error:
-              const errors = this.isValidationError(response) && data.errors
-              if (errors) {
-                this.showValidationErrors(errors, true)
-              } else {
-                const error = isObject(data) ? data : err
-                if (error) {
-                  if (!(await button.emitEvent('error', {
-                    params: getEventParams(request, response, error)
-                  }))) {
-                    this.notify(
+        // TODO: Convert ResourceMixin.request() to async instead:
+        return new Promise(resolve => {
+          this.request(
+            method,
+            { payload, resource },
+            async (err, { request, response }) => {
+              const data = response?.data
+              if (err) {
+                // See if we're dealing with a Dito validation error:
+                const errors = this.isValidationError(response) && data.errors
+                if (errors) {
+                  this.showValidationErrors(errors, true)
+                } else {
+                  const error = isObject(data) ? data : err
+                  notify('error', {
+                    request,
+                    response,
+                    error,
+                    notify: () => [
                       'error',
                       'Request Error',
-                      `Unable to ${this.verbs.create} ${getItemLabel()}:\n${
-                        error.message || error
-                      }`
-                    )
-                  }
+                      `Unable to ${this.verbs.create} ${getItemLabel()}`,
+                      error ? `:\n${error.message || error}` : ''
+                    ]
+                  })
                 }
-              }
-            } else {
-              // Update the underlying data before calling `getEventParams()`
-              // or `getItemLabel()`, so id is set after creating new items.
-              if (data) {
-                this.setData(data)
-              }
-              if (!(await button.emitEvent('success', {
-                params: getEventParams(request, response)
-              }))) {
-                const submitted = this.verbs.submitted
-                this.notify(
-                  'success',
-                  `Successfully ${capitalize(submitted)}`,
-                  `${getItemLabel()} was ${submitted}.`
-                )
-              }
-              // Since `emitEvent()` above is async, the schema may already be
-              // destroyed by now...
-              this.formSchemaComponent?.resetValidation()
-              // After submitting, close form unless clicked button disables it:
-              if (button.schema.close === false) {
-                if (this.isCreating) {
-                  // Navigate to the form editing the newly created item:
+                resolve(false)
+              } else {
+                // Update the underlying data before calling `getEventParams()`
+                // or `getItemLabel()`, so id is set after creating new items.
+                if (data) {
+                  this.setData(data)
+                }
+                const { submitted } = this.verbs
+                notify('success', {
+                  request,
+                  response,
+                  notify: () => [
+                    'success',
+                    `Successfully ${capitalize(submitted)}`,
+                    `${getItemLabel()} was ${submitted}.`
+                  ]
+                })
+                // Since `emitEvent()` above is async, the schema may already be
+                // destroyed by now...
+                this.formSchemaComponent?.resetValidation()
+                // Redirect to the form editing the newly created item:
+                if (close) {
+                  // TODO: await this.close()?
+                  this.close()
+                } else if (this.isCreating) {
                   const id = this.getItemId(this.schema, this.data)
                   this.$router.replace({ path: `../${id}`, append: true })
                 }
-              } else {
-                this.close()
+                resolve(true)
               }
             }
-            return true // Errors were already handled.
-          }
-        )
+          )
+        })
       }
     }
   }

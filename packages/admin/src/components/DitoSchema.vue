@@ -348,14 +348,14 @@ export default DitoComponent.component('dito-schema', {
     },
 
     resetValidation() {
-      for (const components of Object.values(this.components)) {
-        components.resetValidation()
+      for (const component of Object.values(this.components)) {
+        component.resetValidation()
       }
     },
 
     clearErrors() {
-      for (const components of Object.values(this.components)) {
-        components.clearErrors()
+      for (const component of Object.values(this.components)) {
+        component.clearErrors()
       }
     },
 

@@ -38,7 +38,7 @@ import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
-import { equals } from '@ditojs/utils'
+import { equals, stripTags } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
@@ -50,7 +50,8 @@ export default DitoComponent.component('dito-root', {
   data() {
     return {
       allowLogin: false,
-      resolvedViews: {}
+      resolvedViews: {},
+      notificationCount: 0
     }
   },
 
@@ -79,6 +80,33 @@ export default DitoComponent.component('dito-root', {
   },
 
   methods: {
+    notify(...args) {
+      const type = args.length > 1 ? args[0] : 'info'
+      const title = args.length > 2 ? args[1] : {
+        warning: 'Warning',
+        error: 'Error',
+        info: 'Information',
+        success: 'Success'
+      }[type] || 'Notification'
+      const content = args[args.length - 1]
+      let text = type === 'error' && content.message || content.toString()
+      const duration = 1500 + (text.length + title.length) * 20
+      text = text.replace(/\r\n|\n|\r/g, '<br>')
+      this.$notify({ type, title, text, duration })
+      const log = {
+        warning: 'warn',
+        error: 'error',
+        info: 'log',
+        success: 'log'
+      }[type] || 'error'
+      console[log](stripTags(content))
+      this.notificationCount++
+    },
+
+    countNotifications(count = 0) {
+      return this.notificationCount - count
+    },
+
     closeNotifications() {
       this.notifications.destroyAll()
     },

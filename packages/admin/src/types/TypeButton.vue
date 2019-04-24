@@ -46,6 +46,10 @@ export default TypeComponent.register([
         params: params ? () => ({ ...params }) : null,
         parent: this.schemaComponent
       })
+    },
+
+    async submit(options) {
+      return this.formComponent.submit(this, options)
     }
   }
 })
