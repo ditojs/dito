@@ -278,19 +278,7 @@ export default DitoComponent.component('dito-form', {
   watch: {
     sourceData: 'clearClonedData',
     // Needed for the 'create' redirect in `inheritedData()` to work:
-    create: 'setupData',
-    dataPath(dataPath) {
-      console.log(
-        'new dataPath',
-        dataPath,
-        'dataPath',
-        this.formSchemaComponent.dataPath,
-        this.$refs.schema?.dataPath,
-        'uid',
-        this.formSchemaComponent._uid,
-        this.$refs.schema?._uid
-      )
-    }
+    create: 'setupData'
   },
 
   mounted() {
@@ -321,14 +309,6 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     checkValidations(to, from, next) {
-      console.log(
-        'dataPath',
-        this.formSchemaComponent.dataPath,
-        this.$refs.schema?.dataPath,
-        'uid',
-        this.formSchemaComponent._uid,
-        this.$refs.schema?._uid
-      )
       next(
         !this.isActive ||
         !this.doesMutate ||
