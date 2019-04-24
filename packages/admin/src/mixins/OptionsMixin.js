@@ -72,14 +72,18 @@ export default {
             .then(data => {
               this.resolvedData = data
               this.hasOptions = true
+              this.setLoading(false)
             })
             .catch(error => {
               this.addError(error.message, false)
               this.resolvedData = []
-            })
-            .finally(() => {
               this.setLoading(false)
             })
+            // TODO: Switch to finally() once it works on Firefox with vue-cli:
+            // https://github.com/vuejs/vue-cli/issues/2012
+            // .finally(() => {
+            //   this.setLoading(false)
+            // })
           // Clear until promise is resolved.
           data = null
         }
