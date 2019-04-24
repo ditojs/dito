@@ -103,6 +103,10 @@ class ItemParams {
     return get(this, 'api') || null
   }
 
+  get itemLabel() {
+    return get(this, 'itemLabel') || null
+  }
+
   get formLabel() {
     return get(this, 'formLabel') || null
   }
