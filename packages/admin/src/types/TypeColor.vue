@@ -35,6 +35,7 @@
   .dito
     .dito-color
       .dito-input
+        position: relative
         input
           font-variant-numeric: tabular-nums
           margin-right: $color-swatch-width
@@ -47,10 +48,10 @@
         box-shadow: $shadow-window
       .dito-color-preview
         position: absolute
+        top: 0
+        right: 0
+        bottom: 0
         width: $color-swatch-width
-        top: $border-width
-        right: $border-width
-        bottom: $border-width
         border-top-right-radius: $color-swatch-radius
         border-bottom-right-radius: $color-swatch-radius
 </style>
