@@ -1,5 +1,5 @@
 export const required = {
-  validate: value => !!value,
+  validate: value => value != null && value !== '',
   message: 'is required',
   nullish: true
 }
