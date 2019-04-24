@@ -4,7 +4,7 @@
     select(
       ref="element"
       :id="dataPath"
-      v-model="selectValue"
+      v-model="selectedValue"
       v-bind="attributes"
       v-on="listeners"
     )

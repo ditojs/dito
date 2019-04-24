@@ -9,7 +9,7 @@
           ref="element"
           type="checkbox"
           :value="getValueForOption(option)"
-          v-model="selectValue"
+          v-model="selectedValue"
           v-bind="attributes"
           v-on="listeners"
         )

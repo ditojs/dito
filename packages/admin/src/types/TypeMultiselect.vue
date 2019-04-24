@@ -7,7 +7,7 @@
   )
     vue-multiselect(
       ref="element"
-      v-model="multiSelectValue"
+      v-model="selectedOptions"
       v-bind="attributes"
       v-on="listeners"
       :show-labels="false"
@@ -239,10 +239,10 @@ export default TypeComponent.register('multiselect', {
   },
 
   computed: {
-    multiSelectValue: {
+    selectedOptions: {
       get() {
         return this.multiple
-          ? (this.selectValue || [])
+          ? (this.selectedValue || [])
             .map(
               // If an option cannot be found, we may be in taggable mode and
               // can add it.
@@ -251,13 +251,13 @@ export default TypeComponent.register('multiselect', {
             // Filter out options that we couldn't match.
             // TODO: We really should display an error instead
             .filter(value => value)
-          : this.getOptionForValue(this.selectValue)
+          : this.selectedOption
       },
 
       set(option) {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
-        this.selectValue = this.multiple
+        this.selectedValue = this.multiple
           ? (option || []).map(value => this.getValueForOption(value))
           : this.getValueForOption(option)
       }

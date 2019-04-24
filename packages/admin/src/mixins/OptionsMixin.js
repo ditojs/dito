@@ -16,7 +16,7 @@ export default {
   },
 
   computed: {
-    selectValue: {
+    selectedValue: {
       get() {
         const convert = value => this.relate
           ? this.hasOption(value)
@@ -36,7 +36,7 @@ export default {
             this.schemaComponent.isReference(this.value)
           )
         ) {
-          this.selectValue = value
+          this.selectedValue = value
         }
         return value
       },
@@ -49,6 +49,10 @@ export default {
           ? value.map(convert)
           : convert(value)
       }
+    },
+
+    selectedOption() {
+      return this.getOptionForValue(this.selectedValue)
     },
 
     options() {
