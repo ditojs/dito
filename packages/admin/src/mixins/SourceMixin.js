@@ -1,7 +1,7 @@
 import DitoComponent from '@/DitoComponent'
 import ResourceMixin from './ResourceMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getItemParams } from '@/utils/data'
+import { getItemParams, appendDataPath } from '@/utils/data'
 import { getMemberResource } from '@/utils/resource'
 import {
   processRouteSchema, processForms, hasForms, hasLabels, getNamedSchemas,
@@ -363,7 +363,7 @@ export default {
         // For objects, use no path to list, and normal path to the item:
         ? index == null ? undefined : this.dataPath
         // For lists, use normal path to list, and concatenated path to item:
-        : index == null ? this.dataPath : `${this.dataPath}/${index}`
+        : index == null ? this.dataPath : appendDataPath(this.dataPath, index)
     },
 
     getEditLink(item, index) {

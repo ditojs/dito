@@ -139,6 +139,7 @@ import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
 import ItemMixin from '@/mixins/ItemMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
+import { appendDataPath } from '@/utils/data'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getNamedSchemas, hasForms } from '@/utils/schema'
 
@@ -281,7 +282,7 @@ export default DitoComponent.component('dito-tree-item', {
 
   methods: {
     getDataPath(cell) {
-      return `${this.dataPath}/${cell.name}`
+      return appendDataPath(this.dataPath, cell.name)
     },
 
     onEdit() {
