@@ -84,7 +84,7 @@ export default DitoComponent.component('dito-view', {
   watch: {
     $route(to, from) {
       // See if the route changes completely, and clear the data if it does.
-      if (getCommonPrefix(from.path, to.path) === '/') {
+      if (!getCommonPrefix(from.path, to.path).startsWith(this.path)) {
         this.isLoading = false
         this.data = {}
       }
