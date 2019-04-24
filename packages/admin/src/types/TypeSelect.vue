@@ -7,24 +7,33 @@
       v-model="selectedValue"
       v-bind="attributes"
       v-on="listeners"
+      @mousedown="populate = true"
+      @focus="populate = true"
     )
       template(
-        v-for="option in options"
+        v-if="populate"
       )
-        optgroup(
-          v-if="groupBy"
-          :label="option[groupByLabel]"
+        template(
+          v-for="option in options"
         )
-          option(
-            v-for="opt in option[groupByOptions]"
-            :value="getValueForOption(opt)"
+          optgroup(
+            v-if="groupBy"
+            :label="option[groupByLabel]"
           )
-            | {{ getLabelForOption(opt) }}
+            option(
+              v-for="opt in option[groupByOptions]"
+              :value="getValueForOption(opt)"
+            ) {{ getLabelForOption(opt) }}
+          option(
+            v-else
+            :value="getValueForOption(option)"
+          ) {{ getLabelForOption(option) }}
+      template(
+        v-else-if="selectedOption"
+      )
         option(
-          v-else
-          :value="getValueForOption(option)"
-        )
-          | {{ getLabelForOption(option) }}
+          :value="selectedValue"
+        ) {{ getLabelForOption(selectedOption) }}
     button.dito-button-overlay.dito-button-clear(
       v-if="clearable && value"
       @click="clear"
@@ -62,6 +71,12 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 export default TypeComponent.register('select', {
   mixins: [OptionsMixin],
 
-  nativeField: true
+  nativeField: true,
+
+  data() {
+    return {
+      populate: false
+    }
+  }
 })
 </script>

@@ -13,7 +13,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="open && (matchedOptions || options) || []"
+      :options="populate && (matchedOptions || options) || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -24,8 +24,7 @@
       :internal-search="!searchFilter"
       :close-on-select="true"
       :loading="isLoading"
-      @open="open = true"
-      @close="open = false"
+      @open="populate = true"
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
@@ -234,7 +233,7 @@ export default TypeComponent.register('multiselect', {
   data() {
     return {
       matchedOptions: null,
-      open: false
+      populate: false
     }
   },
 
