@@ -45,11 +45,7 @@ export default TypeComponent.register([
     dateFormat: getSchemaAccessor('dateFormat', {
       type: Object,
       default: null
-    }),
-
-    dataProcessor() {
-      return value => isDate(value) ? value.toISOString() : value
-    }
+    })
   },
 
   methods: {
@@ -59,6 +55,10 @@ export default TypeComponent.register([
         time: 'time-picker',
         datetime: 'date-time-picker'
       }[type]
+    },
+
+    getDataProcessor() {
+      return value => isDate(value) ? value.toISOString() : value
     }
   }
 })

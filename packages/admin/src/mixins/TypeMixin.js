@@ -1,9 +1,12 @@
+import ValidationMixin from './ValidationMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItemParams, getItem, getParentItem } from '@/utils/data'
 import { isFunction, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
+  mixins: [ValidationMixin],
+
   inject: [
     'tabComponent'
   ],
@@ -75,26 +78,6 @@ export default {
       }
     }),
 
-    $field() {
-      return this.$fields[this.dataPath]
-    },
-
-    isTouched() {
-      return this.$field.isTouched
-    },
-
-    isDirty() {
-      return this.$field.isDirty
-    },
-
-    isValid() {
-      return this.$field.isValid
-    },
-
-    isValidated() {
-      return this.$field.isValidated
-    },
-
     // The following computed properties are similar to the fields returned by
     // getItemParams(), so that we can access these on `this` as well:
     item() {
@@ -123,13 +106,7 @@ export default {
     },
 
     validations() {
-      // This computed property exists to make it easier to extend validations
-      // in type components.
-      return null
-    },
-
-    mergedValidations() {
-      const validations = { ...this.validations }
+      const validations = { ...this.getValidations() }
       if (this.required) {
         validations.required = true
       }
@@ -144,13 +121,13 @@ export default {
       return validations
     },
 
-    mergedDataProcessor() {
+    dataProcessor() {
       // Produces a `dataProcessor` closure that can exist without the component
       // still being around, by pulling all required schema settings into the
       // local scope and generating a closure that processes the data.
       // It also supports a 'override' `dataProcessor` property on type
       // components than can provide further behavior.
-      const { dataProcessor } = this
+      const dataProcessor = this.getDataProcessor()
       const { exclude, process } = this.schema
       return (value, name, dataPath, rootData) => {
         let params = null
@@ -273,10 +250,19 @@ export default {
       if (!this.$options.flattenedType) {
         this.schemaComponent.registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
-        // validation flags. `this.$field` is defined once `registerComponent()`
-        // was called.
-        this[add ? 'on' : 'off'](this.$field.events)
+        // validation flags. `events` is provided by `ValidationMixin.events()`
+        this[add ? 'on' : 'off'](this.events)
       }
+    },
+
+    // @overridable
+    getValidations() {
+      return null
+    },
+
+    // @overridable
+    getDataProcessor() {
+      return null
     },
 
     focus() {

@@ -170,11 +170,13 @@ export default TypeComponent.register('upload', {
         path: this.dataPath,
         parent: this.resourceComponent.resource
       })
-    },
+    }
+  },
 
-    dataProcessor() {
-      // Since the returned dataProcess will be used after the life-time of this
-      // component, we can't access `this` form inside the returned closure:
+  methods: {
+    getDataProcessor() {
+      // Since the returned dataProcess may be used after the life-time of this
+      // component, we shouldn't access `this` form inside the returned closure:
       const { multiple } = this
       return value => {
         // Filter out all newly added files that weren't actually uploaded.
@@ -185,14 +187,12 @@ export default TypeComponent.register('upload', {
           .filter(file => file)
         return multiple ? files : files[0] || null
       }
-    }
-  },
+    },
 
-  methods: {
     deleteFile(file, index) {
       const name = file.originalName
 
-      if (file && confirm(
+      if (file && window.confirm(
         `Do you really want to ${this.verbs.remove} ${name}?`)
       ) {
         if (this.multiple) {

@@ -414,7 +414,7 @@ export default {
       const notify = transient => this.notify(transient ? 'info' : 'success',
         'Successfully Removed', `${label} was ${this.verbs.deleted}.`)
 
-      if (item && confirm(
+      if (item && window.confirm(
         `Do you really want to ${this.verbs.delete} ${label}?`)
       ) {
         if (this.isTransient) {

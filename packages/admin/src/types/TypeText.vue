@@ -46,9 +46,11 @@ export default TypeComponent.register([
       set(value) {
         this.value = value
       }
-    },
+    }
+  },
 
-    validations() {
+  methods: {
+    getValidations() {
       const rule = {
         email: 'email',
         url: 'url',

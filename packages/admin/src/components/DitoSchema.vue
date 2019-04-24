@@ -119,13 +119,11 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 <script>
 import DitoComponent from '@/DitoComponent'
 import ItemMixin from '@/mixins/ItemMixin'
-import Field from '@/utils/Field'
 import { appendDataPath, getParentItem } from '@/utils/data'
 import { getNamedSchemas, getPanelSchema, setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, isRegExp,
-  getDataPath, parseDataPath, normalizeDataPath,
-  labelize
+  parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
 
 // @vue/component
@@ -134,8 +132,7 @@ export default DitoComponent.component('dito-schema', {
 
   provide() {
     return {
-      $schemaComponent: this,
-      $fields: this.fields
+      $schemaComponent: this
     }
   },
 
@@ -164,7 +161,9 @@ export default DitoComponent.component('dito-schema', {
       isMounted: false,
       components: {},
       panels: {},
-      fields: {},
+      // Register dataProcessors separate from components, so they can survive
+      // their life-cycles and be used at the end in `processData()`.
+      dataProcessors: {},
       temporaryId: 0
     }
   },
@@ -261,15 +260,15 @@ export default DitoComponent.component('dito-schema', {
     },
 
     isDirty() {
-      return this.someField(it => it.isDirty)
+      return this.someComponent(it => it.isDirty)
     },
 
     isTouched() {
-      return this.someField(it => it.isTouched)
+      return this.someComponent(it => it.isTouched)
     },
 
     isValid() {
-      return this.everyField(it => it.isValid)
+      return this.everyComponent(it => it.isValid)
     }
   },
 
@@ -306,19 +305,16 @@ export default DitoComponent.component('dito-schema', {
     registerComponent(component, add) {
       this._register(this.components, component, add)
       if (add) {
-        // Register fields objects separate from their components, so they can
-        // survive their life-cycles and be used at the end in `validate()`,
-        // `processData()`, etc.
+        // Register `dataProcessors` separate from their components, so they can
+        // survive their life-cycles and be used at the end in `processData()`.
         this.$set(
-          this.fields,
+          this.dataProcessors,
           component.dataPath,
-          // Either reuse `component.$field` if it was registered already on a
-          // parent schema, or create a field on the fly if it wasn't yet.
-          component.$field || new Field(component)
+          component.dataProcessor
         )
       } else {
-        // NOTE: We don't remove the field when de-registering! They may still
-        // be required after the component itself is destroyed.
+        // NOTE: We don't remove the dataProcessors when de-registering! They
+        // may still be required after the component itself is destroyed.
       }
       this.parentSchemaComponent?.registerComponent(component, add)
     },
@@ -335,22 +331,12 @@ export default DitoComponent.component('dito-schema', {
       return this._get(this.panels, dataPath)
     },
 
-    getField(dataPath) {
-      return this._get(this.fields, dataPath)
+    someComponent(callback) {
+      return this.isPopulated && Object.values(this.components).some(callback)
     },
 
-    someField(callback) {
-      return this.isPopulated && Object.values(this.fields).some(callback)
-    },
-
-    everyField(callback) {
-      return this.isPopulated && Object.values(this.fields).every(callback)
-    },
-
-    resetFields() {
-      for (const field of Object.values(this.fields)) {
-        field.reset()
-      }
+    everyComponent(callback) {
+      return this.isPopulated && Object.values(this.components).every(callback)
     },
 
     onLoad() {
@@ -361,14 +347,24 @@ export default DitoComponent.component('dito-schema', {
       this.emitEvent('change')
     },
 
-    clearErrors() {
-      for (const field of Object.values(this.fields)) {
-        field.clearErrors()
+    resetValidation() {
+      for (const components of Object.values(this.components)) {
+        components.resetValidation()
       }
     },
 
-    async validateAll(match, notify = true) {
-      const { fields } = this
+    clearErrors() {
+      for (const components of Object.values(this.components)) {
+        components.clearErrors()
+      }
+    },
+
+    getErrors(dataPath) {
+      return this.getComponent(dataPath)?.getErrors() || null
+    },
+
+    validateAll(match, notify = true) {
+      const { components } = this
       let dataPaths
       if (match) {
         const check = isFunction(match)
@@ -377,21 +373,23 @@ export default DitoComponent.component('dito-schema', {
             ? field => match.test(field)
             : null
         dataPaths = check
-          ? Object.keys(fields).filter(check)
+          ? Object.keys(components).filter(check)
           : isArray(match)
             ? match
             : [match]
       }
+      if (notify) {
+        this.clearErrors()
+      }
       let isValid = true
       let first = true
-      for (const dataPath of (dataPaths || Object.keys(fields))) {
-        const field = fields[dataPath]
-        if (field) {
-          const value = getDataPath(this.rootData, dataPath, () => null)
-          if (!await field.validate(value, notify)) {
+      for (const dataPath of (dataPaths || Object.keys(components))) {
+        const component = components[dataPath]
+        if (component) {
+          if (!component.validate(notify)) {
             // Focus first error field
             if (notify && first) {
-              field.focus()
+              component.focus()
             }
             first = false
             isValid = false
@@ -422,8 +420,8 @@ export default DitoComponent.component('dito-schema', {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
-        const field = this.getField(dataPathParts)
-        if (!field?.showValidationErrors(errs, first && focus)) {
+        const component = this.getComponent(dataPathParts)
+        if (!component?.showValidationErrors(errs, first && focus)) {
           // Couldn't find a component in an active form for the given dataPath.
           // See if we can find a component serving a part of the dataPath,
           // and take it from there:
@@ -510,8 +508,8 @@ export default DitoComponent.component('dito-schema', {
       // Also handle items with relate and convert them to only contain ids.
       const process = (value, name, dataPath) => {
         // First, see if there's an associated component requiring processing.
-        // See TypeMixin.mergedDataProcessor(), OptionsMixin.dataProcessor():
-        const dataProcessor = this.fields[dataPath]?.dataProcessor
+        // See TypeMixin.dataProcessor(), OptionsMixin.getDataProcessor():
+        const dataProcessor = this.dataProcessors[dataPath]
         if (dataProcessor) {
           value = dataProcessor(value, name, dataPath, this.rootData)
         }

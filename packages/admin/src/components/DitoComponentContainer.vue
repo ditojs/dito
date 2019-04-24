@@ -97,8 +97,7 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     errors() {
-      const field = this.$fields[this.dataPath]
-      return field?.getErrors()
+      return this.schemaComponent.getErrors(this.dataPath)
     },
 
     containerClass() {

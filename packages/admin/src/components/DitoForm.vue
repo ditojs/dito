@@ -20,7 +20,6 @@
       ref="schema"
       :schema="schema"
       :dataPath="dataPath"
-      :key="dataPath"
       :data="data"
       :meta="meta"
       :store="store"
@@ -92,7 +91,7 @@ export default DitoComponent.component('dito-form', {
       // Name this `formSchemaComponent` instead of `schemaComponent` to not
       // clash with DitoMixin.schemaComponent, which returns the schema in which
       // this component is contained (needed for nested forms).
-      // Use the `isMounted` trick to make `$refs` somewhat reactive:
+      // Use the `isMounted` trick to make `$refs` somewhat reactive.
       return this.isMounted && this.$refs.schema
     },
 
@@ -279,7 +278,19 @@ export default DitoComponent.component('dito-form', {
   watch: {
     sourceData: 'clearClonedData',
     // Needed for the 'create' redirect in `inheritedData()` to work:
-    create: 'setupData'
+    create: 'setupData',
+    dataPath(dataPath) {
+      console.log(
+        'new dataPath',
+        dataPath,
+        'dataPath',
+        this.formSchemaComponent.dataPath,
+        this.$refs.schema?.dataPath,
+        'uid',
+        this.formSchemaComponent._uid,
+        this.$refs.schema?._uid
+      )
+    }
   },
 
   mounted() {
@@ -300,7 +311,31 @@ export default DitoComponent.component('dito-form', {
     })
   },
 
+  beforeRouteUpdate(to, from, next) {
+    this.checkValidations(to, from, next)
+  },
+
+  beforeRouteLeave(to, from, next) {
+    this.checkValidations(to, from, next)
+  },
+
   methods: {
+    checkValidations(to, from, next) {
+      console.log(
+        'dataPath',
+        this.formSchemaComponent.dataPath,
+        this.$refs.schema?.dataPath,
+        'uid',
+        this.formSchemaComponent._uid,
+        this.$refs.schema?._uid
+      )
+      next(
+        !this.isActive ||
+        !this.doesMutate ||
+        this.formSchemaComponent.validateAll()
+      )
+    },
+
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(this.path
@@ -372,7 +407,7 @@ export default DitoComponent.component('dito-form', {
       if (
         this.doesMutate ||
         !this.isDirty ||
-        confirm(`You have unsaved changes. Do you really want to ${
+        window.confirm(`You have unsaved changes. Do you really want to ${
           this.verbs.cancel
         }?`)
       ) {
@@ -386,9 +421,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     async submit(button) {
-      const { formSchemaComponent } = this
-      formSchemaComponent.clearErrors()
-      if (!(await formSchemaComponent.validateAll())) {
+      if (!this.formSchemaComponent.validateAll()) {
         return
       }
 
@@ -492,7 +525,7 @@ export default DitoComponent.component('dito-form', {
               }
               // Since `emitEvent()` above is async, the schema may already be
               // destroyed by now...
-              this.formSchemaComponent?.resetFields()
+              this.formSchemaComponent?.resetValidation()
               // After submitting, close form unless clicked button disables it:
               if (button.schema.close === false) {
                 if (this.isCreating) {

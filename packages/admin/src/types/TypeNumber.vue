@@ -54,37 +54,6 @@ export default TypeComponent.register([
       return this.type === 'integer'
     },
 
-    validations() {
-      const validations = {}
-      // TODO: Create a base class for all number based types (e.g. TypeSlider)
-      // and move these validations there.
-      const { range, min, max, decimals, step } = this
-      if (range) {
-        validations.range = range
-      } else {
-        if (min != null) {
-          validations.min = min
-        }
-        if (max != null) {
-          validations.max = max
-        }
-      }
-      if (decimals != null) {
-        validations.decimals = decimals
-      } else if (step) {
-        const decimals = (`${step}`.split('.')[1] || '').length
-        if (decimals > 0) {
-          validations.decimals = decimals
-        } else {
-          validations.integer = true
-        }
-      }
-      if (this.isInteger) {
-        validations.integer = true
-      }
-      return validations
-    },
-
     stepValue() {
       return this.step == null && !this.isInteger ? 'any' : this.step
     },
@@ -138,6 +107,39 @@ export default TypeComponent.register([
         }
       }
     })
+  },
+
+  methods: {
+    getValidations() {
+      const validations = {}
+      // TODO: Create a base class for all number based types (e.g. TypeSlider)
+      // and move these validations there.
+      const { range, min, max, decimals, step } = this
+      if (range) {
+        validations.range = range
+      } else {
+        if (min != null) {
+          validations.min = min
+        }
+        if (max != null) {
+          validations.max = max
+        }
+      }
+      if (decimals != null) {
+        validations.decimals = decimals
+      } else if (step) {
+        const decimals = (`${step}`.split('.')[1] || '').length
+        if (decimals > 0) {
+          validations.decimals = decimals
+        } else {
+          validations.integer = true
+        }
+      }
+      if (this.isInteger) {
+        validations.integer = true
+      }
+      return validations
+    }
   }
 })
 </script>

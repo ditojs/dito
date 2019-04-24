@@ -122,9 +122,11 @@ export default {
 
     searchFilter() {
       return this.schema.options.search
-    },
+    }
+  },
 
-    dataProcessor() {
+  methods: {
+    getDataProcessor() {
       // Convert object to a shallow copy with only id.
       const processRelate = data => data ? { id: data.id } : data
       return this.relate
@@ -133,10 +135,8 @@ export default {
           ? value.map(entry => processRelate(entry))
           : processRelate(value)
         : null
-    }
-  },
+    },
 
-  methods: {
     processOptions(options) {
       if (options.length) {
         if (this.relate) {
