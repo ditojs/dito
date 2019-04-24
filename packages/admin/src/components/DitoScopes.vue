@@ -1,9 +1,9 @@
 <template lang="pug">
   .dito-scopes
     router-link.dito-button(
-      v-for="scope in scopes"
+      v-for="(scope, key) in scopes"
+      :key="key"
       :to="{ query: getQuery(scope) }"
-      :key="scope.name"
       tag="button"
       type="button"
       :class="{ 'dito-selected': scope.name === query.scope }"

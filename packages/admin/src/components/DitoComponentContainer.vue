@@ -4,7 +4,6 @@
     v-show="componentVisible"
     :class="containerClass"
     :style="containerStyle"
-    :key="dataPath"
   )
     dito-label(
       v-if="label"

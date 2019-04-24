@@ -12,7 +12,6 @@
     dito-schema.dito-scroll(
       ref="schema"
       :schema="viewSchema"
-      :key="name"
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"

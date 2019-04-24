@@ -45,7 +45,6 @@
               :text="getLabel(cell)"
             )
           dito-table-cell(
-            :key="cell.name"
             :cell="cell"
             :schema="schema"
             :dataPath="getDataPath(cell)"
