@@ -300,7 +300,7 @@ export default DitoComponent.component('dito-form', {
         hasResource(target.schema.resource) &&
         !target.responds('click')
       ) {
-        target.submit({ close: true })
+        target.submit({ close: false })
       }
     })
   },
