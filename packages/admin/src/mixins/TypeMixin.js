@@ -197,11 +197,6 @@ export default {
       const { nativeField, textField } = this.$options
 
       const attributes = {
-        'data-vv-name': this.dataPath,
-        'data-vv-as': this.label || this.placeholder || this.name,
-        // Validate with a little delay. This is mainly needed for password
-        // handling in TypeText, but may be of use in other places also.
-        'data-vv-delay': 1,
         disabled: this.disabled
       }
 
