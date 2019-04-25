@@ -79,7 +79,7 @@ export default {
               this.setLoading(false)
             })
             .catch(error => {
-              this.addError(error.message, false)
+              this.addError(error.message)
               this.resolvedData = []
               this.setLoading(false)
             })

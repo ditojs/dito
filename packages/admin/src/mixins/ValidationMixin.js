@@ -50,7 +50,7 @@ export default {
 
     validate(notify = true) {
       let isValid = true
-      const errors = []
+      const errors = notify && []
       const { value } = this
       // console.log('validate', this.dataPath, value, this.validations)
       for (const [rule, setting] of Object.entries(this.validations)) {
@@ -59,7 +59,7 @@ export default {
           const { validate, message } = validator
           if (!validate(value, setting)) {
             isValid = false
-            if (notify) {
+            if (errors) {
               errors.push(
                 isFunction(message)
                   ? message(value, setting, this)
@@ -79,6 +79,11 @@ export default {
 
     verify() {
       return this.validate(false)
+    },
+
+    addError(error) {
+      this.errors = this.errors || []
+      this.errors.push(error)
     },
 
     showValidationErrors(errors, focus) {
