@@ -168,7 +168,7 @@ export default TypeComponent.register('upload', {
       return this.getResourceUrl({
         type: 'upload',
         path: this.dataPath,
-        parent: this.resourceComponent.resource
+        parent: this.closestDataComponent.resource
       })
     }
   },

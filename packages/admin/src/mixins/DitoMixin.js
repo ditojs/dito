@@ -78,9 +78,9 @@ export default {
     },
 
     // Returns the first route component in the chain of parents, including
-    // this current component, that is linked to a resource (and thus doesn't
-    // hold nested data).
-    resourceComponent() {
+    // this current component, that is linked to a resource (and thus loads its
+    // own data and doesn't hold nested data).
+    closestDataComponent() {
       let { routeComponent } = this
       while (routeComponent && !routeComponent.hasResource) {
         routeComponent = routeComponent.parentRouteComponent
@@ -100,14 +100,10 @@ export default {
       return this.formComponent?.$parent.formComponent
     },
 
-    parentResourceComponent() {
-      return this.resourceComponent?.$parent.resourceComponent
-    },
-
     // Returns the data of the first route component in the chain of parents
     // that loads its own data from an associated API resource.
     rootData() {
-      return this.resourceComponent?.data
+      return this.closestDataComponent?.data
     }
   },
 
@@ -241,7 +237,7 @@ export default {
       //    associated with a resource and loads its own data.
       const cacheParent = {
         global: this.appState,
-        local: this.resourceComponent
+        local: this.closestDataComponent
       }[cache]
       const loadCache = cacheParent?.loadCache
       // Build a cache key from the config:
