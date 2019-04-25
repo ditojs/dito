@@ -65,7 +65,7 @@ export default class ControllerAction {
 
   async validateParameters(ctx) {
     if (!this.parameters.validate) return
-    const root = this.getParams(ctx)
+    let root = this.getParams(ctx)
     // Start with root for params, but maybe we have to switch later, see below:
     let params = root
     // `parameters.validate(query)` coerces data in the query to the required
@@ -119,15 +119,19 @@ export default class ControllerAction {
           }
         }
       }
-      // See if coercion happened, and replace value in params with coerced one:
+      // See if coercion happened, and replace value in params (or full root)
+      // with coerced one:
       if (value !== param) {
+        if (useRoot) {
+          root = this.setParams(ctx, value)
+        } else {
+          params[name] = value
+        }
+      }
+      if (useRoot) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.rootName`
-        // See: Application.compileParametersValidator()
-        if (useRoot && params === root) {
-          params = this.setParams(ctx, {})
-        }
-        params[useRoot ? this.parameters.rootName : name] = value
+        params = { [this.parameters.rootName]: root }
       }
     }
     try {
