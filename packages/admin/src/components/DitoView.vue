@@ -26,7 +26,6 @@ import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import { someSchemaComponent, isSingleComponentView } from '@/utils/schema'
 import { hasResource } from '@/utils/resource'
-import { getCommonPrefix } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-view', {
@@ -84,7 +83,7 @@ export default DitoComponent.component('dito-view', {
   watch: {
     $route(to, from) {
       // See if the route changes completely, and clear the data if it does.
-      if (!getCommonPrefix(from.path, to.path).startsWith(this.path)) {
+      if (this.isFullRouteChange(to, from)) {
         this.isLoading = false
         this.data = {}
       }

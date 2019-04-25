@@ -1,3 +1,5 @@
+import { getCommonPrefix } from '@ditojs/utils'
+
 // @vue/component
 export default {
   provide() {
@@ -107,6 +109,10 @@ export default {
 
     getChildPath(schema) {
       return `${this.path}/${schema.path}`
+    },
+
+    isFullRouteChange(to, from) {
+      return getCommonPrefix(to.path, from.path).replace(/[^/]+/g, '') === '/'
     }
   }
 }

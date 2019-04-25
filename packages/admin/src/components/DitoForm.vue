@@ -150,6 +150,10 @@ export default DitoComponent.component('dito-form', {
       return this.formSchemaComponent.isValid
     },
 
+    isValidated() {
+      return this.formSchemaComponent.isValidated
+    },
+
     selectedTab() {
       return this.formSchemaComponent.selectedTab
     },
@@ -312,20 +316,25 @@ export default DitoComponent.component('dito-form', {
   },
 
   beforeRouteUpdate(to, from, next) {
-    this.checkValidations(to, from, next)
+    next(this.isFullRouteChange(to, from) || this.checkValidations())
   },
 
   beforeRouteLeave(to, from, next) {
-    this.checkValidations(to, from, next)
+    next(this.isFullRouteChange(to, from) || this.checkValidations())
   },
 
   methods: {
-    checkValidations(to, from, next) {
-      next(
-        !this.isActive ||
-        !this.doesMutate ||
-        this.formSchemaComponent.validateAll()
+    checkValidations() {
+      // For active, directly mutating (nested) forms that were not validated
+      // yet, validate them once. If the user then still wants to leave them,
+      // they can click close / navigate away again.
+      return (
+        this.isActive &&
+        this.doesMutate &&
+        !this.isValidated
       )
+        ? this.formSchemaComponent.validateAll()
+        : true
     },
 
     getDataPathFrom(route) {

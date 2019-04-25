@@ -269,6 +269,10 @@ export default DitoComponent.component('dito-schema', {
 
     isValid() {
       return this.everyComponent(it => it.isValid)
+    },
+
+    isValidated() {
+      return this.everyComponent(it => it.isValidated)
     }
   },
 
