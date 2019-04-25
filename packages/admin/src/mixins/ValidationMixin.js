@@ -19,6 +19,10 @@ export default {
         this.isTouched = true
       }
 
+      const blur = () => {
+        this.validate()
+      }
+
       const input = () => {
         this.isDirty = true
         this.isValidated = false
@@ -29,11 +33,9 @@ export default {
 
       const change = () => {
         input()
-        // TODO:
-        // this.validate(value, true)
       }
 
-      return { focus, input, change }
+      return { focus, blur, input, change }
     }
   },
 
