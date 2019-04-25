@@ -217,7 +217,7 @@ export default {
       return isFunction(this.optionLabel)
         ? this.optionLabel(option)
         : this.optionLabel ? option?.[this.optionLabel]
-        : labelize(option)
+        : labelize(`${option}`)
     }
   }
 }
