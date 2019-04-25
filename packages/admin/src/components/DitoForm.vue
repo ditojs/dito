@@ -68,13 +68,13 @@ export default DitoComponent.component('dito-form', {
       // NOTE: These get passed on to children through:
       // `provide() ... { $verbs: () => this.verbs }` in ResourceMixin
       const verbs = this.getVerbs()
-      const { isCreating, hasResource } = this
+      const { isCreating, providesData } = this
       return {
         ...verbs,
         submit: isCreating ? verbs.create : verbs.save,
         submitted: isCreating ? verbs.created : verbs.saved,
-        cancel: hasResource ? verbs.cancel : verbs.close,
-        cancelled: hasResource ? verbs.cancelled : verbs.closed
+        cancel: providesData ? verbs.cancel : verbs.close,
+        cancelled: providesData ? verbs.cancelled : verbs.closed
       }
     },
 
@@ -130,7 +130,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isTransient() {
-      return !this.hasResource
+      return !this.providesData
     },
 
     isCreating() {
@@ -307,7 +307,7 @@ export default DitoComponent.component('dito-form', {
     this.formSchemaComponent.on('click', ({ target }) => {
       if (
         target.type === 'button' &&
-        hasResource(target.schema.resource) &&
+        hasResource(target.schema) &&
         !target.responds('click')
       ) {
         target.submit({ close: false })

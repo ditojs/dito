@@ -29,7 +29,7 @@ export default {
       return this.getResource()
     },
 
-    hasResource() {
+    providesData() {
       // This component is a data-source if it has an associated API resource:
       return !!this.resource
     },
@@ -38,10 +38,10 @@ export default {
       // Check the form that this component belongs to as well, since it may be
       // in creation mode, which makes it transient.
       // NOTE: This does not loop endlessly because DitoForm redefines
-      // `isTransient()` to only return `!this.hasResource`.
+      // `isTransient()` to only return `!this.providesData`.
       const form = this.formComponent
       return (
-        !this.hasResource ||
+        !this.providesData ||
         form && (
           form.isTransient ||
           form.isCreating
@@ -79,7 +79,7 @@ export default {
 
   created() {
     // When creating nested data, we still need to call setupData()
-    if (this.hasResource || this.isCreating) {
+    if (this.providesData || this.isCreating) {
       this.setupData()
     }
   },
@@ -138,9 +138,7 @@ export default {
     },
 
     reloadData() {
-      if (!this.isTransient) {
-        this.loadData(false)
-      }
+      this.loadData(false)
     },
 
     loadData(clear) {

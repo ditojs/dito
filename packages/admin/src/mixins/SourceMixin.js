@@ -46,7 +46,7 @@ export default {
     isReady() {
       // Lists that have no data and no associated resource should still render,
       // as they may be getting their data elsewhere, e.g. `compute()`.
-      return this.hasData || !this.hasResource
+      return this.hasData || !this.providesData
     },
 
     wrapPrimitives() {

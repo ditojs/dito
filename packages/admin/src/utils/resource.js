@@ -1,7 +1,7 @@
 import { isObject, isString, pickBy } from '@ditojs/utils'
 
-export function hasResource(resource) {
-  return !!getResource(resource)
+export function hasResource(schema) {
+  return !!getResource(schema.resource)
 }
 
 export function getResource(resource, defaults = {}) {

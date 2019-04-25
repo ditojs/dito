@@ -82,7 +82,7 @@ export default {
     // own data and doesn't hold nested data).
     closestDataComponent() {
       let { routeComponent } = this
-      while (routeComponent && !routeComponent.hasResource) {
+      while (routeComponent && !routeComponent.providesData) {
         routeComponent = routeComponent.parentRouteComponent
       }
       return routeComponent

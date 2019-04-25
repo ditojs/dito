@@ -491,13 +491,13 @@ export default DitoComponent.component('dito-schema', {
     },
 
     filterData(data) {
-      // Filters out arrays that are back by data resources themselves, as those
-      // are already taking care of through their own API resource end-points
-      // and shouldn't be set.
+      // Filters out arrays and objects that are back by data resources
+      // themselves, as those are already taking care of through their own API
+      // resource end-points and shouldn't be set.
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
-        if (isArray(value)) {
-          if (this.getComponent(key)?.hasResource) {
+        if (isArray(value) || isObject(value)) {
+          if (this.getComponent(key)?.providesData) {
             continue
           }
         }

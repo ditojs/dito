@@ -224,7 +224,7 @@ export default {
       }
     },
 
-    hasResource() {
+    providesData() {
       // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
     }
