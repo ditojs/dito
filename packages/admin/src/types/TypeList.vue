@@ -24,7 +24,7 @@
         v-if="columns"
         :query="query"
         :columns="columns"
-        :hasButtons="hasButtons"
+        :hasEditButtons="hasEditButtons"
       )
       vue-draggable(
         tag="tbody"
@@ -79,7 +79,7 @@
                 v-else
                 v-html="getItemLabel(schema, item, index)"
               )
-          td.dito-buttons.dito-buttons-round(v-if="hasButtons")
+          td.dito-buttons.dito-buttons-round(v-if="hasEditButtons")
             button.dito-button(
               v-if="draggable"
               type="button"
@@ -203,7 +203,7 @@ export default TypeComponent.register([
         (this.creatable ? 1 : 0)
     },
 
-    hasButtons() {
+    hasEditButtons() {
       const { listData } = this
       return listData.length > 0 &&
         (this.editable || this.deletable || this.draggable)

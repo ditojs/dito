@@ -17,7 +17,7 @@
         span(
           v-else
         ) {{ getLabel(column) }}
-      th(v-if="hasButtons")
+      th(v-if="hasEditButtons")
 </template>
 
 <script>
@@ -29,7 +29,7 @@ export default DitoComponent.component('dito-table-head', {
   props: {
     query: { type: Object, required: true },
     columns: { type: Object, required: true },
-    hasButtons: { type: Boolean, required: true }
+    hasEditButtons: { type: Boolean, required: true }
   },
 
   computed: {

@@ -13,7 +13,7 @@
         .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
         .dito-tree-label(v-html="label")
-      .dito-buttons.dito-buttons-small(v-if="hasButtons")
+      .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
         button.dito-button(
           v-if="draggable"
           type="button"
@@ -274,7 +274,7 @@ export default DitoComponent.component('dito-tree-item', {
       default: false
     }),
 
-    hasButtons() {
+    hasEditButtons() {
       return this.draggable || this.editable || this.deletable
     }
   },
