@@ -433,8 +433,8 @@ export default DitoComponent.component('dito-form', {
       })
     },
 
-    async submit(button, { close = false } = {}) {
-      if (!this.formSchemaComponent.validateAll()) {
+    async submit(button, { validate = true, close = false } = {}) {
+      if (validate && !this.formSchemaComponent.validateAll()) {
         return false
       }
 
@@ -453,16 +453,19 @@ export default DitoComponent.component('dito-form', {
       const method = resource?.method || this.method
       // Convention: only post and patch requests pass the data as payload.
       const data = (
-        ['post', 'patch'].includes(method) &&
-        this.formSchemaComponent.processData({ processIds: true })
+        ['post', 'patch'].includes(method) && (
+          button?.getSchemaValue(['resource', 'data']) ||
+          button?.processedItem ||
+          this.processedItem
+        )
       )
-      let changed
+      let success
       if (!butttonResource && this.isTransient) {
         // Handle the default "submitting" of transient, nested data:
-        changed = this.isCreating
+        success = this.isCreating
           ? this.addSourceData(data)
           : this.setSourceData(data)
-        if (changed) {
+        if (success) {
           const verb = getVerb(false)
           await this.emitButtonEvent(button, 'success', {
             notify: () => this.notify(
@@ -485,7 +488,7 @@ export default DitoComponent.component('dito-form', {
           })
         }
       } else {
-        changed = await new Promise(resolve => {
+        success = await new Promise(resolve => {
           this.request(
             method,
             { data, resource },
@@ -534,7 +537,7 @@ export default DitoComponent.component('dito-form', {
           )
         })
       }
-      if (changed) {
+      if (success) {
         this.formSchemaComponent.resetValidation()
         if (close) {
           // TODO: Consider await this.close()?
@@ -545,7 +548,7 @@ export default DitoComponent.component('dito-form', {
           this.$router.replace({ path: `../${id}`, append: true })
         }
       }
-      return changed
+      return success
     },
 
     async emitButtonEvent(button, event, { notify, request, response, error }) {

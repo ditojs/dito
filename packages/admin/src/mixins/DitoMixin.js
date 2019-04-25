@@ -5,7 +5,7 @@ import { getItemParams } from '@/utils/data'
 import { getResource } from '@/utils/resource'
 import {
   isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, labelize, hyphenate
+  isRegExp, asArray, labelize, hyphenate, getDataPath
 } from '@ditojs/utils'
 
 // @vue/component
@@ -128,8 +128,16 @@ export default {
       return this.getStore(key) || this.setStore(key, {})
     },
 
-    getSchemaValue(key, { type, default: def, schema = this.schema } = {}) {
-      let value = schema?.[key]
+    getSchemaValue(
+      keyOrDataPath,
+      { type, default: def, schema = this.schema } = {}
+    ) {
+      // For performance reasons, only support dataPaths in array format:
+      let value = schema
+        ? isArray(keyOrDataPath)
+          ? getDataPath(schema, keyOrDataPath, () => undefined)
+          : schema[keyOrDataPath]
+        : undefined
       if (value === undefined && def !== undefined) {
         return def
       }
