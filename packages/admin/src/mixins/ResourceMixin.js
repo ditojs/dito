@@ -49,6 +49,14 @@ export default {
       )
     },
 
+    transientNote() {
+      return (
+        this.isTransient &&
+        '<b>Note</b>: the parent still needs to be saved ' +
+        'in order to persist this change.'
+      )
+    },
+
     shouldLoad() {
       return (
         !this.isTransient &&
@@ -180,26 +188,17 @@ export default {
 
     async request(method, options, callback) {
       this.setLoading(true, this.viewComponent)
-      const {
-        resource = this.resource,
-        payload: data,
-        params
-      } = options
-      const request = {
-        method,
-        resource,
-        data,
-        params
-      }
+      const { resource = this.resource, data, params } = options
+      const request = { method, resource, data, params }
       try {
         const response = await this.rootComponent.request(request)
         // Pass both request and response to the callback, so they can be
         // exposed to further callbacks through ItemParams.
-        callback?.(null, { request, response })
+        callback(null, { request, response })
       } catch (error) {
         // If callback returns true, errors were already handled.
         const { response } = error
-        if (!callback?.(error, { request, response })) {
+        if (!callback(error, { request, response })) {
           const data = response?.data
           if (data && isString(data.type)) {
             this.notify('error', labelize(data.type), data.message || error)

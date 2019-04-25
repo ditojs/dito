@@ -81,14 +81,14 @@ export default DitoComponent.component('dito-root', {
 
   methods: {
     notify(...args) {
-      const type = args.length > 1 ? args[0] : 'info'
-      const title = args.length > 2 ? args[1] : {
+      const type = args.length > 1 ? args.shift() : 'info'
+      const title = args.length > 1 ? args.shift() : {
         warning: 'Warning',
         error: 'Error',
         info: 'Information',
         success: 'Success'
       }[type] || 'Notification'
-      const content = args[args.length - 1]
+      const content = `<p>${args.join('</p></p>')}</p>`
       let text = type === 'error' && content.message || content.toString()
       const duration = 1500 + (text.length + title.length) * 20
       text = text.replace(/\r\n|\n|\r/g, '<br>')

@@ -411,15 +411,19 @@ export default {
     deleteItem(item, index) {
       const label = item && this.getItemLabel(this.schema, item, index, true)
 
-      const notify = transient => this.notify(transient ? 'info' : 'success',
-        'Successfully Removed', `${label} was ${this.verbs.deleted}.`)
+      const notify = () => this.notify(
+        this.isTransient ? 'info' : 'success',
+        'Successfully Removed',
+        `${label} was ${this.verbs.deleted}.`,
+        this.transientNote
+      )
 
       if (item && window.confirm(
         `Do you really want to ${this.verbs.delete} ${label}?`)
       ) {
         if (this.isTransient) {
           this.removeItem(item)
-          notify(true)
+          notify()
         } else {
           const itemId = this.getItemId(this.schema, item)
           const resource = getMemberResource(itemId, this.resource)
@@ -427,7 +431,7 @@ export default {
             this.request('delete', { resource }, err => {
               if (!err) {
                 this.removeItem(item)
-                notify(false)
+                notify()
               }
               this.reloadData()
             })
