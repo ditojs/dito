@@ -112,7 +112,8 @@ export default {
     },
 
     isFullRouteChange(to, from) {
-      return getCommonPrefix(to.path, from.path).replace(/[^/]+/g, '') === '/'
+      const rootPath = this.path.match(/^(\/[^/]*)/)[1]
+      return !getCommonPrefix(to.path, from.path).startsWith(rootPath)
     }
   }
 }

@@ -316,14 +316,21 @@ export default DitoComponent.component('dito-form', {
   },
 
   beforeRouteUpdate(to, from, next) {
-    next(this.isFullRouteChange(to, from) || this.checkValidations())
+    this.beforeRouteChange(to, from, next)
   },
 
   beforeRouteLeave(to, from, next) {
-    next(this.isFullRouteChange(to, from) || this.checkValidations())
+    this.beforeRouteChange(to, from, next)
   },
 
   methods: {
+    beforeRouteChange(to, from, next) {
+      next(
+        this.isFullRouteChange(to, from) ||
+        this.checkValidations()
+      )
+    },
+
     checkValidations() {
       // For active, directly mutating (nested) forms that were not validated
       // yet, validate them once. If the user then still wants to leave them,
