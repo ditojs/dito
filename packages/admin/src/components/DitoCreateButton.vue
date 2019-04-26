@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-form-chooser
+  .dito-create-button
     template(v-if="hasPulldown")
       button.dito-button(
         type="button"
@@ -27,7 +27,7 @@
 
 <style lang="sass">
 .dito
-  .dito-form-chooser
+  .dito-create-button
     position: relative
     .dito-pulldown
       right: 0
@@ -38,7 +38,7 @@ import DitoComponent from '@/DitoComponent'
 import PulldownMixin from '@/mixins/PulldownMixin'
 
 // @vue/component
-export default DitoComponent.component('dito-form-chooser', {
+export default DitoComponent.component('dito-create-button', {
   mixins: [PulldownMixin],
 
   props: {

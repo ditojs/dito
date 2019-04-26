@@ -111,7 +111,7 @@
             :colspan="numColumns"
             :class="{ 'dito-buttons-large': !!viewComponent }"
           )
-            dito-form-chooser(
+            dito-create-button(
               :schema="schema"
               :path="path"
               :verb="verbs.create"
