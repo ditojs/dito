@@ -131,6 +131,10 @@ class ItemParams {
     return get(this, 'panelComponent') || null
   }
 
+  get sourceComponent() {
+    return get(this, 'sourceComponent') || null
+  }
+
   get request() {
     return get(this, 'request') || null
   }
