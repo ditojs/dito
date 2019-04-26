@@ -110,8 +110,11 @@ export default DitoComponent.component('dito-form', {
 
             submit: !this.doesMutate && {
               type: 'submit',
-              // Submit button close the form by default:
-              closeForm: true
+              // Submit buttons close the form by default:
+              closeForm: true,
+              events: {
+                click: ({ target }) => target.submit()
+              }
             }
           },
           this.schema.buttons
