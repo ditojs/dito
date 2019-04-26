@@ -441,7 +441,7 @@ export default DitoComponent.component('dito-form', {
       const data = this.getPayloadData(button, method)
       let success
       if (!butttonResource && this.isTransient) {
-        success = await this.submitTransient(button, data, {
+        success = await this.submitTransient(button, resource, method, data, {
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify(
@@ -499,7 +499,7 @@ export default DitoComponent.component('dito-form', {
       return success
     },
 
-    async submitTransient(button, data, {
+    async submitTransient(button, resource, method, data, {
       notifyError,
       notifySuccess
     }) {
@@ -509,10 +509,12 @@ export default DitoComponent.component('dito-form', {
         : this.setSourceData(data)
       if (success) {
         await this.emitButtonEvent(button, 'success', {
+          resource,
           notify: notifySuccess
         })
       } else {
         await this.emitButtonEvent(button, 'error', {
+          resource,
           error: 'Could not submit transient item',
           notify: notifyError
         })

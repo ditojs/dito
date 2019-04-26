@@ -262,6 +262,7 @@ export default {
                 await this.emitButtonEvent(button, 'error', {
                   request,
                   response,
+                  resource,
                   error,
                   notify: () => notifyError(error)
                 })
@@ -276,6 +277,7 @@ export default {
               await this.emitButtonEvent(button, 'success', {
                 request,
                 response,
+                resource,
                 notify: notifySuccess
               })
               resolve(true)
@@ -285,7 +287,9 @@ export default {
       })
     },
 
-    async emitButtonEvent(button, event, { notify, request, response, error }) {
+    async emitButtonEvent(button, event, {
+      notify, request, response, resource, error
+    }) {
       // Compare notification-count before/after the event to determine if a
       // notification was already displayed, or if notify() should be called.
       const count = this.countNotifications()
@@ -296,6 +300,7 @@ export default {
             itemLabel: this.itemLabel,
             request,
             response,
+            resource,
             error
           }
         })) === undefined &&

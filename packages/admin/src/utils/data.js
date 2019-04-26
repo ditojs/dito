@@ -139,6 +139,10 @@ class ItemParams {
     return get(this, 'response') || null
   }
 
+  get resource() {
+    return get(this, 'resource') || null
+  }
+
   get error() {
     return get(this, 'error') || null
   }
