@@ -102,7 +102,12 @@
         v-if="creatable"
       )
         tr
-          td.dito-buttons.dito-buttons-round(
+          dito-buttons.dito-buttons-round(
+            tag="td"
+            :buttons="buttonSchemas"
+            :dataPath="dataPath"
+            :data="listData"
+            :meta="meta"
             :colspan="numColumns"
             :class="{ 'dito-buttons-large': !!viewComponent }"
           )
@@ -147,7 +152,7 @@ import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { DateTimePicker } from '@ditojs/ui'
 import { pickBy, equals, capitalize, hyphenate } from '@ditojs/utils'
-import { getNamedSchemas } from '@/utils/schema'
+import { getNamedSchemas, getButtonSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
 
@@ -229,6 +234,10 @@ export default TypeComponent.register([
 
     formLabel() {
       return this.getLabel(this.schema.form)
+    },
+
+    buttonSchemas() {
+      return getButtonSchemas(this.schema.buttons)
     }
   },
 

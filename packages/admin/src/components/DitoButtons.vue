@@ -1,8 +1,12 @@
 <template lang="pug">
-  .dito-buttons
+  .dito-buttons(:is="tag")
     // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
     // sub-class as the component container for different layout:
     .dito-buttons-container
+      .dito-button-container(
+        v-if="hasSlot"
+      )
+        slot
       dito-button-container(
         v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
         v-if="shouldRender(buttonSchema)"
@@ -38,15 +42,20 @@ export default DitoComponent.component('dito-buttons', {
   },
 
   props: {
+    tag: { type: String, default: 'div' },
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
-    data: { type: Object, required: true },
+    data: { type: [Object, Array], required: true },
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     disabled: { type: Boolean, default: false }
   },
 
   computed: {
+    hasSlot() {
+      return !!this.$slots.default
+    },
+
     buttonSchemas() {
       // Compute a buttons list which has the dataPath baked into its keys.
       const { dataPath, buttons } = this

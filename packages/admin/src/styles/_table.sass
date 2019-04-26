@@ -12,7 +12,10 @@ table.dito-table
       cursor: grab
       &:active,
         cursor: grabbing
-
+  > tfoot
+      .dito-buttons:not(.dito-buttons-large)
+        .dito-buttons-container
+          justify-content: flex-end
   > tbody,
   > tfoot
     > tr

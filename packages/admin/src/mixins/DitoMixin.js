@@ -96,6 +96,14 @@ export default {
       return component
     },
 
+    closestSourceComponent() {
+      let component = this
+      while (component && !component.isSource) {
+        component = component.$parent
+      }
+      return component
+    },
+
     parentSchemaComponent() {
       return this.schemaComponent?.$parent.schemaComponent
     },
