@@ -3,10 +3,6 @@
     // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
     // sub-class as the component container for different layout:
     .dito-buttons-container
-      .dito-button-container(
-        v-if="hasSlot"
-      )
-        slot
       dito-button-container(
         v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
         v-if="shouldRender(buttonSchema)"
@@ -19,6 +15,8 @@
         :disabled="disabled"
         :generateLabels="false"
       )
+      .dito-button-container(v-if="$slots.default")
+        slot
 </template>
 
 <style lang="sass">
@@ -52,10 +50,6 @@ export default DitoComponent.component('dito-buttons', {
   },
 
   computed: {
-    hasSlot() {
-      return !!this.$slots.default
-    },
-
     buttonSchemas() {
       // Compute a buttons list which has the dataPath baked into its keys.
       const { dataPath, buttons } = this
