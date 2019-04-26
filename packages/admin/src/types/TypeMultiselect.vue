@@ -23,7 +23,7 @@
       :taggable="taggable"
       :internal-search="!searchFilter"
       :close-on-select="true"
-      :loading="isLoading"
+      :loading="isLoading || isSearching"
       @open="populate = true"
       @tag="onAddTag"
       @search-change="onSearchChange"
@@ -232,6 +232,7 @@ export default TypeComponent.register('multiselect', {
 
   data() {
     return {
+      isSearching: false,
       matchedOptions: null,
       populate: false
     }
@@ -332,8 +333,19 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    onSearchChange(query) {
-      this.matchedOptions = this.searchFilter?.(query, this.options) || null
+    async onSearchChange(query) {
+      if (this.searchFilter && query) {
+        try {
+          this.isSearching = true
+          this.matchedOptions = await this.searchFilter(query, this.options)
+        } catch {
+          this.matchedOptions = null
+        } finally {
+          this.isSearching = false
+        }
+      } else {
+        this.matchedOptions = null
+      }
     }
   }
 })
