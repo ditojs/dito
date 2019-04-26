@@ -75,7 +75,9 @@ export default TypeComponent.register('select', {
 
   data() {
     return {
-      populate: false
+      // Disable lazy-population for now.
+      // TODO: Set to `false` Once lineto e2e tests address their issues.
+      populate: true
     }
   }
 })

@@ -338,7 +338,7 @@ export default {
       ) {
         // The controller is sending data for a full multi-component view,
         // including the nested list data.
-        this.viewComponent.data = data
+        this.viewComponent.setData(data)
       }
       this.schemaComponent.onLoad()
     },
