@@ -1,6 +1,7 @@
 export default [
   'create', 'created',
   'save', 'saved',
+  'submit', 'submitted',
   'delete', 'deleted',
   'edit', 'edited',
   'close', 'closed',

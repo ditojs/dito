@@ -49,7 +49,7 @@ export default TypeComponent.register([
     },
 
     async submit(options) {
-      return this.formComponent.submit(this, options)
+      return this.closestResourceComponent.submit(this, options)
     }
   }
 })

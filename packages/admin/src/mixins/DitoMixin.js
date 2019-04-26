@@ -68,24 +68,32 @@ export default {
     },
 
     formComponent() {
-      const comp = this.routeComponent
-      return comp?.isForm ? comp : null
+      const component = this.routeComponent
+      return component?.isForm ? component : null
     },
 
     viewComponent() {
-      const comp = this.routeComponent
-      return comp?.isView ? comp : null
+      const component = this.routeComponent
+      return component?.isView ? component : null
     },
 
     // Returns the first route component in the chain of parents, including
     // this current component, that is linked to a resource (and thus loads its
     // own data and doesn't hold nested data).
     closestDataComponent() {
-      let { routeComponent } = this
-      while (routeComponent && !routeComponent.providesData) {
-        routeComponent = routeComponent.parentRouteComponent
+      let component = this
+      while (component && !component.providesData) {
+        component = component.$parent
       }
-      return routeComponent
+      return component
+    },
+
+    closestResourceComponent() {
+      let component = this
+      while (component && !component.isResource) {
+        component = component.$parent
+      }
+      return component
     },
 
     parentSchemaComponent() {

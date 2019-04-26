@@ -1,7 +1,7 @@
 import ItemMixin from './ItemMixin'
 import LoadingMixin from './LoadingMixin'
 import { setDefaults } from '@/utils/schema'
-import { isString, labelize } from '@ditojs/utils'
+import { isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '@/utils/resource'
 
 // @vue/component
@@ -18,7 +18,8 @@ export default {
 
   data() {
     return {
-      loadedData: null
+      loadedData: null,
+      isResource: true
     }
   },
 
@@ -206,6 +207,102 @@ export default {
         }
       } finally {
         this.setLoading(false, this.viewComponent)
+      }
+    },
+
+    getPayloadData(button, method) {
+      // Convention: only post and patch requests pass the data as payload.
+      return (
+        ['post', 'patch'].includes(method) && (
+          button.getSchemaValue(['resource', 'data']) ||
+          button.processedItem
+        )
+      )
+    },
+
+    async submit(button) {
+      const resource = getResource(button.schema.resource, {
+        parent: this.resource
+      })
+      if (resource) {
+        const { method } = resource
+        const data = this.getPayloadData(button, method)
+        return this.submitResource(button, resource, method, data)
+      }
+      return false
+    },
+
+    async submitResource(button, resource, method, data, {
+      setData = false,
+      notifySuccess = () => this.notify(
+        'success',
+        `Request Successful`,
+        `Request was successfully sent.`
+      ),
+      notifyError = error => this.notify(
+        'error',
+        'Request Error',
+        `Unable to send request${error ? ':' : ''}`,
+        error?.message || error
+      )
+    } = {}) {
+      return new Promise(resolve => {
+        this.request(
+          method,
+          { data, resource },
+          async (err, { request, response }) => {
+            const data = response?.data
+            if (err) {
+              // See if we're dealing with a Dito validation error:
+              const errors = this.isValidationError(response) && data.errors
+              if (errors) {
+                this.showValidationErrors(errors, true)
+              } else {
+                const error = isObject(data) ? data : err
+                await this.emitButtonEvent(button, 'error', {
+                  request,
+                  response,
+                  error,
+                  notify: () => notifyError(error)
+                })
+              }
+              resolve(false)
+            } else {
+              // Update the underlying data before calling `notify()` or
+              // `this.itemLabel`, so id is set after creating new items.
+              if (setData && data) {
+                this.setData(data)
+              }
+              await this.emitButtonEvent(button, 'success', {
+                request,
+                response,
+                notify: notifySuccess
+              })
+              resolve(true)
+            }
+          }
+        )
+      })
+    },
+
+    async emitButtonEvent(button, event, { notify, request, response, error }) {
+      // Compare notification-count before/after the event to determine if a
+      // notification was already displayed, or if notify() should be called.
+      const count = this.countNotifications()
+      if (
+        (await button.emitEvent(event, {
+          params: {
+            data: this.data,
+            itemLabel: this.itemLabel,
+            request,
+            response,
+            error
+          }
+        })) === undefined &&
+        notify &&
+        !this.countNotifications(count)
+      ) {
+        notify()
       }
     },
 

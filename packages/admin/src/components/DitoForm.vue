@@ -42,11 +42,9 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import ResourceMixin from '@/mixins/ResourceMixin'
-import { hasResource, getResource, getMemberResource } from '@/utils/resource'
+import { getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
-import {
-  isObject, clone, capitalize, parseDataPath, merge
-} from '@ditojs/utils'
+import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
@@ -302,17 +300,6 @@ export default DitoComponent.component('dito-form', {
       delete this.meta.errors
       this.showValidationErrors(errors, true)
     }
-    // Handle button clicks and see if the buttons define a resource to submit
-    // to, and if so, delegate to `submit()`:
-    this.formSchemaComponent.on('click', ({ target }) => {
-      if (
-        target.type === 'button' &&
-        hasResource(target.schema) &&
-        !target.responds('click')
-      ) {
-        target.submit({ close: false })
-      }
-    })
   },
 
   beforeRouteUpdate(to, from, next) {
@@ -451,24 +438,13 @@ export default DitoComponent.component('dito-form', {
       })
       const resource = butttonResource || this.resource
       const method = resource?.method || this.method
-      // Convention: only post and patch requests pass the data as payload.
-      const data = (
-        ['post', 'patch'].includes(method) && (
-          button?.getSchemaValue(['resource', 'data']) ||
-          button?.processedItem ||
-          this.processedItem
-        )
-      )
+      const data = this.getPayloadData(button, method)
       let success
       if (!butttonResource && this.isTransient) {
-        // Handle the default "submitting" of transient, nested data:
-        success = this.isCreating
-          ? this.addSourceData(data)
-          : this.setSourceData(data)
-        if (success) {
-          const verb = getVerb(false)
-          await this.emitButtonEvent(button, 'success', {
-            notify: () => this.notify(
+        success = await this.submitTransient(button, data, {
+          notifySuccess: () => {
+            const verb = getVerb(false)
+            this.notify(
               'info',
               this.isCreating
                 ? `Item ${capitalize(verb)}`
@@ -478,69 +454,41 @@ export default DitoComponent.component('dito-form', {
                 : `Changes to ${this.itemLabel} were ${verb}.`,
               this.transientNote
             )
-          })
-        } else {
-          const verb = getVerb(true)
-          const error = `Unable to ${verb} ${this.itemLabel}.`
-          await this.emitButtonEvent(button, 'error', {
-            error,
-            notify: () => this.notify('error', 'Request Error', error)
-          })
-        }
+          },
+          notifyError: () => {
+            const verb = getVerb(true)
+            this.notify(
+              'error',
+              'Request Error',
+              `Unable to ${verb} ${this.itemLabel}.`
+            )
+          }
+        })
       } else {
-        success = await new Promise(resolve => {
-          this.request(
-            method,
-            { data, resource },
-            async (err, { request, response }) => {
-              const data = response?.data
-              if (err) {
-                // See if we're dealing with a Dito validation error:
-                const errors = this.isValidationError(response) && data.errors
-                if (errors) {
-                  this.showValidationErrors(errors, true)
-                } else {
-                  const error = isObject(data) ? data : err
-                  const verb = getVerb(true)
-                  await this.emitButtonEvent(button, 'error', {
-                    request,
-                    response,
-                    error,
-                    notify: () => this.notify(
-                      'error',
-                      'Request Error',
-                      `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,
-                      error?.message || error
-                    )
-                  })
-                }
-                resolve(false)
-              } else {
-                // Update the underlying data before calling `notify()` or
-                // `this.itemLabel`, so id is set after creating new items.
-                if (data) {
-                  this.setData(data)
-                }
-                const verb = getVerb(false)
-                await this.emitButtonEvent(button, 'success', {
-                  request,
-                  response,
-                  notify: () => this.notify(
-                    'success',
-                    `Successfully ${capitalize(verb)}`,
-                    `${this.itemLabel} was ${verb}.`
-                  )
-                })
-                resolve(true)
-              }
-            }
-          )
+        success = await this.submitResource(button, resource, method, data, {
+          setData: true,
+          notifySuccess: () => {
+            const verb = getVerb(false)
+            this.notify(
+              'success',
+              `Successfully ${capitalize(verb)}`,
+              `${this.itemLabel} was ${verb}.`
+            )
+          },
+          notifyError: error => {
+            const verb = getVerb(true)
+            this.notify(
+              'error',
+              'Request Error',
+              `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,
+              error?.message || error
+            )
+          }
         })
       }
       if (success) {
         this.formSchemaComponent.resetValidation()
         if (close) {
-          // TODO: Consider await this.close()?
           this.close()
         } else if (this.isCreating) {
           // Redirect to the form editing the newly created item:
@@ -551,25 +499,25 @@ export default DitoComponent.component('dito-form', {
       return success
     },
 
-    async emitButtonEvent(button, event, { notify, request, response, error }) {
-      // Compare notification-count before/after the event to determine if a
-      // notification was already displayed, or if notify() should be called.
-      const count = this.countNotifications()
-      if (
-        (await button.emitEvent(event, {
-          params: {
-            data: this.data,
-            itemLabel: this.itemLabel,
-            request,
-            response,
-            error
-          }
-        })) === undefined &&
-        notify &&
-        !this.countNotifications(count)
-      ) {
-        notify()
+    async submitTransient(button, data, {
+      notifyError,
+      notifySuccess
+    }) {
+      // Handle the default "submitting" of transient, nested data:
+      const success = this.isCreating
+        ? this.addSourceData(data)
+        : this.setSourceData(data)
+      if (success) {
+        await this.emitButtonEvent(button, 'success', {
+          notify: notifySuccess
+        })
+      } else {
+        await this.emitButtonEvent(button, 'error', {
+          error: 'Could not submit transient item',
+          notify: notifyError
+        })
       }
+      return success
     }
   }
 })

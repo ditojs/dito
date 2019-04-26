@@ -88,10 +88,9 @@ export default DitoComponent.component('dito-root', {
         info: 'Information',
         success: 'Success'
       }[type] || 'Notification'
-      const content = `<p>${args.join('</p></p>')}</p>`
-      let text = type === 'error' && content.message || content.toString()
+      const text = `<p>${args.join('</p> <p>')}</p>`
+        .replace(/\r\n|\n|\r/g, '<br>')
       const duration = 1500 + (text.length + title.length) * 20
-      text = text.replace(/\r\n|\n|\r/g, '<br>')
       this.$notify({ type, title, text, duration })
       const log = {
         warning: 'warn',
@@ -99,7 +98,7 @@ export default DitoComponent.component('dito-root', {
         info: 'log',
         success: 'log'
       }[type] || 'error'
-      console[log](stripTags(content))
+      console[log](stripTags(text))
       this.notificationCount++
     },
 
