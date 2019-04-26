@@ -261,8 +261,7 @@ export function getButtonSchemas(buttons) {
     buttons,
     { type: 'button' } // Defaults
   )
-  // Have all buttons that have resources but no click event call
-  // `this.submit({ close: false })` automatically:
+  // Have all buttons with resources but no click events call `this.submit()`:
   for (const schema of Object.values(buttonSchemas || {})) {
     if (
       hasResource(schema) &&
@@ -271,7 +270,7 @@ export function getButtonSchemas(buttons) {
       schema.events = {
         ...schema.events,
         click() {
-          this.submit({ close: false })
+          this.submit()
         }
       }
     }

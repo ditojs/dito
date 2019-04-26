@@ -12,6 +12,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 export default TypeComponent.register([
   'button', 'submit'
@@ -33,7 +34,12 @@ export default TypeComponent.register([
         blur: () => this.onBlur(),
         click: () => this.onClick()
       }
-    }
+    },
+
+    closeForm: getSchemaAccessor('closeForm', {
+      type: Boolean,
+      default: false
+    })
   },
 
   methods: {

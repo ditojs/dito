@@ -104,18 +104,14 @@ export default DitoComponent.component('dito-form', {
             cancel: {
               type: 'button',
               events: {
-                click: () => {
-                  this.cancel()
-                }
+                click: () => this.cancel()
               }
             },
+
             submit: !this.doesMutate && {
               type: 'submit',
-              events: {
-                click: ({ target }) => {
-                  target.submit({ close: true })
-                }
-              }
+              // Submit button close the form by default:
+              closeForm: true
             }
           },
           this.schema.buttons
@@ -420,7 +416,7 @@ export default DitoComponent.component('dito-form', {
       })
     },
 
-    async submit(button, { validate = true, close = false } = {}) {
+    async submit(button, { validate = true, closeForm = false } = {}) {
       if (validate && !this.formSchemaComponent.validateAll()) {
         return false
       }
@@ -488,7 +484,7 @@ export default DitoComponent.component('dito-form', {
       }
       if (success) {
         this.formSchemaComponent.resetValidation()
-        if (close) {
+        if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {
           // Redirect to the form editing the newly created item:
