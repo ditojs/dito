@@ -1,6 +1,5 @@
 <template lang="pug">
   toggle-button.dito-switch(
-    ref="element"
     :id="dataPath"
     :sync="true"
     :cssColors="true"
@@ -54,6 +53,12 @@ export default TypeComponent.register('switch', {
         width: 50,
         height: 22
       }
+    }
+  },
+
+  methods: {
+    focus() {
+      // TODO: Implement!
     }
   }
 })
