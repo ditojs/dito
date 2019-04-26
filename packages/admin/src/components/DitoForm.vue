@@ -200,7 +200,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.closestDataComponent)
+      return this.getDataPathFrom(this.dataComponent)
     },
 
     sourceData() {

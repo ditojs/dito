@@ -17,8 +17,25 @@ export default {
     '$verbs',
     '$isPopulated',
     '$schemaComponent',
-    '$routeComponent'
+    '$routeComponent',
+    '$dataComponent',
+    '$sourceComponent',
+    '$resourceComponent'
   ],
+
+  provide() {
+    const provide = {}
+    if (this.providesData) {
+      provide.$dataComponent = this
+    }
+    if (this.isSource) {
+      provide.$sourceComponent = this
+    }
+    if (this.isResource) {
+      provide.$resourceComponent = this
+    }
+    return provide
+  },
 
   data() {
     return {
@@ -80,28 +97,16 @@ export default {
     // Returns the first route component in the chain of parents, including
     // this current component, that is linked to a resource (and thus loads its
     // own data and doesn't hold nested data).
-    closestDataComponent() {
-      let component = this
-      while (component && !component.providesData) {
-        component = component.$parent
-      }
-      return component
+    dataComponent() {
+      return this.providesData ? this : this.$dataComponent
     },
 
-    closestResourceComponent() {
-      let component = this
-      while (component && !component.isResource) {
-        component = component.$parent
-      }
-      return component
+    sourceComponent() {
+      return this.isSource ? this : this.$sourceComponent
     },
 
-    closestSourceComponent() {
-      let component = this
-      while (component && !component.isSource) {
-        component = component.$parent
-      }
-      return component
+    resourceComponent() {
+      return this.isResource ? this : this.$resourceComponent
     },
 
     parentSchemaComponent() {
@@ -119,7 +124,7 @@ export default {
     // Returns the data of the first route component in the chain of parents
     // that loads its own data from an associated API resource.
     rootData() {
-      return this.closestDataComponent?.data
+      return this.dataComponent?.data
     }
   },
 
@@ -261,7 +266,7 @@ export default {
       //    associated with a resource and loads its own data.
       const cacheParent = {
         global: this.appState,
-        local: this.closestDataComponent
+        local: this.dataComponent
       }[cache]
       const loadCache = cacheParent?.loadCache
       // Build a cache key from the config:

@@ -61,7 +61,7 @@ export default DitoComponent.component('dito-create-button', {
   methods: {
     createItem(form = this.schema.form, type) {
       if (this.schema.inlined) {
-        this.closestSourceComponent.createItem(form, type)
+        this.sourceComponent.createItem(form, type)
       } else {
         this.$router.push({
           path: `${this.path}/create`,

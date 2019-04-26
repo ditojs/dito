@@ -163,7 +163,10 @@ export default class DitoAdmin {
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $isPopulated: () => true,
         $schemaComponent: null,
-        $routeComponent: null
+        $routeComponent: null,
+        $dataComponent: null,
+        $sourceComponent: null,
+        $resourceComponent: null
       },
       render: h => h(DitoRoot, {
         props: {
