@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/babel-preset",
-  "version": "0.91.0",
+  "version": "0.92.0",
   "description": "Dito.js Babel Preset",
   "main": "index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/babel-preset",
