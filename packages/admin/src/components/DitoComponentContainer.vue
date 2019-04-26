@@ -62,7 +62,7 @@ export default DitoComponent.component('dito-component-container', {
   props: {
     schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
-    data: { type: Object, required: true },
+    data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },

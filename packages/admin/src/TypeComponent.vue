@@ -4,7 +4,6 @@
   // For values of $props, see TypeMixin.props.
   component(
     :is="component"
-    :dataPathIsValue="true"
     v-bind="$props"
   )
 </template>

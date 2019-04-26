@@ -17,7 +17,7 @@ export default {
     // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
     dataPathIsValue: { type: Boolean, default: true },
-    data: { type: Object, required: true },
+    data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, default: false }
