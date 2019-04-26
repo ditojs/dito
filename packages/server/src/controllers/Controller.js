@@ -166,11 +166,14 @@ export class Controller {
     const tokens = parseDataPath(dataPath)
     const getDataPath = callback => normalizeDataPath(tokens.map(callback))
 
-    // Replace wildcards with numbered params and convert to '/'-notation:
+    // Replace wildcards with numbered indices and convert to '/'-notation:
     let index = 0
+    const multipleWildcards = tokens.filter(token => token === '*').length > 1
     const normalizedPath = getDataPath(
       token => token === '*'
-        ? `:param${++index}`
+        ? multipleWildcards
+          ? `:index${++index}`
+          : ':index'
         : this.app.normalizePath(token)
     )
 
