@@ -7,7 +7,8 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, normalizeDataPath
+  isObject, isString, isArray, isBoolean, isFunction, asArray,
+  parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -162,15 +163,25 @@ export class Controller {
         `Unknown storage configuration: '${storageName}'`
       )
     }
-    // Convert dataPath to '/'-notation:
-    const normalizePath = normalizeDataPath(dataPath)
-    const url = this.getUrl('controller', `upload/${normalizePath}`)
-    // Convert `normalizePath` to a regular expression to match field names
+    const tokens = parseDataPath(dataPath)
+    const getDataPath = callback => normalizeDataPath(tokens.map(callback))
+
+    // Replace wildcards with numbered params and convert to '/'-notation:
+    let index = 0
+    const normalizedPath = getDataPath(
+      token => token === '*'
+        ? `:param${++index}`
+        : this.app.normalizePath(token)
+    )
+
+    // Convert `dataPath` to a regular expression to match field names
     // against, but convert wildcards (*) to match both numeric ids and words,
     // e.g. 'create':
     const matchDataPath = new RegExp(
-      `^${normalizePath.replace(/\*/g, '\\w+')}$`
+      `^${getDataPath(token => token === '*' ? '\\w+' : token)}$`
     )
+
+    const url = this.getUrl('controller', `upload/${normalizedPath}`)
     const upload = storage.getUploadHandler({
       ...settings,
       // Only let uploads pass that match the normalizePath + wildcards:
