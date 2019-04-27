@@ -416,6 +416,9 @@ export class Application extends Koa {
     const schema = convertSchema(properties, options)
     const validate = this.compileValidator(schema, {
       // For parameters, always coerce types, including arrays.
+      // TODO: This coerces `null` to 0 for numbers, which is not what we'd want
+      // Implement our own coercion instead, which we already do for objects,
+      // see ControllerAction.validateParameters()
       coerceTypes: 'array',
       ...options
     })
