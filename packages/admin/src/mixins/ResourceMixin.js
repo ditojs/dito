@@ -75,6 +75,29 @@ export default {
       // The actual code is the `getVerbs()` method, for easier overriding of
       // this computed property in components that use the ResourceMixin.
       return this.getVerbs()
+    },
+
+    paginationRange() {
+      // Only apply pagination to lists.
+      const { paginate: amount } = this.sourceSchema
+      if (this.isListSource && amount) {
+        const { page = 0 } = this.query || {}
+        const start = page * amount
+        return [start, start + amount - 1]
+      }
+    },
+
+    queryParams() {
+      const range = this.paginationRange
+      const { page, ...query } = this.query || {}
+      return {
+        ...query, // Query may override scope.
+        ...(range && {
+          // Pass pagination as range, so that we automatically get Objection's
+          // results counting:
+          range: range.join(',')
+        })
+      }
     }
   },
 
@@ -156,7 +179,7 @@ export default {
     },
 
     requestData() {
-      const params = this.getQueryParams()
+      const params = this.queryParams
       this.request('get', { params }, (err, { response }) => {
         if (err) {
           if (response) {
@@ -308,24 +331,6 @@ export default {
         !this.countNotifications(count)
       ) {
         notify()
-      }
-    },
-
-    // @ditojs/server specific processing of parameters, payload and response:
-    getQueryParams() {
-      // @ditojs/server specific query parameters:
-      // TODO: Consider moving this into a modular place, so other backends
-      // could plug in as well.
-      const { paginate } = this.sourceSchema
-      const { page = 0, ...query } = this.query || {}
-      const limit = this.isListSource && paginate // Only apply ranges on lists.
-      const offset = page * limit
-      return {
-        ...query, // Query may override scope.
-        // Convert offset/limit to range so that we get results counting:
-        ...(limit && {
-          range: `${offset},${offset + limit - 1}`
-        })
       }
     }
   }

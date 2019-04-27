@@ -59,7 +59,7 @@
       v-bind="childrenDragOptions"
       :list="childrenList"
       @start="onStartDrag"
-      @end="onEndDrag($event, childrenList, children)"
+      @end="onEndDrag"
     )
       dito-tree-item(
         v-for="(item, index) in childrenItems"
