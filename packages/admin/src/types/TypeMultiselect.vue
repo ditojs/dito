@@ -338,7 +338,8 @@ export default TypeComponent.register('multiselect', {
         try {
           this.isSearching = true
           this.matchedOptions = await this.searchFilter(query, this.options)
-        } catch {
+        } catch (error) {
+          console.error(error)
           this.matchedOptions = null
         } finally {
           this.isSearching = false
