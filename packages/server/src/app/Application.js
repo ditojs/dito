@@ -24,7 +24,7 @@ import { convertSchema } from '@/schema'
 import { ValidationError } from '@/errors'
 import {
   handleError, findRoute, handleRoute, createTransaction, emitUserEvents
-} from './middleware'
+} from '@/middleware'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
