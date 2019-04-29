@@ -102,6 +102,7 @@
       right: $border-width
       bottom: $border-width
       height: inherit
+      border-radius: $border-radius
 
     .multiselect__select
       width: 0
