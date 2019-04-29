@@ -184,6 +184,10 @@ export class Application extends Koa {
     )
   }
 
+  findModel(callback) {
+    return Object.values(this.models).find(callback)
+  }
+
   addServices(services) {
     for (const [name, service] of Object.entries(services)) {
       // Handle ES6 module weirdness that can happen, apparently:
@@ -224,6 +228,10 @@ export class Application extends Koa {
 
   getService(name) {
     return this.services[name] || null
+  }
+
+  findService(callback) {
+    return Object.values(this.services).find(callback)
   }
 
   async callServices(method, ...args) {
@@ -271,6 +279,10 @@ export class Application extends Koa {
 
   getController(url) {
     return this.controllers[url] || null
+  }
+
+  findController(callback) {
+    return Object.values(this.controllers).find(callback)
   }
 
   addStorages(storages) {
