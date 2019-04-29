@@ -6,5 +6,5 @@ export async function migrate(knex) {
     ? chalk.cyan('Already up to date')
     : chalk.green(`Batch ${batch} run: ${log.length} migrations\n`) +
       chalk.cyan(log.join('\n')))
-  return true // done
+  return true
 }

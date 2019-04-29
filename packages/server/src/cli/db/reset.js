@@ -16,5 +16,5 @@ export async function reset(knex) {
       `rolled back: ${migrations.length} migrations\n`) +
       chalk.cyan(migrations.join('\n')))
   await migrate(knex)
-  return true // done
+  return true
 }

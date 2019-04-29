@@ -1,6 +1,7 @@
 #!/usr/bin/env babel-node
 
 import path from 'path'
+import chalk from 'chalk'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
 import * as db from './db'
@@ -30,11 +31,16 @@ async function execute() {
       arg = Knex(arg.knex)
     }
     const res = await execute(arg, ...args)
-    if (res === true) {
-      process.exit()
-    }
+    process.exit(res === true ? 0 : 1)
   } catch (err) {
-    console.error(err)
+    if (err instanceof Error) {
+      console.error(
+        chalk.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
+      )
+    } else {
+      console.error(chalk.red(err))
+    }
+    process.exit(1)
   }
 }
 

@@ -43,7 +43,7 @@ export async function seed(app) {
   for (const { base, seed, modelClass } of seeds) {
     await handleSeed(app, base, seed, modelClass)
   }
-  return true // done
+  return true
 }
 
 async function handleSeed(app, base, seed, modelClass) {
