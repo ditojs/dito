@@ -17,7 +17,7 @@ import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
-import { Controller } from '@/controllers'
+import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
@@ -283,6 +283,16 @@ export class Application extends Koa {
 
   findController(callback) {
     return Object.values(this.controllers).find(callback)
+  }
+
+  getAdminController() {
+    return this.findController(
+      controller => controller instanceof AdminController
+    )
+  }
+
+  getAdminVueConfig(mode = 'production') {
+    return this.getAdminController()?.getVueConfig(mode) || null
   }
 
   addStorages(storages) {
