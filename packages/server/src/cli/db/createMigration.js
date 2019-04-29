@@ -1,5 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
+import chalk from 'chalk'
 import { getRelationClass, isThroughRelationClass } from '@/schema'
 import {
   isObject, isArray, isString, deindent, capitalize
@@ -47,17 +48,25 @@ export async function createMigration(app, name, ...modelNames) {
       await knex.schema
         ${tables.join('\n')}`
     : ''
-  const file = path.join(migrationDir, `${yyyymmddhhmmss()}_${name}.js`)
-  await fs.writeFile(file, deindent`
-    export async function up(knex) {
-      ${getCode(createTables)}
-    }
+  const filename = `${getTimestamp()}_${name}.js`
+  const file = path.join(migrationDir, filename)
+  if (await fs.exists(file)) {
+    // This should never happen, but let's be on the safe side here:
+    console.log(chalk.red(`Migration '${filename}' already exists.`))
+    return false
+  } else {
+    await fs.writeFile(file, deindent`
+      export async function up(knex) {
+        ${getCode(createTables)}
+      }
 
-    export async function down(knex) {
-      ${getCode(dropTables)}
-    }
-  `)
-  return true // done
+      export async function down(knex) {
+        ${getCode(dropTables)}
+      }
+    `)
+    console.log(chalk.cyan(`Migration '${filename}' successfully created.`))
+    return true
+  }
 }
 
 async function collectModelTables(modelClass, app, tables) {
@@ -184,7 +193,7 @@ function padDate(segment) {
 
 // Get a date object in the correct format, without requiring a full out library
 // like "moment.js".
-function yyyymmddhhmmss() {
+function getTimestamp() {
   const d = new Date()
   return d.getFullYear().toString() +
     padDate(d.getMonth() + 1) +
