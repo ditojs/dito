@@ -50,7 +50,9 @@ export default {
 
     validate(notify = true) {
       let isValid = true
-      const errors = notify && []
+      if (notify) {
+        this.errors = null
+      }
       const { value } = this
       // console.log('validate', this.dataPath, value, this.validations)
       for (const [rule, setting] of Object.entries(this.validations)) {
@@ -59,12 +61,11 @@ export default {
           const { validate, message } = validator
           if (!validate(value, setting)) {
             isValid = false
-            if (errors) {
-              errors.push(
-                isFunction(message)
-                  ? message(value, setting, this)
-                  : message
-              )
+            if (notify) {
+              const error = isFunction(message)
+                ? message(value, setting, this)
+                : message
+              this.addError(error, true)
             }
           }
         }
@@ -72,7 +73,6 @@ export default {
       if (notify) {
         this.isValidated = true
         this.isValid = isValid
-        this.errors = isValid ? null : errors
       }
       return isValid
     },
@@ -81,14 +81,21 @@ export default {
       return this.validate(false)
     },
 
-    addError(error) {
+    addError(error, addLabel = false) {
       this.errors = this.errors || []
+      if (addLabel) {
+        const label = this.label || this.placeholder || this.name
+        error = `The ${label} field ${error}.`
+      }
       this.errors.push(error)
     },
 
     showValidationErrors(errors, focus) {
       // Convert from AJV errors objects to an array of error messages
-      this.errors = errors.map(({ message }) => message)
+      this.errors = []
+      for (const { message } of errors) {
+        this.addError(message, true)
+      }
       if (focus) {
         this.focus()
       }
@@ -96,11 +103,7 @@ export default {
     },
 
     getErrors() {
-      const label = this.label || this.placeholder || this.name
-      return (
-        this.errors?.map(error => `The ${label} field ${error}.`) ||
-        null
-      )
+      return this.errors ? [...this.errors] : null
     },
 
     clearErrors() {
