@@ -549,18 +549,20 @@ export class Application extends Koa {
 
   setupKnex() {
     let { knex, log } = this.config
-    const snakeCaseOptions = knex.normalizeDbNames === true
-      ? {}
-      : knex.normalizeDbNames
-    if (snakeCaseOptions) {
-      knex = {
-        ...knex,
-        ...knexSnakeCaseMappers(snakeCaseOptions)
+    if (knex?.client) {
+      const snakeCaseOptions = knex.normalizeDbNames === true
+        ? {}
+        : knex.normalizeDbNames
+      if (snakeCaseOptions) {
+        knex = {
+          ...knex,
+          ...knexSnakeCaseMappers(snakeCaseOptions)
+        }
       }
-    }
-    this.knex = Knex(knex)
-    if (log.sql) {
-      this.setupKnexLogging()
+      this.knex = Knex(knex)
+      if (log.sql) {
+        this.setupKnexLogging()
+      }
     }
   }
 
