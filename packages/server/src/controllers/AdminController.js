@@ -49,10 +49,11 @@ export class AdminController extends Controller {
       }
       return next()
     })
-    if (this.app.config.env === 'development') {
-      // Call getPath() to throw exception if admin.build.path is not defined:
-      this.getPath('build')
-      this.app.once('after:start', () => this.setupKoaWebpack('development'))
+    if (this.mode === 'development') {
+      // Calling getPath() throws exception if admin.build.path is not defined:
+      if (this.getPath('build')) {
+        this.app.once('after:start', () => this.setupKoaWebpack())
+      }
     } else {
       // Statically serve the pre-built admin SPA. But in order for vue-router
       // routes inside the SPA to work, use a tiny rewriting middleware:
@@ -100,9 +101,9 @@ export class AdminController extends Controller {
           ? [this.getPath('build')]
           : undefined,
         resolve: {
-          // Local Lerna dependencies need their symbolic links unresolved,
-          // so that `node_modules` does not disappear from their name,
-          // and re-transpilation would be triggered.
+          // Local Lerna dependencies need their symbolic links unresolved, so
+          // that `node_modules` does not disappear from their name, and
+          // re-transpilation would be triggered.
           symlinks: false
         },
         output: {
@@ -110,9 +111,9 @@ export class AdminController extends Controller {
         },
         optimization: {
           splitChunks: {
-            // Split dependencies into two chunks, one for all common
-            // libraries, and one for all views, so they can be loaded
-            // separately, and only once authentication was successful.
+            // Split dependencies into two chunks, one for all common libraries,
+            // and one for all views, so they can be loaded separately, and only
+            // once authentication was successful.
             cacheGroups: {
               common: {
                 name: 'common',
