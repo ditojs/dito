@@ -22,6 +22,9 @@ export class AdminController extends Controller {
       ...this.app.config.admin,
       ...this.config
     }
+    this.mode = this.config.mode || (
+      this.app.config.env === 'development' ? 'development' : 'production'
+    )
   }
 
   getPath(name) {
@@ -65,7 +68,7 @@ export class AdminController extends Controller {
     return mount(this.url, this.koa)
   }
 
-  async setupKoaWebpack(mode) {
+  async setupKoaWebpack() {
     // https://webpack.js.org/configuration/stats/#stats
     const stats = {
       all: false,
@@ -74,7 +77,7 @@ export class AdminController extends Controller {
     }
 
     const middleware = await koaWebpack({
-      config: this.getWebpackConfig(mode),
+      config: this.getWebpackConfig(),
       devMiddleware: {
         publicPath: '/',
         stats
@@ -87,13 +90,15 @@ export class AdminController extends Controller {
     this.koa.use(middleware)
   }
 
-  getVueConfig(mode = 'production') {
+  getVueConfig() {
     const { build = {}, settings } = this.config
     return {
       runtimeCompiler: true,
       publicPath: `${this.url}/`,
       configureWebpack: {
-        entry: mode === 'development' ? [this.getPath('build')] : undefined,
+        entry: this.mode === 'development'
+          ? [this.getPath('build')]
+          : undefined,
         resolve: {
           // Local Lerna dependencies need their symbolic links unresolved,
           // so that `node_modules` does not disappear from their name,
@@ -102,8 +107,6 @@ export class AdminController extends Controller {
         },
         output: {
           filename: '[name].[hash].js'
-          // TODO: Test dev without this:
-          // publicPath: mode === 'development' ? `${this.url}/` : undefined
         },
         optimization: {
           splitChunks: {
@@ -153,7 +156,7 @@ export class AdminController extends Controller {
           })
           return args
         })
-        if (mode === 'development') {
+        if (this.mode === 'development') {
           // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
           conf.plugins.delete('hmr')
           // Disable the 'compact' option in babel-loader during development to
@@ -167,17 +170,17 @@ export class AdminController extends Controller {
     }
   }
 
-  getWebpackConfig(mode = 'production') {
+  getWebpackConfig() {
     // Use VueService to create full webpack config for us:
     const plugins = [{ id: '@vue/cli-plugin-babel', apply: vuePluginBabel }]
     if (this.config.build.eslint) {
       plugins.push({ id: '@vue/cli-plugin-eslint', apply: vuePluginEslint })
     }
     const service = new VueService(this.getPath('build'), {
-      inlineOptions: this.getVueConfig(mode),
+      inlineOptions: this.getVueConfig(),
       plugins
     })
-    service.init(mode)
+    service.init(this.mode)
     return service.resolveWebpackConfig()
   }
 }
