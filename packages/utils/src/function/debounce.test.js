@@ -1,6 +1,6 @@
 import { debounce } from './debounce'
 
-// tell jest to mock all timeout functions
+// Tell jest to mock all timeout functions:
 jest.useFakeTimers()
 
 describe('debounce()', () => {
@@ -25,6 +25,15 @@ describe('debounce()', () => {
     }
     jest.advanceTimersByTime(1000)
     debounced()
+    expect(func).toBeCalledTimes(1)
+  })
+
+  it('should pass through argument', async () => {
+    const func = jest.fn(value => value)
+    const debounced = debounce(func, 1000)
+    expect(debounced(fixture)).toBeUndefined()
+    jest.advanceTimersByTime(1000)
+    expect(debounced()).toBe(fixture)
     expect(func).toBeCalledTimes(1)
   })
 

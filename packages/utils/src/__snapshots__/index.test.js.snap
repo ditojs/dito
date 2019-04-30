@@ -9,6 +9,7 @@ Object {
   "capitalize": [Function],
   "clone": [Function],
   "debounce": [Function],
+  "debounceAsync": [Function],
   "decamelize": [Function],
   "deepMerge": [Function],
   "defaultDateFormat": Object {
