@@ -55,10 +55,10 @@ export class AdminController extends Controller {
       this.app.once('after:start', () => this.setupKoaWebpack('development'))
     } else {
       // Statically serve the pre-built admin SPA. But in order for vue-router
-      // routes inside the SPA to work, add a tiny rewriting middleware:
+      // routes inside the SPA to work, use a tiny rewriting middleware:
       this.koa.use(async (ctx, next) => {
-        // // Exclude asset requests (image, css, js, anything-with.ext)
-        if (!ctx.url.match(/\.\S{2,4}$/)) {
+        // // Exclude asset requests (css, js, app)
+        if (!ctx.url.match(/^\/(app\.|css\/|js\/)/)) {
           ctx.url = '/'
         }
         await next()
