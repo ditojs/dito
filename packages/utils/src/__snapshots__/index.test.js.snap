@@ -8,6 +8,7 @@ Object {
   "camelize": [Function],
   "capitalize": [Function],
   "clone": [Function],
+  "debounce": [Function],
   "decamelize": [Function],
   "deepMerge": [Function],
   "defaultDateFormat": Object {
