@@ -140,6 +140,10 @@ export default class DitoAdmin {
       ...api.headers
     }
 
+    api.isApiRequest = api.isApiRequest || function(url) {
+      return !isAbsoluteUrl(url) || url.startsWith(api.url)
+    }
+
     this.root = new Vue({
       el,
       router: new VueRouter({
@@ -188,7 +192,7 @@ export default class DitoAdmin {
     params = null,
     headers = null
   }) {
-    const isApiRequest = !isAbsoluteUrl(url) || url.startsWith(this.api.url)
+    const isApiRequest = this.api.isApiRequest(url)
     return axios.request({
       url,
       method,

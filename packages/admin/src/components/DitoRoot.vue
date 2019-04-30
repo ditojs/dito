@@ -233,9 +233,9 @@ export default DitoComponent.component('dito-root', {
     },
 
     async request({ method, url, resource, data, params, internal }) {
-      url = url || this.getResourceUrl(resource)
+      url = url || this.getResourcePath(resource)
       method = method || resource?.method
-      const checkUser = !internal && url.startsWith(this.api.url)
+      const checkUser = !internal && this.api.isApiRequest(url)
       if (checkUser) {
         await this.ensureUser()
       }
