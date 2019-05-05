@@ -112,6 +112,7 @@ export default {
     },
 
     isFullRouteChange(to, from) {
+      // The route path is the path up to the first / (excluding the initial /):
       const rootPath = this.path.match(/^(\/[^/]*)/)[1]
       return !getCommonPrefix(to.path, from.path).startsWith(rootPath)
     }

@@ -311,23 +311,40 @@ export default DitoComponent.component('dito-form', {
 
   methods: {
     beforeRouteChange(to, from, next) {
-      next(
-        this.isFullRouteChange(to, from) ||
-        this.checkValidations()
+      let ok = true
+      const isClosing = (
+        // Only handle this route change if the form is actually mapped to the
+        // `from` route.
+        this.path === from.path && (
+          this.isFullRouteChange(to, from) ||
+          // Decide if we're moving towards a new nested form, or closing /
+          // replacing an already open one by comparing path lengths.
+          // The case of `=` matches the replacing of an already open one.
+          to.path.length <= from.path.length
+        )
       )
-    },
-
-    checkValidations() {
-      // For active, directly mutating (nested) forms that were not validated
-      // yet, validate them once. If the user then still wants to leave them,
-      // they can click close / navigate away again.
-      return (
-        this.isActive &&
-        this.doesMutate &&
-        !this.isValidated
-      )
-        ? this.formSchemaComponent.validateAll()
-        : true
+      if (isClosing) {
+        if (this.doesMutate) {
+          // For active directly mutating (nested) forms that were not validated
+          // yet, validate them once. If the user then still wants to leave
+          // them, they can click close / navigate away again.
+          ok = (
+            this.isValidated ||
+            this.formSchemaComponent.validateAll()
+          )
+        } else {
+          // The form doesn't directly mutate data. If it is dirty, ask if user
+          // wants to persist data first.
+          if (this.isDirty) {
+            ok = window.confirm(
+              `You have unsaved changes. Do you really want to ${
+                this.verbs.cancel
+              }?`
+            )
+          }
+        }
+      }
+      next(ok)
     },
 
     getDataPathFrom(route) {
@@ -397,16 +414,8 @@ export default DitoComponent.component('dito-form', {
       this.formSchemaComponent.showValidationErrors(errors, focus)
     },
 
-    cancel() {
-      if (
-        this.doesMutate ||
-        !this.isDirty ||
-        window.confirm(`You have unsaved changes. Do you really want to ${
-          this.verbs.cancel
-        }?`)
-      ) {
-        this.close()
-      }
+    async cancel() {
+      return this.close()
     },
 
     async close() {
