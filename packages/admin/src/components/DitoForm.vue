@@ -315,7 +315,9 @@ export default DitoComponent.component('dito-form', {
       const isClosing = (
         // Only handle this route change if the form is actually mapped to the
         // `from` route.
-        this.path === from.path && (
+        this.path === from.path &&
+        // Exclude hash changes only (= tab changes):
+        from.path !== to.path && (
           this.isFullRouteChange(to, from) ||
           // Decide if we're moving towards a new nested form, or closing /
           // replacing an already open one by comparing path lengths.
