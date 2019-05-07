@@ -7,12 +7,14 @@ QueryFilters.register({
   @parameters(
     {
       name: 'operator',
-      type: 'string'
+      type: 'string',
+      // NOTE: This is really `text` when only one argument is passed, hence
+      // the first argument is required, and not the second.
+      required: true
     },
     {
       name: 'text',
-      type: 'string',
-      required: true
+      type: 'string'
     }
   )
   text(builder, property, operator, text) {

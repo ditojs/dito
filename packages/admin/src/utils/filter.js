@@ -1,4 +1,4 @@
-import { asArray, labelize } from '@ditojs/utils'
+import { isArray, asArray, labelize } from '@ditojs/utils'
 
 export const filterComponents = {
   text(filter) {
@@ -21,16 +21,18 @@ export const filterComponents = {
       }
     ]
     return {
-      operator: {
-        type: 'select',
-        options:
-          filter.operators
-            ? options.filter(
-              option => filter.operators.includes(option.value)
-            )
-            : options,
-        width: '40%'
-      },
+      operator: filter.operators
+        ? {
+          type: 'select',
+          options:
+            isArray(filter.operators)
+              ? options.filter(
+                option => filter.operators.includes(option.value)
+              )
+              : options,
+          width: '40%'
+        }
+        : null,
       text: {
         type: 'text',
         width: '60%'
@@ -128,11 +130,13 @@ function getFiltersComponents(filters, api) {
       form.components = {}
       // Convert labels to placeholders:
       for (const [key, component] of Object.entries(components)) {
-        const label = component.label || labelize(component.name || key)
-        form.components[key] = {
-          ...component,
-          label: false,
-          placeholder: label
+        if (component) {
+          const label = component.label || labelize(component.name || key)
+          form.components[key] = {
+            ...component,
+            label: false,
+            placeholder: label
+          }
         }
       }
       comps[filter.name] = {
