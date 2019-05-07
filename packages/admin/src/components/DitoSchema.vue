@@ -158,7 +158,7 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this)
           : data
       ),
-      isMounted: false,
+      componentsContainers: {},
       components: {},
       panels: {},
       // Register dataProcessors separate from components, so they can survive
@@ -174,17 +174,6 @@ export default DitoComponent.component('dito-schema', {
       return this
     },
 
-    componentsContainers() {
-      // Use the `isMounted` trick to make `$refs` somewhat reactive:
-      return this.isMounted
-        ? [
-          // Tabs appear above the main schema, so use the same logic here too:
-          ...(this.$refs.tabs || []),
-          this.$refs.components
-        ]
-        : []
-    },
-
     panelSchemas() {
       const schemas = []
       for (const [key, schema] of Object.entries(this.schema.panels || [])) {
@@ -193,8 +182,8 @@ export default DitoComponent.component('dito-schema', {
           schemas.push(panel)
         }
       }
-      for (const componentContainer of this.componentsContainers) {
-        schemas.push(...componentContainer.panelSchemas)
+      for (const container of Object.values(this.componentsContainers)) {
+        schemas.push(...container.panelSchemas)
       }
       return schemas
     },
@@ -282,32 +271,32 @@ export default DitoComponent.component('dito-schema', {
     this.delegate('change', this.parentSchemaComponent)
   },
 
-  mounted() {
-    this.isMounted = true
-  },
-
   methods: {
-    _register(container, component, add) {
-      const { dataPath } = component
+    _register(registry, key, value, add) {
       if (add) {
-        this.$set(container, dataPath, component)
+        this.$set(registry, key, value)
       } else {
-        this.$delete(container, dataPath)
+        this.$delete(registry, key)
       }
     },
 
-    _get(container, dataPath) {
+    _getWithDataPath(registry, dataPath) {
       dataPath = normalizeDataPath(dataPath)
       // See if the argument starts with this form's data-path. If not, then it
       // is a key or sub data-path and needs to be prefixed with the full path:
       dataPath = dataPath.startsWith(this.dataPath)
         ? dataPath
         : appendDataPath(this.dataPath, dataPath)
-      return container[dataPath] || null
+      return registry[dataPath] || null
+    },
+
+    registerComponentsContainer(componentsContainer, add) {
+      const key = componentsContainer.tab || 'main'
+      this._register(this.componentsContainers, key, componentsContainer, add)
     },
 
     registerComponent(component, add) {
-      this._register(this.components, component, add)
+      this._register(this.components, component.dataPath, component, add)
       if (add) {
         // Register `dataProcessors` separate from their components, so they can
         // survive their life-cycles and be used at the end in `processData()`.
@@ -324,15 +313,15 @@ export default DitoComponent.component('dito-schema', {
     },
 
     registerPanel(panel, add) {
-      this._register(this.panels, panel, add)
+      this._register(this.panels, panel.dataPath, panel, add)
     },
 
     getComponent(dataPath) {
-      return this._get(this.components, dataPath)
+      return this._getWithDataPath(this.components, dataPath)
     },
 
     getPanel(dataPath) {
-      return this._get(this.panels, dataPath)
+      return this._getWithDataPath(this.panels, dataPath)
     },
 
     someComponent(callback) {

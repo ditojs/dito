@@ -107,7 +107,19 @@ export default DitoComponent.component('dito-components', {
     }
   },
 
+  created() {
+    this.register(true)
+  },
+
+  destroyed() {
+    this.register(false)
+  },
+
   methods: {
+    register(add) {
+      this.schemaComponent.registerComponentsContainer(this, add)
+    },
+
     focus() {
       if (this.tab) {
         this.$router.push({ hash: this.tab })
