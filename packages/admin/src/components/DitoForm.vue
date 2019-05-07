@@ -140,7 +140,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return this.formSchemaComponent.isDirty
+      return !this.doesMutate && this.formSchemaComponent.isDirty
     },
 
     isValid() {

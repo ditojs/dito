@@ -3,12 +3,14 @@
     .dito-trail
       ul
         li(
-          v-for="(entry, index) in trail"
+          v-for="(component, index) in trail"
         )
           template(v-if="index === trail.length - 1")
-            span {{ entry.breadcrumb }}
-          router-link.dito-breadcrumb(v-else, :to="entry.path")
-            span {{ entry.breadcrumb }}
+            span(:class="getBreadcrumbClass(component)")
+              | {{ component.breadcrumb }}
+          router-link.dito-breadcrumb(v-else, :to="component.path")
+            span(:class="getBreadcrumbClass(component)")
+              | {{ component.breadcrumb }}
       spinner.dito-spinner(v-if="isLoading")
     slot
 </template>
@@ -22,7 +24,7 @@
     z-index: $menu-z-index
     +user-select(none)
     span
-      display: block
+      display: inline-block
       padding: $menu-padding
       color: $color-white
     .dito-trail
@@ -40,8 +42,8 @@
         $angle: 33deg
         &:hover
           color: #999
-        &::after,
-        &::before
+        &::before,
+        &::after
           position: absolute
           content: ''
           width: 1px
@@ -58,6 +60,16 @@
           transform-origin: bottom
     .dito-spinner
       margin-top: $menu-padding-ver
+    .dito-dirty
+      &:after
+        content: ''
+        display: inline-block
+        background-color: $color-white
+        width: 8px
+        height: 8px
+        margin: 2px
+        margin-left: 0.5em
+        border-radius: 100%
     .dito-account,
     .dito-login
       position: absolute
@@ -88,14 +100,9 @@ export default DitoComponent.component('dito-header', {
 
   computed: {
     trail() {
-      const trail = []
-      for (const component of this.appState.routeComponents) {
-        if (component.routeRecord) {
-          const { path, breadcrumb } = component
-          trail.push({ path, breadcrumb })
-        }
-      }
-      return trail
+      return this.appState.routeComponents.filter(
+        component => !!component.routeRecord
+      )
     }
   },
 
@@ -107,6 +114,14 @@ export default DitoComponent.component('dito-header', {
     const { props } = Spinner.options
     props.size.default = size
     props.color.default = color
+  },
+
+  methods: {
+    getBreadcrumbClass(component) {
+      return {
+        'dito-dirty': component.isDirty
+      }
+    }
   }
 })
 </script>
