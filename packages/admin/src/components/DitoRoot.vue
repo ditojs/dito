@@ -157,10 +157,8 @@ export default DitoComponent.component('dito-root', {
           await this.resolveViews()
         } catch (err) {
           const error = err.response?.data?.error
-          if (error) {
-            this.notify('error', 'Authentication Error', error)
-          } else {
-            this.notify('error', 'Authentication Error', err)
+          this.notify('error', 'Authentication Error', error || err)
+          if (!error) {
             console.error(err, err.response)
           }
           this.login()
@@ -176,7 +174,6 @@ export default DitoComponent.component('dito-root', {
         })
         if (response.data.success) {
           this.setUser(null)
-          this.resolvedViews = {}
           this.$router.push({ path: '/' })
         }
       } catch (err) {
@@ -192,9 +189,10 @@ export default DitoComponent.component('dito-root', {
           internal: true
         })
         user = response.data.user || null
-      } finally {
-        this.setUser(user)
+      } catch (err) {
+        this.notify('error', 'Authentication Error', err)
       }
+      this.setUser(user)
       return user
     },
 
@@ -203,6 +201,11 @@ export default DitoComponent.component('dito-root', {
         user &&
         Object.setPrototypeOf(user, DitoUser.prototype)
       )
+      // Clear resolved views when user is logged out.
+      if (!user) {
+        this.resolvedViews = {}
+        this.$router.push({ path: '/' })
+      }
     },
 
     async ensureUser() {
