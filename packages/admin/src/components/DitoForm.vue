@@ -382,10 +382,6 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    showValidationErrors(errors, focus) {
-      this.ownSchemaComponent.showValidationErrors(errors, focus)
-    },
-
     async cancel() {
       return this.close()
     },
@@ -401,7 +397,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
-      if (validate && !this.ownSchemaComponent.validateAll()) {
+      if (validate && !this.validateAll()) {
         return false
       }
 

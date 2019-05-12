@@ -37,6 +37,26 @@ export default {
     // $parent, if the parent uses the `SchemaParentMixin`:
     _registerSchemaComponent(schemaComponent, add) {
       this.ownSchemaComponent = add ? schemaComponent : null
+    },
+
+    validateAll(match, notify = true) {
+      return this.ownSchemaComponent.validateAll(match, notify)
+    },
+
+    verifyAll(match) {
+      return this.ownSchemaComponent.verifyAll(match)
+    },
+
+    resetValidation() {
+      this.ownSchemaComponent.resetValidation()
+    },
+
+    clearErrors() {
+      this.ownSchemaComponent.clearErrors()
+    },
+
+    showValidationErrors(errors, focus) {
+      this.ownSchemaComponent.showValidationErrors(errors, focus)
     }
   }
 }

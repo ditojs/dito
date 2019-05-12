@@ -157,14 +157,6 @@ export default DitoComponent.component('dito-panel', {
       // Register the panels so that other components can find them by their
       // data-path, e.g. in TypeList.onFilterErrors()
       this.schemaComponent._registerPanel(this, add)
-    },
-
-    showValidationErrors(errors, focus) {
-      this.ownSchemaComponent.showValidationErrors(errors, focus)
-    },
-
-    clearErrors() {
-      this.ownSchemaComponent.clearErrors()
     }
   }
 })
