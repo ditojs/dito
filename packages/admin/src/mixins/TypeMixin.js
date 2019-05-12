@@ -231,19 +231,19 @@ export default {
   },
 
   created() {
-    this.register(true)
+    this._register(true)
     this.setupSchemaFields()
   },
 
   destroyed() {
-    this.register(false)
+    this._register(false)
   },
 
   methods: {
-    register(add) {
+    _register(add) {
       // Prevent flattened type components from overriding parent data paths
       if (!this.$options.flattenedType) {
-        this.schemaComponent.registerComponent(this, add)
+        this.schemaComponent._registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`
         this[add ? 'on' : 'off'](this.events)

@@ -33,7 +33,9 @@ export default {
   },
 
   methods: {
-    registerSchemaComponent(schemaComponent, add) {
+    // This method is called by `DitoSchema.created()/destroyed()` on its
+    // $parent, if the parent uses the `SchemaParentMixin`:
+    _registerSchemaComponent(schemaComponent, add) {
       this.ownSchemaComponent = add ? schemaComponent : null
     }
   }

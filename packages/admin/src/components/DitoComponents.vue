@@ -108,16 +108,16 @@ export default DitoComponent.component('dito-components', {
   },
 
   created() {
-    this.register(true)
+    this._register(true)
   },
 
   destroyed() {
-    this.register(false)
+    this._register(false)
   },
 
   methods: {
-    register(add) {
-      this.schemaComponent.registerComponentsContainer(this, add)
+    _register(add) {
+      this.schemaComponent._registerComponentsContainer(this, add)
     },
 
     focus() {

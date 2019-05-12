@@ -137,7 +137,7 @@ export default DitoComponent.component('dito-panel', {
   },
 
   created() {
-    this.register(true)
+    this._register(true)
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
     // where the data is added to the actual component.
     const { data } = this.schema
@@ -149,14 +149,14 @@ export default DitoComponent.component('dito-panel', {
   },
 
   destroyed() {
-    this.register(false)
+    this._register(false)
   },
 
   methods: {
-    register(add) {
+    _register(add) {
       // Register the panels so that other components can find them by their
       // data-path, e.g. in TypeList.onFilterErrors()
-      this.schemaComponent.registerPanel(this, add)
+      this.schemaComponent._registerPanel(this, add)
     },
 
     showValidationErrors(errors, focus) {

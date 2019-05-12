@@ -266,28 +266,34 @@ export default DitoComponent.component('dito-schema', {
   },
 
   created() {
-    this.register(true)
+    this._register(true)
     this.setupSchemaFields()
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
   },
 
   destroyed() {
-    this.register(false)
+    this._register(false)
   },
 
   methods: {
-    register(add) {
-      this.$parent.registerSchemaComponent?.(this, add)
+    _register(add) {
+      // `_registerSchemaComponent()` is only present if the parent uses the
+      // `SchemaParentMixin`:
+      this.$parent._registerSchemaComponent?.(this, add)
     },
 
-    registerComponentsContainer(componentsContainer, add) {
-      const key = componentsContainer.tab || 'main'
-      this._register(this.componentsContainers, key, componentsContainer, add)
+    _registerComponentsContainer(componentsContainer, add) {
+      this._setOrDelete(
+        this.componentsContainers,
+        componentsContainer.tab || 'main',
+        componentsContainer,
+        add
+      )
     },
 
-    registerComponent(component, add) {
-      this._register(this.components, component.dataPath, component, add)
+    _registerComponent(component, add) {
+      this._setOrDelete(this.components, component.dataPath, component, add)
       if (add) {
         // Register `dataProcessors` separate from their components, so they can
         // survive their life-cycles and be used at the end in `processData()`.
@@ -300,11 +306,11 @@ export default DitoComponent.component('dito-schema', {
         // NOTE: We don't remove the dataProcessors when de-registering! They
         // may still be required after the component itself is destroyed.
       }
-      this.parentSchemaComponent?.registerComponent(component, add)
+      this.parentSchemaComponent?._registerComponent(component, add)
     },
 
-    registerPanel(panel, add) {
-      this._register(this.panels, panel.dataPath, panel, add)
+    _registerPanel(panel, add) {
+      this._setOrDelete(this.panels, panel.dataPath, panel, add)
     },
 
     getComponent(dataPath) {
@@ -315,8 +321,8 @@ export default DitoComponent.component('dito-schema', {
       return this._getWithDataPath(this.panels, dataPath)
     },
 
-    _register(registry, key, value, add) {
-      if (add) {
+    _setOrDelete(registry, key, value, set) {
+      if (set) {
         this.$set(registry, key, value)
       } else {
         this.$delete(registry, key)
@@ -404,7 +410,7 @@ export default DitoComponent.component('dito-schema', {
       return isValid
     },
 
-    async verifyAll(match) {
+    verifyAll(match) {
       return this.validateAll(match, false)
     },
 
