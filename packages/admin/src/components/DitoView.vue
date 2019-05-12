@@ -23,13 +23,12 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { someSchemaComponent, isSingleComponentView } from '@/utils/schema'
 import { hasResource } from '@/utils/resource'
 
 // @vue/component
 export default DitoComponent.component('dito-view', {
-  mixins: [RouteMixin, SchemaParentMixin],
+  mixins: [RouteMixin],
 
   data() {
     return {

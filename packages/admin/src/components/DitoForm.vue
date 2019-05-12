@@ -41,14 +41,13 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import ResourceMixin from '@/mixins/ResourceMixin'
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, ResourceMixin, SchemaParentMixin],
+  mixins: [RouteMixin, ResourceMixin],
 
   data() {
     return {
@@ -271,54 +270,7 @@ export default DitoComponent.component('dito-form', {
     }
   },
 
-  beforeRouteUpdate(to, from, next) {
-    this.beforeRouteChange(to, from, next)
-  },
-
-  beforeRouteLeave(to, from, next) {
-    this.beforeRouteChange(to, from, next)
-  },
-
   methods: {
-    beforeRouteChange(to, from, next) {
-      let ok = true
-      const isClosing = (
-        // Only handle this route change if the form is actually mapped to the
-        // `from` route.
-        this.path === from.path &&
-        // Exclude hash changes only (= tab changes):
-        from.path !== to.path && (
-          this.isFullRouteChange(to, from) ||
-          // Decide if we're moving towards a new nested form, or closing /
-          // replacing an already open one by comparing path lengths.
-          // The case of `=` matches the replacing of an already open one.
-          to.path.length <= from.path.length
-        )
-      )
-      if (isClosing) {
-        if (this.doesMutate) {
-          // For active directly mutating (nested) forms that were not validated
-          // yet, validate them once. If the user then still wants to leave
-          // them, they can click close / navigate away again.
-          ok = (
-            this.isValidated ||
-            this.ownSchemaComponent.validateAll()
-          )
-        } else {
-          // The form doesn't directly mutate data. If it is dirty, ask if user
-          // wants to persist data first.
-          if (this.isDirty) {
-            ok = window.confirm(
-              `You have unsaved changes. Do you really want to ${
-                this.verbs.cancel
-              }?`
-            )
-          }
-        }
-      }
-      next(ok)
-    },
-
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(this.path
@@ -463,7 +415,7 @@ export default DitoComponent.component('dito-form', {
         })
       }
       if (success) {
-        this.ownSchemaComponent.resetValidation()
+        this.resetValidation()
         if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {

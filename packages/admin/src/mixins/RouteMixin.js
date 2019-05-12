@@ -1,7 +1,10 @@
+import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getCommonPrefix } from '@ditojs/utils'
 
 // @vue/component
 export default {
+  mixins: [SchemaParentMixin],
+
   provide() {
     return {
       $routeComponent: this
@@ -81,6 +84,11 @@ export default {
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
       return this.$route.params[this.meta?.param] || null
+    },
+
+    // @overridable, see DitoForm
+    doesMutate() {
+      return false
     }
   },
 
@@ -96,7 +104,54 @@ export default {
     routeComponents.splice(routeComponents.indexOf(this), 1)
   },
 
+  beforeRouteUpdate(to, from, next) {
+    this.beforeRouteChange(to, from, next)
+  },
+
+  beforeRouteLeave(to, from, next) {
+    this.beforeRouteChange(to, from, next)
+  },
+
   methods: {
+    beforeRouteChange(to, from, next) {
+      let ok = true
+      const isClosing = (
+        // Only handle this route change if the form is actually mapped to the
+        // `from` route.
+        this.path === from.path &&
+        // Exclude hash changes only (= tab changes):
+        from.path !== to.path && (
+          this.isFullRouteChange(to, from) ||
+          // Decide if we're moving towards a new nested form, or closing /
+          // replacing an already open one by comparing path lengths.
+          // The case of `=` matches the replacing of an already open one.
+          to.path.length <= from.path.length
+        )
+      )
+      if (isClosing) {
+        if (this.doesMutate) {
+          // For active directly mutating (nested) forms that were not validated
+          // yet, validate them once. If the user then still wants to leave
+          // them, they can click close / navigate away again.
+          ok = (
+            this.isValidated ||
+            this.validateAll()
+          )
+        } else {
+          // The form doesn't directly mutate data. If it is dirty, ask if user
+          // wants to persist data first.
+          if (this.isDirty) {
+            ok = window.confirm(
+              `You have unsaved changes. Do you really want to ${
+                this.verbs.cancel
+              }?`
+            )
+          }
+        }
+      }
+      next(ok)
+    },
+
     getRoutePath(templatePath) {
       // Maps the route's actual path to the matched routes by counting its
       // parts separated by '/', splitting the path into the mapped parts
