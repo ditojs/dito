@@ -7,7 +7,6 @@
   )
     .dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
-      ref="schema"
       :schema="panelSchema"
       :dataPath="ownDataPath"
       :data="panelData"
@@ -63,12 +62,14 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getButtonSchemas } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFunction } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {
+  mixins: [SchemaParentMixin],
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
@@ -159,11 +160,11 @@ export default DitoComponent.component('dito-panel', {
     },
 
     showValidationErrors(errors, focus) {
-      this.$refs.schema.showValidationErrors(errors, focus)
+      this.ownSchemaComponent.showValidationErrors(errors, focus)
     },
 
     clearErrors() {
-      this.$refs.schema.clearErrors()
+      this.ownSchemaComponent.clearErrors()
     }
   }
 })

@@ -266,28 +266,19 @@ export default DitoComponent.component('dito-schema', {
   },
 
   created() {
+    this.register(true)
     this.setupSchemaFields()
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
   },
 
-  methods: {
-    _register(registry, key, value, add) {
-      if (add) {
-        this.$set(registry, key, value)
-      } else {
-        this.$delete(registry, key)
-      }
-    },
+  destroyed() {
+    this.register(false)
+  },
 
-    _getWithDataPath(registry, dataPath) {
-      dataPath = normalizeDataPath(dataPath)
-      // See if the argument starts with this form's data-path. If not, then it
-      // is a key or sub data-path and needs to be prefixed with the full path:
-      dataPath = dataPath.startsWith(this.dataPath)
-        ? dataPath
-        : appendDataPath(this.dataPath, dataPath)
-      return registry[dataPath] || null
+  methods: {
+    register(add) {
+      this.$parent.registerSchemaComponent?.(this, add)
     },
 
     registerComponentsContainer(componentsContainer, add) {
@@ -322,6 +313,24 @@ export default DitoComponent.component('dito-schema', {
 
     getPanel(dataPath) {
       return this._getWithDataPath(this.panels, dataPath)
+    },
+
+    _register(registry, key, value, add) {
+      if (add) {
+        this.$set(registry, key, value)
+      } else {
+        this.$delete(registry, key)
+      }
+    },
+
+    _getWithDataPath(registry, dataPath) {
+      dataPath = normalizeDataPath(dataPath)
+      // See if the argument starts with this form's data-path. If not, then it
+      // is a key or sub data-path and needs to be prefixed with the full path:
+      dataPath = dataPath.startsWith(this.dataPath)
+        ? dataPath
+        : appendDataPath(this.dataPath, dataPath)
+      return registry[dataPath] || null
     },
 
     someComponent(callback) {

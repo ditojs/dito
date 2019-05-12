@@ -17,7 +17,6 @@
     @submit.prevent
   )
     dito-schema(
-      ref="schema"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -42,20 +41,20 @@
 import DitoComponent from '@/DitoComponent'
 import RouteMixin from '@/mixins/RouteMixin'
 import ResourceMixin from '@/mixins/ResourceMixin'
+import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getResource, getMemberResource } from '@/utils/resource'
 import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
-  mixins: [RouteMixin, ResourceMixin],
+  mixins: [RouteMixin, ResourceMixin, SchemaParentMixin],
 
   data() {
     return {
       createdData: null,
       clonedData: undefined,
       sourceKey: null,
-      isMounted: false,
       isForm: true
     }
   },
@@ -83,18 +82,6 @@ export default DitoComponent.component('dito-form', {
         // type set, so the form can always be determined.
         this.data || { type: this.type }
       ) || {} // Always return a schema object so we don't need to check for it.
-    },
-
-    formSchemaComponent() {
-      // Name this `formSchemaComponent` instead of `schemaComponent` to not
-      // clash with DitoMixin.schemaComponent, which returns the schema in which
-      // this component is contained (needed for nested forms).
-      // Use the `isMounted` trick to make `$refs` somewhat reactive.
-      return this.isMounted && this.$refs.schema
-    },
-
-    errors() {
-      return this.formSchemaComponent?.errors
     },
 
     buttonSchemas() {
@@ -135,24 +122,8 @@ export default DitoComponent.component('dito-form', {
       return this.param === 'create'
     },
 
-    isTouched() {
-      return this.formSchemaComponent.isTouched
-    },
-
     isDirty() {
-      return !this.doesMutate && this.formSchemaComponent.isDirty
-    },
-
-    isValid() {
-      return this.formSchemaComponent.isValid
-    },
-
-    isValidated() {
-      return this.formSchemaComponent.isValidated
-    },
-
-    selectedTab() {
-      return this.formSchemaComponent.selectedTab
+      return !this.doesMutate && !!this.ownSchemaComponent?.isDirty
     },
 
     doesMutate() {
@@ -291,7 +262,6 @@ export default DitoComponent.component('dito-form', {
   },
 
   mounted() {
-    this.isMounted = true
     // Errors can get passed on through the meta object, so add them now.
     // See DitoSchema.showValidationErrors() / SourceMixin.navigateToComponent()
     const { errors } = this.meta
@@ -332,7 +302,7 @@ export default DitoComponent.component('dito-form', {
           // them, they can click close / navigate away again.
           ok = (
             this.isValidated ||
-            this.formSchemaComponent.validateAll()
+            this.ownSchemaComponent.validateAll()
           )
         } else {
           // The form doesn't directly mutate data. If it is dirty, ask if user
@@ -371,9 +341,9 @@ export default DitoComponent.component('dito-form', {
         this.$set(
           this.sourceData,
           this.sourceKey,
-          this.formSchemaComponent.filterData(data)
+          this.ownSchemaComponent.filterData(data)
         )
-        this.formSchemaComponent.onChange()
+        this.ownSchemaComponent.onChange()
         return true
       }
       return false
@@ -401,7 +371,7 @@ export default DitoComponent.component('dito-form', {
         this.loadedData = data
       }
       if (!clear) {
-        this.formSchemaComponent.onLoad()
+        this.ownSchemaComponent.onLoad()
       }
     },
 
@@ -413,7 +383,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     showValidationErrors(errors, focus) {
-      this.formSchemaComponent.showValidationErrors(errors, focus)
+      this.ownSchemaComponent.showValidationErrors(errors, focus)
     },
 
     async cancel() {
@@ -431,7 +401,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
-      if (validate && !this.formSchemaComponent.validateAll()) {
+      if (validate && !this.ownSchemaComponent.validateAll()) {
         return false
       }
 
@@ -497,7 +467,7 @@ export default DitoComponent.component('dito-form', {
         })
       }
       if (success) {
-        this.formSchemaComponent.resetValidation()
+        this.ownSchemaComponent.resetValidation()
         if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {

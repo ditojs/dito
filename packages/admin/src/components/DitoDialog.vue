@@ -1,7 +1,6 @@
 <template lang="pug">
   form.dito-dialog(@submit.prevent="")
     dito-schema.dito-scroll(
-      ref="schema"
       :schema="schema"
       :data="data"
       :meta="meta"
