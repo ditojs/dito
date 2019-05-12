@@ -13,6 +13,7 @@ export default {
 
     onEndDrag() {
       this.dragging = false
+      this.onChange()
     },
 
     updateOrder(list, schema) {

@@ -23,7 +23,7 @@ export default {
         this.validate()
       }
 
-      const input = () => {
+      const change = () => {
         this.isDirty = true
         this.isValidated = false
         this.isValid = false
@@ -31,11 +31,11 @@ export default {
         this.errors = null
       }
 
-      const change = () => {
-        input()
+      const input = () => {
+        change()
       }
 
-      return { focus, blur, input, change }
+      return { focus, blur, change, input }
     }
   },
 
