@@ -94,11 +94,11 @@ export default DitoComponent.component('dito-view', {
       this.data = data
     },
 
-    getChildPath(schema) {
+    getChildPath(path) {
       // Lists inside single-component views use the view's path for sub-paths:
       return this.isSingleComponentView
         ? this.path
-        : `${this.path}/${schema.path}`
+        : `${this.path}/${path}`
     }
   }
 })

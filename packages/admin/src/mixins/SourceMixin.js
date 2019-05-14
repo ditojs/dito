@@ -113,7 +113,7 @@ export default {
 
     path() {
       // This is used in TypeList for DitoFormChooser.
-      return this.routeComponent.getChildPath(this.schema)
+      return this.routeComponent.getChildPath(this.schema.path)
     },
 
     defaultQuery() {
@@ -445,11 +445,12 @@ export default {
       // See if we can find a route that can serve part of the given dataPath,
       // and take it from there:
       while (dataPathParts.length > 0) {
-        const path = this.api.normalizePath(normalizeDataPath(dataPathParts))
-        const location = `${this.$route.path}/${path}`
-        const { matched } = this.$router.match(location)
-        if (matched.length) {
-          this.$router.push({ path: location, append: true }, route => {
+        const path = this.routeComponent.getChildPath(
+          this.api.normalizePath(normalizeDataPath(dataPathParts))
+        )
+        const { matched } = this.$router.match(path)
+        if (matched.length && this.$route.path !== path) {
+          this.$router.push({ path }, route => {
             if (onComplete) {
               const { matched } = route
               onComplete(matched[matched.length - 1])

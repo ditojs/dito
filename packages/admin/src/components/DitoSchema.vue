@@ -423,7 +423,7 @@ export default DitoComponent.component('dito-schema', {
       const unmatched = []
       for (const [dataPath, errs] of Object.entries(errors)) {
         // If the schema is a data-root, prefix its own dataPath to all errors,
-        // since the data that it sends and validate swill be unprefixed.
+        // since the data that it sends and validates will be unprefixed.
         const fullDataPath = this.hasOwnData
           ? appendDataPath(this.dataPath, dataPath)
           : dataPath

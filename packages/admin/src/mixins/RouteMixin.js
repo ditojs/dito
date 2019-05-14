@@ -162,8 +162,8 @@ export default {
         .join('/')
     },
 
-    getChildPath(schema) {
-      return `${this.path}/${schema.path}`
+    getChildPath(path) {
+      return `${this.path}/${path}`
     },
 
     isFullRouteChange(to, from) {
