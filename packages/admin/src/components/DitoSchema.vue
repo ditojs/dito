@@ -303,10 +303,13 @@ export default DitoComponent.component('dito-schema', {
           component.dataProcessor
         )
       } else {
-        // NOTE: We don't remove the dataProcessors when de-registering! They
-        // may still be required after the component itself is destroyed.
+        // NOTE: We don't remove the dataProcessors when de-registering!
+        // They may still be required after the component itself is destroyed.
       }
-      this.parentSchemaComponent?._registerComponent(component, add)
+      if (!this.hasOwnData) {
+        // Only register with the parent if schema shares data with it.
+        this.parentSchemaComponent?._registerComponent(component, add)
+      }
     },
 
     _registerPanel(panel, add) {
