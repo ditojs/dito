@@ -7,10 +7,7 @@ QueryFilters.register({
   @parameters(
     {
       name: 'operator',
-      type: 'string',
-      // NOTE: This is really `text` when only one argument is passed, hence
-      // the first argument is required, and not the second.
-      required: true
+      type: 'string'
     },
     {
       name: 'text',
@@ -28,9 +25,11 @@ QueryFilters.register({
       'starts-with': text => `${text}%`,
       'ends-with': text => `%${text}`
     }
-    const operand = templates[operator]?.(text)
-    if (operand) {
-      builder.where(property, 'ilike', operand)
+    if (text) {
+      const operand = templates[operator]?.(text)
+      if (operand) {
+        builder.where(property, 'ilike', operand)
+      }
     }
   },
 
