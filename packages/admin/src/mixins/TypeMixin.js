@@ -265,7 +265,14 @@ export default {
       this.tabComponent?.focus()
       const [focus] = asArray(this.$refs.element)
       if (focus) {
-        this.$nextTick(() => focus.focus())
+        this.$nextTick(() => {
+          focus.focus()
+          // If the element is disabled, `focus()` will likely not have the
+          // desired effect. Use `scrollIntoView()` if available:
+          if (this.disabled) {
+            (focus.$el || focus).scrollIntoView?.()
+          }
+        })
       }
     },
 
