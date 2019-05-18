@@ -10,7 +10,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { getResource } from './utils/resource'
 import {
-  isString, clone, hyphenate, camelize, isAbsoluteUrl, defaultDateFormat
+  merge, hyphenate, camelize, isAbsoluteUrl, defaultDateFormat
 } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -24,20 +24,19 @@ Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
-    dito, // Contains the url and api settings as passed from AdminController
-    api = dito?.api || {},
-    url = dito?.url || '/',
+    dito, // Contains the base and api settings as passed from `AdminController`
+    base = dito?.base || '/',
+    api,
     views = {},
     ...options
   } = {}) {
-    // Support serialized functions, dates and regexps, as produced on the
-    // server-side, see: AdminController.getWebpackConfig()
-    api = clone(api, value => deserialize(value))
-
     this.el = el
-    this.api = api
+    // Merge in dito settings as passed from `config.admin` through the
+    // `AdminController` with `api` / `base` values from from 'admin/index.js'
+    this.api = api = merge({}, dito.api, api)
     this.options = options
 
+    // Setup default api setttings:
     api.locale = api.locale || 'en-US'
     api.dateFormat = api.dateFormat || defaultDateFormat
     api.request = api.request || ((...args) => this.request(...args))
@@ -148,7 +147,7 @@ export default class DitoAdmin {
       el,
       router: new VueRouter({
         mode: 'history',
-        base: url
+        base
       }),
       components: { DitoRoot },
       data: {
@@ -206,13 +205,4 @@ export default class DitoAdmin {
       withCredentials: isApiRequest && !!this.api.cors?.credentials
     })
   }
-}
-
-function deserialize(value) {
-  // Match the format '{{serialized-string}}', as produced by
-  // AdminController.getWebpackConfig():
-  const match = isString(value) && value.match(/^\{\{([\s\S]*)\}\}$/)
-  return match
-    ? (new Function('', `return (${match[1]})`))()
-    : value
 }

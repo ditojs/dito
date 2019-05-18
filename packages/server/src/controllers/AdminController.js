@@ -4,13 +4,11 @@ import mount from 'koa-mount'
 import serve from 'koa-static'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
-import serialize from 'serialize-javascript'
 import VueService from '@vue/cli-service'
 import vuePluginBabel from '@vue/cli-plugin-babel'
 import vuePluginEslint from '@vue/cli-plugin-eslint'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
-import { isFunction, isDate, isRegExp, clone } from '@ditojs/utils'
 
 export class AdminController extends Controller {
   // @override
@@ -141,17 +139,13 @@ export class AdminController extends Controller {
         })
         // Expose api config and definitions to browser side:
         // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
-        const api = clone(this.config.api, value => (
-          isFunction(value) || isDate(value) || isRegExp(value)
-            ? `{{${serialize(value)}}}`
-            : value
-        )) || {}
+        const { api = {} } = this.config
         if (api.normalizePaths == null) {
           api.normalizePaths = this.app.config.app.normalizePaths
         }
         conf.plugin('define').tap(args => {
           args[0].dito = args[0]['window.dito'] = JSON.stringify({
-            url: this.url,
+            base: this.url,
             api,
             settings
           })
