@@ -491,12 +491,17 @@ export class Model extends objection.Model {
   // @override
   $setJson(json, options) {
     options = options || {}
-    const hasInitialize = this.$initialize !== Model.prototype.$initialize
+    const callInitialize = (
+      // Do not call initialize when only patching...
+      !options.patch &&
+      // ...and only call it when it's actually doing something.
+      this.$initialize !== Model.prototype.$initialize
+    )
     // Do not call $initialize() on model data that is just a reference.
     const isReference = this.constructor.isReference(json)
-    if (options.skipValidation || !hasInitialize || isReference) {
+    if (options.skipValidation || !callInitialize || isReference) {
       super.$setJson(json, options)
-      if (hasInitialize && !isReference) {
+      if (callInitialize && !isReference) {
         this.$initialize()
       }
     } else {
