@@ -6,10 +6,12 @@ import Registry from './Registry'
 export const QueryParameters = new Registry()
 
 QueryParameters.register({
+  // TODO: Remove in favor of filters
   where(builder, key, value) {
     processWhereFilters(builder, 'where', null, value)
   },
 
+  // TODO: Remove in favor of filters
   orWhere(builder, key, value) {
     processWhereFilters(builder, 'orWhere', null, value)
   },
@@ -80,10 +82,7 @@ QueryParameters.register({
         builder.orderBy(columnName, direction).skipUndefined()
       }
     }
-  },
-
-  omit: applyPropertiesExpression,
-  pick: applyPropertiesExpression
+  }
 })
 
 function processWhereFilters(builder, where, key, value, parts) {
@@ -126,45 +125,5 @@ function processWhereFilters(builder, where, key, value, parts) {
     }
   } else {
     throw new QueryBuilderError(`Unsupported 'where' query: '${value}'.`)
-  }
-}
-
-function parsePropertiesExpression(value) {
-  // Use a very simple expression parser that expands these expressions,
-  // delegating the hard work to JSON.parse():
-  //
-  // "Model1[name,id,relation],Model2[name,id]" ->
-  // {
-  //   Model1: [name, id, relation],
-  //   Model2: [name, id]
-  // }
-  const parse = expression => {
-    const replaced = expression
-      // Quote all words:
-      .replace(/\b(\w+)\b/g, '"$1"')
-      // Expand "[" to ":[":
-      .replace(/"\[/g, '":[')
-    return JSON.parse(`{${replaced}}`)
-  }
-
-  return isArray(value)
-    ? value.map(parse).reduce(
-      (combined, value) => Object.assign(combined, value),
-      {})
-    : isString(value) ? parse(value)
-    : []
-}
-
-function applyPropertiesExpression(builder, key, value) {
-  const parsed = parsePropertiesExpression(value)
-  const { app } = builder.modelClass()
-  for (const [modelName, properties] of Object.entries(parsed)) {
-    const modelClass = app.models[modelName]
-    if (modelClass) {
-      builder[key](modelClass, properties)
-    } else {
-      throw new QueryBuilderError(
-        `Invalid reference to model '${modelName}' in '${key}=${value}'.`)
-    }
   }
 }
