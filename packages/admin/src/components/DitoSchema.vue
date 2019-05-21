@@ -174,6 +174,13 @@ export default DitoComponent.component('dito-schema', {
       return this
     },
 
+    parentSchemaComponent() {
+      // Don't return the actual parent schema is this schema handles its own
+      // data. This prevents delegating events to the parent, and registering
+      // components with the parent that would cause it to set isDirty flags.
+      return this.hasOwnData ? null : this.$parent.schemaComponent
+    },
+
     panelSchemas() {
       const schemas = []
       for (const [key, schema] of Object.entries(this.schema.panels || [])) {
@@ -306,10 +313,8 @@ export default DitoComponent.component('dito-schema', {
         // NOTE: We don't remove the dataProcessors when de-registering!
         // They may still be required after the component itself is destroyed.
       }
-      if (!this.hasOwnData) {
-        // Only register with the parent if schema shares data with it.
-        this.parentSchemaComponent?._registerComponent(component, add)
-      }
+      // Only register with the parent if schema shares data with it.
+      this.parentSchemaComponent?._registerComponent(component, add)
     },
 
     _registerPanel(panel, add) {
