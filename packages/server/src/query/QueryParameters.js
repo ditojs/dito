@@ -1,21 +1,10 @@
 import { ResponseError, QueryBuilderError } from '@/errors'
-import { isObject, isArray, isString, asArray, capitalize } from '@ditojs/utils'
-import { QueryWhereFilters } from './QueryWhereFilters'
+import { isString, asArray } from '@ditojs/utils'
 import Registry from './Registry'
 
 export const QueryParameters = new Registry()
 
 QueryParameters.register({
-  // TODO: Remove in favor of filters
-  where(builder, key, value) {
-    processWhereFilters(builder, 'where', null, value)
-  },
-
-  // TODO: Remove in favor of filters
-  orWhere(builder, key, value) {
-    processWhereFilters(builder, 'orWhere', null, value)
-  },
-
   eager(builder, key, value) {
     for (const eager of asArray(value)) {
       builder.mergeEager(eager)
@@ -65,65 +54,20 @@ QueryParameters.register({
   order(builder, key, value) {
     if (value) {
       for (const entry of asArray(value)) {
-        const ref = builder.getPropertyRef(entry, { parseDirection: true })
-        const { direction = 'asc', relation } = ref
-        const columnName = ref.getFullColumnName(builder)
-        let orderName = columnName
-        if (relation) {
-          if (!relation.isOneToOne()) {
-            throw new QueryBuilderError(
-              `Can only order by model's own properties ` +
-              `and by one-to-one relations' properties.`)
-          }
-          // TODO: Is the use of an alias required here?
-          orderName = `${relation.name}${capitalize(ref.propertyName)}`
-          builder.select(`${columnName} as ${orderName}`)
+        const [propertyName, direction] = entry.trim().split(/\s+/)
+        if (direction && !['asc', 'desc'].includes(direction)) {
+          throw new QueryBuilderError(
+            `Invalid order direction: '${direction}'.`
+          )
         }
-        builder.orderBy(columnName, direction).skipUndefined()
+        const tableRef = builder.tableRefFor(builder.modelClass())
+        const columnName = `${tableRef}.${propertyName}`
+        if (direction) {
+          builder.orderBy(columnName, direction)
+        } else {
+          builder.orderBy(columnName)
+        }
       }
     }
   }
 })
-
-function processWhereFilters(builder, where, key, value, parts) {
-  // Recursively translate object based where filters to string based ones for
-  // standardized processing in PropertyRef.
-  // So this...
-  //   where: {
-  //     firstName: { like: 'Jo%' },
-  //     lastName: '%oe',
-  //     messages: {
-  //       text: { like: '% and %' },
-  //       unread: true
-  //     }
-  //   }
-  // ...becomes that:
-  //   { ref: 'firstName like', value: 'Jo%' }
-  //   { ref: 'lastName', value: '%oe' }
-  //   { ref: 'messages.text like', value: '% and %' }
-  //   { ref: 'messages.unread', value: true }
-  //
-  // TODO: Think about better ways to handle and / or in Object notation.
-  if (isObject(value)) {
-    for (const [subKey, subValue] of Object.entries(value)) {
-      // NOTE: We need to clone `parts` for branching:
-      processWhereFilters(builder, where, subKey, subValue,
-        parts ? [...parts, key] : [])
-    }
-  } else if (parts) {
-    // Recursive call in object parsing
-    const filterName = QueryWhereFilters.has(key) && key
-    if (!filterName) parts.push(key)
-    const ref = `${parts.join('.')}${filterName ? ` ${filterName}` : ''}`
-    builder.parseWhereFilter(where, ref, value)
-  } else if (isString(value)) {
-    const [ref, val] = value.split('=')
-    builder.parseWhereFilter(where, ref, val)
-  } else if (isArray(value)) {
-    for (const entry of value) {
-      processWhereFilters(builder, where, null, entry)
-    }
-  } else {
-    throw new QueryBuilderError(`Unsupported 'where' query: '${value}'.`)
-  }
-}

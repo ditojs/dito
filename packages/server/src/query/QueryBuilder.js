@@ -2,8 +2,6 @@ import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
-import { QueryWhereFilters } from './QueryWhereFilters'
-import PropertyRef from './PropertyRef'
 import { GraphProcessor } from '@/graph'
 import {
   isPlainObject, isString, isArray, clone, parseDataPath
@@ -500,7 +498,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       ? QueryParameters.allowed()
       // If it's already a lookup object just use it, otherwise convert it:
       : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
-    this._relationsToJoin = {}
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
       const param = key.endsWith('[]') ? key.substr(0, key.length - 2) : key
@@ -514,31 +511,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
       paramHandler(this, key, value)
     }
-    for (const relation of Object.values(this._relationsToJoin)) {
-      relation.join(this, { joinOperation: 'leftJoin' })
-    }
     return this
-  }
-
-  getPropertyRef(ref, options) {
-    const cache = this._propertyRefsCache
-    return cache[ref] ||
-      (cache[ref] = new PropertyRef(ref, this.modelClass(), options))
-  }
-
-  parseWhereFilter(where, key, value) {
-    let [ref, filter] = key.split(/\s/)
-    filter = filter || (value === null ? 'null' : 'is')
-    const queryFilter = filter && QueryWhereFilters.get(filter)
-    if (!queryFilter) {
-      throw new QueryBuilderError(`Invalid filter in '${key}=${value}'.`)
-    }
-    const propertyRef = this.getPropertyRef(ref)
-    const { relation } = propertyRef
-    if (relation?.isOneToOne()) {
-      this._relationsToJoin[relation.name] = relation
-    }
-    propertyRef.applyWhereFilter(this, this, queryFilter, where, value)
   }
 
   static mixin(target) {
