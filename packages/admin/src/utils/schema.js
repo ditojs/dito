@@ -298,7 +298,7 @@ export function getPanelSchema(schema, dataPath, schemaComponent) {
     : null
 }
 
-export function getPanelsSchemas(panels, dataPath, schemaComponent) {
+export function getPanelSchemas(panels, dataPath, schemaComponent) {
   const schemas = []
   if (panels) {
     for (const [key, schema] of Object.entries(panels)) {

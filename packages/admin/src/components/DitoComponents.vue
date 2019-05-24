@@ -34,11 +34,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
-import {
-  getTypeOptions,
-  getPanelSchema,
-  getPanelsSchemas
-} from '@/utils/schema'
+import { getTypeOptions, getPanelSchema, getPanelSchemas } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -101,7 +97,7 @@ export default DitoComponent.component('dito-components', {
             getPanelSchema(schema, dataPath, this.schemaComponent),
             // Allow each component to provide its own set of panels, in
             // addition to the default one (e.g. $filter):
-            ...getPanelsSchemas(schema.panels, dataPath, this.schemaComponent)
+            ...getPanelSchemas(schema.panels, dataPath, this.schemaComponent)
           ]) {
             if (panel) {
               schemas.push({
