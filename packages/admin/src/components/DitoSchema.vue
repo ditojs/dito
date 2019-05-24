@@ -120,7 +120,7 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 import DitoComponent from '@/DitoComponent'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
-import { getNamedSchemas, getPanelSchema, setDefaults } from '@/utils/schema'
+import { getNamedSchemas, getPanelsSchemas, setDefaults } from '@/utils/schema'
 import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
@@ -182,13 +182,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     panelSchemas() {
-      const schemas = []
-      for (const [key, schema] of Object.entries(this.schema.panels || [])) {
-        const panel = getPanelSchema(schema, key, this.schemaComponent)
-        if (panel) {
-          schemas.push(panel)
-        }
-      }
+      const schemas = getPanelsSchemas(
+        this.schema.panels,
+        '',
+        this.schemaComponent
+      )
       for (const container of Object.values(this.componentsContainers)) {
         schemas.push(...container.panelSchemas)
       }

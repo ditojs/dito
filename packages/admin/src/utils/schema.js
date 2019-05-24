@@ -298,6 +298,18 @@ export function getPanelSchema(schema, dataPath, schemaComponent) {
     : null
 }
 
+export function getPanelsSchemas(panels, dataPath, schemaComponent) {
+  const schemas = []
+  if (panels) {
+    for (const [key, schema] of Object.entries(panels)) {
+      schemas.push(
+        getPanelSchema(schema, appendDataPath(dataPath, key), schemaComponent)
+      )
+    }
+  }
+  return schemas
+}
+
 export function shouldRenderLabel(schema) {
   return getTypeOptions(schema)?.renderLabel ?? true
 }
