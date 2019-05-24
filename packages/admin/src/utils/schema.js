@@ -1,7 +1,6 @@
 import TypeComponent from '@/TypeComponent'
 import DitoView from '@/components/DitoView'
 import { appendDataPath } from '@/utils/data'
-import { hasResource } from '@/utils/resource'
 import {
   isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
@@ -257,25 +256,10 @@ export function getNamedSchemas(descriptions, defaults) {
 }
 
 export function getButtonSchemas(buttons) {
-  const buttonSchemas = getNamedSchemas(
+  return getNamedSchemas(
     buttons,
     { type: 'button' } // Defaults
   )
-  // Have all buttons with resources but no click events call `this.submit()`:
-  for (const schema of Object.values(buttonSchemas || {})) {
-    if (
-      hasResource(schema) &&
-      !schema.events?.click
-    ) {
-      schema.events = {
-        ...schema.events,
-        click() {
-          this.submit()
-        }
-      }
-    }
-  }
-  return buttonSchemas
 }
 
 function getType(schemaOrType) {

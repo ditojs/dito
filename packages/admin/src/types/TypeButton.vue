@@ -13,6 +13,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { hasResource } from '@/utils/resource'
 
 export default TypeComponent.register([
   'button', 'submit'
@@ -43,19 +44,26 @@ export default TypeComponent.register([
   },
 
   methods: {
-    onClick() {
+    async onClick() {
       const { params } = this.meta
-      this.emitEvent('click', {
+      const res = await this.emitEvent('click', {
         // Provide a params function that creates a copy of the params when
         // needed, since they will be directly used as the item params object,
         // see `getItemParams()`:
         params: params ? () => ({ ...params }) : null,
         parent: this.schemaComponent
       })
+      // Have buttons that define resources call `this.submit()` by default:
+      if (
+        res === undefined && // Meaning: don't prevent default.
+        hasResource(this.schema)
+      ) {
+        await this.submit()
+      }
     },
 
     async submit(options) {
-      return this.resourceComponent.submit(this, options)
+      return this.resourceComponent?.submit(this, options)
     }
   }
 })
