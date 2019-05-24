@@ -30,6 +30,14 @@ import { hasResource } from '@/utils/resource'
 export default DitoComponent.component('dito-view', {
   mixins: [RouteMixin],
 
+  provide() {
+    // Redirect $sourceComponent and $resourceComponent to the main component:
+    return {
+      $sourceComponent: () => this.mainComponent?.sourceComponent || null,
+      $resourceComponent: () => this.mainComponent?.resourceComponent || null
+    }
+  },
+
   data() {
     return {
       isView: true,
@@ -52,6 +60,10 @@ export default DitoComponent.component('dito-view', {
 
     isSingleComponentView() {
       return isSingleComponentView(this.schema)
+    },
+
+    mainComponent() {
+      return this.ownSchemaComponent.getComponent(this.name)
     },
 
     viewSchema() {
