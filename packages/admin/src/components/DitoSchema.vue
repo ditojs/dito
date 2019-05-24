@@ -132,7 +132,7 @@ export default DitoComponent.component('dito-schema', {
 
   provide() {
     return {
-      $schemaComponent: this
+      $schemaComponent: () => this
     }
   },
 

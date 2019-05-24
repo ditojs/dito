@@ -158,18 +158,18 @@ export default class DitoAdmin {
         api,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
-        // Both $verbs and $isPopulated are defined as functions, to preserve
-        // reactiveness across provide/inject.
-        // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
+        // All injects are defined as functions, to preserve reactiveness across
+        // provide/inject, see:
+        // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
         $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $isPopulated: () => true,
-        $schemaComponent: null,
-        $routeComponent: null,
-        $dataComponent: null,
-        $sourceComponent: null,
-        $resourceComponent: null
+        $schemaComponent: () => null,
+        $routeComponent: () => null,
+        $dataComponent: () => null,
+        $sourceComponent: () => null,
+        $resourceComponent: () => null
       },
       render: h => h(DitoRoot, {
         props: {

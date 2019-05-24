@@ -26,13 +26,13 @@ export default {
   provide() {
     const provide = {}
     if (this.providesData) {
-      provide.$dataComponent = this
+      provide.$dataComponent = () => this
     }
     if (this.isSource) {
-      provide.$sourceComponent = this
+      provide.$sourceComponent = () => this
     }
     if (this.isResource) {
-      provide.$resourceComponent = this
+      provide.$resourceComponent = () => this
     }
     return provide
   },
@@ -75,13 +75,13 @@ export default {
     schemaComponent() {
       // Use computed properties as links to injects, so DitoSchema can
       // override the property and return `this` instead of the parent.
-      return this.$schemaComponent
+      return this.$schemaComponent()
     },
 
     routeComponent() {
       // Use computed properties as links to injects, so RouteMixin can
       // override the property and return `this` instead of the parent.
-      return this.$routeComponent
+      return this.$routeComponent()
     },
 
     formComponent() {
@@ -98,15 +98,15 @@ export default {
     // this current component, that is linked to a resource (and thus loads its
     // own data and doesn't hold nested data).
     dataComponent() {
-      return this.providesData ? this : this.$dataComponent
+      return this.providesData ? this : this.$dataComponent()
     },
 
     sourceComponent() {
-      return this.isSource ? this : this.$sourceComponent
+      return this.isSource ? this : this.$sourceComponent()
     },
 
     resourceComponent() {
-      return this.isResource ? this : this.$resourceComponent
+      return this.isResource ? this : this.$resourceComponent()
     },
 
     parentSchemaComponent() {

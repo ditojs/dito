@@ -7,7 +7,7 @@ export default {
 
   provide() {
     return {
-      $routeComponent: this
+      $routeComponent: () => this
     }
   },
 
