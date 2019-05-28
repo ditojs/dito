@@ -13,7 +13,6 @@ export class DiskStorage extends Storage {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
     this.path = config.path
-    this.url = config.url
 
     this.setStorage(multer.diskStorage({
       destination: (req, file, cb) => {
@@ -35,13 +34,12 @@ export class DiskStorage extends Storage {
     const name = file.filename
     return {
       name,
-      url: (
-        this.url &&
-        new URL(
+      url: this.url
+        ? new URL(
           path.posix.join(this.getNestedFolder(name, true), name),
           this.url
-        )
-      )
+        ).toString()
+        : null
     }
   }
 

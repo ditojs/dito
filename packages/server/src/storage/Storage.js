@@ -13,6 +13,7 @@ export class Storage {
     this.app = app
     this.config = config
     this.name = config.name
+    this.url = config.url
     this.storage = null
   }
 
