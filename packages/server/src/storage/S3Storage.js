@@ -47,10 +47,9 @@ export class S3Storage extends Storage {
   getFileIdentifiers(file) {
     return {
       name: file.key,
-      // Allow S3 buckets to define their own serving URLs, e.g. for CloudFront:
-      url: this.url
-        ? new URL(file.key, this.url).toString()
-        : file.location
+      // Attempt `getUrl()` first to allow S3 buckets to define their own
+      // base URLs, e.g. for CloudFront, fall back to default S3 location:
+      url: this.getUrl(file.key) || file.location
     }
   }
 

@@ -1,6 +1,7 @@
 import path from 'path'
 import multer from 'koa-multer'
 import uuidv4 from 'uuid/v4'
+import { URL } from 'url'
 import { NotImplementedError } from '@/errors'
 import { ImageSizeTransform } from './ImageSizeTransform'
 import { ReadableClone } from './ReadableClone'
@@ -104,6 +105,10 @@ export class Storage {
 
   getFilename(file) {
     return `${uuidv4()}${path.extname(file.originalname)}`
+  }
+
+  getUrl(path) {
+    return this.url ? new URL(path, this.url).toString() : null
   }
 
   convertFile(file) {

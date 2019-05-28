@@ -1,6 +1,5 @@
 import fs from 'fs-extra'
 import path from 'path'
-import { URL } from 'url'
 import multer from 'koa-multer'
 import { Storage } from './Storage'
 
@@ -34,12 +33,7 @@ export class DiskStorage extends Storage {
     const name = file.filename
     return {
       name,
-      url: this.url
-        ? new URL(
-          path.posix.join(this.getNestedFolder(name, true), name),
-          this.url
-        ).toString()
-        : null
+      url: this.getUrl(path.posix.join(this.getNestedFolder(name, true), name))
     }
   }
 
