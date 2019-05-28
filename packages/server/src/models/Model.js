@@ -208,18 +208,18 @@ export class Model extends objection.Model {
 
   // @override
   static fromJson(json, options = {}) {
-    if (options.skipValidation || !options.async) {
-      // Fall back to Objection's fromJson() if we don't need async handling:
-      return super.fromJson(json, options)
+    if (options.async && !options.skipValidation) {
+      // Handle async validation, as supported by Dito:
+      const model = new this()
+      return model.$validate(json, options).then(
+        json => model.$setJson(json, {
+          ...options,
+          skipValidation: true
+        })
+      )
     }
-    // From here on, we only need to handle options.async:
-    const model = new this()
-    return model.$validate(json, options).then(
-      json => model.$setJson(json, {
-        ...options,
-        skipValidation: true
-      })
-    )
+    // Fall back to Objection's fromJson() if we don't need async handling:
+    return super.fromJson(json, options)
   }
 
   // @override
@@ -227,6 +227,7 @@ export class Model extends objection.Model {
     // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
       err = dbErrors.wrapError(err)
+      // TODO: Shouldn't this wrapping happen on the Controller level?
       err = err instanceof ResponseError ? err
         : err instanceof dbErrors.DBError ? new DatabaseError(err)
         : new WrappedError(err)
