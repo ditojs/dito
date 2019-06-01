@@ -1,5 +1,6 @@
 import { getExternalsFromDependencies } from './webpack'
 import { getNpmArgs } from './npm'
+import { dataUriImporter } from './sass'
 import { merge } from '@ditojs/utils'
 
 export function getVueConfig(config) {
@@ -9,7 +10,8 @@ export function getVueConfig(config) {
       loaderOptions: {
         sass: {
           includePaths: ['./src/styles'],
-          data: `@import './src/styles/_imports';`
+          data: `@import './src/styles/_imports';`,
+          importer: dataUriImporter
         }
       }
     },

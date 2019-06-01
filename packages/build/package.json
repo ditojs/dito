@@ -21,5 +21,9 @@
   },
   "browserslist": [
     "node 10"
-  ]
+  ],
+  "dependencies": {
+    "mime": "^2.4.3",
+    "mini-svg-data-uri": "^1.0.3"
+  }
 }
