@@ -63,18 +63,18 @@
   .dito-button-add:empty::before,
   // Special .dito-button-add without :empty:
   .dito-button-add-upload::before
-    +icon-add
+    @extend %icon-add
   .dito-button-delete:empty::before,
   .dito-button-remove:empty::before
-    +icon-remove
+    @extend %icon-remove
   .dito-button-edit:empty::before
-    +icon-edit
+    @extend %icon-edit
   .dito-button-drag:empty::before
-    +icon-drag
+    @extend %icon-drag
   .dito-button-copy:empty::before
-    +icon-copy
+    @extend %icon-copy
   .dito-button-paste:empty::before
-    +icon-paste
+    @extend %icon-paste
 
 .dito-button-overlay
   position: absolute
@@ -93,9 +93,10 @@
   z-index: 1
   background: $color-white
   &::before
-    +icon-clear($color-grey)
+    @extend %icon-clear
+    background: $color-grey
   &:hover::before
-    +icon-clear($color-black)
+    background: $color-black
 
 .dito-component:hover > .dito-button-overlay.dito-button-clear
   display: block

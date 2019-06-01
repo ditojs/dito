@@ -1,0 +1,10 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: black; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <polyline points="2,16 16,2 20,6 6,20"/>
+  <polyline points="14,4 18,8"/>
+  <polygon points="6,20 2,20 2,16" style="fill:black;"/>
+</svg>

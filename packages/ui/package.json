@@ -45,8 +45,6 @@
     "pug": "^2.0.3",
     "pug-plain-loader": "^1.0.0",
     "sass-loader": "^7.1.0",
-    "sass-svg": "^1.2.0",
-    "sassdash": "^0.9.0",
     "vue-template-compiler": "^2.6.10"
   }
 }

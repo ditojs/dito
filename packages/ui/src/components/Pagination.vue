@@ -53,15 +53,18 @@
           color: $color-text-inverted
           &:active
             border-color: darken($color-active, 10%)
+        &-prev,
+        &-next
+          &::before
+            @extend %icon-arrow
         &-prev::before
-          +icon-arrow
           transform: scaleX(-1)
-        &-next::before
-          +icon-arrow
         &-ellipsis-prev,
         &-ellipsis-next
           &::before
-            +icon-ellipsis
+            @extend %icon-ellipsis
+          &:hover::before
+            @extend %icon-chevrons
           background: none
           border: 0
           padding: 0
@@ -71,11 +74,8 @@
             color: $color-active
           &:active
             box-shadow: none
-        &-ellipsis-prev:hover::before
-          +icon-arrow-double
+        &-ellipsis-prev::before
           transform: scaleX(-1)
-        &-ellipsis-next:hover::before
-          +icon-arrow-double
 </style>
 
 <script>
