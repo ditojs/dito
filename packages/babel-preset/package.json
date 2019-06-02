@@ -7,7 +7,7 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "engines": {
-    "node": ">= 9.0.0",
+    "node": ">= 10.0.0",
     "yarn": ">= 1.0.0"
   },
   "dependencies": {
