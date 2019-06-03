@@ -4,10 +4,14 @@
   position: relative
   border: 1px solid transparent
   border-radius: $border-radius
-  padding: 0.2em 0.6em
+  padding: $button-padding
   text-align: center
   white-space: nowrap
   cursor: pointer
+  // For icons:
+  min-width: 1.5em
+  min-height: 1.5em
+  vertical-align: text-bottom
   +user-select(none)
   &:focus
     outline: none
@@ -34,24 +38,25 @@
     opacity: 0.6
     pointer-events: none
 
-.dito-buttons
+.dito-button-group
+  display: inline-block
+  & + .dito-button-group
+    margin-left: 1.5em
+
+  .dito-buttons
   white-space: nowrap
   .dito-button + .dito-button
     margin-left: $button-margin
 
 .dito-buttons-round
   .dito-button
+    padding: $button-round-padding
     min-width: 2em
     min-height: 2em
     border-radius: 1em
-    // This padding even works for icons, since 2 * 0.8em < 2em and icons are
-    // positioned absolutely:
-    padding: 0.2em 0.8em
 
 .dito-buttons-small
   .dito-button
-    min-width: 1.5em
-    height: 1.5em
   .dito-button + .dito-button
     margin-left: 1px
 
@@ -61,5 +66,9 @@
     display: inline-block
     text-align: center
     white-space: nowrap
-  .dito-button-text
-    padding: 0 0.7em
+
+.dito-buttons-toolbar
+  .dito-button
+    box-sizing: content-box
+    min-width: 1em
+    padding: 0 $button-padding-hor

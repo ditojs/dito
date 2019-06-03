@@ -56,6 +56,13 @@ $button-padding-ver: 0.2em
 $button-padding-hor: 0.6em
 $button-padding: $button-padding-ver $button-padding-hor
 
+// Use more horizontal padding due to the rounding
+// This padding even works for icons, since 2 * 0.9em < 2em and icons are
+// positioned absolutely:
+$button-round-padding-ver: 0.3em
+$button-round-padding-hor: 0.9em
+$button-round-padding: $button-round-padding-ver $button-round-padding-hor
+
 $button-margin: 2px
 
 // Easings

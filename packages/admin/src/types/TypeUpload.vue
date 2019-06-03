@@ -48,12 +48,12 @@
       tfoot
         tr
           td.dito-buttons.dito-buttons-round(:colspan="4")
-            button.dito-button.dito-button-text(
+            button.dito-button(
               v-if="uploadable"
               type="button"
               @click.prevent="upload.active = true"
             ) Upload All
-            button.dito-button.dito-button-text(
+            button.dito-button(
               v-else-if="cancelable"
               type="button"
               @click.prevent="upload.active = false"
@@ -78,8 +78,6 @@
 <style lang="sass">
 .dito
   .dito-upload
-    .dito-button
-      vertical-align: top
     .dito-button-add-upload
       border: 0
       padding: 0

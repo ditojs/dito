@@ -10,7 +10,7 @@ const renderIcons = icons =>
   bottom: 0
   margin: auto // To align the icon in the center of its container.
   content: ''
-  background: $color-black
+  background: currentColor
   mask: none no-repeat left content-box
 
 ${icons.map(renderIcon).join('\n\n')}

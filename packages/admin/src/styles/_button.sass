@@ -55,13 +55,13 @@
   button
     margin-top: $content-padding
     border-radius: 2em
-    padding: 0.3em 0.9em
+    padding: $button-round-padding
 
 .dito-buttons-round,
 .dito-buttons-small
   .dito-button-create:empty::before,
   .dito-button-add:empty::before,
-  // Special .dito-button-add without :empty:
+  // Special .dito-button-add-upload without :empty:
   .dito-button-add-upload::before
     @extend %icon-add
   .dito-button-delete:empty::before,
@@ -94,9 +94,9 @@
   background: $color-white
   &::before
     @extend %icon-clear
-    background: $color-grey
+    color: $color-grey
   &:hover::before
-    background: $color-black
+    color: $color-black
 
 .dito-component:hover > .dito-button-overlay.dito-button-clear
   display: block
