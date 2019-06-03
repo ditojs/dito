@@ -120,6 +120,7 @@ export default {
   mounted() {
     this.$on('blur', () => {
       if (this.changed) {
+        this.changed = false
         this.$emit('change', this.currentValue)
       }
     })

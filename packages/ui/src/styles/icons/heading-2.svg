@@ -1,0 +1,11 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <line class="st0" x1="2" y1="5" x2="2" y2="19"/>
+  <line class="st0" x1="10" y1="5" x2="10" y2="19"/>
+  <line class="st0" x1="2" y1="12" x2="10" y2="12"/>
+  <path class="st0" d="M15,8.5C15,6.57,16.57,5,18.5,5S22,6.57,22,8.5c0,0.79-0.26,1.52-0.7,2.1L15,19h7"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <g style="fill: currentColor;">
+    <circle cx="6" cy="10" r="4"/>
+    <circle cx="18" cy="10" r="4"/>
+  </g>
+  <path d="M2,18c4.42,0,8-3.58,8-8"/>
+  <path d="M14,18c4.42,0,8-3.58,8-8"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <path d="M3,16C3,12.12,6.12,9,10,9c1.94,0,3.73,0.73,5,2l5,5"/>
+  <polyline points="20,10 20,16 14,16"/>
+</svg>

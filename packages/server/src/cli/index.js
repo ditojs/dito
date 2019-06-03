@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env babel-node
 
 import path from 'path'
 import chalk from 'chalk'

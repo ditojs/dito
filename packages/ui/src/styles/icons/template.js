@@ -11,7 +11,7 @@ const renderIcons = icons =>
   margin: auto // To align the icon in the center of its container.
   content: ''
   background: currentColor
-  mask: none no-repeat left content-box
+  mask: none no-repeat center content-box
 
 ${icons.map(renderIcon).join('\n\n')}
 `

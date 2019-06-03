@@ -1,6 +1,7 @@
 <template lang="pug">
   .dito-code(
     ref="code"
+    :id="dataPath"
     :style="style"
   )
 </template>
