@@ -8,7 +8,7 @@ const renderIcons = icons =>
   left: 0
   right: 0
   bottom: 0
-  margin: auto
+  margin: auto // To align the icon in the center of its container.
   content: ''
   background: $color-black
   mask: none no-repeat left content-box
