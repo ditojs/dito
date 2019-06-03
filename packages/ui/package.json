@@ -12,8 +12,10 @@
   ],
   "scripts": {
     "serve": "vue-cli-service serve dev",
-    "build": "vue-cli-service build --target lib --name dito-ui src/index.js",
-    "watch": "yarn build --watch",
+    "build:icons": "yarn --silent inline-assets src/styles/icons/*.svg --template src/styles/icons/template.js > src/styles/mixins/_icons.sass",
+    "build:vue": "vue-cli-service build --target lib --name dito-ui src/index.js",
+    "build": "yarn build:icons && yarn build:vue",
+    "watch": "yarn build:vue --watch",
     "prepare": "yarn build"
   },
   "engines": {

@@ -1,4 +1,4 @@
-#!/usr/bin/env babel-node
+#!/usr/bin/env node
 
 import path from 'path'
 import chalk from 'chalk'
@@ -44,7 +44,7 @@ async function execute() {
   }
 }
 
-// Start the console if `./lib/cli/index.js`
+// Start the console if `node ./lib/cli/index.js`
 if (require.main === module) {
   execute()
 }

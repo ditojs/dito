@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import mime from 'mime'
-import svgToDataUri from 'mini-svg-data-uri'
+import { getDataUri } from './css'
 
 const cache = {}
 
@@ -21,11 +20,7 @@ export function dataUriImporter(file, prev) {
     if (cached?.modified === modified) {
       return cached
     } else {
-      const content = fs.readFileSync(fullPath, 'utf8')
-      const type = mime.getType(filePath)
-      const data = type === 'image/svg+xml'
-        ? svgToDataUri(content.toString('utf8'))
-        : `data:${type};base64,${content.toString('base64')}`
+      const data = getDataUri(fullPath)
       const resource = {
         modified,
         contents: `&{${prefix}url("${data}")${suffix}}`
