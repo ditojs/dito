@@ -117,8 +117,10 @@ export default {
       let ok = true
       const isClosing = (
         // Only handle this route change if the form is actually mapped to the
-        // `from` route.
-        this.path === from.path &&
+        // `from` route, but include parent forms of closing nested forms as as
+        // well, by matching the the start of from/to path against `this.path`:
+        from.path.startsWith(this.path) &&
+        !to.path.startsWith(this.path) &&
         // Exclude hash changes only (= tab changes):
         from.path !== to.path && (
           this.isFullRouteChange(to, from) ||
