@@ -13,7 +13,7 @@
             :class="{ 'dito-active': isActive }",
             @click="onClick"
           )
-            i(:class="`dito-icon-${icon}`")
+            icon(:name="icon")
     editor-content.dito-markup-editor(
       :editor="editor"
       :style="style"
@@ -103,6 +103,7 @@ import {
   OrderedList, BulletList, ListItem, TodoItem, TodoList,
   Bold, Code, Italic, Link, Strike, Underline, History
 } from 'tiptap-extensions'
+import { Icon } from '@ditojs/ui'
 import {
   isArray, isObject, underscore, hyphenate, debounce
 } from '@ditojs/utils'
@@ -111,7 +112,8 @@ import {
 export default TypeComponent.register('markup', {
   components: {
     EditorContent,
-    EditorMenuBar
+    EditorMenuBar,
+    Icon
   },
 
   data() {

@@ -1,6 +1,7 @@
 export Calendar from './Calendar'
 export DatePicker from './DatePicker'
 export DateTimePicker from './DateTimePicker'
+export Icon from './Icon'
 export InputField from './InputField'
 export Pagination from './Pagination'
 export TimePicker from './TimePicker'

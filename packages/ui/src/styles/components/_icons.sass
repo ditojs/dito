@@ -1,8 +1,0 @@
-// `yarn build:icons` converts the icon SVG files to silent classes inside
-// `src/styles/mixins/_icons.sass`, making them available to all other sass
-// code through `_imports`.
-// In order to be able to use them as normal CSS classes, expose them here too:
-
-@each $icon in $icons
-  .dito-icon-#{$icon}
-    @extend %icon-#{$icon}
