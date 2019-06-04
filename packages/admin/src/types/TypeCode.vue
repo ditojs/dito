@@ -30,8 +30,8 @@
     .codeflask__code,
     .codeflask__lines
       font-family: $font-family-mono
-      font-size: $font-size
-      line-height: $line-height
+      font-size: var(--font-size)
+      line-height: var(--line-height)
     .codeflask__lines
       padding: $input-padding
     .codeflask__lines__line
