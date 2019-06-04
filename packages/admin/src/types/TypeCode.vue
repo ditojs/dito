@@ -49,7 +49,7 @@ export default TypeComponent.register('code', {
     },
 
     style() {
-      return `height: ${this.lines * 1.5}em`
+      return `height: calc(${this.lines} * var(--line-height) * 1em)`
     }
   },
 

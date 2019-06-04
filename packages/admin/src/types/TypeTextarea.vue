@@ -5,7 +5,7 @@
     v-model="value"
     v-bind="attributes"
     v-on="listeners"
-    :rows="schema.lines || 4"
+    :rows="lines"
   )
 </template>
 
@@ -15,6 +15,12 @@ import TypeComponent from '@/TypeComponent'
 // @vue/component
 export default TypeComponent.register('textarea', {
   nativeField: true,
-  textField: true
+  textField: true,
+
+  computed: {
+    lines() {
+      return this.schema.lines || 4
+    }
+  }
 })
 </script>

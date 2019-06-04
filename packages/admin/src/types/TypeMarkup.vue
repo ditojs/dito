@@ -14,7 +14,10 @@
             @click="onClick"
           )
             i(:class="`dito-icon-${icon}`")
-    editor-content.dito-markup-editor(:editor="editor")
+    editor-content.dito-markup-editor(
+      :editor="editor"
+      :style="style"
+    )
 </template>
 
 <style lang="sass">
@@ -24,6 +27,12 @@
 
     .ProseMirror:focus
       outline: none
+
+    .dito-markup-editor
+      overflow-y: scroll
+      // Move padding "inside" editor to correctly position scrollbar
+      margin-right: -$input-padding-hor
+      padding-right: $input-padding-hor
 
     .dito-buttons-toolbar
       margin: $input-padding-ver 0
@@ -112,12 +121,12 @@ export default TypeComponent.register('markup', {
   },
 
   computed: {
-    commands() {
-      return this.editor.commands
+    lines() {
+      return this.schema.lines || 10
     },
 
-    isActive() {
-      return this.editor.isActive
+    style() {
+      return `height: calc(${this.lines} * var(--line-height) * 1em)`
     },
 
     inlineCommands() {
@@ -206,6 +215,14 @@ export default TypeComponent.register('markup', {
       this.onInput()
     }
 
+    this.$watch('value', value => {
+      if (ignoreWatch) {
+        ignoreWatch = false
+      } else {
+        this.editor.setContent(value)
+      }
+    })
+
     this.editor = new Editor({
       editable: !this.readyonly,
       autoFocus: this.autofocus,
@@ -214,14 +231,6 @@ export default TypeComponent.register('markup', {
       onUpdate,
       extensions: this.getExtensions(),
       content: this.value || ''
-    })
-
-    this.$watch('value', value => {
-      if (ignoreWatch) {
-        ignoreWatch = false
-      } else {
-        this.editor.setContent(value)
-      }
     })
   },
 
@@ -269,10 +278,9 @@ export default TypeComponent.register('markup', {
           icon,
           isActive: (
             (isActive == null || isActive()) &&
-            name in this.isActive &&
-            this.isActive[name](attrs)
+            this.editor.isActive[name]?.(attrs)
           ),
-          onClick: () => this.commands[name](attrs)
+          onClick: () => this.editor.commands[name](attrs)
         })
       }
 
