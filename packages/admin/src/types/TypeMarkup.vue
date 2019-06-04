@@ -94,7 +94,9 @@ import {
   OrderedList, BulletList, ListItem, TodoItem, TodoList,
   Bold, Code, Italic, Link, Strike, Underline, History
 } from 'tiptap-extensions'
-import { isArray, underscore, hyphenate, debounce } from '@ditojs/utils'
+import {
+  isArray, isObject, underscore, hyphenate, debounce
+} from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('markup', {
@@ -118,41 +120,59 @@ export default TypeComponent.register('markup', {
       return this.editor.isActive
     },
 
+    inlineCommands() {
+      return this.getCommands({
+        bold: true,
+        italic: true,
+        strike: true,
+        underline: true,
+        code: true
+      })
+    },
+
+    layoutCommands() {
+      return this.getCommands({
+        paragraph: {
+        // Do not show the paragraph command as active if any of the block
+        // commands are also active:
+          isActive: () => !this.blockCommands.some(command => command.isActive)
+        },
+        heading: {
+          attr: 'level',
+          values: [1, 2, 3]
+        }
+      })
+    },
+
+    blockCommands() {
+      return this.getCommands({
+        bulletList: true,
+        orderedList: true,
+        blockquote: true,
+        codeBlock: true
+      })
+    },
+
+    historyCommands() {
+      return this.getCommands({
+        undo: true,
+        redo: true
+      })
+    },
+
     groupedCommands() {
-      const grouped = {
-        inline: this.getCommands({
-          bold: true,
-          italic: true,
-          strike: true,
-          underline: true,
-          code: true
-        }),
-        layout: this.getCommands({
-          paragraph: true,
-          heading: [1, 2, 3]
-        }),
-        blocks: this.getCommands({
-          bulletList: true,
-          orderedList: true,
-          blockquote: true,
-          codeBlock: true
-        }),
-        history: this.getCommands({
-          undo: true,
-          redo: true
-        })
+      const {
+        inlineCommands,
+        layoutCommands,
+        blockCommands,
+        historyCommands
+      } = this
+      return {
+        inlineCommands,
+        layoutCommands,
+        blockCommands,
+        historyCommands
       }
-      // Do not show the paragraph command as active if any of the block
-      // commands are also active:
-      const [first] = grouped.layout
-      const paragraph = first?.name === 'paragraph' && first
-      if (
-        paragraph?.isActive &&
-        grouped.blocks.some(command => command.isActive)
-      ) {
-        paragraph.isActive = false
-      }
-      return grouped
     }
   },
 
@@ -243,31 +263,47 @@ export default TypeComponent.register('markup', {
     getCommands(descriptions) {
       const list = []
 
-      const addCommand = (name, icon, attrs) => {
+      const addCommand = ({ name, icon, attrs, isActive }) => {
         list.push({
           name,
           icon,
-          isActive: name in this.isActive && this.isActive[name](attrs),
+          isActive: (
+            (isActive == null || isActive()) &&
+            name in this.isActive &&
+            this.isActive[name](attrs)
+          ),
           onClick: () => this.commands[name](attrs)
         })
       }
 
       const { commands } = this.schema
       if (commands) {
-        for (const [key, value] of Object.entries(descriptions)) {
+        for (const [key, description] of Object.entries(descriptions)) {
           const command = ['undo', 'redo'].includes(key) ? 'history' : key
           const setting = commands[command]
           const name = underscore(key)
           const icon = hyphenate(key)
           if (setting) {
-            if (value === true) {
-              addCommand(name, icon)
-            } else if (isArray(value) && isArray(setting)) {
-              // Support heading level attrs:
-              for (const level of value) {
-                if (setting.includes(level)) {
-                  addCommand(name, `${icon}-${level}`, { level })
+            if (description === true) {
+              addCommand({ name, icon })
+            } else if (isObject(description)) {
+              const { attr, values, isActive } = description
+              if (attr) {
+                if (isArray(values) && isArray(setting)) {
+                  // Support heading level attrs:
+                  for (const value of values) {
+                    if (setting.includes(value)) {
+                      addCommand({
+                        name,
+                        icon: `${icon}-${value}`,
+                        attrs: { [attr]: value },
+                        isActive
+                      })
+                    }
+                  }
                 }
+              } else {
+                addCommand({ name, icon, isActive })
               }
             }
           }
