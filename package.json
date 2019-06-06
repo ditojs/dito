@@ -7,8 +7,10 @@
   "license": "MIT",
   "scripts": {
     "bootstrap": "lerna bootstrap",
+    "clean": "lerna run clean --parallel",
     "build": "lerna run build --stream",
     "watch": "lerna run watch --parallel",
+    "prepare": "lerna run prepare --stream",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src"
@@ -58,6 +60,7 @@
     "jest": "^24.8.0",
     "lerna": "^3.14.1",
     "lint-staged": "^8.1.7",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "rimraf": "^2.6.3"
   }
 }

@@ -11,9 +11,10 @@
     "lib/"
   ],
   "scripts": {
+    "clean": "rimraf lib",
     "build": "babel src --out-dir lib --copy-files --source-maps inline",
     "watch": "yarn build --watch",
-    "prepare": "yarn build"
+    "prepare": "yarn clean && yarn build"
   },
   "bin": {
     "inline-assets": "./lib/cli/inline-assets.js"
