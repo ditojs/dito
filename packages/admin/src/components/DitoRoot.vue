@@ -124,27 +124,9 @@ export default DitoComponent.component('dito-root', {
         },
 
         buttons: {
-          login: {
-            type: 'submit',
-            events: {
-              click({ dialogComponent }) {
-                dialogComponent.accept()
-              }
-            }
-          },
-
-          cancel: {
-            events: {
-              click({ dialogComponent }) {
-                dialogComponent.cancel()
-              }
-            }
-          }
+          cancel: {},
+          login: { type: 'submit' }
         }
-      }, {
-        width: '480px',
-        height: 'auto',
-        clickToClose: false
       })
       if (loginData) {
         try {

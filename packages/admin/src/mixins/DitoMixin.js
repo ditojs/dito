@@ -231,19 +231,27 @@ export default {
       })
     },
 
-    showDialog(options, config) {
+    showDialog({
+      components,
+      buttons,
+      data,
+      settings = {
+        width: '480px',
+        height: 'auto',
+        clickToClose: false
+      }
+    }) {
       // Shows a dito-dialog component through vue-js-modal, and wraps it in a
       // promise so that the buttons in the dialog can use `dialog.resolve()`
       // and `dialog.reject()` to close the modal dialog and resolve / reject
       // the promise at once.
       return new Promise((resolve, reject) => {
         this.$modal.show(DitoComponent.component('dito-dialog'), {
-          ...options,
-          promise: {
-            resolve,
-            reject
-          }
-        }, config)
+          components,
+          buttons,
+          data,
+          promise: { resolve, reject }
+        }, settings)
       })
     },
 
