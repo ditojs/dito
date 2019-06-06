@@ -11,7 +11,7 @@
   .dito-code
     @extend %input
     position: relative
-    // For propper sizing of content along sith :style="style" setting above,
+    // For propper sizing of content along with :style="style" setting above,
     // for proper line-height calculation.
     padding: $input-padding
     &.dito-width-fill
@@ -49,7 +49,7 @@ export default TypeComponent.register('code', {
     },
 
     style() {
-      return `height: calc(${this.lines} * var(--line-height) * 1em)`
+      return `height: calc(${this.lines}em * var(--line-height))`
     }
   },
 
