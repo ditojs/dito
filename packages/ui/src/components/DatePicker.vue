@@ -44,7 +44,7 @@
 import Trigger from './Trigger'
 import Calendar from './Calendar'
 import InputField from './InputField'
-import { getKeyNavigation } from '../utils'
+import { getKeyNavigation } from '@/utils'
 import { formatDate, defaultDateFormat } from '@ditojs/utils'
 
 export default {

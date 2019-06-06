@@ -144,7 +144,7 @@
 <script>
 import Trigger from './Trigger'
 import InputField from './InputField'
-import { copyDate, scrollTo, setSelection, getKeyNavigation } from '../utils'
+import { copyDate, scrollTo, setSelection, getKeyNavigation } from '@/utils'
 
 export default {
   components: { Trigger, InputField },
