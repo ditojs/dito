@@ -122,7 +122,6 @@ export default DitoComponent.component('dito-root', {
             type: 'password'
           }
         },
-
         buttons: {
           cancel: {},
           login: { type: 'submit' }

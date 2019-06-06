@@ -26,8 +26,10 @@
   .dito-markup
     @extend %input
 
-    .ProseMirror:focus
-      outline: none
+    .ProseMirror
+      height: 100%
+      &:focus
+        outline: none
 
     .dito-markup-editor
       overflow-y: scroll
@@ -111,7 +113,7 @@ import {
   // - Image, Mention, CodeBlockHighlight
   // - Table, TableCell, TableHeader, TableNodes, TableRow,
   // - TodoItem, TodoList
-  // Extensions:
+  // Tools:
   History
 } from 'tiptap-extensions'
 import { Icon } from '@ditojs/ui'
@@ -246,7 +248,7 @@ export default TypeComponent.register('markup', {
       onFocus,
       onBlur,
       onUpdate,
-      extensions: this.getExtensions(),
+      extensions: this.createExtensions(),
       content: this.value || ''
     })
   },
@@ -276,14 +278,13 @@ export default TypeComponent.register('markup', {
             label: 'Title'
           }
         },
-
         buttons: {
           cancel: {},
           apply: { type: 'submit' },
           remove: {
             events: {
               click({ dialogComponent }) {
-                dialogComponent.accept({
+                dialogComponent.resolve({
                   href: null,
                   title: null
                 })
@@ -291,7 +292,6 @@ export default TypeComponent.register('markup', {
             }
           }
         },
-
         data: this.editor.getMarkAttrs('link')
       })
       if (attrs) {
@@ -303,7 +303,7 @@ export default TypeComponent.register('markup', {
       }
     },
 
-    getExtensions() {
+    createExtensions() {
       const {
         marks = {},
         nodes = {},
@@ -336,7 +336,7 @@ export default TypeComponent.register('markup', {
       ].filter(extension => !!extension)
     },
 
-    getButtons(schemaName, descriptions) {
+    getButtons(settingsName, descriptions) {
       const list = []
 
       const addButton = ({ name, icon, attrs, ignoreActive, onClick }) => {
@@ -346,8 +346,8 @@ export default TypeComponent.register('markup', {
           name,
           icon,
           isActive: (
-            (ignoreActive == null || !ignoreActive()) &&
-            isActive?.(attrs)
+            isActive?.(attrs) &&
+            (ignoreActive == null || !ignoreActive())
           ),
           onClick: () => onClick
             ? onClick(command, attrs)
@@ -355,11 +355,11 @@ export default TypeComponent.register('markup', {
         })
       }
 
-      const commands = this.schema[schemaName]
-      if (commands) {
+      const settings = this.schema[settingsName]
+      if (settings) {
         for (const [key, description] of Object.entries(descriptions)) {
-          const command = ['undo', 'redo'].includes(key) ? 'history' : key
-          const setting = commands[command]
+          const settingName = ['undo', 'redo'].includes(key) ? 'history' : key
+          const setting = settings[settingName]
           const name = underscore(key)
           const icon = hyphenate(key)
           if (setting) {

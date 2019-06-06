@@ -110,10 +110,6 @@ export default DitoComponent.component('dito-dialog', {
   },
 
   methods: {
-    onClick(button) {
-      button.onClick?.(this)
-    },
-
     hide() {
       this.$modal.hide(this.name)
     },
@@ -128,8 +124,8 @@ export default DitoComponent.component('dito-dialog', {
       this.hide()
     },
 
-    accept(data = this.data) {
-      this.resolve(data)
+    accept() {
+      this.resolve(this.data)
     },
 
     cancel() {

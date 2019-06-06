@@ -236,7 +236,7 @@ export default {
       buttons,
       data,
       settings = {
-        width: '480px',
+        width: 480,
         height: 'auto',
         clickToClose: false
       }
