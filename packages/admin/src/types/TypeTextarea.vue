@@ -14,9 +14,8 @@
 .dito
   .dito-textarea
     resize: none
-    box-sizing: content-box
-    min-height: calc(1em * var(--line-height))
-    &.dito-resizeable
+    min-height: calc(1em * var(--line-height) + #{ 2 * $input-padding-ver })
+    &.dito-resizable
       resize: vertical
 </style>
 
