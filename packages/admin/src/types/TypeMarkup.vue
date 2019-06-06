@@ -76,17 +76,19 @@
       padding: 0 0.3rem
       border-radius: $border-radius
       background: $color-lighter
-
+    a
+      pointer-events: none
+      cursor: default
+      color: blue
+      text-decoration: underline
     ul,
     ol
       padding-left: 2rem
-
     li
       & > p,
       & > ol,
       & > ul
         margin: 0
-
     blockquote
       border-left: 3px solid $color-lighter
       padding-left: 1rem
@@ -101,9 +103,7 @@ import TypeComponent from '@/TypeComponent'
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap'
 import {
   // Marks:
-  Bold, Code, Italic, Strike, Underline,
-  // TODO:
-  // - Link
+  Bold, Code, Italic, Link, Strike, Underline,
   // Nodes:
   Blockquote, CodeBlock, HardBreak, Heading, HorizontalRule,
   OrderedList, BulletList, ListItem,
@@ -148,7 +148,10 @@ export default TypeComponent.register('markup', {
         italic: true,
         strike: true,
         underline: true,
-        code: true
+        code: true,
+        link: {
+          onClick: command => this.onClickLink(command)
+        }
       })
     },
 
@@ -157,7 +160,8 @@ export default TypeComponent.register('markup', {
         paragraph: {
         // Do not show the paragraph command as active if any of the block
         // commands are also active:
-          isActive: () => !this.otherNodeButtons.some(button => button.isActive)
+          ignoreActive: () =>
+            this.otherNodeButtons.some(button => button.isActive)
         },
         heading: {
           attr: 'level',
@@ -259,6 +263,46 @@ export default TypeComponent.register('markup', {
       })
     },
 
+    async onClickLink(command) {
+      const attrs = await this.showDialog({
+        components: {
+          href: {
+            type: 'url',
+            label: 'Link',
+            autofocus: true
+          },
+          title: {
+            type: 'text',
+            label: 'Title'
+          }
+        },
+
+        buttons: {
+          cancel: {},
+          apply: { type: 'submit' },
+          remove: {
+            events: {
+              click({ dialogComponent }) {
+                dialogComponent.accept({
+                  href: null,
+                  title: null
+                })
+              }
+            }
+          }
+        },
+
+        data: this.editor.getMarkAttrs('link')
+      })
+      if (attrs) {
+        let { href, title } = attrs
+        if (href && !/^(https?|ftps?|rtsp|mms)?:/.test(href)) {
+          href = `http://${href}`
+        }
+        command({ href, title })
+      }
+    },
+
     getExtensions() {
       const {
         marks = {},
@@ -270,10 +314,9 @@ export default TypeComponent.register('markup', {
         marks.bold && new Bold(),
         marks.code && new Code(),
         marks.italic && new Italic(),
+        marks.link && new LinkWithTitle(),
         marks.strike && new Strike(),
         marks.underline && new Underline(),
-        // TODO:
-        // commands.link && new Link(),
 
         // schema.nodes:
         nodes.blockquote && new Blockquote(),
@@ -296,15 +339,19 @@ export default TypeComponent.register('markup', {
     getButtons(schemaName, descriptions) {
       const list = []
 
-      const addButton = ({ name, icon, attrs, isActive }) => {
+      const addButton = ({ name, icon, attrs, ignoreActive, onClick }) => {
+        const isActive = this.editor.isActive[name]
+        const command = this.editor.commands[name]
         list.push({
           name,
           icon,
           isActive: (
-            (isActive == null || isActive()) &&
-            this.editor.isActive[name]?.(attrs)
+            (ignoreActive == null || !ignoreActive()) &&
+            isActive?.(attrs)
           ),
-          onClick: () => this.editor.commands[name](attrs)
+          onClick: () => onClick
+            ? onClick(command, attrs)
+            : command(attrs)
         })
       }
 
@@ -319,7 +366,7 @@ export default TypeComponent.register('markup', {
             if (description === true) {
               addButton({ name, icon })
             } else if (isObject(description)) {
-              const { attr, values, isActive } = description
+              const { attr, values, ignoreActive, onClick } = description
               if (attr) {
                 if (isArray(values) && isArray(setting)) {
                   // Support heading level attrs:
@@ -329,13 +376,14 @@ export default TypeComponent.register('markup', {
                         name,
                         icon: `${icon}-${value}`,
                         attrs: { [attr]: value },
-                        isActive
+                        ignoreActive,
+                        onClick
                       })
                     }
                   }
                 }
               } else {
-                addButton({ name, icon, isActive })
+                addButton({ name, icon, ignoreActive, onClick })
               }
             }
           }
@@ -350,4 +398,29 @@ export default TypeComponent.register('markup', {
     }
   }
 })
+
+class LinkWithTitle extends Link {
+  get schema() {
+    return {
+      attrs: {
+        href: {
+          default: null
+        },
+        title: {
+          default: null
+        }
+      },
+      inclusive: false,
+      parseDOM: [{
+        tag: 'a',
+        getAttrs: dom => ({
+          href: dom.getAttribute('href'),
+          title: dom.getAttribute('title')
+        })
+      }],
+      toDOM: node => ['a', node.attrs, 0]
+    }
+  }
+}
+
 </script>
