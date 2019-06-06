@@ -3,13 +3,14 @@
     :id="dataPath"
   )
     editor-menu-bar.dito-markup-toolbar(:editor="editor")
-      .dito-buttons.dito-buttons-toolbar
+      .dito-buttons.dito-buttons-toolbar(
+        v-if="groupedButtons.length > 0"
+      )
         .dito-button-group(
-          v-for="(commands, group) in groupedCommands"
-          :key="group"
+          v-for="buttons in groupedButtons"
         )
           button.dito-button(
-            v-for="{ name, icon, isActive, onClick } in commands"
+            v-for="{ name, icon, isActive, onClick } in buttons"
             :class="{ 'dito-active': isActive }",
             @click="onClick"
           )
@@ -99,9 +100,19 @@
 import TypeComponent from '@/TypeComponent'
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap'
 import {
+  // Marks:
+  Bold, Code, Italic, Strike, Underline,
+  // TODO:
+  // - Link
+  // Nodes:
   Blockquote, CodeBlock, HardBreak, Heading, HorizontalRule,
-  OrderedList, BulletList, ListItem, TodoItem, TodoList,
-  Bold, Code, Italic, Link, Strike, Underline, History
+  OrderedList, BulletList, ListItem,
+  // TODO:
+  // - Image, Mention, CodeBlockHighlight
+  // - Table, TableCell, TableHeader, TableNodes, TableRow,
+  // - TodoItem, TodoList
+  // Extensions:
+  History
 } from 'tiptap-extensions'
 import { Icon } from '@ditojs/ui'
 import {
@@ -128,11 +139,11 @@ export default TypeComponent.register('markup', {
     },
 
     style() {
-      return `height: calc(${this.lines} * var(--line-height) * 1em)`
+      return `height: calc(${this.lines}em * var(--line-height))`
     },
 
-    inlineCommands() {
-      return this.getCommands({
+    markButtons() {
+      return this.getButtons('marks', {
         bold: true,
         italic: true,
         strike: true,
@@ -141,22 +152,22 @@ export default TypeComponent.register('markup', {
       })
     },
 
-    layoutCommands() {
-      return this.getCommands({
+    basicNodeButtons() {
+      return this.getButtons('nodes', {
         paragraph: {
         // Do not show the paragraph command as active if any of the block
         // commands are also active:
-          isActive: () => !this.blockCommands.some(command => command.isActive)
+          isActive: () => !this.otherNodeButtons.some(button => button.isActive)
         },
         heading: {
           attr: 'level',
-          values: [1, 2, 3]
+          values: [1, 2, 3, 4, 5, 6]
         }
       })
     },
 
-    blockCommands() {
-      return this.getCommands({
+    otherNodeButtons() {
+      return this.getButtons('nodes', {
         bulletList: true,
         orderedList: true,
         blockquote: true,
@@ -164,26 +175,26 @@ export default TypeComponent.register('markup', {
       })
     },
 
-    historyCommands() {
-      return this.getCommands({
+    toolButtons() {
+      return this.getButtons('tools', {
         undo: true,
         redo: true
       })
     },
 
-    groupedCommands() {
+    groupedButtons() {
       const {
-        inlineCommands,
-        layoutCommands,
-        blockCommands,
-        historyCommands
+        markButtons,
+        basicNodeButtons,
+        otherNodeButtons,
+        toolButtons
       } = this
-      return {
-        inlineCommands,
-        layoutCommands,
-        blockCommands,
-        historyCommands
-      }
+      return [
+        markButtons,
+        basicNodeButtons,
+        otherNodeButtons,
+        toolButtons
+      ].filter(buttons => buttons.length > 0)
     }
   },
 
@@ -249,32 +260,43 @@ export default TypeComponent.register('markup', {
     },
 
     getExtensions() {
-      const { commands } = this.schema
+      const {
+        marks = {},
+        nodes = {},
+        tools = {}
+      } = this.schema
       return [
-        commands.blockquote && new Blockquote(),
-        commands.codeBlock && new CodeBlock(),
+        // schema.marks:
+        marks.bold && new Bold(),
+        marks.code && new Code(),
+        marks.italic && new Italic(),
+        marks.strike && new Strike(),
+        marks.underline && new Underline(),
+        // TODO:
+        // commands.link && new Link(),
+
+        // schema.nodes:
+        nodes.blockquote && new Blockquote(),
+        nodes.codeBlock && new CodeBlock(),
         new HardBreak(), // TODO: Should this always on?
-        commands.heading && new Heading({ levels: commands.heading }),
-        commands.horizontalRule && new HorizontalRule(),
-        (commands.orderedList || commands.bulletList) && new ListItem(),
-        commands.bulletList && new BulletList(),
-        commands.orderedList && new OrderedList(),
-        commands.todoList && new TodoItem(), // TODO
-        commands.todoList && new TodoList(), // TODO
-        commands.link && new Link(), // TODO
-        commands.bold && new Bold(),
-        commands.code && new Code(),
-        commands.italic && new Italic(),
-        commands.strike && new Strike(),
-        commands.underline && new Underline(),
-        commands.history && new History()
+        nodes.heading && new Heading({ levels: nodes.heading }),
+        nodes.horizontalRule && new HorizontalRule(),
+        (nodes.orderedList || nodes.bulletList) && new ListItem(),
+        nodes.bulletList && new BulletList(),
+        nodes.orderedList && new OrderedList(),
+        // TODO:
+        // nodes.todoList && new TodoItem(),
+        // nodes.todoList && new TodoList(),
+
+        // schema.tools:
+        tools.history && new History()
       ].filter(extension => !!extension)
     },
 
-    getCommands(descriptions) {
+    getButtons(schemaName, descriptions) {
       const list = []
 
-      const addCommand = ({ name, icon, attrs, isActive }) => {
+      const addButton = ({ name, icon, attrs, isActive }) => {
         list.push({
           name,
           icon,
@@ -286,7 +308,7 @@ export default TypeComponent.register('markup', {
         })
       }
 
-      const { commands } = this.schema
+      const commands = this.schema[schemaName]
       if (commands) {
         for (const [key, description] of Object.entries(descriptions)) {
           const command = ['undo', 'redo'].includes(key) ? 'history' : key
@@ -295,7 +317,7 @@ export default TypeComponent.register('markup', {
           const icon = hyphenate(key)
           if (setting) {
             if (description === true) {
-              addCommand({ name, icon })
+              addButton({ name, icon })
             } else if (isObject(description)) {
               const { attr, values, isActive } = description
               if (attr) {
@@ -303,7 +325,7 @@ export default TypeComponent.register('markup', {
                   // Support heading level attrs:
                   for (const value of values) {
                     if (setting.includes(value)) {
-                      addCommand({
+                      addButton({
                         name,
                         icon: `${icon}-${value}`,
                         attrs: { [attr]: value },
@@ -313,7 +335,7 @@ export default TypeComponent.register('markup', {
                   }
                 }
               } else {
-                addCommand({ name, icon, isActive })
+                addButton({ name, icon, isActive })
               }
             }
           }
