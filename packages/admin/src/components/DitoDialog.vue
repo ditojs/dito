@@ -22,6 +22,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getButtonSchemas } from '@/utils/schema'
+import { addEvents } from '@ditojs/ui'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
@@ -30,6 +31,12 @@ export default DitoComponent.component('dito-dialog', {
     buttons: { type: Object, required: true },
     promise: { type: Object, required: true },
     data: { type: Object, default: () => ({}) }
+  },
+
+  data() {
+    return {
+      windowEvents: null
+    }
   },
 
   computed: {
@@ -67,6 +74,10 @@ export default DitoComponent.component('dito-dialog', {
       )
     },
 
+    hasCancel() {
+      return Object.keys(this.buttonSchemas).includes('cancel')
+    },
+
     meta() {
       return {
         // Additional parameters to be passed to all events:
@@ -82,6 +93,20 @@ export default DitoComponent.component('dito-dialog', {
         this.data[key] = null
       }
     }
+  },
+
+  mounted() {
+    this.windowEvents = addEvents(window, {
+      keyup: () => {
+        if (event.keyCode === 27) {
+          this.cancel()
+        }
+      }
+    })
+  },
+
+  destroyed() {
+    this.windowEvents.remove()
   },
 
   methods: {
@@ -103,12 +128,14 @@ export default DitoComponent.component('dito-dialog', {
       this.hide()
     },
 
-    accept() {
-      this.resolve(this.data)
+    accept(data = this.data) {
+      this.resolve(data)
     },
 
     cancel() {
-      this.resolve(null)
+      if (this.hasCancel) {
+        this.resolve(null)
+      }
     }
   }
 })
