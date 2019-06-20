@@ -296,6 +296,10 @@ export default DitoComponent.component('dito-tree-item', {
 
     onDelete() {
       // TODO: Implement!
+    },
+
+    onChange() {
+      this.container.onChange()
     }
   }
 })
