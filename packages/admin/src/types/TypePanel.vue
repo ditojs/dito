@@ -1,9 +1,3 @@
-<template lang="pug">
-  .dito-panel-anchor(
-    :id="dataPath"
-  )
-</template>
-
 <script>
 import TypeComponent from '@/TypeComponent'
 

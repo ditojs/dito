@@ -17,7 +17,7 @@
         :limit="paginate"
         :total="total || 0"
       )
-    table.dito-table.dito-anchor(
+    table.dito-table(
       :class="{ 'dito-table-spaced': hasSpacing }"
     )
       dito-table-head(
