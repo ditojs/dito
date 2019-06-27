@@ -1,10 +1,7 @@
 <template lang="pug">
   .dito-tree-item(
     :id="dataPath"
-    :class=`{
-      'dito-dragging': dragging,
-      'dito-editing': editing
-    }`
+    :class="classes"
   )
     .dito-tree-header(v-if="label")
       .dito-tree-branch(v-if="numEntries" @click.stop="opened = !opened")
@@ -31,28 +28,28 @@
           @click="onDelete"
           v-bind="getButtonAttributes(verbs.delete)"
         )
-      table.dito-properties(
-        v-if="properties"
-        v-show="opened"
+    table.dito-properties(
+      v-if="properties"
+      v-show="opened"
+    )
+      tr(
+        v-for="cell in properties"
       )
-        tr(
-          v-for="cell in properties"
-        )
-          td
-            dito-label(
-              v-if="cell.label !== false"
-              :dataPath="getDataPath(cell)"
-              :text="getLabel(cell)"
-            )
-          dito-table-cell(
-            :cell="cell"
-            :schema="schema"
+        td
+          dito-label(
+            v-if="cell.label !== false"
             :dataPath="getDataPath(cell)"
-            :data="data"
-            :meta="nestedMeta"
-            :store="store"
-            :disabled="disabled"
+            :text="getLabel(cell)"
           )
+        dito-table-cell(
+          :cell="cell"
+          :schema="schema"
+          :dataPath="getDataPath(cell)"
+          :data="data"
+          :meta="nestedMeta"
+          :store="store"
+          :disabled="disabled"
+        )
     vue-draggable(
       v-if="children"
       v-show="opened"
@@ -69,9 +66,10 @@
         :data="item.data"
         :path="item.path"
         :open="item.open"
-        :editing="item.editing"
+        :active="item.active"
         :draggable="childrenDraggable"
         :label="getItemLabel(children, item.data, index)"
+        :level="level + 1"
       )
 </template>
 
@@ -79,22 +77,37 @@
 $tree-indent: 1.2em
 
 .dito
+  // Use precalculated level classes, so that we can add the accumulated indent
+  // padding directly instead of having it accumulate in CSS. This way, we can
+  // keep the .dito-active area cover the full width:
+  @for $i from 1 through 4
+    .dito-tree-level-#{$i}
+      > .dito-tree-header
+        > .dito-tree-branch,
+        > .dito-tree-leaf
+          padding-left: $tree-indent * ($i - 1)
+
   .dito-tree-item
     .dito-tree-item
       .dito-tree-item
-        margin-left: $tree-indent
+        // margin-left: $tree-indent
     .dito-tree-branch
       cursor: pointer
+    .dito-tree-header
+      display: flex
     .dito-tree-branch,
     .dito-tree-leaf
-      display: inline-block
+      flex: auto
       position: relative
       margin: 1px 0
       +user-select(none)
       > *
         display: inline
+    .dito-tree-label,
     .dito-tree-info
-      color: $color-light
+      white-space: nowrap
+    .dito-tree-info
+      color: rgba($color-black, .2)
     .dito-tree-chevron
       padding-left: 14px
       &::before
@@ -107,10 +120,11 @@ $tree-indent: 1.2em
         left: -0.1em
         transform: rotate(90deg)
     .dito-buttons
+      display: flex
       visibility: hidden
-      float: right
+      height: 100%
       margin-left: 1em
-      margin-bottom: -1em // so float don't push each other away
+      margin: 1px 0 1px 1em
     .dito-tree-header:hover
       > .dito-buttons
         visibility: visible
@@ -119,11 +133,18 @@ $tree-indent: 1.2em
       .dito-tree-header
         > .dito-buttons
           visibility: hidden
-    &.dito-editing
+    &.dito-active
       > .dito-tree-header
-        background: $color-lightest
-        border-radius: $border-radius
+        background: $color-active
+        padding: 0 $input-padding-hor
+        margin: 0 (-$input-padding-hor)
+        > .dito-tree-branch
+          > .dito-tree-chevron::before
+              color: $color-white
+        > * > .dito-tree-label
+          color: $color-white
     .dito-properties
+      display: block
       margin-left: $tree-indent
       > tr
         vertical-align: baseline
@@ -154,9 +175,10 @@ export default DitoComponent.component('dito-tree-item', {
     data: { type: [Array, Object], default: null },
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
-    editing: { type: Boolean, default: false },
+    active: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
-    label: { type: String, default: null }
+    label: { type: String, default: null },
+    level: { type: Number, default: 0 }
   },
 
   data() {
@@ -235,12 +257,12 @@ export default DitoComponent.component('dito-tree-item', {
           const open = childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
             editPath.startsWith(path) && path.length < editPath.length
-          const editing = editPath === path
+          const active = editPath === path
           return {
             data,
             path,
             open,
-            editing
+            active
           }
         }) || []
       }
@@ -250,6 +272,18 @@ export default DitoComponent.component('dito-tree-item', {
       const { numChildren } = this
       return numChildren && ` ${numChildren} ${
         numChildren === 1 ? 'item' : 'items'}`
+    },
+
+    classes() {
+      return {
+        ...(this.level > 0 && { [`dito-tree-level-${this.level}`]: true }),
+        'dito-dragging': this.dragging,
+        'dito-active': this.active
+      }
+    },
+
+    hasEditButtons() {
+      return this.draggable || this.editable || this.deletable
     },
 
     // TODO: Support creatable!
@@ -272,11 +306,7 @@ export default DitoComponent.component('dito-tree-item', {
     deletable: getSchemaAccessor('deletable', {
       type: Boolean,
       default: false
-    }),
-
-    hasEditButtons() {
-      return this.draggable || this.editable || this.deletable
-    }
+    })
   },
 
   methods: {

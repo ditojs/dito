@@ -1,0 +1,16 @@
+%field
+  border: $border-style
+  border-radius: $border-radius
+  box-sizing: border-box
+  margin: 0
+  padding: $input-padding
+  background: $color-white
+  &.dito-has-errors
+    border-color: $color-error
+  &:disabled,
+  &.dito-disabled
+    color: $color-disabled
+    pointer-events: none
+    cursor: text
+    button
+      @extend %button-disabled

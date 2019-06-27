@@ -34,8 +34,7 @@
     &:hover
       background: darken($color-active, 7.5%)
   &[disabled]
-    opacity: 0.6
-    pointer-events: none
+    @extend %button-disabled
 
 .dito-button-group
   display: inline-block

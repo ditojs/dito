@@ -1,6 +1,7 @@
 <template lang="pug">
   .dito-upload
     table.dito-table
+      // Styling comes from DitoTableHead
       thead.dito-table-head
         tr
           th
@@ -10,6 +11,7 @@
           th
             span Status
           th
+            span
       vue-draggable(
         tag="tbody"
         v-bind="getDragOptions(draggable)"

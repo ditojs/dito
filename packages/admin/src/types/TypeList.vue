@@ -18,7 +18,11 @@
         :total="total || 0"
       )
     table.dito-table(
-      :class="{ 'dito-table-spaced': hasSpacing }"
+      :class=`{
+        'dito-table-has-separators': hasSeparators,
+        'dito-table-has-alternate-colors': isListSource && !hasSeparators,
+        'dito-table-has-even-count': hasEvenCount
+      }`
     )
       dito-table-head(
         v-if="columns"
@@ -98,8 +102,10 @@
               @click="deleteItem(item, index)"
               v-bind="getButtonAttributes(verbs.delete)"
             )
+      // Render create button inside the table if we're not inside a single
+      // component view:
       tfoot(
-        v-if="creatable"
+        v-if="creatable && !isInSingleComponentView"
       )
         tr
           dito-buttons.dito-buttons-round(
@@ -109,7 +115,6 @@
             :data="listData"
             :meta="meta"
             :colspan="numColumns"
-            :class="{ 'dito-buttons-large': !!viewComponent }"
           )
             dito-create-button(
               :schema="schema"
@@ -117,6 +122,17 @@
               :verb="verbs.create"
               :text="createButtonText"
             )
+    // Render create button outside the table if we're inside a single
+    // component view:
+    .dito-buttons.dito-buttons-large(
+      v-if="creatable && isInSingleComponentView"
+    )
+      dito-create-button(
+        :schema="schema"
+        :path="path"
+        :verb="verbs.create"
+        :text="createButtonText"
+      )
 </template>
 
 <style lang="sass">
@@ -127,7 +143,6 @@
       display: flex
       justify-content: space-between
       padding-bottom: $content-padding-half
-      margin-top: -$content-padding-half
       +user-select(none)
       &:empty
         display: none
@@ -136,13 +151,6 @@
         display: flex
         flex: 0 1 auto
         min-width: 0
-    tfoot
-      .dito-buttons-large
-        background: none
-        text-align: center
-  .dito-table-spaced
-    border-spacing: 0 $form-spacing
-    margin-top: -$form-spacing
 </style>
 
 <script>
@@ -214,10 +222,8 @@ export default TypeComponent.register([
         (this.editable || this.deletable || this.draggable)
     },
 
-    hasSpacing() {
-      return this.isListSource && this.inlined &&
-        // If there are only compact forms with no labels, don't add spacing
-        (!this.isCompact || this.hasLabels)
+    hasSeparators() {
+      return this.isListSource && this.inlined
     },
 
     createButtonText() {

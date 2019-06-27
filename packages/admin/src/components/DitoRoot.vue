@@ -31,6 +31,8 @@
     @import 'dito.sass'
     height: 100%
     display: flex
+    .dito-page
+      background: $content-background-color
 </style>
 
 <script>

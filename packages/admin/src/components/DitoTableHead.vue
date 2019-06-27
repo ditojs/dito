@@ -18,7 +18,35 @@
           v-else
         ) {{ getLabel(column) }}
       th(v-if="hasEditButtons")
+        // Empty <span> is needed for styling, see _table.sass
+        span
 </template>
+
+<style lang="sass">
+.dito
+  .dito-table-head
+    +user-select(none)
+    tr
+      height: 100% // To stretch table > thead > th > button
+      th
+        padding: 0
+        font-weight: normal
+        text-align: left
+        height: 100% // To stretch table > thead > th > button
+        white-space: nowrap
+        // Convention: Nested spans handle padding
+        span
+          height: 100%
+          padding: $button-padding
+        > span
+          display: block
+        button
+          padding: $button-padding-ver 0
+          width: 100%
+          height: 100% // To stretch table > thead > th > button
+          text-align: inherit
+          border-radius: 0
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'

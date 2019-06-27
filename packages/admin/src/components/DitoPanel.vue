@@ -29,7 +29,9 @@
 <style lang="sass">
 .dito
   .dito-panel
-    padding-bottom: $content-padding
+    border: $border-style
+    border-radius: $border-radius
+    margin-bottom: $content-padding
     .dito-panel-title
       box-sizing: border-box
       height: 2em
@@ -39,15 +41,20 @@
       border-top-left-radius: $border-radius
       border-top-right-radius: $border-radius
     .dito-panel-schema
-      font-size: 11px
-      margin-top: 1px
+      font-size: $font-size-small
       background: $table-color-background
       border-bottom-left-radius: $border-radius
       border-bottom-right-radius: $border-radius
       > .dito-schema-content
         padding: $form-spacing
-      .dito-table td
-        padding: 0
+      .dito-table
+        td,
+        th
+          // Temporary workaround to disable .dito-table borders for 'object'
+          // components.
+          // TODO: Remove once we move to separate TypeObject component:
+          border: 0
+          padding: 0
       .dito-label
         margin: 0
         font-weight: normal

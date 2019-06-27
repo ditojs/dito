@@ -12,11 +12,13 @@
 <style lang="sass">
 .dito
   .dito-menu
-    background: $color-lightest
     flex: initial
     font-size: $menu-font-size
     white-space: nowrap
     +user-select(none)
+    ul
+      background: $color-lighter
+      border-right: $border-style
     a,
     h1
       display: block
@@ -25,6 +27,7 @@
       line-height: $menu-line-height
       font-weight: bold
       background: $color-darker
+      border-right: $border-width solid $color-darkest
       color: $color-white
     a
       padding: $menu-padding

@@ -49,6 +49,14 @@ export default {
       return this.hasData || !this.providesData
     },
 
+    isInView() {
+      return !!this.viewComponent
+    },
+
+    isInSingleComponentView() {
+      return this.isInView && this.viewComponent.isSingleComponentView
+    },
+
     wrapPrimitives() {
       return this.schema.wrapPrimitives
     },
@@ -228,6 +236,10 @@ export default {
       return true
     },
 
+    hasEvenCount() {
+      return !(this.listData.length % 2)
+    },
+
     paginate: getSchemaAccessor('paginate', {
       type: Number
     }),
@@ -333,8 +345,8 @@ export default {
         // `unwrapListData()` and we're done now.
       } else if (
         isObject(data) &&
-        this.viewComponent &&
-        !this.viewComponent.isSingleComponentView
+        this.isInView &&
+        !this.isInSingleComponentView
       ) {
         // The controller is sending data for a full multi-component view,
         // including the nested list data.

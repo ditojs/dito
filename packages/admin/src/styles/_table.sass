@@ -1,12 +1,50 @@
+=table-border
+  // Note: No border-width set here on purpose!
+  border-style: solid
+  border-color: $border-color
+
+=table-border-left
+  border-left-width: $border-width
+
+=table-border-right
+  border-right-width: $border-width
+
+=table-border-top
+  border-top-width: $border-width
+
+=table-border-bottom
+  border-bottom-width: $border-width
+
+=table-border-top-left
+  +table-border-top
+  +table-border-left
+  border-top-left-radius: $border-radius
+
+=table-border-top-right
+  +table-border-top
+  +table-border-right
+  border-top-right-radius: $border-radius
+
+=table-border-bottom-left
+  +table-border-bottom
+  +table-border-left
+  border-bottom-left-radius: $border-radius
+
+=table-border-bottom-right
+  +table-border-bottom
+  +table-border-right
+  border-bottom-right-radius: $border-radius
+
 table.dito-table
   width: 100%
   height: 100% // To stretch table > thead > th > button
   border-radius: $border-radius
-
+  .dito-button,
+  .dito-buttons
+    vertical-align: top // For vertical-align: baseline in normal td to work.
   .dito-buttons
     width: 1%
     text-align: right
-    vertical-align: top // For vertical-align: baseline in normal td to work.
     line-height: 1em
     .dito-button-drag
       cursor: grab
@@ -18,109 +56,83 @@ table.dito-table
           justify-content: flex-end
   > tbody,
   > tfoot
+    &:empty
+      display: none
     > tr
       vertical-align: baseline
       > td
-        border-top: 1px solid $color-white
         padding: $table-spacing
-        background: $table-color-background
-        border-radius: 0
-        &.dito-buttons
-          padding-left: 0
-        // Add rounded corners in first & last headers.
-        &:first-child
-          border-top-left-radius: $border-radius
-          border-bottom-left-radius: $border-radius
-        &:last-child
-          border-top-right-radius: $border-radius
-          border-bottom-right-radius: $border-radius
-  > tbody
-    > tr:first-child
+  &.dito-table-has-separators
+    > tbody > tr + tr,
+    > tbody:not(:empty) + tfoot > tr
       > td
-        // Top row does not need a border at the top...
-        // But to make vuedraggable happy, hide it with background color.
-        border-top-color: $table-color-background
-  > thead + tbody
-    > tr
-      &:first-child
-        > td
-          // ...except if there is a thead as well, then they need it again.
-          border-top-color: $color-white
+        border-top: $border-style
+  &.dito-table-has-alternate-colors
+    > tbody > tr:nth-child(odd),
+    &.dito-table-has-even-count > tfoot > tr
       > td
-        padding: $table-spacing
-        & + td
-          // Also, only add horizontal borders if there is a heaader
-          border-top-color: $color-white
-    &,
-    & + tfoot
-      > tr
-        > td.dito-buttons
-          padding: $button-margin
-  // Without <thead> and an empty <tbody> there's no need for the <tfoot> border
-  > tbody:first-child:empty + tfoot
-    > tr
-      > td
-        border-top-color: $table-color-background
-  // Nested .dito-table:
+        background: $color-white
+  // Add top/top-left/top-right borders to the thead cells, using the special
+  // convention that they're added to the first element inside them instead of
+  // the cell itself, so buttons can keep the border themselves and display
+  // focus nicely.
+  > thead > tr > th
+    // Use `:not(:focus)` to avoid overriding button focus border styling.
+    > *
+      box-sizing: content-box
+      &:not(:focus)
+        +table-border
+      &
+        +table-border-top
+        +table-border-bottom
+        +table-border-left
+        +table-border-right
+    &:first-child > *
+      +table-border-top-left
+    &:last-child > *
+      +table-border-top-right
+    & + th > *
+      margin-left: -1px
+      // Don't cover the focused border of buttons:
+      &:focus
+        z-index: 1
+  // Add left/rigth borders to the normal tbody cells.
+  > tbody > tr > td
+    border: 0
+    +table-border
+    &:first-child
+      +table-border-left
+    &:last-child
+      +table-border-right
+  // If there is no thead, add top/top-left/top-right borders borders to the
+  // first row of the tbody cells.
+  > tbody:first-child > tr:first-child > td,
+  // Use :first-child to exclude situation where there's a thead and empty tbody
+  > tbody:first-child:empty + tfoot > tr > td
+    +table-border-top
+    &:first-child
+      +table-border-top-left
+    &:last-child
+      +table-border-top-right
+  // If there is no toot, add top/top-left/top-right borders borders to the
+  // first row of the tbody cells.
+  > tbody:last-child > tr:last-child > td
+    +table-border-bottom
+    &:first-child
+      +table-border-bottom-left
+    &:last-child
+      +table-border-bottom-right
+    // Add bottom/bottom-left/bottom-right borders to the thead cells.
+  > tfoot > tr > td
+    border-width: 0
+    +table-border
+    +table-border-bottom
+    &:first-child
+      +table-border-bottom-left
+    &:last-child
+      +table-border-bottom-right
+
+// Nested .dito-table:
 table.dito-table table.dito-table,
 .dito-form-nested table.dito-table,
-  // Give nested tables a bit of shadow
-  box-shadow: 0 1px 3px 0 rgba($color-shadow, 0.25)
   margin: $form-spacing-half 0
-  // Nested .dito-table don't have border-spacing
-  border-spacing: 0
-  > tbody,
-  > tfoot
-    > tr
-      // Change corner rounding in nested lists, so that only the four
-      // outer corners are rounded to go with the shadow.
-      > td
-        border-radius: 0
-      &:first-child
-        > td:first-child
-          border-top-left-radius: $border-radius
-        > td:last-child
-          border-top-right-radius: $border-radius
-      &:last-child
-        > td:first-child
-          border-bottom-left-radius: $border-radius
-        > td:last-child
-          border-bottom-right-radius: $border-radius
-
-thead.dito-table-head
-  +user-select(none)
-  tr
-    height: 100% // To stretch table > thead > th > button
-  th
-    padding: 0
-    background: $button-color
-    font-weight: normal
-    text-align: left
-    height: 100% // To stretch table > thead > th > button
-    white-space: nowrap
-    & + th
-      border-left: $border-style
-    // Convention: Nested spans handle margin and spacing
-    span
-      display: inline-block
-      padding: $button-padding-ver 0
-      margin: 0 $form-spacing
-      // When there's no sort-button, add a 1px border to get same height
-      &:first-child
-        border: 1px solid transparent
-    &:first-child
-      &,
-      button
-        border-top-left-radius: $border-radius
-        border-bottom-left-radius: $border-radius
-    &:last-child
-      &,
-      button
-        border-top-right-radius: $border-radius
-        border-bottom-right-radius: $border-radius
-    .dito-button
-      padding: 0
-      width: 100%
-      height: 100% // To stretch table > thead > th > button
-      text-align: inherit
-      border-radius: 0

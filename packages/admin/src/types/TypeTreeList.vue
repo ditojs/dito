@@ -12,25 +12,31 @@
         :dataPath="treeDataPath"
         :open="true"
       )
-      // Include a router-view for the optional DitoFormInlined
-      router-view
+      .dito-tree-form-container(
+        v-if="hasEditableForms"
+      )
+        // Include a router-view for the optional DitoFormInlined
+        router-view
 </template>
 
 <style lang="sass">
 .dito
   .dito-tree-list
+    @extend %field
     .dito-tree-panel
       display: flex
       justify-content: space-between
       > .dito-tree-item
-        flex: initial
-      > .dito-form-nested
-        background: $color-lightest
-        border-radius: $border-radius
-        margin-left: $content-padding
-        width: 0 // let it grow to size
-        max-width: 75%
-        align-self: flex-start
+        flex: 1 1 25%
+      > .dito-tree-form-container
+        flex: 0 1 75%
+        align-self: stretch
+        background: $content-background-color
+        border-left: $border-style
+        border-top-right-radius: $border-radius - 1
+        border-bottom-right-radius: $border-radius - 1
+        margin: (-$input-padding-ver) (-$input-padding-hor)
+        margin-left: $input-padding-hor
 </style>
 
 <script>
@@ -89,6 +95,23 @@ export default TypeComponent.register([
           }
         }
         : this.schema
+    },
+
+    hasEditableForms() {
+      const hasEditableForms = schema => {
+        return (
+          hasForms(schema) && (
+            this.getSchemaValue('editable', {
+              type: Boolean,
+              default: false,
+              schema
+            }) ||
+            schema.children &&
+            hasEditableForms(schema.children)
+          )
+        )
+      }
+      return hasEditableForms(this.schema)
     }
   },
 
