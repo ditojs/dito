@@ -2,7 +2,7 @@
   background: $button-color
   color: $color-text
   position: relative
-  border: 1px solid transparent
+  border: 1px solid $border-color
   border-radius: $border-radius
   padding: $button-padding
   text-align: center
@@ -29,10 +29,13 @@
   &[type="submit"]
     color: $color-text-inverted
     background: $color-active
+    border-color: $color-active
     &:active
       border-color: darken($color-active, 10%)
     &:hover
       background: darken($color-active, 7.5%)
+    &:focus
+      border-color: darken($color-active, 25%)
   &[disabled]
     @extend %button-disabled
 

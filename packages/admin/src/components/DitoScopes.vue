@@ -34,11 +34,10 @@
         border-bottom-right-radius: 1em
         padding-right: 1em
       & + .dito-button
-        border-left: $border-style
-        &:focus
-          border-left-color: $color-active
-        &:active
-          border-left-color: $button-color-active-border
+        margin-left: -1px
+      // Don't cover the focused border of buttons:
+      &:focus
+        z-index: 1
 </style>
 
 <script>
