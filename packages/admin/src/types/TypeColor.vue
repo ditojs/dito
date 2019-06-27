@@ -158,6 +158,8 @@ export default TypeComponent.register('color', {
         const color = tinycolor(`#${this.convertedHexValue}`)
         if (color?.isValid()) {
           this.value = color.toString(this.format)
+          // TODO: Emit 'input' here instead, and 'change' in blur, like others.
+          this.onChange()
         }
       }
     }
