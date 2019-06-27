@@ -10,10 +10,10 @@
 </template>
 
 <style lang="sass">
-$tab-color-background: $color-white
-$tab-color-inactive: $button-color
-$tab-color-hover: lighten($tab-color-inactive, 5%)
-$tab-color-active: $tab-color-inactive
+$tab-color-background: $color-lightest
+$tab-color-inactive: $color-light
+$tab-color-active: $color-lightest
+$tab-color-hover: $color-white
 
 .dito
   .dito-tabs
