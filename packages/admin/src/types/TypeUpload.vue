@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-upload
-    table.dito-table
+    table.dito-table.dito-table-has-separators
       // Styling comes from DitoTableHead
       thead.dito-table-head
         tr
@@ -81,7 +81,7 @@
 .dito
   .dito-upload
     .dito-button-add-upload
-      border: 0
+      box-sizing: border-box
       padding: 0
       > *
         position: absolute
