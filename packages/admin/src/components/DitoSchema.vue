@@ -61,7 +61,10 @@ $tab-height: $menu-font-size + 2 * $tab-padding-ver
 .dito
   .dito-schema
     box-sizing: border-box
+    // To dissplay schema next to panels:
     display: flex
+    // To not vertically stretch .dito-schema-content to screen height:
+    align-items: flex-start
     > .dito-schema-content
       flex: 1 1 100%
       max-width: $content-width

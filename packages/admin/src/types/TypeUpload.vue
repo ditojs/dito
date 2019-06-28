@@ -80,6 +80,9 @@
 <style lang="sass">
 .dito
   .dito-upload
+    .dito-table
+      tr
+        vertical-align: middle
     .dito-button-add-upload
       box-sizing: border-box
       padding: 0
