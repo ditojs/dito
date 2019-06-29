@@ -61,14 +61,19 @@ table.dito-table
       > td
         padding: $table-spacing
   // Variants of list styles: separators and alternate colors
-  &.dito-table-has-separators
+  &.dito-table-separators
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr
       > td
         border-top: $border-style
-  &.dito-table-has-alternate-colors
+  &.dito-table-alternate-colors
     > tbody > tr:nth-child(odd),
-    &.dito-table-has-even-count > tfoot > tr
+    &.dito-table-even-count > tfoot > tr
+      > td
+        background: $color-white
+  &.dito-table-background
+    > tbody > tr,
+    > tfoot > tr
       > td
         background: $color-white
   // Add top/top-left/top-right borders to the thead cells, using the special

@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-upload
-    table.dito-table.dito-table-has-separators
+    table.dito-table.dito-table-separators.dito-table-background
       // Styling comes from DitoTableHead
       thead.dito-table-head
         tr

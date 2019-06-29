@@ -19,9 +19,9 @@
       )
     table.dito-table(
       :class=`{
-        'dito-table-has-separators': hasSeparators,
-        'dito-table-has-alternate-colors': isListSource && !hasSeparators,
-        'dito-table-has-even-count': hasEvenCount
+        'dito-table-separators': hasSeparators,
+        'dito-table-alternate-colors': isListSource && !hasSeparators,
+        'dito-table-even-count': hasEvenCount
       }`
     )
       dito-table-head(
