@@ -13,9 +13,6 @@
     font-weight: bold
     label
       white-space: nowrap
-    &::before
-      // Use &nbsp; to enforce the right text height in the container
-      content: '\00a0'
     &.dito-width-fill
       // Crop labels that are too large when component fills available space
       label
@@ -24,6 +21,10 @@
         text-overflow: ellipsis
         left: 0
         right: 0
+      &::after
+        // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
+        // on its parent to enforce the right text height in the container
+        content: '\00a0'
   .dito-schema-compact .dito-label
     display: inline-block
     // To align with content in selects:
