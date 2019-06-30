@@ -45,7 +45,6 @@ table.dito-table
   .dito-buttons
     width: 1%
     text-align: right
-    line-height: 1em
     .dito-button-drag
       cursor: grab
       &:active,
@@ -60,6 +59,7 @@ table.dito-table
       vertical-align: baseline
       > td
         padding: $table-spacing
+        background: $content-background-color
   // Variants of list styles: separators and alternate colors
   &.dito-table-separators
     > tbody > tr + tr,
