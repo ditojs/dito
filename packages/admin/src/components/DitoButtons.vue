@@ -1,5 +1,8 @@
 <template lang="pug">
-  .dito-buttons(:is="tag")
+  .dito-buttons(
+    v-if="buttonSchemas || $slots.default"
+    :is="tag"
+  )
     // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
     // sub-class as the component container for different layout:
     .dito-buttons-container
@@ -15,8 +18,11 @@
         :disabled="disabled"
         :generateLabels="false"
       )
-      .dito-button-container(v-if="$slots.default")
-        slot
+      .dito-button-container(
+        v-for="node in $slots.default"
+        v-if="node.tag"
+      )
+        dito-vnode(:node="node")
 </template>
 
 <style lang="sass">
@@ -25,7 +31,7 @@
     display: flex
     flex-flow: row wrap
     flex: 100%
-    align-items: baseline
+    align-items: center
     justify-content: center
 </style>
 
@@ -53,10 +59,12 @@ export default DitoComponent.component('dito-buttons', {
     buttonSchemas() {
       // Compute a buttons list which has the dataPath baked into its keys.
       const { dataPath, buttons } = this
-      return Object.values(buttons || {}).reduce((schemas, button) => {
-        schemas[appendDataPath(dataPath, button.name)] = button
-        return schemas
-      }, {})
+      return buttons
+        ? Object.values(buttons).reduce((schemas, button) => {
+          schemas[appendDataPath(dataPath, button.name)] = button
+          return schemas
+        }, {})
+        : null
     }
   }
 })

@@ -1,15 +1,16 @@
 import DitoComponent from '@/DitoComponent'
 import ResourceMixin from './ResourceMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getItemParams, appendDataPath } from '@/utils/data'
 import { getMemberResource } from '@/utils/resource'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels, getNamedSchemas,
+  processRouteSchema, processForms, hasForms, hasLabels,
+  getNamedSchemas, getButtonSchemas,
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
   isObject, isString, isArray, isNumber, asArray,
-  parseDataPath, normalizeDataPath, equals
+  equals, capitalize,
+  parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
 // @vue/component
@@ -218,6 +219,26 @@ export default {
       return forms && Object.values(forms) || asArray(form)
     },
 
+    formLabel() {
+      return this.getLabel(this.schema.form)
+    },
+
+    createButtonText() {
+      return (
+        // Allow schema to override create button through creatable object:
+        this.schema.creatable.label ||
+        // Auto-generate create button labels from from labels for list
+        // sources with only one form:
+        this.isListSource && this.formLabel &&
+          `${capitalize(this.verbs.create)} ${this.formLabel}` ||
+        null
+      )
+    },
+
+    buttonSchemas() {
+      return getButtonSchemas(this.schema.buttons)
+    },
+
     hasLabels() {
       for (const form of this.forms) {
         if (hasLabels(form)) {
@@ -368,31 +389,6 @@ export default {
         this.value = data.results
         return this.value
       }
-    },
-
-    getDataPath(index) {
-      return this.isObjectSource
-        // For objects, use no path to list, and normal path to the item:
-        ? index == null ? undefined : this.dataPath
-        // For lists, use normal path to list, and concatenated path to item:
-        : index == null ? this.dataPath : appendDataPath(this.dataPath, index)
-    },
-
-    getEditLink(item, index) {
-      return {
-        path: this.isObjectSource
-          ? this.path
-          : `${this.path}/${this.getItemId(this.schema, item, index)}`
-      }
-    },
-
-    renderItem(item, index) {
-      return this.schema.render(getItemParams(this, {
-        name: undefined,
-        value: undefined,
-        data: item,
-        dataPath: this.getDataPath(index)
-      }))
     },
 
     createItem(schema, type) {

@@ -47,14 +47,9 @@
       border-bottom-right-radius: $border-radius
       > .dito-schema-content
         padding: $form-spacing
-      .dito-table
-        td,
-        th
-          // Temporary workaround to disable .dito-table borders for 'object'
-          // components.
-          // TODO: Remove once we move to separate TypeObject component:
-          border: 0
-          padding: 0
+      .dito-object
+        border: 0
+        padding: 0
       .dito-label
         margin: 0
         font-weight: normal

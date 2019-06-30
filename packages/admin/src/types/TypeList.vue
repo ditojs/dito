@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-list(
     v-if="isReady"
-    :id="getDataPath()"
+    :id="dataPath"
     :class="schema.class"
     :style="schema.style"
   )
@@ -20,7 +20,7 @@
     table.dito-table(
       :class=`{
         'dito-table-separators': hasSeparators,
-        'dito-table-alternate-colors': isListSource && !hasSeparators,
+        'dito-table-alternate-colors': !hasSeparators,
         'dito-table-even-count': hasEvenCount
       }`
     )
@@ -60,7 +60,7 @@
             td
               dito-schema-inlined(
                 v-if="inlined"
-                :label="isListSource ? getItemLabel(schema, item, index) : null"
+                :label="getItemLabel(schema, item, index)"
                 :schema="getItemFormSchema(schema, item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
@@ -77,7 +77,7 @@
               )
               span(
                 v-else-if="schema.render"
-                v-html="renderItem(item, index)"
+                v-html="schema.render(getItemParams(item, index))"
               )
               span(
                 v-else
@@ -105,7 +105,7 @@
       // Render create button inside the table if we're not inside a single
       // component view:
       tfoot(
-        v-if="creatable && !isInSingleComponentView"
+        v-if="hasListButtons && !isInSingleComponentView"
       )
         tr
           dito-buttons.dito-buttons-round(
@@ -117,6 +117,7 @@
             :colspan="numColumns"
           )
             dito-create-button(
+              v-if="creatable"
               :schema="schema"
               :path="path"
               :verb="verbs.create"
@@ -124,10 +125,15 @@
             )
     // Render create button outside the table if we're inside a single
     // component view:
-    .dito-buttons.dito-buttons-large(
-      v-if="creatable && isInSingleComponentView"
+    dito-buttons.dito-buttons-large(
+      v-if="hasListButtons && isInSingleComponentView"
+      :buttons="buttonSchemas"
+      :dataPath="dataPath"
+      :data="listData"
+      :meta="meta"
     )
       dito-create-button(
+        v-if="creatable"
         :schema="schema"
         :path="path"
         :verb="verbs.create"
@@ -158,18 +164,15 @@ import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { DateTimePicker } from '@ditojs/ui'
-import { pickBy, equals, capitalize, hyphenate } from '@ditojs/utils'
-import { getNamedSchemas, getButtonSchemas } from '@/utils/schema'
+import { pickBy, equals, hyphenate } from '@ditojs/utils'
+import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
-import { appendDataPath } from '@/utils/data'
+import { getItemParams, appendDataPath } from '@/utils/data'
 
 // @vue/component
-export default TypeComponent.register([
-  'list', 'object'
-], {
+export default TypeComponent.register('list', {
+  components: { VueDraggable },
   mixins: [SourceMixin, OrderedMixin],
-  components: { VueDraggable, DateTimePicker },
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
@@ -212,44 +215,57 @@ export default TypeComponent.register([
 
   computed: {
     numColumns() {
-      return (this.columns ? Object.keys(this.columns).length : 1) +
+      return (
+        (this.columns ? Object.keys(this.columns).length : 1) +
         (this.creatable ? 1 : 0)
+      )
+    },
+
+    hasSeparators() {
+      return this.inlined
+    },
+
+    hasListButtons() {
+      return !!(
+        this.buttonSchemas ||
+        this.creatable
+      )
     },
 
     hasEditButtons() {
       const { listData } = this
-      return listData.length > 0 &&
-        (this.editable || this.deletable || this.draggable)
-    },
-
-    hasSeparators() {
-      return this.isListSource && this.inlined
-    },
-
-    createButtonText() {
-      return (
-        // Allow schema to override create button through creatable object:
-        this.schema.creatable.label ||
-        // Auto-generate create button labels from from labels for list
-        // sources with only one form:
-        this.isListSource && this.formLabel &&
-          `${capitalize(this.verbs.create)} ${this.formLabel}` ||
-        null
+      return listData.length > 0 && (
+        this.editable ||
+        this.deletable ||
+        this.draggable
       )
-    },
-
-    formLabel() {
-      return this.getLabel(this.schema.form)
-    },
-
-    buttonSchemas() {
-      return getButtonSchemas(this.schema.buttons)
     }
   },
 
   methods: {
+    getDataPath(index) {
+      return appendDataPath(this.dataPath, index)
+    },
+
+    getEditLink(item, index) {
+      return {
+        path: this.isObjectSource
+          ? this.path
+          : `${this.path}/${this.getItemId(this.schema, item, index)}`
+      }
+    },
+
     getCellClass(cell) {
       return `dito-cell-${hyphenate(cell.name)}`
+    },
+
+    getItemParams(item, index) {
+      return getItemParams(this, {
+        name: undefined,
+        value: undefined,
+        data: item,
+        dataPath: this.getDataPath(index)
+      })
     },
 
     onFilterErrors(errors) {

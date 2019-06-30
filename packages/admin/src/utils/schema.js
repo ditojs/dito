@@ -222,23 +222,27 @@ export function setDefaults(schema, data = {}) {
 }
 
 export function getNamedSchemas(descriptions, defaults) {
-  const toObject = (array, toSchema) => array.reduce((object, value) => {
-    const schema = toSchema(value)
-    if (schema) {
-      object[schema.name] = schema && defaults
-        ? { ...defaults, ...schema }
-        : schema
-    }
-    return object
-  }, {})
+  const toObject = (array, toSchema) => {
+    return array.length > 0
+      ? array.reduce((object, value) => {
+        const schema = toSchema(value)
+        if (schema) {
+          object[schema.name] = schema && defaults
+            ? { ...defaults, ...schema }
+            : schema
+        }
+        return object
+      }, {})
+      : null
+  }
 
-  return isArray(descriptions) && descriptions.length
+  return isArray(descriptions)
     ? toObject(descriptions, value => (
       isObject(value) ? value : {
         name: camelize(value, false)
       }
     ))
-    : isObject(descriptions) && Object.keys(descriptions).length
+    : isObject(descriptions)
       ? toObject(
         Object.entries(descriptions),
         ([name, value]) =>
