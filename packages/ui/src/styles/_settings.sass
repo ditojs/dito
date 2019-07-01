@@ -1,12 +1,15 @@
 // Colors
-$color-black:     hsl(0, 0%, 4%)
-$color-darkest:   hsl(0, 0%, 10%)
-$color-darker:    hsl(0, 0%, 20%)
-$color-dark:      hsl(0, 0%, 30%)
+$color-dark-offset: 2%
+$color-light-offset: 2%
+
+$color-black:     hsl(0, 0%, 5%)
+$color-darkest:   hsl(0, 0%, 10% - $color-dark-offset)
+$color-darker:    hsl(0, 0%, 20% - $color-dark-offset)
+$color-dark:      hsl(0, 0%, 30% - $color-dark-offset)
 $color-grey:      hsl(0, 0%, 50%)
-$color-light:     hsl(0, 0%, 80%)
-$color-lighter:   hsl(0, 0%, 90%)
-$color-lightest:  hsl(0, 0%, 95%)
+$color-light:     hsl(0, 0%, 80% - $color-light-offset)
+$color-lighter:   hsl(0, 0%, 90%- $color-light-offset)
+$color-lightest:  hsl(0, 0%, 95% - $color-light-offset)
 $color-white:     hsl(0, 0%, 100%)
 
 $color-active:    hsl(211, 100%, 61%) // ActiveBorder
