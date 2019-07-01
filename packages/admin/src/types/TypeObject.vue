@@ -72,10 +72,11 @@
     box-sizing: border-box
     .dito-object-content
       flex: 0 1 100%
-    .dito-buttons
+    > .dito-buttons
       flex: 1 0 0%
-    .dito-buttons-container
-      justify-content: flex-end
+      margin-left: $form-spacing
+      > .dito-buttons-container
+        justify-content: flex-end
 </style>
 
 <script>

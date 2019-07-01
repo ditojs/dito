@@ -39,27 +39,24 @@ table.dito-table
   width: 100%
   height: 100% // To stretch table > thead > th > button
   border-radius: $border-radius
-  .dito-button,
-  .dito-buttons
-    vertical-align: top // For vertical-align: baseline in normal td to work.
-  .dito-buttons
-    width: 1%
-    text-align: right
-    .dito-button-drag
-      cursor: grab
-      &:active,
-        cursor: grabbing
-  > tfoot
-      .dito-buttons:not(.dito-buttons-large)
-        .dito-buttons-container
-          justify-content: flex-end
   > tbody,
   > tfoot
     > tr
       vertical-align: baseline
       > td
-        padding: $table-spacing
-        background: $content-background-color
+        padding: $form-spacing 0 $form-spacing $form-spacing
+        background: $content-color-background
+        &:last-child
+          padding-right: $form-spacing
+        &.dito-buttons
+          width: 1%
+          text-align: right
+          .dito-buttons-container
+            justify-content: flex-end
+          &,
+          .dito-button
+            // For vertical-align: baseline in normal td to work:
+            vertical-align: top
   // Variants of list styles: separators and alternate colors
   &.dito-table-separators
     > tbody > tr + tr,
@@ -72,9 +69,9 @@ table.dito-table
       > td
         background: $color-white
   &.dito-table-background
-    > tbody > tr,
-    > tfoot > tr
-      > td
+    > tbody,
+    > tfoot
+       > tr > td
         background: $color-white
   // Add top/top-left/top-right borders to the thead cells, using the special
   // convention that they're added to the first element inside them instead of

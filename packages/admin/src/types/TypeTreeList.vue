@@ -31,7 +31,7 @@
       > .dito-tree-form-container
         flex: 0 1 75%
         align-self: stretch
-        background: $content-background-color
+        background: $content-color-background
         border-left: $border-style
         border-top-right-radius: $border-radius - 1
         border-bottom-right-radius: $border-radius - 1

@@ -42,7 +42,7 @@
       border-top-right-radius: $border-radius
     .dito-panel-schema
       font-size: $font-size-small
-      background: $table-color-background
+      background: $content-color-background
       border-bottom-left-radius: $border-radius
       border-bottom-right-radius: $border-radius
       > .dito-schema-content

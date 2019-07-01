@@ -51,6 +51,11 @@
 .dito-button-paste:empty::before
   content: 'Paste'
 
+.dito-button-drag
+  cursor: grab
+  &:active,
+    cursor: grabbing
+
 .dito-buttons.dito-buttons-large
   text-align: center
   font-size: $menu-font-size

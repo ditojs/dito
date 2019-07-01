@@ -32,7 +32,7 @@
     height: 100%
     display: flex
     .dito-page
-      background: $content-background-color
+      background: $content-color-background
 </style>
 
 <script>
