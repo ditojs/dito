@@ -11,6 +11,7 @@
         :query="query"
         :scopes="scopes"
       )
+      div
       dito-pagination(
         v-if="paginate"
         :query="query"
@@ -20,6 +21,7 @@
     table.dito-table(
       :class=`{
         'dito-table-separators': hasSeparators,
+        'dito-table-edit-buttons': hasEditButtons,
         'dito-table-alternate-colors': !hasSeparators,
         'dito-table-even-count': hasEvenCount
       }`

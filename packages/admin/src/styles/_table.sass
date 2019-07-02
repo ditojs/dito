@@ -55,9 +55,15 @@ table.dito-table
             justify-content: flex-end
           &,
           .dito-button
-            // For vertical-align: baseline in normal td to work:
+            // To align better with `vertical-align: baseline` in normal td:
             vertical-align: top
-  // Variants of list styles: separators and alternate colors
+  // Add more spacing to cells in tables with edit buttons, to better align cell
+  // texts with edit buttons.
+  &.dito-table-edit-buttons
+    td:not(.dito-buttons)
+      $padding: $form-spacing * 1.5
+      padding: $padding 0 $padding $padding
+  // Variants of list styles: separators and alternate colors.
   &.dito-table-separators
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr
