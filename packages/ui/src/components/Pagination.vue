@@ -8,18 +8,16 @@
       template(v-if="total > 0") {{ first }} – {{ last }}
       template(v-else) 0
       |  / {{ total }}
-    ul.dito-pagination-items
-      li(
+    .dito-buttons.dito-buttons-round
+      button.dito-button(
         v-for="page in pageRange"
+        @click="onClickPage(page)"
+        :class="getPageClass(page)"
+        :disabled="page.disabled"
       )
-        button.dito-button.dito-pagination-item(
-          @click="onClickPage(page)"
-          :class="getPageClass(page)"
-          :disabled="page.disabled"
-        )
-          span(
-            v-if="page.text"
-          ) {{ page.text }}
+        span(
+          v-if="page.text"
+        ) {{ page.text }}
 </template>
 
 <style lang="sass">
@@ -31,23 +29,12 @@
       line-height: 2em
       overflow: hidden
       text-overflow: ellipsis
-    .dito-pagination-items
+    .dito-buttons
       display: flex
-      padding: 0
-      margin-right: -$button-margin
-      li
-        list-style: none
-      .dito-pagination-item
-        display: block
+      .dito-button
         transition: all .3s ease, color 0s, background 0s, border 0s
         font-variant-numeric: tabular-nums
-        +user-select(none)
-        height: 2em
-        min-width: 2em
         padding: 0 0.5em
-        text-align: center
-        margin: 0 $button-margin
-        border-radius: 1em
         &.dito-active
           background: $color-active
           color: $color-text-inverted
@@ -159,7 +146,7 @@ export default {
         'dito-active': page.active
       }
       if (page.type) {
-        classes[`dito-pagination-item-${page.type}`] = true
+        classes[`dito-button-${page.type}`] = true
       }
       return classes
     },
