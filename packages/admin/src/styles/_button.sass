@@ -57,7 +57,9 @@
     cursor: grabbing
 
 .dito-buttons
+  --button-margin: 6px
   &.dito-buttons-large
+    --button-margin: 3px
     font-size: $menu-font-size
     flex-flow: row wrap
     justify-content: center
@@ -68,24 +70,24 @@
       border-radius: 2em
       padding: $button-round-padding
 
-  &.dito-buttons-round,
-  &.dito-buttons-small
-    .dito-button-create:empty::before,
-    .dito-button-add:empty::before,
-    // Special .dito-button-add-upload without :empty:
-    .dito-button-add-upload::before
-      @extend %icon-add
-    .dito-button-delete:empty::before,
-    .dito-button-remove:empty::before
-      @extend %icon-remove
-    .dito-button-edit:empty::before
-      @extend %icon-edit
-    .dito-button-drag:empty::before
-      @extend %icon-drag
-    .dito-button-copy:empty::before
-      @extend %icon-copy
-    .dito-button-paste:empty::before
-      @extend %icon-paste
+.dito-buttons-round,
+.dito-buttons-small
+  .dito-button-create:empty::before,
+  .dito-button-add:empty::before,
+  // Special .dito-button-add-upload without :empty:
+  .dito-button-add-upload::before
+    @extend %icon-add
+  .dito-button-delete:empty::before,
+  .dito-button-remove:empty::before
+    @extend %icon-remove
+  .dito-button-edit:empty::before
+    @extend %icon-edit
+  .dito-button-drag:empty::before
+    @extend %icon-drag
+  .dito-button-copy:empty::before
+    @extend %icon-copy
+  .dito-button-paste:empty::before
+    @extend %icon-paste
 
 .dito-button-overlay
   position: absolute

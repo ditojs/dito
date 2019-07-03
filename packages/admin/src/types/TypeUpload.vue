@@ -35,46 +35,48 @@
                 | Uploaded
             template(v-else)
               | Stored
-          td.dito-buttons.dito-buttons-round
-            button.dito-button(
-              v-if="draggable"
-              type="button"
-              v-bind="getButtonAttributes(verbs.drag)"
-            )
-            button.dito-button(
-              v-if="deletable"
-              type="button"
-              @click="deleteFile(file, index)"
-              v-bind="getButtonAttributes(verbs.delete)"
-            )
+          td
+            .dito-buttons.dito-buttons-round
+              button.dito-button(
+                v-if="draggable"
+                type="button"
+                v-bind="getButtonAttributes(verbs.drag)"
+              )
+              button.dito-button(
+                v-if="deletable"
+                type="button"
+                @click="deleteFile(file, index)"
+                v-bind="getButtonAttributes(verbs.delete)"
+              )
       tfoot
         tr
-          td.dito-buttons.dito-buttons-round(:colspan="4")
-            button.dito-button(
-              v-if="uploadable"
-              type="button"
-              @click.prevent="upload.active = true"
-            ) Upload All
-            button.dito-button(
-              v-else-if="cancelable"
-              type="button"
-              @click.prevent="upload.active = false"
-            ) Cancel All
-            vue-upload.dito-button.dito-button-add-upload(
-              :input-id="dataPath"
-              :name="dataPath"
-              :disabled="disabled"
-              :post-action="uploadPath"
-              :extensions="extensions"
-              :accept="accept"
-              :multiple="multiple"
-              :size="maxSize"
-              v-model="uploads"
-              @input-filter="inputFilter"
-              @input-file="inputFile"
-              ref="upload"
-              title="Upload Files"
-            )
+          td(:colspan="4")
+            .dito-buttons.dito-buttons-round
+              button.dito-button(
+                v-if="uploadable"
+                type="button"
+                @click.prevent="upload.active = true"
+              ) Upload All
+              button.dito-button(
+                v-else-if="cancelable"
+                type="button"
+                @click.prevent="upload.active = false"
+              ) Cancel All
+              vue-upload.dito-button.dito-button-add-upload(
+                :input-id="dataPath"
+                :name="dataPath"
+                :disabled="disabled"
+                :post-action="uploadPath"
+                :extensions="extensions"
+                :accept="accept"
+                :multiple="multiple"
+                :size="maxSize"
+                v-model="uploads"
+                @input-filter="inputFilter"
+                @input-file="inputFile"
+                ref="upload"
+                title="Upload Files"
+              )
 </template>
 
 <style lang="sass">

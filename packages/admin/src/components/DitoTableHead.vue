@@ -33,7 +33,7 @@
         text-align: left
         height: 100% // To stretch table > thead > th > button
         white-space: nowrap
-        button
+        .dito-button
           // Convention: Nested spans handle padding, see below
           padding: 0
           width: 100%
@@ -41,9 +41,10 @@
           text-align: inherit
           border-radius: 0
         span
-          height: 100%
+          display: inline-block
           // Convention: Nested spans handle padding
           padding: $button-padding
+          height: 100%
         > span
           display: block
 </style>

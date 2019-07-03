@@ -11,6 +11,9 @@
         :query="query"
         :scopes="scopes"
       )
+      .dito-spacer(
+        v-else
+      )
       dito-pagination(
         v-if="paginate"
         :query="query"
@@ -146,9 +149,6 @@
       justify-content: space-between
       padding-bottom: $content-padding-half
       +user-select(none)
-      &::before
-        // Make pagination right aligned when alone by itself.
-        content: ''
       &:empty
         display: none
       .dito-scopes,

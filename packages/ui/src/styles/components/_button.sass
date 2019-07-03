@@ -39,18 +39,19 @@
   &[disabled]
     @extend %button-disabled
 
-.dito-button-group
-  display: inline-block
-  & + .dito-button-group
-    margin-left: 1.5em
-
 .dito-buttons
   display: flex
   align-items: center
   justify-content: flex-end
   white-space: nowrap
-  .dito-button + .dito-button
-    margin-left: $button-margin
+  &,
+  .dito-button-group
+    > *,
+      margin-left: var(--button-margin, 2px)
+      &:first-child
+        margin-left: 0
+  .dito-button-group + .dito-button-group
+    margin-left: 1.5em
 
 .dito-buttons-round
   .dito-button
@@ -60,25 +61,19 @@
     border-radius: 1em
 
 .dito-buttons-small
-  .dito-button
-  .dito-button + .dito-button
-    margin-left: 1px
+  --button-margin: 1px
 
 .dito-buttons-round,
 .dito-buttons-small
   line-height: 1em
-  .dito-button
-    display: inline-block
-    text-align: center
-    white-space: nowrap
 
 .dito-buttons-toolbar
+  --button-margin: 2px
   justify-content: flex-start
   .dito-button
-    box-sizing: content-box
-    min-width: 1em
     padding: 0 $button-padding-hor
+    box-sizing: content-box
     vertical-align: text-bottom
-
+    // Zoom icons a little
     i[class*="dito-icon-"]
       width: 1.1em

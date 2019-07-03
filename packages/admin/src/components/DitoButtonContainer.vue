@@ -1,12 +1,8 @@
-<style lang="sass">
-  .dito-button-container
-    & + .dito-button-container
-      margin-left: $button-margin
-</style>
-
 <script>
 import DitoComponentContainer from './DitoComponentContainer'
 
+// NOTE: DitoButtonContainer extends DitoComponentContainer and changes the
+// behavior of computed properties for use with buttons.
 // @vue/component
 export default DitoComponentContainer.component('dito-button-container', {
   computed: {
