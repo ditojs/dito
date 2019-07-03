@@ -73,7 +73,7 @@
       padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
-    .dito-components + .dito-form-buttons
+    .dito-components + .dito-buttons
       &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
