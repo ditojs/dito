@@ -1,9 +1,13 @@
 <style lang="sass">
+  $duration: 0.15s
   .height-enter-active,
   .height-leave-active
-    transition: height 0.2s $easeOutQuart
+    transition: height $duration $easeOutQuart
     overflow: hidden
-
+  .height-enter-active
+    animation: slide-enter $duration $easeOutQuart
+  .height-leave-active
+    animation: slide-leave $duration $easeOutQuart
   .height-enter,
   .height-leave-to
     height: 0

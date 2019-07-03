@@ -25,6 +25,8 @@
         padding: ($form-spacing + $form-spacing-half) $form-spacing
       & +.dito-components
         padding-top: $form-spacing-half
+        // Needed for transition-height in DitoSchema:
+        min-height: $form-spacing-half
 </style>
 
 <script>
