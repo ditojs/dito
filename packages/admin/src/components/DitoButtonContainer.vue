@@ -7,7 +7,7 @@ import DitoComponentContainer from './DitoComponentContainer'
 export default DitoComponentContainer.component('dito-button-container', {
   computed: {
     width() {
-      // Override DitoComponentContainer's width() to not use a default width:
+      // Override DitoComponentContainer's width() to never use a default width:
       return this.schema.width
     },
 

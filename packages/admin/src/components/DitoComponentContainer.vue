@@ -35,7 +35,7 @@
     // Cannot use margin here as it needs to be part of box-sizing for
     // percentages in flex-basis to work.
     padding: $form-spacing $form-spacing-half
-    &.no-padding,
+    &.dito-omit-padding,
     &:empty,
       padding: 0
   // NOTE: This is not nested inside .dito-component-container so that other
@@ -52,9 +52,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import {
-  shouldRenderLabel, getContainerClass, getTypeOptions
-} from '@/utils/schema'
+import { shouldRenderLabel, getTypeOptions } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
@@ -82,8 +80,12 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     width() {
+      const width = (
+        this.schema.width ??
+        getTypeOptions(this.schema)?.defaultWidth
+      )
       // Use 100% == 1.0 as default width when nothing is set:
-      return this.schema.width ?? 1.0
+      return width === undefined ? 1.0 : width
     },
 
     percentage() {
@@ -99,12 +101,12 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerClass() {
-      return [
+      return {
         // Use the component name as its class, so the extended
         // dito-button-container automatically works too.
-        this.$options.name,
-        getContainerClass(this.schema)
-      ]
+        [this.$options.name]: true,
+        'dito-omit-padding': getTypeOptions(this.schema)?.omitPadding
+      }
     },
 
     containerStyle() {

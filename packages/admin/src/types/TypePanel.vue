@@ -5,7 +5,7 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register('panel', {
   defaultValue: undefined,
   renderLabel: false,
-  containerClass: 'no-padding',
+  omitPadding: true,
 
   getPanelSchema(schema) {
     // For a TypePanel, the component schema is also the panel schema, but

@@ -19,15 +19,19 @@
 
 <style lang="sass">
   .dito-components
-    // Remove padding added by .dito-component-container below
-    margin: (-$form-spacing) (-$form-spacing-half)
-    // Add removed horizontal margin again to max-width:
-    max-width: $content-width + 2 * $form-spacing-half
     display: flex
     flex-flow: row wrap
     flex: 100%
     position: relative
     align-items: baseline
+    // Remove padding added by .dito-component-container
+    margin: (-$form-spacing) (-$form-spacing-half)
+    // Add removed horizontal margin again to max-width:
+    max-width: $content-width + 2 * $form-spacing-half
+    .dito-component-container.dito-omit-padding > &
+      // Clear above paddings again if parent is omitting padding.
+      margin: 0
+      max-width: $content-width
 </style>
 
 <script>

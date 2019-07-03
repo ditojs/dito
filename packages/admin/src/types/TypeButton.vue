@@ -21,6 +21,7 @@ export default TypeComponent.register([
 // @vue/component
 {
   defaultValue: undefined,
+  defaultWidth: null,
   // TODO: Consider making this work nicely:
   // preventFlexGrowth: true,
 
