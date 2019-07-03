@@ -11,7 +11,6 @@
         :query="query"
         :scopes="scopes"
       )
-      div
       dito-pagination(
         v-if="paginate"
         :query="query"
@@ -105,8 +104,7 @@
                 @click="deleteItem(item, index)"
                 v-bind="getButtonAttributes(verbs.delete)"
               )
-      // Render create button inside the table if we're not inside a single
-      // component view:
+      // Render buttons inside the table when not in a single component view:
       tfoot(v-if="hasListButtons && !isInSingleComponentView")
         tr
           td(:colspan="numColumns")
@@ -123,8 +121,7 @@
                 :verb="verbs.create"
                 :text="createButtonText"
               )
-    // Render create button outside the table if we're inside a single
-    // component view:
+    // Render buttons outside the table when in a single component view:
     dito-buttons.dito-buttons-large(
       v-if="hasListButtons && isInSingleComponentView"
       :buttons="buttonSchemas"
@@ -149,6 +146,9 @@
       justify-content: space-between
       padding-bottom: $content-padding-half
       +user-select(none)
+      &::before
+        // Make pagination right aligned when alone by itself.
+        content: ''
       &:empty
         display: none
       .dito-scopes,
