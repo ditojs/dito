@@ -11,7 +11,7 @@
             v-if="collapsible"
             @click.stop="opened = !opened"
           )
-            .dito-chevron(:class="{ 'dito-collapsed': !opened }")
+            .dito-chevron(:class="{ 'dito-opened': opened }")
             label {{ label }}
           .dito-label(v-else)
             label {{ label }}
@@ -38,18 +38,19 @@
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
-      dito-components.dito-main-components(
-        v-if="schema.components"
-        ref="components"
-        :schema="schema"
-        :dataPath="dataPath"
-        :data="data"
-        :meta="meta"
-        :store="store"
-        :disabled="disabled"
-        :generateLabels="generateLabels"
-        :class="{ 'dito-collapsed': !opened }"
-      )
+      transition-height
+        dito-components.dito-main-components(
+          v-if="schema.components"
+          v-show="opened"
+          ref="components"
+          :schema="schema"
+          :dataPath="dataPath"
+          :data="data"
+          :meta="meta"
+          :store="store"
+          :disabled="disabled"
+          :generateLabels="generateLabels"
+        )
       slot(
         name="buttons"
         v-if="!inlined && isPopulated"
@@ -145,9 +146,11 @@ import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
+import { TransitionHeight } from '@ditojs/ui'
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {
+  components: { TransitionHeight },
   mixins: [ItemMixin],
 
   provide() {

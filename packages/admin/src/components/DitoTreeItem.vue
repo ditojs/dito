@@ -10,7 +10,7 @@
       )
         .dito-chevron(
           v-if="numEntries"
-          :class="{ 'dito-collapsed': !opened }"
+          :class="{ 'dito-opened': opened }"
         )
         .dito-tree-label(v-html="label")
         .dito-tree-info(v-if="details") {{ details }}
