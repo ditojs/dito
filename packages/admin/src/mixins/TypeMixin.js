@@ -261,7 +261,8 @@ export default {
     },
 
     focus() {
-      // Also focus this component's panel in case it's a tab.
+      // Also focus this component's schema and panel in case it's a tab.
+      this.schemaComponent.focus()
       this.tabComponent?.focus()
       const [focus] = asArray(this.$refs.element)
       if (focus) {

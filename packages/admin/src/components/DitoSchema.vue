@@ -411,6 +411,11 @@ export default DitoComponent.component('dito-schema', {
       return this.getComponent(dataPath)?.getErrors() || null
     },
 
+    focus() {
+      this.parentSchemaComponent?.focus()
+      this.opened = true
+    },
+
     validateAll(match, notify = true) {
       const { components } = this
       let dataPaths
