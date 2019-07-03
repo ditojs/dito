@@ -33,18 +33,19 @@
         text-align: left
         height: 100% // To stretch table > thead > th > button
         white-space: nowrap
-        // Convention: Nested spans handle padding
-        span
-          height: 100%
-          padding: $button-padding
-        > span
-          display: block
         button
-          padding: $button-padding-ver 0
+          // Convention: Nested spans handle padding, see below
+          padding: 0
           width: 100%
           height: 100% // To stretch table > thead > th > button
           text-align: inherit
           border-radius: 0
+        span
+          height: 100%
+          // Convention: Nested spans handle padding
+          padding: $button-padding
+        > span
+          display: block
 </style>
 
 <script>
