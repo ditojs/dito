@@ -159,6 +159,10 @@ export default DitoComponent.component('dito-schema', {
     }
   },
 
+  inject: [
+    '$schemaParentComponent'
+  ],
+
   props: {
     schema: { type: Object, default: null },
     dataPath: { type: String, default: '' },
@@ -313,9 +317,9 @@ export default DitoComponent.component('dito-schema', {
 
   methods: {
     _register(add) {
-      // `_registerSchemaComponent()` is only present if the parent uses the
-      // `SchemaParentMixin`:
-      this.$parent._registerSchemaComponent?.(this, add)
+      // `$schemaParentComponent()` is only set if one of the ancestors uses
+      // the `SchemaParentMixin`:
+      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
     },
 
     _registerComponentsContainer(componentsContainer, add) {

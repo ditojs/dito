@@ -63,14 +63,14 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getButtonSchemas } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { isFunction } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {
-  mixins: [SchemaParentMixin],
+  mixins: [ValidatorMixin],
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },

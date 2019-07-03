@@ -1,5 +1,6 @@
 import DitoComponent from '@/DitoComponent'
 import ResourceMixin from './ResourceMixin'
+import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
 import {
@@ -15,7 +16,7 @@ import {
 
 // @vue/component
 export default {
-  mixins: [ResourceMixin],
+  mixins: [ResourceMixin, SchemaParentMixin],
 
   defaultValue(schema) {
     return isListSource(schema) ? [] : null
@@ -303,7 +304,7 @@ export default {
       type: Boolean,
       default: false,
       get(collapsible) {
-        return collapsible || this.collapsed !== null
+        return this.inlined && (collapsible || this.collapsed !== null)
       }
     }),
 
@@ -407,6 +408,9 @@ export default {
       } else {
         this.listData.push(item)
       }
+      if (this.collapsible) {
+        this.$nextTick(() => this.openSchemaComponent(-1))
+      }
       this.onChange()
       return item
     },
@@ -454,6 +458,16 @@ export default {
             })
           }
         }
+      }
+    },
+
+    openSchemaComponent(index) {
+      const { schemaComponents } = this
+      const { length } = schemaComponents
+      const idx = ((index % length) + length) % length
+      const schemaComponent = schemaComponents[idx]
+      if (schemaComponent) {
+        schemaComponent.opened = true
       }
     },
 

@@ -1,9 +1,9 @@
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
+import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getCommonPrefix } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  mixins: [SchemaParentMixin],
+  mixins: [ValidatorMixin],
 
   provide() {
     return {

@@ -166,6 +166,7 @@ export default class DitoAdmin {
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $isPopulated: () => true,
         $schemaComponent: () => null,
+        $schemaParentComponent: () => null,
         $routeComponent: () => null,
         $dataComponent: () => null,
         $sourceComponent: () => null,
