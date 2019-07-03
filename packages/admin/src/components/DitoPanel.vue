@@ -5,7 +5,7 @@
     v-show="visible && (!tabComponent || tabComponent.visible)"
     @submit.prevent
   )
-    .dito-panel-title {{ getLabel(schema) }}
+    label.dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
       :schema="panelSchema"
       :dataPath="ownDataPath"
@@ -30,6 +30,7 @@
   .dito-panel
     margin-bottom: $content-padding
     .dito-panel-title
+      display: block
       box-sizing: border-box
       padding: $input-padding
       background: $button-color

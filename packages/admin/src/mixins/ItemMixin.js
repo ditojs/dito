@@ -1,14 +1,17 @@
 import { isString, isFunction } from '@ditojs/utils'
 import { getItemFormSchema, isListSource } from '@/utils/schema'
 import { appendDataPath, getItemParams } from '@/utils/data'
+import { getUid } from '@/utils/uid'
 
 // @vue/component
 export default {
   methods: {
     getItemFormSchema,
 
-    getItemId(sourceSchema, item, index) {
-      const id = this.isTransient ? index : item[sourceSchema.idName || 'id']
+    getItemId(sourceSchema, item, uid) {
+      const id = this.isTransient
+        ? (uid !== null ? uid : getUid(item))
+        : item[sourceSchema.idName || 'id']
       return id === undefined ? id : String(id)
     },
 

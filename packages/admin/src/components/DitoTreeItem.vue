@@ -4,8 +4,14 @@
     :class="classes"
   )
     .dito-tree-header(v-if="label")
-      .dito-tree-branch(v-if="numEntries" @click.stop="opened = !opened")
-        .dito-tree-chevron(v-if="numEntries" :class="{ 'dito-opened': opened }")
+      .dito-tree-branch(
+        v-if="numEntries"
+        @click.stop="opened = !opened"
+      )
+        .dito-chevron(
+          v-if="numEntries"
+          :class="{ 'dito-collapsed': !opened }"
+        )
         .dito-tree-label(v-html="label")
         .dito-tree-info(v-if="details") {{ details }}
       .dito-tree-leaf(v-else)
@@ -74,7 +80,6 @@
 </template>
 
 <style lang="sass">
-  $tree-indent: 1.2em
   // Use precalculated level classes, so that we can add the accumulated indent
   // padding directly instead of having it accumulate in CSS. This way, we can
   // keep the .dito-active area cover the full width:
@@ -83,12 +88,8 @@
       > .dito-tree-header
         > .dito-tree-branch,
         > .dito-tree-leaf
-          padding-left: $tree-indent * ($i - 1)
-
+          padding-left: $chevron-indent * ($i - 1)
   .dito-tree-item
-    .dito-tree-item
-      .dito-tree-item
-        // margin-left: $tree-indent
     .dito-tree-branch
       cursor: pointer
     .dito-tree-header
@@ -106,17 +107,6 @@
       white-space: nowrap
     .dito-tree-info
       color: rgba($color-black, .2)
-    .dito-tree-chevron
-      padding-left: 14px
-      &::before
-        color: $color-grey
-        content: '\25b6'
-        position: absolute
-        left: 0
-        transition: transform .1s ease
-      &.dito-opened::before
-        left: -0.1em
-        transform: rotate(90deg)
     .dito-buttons
       display: flex
       visibility: hidden
@@ -137,13 +127,13 @@
         padding: 0 $input-padding-hor
         margin: 0 (-$input-padding-hor)
         > .dito-tree-branch
-          > .dito-tree-chevron::before
+          > .dito-chevron::before
               color: $color-white
         > * > .dito-tree-label
           color: $color-white
     .dito-properties
       display: block
-      margin-left: $tree-indent
+      margin-left: $chevron-indent
       > tr
         vertical-align: baseline
       .dito-label
@@ -220,12 +210,14 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     childrenDraggable() {
-      return this.childrenList?.length > 1 &&
+      return (
+        this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
           type: Boolean,
           default: false,
           schema: this.children
         })
+      )
     },
 
     numChildren() {

@@ -1,0 +1,14 @@
+.dito-chevron
+  display: inline
+  position: relative
+  padding-left: $chevron-indent
+  color: $color-grey
+  &::before
+    content: '\25b6'
+    position: absolute
+    color: inherit
+    left: 0
+    transition: transform .1s ease
+  &:not(.dito-collapsed)::before
+    left: -0.1em
+    transform: rotate(90deg)

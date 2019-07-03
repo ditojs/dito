@@ -5,10 +5,16 @@
         v-if="label || tabs || clipboard"
         :class="{ 'dito-schema-menu-header': menuHeader }"
       )
-        .dito-label(
-          v-if="label"
-        )
-          label {{ label }}
+        template(v-if="label")
+          a.dito-label(
+            tabindex="0"
+            v-if="collapsible"
+            @click.stop="opened = !opened"
+          )
+            .dito-chevron(:class="{ 'dito-collapsed': !opened }")
+            label {{ label }}
+          .dito-label(v-else)
+            label {{ label }}
         dito-tabs(
           v-if="tabs"
           :tabs="tabs"
@@ -18,6 +24,7 @@
           v-if="clipboard"
         )
       dito-components.dito-tab-components(
+        v-if="!inlined"
         v-for="(schema, tab) in tabs"
         ref="tabs"
         :key="tab"
@@ -41,13 +48,14 @@
         :store="store"
         :disabled="disabled"
         :generateLabels="generateLabels"
+        :class="{ 'dito-collapsed': !opened }"
       )
       slot(
         name="buttons"
-        v-if="isPopulated"
+        v-if="!inlined && isPopulated"
       )
     dito-panels(
-      v-if="isPopulated && panelSchemas.length > 0"
+      v-if="!inlined && isPopulated && panelSchemas.length > 0"
       :panels="panelSchemas"
       :data="data"
       :meta="meta"
@@ -103,6 +111,7 @@
       .dito-button
         margin: 0 0 $tab-margin $tab-margin
     &.dito-schema-menu-header
+      // Bring the tabs up to the menu.
       position: absolute
       height: $tab-height
       margin-top: -$tab-height
@@ -116,6 +125,15 @@
         font-size: $menu-font-size
       .dito-tabs a
         line-height: $menu-line-height
+    a.dito-label
+      display: block
+      width: 100%
+      margin: 0
+      &:hover,
+      &:focus
+        outline: none
+        .dito-chevron
+          color: $color-active
 </style>
 
 <script>
@@ -146,6 +164,8 @@ export default DitoComponent.component('dito-schema', {
     store: { type: Object, default: () => ({}) },
     label: { type: String, default: null },
     disabled: { type: Boolean, default: false },
+    collapsed: { type: Boolean, default: false },
+    collapsible: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: true },
     hasOwnData: { type: Boolean, default: false },
     menuHeader: { type: Boolean, default: false }
@@ -160,6 +180,7 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this)
           : data
       ),
+      opened: !this.collapsed,
       componentsContainers: {},
       components: {},
       panels: {},
@@ -269,6 +290,10 @@ export default DitoComponent.component('dito-schema', {
 
     isValidated() {
       return this.everyComponent(it => it.isValidated)
+    },
+
+    inlined() {
+      return false
     }
   },
 

@@ -17,6 +17,8 @@
         :meta="nestedMeta"
         :store="store"
         :disabled="disabled || isLoading"
+        :collapsed="collapsed"
+        :collapsible="collapsible"
       )
       component(
         v-else-if="component"

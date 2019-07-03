@@ -106,10 +106,10 @@
       height: 2em
       box-sizing: border-box
       border-radius: $border-radius
-      border: 1px solid transparent
+      border: $border-width solid transparent
       text-align: center
     .dito-calendar-item-today
-      border: 1px solid $color-active
+      border: $border-width solid $color-active
       color: $color-active
     .dito-calendar-item-active
       &,

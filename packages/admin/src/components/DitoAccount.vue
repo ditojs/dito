@@ -20,8 +20,6 @@
     position: relative
     .dito-pulldown
       top: $pulldown-padding-ver
-    a
-      cursor: pointer
 </style>
 
 <script>

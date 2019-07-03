@@ -11,6 +11,8 @@
         :query="query"
         :scopes="scopes"
       )
+      // When there's only pagination without scopes, we need a good ol' spacer
+      // div, for the layout not to break...
       .dito-spacer(
         v-else
       )
@@ -43,7 +45,7 @@
       )
         tr(
           v-for="item, index in listData || []"
-          :key="getItemId(schema, item, index)"
+          :key="getItemId(schema, item, null)"
           :id="getDataPath(index)"
         )
           template(v-if="columns")
@@ -71,6 +73,8 @@
                 :meta="nestedMeta"
                 :store="store"
                 :disabled="disabled || isLoading"
+                :collapsed="collapsed"
+                :collapsible="collapsible"
               )
               component(
                 v-else-if="component"
@@ -87,8 +91,8 @@
                 v-else
                 v-html="getItemLabel(schema, item, index)"
               )
-          td.dito-cell-edit-buttons
-            .dito-buttons.dito-buttons-round(v-if="hasEditButtons")
+          td.dito-cell-edit-buttons(v-if="hasEditButtons")
+            .dito-buttons.dito-buttons-round
               button.dito-button(
                 v-if="draggable"
                 type="button"

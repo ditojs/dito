@@ -11,6 +11,8 @@
     position: relative
     font-weight: bold
     label
+      display: inline
+      cursor: inherit
       white-space: nowrap
     &.dito-width-fill
       // Crop labels that are too large when component fills available space

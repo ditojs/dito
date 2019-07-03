@@ -27,3 +27,11 @@
 
   table
     border-spacing: 0
+
+  a,
+  button
+    cursor: pointer
+
+  label
+    &, * // Match &::after also
+      +user-select(none)

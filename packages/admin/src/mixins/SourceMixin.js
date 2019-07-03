@@ -297,6 +297,19 @@ export default {
       get(draggable) {
         return draggable && this.isListSource && this.listData.length > 1
       }
+    }),
+
+    collapsible: getSchemaAccessor('collapsible', {
+      type: Boolean,
+      default: false,
+      get(collapsible) {
+        return collapsible || this.collapsed !== null
+      }
+    }),
+
+    collapsed: getSchemaAccessor('collapsed', {
+      type: Boolean,
+      default: null
     })
   },
 

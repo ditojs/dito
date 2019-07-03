@@ -32,6 +32,8 @@
       // Clear above paddings again if parent is omitting padding.
       margin: 0
       max-width: $content-width
+    &.dito-collapsed
+      display: none
 </style>
 
 <script>
