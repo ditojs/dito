@@ -28,20 +28,19 @@
 
 <style lang="sass">
   .dito-panel
-    border: $border-style
-    border-radius: $border-radius
     margin-bottom: $content-padding
     .dito-panel-title
       box-sizing: border-box
-      height: 2em
-      line-height: 2em
-      padding: 0 $form-spacing
+      padding: $input-padding
       background: $button-color
+      border: $border-style
       border-top-left-radius: $border-radius
       border-top-right-radius: $border-radius
     .dito-panel-schema
       font-size: $font-size-small
       background: $content-color-background
+      border: $border-style
+      border-top: 0
       border-bottom-left-radius: $border-radius
       border-bottom-right-radius: $border-radius
       > .dito-schema-content
@@ -56,8 +55,9 @@
         margin: 0 (-$form-spacing-half)
       .dito-component-container
         padding: $form-spacing-half
-      .dito-buttons-container
-        padding-top: $form-spacing
+      .dito-buttons
+          --button-margin: #{$form-spacing}
+          padding-top: $form-spacing
 </style>
 
 <script>

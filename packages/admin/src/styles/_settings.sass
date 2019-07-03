@@ -3,7 +3,10 @@ $font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxy
 $font-family-mono: 'Menlo', 'Consolas', 'Monaco', 'Vera Mono', 'Andale Mono', 'Ubuntu Mono', monospace
 $font-size: 13px
 $font-size-small: 11px
-$line-height: 1.5
+// Adjust line-height so that it fulfills this equation, which is used
+// to reach equal height for icon-buttons (height: 2em), table headers & co.:
+// (2 * $font-size - 2 * ($border-width + $input-padding-ver)) / $font-size
+$line-height: 2 - 2 * ($border-width + $input-padding-ver) / $font-size
 
 // Button
 $button-order-arrow-size: 4px
@@ -22,7 +25,7 @@ $content-padding-half: $content-padding / 2
 $content-color-background: $color-lightest
 
 // Form
-$form-spacing: 6px
+$form-spacing: $input-padding-hor
 $form-spacing-half: $form-spacing / 2
 
 // Menu

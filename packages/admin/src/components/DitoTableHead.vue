@@ -43,7 +43,7 @@
         span
           display: inline-block
           // Convention: Nested spans handle padding
-          padding: $button-padding
+          padding: $input-padding
           height: 100%
         > span
           display: block
