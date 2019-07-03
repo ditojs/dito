@@ -29,40 +29,38 @@
       line-height: 2em
       overflow: hidden
       text-overflow: ellipsis
-    .dito-buttons
-      display: flex
-      .dito-button
-        transition: all .3s ease, color 0s, background 0s, border 0s
-        font-variant-numeric: tabular-nums
-        padding: 0 0.5em
-        &.dito-active
-          background: $color-active
-          color: $color-text-inverted
-          &:active
-            border-color: darken($color-active, 10%)
-        &-prev,
-        &-next
-          &::before
-            @extend %icon-arrow
-        &-prev::before
-          transform: scaleX(-1)
-        &-ellipsis-prev,
-        &-ellipsis-next
-          &::before
-            @extend %icon-ellipsis
-          &:hover::before
-            @extend %icon-chevrons
-          background: none
-          border: 0
-          padding: 0
-          margin: 0
-          color: $color-text
-          &:focus
-            color: $color-active
-          &:active
-            box-shadow: none
-        &-ellipsis-prev::before
-          transform: scaleX(-1)
+    .dito-button
+      transition: all .3s ease, color 0s, background 0s, border 0s
+      font-variant-numeric: tabular-nums
+      padding: 0 0.5em
+      &.dito-active
+        background: $color-active
+        color: $color-text-inverted
+        &:active
+          border-color: darken($color-active, 10%)
+      &-prev,
+      &-next
+        &::before
+          @extend %icon-arrow
+      &-prev::before
+        transform: scaleX(-1)
+      &-ellipsis-prev,
+      &-ellipsis-next
+        &::before
+          @extend %icon-ellipsis
+        &:hover::before
+          @extend %icon-chevrons
+        background: none
+        border: 0
+        padding: 0
+        margin: 0
+        color: $color-text
+        &:focus
+          color: $color-active
+        &:active
+          box-shadow: none
+      &-ellipsis-prev::before
+        transform: scaleX(-1)
 </style>
 
 <script>

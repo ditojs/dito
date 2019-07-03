@@ -1,16 +1,17 @@
 <template lang="pug">
-  .dito-clipboard.dito-buttons.dito-buttons-round
-    button.dito-button.dito-button-copy(
-      type="button"
-      ref="copyData"
-      title="Copy Data"
-    )
-    button.dito-button.dito-button-paste(
-      type="button"
-      @click="pasteData"
-      title="Paste Data"
-      :disabled="!appState.clipboardData"
-    )
+  .dito-clipboard
+    .dito-buttons.dito-buttons-round
+      button.dito-button.dito-button-copy(
+        type="button"
+        ref="copyData"
+        title="Copy Data"
+      )
+      button.dito-button.dito-button-paste(
+        type="button"
+        @click="pasteData"
+        title="Paste Data"
+        :disabled="!appState.clipboardData"
+      )
 </template>
 
 <script>

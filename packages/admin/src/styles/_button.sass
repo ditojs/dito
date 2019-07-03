@@ -56,33 +56,36 @@
   &:active,
     cursor: grabbing
 
-.dito-buttons.dito-buttons-large
-  margin-top: $content-padding
-  font-size: $menu-font-size
-  flex-flow: row wrap
-  justify-content: center
-  button
-    border-radius: 2em
-    padding: $button-round-padding
+.dito-buttons
+  &.dito-buttons-large
+    font-size: $menu-font-size
+    flex-flow: row wrap
+    justify-content: center
+    .dito-button-container
+      // Do not specify this on .dito-buttons directly as it would break borders
+      margin-top: $content-padding
+    .dito-button
+      border-radius: 2em
+      padding: $button-round-padding
 
-.dito-buttons-round,
-.dito-buttons-small
-  .dito-button-create:empty::before,
-  .dito-button-add:empty::before,
-  // Special .dito-button-add-upload without :empty:
-  .dito-button-add-upload::before
-    @extend %icon-add
-  .dito-button-delete:empty::before,
-  .dito-button-remove:empty::before
-    @extend %icon-remove
-  .dito-button-edit:empty::before
-    @extend %icon-edit
-  .dito-button-drag:empty::before
-    @extend %icon-drag
-  .dito-button-copy:empty::before
-    @extend %icon-copy
-  .dito-button-paste:empty::before
-    @extend %icon-paste
+  &.dito-buttons-round,
+  &.dito-buttons-small
+    .dito-button-create:empty::before,
+    .dito-button-add:empty::before,
+    // Special .dito-button-add-upload without :empty:
+    .dito-button-add-upload::before
+      @extend %icon-add
+    .dito-button-delete:empty::before,
+    .dito-button-remove:empty::before
+      @extend %icon-remove
+    .dito-button-edit:empty::before
+      @extend %icon-edit
+    .dito-button-drag:empty::before
+      @extend %icon-drag
+    .dito-button-copy:empty::before
+      @extend %icon-copy
+    .dito-button-paste:empty::before
+      @extend %icon-paste
 
 .dito-button-overlay
   position: absolute
@@ -94,17 +97,15 @@
   cursor: pointer
   &:focus
     outline: none
-
-.dito-button-overlay.dito-button-clear
-  display: none
-  width: 2em
-  z-index: 1
-  background: $color-white
-  &::before
-    @extend %icon-clear
-    color: $color-grey
-  &:hover::before
-    color: $color-black
-
-.dito-component:hover > .dito-button-overlay.dito-button-clear
-  display: block
+  &.dito-button-clear
+    width: 2em
+    z-index: 1
+    background: $color-white
+    display: none
+    @at-root .dito-component:hover > &
+      display: block
+    &::before
+      @extend %icon-clear
+      color: $color-grey
+    &:hover::before
+      color: $color-black
