@@ -16,56 +16,57 @@
 <script>
 export default {
   functional: true,
-  render(createElement, context) {
-    const data = {
-      props: {
-        name: 'height'
-      },
 
-      on: {
-        afterEnter(element) {
-          setStyle(element, { height: 'auto' })
-        },
+  props: {
+    enabled: { type: Boolean, default: true }
+  },
 
-        enter(element) {
-          const { width } = getComputedStyle(element)
-          setStyle(element, {
-            width,
-            position: 'absolute',
-            visibility: 'hidden',
-            height: 'auto'
-          })
-          const { height } = getComputedStyle(element)
-          setStyle(element, {
-            width: null,
-            position: null,
-            visibility: null,
-            height: 0
-          })
-          forceRepaint(element)
-          setTimeout(() => setStyle(element, { height }))
-        },
-
-        leave(element) {
-          const { height } = getComputedStyle(element)
-          setStyle(element, { height })
-          forceRepaint(element)
-          setTimeout(() => setStyle(element, { height: 0 }))
-        }
+  render: (createElement, context) => createElement(
+    'transition',
+    context.props.enabled
+      ? {
+        props: { name: 'height' },
+        on: events
       }
-    }
+      : {},
+    context.children
+  )
+}
 
-    return createElement('transition', data, context.children)
+const setStyle = (element, style) => Object.assign(element.style, style)
+
+// Force repaint to make sure the animation is triggered correctly.
+const forceRepaint = element => getComputedStyle(element).height
+
+const events = {
+  afterEnter(element) {
+    setStyle(element, { height: 'auto' })
+  },
+
+  enter(element) {
+    const { width } = getComputedStyle(element)
+    setStyle(element, {
+      width,
+      position: 'absolute',
+      visibility: 'hidden',
+      height: 'auto'
+    })
+    const { height } = getComputedStyle(element)
+    setStyle(element, {
+      width: null,
+      position: null,
+      visibility: null,
+      height: 0
+    })
+    forceRepaint(element)
+    setTimeout(() => setStyle(element, { height }))
+  },
+
+  leave(element) {
+    const { height } = getComputedStyle(element)
+    setStyle(element, { height })
+    forceRepaint(element)
+    setTimeout(() => setStyle(element, { height: 0 }))
   }
-}
-
-function setStyle(element, style) {
-  Object.assign(element.style, style)
-}
-
-function forceRepaint(element) {
-  // Force repaint to make sure the animation is triggered correctly.
-  // eslint-disable-next-line babel/no-unused-expressions
-  getComputedStyle(element).height
 }
 </script>

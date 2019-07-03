@@ -42,6 +42,7 @@ import { ToggleButton } from 'vue-js-toggle-button'
 // @vue/component
 export default TypeComponent.register('switch', {
   defaultValue: false,
+  defaultWidth: null,
 
   components: {
     ToggleButton

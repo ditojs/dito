@@ -172,7 +172,7 @@ export default class DitoAdmin {
         $sourceComponent: () => null,
         $resourceComponent: () => null
       },
-      render: h => h(DitoRoot, {
+      render: createElement => createElement(DitoRoot, {
         props: {
           views,
           options

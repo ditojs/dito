@@ -38,7 +38,9 @@
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
-      transition-height
+      transition-height(
+        :enabled="inlined"
+      )
         dito-components.dito-main-components(
           v-if="schema.components"
           v-show="opened"
@@ -170,6 +172,7 @@ export default DitoComponent.component('dito-schema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: String, default: null },
+    inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
@@ -297,10 +300,6 @@ export default DitoComponent.component('dito-schema', {
 
     isValidated() {
       return this.everyComponent(it => it.isValidated)
-    },
-
-    inlined() {
-      return false
     }
   },
 

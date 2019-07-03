@@ -6,6 +6,7 @@
     :meta="meta"
     :store="store"
     :label="compact ? null: label"
+    :inlined="true"
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
@@ -49,10 +50,6 @@ export default DitoComponent.component('dito-schema-inlined', {
   computed: {
     compact() {
       return this.schema.compact
-    },
-
-    inlined() {
-      return true
     }
   }
 })
