@@ -10,7 +10,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-menu
     flex: initial
     font-size: $menu-font-size

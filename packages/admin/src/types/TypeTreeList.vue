@@ -20,7 +20,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-tree-list
     @extend %field
     .dito-tree-panel

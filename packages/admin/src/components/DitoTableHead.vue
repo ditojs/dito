@@ -23,7 +23,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-table-head
     +user-select(none)
     tr

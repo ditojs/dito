@@ -11,7 +11,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-textarea
     resize: none
     min-height: calc(1em * var(--line-height) + #{ 2 * $input-padding-ver })

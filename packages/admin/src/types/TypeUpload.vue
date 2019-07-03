@@ -78,7 +78,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-upload
     .dito-table
       tr

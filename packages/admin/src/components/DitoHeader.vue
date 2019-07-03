@@ -16,7 +16,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-header
     background: $color-black
     font-size: $menu-font-size

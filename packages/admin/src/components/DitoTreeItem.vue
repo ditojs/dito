@@ -74,9 +74,7 @@
 </template>
 
 <style lang="sass">
-$tree-indent: 1.2em
-
-.dito
+  $tree-indent: 1.2em
   // Use precalculated level classes, so that we can add the accumulated indent
   // padding directly instead of having it accumulate in CSS. This way, we can
   // keep the .dito-active area cover the full width:

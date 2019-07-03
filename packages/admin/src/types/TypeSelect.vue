@@ -42,7 +42,6 @@
 </template>
 
 <style lang="sass">
-.dito
   // TODO: Move to dito-ui
   $select-arrow-right: ($select-arrow-width - $select-arrow-size) / 2
   .dito-select

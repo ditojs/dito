@@ -26,7 +26,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-create-button
     position: relative
     .dito-pulldown

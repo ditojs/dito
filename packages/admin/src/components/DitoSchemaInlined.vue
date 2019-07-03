@@ -12,7 +12,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-schema-inlined
     > .dito-schema-content
       padding: 0

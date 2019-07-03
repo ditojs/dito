@@ -17,7 +17,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-checkboxes
     .dito-checkbox
       margin-right: $form-spacing

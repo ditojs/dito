@@ -1,5 +1,4 @@
 <style lang="sass">
-.dito
   .dito-button-container
     & + .dito-button-container
       margin-left: $button-margin

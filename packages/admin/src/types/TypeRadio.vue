@@ -17,7 +17,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-radio-buttons
     .dito-radio-button
       margin-right: $form-spacing

@@ -62,7 +62,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-object
     display: flex
     border: $border-style

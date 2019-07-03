@@ -57,8 +57,7 @@
 </template>
 
 <style lang="sass">
-$tab-height: $menu-font-size + 2 * $tab-padding-ver
-.dito
+  $tab-height: $menu-font-size + 2 * $tab-padding-ver
   .dito-schema
     box-sizing: border-box
     // To dissplay schema next to panels:

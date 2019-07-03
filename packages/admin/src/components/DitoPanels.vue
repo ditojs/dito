@@ -15,7 +15,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-panels
     max-width: $content-sidebar-width
     min-width: $content-sidebar-width / 2

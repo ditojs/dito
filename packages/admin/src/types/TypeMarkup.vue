@@ -22,7 +22,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-markup
     @extend %input
 

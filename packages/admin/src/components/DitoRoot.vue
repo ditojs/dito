@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito
+  .dito-root
     modals-container
     notifications.dito-notifications(
       ref="notifications"
@@ -26,9 +26,8 @@
 </template>
 
 <style lang="sass">
-  .dito
-    // Import everything name-spaced in .dito
-    @import 'dito.sass'
+  @import 'dito.sass'
+  .dito-root
     height: 100%
     display: flex
     .dito-page

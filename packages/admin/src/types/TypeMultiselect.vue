@@ -36,11 +36,9 @@
 </template>
 
 <style lang="sass">
-// Temporary fix for this vue-cli issue:
-// https://github.com/vuejs/vue-cli/issues/2055#issuecomment-417817527
-// @import '~vue-multiselect/dist/vue-multiselect.min.css'
-
-.dito
+  // Temporary fix for this vue-cli issue:
+  // https://github.com/vuejs/vue-cli/issues/2055#issuecomment-417817527
+  // @import '~vue-multiselect/dist/vue-multiselect.min.css'
   $spinner-width: $select-arrow-width
   $tag-icon-size: 1.8em
   $tag-margin: 2px

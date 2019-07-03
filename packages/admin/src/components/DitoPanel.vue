@@ -27,7 +27,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-panel
     border: $border-style
     border-radius: $border-radius

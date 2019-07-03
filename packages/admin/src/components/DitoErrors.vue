@@ -8,7 +8,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-errors
     position: absolute
     z-index: 1

@@ -14,7 +14,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .v--modal-overlay
     z-index: 2000
 </style>

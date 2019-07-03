@@ -13,7 +13,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-scopes
     white-space: nowrap
     display: flex

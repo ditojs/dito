@@ -26,7 +26,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-buttons-container
     display: flex
     flex-flow: row wrap

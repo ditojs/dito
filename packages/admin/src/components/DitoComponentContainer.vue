@@ -27,7 +27,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-component-container
     align-self: stretch
     box-sizing: border-box

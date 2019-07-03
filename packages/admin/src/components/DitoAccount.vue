@@ -16,7 +16,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-account
     position: relative
     .dito-pulldown

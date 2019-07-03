@@ -1,5 +1,4 @@
 <style lang="sass">
-.dito
   .dito-form-nested
     .dito-scroll
       // No scrolling inside nested forms:

@@ -4,7 +4,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-label
     // In order for ellipsis to work on labels without affecting other layout,
     // we need to position it absolutely inside its container.

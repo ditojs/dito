@@ -29,10 +29,8 @@
 </template>
 
 <style lang="sass">
-  $color-swatch-width: 2em
-  $color-swatch-radius: $border-radius - $border-width
-
-  .dito
+    $color-swatch-width: 2em
+    $color-swatch-radius: $border-radius - $border-width
     .dito-color
       .dito-input
         position: relative

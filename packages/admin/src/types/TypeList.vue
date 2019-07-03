@@ -144,7 +144,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-list
     position: relative
     .dito-navigation

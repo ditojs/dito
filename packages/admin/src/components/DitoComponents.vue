@@ -18,7 +18,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-components
     // Remove padding added by .dito-component-container below
     margin: (-$form-spacing) (-$form-spacing-half)

@@ -7,7 +7,6 @@
 </template>
 
 <style lang="sass">
-.dito
   .dito-code
     @extend %input
     position: relative
