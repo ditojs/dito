@@ -53,6 +53,7 @@
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { shouldRenderLabel, getTypeOptions } from '@/utils/schema'
+import { isString } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
@@ -101,11 +102,20 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerClass() {
+      const { containerClass } = this.schema
       return {
         // Use the component name as its class, so the extended
         // dito-button-container automatically works too.
         [this.$options.name]: true,
-        'dito-omit-padding': getTypeOptions(this.schema)?.omitPadding
+        'dito-omit-padding': (
+          this.schema.omitPadding ||
+          getTypeOptions(this.schema)?.omitPadding
+        ),
+        ...(
+          isString(containerClass)
+            ? { [containerClass]: true }
+            : containerClass
+        )
       }
     },
 
