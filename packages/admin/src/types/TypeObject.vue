@@ -74,8 +74,6 @@
     > .dito-buttons
       flex: 1 0 0%
       margin-left: $form-spacing
-      > .dito-buttons-container
-        justify-content: flex-end
 </style>
 
 <script>

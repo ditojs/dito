@@ -48,19 +48,16 @@ table.dito-table
         background: $content-color-background
         &:last-child
           padding-right: $form-spacing
-        &.dito-buttons
+        &.dito-cell-edit-buttons
           width: 1%
-          text-align: right
-          .dito-buttons-container
-            justify-content: flex-end
           &,
           .dito-button
             // To align better with `vertical-align: baseline` in normal td:
             vertical-align: top
-  // Add more spacing to cells in tables with edit buttons, to better align cell
-  // texts with edit buttons.
-  &.dito-table-edit-buttons
-    td:not(.dito-buttons)
+  &.dito-table-larger-padding
+    // Add more spacing to cells in tables except those containing edit buttons,
+    // to better align cell texts with edit buttons.
+    td:not(.dito-cell-edit-buttons)
       $padding: $form-spacing * 1.5
       padding: $padding 0 $padding $padding
   // Variants of list styles: separators and alternate colors.

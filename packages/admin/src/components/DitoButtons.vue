@@ -1,7 +1,6 @@
 <template lang="pug">
   .dito-buttons(
     v-if="buttonSchemas || $slots.default"
-    :is="tag"
   )
     // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
     // sub-class as the component container for different layout:
@@ -31,7 +30,7 @@
     flex-flow: row wrap
     flex: 100%
     align-items: center
-    justify-content: center
+    justify-content: flex-end
 </style>
 
 <script>
@@ -45,7 +44,6 @@ export default DitoComponent.component('dito-buttons', {
   },
 
   props: {
-    tag: { type: String, default: 'div' },
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], required: true },

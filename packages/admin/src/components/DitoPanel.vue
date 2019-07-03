@@ -57,7 +57,6 @@
       .dito-component-container
         padding: $form-spacing-half
       .dito-buttons-container
-        justify-content: flex-end
         padding-top: $form-spacing
 </style>
 

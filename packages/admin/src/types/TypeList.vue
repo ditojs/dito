@@ -20,9 +20,9 @@
       )
     table.dito-table(
       :class=`{
-        'dito-table-separators': hasSeparators,
-        'dito-table-edit-buttons': hasEditButtons,
-        'dito-table-alternate-colors': !hasSeparators,
+        'dito-table-separators': inlined,
+        'dito-table-larger-padding': hasEditButtons && !inlined,
+        'dito-table-alternate-colors': !inlined,
         'dito-table-even-count': hasEvenCount
       }`
     )
@@ -85,46 +85,44 @@
                 v-else
                 v-html="getItemLabel(schema, item, index)"
               )
-          td.dito-buttons.dito-buttons-round(v-if="hasEditButtons")
-            button.dito-button(
-              v-if="draggable"
-              type="button"
-              v-bind="getButtonAttributes(verbs.drag)"
-            )
-            router-link.dito-button(
-              v-if="editable"
-              :to="getEditLink(item, index)" append
-              tag="button"
-              type="button"
-              v-bind="getButtonAttributes(verbs.edit)"
-            )
-            button.dito-button(
-              v-if="deletable"
-              type="button"
-              @click="deleteItem(item, index)"
-              v-bind="getButtonAttributes(verbs.delete)"
-            )
+          td.dito-cell-edit-buttons
+            .dito-buttons.dito-buttons-round(v-if="hasEditButtons")
+              button.dito-button(
+                v-if="draggable"
+                type="button"
+                v-bind="getButtonAttributes(verbs.drag)"
+              )
+              router-link.dito-button(
+                v-if="editable"
+                :to="getEditLink(item, index)" append
+                tag="button"
+                type="button"
+                v-bind="getButtonAttributes(verbs.edit)"
+              )
+              button.dito-button(
+                v-if="deletable"
+                type="button"
+                @click="deleteItem(item, index)"
+                v-bind="getButtonAttributes(verbs.delete)"
+              )
       // Render create button inside the table if we're not inside a single
       // component view:
-      tfoot(
-        v-if="hasListButtons && !isInSingleComponentView"
-      )
+      tfoot(v-if="hasListButtons && !isInSingleComponentView")
         tr
-          dito-buttons.dito-buttons-round(
-            tag="td"
-            :buttons="buttonSchemas"
-            :dataPath="dataPath"
-            :data="listData"
-            :meta="meta"
-            :colspan="numColumns"
-          )
-            dito-create-button(
-              v-if="creatable"
-              :schema="schema"
-              :path="path"
-              :verb="verbs.create"
-              :text="createButtonText"
+          td(:colspan="numColumns")
+            dito-buttons.dito-buttons-round(
+              :buttons="buttonSchemas"
+              :dataPath="dataPath"
+              :data="listData"
+              :meta="meta"
             )
+              dito-create-button(
+                v-if="creatable"
+                :schema="schema"
+                :path="path"
+                :verb="verbs.create"
+                :text="createButtonText"
+              )
     // Render create button outside the table if we're inside a single
     // component view:
     dito-buttons.dito-buttons-large(
@@ -222,10 +220,6 @@ export default TypeComponent.register('list', {
       )
     },
 
-    hasSeparators() {
-      return this.inlined
-    },
-
     hasListButtons() {
       return !!(
         this.buttonSchemas ||
@@ -240,6 +234,10 @@ export default TypeComponent.register('list', {
         this.deletable ||
         this.draggable
       )
+    },
+
+    hasEvenCount() {
+      return !(this.listData.length % 2)
     }
   },
 

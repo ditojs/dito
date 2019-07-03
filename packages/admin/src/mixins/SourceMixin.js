@@ -257,10 +257,6 @@ export default {
       return true
     },
 
-    hasEvenCount() {
-      return !(this.listData.length % 2)
-    },
-
     paginate: getSchemaAccessor('paginate', {
       type: Number
     }),
