@@ -219,6 +219,8 @@ export default {
         animation: 150,
         disabled: !draggable,
         handle: '.dito-button-drag',
+        dragClass: 'dito-drag-active',
+        chosenClass: 'dito-drag-chosen',
         ghostClass: 'dito-drag-ghost'
       }
     },

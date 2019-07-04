@@ -50,6 +50,7 @@
         min-height: $form-spacing
     &.dito-schema-labeled
       > .dito-buttons
+        z-index: 2 // above `button.dito-label`
         position: absolute
         top: 0
         right: 0

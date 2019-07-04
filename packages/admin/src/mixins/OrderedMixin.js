@@ -11,9 +11,11 @@ export default {
       this.dragging = true
     },
 
-    onEndDrag() {
+    onEndDrag({ oldIndex, newIndex }) {
       this.dragging = false
-      this.onChange()
+      if (oldIndex !== newIndex) {
+        this.onChange()
+      }
     },
 
     updateOrder(list, schema) {
