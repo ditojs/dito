@@ -14,7 +14,7 @@
       // When there's only pagination without scopes, we need a good ol' spacer
       // div, for the layout not to break...
       .dito-spacer(
-        v-else
+        v-else-if="paginate"
       )
       dito-pagination(
         v-if="paginate"
@@ -44,7 +44,7 @@
         @end="onEndDrag"
       )
         tr(
-          v-for="item, index in listData || []"
+          v-for="item, index in listData"
           :key="getItemId(schema, item, null)"
           :id="getDataPath(index)"
         )
@@ -71,10 +71,15 @@
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"
-                :store="store"
+                :store="getChildStore(index)"
                 :disabled="disabled || isLoading"
                 :collapsed="collapsed"
                 :collapsible="collapsible"
+                :deletable="deletable"
+                :draggable="draggable"
+                :editable="editable"
+                :editPath="getEditPath(item, index)"
+                @delete="deleteItem(item, index)"
               )
               component(
                 v-else-if="component"
@@ -91,58 +96,51 @@
                 v-else
                 v-html="getItemLabel(schema, item, index)"
               )
-          td.dito-cell-edit-buttons(v-if="hasEditButtons")
-            .dito-buttons.dito-buttons-round
-              button.dito-button(
-                v-if="draggable"
-                type="button"
-                v-bind="getButtonAttributes(verbs.drag)"
-              )
-              router-link.dito-button(
-                v-if="editable"
-                :to="getEditLink(item, index)" append
-                tag="button"
-                type="button"
-                v-bind="getButtonAttributes(verbs.edit)"
-              )
-              button.dito-button(
-                v-if="deletable"
-                type="button"
-                @click="deleteItem(item, index)"
-                v-bind="getButtonAttributes(verbs.delete)"
-              )
-      // Render buttons inside the table when not in a single component view:
-      tfoot(v-if="hasListButtons && !isInSingleComponentView")
+          td.dito-cell-edit-buttons(
+            v-if="hasCellEditButtons"
+          )
+            dito-edit-buttons(
+              :deletable="deletable"
+              :draggable="draggable"
+              :editable="editable"
+              :editPath="getEditPath(item, index)"
+              :schema="getItemFormSchema(schema, item)"
+              :dataPath="getDataPath(index)"
+              :data="item"
+              :meta="nestedMeta"
+              :store="getChildStore(index)"
+              @delete="deleteItem(item, index)"
+            )
+      // Render create buttons inside table when not in a single component view:
+      tfoot(
+        v-if="hasListButtons && !isInSingleComponentView"
+      )
         tr
-          td(:colspan="numColumns")
-            dito-buttons.dito-buttons-round(
+          td(
+            :colspan="numColumns"
+          )
+            dito-edit-buttons(
+              :creatable="creatable"
+              :createPath="path"
               :buttons="buttonSchemas"
+              :schema="schema"
               :dataPath="dataPath"
               :data="listData"
               :meta="meta"
+              :store="store"
             )
-              dito-create-button(
-                v-if="creatable"
-                :schema="schema"
-                :path="path"
-                :verb="verbs.create"
-                :text="createButtonText"
-              )
-    // Render buttons outside the table when in a single component view:
-    dito-buttons.dito-buttons-large(
+    // Render create buttons outside table when in a single component view:
+    dito-edit-buttons.dito-buttons-large(
       v-if="hasListButtons && isInSingleComponentView"
+      :creatable="creatable"
+      :createPath="path"
       :buttons="buttonSchemas"
+      :schema="schema"
       :dataPath="dataPath"
       :data="listData"
       :meta="meta"
+      :store="store"
     )
-      dito-create-button(
-        v-if="creatable"
-        :schema="schema"
-        :path="path"
-        :verb="verbs.create"
-        :text="createButtonText"
-      )
 </template>
 
 <style lang="sass">
@@ -217,13 +215,6 @@ export default TypeComponent.register('list', {
   },
 
   computed: {
-    numColumns() {
-      return (
-        (this.columns ? Object.keys(this.columns).length : 1) +
-        (this.creatable ? 1 : 0)
-      )
-    },
-
     hasListButtons() {
       return !!(
         this.buttonSchemas ||
@@ -240,8 +231,19 @@ export default TypeComponent.register('list', {
       )
     },
 
+    hasCellEditButtons() {
+      return !this.inlined && this.hasEditButtons
+    },
+
     hasEvenCount() {
       return !(this.listData.length % 2)
+    },
+
+    numColumns() {
+      return (
+        (this.columns ? Object.keys(this.columns).length : 1) +
+        (this.hasCellEditButtons ? 1 : 0)
+      )
     }
   },
 
@@ -250,12 +252,10 @@ export default TypeComponent.register('list', {
       return appendDataPath(this.dataPath, index)
     },
 
-    getEditLink(item, index) {
-      return {
-        path: this.isObjectSource
-          ? this.path
-          : `${this.path}/${this.getItemId(this.schema, item, index)}`
-      }
+    getEditPath(item, index) {
+      return this.editable
+        ? `${this.path}/${this.getItemId(this.schema, item, index)}`
+        : null
     },
 
     getCellClass(cell) {

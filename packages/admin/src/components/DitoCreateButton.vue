@@ -18,7 +18,7 @@
           ) {{ getLabel(form) }}
     button.dito-button(
       v-else
-      :type="isSingleComponentView ? 'submit' : 'button'"
+      :type="isInSingleComponentView ? 'submit' : 'button'"
       @click="createItem()"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
@@ -52,7 +52,7 @@ export default DitoComponent.component('dito-create-button', {
       return !!this.schema.forms
     },
 
-    isSingleComponentView() {
+    isInSingleComponentView() {
       return !!this.viewComponent?.isSingleComponentView
     }
   },

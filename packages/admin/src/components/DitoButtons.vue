@@ -36,7 +36,7 @@ export default DitoComponent.component('dito-buttons', {
   props: {
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
-    data: { type: [Object, Array], required: true },
+    data: { type: [Object, Array], default: null },
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     disabled: { type: Boolean, default: false }

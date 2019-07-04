@@ -45,7 +45,10 @@
       border-bottom-left-radius: $border-radius
       border-bottom-right-radius: $border-radius
       > .dito-schema-content
-        padding: $form-spacing
+        padding: $form-spacing-half $form-spacing
+        > .dito-buttons
+          --button-margin: #{$form-spacing}
+          padding: $form-spacing-half 0
       .dito-object
         border: 0
         padding: 0
@@ -56,9 +59,6 @@
         margin: 0 (-$form-spacing-half)
       .dito-component-container
         padding: $form-spacing-half
-      .dito-buttons
-          --button-margin: #{$form-spacing}
-          padding-top: $form-spacing
 </style>
 
 <script>

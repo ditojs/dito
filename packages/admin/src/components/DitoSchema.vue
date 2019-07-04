@@ -6,8 +6,7 @@
         :class="{ 'dito-schema-menu-header': menuHeader }"
       )
         template(v-if="label")
-          a.dito-label(
-            tabindex="0"
+          button.dito-label(
             v-if="collapsible"
             @click.stop="opened = !opened"
           )
@@ -128,15 +127,22 @@
         font-size: $menu-font-size
       .dito-tabs a
         line-height: $menu-line-height
-    a.dito-label
+    button.dito-label
       display: block
       width: 100%
+      // Clear button styles:
+      text-align: left
+      background: none
       margin: 0
-      &:hover,
+      border: 0
+      padding: 0
       &:focus
         outline: none
         .dito-chevron
           color: $color-active
+      &:hover
+        .dito-chevron
+          color: $color-darker
 </style>
 
 <script>

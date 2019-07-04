@@ -9,8 +9,7 @@ import {
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
-  isObject, isString, isArray, isNumber, asArray,
-  equals, capitalize,
+  isObject, isString, isArray, isNumber, asArray, equals,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
@@ -56,7 +55,7 @@ export default {
     },
 
     isInSingleComponentView() {
-      return this.isInView && this.viewComponent.isSingleComponentView
+      return !!this.viewComponent?.isSingleComponentView
     },
 
     wrapPrimitives() {
@@ -97,7 +96,7 @@ export default {
           this.wrappedPrimitives = data
         } else {
           this.value = this.isObjectSource
-            ? (data ? data[0] : data)
+            ? (data && data.length > 0 ? data[0] : null)
             : data
         }
       }
@@ -107,12 +106,11 @@ export default {
       get() {
         // Always go through `listData` internally, which does all the
         // processing of `wrapPrimitives`, etc.
-        const { listData } = this
-        return listData ? listData[0] : listData
+        return this.listData[0] || null
       },
 
       set(data) {
-        this.listData = data ? [data] : data
+        this.listData = data ? [data] : []
       }
     },
 
@@ -220,22 +218,6 @@ export default {
       return forms && Object.values(forms) || asArray(form)
     },
 
-    formLabel() {
-      return this.getLabel(this.schema.form)
-    },
-
-    createButtonText() {
-      return (
-        // Allow schema to override create button through creatable object:
-        this.schema.creatable.label ||
-        // Auto-generate create button labels from from labels for list
-        // sources with only one form:
-        this.isListSource && this.formLabel &&
-          `${capitalize(this.verbs.create)} ${this.formLabel}` ||
-        null
-      )
-    },
-
     buttonSchemas() {
       return getButtonSchemas(this.schema.buttons)
     },
@@ -302,9 +284,9 @@ export default {
 
     collapsible: getSchemaAccessor('collapsible', {
       type: Boolean,
-      default: false,
+      default: null, // so that `??` below can do its thing:
       get(collapsible) {
-        return this.inlined && (collapsible || this.collapsed !== null)
+        return this.inlined && !!(collapsible ?? this.collapsed !== null)
       }
     }),
 

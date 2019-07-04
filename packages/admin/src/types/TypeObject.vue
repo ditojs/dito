@@ -35,32 +35,20 @@
         v-else
         v-html="getItemLabel(schema, objectData)"
       )
-    dito-buttons.dito-buttons-round(
+    dito-edit-buttons(
+      :creatable="creatable"
+      :deletable="objectData && deletable"
+      :editable="objectData && editable"
+      :editPath="path"
       :buttons="buttonSchemas"
+      :schema="schema"
       :dataPath="dataPath"
-      :data="listData"
+      :data="objectData"
+      :path="path"
       :meta="meta"
+      :store="store"
+      @delete="deleteItem(objectData)"
     )
-      dito-create-button(
-        v-if="creatable"
-        :schema="schema"
-        :path="path"
-        :verb="verbs.create"
-        :text="createButtonText"
-      )
-      router-link.dito-button(
-        v-if="objectData && editable"
-        :to="{ path }" append
-        tag="button"
-        type="button"
-        v-bind="getButtonAttributes(verbs.edit)"
-      )
-      button.dito-button(
-        v-if="objectData && deletable"
-        type="button"
-        @click="deleteItem(objectData)"
-        v-bind="getButtonAttributes(verbs.delete)"
-      )
 </template>
 
 <style lang="sass">
