@@ -39,6 +39,7 @@
       :creatable="creatable"
       :deletable="objectData && deletable"
       :editable="objectData && editable"
+      :createPath="path"
       :editPath="path"
       :buttons="buttonSchemas"
       :schema="schema"
