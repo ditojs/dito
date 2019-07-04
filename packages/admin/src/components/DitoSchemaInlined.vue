@@ -41,8 +41,10 @@
       // Change spacing so that .dito-label covers the full .dito-schema-header.
       margin: -$form-spacing
       .dito-label
-        // Add removed $form-spacing again, plus $form-spacing-half vertically.
-        padding: ($form-spacing + $form-spacing-half) $form-spacing
+        height: 2em // Same as round buttons
+        box-sizing: content-box
+        // Add removed $form-spacing again
+        padding: $form-spacing
       & +.dito-components
         // Needed for transition-height in DitoSchema:
         min-height: $form-spacing

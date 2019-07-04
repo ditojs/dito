@@ -130,6 +130,8 @@
     button.dito-label
       display: block
       width: 100%
+      // Catch all clicks, even when it would be partially covered by schema.
+      z-index: 1
       // Clear button styles:
       text-align: left
       background: none
