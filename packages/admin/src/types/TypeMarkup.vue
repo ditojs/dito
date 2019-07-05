@@ -205,7 +205,7 @@ export default TypeComponent.register('markup', {
 
   watch: {
     readyonly: 'updateOptions',
-    autoFocus: 'updateOptions'
+    autofocus: 'updateOptions'
   },
 
   created() {

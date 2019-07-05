@@ -94,6 +94,7 @@
       cursor: pointer
     .dito-tree-header
       display: flex
+      justify-content: space-between
     .dito-tree-branch,
     .dito-tree-leaf
       flex: auto
