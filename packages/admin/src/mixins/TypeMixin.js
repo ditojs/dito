@@ -235,7 +235,7 @@ export default {
     this.setupSchemaFields()
   },
 
-  destroyed() {
+  beforeDestroy() {
     this._register(false)
   },
 

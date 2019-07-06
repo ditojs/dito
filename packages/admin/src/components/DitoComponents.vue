@@ -120,7 +120,7 @@ export default DitoComponent.component('dito-components', {
     this._register(true)
   },
 
-  destroyed() {
+  beforeDestroy() {
     this._register(false)
   },
 

@@ -318,7 +318,7 @@ export default DitoComponent.component('dito-schema', {
     this.delegate('change', this.parentSchemaComponent)
   },
 
-  destroyed() {
+  beforeDestroy() {
     this._register(false)
   },
 
@@ -371,7 +371,7 @@ export default DitoComponent.component('dito-schema', {
     _setOrDelete(registry, key, value, set) {
       if (set) {
         this.$set(registry, key, value)
-      } else {
+      } else if (registry[key] === value) {
         this.$delete(registry, key)
       }
     },

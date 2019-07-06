@@ -148,8 +148,10 @@ export default {
     },
 
     checked(checked) {
-      this.$emit('input', checked)
-      this.$emit('change', checked)
+      if (checked !== this.value) {
+        this.$emit('input', checked)
+        this.$emit('change', checked)
+      }
     }
   },
 

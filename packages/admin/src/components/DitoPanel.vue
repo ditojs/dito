@@ -153,7 +153,7 @@ export default DitoComponent.component('dito-panel', {
     }
   },
 
-  destroyed() {
+  beforeDestroy() {
     this._register(false)
   },
 
