@@ -2,9 +2,6 @@
   .dito-input
     input(
       ref="input"
-      :id="id"
-      :name="name"
-      :type="type"
       v-model="currentValue"
       v-bind="attributes"
       v-on="listeners"
@@ -59,9 +56,25 @@ export default {
   computed: {
     attributes() {
       const {
-        title, disabled, readonly, placeholder, autocomplete, $attrs
+        id,
+        name,
+        title,
+        disabled,
+        readonly,
+        placeholder,
+        autocomplete,
+        $attrs
       } = this
-      return { title, disabled, readonly, placeholder, autocomplete, ...$attrs }
+      return {
+        id,
+        name,
+        title,
+        disabled,
+        readonly,
+        placeholder,
+        autocomplete,
+        ...$attrs
+      }
     },
 
     listeners() {

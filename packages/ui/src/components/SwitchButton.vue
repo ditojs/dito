@@ -1,16 +1,15 @@
 <template lang="pug">
-  label.dito-switch(
+  .dito-switch(
     :class="classes"
     :style="styles"
   )
-    input(
-      type="checkbox"
-      ref="input"
-      :name="name"
-      :disabled="disabled"
-      v-model="checked"
-    )
     .dito-switch-pane
+      input(
+        type="checkbox"
+        ref="input"
+        v-model="checked"
+        v-bind="attributes"
+      )
       .dito-switch-button
       span.dito-switch-label(
         v-if="labels"
@@ -36,75 +35,80 @@
     --switch-padding: 3px
     --switch-speed: 300ms
     --label-margin: 0.5em
-    vertical-align: bottom
+
+    --width: calc(var(--switch-width) - 2 * var(--switch-margin))
+    --height: calc(var(--switch-height) - 2 * var(--switch-margin))
+    --offset: calc(var(--width) - var(--height))
+
     display: inline-block
     position: relative
-    // For the baseline to be aligned well:
+    // For the baseline to aligned well with compact labels, use `bottom`
+    // alignment and remove 1px from height (why does this work?)
     vertical-align: bottom
     height: calc(var(--switch-height) - 1px)
     +user-select(none)
-    cursor: pointer
-    input
-      opacity: 0
-      position: absolute
-      width: 1px
-      height: 1px
-    .dito-switch-label
-      position: absolute
-      right: var(--label-margin)
-      top: 50%
-      transform: translateY(-50%)
-      text-transform: uppercase
-      color: $color-white
     .dito-switch-pane
-      --width: calc(var(--switch-width) - 2 * var(--switch-margin))
-      --height: calc(var(--switch-height) - 2 * var(--switch-margin))
-      --offset: calc(var(--width) - var(--height))
-      display: block
-      position: absolute
       position: relative
-      box-sizing: border-box
       width: var(--width)
       height: var(--height)
+    .dito-switch-pane,
+    .dito-switch-label
       top: 50%
       transform: translateY(-50%)
-      border: var(--switch-padding) solid transparent
+    input
+      cursor: pointer
+      appearance: none
+      width: 100%
+      height: 100%
       border-radius: 1em
       background: $color-light
       transition: border-color .3s, background-color .3s
-      .dito-switch-button
-        display: block
-        position: absolute
-        // Set font-size to height, so we can use width/height = 1em for circle:
-        font-size: calc(var(--height) - 2 * var(--switch-padding))
-        top: 0
-        left: 0
-        width: 1em
-        height: 1em
-        border-radius: 0.5em
-        background: $color-white
-        transition: transform var(--switch-speed)
-        transform: translateX(0)
+      &:focus
+        outline: none
+    .dito-switch-button
+      position: absolute
+      // Set font-size to height, so we can use width/height = 1em for circle:
+      font-size: calc(var(--height) - 2 * var(--switch-padding))
+      top: var(--switch-padding)
+      left: var(--switch-padding)
+      width: 1em
+      height: 1em
+      border-radius: 0.5em
+      border: 1px solid transparent
+      box-sizing: border-box
+      background: $color-white
+      transition: transform var(--switch-speed)
+      transform: translateX(0)
+    .dito-switch-button,
+    .dito-switch-label
+      pointer-events: none
+    .dito-switch-label
+      position: absolute
+      right: var(--label-margin)
+      text-transform: uppercase
+      color: $color-white
     &.dito-checked
-      .dito-switch-pane
-        background-color: $color-active
+      input
+        background: $color-active
       .dito-switch-button
         transform: translateX(var(--offset))
       .dito-switch-label
         left: var(--label-margin)
         right: unset
     &.dito-disabled
-      pointer-events: none
-      opacity: 0.6
+      @extend %button-disabled
+    &:focus-within:not(:hover)
+      .dito-switch-button
+        border: 1px solid $color-active
 </style>
 
 <script>
 export default {
   props: {
     value: { type: Boolean, default: false },
+    id: { type: String, default: null },
     name: { type: String, default: null },
     disabled: { type: Boolean, default: false },
-    sync: { type: Boolean, default: false },
     labels: { type: [Object, Boolean], default: false }
   },
 
@@ -125,11 +129,16 @@ export default {
 
     styles() {
       const { labels: { checked, unchecked } = {} } = this
-      // Calculate `--switch-width` in rem based on label length
+      // Calculate `--switch-width` in `rem`, based on label length.
       const length = Math.max(0, checked?.length, unchecked?.length)
       return {
         '--switch-width': length ? `${length * 1.5}rem` : null
       }
+    },
+
+    attributes() {
+      const { id, name, disabled, $attrs } = this
+      return { id, name, disabled, ...$attrs }
     }
   },
 
