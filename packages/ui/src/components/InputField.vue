@@ -33,9 +33,9 @@ export default {
     value: { type: [String, Number], default: null },
     id: { type: String, default: null },
     name: { type: String, default: null },
+    title: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
-    title: { type: String, default: null },
     placeholder: { type: String, default: null },
     autocomplete: { type: String, default: 'off' }
     /*
@@ -58,6 +58,7 @@ export default {
       const {
         id,
         name,
+        type,
         title,
         disabled,
         readonly,
@@ -68,6 +69,7 @@ export default {
       return {
         id,
         name,
+        type,
         title,
         disabled,
         readonly,
