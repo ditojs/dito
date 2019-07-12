@@ -6,14 +6,22 @@
         :class="{ 'dito-schema-menu-header': menuHeader }"
       )
         template(v-if="label")
-          button.dito-label(
+          dito-label(
             v-if="collapsible"
+            tag="button"
+            :label="label"
+            :dataPath="dataPath"
             @click.stop="opened = !opened"
           )
-            .dito-chevron(:class="{ 'dito-opened': opened }")
-            label {{ label }}
-          .dito-label(v-else)
-            label {{ label }}
+            .dito-chevron(
+              slot="prefix"
+              :class="{ 'dito-opened': opened }"
+            )
+          dito-label(
+            v-else
+            :label="label"
+            :dataPath="dataPath"
+          )
         dito-tabs(
           v-if="tabs"
           :tabs="tabs"
@@ -179,7 +187,7 @@ export default DitoComponent.component('dito-schema', {
     data: { type: Object, default: null },
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
-    label: { type: String, default: null },
+    label: { type: [String, Object], default: null },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },

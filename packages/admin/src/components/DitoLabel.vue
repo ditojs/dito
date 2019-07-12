@@ -1,6 +1,16 @@
 <template lang="pug">
-  .dito-label
+  // Render the label even if it's empty, when a specific tag (e.g. button) is
+  // specified.
+  component.dito-label(
+    v-if="text || tag"
+    :is="tag || 'div'"
+    v-on="$listeners"
+  )
+    slot(name="prefix")
+      span.dito-label-prefix(v-if="prefix") {{ prefix }}
     label(:for="dataPath") {{ text }}
+    slot(name="suffix")
+      span.dito-label-suffix(v-if="suffix") {{ suffix }}
 </template>
 
 <style lang="sass">
@@ -9,11 +19,14 @@
     // we need to position it absolutely inside its container.
     margin: 0 0 $form-spacing-half 0
     position: relative
-    font-weight: bold
     label
       display: inline
       cursor: inherit
       white-space: nowrap
+      font-weight: bold
+    .dito-label-prefix::after,
+    .dito-label-suffix::before
+      content: '\00a0'
     &.dito-width-fill
       // Crop labels that are too large when component fills available space
       label
@@ -38,12 +51,32 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import { isObject } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-label', {
   props: {
+    tag: { type: String, default: null },
     dataPath: { type: String, required: true },
-    text: { type: String, required: true }
+    label: { type: [String, Object], required: true }
+  },
+
+  computed: {
+    text() {
+      const { label } = this
+      return isObject(label) ? label?.text : label
+    },
+
+    prefix() {
+      const { label } = this
+      return isObject(label) ? label?.prefix : null
+    },
+
+    suffix() {
+      const { label } = this
+      return isObject(label) ? label?.suffix : null
+    }
   }
 })
+
 </script>

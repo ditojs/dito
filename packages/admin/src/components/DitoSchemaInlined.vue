@@ -8,7 +8,7 @@
       :data="data"
       :meta="meta"
       :store="store"
-      :label="compact ? null: label"
+      :label="compact ? null : label"
       :inlined="true"
       :disabled="disabled"
       :collapsed="collapsed"
@@ -74,7 +74,7 @@ export default DitoComponent.component('dito-schema-inlined', {
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    label: { type: String, default: null },
+    label: { type: [String, Object], default: null },
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },

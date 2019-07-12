@@ -8,7 +8,7 @@
     dito-label(
       v-if="label"
       :dataPath="dataPath"
-      :text="label"
+      :label="label"
       :class="componentClass"
     )
     component.dito-component(

@@ -45,7 +45,7 @@
           dito-label(
             v-if="cell.label !== false"
             :dataPath="getDataPath(cell)"
-            :text="getLabel(cell)"
+            :label="getLabel(cell)"
           )
         dito-table-cell(
           :cell="cell"
