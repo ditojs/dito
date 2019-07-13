@@ -1,7 +1,11 @@
 <template lang="pug">
   .dito-tree-item(
     :id="dataPath"
-    :class="classes"
+    :class=`{
+      'dito-dragging': dragging,
+      'dito-active': active
+    }`
+    :style="level > 0 && { '--level': level }"
   )
     .dito-tree-header(v-if="label")
       .dito-tree-branch(
@@ -80,16 +84,15 @@
 </template>
 
 <style lang="sass">
-  // Use precalculated level classes, so that we can add the accumulated indent
-  // padding directly instead of having it accumulate in CSS. This way, we can
-  // keep the .dito-active area cover the full width:
-  @for $i from 1 through 4
-    .dito-tree-level-#{$i}
-      > .dito-tree-header
-        > .dito-tree-branch,
-        > .dito-tree-leaf
-          padding-left: $chevron-indent * ($i - 1)
   .dito-tree-item
+    --chevron-indent: #{$chevron-indent}
+    > .dito-tree-header
+      > .dito-tree-branch,
+      > .dito-tree-leaf
+        // Use `--level` CSS variable to calculated the accumulated indent
+        // padding directly instead of having it accumulate in nested CSS.
+        // This way, we can keep the .dito-active area cover the full width:
+        padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1))
     .dito-tree-branch
       cursor: pointer
     .dito-tree-header
@@ -263,14 +266,6 @@ export default DitoComponent.component('dito-tree-item', {
       const { numChildren } = this
       return numChildren && ` ${numChildren} ${
         numChildren === 1 ? 'item' : 'items'}`
-    },
-
-    classes() {
-      return {
-        ...(this.level > 0 && { [`dito-tree-level-${this.level}`]: true }),
-        'dito-dragging': this.dragging,
-        'dito-active': this.active
-      }
     },
 
     hasEditButtons() {
