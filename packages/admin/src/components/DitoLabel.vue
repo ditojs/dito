@@ -49,6 +49,7 @@
       margin-left: 0
       padding: var(--label-padding)
     &.dito-width-fill
+      width: 100%
       // In order for ellipsis to work on labels without affecting other layout,
       // we need to position it absolutely inside its container.
       label
@@ -60,11 +61,12 @@
         // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
         // on its parent to enforce the right text height in the container
         content: '\00a0'
-  .dito-schema-compact .dito-label
-    // Display compact labels as inline-blocks, with ': ' appended to them:
-    display: inline-block
-    label::after
-      content: ':\00a0'
+  .dito-schema-compact
+    .dito-label
+      // Display compact labels as inline-blocks, with ': ' appended to them:
+      display: inline-block
+      label::after
+        content: ':\00a0'
 </style>
 
 <script>

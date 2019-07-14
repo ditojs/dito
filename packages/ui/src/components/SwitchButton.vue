@@ -42,10 +42,9 @@
 
     display: inline-block
     position: relative
-    // For the baseline to aligned well with compact labels, use `bottom`
-    // alignment and remove 1px from height (why does this work?)
-    vertical-align: bottom
-    height: calc(var(--switch-height) - 1px)
+    height: var(--switch-height)
+    // To make inline labels appear on consistent baseline:
+    vertical-align: -25%
     +user-select(none)
     .dito-switch-pane
       position: relative

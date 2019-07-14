@@ -28,6 +28,8 @@
 
 <style lang="sass">
   .dito-component-container
+    // Needed for better vertical alignment:
+    align-self: stretch
     box-sizing: border-box
     // To prevent list tables from blowing out of their flex box containers.
     max-width: 100%
