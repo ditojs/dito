@@ -305,6 +305,29 @@ export default {
       return res
     },
 
+    async navigate(location) {
+      return new Promise(resolve => {
+        this.$router.push(
+          isString(location) ? { path: location } : location,
+          () => resolve(true),
+          () => resolve(false)
+        )
+      })
+    },
+
+    download(url, filename) {
+      // See: https://stackoverflow.com/a/49917066/1163708
+      const a = document.createElement('a')
+      a.href = url
+      if (filename) {
+        a.download = filename
+      }
+      const { body } = document
+      body.appendChild(a)
+      a.click()
+      body.removeChild(a)
+    },
+
     notify(...args) {
       this.rootComponent.notify(...args)
     },

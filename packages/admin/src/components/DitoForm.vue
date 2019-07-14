@@ -344,13 +344,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     async close() {
-      return new Promise(resolve => {
-        this.$router.push(
-          { path: this.parentRouteComponent.path },
-          () => resolve(true),
-          () => resolve(false)
-        )
-      })
+      return this.navigate(this.parentRouteComponent.path)
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
