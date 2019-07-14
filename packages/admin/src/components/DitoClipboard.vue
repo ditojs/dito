@@ -1,18 +1,17 @@
 <template lang="pug">
-  .dito-clipboard
-    .dito-buttons.dito-buttons-round
-      button.dito-button.dito-button-copy(
-        type="button"
-        ref="copyData"
-        title="Copy Data"
-        @click="onCopy"
-      )
-      button.dito-button.dito-button-paste(
-        type="button"
-        title="Paste Data"
-        :disabled="!pasteEnabled"
-        @click="onPaste"
-      )
+  .dito-clipboard.dito-buttons.dito-buttons-round
+    button.dito-button.dito-button-copy(
+      type="button"
+      ref="copyData"
+      title="Copy Data"
+      @click="onCopy"
+    )
+    button.dito-button.dito-button-paste(
+      type="button"
+      title="Paste Data"
+      :disabled="!pasteEnabled"
+      @click="onPaste"
+    )
 </template>
 
 <script>
@@ -42,13 +41,27 @@ export default DitoComponent.component('dito-clipboard', {
   },
 
   methods: {
+    async handlePaste(callback) {
+      const json = await navigator.clipboard.readText()
+      const data = JSON.parse(json)
+      const target = this.schemaComponent?.data
+      if (data && target) {
+        for (const key in data) {
+          if (callback(target, key, data[key]) === false) {
+            return false
+          }
+        }
+        return true
+      }
+    },
+
     async onClipboardChange() {
       try {
-        // See if the clipboard content is valid JSON, and only activate the
-        // paste button if it is:
-        const json = await navigator.clipboard.readText()
-        JSON.parse(json)
-        this.pasteEnabled = true
+        // See if the clipboard content is valid JSON data that is compatible
+        // with the current target schema, and only then activate the pasting:
+        this.pasteEnabled = await this.handlePaste(
+          (target, key) => key in target
+        )
       } catch (err) {
         this.pasteEnabled = false
       }
@@ -68,16 +81,13 @@ export default DitoComponent.component('dito-clipboard', {
 
     async onPaste() {
       try {
-        const json = await navigator.clipboard.readText()
-        const data = JSON.parse(json)
-        const target = this.schemaComponent?.data
-        if (data && target) {
-          for (const key in data) {
+        this.pasteEnabled = await this.handlePaste(
+          (target, key, value) => {
             if (key in target) {
-              this.$set(target, key, data[key])
+              this.$set(target, key, value)
             }
           }
-        }
+        )
       } catch (err) {
         this.handleError(err)
       }
