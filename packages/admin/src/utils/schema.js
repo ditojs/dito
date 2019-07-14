@@ -206,23 +206,28 @@ export function setDefaults(schema, data = {}) {
       // isn't mounted) so we can't use `dataPath` to get to components,
       // and then to the defaultValue from there. That's why defaultValue is
       // a 'static' value on the component definitions:
-      if (!(key in data)) {
+      const typeOptions = getTypeOptions(componentSchema) || {}
+      const { flattenedType } = typeOptions
+      if (!flattenedType && !(key in data)) {
         const defaultValue = (
           componentSchema.default ??
-          getTypeOptions(componentSchema)?.defaultValue
+          typeOptions.defaultValue
         )
         data[key] = isFunction(defaultValue)
           ? defaultValue(componentSchema)
           : clone(defaultValue)
       }
-      // Recursively set defaults on nested forms
-      if (hasForms(componentSchema)) {
-        asArray(data[key]).forEach(item => {
+      if (flattenedType) {
+        // Recursively set defaults on section components.
+        setDefaults(componentSchema, data)
+      } else if (hasForms(componentSchema)) {
+        // Recursively set defaults on nested forms.
+        for (const item of asArray(data[key])) {
           const formSchema = getItemFormSchema(componentSchema, item)
           if (item && formSchema) {
             setDefaults(formSchema, item)
           }
-        })
+        }
       }
     }
   }
