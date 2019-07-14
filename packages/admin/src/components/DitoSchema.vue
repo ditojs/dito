@@ -270,9 +270,9 @@ export default DitoComponent.component('dito-schema', {
     },
 
     clipboardData() {
-      return this.processData({
-        removeIds: true
-      })
+      // Remove the root id from the copied data:
+      const { id, ...data } = this.processData()
+      return data
     },
 
     // The following computed properties are similar to the fields returned by
@@ -578,7 +578,7 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData({ processIds = false, removeIds = false } = {}) {
+    processData({ processIds = false } = {}) {
       // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
@@ -593,6 +593,7 @@ export default DitoComponent.component('dito-schema', {
         // transient data: Replace id with #id, so '#ref' can be used for
         // relates, see OptionsMixin:
         const isObj = isObject(value)
+        const isArr = isArray(value)
         if (
           isObj &&
           processIds &&
@@ -605,7 +606,7 @@ export default DitoComponent.component('dito-schema', {
             ? { '#ref': id }
             : { '#id': id, ...rest }
         }
-        if (isObj || isArray(value)) {
+        if (isObj || isArr) {
           // Use reduce() for both arrays and objects thanks to Object.entries()
           value = Object.entries(value).reduce(
             (processed, [key, val]) => {
@@ -615,11 +616,8 @@ export default DitoComponent.component('dito-schema', {
               }
               return processed
             },
-            isArray(value) ? [] : {}
+            isArr ? [] : {}
           )
-        }
-        if (isObj && removeIds && value.id) {
-          delete value.id
         }
         return value
       }
