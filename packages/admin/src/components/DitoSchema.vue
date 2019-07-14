@@ -112,10 +112,9 @@
         margin: $form-spacing-half
   .dito-schema-header
     display: flex
-    box-sizing: border-box
-    // turn off pointer events in background so that DitoTrail keeps working.
-    pointer-events: none
     justify-content: space-between
+    // Turn off pointer events in background so that DitoTrail keeps working.
+    pointer-events: none
     > *
       pointer-events: auto
     .dito-tabs,
