@@ -33,6 +33,7 @@
     $color-swatch-radius: $border-radius - $border-width
     .dito-color
       .dito-input
+        display: block
         position: relative
         input
           font-variant-numeric: tabular-nums
