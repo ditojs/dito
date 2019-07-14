@@ -1,9 +1,24 @@
-import TypeComponent from '@/TypeComponent'
-import DitoView from '@/components/DitoView'
 import { appendDataPath } from '@/utils/data'
 import {
   isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
+
+const typeComponents = {}
+const unknownTypeReported = {}
+
+export function registerTypeComponent(type, component) {
+  typeComponents[type] = component
+}
+
+export function getTypeComponent(type) {
+  const component = typeComponents[type] || null
+  if (!component && !unknownTypeReported[type]) {
+    // Report each missing type only once, to avoid flooding the console:
+    unknownTypeReported[type] = true
+    throw new Error(`Unknown Dito component type: '${type}'`)
+  }
+  return component
+}
 
 export function forEachSchemaComponent(schema, callback) {
   const schemas = [
@@ -55,7 +70,7 @@ export async function resolveViews(views) {
   return views
 }
 
-export async function processView(api, schema, name, routes) {
+export async function processView(component, api, schema, name, routes) {
   const children = []
   processRouteSchema(api, schema, name)
   if (isSingleComponentView(schema)) {
@@ -67,7 +82,7 @@ export async function processView(api, schema, name, routes) {
   routes.push({
     path: `/${schema.path}`,
     children,
-    component: DitoView,
+    component,
     meta: {
       api,
       schema
@@ -271,7 +286,7 @@ function getType(schemaOrType) {
 }
 
 export function getTypeOptions(schemaOrType) {
-  return TypeComponent.get(getType(schemaOrType))?.options
+  return getTypeComponent(getType(schemaOrType))?.options
 }
 
 export function getSourceType(schemaOrType) {

@@ -20,9 +20,8 @@
 // }
 import DitoComponent from './DitoComponent'
 import TypeMixin from './mixins/TypeMixin'
+import { getTypeComponent, registerTypeComponent } from '@/utils/schema'
 import { asArray } from '@ditojs/utils'
-
-const { typeComponents } = DitoComponent
 
 const TypeComponent = DitoComponent.component('typo-component', {
   mixins: [TypeMixin],
@@ -37,24 +36,22 @@ const TypeComponent = DitoComponent.component('typo-component', {
 // Expose this component as the general purpose 'component' type, which can
 // resolves to any provided custom component, through `schema.component`, see
 // `resolveTypeComponent()`
-typeComponents.component = TypeComponent
+registerTypeComponent('component', TypeComponent)
 
-TypeComponent.register = function(type, options = {}) {
-  const types = asArray(type)
+TypeComponent.register = function(types, options = {}) {
+  types = asArray(types)
   const component = this.component(`dito-type-${types[0]}`, options)
   // If nothing is specified, the default value for `defaultValue` is null:
   if (!('defaultValue' in component.options)) {
     component.options.defaultValue = null
   }
-  for (const t of types) {
-    typeComponents[t] = component
+  for (const type of types) {
+    registerTypeComponent(type, component)
   }
   return component
 }
 
-TypeComponent.get = function(type) {
-  return typeComponents[type]
-}
+TypeComponent.get = getTypeComponent
 
 export default TypeComponent
 </script>

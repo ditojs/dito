@@ -1,11 +1,10 @@
 import Vue from 'vue'
 import DitoMixin from './mixins/DitoMixin'
 import TypeMixin from './mixins/TypeMixin'
+import { getTypeComponent } from '@/utils/schema'
 import { isFunction, isPromise } from '@ditojs/utils'
 
 const components = {}
-const typeComponents = {}
-const unknownTypeReported = {}
 
 const DitoComponent = Vue.extend({
   // Make sure that registered components are present in all DitoComponent.
@@ -13,15 +12,7 @@ const DitoComponent = Vue.extend({
   mixins: [DitoMixin],
 
   methods: {
-    getTypeComponent(type) {
-      const component = typeComponents[type] || null
-      if (!component && !unknownTypeReported[type]) {
-        // Report each missing type only once, to avoid flooding the console:
-        unknownTypeReported[type] = true
-        throw new Error(`Unknown Dito component type: '${type}'`)
-      }
-      return component
-    },
+    getTypeComponent,
 
     resolveTypeComponent(component) {
       // A helper method to allow three things:
@@ -46,8 +37,6 @@ const DitoComponent = Vue.extend({
     }
   }
 })
-
-DitoComponent.typeComponents = typeComponents
 
 DitoComponent.component = function(name, options) {
   if (options) {

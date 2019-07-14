@@ -37,6 +37,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
+import DitoView from '@/components/DitoView'
 import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
 import { equals, stripTags } from '@ditojs/utils'
@@ -211,7 +212,7 @@ export default DitoComponent.component('dito-root', {
       const routes = []
       const promises = []
       for (const [name, schema] of Object.entries(this.resolvedViews)) {
-        promises.push(processView(this.api, schema, name, routes))
+        promises.push(processView(DitoView, this.api, schema, name, routes))
       }
       await Promise.all(promises)
       this.$router.addRoutes(routes)
