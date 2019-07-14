@@ -52,6 +52,7 @@
       // In order for ellipsis to work on labels without affecting other layout,
       // we need to position it absolutely inside its container.
       label
+        +ellipsis
         position: absolute
         left: 0
         right: 0

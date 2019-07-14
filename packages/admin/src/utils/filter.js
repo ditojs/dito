@@ -35,7 +35,7 @@ export const filterComponents = {
         : null,
       text: {
         type: 'text',
-        width: '60%'
+        width: filter.operators ? '60%' : 'fill'
       }
     }
   },
