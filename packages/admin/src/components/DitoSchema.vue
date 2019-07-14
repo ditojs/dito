@@ -132,7 +132,7 @@
       height: $tab-height
       margin-top: -$tab-height
       padding: 0 $menu-padding-hor
-      max-width: $content-width + 2 * $content-padding
+      max-width: $content-width
       top: 0
       left: 0
       right: 0
