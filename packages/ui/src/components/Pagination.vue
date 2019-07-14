@@ -24,11 +24,9 @@
   .dito-pagination
     display: flex
     .dito-pagination-total
-      white-space: nowrap
+      +ellipsis
       margin: 0 0.5em
       line-height: 2em
-      overflow: hidden
-      text-overflow: ellipsis
     .dito-button
       transition: all .3s ease, color 0s, background 0s, border 0s
       font-variant-numeric: tabular-nums

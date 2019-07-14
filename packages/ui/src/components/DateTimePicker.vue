@@ -30,7 +30,6 @@
 
 <style lang="sass">
   .dito-date-time-picker
-    // display: inline-block
     .dito-pickers
       @extend %input
       padding: 0

@@ -100,16 +100,16 @@
       justify-content: space-between
     .dito-tree-branch,
     .dito-tree-leaf
+      display: flex
       flex: auto
       position: relative
       margin: 1px 0
       +user-select(none)
-      > *
-        display: inline
     .dito-tree-label,
     .dito-tree-info
       white-space: nowrap
     .dito-tree-info
+      padding-left: 0.35em
       color: rgba($color-black, .2)
     .dito-buttons
       display: flex
@@ -264,8 +264,9 @@ export default DitoComponent.component('dito-tree-item', {
 
     details() {
       const { numChildren } = this
-      return numChildren && ` ${numChildren} ${
-        numChildren === 1 ? 'item' : 'items'}`
+      return numChildren && `${numChildren} ${
+        numChildren === 1 ? 'item' : 'items'
+      }`
     },
 
     hasEditButtons() {

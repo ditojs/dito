@@ -2,26 +2,23 @@
   .dito-schema
     .dito-schema-content
       .dito-schema-header(
-        v-if="label || tabs || clipboard"
+        v-if="hasLabel || tabs || clipboard"
         :class="{ 'dito-schema-menu-header': menuHeader }"
       )
-        template(v-if="label")
-          dito-label(
-            v-if="collapsible"
-            tag="button"
-            :label="label"
-            :dataPath="dataPath"
-            @click.stop="opened = !opened"
+        dito-label(
+          v-if="hasLabel"
+          :label="label"
+          :dataPath="dataPath"
+          :collapsible="collapsible"
+          :collapsed="!opened"
+          @expand="onExpand"
+        )
+          // Pass edit-buttons through to dito-label's own edit-buttons slot:
+          template(
+            #edit-buttons
+            v-if="inlined"
           )
-            .dito-chevron(
-              slot="prefix"
-              :class="{ 'dito-opened': opened }"
-            )
-          dito-label(
-            v-else
-            :label="label"
-            :dataPath="dataPath"
-          )
+            slot(name="edit-buttons")
         dito-tabs(
           v-if="tabs"
           :tabs="tabs"
@@ -64,14 +61,20 @@
         name="buttons"
         v-if="!inlined && isPopulated"
       )
-    dito-panels(
-      v-if="!inlined && isPopulated && panelSchemas.length > 0"
-      :panels="panelSchemas"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-    )
+    template(v-if="inlined")
+      slot(
+        v-if="!hasLabel"
+        name="edit-buttons"
+      )
+    template(ve-else)
+      dito-panels(
+        v-if="isPopulated && panelSchemas.length > 0"
+        :panels="panelSchemas"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="disabled"
+      )
 </template>
 
 <style lang="sass">
@@ -86,8 +89,12 @@
       flex: 1 1 100%
       max-width: $content-width
       padding: $content-padding
-    .dito-panels
+    > .dito-buttons,
+    > .dito-panels
       flex: 1 1 0%
+    > .dito-buttons
+      margin-left: $form-spacing
+    > .dito-panels
       padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
     .dito-tab-components + .dito-main-components,
@@ -136,16 +143,9 @@
       .dito-tabs a
         line-height: $menu-line-height
     button.dito-label
-      display: block
       width: 100%
       // Catch all clicks, even when it would be partially covered by schema.
       z-index: 1
-      // Clear button styles:
-      text-align: left
-      background: none
-      margin: 0
-      border: 0
-      padding: 0
       &:focus
         outline: none
         .dito-chevron
@@ -316,6 +316,10 @@ export default DitoComponent.component('dito-schema', {
 
     isValidated() {
       return this.everyComponent(it => it.isValidated)
+    },
+
+    hasLabel() {
+      return !!this.label || this.collapsible
     }
   },
 
@@ -400,6 +404,11 @@ export default DitoComponent.component('dito-schema', {
 
     everyComponent(callback) {
       return this.isPopulated && Object.values(this.components).every(callback)
+    },
+
+    onExpand(expand) {
+      this.emitEvent('expand', { params: { expand } })
+      this.opened = expand
     },
 
     onLoad() {

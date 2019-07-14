@@ -1,66 +1,51 @@
 <template lang="pug">
-  .dito-schema-inlined(
-    :class="{ 'dito-schema-labeled': labeled }"
+  dito-schema.dito-schema-inlined(
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :label="compact ? null : label"
+    :inlined="true"
+    :disabled="disabled"
+    :collapsed="collapsed"
+    :collapsible="collapsible"
+    :class="{ 'dito-schema-compact': compact }"
   )
-    dito-schema(
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :label="compact ? null : label"
-      :inlined="true"
-      :disabled="disabled"
-      :collapsed="collapsed"
-      :collapsible="collapsible"
-      :class="{ 'dito-schema-compact': compact }"
-    )
-    // Render dito-edit-buttons for inlined shemas separately from
-    // all others in `TypeList`, because of layout concerns.
-    dito-edit-buttons(
-      v-if="deletable || draggable || editable"
-      :deletable="deletable"
-      :draggable="draggable"
-      :editable="editable"
-      :editPath="editPath"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      @delete="$emit('delete')"
-    )
+    // Render dito-edit-buttons for inlined shemas separately from all
+    // others in `TypeList` as a scope, for better handling of layout.
+    template(#edit-buttons)
+      dito-edit-buttons(
+        v-if="deletable || draggable || editable"
+        :deletable="deletable"
+        :draggable="draggable"
+        :editable="editable"
+        :editPath="editPath"
+        :schema="schema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        @delete="$emit('delete')"
+      )
 </template>
 
 <style lang="sass">
   .dito-schema-inlined
-    position: relative
-    > .dito-schema > .dito-schema-content
+    > .dito-schema-content
       padding: 0
-    .dito-schema-header
-      // Change spacing so that .dito-label covers the full .dito-schema-header.
-      margin: -$form-spacing
-      .dito-label
-        height: 2em // Same as round buttons
-        box-sizing: content-box
-        // Add removed $form-spacing again
-        padding: $form-spacing
-      & +.dito-components
-        // Needed for transition-height in DitoSchema:
-        min-height: $form-spacing
-    &.dito-schema-labeled
-      > .dito-buttons
-        z-index: 2 // above `button.dito-label`
-        position: absolute
-        top: 0
-        right: 0
-    &:not(.dito-schema-labeled)
-      display: flex
-      > .dito-schema
-        flex: 1 1 100%
-      > .dito-buttons
-        flex: 1 1 0%
-        margin-left: $form-spacing
+      > .dito-schema-header
+        // Change spacing so .dito-label covers the full .dito-schema-header.
+        margin: -$form-spacing
+        .dito-label
+          // Add removed $form-spacing again
+          --label-padding: #{$form-spacing}
+          margin: 0
+          width: 100%
+          max-width: $content-width
+        & +.dito-components
+          // Needed for transition-height in DitoSchema:
+          min-height: $form-spacing
 </style>
 
 <script>
@@ -89,7 +74,7 @@ export default DitoComponent.component('dito-schema-inlined', {
       return this.schema.compact
     },
 
-    labeled() {
+    hasLabel() {
       return !this.compact && !!this.label
     }
   }

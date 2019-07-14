@@ -17,9 +17,8 @@
     white-space: nowrap
     display: flex
     .dito-button
+      +ellipsis
       border-radius: 0
-      overflow: hidden
-      text-overflow: ellipsis
       // A bit more than the width of ellipsis, to prevent replacing short words
       // with ellipsis.
       min-width: 3em

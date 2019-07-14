@@ -1,14 +1,16 @@
 .dito-chevron
-  display: inline
   position: relative
-  padding-left: $chevron-indent
+  width: $chevron-indent
+  flex: none
   color: $color-grey
   &::before
     content: '\25b6'
     position: absolute
-    color: inherit
     left: 0
+    color: inherit
     transition: transform .1s ease
   &.dito-opened::before
-    left: -0.1em
     transform: rotate(90deg)
+  &::after
+    // For the height to align well with text:
+    content: '\00a0'

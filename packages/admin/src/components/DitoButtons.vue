@@ -3,6 +3,8 @@
   // sub-class as the component container for different layout:
   .dito-buttons(
     v-if="buttonSchemas || $slots.default"
+    /* Pass on $listeners so that dito-edit-buttons can pass events. */
+    v-on="$listeners"
   )
     dito-button-container(
       v-for="(buttonSchema, buttonDataPath) in buttonSchemas"

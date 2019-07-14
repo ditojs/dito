@@ -1,10 +1,12 @@
 <template lang="pug">
-  dito-buttons.dito-buttons-round(
+  dito-buttons.dito-edit-buttons.dito-buttons-round(
     :buttons="buttons"
     :dataPath="dataPath"
     :data="data"
     :meta="meta"
     :store="store"
+    /* Prevent click events from bubbling to dito-label: */
+    @click.stop
   )
     button.dito-button(
       v-if="draggable"
@@ -32,6 +34,13 @@
       @click="$emit('delete')"
     )
 </template>
+
+<style lang="sass">
+  .dito-edit-buttons
+    // Override cursor from collapsible dito-label:
+    cursor: default
+    flex: none
+</style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
