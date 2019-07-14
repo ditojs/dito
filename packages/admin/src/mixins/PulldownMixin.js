@@ -10,18 +10,19 @@ export default {
         open: false,
         startTime: 0,
         checkTime: true,
-        documentHandlers: {
+        events: {
           mousedown: () => {
             this.showPulldown(false)
-            this.domOff(document, this.pulldown.documentHandlers)
+            this.pulldown.handlers.remove()
           },
 
           mouseup: () => {
             if (this.onPulldownMouseUp(null)) {
-              this.domOff(document, this.pulldown.documentHandlers)
+              this.pulldown.handlers.remove()
             }
           }
-        }
+        },
+        handlers: null
       }
     }
   },
@@ -55,7 +56,7 @@ export default {
       this.pulldown.open = open
       this.pulldown.startTime = open ? Date.now() : 0
       if (open) {
-        this.domOn(document, this.pulldown.documentHandlers)
+        this.pulldown.handlers = this.domOn(document, this.pulldown.events)
       }
     }
   }

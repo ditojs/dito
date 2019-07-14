@@ -35,7 +35,7 @@
                 | Uploaded
             template(v-else)
               | Stored
-          td
+          td.dito-cell-edit-buttons
             .dito-buttons.dito-buttons-round
               button.dito-button(
                 v-if="draggable"
