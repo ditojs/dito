@@ -23,7 +23,7 @@ export default TypeComponent.register([
   defaultValue: undefined,
   defaultWidth: null,
   // TODO: Consider making this work nicely:
-  // preventFlexGrowth: true,
+  // omitFlexGrow: true,
 
   computed: {
     verb() {

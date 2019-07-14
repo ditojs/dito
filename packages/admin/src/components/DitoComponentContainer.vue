@@ -28,7 +28,6 @@
 
 <style lang="sass">
   .dito-component-container
-    align-self: stretch
     box-sizing: border-box
     // To prevent list tables from blowing out of their flex box containers.
     max-width: 100%
@@ -135,10 +134,8 @@ export default DitoComponent.component('dito-component-container', {
     containerStyle() {
       const basis = this.percentage && `${this.percentage}%`
       const grow = (
-        // TODO: Switch back to `width === 'auto' ? 0 : 1`
-        // if `preventFlexGrowth` is never used.
         this.width === 'fill' ||
-        this.width !== 'auto' && !getTypeOptions(this.schema)?.preventFlexGrowth
+        this.width !== 'auto' && !getTypeOptions(this.schema)?.omitFlexGrow
       ) ? 1 : 0
       return {
         'flex-basis': basis,

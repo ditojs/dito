@@ -18,6 +18,7 @@ export default TypeComponent.register('section', {
   flattenedType: true,
   defaultValue: undefined,
   generateLabel: false,
+  omitFlexGrow: true,
   omitPadding: true
 })
 </script>
