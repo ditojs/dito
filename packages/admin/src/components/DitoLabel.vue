@@ -74,7 +74,7 @@ import { isObject } from '@ditojs/utils'
 export default DitoComponent.component('dito-label', {
   props: {
     label: { type: [String, Object], default: null },
-    dataPath: { type: String, required: true },
+    dataPath: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false }
   },

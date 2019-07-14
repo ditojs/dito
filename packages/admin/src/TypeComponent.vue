@@ -38,12 +38,16 @@ const TypeComponent = DitoComponent.component('typo-component', {
 // `resolveTypeComponent()`
 registerTypeComponent('component', TypeComponent)
 
-TypeComponent.register = function(types, options = {}) {
+TypeComponent.register = function(types, definition = {}) {
   types = asArray(types)
-  const component = this.component(`dito-type-${types[0]}`, options)
-  // If nothing is specified, the default value for `defaultValue` is null:
-  if (!('defaultValue' in component.options)) {
-    component.options.defaultValue = null
+  const component = this.component(`dito-type-${types[0]}`, definition)
+  const { options } = component
+  // Set defaults for `defaultValue` and `generateLabels` if not specified:
+  if (!('defaultValue' in options)) {
+    options.defaultValue = null
+  }
+  if (!('generateLabel' in options)) {
+    options.generateLabel = true
   }
   for (const type of types) {
     registerTypeComponent(type, component)

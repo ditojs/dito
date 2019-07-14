@@ -7,8 +7,8 @@
   )
     dito-label(
       v-if="label"
-      :dataPath="dataPath"
       :label="label"
+      :dataPath="labelDataPath"
       :class="componentClass"
     )
     component.dito-component(
@@ -35,9 +35,12 @@
     // Cannot use margin here as it needs to be part of box-sizing for
     // percentages in flex-basis to work.
     padding: $form-spacing $form-spacing-half
-    &.dito-omit-padding,
     &:empty,
       padding: 0
+    &.dito-omit-padding
+      padding: 0
+      > .dito-label
+        margin: 0 $form-spacing-half
   // NOTE: This is not nested inside .dito-component-container so that other
   // type components can override `.dito-width-fill` class (filter precedence).
   .dito-component.dito-width-fill
@@ -52,7 +55,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { shouldRenderLabel, getTypeOptions } from '@/utils/schema'
+import { getTypeOptions } from '@/utils/schema'
 import { isString } from '@ditojs/utils'
 
 // @vue/component
@@ -68,22 +71,32 @@ export default DitoComponent.component('dito-component-container', {
   },
 
   computed: {
-    label() {
+    typeOptions() {
+      return getTypeOptions(this.schema) || {}
+    },
+
+    hasLabel() {
       const { schema } = this
-      const hasLabel = (
-        schema.label !== false &&
-        shouldRenderLabel(schema) && (
-          schema.label ||
-          this.generateLabels
-        )
+      const { label } = schema
+      return (
+        label !== false &&
+        (!!label || this.typeOptions.generateLabel && this.generateLabels)
       )
-      return hasLabel ? this.getLabel(schema) : null
+    },
+
+    label() {
+      return this.hasLabel ? this.getLabel(this.schema) : null
+    },
+
+    labelDataPath() {
+      // Flattened types don't have a dataPath for themselves, don't use it:
+      return this.typeOptions.flattenedType ? null : this.dataPath
     },
 
     width() {
       const width = (
         this.schema.width ??
-        getTypeOptions(this.schema)?.defaultWidth
+        this.typeOptions.defaultWidth
       )
       // Use 100% == 1.0 as default width when nothing is set:
       return width === undefined ? 1.0 : width

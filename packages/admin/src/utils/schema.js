@@ -329,14 +329,6 @@ export function getPanelSchemas(panels, dataPath, schemaComponent) {
   return schemas
 }
 
-export function shouldRenderLabel(schema) {
-  return getTypeOptions(schema)?.renderLabel ?? true
-}
-
-export function getContainerClass(schema) {
-  return getTypeOptions(schema)?.containerClass
-}
-
 export function isObjectSource(schemaOrType) {
   return getSourceType(schemaOrType) === 'object'
 }

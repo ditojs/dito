@@ -1,7 +1,7 @@
 import ValidationMixin from './ValidationMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItemParams, getItem, getParentItem } from '@/utils/data'
-import { isFunction, asArray } from '@ditojs/utils'
+import { isString, isFunction, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -70,13 +70,6 @@ export default {
         this.$set(this.data, this.name, value)
       }
     },
-
-    label: getSchemaAccessor('label', {
-      type: [String, Boolean],
-      get(label) {
-        return label ?? this.getLabel(this.schema)
-      }
-    }),
 
     // The following computed properties are similar to the fields returned by
     // getItemParams(), so that we can access these on `this` as well:
@@ -148,6 +141,17 @@ export default {
         return process ? process(getParams()) : value
       }
     },
+
+    label: getSchemaAccessor('label', {
+      type: [String, Boolean],
+      get(label) {
+        return isString(label)
+          ? label
+          : label !== false && this.$options.generateLabel
+            ? this.getLabel(this.schema)
+            : null
+      }
+    }),
 
     width: getSchemaAccessor('width', {
       type: [String, Number]

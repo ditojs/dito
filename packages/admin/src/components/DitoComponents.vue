@@ -4,11 +4,11 @@
     v-show="visible"
   )
     dito-component-container(
-      v-for="{ schema, dataPath, store } in componentSchemas"
+      v-for="{ schema, dataPath, flattenedDataPath, store } in componentSchemas"
       v-if="shouldRender(schema)"
       :key="dataPath"
       :schema="schema"
-      :dataPath="dataPath"
+      :dataPath="flattenedDataPath"
       :data="data"
       :meta="meta"
       :store="store"
@@ -69,7 +69,6 @@ export default DitoComponent.component('dito-components', {
       // and adds the key as the name to each component, used for labels, etc.
       // NOTE: schema can be null while multi-form lists load their data,
       // because only the available data will determine the type of form.
-      const { dataPath } = this
       // When editing primitive values through a form, do not append 'name' to
       // the component's dataPath so it can be mapped to from validation errors.
       // NOTE: Not all schemas / components have a sourceSchema, e.g. dialogs.
@@ -78,13 +77,15 @@ export default DitoComponent.component('dito-components', {
         ([name, schema]) => {
           // Share dataPath and store with parent if flattenedType is true:
           const flattened = getTypeOptions(schema)?.flattenedType
-          // Always add name to component schema
+          // Always add name to component schema.
           schema.name = name
+          const dataPath = appendDataPath(this.dataPath, name)
           return {
             schema,
-            dataPath: flattened || wrapPrimitives
-              ? dataPath
-              : appendDataPath(dataPath, name),
+            dataPath,
+            flattenedDataPath: flattened || wrapPrimitives
+              ? this.dataPath
+              : dataPath,
             store: flattened ? this.store : this.getChildStore(name)
           }
         }

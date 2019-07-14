@@ -17,6 +17,7 @@ import TypeComponent from '@/TypeComponent'
 export default TypeComponent.register('section', {
   flattenedType: true,
   defaultValue: undefined,
+  generateLabel: false,
   omitPadding: true
 })
 </script>
