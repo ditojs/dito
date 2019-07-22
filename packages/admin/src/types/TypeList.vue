@@ -116,7 +116,7 @@
         v-if="hasListButtons && !isInSingleComponentView"
       )
         tr
-          td(
+          td.dito-cell-edit-buttons(
             :colspan="numColumns"
           )
             dito-edit-buttons(
