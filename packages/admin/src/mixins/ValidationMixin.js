@@ -59,7 +59,7 @@ export default {
         const validator = validations[rule]
         if (validator && (validator.nullish || value != null)) {
           const { validate, message } = validator
-          if (!validate(value, setting)) {
+          if (!validate(value, setting, this.validations)) {
             isValid = false
             if (notify) {
               const error = isFunction(message)

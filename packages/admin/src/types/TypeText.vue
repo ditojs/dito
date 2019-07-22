@@ -55,6 +55,7 @@ export default TypeComponent.register([
         email: 'email',
         url: 'url',
         hostname: 'hostname',
+        password: 'password',
         creditcard: 'creditcard'
       }[this.type]
       return rule ? { [rule]: true } : {}
