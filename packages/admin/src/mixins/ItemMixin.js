@@ -83,19 +83,25 @@ export default {
         )
         label = item[key]
       }
+      const hadLabel = !!label
       // If no label was found so far, try to produce one from the id or index.
       if (label == null) {
         const id = this.getItemId(sourceSchema, item)
         label = id ? `(id: ${id})`
           : isListSource(sourceSchema) && index !== null ? `${index + 1}`
           : ''
+        // Always use extended style when auto-generating labels from index/id:
         extended = true
-      } else if (extended) {
-        label = `'${label}'`
       }
-      return extended
-        ? label ? `${getFormLabel()} ${label}` : getFormLabel()
-        : label || ''
+      if (extended) {
+        const formLabel = getFormLabel()
+        if (formLabel) {
+          // If a label was provided, put in quotes when prefixed with the
+          // form label for the extended style:
+          label = `${formLabel} ${hadLabel ? `'${label}'` : label}`
+        }
+      }
+      return label || ''
     }
   }
 }
