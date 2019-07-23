@@ -159,6 +159,7 @@ import DitoComponent from '@/DitoComponent'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
 import { getNamedSchemas, getPanelSchemas, setDefaults } from '@/utils/schema'
+import { getStoreAccessor } from '@/utils/accessor'
 import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
@@ -205,7 +206,6 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this)
           : data
       ),
-      opened: !this.collapsed,
       componentsContainers: {},
       components: {},
       panels: {},
@@ -319,7 +319,13 @@ export default DitoComponent.component('dito-schema', {
 
     hasLabel() {
       return !!this.label || this.collapsible
-    }
+    },
+
+    opened: getStoreAccessor('opened', {
+      default() {
+        return !this.collapsed
+      }
+    })
   },
 
   created() {
