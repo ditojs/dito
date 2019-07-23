@@ -187,8 +187,13 @@ export default {
         value = this.user?.hasRole(...asArray(value))
       }
       // Now finally see if we can convert to the expect types.
-      if (value != null && !isMatchingType(types, value)) {
-        value = convertType(types[0], value)
+      if (types && value != null && !isMatchingType(types, value)) {
+        for (const type of types) {
+          const converted = convertType(type, value)
+          if (converted !== value) {
+            return converted
+          }
+        }
       }
       return value
     },
