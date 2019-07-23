@@ -2,10 +2,11 @@ import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
 import EmitterMixin from './EmitterMixin'
 import { getItemParams } from '@/utils/data'
+import { isMatchingType, convertType } from '@/utils/type'
 import { getResource } from '@/utils/resource'
 import {
-  isObject, isArray, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray, labelize, hyphenate, getDataPath
+  isObject, isArray, isString, isFunction, asArray,
+  getDataPath, labelize, hyphenate
 } from '@ditojs/utils'
 
 // @vue/component
@@ -153,30 +154,19 @@ export default {
       keyOrDataPath,
       { type, default: def, schema = this.schema } = {}
     ) {
+      const types = type && asArray(type)
       // For performance reasons, only support dataPaths in array format:
       let value = schema
         ? isArray(keyOrDataPath)
           ? getDataPath(schema, keyOrDataPath, () => undefined)
           : schema[keyOrDataPath]
         : undefined
+
       if (value === undefined && def !== undefined) {
         return def
       }
 
-      const types = type && asArray(type)
-      const isMatchingType = value => {
-        // See if any of the expect types match, return immediately if they do:
-        if (types && value != null) {
-          for (const type of types) {
-            if (typeCheckers[type.name]?.(value)) {
-              return true
-            }
-          }
-        }
-        return false
-      }
-
-      if (isMatchingType(value)) {
+      if (isMatchingType(types, value)) {
         return value
       }
       // Any schema value handled through `getSchemaValue()` can provide
@@ -190,9 +180,8 @@ export default {
         value = this.user?.hasRole(...asArray(value))
       }
       // Now finally see if we can convert to the expect types.
-      if (value != null && !isMatchingType(value)) {
-        const converter = types && typeConverters[types[0].name]
-        value = converter ? converter(value) : value
+      if (value != null && !isMatchingType(types, value)) {
+        value = convertType(types[0], value)
       }
       return value
     },
@@ -439,29 +428,4 @@ export default {
       }
     }
   }
-}
-
-const typeCheckers = {
-  Boolean: value => isBoolean(value),
-  Number: value => isNumber(value),
-  String: value => isString(value),
-  Date: value => isDate(value),
-  Array: value => isArray(value),
-  RegExp: value => isRegExp(value),
-  Function: value => isFunction(value)
-}
-
-const typeConverters = {
-  Boolean: value => !!value,
-  Number: value => +value,
-  String: value => isString(value) ? value : `${value}`,
-  Date: value => isDate(value) ? value : new Date(value),
-  Array: value => isArray(value)
-    ? value
-    : isString(value)
-      ? value.split(',')
-      : asArray(value),
-  RegExp: value => isRegExp(value)
-    ? value
-    : new RegExp(value)
 }
