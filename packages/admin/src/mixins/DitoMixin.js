@@ -162,7 +162,14 @@ export default {
           : schema[keyOrDataPath]
         : undefined
 
+      let params = null
+      const getParams = () => params || (params = getItemParams(this))
+
       if (value === undefined && def !== undefined) {
+        if (isFunction(def) && !isMatchingType(types, def)) {
+          // Support `default()` functions for any type except `Function`:
+          def = def.call(this, getParams())
+        }
         return def
       }
 
@@ -172,7 +179,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (isFunction(value)) {
-        value = value.call(this, getItemParams(this))
+        value = value.call(this, getParams())
       }
       // For boolean values that are defined as strings or arrays,
       // interpret the values as user roles and match against user:
