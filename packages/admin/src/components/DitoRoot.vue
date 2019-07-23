@@ -92,6 +92,7 @@ export default DitoComponent.component('dito-root', {
       }[type] || 'Notification'
       const text = `<p>${args.join('</p> <p>')}</p>`
         .replace(/\r\n|\n|\r/g, '<br>')
+      // Calculate display-duration for the notification based on its content:
       const duration = 1500 + (text.length + title.length) * 20
       this.$notify({ type, title, text, duration })
       const log = {

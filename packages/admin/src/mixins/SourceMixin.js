@@ -1,7 +1,7 @@
 import DitoComponent from '@/DitoComponent'
 import ResourceMixin from './ResourceMixin'
 import SchemaParentMixin from '@/mixins/SchemaParentMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
 import {
   processRouteSchema, processForms, hasForms, hasLabels,
@@ -129,11 +129,11 @@ export default {
       return order ? { order } : {}
     },
 
-    query: {
-      get() {
+    query: getStoreAccessor('query', {
+      get(query) {
         return {
           ...this.defaultQuery,
-          ...this.getStore('query')
+          ...query
         }
       },
 
@@ -157,19 +157,11 @@ export default {
           this.ignoreRouteChange = true
           this.$router.replace({ query, hash: this.$route.hash })
         }
-        this.setStore('query', query)
+        return query // Let getStoreAccessor() do the actual setting
       }
-    },
+    }),
 
-    total: {
-      get() {
-        return this.getStore('total')
-      },
-
-      set(total) {
-        return this.setStore('total', total)
-      }
-    },
+    total: getStoreAccessor('total'),
 
     columns() {
       return getNamedSchemas(this.schema.columns)
