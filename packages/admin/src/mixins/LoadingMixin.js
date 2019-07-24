@@ -7,7 +7,7 @@ export default {
   },
 
   methods: {
-    setLoading(isLoading, { showSpinner = true, updateView = false }) {
+    setLoading(isLoading, { showSpinner = true, updateView = false } = {}) {
       if (!this.isLoading ^ !isLoading) { // Boolean xor
         this.isLoading = !!isLoading
         if (showSpinner) {
