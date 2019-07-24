@@ -10,7 +10,7 @@ export default {
 
   data() {
     return {
-      resolvedData: null,
+      resolvedOptions: null,
       hasOptions: false
     }
   },
@@ -56,7 +56,7 @@ export default {
     },
 
     options() {
-      let data = this.resolvedData
+      let data = this.resolvedOptions
       if (!data) {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
@@ -67,19 +67,19 @@ export default {
           this.hasOptions = true
         } else if (isPromise(data)) {
           // If the data is asynchronous, we can't return it straight away.
-          // But we can "cheat" using computed properties and `resolvedData`,
+          // But we can "cheat" using computed properties and `resolvedOptions`,
           // which is going to receive the loaded data asynchronously,
           // triggering a recompute of `options` which depends on its value.
           this.setLoading(true)
           data
             .then(data => {
-              this.resolvedData = data
+              this.resolvedOptions = data
               this.hasOptions = true
               this.setLoading(false)
             })
             .catch(error => {
               this.addError(error.message)
-              this.resolvedData = []
+              this.resolvedOptions = []
               this.setLoading(false)
             })
             // TODO: Switch to finally() once it works on Firefox with vue-cli:

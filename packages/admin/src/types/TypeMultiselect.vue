@@ -13,7 +13,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="populate && (matchedOptions || options) || []"
+      :options="populate && options || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -232,7 +232,6 @@ export default TypeComponent.register('multiselect', {
   data() {
     return {
       isSearching: false,
-      matchedOptions: null,
       populate: false
     }
   },
@@ -336,15 +335,13 @@ export default TypeComponent.register('multiselect', {
       if (this.searchFilter && query) {
         try {
           this.isSearching = true
-          this.matchedOptions = await this.searchFilter(query, this.options)
+          this.resolvedOptions = await this.searchFilter(query, this.options)
         } catch (error) {
           this.addError(error)
-          this.matchedOptions = null
+          this.resolvedOptions = null
         } finally {
           this.isSearching = false
         }
-      } else {
-        this.matchedOptions = null
       }
     }
   }
