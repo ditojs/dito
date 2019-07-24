@@ -10,9 +10,19 @@
       v-if="collapsible"
       :class="{ 'dito-opened': !collapsed }"
     )
-    span.dito-label-prefix(v-if="prefix") {{ prefix }}
-    label(:for="dataPath") {{ text }}
-    span.dito-label-suffix(v-if="suffix") {{ suffix }}
+    dito-element.dito-label-prefix(
+      v-for="(prefix, index) of prefixes"
+      tag="span"
+      :key="index"
+      :content="prefix"
+    )
+    label(:for="dataPath" v-html="text")
+    dito-element.dito-label-suffix(
+      v-for="(suffix, index) of suffixes"
+      tag="span"
+      :key="index"
+      :content="suffix"
+    )
     slot(name="edit-buttons")
 </template>
 
@@ -80,7 +90,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { isObject } from '@ditojs/utils'
+import { isObject, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-label', {
@@ -101,14 +111,12 @@ export default DitoComponent.component('dito-label', {
       return isObject(label) ? label?.text : label
     },
 
-    prefix() {
-      const { label } = this
-      return isObject(label) ? label?.prefix : null
+    prefixes() {
+      return asArray(this.label?.prefix)
     },
 
-    suffix() {
-      const { label } = this
-      return isObject(label) ? label?.suffix : null
+    suffixes() {
+      return asArray(this.label?.suffix)
     },
 
     listeners() {
