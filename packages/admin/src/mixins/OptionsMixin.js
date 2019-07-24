@@ -10,7 +10,7 @@ export default {
 
   data() {
     return {
-      resolvedOptions: null,
+      loadedOptions: null,
       hasOptions: false
     }
   },
@@ -56,7 +56,7 @@ export default {
     },
 
     options() {
-      let data = this.resolvedOptions
+      let data = this.loadedOptions
       if (!data) {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
@@ -67,27 +67,11 @@ export default {
           this.hasOptions = true
         } else if (isPromise(data)) {
           // If the data is asynchronous, we can't return it straight away.
-          // But we can "cheat" using computed properties and `resolvedOptions`,
+          // But we can "cheat" using computed properties and `loadedOptions`,
           // which is going to receive the loaded data asynchronously,
           // triggering a recompute of `options` which depends on its value.
-          this.setLoading(true)
-          data
-            .then(data => {
-              this.resolvedOptions = data
-              this.hasOptions = true
-              this.setLoading(false)
-            })
-            .catch(error => {
-              this.addError(error.message)
-              this.resolvedOptions = []
-              this.setLoading(false)
-            })
-            // TODO: Switch to finally() once it works on Firefox with vue-cli:
-            // https://github.com/vuejs/vue-cli/issues/2012
-            // .finally(() => {
-            //   this.setLoading(false)
-            // })
-          // Clear until promise is resolved.
+          this.loadOptions(() => data)
+          // Clear data until promise is resolved and `loadedOptions` is set.
           data = null
         }
       }
@@ -114,7 +98,7 @@ export default {
       // If no `label` was provided but the options are objects, assume a
       // default value of 'label':
       return this.schema.options.label ||
-        isObject(this.options[0]) && 'label' ||
+        this.getOptionKey('label') ||
         null
     },
 
@@ -123,7 +107,7 @@ export default {
       // default value of 'value':
       return this.schema.options.value ||
         this.relate && 'id' ||
-        isObject(this.options[0]) && 'value' ||
+        this.getOptionKey('value') ||
         null
     },
 
@@ -142,6 +126,24 @@ export default {
           ? value.map(entry => processRelate(entry))
           : processRelate(value)
         : null
+    },
+
+    getOptionKey(key) {
+      const [option] = this.options
+      return isObject(option) && key in option ? key : null
+    },
+
+    async loadOptions(load, settings) {
+      this.setLoading(true, settings)
+      try {
+        this.loadedOptions = await load()
+        this.hasOptions = true
+      } catch (error) {
+        this.addError(error.message || error)
+        this.loadedOptions = []
+        this.hasOptions = false
+      }
+      this.setLoading(false, settings)
     },
 
     processOptions(options) {

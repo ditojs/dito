@@ -209,7 +209,8 @@ export default {
     },
 
     async request(method, options, callback) {
-      this.setLoading(true, this.viewComponent)
+      const settings = { updateView: !!this.viewComponent }
+      this.setLoading(true, settings)
       const { resource = this.resource, data, params } = options
       const request = { method, resource, data, params }
       try {
@@ -228,9 +229,8 @@ export default {
             this.notify('error', 'Request Error', error)
           }
         }
-      } finally {
-        this.setLoading(false, this.viewComponent)
       }
+      this.setLoading(false, settings)
     },
 
     getPayloadData(button, method) {

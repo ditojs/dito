@@ -331,17 +331,11 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    async onSearchChange(query) {
+    onSearchChange(query) {
       if (this.searchFilter && query) {
-        try {
-          this.isSearching = true
-          this.resolvedOptions = await this.searchFilter(query, this.options)
-        } catch (error) {
-          this.addError(error)
-          this.resolvedOptions = null
-        } finally {
-          this.isSearching = false
-        }
+        this.loadOptions(() => this.searchFilter(query, this.options), {
+          showSpinner: false
+        })
       }
     }
   }
