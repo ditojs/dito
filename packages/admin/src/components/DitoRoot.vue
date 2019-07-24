@@ -92,9 +92,6 @@ export default DitoComponent.component('dito-root', {
       }[type] || 'Notification'
       const text = `<p>${args.join('</p> <p>')}</p>`
         .replace(/\r\n|\n|\r/g, '<br>')
-      // Calculate display-duration for the notification based on its content:
-      const duration = 1500 + (text.length + title.length) * 20
-      this.$notify({ type, title, text, duration })
       const log = {
         warning: 'warn',
         error: 'error',
@@ -102,6 +99,16 @@ export default DitoComponent.component('dito-root', {
         success: 'log'
       }[type] || 'error'
       console[log](stripTags(text))
+      const { notifications = true } = this.api
+      if (notifications) {
+        // Calculate display-duration for the notification based on its content
+        // and the setting of the `durationFactor` configuration. It defines the
+        // amount of milliseconds multiplied with the amount of characters
+        // displayed in the notification, plus 40 (40 + title + message):
+        const { durationFactor = 20 } = notifications
+        const duration = (40 + text.length + title.length) * durationFactor
+        this.$notify({ type, title, text, duration })
+      }
       this.notificationCount++
     },
 
