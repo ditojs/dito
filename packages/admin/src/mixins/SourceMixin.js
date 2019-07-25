@@ -404,7 +404,10 @@ export default {
     },
 
     deleteItem(item, index) {
-      const label = item && this.getItemLabel(this.schema, item, index, true)
+      const label = item && this.getItemLabel(this.schema, item, {
+        index,
+        extended: true
+      })
 
       const notify = () => this.notify(
         this.isTransient ? 'info' : 'success',

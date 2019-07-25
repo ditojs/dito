@@ -66,7 +66,7 @@
             td
               dito-schema-inlined(
                 v-if="inlined"
-                :label="getItemLabel(schema, item, index)"
+                :label="getItemLabel(schema, item, { index, asObject: true })"
                 :schema="getItemFormSchema(schema, item)"
                 :dataPath="getDataPath(index)"
                 :data="item"
@@ -94,7 +94,7 @@
               )
               span(
                 v-else
-                v-html="getItemLabel(schema, item, index)"
+                v-html="getItemLabel(schema, item, { index })"
               )
           td.dito-cell-edit-buttons(
             v-if="hasCellEditButtons"

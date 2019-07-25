@@ -254,7 +254,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     itemLabel() {
-      return this.getItemLabel(this.sourceSchema, this.data, null, true)
+      return this.getItemLabel(this.sourceSchema, this.data, { extended: true })
     }
   },
 

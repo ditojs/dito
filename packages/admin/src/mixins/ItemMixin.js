@@ -1,7 +1,7 @@
-import { isString, isFunction } from '@ditojs/utils'
 import { getItemFormSchema, isListSource } from '@/utils/schema'
 import { appendDataPath, getItemParams } from '@/utils/data'
 import { getUid } from '@/utils/uid'
+import { isObject, isString, isFunction } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -35,7 +35,11 @@ export default {
       return index !== -1 ? index : null
     },
 
-    getItemLabel(sourceSchema, item, index = null, extended = false) {
+    getItemLabel(sourceSchema, item, {
+      index = null,
+      extended = false,
+      asObject = false
+    } = {}) {
       const { itemLabel } = sourceSchema
       if (!item || !extended && itemLabel === false) {
         return null
@@ -50,9 +54,11 @@ export default {
         formLabel ||
         (formLabel = this.getLabel(getItemFormSchema(sourceSchema, item)))
       )
-      let label = null
+      let text = null
+      let prefix = null
+      let suffix = null
       if (isFunction(itemLabel)) {
-        label = itemLabel.call(
+        const label = itemLabel.call(
           this,
           getItemParams(this, {
             name: undefined,
@@ -68,7 +74,12 @@ export default {
             }
           })
         )
-        // It's up to `itemLabel()` entirely to produce the name:
+        if (isObject(label)) {
+          ({ text, prefix, suffix } = label)
+        } else {
+          text = label
+        }
+        // It's up to `itemLabel()` entirely to produce the label:
         extended = false
       } else {
         // Look up the name on the item, by these rules:
@@ -81,13 +92,13 @@ export default {
           isListSource(sourceSchema) && columns && Object.keys(columns)[0] ||
           'name'
         )
-        label = item[key]
+        text = item[key]
       }
-      const hadLabel = !!label
+      const hadLabel = !!text
       // If no label was found so far, try to produce one from the id or index.
-      if (label == null) {
+      if (text == null) {
         const id = this.getItemId(sourceSchema, item)
-        label = id ? `(id: ${id})`
+        text = id ? `(id: ${id})`
           : isListSource(sourceSchema) && index !== null ? `${index + 1}`
           : ''
         // Always use extended style when auto-generating labels from index/id:
@@ -98,10 +109,11 @@ export default {
         if (formLabel) {
           // If a label was provided, put in quotes when prefixed with the
           // form label for the extended style:
-          label = `${formLabel} ${hadLabel ? `'${label}'` : label}`
+          text = `${formLabel} ${hadLabel ? `'${text}'` : text}`
         }
       }
-      return label || ''
+      text = text || ''
+      return asObject ? { text, prefix, suffix } : text
     }
   }
 }

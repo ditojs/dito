@@ -78,9 +78,11 @@
         :open="item.open"
         :active="item.active"
         :draggable="childrenDraggable"
-        :label="getItemLabel(children, item.data, index)"
+        :label="getItemLabel(children, item.data, { index })"
         :level="level + 1"
       )
+      // TODO: Convert dito-tree-item to use dito-label internally, and then
+      // pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
 <style lang="sass">
