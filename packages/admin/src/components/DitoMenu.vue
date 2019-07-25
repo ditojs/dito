@@ -36,7 +36,7 @@
         color: $color-white
         background: $color-active
   .dito-link
-    &:focus:not(:active)
+    &:focus:not(:active):not(.dito-active)
       box-shadow: $shadow-focus
 </style>
 

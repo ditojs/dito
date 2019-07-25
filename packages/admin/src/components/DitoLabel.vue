@@ -5,6 +5,7 @@
     v-if="text || collapsible"
     :is="tag"
     v-on="listeners"
+    :class="{ 'dito-active': isActive }"
   )
     .dito-chevron(
       v-if="collapsible"
@@ -80,7 +81,7 @@
     &:hover
       .dito-chevron
         color: $color-darker
-    &:focus
+    &:focus:not(:active):not(.dito-active)
       .dito-chevron
         -webkit-text-stroke: $border-width $color-active
   // Display labels in compact schema as inline-blocks, to allow compact layouts
@@ -128,9 +129,26 @@ export default DitoComponent.component('dito-label', {
     listeners() {
       return {
         ...(this.collapsible && {
-          click: () => this.$emit('expand', this.collapsed)
+          click: this.onClick,
+          mouseup: this.onMouseUp
         })
       }
+    },
+
+    isActive() {
+      return this.appState.activeLabel === this
+    }
+  },
+
+  methods: {
+    onClick() {
+      this.$emit('expand', this.collapsed)
+    },
+
+    onMouseUp(event) {
+      this.appState.activeLabel = this
+      // Prevent DitoRoot's document 'mouseup' event from clearing activeLabel:
+      event.stopPropagation()
     }
   }
 })

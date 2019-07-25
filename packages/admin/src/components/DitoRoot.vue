@@ -38,12 +38,15 @@
 import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import DitoView from '@/components/DitoView'
+import DomMixin from '@/mixins/DomMixin'
 import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
 import { equals, stripTags } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
+  mixins: [DomMixin],
+
   props: {
     views: { type: [Object, Function, Promise], required: true },
     options: { type: Object, default: () => ({}) }
@@ -73,6 +76,15 @@ export default DitoComponent.component('dito-root', {
   },
 
   async mounted() {
+    // Clear the label marked as active on all mouse and keyboard events, except
+    // the ones that DitoLabel itself intercepts.
+    const clearActiveLabel = () => {
+      this.appState.activeLabel = null
+    }
+    this.domOn(document, {
+      mouseup: clearActiveLabel,
+      keyup: clearActiveLabel
+    })
     try {
       this.allowLogin = false
       if (await this.fetchUser()) {
