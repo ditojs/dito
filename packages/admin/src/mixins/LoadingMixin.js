@@ -7,16 +7,14 @@ export default {
   },
 
   methods: {
-    setLoading(isLoading, { showSpinner = true, updateView = false } = {}) {
+    setLoading(isLoading, { updateRoot = false, updateView = false } = {}) {
       if (!this.isLoading ^ !isLoading) { // Boolean xor
         this.isLoading = !!isLoading
-        if (showSpinner) {
-          this.appState.loadingCounter += isLoading ? 1 : -1
+        if (updateRoot) {
+          this.rootComponent.registerLoading(isLoading)
         }
-        // As SourceMixin handles loading for DitoView, control its `isLoading`
-        // property from here:
         if (updateView) {
-          this.viewComponent.isLoading = this.isLoading
+          this.viewComponent.setLoading(this.isLoading)
         }
       }
     }

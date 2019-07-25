@@ -41,7 +41,7 @@ export default DitoComponent.component('dito-view', {
   data() {
     return {
       isView: true,
-      // This is updated from LoadingMixin:
+      // Updated from LoadingMixin through `setLoading(isLoading)`:
       isLoading: false,
       // NOTE: Data is shared across all views because the router recycles the
       // DitoView component.
@@ -111,6 +111,10 @@ export default DitoComponent.component('dito-view', {
       return this.isSingleComponentView
         ? this.path
         : `${this.path}/${path}`
+    },
+
+    setLoading(isLoading) {
+      this.isLoading = !!isLoading
     }
   }
 })

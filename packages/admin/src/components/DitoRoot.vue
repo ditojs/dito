@@ -12,7 +12,7 @@
     main.dito-page.dito-scroll-parent
       dito-header(
         :spinner="options.spinner"
-        :isLoading="appState.loadingCounter > 0"
+        :isLoading="isLoading"
       )
         dito-account(
           v-if="user"
@@ -53,13 +53,18 @@ export default DitoComponent.component('dito-root', {
     return {
       allowLogin: false,
       resolvedViews: {},
-      notificationCount: 0
+      notificationCount: 0,
+      loadingCount: 0
     }
   },
 
   computed: {
     notifications() {
       return this.$refs.notifications
+    },
+
+    isLoading() {
+      return this.loadingCount > 0
     }
   },
 
@@ -118,6 +123,10 @@ export default DitoComponent.component('dito-root', {
 
     closeNotifications() {
       this.notifications.destroyAll()
+    },
+
+    registerLoading(isLoading) {
+      this.loadingCount += isLoading ? 1 : -1
     },
 
     async login() {

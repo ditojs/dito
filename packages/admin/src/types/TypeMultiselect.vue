@@ -333,9 +333,7 @@ export default TypeComponent.register('multiselect', {
 
     onSearchChange(query) {
       if (this.searchFilter && query) {
-        this.loadOptions(() => this.searchFilter(query, this.options), {
-          showSpinner: false
-        })
+        this.loadOptions(() => this.searchFilter(query, this.options))
       }
     }
   }

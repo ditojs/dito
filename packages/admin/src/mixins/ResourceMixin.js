@@ -209,7 +209,10 @@ export default {
     },
 
     async request(method, options, callback) {
-      const settings = { updateView: !!this.viewComponent }
+      const settings = {
+        updateRoot: true, // Display spinner in header when loading in resources
+        updateView: this.isInView // Notify view of loading for view components
+      }
       this.setLoading(true, settings)
       const { resource = this.resource, data, params } = options
       const request = { method, resource, data, params }
