@@ -145,13 +145,12 @@
       width: 100%
       // Catch all clicks, even when it would be partially covered by schema.
       z-index: 1
-      &:focus
-        outline: none
-        .dito-chevron
-          color: $color-active
       &:hover
         .dito-chevron
           color: $color-darker
+      &:focus
+        .dito-chevron
+          -webkit-text-stroke: $border-width $color-active
 </style>
 
 <script>

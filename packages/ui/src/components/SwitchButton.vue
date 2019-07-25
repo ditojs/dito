@@ -62,8 +62,6 @@
       border-radius: 1em
       background: $color-light
       transition: border-color .3s, background-color .3s
-      &:focus
-        outline: none
     .dito-switch-button
       position: absolute
       // Set font-size to height, so we can use width/height = 1em for circle:

@@ -27,8 +27,7 @@
 
     .ProseMirror
       height: 100%
-      &:focus
-        outline: none
+      outline: none
 
     .dito-markup-editor
       overflow-y: scroll

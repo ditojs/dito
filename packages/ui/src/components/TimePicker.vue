@@ -83,7 +83,6 @@
         height: 100%
 
   .dito-time-picker-popup
-    outline: none
     list-style: none
     background: $color-white
     border: $border-style
