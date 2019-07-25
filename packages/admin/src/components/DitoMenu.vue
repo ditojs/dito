@@ -3,9 +3,10 @@
     h1 {{ appState.title }}
     ul.dito-scroll
       li(v-for="view in views")
-        router-link(
-          :to="`/${view.path}`"
+        router-link.dito-link(
           v-if="shouldRender(view)"
+          :to="`/${view.path}`"
+          active-class="dito-active"
         ) {{ getLabel(view) }}
 </template>
 
@@ -28,12 +29,15 @@
       background: $color-darker
       border-right: $border-width solid $color-darkest
       color: $color-white
-    a
+    .dito-link
       padding: $menu-padding
       line-height: $menu-line-height
-      &.router-link-active
+      &.dito-active
         color: $color-white
         background: $color-active
+  .dito-link
+    &:focus:not(:active)
+      box-shadow: $shadow-focus
 </style>
 
 <script>

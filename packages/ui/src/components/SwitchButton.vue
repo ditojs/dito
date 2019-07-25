@@ -71,7 +71,6 @@
       width: 1em
       height: 1em
       border-radius: 0.5em
-      border: 1px solid transparent
       box-sizing: border-box
       background: $color-white
       transition: transform var(--switch-speed)
@@ -96,7 +95,7 @@
       @extend %button-disabled
     &:focus-within:not(:hover)
       .dito-switch-button
-        border: 1px solid $color-active
+        box-shadow: $shadow-focus
 </style>
 
 <script>

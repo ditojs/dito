@@ -147,6 +147,8 @@ export default class DitoAdmin {
       el,
       router: new VueRouter({
         mode: 'history',
+        linkActiveClass: '',
+        linkExactActiveClass: '',
         base
       }),
       components: { DitoRoot },

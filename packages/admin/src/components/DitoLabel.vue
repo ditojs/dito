@@ -77,6 +77,12 @@
     text-align: left
     background: none
     border: 0
+    &:hover
+      .dito-chevron
+        color: $color-darker
+    &:focus
+      .dito-chevron
+        -webkit-text-stroke: $border-width $color-active
   // Display labels in compact schema as inline-blocks, to allow compact layouts
   // with `width: 'auto'` elements:
   // TODO: Find a better way to control this behavior.

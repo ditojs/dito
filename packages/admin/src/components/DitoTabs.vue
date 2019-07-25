@@ -1,10 +1,10 @@
 <template lang="pug">
   .dito-tabs
-    router-link(
+    router-link.dito-link(
       v-for="(tabSchema, key) in tabs"
       :key="key"
       :to="{ hash: key }"
-      :class="{ selected: selectedTab === key }"
+      active-class="dito-active"
     )
       | {{ getLabel(tabSchema, key) }}
 </template>
@@ -30,7 +30,7 @@
         background: $tab-color-hover
       &:active
         background: $tab-color-active
-      &.selected
+      &.dito-active
         background: $tab-color-background
 </style>
 
