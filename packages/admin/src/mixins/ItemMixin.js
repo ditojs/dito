@@ -54,9 +54,9 @@ export default {
         formLabel ||
         (formLabel = this.getLabel(getItemFormSchema(sourceSchema, item)))
       )
-      let text = null
-      let prefix = null
-      let suffix = null
+      let text
+      let prefix
+      let suffix
       if (isFunction(itemLabel)) {
         const label = itemLabel.call(
           this,

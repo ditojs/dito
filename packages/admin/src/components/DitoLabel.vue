@@ -13,14 +13,14 @@
     dito-element.dito-label-prefix(
       v-for="(prefix, index) of prefixes"
       tag="span"
-      :key="index"
+      :key="`prefix-${index}`"
       :content="prefix"
     )
     label(:for="dataPath" v-html="text")
     dito-element.dito-label-suffix(
       v-for="(suffix, index) of suffixes"
       tag="span"
-      :key="index"
+      :key="`suffix-${index}`"
       :content="suffix"
     )
     slot(name="edit-buttons")
