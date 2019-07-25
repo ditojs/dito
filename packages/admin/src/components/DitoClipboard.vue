@@ -4,6 +4,7 @@
       type="button"
       ref="copyData"
       title="Copy Data"
+      :disabled="!copyEnabled"
       @click="onCopy"
     )
     button.dito-button.dito-button-paste(
@@ -23,8 +24,13 @@ import { deindent } from '@ditojs/utils'
 export default DitoComponent.component('dito-clipboard', {
   mixins: [DomMixin],
 
+  props: {
+    data: { type: [Object, Array], default: null }
+  },
+
   data() {
     return {
+      copyEnabled: false,
       pasteEnabled: false
     }
   },
@@ -33,21 +39,21 @@ export default DitoComponent.component('dito-clipboard', {
     // Check clipboard content whenever something gets copied or the window gets
     // (re)activated, as those are the moments when the clipboard can change:
     this.domOn(document, {
-      copy: this.onClipboardChange
+      copy: this.checkClipboard
     })
     this.domOn(window, {
-      focus: this.onClipboardChange
+      focus: this.checkClipboard
     })
+    this.$watch('data', this.checkClipboard)
   },
 
   methods: {
     async handlePaste(callback) {
       const json = await navigator.clipboard.readText()
       const data = JSON.parse(json)
-      const target = this.schemaComponent?.data
-      if (data && target) {
+      if (data && this.data) {
         for (const key in data) {
-          if (callback(target, key, data[key]) === false) {
+          if (callback(key, data[key]) === false) {
             return false
           }
         }
@@ -55,13 +61,12 @@ export default DitoComponent.component('dito-clipboard', {
       }
     },
 
-    async onClipboardChange() {
+    async checkClipboard() {
       try {
+        this.copyEnabled = !!this.data
         // See if the clipboard content is valid JSON data that is compatible
         // with the current target schema, and only then activate the pasting:
-        this.pasteEnabled = await this.handlePaste(
-          (target, key) => key in target
-        )
+        this.pasteEnabled = await this.handlePaste(key => key in this.data)
       } catch (err) {
         this.pasteEnabled = false
       }
@@ -73,7 +78,7 @@ export default DitoComponent.component('dito-clipboard', {
         const json = JSON.stringify(data, null, '  ')
         await navigator.clipboard.writeText(json)
         // See if we can activate the paste button now, dependding on browsers:
-        await this.onClipboardChange()
+        await this.checkClipboard()
       } catch (err) {
         this.handleError(err)
       }
@@ -82,9 +87,9 @@ export default DitoComponent.component('dito-clipboard', {
     async onPaste() {
       try {
         this.pasteEnabled = await this.handlePaste(
-          (target, key, value) => {
-            if (key in target) {
-              this.$set(target, key, value)
+          (key, value) => {
+            if (key in this.data) {
+              this.$set(this.data, key, value)
             }
           }
         )

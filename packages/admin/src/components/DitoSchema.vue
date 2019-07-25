@@ -26,6 +26,7 @@
         )
         dito-clipboard(
           v-if="clipboard"
+          :data="data"
         )
       dito-components.dito-tab-components(
         v-if="!inlined"
@@ -308,6 +309,10 @@ export default DitoComponent.component('dito-schema', {
 
     isValidated() {
       return this.everyComponent(it => it.isValidated)
+    },
+
+    hasData() {
+      return !!this.data
     },
 
     hasLabel() {
