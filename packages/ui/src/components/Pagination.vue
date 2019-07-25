@@ -31,11 +31,6 @@
       transition: all .3s ease, color 0s, background 0s, border 0s
       font-variant-numeric: tabular-nums
       padding: 0 0.5em
-      &.dito-active
-        background: $color-active
-        color: $color-text-inverted
-        &:active
-          border-color: darken($color-active, 10%)
       &-prev,
       &-next
         &::before
@@ -139,7 +134,7 @@ export default {
 
     getPageClass(page) {
       const classes = {
-        'dito-active': page.active
+        'dito-selected': page.active
       }
       if (page.type) {
         classes[`dito-button-${page.type}`] = true
