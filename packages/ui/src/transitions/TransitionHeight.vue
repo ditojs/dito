@@ -33,7 +33,12 @@ export default {
   )
 }
 
-const setStyle = (element, style) => Object.assign(element.style, style)
+const setStyle = (element, style) => {
+  // A timepout before setting style is only really needed after calls to
+  // `forceRepaint()`, but using one always preserves execution sequence, so
+  // that the call from `enter()` can never outrun the one from `afterEnter()`:
+  setTimeout(() => Object.assign(element.style, style))
+}
 
 // Force repaint to make sure the animation is triggered correctly.
 const forceRepaint = element => getComputedStyle(element).height
@@ -59,14 +64,14 @@ const events = {
       height: 0
     })
     forceRepaint(element)
-    setTimeout(() => setStyle(element, { height }))
+    setStyle(element, { height })
   },
 
   leave(element) {
     const { height } = getComputedStyle(element)
     setStyle(element, { height })
     forceRepaint(element)
-    setTimeout(() => setStyle(element, { height: 0 }))
+    setStyle(element, { height: 0 })
   }
 }
 </script>
