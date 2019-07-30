@@ -18,7 +18,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DomMixin from '@/mixins/DomMixin'
-import { deindent } from '@ditojs/utils'
+import { clone, deindent } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-clipboard', {
@@ -31,7 +31,8 @@ export default DitoComponent.component('dito-clipboard', {
   data() {
     return {
       copyEnabled: false,
-      pasteEnabled: false
+      pasteEnabled: false,
+      clipboardData: null
     }
   },
 
@@ -48,9 +49,25 @@ export default DitoComponent.component('dito-clipboard', {
   },
 
   methods: {
-    async handlePaste(callback) {
-      const json = await navigator.clipboard.readText()
-      const data = JSON.parse(json)
+    async handlePaste(callback, report) {
+      let data = this.clipboardData // Use the internal clipboard as fallback.
+      try {
+        const json = await navigator.clipboard?.readText?.()
+        if (json) {
+          data = JSON.parse(json)
+        }
+      } catch (err) {
+        if (report) {
+          console.error(err, err.name, err.message)
+          if (err.name === 'SyntaxError') {
+            alert(deindent`
+              The data in the clipboard appears to be malformed:
+              ${err.message}
+            `)
+          }
+        }
+        return false
+      }
       if (data && this.data) {
         for (const key in data) {
           if (callback(key, data[key]) === false) {
@@ -62,59 +79,35 @@ export default DitoComponent.component('dito-clipboard', {
     },
 
     async checkClipboard() {
-      try {
-        this.copyEnabled = !!this.data
-        // See if the clipboard content is valid JSON data that is compatible
-        // with the current target schema, and only then activate the pasting:
-        this.pasteEnabled = await this.handlePaste(key => key in this.data)
-      } catch (err) {
-        this.pasteEnabled = false
-      }
+      this.copyEnabled = !!this.data
+      // See if the clipboard content is valid JSON data that is compatible
+      // with the current target schema, and only then activate the pasting:
+      this.pasteEnabled = await this.handlePaste(key => key in this.data, false)
     },
 
     async onCopy() {
       const data = this.schemaComponent?.clipboardData
+      // Keep an internal clipboard as fallback.
+      this.clipboardData = clone(data)
       try {
         const json = JSON.stringify(data, null, '  ')
-        await navigator.clipboard.writeText(json)
+        await navigator.clipboard?.writeText?.(json)
         // See if we can activate the paste button now, dependding on browsers:
         await this.checkClipboard()
       } catch (err) {
-        this.handleError(err)
+        console.error(err, err.name, err.message)
       }
     },
 
     async onPaste() {
-      try {
-        this.pasteEnabled = await this.handlePaste(
-          (key, value) => {
-            if (key in this.data) {
-              this.$set(this.data, key, value)
-            }
+      this.pasteEnabled = await this.handlePaste(
+        (key, value) => {
+          if (key in this.data) {
+            this.$set(this.data, key, value)
           }
-        )
-      } catch (err) {
-        this.handleError(err)
-      }
-    },
-
-    handleError(err) {
-      console.log(err, err.name, err.message)
-      switch (err.name) {
-      case 'NotAllowedError':
-        alert(deindent`
-          Clipboard access is currently blocked:
-          ${err.message}
-          Please check your browser's permissions.
-        `)
-        break
-      case 'SyntaxError':
-        alert(deindent`
-          Clipboard data appears to be malformed:
-          ${err.message}
-        `)
-        break
-      }
+        },
+        true // report
+      )
     }
   }
 })
