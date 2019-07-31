@@ -26,25 +26,24 @@
   .dito-table-head
     +user-select(none)
     tr
-      height: 100% // To stretch table > thead > th > button
       th
         padding: 0
         font-weight: normal
         text-align: left
-        height: 100% // To stretch table > thead > th > button
         white-space: nowrap
         .dito-button
           // Convention: Nested spans handle padding, see below
           padding: 0
           width: 100%
-          height: 100% // To stretch table > thead > th > button
           text-align: inherit
           border-radius: 0
         span
           display: inline-block
           // Convention: Nested spans handle padding
           padding: $input-padding
-          height: 100%
+          &:empty::after
+            // Prevent empty <th> from collapsing
+            content: '\00a0'
         > span
           display: block
 </style>
