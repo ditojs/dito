@@ -46,15 +46,19 @@ export default DitoComponent.component('dito-clipboard', {
       focus: this.checkClipboard
     })
     this.$watch('data', this.checkClipboard)
+    // If we already have data (e.g. create form), then check right away also:
+    if (this.data) {
+      this.checkClipboard()
+    }
   },
 
   methods: {
-    async handlePaste(callback, report) {
-      let data = this.clipboardData // Use the internal clipboard as fallback.
+    async getClipboardData(report) {
+      let { clipboardData } = this // Use the internal clipboard as fallback.
       try {
         const json = await navigator.clipboard?.readText?.()
         if (json) {
-          data = JSON.parse(json)
+          clipboardData = JSON.parse(json)
         }
       } catch (err) {
         if (report) {
@@ -66,23 +70,16 @@ export default DitoComponent.component('dito-clipboard', {
             `)
           }
         }
-        return false
       }
-      if (data && this.data) {
-        for (const key in data) {
-          if (callback(key, data[key]) === false) {
-            return false
-          }
-        }
-        return true
-      }
+      const { $schema, ...data } = clipboardData || {}
+      return $schema === this.schemaComponent?.schema.name ? data : null
     },
 
     async checkClipboard() {
       this.copyEnabled = !!this.data
       // See if the clipboard content is valid JSON data that is compatible
       // with the current target schema, and only then activate the pasting:
-      this.pasteEnabled = await this.handlePaste(key => key in this.data, false)
+      this.pasteEnabled = !!(await this.getClipboardData(false)) // don't report
     },
 
     async onCopy() {
@@ -100,14 +97,10 @@ export default DitoComponent.component('dito-clipboard', {
     },
 
     async onPaste() {
-      this.pasteEnabled = await this.handlePaste(
-        (key, value) => {
-          if (key in this.data) {
-            this.$set(this.data, key, value)
-          }
-        },
-        true // report
-      )
+      const data = await this.getClipboardData(true) // report
+      if (data) {
+        this.schemaComponent.setData(data)
+      }
     }
   }
 })

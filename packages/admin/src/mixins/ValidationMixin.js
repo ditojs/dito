@@ -24,15 +24,11 @@ export default {
       }
 
       const change = () => {
-        this.isDirty = true
-        this.isValidated = false
-        this.isValid = false
-        // Clear currently displayed errors on new input.
-        this.errors = null
+        this.markDirty()
       }
 
       const input = () => {
-        change()
+        this.markDirty()
       }
 
       return { focus, blur, change, input }
@@ -79,6 +75,14 @@ export default {
 
     verify() {
       return this.validate(false)
+    },
+
+    markDirty() {
+      this.isDirty = true
+      this.isValidated = false
+      this.isValid = false
+      // Clear currently displayed errors on new input.
+      this.errors = null
     },
 
     addError(error, addLabel = false) {

@@ -264,7 +264,10 @@ export default DitoComponent.component('dito-schema', {
     clipboardData() {
       // Remove the root id from the copied data:
       const { id, ...data } = this.processData()
-      return data
+      return {
+        $schema: this.schema.name,
+        ...data
+      }
     },
 
     // The following computed properties are similar to the fields returned by
@@ -462,7 +465,7 @@ export default DitoComponent.component('dito-schema', {
       let isValid = true
       let first = true
       for (const dataPath of (dataPaths || Object.keys(components))) {
-        const component = components[dataPath]
+        const component = this.getComponent(dataPath)
         if (component) {
           if (!component.validate(notify)) {
             // Focus first error field
@@ -562,6 +565,15 @@ export default DitoComponent.component('dito-schema', {
       // `setDefaults()`, as they are all reactive already from the starts:
       Object.assign(this.data, setDefaults(this.schema, {}))
       this.clearErrors()
+    },
+
+    setData(data) {
+      for (const key in data) {
+        if (key in this.data) {
+          this.$set(this.data, key, data[key])
+          this.getComponent(key)?.markDirty()
+        }
+      }
     },
 
     filterData(data) {
