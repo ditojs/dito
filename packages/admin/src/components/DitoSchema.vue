@@ -79,7 +79,6 @@
 </template>
 
 <style lang="sass">
-  $tab-height: $menu-font-size + 2 * $tab-padding-ver
   .dito-schema
     box-sizing: border-box
     // To dissplay schema next to panels:
@@ -130,8 +129,7 @@
     &.dito-schema-menu-header
       // Bring the tabs up to the menu.
       position: absolute
-      height: $tab-height
-      margin-top: -$tab-height
+      height: $menu-height
       padding: 0 $menu-padding-hor
       max-width: $content-width
       top: 0
