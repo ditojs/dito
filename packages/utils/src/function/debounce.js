@@ -1,5 +1,5 @@
 export function debounce(func, delay, immediate) {
-  let timer
+  let timer = null
   let result
 
   const debounced = function(...args) {
@@ -18,8 +18,12 @@ export function debounce(func, delay, immediate) {
   }
 
   debounced.cancel = function() {
-    clearTimeout(timer)
-    timer = null
+    const pending = timer !== null
+    if (pending) {
+      clearTimeout(timer)
+      timer = null
+    }
+    return pending
   }
 
   return debounced

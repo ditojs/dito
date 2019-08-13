@@ -64,13 +64,21 @@ describe('debounceAsync()', () => {
   })
 
   it('should allow to cancel', async () => {
-    expect.assertions(1)
+    expect.assertions(6)
     const func = jest.fn()
     const debounced = debounceAsync(func, 1000)
-    jest.advanceTimersByTime(1000)
-    debounced.cancel()
-    await debounced()
+    const promise = debounced()
+    jest.advanceTimersByTime(500)
+    expect(debounced.cancel()).toBe(true)
+    expect(debounced.cancel()).toBe(false)
+    jest.advanceTimersByTime(500)
     expect(func).toBeCalledTimes(0)
+    expect(await promise).toBeUndefined()
+    jest.advanceTimersByTime(1000)
+    expect(func).toBeCalledTimes(0)
+    await debounced()
+    jest.advanceTimersByTime(1000)
+    expect(func).toBeCalledTimes(1)
   })
 
   it(

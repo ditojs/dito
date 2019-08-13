@@ -1,5 +1,5 @@
 export function debounceAsync(func, delay, immediate) {
-  let timer
+  let timer = null
   let callbacks = []
   let cancelled = false
 
@@ -42,9 +42,14 @@ export function debounceAsync(func, delay, immediate) {
   }
 
   debounced.cancel = function() {
-    clearTimeout(timer)
-    timer = null
+    const pending = timer !== null
+    if (pending) {
+      resolve(undefined)
+      clearTimeout(timer)
+      timer = null
+    }
     cancelled = true
+    return pending
   }
 
   return debounced

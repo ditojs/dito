@@ -58,10 +58,17 @@ describe('debounce()', () => {
   it('should allow to cancel', () => {
     const func = jest.fn()
     const debounced = debounce(func, 1000)
-    jest.advanceTimersByTime(1000)
-    debounced.cancel()
     debounced()
+    jest.advanceTimersByTime(500)
+    expect(debounced.cancel()).toBe(true)
+    expect(debounced.cancel()).toBe(false)
+    jest.advanceTimersByTime(500)
     expect(func).toBeCalledTimes(0)
+    jest.advanceTimersByTime(1000)
+    expect(func).toBeCalledTimes(0)
+    debounced()
+    jest.advanceTimersByTime(1000)
+    expect(func).toBeCalledTimes(1)
   })
 
   it('should execute once immediately if intervals are less than wait', () => {
