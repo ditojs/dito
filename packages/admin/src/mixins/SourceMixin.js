@@ -478,6 +478,13 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
+    const { components } = schema
+    if (components) {
+      // Expand inlined components to a nested form with inlined = true
+      delete schema.components
+      schema.form = { components }
+      schema.inlined = true
+    }
     if (!hasForms(schema)) return
     processRouteSchema(api, schema, name)
     if (schema.inlined && schema.resource) {
