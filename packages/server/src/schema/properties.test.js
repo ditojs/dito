@@ -25,7 +25,7 @@ describe('convertSchema()', () => {
     expect(convertSchema(properties)).toEqual(getPropertySchema(properties))
   })
 
-  it(`expands 'text' objects to 'string' JSON schema properties`, () => {
+  it(`expands 'text' typess to 'string' JSON schema typess`, () => {
     expect(convertSchema({
       myText: {
         type: 'text'
@@ -106,6 +106,37 @@ describe('convertSchema()', () => {
     ))
   })
 
+  it(`expands 'object' schemas with properties to JSON schemas allowing no additional properties`, () => {
+    expect(convertSchema({
+      myText: {
+        type: 'object',
+        properties: {}
+      }
+    })).toEqual(getPropertySchema({
+      myText: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {}
+      }
+    }))
+  })
+
+  it(`preserves preexisting settings for no additional properties`, () => {
+    expect(convertSchema({
+      myText: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {}
+      }
+    })).toEqual(getPropertySchema({
+      myText: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {}
+      }
+    }))
+  })
+
   it('expands datetime types to their JSON schema representation', () => {
     expect(convertSchema({
       myDate: {
@@ -145,7 +176,7 @@ describe('convertSchema()', () => {
     }))
   })
 
-  it('expands unrecognized types to `instanceof` keywords', () => {
+  it(`expands unrecognized types to \`instanceof\` keywords when the \`useInstanceOf\` option is provided`, () => {
     expect(convertSchema({
       myModel: {
         type: 'MyModel'
@@ -160,7 +191,7 @@ describe('convertSchema()', () => {
     }))
   })
 
-  it('expands `nullable` to JSON schema representation', () => {
+  it('expands `nullable: true` to correct JSON schema representation', () => {
     expect(convertSchema({
       myString: {
         type: 'string',
@@ -174,7 +205,7 @@ describe('convertSchema()', () => {
     }))
   })
 
-  it('expands `nullable` references to JSON schema representation', () => {
+  it(`expands \`nullable: true\` references to correct JSON schema representation`, () => {
     expect(convertSchema({
       myModel: {
         type: 'MyModel',
@@ -195,7 +226,7 @@ describe('convertSchema()', () => {
     }))
   })
 
-  it('expands `nullable` dates to JSON schema representation', () => {
+  it(`expands \`nullable: true\` dates to correct JSON schema representation`, () => {
     expect(convertSchema({
       myDate: {
         type: 'date',

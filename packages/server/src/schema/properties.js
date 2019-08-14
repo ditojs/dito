@@ -4,6 +4,7 @@ import { isObject, isArray, asArray, isString } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
+    // TODO: Consider removing string short-hand
     // Nested shorthand expansion
     schema = { type: schema }
   } else if (isArray(schema)) {
@@ -11,7 +12,7 @@ export function convertSchema(schema, options = {}) {
     schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
-    // Shallow clone so we can modify and return:
+    // Create a shallow clone so we can modify and return:
     schema = { ...schema }
     const { type } = schema
     if (isString(type)) {
@@ -34,6 +35,11 @@ export function convertSchema(schema, options = {}) {
             if (required.length > 0) {
               schema.required = required
             }
+            // Invert the logic of `additionalProperties` so that it needs to be
+            // explicitely set to `true`:
+            if (!('additionalProperties' in schema)) {
+              schema.additionalProperties = false
+            }
           }
           // TODO: convertSchema() on patternProperties
         } else if (jsonType === 'array') {
@@ -43,7 +49,7 @@ export function convertSchema(schema, options = {}) {
           }
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
-        // date properties can be submitted both as a string or a Date object.
+        // Date properties can be submitted both as a string or a Date object.
         // Provide validation through date-time format, which in Ajv appears
         // to handle both types correctly.
         schema.type = ['string', 'object']
@@ -101,6 +107,7 @@ export function convertSchema(schema, options = {}) {
 }
 
 export function expandSchemaShorthand(schema) {
+  // TODO: Consider removing string short-hand
   if (isString(schema)) {
     schema = {
       type: schema
