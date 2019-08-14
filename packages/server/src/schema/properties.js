@@ -21,27 +21,33 @@ export function convertSchema(schema, options = {}) {
       if (jsonType) {
         schema.type = jsonType
         if (jsonType === 'object') {
+          let setAdditionalProperties = false
           if (schema.properties) {
-            const properties = {}
-            const required = []
-            for (let [key, property] of Object.entries(schema.properties)) {
-              property = expandSchemaShorthand(property)
-              properties[key] = convertSchema(property, options)
-              if (property?.required) {
-                required.push(key)
-              }
-            }
+            const { properties, required } = expandProperties(
+              schema.properties,
+              options
+            )
             schema.properties = properties
             if (required.length > 0) {
               schema.required = required
             }
+            setAdditionalProperties = true
+          }
+          if (schema.patternProperties) {
+            const { properties } = expandProperties(
+              schema.patternProperties,
+              options
+            )
+            schema.patternProperties = properties
+            setAdditionalProperties = true
+          }
+          if (setAdditionalProperties) {
             // Invert the logic of `additionalProperties` so that it needs to be
             // explicitely set to `true`:
             if (!('additionalProperties' in schema)) {
               schema.additionalProperties = false
             }
           }
-          // TODO: convertSchema() on patternProperties
         } else if (jsonType === 'array') {
           const { items } = schema
           if (items) {
@@ -104,6 +110,19 @@ export function convertSchema(schema, options = {}) {
     }
   }
   return schema
+}
+
+export function expandProperties(schemaProperties, options) {
+  const properties = {}
+  const required = []
+  for (let [key, property] of Object.entries(schemaProperties)) {
+    property = expandSchemaShorthand(property)
+    properties[key] = convertSchema(property, options)
+    if (property?.required) {
+      required.push(key)
+    }
+  }
+  return { properties, required }
 }
 
 export function expandSchemaShorthand(schema) {
