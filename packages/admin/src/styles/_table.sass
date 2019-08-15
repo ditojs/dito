@@ -39,6 +39,7 @@ table.dito-table
   width: 100%
   height: 100% // To stretch table > thead > th > button
   border-radius: $border-radius
+  --separator-width: #{$border-width}
   > tbody,
   > tfoot
     > tr
@@ -65,7 +66,7 @@ table.dito-table
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr
       > td
-        border-top: $border-style
+        border-top: var(--separator-width) solid $border-color
   &.dito-table-alternate-colors
     > tbody > tr:nth-child(odd),
     &.dito-table-even-count > tfoot > tr
