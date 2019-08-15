@@ -122,11 +122,11 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return !this.doesMutate && !!this.schemaComponents[0]?.isDirty
+      return !this.doesMutate && !!this.mainSchemaComponent?.isDirty
     },
 
     selectedTab() {
-      return this.schemaComponents[0]?.selectedTab || null
+      return this.mainSchemaComponent?.selectedTab || null
     },
 
     doesMutate() {
@@ -294,13 +294,13 @@ export default DitoComponent.component('dito-form', {
 
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
-        const [schemaComponent] = this.schemaComponents
+        const { mainSchemaComponent } = this
         this.$set(
           this.sourceData,
           this.sourceKey,
-          schemaComponent.filterData(data)
+          mainSchemaComponent.filterData(data)
         )
-        schemaComponent.onChange()
+        mainSchemaComponent.onChange()
         return true
       }
       return false
@@ -328,7 +328,7 @@ export default DitoComponent.component('dito-form', {
         this.loadedData = data
       }
       if (!clear) {
-        this.schemaComponents[0].onLoad()
+        this.mainSchemaComponent.onLoad()
       }
     },
 

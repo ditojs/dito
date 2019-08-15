@@ -63,7 +63,7 @@ export default DitoComponent.component('dito-view', {
     },
 
     mainComponent() {
-      return this.schemaComponents[0].getComponent(this.name)
+      return this.mainSchemaComponent.getComponent(this.name)
     },
 
     viewSchema() {

@@ -5,6 +5,10 @@ export default {
   mixins: [SchemaParentMixin],
 
   computed: {
+    mainSchemaComponent() {
+      return this.schemaComponents[0]
+    },
+
     errors() {
       return this.schemaComponents.reduce(
         (result, { errors }) =>
