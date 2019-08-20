@@ -18,6 +18,8 @@
       :disabled="disabled"
       :generateLabels="false"
     )
+    // Render each node in the default slot through `dito-vnode`, so it can be
+    // wrapped in a `.dito-button-container` class.
     .dito-button-container(
       v-for="node in $slots.default"
       v-if="node.tag"
