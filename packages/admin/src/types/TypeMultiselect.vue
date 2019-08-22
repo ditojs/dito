@@ -13,7 +13,7 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="populate && options || []"
+      :options="populate && (filteredOptions || options) || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
@@ -23,7 +23,7 @@
       :taggable="taggable"
       :internal-search="!searchFilter"
       :close-on-select="true"
-      :loading="isLoading || isSearching"
+      :loading="isLoading"
       @open="populate = true"
       @tag="onAddTag"
       @search-change="onSearchChange"
@@ -231,7 +231,7 @@ export default TypeComponent.register('multiselect', {
 
   data() {
     return {
-      isSearching: false,
+      filteredOptions: null,
       populate: false
     }
   },
@@ -331,9 +331,18 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    onSearchChange(query) {
-      if (this.searchFilter && query) {
-        this.loadOptions(() => this.searchFilter(query, this.options))
+    async onSearchChange(query) {
+      if (this.searchFilter) {
+        // Clear filteredOptions whenever a search change happens.
+        this.filteredOptions = null
+        if (query) {
+          // Set `filteredOptions` to an empty array, before it will be
+          // populated asynchronously with the actual results.
+          this.filteredOptions = []
+          this.filteredOptions = await this.loadOptions(
+            () => this.searchFilter(query, this.options)
+          )
+        }
       }
     }
   }

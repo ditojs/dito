@@ -70,7 +70,10 @@ export default {
           // But we can "cheat" using computed properties and `loadedOptions`,
           // which is going to receive the loaded data asynchronously,
           // triggering a recompute of `options` which depends on its value.
-          this.loadOptions(() => data)
+          this.loadOptions(() => data).then(options => {
+            this.loadedOptions = options || []
+            this.hasOptions = !!options
+          })
           // Clear data until promise is resolved and `loadedOptions` is set.
           data = null
         }
@@ -144,15 +147,14 @@ export default {
 
     async loadOptions(load, settings) {
       this.setLoading(true, settings)
-      this.loadedOptions = []
+      let options = null
       try {
-        this.loadedOptions = await load()
-        this.hasOptions = true
+        options = await load()
       } catch (error) {
         this.addError(error.message || error)
-        this.hasOptions = false
       }
       this.setLoading(false, settings)
+      return options
     },
 
     processOptions(options) {
