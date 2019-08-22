@@ -1,7 +1,7 @@
 import LoadingMixin from './LoadingMixin'
 import { getItemParams } from '@/utils/data'
 import {
-  isObject, isArray, isFunction, isPromise, labelize
+  isObject, isArray, isFunction, isPromise, labelize, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -112,7 +112,16 @@ export default {
     },
 
     searchFilter() {
-      return this.schema.options.search
+      const { search, options } = this.schema
+      if (search) {
+        const { filter, debounce } = isFunction(search)
+          ? { filter: search }
+          : search
+        return debounce ? debounceAsync(filter, debounce) : filter
+      } else {
+        // TODO: `schema.options.search` is deprecated, remove later.
+        return options.search
+      }
     }
   },
 
