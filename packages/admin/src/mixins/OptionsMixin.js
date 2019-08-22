@@ -135,12 +135,12 @@ export default {
 
     async loadOptions(load, settings) {
       this.setLoading(true, settings)
+      this.loadedOptions = []
       try {
         this.loadedOptions = await load()
         this.hasOptions = true
       } catch (error) {
         this.addError(error.message || error)
-        this.loadedOptions = []
         this.hasOptions = false
       }
       this.setLoading(false, settings)
