@@ -7,9 +7,10 @@
     )
     .dito-tree-panel
       dito-tree-item(
-        :data="treeData"
         :schema="treeSchema"
         :dataPath="treeDataPath"
+        :data="treeData"
+        :draggable="draggable"
         :open="true"
       )
       .dito-tree-form-container(

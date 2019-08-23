@@ -1,30 +1,55 @@
 import {
-  isArray, isString, isBoolean, isNumber, isFunction, isDate, isRegExp, asArray
+  isArray, isObject, isString, isBoolean, isNumber, isFunction, isDate,
+  isRegExp, asArray
 } from '@ditojs/utils'
 
 const typeCheckers = {
-  Boolean: value => isBoolean(value),
-  Number: value => isNumber(value),
-  String: value => isString(value),
-  Date: value => isDate(value),
-  Array: value => isArray(value),
-  RegExp: value => isRegExp(value),
-  Function: value => isFunction(value)
+  Boolean: isBoolean,
+  Number: isNumber,
+  String: isString,
+  Date: isDate,
+  Array: isArray,
+  Object: isObject,
+  RegExp: isRegExp,
+  Function: isFunction
 }
 
+// Declare these separately from the `typeConverters` object, to prevent
+// Babel issues with `Object` overriding the global `Object`:
+const toBoolean = value => !!value
+const toNumber = value => +value
+const toString = value => String(value)
+
+const toDate = value => isDate(value)
+  ? value
+  : new Date(value)
+
+const toArray = value => isArray(value)
+  ? value
+  : isString(value)
+    ? value.split(',')
+    : asArray(value)
+
+const toObject = value => isObject(value)
+  ? value
+  // If a Object is expected but a Boolean provide, convert to an empty
+  // object. Used by `creatable` & co, that can be both.
+  : value === true
+    ? {}
+    : null
+
+const toRegExp = value => isRegExp(value)
+  ? value
+  : new RegExp(value)
+
 const typeConverters = {
-  Boolean: value => !!value,
-  Number: value => +value,
-  String: value => isString(value) ? value : `${value}`,
-  Date: value => isDate(value) ? value : new Date(value),
-  Array: value => isArray(value)
-    ? value
-    : isString(value)
-      ? value.split(',')
-      : asArray(value),
-  RegExp: value => isRegExp(value)
-    ? value
-    : new RegExp(value)
+  Boolean: toBoolean,
+  Number: toNumber,
+  String: toString,
+  Date: toDate,
+  Array: toArray,
+  Object: toObject,
+  RegExp: toRegExp
 }
 
 export function isMatchingType(types, value) {

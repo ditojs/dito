@@ -61,24 +61,24 @@
           :disabled="disabled"
         )
     vue-draggable(
-      v-if="children"
+      v-if="childrenSchema"
       v-show="opened"
-      v-bind="childrenDragOptions"
-      :list="childrenList"
+      v-bind="getDragOptions(childrenDraggable)"
+      :list="updateOrder(childrenList, childrenSchema)"
       @start="onStartDrag"
       @end="onEndDrag"
     )
       dito-tree-item(
         v-for="(item, index) in childrenItems"
         :key="index"
-        :schema="children"
-        :dataPath="getItemDataPath(children, index)"
+        :schema="childrenSchema"
+        :dataPath="getItemDataPath(childrenSchema, index)"
         :data="item.data"
         :path="item.path"
         :open="item.open"
         :active="item.active"
         :draggable="childrenDraggable"
-        :label="getItemLabel(children, item.data, { index })"
+        :label="getItemLabel(childrenSchema, item.data, { index })"
         :level="level + 1"
       )
       // TODO: Convert dito-tree-item to use dito-label internally, and then
@@ -170,7 +170,7 @@ export default DitoComponent.component('dito-tree-item', {
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
-    draggable: { type: Boolean, default: false },
+    draggable: { type: [Object, Boolean], default: false },
     label: { type: String, default: null },
     level: { type: Number, default: 0 }
   },
@@ -205,13 +205,13 @@ export default DitoComponent.component('dito-tree-item', {
       return getNamedSchemas(this.schema.properties)
     },
 
-    children() {
-      // TODO: Should this be named `sourceSchema` instead? Use SourceMixin?
+    // TODO: Should this be named `sourceSchema` instead? Use SourceMixin?
+    childrenSchema() {
       return this.schema.children
     },
 
     childrenList() {
-      const name = this.children?.name
+      const name = this.childrenSchema?.name
       return name && this.data[name]
     },
 
@@ -219,9 +219,9 @@ export default DitoComponent.component('dito-tree-item', {
       return (
         this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
-          type: Boolean,
+          type: [Object, Boolean],
           default: false,
-          schema: this.children
+          schema: this.childrenSchema
         })
       )
     },
@@ -238,18 +238,17 @@ export default DitoComponent.component('dito-tree-item', {
       return this.numProperties + this.numChildren
     },
 
-    childrenDragOptions() {
-      return this.getDragOptions(this.childrenDraggable)
-    },
-
     childrenItems() {
-      const { children } = this
-      if (children) {
+      const { childrenSchema } = this
+      if (childrenSchema) {
         const { editPath } = this.container
-        const childrenOpen = !this.path && children.open
+        const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
         return this.childrenList?.map((data, index) => {
-          const path = children.path && `${this.path}/${children.path}/${index}`
+          const path = (
+            childrenSchema.path &&
+            `${this.path}/${childrenSchema.path}/${index}`
+          )
           const open = childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
             editPath.startsWith(path) && path.length < editPath.length

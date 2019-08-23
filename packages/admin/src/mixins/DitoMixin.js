@@ -183,7 +183,7 @@ export default {
       }
       // For boolean values that are defined as strings or arrays,
       // interpret the values as user roles and match against user:
-      if (type === Boolean && (isString(value) || isArray(value))) {
+      if (types?.includes(Boolean) && (isString(value) || isArray(value))) {
         value = this.user?.hasRole(...asArray(value))
       }
       // Now finally see if we can convert to the expect types.

@@ -267,10 +267,10 @@ export default {
     }),
 
     draggable: getSchemaAccessor('draggable', {
-      type: Boolean,
+      type: [Object, Boolean],
       default: false,
       get(draggable) {
-        return draggable && this.isListSource && this.listData.length > 1
+        return this.isListSource && this.listData.length > 1 && draggable
       }
     }),
 
