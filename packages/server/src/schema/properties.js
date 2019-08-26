@@ -97,7 +97,7 @@ export function convertSchema(schema, options = {}) {
         // format instead that only validates if required string is not empty.
         schema = addFormat(schema, 'required')
       }
-      if (_default && !excludeDefaults[_default]) {
+      if (_default !== undefined && !excludeDefaults[_default]) {
         schema.default = _default
       }
     }

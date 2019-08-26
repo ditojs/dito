@@ -29,6 +29,40 @@ describe('convertSchema()', () => {
     })
   })
 
+  it('supports falsy default values', () => {
+    const properties = {
+      myString: {
+        type: 'string',
+        default: ''
+      },
+      myNumber: {
+        type: 'number',
+        default: 0
+      },
+      myInteger: {
+        type: 'integer',
+        default: 0
+      },
+      myBoolean: {
+        type: 'boolean',
+        default: false
+      },
+      myObject: {
+        type: 'object',
+        default: null
+      },
+      myArray: {
+        type: 'array',
+        default: null
+      }
+    }
+    expect(convertSchema(properties)).toEqual({
+      type: 'object',
+      properties,
+      additionalProperties: false
+    })
+  })
+
   it(`expands 'text' typess to 'string' JSON schema typess`, () => {
     expect(convertSchema({
       myText: {
