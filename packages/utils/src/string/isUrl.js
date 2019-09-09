@@ -2,7 +2,7 @@
 // isUrl() returns `true` for 'google.com', and isAbsoluteUrl() returns `false`!
 
 const isUrlRegExp = new RegExp(
-  '^((https?|ftps?|rtsp|mms)?://)?' +
+  '^((https?|ftps?|mailto|rtsp|mms)?://)?' +
   '(([0-9a-z_!~*\'().&=+$%-]+:)?[0-9a-z_!~*\'().&=+$%-]*@)?' + // user:pass@
   '(' +
     '(\\d{1,3}\\.){3}\\d{1,3}' + // ip
