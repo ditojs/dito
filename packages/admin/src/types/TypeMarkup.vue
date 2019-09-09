@@ -294,8 +294,14 @@ export default TypeComponent.register('markup', {
       })
       if (attrs) {
         let { href, title } = attrs
-        if (href && !/^(https?|ftps?|rtsp|mms)?:/.test(href)) {
-          href = `http://${href}`
+        if (href) {
+          // See if `href` can be parsed as a URL, and if not, prefix it with
+          // a default protocol.
+          try {
+            new URL(href)
+          } catch {
+            href = `http://${href}`
+          }
         }
         command({ href, title })
       }
