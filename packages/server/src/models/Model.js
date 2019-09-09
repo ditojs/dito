@@ -615,11 +615,21 @@ export class Model extends objection.Model {
 
   // @override
   static modifierNotFound(builder, modifier) {
-    if (modifier[0] === '^') {
+    switch (modifier[0]) {
+    case '^':
       // Apply the unknown scope eagerly, as it may still be known in
       // eager-loaded relations.
       builder.applyScope(modifier)
-    } else {
+      break
+    case ':':
+      // Apply the scope marked by `:` normally.
+      builder.applyScope(modifier.substring(1))
+      break
+    case '#':
+      // Select the column marked by `#`.
+      builder.select(modifier.substring(1))
+      break
+    default:
       super.modifierNotFound(builder, modifier)
     }
   }
