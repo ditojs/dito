@@ -58,6 +58,7 @@ module.exports = {
     'no-mixed-operators': 'off',
     'no-new': 'off',
     'no-new-func': 'off',
+    'no-prototype-builtins': 'off',
     'no-return-assign': 'error',
     'no-this-before-super': 'error',
     'no-undef': isProduction ? 'error' : 'warn',
