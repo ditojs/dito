@@ -39,7 +39,7 @@ describe('isUrl()', () => {
   ])(
     'isUrl(%o)',
     str => {
-      it(`returns true`, () => {
+      it('returns true', () => {
         expect(isUrl(str)).toBe(true)
       })
     }
@@ -80,7 +80,7 @@ describe('isUrl()', () => {
   ])(
     'isUrl(%o)',
     str => {
-      it(`returns false`, () => {
+      it('returns false', () => {
         expect(isUrl(str)).toBe(false)
       })
     }

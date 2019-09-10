@@ -90,7 +90,7 @@ class ModelReference {
     const toName = toRef.modelName
     const toProperties = toRef.propertyNames
     if (fromProperties.length !== toProperties.length) {
-      throw new RelationError(`Unable to create through join for ` +
+      throw new RelationError('Unable to create through join for ' +
         `composite keys from '${this}' to '${toRef}'`)
     }
     const from = []

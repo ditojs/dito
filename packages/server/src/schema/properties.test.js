@@ -185,7 +185,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`preserves preexisting settings for no additional properties`, () => {
+  it('preserves preexisting settings for no additional properties', () => {
     expect(convertSchema({
       myText: {
         type: 'object',
@@ -205,7 +205,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands nested object schemas with required properties`, () => {
+  it('expands nested object schemas with required properties', () => {
     expect(convertSchema({
       myText: {
         type: 'object',

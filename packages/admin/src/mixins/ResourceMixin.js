@@ -262,8 +262,8 @@ export default {
       setData = false,
       notifySuccess = () => this.notify(
         'success',
-        `Request Successful`,
-        `Request was successfully sent.`
+        'Request Successful',
+        'Request was successfully sent.'
       ),
       notifyError = error => this.notify(
         'error',

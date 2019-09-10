@@ -272,13 +272,13 @@ export default TypeComponent.register('upload', {
           }
         } else if (error) {
           const message = {
-            abort: `Upload aborted`,
-            denied: `Upload denied`,
+            abort: 'Upload aborted',
+            denied: 'Upload denied',
             extension: `Unsupported file-type: ${newFile.name}`,
-            network: `Network error encountered during upload`,
-            server: `Server error occurred during upload`,
+            network: 'Network error encountered during upload',
+            server: 'Server error occurred during upload',
             size: `File is too large: ${formatFileSize(newFile.size)}`,
-            timeout: `Timeout occurred during upload`
+            timeout: 'Timeout occurred during upload'
 
           }[error] || `Unknown File Upload Error: '${error}'`
           this.notify('error', 'File Upload Error', message)

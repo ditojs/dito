@@ -25,7 +25,7 @@ describe('parseDataPath()', () => {
   })
 
   it('should handle white-space in JSON pointers', () => {
-    expect(parseDataPath(`/object/property name`))
+    expect(parseDataPath('/object/property name'))
       .toStrictEqual(['object', 'property name'])
   })
 

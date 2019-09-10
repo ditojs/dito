@@ -16,7 +16,7 @@ describe('toCallback()', () => {
 
   it('should convert async exceptions to callback errors', async () => {
     expect.assertions(2)
-    const error = new Error(`This error is intentional`)
+    const error = new Error('This error is intentional')
     const callback = toCallback(async error => {
       await Promise.resolve()
       throw error

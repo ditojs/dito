@@ -78,6 +78,10 @@ module.exports = {
     'prefer-const': ['error', {
       destructuring: 'all'
     }],
+    'quotes': ['error', 'single', {
+      allowTemplateLiterals: true,
+      avoidEscape: true
+    }],
     'quote-props': ['error', 'as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'never',

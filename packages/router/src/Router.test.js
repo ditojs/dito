@@ -18,7 +18,7 @@ describe('Router', () => {
     ])(
       'supports %s() short-cut',
       verb => {
-        it(`reports correct allowed methods`, () => {
+        it('reports correct allowed methods', () => {
           router[verb]('/')
           expect(router.getAllowedMethods()).toStrictEqual([verb.toUpperCase()])
         })

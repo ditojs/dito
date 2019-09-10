@@ -15,7 +15,7 @@ describe('toAsync()', () => {
 
   it('should convert callback errors to exceptions', async () => {
     expect.assertions(1)
-    const error = new Error(`This error is intentional`)
+    const error = new Error('This error is intentional')
     const throwError = toAsync(function(toReject, callback) {
       process.nextTick(() => {
         callback(toReject)

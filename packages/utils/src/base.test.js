@@ -189,7 +189,7 @@ describe('isInteger()', () => {
   ])(
     'isInteger(%o)',
     str => {
-      it(`returns true`, () => {
+      it('returns true', () => {
         expect(isInteger(str)).toBe(true)
       })
     }
@@ -201,7 +201,7 @@ describe('isInteger()', () => {
   ])(
     'isInteger(%o)',
     str => {
-      it(`returns false`, () => {
+      it('returns false', () => {
         expect(isInteger(str)).toBe(false)
       })
     }

@@ -14,7 +14,7 @@ describe('isEmail()', () => {
   ])(
     'isEmail(%o)',
     str => {
-      it(`returns true`, () => {
+      it('returns true', () => {
         expect(isEmail(str)).toBe(true)
       })
     }
@@ -29,7 +29,7 @@ describe('isEmail()', () => {
   ])(
     'isEmail(%o)',
     str => {
-      it(`returns false`, () => {
+      it('returns false', () => {
         expect(isEmail(str)).toBe(false)
       })
     }

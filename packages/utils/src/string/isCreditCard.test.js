@@ -21,7 +21,7 @@ describe('isCreditCard()', () => {
   ])(
     'isCreditCard(%o)',
     str => {
-      it(`returns true`, () => {
+      it('returns true', () => {
         expect(isCreditCard(str)).toBe(true)
       })
     }
@@ -42,7 +42,7 @@ describe('isCreditCard()', () => {
   ])(
     'isCreditCard(%o)',
     str => {
-      it(`returns false`, () => {
+      it('returns false', () => {
         expect(isCreditCard(str)).toBe(false)
       })
     }
