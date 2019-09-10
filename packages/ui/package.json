@@ -11,7 +11,6 @@
     "dist/"
   ],
   "scripts": {
-    "serve": "vue-cli-service serve dev",
     "build:icons": "yarn --silent inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.sass",
     "build:vue": "vue-cli-service build --target lib --name dito-ui src/index.js",
     "build": "yarn build:icons && yarn build:vue",

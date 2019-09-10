@@ -29,6 +29,10 @@ export function getVueConfig(config) {
           .options({ compact: false })
         // - Disable eslint, as it somehow complains about compressed imports:
         config.module.rules.delete('eslint')
+        // - Disable progress plugin, which floods the console since
+        //   @vue/cli-service 3.11.0
+        //   https://github.com/vuejs/vue-cli/issues/3603
+        config.plugins.delete('progress')
       }
     }
   }, config)
