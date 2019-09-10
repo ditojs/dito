@@ -23,10 +23,10 @@ export function debounceAsync(func, delay, immediate) {
   }
 
   const debounced = function(...args) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const callNow = immediate && !timer
       clearTimeout(timer)
-      timer = setTimeout(async () => {
+      timer = setTimeout(() => {
         timer = null
         if (!immediate) {
           execute(this, args)
