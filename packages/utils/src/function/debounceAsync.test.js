@@ -86,7 +86,7 @@ describe('debounceAsync()', () => {
     async () => {
       expect.assertions(2)
       const func = jest.fn()
-      const debounced = debounceAsync(func, 1000, true)
+      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
       const promises = []
       promises.push(debounced())
       expect(func).toBeCalledTimes(1)
@@ -104,7 +104,7 @@ describe('debounceAsync()', () => {
     async () => {
       expect.assertions(3)
       const func = jest.fn()
-      const debounced = debounceAsync(func, 1000, true)
+      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
       const promises = []
       promises.push(debounced())
       expect(func).toBeCalledTimes(1)

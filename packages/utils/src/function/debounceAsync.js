@@ -1,4 +1,8 @@
-export function debounceAsync(func, delay, immediate) {
+import { isNumber } from '@/base'
+
+export function debounceAsync(func, options) {
+  const { delay, immediate } = isNumber(options) ? { delay: options } : options
+
   let timer = null
   let callbacks = []
   let cancelled = false

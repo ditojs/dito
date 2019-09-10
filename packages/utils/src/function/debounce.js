@@ -1,4 +1,8 @@
-export function debounce(func, delay, immediate) {
+import { isNumber } from '@/base'
+
+export function debounce(func, options) {
+  const { delay, immediate } = isNumber(options) ? { delay: options } : options
+
   let timer = null
   let result
 

@@ -73,7 +73,7 @@ describe('debounce()', () => {
 
   it('should execute once immediately if intervals are less than wait', () => {
     const func = jest.fn()
-    const debounced = debounce(func, 1000, true)
+    const debounced = debounce(func, { delay: 1000, immediate: true })
     debounced()
     expect(func).toBeCalledTimes(1)
     for (let i = 0; i < 10; i++) {
@@ -85,7 +85,7 @@ describe('debounce()', () => {
 
   it('should execute twice immediately with long enough intervals', () => {
     const func = jest.fn()
-    const debounced = debounce(func, 1000, true)
+    const debounced = debounce(func, { delay: 1000, immediate: true })
     debounced()
     expect(func).toBeCalledTimes(1)
     for (let i = 0; i < 10; i++) {
