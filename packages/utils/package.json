@@ -27,7 +27,7 @@
     "not ie <= 9"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.5.5",
+    "@babel/runtime": "^7.6.0",
     "core-js": "^3.2.1"
   }
 }
