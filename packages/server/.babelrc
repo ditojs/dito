@@ -15,7 +15,7 @@
       }
     }],
     "@babel/plugin-transform-runtime",
-    "dynamic-import-node-babel-7",
+    "dynamic-import-node",
     "transform-promise-to-bluebird"
   ],
   "env": {
