@@ -1,4 +1,5 @@
 import { isArray, isObject, isDate, isRegExp } from '@/base'
+import { pick } from '@/object'
 
 export function clone(val, iteratee = null) {
   let copy
@@ -19,5 +20,5 @@ export function clone(val, iteratee = null) {
   } else {
     copy = val
   }
-  return iteratee?.(copy) ?? copy
+  return pick(iteratee?.(copy), copy)
 }
