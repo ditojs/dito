@@ -1,26 +1,84 @@
-import { asArray } from '@ditojs/utils'
+import { isObject, isArray, asArray } from '@ditojs/utils'
 import { QueryBuilder } from '@/query'
 import { collectExpressionPaths, expressionPathToEager } from './expression.js'
 
 // Similar to Objection's private `modelClass.ensureModel(model)`:
-export function ensureModel(modelClass, model) {
+export function ensureModel(modelClass, model, options) {
   return !model
     ? null
     : model instanceof modelClass
-      ? model
-      : modelClass.fromJson(model, { skipValidation: true })
+      ? parseRelationsIntoModelInstances(model, model, options)
+      : modelClass.fromJson(model, options)
 }
 
 // Similar to Objection's private `modelClass.ensureModelArray(data)`:
-export function ensureModelArray(modelClass, data) {
+export function ensureModelArray(modelClass, data, options) {
   return data
-    ? asArray(data).map(model => ensureModel(modelClass, model))
+    ? asArray(data).map(model => ensureModel(modelClass, model, options))
     : []
+}
+
+function parseRelationsIntoModelInstances(model, json, options = {}) {
+  if (!options.cache) {
+    options = { ...options, cache: new Map() }
+  }
+  options.cache.set(json, model)
+
+  for (const relationName of model.constructor.getRelationNames()) {
+    const relationJson = json[relationName]
+
+    if (relationJson !== undefined) {
+      const relation = model.constructor.getRelation(relationName)
+      const relationModel = parseRelation(relationJson, relation, options)
+
+      if (relationModel !== relationJson) {
+        model[relation.name] = relationModel
+      }
+    }
+  }
+
+  return model
+}
+
+function parseRelation(json, relation, options) {
+  return isArray(json)
+    ? parseRelationArray(json, relation, options)
+    : parseRelationObject(json, relation, options)
+}
+
+function parseRelationArray(json, relation, options) {
+  const models = new Array(json.length)
+  let changed = false
+  for (let i = 0, l = json.length; i < l; i++) {
+    const model = parseRelationObject(json[i], relation, options)
+    changed = changed || (model !== json[i])
+    models[i] = model
+  }
+  return changed ? models : json
+}
+
+function parseRelationObject(json, relation, options) {
+  if (isObject(json)) {
+    const modelClass = relation.relatedModelClass
+    let model = options.cache.get(json)
+    if (model === undefined) {
+      if (json instanceof modelClass) {
+        model = parseRelationsIntoModelInstances(json, json, options)
+      } else {
+        model = modelClass.fromJson(json, options)
+      }
+    }
+    return model
+  }
+  return json
 }
 
 export function filterGraph(rootModelClass, graph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
-  for (const model of ensureModelArray(rootModelClass, graph)) {
+  const models = ensureModelArray(rootModelClass, graph, {
+    skipValidation: true
+  })
+  for (const model of models) {
     if (model) {
       const relations = model.constructor.getRelations()
       for (const key in model) {
@@ -103,7 +161,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
           const { modify, relation } = path[i]
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
-            item = ensureModel(modelClass, item)
+            item = ensureModel(modelClass, item, { skipValidation: true })
             let add = false
             const isReference = modelClass.isReference(item)
             if (isReference) {

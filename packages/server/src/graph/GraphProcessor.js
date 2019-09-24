@@ -4,7 +4,9 @@ import { modelGraphToExpression, ensureModelArray } from '.'
 export class GraphProcessor {
   constructor(rootModelClass, data, options = {}, settings = {}) {
     this.rootModelClass = rootModelClass
-    this.data = ensureModelArray(rootModelClass, data)
+    this.data = ensureModelArray(rootModelClass, data, {
+      skipValidation: true
+    })
     this.isArray = isArray(data)
     this.options = options
     this.settings = settings
