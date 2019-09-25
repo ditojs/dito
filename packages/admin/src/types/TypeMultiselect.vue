@@ -40,11 +40,10 @@
   // https://github.com/vuejs/vue-cli/issues/2055#issuecomment-417817527
   // @import '~vue-multiselect/dist/vue-multiselect.min.css'
   $spinner-width: $select-arrow-width
-  $tag-icon-size: 1.8em
+  $tag-icon-width: 1.8em
   $tag-margin: 2px
   $tag-padding: 3px
-  $tag-line-height: 1.2em
-  $tag-icon-scale: 1.2
+  $tag-line-height: 1.1em
 
   .dito-multiselect
     position: relative
@@ -55,6 +54,7 @@
       color: $color-black
 
     .multiselect__tags
+      display: flex
       font-size: inherit
       overflow: auto
       min-height: inherit
@@ -63,20 +63,19 @@
       padding-bottom: $tag-margin
 
     .multiselect__tag
-      float: left
       margin: $tag-margin 0 0 $tag-margin
       border-radius: 1em
-      padding: $tag-padding $tag-icon-size $tag-padding 0.8em
+      padding: $tag-padding $tag-icon-width $tag-padding 0.8em
       line-height: $tag-line-height
 
     .multiselect__tags-wrap
       overflow: auto
-      margin: $tag-margin 0 0 $tag-margin
       line-height: 0
 
     .multiselect__single,
     .multiselect__placeholder,
-    .multiselect__input
+    .multiselect__input,
+    .multiselect__tags::after
       font-size: inherit
       line-height: inherit
       min-height: 0
@@ -86,6 +85,10 @@
       // .multiselect__tags:
       padding-bottom: 0
       background: none
+    .multiselect__tags::after
+      // Enforce the same height when .multiselect__tags has no content.
+      display: inline-block
+      content: '\200b'
     // Unfortunately .multiselect__single is used for place placeholder text
     // also, but as it is then nested in an nother span so wen can match it:
     span span.multiselect__single,
@@ -146,11 +149,11 @@
       background: none
       border-radius: 1em
       font-weight: inherit
-      line-height: $tag-line-height * $tag-icon-scale
-      width: $tag-icon-size
+      line-height: 1.4em
+      width: $tag-icon-width
       &::after
         color: $color-text-inverted
-        font-size: 1em * $tag-icon-scale
+        font-size: 1.3em
       &:hover::after
         color: $color-text
 
