@@ -5,6 +5,11 @@
       overflow: visible
 </style>
 
+<style lang="sass">
+  .dito-form-nested
+    overflow: visible
+</style>
+
 <script>
 import DitoForm from './DitoForm'
 
