@@ -29,11 +29,17 @@ export class DiskStorage extends Storage {
     }))
   }
 
+  getPath(...parts) {
+    return this.path ? path.join(this.path, ...parts) : null
+  }
+
   getFileIdentifiers(file) {
     const name = file.filename
+    const filePath = path.posix.join(this.getNestedFolder(name, true), name)
     return {
       name,
-      url: this.getUrl(path.posix.join(this.getNestedFolder(name, true), name))
+      path: this.getPath(filePath),
+      url: this.getUrl(filePath)
     }
   }
 
@@ -59,6 +65,6 @@ export class DiskStorage extends Storage {
   }
 
   getFilePath(name) {
-    return path.join(this.path, this.getNestedFolder(name), name)
+    return this.getPath(this.getNestedFolder(name), name)
   }
 }
