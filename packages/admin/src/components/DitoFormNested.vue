@@ -1,13 +1,10 @@
 <style lang="sass">
   .dito-form-nested
+    &,
     .dito-scroll
-      // No scrolling inside nested forms:
+      // No scrolling inside nested forms, and prevent open .multiselect from
+      // being cropped.
       overflow: visible
-</style>
-
-<style lang="sass">
-  .dito-form-nested
-    overflow: visible
 </style>
 
 <script>
