@@ -2,9 +2,10 @@ import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
-import { GraphProcessor } from '@/graph'
+import { GraphProcessor, walkGraph } from '@/graph'
 import {
-  isPlainObject, isString, isArray, clone, parseDataPath
+  isObject, isPlainObject, isString, isArray, clone,
+  getDataPath, setDataPath, parseDataPath
 } from '@ditojs/utils'
 import { createLookup, getScope } from '@/utils'
 
@@ -443,6 +444,75 @@ export class QueryBuilder extends objection.QueryBuilder {
       data, patchGraphOptions, options)
   }
 
+  async _upsertCyclicGraph(data, options) {
+    // TODO: This is part of a workaround for the following Objection.js issue.
+    // Replace with a normal `upsertGraphAndFetch()` once it is fixed:
+    // https://github.com/Vincit/objection.js/issues/1482
+
+    // First, collect all #id identifiers and #ref references in the graph,
+    // along with their data paths.
+    const identifiers = {}
+    const references = {}
+
+    const { uidProp, uidRefProp } = this.modelClass()
+
+    walkGraph(data, (value, path) => {
+      if (isObject(value)) {
+        const { [uidProp]: id, [uidRefProp]: ref } = value
+        if (id) {
+          identifiers[id] = path.join('/')
+        } else if (ref) {
+          references[path.join('/')] = ref
+        }
+      }
+    })
+
+    // Now clone the data and delete all references from it, for the initial
+    // upsert.
+    const cloned = clone(data)
+    for (const path of Object.keys(references)) {
+      const parts = parseDataPath(path)
+      const key = parts.pop()
+      const parent = getDataPath(cloned, parts)
+      delete parent[key]
+    }
+
+    const model = await this.clone().upsertGraphAndFetch(cloned, options)
+
+    // Now for each identifier, create an object containing only the final id in
+    // the fetched model data:
+    const links = {}
+    for (const [identifier, path] of Object.entries(identifiers)) {
+      const { id } = getDataPath(model, path)
+      links[identifier] = { id }
+    }
+
+    // And finally replace all references with the final ids, before upserting
+    // once again:
+    for (const [path, reference] of Object.entries(references)) {
+      const link = links[reference]
+      if (link) {
+        setDataPath(model, path, link)
+      }
+    }
+
+    return model
+  }
+
+  async upsertCyclicGraph(data, options) {
+    return this.upsertGraph(
+      await this._upsertCyclicGraph(data, options),
+      options
+    )
+  }
+
+  async upsertCyclicGraphAndFetch(data, options) {
+    return this.upsertGraphAndFetch(
+      await this._upsertCyclicGraph(data, options),
+      options
+    )
+  }
+
   upsertGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
     return this.upsertGraphAndFetch({
@@ -462,6 +532,14 @@ export class QueryBuilder extends objection.QueryBuilder {
   patchGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
     return this.patchGraphAndFetch({
+      ...data,
+      ...this.modelClass().getReference(id)
+    }, options)
+  }
+
+  async upsertCyclicGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
+    return this.upsertCyclicGraphAndFetch({
       ...data,
       ...this.modelClass().getReference(id)
     }, options)
@@ -701,13 +779,16 @@ const mixinMethods = [
   'upsertGraph',
   'updateGraph',
   'patchGraph',
+  'upsertCyclicGraph',
   'insertGraphAndFetch',
   'upsertGraphAndFetch',
   'updateGraphAndFetch',
   'patchGraphAndFetch',
+  'upsertCyclicGraphAndFetch',
   'upsertGraphAndFetchById',
   'updateGraphAndFetchById',
   'patchGraphAndFetchById',
+  'upsertCyclicGraphAndFetchById',
   'where',
   'whereNot',
   'whereRaw',

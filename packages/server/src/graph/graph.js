@@ -25,14 +25,12 @@ function parseRelationsIntoModelInstances(model, json, options = {}) {
   options.cache.set(json, model)
 
   for (const relationName of model.constructor.getRelationNames()) {
-    const relationJson = json[relationName]
-
-    if (relationJson !== undefined) {
+    const jsonRelation = json[relationName]
+    if (jsonRelation !== undefined) {
       const relation = model.constructor.getRelation(relationName)
-      const relationModel = parseRelation(relationJson, relation, options)
-
-      if (relationModel !== relationJson) {
-        model[relation.name] = relationModel
+      const parsedRelation = parseRelation(jsonRelation, relation, options)
+      if (parsedRelation !== jsonRelation) {
+        model[relation.name] = parsedRelation
       }
     }
   }
@@ -71,6 +69,15 @@ function parseRelationObject(json, relation, options) {
     return model
   }
   return json
+}
+
+export function walkGraph(data, callback, path = []) {
+  if (isObject(data) || isArray(data)) {
+    for (const [key, value] of Object.entries(data)) {
+      walkGraph(value, callback, [...path, key])
+    }
+  }
+  callback(data, path)
 }
 
 export function filterGraph(rootModelClass, graph, expr) {
