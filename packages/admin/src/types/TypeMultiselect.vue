@@ -54,7 +54,6 @@
       color: $color-black
 
     .multiselect__tags
-      display: flex
       font-size: inherit
       overflow: auto
       min-height: inherit
@@ -63,6 +62,7 @@
       padding-bottom: $tag-margin
 
     .multiselect__tag
+      float: left
       margin: $tag-margin 0 0 $tag-margin
       border-radius: 1em
       padding: $tag-padding $tag-icon-width $tag-padding 0.8em
@@ -74,8 +74,7 @@
 
     .multiselect__single,
     .multiselect__placeholder,
-    .multiselect__input,
-    .multiselect__tags::after
+    .multiselect__input
       font-size: inherit
       line-height: inherit
       min-height: 0
@@ -85,10 +84,12 @@
       // .multiselect__tags:
       padding-bottom: 0
       background: none
-    .multiselect__tags::after
-      // Enforce the same height when .multiselect__tags has no content.
-      display: inline-block
-      content: '\200b'
+    .multiselect--active
+      .multiselect__placeholder
+        // Don't use `display: none` to hide place-holder, as the layout would
+        // collapse.
+        display: inline-block
+        visibility: hidden
     // Unfortunately .multiselect__single is used for place placeholder text
     // also, but as it is then nested in an nother span so wen can match it:
     span span.multiselect__single,
