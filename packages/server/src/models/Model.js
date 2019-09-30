@@ -14,6 +14,15 @@ import RelationAccessor from './RelationAccessor'
 import definitionHandlers from './definitions'
 
 export class Model extends objection.Model {
+  // Define a default constructor to allow new Model(json) as a short-cut to
+  // `Model.fromJson(json, { skipValidation: true })`
+  constructor(json) {
+    super()
+    if (json) {
+      this.$setJson(json, { skipValidation: true })
+    }
+  }
+
   static setup(knex) {
     this.knex(knex)
     try {
