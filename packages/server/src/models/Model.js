@@ -19,7 +19,7 @@ export class Model extends objection.Model {
   constructor(json) {
     super()
     if (json) {
-      this.$setJson(json, { skipValidation: true })
+      this.$setJson(json)
     }
   }
 
@@ -340,7 +340,7 @@ export class Model extends objection.Model {
             {
               type: 'object',
               properties: {
-                '#ref': {
+                [this.uidRefProp]: {
                   type: 'string'
                 }
               },
