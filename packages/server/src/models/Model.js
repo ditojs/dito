@@ -405,8 +405,8 @@ export class Model extends objection.Model {
 
   static get jsonAttributes() {
     return this.getCached('jsonSchema:jsonAttributes', () => (
-      this.getAttributes(({ type, computed }) =>
-        !computed && ['object', 'array'].includes(type))
+      this.getAttributes(({ type, json, computed }) =>
+        !computed && type === 'object' || type === 'array' && json)
     ), [])
   }
 

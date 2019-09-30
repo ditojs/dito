@@ -8,8 +8,9 @@ import {
 
 const typeToKnex = {
   number: 'double',
-  array: 'json',
-  object: 'json'
+  object: 'json',
+  // TODO: Only use 'json' for arrays if the `json` keyword is also set!
+  array: 'json'
 }
 
 const defaultValues = {
