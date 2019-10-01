@@ -1,3 +1,4 @@
+export * from './_specificType'
 export * from './_primary'
 export * from './_foreign'
 export * from './_unique'

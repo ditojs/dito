@@ -9,7 +9,6 @@ import {
 const typeToKnex = {
   number: 'double',
   object: 'json',
-  // TODO: Only use 'json' for arrays if the `json` keyword is also set!
   array: 'json'
 }
 
@@ -79,7 +78,7 @@ async function collectModelTables(modelClass, app, tables) {
   for (const [name, property] of Object.entries(properties)) {
     const column = app.normalizeIdentifier(name)
     let {
-      description, type, unsigned, computed, nullable, required,
+      description, type, specificType, unsigned, computed, nullable, required,
       primary, foreign, unique, index,
       default: _default
     } = property
@@ -99,7 +98,9 @@ async function collectModelTables(modelClass, app, tables) {
       }
       const statement = primary
         ? [`table.increments('${column}').primary()`]
-        : [`table.${knexType}('${column}')`]
+        : specificType
+          ? [`table.specificType('${column}', '${specificType}')`]
+          : [`table.${knexType}('${column}')`]
       statement.push(
         unsigned && 'unsigned()',
         !primary && required && 'notNullable()',

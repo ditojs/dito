@@ -126,7 +126,7 @@ export function expandProperties(schemaProperties, options) {
 }
 
 export function expandSchemaShorthand(schema) {
-  // TODO: Consider removing string short-hand
+  // TODO: Consider removing all short-hand schema expansion.
   if (isString(schema)) {
     schema = {
       type: schema
