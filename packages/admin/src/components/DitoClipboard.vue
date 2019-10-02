@@ -1,5 +1,7 @@
 <template lang="pug">
-  .dito-clipboard.dito-buttons.dito-buttons-round
+  .dito-clipboard.dito-buttons.dito-buttons-round(
+    v-if="clipboard"
+  )
     button.dito-button.dito-button-copy(
       type="button"
       ref="copyData"
@@ -18,13 +20,16 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import DomMixin from '@/mixins/DomMixin'
-import { clone, deindent } from '@ditojs/utils'
+import { getItemParams } from '@/utils/data'
+import { isObject, clone, deindent } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-clipboard', {
   mixins: [DomMixin],
 
   props: {
+    clipboard: { type: [Boolean, Object], default: false },
+    dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null }
   },
 
@@ -33,6 +38,26 @@ export default DitoComponent.component('dito-clipboard', {
       copyEnabled: false,
       pasteEnabled: false,
       clipboardData: null
+    }
+  },
+
+  computed: {
+    clipboardConfig() {
+      return isObject(this.clipboard) ? this.clipboard : {}
+    },
+
+    copyData() {
+      const { copy } = this.clipboardConfig
+      return copy
+        ? data => copy.call(this, data, this.getItemParams())
+        : data => clone(data)
+    },
+
+    pasteData() {
+      const { paste } = this.clipboardConfig
+      return paste
+        ? data => paste.call(this, data, this.getItemParams())
+        : data => data
     }
   },
 
@@ -75,6 +100,15 @@ export default DitoComponent.component('dito-clipboard', {
       return $schema === this.schemaComponent?.schema.name ? data : null
     },
 
+    getItemParams() {
+      return getItemParams(this, {
+        name: undefined,
+        value: undefined,
+        data: this.data,
+        dataPath: this.dataPath
+      })
+    },
+
     async checkClipboard() {
       this.copyEnabled = !!this.data
       // See if the clipboard content is valid JSON data that is compatible
@@ -83,9 +117,10 @@ export default DitoComponent.component('dito-clipboard', {
     },
 
     async onCopy() {
-      const data = this.schemaComponent?.clipboardData
+      let data = this.schemaComponent?.clipboardData
+      data = data && this.copyData(data)
       // Keep an internal clipboard as fallback.
-      this.clipboardData = clone(data)
+      this.clipboardData = data
       try {
         const json = JSON.stringify(data, null, '  ')
         await navigator.clipboard?.writeText?.(json)
@@ -97,7 +132,8 @@ export default DitoComponent.component('dito-clipboard', {
     },
 
     async onPaste() {
-      const data = await this.getClipboardData(true) // report
+      let data = await this.getClipboardData(true) // report
+      data = data && this.pasteData(data)
       if (data) {
         this.schemaComponent.setData(data)
       }

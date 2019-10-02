@@ -25,7 +25,8 @@
           :selectedTab="selectedTab"
         )
         dito-clipboard(
-          v-if="clipboard"
+          :clipboard="clipboard"
+          :dataPath="dataPath"
           :data="data"
         )
       dito-components.dito-tab-components(
@@ -266,11 +267,9 @@ export default DitoComponent.component('dito-schema', {
     },
 
     clipboardData() {
-      // Remove the root id from the copied data:
-      const { id, ...data } = this.processData()
       return {
         $schema: this.schema.name,
-        ...data
+        ...this.processData({ removeIds: true })
       }
     },
 
@@ -596,7 +595,7 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData({ processIds = false } = {}) {
+    processData({ processIds = false, removeIds = false } = {}) {
       // @ditojs/server specific handling of relates within graphs:
       // Find entries with temporary ids, and convert them to #id / #ref pairs.
       // Also handle items with relate and convert them to only contain ids.
@@ -637,6 +636,15 @@ export default DitoComponent.component('dito-schema', {
             isArr ? [] : {}
           )
         }
+        if (
+          isObj &&
+          removeIds &&
+          value.id != null &&
+          // Only remove ids if it isn't a reference.
+          !this.isReference(value)
+        ) {
+          delete value.id
+        }
         return value
       }
       return process(this.data, null, this.dataPath)
@@ -653,8 +661,8 @@ export default DitoComponent.component('dito-schema', {
 
     isReference(data) {
       // Returns true if value is an object that holds nothing more than an id.
-      const keys = data && Object.keys(data)
-      return keys?.length === 1 && keys[0] === 'id'
+      const keys = data && data.id != null && Object.keys(data)
+      return keys?.length === 1
     }
   }
 })
