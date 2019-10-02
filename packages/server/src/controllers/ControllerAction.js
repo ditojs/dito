@@ -54,9 +54,13 @@ export default class ControllerAction {
     await this.controller.handleAuthorization(this.authorization, ctx, ...args)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
-    let result = await this.handler.call(this.controller, ctx, ...args)
-    result = await this.validateResult(result)
-    return this.controller.emitHook(`after:${identifier}`, true, ctx, result)
+    let result = await this.callHandler(ctx, ...args)
+    result = this.controller.emitHook(`after:${identifier}`, true, ctx, result)
+    return this.validateResult(result)
+  }
+
+  async callHandler(ctx, ...args) {
+    return this.handler.call(this.controller, ctx, ...args)
   }
 
   createValidationError(options) {

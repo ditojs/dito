@@ -103,18 +103,22 @@ export class Storage {
     return storage ? multer({ ...config, storage }).any() : null
   }
 
-  getFilename(file) {
-    return `${uuidv4()}${path.extname(file.originalname)}`
+  getUniqueFilename(filename) {
+    return `${uuidv4()}${path.extname(filename)}`
   }
 
-  getUrl(path) {
-    return this.url ? new URL(path, this.url).toString() : null
+  getUrl(...parts) {
+    return this.url
+      ? new URL(path.posix.join(...parts), this.url).toString()
+      : null
   }
 
   convertFile(file) {
-    // Convert multer-file object to our own file object format.
+    const name = this.getFileName(file)
+    // Convert multer file object to our own file object format:
     return {
-      ...this.getFileIdentifiers(file),
+      name,
+      ...this.getFileProperties(name, file),
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
@@ -131,12 +135,17 @@ export class Storage {
     return file.mimetype.startsWith('image/')
   }
 
-  getFileIdentifiers(_file) {
+  getFileName(_file) {
     // To be implemented in sub-classes.
     throw new NotImplementedError()
   }
 
-  managesFile(_file) {
+  getFileProperties(_name, _file) {
+    // To be implemented in sub-classes.
+    throw new NotImplementedError()
+  }
+
+  async addFile(_file, _buffer) {
     // To be implemented in sub-classes.
     throw new NotImplementedError()
   }

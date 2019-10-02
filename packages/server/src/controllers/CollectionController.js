@@ -70,12 +70,10 @@ export class CollectionController extends Controller {
         (allFiles, dataPath) => {
           allFiles[dataPath] = asArray(models).reduce(
             (files, model) => {
+              const data = asArray(getDataPath(model, dataPath, () => null))
               // Use flatten() as dataPath may contain wildcards, resulting in
               // nested files arrays.
-              const data = asArray(getDataPath(model, dataPath, () => null))
-              for (const { name } of flatten(data).filter(file => !!file)) {
-                files.push(name)
-              }
+              files.push(...flatten(data).filter(file => !!file))
               return files
             },
             []
@@ -105,17 +103,33 @@ export class CollectionController extends Controller {
         'after:*:patch',
         'after:*:delete'
       ], async (ctx, result) => {
+        const { action } = ctx
+        const isDelete = action.name === 'delete'
         const before = ctx.assets?.before || {}
-        const after = ctx.action.name === 'delete' ? {} : getFiles(result)
-        const added = []
-        const removed = []
-        for (const dataPath of Object.keys(assets)) {
+        const after = isDelete ? {} : getFiles(result)
+        for (const dataPath of dataPaths) {
+          const { storage } = assets[dataPath]
           const _before = before[dataPath] || []
           const _after = after[dataPath] || []
-          added.push(..._after.filter(file => !_before.includes(file)))
-          removed.push(..._before.filter(file => !_after.includes(file)))
+          const added = _after.filter(
+            file => !_before.find(it => it.name === file.name)
+          )
+          const removed = _before.filter(
+            file => !_after.find(it => it.name === file.name)
+          )
+          const foreignAssetsAdded = await this.app.changeAssets(
+            storage, added, removed, ctx.transaction
+          )
+          if (foreignAssetsAdded && !isDelete) {
+            // Since the actual foreign file objects were already modified by
+            // `changeAssets()`, all that's remaining to do is to call the
+            // associated patch action, with the changed data:
+            const execute = action.type === 'member'
+              ? 'executeAndFetchById'
+              : 'executeAndFetch'
+            return this[execute]('patch', ctx, null, result)
+          }
         }
-        await this.app.changeAssets(added, removed, ctx.transaction)
       })
     }
     return assets
@@ -193,18 +207,18 @@ export class CollectionController extends Controller {
     // Overrides are in ModelController and RelationController.
   }
 
-  async executeAndFetch(action, ctx, modify) {
+  async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
     return this.execute(ctx, (query, trx) =>
-      query[name](ctx.request.body)
+      query[name](body)
         .modify(getModify(modify, trx))
     )
   }
 
-  async executeAndFetchById(action, ctx, modify) {
+  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
-      query[name](this.getMemberId(ctx), ctx.request.body)
+      query[name](this.getMemberId(ctx), body)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )

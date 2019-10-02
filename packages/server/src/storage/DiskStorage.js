@@ -15,7 +15,7 @@ export class DiskStorage extends Storage {
 
     this.setStorage(multer.diskStorage({
       destination: (req, file, cb) => {
-        const filename = this.getFilename(file)
+        const filename = this.getUniqueFilename(file.originalname)
         file.filename = filename
         const dir = path.join(this.path, this.getNestedFolder(filename))
         fs.ensureDir(dir)
@@ -33,13 +33,25 @@ export class DiskStorage extends Storage {
     return this.path ? path.join(this.path, ...parts) : null
   }
 
-  getFileIdentifiers(file) {
-    const name = file.filename
-    const filePath = path.posix.join(this.getNestedFolder(name, true), name)
+  getFileName(file) {
+    return file.filename
+  }
+
+  getFileProperties(name) {
     return {
-      name,
-      path: this.getPath(filePath),
-      url: this.getUrl(filePath)
+      path: this.getFilePath(name),
+      url: this.getFileUrl(name)
+    }
+  }
+
+  async addFile(file, buffer) {
+    const filePath = this.getFilePath(file.name)
+    const dir = path.dirname(filePath)
+    await fs.ensureDir(dir)
+    await fs.writeFile(filePath, buffer)
+    return {
+      ...file,
+      ...this.getFileProperties(file.name)
     }
   }
 
@@ -66,5 +78,9 @@ export class DiskStorage extends Storage {
 
   getFilePath(name) {
     return this.getPath(this.getNestedFolder(name), name)
+  }
+
+  getFileUrl(name) {
+    return this.getUrl(this.getNestedFolder(name, true), name)
   }
 }

@@ -11,21 +11,24 @@ export class S3Storage extends Storage {
     const {
       name,
       s3,
+      acl,
       bucket,
       contentType,
       ...options
     } = config
     this.s3 = new aws.S3(s3)
+    this.acl = acl
     this.bucket = bucket
 
     this.setStorage(multerS3({
       s3: this.s3,
+      acl,
       bucket,
       contentType: contentType || multerS3.AUTO_CONTENT_TYPE,
       ...options,
 
       key: (req, file, cb) => {
-        cb(null, this.getFilename(file))
+        cb(null, this.getUniqueFilename(file.originalname))
       },
 
       metadata: (req, file, cb) => {
@@ -44,12 +47,26 @@ export class S3Storage extends Storage {
     }))
   }
 
-  getFileIdentifiers(file) {
+  getFileName(file) {
+    return file.key
+  }
+
+  getFileProperties(name, file) {
     return {
-      name: file.key,
-      // Attempt `getUrl()` first to allow S3 buckets to define their own
-      // base URLs, e.g. for CloudFront, fall back to default S3 location:
-      url: this.getUrl(file.key) || file.location
+      url: this.getFileUrl(name, file.location)
+    }
+  }
+
+  async addFile(file, buffer) {
+    const data = await this.execute('upload', {
+      Bucket: this.bucket,
+      ACL: this.acl,
+      Key: file.name,
+      Body: buffer
+    })
+    return {
+      ...file,
+      ...this.getFileProperties(file.name, { location: data.Location })
     }
   }
 
@@ -58,6 +75,12 @@ export class S3Storage extends Storage {
       Bucket: this.bucket,
       Key: file.name
     })
+  }
+
+  getFileUrl(name, location) {
+    // Attempt `getUrl()` first to allow S3 buckets to define their own
+    // base URLs, e.g. for CloudFront, fall back to default S3 location:
+    return this.getUrl(name) || location
   }
 
   execute(method, params) {

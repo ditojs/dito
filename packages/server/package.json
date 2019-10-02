@@ -38,6 +38,7 @@
     "@vue/cli-service": "^3.11.0",
     "ajv": "^6.10.2",
     "aws-sdk": "^2.534.0",
+    "axios": "^0.19.0",
     "babel-loader": "^8.0.6",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.5",

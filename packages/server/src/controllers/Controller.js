@@ -206,11 +206,7 @@ export class Controller {
 
       async (ctx, next) => {
         const files = storage.convertFiles(ctx.req.files)
-        await this.app.createAssets(
-          files,
-          storageName,
-          ctx.transaction
-        )
+        await this.app.createAssets(storageName, files, 0, ctx.transaction)
         // Send the file objects back for the upload component to store in the
         // data.
         ctx.body = files

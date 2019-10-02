@@ -245,8 +245,8 @@ export class Model extends objection.Model {
   }
 
   static async count(...args) {
-    const res = await this.query().count(...args).first()
-    return res && +res[Object.keys(res)[0]] || 0
+    const count = await this.query().count(...args).pluck('count').first()
+    return +count || 0
   }
 
   // @override
