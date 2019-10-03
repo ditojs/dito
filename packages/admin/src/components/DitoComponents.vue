@@ -31,7 +31,7 @@
     .dito-component-container.dito-omit-padding > &
       // Clear above paddings again if parent is omitting padding.
       margin: 0
-      max-width: $content-width
+      max-width: unset
 </style>
 
 <script>
