@@ -64,7 +64,7 @@
       v-if="childrenSchema"
       v-show="opened"
       v-bind="getDragOptions(childrenDraggable)"
-      :list="updateOrder(childrenList, childrenSchema)"
+      :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
       @start="onStartDrag"
       @end="onEndDrag"
     )
