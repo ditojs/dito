@@ -442,20 +442,6 @@ class LinkWithTitle extends Link {
       toDOM: node => ['a', node.attrs, 0]
     }
   }
-
-  commands({ type }) {
-    // Work around a strange problem with tiptap where `updateMark()` doesn't
-    // seem to trigger an actual update (`editor.onUpdate()` isn't called) when
-    // only attributes changes. We can fix this by first calling the command
-    // with empty attributes, triggering `removeMark()`, followed by an actual
-    // `updateMark()`, in which case update does get called.
-    // Bug: https://github.com/scrumpy/tiptap/issues/452
-    const command = super.commands({ type })
-    return attrs => (state, dispatch) => {
-      command({})(state, dispatch)
-      return command(attrs)(state, dispatch)
-    }
-  }
 }
 
 </script>
