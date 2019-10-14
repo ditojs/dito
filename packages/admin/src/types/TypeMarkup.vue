@@ -100,6 +100,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { getSchemaAccessor } from '@/utils/accessor'
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap'
 import {
   // Marks:
@@ -199,7 +200,22 @@ export default TypeComponent.register('markup', {
         otherNodeButtons,
         toolButtons
       ].filter(buttons => buttons.length > 0)
-    }
+    },
+
+    parseOptions() {
+      return {
+        preserveWhitespace: {
+          collapse: false,
+          preserve: true,
+          'preserve-all': 'full'
+        }[this.whitespace]
+      }
+    },
+
+    whitespace: getSchemaAccessor('whitespace', {
+      type: Boolean,
+      default: 'collapse'
+    })
   },
 
   watch: {
@@ -236,7 +252,7 @@ export default TypeComponent.register('markup', {
       if (ignoreWatch) {
         ignoreWatch = false
       } else {
-        this.editor.setContent(value)
+        this.editor.setContent(value, false, this.parseOptions)
       }
     })
 
@@ -247,6 +263,7 @@ export default TypeComponent.register('markup', {
       onBlur,
       onUpdate,
       extensions: this.createExtensions(),
+      parseOptions: this.parseOptions,
       content: this.value || ''
     })
   },
