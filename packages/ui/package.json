@@ -34,18 +34,18 @@
   "dependencies": {
     "@babel/runtime": "^7.6.3",
     "@ditojs/utils": "^0.139.0",
-    "core-js": "^3.3.2"
+    "core-js": "^3.3.3"
   },
   "devDependencies": {
     "@ditojs/build": "^0.139.0",
-    "@vue/cli-plugin-babel": "^3.12.0",
-    "@vue/cli-plugin-eslint": "^3.12.0",
-    "@vue/cli-service": "^3.12.0",
+    "@vue/cli-plugin-babel": "^4.0.5",
+    "@vue/cli-plugin-eslint": "^4.0.5",
+    "@vue/cli-service": "^4.0.5",
     "babel-loader": "^8.0.6",
-    "node-sass": "4.12.0",
+    "node-sass": "^4.13.0",
     "pug": "^2.0.4",
     "pug-plain-loader": "^1.0.0",
-    "sass-loader": "^7.2.0",
+    "sass-loader": "^8.0.0",
     "vue-template-compiler": "^2.6.10"
   }
 }
