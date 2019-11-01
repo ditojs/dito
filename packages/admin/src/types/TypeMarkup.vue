@@ -16,14 +16,30 @@
           )
             icon(:name="icon")
     editor-content.dito-markup-editor(
+      ref="editor"
       :editor="editor"
-      :style="style"
+      :style="styles"
+    )
+    .dito-resize(
+      v-if="resizable"
+      @mousedown.stop.prevent="onDragResize"
     )
 </template>
 
 <style lang="sass">
   .dito-markup
     @extend %input
+    position: relative
+
+    .dito-resize
+      @extend %icon-resize
+      position: absolute
+      top: unset
+      left: unset
+      right: 0
+      bottom: 0
+      width: 1em
+      height: 1em
 
     .ProseMirror
       height: 100%
@@ -100,6 +116,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DomMixin from '@/mixins/DomMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { Editor, EditorContent, EditorMenuBar } from 'tiptap'
 import {
@@ -128,9 +145,12 @@ export default TypeComponent.register('markup', {
     Icon
   },
 
+  mixins: [DomMixin],
+
   data() {
     return {
-      editor: null
+      editor: null,
+      height: null
     }
   },
 
@@ -139,8 +159,10 @@ export default TypeComponent.register('markup', {
       return this.schema.lines || 10
     },
 
-    style() {
-      return `height: calc(${this.lines}em * var(--line-height))`
+    styles() {
+      return {
+        height: this.height || `calc(${this.lines}em * var(--line-height))`
+      }
     },
 
     markButtons() {
@@ -222,6 +244,11 @@ export default TypeComponent.register('markup', {
       }
     },
 
+    resizable: getSchemaAccessor('resizable', {
+      type: Boolean,
+      default: false
+    }),
+
     whitespace: getSchemaAccessor('whitespace', {
       type: String,
       default: 'collapse'
@@ -296,6 +323,29 @@ export default TypeComponent.register('markup', {
   },
 
   methods: {
+    onDragResize(event) {
+      const getPoint = ({ clientX: x, clientY: y }) => ({ x, y })
+
+      let prevY = getPoint(event).y
+      let height = parseFloat(getComputedStyle(this.$refs.editor.$el).height)
+
+      const mousemove = event => {
+        const { y } = getPoint(event)
+        height += y - prevY
+        prevY = y
+        this.height = `${Math.max(height, 0)}px`
+      }
+
+      const handlers = this.domOn(document, {
+        mousemove,
+
+        mouseup(event) {
+          mousemove(event)
+          handlers.remove()
+        }
+      })
+    },
+
     updateEditorOptions() {
       this.editor.setOptions(this.editorOptions)
     },

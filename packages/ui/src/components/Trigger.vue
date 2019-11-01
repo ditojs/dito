@@ -210,7 +210,7 @@ export default {
       if (target) {
         // Actually resize the popup's first child, so they can set size limits.
         const el = target === popup ? trigger : popup.firstChild
-        el.style.width = window.getComputedStyle(target).width
+        el.style.width = getComputedStyle(target).width
       }
 
       const bounds = (target || trigger).getBoundingClientRect()
