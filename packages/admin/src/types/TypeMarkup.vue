@@ -212,15 +212,40 @@ export default TypeComponent.register('markup', {
       }
     },
 
+    editorOptions() {
+      return {
+        editable: !this.readyonly,
+        autoFocus: this.autofocus,
+        disableInputRules: !this.enableRules.input,
+        disablePasteRules: !this.enableRules.paste,
+        parseOptions: this.parseOptions
+      }
+    },
+
     whitespace: getSchemaAccessor('whitespace', {
-      type: Boolean,
+      type: String,
       default: 'collapse'
+      // Possible values are: 'collapse', 'preserve', 'preserve-all'
+    }),
+
+    enableRules: getSchemaAccessor('enableRules', {
+      type: [Object, Boolean],
+      default: false,
+      get(enableRules) {
+        return isObject(enableRules)
+          ? enableRules
+          : {
+            input: !!enableRules,
+            paste: !!enableRules
+          }
+      }
     })
   },
 
   watch: {
-    readyonly: 'updateOptions',
-    autofocus: 'updateOptions'
+    readyonly: 'updateEditorOptions',
+    autofocus: 'updateEditorOptions',
+    enableRules: 'updateEditorOptions'
   },
 
   created() {
@@ -257,13 +282,11 @@ export default TypeComponent.register('markup', {
     })
 
     this.editor = new Editor({
-      editable: !this.readyonly,
-      autoFocus: this.autofocus,
+      ...this.editorOptions,
       onFocus,
       onBlur,
       onUpdate,
       extensions: this.createExtensions(),
-      parseOptions: this.parseOptions,
       content: this.value || ''
     })
   },
@@ -273,11 +296,8 @@ export default TypeComponent.register('markup', {
   },
 
   methods: {
-    updateOptions() {
-      this.editor.setOptions({
-        editable: !this.readyonly,
-        autoFocus: this.autofocus
-      })
+    updateEditorOptions() {
+      this.editor.setOptions(this.editorOptions)
     },
 
     async onClickLink(command) {
