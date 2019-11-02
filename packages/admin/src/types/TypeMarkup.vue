@@ -118,7 +118,8 @@
 import TypeComponent from '@/TypeComponent'
 import DomMixin from '@/mixins/DomMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { Editor, EditorContent, EditorMenuBar } from 'tiptap'
+import { Editor, EditorContent, EditorMenuBar, Mark } from 'tiptap'
+import { toggleMark } from 'tiptap-commands'
 import {
   // Marks:
   Bold, Code, Italic, Link, Strike, Underline,
@@ -169,8 +170,9 @@ export default TypeComponent.register('markup', {
       return this.getButtons('marks', {
         bold: true,
         italic: true,
-        strike: true,
         underline: true,
+        strike: true,
+        small: true,
         code: true,
         link: {
           onClick: command => this.onClickLink(command)
@@ -403,11 +405,12 @@ export default TypeComponent.register('markup', {
       return [
         // schema.marks:
         marks.bold && new Bold(),
-        marks.code && new Code(),
         marks.italic && new Italic(),
-        marks.link && new LinkWithTitle(),
-        marks.strike && new Strike(),
         marks.underline && new Underline(),
+        marks.strike && new Strike(),
+        marks.small && new Small(),
+        marks.code && new Code(),
+        marks.link && new LinkWithTitle(),
 
         // schema.nodes:
         nodes.blockquote && new Blockquote(),
@@ -490,6 +493,24 @@ export default TypeComponent.register('markup', {
   }
 })
 
+class Small extends Mark {
+  get name() {
+    return 'small'
+  }
+
+  get schema() {
+    return {
+      parseDOM: [
+        { tag: 'small' }
+      ],
+      toDOM: () => ['small', 0]
+    }
+  }
+
+  commands({ type }) {
+    return () => toggleMark(type)
+  }
+}
 class LinkWithTitle extends Link {
   get schema() {
     return {
@@ -513,5 +534,4 @@ class LinkWithTitle extends Link {
     }
   }
 }
-
 </script>
