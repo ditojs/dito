@@ -1,4 +1,6 @@
 .dito-button
+  display: inline-block
+  box-sizing: border-box
   background: $button-color
   color: $color-text
   position: relative
@@ -67,8 +69,8 @@
 .dito-buttons-toolbar
   justify-content: flex-start
   .dito-button
-    padding: 0 $input-padding-hor
     box-sizing: content-box
+    padding: 0 $input-padding-hor
     // Zoom icons a little
     i[class*="dito-icon-"]
       width: 1.1em

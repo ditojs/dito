@@ -85,7 +85,6 @@
       tr
         vertical-align: middle
     .dito-button-add-upload
-      box-sizing: border-box
       padding: 0
       > *
         position: absolute

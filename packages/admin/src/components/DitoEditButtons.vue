@@ -16,8 +16,6 @@
     router-link.dito-button(
       v-if="editable && editPath"
       :to="{ path: editPath }" append
-      tag="button"
-      type="button"
       v-bind="getButtonAttributes(verbs.edit)"
     )
     dito-create-button(
