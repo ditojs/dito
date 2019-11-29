@@ -477,6 +477,11 @@ export class QueryBuilder extends objection.QueryBuilder {
       delete parent[key]
     }
 
+    // TODO: The model isn't necessarily fetched with data in the same order as
+    // `cloned` defines, e.g. if there is sorting in the database. A solid
+    // implementation of this would take care of that and map entries from
+    // `model` back to `cloned`, so that the `setDataPath` calls below would
+    // still work in such cases.
     const model = await this.clone().upsertGraphAndFetch(cloned, options)
 
     // Now for each identifier, create an object containing only the final id in
