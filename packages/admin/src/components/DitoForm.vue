@@ -26,7 +26,7 @@
       :selectedTab="selectedTab"
       :menuHeader="true"
     )
-      dito-buttons.dito-buttons-large(
+      dito-buttons.dito-buttons-main.dito-buttons-large(
         slot="buttons"
         :buttons="buttonSchemas"
         :dataPath="dataPath"

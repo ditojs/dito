@@ -29,7 +29,7 @@
           :dataPath="dataPath"
           :data="data"
         )
-      dito-components.dito-tab-components(
+      dito-components.dito-components-tab(
         v-if="!inlined"
         v-for="(schema, tab) in tabs"
         ref="tabs"
@@ -47,7 +47,7 @@
       transition-height(
         :enabled="inlined"
       )
-        dito-components.dito-main-components(
+        dito-components.dito-components-main(
           v-if="schema.components"
           v-show="opened"
           ref="components"
@@ -84,10 +84,11 @@
     box-sizing: border-box
     // To dissplay schema next to panels:
     display: flex
-    // To not vertically stretch .dito-schema-content to screen height:
-    align-items: flex-start
+    min-height: 100%
     > .dito-schema-content
       flex: 1 1 100%
+      display: flex
+      flex-flow: column
       max-width: $content-width
       padding: $content-padding
     > .dito-buttons,
@@ -98,19 +99,15 @@
     > .dito-panels
       padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
-    .dito-tab-components + .dito-main-components,
-    .dito-components + .dito-buttons-large
+    .dito-components-tab + .dito-components-main
       &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
         content: ''
         width: 100%
-        padding-top: $content-padding
         border-bottom: $border-style
-    .dito-tab-components + .dito-main-components
-      &::before
         // Add removed $form-spacing again to the ruler
-        margin: $form-spacing-half
+        margin: $content-padding $form-spacing-half $form-spacing-half
   .dito-schema-header
     display: flex
     justify-content: space-between

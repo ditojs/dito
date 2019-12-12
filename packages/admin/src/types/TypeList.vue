@@ -130,7 +130,7 @@
               :store="store"
             )
     // Render create buttons outside table when in a single component view:
-    dito-edit-buttons.dito-buttons-large(
+    dito-edit-buttons.dito-buttons-main.dito-buttons-large(
       v-if="hasListButtons && isInSingleComponentView"
       :creatable="creatable"
       :createPath="path"

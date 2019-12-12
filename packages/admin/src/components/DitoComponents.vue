@@ -21,7 +21,12 @@
   .dito-components
     display: flex
     flex-flow: row wrap
-    flex: 100%
+    align-content: flex-start
+    // Use `flex: 0%` for all `.dito-components` except `.dito-components-main`,
+    // so that the `.dito-buttons-main` can be moved all the way to the bottom.
+    flex: 0%
+    &.dito-components-main
+      flex: 100%
     position: relative
     align-items: baseline
     // Remove padding added by .dito-component-container
