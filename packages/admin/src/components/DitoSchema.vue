@@ -2,7 +2,7 @@
   .dito-schema
     .dito-schema-content
       .dito-schema-header(
-        v-if="hasLabel || tabs || clipboard"
+        v-if="hasLabel || hasTabs || clipboard"
         :class="{ 'dito-schema-menu-header': menuHeader }"
       )
         dito-label(
@@ -30,7 +30,7 @@
           :data="data"
         )
       dito-components.dito-components-tab(
-        v-if="!inlined"
+        v-if="hasTabs"
         v-for="(schema, tab) in tabs"
         ref="tabs"
         :key="tab"
@@ -41,6 +41,7 @@
         :data="data"
         :meta="meta"
         :store="store"
+        :single="!hasMainComponents"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
@@ -48,7 +49,7 @@
         :enabled="inlined"
       )
         dito-components.dito-components-main(
-          v-if="schema.components"
+          v-if="hasMainComponents"
           v-show="opened"
           ref="components"
           :schema="schema"
@@ -56,6 +57,7 @@
           :data="data"
           :meta="meta"
           :store="store"
+          :single="!hasTabs"
           :disabled="disabled"
           :generateLabels="generateLabels"
         )
@@ -82,13 +84,16 @@
 <style lang="sass">
   .dito-schema
     box-sizing: border-box
-    // To dissplay schema next to panels:
+    // To display schema next to panels:
     display: flex
     min-height: 100%
     > .dito-schema-content
       flex: 1 1 100%
-      display: flex
-      flex-flow: column
+      // So that schema buttons can be sticky to the bottom:
+      display: grid
+      grid-template-rows: min-content
+      > *:only-child
+        grid-row-end: none
       max-width: $content-width
       padding: $content-padding
     > .dito-buttons,
@@ -318,6 +323,15 @@ export default DitoComponent.component('dito-schema', {
 
     hasLabel() {
       return !!this.label || this.collapsible
+    },
+
+    hasTabs() {
+      return !this.inlined && !!this.tabs
+    },
+
+    hasMainComponents() {
+      const { components } = this.schema
+      return !!components && Object.keys(components).length > 0
     },
 
     opened: getStoreAccessor('opened', {

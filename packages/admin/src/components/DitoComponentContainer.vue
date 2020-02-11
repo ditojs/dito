@@ -43,15 +43,18 @@
       padding: 0
       > .dito-label
         margin: 0 $form-spacing-half
+    &.dito-single
+      height: 100% // So that list buttons can be sticky at the bottom
   // NOTE: This is not nested inside .dito-component-container so that other
   // type components can override `.dito-width-fill` class (filter precedence).
-  .dito-component.dito-width-fill
-    width: 100%
-    &.dito-checkbox,
-    &.dito-radio-button
-      // WebKit doesn't like changed width on checkboxes and radios, override:
-      display: inline-block
-      width: auto
+  .dito-component
+    &.dito-width-fill
+      width: 100%
+      &.dito-checkbox,
+      &.dito-radio-button
+        // WebKit doesn't like changed width on checkboxes and radios, override:
+        display: inline-block
+        width: auto
 </style>
 
 <script>
@@ -123,6 +126,7 @@ export default DitoComponent.component('dito-component-container', {
         // Use the component name as its class, so the extended
         // dito-button-container automatically works too.
         [this.$options.name]: true,
+        'dito-single': this.single,
         'dito-omit-padding': (
           this.schema.omitPadding ||
           getTypeOptions(this.schema)?.omitPadding
@@ -150,6 +154,7 @@ export default DitoComponent.component('dito-component-container', {
     componentClass() {
       const { width } = this
       return {
+        'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
         'dito-width-fill': width === 'fill' || this.percentage > 0,
         'dito-width-auto': width === 'auto',

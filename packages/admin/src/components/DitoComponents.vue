@@ -12,7 +12,7 @@
       :data="data"
       :meta="meta"
       :store="store"
-      :single="single"
+      :single="isSingleComponent"
       :disabled="disabled"
       :generateLabels="generateLabels"
     )
@@ -61,6 +61,7 @@ export default DitoComponent.component('dito-components', {
     data: { type: Object, default: null },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    single: { type: Boolean, required: false },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: true }
   },
@@ -122,8 +123,8 @@ export default DitoComponent.component('dito-components', {
       )
     },
 
-    single() {
-      return this.componentSchemas.length === 1
+    isSingleComponent() {
+      return this.single && this.componentSchemas.length === 1
     }
   },
 

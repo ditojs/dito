@@ -3,17 +3,18 @@
     ref="element"
     :id="dataPath"
     :type="type"
-    :title="schema.text || labelize(verb)"
+    :title="text"
     :class="`dito-button-${verb}`"
     v-bind="attributes"
     v-on="listeners"
-  ) {{ schema.text }}
+  ) {{ text }}
 </template>
 
 <script>
 import TypeComponent from '@/TypeComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { hasResource } from '@/utils/resource'
+import { labelize } from '@ditojs/utils'
 
 export default TypeComponent.register([
   'button', 'submit'
@@ -28,6 +29,10 @@ export default TypeComponent.register([
   computed: {
     verb() {
       return this.verbs[this.name] || this.name
+    },
+
+    text() {
+      return this.schema.text || labelize(this.verb)
     },
 
     listeners() {

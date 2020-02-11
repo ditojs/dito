@@ -158,6 +158,11 @@
         display: flex
         flex: 0 1 auto
         min-width: 0
+    &.dito-single
+      // So that list buttons can be sticky to the bottom:
+      display: grid
+      grid-template-rows: min-content
+      height: 100%
 </style>
 
 <script>
