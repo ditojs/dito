@@ -24,8 +24,8 @@
     "node 10"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.6.3",
-    "core-js": "^3.3.6"
+    "@babel/runtime": "^7.8.4",
+    "core-js": "^3.6.4"
   },
   "devDependencies": {
     "@ditojs/utils": "^0.141.0"
