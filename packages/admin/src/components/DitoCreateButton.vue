@@ -18,7 +18,7 @@
           ) {{ getLabel(form) }}
     button.dito-button(
       v-else
-      :type="isInSingleComponentView ? 'submit' : 'button'"
+      :type="inlined ? 'button' : 'submit'"
       @click="createItem()"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
@@ -52,14 +52,14 @@ export default DitoComponent.component('dito-create-button', {
       return !!this.schema.forms
     },
 
-    isInSingleComponentView() {
-      return !!this.viewComponent?.isSingleComponentView
+    inlined() {
+      return !!this.schema.inlined
     }
   },
 
   methods: {
     createItem(form = this.schema.form, type) {
-      if (this.schema.inlined) {
+      if (this.inlined) {
         this.sourceComponent.createItem(form, type)
       } else {
         this.$router.push({
