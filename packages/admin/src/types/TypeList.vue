@@ -113,7 +113,7 @@
             )
       // Render create buttons inside table when not in a single component view:
       tfoot(
-        v-if="hasListButtons && !isInSingleComponentView"
+        v-if="hasListButtons && !single"
       )
         tr
           td.dito-cell-edit-buttons(
@@ -131,7 +131,7 @@
             )
     // Render create buttons outside table when in a single component view:
     dito-edit-buttons.dito-buttons-main.dito-buttons-large(
-      v-if="hasListButtons && isInSingleComponentView"
+      v-if="hasListButtons && single"
       :creatable="creatable"
       :createPath="path"
       :buttons="buttonSchemas"

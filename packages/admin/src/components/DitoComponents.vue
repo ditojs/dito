@@ -12,6 +12,7 @@
       :data="data"
       :meta="meta"
       :store="store"
+      :single="single"
       :disabled="disabled"
       :generateLabels="generateLabels"
     )
@@ -119,6 +120,10 @@ export default DitoComponent.component('dito-components', {
         },
         []
       )
+    },
+
+    single() {
+      return this.componentSchemas.length === 1
     }
   },
 

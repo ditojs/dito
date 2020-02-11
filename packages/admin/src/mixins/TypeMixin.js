@@ -20,6 +20,7 @@ export default {
     data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    single: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
   },
 

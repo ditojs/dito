@@ -54,10 +54,6 @@ export default {
       return !!this.viewComponent
     },
 
-    isInSingleComponentView() {
-      return !!this.viewComponent?.isSingleComponentView
-    },
-
     wrapPrimitives() {
       return this.schema.wrapPrimitives
     },
@@ -348,11 +344,7 @@ export default {
         // The format didn't match, see if we received a `{ results, total }`
         // object, in which case `this.value` was already set by
         // `unwrapListData()` and we're done now.
-      } else if (
-        isObject(data) &&
-        this.isInView &&
-        !this.isInSingleComponentView
-      ) {
+      } else if (isObject(data) && this.isInView) {
         // The controller is sending data for a full multi-component view,
         // including the nested list data.
         this.viewComponent.setData(data)
