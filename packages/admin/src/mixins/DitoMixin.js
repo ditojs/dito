@@ -226,6 +226,14 @@ export default {
       }
     },
 
+    getQueryLink(query) {
+      return {
+        query,
+        // Preserve hash for tabs:
+        hash: this.$route.hash
+      }
+    },
+
     shouldRender(schema = null) {
       return !!schema && this.getSchemaValue('if', {
         type: Boolean,

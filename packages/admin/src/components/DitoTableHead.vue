@@ -86,12 +86,10 @@ export default DitoComponent.component('dito-table-head', {
       const order = this.sort.name === column.name && this.sort.order === 'asc'
         ? 'desc'
         : 'asc'
-      return {
-        query: {
-          ...this.query,
-          order: `${column.name} ${order}`
-        }
-      }
+      return this.getQueryLink({
+        ...this.query,
+        order: `${column.name} ${order}`
+      })
     }
   }
 })

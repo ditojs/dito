@@ -3,7 +3,7 @@
     router-link.dito-button(
       v-for="(scope, key) in scopes"
       :key="key"
-      :to="getLink(scope)"
+      :to="getScopeLink(scope)"
       tag="button"
       type="button"
       :class="{ 'dito-selected': scope.name === query.scope }"
@@ -49,13 +49,12 @@ export default DitoComponent.component('dito-scopes', {
   },
 
   methods: {
-    getLink(scope) {
+    getScopeLink(scope) {
       const query = { ...this.query, scope: scope.name }
       if (query.page) {
         query.page = 0
       }
-      // Preserve hash for tabs:
-      return { query, hash: this.$route.hash }
+      return this.getQueryLink(query)
     }
   }
 })
