@@ -41,7 +41,7 @@
         :data="data"
         :meta="meta"
         :store="store"
-        :single="!hasMainComponents"
+        :single="!inlined && !hasMainComponents"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
@@ -57,7 +57,7 @@
           :data="data"
           :meta="meta"
           :store="store"
-          :single="!hasTabs"
+          :single="!inlined && !hasTabs"
           :disabled="disabled"
           :generateLabels="generateLabels"
         )
