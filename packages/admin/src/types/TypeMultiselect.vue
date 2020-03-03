@@ -13,15 +13,17 @@
       :show-labels="false"
       :placeholder="placeholder"
       tag-placeholder="Press enter to add new tag",
-      :options="populate && (filteredOptions || options) || []"
+      :options="populate && activeOptions || []"
       :custom-label="getLabelForOption"
       :track-by="optionValue"
       :group-label="groupByLabel"
       :group-values="groupByOptions"
       :multiple="multiple"
-      :searchable="searchable"
       :taggable="taggable"
+      :searchable="searchable"
       :internal-search="!searchFilter"
+      :preserve-search="!!searchFilter"
+      :clear-on-select="!searchFilter"
       :close-on-select="true"
       :loading="isLoading"
       @open="populate = true"
@@ -235,7 +237,7 @@ export default TypeComponent.register('multiselect', {
 
   data() {
     return {
-      filteredOptions: null,
+      searchedOptions: null,
       populate: false
     }
   },
@@ -263,6 +265,10 @@ export default TypeComponent.register('multiselect', {
           ? (option || []).map(value => this.getValueForOption(value))
           : this.getValueForOption(option)
       }
+    },
+
+    activeOptions() {
+      return this.searchedOptions || this.options
     },
 
     multiple: getSchemaAccessor('multiple', {
@@ -337,15 +343,16 @@ export default TypeComponent.register('multiselect', {
 
     async onSearchChange(query) {
       if (this.searchFilter) {
-        // Clear filteredOptions whenever a search change happens.
-        this.filteredOptions = null
         if (query) {
-          // Set `filteredOptions` to an empty array, before it will be
+          // Set `searchedOptions` to an empty array, before it will be
           // populated asynchronously with the actual results.
-          this.filteredOptions = []
-          this.filteredOptions = await this.loadOptions(
+          this.searchedOptions = []
+          this.searchedOptions = await this.loadOptions(
             () => this.searchFilter(query, this.options)
           )
+        } else {
+          // Clear `searchedOptions` when the query is cleared.
+          this.searchedOptions = null
         }
       }
     }

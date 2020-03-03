@@ -81,6 +81,12 @@ export default {
       return this.processOptions(data || [])
     },
 
+    activeOptions() {
+      // This is overridden in `TypeMultiselect` to return the `searchedOptions`
+      // when a search filter was applied.
+      return this.options
+    },
+
     relate() {
       return this.schema.relate
     },
@@ -141,7 +147,7 @@ export default {
     },
 
     getOptionKey(key) {
-      const [option] = this.options
+      const [option] = this.activeOptions
       return isObject(option) && key in option ? key : null
     },
 
@@ -215,7 +221,7 @@ export default {
       }
 
       return this.optionValue
-        ? findOption(this.options, value, this.groupBy)
+        ? findOption(this.activeOptions, value, this.groupBy)
         : value
     },
 
