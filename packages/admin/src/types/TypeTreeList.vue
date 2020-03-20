@@ -126,7 +126,7 @@ export default TypeComponent.register([
       // Pass process() to add more routes to childRoutes:
       (childRoutes, level) => {
         const { children } = schema
-        if (hasForms(children)) {
+        if (children) {
           // Add `type` to the nested tree list.
           children.type = 'tree-list'
           return this.processSchema(

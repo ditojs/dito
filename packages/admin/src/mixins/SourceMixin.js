@@ -477,7 +477,6 @@ export default {
       schema.form = { components }
       schema.inlined = true
     }
-    if (!hasForms(schema)) return
     processRouteSchema(api, schema, name)
     if (schema.inlined && schema.resource) {
       throw new Error(
@@ -505,7 +504,7 @@ export default {
       await process(childRoutes, level + 1)
     }
     // Inline forms don't need to actually add routes.
-    if (!schema.inlined) {
+    if (hasForms(schema) && !schema.inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`
