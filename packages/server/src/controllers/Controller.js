@@ -197,15 +197,13 @@ export class Controller {
     this.setupRoute('post', url, transacted, authorize, null, [
       async (ctx, next) => {
         await this.handleAuthorization(authorization, ctx)
-        // Give the multer callbacks access to `ctx` through `req`.
-        ctx.req.ctx = ctx
         return next()
       },
 
       upload,
 
       async (ctx, next) => {
-        const files = storage.convertFiles(ctx.req.files)
+        const files = storage.convertFiles(ctx.request.files)
         await this.app.createAssets(storageName, files, 0, ctx.transaction)
         // Send the file objects back for the upload component to store in the
         // data.

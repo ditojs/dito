@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
-import multer from 'koa-multer'
+import multer from '@koa/multer'
 import { Storage } from './Storage'
 
 export class DiskStorage extends Storage {
