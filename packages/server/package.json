@@ -77,7 +77,7 @@
     "vue-template-compiler": "^2.6.11"
   },
   "peerDependencies": {
-    "knex": "^0.19.4"
+    "knex": "^0.20.0"
   },
   "devDependencies": {
     "babel-plugin-transform-promise-to-bluebird": "^2.0.0",
