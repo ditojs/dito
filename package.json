@@ -62,5 +62,8 @@
     "lint-staged": "^10.0.8",
     "minimist": "^1.2.5",
     "rimraf": "^3.0.2"
+  },
+  "resolutions": {
+    "prosemirror-model": "1.8.2"
   }
 }
