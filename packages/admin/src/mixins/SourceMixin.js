@@ -441,6 +441,15 @@ export default {
     },
 
     navigateToComponent(dataPath, onComplete) {
+      const callOnComplete = () => {
+        if (onComplete) {
+          // Retrieve the last route component, which will be the component that
+          // we just navigated to, and pass it on to `onComplete()`
+          const { routeComponents } = this.appState
+          onComplete(routeComponents[routeComponents.length - 1])
+        }
+      }
+
       const dataPathParts = parseDataPath(dataPath)
       // See if we can find a route that can serve part of the given dataPath,
       // and take it from there:
@@ -448,14 +457,21 @@ export default {
         const path = this.routeComponent.getChildPath(
           this.api.normalizePath(normalizeDataPath(dataPathParts))
         )
+        // See if there actually is a route for this sub-component:
         const { matched } = this.$router.match(path)
-        if (matched.length && this.$route.path !== path) {
-          this.$router.push({ path }, route => {
-            if (onComplete) {
-              const { matched } = route
-              onComplete(matched[matched.length - 1])
-            }
-          })
+        if (matched.length) {
+          if (this.$route.path === path) {
+            // We're already there, so just call `onComplete()`:
+            callOnComplete()
+          } else {
+            // Navigate to the component's path, then call `onComplete()`_:
+            this.$router.push(
+              { path },
+              // Wait for the last route component to be mounted in the next
+              // tick before calling `onComplete()`
+              () => this.$nextTick(callOnComplete)
+            )
+          }
           return true
         }
         // Keep removing the last part until we find a match.

@@ -523,22 +523,24 @@ export default DitoComponent.component('dito-schema', {
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
             const component = this.getComponent(dataPathParts)
-            if (component?.navigateToComponent?.(fullDataPath, routeRecord => {
-              // Filter the errors to only contain those that belong to the
-              // matched dataPath:
-              const normalizedPath = normalizeDataPath(dataPathParts)
-              // Pass on the errors to the instance through the meta object,
-              // see DitoForm.created()
-              routeRecord.meta.errors = Object.entries(errors).reduce(
-                (filtered, [dataPath, errs]) => {
-                  if (normalizeDataPath(dataPath).startsWith(normalizedPath)) {
-                    filtered[dataPath] = errs
-                  }
-                  return filtered
-                },
-                {}
-              )
-            })) {
+            if (component?.navigateToComponent?.(
+              fullDataPath,
+              subComponent => {
+                // Filter the errors to only contain those that belong to the
+                // matched dataPath:
+                const parentPath = normalizeDataPath(dataPathParts)
+                const filteredErrors = Object.entries(errors).reduce(
+                  (filtered, [dataPath, errs]) => {
+                    if (normalizeDataPath(dataPath).startsWith(parentPath)) {
+                      filtered[dataPath] = errs
+                    }
+                    return filtered
+                  },
+                  {}
+                )
+                subComponent.showValidationErrors(filteredErrors, true)
+              }
+            )) {
               // We found some nested form to display at least parts fo the
               // errors. We can't display all errors at once, so we're done.
               // Don't call notifyErrors() yet, as we can only display it

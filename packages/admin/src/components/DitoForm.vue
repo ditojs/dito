@@ -264,16 +264,6 @@ export default DitoComponent.component('dito-form', {
     create: 'setupData'
   },
 
-  mounted() {
-    // Errors can get passed on through the meta object, so add them now.
-    // See DitoSchema.showValidationErrors() / SourceMixin.navigateToComponent()
-    const { errors } = this.meta
-    if (errors) {
-      delete this.meta.errors
-      this.showValidationErrors(errors, true)
-    }
-  },
-
   methods: {
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
