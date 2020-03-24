@@ -6,8 +6,8 @@ import {
 
 const object = { a: 1 }
 const array = [1, 2, 3]
-const number = 1
 const string = 'a'
+const number = 1
 const boolean = true
 const date = new Date()
 const regexp = /x/
@@ -23,8 +23,8 @@ describe('isPlainObject()', () => {
   describe.each([
     [object, true],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -49,8 +49,8 @@ describe('isObject()', () => {
   describe.each([
     [object, true],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [Object(number), true],
     [Object(string), true],
@@ -78,8 +78,8 @@ describe('isArray()', () => {
   describe.each([
     [object, false],
     [array, true],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -104,8 +104,8 @@ describe('isFunction()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -130,9 +130,9 @@ describe('isNumber()', () => {
   describe.each([
     [object, false],
     [array, false],
+    [string, false],
     [number, true],
     [Object(number), true],
-    [string, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -157,8 +157,8 @@ describe('isInteger()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, true],
     [string, false],
+    [number, true],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -212,9 +212,9 @@ describe('isString()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, true],
     [Object(string), true],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -239,8 +239,8 @@ describe('isBoolean()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, true],
     [Object(boolean), true],
     [date, false],
@@ -266,8 +266,8 @@ describe('isDate()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, true],
     [regexp, false],
@@ -292,8 +292,8 @@ describe('isRegExp()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, true],
@@ -326,8 +326,8 @@ describe('isPromise()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],
@@ -354,8 +354,8 @@ describe('isAsync()', () => {
   describe.each([
     [object, false],
     [array, false],
-    [number, false],
     [string, false],
+    [number, false],
     [boolean, false],
     [date, false],
     [regexp, false],

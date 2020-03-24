@@ -1,24 +1,24 @@
 import { isArray, isObject, isDate, isRegExp } from '@/base'
 import { pick } from '@/object'
 
-export function clone(val, iteratee = null) {
+export function clone(arg, iteratee = null) {
   let copy
-  if (isDate(val)) {
-    copy = new val.constructor(+val)
-  } else if (isRegExp(val)) {
-    copy = new RegExp(val)
-  } else if (isObject(val)) {
-    copy = new val.constructor()
-    for (const key in val) {
-      copy[key] = clone(val[key], iteratee)
+  if (isDate(arg)) {
+    copy = new arg.constructor(+arg)
+  } else if (isRegExp(arg)) {
+    copy = new RegExp(arg)
+  } else if (isObject(arg)) {
+    copy = new arg.constructor()
+    for (const key in arg) {
+      copy[key] = clone(arg[key], iteratee)
     }
-  } else if (isArray(val)) {
-    copy = new val.constructor(val.length)
-    for (let i = 0, l = val.length; i < l; i++) {
-      copy[i] = clone(val[i], iteratee)
+  } else if (isArray(arg)) {
+    copy = new arg.constructor(arg.length)
+    for (let i = 0, l = arg.length; i < l; i++) {
+      copy[i] = clone(arg[i], iteratee)
     }
   } else {
-    copy = val
+    copy = arg
   }
   return pick(iteratee?.(copy), copy)
 }

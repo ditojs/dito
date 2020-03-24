@@ -8,20 +8,20 @@ export const is = Object.is || (
   (x, y) => x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y
 )
 
-export function isPlainObject(val) {
-  const ctor = val?.constructor
+export function isPlainObject(arg) {
+  const ctor = arg?.constructor
   // We also need to check for ctor.name === 'Object', in case this is an object
   // from another global scope (e.g. another vm context in Node.js).
   // When an value has no constructor, it was created with `Object.create(null)`
   return !ctor || (ctor === Object || ctor.name === 'Object')
 }
 
-export function isObject(val) {
-  return !!val && typeof val === 'object' && !isArray(val)
+export function isObject(arg) {
+  return !!arg && typeof arg === 'object' && !isArray(arg)
 }
 
-export function isFunction(val) {
-  return !!val && typeof val === 'function'
+export function isFunction(arg) {
+  return !!arg && typeof arg === 'function'
 }
 
 function getPrimitiveCheck(name) {
@@ -45,39 +45,39 @@ export const isString = getPrimitiveCheck('String')
 
 export const isBoolean = getPrimitiveCheck('Boolean')
 
-export function isDate(val) {
-  return !!val && toString.call(val) === '[object Date]'
+export function isDate(arg) {
+  return !!arg && toString.call(arg) === '[object Date]'
 }
 
-export function isRegExp(val) {
-  return !!val && toString.call(val) === '[object RegExp]'
+export function isRegExp(arg) {
+  return !!arg && toString.call(arg) === '[object RegExp]'
 }
 
-export function isPromise(val) {
-  return !!val && isFunction(val.then) && isFunction(val.catch)
+export function isPromise(arg) {
+  return !!arg && isFunction(arg.then) && isFunction(arg.catch)
 }
 
-export const isInteger = Number.isInteger || function isInteger(value) {
+export const isInteger = Number.isInteger || function isInteger(arg) {
   return (
-    isNumber(value) &&
-    isFinite(value) &&
-    Math.floor(value) === value
+    isNumber(arg) &&
+    isFinite(arg) &&
+    Math.floor(arg) === arg
   )
 }
 
-export function isAsync(val) {
-  return val?.[Symbol.toStringTag] === 'AsyncFunction'
+export function isAsync(arg) {
+  return arg?.[Symbol.toStringTag] === 'AsyncFunction'
 }
 
-export function asObject(val) {
+export function asObject(arg) {
   // http://2ality.com/2011/04/javascript-converting-any-value-to.html
-  return val != null ? Object(val) : val
+  return arg != null ? Object(arg) : arg
 }
 
-export function asArray(val) {
-  return isArray(val) ? val : val !== undefined ? [val] : []
+export function asArray(arg) {
+  return isArray(arg) ? arg : arg !== undefined ? [arg] : []
 }
 
-export function asFunction(val) {
-  return isFunction(val) ? val : () => val
+export function asFunction(arg) {
+  return isFunction(arg) ? arg : () => arg
 }
