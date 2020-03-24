@@ -1,6 +1,6 @@
 import {
   isPlainObject, isObject, isArray, isFunction, isString, isBoolean, isNumber,
-  isDate, isRegExp, isPromise, isAsync, isInteger,
+  isDate, isRegExp, isPromise, isAsync, isInteger, isArrayLike, isEmpty,
   asObject, asArray, asFunction
 } from './base'
 
@@ -371,6 +371,50 @@ describe('isAsync()', () => {
     (value, expected) => {
       it(`returns ${expected}`, () => {
         expect(isAsync(value)).toBe(expected)
+      })
+    }
+  )
+})
+
+describe('isArrayLike()', () => {
+  describe.each([
+    [object, false],
+    [array, true],
+    [string, true],
+    [number, false],
+    [boolean, false],
+    [date, false],
+    [regexp, false],
+    [symbol, false],
+    [instance, false],
+    [promise, false],
+    [func, false],
+    [lambda, false],
+    [asyncFunc, false],
+    [asyncLambda, false]
+  ])(
+    'isArrayLike(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isArrayLike(value)).toBe(expected)
+      })
+    }
+  )
+})
+
+describe('isEmpty()', () => {
+  describe.each([
+    [object, false],
+    [{}, true],
+    [array, false],
+    [[], true],
+    [string, false],
+    ['', true]
+  ])(
+    'isEmpty(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isEmpty(value)).toBe(expected)
       })
     }
   )

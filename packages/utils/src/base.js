@@ -69,6 +69,23 @@ export function isAsync(arg) {
   return arg?.[Symbol.toStringTag] === 'AsyncFunction'
 }
 
+export function isArrayLike(arg) {
+  const length = arg?.length
+  return (
+    length != null &&
+    !isFunction(arg) &&
+    isNumber(length) &&
+    length >= 0 &&
+    length <= Number.MAX_SAFE_INTEGER
+  )
+}
+
+export function isEmpty(arg) {
+  return arg == null ||
+    isArrayLike(arg) && arg.length === 0 ||
+    isObject(arg) && Object.keys(arg).length === 0
+}
+
 export function asObject(arg) {
   // http://2ality.com/2011/04/javascript-converting-any-value-to.html
   return arg != null ? Object(arg) : arg
