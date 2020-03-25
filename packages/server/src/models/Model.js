@@ -1,5 +1,4 @@
 import objection from 'objection'
-import dbErrors from 'db-errors'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
@@ -233,12 +232,10 @@ export class Model extends objection.Model {
 
   // @override
   static query(trx) {
-    // See: https://github.com/Vincit/objection-db-errors/blob/e4c91197c9cce18b8492a983640921f9929f4cf1/index.js#L7-L11
     return super.query(trx).onError(err => {
-      err = dbErrors.wrapError(err)
       // TODO: Shouldn't this wrapping happen on the Controller level?
       err = err instanceof ResponseError ? err
-        : err instanceof dbErrors.DBError ? new DatabaseError(err)
+        : err instanceof objection.DBError ? new DatabaseError(err)
         : new WrappedError(err)
       return Promise.reject(err)
     })

@@ -45,7 +45,6 @@
     "bluebird": "^3.7.2",
     "chalk": "^3.0.0",
     "core-js": "^3.6.4",
-    "db-errors": "^0.2.3",
     "eventemitter2": "^6.2.1",
     "fs-extra": "^9.0.0",
     "image-size": "^0.8.3",

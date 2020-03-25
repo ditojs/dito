@@ -5,7 +5,7 @@ import {
   CheckViolationError,
   NotNullViolationError,
   ConstraintViolationError
-} from 'db-errors'
+} from 'objection'
 
 export class DatabaseError extends WrappedError {
   constructor(error) {
