@@ -1,6 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { QueryBuilder } from '@/query'
-import { collectExpressionPaths, expressionPathToEager } from './expression.js'
+import { collectExpressionPaths, expressionPathToString } from './expression.js'
 
 // Similar to Objection's private `modelClass.ensureModel(model)`:
 export function ensureModel(modelClass, model, options) {
@@ -80,9 +80,9 @@ export function walkGraph(data, callback, path = []) {
   callback(data, path)
 }
 
-export function filterGraph(rootModelClass, graph, expr) {
+export function filterGraph(rootModelClass, modelGraph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
-  const models = ensureModelArray(rootModelClass, graph, {
+  const models = ensureModelArray(rootModelClass, modelGraph, {
     skipValidation: true
   })
   for (const model of models) {
@@ -109,7 +109,7 @@ export function filterGraph(rootModelClass, graph, expr) {
       }
     }
   }
-  return graph
+  return modelGraph
 }
 
 export async function populateGraph(rootModelClass, graph, expr, trx) {
@@ -117,28 +117,28 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
   // reference and has multiple sub-paths to be populated. We may need to
   // move away from graph path handling and directly process the expression
   // tree, composing paths to the current place on the fly, and process data
-  // with addToGroup(). Then use the sub-tree as eager expression when
+  // with addToGroup(). Then use the sub-tree as graph expression when
   // encountering references (needs toString() for caching also?)
   // TODO: Better idea: First cache groups by the path up to their location in
-  // the graph, and collect modify + eager statements there for references
+  // the graph, and collect modify + graph expressions there for references
   // that are not leaves. Then use the resulting nodes to create new groups by
-  // model name / modify / eager.
+  // model name / modify / graph expressions.
   expr = QueryBuilder.parseRelationExpression(expr)
   // Convert the relation expression to an array of paths, that themselves
   // contain path entries with relation names and modify settings.
 
   const grouped = {}
   const addToGroup =
-    (item, modelClass, isReference, modify, relation, eager) => {
+    (item, modelClass, isReference, modify, relation, expr) => {
       const id = item.$id()
       if (id != null) {
-        // Group models by model-name + modify + eager, for faster loading:
-        const key = `${modelClass.name}_${modify}_${eager || ''}`
+        // Group models by model-name + modify + expr, for faster loading:
+        const key = `${modelClass.name}_${modify}_${expr || ''}`
         const group = grouped[key] || (grouped[key] = {
           modelClass,
           modify,
           relation,
-          eager,
+          expr,
           targets: [],
           ids: [],
           modelsById: {}
@@ -188,8 +188,8 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
               }
             }
             if (add) {
-              const eager = expressionPathToEager(path, i)
-              addToGroup(item, modelClass, isReference, modify, relation, eager)
+              const expr = expressionPathToString(path, i)
+              addToGroup(item, modelClass, isReference, modify, relation, expr)
             }
             return items
           }, [])
@@ -212,14 +212,13 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     // be in the same database.
     await Promise.map(
       groups,
-      async ({ modelClass, modify, eager, ids, modelsById }) => {
+      async ({ modelClass, expr, modify, ids, modelsById }) => {
         const query = modelClass.query(trx).findByIds(ids)
-        if (eager) {
-          query.mergeEager(eager)
+        if (expr) {
+          // TODO: Make algorithm configurable through options.
+          query.withGraph(expr)
         }
-        for (const mod of modify) {
-          query.modify(mod)
-        }
+        query.modify(modify)
         const models = await query.execute()
         // Fill the group.modelsById lookup:
         for (const model of models) {

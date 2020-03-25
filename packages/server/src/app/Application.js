@@ -392,8 +392,8 @@ export class Application extends Koa {
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
       await Promise.map(files, async file => {
-        const count = await AssetModel.query(trx)
-          .where('name', file.name).count().pluck('count').first()
+        const { count } = await AssetModel.query(trx)
+          .where('name', file.name).count().first() || {}
         if (+count === 0) {
           console.log(
             `Asset ${

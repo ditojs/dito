@@ -107,10 +107,10 @@ export class GraphProcessor {
    * building relation paths for them.
    */
   processOverrides() {
-    const node = modelGraphToExpression(this.data)
+    const expr = modelGraphToExpression(this.data)
 
     const processExpression =
-      (node, modelClass, relation, relationPath = '') => {
+      (expr, modelClass, relation, relationPath = '') => {
         if (relation) {
           const graphOptions = this.getGraphOptions(relation)
           // Loop through all override options, figure out their settings for
@@ -132,11 +132,11 @@ export class GraphProcessor {
 
         const { relations } = modelClass.definition
         const relationInstances = modelClass.getRelations()
-        for (const key in node) {
-          const child = node[key]
+        for (const key in expr) {
+          const childExpr = expr[key]
           const { relatedModelClass } = relationInstances[key]
           processExpression(
-            child,
+            childExpr,
             relatedModelClass,
             relations[key],
             appendPath(relationPath, '.', key)
@@ -144,7 +144,7 @@ export class GraphProcessor {
         }
       }
 
-    processExpression(node, this.rootModelClass)
+    processExpression(expr, this.rootModelClass)
   }
 
   shouldRelate(relationPath) {

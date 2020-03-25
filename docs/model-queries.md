@@ -29,11 +29,11 @@ You can use `.debug()` on any query to directly log SQL statement to console.
 
 ## Scope Methods
 
-### `scope(name, …)`
-### `mergeScope(name, …)`
+### `withScope(name, …)`
 ### `applyScope(name, …)`
 ### `allowScope(name, …)`
-### `clearScope()`
+### `clearWithScope()`
+### `clearAllowScope()`
 ### `ignoreScope()`
 
 ## Filter Methods

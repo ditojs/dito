@@ -7,7 +7,7 @@ import {
   isObject, isPlainObject, isString, isArray, clone,
   getDataPath, setDataPath, parseDataPath
 } from '@ditojs/utils'
-import { createLookup, getScope } from '@/utils'
+import { createLookup, getScope, deprecate } from '@/utils'
 
 // This code is based on objection-find, and simplified.
 // Instead of a separate class, we extend objection.QueryBuilder to better
@@ -16,10 +16,10 @@ import { createLookup, getScope } from '@/utils'
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
-    this._propertyRefsCache = {}
+    this._ignoreGraph = false
+    this._graphAlgorithm = 'fetch'
     this._allowScopes = null
     this._ignoreScopes = false
-    this._ignoreEager = false
     this._appliedScopes = {}
     this._allowFilters = null
     this._clearScopes(true)
@@ -28,12 +28,12 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   clone() {
     const copy = super.clone()
-    copy._propertyRefsCache = this._propertyRefsCache
-    copy._copyScopes(this)
+    copy._ignoreGraph = this._ignoreGraph
+    copy._graphAlgorithm = this._graphAlgorithm
     copy._ignoreScopes = this._ignoreScopes
-    copy._ignoreEager = this._ignoreEager
     copy._appliedScopes = { ...this._appliedScopes }
     copy._allowFilters = { ...this._allowFilters }
+    copy._copyScopes(this)
     return copy
   }
 
@@ -46,15 +46,15 @@ export class QueryBuilder extends objection.QueryBuilder {
         this.isFind() &&
         !this.hasSpecialSelects()
       )
-      // If this isn't a normal find query, ignore all 'eager' operations,
+      // If this isn't a normal find query, ignore all graph operations,
       // to not mess with special selects such as `count`, etc:
-      this._ignoreEager = !isNormalFind
-      for (const { scope, eager } of this._scopes) {
+      this._ignoreGraph = !isNormalFind
+      for (const { scope, graph } of this._scopes) {
         if (scope !== 'default' || isNormalFind) {
-          this._applyScope(scope, eager)
+          this._applyScope(scope, graph)
         }
       }
-      this._ignoreEager = false
+      this._ignoreGraph = false
     }
     return super.execute()
   }
@@ -76,44 +76,51 @@ export class QueryBuilder extends objection.QueryBuilder {
   childQueryOf(query, options) {
     super.childQueryOf(query, options)
     if (this.isInternal()) {
-      // Internal queries shouldn't apply or inherit any scopes.
+      // Internal queries shouldn't apply or inherit any scopes, not even the
+      // default scope.
       this._clearScopes(false)
     } else {
-      // Inherit the scopes from the parent query, but only include non-eager
-      // scopes if this query is for the same model-class as the parent query.
-      this._copyScopes(query, this.modelClass() !== query.modelClass())
+      // Inherit the graph scopes from the parent query.
+      this._copyScopes(query)
     }
     return this
   }
 
-  scope(...scopes) {
-    return this._clearScopes(true).mergeScope(...scopes)
-  }
-
-  mergeScope(...scopes) {
+  withScope(...scopes) {
     for (const expr of scopes) {
       if (expr) {
-        const { scope, eager } = getScope(expr)
+        const { scope, graph } = getScope(expr)
         // Merge with existing matching scope statements, or add a new one.
-        const existing = this._scopes.find(entry => entry.scope === scope)
-        if (existing) {
-          existing.eager = existing.eager || eager
+        const entry = this._scopes.find(entry => entry.scope === scope)
+        if (entry) {
+          entry.graph = entry.graph || graph
         } else {
-          this._scopes.push({ scope, eager })
+          this._scopes.push({ scope, graph })
         }
       }
     }
     return this
   }
 
+  // Clear all scopes defined with `withScope()` statements, preserving the
+  // default scope.
+  clearWithScope() {
+    return this._clearScopes(true)
+  }
+
+  ignoreScope() {
+    this._ignoreScopes = true
+    return this
+  }
+
   applyScope(...scopes) {
     // When directly applying a scope, still merge it into the list of scopes
     // `this._scopes`, so it can still be passed on to forked child queries:
-    this.mergeScope(...scopes)
+    this.withScope(...scopes)
     for (const expr of scopes) {
       if (expr) {
-        const { scope, eager } = getScope(expr)
-        this._applyScope(scope, eager)
+        const { scope, graph } = getScope(expr)
+        this._applyScope(scope, graph)
       }
     }
     return this
@@ -131,27 +138,47 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
   }
 
-  clearScope() {
-    return this._clearScopes(false)
+  scope(...scopes) {
+    deprecate(`QueryBuilder#scope() is deprecated. Use #withScope() instead.`)
+
+    return this.clearWithScope().withScope(...scopes)
   }
 
-  ignoreScope() {
-    this._ignoreScopes = true
+  mergeScope(...scopes) {
+    deprecate(`QueryBuilder#mergeScope() is deprecated. Use #withScope() instead.`)
+
+    return this.withScope(...scopes)
+  }
+
+  clearScope() {
+    deprecate(`QueryBuilder#clearScope() is deprecated. Use #clearWithScope() or #ignoreScope() instead.`)
+
+    return this.clearWithScope()
+  }
+
+  _clearScopes(addDefault) {
+    this._scopes = addDefault
+      ? [{ scope: 'default', graph: true }]
+      : []
     return this
   }
 
-  _copyScopes(query, eagerOnly = false) {
-    if (eagerOnly) {
-      this._scopes = query._scopes.filter(scope => scope.eager)
-    } else {
+  _copyScopes(query) {
+    if (this.modelClass() === query.modelClass()) {
+      // The target query is for the same model-class as this query,
+      // so copy all scopes, both graph and non-graph.
       this._scopes = query._scopes.slice()
       this._allowScopes = query._allowScopes
         ? { ...query._allowScopes }
         : null
+    } else {
+      // The target query is for a different model-class than this query,
+      // meaning it must be a child query of it, so only copy graph scopes.
+      this._scopes = query._scopes.filter(scope => scope.graph)
     }
   }
 
-  _applyScope(scope, eager) {
+  _applyScope(scope, graph) {
     if (!this._ignoreScopes) {
       const modelClass = this.modelClass()
       // When a scope itself is allowed, it should be able to apply all other
@@ -162,10 +189,10 @@ export class QueryBuilder extends objection.QueryBuilder {
       try {
         if (
           // Prevent multiple application of scopes. This can easily occur
-          // with the nesting of eager scopes, see below.
+          // with the nesting of graph-scopes, see below.
           !this._appliedScopes[scope] &&
-          // Only eager-apply scopes that are actually defined on the model:
-          (!eager || modelClass.hasScope(scope))
+          // Only apply graph-scopes that are actually defined on the model:
+          (!graph || modelClass.hasScope(scope))
         ) {
           if (_allowScopes && !_allowScopes[scope]) {
             throw new QueryBuilderError(
@@ -175,28 +202,19 @@ export class QueryBuilder extends objection.QueryBuilder {
           this._appliedScopes[scope] = true
           this.modify(scope)
         }
-        const eagerObject = eager && this.eagerObject()
-        if (eagerObject) {
-          // Add a new modifier to the existing eager expression that
-          // recursively applies the eager-scope to the resulting queries.
-          // This even works if nested scopes expand the eager expression,
+        const expr = graph && this.graphExpressionObject()
+        if (expr) {
+          // Add a new modifier to the existing graph expression that
+          // recursively applies the graph-scope to the resulting queries.
+          // This even works if nested scopes expand the graph expression,
           // because it re-applies itself to the result.
           const name = `^${scope}`
           const modifiers = {
-            [name]: query => query._applyScope(scope, eager)
+            [name]: query => query._applyScope(scope, graph)
           }
-          this.eager(
-            addEagerScope(
-              this.modelClass(),
-              eagerObject,
-              [name],
-              modifiers
-            ),
-            {
-              ...this.eagerModifiers(),
-              ...modifiers
-            }
-          )
+          this.withGraph(
+            addGraphScope(this.modelClass(), expr, [name], modifiers, true)
+          ).modifiers(modifiers)
         }
       } finally {
         this._allowScopes = _allowScopes
@@ -204,19 +222,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
   }
 
-  _clearScopes(addDefault) {
-    this._scopes = addDefault
-      ? [{
-        scope: 'default',
-        eager: true
-      }]
-      : []
-    return this
-  }
-
   applyFilter(name, ...args) {
-    // NOTE: Dito's `applyFilter()` does something else than Objection's
-    // deprecated `applyFilter()`, use `applyModifier()` instead!
     if (this._allowFilters && !this._allowFilters[name]) {
       throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
     }
@@ -230,21 +236,43 @@ export class QueryBuilder extends objection.QueryBuilder {
     })
   }
 
-  // Work-around for Objection's issue in modify() introduced in v1.3.0
-  // See: https://github.com/Vincit/objection.js/issues/1085
-  modify(arg, ...args) {
-    return arg === undefined
-      ? this
-      : isString(arg)
-        ? this.applyModifier(arg, ...args)
-        : super.modify(arg, ...args)
-  }
-
   allowFilter(...filters) {
     this._allowFilters = this._allowFilters || {}
     for (const filter of filters) {
       this._allowFilters[filter] = true
     }
+  }
+
+  // A algorithm-agnostic version of `withGraphFetched()` / `withGraphJoined()`,
+  // with the algorithm specifiable in the options. Additionally, it handles
+  // `_ignoreGraph` and `_graphAlgorithm`:
+  withGraph(expr, options = {}) {
+    // To make merging easier, keep the current algorithm if none is specified:
+    const { algorithm = this._graphAlgorithm } = options
+    const method = {
+      fetch: 'withGraphFetched',
+      join: 'withGraphJoined'
+    }[algorithm]
+    if (!method) {
+      throw new QueryBuilderError(
+        `Graph algorithm '${algorithm}' is unsupported.`
+      )
+    }
+    if (!this._ignoreGraph) {
+      this._graphAlgorithm = algorithm
+      super[method](expr, options)
+    }
+    return this
+  }
+
+  // @override
+  withGraphFetched(expr, options) {
+    return this.withGraph(expr, { ...options, algorithm: 'fetch' })
+  }
+
+  // @override
+  withGraphJoined(expr, options) {
+    return this.withGraph(expr, { ...options, algorithm: 'join' })
   }
 
   raw(...args) {
@@ -255,7 +283,18 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.select(this.raw(...args))
   }
 
-  loadDataPath(dataPath) {
+  // Non-deprecated version of Objection's `pluck()`
+  pluck(key) {
+    return this.runAfter(result =>
+      isArray(result)
+        ? result.map(it => it?.[key])
+        : isObject(result)
+          ? result[key]
+          : result
+    )
+  }
+
+  loadDataPath(dataPath, options) {
     // Loads the dataPath from the graph of the queried model, by parsing the
     // dataPath, matching it to its relations and properties, and supporting
     // wildcard `*` options to load all data from an array.
@@ -284,7 +323,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     } else {
       let relation = modelClass.getRelations()[first]
       if (relation) {
-        let eager = first
+        let expr = first
         const modifiers = []
         let { relatedModelClass } = relation
         let index = 1 // `first` is at `index = 0`
@@ -294,10 +333,10 @@ export class QueryBuilder extends objection.QueryBuilder {
             // A property to load. We should be done here:
             throwUnlessFullMatch(index, property)
             // Create a modifier that loads the property, then use it in the
-            // eager statement to actually load it along with the relation:
+            // graph expression to actually load it along with the relation:
             const modifier = `@${token}`
             modifiers[modifier] = query => query.select(token)
-            eager = `${eager}(${modifier})`
+            expr = `${expr}(${modifier})`
             break
           } else if (token === '*') {
             // Do not support wildcards on one-to-one relations:
@@ -305,10 +344,10 @@ export class QueryBuilder extends objection.QueryBuilder {
               throwUnlessFullMatch(index - 1)
             }
           } else {
-            // A relation to load. Add it to eager, and keep looping.
+            // A relation to load. Add it to the graph, and keep looping.
             relation = relatedModelClass.getRelations()[token]
             if (relation) {
-              eager = `${eager}.${token}`
+              expr = `${expr}.${token}`
               relatedModelClass = relation.relatedModelClass
             } else {
               throwUnlessFullMatch(index - 1)
@@ -316,7 +355,7 @@ export class QueryBuilder extends objection.QueryBuilder {
           }
           index++
         }
-        this.mergeEager(eager, modifiers)
+        this.withGraph(expr, options).modifiers(modifiers)
       }
     }
     return this
@@ -619,14 +658,17 @@ export class QueryBuilder extends objection.QueryBuilder {
 
 KnexHelper.mixin(QueryBuilder.prototype)
 
-// Override all eager methods to respect the `_ignoreEager` flag:
+// Override all deprecated eager methods to respect the `_ignoreGraph` flag,
+// and also keep track of `_graphAlgorithm`, as required by `withGraph()`
+// TODO: Remove once we move to Objection 3.0
 for (const key of [
   'eager', 'joinEager', 'naiveEager',
   'mergeEager', 'mergeJoinEager', 'mergeNaiveEager'
 ]) {
   const method = QueryBuilder.prototype[key]
   QueryBuilder.prototype[key] = function(...args) {
-    if (!this._ignoreEager) {
+    if (!this._ignoreGraph) {
+      this._graphAlgorithm = /join/i.test(key) ? 'join' : 'fetch'
       method.call(this, ...args)
     }
     return this
@@ -646,6 +688,11 @@ for (const key of [
   'whereNotNull', 'orWhereNotNull',
   'whereBetween', 'andWhereBetween', 'orWhereBetween',
   'whereNotBetween', 'andWhereNotBetween', 'orWhereNotBetween',
+  'whereColumn', 'andWhereColumn', 'orWhereColumn',
+  'whereNotColumn', 'andWhereNotColumn', 'orWhereNotColumn',
+  'whereComposite', 'andWhereComposite', 'orWhereComposite',
+  'whereInComposite',
+  'whereNotInComposite',
 
   'having', 'orHaving',
   'havingIn', 'orHavingIn',
@@ -696,34 +743,38 @@ for (const key of [
 
 // Change the defaults of insertGraph, upsertGraph, updateGraph and patchGraph
 const insertGraphOptions = {
-  relate: true
+  relate: true,
+  allowRefs: true
 }
 
 const upsertGraphOptions = {
   relate: true,
   unrelate: true,
-  insertMissing: true
+  insertMissing: true,
+  allowRefs: true
 }
 
 const patchGraphOptions = {
   relate: true,
   unrelate: true,
-  insertMissing: false
+  insertMissing: false,
+  allowRefs: true
 }
 
 const updateGraphOptions = {
   relate: true,
   unrelate: true,
   update: true,
-  insertMissing: false
+  insertMissing: false,
+  allowRefs: true
 }
 
-function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
+function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
   if (isRoot) {
     expr = clone(expr)
   } else {
-    // Only add the scope if it's not already defined by the eager statement and
-    // if it's actually available as a modifier in the model's modifiers list.
+    // Only add the scope if it's not already defined by the graph expression
+    // and if it's actually available in the model's list of modifiers.
     for (const scope of scopes) {
       if (!expr.$modify?.includes(scope) &&
           (modelClass.modifiers[scope] || modifiers?.[scope])) {
@@ -735,51 +786,71 @@ function addEagerScope(modelClass, expr, scopes, modifiers, isRoot = true) {
   for (const key in expr) {
     // All enumerable properties that don't start with '$' are child nodes.
     if (key[0] !== '$') {
-      const child = expr[key]
-      const relation = relations[child.$relation || key]
+      const childExpr = expr[key]
+      const relation = relations[childExpr.$relation || key]
       if (!relation) {
         throw new RelationError(`Invalid child expression: '${key}'`)
       }
-      addEagerScope(relation.relatedModelClass, child, scopes, modifiers, false)
+      addGraphScope(relation.relatedModelClass, childExpr, scopes, modifiers)
     }
   }
   return expr
 }
+
+// List of all `QueryBuilder` methods to be mixed into `Model` as a short-cut
+// for `model.query().METHOD()`
+//
+// Use this code to find all `QueryBuilder` methods:
+//
+// function getAllPropertyNames(obj) {
+//   const proto = Object.getPrototypeOf(obj)
+//   const inherited = proto ? getAllPropertyNames(proto) : []
+//   return [...new Set(Object.getOwnPropertyNames(obj).concat(inherited))]
+// }
+//
+// console.dir(getAllPropertyNames(QueryBuilder.prototype).sort(), {
+//   colors: true,
+//   depth: null,
+//   maxArrayLength: null
+// })
 
 const mixinMethods = [
   'first',
   'find',
   'findOne',
   'findById',
-  'eager',
-  'joinEager',
-  'naiveEager',
-  'mergeEager',
-  'mergeJoinEager',
-  'mergeNaiveEager',
-  'clearEager',
-  'scope',
-  'mergeScope',
+
+  'withGraph',
+  'withGraphFetched',
+  'withGraphJoined',
+  'clearWithGraph',
+
+  'withScope',
   'applyScope',
-  'clearScope',
+  'clearWithScope',
+
   'clear',
   'pick',
   'omit',
   'select',
+
   'insert',
   'upsert',
   'update',
   'relate',
   'patch',
+
   'truncate',
   'delete',
   'deleteById',
+
   'insertAndFetch',
   'upsertAndFetch',
   'updateAndFetch',
   'patchAndFetch',
   'updateAndFetchById',
   'patchAndFetchById',
+
   'insertGraph',
   'upsertGraph',
   'updateGraph',
@@ -794,6 +865,7 @@ const mixinMethods = [
   'updateGraphAndFetchById',
   'patchGraphAndFetchById',
   'upsertCyclicGraphAndFetchById',
+
   'where',
   'whereNot',
   'whereRaw',
@@ -806,14 +878,22 @@ const mixinMethods = [
   'whereNotNull',
   'whereBetween',
   'whereNotBetween',
-  'whereJsonSupersetOf',
-  'whereJsonNotSupersetOf',
-  'whereJsonSubsetOf',
-  'whereJsonNotSubsetOf',
+  'whereColumn',
+  'whereNotColumn',
+  'whereComposite',
+  'whereInComposite',
+  'whereNotInComposite',
   'whereJsonHasAny',
   'whereJsonHasAll',
   'whereJsonIsArray',
+  'whereJsonNotArray',
   'whereJsonIsObject',
+  'whereJsonNotObject',
+  'whereJsonSubsetOf',
+  'whereJsonNotSubsetOf',
+  'whereJsonSupersetOf',
+  'whereJsonNotSupersetOf',
+
   'having',
   'havingIn',
   'havingNotIn',
@@ -823,5 +903,20 @@ const mixinMethods = [
   'havingNotExists',
   'havingBetween',
   'havingNotBetween',
-  'havingRaw'
+  'havingRaw',
+  'havingWrapped',
+
+  // deprecated methods that are still supported at the moment.
+  // TODO: Remove once we move to Objection 3.0
+  'eager',
+  'joinEager',
+  'naiveEager',
+  'mergeEager',
+  'mergeJoinEager',
+  'mergeNaiveEager',
+  'clearEager',
+
+  'scope',
+  'mergeScope',
+  'clearScope'
 ]

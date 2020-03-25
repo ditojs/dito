@@ -26,7 +26,7 @@ export function collectExpressionPaths(expr) {
   return paths
 }
 
-export function expressionPathToEager(path, start = 0) {
+export function expressionPathToString(path, start = 0) {
   return (start ? path.slice(start) : path)
     .map(
       ({ relation, alias, modify }) => {
@@ -39,16 +39,16 @@ export function expressionPathToEager(path, start = 0) {
     .join('.')
 }
 
-export function modelGraphToExpression(graph, node) {
-  if (graph) {
-    node = node || {}
-    for (const model of asArray(graph)) {
+export function modelGraphToExpression(modelGraph, expr) {
+  if (modelGraph) {
+    expr = expr || {}
+    for (const model of asArray(modelGraph)) {
       for (const { name } of Object.values(model.constructor.getRelations())) {
         if (model.hasOwnProperty(name)) {
-          node[name] = modelGraphToExpression(model[name], node[name])
+          expr[name] = modelGraphToExpression(model[name], expr[name])
         }
       }
     }
   }
-  return node
+  return expr
 }

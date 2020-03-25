@@ -120,7 +120,7 @@ export const UserMixin = mixin(Model => class extends Model {
   }
 
   static sessionQuery(trx) {
-    return this.query(trx).scope(
+    return this.query(trx).withScope(
       ...asArray(this.definition.options.sessionScope)
     )
   }

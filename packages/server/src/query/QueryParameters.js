@@ -5,14 +5,8 @@ import Registry from './Registry'
 export const QueryParameters = new Registry()
 
 QueryParameters.register({
-  eager(builder, key, value) {
-    for (const eager of asArray(value)) {
-      builder.mergeEager(eager)
-    }
-  },
-
   scope(builder, key, value) {
-    builder.mergeScope(...asArray(value))
+    builder.withScope(...asArray(value))
   },
 
   filter(builder, key, value) {

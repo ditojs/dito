@@ -208,9 +208,7 @@ export function convertRelation(schema, models) {
         ? scope
         // Otherwise, create a new modify function that merges them:
         : query => {
-          if (scope) {
-            query.scope(scope)
-          }
+          query.withScope(scope)
           if (origModify) {
             query.modify(origModify)
           }

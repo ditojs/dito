@@ -245,7 +245,7 @@ export class Model extends objection.Model {
   }
 
   static async count(...args) {
-    const count = await this.query().count(...args).pluck('count').first()
+    const { count } = await this.query().count(...args).first() || {}
     return +count || 0
   }
 
@@ -599,27 +599,20 @@ export class Model extends objection.Model {
     return json
   }
 
-  $loadEager(expr, modifiers, trx) {
-    return this.constructor.query(trx)
-      .findById(this.$id())
-      .eager(expr, modifiers)
-      .runAfter(result => Object.assign(this, result))
+  $filterGraph(modelGraph, expr) {
+    return filterGraph(this.constructor, modelGraph, expr)
   }
 
-  $filterGraph(graph, expr) {
-    return this.constructor.filterGraph(this, expr)
+  async $populateGraph(modelGraph, expr, trx) {
+    return populateGraph(this.constructor, modelGraph, expr, trx)
   }
 
-  async $populateGraph(graph, expr, trx) {
-    return this.constructor.populateGraph(this, expr, trx)
+  static filterGraph(modelGraph, expr) {
+    return filterGraph(this, modelGraph, expr)
   }
 
-  static filterGraph(graph, expr) {
-    return filterGraph(this, graph, expr)
-  }
-
-  static async populateGraph(graph, expr, trx) {
-    return populateGraph(this, graph, expr, trx)
+  static async populateGraph(modelGraph, expr, trx) {
+    return populateGraph(this, modelGraph, expr, trx)
   }
 
   // @override

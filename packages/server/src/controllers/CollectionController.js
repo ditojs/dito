@@ -197,7 +197,7 @@ export class CollectionController extends Controller {
       query.allowFilter(...asAllowArray(allowFilter))
     }
     if (scope) {
-      query.mergeScope(...asArray(scope))
+      query.withScope(...asArray(scope))
     }
     return query
   }
@@ -250,7 +250,7 @@ export class CollectionController extends Controller {
 
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) => query
-        .clearScope()
+        .ignoreScope()
         .find(ctx.query, this.allowParam)
         .modify(query => this.isOneToOne && query.throwIfNotFound())
         .modify(getModify(modify, trx))
@@ -295,7 +295,7 @@ export class CollectionController extends Controller {
 
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) => query
-        .clearScope()
+        .ignoreScope()
         .findById(this.getMemberId(ctx))
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()

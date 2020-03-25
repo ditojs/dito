@@ -25,9 +25,9 @@ export class RelationController extends CollectionController {
     this.transacted = parent.transacted
     this.level = parent.level + 1
     if (parent.scope) {
-      // Inherit only the eager scopes since it's in its nature to propagate to
+      // Inherit only the graph scopes since it's in its nature to propagate to
       // relations:
-      this.scope = asArray(parent.scope).filter(scope => getScope(scope).eager)
+      this.scope = asArray(parent.scope).filter(scope => getScope(scope).graph)
     }
     // Initialize:
     this.path = this.app.normalizePath(this.name)
@@ -74,7 +74,7 @@ export class RelationController extends CollectionController {
     return this.parent.execute(ctx,
       async (parentQuery, trx) => {
         const model = await parentQuery
-          .clearScope()
+          .ignoreScope()
           .findById(id)
           .throwIfNotFound()
           // Explicitly only select the foreign key ids for more efficiency.
