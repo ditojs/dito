@@ -10,7 +10,7 @@ export default class RelationAccessor {
 
   query(trx) {
     return this.modelClass
-      ? this.modelClass.relatedQuery(this.name)
+      ? this.modelClass.relatedQuery(this.name, trx)
       : this.model.$relatedQuery(this.name, trx)
   }
 
