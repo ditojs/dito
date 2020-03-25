@@ -616,6 +616,12 @@ export class Model extends objection.Model {
   }
 
   // @override
+  static relatedQuery(relationName, trx) {
+    // https://github.com/Vincit/objection.js/issues/1720
+    return super.relatedQuery(relationName, trx).alias(relationName)
+  }
+
+  // @override
   static modifierNotFound(builder, modifier) {
     switch (modifier[0]) {
     case '^':
