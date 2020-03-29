@@ -2,7 +2,7 @@ import objection from 'objection'
 import { KnexHelper } from '@/lib'
 import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
-import { GraphProcessor, walkGraph } from '@/graph'
+import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
   isObject, isPlainObject, isString, isArray, clone,
   getDataPath, setDataPath, parseDataPath
@@ -419,71 +419,110 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.upsert(data, { ...options, fetch: true })
   }
 
-  _handleGraph(method, data, defaultOptions, options = defaultOptions) {
-    if (options.skipProcessing) {
-      return super[method](data, options)
-    }
-    const graph = new GraphProcessor(
+  insertDitoGraph(data, options) {
+    return this._handleDitoGraph('insertGraph',
+      data, options, insertDitoGraphOptions)
+  }
+
+  insertDitoGraphAndFetch(data, options) {
+    return this._handleDitoGraph('insertGraphAndFetch',
+      data, options, insertDitoGraphOptions)
+  }
+
+  upsertDitoGraph(data, options) {
+    return this._handleDitoGraph('upsertGraph',
+      data, options, upsertDitoGraphOptions)
+  }
+
+  // @override
+  upsertDitoGraphAndFetch(data, options) {
+    return this._handleDitoGraph('upsertGraphAndFetch',
+      data, options, upsertDitoGraphOptions)
+  }
+
+  patchDitoGraph(data, options) {
+    return this._handleDitoGraph('upsertGraph',
+      data, options, patchDitoGraphOptions)
+  }
+
+  patchDitoGraphAndFetch(data, options) {
+    return this._handleDitoGraph('upsertGraphAndFetch',
+      data, options, patchDitoGraphOptions)
+  }
+
+  updateDitoGraph(data, options) {
+    return this._handleDitoGraph('upsertGraph',
+      data, options, updateDitoGraphOptions)
+  }
+
+  updateDitoGraphAndFetch(data, options) {
+    return this._handleDitoGraph('upsertGraphAndFetch',
+      data, options, updateDitoGraphOptions)
+  }
+
+  upsertDitoGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
+    return this.upsertDitoGraphAndFetch({
+      ...data,
+      ...this.modelClass().getReference(id)
+    }, options)
+  }
+
+  patchDitoGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
+    return this.patchDitoGraphAndFetch({
+      ...data,
+      ...this.modelClass().getReference(id)
+    }, options)
+  }
+
+  updateDitoGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
+    return this.updateDitoGraphAndFetch({
+      ...data,
+      ...this.modelClass().getReference(id)
+    }, options)
+  }
+
+  async upsertCyclicDitoGraphAndFetchById(id, data, options) {
+    this.context({ byId: id })
+    return this.upsertCyclicDitoGraphAndFetch({
+      ...data,
+      ...this.modelClass().getReference(id)
+    }, options)
+  }
+
+  async upsertCyclicDitoGraph(data, options) {
+    return this.upsertDitoGraph(
+      await this._upsertCyclicDitoGraph(data, options),
+      options
+    )
+  }
+
+  async upsertCyclicDitoGraphAndFetch(data, options) {
+    return this.upsertDitoGraphAndFetch(
+      await this._upsertCyclicDitoGraph(data, options),
+      options
+    )
+  }
+
+  _handleDitoGraph(method, data, options, defaultOptions) {
+    const graphProcessor = new DitoGraphProcessor(
       this.modelClass(),
       data,
-      options,
-      // Only process overrides and relates if the options aren't overridden,
-      // to still allow Objection.js-style graph calls with detailed options.
-      options === defaultOptions
-        ? {
-          processOverrides: true,
-          processRelates: true
-        }
-        : {}
+      {
+        ...defaultOptions,
+        ...options
+      },
+      {
+        processOverrides: true,
+        processRelates: true
+      }
     )
-    return super[method](graph.getData(), graph.getOptions())
+    return super[method](graphProcessor.getData(), graphProcessor.getOptions())
   }
 
-  // @override
-  insertGraph(data, options) {
-    return this._handleGraph('insertGraph',
-      data, insertGraphOptions, options)
-  }
-
-  // @override
-  insertGraphAndFetch(data, options) {
-    return this._handleGraph('insertGraphAndFetch',
-      data, insertGraphOptions, options)
-  }
-
-  // @override
-  upsertGraph(data, options) {
-    return this._handleGraph('upsertGraph',
-      data, upsertGraphOptions, options)
-  }
-
-  // @override
-  upsertGraphAndFetch(data, options) {
-    return this._handleGraph('upsertGraphAndFetch',
-      data, upsertGraphOptions, options)
-  }
-
-  updateGraph(data, options) {
-    return this._handleGraph('upsertGraph',
-      data, updateGraphOptions, options)
-  }
-
-  updateGraphAndFetch(data, options) {
-    return this._handleGraph('upsertGraphAndFetch',
-      data, updateGraphOptions, options)
-  }
-
-  patchGraph(data, options) {
-    return this._handleGraph('upsertGraph',
-      data, patchGraphOptions, options)
-  }
-
-  patchGraphAndFetch(data, options) {
-    return this._handleGraph('upsertGraphAndFetch',
-      data, patchGraphOptions, options)
-  }
-
-  async _upsertCyclicGraph(data, options) {
+  async _upsertCyclicDitoGraph(data, options) {
     // TODO: This is part of a workaround for the following Objection.js issue.
     // Replace with a normal `upsertGraphAndFetch()` once it is fixed:
     // https://github.com/Vincit/objection.js/issues/1482
@@ -521,7 +560,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     // implementation of this would take care of that and map entries from
     // `model` back to `cloned`, so that the `setDataPath` calls below would
     // still work in such cases.
-    const model = await this.clone().upsertGraphAndFetch(cloned, options)
+    const model = await this.clone().upsertDitoGraphAndFetch(cloned, options)
 
     // Now for each identifier, create an object containing only the final id in
     // the fetched model data:
@@ -541,52 +580,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     return model
-  }
-
-  async upsertCyclicGraph(data, options) {
-    return this.upsertGraph(
-      await this._upsertCyclicGraph(data, options),
-      options
-    )
-  }
-
-  async upsertCyclicGraphAndFetch(data, options) {
-    return this.upsertGraphAndFetch(
-      await this._upsertCyclicGraph(data, options),
-      options
-    )
-  }
-
-  upsertGraphAndFetchById(id, data, options) {
-    this.context({ byId: id })
-    return this.upsertGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
-  }
-
-  updateGraphAndFetchById(id, data, options) {
-    this.context({ byId: id })
-    return this.updateGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
-  }
-
-  patchGraphAndFetchById(id, data, options) {
-    this.context({ byId: id })
-    return this.patchGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
-  }
-
-  async upsertCyclicGraphAndFetchById(id, data, options) {
-    this.context({ byId: id })
-    return this.upsertCyclicGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
   }
 
   // @override
@@ -741,32 +734,32 @@ for (const key of [
   }
 }
 
-// Change the defaults of insertGraph, upsertGraph, updateGraph and patchGraph
-const insertGraphOptions = {
+// The default options for insertDitoGraph(), upsertDitoGraph(),
+// updateDitoGraph() and patchDitoGraph()
+const insertDitoGraphOptions = {
+  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
+  // will reduce the number of update queries from a lot to only those
+  // rows that have changes.
+  fetchStrategy: 'OnlyNeeded',
   relate: true,
   allowRefs: true
 }
 
-const upsertGraphOptions = {
-  relate: true,
-  unrelate: true,
+const upsertDitoGraphOptions = {
+  ...insertDitoGraphOptions,
   insertMissing: true,
-  allowRefs: true
+  unrelate: true
 }
 
-const patchGraphOptions = {
-  relate: true,
-  unrelate: true,
-  insertMissing: false,
-  allowRefs: true
+const patchDitoGraphOptions = {
+  ...upsertDitoGraphOptions,
+  insertMissing: false
 }
 
-const updateGraphOptions = {
-  relate: true,
-  unrelate: true,
-  update: true,
+const updateDitoGraphOptions = {
+  ...patchDitoGraphOptions,
   insertMissing: false,
-  allowRefs: true
+  update: true
 }
 
 function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
@@ -853,18 +846,24 @@ const mixinMethods = [
 
   'insertGraph',
   'upsertGraph',
-  'updateGraph',
-  'patchGraph',
-  'upsertCyclicGraph',
   'insertGraphAndFetch',
   'upsertGraphAndFetch',
-  'updateGraphAndFetch',
-  'patchGraphAndFetch',
-  'upsertCyclicGraphAndFetch',
-  'upsertGraphAndFetchById',
-  'updateGraphAndFetchById',
-  'patchGraphAndFetchById',
-  'upsertCyclicGraphAndFetchById',
+
+  'insertDitoGraph',
+  'upsertDitoGraph',
+  'updateDitoGraph',
+  'patchDitoGraph',
+  'insertDitoGraphAndFetch',
+  'upsertDitoGraphAndFetch',
+  'updateDitoGraphAndFetch',
+  'patchDitoGraphAndFetch',
+  'upsertDitoGraphAndFetchById',
+  'updateDitoGraphAndFetchById',
+  'patchDitoGraphAndFetchById',
+
+  'upsertCyclicDitoGraph',
+  'upsertCyclicDitoGraphAndFetch',
+  'upsertCyclicDitoGraphAndFetchById',
 
   'where',
   'whereNot',

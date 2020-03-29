@@ -54,19 +54,23 @@ In addition to Objection.js' many database methods, ...:
 
 ### `find(query, options)`
 
-## Graph Methods
+## Dito Graph Methods
 
-### `insertGraph(data, options)`
-### `insertGraphAndFetch(data, options)`
-### `upsertGraph(data, options)`
-### `upsertGraphAndFetch(data, options)`
-### `upsertGraphAndFetchById(id, data, options)`
-### `updateGraph(data, options)`
-### `updateGraphAndFetch(data, options)`
-### `updateGraphAndFetchById(id, data, options)`
-### `patchGraph(data, options)`
-### `patchGraphAndFetch(data, options)`
-### `patchGraphAndFetchById(id, data, options)`
+### `insertDitoGraph(data, options)`
+### `insertDitoGraphAndFetch(data, options)`
+### `upsertDitoGraph(data, options)`
+### `upsertDitoGraphAndFetch(data, options)`
+### `upsertDitoGraphAndFetchById(id, data, options)`
+### `updateDitoGraph(data, options)`
+### `updateDitoGraphAndFetch(data, options)`
+### `updateDitoGraphAndFetchById(id, data, options)`
+### `patchDitoGraph(data, options)`
+### `patchDitoGraphAndFetch(data, options)`
+### `patchDitoGraphAndFetchById(id, data, options)`
+
+### `upsertCyclicDitoGraph(data, options)`
+### `upsertCyclicDitoGraphAndFetch(data, options)`
+### `upsertCyclicDitoGraphAndFetchById(data, options)`
 
 ## Raw Methods
 

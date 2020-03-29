@@ -1,7 +1,7 @@
 import { isArray } from '@ditojs/utils'
 import { modelGraphToExpression, ensureModelArray } from '.'
 
-export class GraphProcessor {
+export class DitoGraphProcessor {
   constructor(rootModelClass, data, options = {}, settings = {}) {
     this.rootModelClass = rootModelClass
     this.data = ensureModelArray(rootModelClass, data, {
@@ -23,16 +23,10 @@ export class GraphProcessor {
   }
 
   getOptions() {
-    return this.numOverrides > 0
-      ? {
-        // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
-        // will reduce the number of update queries from a lot to only those
-        // rows that have changes.
-        fetchStrategy: 'OnlyNeeded',
-        ...this.options,
-        ...this.overrides
-      }
-      : this.options
+    return {
+      ...this.options,
+      ...this.overrides
+    }
   }
 
   getData() {

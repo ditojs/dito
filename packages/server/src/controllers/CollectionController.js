@@ -208,7 +208,7 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
-    const name = `${action}${this.graph ? 'Graph' : ''}AndFetch`
+    const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetch`
     return this.execute(ctx, (query, trx) =>
       query[name](body)
         .modify(getModify(modify, trx))
@@ -216,7 +216,7 @@ export class CollectionController extends Controller {
   }
 
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    const name = `${action}${this.graph ? 'Graph' : ''}AndFetchById`
+    const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
       query[name](this.getMemberId(ctx), body)
         .throwIfNotFound()
@@ -261,9 +261,9 @@ export class CollectionController extends Controller {
 
     async insert(ctx, modify) {
       const result = this.relate
-        // Use patchGraphAndFetch() to handle relates for us.
+        // Use patchDitoGraphAndFetch() to handle relates for us.
         ? await this.execute(ctx, (query, trx) => query
-          .patchGraphAndFetch(ctx.request.body, { relate: true })
+          .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
           .modify(getModify(modify, trx))
         )
         : await this.executeAndFetch('insert', ctx, modify)

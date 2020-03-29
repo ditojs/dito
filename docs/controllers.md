@@ -314,9 +314,9 @@ collection actions and the database methods they execute:
 | ---------- | ----------------- | ---------------------------------------------
 | `'get'`    | `find()`          | `find()`
 | `'delete'` | `delete()`        | `delete()`
-| `'post'`   | `insert()`        | `insertAndFetch()` or `insertGraphAndFetch()`
-| `'put'`    | `update()`        | `updateAndFetch()` or `updateGraphAndFetch()`
-| `'patch'`  | `patch()`         | `patchAndFetch()` or `patchGraphAndFetch()`
+| `'post'`   | `insert()`        | `insertAndFetch()` or `insertDitoGraphAndFetch()`
+| `'put'`    | `update()`        | `updateAndFetch()` or `updateDitoGraphAndFetch()`
+| `'patch'`  | `patch()`         | `patchAndFetch()` or `patchDitoGraphAndFetch()`
 
 ### Member Actions
 
@@ -329,8 +329,8 @@ member actions and the database methods they execute:
 | ---------- | ------------- | -------------------------------------------------
 | `'get'`    | `find()`      | `findById()`
 | `'delete'` | `delete()`    | `deleteById()`
-| `'put'`    | `update()`    | `updateAndFetchById()` or `updateGraphAndFetchById()`
-| `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchGraphAndFetchById()`
+| `'put'`    | `update()`    | `updateAndFetchById()` or `updateDitoGraphAndFetchById()`
+| `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
 
 In comparison to the `collection` actions, the `insert()` action assigned to the
 `post` verb is missing here, but with good reason: Inserting into an existing
