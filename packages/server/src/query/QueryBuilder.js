@@ -275,6 +275,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.withGraph(expr, { ...options, algorithm: 'join' })
   }
 
+  toSQL() {
+    return this.toKnexQuery().toSQL()
+  }
+
   raw(...args) {
     return this.knex().raw(...args)
   }
