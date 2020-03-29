@@ -640,10 +640,14 @@ export class Model extends objection.Model {
   }
 
   // @override
-  static createNotFoundError(ctx) {
-    return new NotFoundError(ctx.byId
-      ? `'${this.name}' model with id ${ctx.byId} not found`
-      : `'${this.name}' model not found`)
+  static createNotFoundError(ctx, error) {
+    return new NotFoundError(
+      error || (
+        ctx.byId
+          ? `'${this.name}' model with id ${ctx.byId} not found`
+          : `'${this.name}' model not found`
+      )
+    )
   }
 
   // @override

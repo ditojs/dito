@@ -428,6 +428,7 @@ export class Controller {
                 ? member.$is(user)
                 // collection actions: match id and modelClass
                 : user.constructor === this.modelClass &&
+                  // TODO: Shouldn't this use `getMemberId()`?
                   `${user.id}` === ctx.params.id
               : value === '$owner'
                 ? member?.$hasOwner?.(user)

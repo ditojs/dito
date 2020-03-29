@@ -51,6 +51,7 @@ export class UserController extends ModelController {
     self(ctx) {
       const { user } = ctx.state
       if (ctx.isAuthenticated() && user instanceof this.modelClass) {
+        // TODO: Shouldn't this use `setMemberId()`?
         ctx.params.id = user.id
         return this.member.find.call(this, ctx)
       }
