@@ -138,6 +138,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
   }
 
+  clearAllowScope() {
+    this._allowScopes = null
+  }
+
   scope(...scopes) {
     deprecate(`QueryBuilder#scope() is deprecated. Use #withScope() instead.`)
 
