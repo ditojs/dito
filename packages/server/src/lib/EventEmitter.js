@@ -23,19 +23,14 @@ export class EventEmitter extends EventEmitter2 {
 
   responds(event) {
     // TODO: See if this can be added to EventEmitter2 directly?
-    // Related: https://github.com/EventEmitter2/EventEmitter2/pull/238
-    return this._events && this._events[event]
+    // See: https://github.com/EventEmitter2/EventEmitter2/issues/251
+    return this._all?.length > 0 || !!this._events?.[event]
   }
 
   emit(event, ...args) {
-    // Only call emit if emitter actually responds to event. This prevents
-    //  `_events` from being created when no events are installed.
-    // See: https://github.com/EventEmitter2/EventEmitter2/pull/238
-    return this.responds(event)
-      // Always use async version to emit events: It will perform the same as
-      // the normal one when the methods aren't actually async.
-      ? this.emitAsync(event, ...args)
-      : undefined
+    // Always use async version to emit events: It will perform the same as
+    // the normal one when the methods aren't actually async.
+    return this.emitAsync(event, ...args)
   }
 
   _handle(method, event, callback) {
