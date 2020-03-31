@@ -22,6 +22,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._ignoreScopes = false
     this._appliedScopes = {}
     this._allowFilters = null
+    this._executeFirst = null // Part of a work-around for cyclic graphs
     this._clearScopes(true)
   }
 
@@ -38,7 +39,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  execute() {
+  async execute() {
     if (!this._ignoreScopes) {
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
@@ -56,6 +57,8 @@ export class QueryBuilder extends objection.QueryBuilder {
       }
       this._ignoreGraph = false
     }
+    // In case of cyclic graphs, run `_executeFirst()` now:
+    await this._executeFirst?.()
     return super.execute()
   }
 
@@ -442,7 +445,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       data, options, upsertDitoGraphOptions)
   }
 
-  // @override
   upsertDitoGraphAndFetch(data, options) {
     return this._handleDitoGraph('upsertGraphAndFetch',
       data, options, upsertDitoGraphOptions)
@@ -492,45 +494,41 @@ export class QueryBuilder extends objection.QueryBuilder {
     }, options)
   }
 
-  async upsertCyclicDitoGraphAndFetchById(id, data, options) {
-    this.context({ byId: id })
-    return this.upsertCyclicDitoGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
-  }
-
-  async upsertCyclicDitoGraph(data, options) {
-    return this.upsertDitoGraph(
-      await this._upsertCyclicDitoGraph(data, options),
-      options
-    )
-  }
-
-  async upsertCyclicDitoGraphAndFetch(data, options) {
-    return this.upsertDitoGraphAndFetch(
-      await this._upsertCyclicDitoGraph(data, options),
-      options
-    )
-  }
-
   _handleDitoGraph(method, data, options, defaultOptions) {
-    const graphProcessor = new DitoGraphProcessor(
-      this.modelClass(),
-      data,
-      {
-        ...defaultOptions,
-        ...options
-      },
-      {
-        processOverrides: true,
-        processRelates: true
+    const handleGraph = data => {
+      const graphProcessor = new DitoGraphProcessor(
+        this.modelClass(),
+        data,
+        {
+          ...defaultOptions,
+          ...options
+        },
+        {
+          processOverrides: true,
+          processRelates: true
+        }
+      )
+      this[method](graphProcessor.getData(), graphProcessor.getOptions())
+    }
+
+    if (options?.cyclic && method.startsWith('upsert')) {
+      // `_upsertCyclicDitoGraph()` needs to run asynchronously, but we can't do
+      // so here and `runBefore()` executes too late, so use `_executeFirst()`
+      // to work around it. See `execute()` for more.
+      this._executeFirst = async () => {
+        this._executeFirst = null
+        handleGraph(
+          await this.clone()._upsertCyclicDitoGraphAndFetch(data, options)
+        )
       }
-    )
-    return super[method](graphProcessor.getData(), graphProcessor.getOptions())
+    } else {
+      handleGraph(data)
+    }
+
+    return this
   }
 
-  async _upsertCyclicDitoGraph(data, options) {
+  async _upsertCyclicDitoGraphAndFetch(data, options) {
     // TODO: This is part of a workaround for the following Objection.js issue.
     // Replace with a normal `upsertGraphAndFetch()` once it is fixed:
     // https://github.com/Vincit/objection.js/issues/1482
@@ -568,7 +566,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     // implementation of this would take care of that and map entries from
     // `model` back to `cloned`, so that the `setDataPath` calls below would
     // still work in such cases.
-    const model = await this.clone().upsertDitoGraphAndFetch(cloned, options)
+    const { cyclic, ...opts } = options
+    const model = await this.upsertDitoGraphAndFetch(cloned, opts)
 
     // Now for each identifier, create an object containing only the final id in
     // the fetched model data:
