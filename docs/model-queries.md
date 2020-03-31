@@ -68,10 +68,6 @@ In addition to Objection.js' many database methods, ...:
 ### `patchDitoGraphAndFetch(data, options)`
 ### `patchDitoGraphAndFetchById(id, data, options)`
 
-### `upsertCyclicDitoGraph(data, options)`
-### `upsertCyclicDitoGraphAndFetch(data, options)`
-### `upsertCyclicDitoGraphAndFetchById(data, options)`
-
 ## Raw Methods
 
 ### `raw(…)`

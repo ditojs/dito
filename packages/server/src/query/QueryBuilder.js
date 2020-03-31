@@ -512,9 +512,9 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     if (options?.cyclic && method.startsWith('upsert')) {
-      // `_upsertCyclicDitoGraph()` needs to run asynchronously, but we can't do
-      // so here and `runBefore()` executes too late, so use `_executeFirst()`
-      // to work around it. See `execute()` for more.
+      // `_upsertCyclicDitoGraphAndFetch()` needs to run asynchronously,
+      // but we can't do so here and `runBefore()` executes too late,
+      // so use `_executeFirst()` to work around it.
       this._executeFirst = async () => {
         this._executeFirst = null
         handleGraph(
@@ -544,6 +544,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       if (isObject(value)) {
         const { [uidProp]: id, [uidRefProp]: ref } = value
         if (id) {
+          // TODO: Also store the correct `idColumn` property for the given path
           identifiers[id] = path.join('/')
         } else if (ref) {
           references[path.join('/')] = ref
@@ -573,6 +574,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     // the fetched model data:
     const links = {}
     for (const [identifier, path] of Object.entries(identifiers)) {
+      // TODO: Use the correct `idColumn` property for the given path
       const { id } = getDataPath(model, path)
       links[identifier] = { id }
     }
@@ -867,10 +869,6 @@ const mixinMethods = [
   'upsertDitoGraphAndFetchById',
   'updateDitoGraphAndFetchById',
   'patchDitoGraphAndFetchById',
-
-  'upsertCyclicDitoGraph',
-  'upsertCyclicDitoGraphAndFetch',
-  'upsertCyclicDitoGraphAndFetchById',
 
   'where',
   'whereNot',
