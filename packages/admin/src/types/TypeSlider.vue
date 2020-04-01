@@ -28,7 +28,7 @@
     @extend %input
     display: flex
     .dito-range
-      flex: 1 1 100%
+      flex: auto
       height: calc(1em * var(--line-height))
     .dito-number
       border: 0

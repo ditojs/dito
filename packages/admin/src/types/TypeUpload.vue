@@ -51,32 +51,38 @@
       tfoot
         tr
           td(:colspan="4")
-            .dito-buttons.dito-buttons-round
-              button.dito-button(
-                v-if="uploadable"
-                type="button"
-                @click.prevent="upload.active = true"
-              ) Upload All
-              button.dito-button(
-                v-else-if="cancelable"
-                type="button"
-                @click.prevent="upload.active = false"
-              ) Cancel All
-              vue-upload.dito-button.dito-button-add-upload(
-                :input-id="dataPath"
-                :name="dataPath"
-                :disabled="disabled"
-                :post-action="uploadPath"
-                :extensions="extensions"
-                :accept="accept"
-                :multiple="multiple"
-                :size="maxSize"
-                v-model="uploads"
-                @input-filter="inputFilter"
-                @input-file="inputFile"
-                ref="upload"
-                title="Upload Files"
+            .dito-upload-footer
+              progress.dito-progress(
+                v-if="isUploadActive"
+                :value="uploadProgress"
+                max="100"
               )
+              .dito-buttons.dito-buttons-round
+                button.dito-button(
+                  v-if="isUploadActive"
+                  type="button"
+                  @click.prevent="upload.active = false"
+                ) Cancel All
+                button.dito-button(
+                  v-else-if="isUploadReady"
+                  type="button"
+                  @click.prevent="upload.active = true"
+                ) Upload All
+                vue-upload.dito-button.dito-button-add-upload(
+                  :input-id="dataPath"
+                  :name="dataPath"
+                  :disabled="disabled"
+                  :post-action="uploadPath"
+                  :extensions="extensions"
+                  :accept="accept"
+                  :multiple="multiple"
+                  :size="maxSize"
+                  v-model="uploads"
+                  @input-filter="inputFilter"
+                  @input-file="inputFile"
+                  ref="upload"
+                  title="Upload Files"
+                )
 </template>
 
 <style lang="sass">
@@ -89,6 +95,13 @@
       > *
         position: absolute
         cursor: pointer
+    .dito-upload-footer
+      display: flex
+      justify-content: flex-end
+      align-items: center
+      .dito-progress
+        flex: auto
+        margin-right: $form-spacing
 </style>
 
 <script>
@@ -158,13 +171,20 @@ export default TypeComponent.register('upload', {
       default: false
     }),
 
-    uploadable() {
+    isUploadReady() {
       return this.uploads.length &&
         !(this.upload.active || this.upload.uploaded)
     },
 
-    cancelable() {
+    isUploadActive() {
       return this.uploads.length && this.upload.active
+    },
+
+    uploadProgress() {
+      return (
+        this.uploads.reduce((total, file) => total + file.progress, 0) /
+        this.uploads.length
+      )
     },
 
     uploadPath() {
@@ -282,9 +302,6 @@ export default TypeComponent.register('upload', {
           }[error] || `Unknown File Upload Error: '${error}'`
           this.notify('error', 'File Upload Error', message)
           this.removeFile(newFile)
-        } else {
-          // TODO: Implement progress bar for uploads
-          console.log('update', newFile)
         }
       }
     },
