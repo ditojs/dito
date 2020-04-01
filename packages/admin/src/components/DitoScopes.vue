@@ -7,7 +7,7 @@
       tag="button"
       type="button"
       :class="{ 'dito-selected': scope.name === query.scope }"
-      :title="getLabel(scope)"
+      :title="scope.hint || getLabel(scope)"
     )
       | {{ getLabel(scope) }}
 </template>
