@@ -4,9 +4,25 @@ import { isArray } from '@ditojs/utils'
 // @vue/component
 export default {
   computed: {
+    inputValue: {
+      get() {
+        return this.value !== null ? this.value : ''
+      },
+
+      set(value) {
+        this.value = value !== ''
+          ? this.isInteger ? parseInt(value, 10) : parseFloat(value)
+          : null
+      }
+    },
+
     // @overridable
     isInteger() {
       return false
+    },
+
+    stepValue() {
+      return this.step == null && !this.isInteger ? 'any' : this.step
     },
 
     decimals: getSchemaAccessor('decimals', {

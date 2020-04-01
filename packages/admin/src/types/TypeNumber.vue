@@ -37,24 +37,8 @@ export default TypeComponent.register([
   textField: true,
 
   computed: {
-    inputValue: {
-      get() {
-        return this.value !== null ? this.value : ''
-      },
-
-      set(value) {
-        this.value = value !== ''
-          ? this.isInteger ? parseInt(value, 10) : parseFloat(value)
-          : null
-      }
-    },
-
     isInteger() {
       return this.type === 'integer'
-    },
-
-    stepValue() {
-      return this.step == null && !this.isInteger ? 'any' : this.step
     }
   }
 })
