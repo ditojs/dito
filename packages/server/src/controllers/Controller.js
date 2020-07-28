@@ -72,8 +72,9 @@ export class Controller {
     const addAction = key => {
       const value = this[key]
       // NOTE: Only add instance methods that have a @action() decorator,
-      // which in turn sets the `verb` property on the method:
-      if (isFunction(value) && value.verb) {
+      // which in turn sets the `verb` property on the method, or action objects
+      // which have the `verb` property:
+      if (value.verb) {
         controller[key] = value
       }
     }
@@ -111,6 +112,68 @@ export class Controller {
   }
 
   setupAction(type, name, handler, authorize) {
+    if (!isFunction(handler)) {
+      const setupHandlerFromParam = ({
+        handler,
+        action,
+        authorize,
+        parameters,
+        returns,
+        scope,
+        transacted
+      }) => {
+        if (action !== undefined) {
+          handler.verb = action.verb
+          handler.path = action.path
+        }
+
+        if (authorize !== undefined) {
+          handler.authorize = authorize
+        }
+
+        if (parameters !== undefined) {
+          const parametersHasOptions = isArray(parameters[0])
+          handler.parameters = parametersHasOptions
+            ? parameters[0] : parameters
+
+          // If validation options are provided, expose them through
+          // `handler.options.parameters`, see ControllerAction
+          if (parametersOparametersHasOptionstions) {
+            handler.options = handler.options || {}
+            handler.options.parameters = parameters[1]
+          }
+        }
+
+        if (returns !== undefined) {
+          const returnsHasOptions = isArray(returns)
+          handler.returns = returnsHasOptions
+            ? returns[0] : returns
+
+          // If validation options are provided, expose them through
+          // `handler.options.returns`, see ControllerAction
+          if (returnsHasOptions) {
+            handler.options = handler.options || {}
+            handler.options.returns = returns[1]
+          }
+        }
+
+        if (scope !== undefined) {
+          const handlerScope = handler.scope = handler.scope || []
+          if (isArray(scope)) {
+            handlerScope.push(...scope)
+          } else {
+            handlerScope.push(scope)
+          }
+        }
+
+        if (transacted === true) {
+          handler.transacted = true
+        }
+        return handler
+      }
+      handler = setupHandlerFromParam(handler)
+    }
+
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
     const ActionClass = type === 'member' ? MemberAction : ControllerAction
