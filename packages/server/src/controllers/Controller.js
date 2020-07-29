@@ -74,7 +74,7 @@ export class Controller {
       // NOTE: Only add instance methods that have a @action() decorator,
       // which in turn sets the `verb` property on the method, or action objects
       // which have the `verb` property:
-      if (value.verb) {
+      if (value?.verb) {
         controller[key] = value
       }
     }
@@ -113,65 +113,7 @@ export class Controller {
 
   setupAction(type, name, handler, authorize) {
     if (!isFunction(handler)) {
-      const setupHandlerFromParam = ({
-        handler,
-        action,
-        authorize,
-        parameters,
-        returns,
-        scope,
-        transacted
-      }) => {
-        if (action !== undefined) {
-          handler.verb = action.verb
-          handler.path = action.path
-        }
-
-        if (authorize !== undefined) {
-          handler.authorize = authorize
-        }
-
-        if (parameters !== undefined) {
-          const parametersHasOptions = isArray(parameters[0])
-          handler.parameters = parametersHasOptions
-            ? parameters[0] : parameters
-
-          // If validation options are provided, expose them through
-          // `handler.options.parameters`, see ControllerAction
-          if (parametersOparametersHasOptionstions) {
-            handler.options = handler.options || {}
-            handler.options.parameters = parameters[1]
-          }
-        }
-
-        if (returns !== undefined) {
-          const returnsHasOptions = isArray(returns)
-          handler.returns = returnsHasOptions
-            ? returns[0] : returns
-
-          // If validation options are provided, expose them through
-          // `handler.options.returns`, see ControllerAction
-          if (returnsHasOptions) {
-            handler.options = handler.options || {}
-            handler.options.returns = returns[1]
-          }
-        }
-
-        if (scope !== undefined) {
-          const handlerScope = handler.scope = handler.scope || []
-          if (isArray(scope)) {
-            handlerScope.push(...scope)
-          } else {
-            handlerScope.push(scope)
-          }
-        }
-
-        if (transacted === true) {
-          handler.transacted = true
-        }
-        return handler
-      }
-      handler = setupHandlerFromParam(handler)
+      handler = setupHandlerFromObject(handler)
     }
 
     // Custom member actions have their own class so they can fetch the members
@@ -533,3 +475,54 @@ export class Controller {
 EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
+
+const setupHandlerFromObject = ({
+  handler,
+  action,
+  authorize,
+  parameters,
+  returns,
+  scope,
+  transacted
+}) => {
+  handler.authorize = authorize
+  handler.transacted = transacted
+
+  if (action) {
+    const [verb, path] = asArray(action)
+    handler.verb = verb
+    handler.path = path
+  }
+
+  if (parameters) {
+    const [_parameters, options] = parameters
+    const hasOptions = isArray(_parameters)
+    handler.parameters = hasOptions ? _parameters : parameters
+
+    // If validation options are provided, expose them through
+    // `handler.options.parameters`, see ControllerAction
+    if (hasOptions) {
+      handler.options = handler.options || {}
+      handler.options.parameters = options
+    }
+  }
+
+  if (returns) {
+    const [_returns, options] = asArray(returns)
+    handler.returns = _returns
+
+    // If validation options are provided, expose them through
+    // `handler.options.returns`, see ControllerAction
+    if (options) {
+      handler.options = handler.options || {}
+      handler.options.returns = options
+    }
+  }
+
+  if (scope) {
+    const handlerScope = handler.scope = handler.scope || []
+    handlerScope.push(...asArray(scope))
+  }
+
+  return handler
+}
