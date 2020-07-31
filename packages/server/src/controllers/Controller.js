@@ -502,8 +502,10 @@ const setupHandlerFromObject = ({
     // If validation options are provided, expose them through
     // `handler.options.parameters`, see ControllerAction
     if (hasOptions) {
-      handler.options = handler.options || {}
-      handler.options.parameters = options
+      handler.options = {
+        ...handler.options,
+        parameters: options
+      }
     }
   }
 
@@ -514,14 +516,15 @@ const setupHandlerFromObject = ({
     // If validation options are provided, expose them through
     // `handler.options.returns`, see ControllerAction
     if (options) {
-      handler.options = handler.options || {}
-      handler.options.returns = options
+      handler.options = {
+        ...handler.options,
+        parameters: options
+      }
     }
   }
 
   if (scope) {
-    const handlerScope = handler.scope = handler.scope || []
-    handlerScope.push(...asArray(scope))
+    handler.scope = asArray(scope)
   }
 
   return handler
