@@ -66,5 +66,9 @@
     "sass-loader": "^8.0.2",
     "sass-svg": "^1.2.0",
     "vue-template-compiler": "^2.6.11"
+  },
+  "resolutions": {
+    "prosemirror-model": "1.11.0",
+    "prosemirror-tables": "1.1.1"
   }
 }
