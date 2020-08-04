@@ -6,8 +6,6 @@ export class EventEmitter extends EventEmitter2 {
   setupEmitter(events, options) {
     EventEmitter2.call(this, {
       delimiter: ':',
-      wildcard: false,
-      newListener: false,
       maxListeners: 0,
       ...options
     })
