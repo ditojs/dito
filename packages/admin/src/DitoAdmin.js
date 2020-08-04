@@ -24,8 +24,9 @@ Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
-    dito, // Contains the base and api settings as passed from `AdminController`
-    base = dito?.base || '/',
+    // `dito` contains the base and api settings passed from `AdminController`
+    dito = {},
+    base = dito.base || '/',
     api,
     views = {},
     ...options
