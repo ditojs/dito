@@ -32,20 +32,20 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.9.2",
+    "@babel/runtime": "^7.11.0",
     "@ditojs/utils": "^0.151.0",
-    "core-js": "^3.6.4"
+    "core-js": "^3.6.5"
   },
   "devDependencies": {
     "@ditojs/build": "^0.151.0",
-    "@vue/cli-plugin-babel": "^4.2.3",
-    "@vue/cli-plugin-eslint": "^4.2.3",
-    "@vue/cli-service": "^4.2.3",
+    "@vue/cli-plugin-babel": "^4.4.6",
+    "@vue/cli-plugin-eslint": "^4.4.6",
+    "@vue/cli-service": "^4.4.6",
     "babel-loader": "^8.1.0",
-    "node-sass": "^4.13.1",
-    "pug": "^2.0.4",
+    "node-sass": "^4.14.1",
+    "pug": "^3.0.0",
     "pug-plain-loader": "^1.0.0",
-    "sass-loader": "^8.0.2",
+    "sass-loader": "^9.0.2",
     "vue-template-compiler": "^2.6.11"
   }
 }

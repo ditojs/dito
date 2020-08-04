@@ -27,7 +27,7 @@
     "node 10"
   ],
   "dependencies": {
-    "mime": "^2.4.4",
-    "mini-svg-data-uri": "^1.1.3"
+    "mime": "^2.4.6",
+    "mini-svg-data-uri": "^1.2.3"
   }
 }
