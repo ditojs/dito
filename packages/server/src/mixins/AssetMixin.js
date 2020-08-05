@@ -1,4 +1,4 @@
-import { mixin } from '@/utils'
+import { mixin } from './mixin'
 import { TimeStampedMixin } from './TimeStampedMixin'
 
 // Asset models are always to be time-stamped:

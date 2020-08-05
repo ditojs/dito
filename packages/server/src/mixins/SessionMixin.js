@@ -1,4 +1,4 @@
-import { mixin } from '@/utils'
+import { mixin } from './mixin'
 
 export const SessionMixin = mixin(Model => class extends Model {
   static properties = {
