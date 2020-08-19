@@ -95,9 +95,9 @@ export class AdminController extends Controller {
       runtimeCompiler: true,
       publicPath: `${this.url}/`,
       configureWebpack: {
-        entry: this.mode === 'development'
-          ? [this.getPath('build')]
-          : undefined,
+        // We always need the source build path as entry, even for production,
+        // for things like .babelrc to work when building for dist:
+        entry: [this.getPath('build')],
         resolve: {
           // Local Lerna dependencies need their symbolic links unresolved, so
           // that `node_modules` does not disappear from their name, and
