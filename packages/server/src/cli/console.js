@@ -64,24 +64,6 @@ export default async function startConsole(app, config) {
     `)
   }
 
-  server.once('exit', async () => {
-    try {
-      await app.stop()
-    } catch (err) {
-      logError(err)
-    }
-    try {
-      const lines = (server.history || [])
-        .reverse()
-        .filter(line => line.trim())
-        .join('\n')
-      await fs.writeFile(historyFile, lines)
-    } catch (err) {
-      logError(err)
-    }
-    process.exit()
-  })
-
   await app.start()
   if (!config.quiet) {
     displayUsage(app, config)
@@ -89,7 +71,25 @@ export default async function startConsole(app, config) {
   server.setPrompt(config.prompt)
   server.resume()
   server.write('', { name: 'return' })
-  return server
+  return new Promise(resolve => {
+    server.once('exit', async () => {
+      try {
+        await app.stop()
+      } catch (err) {
+        logError(err)
+      }
+      try {
+        const lines = (server.history || [])
+          .reverse()
+          .filter(line => line.trim())
+          .join('\n')
+        await fs.writeFile(historyFile, lines)
+      } catch (err) {
+        logError(err)
+      }
+      resolve(true)
+    })
+  })
 }
 
 function displayUsage(app, config, details) {
