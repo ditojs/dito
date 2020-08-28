@@ -1,10 +1,10 @@
 // http://eslint.org/docs/user-guide/configuring
-var isProduction = process.env.NODE_ENV === 'production'
+const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
   root: true,
   parserOptions: {
-    parser: 'babel-eslint',
+    parser: '@babel/eslint-parser',
     sourceType: 'module',
     ecmaVersion: 2018,
     ecmaFeatures: {
@@ -22,7 +22,7 @@ module.exports = {
     'plugin:vue/recommended'
   ],
   plugins: [
-    'babel',
+    '@babel',
     'vue'
   ],
   rules: {
@@ -62,15 +62,12 @@ module.exports = {
     'no-return-assign': 'error',
     'no-this-before-super': 'error',
     'no-undef': isProduction ? 'error' : 'warn',
-    'no-unreachable':isProduction ? 'error' : 'warn',
+    'no-unreachable': isProduction ? 'error' : 'warn',
     'no-unused-vars': [isProduction ? 'error' : 'warn', {
       args: 'after-used',
       argsIgnorePattern: '^_',
       ignoreRestSiblings: true
     }],
-    // https://github.com/babel/eslint-plugin-babel/pull/158
-    'no-unused-expressions': 'off',
-    'babel/no-unused-expressions': 'error',
     'no-var': 'error',
     'object-shorthand': 'error',
     'standard/object-curly-even-spacing': 'off',
@@ -82,7 +79,7 @@ module.exports = {
       allowTemplateLiterals: true,
       avoidEscape: true
     }],
-    'quote-props': ['error', 'as-needed'],
+    'quote-props': ['error', 'consistent-as-needed'],
     'space-before-function-paren': ['error', {
       anonymous: 'never',
       named: 'never',

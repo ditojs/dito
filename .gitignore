@@ -1,5 +1,4 @@
 .DS_Store
-yarn.lock
 *.log
 *.cache
 /node_modules
