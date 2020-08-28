@@ -51,7 +51,7 @@
     "koa": "^2.13.0",
     "koa-bodyparser": "^4.3.0",
     "koa-compose": "^4.1.0",
-    "koa-compress": "^5.0.1",
+    "koa-compress": "^3.1.0",
     "koa-conditional-get": "^2.0.0",
     "koa-connect-history-api-fallback": "^0.3.1",
     "koa-etag": "^3.0.0",
