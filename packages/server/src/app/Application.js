@@ -525,13 +525,13 @@ export class Application extends Koa {
       app = {}
     } = this.config
 
+    // TODO: `log.request` is deprecated, remove later.
     const logger = {
       console: koaLogger,
       true: koaLogger,
       // TODO: Implement logging to actual file instead of console for Pino.
       file: pinoLogger
     }[log.requests || log.request]
-    // TODO: `log.request` is deprecated, remove later.
 
     this.use(handleError())
     if (app.responseTime !== false) {

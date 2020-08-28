@@ -91,6 +91,7 @@ class ItemParams {
     return get(this, 'rootData') || null
   }
 
+  // TODO: Rename to `targetComponent`, since `target` is always a component.
   get target() {
     return get(this, 'target') || null
   }

@@ -415,6 +415,8 @@ export default {
         }
       }
       // Also scan schema for `on[A-Z]`-style callbacks and add them
+      // TODO: Deperecate one format or the other, in favour of only one way of
+      // doing things. Decide which one to remove.
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {
           addEvent(key, hyphenate(key.substring(2)), value)

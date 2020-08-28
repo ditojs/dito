@@ -20,6 +20,8 @@ export default {
 
     updateOrder(list, schema, draggable) {
       // NOTE: This mixin requires the component to define `this.draggable`.
+      // TODO: Rename to a more meaningfull name, e.g. `orderKey` or
+      // `orderProperty`.
       const order = draggable?.order
       if (order) {
         // Reorder the changed entries by their order key, taking pagination
