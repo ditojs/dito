@@ -476,7 +476,7 @@ EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
 
-const setupHandlerFromObject = ({
+function setupHandlerFromObject({
   handler,
   action,
   authorize,
@@ -484,7 +484,7 @@ const setupHandlerFromObject = ({
   returns,
   scope,
   transacted
-}) => {
+}) {
   handler.authorize = authorize
   handler.transacted = transacted
 
