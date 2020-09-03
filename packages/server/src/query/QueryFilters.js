@@ -20,8 +20,8 @@ QueryFilters.register({
       operator = 'contains'
     }
     const templates = {
-      equals: text => text,
-      contains: text => `%${text}%`,
+      'equals': text => text,
+      'contains': text => `%${text}%`,
       'starts-with': text => `${text}%`,
       'ends-with': text => `%${text}`
     }

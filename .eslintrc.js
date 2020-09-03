@@ -3,6 +3,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 module.exports = {
   root: true,
+  parser: 'vue-eslint-parser',
   parserOptions: {
     parser: '@babel/eslint-parser',
     sourceType: 'module',
@@ -26,6 +27,7 @@ module.exports = {
     'vue'
   ],
   rules: {
+    'accessor-pairs': 'error',
     'array-bracket-spacing': ['error', 'never'],
     // Allow paren-less arrow functions.
     'arrow-parens': ['error', 'as-needed'],

@@ -43,6 +43,11 @@ export const UserMixin = mixin(Model => class extends Model {
     }
   }
 
+  get password() {
+    // Nice try ;)
+    return undefined
+  }
+
   set password(password) {
     this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
   }

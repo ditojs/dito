@@ -229,8 +229,8 @@ export default TypeComponent.register('markup', {
     parseOptions() {
       return {
         preserveWhitespace: {
-          collapse: false,
-          preserve: true,
+          'collapse': false,
+          'preserve': true,
           'preserve-all': 'full'
         }[this.whitespace]
       }

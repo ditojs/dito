@@ -61,6 +61,7 @@
     "lerna": "^3.22.1",
     "lint-staged": "^10.2.13",
     "minimist": "^1.2.5",
-    "rimraf": "^3.0.2"
+    "rimraf": "^3.0.2",
+    "vue-eslint-parser": "^7.1.0"
   }
 }
