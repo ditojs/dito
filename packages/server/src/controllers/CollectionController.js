@@ -1,6 +1,6 @@
 import { Controller } from './Controller'
 import ControllerAction from './ControllerAction'
-import { isObject, isArray, asArray, flatten, getDataPath } from '@ditojs/utils'
+import { isObject, isArray, asArray } from '@ditojs/utils'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -43,11 +43,13 @@ export class CollectionController extends Controller {
   // @override
   setupAssets() {
     const { modelClass } = this
-    // Merge in the assets definition from the model into the assets config.
-    // That way, we can still use `allow` and `authorize` to controll the upload
-    // access, while keeping the assets definitions in one central location on
-    // the model.
-    if (this.assets === true || isObject(this.assets)) {
+    if (this.assets === true) {
+      this.assets = modelClass.definition.assets
+    } else if (isObject(this.assets)) {
+      // Merge in the assets definition from the model into the assets config.
+      // That way, we can still use `allow` and `authorize` to controll the
+      // upload access, while keeping the assets definitions in one central
+      // location on the model.
       this.assets = {
         ...modelClass.definition.assets,
         ...this.assets
@@ -57,82 +59,7 @@ export class CollectionController extends Controller {
     }
     // Now call `super.setupAssets()` which performs the usual inheritance /
     // allow / authorize tricks:
-    const assets = super.setupAssets()
-    if (assets) {
-      const dataPaths = Object.keys(assets)
-
-      const loadDataPaths = query => dataPaths.reduce(
-        (query, dataPath) => query.loadDataPath(dataPath),
-        query
-      )
-
-      const getFiles = models => dataPaths.reduce(
-        (allFiles, dataPath) => {
-          allFiles[dataPath] = asArray(models).reduce(
-            (files, model) => {
-              const data = asArray(getDataPath(model, dataPath, () => null))
-              // Use flatten() as dataPath may contain wildcards, resulting in
-              // nested files arrays.
-              files.push(...flatten(data).filter(file => !!file))
-              return files
-            },
-            []
-          )
-          return allFiles
-        },
-        {}
-      )
-
-      this.on([
-        'before:*:update',
-        'before:*:patch',
-        'before:*:delete'
-      ], async ctx => {
-        ctx.assets = {
-          before: getFiles(
-            await loadDataPaths(
-              modelClass.query(ctx.transaction).findByIds(this.getIds(ctx))
-            )
-          )
-        }
-      })
-
-      this.on([
-        'after:*:insert',
-        'after:*:update',
-        'after:*:patch',
-        'after:*:delete'
-      ], async (ctx, result) => {
-        const { action } = ctx
-        const isDelete = action.name === 'delete'
-        const before = ctx.assets?.before || {}
-        const after = isDelete ? {} : getFiles(result)
-        for (const dataPath of dataPaths) {
-          const { storage } = assets[dataPath]
-          const _before = before[dataPath] || []
-          const _after = after[dataPath] || []
-          const added = _after.filter(
-            file => !_before.find(it => it.name === file.name)
-          )
-          const removed = _before.filter(
-            file => !_after.find(it => it.name === file.name)
-          )
-          const foreignAssetsAdded = await this.app.changeAssets(
-            storage, added, removed, ctx.transaction
-          )
-          if (foreignAssetsAdded && !isDelete) {
-            // Since the actual foreign file objects were already modified by
-            // `changeAssets()`, all that's remaining to do is to call the
-            // associated patch action, with the changed data:
-            const execute = action.type === 'member'
-              ? 'executeAndFetchById'
-              : 'executeAndFetch'
-            return this[execute]('patch', ctx, null, result)
-          }
-        }
-      })
-    }
-    return assets
+    return super.setupAssets()
   }
 
   // @override

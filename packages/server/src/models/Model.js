@@ -7,7 +7,9 @@ import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
-import { isObject, isFunction, isPromise, asArray, merge } from '@ditojs/utils'
+import {
+  isObject, isFunction, isPromise, asArray, merge, flatten, getDataPath
+} from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
 
@@ -79,6 +81,9 @@ export class Model extends objection.Model {
   // @overridable
   static initialize() {
     this.setupEmitter(this.definition.hooks)
+    if (this.definition.assets) {
+      this.setupAssetsEvents()
+    }
   }
 
   // @overridable
@@ -107,36 +112,8 @@ export class Model extends objection.Model {
     return this
   }
 
-  $emit(type, ...args) {
-    return this.constructor.emit(type, this, ...args)
-  }
-
-  $beforeInsert(queryContext) {
-    return this.$emit('before:insert', queryContext)
-  }
-
-  $afterInsert(queryContext) {
-    return this.$emit('after:insert', queryContext)
-  }
-
-  $beforeUpdate(opt, queryContext) {
-    return this.$emit('before:update', opt, queryContext)
-  }
-
-  $afterUpdate(opt, queryContext) {
-    return this.$emit('after:update', opt, queryContext)
-  }
-
-  $afterGet(queryContext) {
-    return this.$emit('after:get', queryContext)
-  }
-
-  $beforeDelete(queryContext) {
-    return this.$emit('before:delete', queryContext)
-  }
-
-  $afterDelete(queryContext) {
-    return this.$emit('after:delete', queryContext)
+  $emit(event, ...args) {
+    return this.constructor.emit(event, this, ...args)
   }
 
   // @override
@@ -472,12 +449,6 @@ export class Model extends objection.Model {
     return getMeta(this, 'relatedRelations', [])
   }
 
-  // Assets handling
-
-  getAssetConfig(dataPath) {
-    return this.definition.assets?.[dataPath] || null
-  }
-
   // Override propertyNameToColumnName() / columnNameToPropertyName() to not
   // rely on $formatDatabaseJson() /  $parseDatabaseJson() do detect naming
   // conventions but assume simply that they're always the same.
@@ -754,6 +725,148 @@ export class Model extends objection.Model {
       return definition
     })
   }
+
+  static beforeFind(args) {
+    return this._emitStaticHook('before:find', args)
+  }
+
+  static afterFind(args) {
+    return this._emitStaticHook('after:find', args)
+  }
+
+  static beforeInsert(args) {
+    return this._emitStaticHook('before:insert', args)
+  }
+
+  static afterInsert(args) {
+    return this._emitStaticHook('after:insert', args)
+  }
+
+  static beforeUpdate(args) {
+    return this._emitStaticHook('before:update', args)
+  }
+
+  static afterUpdate(args) {
+    return this._emitStaticHook('after:update', args)
+  }
+
+  static beforeDelete(args) {
+    return this._emitStaticHook('before:delete', args)
+  }
+
+  static afterDelete(args) {
+    return this._emitStaticHook('after:delete', args)
+  }
+
+  static async _emitStaticHook(event, originalArgs) {
+    // Static hooks are emitted in sequence (but each event can be async), and
+    // results are passed through and returned in the end.
+    let { result } = originalArgs
+    // The result of any event handler will override `args.result` in the call
+    // of the next handler in sequence. Since `StaticHookArguments` in Objection
+    // is private, use a JS inheritance trick here to override `args.result`:
+    const args = Object.create(originalArgs, {
+      type: {
+        value: event
+      },
+      result: {
+        get() {
+          return result
+        }
+      }
+    })
+    for (const listener of this.listeners(event)) {
+      const res = await listener.call(this, args)
+      if (res !== undefined) {
+        result = res
+      }
+    }
+    // console.log(event, result)
+    return result !== originalArgs.result ? result : undefined
+  }
+
+  // Assets handling
+
+  static setupAssetsEvents() {
+    const { assets } = this.definition
+    const dataPaths = Object.keys(assets)
+
+    const loadDataPaths = query => dataPaths.reduce(
+      (query, dataPath) => query.loadDataPath(dataPath),
+      query
+    )
+
+    const getFiles = models => dataPaths.reduce(
+      (allFiles, dataPath) => {
+        allFiles[dataPath] = asArray(models).reduce(
+          (files, model) => {
+            const data = asArray(getDataPath(model, dataPath, () => null))
+            // Use flatten() as dataPath may contain wildcards, resulting in
+            // nested files arrays.
+            files.push(...flatten(data).filter(file => !!file))
+            return files
+          },
+          []
+        )
+        return allFiles
+      },
+      {}
+    )
+
+    this.on([
+      'before:update',
+      'before:delete'
+    ], async ({ context, asFindQuery }) => {
+      context.assets = {
+        before: getFiles(await loadDataPaths(asFindQuery()))
+      }
+    })
+
+    this.on([
+      'after:insert',
+      'after:update',
+      'after:delete'
+    ], async ({
+      type, context, inputItems, transaction, modelOptions = {},
+      result
+    }) => {
+      const isDelete = type === 'after:delete'
+      const before = context.assets?.before || {}
+      const after = isDelete ? {} : getFiles(inputItems)
+      let foreignAssetsAdded = false
+      for (const dataPath of dataPaths) {
+        const { storage } = assets[dataPath]
+        const _before = before[dataPath] || []
+        const _after = after[dataPath] || []
+        const added = _after.filter(
+          file => !_before.find(it => it.name === file.name)
+        )
+        const removed = _before.filter(
+          file => !_after.find(it => it.name === file.name)
+        )
+        if (await this.app.changeAssets(storage, added, removed, transaction)) {
+          foreignAssetsAdded = true
+        }
+      }
+      if (foreignAssetsAdded && !isDelete) {
+        const useFetch = isObject(result[0])
+        // Since the actual foreign file objects were already modified by
+        // `changeAssets()`, all that's remaining to do is to call the
+        // associated patch action, with the changed data:
+        let method = modelOptions.patch ? 'patch' : 'update'
+        if (useFetch) {
+          method += 'AndFetch'
+        }
+        const res = Promise.map(
+          inputItems,
+          item => this.query(transaction).findById(item.$id())[method](item)
+        )
+        if (useFetch) {
+          return res
+        }
+      }
+    })
+  }
 }
 
 EventEmitter.mixin(Model)
@@ -773,3 +886,16 @@ function getMeta(modelClass, key, value) {
   }
   return meta[key]
 }
+
+// Temporary workaround to fix this issue until a new version is deployed:
+// https://github.com/Vincit/objection.js/issues/1839
+// TODO: Remove again once the above issue is resolved and published.
+const query = Model.query()
+query.addOperation = operation => {
+  Object.defineProperty(Object.getPrototypeOf(operation), 'models', {
+    get() {
+      return this.delegate.models
+    }
+  })
+}
+query.insertAndFetch({})

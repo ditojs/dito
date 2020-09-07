@@ -330,7 +330,7 @@ export class Application extends Koa {
   async createAssets(storageName, files, count = 0, trx = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      const assets = asArray(files).map(file => ({
+      const assets = files.map(file => ({
         name: file.name,
         file,
         storage: storageName,
@@ -392,23 +392,42 @@ export class Application extends Koa {
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
       await Promise.map(files, async file => {
-        const { count } = await AssetModel.query(trx)
-          .where('name', file.name).count().first() || {}
-        if (+count === 0) {
+        const asset = await AssetModel.query(trx).findOne('name', file.name)
+        if (!asset) {
           console.log(
-            `Asset ${
+            `${
+              chalk.red('INFO:')
+            } Asset ${
               chalk.green(`'${file.originalName}'`)
-            } is from a foreign source, fetching and adding to storage...`
+            } is from a foreign source, fetching from ${
+              chalk.green(`'${file.url}'`)
+            } and adding to storage ${
+              chalk.green(`'${storageName}'`)
+            }...`
           )
           try {
-            const newFile = await this.addForeignAsset(storageName, file, trx)
+            const addedFile = await this.addForeignAsset(storageName, file, trx)
             // Merge back the changed file properties into the actual files
-            // object, for easier (re-)upserting in `CollectionController`.
-            Object.assign(file, newFile)
+            // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
+            Object.assign(file, addedFile)
             foreignAssetsAdded = true
           } catch (error) {
             console.error(error)
           }
+        } else if (asset.file.url !== file.url) {
+          console.log(
+            `${
+              chalk.red('INFO:')
+            } Asset ${
+              chalk.green(`'${file.originalName}'`)
+            } is from a foreign source, but was already imported to storage ${
+              chalk.green(`'${storageName}'`)
+            } and can be reused.`
+          )
+          // Merge back the changed file properties into the actual files
+          // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
+          Object.assign(file, asset.file)
+          foreignAssetsAdded = true
         }
       })
     }
@@ -422,11 +441,9 @@ export class Application extends Koa {
       url: file.url,
       responseType: 'arraybuffer'
     })
-    const [result] = await Promise.all([
-      storage.addFile(file, data),
-      this.createAssets(storageName, file, 1, trx)
-    ])
-    return result
+    const addedFile = await storage.addFile(file, data)
+    await this.createAssets(storageName, [addedFile], 0, trx)
+    return addedFile
   }
 
   async releaseUnusedAssets(timeThreshold = 0, trx = null) {
