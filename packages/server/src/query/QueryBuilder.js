@@ -423,6 +423,61 @@ export class QueryBuilder extends objection.QueryBuilder {
       })
   }
 
+  find(query, allowParam) {
+    if (!query) return this
+    const allowed = !allowParam
+      ? QueryParameters.allowed()
+      // If it's already a lookup object just use it, otherwise convert it:
+      : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
+    for (const [key, value] of Object.entries(query)) {
+      // Support array notation for multiple parameters, as sent by axios:
+      const param = key.endsWith('[]') ? key.substr(0, key.length - 2) : key
+      if (!allowed[param]) {
+        throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
+      }
+      const paramHandler = QueryParameters.get(param)
+      if (!paramHandler) {
+        throw new QueryBuilderError(
+          `Invalid query parameter '${param}' in '${key}=${value}'.`)
+      }
+      paramHandler(this, key, value)
+    }
+    return this
+  }
+
+  // @override
+  findById(id) {
+    // Remember id so Model.createNotFoundError() can report it:
+    this.context({ byId: id })
+    return super.findById(id)
+  }
+
+  // @override
+  updateAndFetchById(id, data) {
+    this.context({ byId: id })
+    return super.updateAndFetchById(id, data)
+  }
+
+  // @override
+  patchAndFetchById(id, data) {
+    this.context({ byId: id })
+    return super.patchAndFetchById(id, data)
+  }
+
+  // @override
+  deleteById(id) {
+    this.context({ byId: id })
+    return super.deleteById(id)
+  }
+
+  updateById(id, data) {
+    return this.findById(id).update(data)
+  }
+
+  patchById(id, data) {
+    return this.findById(id).patch(data)
+  }
+
   upsertAndFetch(data, options) {
     return this.upsert(data, { ...options, fetch: true })
   }
@@ -586,53 +641,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     return model
-  }
-
-  // @override
-  updateAndFetchById(id, data) {
-    this.context({ byId: id })
-    return super.updateAndFetchById(id, data)
-  }
-
-  // @override
-  patchAndFetchById(id, data) {
-    this.context({ byId: id })
-    return super.patchAndFetchById(id, data)
-  }
-
-  // @override
-  deleteById(id) {
-    this.context({ byId: id })
-    return super.deleteById(id)
-  }
-
-  // @override
-  findById(id) {
-    // Remember id so Model.createNotFoundError() can report it:
-    this.context({ byId: id })
-    return super.findById(id)
-  }
-
-  find(query, allowParam) {
-    if (!query) return this
-    const allowed = !allowParam
-      ? QueryParameters.allowed()
-      // If it's already a lookup object just use it, otherwise convert it:
-      : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
-    for (const [key, value] of Object.entries(query)) {
-      // Support array notation for multiple parameters, as sent by axios:
-      const param = key.endsWith('[]') ? key.substr(0, key.length - 2) : key
-      if (!allowed[param]) {
-        throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
-      }
-      const paramHandler = QueryParameters.get(param)
-      if (!paramHandler) {
-        throw new QueryBuilderError(
-          `Invalid query parameter '${param}' in '${key}=${value}'.`)
-      }
-      paramHandler(this, key, value)
-    }
-    return this
   }
 
   static mixin(target) {
@@ -836,18 +844,22 @@ const mixinMethods = [
 
   'insert',
   'upsert',
+
   'update',
-  'relate',
   'patch',
+  'delete',
+
+  'updateById',
+  'patchById',
+  'deleteById',
 
   'truncate',
-  'delete',
-  'deleteById',
 
   'insertAndFetch',
   'upsertAndFetch',
   'updateAndFetch',
   'patchAndFetch',
+
   'updateAndFetchById',
   'patchAndFetchById',
 
@@ -864,6 +876,7 @@ const mixinMethods = [
   'upsertDitoGraphAndFetch',
   'updateDitoGraphAndFetch',
   'patchDitoGraphAndFetch',
+
   'upsertDitoGraphAndFetchById',
   'updateDitoGraphAndFetchById',
   'patchDitoGraphAndFetchById',
