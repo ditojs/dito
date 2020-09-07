@@ -782,7 +782,8 @@ export class Model extends objection.Model {
         result = res
       }
     }
-    // console.log(event, result)
+    // Unfortunately `result` is always an array, even when the actual result is
+    // a model object. Avoid returning it when it's not actually changed.
     return result !== originalArgs.result ? result : undefined
   }
 
@@ -817,9 +818,9 @@ export class Model extends objection.Model {
       'before:update',
       'before:delete'
     ], async ({ context, asFindQuery }) => {
-      context.assets = {
-        before: getFiles(await loadDataPaths(asFindQuery()))
-      }
+      // Load the model's assets, as they were before the update / delete is
+      // executed.
+      context.assets = getFiles(await loadDataPaths(asFindQuery()))
     })
 
     this.on([
@@ -827,11 +828,10 @@ export class Model extends objection.Model {
       'after:update',
       'after:delete'
     ], async ({
-      type, context, inputItems, transaction, modelOptions = {},
-      result
+      type, context, transaction, inputItems, result, modelOptions = {}
     }) => {
       const isDelete = type === 'after:delete'
-      const before = context.assets?.before || {}
+      const before = context.assets || {}
       const after = isDelete ? {} : getFiles(inputItems)
       let foreignAssetsAdded = false
       for (const dataPath of dataPaths) {
@@ -853,13 +853,17 @@ export class Model extends objection.Model {
         // Since the actual foreign file objects were already modified by
         // `changeAssets()`, all that's remaining to do is to call the
         // associated patch action, with the changed data:
-        let method = modelOptions.patch ? 'patch' : 'update'
-        if (useFetch) {
-          method += 'AndFetch'
-        }
-        const res = Promise.map(
+        const method = `${
+            modelOptions.patch ? 'patch' : 'update'
+          }${
+            useFetch ? 'AndFetch' : ''
+          }ById`
+        // TODO: We should probably optimize this and only patch / update
+        // the changed file properties, not the full content of the modified
+        // `inputItems` again.
+        const res = await Promise.map(
           inputItems,
-          item => this.query(transaction).findById(item.$id())[method](item)
+          item => this.query(transaction)[method](item.$id(), item)
         )
         if (useFetch) {
           return res
