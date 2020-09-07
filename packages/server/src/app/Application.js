@@ -38,7 +38,7 @@ export class Application extends Koa {
     { validator, router, events, models, controllers, services }
   ) {
     super()
-    this.setupEmitter(events)
+    this._setupEmitter(events)
     // Pluck keys out of `config.app` to keep them secret
     const { keys, ...app } = config.app || {}
     this.config = { ...config, app }

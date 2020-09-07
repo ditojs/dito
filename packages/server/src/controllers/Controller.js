@@ -24,7 +24,7 @@ export class Controller {
   }
 
   setup(isRoot = true, setupActionsObject = true) {
-    this.setupEmitter(this.hooks, {
+    this._setupEmitter(this.hooks, {
       // Support wildcard hooks only on controllers:
       wildcard: true
     })

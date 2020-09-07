@@ -10,8 +10,8 @@ export default {
 
   methods: {
     // Async versions of Vue's $on() and $off() methods that keep track of the
-    // events added / removed, and provide a responds() method that checks if
-    // the component responds to a given event.
+    // events added / removed, and provide a hasListeners() method that checks
+    // if the component has listeners for a given event.
 
     // Also adds proper handling of async events, including a async emit() that
     // deals with proper event queueing.
@@ -80,7 +80,7 @@ export default {
     },
 
     emit(event, ...args) {
-      // Only queue if it actually responds to it.
+      // Only queue event if there actually are listeners for it.
       const entry = this.$events?.[event]
       if (entry) {
         const { queue, callbacks } = entry
@@ -117,15 +117,15 @@ export default {
       }
     },
 
-    // Checks if the components responds to a given event type:
-    responds(event) {
+    // Checks if the component has listeners for a given event type:
+    hasListeners(event) {
       if (isArray(event)) {
         for (const ev of event) {
-          if (this.responds(ev)) {
-            return true
+          if (!this.hasListeners(ev)) {
+            return false
           }
         }
-        return false
+        return event.length > 0
       } else {
         return !!this.$events?.[event]
       }

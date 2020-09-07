@@ -44,7 +44,7 @@ export class CollectionController extends Controller {
   setupAssets() {
     const { modelClass } = this
     if (this.assets === true) {
-      this.assets = modelClass.definition.assets
+      this.assets = modelClass.definition.assets || null
     } else if (isObject(this.assets)) {
       // Merge in the assets definition from the model into the assets config.
       // That way, we can still use `allow` and `authorize` to controll the

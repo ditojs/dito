@@ -428,9 +428,9 @@ export default {
       params = null,
       parent = null
     } = {}) {
-      const responds = this.responds(event)
-      const parentResponds = parent?.responds(event)
-      if (responds || parentResponds) {
+      const hasListeners = this.hasListeners(event)
+      const parentHasListeners = parent?.hasListeners(event)
+      if (hasListeners || parentHasListeners) {
         // The effects of some events need some time to propagate through Vue.
         // Use $nextTick() to make sure our handlers see these changes.
         // For example, `processedData` is only correct after components that
@@ -439,11 +439,11 @@ export default {
           await this.$nextTick()
         }
         const itemParams = getItemParams(this, params)
-        const res = responds
+        const res = hasListeners
           ? await this.emit(event, itemParams)
           : undefined
         // Don't bubble to parent if handled event returned `false`
-        if (parentResponds && res !== false) {
+        if (parentHasListeners && res !== false) {
           parent.emit(event, itemParams)
         }
         return res

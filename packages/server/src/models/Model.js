@@ -80,9 +80,10 @@ export class Model extends objection.Model {
 
   // @overridable
   static initialize() {
-    this.setupEmitter(this.definition.hooks)
-    if (this.definition.assets) {
-      this.setupAssetsEvents()
+    const { hooks, assets } = this.definition
+    this._setupEmitter(hooks)
+    if (assets) {
+      this._setupAssetsEvents(assets)
     }
   }
 
@@ -787,8 +788,7 @@ export class Model extends objection.Model {
 
   // Assets handling
 
-  static setupAssetsEvents() {
-    const { assets } = this.definition
+  static _setupAssetsEvents(assets) {
     const dataPaths = Object.keys(assets)
 
     const loadDataPaths = query => dataPaths.reduce(
