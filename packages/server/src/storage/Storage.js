@@ -135,23 +135,23 @@ export class Storage {
     return file.mimetype.startsWith('image/')
   }
 
+  // @overridable
   getFileName(_file) {
-    // To be implemented in sub-classes.
     throw new NotImplementedError()
   }
 
+  // @overridable
   getFileProperties(_name, _file) {
-    // To be implemented in sub-classes.
     throw new NotImplementedError()
   }
 
+  // @overridable
   async addFile(_file, _buffer) {
-    // To be implemented in sub-classes.
     throw new NotImplementedError()
   }
 
+  // @overridable
   async removeFile(_file) {
-    // To be implemented in sub-classes.
     throw new NotImplementedError()
   }
 

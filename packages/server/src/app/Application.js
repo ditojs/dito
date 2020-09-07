@@ -327,162 +327,6 @@ export class Application extends Koa {
     return this.storages[name] || null
   }
 
-  async createAssets(storageName, files, count = 0, trx = null) {
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      const assets = files.map(file => ({
-        name: file.name,
-        file,
-        storage: storageName,
-        count
-      }))
-      return AssetModel
-        .query(trx)
-        .insert(assets)
-    }
-    return null
-  }
-
-  async changeAssets(storageName, added, removed, trx = null) {
-    // console.log('added', added)
-    // console.log('removed', removed)
-    // Only remove unused assets that haven't seen changes for given timeframe.
-    // TODO: Make timeThreshold an optional configuration setting?
-    // const timeThreshold = 5 * 1000 // 5s
-    const timeThreshold = 12 * 60 * 60 * 1000 // 12h
-
-    let foreignAssetsAdded = false
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      await AssetModel.transaction(trx, async trx => {
-        if (
-          added.length > 0 &&
-          await this.addForeignAssets(storageName, added, trx)
-        ) {
-          foreignAssetsAdded = true
-        }
-        const changeCount = (files, increment) => AssetModel.query(trx)
-          .whereIn('name', files.map(it => it.name))
-          .increment('count', increment)
-        if (added.length > 0 || removed.length > 0) {
-          await Promise.all([
-            added.length && changeCount(added, 1),
-            removed.length && changeCount(removed, -1)
-          ])
-          if (timeThreshold) {
-            setTimeout(
-              // Don't pass `trx` here, as we want this delayed execution to
-              // create its own transaction.
-              () => this.releaseUnusedAssets(timeThreshold),
-              timeThreshold
-            )
-          }
-        }
-        // Also execute releaseUnusedAssets() immediately in the same
-        // transaction, to potentially clean up other pending assets.
-        await this.releaseUnusedAssets(timeThreshold, trx)
-      })
-      return foreignAssetsAdded
-    }
-  }
-
-  async addForeignAssets(storageName, files, trx) {
-    let foreignAssetsAdded = false
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      // Find missing assets (copied from another system), and add them.
-      await Promise.map(files, async file => {
-        const asset = await AssetModel.query(trx).findOne('name', file.name)
-        if (!asset) {
-          console.log(
-            `${
-              chalk.red('INFO:')
-            } Asset ${
-              chalk.green(`'${file.originalName}'`)
-            } is from a foreign source, fetching from ${
-              chalk.green(`'${file.url}'`)
-            } and adding to storage ${
-              chalk.green(`'${storageName}'`)
-            }...`
-          )
-          try {
-            const addedFile = await this.addForeignAsset(storageName, file, trx)
-            // Merge back the changed file properties into the actual files
-            // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
-            Object.assign(file, addedFile)
-            foreignAssetsAdded = true
-          } catch (error) {
-            console.error(error)
-          }
-        } else if (asset.file.url !== file.url) {
-          console.log(
-            `${
-              chalk.red('INFO:')
-            } Asset ${
-              chalk.green(`'${file.originalName}'`)
-            } is from a foreign source, but was already imported to storage ${
-              chalk.green(`'${storageName}'`)
-            } and can be reused.`
-          )
-          // Merge back the changed file properties into the actual files
-          // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
-          Object.assign(file, asset.file)
-          foreignAssetsAdded = true
-        }
-      })
-    }
-    return foreignAssetsAdded
-  }
-
-  async addForeignAsset(storageName, file, trx = null) {
-    const storage = this.getStorage(storageName)
-    const { data } = await axios.request({
-      method: 'get',
-      url: file.url,
-      responseType: 'arraybuffer'
-    })
-    const addedFile = await storage.addFile(file, data)
-    await this.createAssets(storageName, [addedFile], 0, trx)
-    return addedFile
-  }
-
-  async releaseUnusedAssets(timeThreshold = 0, trx = null) {
-    const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      await AssetModel.transaction(trx, async trx => {
-        // Determine the time threshold in JS instead of SQL, as there is no
-        // easy cross-SQL way to do `now() - interval X hours`:
-        const date = new Date()
-        date.setMilliseconds(date.getMilliseconds() - timeThreshold)
-        const orphans = await AssetModel
-          .query(trx)
-          .where('count', 0)
-          .andWhere('updatedAt', '<=', date)
-        if (orphans.length > 0) {
-          const assetNames = await Promise.map(
-            orphans,
-            async ({ name, file, storage: storageName }) => {
-              try {
-                await this.getStorage(storageName).removeFile(file)
-              } catch (error) {
-                this.emit('error', error)
-              }
-              return name
-            }
-          )
-          await AssetModel
-            .query(trx)
-            .delete()
-            .whereIn('name', assetNames)
-        }
-      })
-    }
-  }
-
-  normalizePath(path) {
-    return this.config.app.normalizePaths ? hyphenate(path) : path
-  }
-
   compileValidator(jsonSchema, options) {
     return jsonSchema
       ? this.validator.compile(jsonSchema, options)
@@ -683,6 +527,10 @@ export class Application extends Koa {
     return Object.keys(obj)[0]
   }
 
+  normalizePath(path) {
+    return this.config.app.normalizePaths ? hyphenate(path) : path
+  }
+
   onError(err) {
     if (err.status !== 404 && !err.expose && !this.silent) {
       console.error(`${err.name}: ${err.toJSON
@@ -745,6 +593,160 @@ export class Application extends Koa {
     } catch (err) {
       this.emit('error', err)
       process.exit(-1)
+    }
+  }
+
+  // Assets handling
+
+  async createAssets(storageName, files, count = 0, trx = null) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      const assets = files.map(file => ({
+        name: file.name,
+        file,
+        storage: storageName,
+        count
+      }))
+      return AssetModel
+        .query(trx)
+        .insert(assets)
+    }
+    return null
+  }
+
+  async changeAssets(storageName, added, removed, trx = null) {
+    // console.log('added', added)
+    // console.log('removed', removed)
+    // Only remove unused assets that haven't seen changes for given timeframe.
+    // TODO: Make timeThreshold an optional configuration setting?
+    // const timeThreshold = 5 * 1000 // 5s
+    const timeThreshold = 12 * 60 * 60 * 1000 // 12h
+
+    let foreignAssetsAdded = false
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      await AssetModel.transaction(trx, async trx => {
+        if (
+          added.length > 0 &&
+          await this.addForeignAssets(storageName, added, trx)
+        ) {
+          foreignAssetsAdded = true
+        }
+        const changeCount = (files, increment) => AssetModel.query(trx)
+          .whereIn('name', files.map(it => it.name))
+          .increment('count', increment)
+        if (added.length > 0 || removed.length > 0) {
+          await Promise.all([
+            added.length && changeCount(added, 1),
+            removed.length && changeCount(removed, -1)
+          ])
+          if (timeThreshold) {
+            setTimeout(
+              // Don't pass `trx` here, as we want this delayed execution to
+              // create its own transaction.
+              () => this.releaseUnusedAssets(timeThreshold),
+              timeThreshold
+            )
+          }
+        }
+        // Also execute releaseUnusedAssets() immediately in the same
+        // transaction, to potentially clean up other pending assets.
+        await this.releaseUnusedAssets(timeThreshold, trx)
+      })
+      return foreignAssetsAdded
+    }
+  }
+
+  async addForeignAssets(storageName, files, trx) {
+    let foreignAssetsAdded = false
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      // Find missing assets (copied from another system), and add them.
+      await Promise.map(files, async file => {
+        const asset = await AssetModel.query(trx).findOne('name', file.name)
+        if (!asset) {
+          console.log(
+            `${
+              chalk.red('INFO:')
+            } Asset ${
+              chalk.green(`'${file.originalName}'`)
+            } is from a foreign source, fetching from ${
+              chalk.green(`'${file.url}'`)
+            } and adding to storage ${
+              chalk.green(`'${storageName}'`)
+            }...`
+          )
+          try {
+            const addedFile = await this.addForeignAsset(storageName, file, trx)
+            // Merge back the changed file properties into the actual files
+            // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
+            Object.assign(file, addedFile)
+            foreignAssetsAdded = true
+          } catch (error) {
+            console.error(error)
+          }
+        } else if (asset.file.url !== file.url) {
+          console.log(
+            `${
+              chalk.red('INFO:')
+            } Asset ${
+              chalk.green(`'${file.originalName}'`)
+            } is from a foreign source, but was already imported to storage ${
+              chalk.green(`'${storageName}'`)
+            } and can be reused.`
+          )
+          // Merge back the changed file properties into the actual files
+          // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
+          Object.assign(file, asset.file)
+          foreignAssetsAdded = true
+        }
+      })
+    }
+    return foreignAssetsAdded
+  }
+
+  async addForeignAsset(storageName, file, trx = null) {
+    const storage = this.getStorage(storageName)
+    const { data } = await axios.request({
+      method: 'get',
+      url: file.url,
+      responseType: 'arraybuffer'
+    })
+    const addedFile = await storage.addFile(file, data)
+    await this.createAssets(storageName, [addedFile], 0, trx)
+    return addedFile
+  }
+
+  async releaseUnusedAssets(timeThreshold = 0, trx = null) {
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      await AssetModel.transaction(trx, async trx => {
+        // Determine the time threshold in JS instead of SQL, as there is no
+        // easy cross-SQL way to do `now() - interval X hours`:
+        const date = new Date()
+        date.setMilliseconds(date.getMilliseconds() - timeThreshold)
+        const orphans = await AssetModel
+          .query(trx)
+          .where('count', 0)
+          .andWhere('updatedAt', '<=', date)
+        if (orphans.length > 0) {
+          const assetNames = await Promise.map(
+            orphans,
+            async ({ name, file, storage: storageName }) => {
+              try {
+                await this.getStorage(storageName).removeFile(file)
+              } catch (error) {
+                this.emit('error', error)
+              }
+              return name
+            }
+          )
+          await AssetModel
+            .query(trx)
+            .delete()
+            .whereIn('name', assetNames)
+        }
+      })
     }
   }
 }

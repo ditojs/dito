@@ -113,10 +113,6 @@ export class Model extends objection.Model {
     return this
   }
 
-  $emit(event, ...args) {
-    return this.constructor.emit(event, this, ...args)
-  }
-
   // @override
   $transaction(trx, handler) {
     return this.constructor.transaction(trx, handler)
@@ -725,6 +721,12 @@ export class Model extends objection.Model {
       }
       return definition
     })
+  }
+
+  // Hooks
+
+  $emit(event, ...args) {
+    return this.constructor.emit(event, this, ...args)
   }
 
   static beforeFind(args) {
