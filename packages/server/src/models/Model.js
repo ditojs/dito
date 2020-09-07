@@ -7,10 +7,9 @@ import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
-import { mergeReversed } from '@/utils'
 import { isObject, isFunction, isPromise, asArray, merge } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
-import definitionHandlers from './definitions'
+import definitions from './definitions'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -77,13 +76,13 @@ export class Model extends objection.Model {
     defineAccessor(this.prototype, false)
   }
 
+  // @overridable
   static initialize() {
-    // Overridable in sub-classes
     this.setupEmitter(this.definition.hooks)
   }
 
+  // @overridable
   $initialize() {
-    // Overridable in sub-classes
   }
 
   get $app() {
@@ -358,7 +357,7 @@ export class Model extends objection.Model {
 
   static get modifiers() {
     // Convert Dito's scopes to Objection's modifiers and cache result.
-    return this.getCached('modifiers', () => {
+    return this._getCached('modifiers', () => {
       const modifiers = {}
       for (const [name, scope] of Object.entries(this.definition.scopes)) {
         if (isFunction(scope)) {
@@ -372,7 +371,7 @@ export class Model extends objection.Model {
   }
 
   static get relationMappings() {
-    return this.getCached('relationMappings', () => {
+    return this._getCached('relationMappings', () => {
       const { relations } = this.definition
       return relations
         ? convertRelations(this, relations, this.app.models)
@@ -381,7 +380,7 @@ export class Model extends objection.Model {
   }
 
   static get jsonSchema() {
-    return this.getCached('jsonSchema', () => {
+    return this._getCached('jsonSchema', () => {
       const schema = convertSchema(this.definition.properties)
       addRelationSchemas(this, schema.properties)
       // Merge in root-level schema additions
@@ -401,34 +400,34 @@ export class Model extends objection.Model {
   }
 
   static get jsonAttributes() {
-    return this.getCached('jsonSchema:jsonAttributes', () => (
+    return this._getCached('jsonSchema:jsonAttributes', () => (
       this.getAttributes(({ type, specificType, computed }) =>
         !computed && !specificType && (type === 'object' || type === 'array'))
     ), [])
   }
 
   static get booleanAttributes() {
-    return this.getCached('jsonSchema:booleanAttributes', () => (
+    return this._getCached('jsonSchema:booleanAttributes', () => (
       this.getAttributes(({ type, computed }) =>
         !computed && type === 'boolean')
     ), [])
   }
 
   static get dateAttributes() {
-    return this.getCached('jsonSchema:dateAttributes', () => (
+    return this._getCached('jsonSchema:dateAttributes', () => (
       this.getAttributes(({ type, computed }) =>
         !computed && ['date', 'datetime', 'timestamp'].includes(type))
     ), [])
   }
 
   static get computedAttributes() {
-    return this.getCached('jsonSchema:computedAttributes', () => (
+    return this._getCached('jsonSchema:computedAttributes', () => (
       this.getAttributes(({ computed }) => computed)
     ), [])
   }
 
   static get hiddenAttributes() {
-    return this.getCached('jsonSchema:hiddenAttributes', () => (
+    return this._getCached('jsonSchema:hiddenAttributes', () => (
       this.getAttributes(({ hidden }) => hidden)
     ), [])
   }
@@ -444,7 +443,7 @@ export class Model extends objection.Model {
     return attributes
   }
 
-  static getCached(identifier, calculate, empty = {}) {
+  static _getCached(identifier, calculate, empty = {}) {
     let cache = getMeta(this, 'cache', {})
     // Use a simple dependency tracking mechanism with cache identifiers that
     // can be children of other cached values, e.g.:
@@ -710,7 +709,7 @@ export class Model extends objection.Model {
         // to super-class. To go from super-class to sub-class when merging,
         // `mergeReversed()` is used to prevent wrong overrides.
         // `mergeAsReversedArrays()` can be used to keep arrays of inherited
-        // values per key, see `definitionHandlers.scopes`.
+        // values per key, see `definitions.scopes`.
         const values = []
         while (modelClass !== objection.Model) {
           // Only consider model classes that actually define `name` property.
@@ -733,10 +732,7 @@ export class Model extends objection.Model {
           configurable: true,
           value: {}
         })
-        const handler = definitionHandlers[name]
-        const merged = handler
-          ? handler.call(this, values)
-          : mergeReversed(values)
+        const merged = definitions[name].call(this, values)
         // Once calculated, override definition getter with final merged value.
         setDefinition(name, {
           configurable: false,
@@ -746,10 +742,10 @@ export class Model extends objection.Model {
       }
 
       // If no definition object was defined yet, create one with accessors for
-      // each entry in `definitionHandlers`. Each of these getters when called
-      // merge definitions up the inheritance chain and store the merged result
-      // in `modelClass.definition[name]` for further caching.
-      for (const name in definitionHandlers) {
+      // each entry in `definitions`. Each of these getters when called merge
+      // definitions up the inheritance chain and store the merged result in
+      // `modelClass.definition[name]` for further caching.
+      for (const name in definitions) {
         setDefinition(name, {
           configurable: true,
           get: () => getDefinition(name)

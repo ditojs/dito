@@ -19,8 +19,8 @@ export class Controller {
     this.level = 0
   }
 
+  // @overridable
   initialize() {
-    // Overridable in sub-classes
   }
 
   setup(isRoot = true, setupActionsObject = true) {

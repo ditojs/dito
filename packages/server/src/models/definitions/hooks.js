@@ -1,3 +1,5 @@
 import { mergeAsReversedArrays } from '@/utils'
 
-export default values => mergeAsReversedArrays(values)
+export default function hooks(values) {
+  return mergeAsReversedArrays(values)
+}

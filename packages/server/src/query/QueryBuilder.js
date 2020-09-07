@@ -826,6 +826,7 @@ const mixinMethods = [
   'withGraphFetched',
   'withGraphJoined',
   'clearWithGraph',
+  'clearWithGraphFetched',
 
   'withScope',
   'applyScope',

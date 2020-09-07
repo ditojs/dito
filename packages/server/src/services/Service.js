@@ -13,15 +13,15 @@ export class Service {
     this.config = config
   }
 
+  // @overridable
   initialize() {
-    // Overridable in sub-classes
   }
 
+  // @overridable
   async start() {
-    // Overridable in sub-classes
   }
 
+  // @overridable
   async stop() {
-    // Overridable in sub-classes
   }
 }

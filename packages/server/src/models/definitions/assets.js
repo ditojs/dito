@@ -1,3 +1,5 @@
-// No special treatment needed for assets, but we still need to define a key
-// for it, so it will be recognized and handled as a definition:
-export default null
+import { mergeReversedOrNull } from '@/utils'
+
+export default function assets(values) {
+  return mergeReversedOrNull(values)
+}

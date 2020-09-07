@@ -24,6 +24,11 @@ export function mergeReversed(objects) {
   return Object.assign({}, ...objects.slice().reverse())
 }
 
+export function mergeReversedOrNull(objects) {
+  const merged = mergeReversed(objects)
+  return Object.keys(merged).length > 0 ? merged : null
+}
+
 export function mergeAsReversedArrays(objects) {
   const res = {}
   for (const object of objects) {
