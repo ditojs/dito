@@ -335,7 +335,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       let relation = modelClass.getRelations()[first]
       if (relation) {
         let expr = first
-        const modifiers = []
         let { relatedModelClass } = relation
         let index = 1 // `first` is at `index = 0`
         for (const token of rest) {
@@ -343,11 +342,9 @@ export class QueryBuilder extends objection.QueryBuilder {
           if (property) {
             // A property to load. We should be done here:
             throwUnlessFullMatch(index, property)
-            // Create a modifier that loads the property, then use it in the
-            // graph expression to actually load it along with the relation:
-            const modifier = `@${token}`
-            modifiers[modifier] = query => query.select(token)
-            expr = `${expr}(${modifier})`
+            // Use Dito.js' `#propertyName` convention to load the property
+            // through a modifier:
+            expr = `${expr}(#${token})`
             break
           } else if (token === '*') {
             // Do not support wildcards on one-to-one relations:
@@ -366,7 +363,7 @@ export class QueryBuilder extends objection.QueryBuilder {
           }
           index++
         }
-        this.withGraph(expr, options).modifiers(modifiers)
+        this.withGraph(expr, options)
       }
     }
     return this
