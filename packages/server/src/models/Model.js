@@ -2,14 +2,14 @@ import objection from 'objection'
 import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
-import { populateGraph, filterGraph } from '@/graph'
+import { populateGraph, filterGraph, walkGraph } from '@/graph'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
 } from '@/errors'
 import {
-  isObject, isFunction, isPromise, asArray, merge, flatten,
-  parseDataPath, normalizeDataPath, getValueAtDataPath
+  isObject, isFunction, isPromise, asArray, merge, clone,
+  parseDataPath, normalizeDataPath, getEntriesAtDataPath, setDataPathEntries
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
@@ -862,22 +862,41 @@ export class Model extends objection.Model {
       query
     )
 
-    const getFiles = items => dataPaths.reduce(
+    const getFileMapsPerAssetDataPath = items => dataPaths.reduce(
       (allFiles, dataPath) => {
-        allFiles[dataPath] = asArray(items).reduce(
-          (files, item) => {
-            const data = asArray(getValueAtDataPath(item, dataPath, () => null))
-            // Use flatten() as dataPath may contain wildcards, resulting in
-            // nested files arrays.
-            files.push(...flatten(data).filter(file => !!file))
-            return files
-          },
-          []
-        )
+        let index = 0
+        const files = {}
+        for (const item of items) {
+          const entries = getEntriesAtDataPath(item, dataPath, () => ({}))
+          for (const [dataPath, value] of Object.entries(entries)) {
+            files[`${index}/${dataPath}`] = value
+          }
+          index++
+        }
+        allFiles[dataPath] = files
         return allFiles
       },
       {}
     )
+
+    const mapFilesByName = filesMap => Object.values(filesMap).reduce(
+      (map, file) => {
+        map[file.name] = file
+        return map
+      },
+      {}
+    )
+
+    const filterFilesMap = (filesMap, excludeMap) => Object.entries(filesMap)
+      .reduce(
+        (map, [dataPath, file]) => {
+          if (!excludeMap[file.name]) {
+            map[dataPath] = file
+          }
+          return map
+        },
+        {}
+      )
 
     this.on([
       'before:update',
@@ -885,7 +904,8 @@ export class Model extends objection.Model {
     ], async ({ context, asFindQuery }) => {
       // Load the model's assets, as they were before the update / delete is
       // executed.
-      context.assets = getFiles(await loadDataPaths(asFindQuery()))
+      const currentItems = asArray(await loadDataPaths(asFindQuery()))
+      context.assets = getFileMapsPerAssetDataPath(currentItems)
     })
 
     this.on([
@@ -896,42 +916,78 @@ export class Model extends objection.Model {
       type, context, transaction, inputItems, result, modelOptions = {}
     }) => {
       const isDelete = type === 'after:delete'
-      const before = context.assets || {}
-      const after = isDelete ? {} : getFiles(inputItems)
-      let foreignAssetsAdded = false
+      const beforeMaps = context.assets || {}
+      const afterMaps = isDelete ? {} : getFileMapsPerAssetDataPath(inputItems)
+      let foreignFilesMap = null
       for (const dataPath of dataPaths) {
         const { storage } = assets[dataPath]
-        const _before = before[dataPath] || []
-        const _after = after[dataPath] || []
-        const added = _after.filter(
-          file => !_before.find(it => it.name === file.name)
+        const beforeMap = beforeMaps[dataPath] || {}
+        const afterMap = afterMaps[dataPath] || {}
+        const beforeByName = mapFilesByName(beforeMap)
+        const afterByName = mapFilesByName(afterMap)
+        const addedMap = filterFilesMap(afterMap, beforeByName)
+        const removedMap = filterFilesMap(beforeMap, afterByName)
+        const addedForeignFilesMap = await this.app.changeAssets(
+          storage,
+          addedMap,
+          removedMap,
+          transaction
         )
-        const removed = _before.filter(
-          file => !_after.find(it => it.name === file.name)
-        )
-        if (await this.app.changeAssets(storage, added, removed, transaction)) {
-          foreignAssetsAdded = true
+        if (addedForeignFilesMap) {
+          foreignFilesMap = Object.assign(
+            foreignFilesMap || {},
+            addedForeignFilesMap
+          )
         }
       }
-      if (foreignAssetsAdded && !isDelete) {
-        const useFetch = isObject(result[0])
-        // Since the actual foreign file objects were already modified by
-        // `changeAssets()`, all that's remaining to do is to call the
-        // associated patch action, with the changed data:
-        const method = `${
-            modelOptions.patch ? 'patch' : 'update'
-          }${
-            useFetch ? 'AndFetch' : ''
-          }ById`
-        // TODO: We should probably optimize this and only patch / update
-        // the changed file properties, not the full content of the modified
-        // `inputItems` again.
-        const res = await Promise.map(
-          inputItems,
-          item => this.query(transaction)[method](item.$id(), item)
+      if (foreignFilesMap) {
+        // First change the foreign files in the `inputItems`.
+        setDataPathEntries(inputItems, foreignFilesMap)
+        // Now clone the items into `patchedItems` and filter out all the data
+        // that is not part of the changed files.
+        const patchItems = clone(inputItems)
+        // Keep track of ids separately, since the id properties will also be
+        // deleted as part of the filtering.
+        const ids = inputItems.map(item => item.$id())
+        // Now use `walkGraph()` to filter `patchItems`, deleting all the
+        // properties that don't need patching.
+        const changedDataPaths = Object.keys(foreignFilesMap)
+        walkGraph(patchItems, (value, dataPath, parentData, parentKey) => {
+          // Caution: Don't delete anything inside nested JSON properties, since
+          // they need to be patched in their entirety always.
+          // Remove the leading index from `dataPath` to get the relating
+          // property from the model:
+          const [, ...modelDataPath] = dataPath
+          const {
+            dataPath: foundDataPath
+          } = this.getPropertyOrRelationAtDataPath(modelDataPath)
+          dataPath = normalizeDataPath(dataPath)
+          if (
+            // Only delete properties that can be directly found by
+            // `getPropertyOrRelationAtDataPath()`, and aren't nested data.
+            foundDataPath === normalizeDataPath(modelDataPath) &&
+            // By checking against `changedDataPaths`, filter out all properties
+            // that haven't received any changes (unless they are nested data).
+            !changedDataPaths.find(path => (
+              path.startsWith(dataPath) ||
+              dataPath.startsWith(path)
+            ))
+          ) {
+            delete parentData[parentKey]
+          }
+        })
+        // Finally patch the items that remain with data to change.
+        const method = modelOptions.patch ? 'patchById' : 'updateById'
+        await Promise.map(
+          patchItems,
+          async (item, index) => (
+            item &&
+            this.query(transaction)[method](ids[index], item).debug()
+          )
         )
-        if (useFetch) {
-          return res
+        // Also patch the files in the results that are sent back:
+        if (isObject(result[0])) {
+          setDataPathEntries(result, foreignFilesMap)
         }
       }
     })

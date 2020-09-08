@@ -5,4 +5,5 @@ import { S3Storage } from './S3Storage'
 Storage.register(DiskStorage)
 Storage.register(S3Storage)
 
+export * from './AssetFile'
 export { Storage }

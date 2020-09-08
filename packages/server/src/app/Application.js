@@ -614,7 +614,12 @@ export class Application extends Koa {
     return null
   }
 
-  async changeAssets(storageName, added, removed, trx = null) {
+  async changeAssets(
+    storageName,
+    addedFilesMap,
+    removedFilesMap,
+    trx = null
+  ) {
     // console.log('added', added)
     // console.log('removed', removed)
     // Only remove unused assets that haven't seen changes for given timeframe.
@@ -622,23 +627,34 @@ export class Application extends Koa {
     // const timeThreshold = 5 * 1000 // 5s
     const timeThreshold = 12 * 60 * 60 * 1000 // 12h
 
-    let foreignAssetsAdded = false
+    let foreignFilesMap = null
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       await AssetModel.transaction(trx, async trx => {
-        if (
-          added.length > 0 &&
-          await this.addForeignAssets(storageName, added, trx)
-        ) {
-          foreignAssetsAdded = true
+        const addedForeignFilesMap = await this.addForeignAssets(
+          storageName,
+          addedFilesMap,
+          trx
+        )
+        if (addedForeignFilesMap) {
+          foreignFilesMap = Object.assign(
+            foreignFilesMap || {},
+            addedForeignFilesMap
+          )
         }
-        const changeCount = (files, increment) => AssetModel.query(trx)
-          .whereIn('name', files.map(it => it.name))
-          .increment('count', increment)
-        if (added.length > 0 || removed.length > 0) {
+
+        const addedFiles = Object.values(addedFilesMap)
+        const removedFiles = Object.values(removedFilesMap)
+        if (addedFiles.length > 0 || removedFiles.length > 0) {
+          const changeCount = (files, increment) => (
+            files.length > 0 &&
+            AssetModel.query(trx)
+              .whereIn('name', files.map(it => it.name))
+              .increment('count', increment)
+          )
           await Promise.all([
-            added.length && changeCount(added, 1),
-            removed.length && changeCount(removed, -1)
+            changeCount(addedFiles, 1),
+            changeCount(removedFiles, -1)
           ])
           if (timeThreshold) {
             setTimeout(
@@ -653,16 +669,23 @@ export class Application extends Koa {
         // transaction, to potentially clean up other pending assets.
         await this.releaseUnusedAssets(timeThreshold, trx)
       })
-      return foreignAssetsAdded
+      return foreignFilesMap
     }
   }
 
-  async addForeignAssets(storageName, files, trx) {
-    let foreignAssetsAdded = false
+  async addForeignAssets(storageName, filesMap, trx) {
+    let addedFilesMap = null
+    const addForeignFile = (dataPath, file) => {
+      addedFilesMap = {
+        ...addedFilesMap,
+        [dataPath]: file
+      }
+    }
+
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
-      await Promise.map(files, async file => {
+      await Promise.map(Object.entries(filesMap), async ([dataPath, file]) => {
         const asset = await AssetModel.query(trx).findOne('name', file.name)
         if (!asset) {
           console.log(
@@ -678,10 +701,7 @@ export class Application extends Koa {
           )
           try {
             const addedFile = await this.addForeignAsset(storageName, file, trx)
-            // Merge back the changed file properties into the actual files
-            // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
-            Object.assign(file, addedFile)
-            foreignAssetsAdded = true
+            addForeignFile(dataPath, addedFile)
           } catch (error) {
             console.error(error)
           }
@@ -695,14 +715,11 @@ export class Application extends Koa {
               chalk.green(`'${storageName}'`)
             } and can be reused.`
           )
-          // Merge back the changed file properties into the actual files
-          // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
-          Object.assign(file, asset.file)
-          foreignAssetsAdded = true
+          addForeignFile(dataPath, asset.file)
         }
       })
     }
-    return foreignAssetsAdded
+    return addedFilesMap
   }
 
   async addForeignAsset(storageName, file, trx = null) {
