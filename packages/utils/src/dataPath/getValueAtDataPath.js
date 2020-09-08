@@ -1,6 +1,5 @@
 import { parseDataPath } from './parseDataPath'
 
-// TODO: Implement `getEntriesAtDataPath()` -> { [dataPath]: value }
 export function getValueAtDataPath(
   obj,
   path,
