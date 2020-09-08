@@ -8,7 +8,7 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import {
-  isObject, isFunction, isPromise, asArray, merge, flatten, getDataPath
+  isObject, isFunction, isPromise, asArray, merge, flatten, getValueAtDataPath
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
@@ -801,11 +801,11 @@ export class Model extends objection.Model {
       query
     )
 
-    const getFiles = models => dataPaths.reduce(
+    const getFiles = items => dataPaths.reduce(
       (allFiles, dataPath) => {
-        allFiles[dataPath] = asArray(models).reduce(
-          (files, model) => {
-            const data = asArray(getDataPath(model, dataPath, () => null))
+        allFiles[dataPath] = asArray(items).reduce(
+          (files, item) => {
+            const data = asArray(getValueAtDataPath(item, dataPath, () => null))
             // Use flatten() as dataPath may contain wildcards, resulting in
             // nested files arrays.
             files.push(...flatten(data).filter(file => !!file))

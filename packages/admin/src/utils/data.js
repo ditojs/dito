@@ -1,4 +1,4 @@
-import { parseDataPath, getDataPath, isFunction } from '@ditojs/utils'
+import { parseDataPath, getValueAtDataPath, isFunction } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
   return dataPath != null && dataPath !== ''
@@ -11,7 +11,7 @@ export function getItem(rootItem, dataPath, isValue) {
   // Remove the first path token if the path is not to an item's value, and see
   // if it's valid:
   return path && (!isValue || path.pop() != null)
-    ? getDataPath(rootItem, path)
+    ? getValueAtDataPath(rootItem, path)
     : null
 }
 
@@ -28,7 +28,7 @@ export function getParentItem(rootItem, dataPath, isValue) {
     } while (token != null && !isNaN(token))
     // If the removed token is valid, we can get the parent data:
     if (token != null) {
-      return getDataPath(rootItem, path)
+      return getValueAtDataPath(rootItem, path)
     }
   }
   return null

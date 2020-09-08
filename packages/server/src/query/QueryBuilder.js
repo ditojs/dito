@@ -5,7 +5,7 @@ import { QueryParameters } from './QueryParameters'
 import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
   isObject, isPlainObject, isString, isArray, clone,
-  getDataPath, setDataPath, parseDataPath
+  getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
 import { createLookup, getScope, deprecate } from '@/utils'
 
@@ -610,7 +610,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const path of Object.keys(references)) {
       const parts = parseDataPath(path)
       const key = parts.pop()
-      const parent = getDataPath(cloned, parts)
+      const parent = getValueAtDataPath(cloned, parts)
       delete parent[key]
     }
 
@@ -627,7 +627,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     const links = {}
     for (const [identifier, path] of Object.entries(identifiers)) {
       // TODO: Use the correct `idColumn` property for the given path
-      const { id } = getDataPath(model, path)
+      const { id } = getValueAtDataPath(model, path)
       links[identifier] = { id }
     }
 
@@ -636,7 +636,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const [path, reference] of Object.entries(references)) {
       const link = links[reference]
       if (link) {
-        setDataPath(model, path, link)
+        setValueAtDataPath(model, path, link)
       }
     }
 

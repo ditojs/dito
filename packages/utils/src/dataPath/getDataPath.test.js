@@ -35,9 +35,9 @@ describe('getDataPath()', () => {
   })
 
   it('should support custom error handler', () => {
-    const handleError = (object, part, index) => `${part}, ${index}: err`
+    const handleError = (object, part, index) => `Error: ${part}, ${index}`
     expect(getDataPath(data, 'object/unknown/prop', handleError))
-      .toBe('unknown, 1: err')
+      .toBe('Error: unknown, 1')
   })
 
   it('should return wildcard matches', () => {
