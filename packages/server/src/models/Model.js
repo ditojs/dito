@@ -99,18 +99,20 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
-  async $update(attributes, trx) {
-    if (await this.$query(trx).update(attributes)) {
-      this.$set(attributes)
-    }
-    return this
+  $update(attributes, trx) {
+    return this.$query(trx)
+      .update(attributes)
+      .runAfter(() => {
+        this.$set(attributes)
+      })
   }
 
-  async $patch(attributes, trx) {
-    if (await this.$query(trx).patch(attributes)) {
-      this.$set(attributes)
-    }
-    return this
+  $patch(attributes, trx) {
+    return this.$query(trx)
+      .patch(attributes)
+      .runAfter(() => {
+        this.$set(attributes)
+      })
   }
 
   // @override
