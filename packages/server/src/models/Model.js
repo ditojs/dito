@@ -8,7 +8,8 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import {
-  isObject, isFunction, isPromise, asArray, merge, flatten, getValueAtDataPath
+  isObject, isFunction, isPromise, asArray, merge, flatten,
+  parseDataPath, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
@@ -565,6 +566,8 @@ export class Model extends objection.Model {
     return json
   }
 
+  // Graph handling
+
   $filterGraph(modelGraph, expr) {
     return filterGraph(this.constructor, modelGraph, expr)
   }
@@ -579,6 +582,64 @@ export class Model extends objection.Model {
 
   static async populateGraph(modelGraph, expr, trx) {
     return populateGraph(this, modelGraph, expr, trx)
+  }
+
+  static getPropertyOrRelationAtDataPath(dataPath) {
+    // Finds the property or relation at the given the dataPath of the model by
+    // parsing the dataPath and matching it to its relations and properties.
+    const parsedDataPath = parseDataPath(dataPath)
+    let index = 0
+
+    const getResult = (property = null, relation = null) => {
+      const found = property || relation
+      const name = parsedDataPath[index]
+      const dataPath = found
+        ? normalizeDataPath(parsedDataPath.slice(0, index + 1))
+        : null
+      const expression = found
+        ? parsedDataPath.slice(0, relation ? index + 1 : index).join('.') +
+          (property ? `(#${name})` : '')
+        : null
+      return { property, relation, dataPath, name, expression, index }
+    }
+
+    const [firstToken, ...otherTokens] = parsedDataPath
+    const property = this.definition.properties[firstToken]
+    if (property) {
+      return getResult(property)
+    } else {
+      let relation = this.getRelations()[firstToken]
+      if (relation) {
+        let { relatedModelClass } = relation
+        for (const token of otherTokens) {
+          index++
+          const property = relatedModelClass.definition.properties[token]
+          if (property) {
+            return getResult(property)
+          } else if (token === '*') {
+            if (relation.isOneToOne()) {
+              // Do not support wildcards on one-to-one relations:
+              return getResult()
+            } else {
+              continue
+            }
+          } else {
+            // Found a relation? Keep iterating.
+            relation = relatedModelClass.getRelations()[token]
+            if (relation) {
+              relatedModelClass = relation.relatedModelClass
+            } else {
+              return getResult()
+            }
+          }
+        }
+        if (relation) {
+          // Still here? Found a relation at the end of the data-path.
+          return getResult(null, relation)
+        }
+      }
+    }
+    return getResult()
   }
 
   // @override

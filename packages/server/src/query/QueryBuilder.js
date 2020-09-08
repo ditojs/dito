@@ -5,7 +5,7 @@ import { QueryParameters } from './QueryParameters'
 import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
   isObject, isPlainObject, isString, isArray, clone,
-  getValueAtDataPath, setValueAtDataPath, parseDataPath
+  getValueAtDataPath, setValueAtDataPath, parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 import { createLookup, getScope, deprecate } from '@/utils'
 
@@ -306,65 +306,35 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   loadDataPath(dataPath, options) {
-    // Loads the dataPath from the graph of the queried model, by parsing the
-    // dataPath, matching it to its relations and properties, and supporting
-    // wildcard `*` options to load all data from an array.
     const parsedDataPath = parseDataPath(dataPath)
 
-    const throwUnlessFullMatch = (index, property) => {
-      if (index < parsedDataPath.length - 1) {
-        // once a json data type is reached, load it and assume we're done with
-        // the loading part, even if there s more to the data-path. This also
-        // supports wildcard `*` matching.
-        if (!(property && ['object', 'array'].includes(property.type))) {
-          const unmatched = parsedDataPath.slice(index + 1).join('/')
-          throw new QueryBuilderError(
-            `Unable to load full data-path '${dataPath}' ('${unmatched}').`
-          )
-        }
+    const {
+      property,
+      expression,
+      name,
+      index
+    } = this.modelClass().getPropertyOrRelationAtDataPath(parsedDataPath)
+
+    if (index < parsedDataPath.length - 1) {
+      // Once a JSON data type is reached, load it and assume we're done with
+      // the loading part, even if there s more to the data-path.
+      if (!(property && ['object', 'array'].includes(property.type))) {
+        throw new QueryBuilderError(
+          `Unable to load full data-path '${
+            dataPath
+          }' (Unmatched: '${
+            normalizeDataPath(parsedDataPath.slice(index + 1))
+          }').`
+        )
       }
     }
 
-    const modelClass = this.modelClass()
-    const [first, ...rest] = parsedDataPath
-    const property = modelClass.definition.properties[first]
-    if (property) {
-      throwUnlessFullMatch(0, property)
-      this.select(first)
+    // Handle the special case of root-level property separately,
+    // because `withGraph('(#propertyName)')` is not supported.
+    if (property && index === 0) {
+      this.select(name)
     } else {
-      let relation = modelClass.getRelations()[first]
-      if (relation) {
-        let expr = first
-        let { relatedModelClass } = relation
-        let index = 1 // `first` is at `index = 0`
-        for (const token of rest) {
-          const property = relatedModelClass.definition.properties[token]
-          if (property) {
-            // A property to load. We should be done here:
-            throwUnlessFullMatch(index, property)
-            // Use Dito.js' `#propertyName` convention to load the property
-            // through a modifier:
-            expr = `${expr}(#${token})`
-            break
-          } else if (token === '*') {
-            // Do not support wildcards on one-to-one relations:
-            if (relation.isOneToOne()) {
-              throwUnlessFullMatch(index - 1)
-            }
-          } else {
-            // A relation to load. Add it to the graph, and keep looping.
-            relation = relatedModelClass.getRelations()[token]
-            if (relation) {
-              expr = `${expr}.${token}`
-              relatedModelClass = relation.relatedModelClass
-            } else {
-              throwUnlessFullMatch(index - 1)
-            }
-          }
-          index++
-        }
-        this.withGraph(expr, options)
-      }
+      this.withGraph(expression, options)
     }
     return this
   }
