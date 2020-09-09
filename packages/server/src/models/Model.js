@@ -104,17 +104,21 @@ export class Model extends objection.Model {
   $update(attributes, trx) {
     return this.$query(trx)
       .update(attributes)
-      .runAfter(() => {
-        this.$set(attributes)
-      })
+      .runAfter((result, query) =>
+        // Only perform `$set()` and return `this` if the query wasn't modified
+        // in a way that would remove the `update()` command, e.g. toFindQuery()
+        query.has('update') ? this.$set(attributes) : result
+      )
   }
 
   $patch(attributes, trx) {
     return this.$query(trx)
       .patch(attributes)
-      .runAfter(() => {
-        this.$set(attributes)
-      })
+      .runAfter((result, query) =>
+        // Only perform `$set()` and return `this` if the query wasn't modified
+        // in a way that would remove the `patch()` command, e.g. toFindQuery()
+        query.has('patch') ? this.$set(attributes) : result
+      )
   }
 
   // @override
