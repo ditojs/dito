@@ -12,15 +12,25 @@ export default function filters(values) {
     // Convert array of inherited filter definitions to filter functions,
     // including parameter validation.
     const functions = array
-      .map(filter => {
+      .map(definition => {
         let func
-        if (isFunction(filter)) {
-          func = filter
-        } else if (isObject(filter)) {
-          // Convert QueryFilters to normal filter functions
-          const queryFilter = QueryFilters.get(filter.filter)
-          if (queryFilter) {
-            const { properties } = filter
+        if (isFunction(definition)) {
+          func = definition
+        } else if (isObject(definition)) {
+          const { filter } = definition
+          if (isFunction(filter)) {
+            func = filter
+            func.parameters = definition.parameters
+            func.validate = definition.validate
+          } else {
+            // Convert QueryFilters to normal filter functions
+            const queryFilter = QueryFilters.get(filter)
+            if (!queryFilter) {
+              throw new ModelError(this,
+                `Invalid filter '${name}': Unknown filter type '${filter}'.`
+              )
+            }
+            const { properties } = definition
             func = properties
               ? (builder, ...args) => {
                 // When the filter provides multiple properties, match them
@@ -37,11 +47,6 @@ export default function filters(values) {
             // Copy over @parameters() and @validate() settings
             func.parameters = queryFilter.parameters
             func.validate = queryFilter.validate
-          } else {
-            throw new ModelError(this,
-              `Invalid filter '${name}': Unknown filter type '${
-                filter.filter}'.`
-            )
           }
         }
         // If parameters are defined, wrap the function in a closure that
