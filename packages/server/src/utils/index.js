@@ -1,5 +1,6 @@
 export * from './decorator'
 export * from './deprecate'
+export * from './emitter'
 export * from './function'
 export * from './mixin'
 export * from './object'
