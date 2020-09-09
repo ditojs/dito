@@ -16,8 +16,9 @@ export default class ControllerAction {
     this.transacted = !!(
       handler.transacted ||
       controller.transacted ||
-      // Core graph operations are always transacted:
-      controller.graph && handler.core
+      // Core graph and assets operations are always transacted, unless the verb
+      // is 'get':
+      handler.core && verb !== 'get' && (controller.graph || controller.assets)
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
