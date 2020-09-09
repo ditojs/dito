@@ -1,3 +1,4 @@
+export * from './AssetError'
 export * from './ResponseError'
 export * from './AuthenticationError'
 export * from './AuthorizationError'

@@ -9,7 +9,8 @@ export function clone(arg, iteratee = null) {
     copy = new arg.constructor(arg)
   } else if (isObject(arg)) {
     copy = Object.create(Object.getPrototypeOf(arg))
-    for (const key in arg) {
+    // Only clone the non-inherited properties.
+    for (const key of Object.keys(arg)) {
       copy[key] = clone(arg[key], iteratee)
     }
   } else if (isArray(arg)) {

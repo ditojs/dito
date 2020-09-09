@@ -1,6 +1,5 @@
 import path from 'path'
 import multer from '@koa/multer'
-import { v4 as uuidv4 } from 'uuid'
 import { URL } from 'url'
 import { ImageSizeTransform } from './ImageSizeTransform'
 import { ReadableClone } from './ReadableClone'
@@ -55,7 +54,7 @@ export class Storage {
   }
 
   getUniqueFilename(filename) {
-    return `${uuidv4()}${path.extname(filename)}`
+    return AssetFile.getUniqueFilename(filename)
   }
 
   convertFile(file) {
@@ -107,13 +106,13 @@ export class Storage {
   _getUrl(...parts) {
     return this.url
       ? new URL(path.posix.join(...parts), this.url).toString()
-      : null
+      : undefined // So that it doesn't show up in JSON data.
   }
 
   _getPath(...parts) {
     return this.path
       ? path.join(this.path, ...parts)
-      : null
+      : undefined // So that it doesn't show up in JSON data.
   }
 
   // @overridable

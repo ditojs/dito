@@ -4,48 +4,62 @@ import dataUriToBuffer from 'data-uri-to-buffer'
 import { v4 as uuidv4 } from 'uuid'
 import { isString } from '@ditojs/utils'
 
+const SYMBOL_STORAGE = Symbol('storage')
+const SYMBOL_DATA = Symbol('data')
+
 export class AssetFile {
-  constructor(name, data, mimeType) {
+  constructor(originalName, data, mimeType) {
+    // TODO: If we do file migration, why not switch to:
+    // name -> storedName
+    // originalName -> name
+    this.name = AssetFile.getUniqueFilename(originalName)
+    this.originalName = originalName
+    // Set `mimeType` before `data`, so it can be used as default in `set data`
+    this.mimeType = mimeType
+    this.data = data
+  }
+
+  get storage() {
+    return this[SYMBOL_STORAGE] || null
+  }
+
+  set storage(storage) {
+    this[SYMBOL_STORAGE] = storage
+  }
+
+  get data() {
+    return this[SYMBOL_DATA] || null
+  }
+
+  set data(data) {
     if (isString(data)) {
       if (data.startsWith('data:')) {
         data = dataUriToBuffer(data)
-        mimeType ||= data.type || mime.lookup(name)
+        this.mimeType ||= data.type || mime.lookup(this.name)
       } else {
         data = Buffer.from(data)
-        mimeType ||= mime.lookup(name) || 'text/plain'
+        this.mimeType ||= mime.lookup(this.name) || 'text/plain'
       }
     } else {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
-      mimeType ||= mime.lookup(name) || 'application/octet-stream'
+      this.mimeType ||= mime.lookup(this.name) || 'application/octet-stream'
     }
-    this.name = AssetFile.getUniqueFilename(name)
-    this.originalName = name
-    this.mimeType = mimeType
-    this.size = Buffer.byteLength(this.data)
-    defineHiddenProperty(this, 'data', data)
+    this.size = Buffer.byteLength(data)
+    this[SYMBOL_DATA] = data
   }
 
   static convert(object, storage) {
     Object.setPrototypeOf(object, AssetFile.prototype)
-    defineHiddenProperty(object, 'storage', storage)
+    object.storage = storage
     return object
   }
 
-  static create({ name, data, mimeType }) {
-    return new AssetFile(name, data, mimeType)
+  static create({ originalName, data, mimeType }) {
+    return new AssetFile(originalName, data, mimeType)
   }
 
   static getUniqueFilename(filename) {
     return `${uuidv4()}${path.extname(filename)}`
   }
-}
-
-function defineHiddenProperty(object, key, value) {
-  Object.defineProperty(object, key, {
-    configurable: true,
-    enumerable: false,
-    writable: true,
-    value
-  })
 }

@@ -881,56 +881,42 @@ export class Model extends objection.Model {
   // Assets handling
 
   static _setupAssetsEvents(assets) {
-    const dataPaths = Object.keys(assets)
-
-    const loadAssetDataPaths = query => dataPaths.reduce(
-      (query, dataPath) => query.loadDataPath(dataPath),
-      query
-    )
-
-    const getFilesPerAssetDataPath = items => dataPaths.reduce(
-      (allFiles, dataPath) => {
-        allFiles[dataPath] = asArray(items).reduce(
-          (files, item) => {
-            const data = asArray(getValueAtDataPath(item, dataPath, () => null))
-            // Use flatten() as dataPath may contain wildcards, resulting in
-            // nested files arrays.
-            files.push(...flatten(data).filter(file => !!file))
-            return files
-          },
-          []
-        )
-        return allFiles
-      },
-      {}
-    )
-
-    const mapFilesByName = files => files.reduce(
-      (map, file) => {
-        map[file.name] = file
-        return map
-      },
-      {}
-    )
+    const assetDataPaths = Object.keys(assets)
 
     this.on([
       'before:insert',
       'before:update',
       'before:delete'
     ], async ({ type, transaction, inputItems, asFindQuery }) => {
-      // Load the model's assets, as they were before the update / delete is
-      // executed. Use `undefined` for insert, so that `asArray()` results in an
-      // empty array.
-      const beforeItems = type === 'before:insert'
-        ? undefined
-        : await loadAssetDataPaths(asFindQuery())
       const afterItems = type === 'before:delete'
-        ? undefined
+        ? []
         : inputItems
-      const beforeFilesPerDataPath = getFilesPerAssetDataPath(beforeItems)
-      const afterFilesPerDataPath = getFilesPerAssetDataPath(afterItems)
+      // Figure out which asset data paths where actually present in the
+      // submitted data, and only compare these. But when deleting, use all.
+      const dataPaths = afterItems
+        ? assetDataPaths.filter(
+          path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
+        )
+        : assetDataPaths
+      // Load the model's asset files in their current state before the query is
+      // executed.
+      const beforeItems = type === 'before:insert'
+        ? []
+        : await loadAssetDataPaths(
+          asFindQuery().clear('runAfter'),
+          dataPaths
+        )
+      const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+        beforeItems,
+        dataPaths
+      )
+      const afterFilesPerDataPath = getFilesPerAssetDataPath(
+        afterItems,
+        dataPaths
+      )
 
       const importedFiles = []
+      const modifiedFiles = []
 
       transaction.on('rollback', async error => {
         if (importedFiles.length > 0) {
@@ -944,6 +930,15 @@ export class Model extends objection.Model {
             file => file.storage.removeFile(file)
           )
         }
+        if (modifiedFiles.length > 0) {
+          // TODO: We should really restore `modifiedFiles` as well, but that's
+          // far from trivial since no backup is kept in `handleModifiedAssets`
+          console.log(
+            `Unable to restore these already modified files: ${
+              modifiedFiles.map(file => `'${file.originalName}'`)
+            }`
+          )
+        }
       })
 
       for (const dataPath of dataPaths) {
@@ -952,13 +947,27 @@ export class Model extends objection.Model {
         const afterFiles = afterFilesPerDataPath[dataPath] || []
         const beforeByName = mapFilesByName(beforeFiles)
         const afterByName = mapFilesByName(afterFiles)
-        const addedFiles = afterFiles.filter(it => !beforeByName[it.name])
         const removedFiles = beforeFiles.filter(it => !afterByName[it.name])
+        const addedFiles = afterFiles.filter(it => !beforeByName[it.name])
+        // Also handle modified files, which are files where the data property
+        // is changed before update / patch, meanting the file is changed.
+        // NOTE: This will change the content for all the references to it,
+        // and thus should only really be used when there's only one reference.
+        const modifiedFiles = afterFiles.filter(
+          it => it.data && beforeByName[it.name]
+        )
         importedFiles.push(
-          ...await this.app.changeAssets(
+          ...await this.app.handleAdddedAndRemovedAssets(
             storage,
             addedFiles,
             removedFiles,
+            transaction
+          )
+        )
+        modifiedFiles.push(
+          ...await this.app.handleModifiedAssets(
+            storage,
+            modifiedFiles,
             transaction
           )
         )
@@ -983,6 +992,46 @@ function getMeta(modelClass, key, value) {
     meta[key] = isFunction(value) ? value() : value
   }
   return meta[key]
+}
+
+function loadAssetDataPaths(query, dataPaths) {
+  return dataPaths.reduce(
+    (query, dataPath) => query.loadDataPath(dataPath),
+    query
+  )
+}
+
+function getValueAtAssetDataPath(item, path) {
+  return getValueAtDataPath(item, path, () => undefined)
+}
+
+function getFilesPerAssetDataPath(items, dataPaths) {
+  return dataPaths.reduce(
+    (allFiles, dataPath) => {
+      allFiles[dataPath] = asArray(items).reduce(
+        (files, item) => {
+          const data = asArray(getValueAtAssetDataPath(item, dataPath))
+          // Use flatten() as dataPath may contain wildcards, resulting in
+          // nested files arrays.
+          files.push(...flatten(data).filter(file => !!file))
+          return files
+        },
+        []
+      )
+      return allFiles
+    },
+    {}
+  )
+}
+
+function mapFilesByName(files) {
+  return files.reduce(
+    (map, file) => {
+      map[file.name] = file
+      return map
+    },
+    {}
+  )
 }
 
 // Temporary workaround to fix this issue until a new version is deployed:

@@ -22,7 +22,7 @@ import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
-import { ValidationError, NotFoundError } from '@/errors'
+import { ValidationError, AssetError } from '@/errors'
 import {
   handleError, findRoute, handleRoute, createTransaction, emitUserEvents
 } from '@/middleware'
@@ -532,7 +532,7 @@ export class Application extends Koa {
   }
 
   onError(err) {
-    if (err.status !== 404 && !err.expose && !this.silent) {
+    if (!err.expose && !this.silent) {
       console.error(`${err.name}: ${err.toJSON
         ? JSON.stringify(err.toJSON(), null, '  ')
         : err.message || err}`
@@ -614,7 +614,12 @@ export class Application extends Koa {
     return null
   }
 
-  async changeAssets(storage, addedFiles, removedFiles, trx = null) {
+  async handleAdddedAndRemovedAssets(
+    storage,
+    addedFiles,
+    removedFiles,
+    trx = null
+  ) {
     // Only remove unused assets that haven't seen changes for given timeframe.
     // TODO: Make timeThreshold an optional configuration setting?
     // const timeThreshold = 5 * 1000 // 5s
@@ -664,46 +669,46 @@ export class Application extends Koa {
       await Promise.map(files, async file => {
         const asset = await AssetModel.query(trx).findOne('name', file.name)
         if (!asset) {
-          if (file.url) {
-            console.log(
-              `${
-                chalk.red('INFO:')
-              } Asset ${
-                chalk.green(`'${file.originalName}'`)
-              } is from a foreign source, fetching from ${
-                chalk.green(`'${file.url}'`)
-              } and adding to storage ${
-                chalk.green(`'${storage.name}'`)
-              }...`
-            )
-            const importedFile = await this.importForeignAsset(
-              storage,
-              file,
-              trx
-            )
+          if (file.data || file.url) {
+            let { data } = file
+            if (!data) {
+              console.log(
+                `${
+                  chalk.red('INFO:')
+                } Asset ${
+                  chalk.green(`'${file.originalName}'`)
+                } is from a foreign source, fetching from ${
+                  chalk.green(`'${file.url}'`)
+                } and adding to storage ${
+                  chalk.green(`'${storage.name}'`)
+                }...`
+              )
+              const response = await axios.request({
+                method: 'get',
+                url: file.url,
+                responseType: 'arraybuffer'
+              })
+              data = response.data
+            }
+            const importedFile = await storage.addFile(file, data)
+            await this.createAssets(storage, [importedFile], 0, trx)
             // Merge back the changed file properties into the actual files
             // object, so that the data from the static model hook can be used
             // directly for the actual running query.
             Object.assign(file, importedFile)
             importedFiles.push(importedFile)
           } else {
-            throw new NotFoundError(
+            throw new AssetError(
               `Unable to import asset from foreign source: '${
                 file.originalName
-              }'`
+              }' ('${
+                file.name
+              }')`
             )
           }
         } else if (!storage.areFilesEqual(file, asset.file)) {
-          console.log(
-            `${
-              chalk.red('INFO:')
-            } Asset ${
-              chalk.green(`'${file.originalName}'`)
-            } is from a foreign source, but was already imported to storage ${
-              chalk.green(`'${storage.name}'`)
-            } and can be reused.`
-          )
-          // See above for an explanation of this merge.
+          // Asset is from a foreign source, but was already imported and can be
+          // reused. See above for an explanation of this merge.
           Object.assign(file, asset.file)
           // NOTE: No need to add `file` to `importedFiles`, since it's already
           // been imported to the storage before.
@@ -713,15 +718,33 @@ export class Application extends Koa {
     return importedFiles
   }
 
-  async importForeignAsset(storage, file, trx = null) {
-    const { data } = await axios.request({
-      method: 'get',
-      url: file.url,
-      responseType: 'arraybuffer'
-    })
-    const addedFile = await storage.addFile(file, data)
-    await this.createAssets(storage, [addedFile], 0, trx)
-    return addedFile
+  async handleModifiedAssets(storage, files, trx = null) {
+    const modifiedFiles = []
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      await Promise.map(files, async file => {
+        if (file.data) {
+          const asset = await AssetModel.query(trx).findOne('name', file.name)
+          if (asset) {
+            const changedFile = await storage.addFile(file, file.data)
+            // Merge back the changed file properties into the actual files
+            // object, so that the data from the static model hook can be used
+            // directly for the actual running query.
+            Object.assign(file, changedFile)
+            modifiedFiles.push(changedFile)
+          } else {
+            throw new AssetError(
+              `Unable to update modified asset from memory source: '${
+                file.originalName
+              }' ('${
+                file.name
+              }')`
+            )
+          }
+        }
+      })
+    }
+    return modifiedFiles
   }
 
   async releaseUnusedAssets(timeThreshold = 0, trx = null) {
