@@ -3,6 +3,7 @@ import Knex from 'knex'
 import util from 'util'
 import axios from 'axios'
 import chalk from 'chalk'
+import zlib from 'zlib'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
@@ -29,7 +30,7 @@ import {
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone
+  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge
 } from '@ditojs/utils'
 
 export class Application extends Koa {
@@ -408,7 +409,18 @@ export class Application extends Koa {
       this.use(cors(isObject(app.cors) ? app.cors : {}))
     }
     if (app.compress !== false) {
-      this.use(compress(app.compress))
+      this.use(compress(merge(
+        {
+          // Use a reasonable default for Brotli compression when availalble.
+          // See https://github.com/koajs/compress/issues/126
+          br: {
+            params: {
+              [zlib.constants.BROTLI_PARAM_QUALITY]: 4
+            }
+          }
+        },
+        app.compress
+      )))
     }
     if (app.etag !== false) {
       this.use(conditional())

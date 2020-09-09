@@ -42,7 +42,7 @@
     "hint.css": "^2.6.0",
     "tinycolor2": "^1.4.1",
     "tiptap": "^1.29.6",
-    "tiptap-extensions": "^1.32.5",
+    "tiptap-extensions": "^1.32.7",
     "to-pascal-case": "^1.0.0",
     "vue": "^2.6.12",
     "vue-color": "^2.7.1",
@@ -63,7 +63,7 @@
     "node-sass": "^4.14.1",
     "pug": "^3.0.0",
     "pug-plain-loader": "^1.0.0",
-    "sass-loader": "^10.0.1",
+    "sass-loader": "^10.0.2",
     "sass-svg": "^1.2.0",
     "vue-template-compiler": "^2.6.12"
   }

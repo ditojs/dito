@@ -45,7 +45,7 @@
     "node-sass": "^4.14.1",
     "pug": "^3.0.0",
     "pug-plain-loader": "^1.0.0",
-    "sass-loader": "^10.0.1",
+    "sass-loader": "^10.0.2",
     "vue-template-compiler": "^2.6.12"
   }
 }
