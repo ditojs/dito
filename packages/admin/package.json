@@ -72,5 +72,6 @@
     "sass-loader": "^10.1.0",
     "sass-svg": "^1.2.0",
     "vue-template-compiler": "^2.6.12"
-  }
+  },
+  "types": "./src/index.d.ts"
 }
