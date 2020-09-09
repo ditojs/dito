@@ -28,7 +28,14 @@ QueryFilters.register({
     if (text) {
       const operand = templates[operator]?.(text)
       if (operand) {
-        builder.where(property, 'ilike', operand)
+        if (builder.isPostgreSQL()) {
+          builder.where(property, 'ILIKE', operand)
+        } else {
+          builder.whereRaw(
+            `LOWER(??) LIKE ?`,
+            [property, operand.toLowerCase()]
+          )
+        }
       }
     }
   },
