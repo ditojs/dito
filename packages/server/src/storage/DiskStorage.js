@@ -75,6 +75,11 @@ export class DiskStorage extends Storage {
   }
 
   // @override
+  async _readFile(file) {
+    return fs.readFile(file.path)
+  }
+
+  // @override
   _areFilesEqual(_file1, _file2) {
     return _file1.path === _file2.path
   }

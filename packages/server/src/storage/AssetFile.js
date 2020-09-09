@@ -43,10 +43,18 @@ export class AssetFile {
     } else {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
-      this.mimeType ||= mime.lookup(this.name) || 'application/octet-stream'
+      this.mimeType ||= (
+        data.mimeType ||
+        mime.lookup(this.name) ||
+        'application/octet-stream'
+      )
     }
     this.size = Buffer.byteLength(data)
     this[SYMBOL_DATA] = data
+  }
+
+  async read() {
+    return this.storage?.readFile(this) || null
   }
 
   static convert(object, storage) {

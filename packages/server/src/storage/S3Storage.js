@@ -1,4 +1,5 @@
 import aws from 'aws-sdk'
+import axios from 'axios'
 import multerS3 from 'multer-s3'
 import { Storage } from './Storage'
 import { toPromiseCallback } from '@ditojs/utils'
@@ -84,6 +85,29 @@ export class S3Storage extends Storage {
       Key: file.name
     })
     // TODO: Check for errors and throw?
+  }
+
+  // @override
+  async _readFile(file) {
+    if (file.url) {
+      const { data } = await axios.request({
+        method: 'get',
+        url: file.url,
+        responseType: 'arraybuffer'
+      })
+      return data
+    } else {
+      const {
+        Body: data,
+        ContentType: mimeType
+      } = await this.execute('getObject', {
+        Bucket: this.bucket,
+        Key: file.name
+      })
+      // See AssetFile, `set data(data)`:
+      data.mimeType = mimeType
+      return data
+    }
   }
 
   // @override

@@ -87,6 +87,10 @@ export class Storage {
     await this._removeFile(file)
   }
 
+  async readFile(file) {
+    return this._readFile(file)
+  }
+
   isImageFile(file) {
     return file.mimetype.startsWith('image/')
   }
@@ -116,24 +120,22 @@ export class Storage {
   }
 
   // @overridable
-  _getFileName(_file) {
-  }
+  _getFileName(_file) {}
 
   // @overridable
-  _getStorageProperties(_name, _file) {
-  }
+  _getStorageProperties(_name, _file) {}
 
   // @overridable
-  _extractStorageProperties(_file) {
-  }
+  _extractStorageProperties(_file) {}
 
   // @overridable
-  async _addFile(_file, _buffer) {
-  }
+  async _addFile(_file, _buffer) {}
 
   // @overridable
-  async _removeFile(_file) {
-  }
+  async _removeFile(_file) {}
+
+  // @overridable
+  async _readFile(_file) {}
 
   // @overridable
   _areFilesEqual(_file1, _file2) {
