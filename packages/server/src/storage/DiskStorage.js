@@ -8,16 +8,15 @@ export class DiskStorage extends Storage {
 
   constructor(app, config) {
     super(app, config)
-    if (!config.path) {
+    if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
-    this.path = config.path
 
-    this.setStorage(multer.diskStorage({
+    this.storage = multer.diskStorage({
       destination: (req, file, cb) => {
         const filename = this.getUniqueFilename(file.originalname)
         file.filename = filename
-        const dir = path.join(this.path, this.getNestedFolder(filename))
+        const dir = this._getPath(this._getNestedFolder(filename))
         fs.ensureDir(dir)
           .then(() => cb(null, dir))
           .catch(cb)
@@ -26,37 +25,42 @@ export class DiskStorage extends Storage {
       filename: (req, file, cb) => {
         cb(null, file.filename)
       }
-    }))
+    })
   }
 
-  getPath(...parts) {
-    return this.path ? path.join(this.path, ...parts) : null
-  }
-
-  getFileName(file) {
+  // @override
+  _getFileName(file) {
     return file.filename
   }
 
-  getFileProperties(name) {
+  // @override
+  _getStorageProperties(name) {
     return {
-      path: this.getFilePath(name),
-      url: this.getFileUrl(name)
+      path: this._getFilePath(name),
+      url: this._getFileUrl(name)
     }
   }
 
-  async addFile(file, buffer) {
-    const filePath = this.getFilePath(file.name)
+  // @override
+  _extractStorageProperties(file) {
+    return {
+      path: file.path,
+      url: file.url
+    }
+  }
+
+  // @override
+  async _addFile(file, buffer) {
+    const filePath = this._getFilePath(file.name)
     const dir = path.dirname(filePath)
     await fs.ensureDir(dir)
     await fs.writeFile(filePath, buffer)
-    return {
-      ...file,
-      ...this.getFileProperties(file.name)
-    }
+    return file
   }
 
-  async removeFile(file) {
-    const filePath = this.getFilePath(file.name)
+  // @override
+  async _removeFile(file) {
+    const filePath = this._getFilePath(file.name)
     await fs.unlink(filePath)
     const removeIfEmpty = async dir => {
       if ((await fs.readdir(dir)).length === 0) {
@@ -70,17 +74,22 @@ export class DiskStorage extends Storage {
     await removeIfEmpty(parentDir)
   }
 
-  getNestedFolder(name, posix = false) {
+  // @override
+  _areFilesEqual(_file1, _file2) {
+    return _file1.path === _file2.path
+  }
+
+  _getNestedFolder(name, posix = false) {
     // Store files in nested folders created with the first two chars of
     // filename, for faster access & management with large amounts of files.
     return (posix ? path.posix : path).join(name[0], name[1])
   }
 
-  getFilePath(name) {
-    return this.getPath(this.getNestedFolder(name), name)
+  _getFilePath(name) {
+    return this._getPath(this._getNestedFolder(name), name)
   }
 
-  getFileUrl(name) {
-    return this.getUrl(this.getNestedFolder(name, true), name)
+  _getFileUrl(name) {
+    return this._getUrl(this._getNestedFolder(name, true), name)
   }
 }

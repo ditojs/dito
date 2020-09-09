@@ -6,9 +6,9 @@ export function clone(arg, iteratee = null) {
   if (isDate(arg)) {
     copy = new arg.constructor(+arg)
   } else if (isRegExp(arg)) {
-    copy = new RegExp(arg)
+    copy = new arg.constructor(arg)
   } else if (isObject(arg)) {
-    copy = new arg.constructor()
+    copy = Object.create(Object.getPrototypeOf(arg))
     for (const key in arg) {
       copy[key] = clone(arg[key], iteratee)
     }

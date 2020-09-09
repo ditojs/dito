@@ -20,7 +20,7 @@ export class S3Storage extends Storage {
     this.acl = acl
     this.bucket = bucket
 
-    this.setStorage(multerS3({
+    this.storage = multerS3({
       s3: this.s3,
       acl,
       bucket,
@@ -44,43 +44,57 @@ export class S3Storage extends Storage {
           cb(null, {})
         }
       }
-    }))
+    })
   }
 
-  getFileName(file) {
+  // @override
+  _getFileName(file) {
     return file.key
   }
 
-  getFileProperties(name, file) {
+  // @override
+  _getStorageProperties(name, file) {
     return {
-      url: this.getFileUrl(name, file.location)
+      url: this._getFileUrl(name, file.location)
     }
   }
 
-  async addFile(file, buffer) {
+  // @override
+  _extractStorageProperties(file) {
+    return {
+      url: file.url
+    }
+  }
+
+  // @override
+  async _addFile(file, buffer) {
     const data = await this.execute('upload', {
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.name,
       Body: buffer
     })
-    return {
-      ...file,
-      ...this.getFileProperties(file.name, { location: data.Location })
-    }
+    return data
   }
 
-  async removeFile(file) {
+  // @override
+  async _removeFile(file) {
     await this.execute('deleteObject', {
       Bucket: this.bucket,
       Key: file.name
     })
+    // TODO: Check for errors and throw?
   }
 
-  getFileUrl(name, location) {
+  // @override
+  _areFilesEqual(_file1, _file2) {
+    return _file1.url === _file2.url
+  }
+
+  _getFileUrl(name, location) {
     // Attempt `getUrl()` first to allow S3 buckets to define their own
     // base URLs, e.g. for CloudFront, fall back to default S3 location:
-    return this.getUrl(name) || location
+    return this._getUrl(name) || location
   }
 
   execute(method, params) {

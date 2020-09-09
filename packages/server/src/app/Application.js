@@ -22,7 +22,7 @@ import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
-import { ValidationError } from '@/errors'
+import { ValidationError, NotFoundError } from '@/errors'
 import {
   handleError, findRoute, handleRoute, createTransaction, emitUserEvents
 } from '@/middleware'
@@ -598,13 +598,13 @@ export class Application extends Koa {
 
   // Assets handling
 
-  async createAssets(storageName, files, count = 0, trx = null) {
+  async createAssets(storage, files, count = 0, trx = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const assets = files.map(file => ({
         name: file.name,
         file,
-        storage: storageName,
+        storage: storage.name,
         count
       }))
       return AssetModel
@@ -614,106 +614,113 @@ export class Application extends Koa {
     return null
   }
 
-  async changeAssets(storageName, added, removed, trx = null) {
-    // console.log('added', added)
-    // console.log('removed', removed)
+  async changeAssets(storage, addedFiles, removedFiles, trx = null) {
     // Only remove unused assets that haven't seen changes for given timeframe.
     // TODO: Make timeThreshold an optional configuration setting?
     // const timeThreshold = 5 * 1000 // 5s
     const timeThreshold = 12 * 60 * 60 * 1000 // 12h
 
-    let foreignAssetsAdded = false
+    const importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      await AssetModel.transaction(trx, async trx => {
-        if (
-          added.length > 0 &&
-          await this.addForeignAssets(storageName, added, trx)
-        ) {
-          foreignAssetsAdded = true
+      importedFiles.push(
+        ...await this.addForeignAssets(storage, addedFiles, trx)
+      )
+      if (
+        addedFiles.length > 0 ||
+        removedFiles.length > 0
+      ) {
+        const changeCount = (files, increment) => (
+          files.length > 0 &&
+          AssetModel.query(trx)
+            .whereIn('name', files.map(it => it.name))
+            .increment('count', increment)
+        )
+        await Promise.all([
+          changeCount(addedFiles, 1),
+          changeCount(removedFiles, -1)
+        ])
+        if (timeThreshold) {
+          setTimeout(
+            // Don't pass `trx` here, as we want this delayed execution to
+            // create its own transaction.
+            () => this.releaseUnusedAssets(timeThreshold),
+            timeThreshold
+          )
         }
-        const changeCount = (files, increment) => AssetModel.query(trx)
-          .whereIn('name', files.map(it => it.name))
-          .increment('count', increment)
-        if (added.length > 0 || removed.length > 0) {
-          await Promise.all([
-            added.length && changeCount(added, 1),
-            removed.length && changeCount(removed, -1)
-          ])
-          if (timeThreshold) {
-            setTimeout(
-              // Don't pass `trx` here, as we want this delayed execution to
-              // create its own transaction.
-              () => this.releaseUnusedAssets(timeThreshold),
-              timeThreshold
-            )
-          }
-        }
-        // Also execute releaseUnusedAssets() immediately in the same
-        // transaction, to potentially clean up other pending assets.
-        await this.releaseUnusedAssets(timeThreshold, trx)
-      })
-      return foreignAssetsAdded
+      }
+      // Also execute releaseUnusedAssets() immediately in the same
+      // transaction, to potentially clean up other pending assets.
+      await this.releaseUnusedAssets(timeThreshold, trx)
+      return importedFiles
     }
   }
 
-  async addForeignAssets(storageName, files, trx) {
-    let foreignAssetsAdded = false
+  async addForeignAssets(storage, files, trx = null) {
+    const importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
       await Promise.map(files, async file => {
         const asset = await AssetModel.query(trx).findOne('name', file.name)
         if (!asset) {
-          console.log(
-            `${
-              chalk.red('INFO:')
-            } Asset ${
-              chalk.green(`'${file.originalName}'`)
-            } is from a foreign source, fetching from ${
-              chalk.green(`'${file.url}'`)
-            } and adding to storage ${
-              chalk.green(`'${storageName}'`)
-            }...`
-          )
-          try {
-            const addedFile = await this.addForeignAsset(storageName, file, trx)
+          if (file.url) {
+            console.log(
+              `${
+                chalk.red('INFO:')
+              } Asset ${
+                chalk.green(`'${file.originalName}'`)
+              } is from a foreign source, fetching from ${
+                chalk.green(`'${file.url}'`)
+              } and adding to storage ${
+                chalk.green(`'${storage.name}'`)
+              }...`
+            )
+            const importedFile = await this.importForeignAsset(
+              storage,
+              file,
+              trx
+            )
             // Merge back the changed file properties into the actual files
-            // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
-            Object.assign(file, addedFile)
-            foreignAssetsAdded = true
-          } catch (error) {
-            console.error(error)
+            // object, so that the data from the static model hook can be used
+            // directly for the actual running query.
+            Object.assign(file, importedFile)
+            importedFiles.push(importedFile)
+          } else {
+            throw new NotFoundError(
+              `Unable to import asset from foreign source: '${
+                file.originalName
+              }'`
+            )
           }
-        } else if (asset.file.url !== file.url) {
+        } else if (!storage.areFilesEqual(file, asset.file)) {
           console.log(
             `${
               chalk.red('INFO:')
             } Asset ${
               chalk.green(`'${file.originalName}'`)
             } is from a foreign source, but was already imported to storage ${
-              chalk.green(`'${storageName}'`)
+              chalk.green(`'${storage.name}'`)
             } and can be reused.`
           )
-          // Merge back the changed file properties into the actual files
-          // object, for easier (re-)upserting in `Model.setupAssetsEvents()`.
+          // See above for an explanation of this merge.
           Object.assign(file, asset.file)
-          foreignAssetsAdded = true
+          // NOTE: No need to add `file` to `importedFiles`, since it's already
+          // been imported to the storage before.
         }
       })
     }
-    return foreignAssetsAdded
+    return importedFiles
   }
 
-  async addForeignAsset(storageName, file, trx = null) {
-    const storage = this.getStorage(storageName)
+  async importForeignAsset(storage, file, trx = null) {
     const { data } = await axios.request({
       method: 'get',
       url: file.url,
       responseType: 'arraybuffer'
     })
     const addedFile = await storage.addFile(file, data)
-    await this.createAssets(storageName, [addedFile], 0, trx)
+    await this.createAssets(storage, [addedFile], 0, trx)
     return addedFile
   }
 

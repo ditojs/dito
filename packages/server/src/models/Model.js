@@ -8,11 +8,12 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import {
-  isObject, isFunction, isPromise, asArray, merge, flatten,
+  isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
   parseDataPath, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
+import { AssetFile } from '@/storage'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -541,6 +542,27 @@ export class Model extends objection.Model {
         }
       }
     }
+    // Convert plain asset files objects to AssetFile instances with references
+    // to the linked storage.
+    const { assets } = constructor.definition
+    if (assets) {
+      for (const dataPath in assets) {
+        const storage = constructor.app.getStorage(assets[dataPath].storage)
+        const data = getValueAtDataPath(json, dataPath, () => null)
+        if (data) {
+          const convertFiles = data => {
+            if (data) {
+              if (isArray(data)) {
+                data.forEach(convertFiles)
+              } else {
+                AssetFile.convert(data, storage)
+              }
+            }
+          }
+          convertFiles(data)
+        }
+      }
+    }
     return json
   }
 
@@ -857,12 +879,12 @@ export class Model extends objection.Model {
   static _setupAssetsEvents(assets) {
     const dataPaths = Object.keys(assets)
 
-    const loadDataPaths = query => dataPaths.reduce(
+    const loadAssetDataPaths = query => dataPaths.reduce(
       (query, dataPath) => query.loadDataPath(dataPath),
       query
     )
 
-    const getFiles = items => dataPaths.reduce(
+    const getFilesPerAssetDataPath = items => dataPaths.reduce(
       (allFiles, dataPath) => {
         allFiles[dataPath] = asArray(items).reduce(
           (files, item) => {
@@ -879,60 +901,63 @@ export class Model extends objection.Model {
       {}
     )
 
-    this.on([
-      'before:update',
-      'before:delete'
-    ], async ({ context, asFindQuery }) => {
-      // Load the model's assets, as they were before the update / delete is
-      // executed.
-      context.assets = getFiles(await loadDataPaths(asFindQuery()))
-    })
+    const mapFilesByName = files => files.reduce(
+      (map, file) => {
+        map[file.name] = file
+        return map
+      },
+      {}
+    )
 
     this.on([
-      'after:insert',
-      'after:update',
-      'after:delete'
-    ], async ({
-      type, context, transaction, inputItems, result, modelOptions = {}
-    }) => {
-      const isDelete = type === 'after:delete'
-      const before = context.assets || {}
-      const after = isDelete ? {} : getFiles(inputItems)
-      let foreignAssetsAdded = false
+      'before:insert',
+      'before:update',
+      'before:delete'
+    ], async ({ type, transaction, inputItems, asFindQuery }) => {
+      // Load the model's assets, as they were before the update / delete is
+      // executed. Use `undefined` for insert, so that `asArray()` results in an
+      // empty array.
+      const beforeItems = type === 'before:insert'
+        ? undefined
+        : await loadAssetDataPaths(asFindQuery())
+      const afterItems = type === 'before:delete'
+        ? undefined
+        : inputItems
+      const beforeFilesPerDataPath = getFilesPerAssetDataPath(beforeItems)
+      const afterFilesPerDataPath = getFilesPerAssetDataPath(afterItems)
+
+      const importedFiles = []
+
+      transaction.on('rollback', async error => {
+        if (importedFiles.length > 0) {
+          console.log(
+            `Received '${error}', removing imported files again: ${
+              importedFiles.map(file => `'${file.originalName}'`)
+            }`
+          )
+          await Promise.map(
+            importedFiles,
+            file => file.storage.removeFile(file)
+          )
+        }
+      })
+
       for (const dataPath of dataPaths) {
-        const { storage } = assets[dataPath]
-        const _before = before[dataPath] || []
-        const _after = after[dataPath] || []
-        const added = _after.filter(
-          file => !_before.find(it => it.name === file.name)
+        const storage = this.app.getStorage(assets[dataPath].storage)
+        const beforeFiles = beforeFilesPerDataPath[dataPath] || []
+        const afterFiles = afterFilesPerDataPath[dataPath] || []
+        const beforeByName = mapFilesByName(beforeFiles)
+        const afterByName = mapFilesByName(afterFiles)
+        const addedFiles = afterFiles.filter(it => !beforeByName[it.name])
+        const removedFiles = beforeFiles.filter(it => !afterByName[it.name])
+        importedFiles.push(
+          ...await this.app.changeAssets(
+            storage,
+            addedFiles,
+            removedFiles,
+            transaction
+          )
         )
-        const removed = _before.filter(
-          file => !_after.find(it => it.name === file.name)
-        )
-        if (await this.app.changeAssets(storage, added, removed, transaction)) {
-          foreignAssetsAdded = true
-        }
-      }
-      if (foreignAssetsAdded && !isDelete) {
-        const useFetch = isObject(result[0])
-        // Since the actual foreign file objects were already modified by
-        // `changeAssets()`, all that's remaining to do is to call the
-        // associated patch action, with the changed data:
-        const method = `${
-            modelOptions.patch ? 'patch' : 'update'
-          }${
-            useFetch ? 'AndFetch' : ''
-          }ById`
-        // TODO: We should probably optimize this and only patch / update
-        // the changed file properties, not the full content of the modified
-        // `inputItems` again.
-        const res = await Promise.map(
-          inputItems,
-          item => this.query(transaction)[method](item.$id(), item)
-        )
-        if (useFetch) {
-          return res
-        }
       }
     })
   }
