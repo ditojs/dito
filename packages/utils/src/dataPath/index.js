@@ -1,4 +1,6 @@
+export * from './getEntriesAtDataPath'
 export * from './getValueAtDataPath'
 export * from './normalizeDataPath'
 export * from './parseDataPath'
+export * from './setDataPathEntries'
 export * from './setValueAtDataPath'
