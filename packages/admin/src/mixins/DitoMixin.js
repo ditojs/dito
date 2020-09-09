@@ -6,7 +6,7 @@ import { isMatchingType, convertType } from '@/utils/type'
 import { getResource } from '@/utils/resource'
 import {
   isObject, isArray, isString, isFunction, asArray,
-  getDataPath, labelize, hyphenate
+  getValueAtDataPath, labelize, hyphenate
 } from '@ditojs/utils'
 
 // @vue/component
@@ -158,7 +158,7 @@ export default {
       // For performance reasons, only support dataPaths in array format:
       let value = schema
         ? isArray(keyOrDataPath)
-          ? getDataPath(schema, keyOrDataPath, () => undefined)
+          ? getValueAtDataPath(schema, keyOrDataPath, () => undefined)
           : schema[keyOrDataPath]
         : undefined
 
