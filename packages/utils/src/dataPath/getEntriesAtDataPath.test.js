@@ -48,7 +48,7 @@ describe('getEntriesAtDataPath()', () => {
 
   it('should return wildcard matches', () => {
     const data = {
-      object: {
+      object1: {
         array: [
           {
             name: 'one',
@@ -65,25 +65,55 @@ describe('getEntriesAtDataPath()', () => {
             ]
           }
         ]
+      },
+      object2: {
+        object: {
+          one: {
+            name: 'one',
+            object: {
+              one: { name: 'one.one' },
+              two: { name: 'one.two' }
+            }
+          },
+          two: {
+            name: 'two',
+            object: {
+              one: { name: 'two.one' },
+              two: { name: 'two.two' }
+            }
+          }
+        }
       }
     }
 
-    expect(getEntriesAtDataPath(data, 'object/array/*/name'))
+    expect(getEntriesAtDataPath(data, 'object1/array/*/name'))
       .toStrictEqual({
-        'object/array/0/name': 'one',
-        'object/array/1/name': 'two'
+        'object1/array/0/name': 'one',
+        'object1/array/1/name': 'two'
       })
-    expect(getEntriesAtDataPath(data, 'object.array[*].name'))
+    expect(getEntriesAtDataPath(data, 'object1.array[*].name'))
       .toStrictEqual({
-        'object/array/0/name': 'one',
-        'object/array/1/name': 'two'
+        'object1/array/0/name': 'one',
+        'object1/array/1/name': 'two'
       })
-    expect(getEntriesAtDataPath(data, 'object/array/*/array/*/name'))
+    expect(getEntriesAtDataPath(data, 'object1/array/*/array/*/name'))
       .toStrictEqual({
-        'object/array/0/array/0/name': 'one.one',
-        'object/array/0/array/1/name': 'one.two',
-        'object/array/1/array/0/name': 'two.one',
-        'object/array/1/array/1/name': 'two.two'
+        'object1/array/0/array/0/name': 'one.one',
+        'object1/array/0/array/1/name': 'one.two',
+        'object1/array/1/array/0/name': 'two.one',
+        'object1/array/1/array/1/name': 'two.two'
+      })
+    expect(getEntriesAtDataPath(data, 'object2/object/*/name'))
+      .toStrictEqual({
+        'object2/object/one/name': 'one',
+        'object2/object/two/name': 'two'
+      })
+    expect(getEntriesAtDataPath(data, 'object2/object/*/object/*/name'))
+      .toStrictEqual({
+        'object2/object/one/object/one/name': 'one.one',
+        'object2/object/one/object/two/name': 'one.two',
+        'object2/object/two/object/one/name': 'two.one',
+        'object2/object/two/object/two/name': 'two.two'
       })
   })
 })

@@ -1,4 +1,4 @@
-import { isArray } from '@/base'
+import { isArray, isObject } from '@/base'
 import { parseDataPath } from './parseDataPath'
 import { normalizeDataPath } from './normalizeDataPath'
 
@@ -15,12 +15,12 @@ export function getEntriesAtDataPath(
         obj = obj[part]
         index++
         continue
-      } else if (part === '*' && isArray(obj)) {
-        // Support wildcards on arrays
+      } else if (part === '*' && (isArray(obj) || isObject(obj))) {
+        // Support wildcards on arrays and objects
         const pathStart = normalizeDataPath(parsedPath.slice(0, index))
         const pathEnd = parsedPath.slice(index + 1)
-        return obj.reduce(
-          (map, value, key) => {
+        return Object.entries(obj).reduce(
+          (map, [key, value]) => {
             const entries = getEntriesAtDataPath(value, pathEnd, handleError)
             for (const [subPath, subVal] of Object.entries(entries)) {
               map[`${pathStart}/${key}/${subPath}`] = subVal

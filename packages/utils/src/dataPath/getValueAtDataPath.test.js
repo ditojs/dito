@@ -42,17 +42,27 @@ describe('getValueAtDataPath()', () => {
 
   it('should return wildcard matches', () => {
     const data = {
-      object: {
+      object1: {
         array: [
-          { prop: 'one' },
-          { prop: 'two' }
+          { name: 'one' },
+          { name: 'two' }
         ]
+      },
+      object2: {
+        object: {
+          one: { name: 'one' },
+          two: { name: 'two' }
+        }
       }
     }
 
-    expect(getValueAtDataPath(data, 'object/array/*/prop'))
+    expect(getValueAtDataPath(data, 'object1/array/*/name'))
       .toEqual(['one', 'two'])
-    expect(getValueAtDataPath(data, 'object.array[*].prop'))
+    expect(getValueAtDataPath(data, 'object1.array[*].name'))
+      .toEqual(['one', 'two'])
+    expect(getValueAtDataPath(data, 'object2/object/*/name'))
+      .toEqual(['one', 'two'])
+    expect(getValueAtDataPath(data, 'object2.object[*].name'))
       .toEqual(['one', 'two'])
   })
 })
