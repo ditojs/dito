@@ -9,57 +9,52 @@ const SYMBOL_DATA = Symbol('data')
 
 export class AssetFile {
   constructor(originalName, data, mimeType) {
-    // TODO: If we do file migration, why not switch to:
-    // name -> storedName
-    // originalName -> name
+    // TODO: Consider changing names to these?
+    // name -> key
+    // originalName -> filename
     this.name = AssetFile.getUniqueFilename(originalName)
     this.originalName = originalName
-    // Set `mimeType` before `data`, so it can be used as default in `set data`
-    this.mimeType = mimeType
-    this.data = data
+    this.replaceData(data, mimeType)
   }
 
   get storage() {
     return this[SYMBOL_STORAGE] || null
   }
 
-  set storage(storage) {
-    setHiddenProperty(this, SYMBOL_STORAGE, storage)
-  }
-
   get data() {
     return this[SYMBOL_DATA] || null
   }
 
-  set data(data) {
+  replaceData(data, mimeType = this.mimeType) {
     if (isString(data)) {
       if (data.startsWith('data:')) {
         data = dataUriToBuffer(data)
-        this.mimeType ||= data.type || mime.lookup(this.name)
+        mimeType ||= data.type || mime.lookup(this.name)
       } else {
         data = Buffer.from(data)
-        this.mimeType ||= mime.lookup(this.name) || 'text/plain'
+        mimeType ||= mime.lookup(this.name) || 'text/plain'
       }
     } else {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
-      this.mimeType ||= (
+      mimeType ||= (
         data.mimeType ||
         mime.lookup(this.name) ||
         'application/octet-stream'
       )
     }
-    this.size = Buffer.byteLength(data)
     setHiddenProperty(this, SYMBOL_DATA, data)
+    this.mimeType = mimeType
+    this.size = Buffer.byteLength(data)
   }
 
   async read() {
-    return this.storage?.readFile(this) || null
+    return this.data || this.storage?.readFile(this) || null
   }
 
   static convert(object, storage) {
     Object.setPrototypeOf(object, AssetFile.prototype)
-    object.storage = storage
+    setHiddenProperty(object, SYMBOL_STORAGE, storage)
     return object
   }
 
