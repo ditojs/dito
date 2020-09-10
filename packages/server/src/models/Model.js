@@ -530,20 +530,27 @@ export class Model extends objection.Model {
   // @override
   $parseDatabaseJson(json) {
     json = super.$parseDatabaseJson(json)
-    const { constructor } = this
-    for (const key of constructor.dateAttributes) {
-      const date = json[key]
-      if (date !== undefined) {
-        json[key] = date ? new Date(date) : date
-      }
-    }
-    if (constructor.isSQLite()) {
+    if (this.constructor.isSQLite()) {
       // SQLite does not support boolean natively and needs conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
         if (bool !== undefined) {
           json[key] = !!bool
         }
+      }
+    }
+    // Also run through normal $parseJson(), for handling of `Date` and
+    // `AssetFile`.
+    return this.$parseJson(json)
+  }
+
+  // @override
+  $parseJson(json) {
+    const { constructor } = this
+    for (const key of constructor.dateAttributes) {
+      const date = json[key]
+      if (date !== undefined) {
+        json[key] = date ? new Date(date) : date
       }
     }
     // Convert plain asset files objects to AssetFile instances with references
@@ -572,7 +579,6 @@ export class Model extends objection.Model {
 
   // @override
   $formatJson(json) {
-    json = super.$formatJson(json)
     const { constructor } = this
     // Calculate and set the computed properties.
     for (const key of constructor.computedAttributes) {
