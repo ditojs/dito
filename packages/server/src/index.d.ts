@@ -19,9 +19,6 @@ import { DateFormat } from '@ditojs/utils'
 export = Dito
 
 declare namespace Dito {
-  export type Keyword = Ajv.KeywordDefinition
-  export type Format = Ajv.FormatValidator | Ajv.FormatDefinition
-
   interface ApplicationConfig<S extends { [key in keyof S]: any } = any> {
     /**
      * @defaultValue `production`
@@ -623,7 +620,7 @@ declare namespace Dito {
      * Validates a property of type 'number' or 'integer' to be in a given
      * range, e.g. a value between 2 and 5: [2, 5]
      */
-     range?: [number, number]
+    range?: [number, number]
 
     // keywords/_instanceof.js
     /**
@@ -751,40 +748,76 @@ declare namespace Dito {
     [k: string]: ModelAsset
   }
 
+  interface ModelOptions extends objection.ModelOptions {
+    graph?: boolean,
+    async?: boolean,
+    mutable?: boolean,
+  }
+
   class Model extends objection.Model {
     /**
      * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md|Model Properties}
      */
     static properties: ModelProperties
+
     /**
      * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md|Model Relations}
      */
     static relations: ModelRelations
+
     /**
      * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
      */
     static scopes: ModelScopes<Model>
+
     /**
      * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
      */
     static filters: ModelFilters<Model>
+
     static assets: ModelAssets
+
+    static getPropertyOrRelationAtDataPath: (dataPath: OrArrayOf<string>) => any
+
+    static count: {
+      (column?: objection.ColumnRef, options?: { as: string }): number;
+      (aliasToColumnDict: { [alias: string]: string | string[] }): number;
+      (...columns: objection.ColumnRef[]): number;
+    }
 
     /**
      * Dito automatically adds an `id` property if a model property with the
      * `primary: true` setting is not already explicitly defined.
      */
-    readonly id: string | number
+    readonly id: Id
 
     /**
      * Dito automatically adds a `foreignKeyId` property if foreign keys
      * occurring in relations definitions are not explicitly defined in the
      * properties.
      */
-    readonly foreignKeyId: string | number
+    readonly foreignKeyId: Id
 
     QueryBuilderType: QueryBuilder<this, this[]>
 
+    // Todo: include application settings
+    $app: Application<any>
+    $is(model: Model): boolean
+    $update(
+      attributes: Partial<ExtractModelProperties<this>>,
+      trx?: objection.Transaction
+    ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
+    $patch(
+      attributes: Partial<ExtractModelProperties<this>>,
+      trx?: objection.Transaction
+    ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
+    $validate<$JSON extends null | {}>(
+      json?: $JSON,
+      options?: ModelOptions & { [k: string]: any }
+    ): Promise<$JSON | this>
+    $validateGraph(
+      options: ModelOptions  & { [k: string]: any }
+    ): Promise<this>
     /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
     first: QueryBuilder<this>['first']
     find: QueryBuilder<this>['find']
@@ -1026,7 +1059,18 @@ declare namespace Dito {
 
   type ControllerActionHandler = (ctx: Koa.Context, ...args: any[]) => any
 
-  type ExtractModelProperties<T extends { properties: any }> = T['properties']
+  type ExtractModelProperties<$Model extends Model> = {
+    [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key]
+  }
+
+  type Extends<$A extends any, $B extends any> = $A extends $B ? 1 : 0
+
+  type SelectModelPropertyKeys<$Model extends Model> = {
+    [K in keyof $Model]-?: {
+      1: never
+      0: K extends 'QueryBuilderType' ? never : K
+    }[Extends<$Model[K], Model | Function>]
+  }[keyof $Model]
 
   type AuthorizationOptions =
     | boolean
@@ -1566,9 +1610,6 @@ declare namespace Dito {
       dataPath: string[] | string,
       options: objection.GraphOptions & { algorithm: 'fetch' | 'join' }
     ) => this
-    /**
-     *
-     */
     upsert: (
       data: PartialModelObject<M>,
       options?: {
@@ -1576,6 +1617,14 @@ declare namespace Dito {
         fetch: boolean
       }
     ) => this
+    find: (
+      query: QueryParameterOptions,
+      allowParam?:
+        | QueryParameterOptionKey[]
+        | { [key in keyof QueryParameterOptionKey]: boolean }
+    ) => this
+    updateById: (id: Id, data: PartialModelObject<M>) => this
+    patchById: (id: Id, data: PartialModelObject<M>) => this
     upsertAndFetch: (
       data: PartialModelObject<M>,
       options?: {
@@ -1596,7 +1645,7 @@ declare namespace Dito {
     ) => this
     upsertDitoGraphAndFetch: (data: any, options?: DitoGraphOptions) => this
     upsertDitoGraphAndFetchById: (
-      id: string | number,
+      id: Id,
       data: any,
       options?: DitoGraphOptions
     ) => QueryBuilder<M, M>
@@ -1609,7 +1658,7 @@ declare namespace Dito {
       options?: DitoGraphOptions
     ) => this
     updateDitoGraphAndFetchById: (
-      id: string | number,
+      id: Id,
       data: any,
       options?: DitoGraphOptions
     ) => QueryBuilder<M, M>
@@ -1622,16 +1671,10 @@ declare namespace Dito {
       options?: DitoGraphOptions
     ) => this
     patchDitoGraphAndFetchById: (
-      id: string | number,
+      id: Id,
       data: PartialDitoModelGraph<M>,
       options?: DitoGraphOptions
     ) => QueryBuilder<M, M>
-    find: (
-      query: QueryParameterOptions,
-      allowParam?:
-        | QueryParameterOptionKey[]
-        | { [key in keyof QueryParameterOptionKey]: boolean }
-    ) => this
     // TODO: static mixin(target)
 
     ArrayQueryBuilderType: QueryBuilder<M, M[]>
@@ -1754,6 +1797,10 @@ declare namespace Dito {
 
     isMsSQL(): boolean
   }
+
+  type Keyword = Ajv.KeywordDefinition
+  type Format = Ajv.FormatValidator | Ajv.FormatDefinition
+  type Id = string | number
 }
 
 // https://stackoverflow.com/a/56363362/825205
