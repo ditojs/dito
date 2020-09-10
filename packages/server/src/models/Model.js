@@ -924,28 +924,30 @@ export class Model extends objection.Model {
       const importedFiles = []
       const modifiedFiles = []
 
-      transaction.on('rollback', async error => {
-        if (importedFiles.length > 0) {
-          console.log(
-            `Received '${error}', removing imported files again: ${
-              importedFiles.map(file => `'${file.originalName}'`)
-            }`
-          )
-          await Promise.map(
-            importedFiles,
-            file => file.storage.removeFile(file)
-          )
-        }
-        if (modifiedFiles.length > 0) {
-          // TODO: We should really restore `modifiedFiles` as well, but that's
-          // far from trivial since no backup is kept in `handleModifiedAssets`
-          console.log(
-            `Unable to restore these already modified files: ${
-              modifiedFiles.map(file => `'${file.originalName}'`)
-            }`
-          )
-        }
-      })
+      if (transaction.rollback) {
+        transaction.on('rollback', async error => {
+          if (importedFiles.length > 0) {
+            console.log(
+              `Received '${error}', removing imported files again: ${
+                importedFiles.map(file => `'${file.originalName}'`)
+              }`
+            )
+            await Promise.map(
+              importedFiles,
+              file => file.storage.removeFile(file)
+            )
+          }
+          if (modifiedFiles.length > 0) {
+            // TODO: `modifiedFiles` should be restored as well, but that's far
+            // from trivial since no backup is kept in `handleModifiedAssets`
+            console.log(
+              `Unable to restore these already modified files: ${
+                modifiedFiles.map(file => `'${file.originalName}'`)
+              }`
+            )
+          }
+        })
+      }
 
       for (const dataPath of dataPaths) {
         const storage = this.app.getStorage(assets[dataPath].storage)
