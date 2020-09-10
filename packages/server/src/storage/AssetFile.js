@@ -14,7 +14,9 @@ export class AssetFile {
     // originalName -> filename
     this.name = AssetFile.getUniqueFilename(originalName)
     this.originalName = originalName
-    this.replaceData(data, mimeType)
+    // Set `mimeType` before `data`, so it can be used as default in `set data`
+    this.mimeType = mimeType
+    this.data = data
   }
 
   get storage() {
@@ -25,31 +27,30 @@ export class AssetFile {
     return this[SYMBOL_DATA] || null
   }
 
-  replaceData(data, mimeType = this.mimeType) {
+  set data(data) {
     if (isString(data)) {
       if (data.startsWith('data:')) {
         data = dataUriToBuffer(data)
-        mimeType ||= data.type || mime.lookup(this.name)
+        this.mimeType ||= data.type || mime.lookup(this.name)
       } else {
         data = Buffer.from(data)
-        mimeType ||= mime.lookup(this.name) || 'text/plain'
+        this.mimeType ||= mime.lookup(this.name) || 'text/plain'
       }
     } else {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
-      mimeType ||= (
+      this.mimeType ||= (
         data.mimeType ||
         mime.lookup(this.name) ||
         'application/octet-stream'
       )
     }
-    setHiddenProperty(this, SYMBOL_DATA, data)
-    this.mimeType = mimeType
     this.size = Buffer.byteLength(data)
+    setHiddenProperty(this, SYMBOL_DATA, data)
   }
 
   async read() {
-    return this.data || this.storage?.readFile(this) || null
+    return this.storage?.readFile(this) || null
   }
 
   static convert(object, storage) {
