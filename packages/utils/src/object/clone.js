@@ -1,4 +1,4 @@
-import { isArray, isObject, isDate, isRegExp } from '@/base'
+import { isArray, isObject, isDate, isRegExp, isFunction } from '@/base'
 import { pick } from '@/object'
 
 export function clone(arg, iteratee = null) {
@@ -8,10 +8,15 @@ export function clone(arg, iteratee = null) {
   } else if (isRegExp(arg)) {
     copy = new arg.constructor(arg)
   } else if (isObject(arg)) {
-    copy = Object.create(Object.getPrototypeOf(arg))
-    // Only clone the non-inherited properties.
-    for (const key of Object.keys(arg)) {
-      copy[key] = clone(arg[key], iteratee)
+    if (isFunction(arg.clone)) {
+      copy = arg.clone()
+    } else {
+      // Prevent calling the actual constructor since it is not guaranteed to
+      // work as intended here, and only clone the non-inherited properties.
+      copy = Object.create(Object.getPrototypeOf(arg))
+      for (const key of Object.keys(arg)) {
+        copy[key] = clone(arg[key], iteratee)
+      }
     }
   } else if (isArray(arg)) {
     copy = new arg.constructor(arg.length)
