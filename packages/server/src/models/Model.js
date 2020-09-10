@@ -554,16 +554,16 @@ export class Model extends objection.Model {
         const storage = constructor.app.getStorage(assets[dataPath].storage)
         const data = getValueAtDataPath(json, dataPath, () => null)
         if (data) {
-          const convertFiles = data => {
+          const convertToAssetFiles = data => {
             if (data) {
               if (isArray(data)) {
-                data.forEach(convertFiles)
+                data.forEach(convertToAssetFiles)
               } else {
                 AssetFile.convert(data, storage)
               }
             }
           }
-          convertFiles(data)
+          convertToAssetFiles(data)
         }
       }
     }

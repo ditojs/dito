@@ -34,7 +34,7 @@ export class Storage {
 
   getUploadStorage(config) {
     // Returns a storage that inherits from this.storage but overrides
-    // _handleFile to pass on `settings` to the call of `handleUpload()`
+    // _handleFile to pass on `config` to the call of `handleUpload()`
     return this.storage
       ? Object.setPrototypeOf({
         _handleFile: async (req, file, callback) => {
@@ -57,7 +57,7 @@ export class Storage {
     return AssetFile.getUniqueFilename(filename)
   }
 
-  convertFile(file) {
+  convertStorageFile(file) {
     const name = this._getFileName(file)
     // Convert multer file object to our own file object format:
     return {
@@ -71,8 +71,8 @@ export class Storage {
     }
   }
 
-  convertFiles(files) {
-    return files.map(file => this.convertFile(file))
+  convertStorageFiles(files) {
+    return files.map(file => this.convertStorageFile(file))
   }
 
   async addFile(file, buffer) {
