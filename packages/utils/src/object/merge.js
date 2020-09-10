@@ -7,10 +7,9 @@ export function merge(target, ...sources) {
       isObject(target) && isObject(source) ||
       isArray(target) && isArray(source)
     )) {
-      for (const key in source) {
+      for (const key of Object.keys(source)) {
         const value = source[key]
         if (
-          source.hasOwnProperty(key) &&
           !_merge(target[key], value) &&
           (value !== undefined || !(key in target))
         ) {
@@ -27,6 +26,3 @@ export function merge(target, ...sources) {
   }
   return target
 }
-
-// TODO: Deprecate in 2019:
-export const deepMerge = merge

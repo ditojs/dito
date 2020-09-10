@@ -24,7 +24,7 @@ export class AssetFile {
   }
 
   set storage(storage) {
-    this[SYMBOL_STORAGE] = storage
+    setHiddenProperty(this, SYMBOL_STORAGE, storage)
   }
 
   get data() {
@@ -50,7 +50,7 @@ export class AssetFile {
       )
     }
     this.size = Buffer.byteLength(data)
-    this[SYMBOL_DATA] = data
+    setHiddenProperty(this, SYMBOL_DATA, data)
   }
 
   async read() {
@@ -70,4 +70,13 @@ export class AssetFile {
   static getUniqueFilename(filename) {
     return `${uuidv4()}${path.extname(filename)}`
   }
+}
+
+function setHiddenProperty(object, key, value) {
+  Object.defineProperty(object, key, {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value
+  })
 }

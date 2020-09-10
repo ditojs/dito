@@ -89,22 +89,20 @@ export function filterGraph(rootModelClass, modelGraph, expr) {
   for (const model of models) {
     if (model) {
       const relations = model.constructor.getRelations()
-      for (const key in model) {
-        if (model.hasOwnProperty(key)) {
-          const relation = relations[key]
-          if (relation) {
-            const child = expr[key]
-            if (child) {
-              // Allowed relation, keep filtering recursively:
-              filterGraph(
-                relation.relatedModelClass,
-                model[key],
-                child
-              )
-            } else {
-              // Disallowed relation, delete:
-              delete model[key]
-            }
+      for (const key of Object.keys(model)) {
+        const relation = relations[key]
+        if (relation) {
+          const child = expr[key]
+          if (child) {
+            // Allowed relation, keep filtering recursively:
+            filterGraph(
+              relation.relatedModelClass,
+              model[key],
+              child
+            )
+          } else {
+            // Disallowed relation, delete:
+            delete model[key]
           }
         }
       }
