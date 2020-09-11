@@ -122,7 +122,7 @@ export default DitoComponent.component('dito-clipboard', {
       // Keep an internal clipboard as fallback.
       this.clipboardData = data
       try {
-        const json = JSON.stringify(data, null, '  ')
+        const json = JSON.stringify(data, null, 2)
         await navigator.clipboard?.writeText?.(json)
         // See if we can activate the paste button now, dependding on browsers:
         await this.checkClipboard()

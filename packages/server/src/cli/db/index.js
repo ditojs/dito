@@ -1,4 +1,5 @@
 export * from './createMigration'
+export * from './listAssetConfig'
 export * from './migrate'
 export * from './rollback'
 export * from './reset'

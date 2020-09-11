@@ -546,7 +546,7 @@ export class Application extends Koa {
   onError(err) {
     if (!err.expose && !this.silent) {
       console.error(`${err.name}: ${err.toJSON
-        ? JSON.stringify(err.toJSON(), null, '  ')
+        ? JSON.stringify(err.toJSON(), null, 2)
         : err.message || err}`
       )
       if (err.stack) {

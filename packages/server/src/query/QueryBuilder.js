@@ -5,7 +5,7 @@ import { QueryParameters } from './QueryParameters'
 import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
   isObject, isPlainObject, isString, isArray, clone,
-  getValueAtDataPath, setValueAtDataPath, parseDataPath, normalizeDataPath
+  getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
 import { createLookup, getScope, deprecate } from '@/utils'
 
@@ -311,19 +311,20 @@ export class QueryBuilder extends objection.QueryBuilder {
     const {
       property,
       expression,
+      nestedDataPath,
       name,
       index
     } = this.modelClass().getPropertyOrRelationAtDataPath(parsedDataPath)
 
-    if (index < parsedDataPath.length - 1) {
-      // Once a JSON data type is reached, load it and assume we're done with
-      // the loading part, even if there s more to the data-path.
+    if (nestedDataPath) {
+      // Once a JSON data type is reached, even if it's not at the end of the
+      // provided path, load it and assume we're done with the loading part.
       if (!(property && ['object', 'array'].includes(property.type))) {
         throw new QueryBuilderError(
           `Unable to load full data-path '${
             dataPath
           }' (Unmatched: '${
-            normalizeDataPath(parsedDataPath.slice(index + 1))
+            nestedDataPath
           }').`
         )
       }

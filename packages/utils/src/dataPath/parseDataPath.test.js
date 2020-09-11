@@ -44,5 +44,11 @@ describe('parseDataPath()', () => {
 
   it('should return undefined for values other than array / string', () => {
     expect(parseDataPath({})).toBe(undefined)
+    expect(parseDataPath(false)).toBe(undefined)
+    expect(parseDataPath(10)).toBe(undefined)
+  })
+
+  it('should parse an empty string to an empty array', () => {
+    expect(parseDataPath('')).toStrictEqual([])
   })
 })

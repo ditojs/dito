@@ -4,6 +4,7 @@ export function parseDataPath(path) {
   if (isArray(path)) {
     return [...path] // Alway return new arrays (clones).
   } else if (isString(path)) {
+    if (!path) return []
     const str = path
       // Convert from JavaScript property access notation to JSON pointers:
       .replace(/\.([^.]*)/g, '/$1')

@@ -21,7 +21,7 @@ export class ResponseError extends Error {
       // Include full JSON error in message during tests, for better reporting.
       const { message: _, ...rest } = data
       if (Object.keys(rest).length > 0) {
-        message = `${message}\nError Data:\n${JSON.stringify(rest, null, '  ')}`
+        message = `${message}\nError Data:\n${JSON.stringify(rest, null, 2)}`
       }
     }
     super(message)

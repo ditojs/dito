@@ -625,14 +625,26 @@ export class Model extends objection.Model {
     const getResult = (property = null, relation = null) => {
       const found = property || relation
       const name = parsedDataPath[index]
+      const next = index + 1
       const dataPath = found
-        ? normalizeDataPath(parsedDataPath.slice(0, index + 1))
+        ? normalizeDataPath(parsedDataPath.slice(0, next))
+        : null
+      const nestedDataPath = found
+        ? normalizeDataPath(parsedDataPath.slice(next))
         : null
       const expression = found
-        ? parsedDataPath.slice(0, relation ? index + 1 : index).join('.') +
+        ? parsedDataPath.slice(0, relation ? next : index).join('.') +
           (property ? `(#${name})` : '')
         : null
-      return { property, relation, dataPath, name, expression, index }
+      return {
+        property,
+        relation,
+        dataPath,
+        nestedDataPath,
+        name,
+        expression,
+        index
+      }
     }
 
     const [firstToken, ...otherTokens] = parsedDataPath
