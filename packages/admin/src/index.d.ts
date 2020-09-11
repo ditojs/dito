@@ -2178,7 +2178,7 @@ declare module '@ditojs/admin' {
     multiselect: TypeMultiselect<$State>
     number: TypeNumber<$State>
     radio: TypeRadio<$State>
-    select: SelectSchema<$State>
+    select: TypeSelect<$State>
     slider: TypeSlider<$State>
     switch: TypeSwitch<$State>
     text: TypeText<$State>
