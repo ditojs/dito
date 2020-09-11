@@ -21,7 +21,7 @@ import multerS3 from 'multer-s3'
 export = Dito
 
 declare namespace Dito {
-  interface ApplicationConfig<S extends { [key in keyof S]: any } = any> {
+  type ApplicationConfig = {
     /**
      * @defaultValue `production`
      */
@@ -137,7 +137,7 @@ declare namespace Dito {
     /**
      * Service configurations. Pass `false` as a value to disable a service.
      */
-    services?: { [key in keyof S]: any }
+    services?: $Services
     storages?: { [k: string]: StorageConfig }
   }
 
@@ -347,9 +347,9 @@ declare namespace Dito {
       | ApplicationControllers
   }
 
-  class Application<S extends { [key in keyof S]: any }> {
+  class Application {
     constructor(
-      config: ApplicationConfig<S>,
+      config: ApplicationConfig,
       elements: {
         validator?: Validator
         // TODO: router types
@@ -366,7 +366,7 @@ declare namespace Dito {
         }
         controllers?: ApplicationControllers
         // TODO: services docs
-        services?: { [key in keyof S]: Class<Service> | Service }
+        services?: { [k: string]: Class<Service> | Service }
       }
     )
     start: () => Promise<void>
