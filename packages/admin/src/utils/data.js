@@ -6,7 +6,7 @@ export function appendDataPath(dataPath, token) {
     : token
 }
 
-export function getItem(rootItem, dataPath, isValue) {
+export function getItem(rootItem, dataPath, isValue = false) {
   const path = parseDataPath(dataPath)
   // Remove the first path token if the path is not to an item's value, and see
   // if it's valid:
@@ -15,7 +15,7 @@ export function getItem(rootItem, dataPath, isValue) {
     : null
 }
 
-export function getParentItem(rootItem, dataPath, isValue) {
+export function getParentItem(rootItem, dataPath, isValue = false) {
   const path = parseDataPath(dataPath)
   if (path) {
     // Remove the first path token if the path is not to an item's value:
@@ -34,8 +34,8 @@ export function getParentItem(rootItem, dataPath, isValue) {
   return null
 }
 
-export function getItemParams(target, params) {
-  return new ItemParams(target, params)
+export function getItemParams(component, params) {
+  return new ItemParams(component, params)
 }
 
 // Use WeakMap for ItemParams objects, so we don't have to pollute the actual
@@ -47,15 +47,15 @@ function get(that, key) {
 }
 
 class ItemParams {
-  constructor(target, params) {
+  constructor(component, params) {
     // Use the provided params object / function, or create a new one:
     params = params
       ? (isFunction(params) ? params() : params)
       : {}
-    params.target = target
-    // Have `params` inherit from `target`, so it can override its values and
+    params.component = component
+    // Have `params` inherit from `component`, so it can override its values and
     // still retrieve from it, and associate it with `this` through `paramsMap`:
-    paramsMap.set(this, Object.setPrototypeOf(params, target))
+    paramsMap.set(this, Object.setPrototypeOf(params, component))
   }
 
   get value() {
@@ -91,11 +91,6 @@ class ItemParams {
     return get(this, 'rootData') || null
   }
 
-  // TODO: Rename to `targetComponent`, since `target` is always a component.
-  get target() {
-    return get(this, 'target') || null
-  }
-
   get user() {
     return get(this, 'user') || null
   }
@@ -110,6 +105,16 @@ class ItemParams {
 
   get formLabel() {
     return get(this, 'formLabel') || null
+  }
+
+  get component() {
+    return get(this, 'component') || null
+  }
+
+  // TODO: `ItemParams.target` was deprecated in favor of `ItemParams.component`
+  // on 2020-09-11, remove later.
+  get target() {
+    return this.component
   }
 
   get schemaComponent() {

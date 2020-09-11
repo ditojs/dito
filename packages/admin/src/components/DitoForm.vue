@@ -99,7 +99,7 @@ export default DitoComponent.component('dito-form', {
               // Submit buttons close the form by default:
               closeForm: true,
               events: {
-                click: ({ target }) => target.submit()
+                click: ({ component: button }) => button.submit()
               }
             }
           },
