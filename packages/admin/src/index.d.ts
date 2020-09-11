@@ -416,7 +416,7 @@ declare module '@ditojs/admin' {
            * @defaultValue `'label'` when no label is supplied and the options are
            * objects
            */
-          label?: string
+          label?: string | ((option: any) => string)
           /**
            * The key of the option property which should be treated as the value.
            *
@@ -435,20 +435,19 @@ declare module '@ditojs/admin' {
      * When defined, a search input field will be added to allow searching for
      * specific options.
      */
-    search?: (
-      query: string,
-      options: any[]
-    ) =>
-      | OrPromiseOf<any[]>
-      | {
-          filter: (query: string, options: any[]) => OrPromiseOf<any[]>
-          debounce?:
-            | number
-            | {
-                delay: number
-                immediate?: boolean
-              }
-        }
+    search?: {
+      filter: (
+        this: ComponentByType[$State['component']],
+        query: string,
+        options: any[]
+      ) => OrPromiseOf<any[]> | AxiosResponse<any[]>
+      debounce?:
+        | number
+        | {
+            delay: number
+            immediate?: boolean
+          }
+    }
   }
 
   export interface SchemaNumberMixin<$State extends State> {
@@ -1321,7 +1320,7 @@ declare module '@ditojs/admin' {
       }
     }): Promise<$Item>
     getResourcePath(resource: any): string | null
-    load(options: {
+    load<T extends any>(options: {
       cache?: 'local' | 'global'
       url: string
       /**
@@ -1330,7 +1329,7 @@ declare module '@ditojs/admin' {
       method?: HTTPVerb
       params?: any
       data?: any
-    }): Response
+    }): T
     navigate(location: string | { path: string }): Promise<boolean>
     download(url: string, filename: string): void
     notify: {
