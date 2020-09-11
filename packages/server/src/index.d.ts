@@ -777,7 +777,7 @@ declare namespace Dito {
   type ModelScope<T extends Model> = (
     this: T,
     queryBuilder: QueryBuilder<T>
-  ) => QueryBuilder<T, any>
+  ) => QueryBuilder<T, any> | void
 
   interface ModelScopes<T extends Model> {
     [k: string]: ModelScope<T>
