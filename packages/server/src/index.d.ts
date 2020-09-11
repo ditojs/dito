@@ -1109,13 +1109,20 @@ declare namespace Dito {
 
   type ActionParameter = Schema & { name: string }
 
-  type ModelControllerActionHandler<M extends Model> = (
-    ctx: Koa.Context,
-    member: M,
+  type ModelControllerActionHandler<
+    $ModelController extends ModelController
+  > = (
+    this: $ModelController,
+    ctx: KoaContext,
+    member: InstanceType<$ModelController['modelClass']>,
     ...args: any[]
   ) => any
 
-  type ControllerActionHandler = (ctx: Koa.Context, ...args: any[]) => any
+  type ControllerActionHandler<$Model extends Model> = (
+    this: $Model,
+    ctx: KoaContext,
+    ...args: any[]
+  ) => any
 
   type ExtractModelProperties<$Model extends Model> = {
     [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key]
@@ -1208,12 +1215,12 @@ declare namespace Dito {
   }
 
   type ModelControllerActionOptions<
-    M extends Model
-  > = ControllerActionOptions & {
+    $ModelController extends ModelController
+  > = BaseControllerActionOptions & {
     /**
      * The function to be called when the action route is requested.
      */
-    handler: ModelControllerActionHandler<M>
+    handler: ModelControllerActionHandler<$ModelController>
   }
 
   type MemberActionParameter<M extends Model> =
@@ -1244,10 +1251,10 @@ declare namespace Dito {
         modify?: (query: QueryBuilder<M>) => QueryBuilder<M>
       }
 
-  type ModelControllerActions<M extends Model> = {
+  type ModelControllerActions<$ModelController = ModelController> = {
     [key: string]:
-      | ModelControllerActionOptions<M>
-      | ModelControllerActionHandler<M>
+      | ModelControllerActionOptions<$ModelController>
+      | ModelControllerActionHandler<$ModelController>
       | AllowedControllerActionName[]
   }
 
@@ -1347,14 +1354,14 @@ declare namespace Dito {
 
   // TODO: UserMixin
 
-  class ModelController<M extends Model> extends Controller {
+  class ModelController<$Model extends Model> extends Controller {
     /**
      * The model class that this controller represents. If none is provided,
      * the singularized controller name is used to look up the model class in
      * models registered with the application. As a convention, model controller
      * names should always be provided in pluralized form.
      */
-    modelClass?: Class<M>
+    modelClass?: Class<$Model>
     /**
      * The controller's collection actions. Instead of being provided on the
      * instance level as in the controller base class, they are to be wrapped
@@ -1364,7 +1371,7 @@ declare namespace Dito {
      * array of action names under the `allow` key. Only the action names listed
      * there will be mapped to routes, everything else will be omitted.
      */
-    collection?: ModelControllerActions<M>
+    collection?: ModelControllerActions<ModelController<$Model>, $Model>
     /**
      * The controller's member actions. Instead of being provided on the instance
      * level as in the controller base class, they are to be wrapped in a
@@ -1374,7 +1381,7 @@ declare namespace Dito {
      * of action names under the `allow` key. Only the action names listed there
      * will be mapped to routes, everything else will be omitted.
      */
-    member?: ModelControllerMemberActions<M>
+    member?: ModelControllerMemberActions<$Model>
     /**
      * Controls whether normal database methods should be used, or their …Graph…
      * counterparts.
