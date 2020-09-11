@@ -139,7 +139,7 @@ declare namespace Dito {
      * Service configurations. Pass `false` as a value to disable a service.
      */
     services?: $Services
-    storages?: { [k: string]: StorageConfig }
+    storages?: StorageConfigs
   }
 
   interface multerS3Options {
@@ -190,6 +190,10 @@ declare namespace Dito {
           callback: (error: any, serverSideEncryption?: string) => void
         ) => void)
       | string
+  }
+
+  type StorageConfigs = {
+    [k: string]: StorageConfig
   }
 
   type StorageConfig =
@@ -348,6 +352,10 @@ declare namespace Dito {
       | ApplicationControllers
   }
 
+  type Models = {
+    [name: string]: Class<Model>
+  }
+
   class Application {
     constructor(
       config: ApplicationConfig,
@@ -362,17 +370,23 @@ declare namespace Dito {
         events?: {
           [eventName: string]: (this: Application<S>, ...args: []) => void
         }
-        models: {
-          [name: string]: Class<Model>
-        }
+        models: Models
         controllers?: ApplicationControllers
         // TODO: services docs
-        services?: { [k: string]: Class<Service> | Service }
+        services?: Services
       }
     )
-    start: () => Promise<void>
-    stop: () => Promise<void>
-    startOrExit: () => Promise<void>
+    start(): Promise<void>
+    stop(): Promise<void>
+    startOrExit(): Promise<void>
+    addServices(services: Services): void
+    addService(service: Service): void
+    addController(controllers: Controller, namespace?: string): void
+    addControllers(controllers: ApplicationControllers, namespace?: string): void
+    addStorages(storages: StorageConfigs): void
+    addStorage(storage: StorageConfig): void
+    addModels(models: Models): void
+    addModel(model: Class<Model>): void
   }
   interface Application<S extends { [key in keyof S]: any }>
     extends Omit<
@@ -1646,6 +1660,7 @@ declare namespace Dito {
 
     stop(): Promise<void>
   }
+  type Services = { [k: string]: Class<Service> | Service }
 
   class QueryBuilder<M extends Model, R = M[]> extends objection.QueryBuilder<
     M,
