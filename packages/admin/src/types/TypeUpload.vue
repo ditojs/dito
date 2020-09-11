@@ -21,9 +21,9 @@
       )
         tr(
           v-for="(file, index) in files"
-          :key=" file.id || file.name"
+          :key="file.name"
         )
-          td {{ file.originalName }}
+          td(v-html="renderFile(file, index)")
           td {{ file.size | formatFileSize }}
           td
             template(v-if="file.upload")
@@ -112,7 +112,8 @@ import parseFileSize from 'filesize-parser'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { formatFileSize } from '@/utils/units'
-import { isArray, asArray } from '@ditojs/utils'
+import { getItemParams, appendDataPath } from '@/utils/data'
+import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('upload', {
@@ -190,8 +191,7 @@ export default TypeComponent.register('upload', {
     uploadPath() {
       return this.getResourceUrl({
         type: 'upload',
-        path: this.api.normalizePath(this.dataPath),
-        parent: this.dataComponent.resource
+        path: this.api.normalizePath(this.dataPath)
       })
     }
   },
@@ -210,6 +210,21 @@ export default TypeComponent.register('upload', {
           .filter(file => file)
         return multiple ? files : files[0] || null
       }
+    },
+
+    renderFile(file, index) {
+      const { render } = this.schema
+      return render
+        ? render.call(
+          this,
+          getItemParams(this, {
+            value: file,
+            list: this.files,
+            index,
+            dataPath: appendDataPath(this.dataPath, index)
+          })
+        )
+        : escapeHtml(file.originalName)
     },
 
     deleteFile(file, index) {

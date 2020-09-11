@@ -1,4 +1,6 @@
-import { parseDataPath, getValueAtDataPath, isFunction } from '@ditojs/utils'
+import {
+  parseDataPath, getValueAtDataPath, isFunction, isInteger
+} from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
   return dataPath != null && dataPath !== ''
@@ -25,7 +27,7 @@ export function getParentItem(rootItem, dataPath, isValue = false) {
     let token
     do {
       token = path.pop()
-    } while (token != null && !isNaN(token))
+    } while (token != null && isInteger(+token))
     // If the removed token is valid, we can get the parent data:
     if (token != null) {
       return getValueAtDataPath(rootItem, path)
@@ -84,11 +86,20 @@ class ItemParams {
   // parent. If needed, we could expose this data here too, as we can do all
   // sorts of data processing with `rootData` and `dataPath`.
   get parentItem() {
-    return getParentItem(this.rootItem, this.dataPath, true) || null
+    const parentItem = getParentItem(this.rootItem, this.dataPath, true) || null
+    return parentItem !== this.item ? parentItem : null
   }
 
   get rootItem() {
     return get(this, 'rootData') || null
+  }
+
+  get list() {
+    return get(this, 'list')
+  }
+
+  get index() {
+    return get(this, 'index')
   }
 
   get user() {
