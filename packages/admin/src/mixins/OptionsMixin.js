@@ -121,15 +121,12 @@ export default {
     },
 
     searchFilter() {
-      const { search, options } = this.schema
+      const { search } = this.schema
       if (search) {
         const { filter, debounce } = isFunction(search)
           ? { filter: search }
           : search
         return debounce ? debounceAsync(filter, debounce) : filter
-      } else {
-        // TODO: `schema.options.search` is deprecated, remove later.
-        return options.search
       }
     }
   },

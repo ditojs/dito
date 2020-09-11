@@ -160,8 +160,7 @@ export function convertRelation(schema, models) {
     from = new ModelReference(from, models, false)
     to = new ModelReference(to, models, false)
     if (isThroughRelationClass(relationClass)) {
-      // TODO: `through === true` is deprecated, remove later.
-      if (!through || through === true) {
+      if (!through) {
         // Auto-generate the through settings, see buildThrough():
         through = inverse
           ? to.buildThrough(from, true)
