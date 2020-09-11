@@ -58,7 +58,7 @@ export class Storage {
   }
 
   convertStorageFile(file) {
-    const name = this._getFileName(file)
+    const name = this._getName(file)
     // Convert multer file object to our own file object format:
     return {
       name,
@@ -91,6 +91,10 @@ export class Storage {
     return this._readFile(file)
   }
 
+  getFilePath(file) {
+    return this._getFilePath(file)
+  }
+
   isImageFile(file) {
     return file.mimetype.startsWith('image/')
   }
@@ -120,7 +124,10 @@ export class Storage {
   }
 
   // @overridable
-  _getFileName(_file) {}
+  _getName(_file) {}
+
+  // @overridable
+  _getFilePath(_file) {}
 
   // @overridable
   _getStorageProperties(_name, _file) {}

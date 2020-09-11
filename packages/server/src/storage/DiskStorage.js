@@ -29,14 +29,20 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  _getFileName(file) {
+  _getName(file) {
     return file.filename
+  }
+
+  // @override
+  _getFilePath(file) {
+    const { name } = file
+    return this._getPath(this._getNestedFolder(name), name)
   }
 
   // @override
   _getStorageProperties(name) {
     return {
-      url: this._getFileUrl(name)
+      url: this._getUrl(this._getNestedFolder(name, true), name)
     }
   }
 
@@ -49,7 +55,7 @@ export class DiskStorage extends Storage {
 
   // @override
   async _addFile(file, buffer) {
-    const filePath = this._getFilePath(file.name)
+    const filePath = this._getFilePath(file)
     const dir = path.dirname(filePath)
     await fs.ensureDir(dir)
     await fs.writeFile(filePath, buffer)
@@ -58,7 +64,7 @@ export class DiskStorage extends Storage {
 
   // @override
   async _removeFile(file) {
-    const filePath = this._getFilePath(file.name)
+    const filePath = this._getFilePath(file)
     await fs.unlink(filePath)
     const removeIfEmpty = async dir => {
       if ((await fs.readdir(dir)).length === 0) {
@@ -74,7 +80,7 @@ export class DiskStorage extends Storage {
 
   // @override
   async _readFile(file) {
-    return fs.readFile(this._getFilePath(file.name))
+    return fs.readFile(this._getFilePath(file))
   }
 
   // @override
@@ -86,13 +92,5 @@ export class DiskStorage extends Storage {
     // Store files in nested folders created with the first two chars of
     // filename, for faster access & management with large amounts of files.
     return (posix ? path.posix : path).join(name[0], name[1])
-  }
-
-  _getFilePath(name) {
-    return this._getPath(this._getNestedFolder(name), name)
-  }
-
-  _getFileUrl(name) {
-    return this._getUrl(this._getNestedFolder(name, true), name)
   }
 }

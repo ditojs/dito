@@ -49,14 +49,22 @@ export class S3Storage extends Storage {
   }
 
   // @override
-  _getFileName(file) {
+  _getName(file) {
     return file.key
+  }
+
+  // @override
+  _getFilePath(_file) {
+    // There is no "local" file-path to files on S3.
+    return null
   }
 
   // @override
   _getStorageProperties(name, file) {
     return {
-      url: this._getFileUrl(name, file.location)
+      // Attempt `getUrl()` first to allow S3 buckets to define their own
+      // base URLs, e.g. for CloudFront, fall back to default S3 location:
+      url: this._getUrl(name) || file.location
     }
   }
 
@@ -69,7 +77,7 @@ export class S3Storage extends Storage {
 
   // @override
   async _addFile(file, buffer) {
-    const data = await this.execute('upload', {
+    const data = await this._execute('upload', {
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.name,
@@ -80,7 +88,7 @@ export class S3Storage extends Storage {
 
   // @override
   async _removeFile(file) {
-    await this.execute('deleteObject', {
+    await this._execute('deleteObject', {
       Bucket: this.bucket,
       Key: file.name
     })
@@ -100,7 +108,7 @@ export class S3Storage extends Storage {
       const {
         Body: data,
         ContentType: mimeType
-      } = await this.execute('getObject', {
+      } = await this._execute('getObject', {
         Bucket: this.bucket,
         Key: file.name
       })
@@ -115,13 +123,7 @@ export class S3Storage extends Storage {
     return _file1.url === _file2.url
   }
 
-  _getFileUrl(name, location) {
-    // Attempt `getUrl()` first to allow S3 buckets to define their own
-    // base URLs, e.g. for CloudFront, fall back to default S3 location:
-    return this._getUrl(name) || location
-  }
-
-  execute(method, params) {
+  _execute(method, params) {
     return new Promise((resolve, reject) => {
       this.s3[method](params, toPromiseCallback(resolve, reject))
     })

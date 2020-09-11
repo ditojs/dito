@@ -49,11 +49,19 @@ export class AssetFile {
     setHiddenProperty(this, SYMBOL_DATA, data)
   }
 
+  get path() {
+    return this.storage?.getFilePath(this)
+  }
+
   async read() {
     return this.storage?.readFile(this) || null
   }
 
   static convert(object, storage) {
+    // `path` properties were removed in favor or the `get path()` accessor
+    // above. For it to work we need to delete the field in legacy data.
+    // TODO: Remove once all data is migrated to new format.
+    delete object.path
     Object.setPrototypeOf(object, AssetFile.prototype)
     setHiddenProperty(object, SYMBOL_STORAGE, storage)
     return object
