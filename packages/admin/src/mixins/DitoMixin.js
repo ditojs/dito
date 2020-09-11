@@ -267,15 +267,34 @@ export default {
     },
 
     getResourcePath(resource) {
+      resource = getResource(resource)
+      if (resource.parent === undefined && !this.providesData) {
+        resource.parent = this.dataComponent?.resource
+      }
       return this.api.resources.any(getResource(resource))
     },
 
     getResourceUrl(resource) {
       const path = this.getResourcePath(resource)
-      // Use same approach as axios internally to join baseURL with path:
-      return path
-        ? `${this.api.url.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
-        : null
+      let url = null
+      if (path) {
+        // Use same approach as axios internally to join baseURL with path:
+        url = `${
+          this.api.url.replace(/\/+$/, '')
+        }/${
+          path.replace(/^\/+/, '')
+        }`
+        // Support optional query parameters, which are added to the URL:
+        const { query } = resource
+        if (query) {
+          const params = Object.entries(query).map(
+            ([key, value]) =>
+              `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+          )
+          url = `${url}?${params.join('&')}`
+        }
+      }
+      return url
     },
 
     load({ cache, ...options }) {
