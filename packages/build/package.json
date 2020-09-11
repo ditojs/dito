@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "0.157.0",
+  "version": "0.158.0",
   "private": true,
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/webpack",
