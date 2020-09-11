@@ -2046,10 +2046,12 @@ declare module '@ditojs/admin' {
     error: any | null
   }
 
-  type SchemaType<$State extends State> =
+  type ComponentSchema<$State extends State = CreateState> =
     | InputSchema<$State>
     | RadioSchema<$State>
+    | CheckboxSchema<$State>
     | CheckboxesSchema<$State>
+    | ColorSchema<$State>
     | SelectSchema<$State>
     | MultiSelectSchema<$State>
     | ListSchema<$State>
@@ -2067,11 +2069,11 @@ declare module '@ditojs/admin' {
   type Components<$State extends State> = AnyAlternative<
     $State['item'],
     {
-      [name: string]: SchemaType<$State>
+      [name: string]: ComponentSchema<$State>
     },
     {
       [$ItemName in keyof $State['item']]?:
-        | SchemaType<
+        | ComponentSchema<
             CreateState<$State['item'], $ItemName, $State['item'][$ItemName]>
           >
         | never
