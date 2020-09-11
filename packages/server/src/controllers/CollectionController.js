@@ -91,11 +91,15 @@ export class CollectionController extends Controller {
   }
 
   validateId(id) {
-    this.idValidator.$validate(
-      this.modelClass.getReference(id),
-      { patch: true }
-    )
-    return id
+    const reference = this.modelClass.getReference(id)
+    // This validates and coerces at the same time, so extract the coerced id
+    // from `reference` again afterwards.
+    this.idValidator.$validate(reference, {
+      coerceTypes: true,
+      patch: true
+    })
+    const values = Object.values(reference)
+    return values.length > 1 ? values : values[0]
   }
 
   query(trx) {

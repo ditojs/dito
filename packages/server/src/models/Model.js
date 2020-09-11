@@ -279,15 +279,8 @@ export class Model extends objection.Model {
           }.`
         )
       }
-      const { properties } = this.definition
       idProperties.forEach((key, index) => {
-        const id = ids[index]
-        if (id !== undefined) {
-          const { type } = properties[key]
-          // On-the-fly coercion of numeric ids to numbers, so they can pass the
-          // model validation in `CollectionController.getMemberId()`
-          ref[key] = ['integer', 'number'].includes(type) ? +id : id
-        }
+        ref[key] = ids[index]
       })
     }
     return ref
