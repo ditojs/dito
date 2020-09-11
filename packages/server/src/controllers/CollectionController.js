@@ -1,5 +1,4 @@
 import { Controller } from './Controller'
-import ControllerAction from './ControllerAction'
 import { isObject, isArray, asArray } from '@ditojs/utils'
 
 // Abstract base class for ModelController and RelationController
@@ -26,18 +25,14 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, name, handler, authorize) {
+  setupAction(type, name, handler, authorize, verb, path) {
+    // These default actions happen directly on the collection / member route
+    // and are distinguished by their verbs, not by nested paths.
     if (name in actionToVerb) {
-      // NOTE: `ControllerAction` is used even for the default member actions,
-      // since they don't need to fetch members ahead of their call.
-      const verb = actionToVerb[name]
-      this.setupActionRoute(
-        type,
-        new ControllerAction(this, handler, type, name, verb, '', authorize)
-      )
-    } else {
-      return super.setupAction(type, name, handler, authorize)
+      verb = actionToVerb[name]
+      path = ''
     }
+    return super.setupAction(type, name, handler, authorize, verb, path)
   }
 
   // @override
@@ -145,7 +140,7 @@ export class CollectionController extends Controller {
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
-      query[name](this.getMemberId(ctx), body)
+      query[name](ctx.memberId, body)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
     )
@@ -213,7 +208,7 @@ export class CollectionController extends Controller {
   member = this.toCoreActions({
     async find(ctx, modify) {
       return this.execute(ctx, (query, trx) => query
-        .findById(this.getMemberId(ctx))
+        .findById(ctx.memberId)
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
@@ -223,7 +218,7 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) => query
         .ignoreScope()
-        .findById(this.getMemberId(ctx))
+        .findById(ctx.memberId)
         .find(ctx.query, this.allowParam)
         .throwIfNotFound()
         .modify(getModify(modify, trx))

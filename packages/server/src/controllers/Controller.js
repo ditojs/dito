@@ -111,19 +111,27 @@ export class Controller {
     return actions
   }
 
-  setupAction(type, name, handler, authorize) {
+  setupAction(
+    type,
+    name,
+    handler,
+    authorize,
+    // These values are only changed when called from
+    // `CollectionController.setupAction()`:
+    verb = 'get',
+    // The default path for actions is the normalized name.
+    path = this.app.normalizePath(name)
+  ) {
     if (!isFunction(handler)) {
       handler = setupHandlerFromObject(handler)
     }
-
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
-    const ActionClass = type === 'member' ? MemberAction : ControllerAction
-    // The default path for actions is the normalized name.
-    const path = this.app.normalizePath(name)
+    const actionClass = type === 'member' ? MemberAction : ControllerAction
     this.setupActionRoute(
       type,
-      new ActionClass(this, handler, type, name, 'get', path, authorize)
+      // eslint-disable-next-line new-cap
+      new actionClass(this, handler, type, name, verb, path, authorize)
     )
   }
 
@@ -433,7 +441,7 @@ export class Controller {
                 ? member.$is(user)
                 // collection actions: match id and modelClass
                 : user.constructor === this.modelClass &&
-                  // TODO: Shouldn't this use `getMemberId()`?
+                  // TODO: Shouldn't this use `ctx.memberId`?
                   `${user.id}` === ctx.params.id
               : value === '$owner'
                 ? member?.$hasOwner?.(user)
