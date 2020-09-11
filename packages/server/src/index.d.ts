@@ -128,24 +128,11 @@ declare namespace Dito {
       keys?: string[]
     }
     admin?: AdminConfig
-    knex?: {
-      /**
-       * The database client to use - see http://knexjs.org/#Installation-client
-       */
-      client?: Knex.Config['client']
-      /**?
-       * The database connection configuration - see http://knexjs.org/#Installation-client
-       */
-      connection?: Knex.Config['connection']
+    knex?: Knex.Config<any> & {
       /**
        * @defaultValue `false`
        */
       normalizeDbNames?: boolean | Parameters<KnexSnakeCaseMappersFactory>
-      /**
-       * Whether to replace undefined keys with NULL instead of DEFAULT
-       * @defaultValue `false`
-       */
-      useNullAsDefault?: Knex.Config['useNullAsDefault']
     }
     /**
      * Service configurations. Pass `false` as a value to disable a service.
