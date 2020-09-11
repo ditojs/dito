@@ -17,6 +17,7 @@ import { KnexSnakeCaseMappersFactory } from 'objection'
 import { DateFormat } from '@ditojs/utils'
 import aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
+import * as dbErrors from 'db-errors'
 
 export = Dito
 
@@ -1773,8 +1774,47 @@ declare namespace Dito {
       : M[K]
   }
 
-  // Decorators:
+  /*------------------------------ Start Errors -----------------------------*/
+  class ResponseError extends Error {
+    constructor()
+    constructor(error: { status: number; message?: string })
+    constructor(message: string, defaults?: { status: number })
+    status: number
+  }
+  class AssetError extends ResponseError {}
+  class AuthenticationError extends ResponseError {}
+  class AuthorizationError extends ResponseError {}
+  class WrappedError extends ResponseError {}
+  class ControllerError extends WrapperError {
+    constructor(controller: Controller)
+  }
+  class DatabaseError extends WrapperError {
+    constructor(
+      error:
+        | dbErrors.CheckViolationError
+        | dbErrors.NotNullViolationError
+        | dbErrors.ConstraintViolationError
+        | dbErrors.DataError
+        | dbErrors.DBError
+    )
+  }
+  class GraphError extends ResponseError {}
+  class ModelError extends ResponseError {
+    constructor(model: Class<Model> | Model)
+  }
+  class NotFoundError extends ResponseError {}
+  class NotImplementedError extends ResponseError {}
+  class QueryBuilderError extends ResponseError {}
+  class RelationError extends ResponseError {}
+  class ValidationError extends ResponseError {}
+  class ControllerError extends ResponseError {
+    constructor(
+      controller: { name: string } | { constructor: { name: string } }
+    )
+  }
+  /*------------------------------- End Errors ------------------------------*/
 
+  /*------------------------------ Start Mixins -----------------------------*/
   type Mixin = (
     target: Object,
     propertyName: string,
@@ -1848,6 +1888,8 @@ declare namespace Dito {
    * executed to the pre-transaction state.
    */
   const transacted: () => Mixin
+
+  /*------------------------------ End Mixins -----------------------------*/
 
   type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
