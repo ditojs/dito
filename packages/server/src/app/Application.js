@@ -36,7 +36,7 @@ import {
 export class Application extends Koa {
   constructor(
     config = {},
-    { validator, router, events, models, controllers, services }
+    { validator, router, events, middleware, models, services, controllers }
   ) {
     super()
     this._setupEmitter(events)
@@ -53,8 +53,11 @@ export class Application extends Koa {
     this.services = Object.create(null)
     this.controllers = Object.create(null)
     this.hasControllerMiddleware = false
-    this.setupGlobalMiddleware()
     this.setupKnex()
+    this.setupGlobalMiddleware()
+    if (middleware) {
+      this.use(middleware)
+    }
     if (config.storages) {
       this.addStorages(config.storages)
     }
