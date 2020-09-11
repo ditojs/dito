@@ -2137,6 +2137,8 @@ declare module '@ditojs/admin' {
     | RequireAtLeastOne<{
         path?: string
         method?: HTTPVerb
+        // TODO: type Resource['data']
+        data?: any
       }>
 
   export default class DitoAdmin<
