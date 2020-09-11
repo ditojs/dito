@@ -5,8 +5,8 @@
 
 <template lang="pug">
   td(
-    :class="cell.class"
-    :style="cell.style"
+    :class="column.class"
+    :style="column.style"
   )
     // TODO: Implement inlined components in cell mode!
     component(
@@ -22,7 +22,7 @@
     )
     span(
       v-else
-      v-html="renderCell(cell, data)"
+      v-html="renderCell(data)"
     )
 </template>
 
@@ -34,7 +34,7 @@ import { escapeHtml } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('dito-table-cell', {
   props: {
-    cell: { type: Object, required: true },
+    column: { type: Object, required: true },
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     dataPathIsValue: { type: Boolean, default: true },
@@ -46,13 +46,13 @@ export default DitoComponent.component('dito-table-cell', {
 
   computed: {
     component() {
-      return this.resolveTypeComponent(this.cell.component)
+      return this.resolveTypeComponent(this.column.component)
     }
   },
 
   methods: {
-    renderCell(cell, item) {
-      const { name, render } = cell
+    renderCell(item) {
+      const { name, render } = this.column
       const value = item[name]
       return render
         ? render(getItemParams(this, {

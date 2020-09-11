@@ -50,10 +50,10 @@
         )
           template(v-if="columns")
             dito-table-cell(
-              v-for="cell in columns"
-              :key="cell.name"
-              :class="getCellClass(cell)"
-              :cell="cell"
+              v-for="column in columns"
+              :key="column.name"
+              :class="getCellClass(column)"
+              :column="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
               :dataPathIsValue="false"
@@ -263,8 +263,8 @@ export default TypeComponent.register('list', {
         : null
     },
 
-    getCellClass(cell) {
-      return `dito-cell-${hyphenate(cell.name)}`
+    getCellClass(column) {
+      return `dito-cell-${hyphenate(column.name)}`
     },
 
     getItemParams(item, index) {
