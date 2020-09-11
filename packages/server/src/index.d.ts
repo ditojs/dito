@@ -1684,7 +1684,7 @@ declare namespace Dito {
      */
     clearWithScope: () => this
     ignoreScope: () => this
-    applyScope: () => this
+    applyScope: (...scopes: string[]) => this
     allowScope: (...scopes: string[]) => void
     clearAllowScope: () => void
     applyFilter: (name: string, ...args: any[]) => this
