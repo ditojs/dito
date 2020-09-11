@@ -409,7 +409,10 @@ declare module '@ditojs/admin' {
           /**
            * The function which is called to load the options.
            */
-          data?: ItemAccessor<$State, Response<Options>>
+          data?: ItemAccessor<
+            $State,
+            OrFunctionReturning<OrPromiseOf<Options>>
+          >
           /**
            * The key of the option property which should be treated as the label.
            *
