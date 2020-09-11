@@ -89,8 +89,8 @@
                 :data="item"
               )
               span(
-                v-else-if="schema.render"
-                v-html="schema.render(getItemParams(item, index))"
+                v-else-if="render"
+                v-html="render(getItemParams(item, index))"
               )
               span(
                 v-else

@@ -237,6 +237,11 @@ export default {
       default: false
     }),
 
+    render: getSchemaAccessor('render', {
+      type: Function,
+      default: null
+    }),
+
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,
       default: false,

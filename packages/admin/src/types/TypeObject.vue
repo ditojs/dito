@@ -28,8 +28,8 @@
         :data="objectData"
       )
       span(
-        v-else-if="schema.render"
-        v-html="schema.render(getItemParams())"
+        v-else-if="render"
+        v-html="render(getItemParams())"
       )
       span(
         v-else

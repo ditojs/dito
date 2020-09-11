@@ -55,12 +55,15 @@ export default DitoComponent.component('dito-table-cell', {
       const { name, render } = this.column
       const value = item[name]
       return render
-        ? render(getItemParams(this, {
-          name,
-          value,
-          data: item,
-          dataPath: appendDataPath(this.dataPath, name)
-        }))
+        ? render.call(
+          this,
+          getItemParams(this, {
+            name,
+            value,
+            data: item,
+            dataPath: appendDataPath(this.dataPath, name)
+          })
+        )
         : escapeHtml(value)
     }
   }
