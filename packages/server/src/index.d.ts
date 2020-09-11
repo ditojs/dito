@@ -800,9 +800,9 @@ declare namespace Dito {
   }
 
   interface ModelOptions extends objection.ModelOptions {
-    graph?: boolean,
-    async?: boolean,
-    mutable?: boolean,
+    graph?: boolean
+    async?: boolean
+    mutable?: boolean
   }
 
   class Model extends objection.Model {
@@ -831,9 +831,9 @@ declare namespace Dito {
     static getPropertyOrRelationAtDataPath: (dataPath: OrArrayOf<string>) => any
 
     static count: {
-      (column?: objection.ColumnRef, options?: { as: string }): number;
-      (aliasToColumnDict: { [alias: string]: string | string[] }): number;
-      (...columns: objection.ColumnRef[]): number;
+      (column?: objection.ColumnRef, options?: { as: string }): number
+      (aliasToColumnDict: { [alias: string]: string | string[] }): number
+      (...columns: objection.ColumnRef[]): number
     }
 
     /**
@@ -866,9 +866,7 @@ declare namespace Dito {
       json?: $JSON,
       options?: ModelOptions & { [k: string]: any }
     ): Promise<$JSON | this>
-    $validateGraph(
-      options: ModelOptions  & { [k: string]: any }
-    ): Promise<this>
+    $validateGraph(options: ModelOptions & { [k: string]: any }): Promise<this>
     /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
     first: QueryBuilder<this>['first']
     find: QueryBuilder<this>['find']
