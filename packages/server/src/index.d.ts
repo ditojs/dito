@@ -1064,7 +1064,7 @@ declare namespace Dito {
       transacted: boolean,
       authorize: Authorize,
       action: ControllerAction,
-      handlers: ((ctx: Koa.Context, next: Function) => void)[]
+      handlers: ((ctx: KoaContext, next: Function) => void)[]
     ): void
     setupActions(type: string): string[]
     setupActionRoute(type: any, action: any): void
@@ -1136,7 +1136,7 @@ declare namespace Dito {
 
   type Authorize =
     | ((
-        ctx: Koa.Context
+        ctx: KoaContext
       ) => AuthorizationOptions | Promise<AuthorizationOptions>)
     | AuthorizationOptions
 
@@ -1303,10 +1303,10 @@ declare namespace Dito {
 
     $hasOwner(owner: UserModel): boolean
 
-    $isLoggedIn(ctx: Koa.Context): boolean
+    $isLoggedIn(ctx: KoaContext): boolean
 
     // TODO: type options
-    static login(ctx: Koa.Context, options: any): Promise<void>
+    static login(ctx: KoaContext, options: any): Promise<void>
 
     static sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
   }
@@ -1799,7 +1799,7 @@ declare namespace Dito {
    *   the overridable `UserModel.hasRole()` method.
    */
   const authorize: (
-    authorize: (ctx: Koa.Context) => void | boolean | OrArrayOf<string>
+    authorize: (ctx: KoaContext) => void | boolean | OrArrayOf<string>
   ) => Mixin
 
   /**
@@ -1859,6 +1859,10 @@ declare namespace Dito {
   type Keyword = Ajv.KeywordDefinition
   type Format = Ajv.FormatValidator | Ajv.FormatDefinition
   type Id = string | number
+  type KoaContext<$State = any> = Koa.ParameterizedContext<
+    $State,
+    { transaction: objection.Transaction }
+  >
 }
 
 // https://stackoverflow.com/a/56363362/825205
