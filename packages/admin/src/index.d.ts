@@ -312,6 +312,8 @@ declare module '@ditojs/admin' {
      */
     format?: OrItemAccessor<$State, any>
 
+    disabled?: OrItemAccessor<$State, boolean>
+
     /**
      * Specifies a function which parses the component value when it changes,
      *
