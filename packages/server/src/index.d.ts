@@ -1383,6 +1383,20 @@ declare namespace Dito {
      * will be mapped to routes, everything else will be omitted.
      */
     member?: ModelControllerMemberActions<$Model>
+    assets?:
+      | boolean
+      | {
+          allow?: OrArrayOf<string>
+          authorize: {
+            [k: string]: OrArrayOf<string>
+          }
+        }
+    /**
+     * When nothing is returned from a hook, the standard action result is used.
+     */
+    hooks?: {
+      [k: string]: (ctx: objection.QueryContext, result: any) => any
+    }
     /**
      * Controls whether normal database methods should be used, or their …Graph…
      * counterparts.
