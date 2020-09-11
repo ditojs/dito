@@ -36,7 +36,7 @@ export class DiskStorage extends Storage {
   // @override
   _getStorageProperties(name) {
     return {
-      path: this._getFilePath(name),
+      path: this._getFilePath(name, true),
       url: this._getFileUrl(name)
     }
   }
@@ -76,7 +76,11 @@ export class DiskStorage extends Storage {
 
   // @override
   async _readFile(file) {
-    return fs.readFile(file.path)
+    const { path } = file
+    // Dito used to store paths absolutely, so check if a call of `_getPath()`
+    // is required for the time being.
+    // TODO: Absolute paths are deprecated, remove once all data is converted.
+    return fs.readFile(path.startsWith(this.path) ? path : this._getPath(path))
   }
 
   // @override
@@ -90,8 +94,11 @@ export class DiskStorage extends Storage {
     return (posix ? path.posix : path).join(name[0], name[1])
   }
 
-  _getFilePath(name) {
-    return this._getPath(this._getNestedFolder(name), name)
+  _getFilePath(name, relative = false) {
+    const dir = this._getNestedFolder(name)
+    return relative
+      ? path.join(dir, name)
+      : this._getPath(dir, name)
   }
 
   _getFileUrl(name) {
