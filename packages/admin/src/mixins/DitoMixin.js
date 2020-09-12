@@ -268,7 +268,7 @@ export default {
 
     getResourcePath(resource) {
       resource = getResource(resource)
-      if (resource.parent === undefined && !this.providesData) {
+      if (resource.parent === undefined) {
         resource.parent = this.dataComponent?.resource
       }
       return this.api.resources.any(getResource(resource))
