@@ -1,4 +1,4 @@
-import { isArray, isObject } from '@/base'
+import { isArray } from '@/base'
 import { parseDataPath } from './parseDataPath'
 
 export function getValueAtDataPath(
@@ -16,17 +16,11 @@ export function getValueAtDataPath(
         continue
       } else if (part === '*') {
         // Support wildcards on arrays and objects
-        const values = isArray(obj)
-          ? obj
-          : isObject(obj)
-            ? Object.values(obj)
-            : null
-        if (values) {
-          const subPath = parsedPath.slice(index + 1)
-          return values.map(
-            value => getValueAtDataPath(value, subPath, handleError)
-          )
-        }
+        const subPath = parsedPath.slice(index + 1)
+        const values = isArray(obj) ? obj : Object.values(obj)
+        return values.map(
+          value => getValueAtDataPath(value, subPath, handleError)
+        )
       }
     }
     return handleError?.(obj, part, index)

@@ -19,15 +19,32 @@ describe('Router', () => {
       'supports %s() short-cut',
       verb => {
         it('reports correct allowed methods', () => {
-          router[verb]('/')
+          router[verb]('/', () => {})
           expect(router.getAllowedMethods()).toStrictEqual([verb.toUpperCase()])
         })
       }
     )
 
     it('supports all() short-cut', () => {
-      router.all('/')
+      router.all('/', () => {})
       expect(router.getAllowedMethods()).toEqual(http.METHODS)
+    })
+
+    it('returns allowed methods', () => {
+      router.add('GET', '/', () => {})
+      expect(router.getAllowedMethods()).toStrictEqual(['GET'])
+      expect(router.getAllowedMethods('/')).toStrictEqual(['GET'])
+    })
+
+    it('does not count routes without handlers for allowed methods', () => {
+      router.add('GET', '/')
+      expect(router.getAllowedMethods('/')).toStrictEqual([])
+    })
+
+    it('allows excluding methods when getting allowed methods', () => {
+      router.add('GET', '/', () => {})
+      router.add('POST', '/', () => {})
+      expect(router.getAllowedMethods('/', 'GET')).toStrictEqual(['POST'])
     })
 
     it('normalizes paths', () => {
@@ -41,22 +58,65 @@ describe('Router', () => {
     })
   })
 
+  it('supports prefix for path normalization', () => {
+    router = new Router({ prefix: '/bla' })
+    expect(router.normalizePath('/')).toBe('/bla/')
+    expect(router.normalizePath('/no-trailing/')).toBe('/bla/no-trailing')
+    expect(router.normalizePath('wacky-path')).toBe('/bla/wacky-path')
+    expect(router.normalizePath('//like-whatever')).toBe('/bla//like-whatever')
+  })
+
+  it('does not normalize paths in strict mode', () => {
+    router = new Router({ strict: true })
+    expect(router.normalizePath('/')).toBe('/')
+    expect(router.normalizePath('/trailing/')).toBe('/trailing/')
+    expect(router.normalizePath('/more/trailing//')).toBe('/more/trailing//')
+    expect(router.normalizePath('/more/trailing///')).toBe('/more/trailing///')
+    expect(router.normalizePath('wacky-path')).toBe('wacky-path')
+    expect(router.normalizePath('//like-whatever')).toBe('//like-whatever')
+  })
+
+  it('returns empty string with no routes', () => {
+    expect(router.toString()).toStrictEqual('')
+  })
+
   it('handles static routes', () => {
-    router.add('GET', '/folders/files/bolt.gif', handler)
+    const getHandler = () => {}
+    const putHandler = () => {}
+    router.add('GET', '/folders/files/bolt.gif', getHandler)
+    router.add('PUT', '/folders/files/bolt.gif', putHandler)
 
     expect(router.toString()).toBe(deindent`
       / children=1
-      └── folders/files/bolt.gif handler() children=0
+      └── folders/files/bolt.gif getHandler() children=0
     `.trim())
 
     result = router.find('GET', '/folders/files/bolt.gif')
-    expect(result.handler).toBe(handler)
+    expect(result.handler).toBe(getHandler)
+    expect(result.status).toBe(200)
 
     result = router.find('GET', '/folders/files/bolt.hash.gif')
     expect(result.handler).toBeUndefined()
+    expect(result.allowed).toStrictEqual([])
+    expect(result.status).toBe(404)
 
     result = router.find('GET', '/folders/bolt .gif')
     expect(result.handler).toBeUndefined()
+    expect(result.status).toBe(404)
+
+    result = router.find('PUT', '/folders/files/bolt.gif')
+    expect(result.handler).toBe(putHandler)
+    expect(result.status).toBe(200)
+
+    result = router.find('PUT', '/folders/files/bolt.hash.gif')
+    expect(result.handler).toBeUndefined()
+    expect(result.status).toBe(405)
+    expect(result.allowed).toStrictEqual([])
+
+    result = router.find('POST', '/folders/files/bolt.gif')
+    expect(result.handler).toBeUndefined()
+    expect(result.status).toBe(501)
+    expect(result.allowed).toStrictEqual(['GET', 'PUT'])
   })
 
   it('handles match-any nodes (catch-all / wildcard)', () => {

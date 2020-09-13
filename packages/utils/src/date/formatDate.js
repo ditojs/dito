@@ -57,9 +57,7 @@ export function formatDate(date, options = {
             : 'time'
           modeOpts = opts[mode]
         }
-        return modeOpts?.format
-          ? modeOpts.format(value, type, modeOpts)
-          : value
+        return modeOpts?.format?.(value, type, modeOpts) ?? value
       }).join('')
     } else {
       return new Date(date).toLocaleString(locale, mergedOpts)

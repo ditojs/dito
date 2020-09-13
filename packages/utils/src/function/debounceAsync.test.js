@@ -119,4 +119,31 @@ describe('debounceAsync()', () => {
       expect(func).toBeCalledTimes(2)
     }
   )
+
+  it(
+    'should only reject the last waiting promise',
+    async () => {
+      expect.assertions(5)
+      let count = 0
+      const func = jest.fn(() => {
+        if (++count > 1) {
+          throw new Error('boom')
+        }
+      })
+      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+      const promises = []
+      promises.push(debounced())
+      expect(func).toBeCalledTimes(1)
+      for (let i = 0; i < 10; i++) {
+        jest.advanceTimersByTime(500)
+        promises.push(debounced())
+      }
+      expect(func).toBeCalledTimes(1)
+      jest.advanceTimersByTime(1000)
+      await expect(debounced()).rejects.toThrow('boom')
+      const results = await Promise.all(promises)
+      expect(results).toStrictEqual(new Array(11).fill(undefined))
+      expect(func).toBeCalledTimes(2)
+    }
+  )
 })

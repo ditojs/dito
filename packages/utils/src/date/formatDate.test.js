@@ -3,6 +3,10 @@ import { formatDate } from './formatDate'
 describe('formatDate()', () => {
   const date = new Date(2012, 5, 9, 22, 45, 30)
 
+  it('should return undefined when no date is given', () => {
+    expect(formatDate()).toBe(undefined)
+  })
+
   it('should use the en-US locale by default', () => {
     expect(formatDate(date)).toBe('June 9, 2012, 10:45:30 PM')
     expect(formatDate(date, {})).toBe('June 9, 2012, 10:45:30 PM')

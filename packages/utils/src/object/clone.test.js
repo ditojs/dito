@@ -43,6 +43,16 @@ describe('clone()', () => {
     expect(copy.b).not.toBe(object.b)
   })
 
+  it('should use clone() methods if available', () => {
+    const object = {
+      a: 1,
+      clone: jest.fn(() => ({ b: 2 }))
+    }
+    const copy = clone(object)
+    expect(object.clone).toBeCalledTimes(1)
+    expect(copy).toStrictEqual({ b: 2 })
+  })
+
   it('should transform cloned values by `iteratee`', () => {
     const object = {
       a: { b: 1, c: 2 },

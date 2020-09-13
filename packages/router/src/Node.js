@@ -145,13 +145,14 @@ export default class Node {
       // It's a match!
       const { handler } = this
       if (handler) {
-        // Convert paramNames and values to params
+        // Convert paramNames and values to params.
         const params = {}
         let i = 0
         for (const name of this.paramNames) {
           params[name] = paramValues[i++]
         }
-        return { handler, params }
+        // Support HTTP status on found entries.
+        return { handler, params, status: 200 }
       }
       return null
     }
