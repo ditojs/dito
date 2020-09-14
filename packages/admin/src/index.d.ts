@@ -1366,7 +1366,7 @@ declare module '@ditojs/admin' {
     // ): Promise<any | boolean>
   }
 
-  type TypeMixin<$State extends State> = ValidationMixin & {
+  type MixinComponent<$State extends State> = ValidationMixin & {
     data: {
       focused: boolean
     }
@@ -1556,32 +1556,32 @@ declare module '@ditojs/admin' {
     updateOrder(list: any, schema: any, draggable: boolean): any[] | undefined
   }
 
-  export class TypeComponent<$State> extends DitoComponent<$State> {
-    data: DitoComponent<$State>['data'] & TypeMixin<$State>['data']
+  export class BaseComponent<$State> extends DitoComponent<$State> {
+    data: DitoComponent<$State>['data'] & MixinComponent<$State>['data']
     component: Vue
     static register(types: OrArrayOf<string>, definition: any): Vue
     static get(type: string): Vue
   }
-  interface TypeComponent<$State extends State> extends TypeMixin<$State> {}
+  interface BaseComponent<$State extends State> extends MixinComponent<$State> {}
 
-  class TypeNumber<
+  class NumberComponent<
     $InputState extends State,
-    $State extends State = $InputState & { component: TypeNumber<$InputState> }
-  > extends TypeComponent<$State> {
+    $State extends State = $InputState & { component: NumberComponent<$InputState> }
+  > extends BaseComponent<$State> {
     schema: NumberSchema<$State>
 
     // computed:
     isInteger: boolean
   }
-  interface TypeNumber<
+  interface NumberComponent<
     $InputState extends State = CreateState,
-    $State extends State = $InputState & { component: TypeNumber<$InputState> }
+    $State extends State = $InputState & { component: NumberComponent<$InputState> }
   > extends NumberMixin<$State> {}
 
-  class TypeButton<
+  class ButtonComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'button'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: ButtonSchema<$State>
 
     // computed
@@ -1594,29 +1594,29 @@ declare module '@ditojs/admin' {
     submit(): Promise<any>
   }
 
-  export class TypeCheckbox<
+  export class CheckboxComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'button'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: CheckboxSchema
   }
 
-  class TypeCheckboxes<
+  class CheckboxesComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'button'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: CheckboxesSchema
-    data: TypeComponent<$State>['data'] & OptionsMixin<$State>['data']
+    data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
   }
-  interface TypeCheckboxes<
+  interface CheckboxesComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'button'>
   > extends OptionsMixin<$State> {}
 
-  class TypeCode<
+  class CodeComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'code'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: SchemaByType<$State>[$State['component']]
 
     // computed
@@ -1629,13 +1629,13 @@ declare module '@ditojs/admin' {
     focus(): void
   }
 
-  class TypeColor<
+  class ColorComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'color'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: ColorSchema<$State>
 
-    data: TypeComponent<$State>['data'] & {
+    data: BaseComponent<$State>['data'] & {
       showPopup: boolean
       convertedHexValue: string | null
     }
@@ -1649,15 +1649,15 @@ declare module '@ditojs/admin' {
     presets: SchemaAccessorReturnType<ColorSchema['presets']>
   }
 
-  class TypeComputed<
+  class ComputedComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
-  > extends TypeComponent<$State> {}
+  > extends BaseComponent<$State> {}
 
-  class TypeDate<
+  class DateComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: DateSchema<$State>
 
     // computed
@@ -1677,13 +1677,13 @@ declare module '@ditojs/admin' {
     getDataProcessor(): any | null
   }
 
-  class TypeList<
+  class ListComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: ListSchema<$State>
 
-    data: TypeComponent<$State>['data'] & OrderedSourceMixin<$State>['data']
+    data: BaseComponent<$State>['data'] & OrderedSourceMixin<$State>['data']
 
     // computed
     hasListButtons: boolean
@@ -1699,17 +1699,17 @@ declare module '@ditojs/admin' {
     getItemParams(item: any, index: any): any
     onFilterErrors(errors: string[]): true | undefined
   }
-  interface TypeList<
+  interface ListComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'list'>
   > extends OrderedSourceMixin<$State> {}
 
-  class TypeMarkup<
+  class MarkupComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: MarkupSchema
-    data: TypeComponent<$State>['data'] &
+    data: BaseComponent<$State>['data'] &
       DomMixin['data'] & {
         editor: null
         height: null
@@ -1732,7 +1732,7 @@ declare module '@ditojs/admin' {
       autoFocus: boolean
       disableInputRules: boolean
       disablePasteRules: boolean
-      parseOptions: TypeMarkup<$State>['parseOptions']
+      parseOptions: MarkupComponent<$State>['parseOptions']
     }
     resizable: SchemaAccessorReturnType<MarkupSchema<$State>['resizable']>
     whitespace: SchemaAccessorReturnType<MarkupSchema<$State>['whitespace']>
@@ -1751,67 +1751,67 @@ declare module '@ditojs/admin' {
      */
     focus(): void
   }
-  interface TypeMarkup<$InputState extends State> extends DomMixin {}
+  interface MarkupComponent<$InputState extends State> extends DomMixin {}
 
-  class TypeRadio<
+  class RadioComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'radio'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: RadioSchema<$State>
 
-    data: TypeComponent<$State>['data'] & OptionsMixin<$State>['data']
+    data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
   }
-  interface TypeRadio<
+  interface RadioComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'radio'>
   > extends OptionsMixin<$State> {}
 
   // // TODO: TypeSection
 
-  class TypeSelect<
+  class SelectComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: SelectSchema<$State>
 
-    data: TypeComponent<$State>['data'] &
+    data: BaseComponent<$State>['data'] &
       OptionsMixin<$State>['data'] & {
         populate: true
       }
   }
-  interface TypeSelect<
+  interface SelectComponent<
     $InputState extends State,
     $State extends State = AddComponent<$InputState, 'list'>
   > extends OptionsMixin<$State> {}
 
-  class TypeSlider<
+  class SliderComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'slider'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: SliderSchema<$State>
 
     // computed
     input: ItemAccessor<$State, boolean>
   }
-  interface TypeSlider<
+  interface SliderComponent<
     $InputState extends State = CreateState,
     $State = AddComponent<$InputState, 'slider'>
   > extends NumberMixin<$State> {}
 
-  class TypeSwitch<
+  class SwitchComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'text'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: SwitchSchema<$State>
 
     // computed
     labels: SwitchSchema<$State>['labels']
   }
 
-  class TypeText<
+  class TextComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'text'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: InputSchema<$State>
 
     // computed
@@ -1822,10 +1822,10 @@ declare module '@ditojs/admin' {
     // TODO: getValidations()
   }
 
-  class TypeTextarea<
+  class TextareaComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'textarea'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: SchemaByType[$State['component']]
     // computed
     lines: number
@@ -1834,12 +1834,12 @@ declare module '@ditojs/admin' {
 
   // // TODO: TypeTreeList
 
-  class TypeUpload<
+  class UploadComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'upload'>
-  > extends TypeComponent<$State> {
+  > extends BaseComponent<$State> {
     schema: UploadSchema
-    data: TypeComponent<$State>['data'] & OrderedMixin<$State>['data']
+    data: BaseComponent<$State>['data'] & OrderedMixin<$State>['data']
     // computed
     upload: any
     files: any
@@ -1848,7 +1848,7 @@ declare module '@ditojs/admin' {
     // TODO: finish off
     // accept:
   }
-  interface TypeUpload<
+  interface UploadComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'upload'>
   > extends OrderedMixin<$State> {}
@@ -1872,11 +1872,11 @@ declare module '@ditojs/admin' {
   interface DitoComponent<$State extends State = CreateState>
     extends DitoMixin<$State> {}
 
-  class TypeMultiselect<
+  class MultiselectComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'multiselect'>
-  > extends TypeComponent<$State> {
-    data: TypeComponent<$State>['data'] & OptionsMixin<$State>['data']
+  > extends BaseComponent<$State> {
+    data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
 
     // computed
     selectedOptions: any
@@ -1890,7 +1890,7 @@ declare module '@ditojs/admin' {
     onAddTag(tag: any): void
     onSearchChange(query: any): Promise<void>
   }
-  interface TypeMultiselect<
+  interface MultiselectComponent<
     $InputState extends State = CreateState,
     $State extends State = AddComponent<$InputState, 'multiselect'>
   > extends OptionsMixin<$State> {}
@@ -2175,24 +2175,24 @@ declare module '@ditojs/admin' {
   export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
   type ComponentByType<$State extends State = CreateState> = {
-    button: TypeButton<$State>
-    checkbox: TypeCheckbox<$State>
-    checkboxes: TypeCheckboxes<$State>
-    code: TypeCode<$State>
-    color: TypeColor<$State>
-    computed: TypeComputed<$State>
-    date: TypeDate<$State>
-    list: TypeList<$State>
-    markup: TypeMarkup<$State>
-    multiselect: TypeMultiselect<$State>
-    number: TypeNumber<$State>
-    radio: TypeRadio<$State>
-    select: TypeSelect<$State>
-    slider: TypeSlider<$State>
-    switch: TypeSwitch<$State>
-    text: TypeText<$State>
-    textarea: TypeTextarea<$State>
-    upload: TypeUpload<$State>
+    button: ButtonComponent<$State>
+    checkbox: CheckboxComponent<$State>
+    checkboxes: CheckboxesComponent<$State>
+    code: CodeComponent<$State>
+    color: ColorComponent<$State>
+    computed: ComputedComponent<$State>
+    date: DateComponent<$State>
+    list: ListComponent<$State>
+    markup: MarkupComponent<$State>
+    multiselect: MultiselectComponent<$State>
+    number: NumberComponent<$State>
+    radio: RadioComponent<$State>
+    select: SelectComponent<$State>
+    slider: SliderComponent<$State>
+    switch: SwitchComponent<$State>
+    text: TextComponent<$State>
+    textarea: TextareaComponent<$State>
+    upload: UploadComponent<$State>
     unknown: never
   }
 
