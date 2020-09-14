@@ -1,4 +1,5 @@
 .DS_Store
+.prettierrc.json
 *.log
 *.cache
 /node_modules
