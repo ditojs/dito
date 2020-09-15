@@ -930,6 +930,9 @@ export class Model extends objection.Model {
       const modifiedFiles = []
 
       if (transaction.rollback) {
+        // Prevent wrong memory leak error messages when installing more than 10
+        // 'rollback' handlers, which can happen with more complex queries.
+        transaction.setMaxListeners(0)
         transaction.on('rollback', async error => {
           if (importedFiles.length > 0) {
             console.log(
