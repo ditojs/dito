@@ -30,7 +30,8 @@ import {
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge
+  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
+  parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
 export class Application extends Koa {
@@ -298,6 +299,46 @@ export class Application extends Koa {
 
   getAdminVueConfig(mode = 'production') {
     return this.getAdminController()?.getVueConfig(mode) || null
+  }
+
+  getAssetConfig({
+    models = Object.keys(this.models),
+    normalizeDbNames = this.config.knex.normalizeDbNames
+  } = {}) {
+    const assetConfig = {}
+    for (const modelName of models) {
+      const modelClass = this.models[modelName]
+      const { assets } = modelClass.definition
+      if (assets) {
+        const normalizedModelName = normalizeDbNames
+          ? this.normalizeIdentifier(modelName)
+          : modelName
+        const convertedAssets = {}
+        for (const [assetDataPath, config] of Object.entries(assets)) {
+          const {
+            property,
+            nestedDataPath,
+            name,
+            index
+          } = modelClass.getPropertyOrRelationAtDataPath(assetDataPath)
+          if (property && index === 0) {
+            const normalizedName = normalizeDbNames
+              ? this.normalizeIdentifier(name)
+              : name
+            const dataPath = normalizeDataPath([
+              normalizedName,
+              ...parseDataPath(nestedDataPath)
+            ])
+            const assetConfigs = convertedAssets[normalizedName] ||= {}
+            assetConfigs[dataPath] = config
+          } else {
+            throw new Error('Nested graph properties are not supported yet')
+          }
+        }
+        assetConfig[normalizedModelName] = convertedAssets
+      }
+    }
+    return assetConfig
   }
 
   addStorages(storages) {
