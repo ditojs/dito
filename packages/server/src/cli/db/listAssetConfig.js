@@ -3,11 +3,11 @@ import { parseDataPath, normalizeDataPath } from '@ditojs/utils'
 export async function listAssetConfig(app, ...args) {
   const modelNames = args.length > 0 ? args : Object.keys(app.models)
   const assetConfig = {}
-  for (let modelName of modelNames) {
+  for (const modelName of modelNames) {
     const modelClass = app.models[modelName]
     const { assets } = modelClass.definition
     if (assets) {
-      modelName = app.normalizeIdentifier(modelName)
+      const normalizedModelName = app.normalizeIdentifier(modelName)
       const convertedAssets = {}
       for (const [assetDataPath, config] of Object.entries(assets)) {
         const {
@@ -17,20 +17,19 @@ export async function listAssetConfig(app, ...args) {
           index
         } = modelClass.getPropertyOrRelationAtDataPath(assetDataPath)
         if (property && index === 0) {
-          const convertedName = app.normalizeIdentifier(name)
-          convertedAssets[convertedName] = {
-            dataPath: normalizeDataPath([
-              convertedName,
-              ...parseDataPath(nestedDataPath)
-            ]),
-            ...config
-          }
+          const normalizedName = app.normalizeIdentifier(name)
+          const dataPath = normalizeDataPath([
+            normalizedName,
+            ...parseDataPath(nestedDataPath)
+          ])
+          const assetConfigs = convertedAssets[normalizedName] ||= {}
+          assetConfigs[dataPath] = config
         } else {
           console.error('Nested graph properties are not supported yet')
           return false
         }
       }
-      assetConfig[modelName] = convertedAssets
+      assetConfig[normalizedModelName] = convertedAssets
     }
   }
   console.log(JSON.stringify(assetConfig, null, 2))
