@@ -805,32 +805,34 @@ export class Application extends Koa {
   async releaseUnusedAssets(timeThreshold = 0, trx = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      await AssetModel.transaction(trx, async trx => {
+      return AssetModel.transaction(trx, async trx => {
         // Determine the time threshold in JS instead of SQL, as there is no
         // easy cross-SQL way to do `now() - interval X hours`:
         const date = new Date()
         date.setMilliseconds(date.getMilliseconds() - timeThreshold)
-        const orphans = await AssetModel
+        const orphanedAssets = await AssetModel
           .query(trx)
           .where('count', 0)
           .andWhere('updatedAt', '<=', date)
-        if (orphans.length > 0) {
-          const assetNames = await Promise.map(
-            orphans,
-            async ({ name, file, storage: storageName }) => {
+        if (orphanedAssets.length > 0) {
+          const orphanedNames = await Promise.map(
+            orphanedAssets,
+            async asset => {
               try {
-                await this.getStorage(storageName).removeFile(file)
+                await this.getStorage(asset.storage).removeFile(asset.file)
               } catch (error) {
                 this.emit('error', error)
+                asset.error = error
               }
-              return name
+              return asset.name
             }
           )
           await AssetModel
             .query(trx)
             .delete()
-            .whereIn('name', assetNames)
+            .whereIn('name', orphanedNames)
         }
+        return orphanedAssets
       })
     }
   }
