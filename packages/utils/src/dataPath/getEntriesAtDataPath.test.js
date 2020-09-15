@@ -43,7 +43,13 @@ describe('getEntriesAtDataPath()', () => {
   it('should support custom error handler', () => {
     const handleError = (object, part, index) => `Error: ${part}, ${index}`
     expect(getEntriesAtDataPath(data, 'object/unknown/prop', handleError))
-      .toBe('Error: unknown, 1')
+      .toStrictEqual({ 'object/unknown/prop': 'Error: unknown, 1' })
+  })
+
+  it('should handle non-existing paths with custom `handleError()`', () => {
+    const handleError = () => undefined
+    expect(getEntriesAtDataPath(data, 'object/unknown/prop', handleError))
+      .toStrictEqual({})
   })
 
   it('should return wildcard matches', () => {

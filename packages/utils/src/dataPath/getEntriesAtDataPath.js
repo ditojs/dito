@@ -30,9 +30,11 @@ export function getEntriesAtDataPath(
         )
       }
     }
-    return handleError?.(obj, part, index)
+    const res = handleError?.(obj, part, index)
+    // Do not add `undefined` results to the resulting entries object.
+    return res !== undefined
+      ? { [normalizeDataPath(parsedPath)]: res }
+      : {}
   }
-  return {
-    [normalizeDataPath(parsedPath)]: obj
-  }
+  return { [normalizeDataPath(parsedPath)]: obj }
 }
