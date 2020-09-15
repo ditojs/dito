@@ -1050,15 +1050,49 @@ function mapFilesByName(files) {
   )
 }
 
+// What follows is nasty monkey-patching to fix two new Objection issues:
+function getOperationClass(modify) {
+  Model.knex({})
+  const query = Model.query()
+  let constructor = null
+  // Locally override QueryBuilder#addOperation() in order to extract the
+  // private operation constructor / class:
+  query.addOperation = operation => {
+    constructor = operation.constructor
+  }
+  modify(query)
+  Model.knex(null)
+  return constructor
+}
+
+// Temporary workaround to fix this issue until it is resolved in Objection:
+// https://github.com/Vincit/objection.js/issues/1855
+// TODO: Remove again once the above issue is resolved and published.
+const InsertOperation = getOperationClass(query => query.insert())
+const UpdateOperation = getOperationClass(query => query.update())
+const DeleteOperation = getOperationClass(query => query.delete())
+
+// @override
+QueryBuilder.prototype.toFindQuery = function() {
+  const builder = this.clone()
+  const selector = op => (
+    op.is(InsertOperation) ||
+    op.is(UpdateOperation) ||
+    op.is(DeleteOperation)
+  )
+  builder.forEachOperation(selector, op => op.onBuild(builder))
+  return builder.clear(selector)
+}
+
 // Temporary workaround to fix this issue until a new version is deployed:
 // https://github.com/Vincit/objection.js/issues/1839
 // TODO: Remove again once the above issue is resolved and published.
-const query = Model.query()
-query.addOperation = operation => {
-  Object.defineProperty(Object.getPrototypeOf(operation), 'models', {
-    get() {
-      return this.delegate.models
-    }
-  })
-}
-query.insertAndFetch({})
+const InsertAndFetchOperation = getOperationClass(
+  query => query.insertAndFetch({})
+)
+
+Object.defineProperty(InsertAndFetchOperation.prototype, 'models', {
+  get() {
+    return this.delegate.models
+  }
+})
