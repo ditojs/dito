@@ -904,7 +904,7 @@ export class Model extends objection.Model {
         : inputItems
       // Figure out which asset data paths where actually present in the
       // submitted data, and only compare these. But when deleting, use all.
-      const dataPaths = afterItems
+      const dataPaths = afterItems.length > 0
         ? assetDataPaths.filter(
           path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
         )
