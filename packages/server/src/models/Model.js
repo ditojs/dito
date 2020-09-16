@@ -937,7 +937,7 @@ export class Model extends objection.Model {
           if (importedFiles.length > 0) {
             console.log(
               `Received '${error}', removing imported files again: ${
-                importedFiles.map(file => `'${file.originalName}'`)
+                importedFiles.map(file => `'${file.name}'`)
               }`
             )
             await Promise.map(
@@ -950,7 +950,7 @@ export class Model extends objection.Model {
             // from trivial since no backup is kept in `handleModifiedAssets`
             console.log(
               `Unable to restore these already modified files: ${
-                modifiedFiles.map(file => `'${file.originalName}'`)
+                modifiedFiles.map(file => `'${file.name}'`)
               }`
             )
           }
@@ -961,16 +961,16 @@ export class Model extends objection.Model {
         const storage = this.app.getStorage(assets[dataPath].storage)
         const beforeFiles = beforeFilesPerDataPath[dataPath] || []
         const afterFiles = afterFilesPerDataPath[dataPath] || []
-        const beforeByName = mapFilesByName(beforeFiles)
-        const afterByName = mapFilesByName(afterFiles)
-        const removedFiles = beforeFiles.filter(it => !afterByName[it.name])
-        const addedFiles = afterFiles.filter(it => !beforeByName[it.name])
+        const beforeByKey = mapFilesByKey(beforeFiles)
+        const afterByKey = mapFilesByKey(afterFiles)
+        const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
+        const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
         // Also handle modified files, which are files where the data property
         // is changed before update / patch, meanting the file is changed.
         // NOTE: This will change the content for all the references to it,
         // and thus should only really be used when there's only one reference.
         const modifiedFiles = afterFiles.filter(
-          it => it.data && beforeByName[it.name]
+          file => file.data && beforeByKey[file.key]
         )
         importedFiles.push(
           ...await this.app.handleAdddedAndRemovedAssets(
@@ -1040,10 +1040,10 @@ function getFilesPerAssetDataPath(items, dataPaths) {
   )
 }
 
-function mapFilesByName(files) {
+function mapFilesByKey(files) {
   return files.reduce(
     (map, file) => {
-      map[file.name] = file
+      map[file.key] = file
       return map
     },
     {}

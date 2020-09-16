@@ -21,7 +21,7 @@
       )
         tr(
           v-for="(file, index) in files"
-          :key="file.name"
+          :key="file.key"
         )
           td(v-html="renderFile(file, index)")
           td {{ file.size | formatFileSize }}
@@ -224,11 +224,11 @@ export default TypeComponent.register('upload', {
             dataPath: appendDataPath(this.dataPath, index)
           })
         )
-        : escapeHtml(file.originalName)
+        : escapeHtml(file.name)
     },
 
     deleteFile(file, index) {
-      const name = file.originalName
+      const { name } = file
 
       if (file && window.confirm(
         `Do you really want to ${this.verbs.remove} ${name}?`)
@@ -285,12 +285,8 @@ export default TypeComponent.register('upload', {
 
     inputFile(newFile, oldFile) {
       if (newFile && !oldFile) {
-        this.addFile({
-          id: newFile.id,
-          originalName: newFile.name,
-          size: newFile.size,
-          upload: newFile
-        })
+        const { id, name, size } = newFile
+        this.addFile({ id, name, size, upload: newFile })
       }
       if (newFile && oldFile) {
         const { success, error } = newFile

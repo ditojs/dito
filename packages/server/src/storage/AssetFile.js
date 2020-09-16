@@ -8,14 +8,11 @@ const SYMBOL_STORAGE = Symbol('storage')
 const SYMBOL_DATA = Symbol('data')
 
 export class AssetFile {
-  constructor(originalName, data, mimeType) {
-    // TODO: Consider changing names to these?
-    // name -> key
-    // originalName -> filename
-    this.name = AssetFile.getUniqueFilename(originalName)
-    this.originalName = originalName
-    // Set `mimeType` before `data`, so it can be used as default in `set data`
-    this.mimeType = mimeType
+  constructor(name, data, type) {
+    this.key = AssetFile.getUniqueKey(name)
+    this.name = name
+    // Set `type` before `data`, so it can be used as default in `set data`
+    this.type = type
     this.data = data
   }
 
@@ -31,16 +28,16 @@ export class AssetFile {
     if (isString(data)) {
       if (data.startsWith('data:')) {
         data = dataUriToBuffer(data)
-        this.mimeType ||= data.type || mime.lookup(this.name)
+        this.type ||= data.type || mime.lookup(this.name)
       } else {
         data = Buffer.from(data)
-        this.mimeType ||= mime.lookup(this.name) || 'text/plain'
+        this.type ||= mime.lookup(this.name) || 'text/plain'
       }
     } else {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
-      this.mimeType ||= (
-        data.mimeType ||
+      this.type ||= (
+        data.type ||
         mime.lookup(this.name) ||
         'application/octet-stream'
       )
@@ -58,21 +55,17 @@ export class AssetFile {
   }
 
   static convert(object, storage) {
-    // `path` properties were removed in favor or the `get path()` accessor
-    // above. For it to work we need to delete the field in legacy data.
-    // TODO: Remove once all data is migrated to new format.
-    delete object.path
     Object.setPrototypeOf(object, AssetFile.prototype)
     setHiddenProperty(object, SYMBOL_STORAGE, storage)
     return object
   }
 
-  static create({ originalName, data, mimeType }) {
-    return new AssetFile(originalName, data, mimeType)
+  static create({ name, data, type }) {
+    return new AssetFile(name, data, type)
   }
 
-  static getUniqueFilename(filename) {
-    return `${uuidv4()}${path.extname(filename)}`
+  static getUniqueKey(name) {
+    return `${uuidv4()}${path.extname(name)}`
   }
 }
 

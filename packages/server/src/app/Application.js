@@ -657,7 +657,7 @@ export class Application extends Koa {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const assets = files.map(file => ({
-        name: file.name,
+        key: file.key,
         file,
         storage: storage.name,
         count
@@ -693,7 +693,7 @@ export class Application extends Koa {
         const changeCount = (files, increment) => (
           files.length > 0 &&
           AssetModel.query(trx)
-            .whereIn('name', files.map(it => it.name))
+            .whereIn('key', files.map(file => file.key))
             .increment('count', increment)
         )
         await Promise.all([
@@ -722,7 +722,7 @@ export class Application extends Koa {
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
       await Promise.map(files, async file => {
-        const asset = await AssetModel.query(trx).findOne('name', file.name)
+        const asset = await AssetModel.query(trx).findOne('key', file.key)
         if (!asset) {
           if (file.data || file.url) {
             let { data } = file
@@ -731,7 +731,7 @@ export class Application extends Koa {
                 `${
                   chalk.red('INFO:')
                 } Asset ${
-                  chalk.green(`'${file.originalName}'`)
+                  chalk.green(`'${file.name}'`)
                 } is from a foreign source, fetching from ${
                   chalk.green(`'${file.url}'`)
                 } and adding to storage ${
@@ -755,9 +755,9 @@ export class Application extends Koa {
           } else {
             throw new AssetError(
               `Unable to import asset from foreign source: '${
-                file.originalName
-              }' ('${
                 file.name
+              }' ('${
+                file.key
               }')`
             )
           }
@@ -779,7 +779,7 @@ export class Application extends Koa {
     if (AssetModel) {
       await Promise.map(files, async file => {
         if (file.data) {
-          const asset = await AssetModel.query(trx).findOne('name', file.name)
+          const asset = await AssetModel.query(trx).findOne('key', file.key)
           if (asset) {
             const changedFile = await storage.addFile(file, file.data)
             // Merge back the changed file properties into the actual files
@@ -790,9 +790,9 @@ export class Application extends Koa {
           } else {
             throw new AssetError(
               `Unable to update modified asset from memory source: '${
-                file.originalName
-              }' ('${
                 file.name
+              }' ('${
+                file.key
               }')`
             )
           }
@@ -815,7 +815,7 @@ export class Application extends Koa {
           .where('count', 0)
           .andWhere('updatedAt', '<=', date)
         if (orphanedAssets.length > 0) {
-          const orphanedNames = await Promise.map(
+          const orphanedKeys = await Promise.map(
             orphanedAssets,
             async asset => {
               try {
@@ -824,13 +824,13 @@ export class Application extends Koa {
                 this.emit('error', error)
                 asset.error = error
               }
-              return asset.name
+              return asset.key
             }
           )
           await AssetModel
             .query(trx)
             .delete()
-            .whereIn('name', orphanedNames)
+            .whereIn('key', orphanedKeys)
         }
         return orphanedAssets
       })

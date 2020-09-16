@@ -29,7 +29,7 @@ export class S3Storage extends Storage {
       ...options,
 
       key: (req, file, cb) => {
-        cb(null, this.getUniqueFilename(file.originalname))
+        cb(null, this.getUniqueKey(file.originalname))
       },
 
       metadata: (req, file, cb) => {
@@ -49,30 +49,14 @@ export class S3Storage extends Storage {
   }
 
   // @override
-  _getName(file) {
-    return file.key
-  }
-
-  // @override
   _getFilePath(_file) {
     // There is no "local" file-path to files on S3.
-    return null
+    return undefined
   }
 
   // @override
-  _getStorageProperties(name, file) {
-    return {
-      // Attempt `getUrl()` first to allow S3 buckets to define their own
-      // base URLs, e.g. for CloudFront, fall back to default S3 location:
-      url: this._getUrl(name) || file.location
-    }
-  }
-
-  // @override
-  _extractStorageProperties(file) {
-    return {
-      url: file.url
-    }
+  _getFileUrl(file) {
+    return this._getUrl(file.key) ?? file.url ?? file.location
   }
 
   // @override
@@ -80,47 +64,52 @@ export class S3Storage extends Storage {
     const data = await this._execute('upload', {
       Bucket: this.bucket,
       ACL: this.acl,
-      Key: file.name,
+      Key: file.key,
       Body: buffer
     })
-    return data
+    // "Convert" `file` to something looking more like a S3 `storageFile`.
+    // For now, only the `location` property is of interest:
+    return {
+      ...file,
+      location: data.Location
+    }
   }
 
   // @override
   async _removeFile(file) {
     await this._execute('deleteObject', {
       Bucket: this.bucket,
-      Key: file.name
+      Key: file.key
     })
     // TODO: Check for errors and throw?
   }
 
   // @override
   async _readFile(file) {
+    let data
+    let type
     if (file.url) {
-      const { data } = await axios.request({
+      ({
+        data,
+        'content-type': type
+      } = await axios.request({
         method: 'get',
         url: file.url,
         responseType: 'arraybuffer'
-      })
-      return data
+      }))
     } else {
-      const {
+      ({
         Body: data,
-        ContentType: mimeType
+        ContentType: type
       } = await this._execute('getObject', {
         Bucket: this.bucket,
-        Key: file.name
-      })
-      // See AssetFile, `set data(data)`:
-      data.mimeType = mimeType
-      return data
+        Key: file.key
+      }))
     }
-  }
-
-  // @override
-  _areFilesEqual(_file1, _file2) {
-    return _file1.url === _file2.url
+    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)
+    // See `AssetFile.data` setter:
+    buffer.type = type
+    return buffer
   }
 
   _execute(method, params) {

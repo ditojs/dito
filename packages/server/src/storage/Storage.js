@@ -53,34 +53,36 @@ export class Storage {
     return storage ? multer({ ...config, storage }).any() : null
   }
 
-  getUniqueFilename(filename) {
-    return AssetFile.getUniqueFilename(filename)
+  getUniqueKey(name) {
+    return AssetFile.getUniqueKey(name)
   }
 
-  convertStorageFile(file) {
-    const name = this._getName(file)
+  convertStorageFile(storageFile) {
+    console.log('convertStorageFile', storageFile)
     // Convert multer file object to our own file object format:
     return {
-      name,
-      ...this._getStorageProperties(name, file),
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      width: file.width,
-      height: file.height
+      key: storageFile.key,
+      name: storageFile.originalname,
+      type: storageFile.mimetype,
+      size: storageFile.size,
+      url: this._getFileUrl(storageFile),
+      // In case `config.readImageSize` is set:
+      width: storageFile.width,
+      height: storageFile.height
     }
   }
 
-  convertStorageFiles(files) {
-    return files.map(file => this.convertStorageFile(file))
+  convertStorageFiles(storageFiles) {
+    return storageFiles.map(storageFile => this.convertStorageFile(storageFile))
   }
 
   async addFile(file, buffer) {
-    const addedFile = await this._addFile(file, buffer)
-    return AssetFile.convert({
-      ...file,
-      ...this._getStorageProperties(file.name, addedFile)
-    }, this)
+    const storageFile = await this._addFile(file, buffer)
+    file.size = Buffer.byteLength(buffer)
+    file.url = this._getFileUrl(storageFile)
+    // TODO: Support `config.readImageSize`, but this can only be done onces
+    // there are separate storage instances per model assets config!
+    return AssetFile.convert(file, this)
   }
 
   async removeFile(file) {
@@ -95,6 +97,10 @@ export class Storage {
     return this._getFilePath(file)
   }
 
+  getFileUrl(file) {
+    return this._getFileUrl(file)
+  }
+
   isImageFile(file) {
     return file.mimetype.startsWith('image/')
   }
@@ -103,11 +109,10 @@ export class Storage {
     return !!(
       file1 &&
       file2 &&
+      file1.key === file2.key &&
       file1.name === file2.name &&
-      file1.originalName === file2.originalName &&
-      file1.mimeType === file2.mimeType &&
-      file1.size === file2.size &&
-      this._areFilesEqual(file1, file2)
+      file1.type === file2.type &&
+      file1.size === file2.size
     )
   }
 
@@ -124,16 +129,10 @@ export class Storage {
   }
 
   // @overridable
-  _getName(_file) {}
-
-  // @overridable
   _getFilePath(_file) {}
 
   // @overridable
-  _getStorageProperties(_name, _file) {}
-
-  // @overridable
-  _extractStorageProperties(_file) {}
+  _getFileUrl(_file) {}
 
   // @overridable
   async _addFile(_file, _buffer) {}
@@ -143,11 +142,6 @@ export class Storage {
 
   // @overridable
   async _readFile(_file) {}
-
-  // @overridable
-  _areFilesEqual(_file1, _file2) {
-    return false
-  }
 
   async _handleUpload(req, file, config) {
     if (config.readImageSize && this.isImageFile(file)) {
