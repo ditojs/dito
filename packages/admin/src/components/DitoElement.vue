@@ -1,5 +1,6 @@
 <template lang="pug">
   component(
+    v-if="content"
     :is="options.tag || tag"
     :class="classes"
     :style="styles"
@@ -17,7 +18,7 @@ import { isObject, isString, asArray } from '@ditojs/utils'
 export default DitoComponent.component('dito-element', {
   props: {
     tag: { type: String, default: 'span' },
-    content: { type: [String, Object], required: true }
+    content: { type: [String, Object] }
   },
 
   computed: {
