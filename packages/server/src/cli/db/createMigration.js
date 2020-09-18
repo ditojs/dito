@@ -52,7 +52,7 @@ export async function createMigration(app, name, ...modelNames) {
   const file = path.join(migrationDir, filename)
   if (await fs.exists(file)) {
     // This should never happen, but let's be on the safe side here:
-    console.log(chalk.red(`Migration '${filename}' already exists.`))
+    console.info(chalk.red(`Migration '${filename}' already exists.`))
     return false
   } else {
     await fs.writeFile(file, deindent`
@@ -64,7 +64,7 @@ export async function createMigration(app, name, ...modelNames) {
         ${getCode(dropTables)}
       }
     `)
-    console.log(chalk.cyan(`Migration '${filename}' successfully created.`))
+    console.info(chalk.cyan(`Migration '${filename}' successfully created.`))
     return true
   }
 }

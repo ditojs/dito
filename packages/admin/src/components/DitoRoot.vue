@@ -123,6 +123,7 @@ export default DitoComponent.component('dito-root', {
         info: 'log',
         success: 'log'
       }[type] || 'error'
+      // eslint-disable-next-line no-console
       console[log](stripTags(text))
       const { notifications = true } = this.api
       if (notifications) {

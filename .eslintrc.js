@@ -52,6 +52,13 @@ module.exports = {
       capIsNewExceptions: ['Knex'],
       capIsNewExceptionPattern: 'Mixin$'
     }],
+    'no-console': [isProduction ? 'error' : 'warn', {
+      allow: [
+        'info',
+        'warn',
+        'error'
+      ]
+    }],
     'no-cond-assign': 'error',
     'no-const-assign': 'error',
     'no-constant-condition': isProduction ? 'error' : 'warn',

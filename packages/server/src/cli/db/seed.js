@@ -56,12 +56,12 @@ async function handleSeed(app, base, seed, modelClass) {
       res = await modelClass.insertGraph(seed)
     }
     if (isArray(res)) {
-      console.log(
+      console.info(
         chalk.green(`${base}:`),
         chalk.cyan(`${res.length} seed records created.`)
       )
     } else {
-      console.log(
+      console.info(
         chalk.red(`${base}:`),
         chalk.cyan('No seed records created.')
       )

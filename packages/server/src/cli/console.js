@@ -42,7 +42,7 @@ export default async function startConsole(app, config) {
   server.defineCommand('models', {
     help: 'Display available Dito models',
     action() {
-      console.log(Object.keys(app.models).join(', '))
+      console.info(Object.keys(app.models).join(', '))
       this.displayPrompt()
     }
   })
@@ -58,7 +58,7 @@ export default async function startConsole(app, config) {
       .filter(line => line.trim())
       .map(line => server.history.push(line))
   } catch (e) {
-    console.log(deindent`
+    console.info(deindent`
       Unable to REPL history file at ${historyFile}.
       A history file will be created on shutdown
     `)
@@ -94,7 +94,7 @@ export default async function startConsole(app, config) {
 
 function displayUsage(app, config, details) {
   const modelHandleNames = Object.keys(app.models)
-  console.log(deindent`
+  console.info(deindent`
 
     ------------------------------------------------------------
     Dito Console
@@ -109,7 +109,7 @@ function displayUsage(app, config, details) {
     }
   `)
   if (details) {
-    console.log(deindent`
+    console.info(deindent`
       Examples:
 
       ${config.prompt} user = User.where({ lastName: 'Doe' }).first()
@@ -117,7 +117,7 @@ function displayUsage(app, config, details) {
       ${config.prompt} user.$comments.insert({ ... })
     `)
   }
-  console.log('------------------------------------------------------------')
+  console.info('------------------------------------------------------------')
 }
 
 // Wraps the default eval with a handler that resolves promises
@@ -145,5 +145,5 @@ function wrapEval({ eval: defaultEval }) {
 }
 
 function logError(error) {
-  console.log(`\x1b[31m${error}\x1b[0m`)
+  console.info(`\x1b[31m${error}\x1b[0m`)
 }

@@ -58,7 +58,6 @@ export class Storage {
   }
 
   convertStorageFile(storageFile) {
-    console.log('convertStorageFile', storageFile)
     // Convert multer file object to our own file object format:
     return {
       key: storageFile.key,

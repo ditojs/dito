@@ -935,7 +935,7 @@ export class Model extends objection.Model {
         transaction.setMaxListeners(0)
         transaction.on('rollback', async error => {
           if (importedFiles.length > 0) {
-            console.log(
+            console.info(
               `Received '${error}', removing imported files again: ${
                 importedFiles.map(file => `'${file.name}'`)
               }`
@@ -948,7 +948,7 @@ export class Model extends objection.Model {
           if (modifiedFiles.length > 0) {
             // TODO: `modifiedFiles` should be restored as well, but that's far
             // from trivial since no backup is kept in `handleModifiedAssets`
-            console.log(
+            console.info(
               `Unable to restore these already modified files: ${
                 modifiedFiles.map(file => `'${file.name}'`)
               }`

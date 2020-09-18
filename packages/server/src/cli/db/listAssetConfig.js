@@ -3,6 +3,6 @@ export async function listAssetConfig(app, ...args) {
     models: args.length > 0 ? args : Object.keys(app.models),
     normalizeDbNames: true
   })
-  console.log(JSON.stringify(assetConfig, null, 2))
+  console.info(JSON.stringify(assetConfig, null, 2))
   return true
 }

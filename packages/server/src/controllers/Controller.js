@@ -475,7 +475,7 @@ export class Controller {
 
   log(str, indent = 0) {
     if (this.logging) {
-      console.log(`${'  '.repeat(indent)}${str}`)
+      console.info(`${'  '.repeat(indent)}${str}`)
     }
   }
 }

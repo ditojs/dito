@@ -10,7 +10,7 @@ export async function reset(knex) {
     batches.push(batch)
     migrations.push(...log)
   }
-  console.log(migrations.length === 0
+  console.info(migrations.length === 0
     ? chalk.cyan('Already at the base migration')
     : chalk.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
       `rolled back: ${migrations.length} migrations\n`) +

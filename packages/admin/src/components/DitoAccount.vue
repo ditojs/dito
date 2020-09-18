@@ -46,7 +46,7 @@ export default DitoComponent.component('dito-account', {
         this.rootComponent.logout()
         break
       case 'settings':
-        console.log('TODO: Implement Settings')
+        console.info('TODO: Implement Settings')
         break
       }
     }

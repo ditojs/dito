@@ -124,7 +124,7 @@ export class Application extends Koa {
             Model.isPrototypeOf(value) ? `[Model: ${value.name}]` : value
           )
         }
-        console.log(
+        console.info(
           chalk.yellow.bold(`\n${modelClass.name}:\n`),
           util.inspect(data, {
             colors: true,
@@ -548,7 +548,7 @@ export class Application extends Koa {
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
       const bindings = query.bindings.join(', ')
-      console.log(
+      console.info(
         chalk.yellow.bold('knex:sql'),
         chalk.cyan(trim(query.sql)),
         chalk.magenta(duration + 'ms'),
@@ -611,7 +611,7 @@ export class Application extends Koa {
     this.server = await new Promise((resolve, reject) => {
       const server = this.listen(port, host, () => {
         const { port } = server.address()
-        console.log(
+        console.info(
           `${env} server started at http://${host}:${port}`
         )
         resolve(server)
@@ -727,7 +727,7 @@ export class Application extends Koa {
           if (file.data || file.url) {
             let { data } = file
             if (!data) {
-              console.log(
+              console.info(
                 `${
                   chalk.red('INFO:')
                 } Asset ${
