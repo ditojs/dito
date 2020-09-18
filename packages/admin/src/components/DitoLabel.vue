@@ -67,8 +67,7 @@
       label
         +ellipsis
         position: absolute
-        left: 0
-        right: 0
+        max-width: 100%
       &::after
         // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
         // on its parent to enforce the right text height in the container
