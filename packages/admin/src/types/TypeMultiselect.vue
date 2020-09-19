@@ -81,10 +81,12 @@
       line-height: inherit
       min-height: 0
       margin: 0 0 1px 0
-      padding: $input-padding
+      // Sadly, vue-select sets style="padding: ...;" in addition to using
+      // classes, so `!important` is necessary:
+      padding: $input-padding !important
       // So input can float next to tags and have proper margins with
       // .multiselect__tags:
-      padding-bottom: 0
+      padding-bottom: 0 !important
       background: none
     .multiselect--active
       .multiselect__placeholder
@@ -205,7 +207,8 @@
     &.dito-multiselect-single
       .multiselect--active
         .multiselect__input
-          // For crying out loud vue-select, why set style="width: auto;" here?
+          // Sadly, vue-select sets style="width: auto;" in addition to using
+          // classes, so `!important` is necessary:
           width: 100% !important
 
     &.dito-multiselect-multiple
@@ -213,7 +216,9 @@
       .multiselect__single,
       .multiselect__input
         float: left
-        width: auto
+        // Sadly, vue-select sets style="width: auto;" in addition to using
+        // classes, so `!important` is necessary:
+        width: auto !important
 
     &.dito-has-errors
       .multiselect__tags
