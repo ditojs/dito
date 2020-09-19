@@ -18,6 +18,8 @@
 
 <style lang="sass">
   .dito-radio-buttons
+    label
+      @extend %input-borderless
     .dito-radio-button
       margin-right: $form-spacing
 </style>

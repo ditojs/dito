@@ -102,8 +102,8 @@
     span
       display: inline-block
       width: (100% / 7)
-      line-height: calc(2em - 2px)
-      height: 2em
+      height: $input-height
+      line-height: calc(#{$input-height} - 2px)
       box-sizing: border-box
       border-radius: $border-radius
       border: $border-width solid transparent
@@ -157,9 +157,8 @@
 
   .dito-calendar-header,
   .dito-calendar-footer
+    @extend %input-height
     position: relative
-    height: 2em
-    line-height: 2em
     text-align: center
 
   .dito-calendar-footer

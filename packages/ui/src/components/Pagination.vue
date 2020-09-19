@@ -26,7 +26,7 @@
     .dito-pagination-total
       +ellipsis
       margin: 0 0.5em
-      line-height: 2em
+      line-height: $input-height
     .dito-button
       transition: all .3s ease, color 0s, background 0s, border 0s
       font-variant-numeric: tabular-nums

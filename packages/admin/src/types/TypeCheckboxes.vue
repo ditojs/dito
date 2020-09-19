@@ -18,6 +18,8 @@
 
 <style lang="sass">
   .dito-checkboxes
+    label
+      @extend %input-borderless
     .dito-checkbox
       margin-right: $form-spacing
 </style>

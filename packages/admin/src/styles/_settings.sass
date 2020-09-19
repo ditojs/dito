@@ -4,9 +4,13 @@ $font-family-mono: 'Menlo', 'Consolas', 'Monaco', 'Vera Mono', 'Andale Mono', 'U
 $font-size: 13px
 $font-size-small: 11px
 // Adjust line-height so that it fulfills this equation, which is used
-// to reach equal height for icon-buttons (height: 2em), table headers & co.:
-// (2 * $font-size - 2 * ($border-width + $input-padding-ver)) / $font-size
-$line-height: 2 - 2 * ($border-width + $input-padding-ver) / $font-size
+// to reach equal height for icon-buttons (`height: 2em`), table headers & co.:
+// `(2 * $font-size - 2 * ($border-width + $input-padding-ver)) / $font-size`
+// TODO: Ideally, this would be handled in @ditojs/ui, but it would have to be
+// done in a way independent of `$font-size`. The right approach would probably
+// be to use `$input-height` and vertical centering instead for all inputs that
+// have a height of one line?
+$line-height: $input-height-factor - 2 * ($border-width + $input-padding-ver) / $font-size
 
 // Button
 $button-order-arrow-size: 4px

@@ -159,9 +159,8 @@ export class Storage {
         this._getImageSize(stream2).finally(() => stream2.destroy())
       ])
       if (size) {
-        const { width, height } = size
-        res.width = width
-        res.height = height
+        res.width = size.width
+        res.height = size.height
       }
       return res
     } else {

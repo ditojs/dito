@@ -9,6 +9,11 @@
   )
 </template>
 
+<style lang="sass">
+  .dito-checkbox
+    @extend %input-borderless
+</style>
+
 <script>
 import TypeComponent from '@/TypeComponent'
 
