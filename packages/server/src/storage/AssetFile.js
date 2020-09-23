@@ -65,7 +65,7 @@ export class AssetFile {
   }
 
   static getUniqueKey(name) {
-    return `${uuidv4()}${path.extname(name)}`
+    return `${uuidv4()}${path.extname(name).toLowerCase()}`
   }
 }
 

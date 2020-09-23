@@ -2,7 +2,6 @@ import aws from 'aws-sdk'
 import axios from 'axios'
 import multerS3 from 'multer-s3'
 import { Storage } from './Storage'
-import { toPromiseCallback } from '@ditojs/utils'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -61,12 +60,12 @@ export class S3Storage extends Storage {
 
   // @override
   async _addFile(file, buffer) {
-    const data = await this._execute('upload', {
+    const data = await this.s3.upload({
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.key,
       Body: buffer
-    })
+    }).promise()
     // "Convert" `file` to something looking more like a S3 `storageFile`.
     // For now, only the `location` property is of interest:
     return {
@@ -77,10 +76,10 @@ export class S3Storage extends Storage {
 
   // @override
   async _removeFile(file) {
-    await this._execute('deleteObject', {
+    await this.s3.deleteObject({
       Bucket: this.bucket,
       Key: file.key
-    })
+    }).promise()
     // TODO: Check for errors and throw?
   }
 
@@ -101,10 +100,10 @@ export class S3Storage extends Storage {
       ({
         Body: data,
         ContentType: type
-      } = await this._execute('getObject', {
+      } = await this.s3.getObject({
         Bucket: this.bucket,
         Key: file.key
-      }))
+      }).promise())
     }
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)
     // See `AssetFile.data` setter:
@@ -112,9 +111,19 @@ export class S3Storage extends Storage {
     return buffer
   }
 
-  _execute(method, params) {
-    return new Promise((resolve, reject) => {
-      this.s3[method](params, toPromiseCallback(resolve, reject))
-    })
+  // @override
+  async _listKeys() {
+    const files = []
+    const params = { Bucket: this.bucket }
+    let result
+    do {
+      result = await this.s3.listObjectsV2(params).promise()
+      for (const { Key: key } of result.Contents) {
+        files.push(key)
+      }
+      // Continue it if results are truncated.
+      params.ContinuationToken = result.NextContinuationToken
+    } while (result.IsTruncated)
+    return files
   }
 }

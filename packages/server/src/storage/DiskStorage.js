@@ -69,6 +69,32 @@ export class DiskStorage extends Storage {
     return fs.readFile(this._getFilePath(file))
   }
 
+  // @override
+  async _listKeys() {
+    const files = []
+    await Promise.map(
+      fs.readdir(this._getPath(), { withFileTypes: true }),
+      async level1 => {
+        if (level1.isDirectory() && level1.name.length === 1) {
+          await Promise.map(
+            fs.readdir(this._getPath(level1.name), { withFileTypes: true }),
+            async level2 => {
+              if (level2.isDirectory() && level2.name.length === 1) {
+                const nestedFolder = this._getPath(level1.name, level2.name)
+                for (const file of await fs.readdir(nestedFolder)) {
+                  if (!file.startsWith('.')) {
+                    files.push(file)
+                  }
+                }
+              }
+            }
+          )
+        }
+      }
+    )
+    return files
+  }
+
   _getNestedFolder(key, posix = false) {
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.

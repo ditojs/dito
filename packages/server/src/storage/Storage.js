@@ -92,6 +92,10 @@ export class Storage {
     return this._readFile(file)
   }
 
+  async listKeys() {
+    return this._listKeys()
+  }
+
   getFilePath(file) {
     return this._getFilePath(file)
   }
@@ -141,6 +145,9 @@ export class Storage {
 
   // @overridable
   async _readFile(_file) {}
+
+  // @overridable
+  async _listKeys() {}
 
   async _handleUpload(req, file, config) {
     if (config.readImageSize && this.isImageFile(file)) {
