@@ -43,7 +43,22 @@ export class Application extends Koa {
     this._setupEmitter(events)
     // Pluck keys out of `config.app` to keep them secret
     const { keys, ...app } = config.app || {}
-    this.config = { ...config, app }
+    const { env } = process
+    const mode = env.NODE_ENV || 'development'
+    this.config = merge({
+      env: mode,
+      log: {},
+      server: {
+        host: env.NODE_HOST || env.HOST || '0.0.0.0',
+        port: env.NODE_PORT || env.PORT || '8080'
+      },
+      admin: {
+        mode
+      },
+      settings: {
+        env: mode
+      }
+    }, { ...config, app })
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
