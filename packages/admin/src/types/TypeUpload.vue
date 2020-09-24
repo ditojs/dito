@@ -37,9 +37,9 @@
               | Stored
           td.dito-cell-edit-buttons
             .dito-buttons.dito-buttons-round
-              button.dito-button(
+              // Firefox doesn't like <button> here, so use <a> instead:
+              a.dito-button(
                 v-if="draggable"
-                type="button"
                 v-bind="getButtonAttributes(verbs.drag)"
               )
               button.dito-button(
