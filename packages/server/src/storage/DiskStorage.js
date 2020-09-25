@@ -54,7 +54,15 @@ export class DiskStorage extends Storage {
     await fs.unlink(filePath)
     const removeIfEmpty = async dir => {
       if ((await fs.readdir(dir)).length === 0) {
-        await fs.rmdir(dir)
+        try {
+          await fs.rmdir(dir)
+        } catch (err) {
+          // The directory may already have been deleted by another async call,
+          // fail silently here in this case.
+          if (err.code !== 'ENOENT') {
+            throw err
+          }
+        }
       }
     }
     // Clean up nested folders created with first two chars of `file.key` also:
