@@ -49,6 +49,11 @@ export class QueryBuilder extends objection.QueryBuilder {
       // If this isn't a normal find query, ignore all graph operations,
       // to not mess with special selects such as `count`, etc:
       this._ignoreGraph = !isNormalFind
+      // All scopes in `_scopes` were already checked against `_allowScopes`.
+      // They themeselves are allowed to apply / request other scopes that
+      // aren't listed, so clear `_applyScope` and restore again after:
+      const { _allowScopes } = this
+      this._allowScopes = null
       const appliedScopes = {}
       // Scopes can themselves request more scopes by calling `withScope()`
       // In order to prevent that from causing problems while looping over
@@ -71,6 +76,7 @@ export class QueryBuilder extends objection.QueryBuilder {
         scopes = Object.entries(this._scopes)
       }
       this._scopes = appliedScopes
+      this._allowScopes = _allowScopes
       this._ignoreGraph = false
     }
     // In case of cyclic graphs, run `_executeFirst()` now:
