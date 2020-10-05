@@ -690,12 +690,15 @@ export class Model extends objection.Model {
     switch (modifier[0]) {
     case '^':
       // Apply the unknown scope eagerly, as it may still be known in
-      // eager-loaded relations.
+      // eager-loaded relations. Note: `applyScope()` will handle the '^' sign.
       builder.applyScope(modifier)
       break
     case ':':
       // Apply the scope marked by `:` normally.
       builder.applyScope(modifier.substring(1))
+      break
+    case '-':
+      builder.ignoreScope(modifier.substring(1))
       break
     case '#':
       // Select the column marked by `#`.

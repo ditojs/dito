@@ -6,7 +6,9 @@ export const QueryParameters = new Registry()
 
 QueryParameters.register({
   scope(builder, key, value) {
-    builder.withScope(...asArray(value))
+    // Use `applyScope()` instead of `withScope()`, so the scope applied here
+    // can clear earlier `withScope()` statements before `execute()` is run.
+    builder.applyScope(...asArray(value))
   },
 
   filter(builder, key, value) {

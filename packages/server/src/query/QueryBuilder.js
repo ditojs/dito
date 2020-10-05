@@ -18,10 +18,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     super(modelClass)
     this._ignoreGraph = false
     this._graphAlgorithm = 'fetch'
-    this._allowScopes = null
-    this._ignoreScopes = false
-    this._appliedScopes = {}
     this._allowFilters = null
+    this._allowScopes = null
+    this._ignoreScopes = {}
+    this._appliedScopes = {}
     this._executeFirst = null // Part of a work-around for cyclic graphs
     this._clearScopes(true)
   }
@@ -31,16 +31,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     const copy = super.clone()
     copy._ignoreGraph = this._ignoreGraph
     copy._graphAlgorithm = this._graphAlgorithm
-    copy._ignoreScopes = this._ignoreScopes
     copy._appliedScopes = { ...this._appliedScopes }
-    copy._allowFilters = { ...this._allowFilters }
+    copy._allowFilters = this._allowFilters ? { ...this._allowFilters } : null
     copy._copyScopes(this)
     return copy
   }
 
   // @override
   async execute() {
-    if (!this._ignoreScopes) {
+    if (!this._ignoreScopes['*']) {
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
       const isNormalFind = (
@@ -50,11 +49,28 @@ export class QueryBuilder extends objection.QueryBuilder {
       // If this isn't a normal find query, ignore all graph operations,
       // to not mess with special selects such as `count`, etc:
       this._ignoreGraph = !isNormalFind
-      for (const { scope, graph } of this._scopes) {
-        if (scope !== 'default' || isNormalFind) {
-          this._applyScope(scope, graph)
+      const appliedScopes = {}
+      // Scopes can themselves request more scopes by calling `withScope()`
+      // In order to prevent that from causing problems while looping over
+      // `_scopes`, create a local copy of the entries, set `_scopes` to an
+      // empty object during iteration and check if there are new entries after
+      // one full loop. Keep doing this until there's nothing left, but keep
+      // track of all the applied scopes, so `_scopes` can be set to the the
+      // that in the end. This is needed for child queries, see `childQueryOf()`
+      let scopes = Object.entries(this._scopes)
+      while (scopes.length > 0) {
+        this._scopes = {}
+        for (const [scope, graph] of scopes) {
+          // Don't apply `default` scopes on anything else than a normal find
+          // query:
+          if (scope !== 'default' || isNormalFind) {
+            this._applyScope(scope, graph)
+            appliedScopes[scope] ||= graph
+          }
         }
+        scopes = Object.entries(this._scopes)
       }
+      this._scopes = appliedScopes
       this._ignoreGraph = false
     }
     // In case of cyclic graphs, run `_executeFirst()` now:
@@ -93,13 +109,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const expr of scopes) {
       if (expr) {
         const { scope, graph } = getScope(expr)
-        // Merge with existing matching scope statements, or add a new one.
-        const entry = this._scopes.find(entry => entry.scope === scope)
-        if (entry) {
-          entry.graph = entry.graph || graph
-        } else {
-          this._scopes.push({ scope, graph })
+        if (this._allowScopes && !this._allowScopes[scope]) {
+          throw new QueryBuilderError(
+            `Query scope '${scope}' is not allowed.`
+          )
         }
+        this._scopes[scope] ||= graph
       }
     }
     return this
@@ -111,14 +126,25 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this._clearScopes(true)
   }
 
-  ignoreScope() {
-    this._ignoreScopes = true
+  ignoreScope(...scopes) {
+    if (!this._ignoreScopes['*']) {
+      const ignoreScopes = scopes.length > 0
+        ? createLookup(scopes)
+        : { '*': true } // Empty arguments = '*' -> ignore everything
+      this._ignoreScopes = ignoreScopes['*']
+        ? ignoreScopes
+        : {
+          ...this._ignoreScopes,
+          ...ignoreScopes
+        }
+    }
     return this
   }
 
   applyScope(...scopes) {
-    // When directly applying a scope, still merge it into the list of scopes
-    // `this._scopes`, so it can still be passed on to forked child queries:
+    // When directly applying a scope, still merge it into `this._scopes`,
+    // so it can still be passed on to forked child queries. This also handles
+    // the checks against `_allowScopes`.
     this.withScope(...scopes)
     for (const expr of scopes) {
       if (expr) {
@@ -164,9 +190,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _clearScopes(addDefault) {
+    // `_scopes` is an object where the keys are the scopes and the values
+    // indicate if the scope should be eager-applied or not:
     this._scopes = addDefault
-      ? [{ scope: 'default', graph: true }]
-      : []
+      ? { default: true } // eager-apply the default scope
+      : {}
     return this
   }
 
@@ -174,42 +202,39 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (this.modelClass() === query.modelClass()) {
       // The target query is for the same model-class as this query,
       // so copy all scopes, both graph and non-graph.
-      this._scopes = query._scopes.slice()
-      this._allowScopes = query._allowScopes
-        ? { ...query._allowScopes }
-        : null
+      this._scopes = { ...query._scopes }
+      this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
+      this._ignoreScopes = { ...query._ignoreScopes }
     } else {
       // The target query is for a different model-class than this query,
       // meaning it must be a child query of it, so only copy graph scopes.
-      this._scopes = query._scopes.filter(scope => scope.graph)
+      this._scopes = Object.entries(query._scopes).reduce(
+        (scopes, [scope, graph]) => {
+          if (graph) {
+            scopes[scope] = true
+          }
+          return scopes
+        },
+        {}
+      )
     }
   }
 
   _applyScope(scope, graph) {
-    if (!this._ignoreScopes) {
-      const modelClass = this.modelClass()
-      // When a scope itself is allowed, it should be able to apply all other
-      // scopes internally, ignoring the settings of _allowScopes during its
-      // execution. Do so by temporarily clearing and restoring _allowScopes:
-      const { _allowScopes } = this
-      this._allowScopes = null
-      try {
-        if (
-          // Prevent multiple application of scopes. This can easily occur
-          // with the nesting of graph-scopes, see below.
-          !this._appliedScopes[scope] &&
-          // Only apply graph-scopes that are actually defined on the model:
-          (!graph || modelClass.hasScope(scope))
-        ) {
-          if (_allowScopes && !_allowScopes[scope]) {
-            throw new QueryBuilderError(
-              `Query scope '${scope}' is not allowed.`
-            )
-          }
-          this._appliedScopes[scope] = true
+    if (!this._ignoreScopes['*'] && !this._ignoreScopes[scope]) {
+      // Prevent multiple application of scopes. This can easily occur
+      // with the nesting and eager-application of graph-scopes, see below.
+      if (!this._appliedScopes[scope]) {
+        // Only apply graph-scopes that are actually defined on the model:
+        if (!graph || this.modelClass().hasScope(scope)) {
           this.modify(scope)
+          this._appliedScopes[scope] = true
         }
-        const expr = graph && this.graphExpressionObject()
+      }
+      if (graph) {
+        // Also bake the scope into any graph expression that may have been
+        // set already using `withGraph()` & co.
+        const expr = this.graphExpressionObject()
         if (expr) {
           // Add a new modifier to the existing graph expression that
           // recursively applies the graph-scope to the resulting queries.
@@ -223,8 +248,6 @@ export class QueryBuilder extends objection.QueryBuilder {
             addGraphScope(this.modelClass(), expr, [name], modifiers, true)
           ).modifiers(modifiers)
         }
-      } finally {
-        this._allowScopes = _allowScopes
       }
     }
   }
