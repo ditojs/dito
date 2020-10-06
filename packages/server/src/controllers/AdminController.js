@@ -90,11 +90,16 @@ export class AdminController extends Controller {
   }
 
   getVueConfig() {
-    const { build = {}, settings } = this.config
+    const {
+      build = {},
+      devtool = this.mode === 'development' ? 'source-map' : null,
+      settings
+    } = this.config
     return {
       runtimeCompiler: true,
       publicPath: `${this.url}/`,
       configureWebpack: {
+        devtool,
         // We always need the source build path as entry, even for production,
         // for things like .babelrc to work when building for dist:
         entry: [this.getPath('build')],
