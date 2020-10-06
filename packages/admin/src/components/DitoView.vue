@@ -5,6 +5,7 @@
   // used to always render forms even when other nested forms are present.
   router-view(
     v-if="!isLastRoute"
+    :key="name"
   )
   .dito-view.dito-scroll-parent(
     v-else-if="shouldRender(viewSchema)"

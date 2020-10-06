@@ -38,9 +38,9 @@ export default class DitoAdmin {
     this.options = options
 
     // Setup default api setttings:
-    api.locale = api.locale || 'en-US'
-    api.dateFormat = api.dateFormat || defaultDateFormat
-    api.request = api.request || ((...args) => this.request(...args))
+    api.locale ||= 'en-US'
+    api.dateFormat ||= defaultDateFormat
+    api.request ||= (...args) => this.request(...args)
 
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
@@ -148,9 +148,9 @@ export default class DitoAdmin {
       el,
       router: new VueRouter({
         mode: 'history',
+        base,
         linkActiveClass: '',
-        linkExactActiveClass: '',
-        base
+        linkExactActiveClass: ''
       }),
       components: { DitoRoot },
       data: {
