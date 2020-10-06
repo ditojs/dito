@@ -17,11 +17,11 @@
     "prepare": "yarn clean && yarn build"
   },
   "engines": {
-    "node": ">= 10.0.0",
+    "node": ">= 14.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node 10"
+    "node 14"
   ],
   "dependencies": {
     "@babel/runtime": "^7.11.2",
