@@ -88,17 +88,22 @@
       // .multiselect__tags:
       padding-bottom: 0 !important
       background: none
+
+    .multiselect__placeholder,
+    .multiselect__input::placeholder
+      color: $color-placeholder
+
+    .multiselect__input
+      display: none
+
     .multiselect--active
+      .multiselect__input
+        display: inline-block
       .multiselect__placeholder
         // Don't use `display: none` to hide place-holder, as the layout would
         // collapse.
         display: inline-block
         visibility: hidden
-    // Unfortunately .multiselect__single is used for place placeholder text
-    // also, but as it is then nested in an nother span so wen can match it:
-    span span.multiselect__single,
-    .multiselect__input::placeholder
-      color: $color-placeholder
 
     .multiselect__select,
     .multiselect__spinner
@@ -216,9 +221,10 @@
       .multiselect__single,
       .multiselect__input
         float: left
-        // Sadly, vue-select sets style="width: auto;" in addition to using
-        // classes, so `!important` is necessary:
+        // Sadly, vue-select sets `style="width: 100%; position: absolute"` in
+        // addition to using classes, so `!important` is necessary:
         width: auto !important
+        position: static !important
 
     &.dito-has-errors
       .multiselect__tags
