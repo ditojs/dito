@@ -8,9 +8,9 @@ export default {
   methods: {
     getItemFormSchema,
 
-    getItemId(sourceSchema, item, uid) {
+    getItemId(sourceSchema, item, index) {
       const id = this.isTransient
-        ? (uid !== null ? uid : getUid(item))
+        ? (index != null ? index : getUid(item))
         : item[sourceSchema.idName || 'id']
       return id === undefined ? id : String(id)
     },

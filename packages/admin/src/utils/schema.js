@@ -136,13 +136,17 @@ export async function resolveForm(form) {
   if (isPromise(form)) {
     form = await form
   }
-  // When dynamically importing forms, try figuring out and setting their
-  // name, if they were declared as named imports:
+  // When dynamically importing forms, the actual form can be received named or
+  // as `default` in a nested object, detect and handle this case:
   if (form && !('components' in form)) {
-    const name = Object.keys(form)[0]
-    form = form[name]
-    if (form && name !== 'default') {
-      form.name = name
+    const keys = Object.keys(form)
+    // Only extract form if there's only one property (named or default)
+    if (keys.length === 1) {
+      const name = keys[0]
+      form = form[name]
+      if (form && name !== 'default') {
+        form.name = name
+      }
     }
   }
   return form
