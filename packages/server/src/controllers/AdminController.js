@@ -82,6 +82,10 @@ export class AdminController extends Controller {
         stats
       },
       hotClient: this.config.hotReload !== false && {
+        // The only way to not log `Failed to parse source map` warnings is
+        // sadly to ignore all warnings:
+        // https://github.com/webpack-contrib/webpack-hot-client/issues/94
+        logLevel: 'error',
         stats
       }
     })
@@ -130,6 +134,21 @@ export class AdminController extends Controller {
               }
             }
           }
+        },
+        // Preserve source-maps in third party dependencies, but do not log
+        // warnings about dependencies that don't come with source-maps.
+        // https://webpack.js.org/loaders/source-map-loader/#ignoring-warnings
+        module: {
+          rules: [
+            {
+              test: /\.(js|css)$/,
+              enforce: 'pre',
+              use: ['source-map-loader']
+            }
+          ]
+        },
+        stats: {
+          warningsFilter: /Failed to parse source map/
         }
       },
 
@@ -166,6 +185,9 @@ export class AdminController extends Controller {
             .use('babel-loader')
             .options({ compact: false })
         }
+        // Make `stats.warningsFilter` work, see:
+        // https://forum.vuejs.org/t/sppress-warnings-in-vue-cli-3/45905/4
+        conf.plugins.delete('friendly-errors')
       }
     }
   }
