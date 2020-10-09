@@ -104,7 +104,7 @@
               :draggable="draggable"
               :editable="editable"
               :editPath="getEditPath(item, index)"
-              :schema="getItemFormSchema(schema, item)"
+              :schema="getItemFormSchema(schema, item, views)"
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
@@ -258,9 +258,14 @@ export default TypeComponent.register('list', {
     },
 
     getEditPath(item, index) {
-      return this.editable
-        ? `${this.path}/${this.getItemId(this.schema, item, index)}`
-        : null
+      if (this.editable) {
+        const id = this.getItemId(this.schema, item, index)
+        const { view } = this.schema
+        return view
+          ? `/${this.views[view].path}/${id}`
+          : `${this.path}/${id}`
+      }
+      return null
     },
 
     getCellClass(column) {

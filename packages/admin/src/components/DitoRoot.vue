@@ -6,9 +6,7 @@
       position="top right"
       classes="dito-notification"
     )
-    dito-menu(
-      :views="resolvedViews"
-    )
+    dito-menu
     main.dito-page.dito-scroll-parent
       dito-header(
         :spinner="options.spinner"
@@ -56,7 +54,7 @@ export default DitoComponent.component('dito-root', {
   mixins: [DomMixin],
 
   props: {
-    views: { type: [Object, Function, Promise], required: true },
+    unresolvedViews: { type: [Object, Function, Promise], required: true },
     options: { type: Object, default: () => ({}) }
   },
 
@@ -66,6 +64,12 @@ export default DitoComponent.component('dito-root', {
       resolvedViews: {},
       notificationCount: 0,
       loadingCount: 0
+    }
+  },
+
+  provide() {
+    return {
+      $views: () => this.resolvedViews
     }
   },
 
@@ -237,9 +241,9 @@ export default DitoComponent.component('dito-root', {
 
     async resolveViews() {
       try {
-        const views = await resolveViews(this.views)
+        const resolvedViews = await resolveViews(this.unresolvedViews)
         // Copy views to convert from module to a plain object:
-        this.resolvedViews = { ...views }
+        this.resolvedViews = { ...resolvedViews }
       } catch (error) {
         if (!error.request) {
           console.error(error)

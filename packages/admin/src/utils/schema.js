@@ -174,7 +174,14 @@ export function hasForms(schema) {
   return isObject(schema) && !!(schema.form || schema.forms)
 }
 
-export function getItemFormSchema(schema, item) {
+export function getItemFormSchema(schema, item, views = null) {
+  const { view } = schema
+  if (view && views) {
+    schema = views[view]
+    if (!schema) {
+      throw new Error(`Unknown view: '${view}'`)
+    }
+  }
   const { form, forms } = schema
   const type = item?.type
   return forms && type ? forms[type] : form

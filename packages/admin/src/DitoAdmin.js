@@ -167,6 +167,7 @@ export default class DitoAdmin {
         $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
+        $views: () => {},
         $isPopulated: () => true,
         $schemaComponent: () => null,
         $schemaParentComponent: () => null,
@@ -177,7 +178,7 @@ export default class DitoAdmin {
       },
       render: createElement => createElement(DitoRoot, {
         props: {
-          views,
+          unresolvedViews: views,
           options
         }
       })

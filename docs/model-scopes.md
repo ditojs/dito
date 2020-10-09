@@ -33,7 +33,7 @@ export class MyModel extends Model {
 
     published: query => query
       .where('published', true)
-      .mergeEager('someRelation(published)')
+      .withGraph('someRelation(published)')
   }
 }
 ```
@@ -47,11 +47,6 @@ set to `true`, and for these it will also eager-load the models of the
 `someRelation` relation, but only the ones where the `published` scope applies 
 as well (using Objection.js' syntax for applying filters = scopes to [eager 
 expressions](http://vincit.github.io/objection.js/#relationexpression)).
-
-Note: `mergeEager()` merges with previously defined eager expressions whereas
-`eager()` overwrites previously defined eager expressions. In scopes, it is
-advised to use `mergeEager()`, so that when multiple scopes are combined,
-their eager expressions get merged correctly as well.
 
 For more information on
 [eager expressions](http://vincit.github.io/objection.js/#eager), see the

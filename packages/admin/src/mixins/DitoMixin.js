@@ -16,6 +16,7 @@ export default {
   inject: [
     'api',
     '$verbs',
+    '$views',
     '$isPopulated',
     '$schemaComponent',
     '$routeComponent',
@@ -54,11 +55,15 @@ export default {
       return appState.user
     },
 
-    // Both $verbs and $isPopulated are defined as functions, to preserve
+    // $verbs, $verbs and $isPopulated are defined as functions, to preserve
     // reactiveness across provide/inject.
     // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
     verbs() {
       return this.$verbs()
+    },
+
+    views() {
+      return this.$views()
     },
 
     isPopulated() {
