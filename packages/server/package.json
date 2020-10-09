@@ -70,6 +70,7 @@
     "multer-s3": "^2.9.0",
     "nodemon": "^2.0.4",
     "objection": "^2.2.3",
+    "parse-duration": "^0.4.4",
     "passport-local": "^1.0.0",
     "pluralize": "^8.0.0",
     "repl": "^0.1.3",

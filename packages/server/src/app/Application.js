@@ -4,6 +4,7 @@ import util from 'util'
 import axios from 'axios'
 import chalk from 'chalk'
 import zlib from 'zlib'
+import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
@@ -675,10 +676,15 @@ export class Application extends Koa {
     removedFiles,
     trx = null
   ) {
+    const {
+      assets: {
+        cleanupTimeThreshold = 0
+      } = {}
+    } = this.config
     // Only remove unused assets that haven't seen changes for given timeframe.
-    // TODO: Make timeThreshold an optional configuration setting?
-    // const timeThreshold = 5 * 1000 // 5s
-    const timeThreshold = 12 * 60 * 60 * 1000 // 12h
+    const timeThreshold = isString(cleanupTimeThreshold)
+      ? parseDuration(cleanupTimeThreshold)
+      : cleanupTimeThreshold
 
     const importedFiles = []
     const AssetModel = this.getModel('Asset')
@@ -700,7 +706,7 @@ export class Application extends Koa {
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)
         ])
-        if (timeThreshold) {
+        if (timeThreshold > 0) {
           setTimeout(
             // Don't pass `trx` here, as we want this delayed execution to
             // create its own transaction.
