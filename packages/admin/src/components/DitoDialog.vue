@@ -2,13 +2,13 @@
   form.dito-dialog(@submit.prevent="")
     dito-schema.dito-scroll(
       :schema="schema"
-      :data="data"
+      :data="dialogData"
       :meta="meta"
     )
       dito-buttons.dito-buttons-large(
         slot="buttons"
         :buttons="buttonSchemas"
-        :data="data"
+        :data="dialogData"
         :meta="meta"
       )
 </template>
@@ -22,6 +22,7 @@
 import DitoComponent from '@/DitoComponent'
 import { getButtonSchemas } from '@/utils/schema'
 import { addEvents } from '@ditojs/ui'
+import { clone } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
@@ -33,8 +34,16 @@ export default DitoComponent.component('dito-dialog', {
   },
 
   data() {
+    // Make sure dialog data contains all the expected keys
+    const dialogData = clone(this.data)
+    for (const key in this.components) {
+      if (!(key in dialogData)) {
+        dialogData[key] = null
+      }
+    }
     return {
-      windowEvents: null
+      windowEvents: null,
+      dialogData
     }
   },
 
@@ -85,15 +94,6 @@ export default DitoComponent.component('dito-dialog', {
     }
   },
 
-  created() {
-    // Make sure data contains all the expected keys
-    for (const key in this.components) {
-      if (!(key in this.data)) {
-        this.data[key] = null
-      }
-    }
-  },
-
   mounted() {
     this.windowEvents = addEvents(window, {
       keyup: () => {
@@ -124,7 +124,7 @@ export default DitoComponent.component('dito-dialog', {
     },
 
     accept() {
-      this.resolve(this.data)
+      this.resolve(this.dialogData)
     },
 
     cancel() {

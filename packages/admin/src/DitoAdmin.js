@@ -153,10 +153,6 @@ export default class DitoAdmin {
         linkExactActiveClass: ''
       }),
       components: { DitoRoot },
-      data: {
-        views,
-        options
-      },
       provide: {
         api,
         // A default list of verbs are provided by $verbs() and can be
@@ -175,6 +171,10 @@ export default class DitoAdmin {
         $dataComponent: () => null,
         $sourceComponent: () => null,
         $resourceComponent: () => null
+      },
+      data: {
+        views,
+        options
       },
       render: createElement => createElement(DitoRoot, {
         props: {

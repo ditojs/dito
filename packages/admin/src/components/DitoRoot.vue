@@ -53,6 +53,12 @@ import { equals, stripTags } from '@ditojs/utils'
 export default DitoComponent.component('dito-root', {
   mixins: [DomMixin],
 
+  provide() {
+    return {
+      $views: () => this.resolvedViews
+    }
+  },
+
   props: {
     unresolvedViews: { type: [Object, Function, Promise], required: true },
     options: { type: Object, default: () => ({}) }
@@ -64,12 +70,6 @@ export default DitoComponent.component('dito-root', {
       resolvedViews: {},
       notificationCount: 0,
       loadingCount: 0
-    }
-  },
-
-  provide() {
-    return {
-      $views: () => this.resolvedViews
     }
   },
 

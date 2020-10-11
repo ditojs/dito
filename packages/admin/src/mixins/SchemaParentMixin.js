@@ -1,14 +1,14 @@
 // @vue/component
 export default {
-  data() {
-    return {
-      schemaComponents: []
-    }
-  },
-
   provide() {
     return {
       $schemaParentComponent: () => this
+    }
+  },
+
+  data() {
+    return {
+      schemaComponents: []
     }
   },
 

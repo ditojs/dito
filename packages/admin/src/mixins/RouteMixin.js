@@ -11,6 +11,14 @@ export default {
     }
   },
 
+  beforeRouteUpdate(to, from, next) {
+    this.beforeRouteChange(to, from, next)
+  },
+
+  beforeRouteLeave(to, from, next) {
+    this.beforeRouteChange(to, from, next)
+  },
+
   data() {
     return {
       reload: false,
@@ -102,14 +110,6 @@ export default {
   destroyed() {
     const { routeComponents } = this.appState
     routeComponents.splice(routeComponents.indexOf(this), 1)
-  },
-
-  beforeRouteUpdate(to, from, next) {
-    this.beforeRouteChange(to, from, next)
-  },
-
-  beforeRouteLeave(to, from, next) {
-    this.beforeRouteChange(to, from, next)
   },
 
   methods: {

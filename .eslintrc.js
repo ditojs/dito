@@ -96,6 +96,10 @@ module.exports = {
     }],
     'space-in-parens': ['error', 'never'],
     'valid-typeof': 'error',
+    'vue/component-definition-name-casing': ['error', 'kebab-case'],
+    'vue/component-tags-order': ['error', {
+      order: ['template', 'style', 'script']
+    }],
     'vue/no-async-in-computed-properties': 'off',
     'vue/no-side-effects-in-computed-properties': 'off',
     'vue/require-default-prop': 'off',
