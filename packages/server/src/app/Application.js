@@ -447,7 +447,7 @@ export class Application extends Koa {
       this.use(logger())
     }
     if (app.helmet !== false) {
-      this.use(helmet())
+      this.use(helmet(isObject(app.helmet) ? app.helmet : {}))
     }
     if (app.cors !== false) {
       this.use(cors(isObject(app.cors) ? app.cors : {}))
