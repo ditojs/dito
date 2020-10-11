@@ -96,7 +96,7 @@ export class AdminController extends Controller {
   getVueConfig() {
     const {
       build = {},
-      devtool = this.mode === 'development' ? 'source-map' : null,
+      devtool = this.mode === 'development' ? 'source-map' : false,
       settings
     } = this.config
     return {
