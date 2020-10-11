@@ -93,12 +93,7 @@
     .multiselect__input::placeholder
       color: $color-placeholder
 
-    .multiselect__input
-      display: none
-
     .multiselect--active
-      .multiselect__input
-        display: inline-block
       .multiselect__placeholder
         // Don't use `display: none` to hide place-holder, as the layout would
         // collapse.
@@ -184,11 +179,23 @@
       border: $border-style
       border-radius: $border-radius
 
+    &.dito-multiselect-single
+      --input-width: 100%;
+    &.dito-multiselect-multiple
+      --input-width: auto;
+
     .multiselect--active
+      .multiselect__single,
+      .multiselect__input
+        // Sadly, vue-select sets `style="width"` in addition to using classes
+        // so `!important` is necessary:
+        width: var(--input-width) !important
+
       .multiselect__tags
         border-color: $color-active
         border-bottom-left-radius: 0
         border-bottom-right-radius: 0
+
       .multiselect__content-wrapper
         border: $border-width solid $color-active
         border-top-color: $border-color
@@ -208,23 +215,6 @@
           border-radius: $border-radius
           border-bottom-left-radius: 0
           border-bottom-right-radius: 0
-
-    &.dito-multiselect-single
-      .multiselect--active
-        .multiselect__input
-          // Sadly, vue-select sets style="width: auto;" in addition to using
-          // classes, so `!important` is necessary:
-          width: 100% !important
-
-    &.dito-multiselect-multiple
-      // Only shrink & float the input field if we have multiple values (tags)
-      .multiselect__single,
-      .multiselect__input
-        float: left
-        // Sadly, vue-select sets `style="width: 100%; position: absolute"` in
-        // addition to using classes, so `!important` is necessary:
-        width: auto !important
-        position: static !important
 
     &.dito-has-errors
       .multiselect__tags
