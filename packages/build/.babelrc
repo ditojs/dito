@@ -1,4 +1,6 @@
 {
+  "sourceType": "module",
+  "sourceMaps": "both",
   "presets": [
     "@ditojs/babel-preset",
     ["@babel/preset-env", {

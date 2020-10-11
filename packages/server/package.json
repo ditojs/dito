@@ -13,7 +13,7 @@
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",
     "clean": "rimraf lib",
-    "build": "babel src --out-dir lib --copy-files --source-maps inline",
+    "build": "babel src --out-dir lib --copy-files",
     "watch": "yarn build --watch",
     "prepare": "yarn clean && yarn build"
   },
