@@ -18,7 +18,6 @@ import koaLogger from 'koa-logger'
 import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
-import { Model, BelongsToOneRelation, knexSnakeCaseMappers } from 'objection'
 import { EventEmitter } from '@/lib'
 import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
@@ -34,6 +33,12 @@ import {
   isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
+import {
+  Model,
+  BelongsToOneRelation,
+  knexSnakeCaseMappers,
+  ref
+} from 'objection'
 
 export class Application extends Koa {
   constructor(
@@ -820,6 +825,9 @@ export class Application extends Koa {
           .query(trx)
           .where('count', 0)
           .andWhere('updatedAt', '<=', date)
+          // Protect freshly created assets from being deleted again right away,
+          // .e.g. when `config.assets.cleanupTimeThreshold = 0`
+          .andWhere('updatedAt', '>', ref('createdAt'))
         if (orphanedAssets.length > 0) {
           const orphanedKeys = await Promise.map(
             orphanedAssets,
