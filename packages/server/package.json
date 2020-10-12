@@ -69,7 +69,6 @@
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
     "nodemon": "^2.0.4",
-    "objection": "^2.2.3",
     "parse-duration": "^0.4.4",
     "passport-local": "^1.0.0",
     "pluralize": "^8.0.0",
@@ -80,11 +79,13 @@
     "vue-template-compiler": "^2.6.12"
   },
   "peerDependencies": {
-    "knex": "^0.20.0"
+    "knex": "^0.20.0",
+    "objection": "^2.2.0"
   },
   "devDependencies": {
     "babel-plugin-transform-promise-to-bluebird": "^2.0.0",
     "knex": "^0.21.6",
+    "objection": "^2.2.3",
     "pg": "^8.4.1",
     "sqlite3": "^5.0.0"
   }
