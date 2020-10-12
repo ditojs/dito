@@ -198,7 +198,6 @@ export default TypeComponent.register('list', {
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
-        schemaComponent.api,
         { // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
             return getComponent()?.query
