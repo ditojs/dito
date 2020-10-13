@@ -22,7 +22,9 @@ export default {
     '$routeComponent',
     '$dataComponent',
     '$sourceComponent',
-    '$resourceComponent'
+    '$resourceComponent',
+    '$dialogComponent',
+    '$panelComponent'
   ],
 
   provide() {
@@ -105,6 +107,14 @@ export default {
 
     resourceComponent() {
       return this.$resourceComponent()
+    },
+
+    dialogComponent() {
+      return this.$dialogComponent()
+    },
+
+    panelComponent() {
+      return this.$panelComponent()
     },
 
     parentSchemaComponent() {

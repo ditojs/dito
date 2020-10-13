@@ -10,7 +10,7 @@
       :schema="panelSchema"
       :dataPath="ownDataPath"
       :data="panelData"
-      :meta="panelMeta"
+      :meta="meta"
       :store="store"
       :disabled="disabled"
       :hasOwnData="hasOwnData"
@@ -20,7 +20,7 @@
         :buttons="buttonSchemas"
         :dataPath="ownDataPath"
         :data="panelData"
-        :meta="panelMeta"
+        :meta="meta"
         :store="store"
         :disabled="disabled"
       )
@@ -72,6 +72,13 @@ import { isFunction } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('dito-panel', {
   mixins: [ValidatorMixin],
+
+  provide() {
+    return {
+      $panelComponent: () => this
+    }
+  },
+
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
@@ -89,6 +96,10 @@ export default DitoComponent.component('dito-panel', {
   },
 
   computed: {
+    panelComponent() {
+      return this
+    },
+
     buttonSchemas() {
       return getButtonSchemas(this.schema.buttons)
     },
@@ -119,14 +130,6 @@ export default DitoComponent.component('dito-panel', {
     panelTag() {
       // Panels that provide their own data need their own form.
       return this.hasOwnData ? 'form' : 'div'
-    },
-
-    panelMeta() {
-      return {
-        ...this.meta,
-        // Additional parameters to be passed to all events:
-        params: { panelComponent: this }
-      }
     },
 
     ownDataPath() {

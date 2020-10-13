@@ -3,13 +3,11 @@
     dito-schema.dito-scroll(
       :schema="schema"
       :data="dialogData"
-      :meta="meta"
     )
       dito-buttons.dito-buttons-large(
         slot="buttons"
         :buttons="buttonSchemas"
         :data="dialogData"
-        :meta="meta"
       )
 </template>
 
@@ -26,6 +24,12 @@ import { clone } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
+  provide() {
+    return {
+      $dialogComponent: () => this
+    }
+  },
+
   props: {
     components: { type: Object, required: true },
     buttons: { type: Object, required: true },
@@ -48,6 +52,10 @@ export default DitoComponent.component('dito-dialog', {
   },
 
   computed: {
+    dialogComponent() {
+      return this
+    },
+
     name() {
       return this.$parent.name
     },
@@ -84,13 +92,6 @@ export default DitoComponent.component('dito-dialog', {
 
     hasCancel() {
       return Object.keys(this.buttonSchemas).includes('cancel')
-    },
-
-    meta() {
-      return {
-        // Additional parameters to be passed to all events:
-        params: { dialogComponent: this }
-      }
     }
   },
 

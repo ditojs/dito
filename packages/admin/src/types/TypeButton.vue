@@ -51,12 +51,7 @@ export default TypeComponent.register([
 
   methods: {
     async onClick() {
-      const { params } = this.meta
       const res = await this.emitEvent('click', {
-        // Provide a params function that creates a copy of the params when
-        // needed, since they will be directly used as the item params object,
-        // see `getItemParams()`:
-        params: params ? () => ({ ...params }) : null,
         parent: this.schemaComponent
       })
       // Have buttons that define resources call `this.submit()` by default:

@@ -188,7 +188,9 @@ export default class DitoAdmin {
         $routeComponent: () => null,
         $dataComponent: () => null,
         $sourceComponent: () => null,
-        $resourceComponent: () => null
+        $resourceComponent: () => null,
+        $dialogComponent: () => null,
+        $panelComponent: () => null
       },
       data: {
         views,
