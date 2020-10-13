@@ -343,7 +343,7 @@ export default {
     async navigate(location) {
       return new Promise(resolve => {
         this.$router.push(
-          isString(location) ? { path: location } : location,
+          location,
           () => resolve(true),
           () => resolve(false)
         )

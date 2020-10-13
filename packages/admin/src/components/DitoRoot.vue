@@ -191,6 +191,10 @@ export default DitoComponent.component('dito-root', {
       }
     },
 
+    navigateHome() {
+      return this.navigate('/')
+    },
+
     async logout() {
       try {
         const response = await this.request({
@@ -199,7 +203,7 @@ export default DitoComponent.component('dito-root', {
         })
         if (response.data.success) {
           this.setUser(null)
-          this.$router.push({ path: '/' })
+          this.navigateHome()
         }
       } catch (err) {
         console.error(err)
@@ -229,7 +233,7 @@ export default DitoComponent.component('dito-root', {
       // Clear resolved views when user is logged out.
       if (!user) {
         this.resolvedViews = {}
-        this.$router.push({ path: '/' })
+        this.navigateHome()
       }
     },
 
