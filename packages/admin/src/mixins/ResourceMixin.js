@@ -10,6 +10,7 @@ export default {
 
   provide() {
     return {
+      $resourceComponent: () => this,
       // Pass local verbs overrides on to children, see verbs() computed prop.
       $verbs: () => this.verbs,
       $isPopulated: () => this.hasData
@@ -18,12 +19,15 @@ export default {
 
   data() {
     return {
-      loadedData: null,
-      isResource: true
+      loadedData: null
     }
   },
 
   computed: {
+    resourceComponent() {
+      return this
+    },
+
     resource() {
       // Returns the resource object representing the resource for the
       // associated source schema.

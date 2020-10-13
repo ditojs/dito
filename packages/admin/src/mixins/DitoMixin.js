@@ -26,17 +26,9 @@ export default {
   ],
 
   provide() {
-    const provide = {}
-    if (this.providesData) {
-      provide.$dataComponent = () => this
-    }
-    if (this.isSource) {
-      provide.$sourceComponent = () => this
-    }
-    if (this.isResource) {
-      provide.$resourceComponent = () => this
-    }
-    return provide
+    return this.providesData
+      ? { $dataComponent: () => this }
+      : {}
   },
 
   data() {
@@ -108,11 +100,11 @@ export default {
     },
 
     sourceComponent() {
-      return this.isSource ? this : this.$sourceComponent()
+      return this.$sourceComponent()
     },
 
     resourceComponent() {
-      return this.isResource ? this : this.$resourceComponent()
+      return this.$resourceComponent()
     },
 
     parentSchemaComponent() {

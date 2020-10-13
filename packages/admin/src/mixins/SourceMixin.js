@@ -21,9 +21,14 @@ export default {
     return isListSource(schema) ? [] : null
   },
 
+  provide() {
+    return {
+      $sourceComponent: () => this
+    }
+  },
+
   data() {
     return {
-      isSource: true,
       wrappedPrimitives: null,
       unwrappingPrimitives: false,
       ignoreRouteChange: false
@@ -31,6 +36,10 @@ export default {
   },
 
   computed: {
+    sourceComponent() {
+      return this
+    },
+
     isObjectSource() {
       return isObjectSource(this.type)
     },
