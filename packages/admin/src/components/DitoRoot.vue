@@ -142,10 +142,6 @@ export default DitoComponent.component('dito-root', {
       this.notificationCount++
     },
 
-    countNotifications(count = 0) {
-      return this.notificationCount - count
-    },
-
     closeNotifications() {
       this.notifications.destroyAll()
     },

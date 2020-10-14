@@ -367,10 +367,6 @@ export default {
       this.rootComponent.notify(...args)
     },
 
-    countNotifications(count) {
-      return this.rootComponent.countNotifications(count)
-    },
-
     closeNotifications() {
       this.rootComponent.closeNotifications()
     },

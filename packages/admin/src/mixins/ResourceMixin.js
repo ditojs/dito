@@ -322,7 +322,7 @@ export default {
     }) {
       // Compare notification-count before/after the event to determine if a
       // notification was already displayed, or if notify() should be called.
-      const count = this.countNotifications()
+      const { notificationCount } = this.rootComponent
       const res = await button.emitEvent(event, {
         params: {
           data: this.data,
@@ -336,7 +336,7 @@ export default {
       if (
         res === undefined && // Meaning: don't prevent default.
         notify &&
-        !this.countNotifications(count)
+        this.rootComponent.notificationCount !== notificationCount
       ) {
         notify()
       }
