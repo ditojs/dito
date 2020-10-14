@@ -426,14 +426,12 @@ export default DitoComponent.component('dito-form', {
         : this.setSourceData(data)
       if (success) {
         await this.emitButtonEvent(button, 'success', {
-          resource,
           notify: notifySuccess
         })
       } else {
         await this.emitButtonEvent(button, 'error', {
-          resource,
-          error: 'Could not submit transient item',
-          notify: notifyError
+          notify: notifyError,
+          error: 'Could not submit transient item'
         })
       }
       return success

@@ -184,7 +184,7 @@ export default {
 
     requestData() {
       const params = this.queryParams
-      this.request('get', { params }, (err, { response }) => {
+      this.request('get', { params }, (err, response) => {
         if (err) {
           if (response) {
             const { data } = response
@@ -224,11 +224,11 @@ export default {
         const response = await this.rootComponent.request(request)
         // Pass both request and response to the callback, so they can be
         // exposed to further callbacks through ItemContext.
-        callback(null, { request, response })
+        callback(null, response)
       } catch (error) {
         // If callback returns true, errors were already handled.
         const { response } = error
-        if (!callback(error, { request, response })) {
+        if (!callback(error, response)) {
           const data = response?.data
           if (data && isString(data.type)) {
             this.notify('error', labelize(data.type), data.message || error)
@@ -280,7 +280,7 @@ export default {
         this.request(
           method,
           { data, resource },
-          async (err, { request, response }) => {
+          async (err, response) => {
             const data = response?.data
             if (err) {
               // See if we're dealing with a Dito validation error:
@@ -290,11 +290,8 @@ export default {
               } else {
                 const error = isObject(data) ? data : err
                 await this.emitButtonEvent(button, 'error', {
-                  request,
-                  response,
-                  resource,
-                  error,
-                  notify: () => notifyError(error)
+                  notify: notifyError,
+                  error
                 })
               }
               resolve(false)
@@ -305,9 +302,6 @@ export default {
                 this.setData(data)
               }
               await this.emitButtonEvent(button, 'success', {
-                request,
-                response,
-                resource,
                 notify: notifySuccess
               })
               resolve(true)
@@ -317,9 +311,9 @@ export default {
       })
     },
 
-    async emitButtonEvent(button, event, {
-      notify, request, response, resource, error
-    }) {
+    // `emitButtonEvent()` returns `true` when the default is not
+    //
+    async emitButtonEvent(button, event, { notify, error }) {
       // Compare notification-count before/after the event to determine if a
       // notification was already displayed, or if notify() should be called.
       const { notificationCount } = this.rootComponent
@@ -327,19 +321,20 @@ export default {
         params: {
           data: this.data,
           itemLabel: this.itemLabel,
-          request,
-          response,
-          resource,
           error
         }
       })
       if (
-        res === undefined && // Meaning: don't prevent default.
         notify &&
-        this.rootComponent.notificationCount !== notificationCount
+        // Prevent default if anything was returned from the event handler.
+        res === undefined &&
+        // Do not display default notification if the event handler already
+        // displayed a notification.
+        this.rootComponent.notificationCount === notificationCount
       ) {
-        notify()
+        notify(error)
       }
+      return res
     }
   }
 }
