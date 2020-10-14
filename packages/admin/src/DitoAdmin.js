@@ -28,15 +28,15 @@ export default class DitoAdmin {
   constructor(el, {
     // `dito` contains the base and api settings passed from `AdminController`
     dito = {},
-    base = dito.base || '/',
     api,
     views = {},
     ...options
   } = {}) {
     this.el = el
-    // Merge in dito settings as passed from `config.admin` through the
-    // `AdminController` with `api` / `base` values from from 'admin/index.js'
-    this.api = api = merge({}, dito.api, api)
+    // Merge in `api` settings as passed from `config.admin` and through the
+    // `AdminController` with `api` values from from 'admin/index.js'
+    // NOTE: `AdminController` provides `dito.api.base`
+    this.api = api = merge({ base: '/' }, dito.api, api)
     this.options = options
 
     // Setup default api setttings:
@@ -44,7 +44,7 @@ export default class DitoAdmin {
 
     api.dateFormat ||= defaultDateFormat
 
-    api.request ||= (...args) => this.request(...args)
+    api.request ||= options => this.request(options)
 
     api.formatDate ||= (data, {
       locale = api.locale,
@@ -166,18 +166,18 @@ export default class DitoAdmin {
       el,
       router: new VueRouter({
         mode: 'history',
-        base,
+        base: dito.base,
         linkActiveClass: '',
         linkExactActiveClass: ''
       }),
       components: { DitoRoot },
+      // Most injects are defined as functions, to preserve reactiveness across
+      // provide/inject, see:
+      // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
       provide: {
         api,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
-        // All injects are defined as functions, to preserve reactiveness across
-        // provide/inject, see:
-        // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
         $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
