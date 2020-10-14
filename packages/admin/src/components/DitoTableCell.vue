@@ -28,7 +28,8 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { getItemParams, appendDataPath } from '@/utils/data'
+import { ItemContext } from '@/classes'
+import { appendDataPath } from '@/utils/data'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component
@@ -57,7 +58,7 @@ export default DitoComponent.component('dito-table-cell', {
       return render
         ? render.call(
           this,
-          getItemParams(this, {
+          new ItemContext(this, {
             name,
             value,
             data: item,

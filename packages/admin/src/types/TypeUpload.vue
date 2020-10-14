@@ -110,9 +110,10 @@ import VueUpload from 'vue-upload-component'
 import VueDraggable from 'vuedraggable'
 import parseFileSize from 'filesize-parser'
 import OrderedMixin from '@/mixins/OrderedMixin'
+import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { formatFileSize } from '@/utils/units'
-import { getItemParams, appendDataPath } from '@/utils/data'
+import { appendDataPath } from '@/utils/data'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 
 // @vue/component
@@ -217,7 +218,7 @@ export default TypeComponent.register('upload', {
       return render
         ? render.call(
           this,
-          getItemParams(this, {
+          new ItemContext(this, {
             value: file,
             list: this.files,
             index,

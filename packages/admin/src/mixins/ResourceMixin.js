@@ -223,7 +223,7 @@ export default {
       try {
         const response = await this.rootComponent.request(request)
         // Pass both request and response to the callback, so they can be
-        // exposed to further callbacks through ItemParams.
+        // exposed to further callbacks through ItemContext.
         callback(null, { request, response })
       } catch (error) {
         // If callback returns true, errors were already handled.

@@ -1,5 +1,5 @@
 import LoadingMixin from './LoadingMixin'
-import { getItemParams } from '@/utils/data'
+import { ItemContext } from '@/classes'
 import {
   isObject, isArray, isFunction, isPromise, labelize, debounceAsync
 } from '@ditojs/utils'
@@ -61,7 +61,7 @@ export default {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
-          data = data.call(this, getItemParams(this))
+          data = data.call(this, new ItemContext(this))
         }
         if (isArray(data)) {
           this.hasOptions = true

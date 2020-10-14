@@ -1,4 +1,4 @@
-import { getItemParams } from '@/utils/data'
+import { ItemContext } from '@/classes'
 import { isFunction } from '@ditojs/utils'
 
 export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
@@ -34,7 +34,7 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       let value = this.getStore(name)
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
-        value = isFunction(def) ? def.call(this, getItemParams(this)) : def
+        value = isFunction(def) ? def.call(this, new ItemContext(this)) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
       }

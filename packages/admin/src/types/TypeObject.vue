@@ -29,7 +29,7 @@
       )
       span(
         v-else-if="render"
-        v-html="render(getItemParams())"
+        v-html="render(getItemContext())"
       )
       span(
         v-else
@@ -70,7 +70,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { getItemParams } from '@/utils/data'
+import { ItemContext } from '@/classes'
 
 // @vue/component
 export default TypeComponent.register('object', {
@@ -82,8 +82,8 @@ export default TypeComponent.register('object', {
   },
 
   methods: {
-    getItemParams() {
-      return getItemParams(this, {
+    getItemContext() {
+      return new ItemContext(this, {
         name: undefined,
         value: undefined,
         data: this.objectData,

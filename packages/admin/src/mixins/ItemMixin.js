@@ -1,5 +1,6 @@
+import { ItemContext } from '@/classes'
 import { getItemFormSchema, isListSource } from '@/utils/schema'
-import { appendDataPath, getItemParams } from '@/utils/data'
+import { appendDataPath } from '@/utils/data'
 import { getUid } from '@/utils/uid'
 import { isObject, isString, isFunction } from '@ditojs/utils'
 
@@ -60,7 +61,7 @@ export default {
       if (isFunction(itemLabel)) {
         const label = itemLabel.call(
           this,
-          getItemParams(this, {
+          new ItemContext(this, {
             name: undefined,
             value: undefined,
             data: item,

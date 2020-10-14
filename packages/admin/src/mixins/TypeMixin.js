@@ -1,6 +1,7 @@
 import ValidationMixin from './ValidationMixin'
+import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getItemParams, getItem, getParentItem } from '@/utils/data'
+import { getItem, getParentItem } from '@/utils/data'
 import { isString, isFunction, asArray } from '@ditojs/utils'
 
 // @vue/component
@@ -46,8 +47,8 @@ export default {
           const value = compute.call(
             this,
             // Override value to prevent endless recursion through calling the
-            // getter for `this.value` in `getItemParams()`:
-            getItemParams(this, { value: this.data[this.name] })
+            // getter for `this.value` in `ItemContext`:
+            new ItemContext(this, { value: this.data[this.name] })
           )
           if (value !== undefined) {
             // Trigger setter to update computed value, without calling parse():
@@ -58,7 +59,7 @@ export default {
         // property once it's set (e.g. computed)
         let value = this.data[this.name]
         if (format) {
-          value = format.call(this, getItemParams(this, { value }))
+          value = format.call(this, new ItemContext(this, { value }))
         }
         return value
       },
@@ -66,14 +67,14 @@ export default {
       set(value) {
         const { parse } = this.schema
         if (parse) {
-          value = parse.call(this, getItemParams(this, { value }))
+          value = parse.call(this, new ItemContext(this, { value }))
         }
         this.$set(this.data, this.name, value)
       }
     },
 
-    // The following computed properties are similar to the fields returned by
-    // getItemParams(), so that we can access these on `this` as well:
+    // The following computed properties are similar to `ItemContext`
+    // properties, so that we can access these on `this` as well:
     item() {
       return getItem(this.rootItem, this.dataPath, this.dataPathIsValue)
     },
@@ -127,7 +128,7 @@ export default {
         let params = null
         const getParams = () => (
           params ||
-          (params = getItemParams(null, { value, name, dataPath, rootData }))
+          (params = new ItemContext(null, { value, name, dataPath, rootData }))
         )
         if (
           exclude === true ||
