@@ -13,9 +13,8 @@ export function getResource(resource, defaults = {}) {
   // dealt with correctly.
   if (
     resource &&
-    parent &&
-    !resource.parent &&
-    parent.path &&
+    parent !== undefined &&
+    resource.parent === undefined &&
     !resource.path?.startsWith('/')
   ) {
     resource.parent = parent

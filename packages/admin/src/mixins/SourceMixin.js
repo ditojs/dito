@@ -432,7 +432,7 @@ export default {
           const itemId = this.getItemId(this.schema, item)
           const resource = getMemberResource(itemId, this.resource)
           if (resource) {
-            this.request('delete', { resource }, err => {
+            this.handleRequest({ method: 'delete', resource }, err => {
               if (!err) {
                 this.removeItem(item)
                 notify()

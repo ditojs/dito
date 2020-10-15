@@ -45,9 +45,8 @@ import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import DitoView from '@/components/DitoView'
 import DomMixin from '@/mixins/DomMixin'
-import { getMemberResource } from '@/utils/resource'
 import { processView, resolveViews } from '@/utils/schema'
-import { equals, stripTags } from '@ditojs/utils'
+import { stripTags } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
@@ -169,7 +168,7 @@ export default DitoComponent.component('dito-root', {
       })
       if (loginData) {
         try {
-          const response = await this.request({
+          const response = await this.sendRequest({
             resource: this.api.users.login,
             data: loginData,
             internal: true
@@ -193,7 +192,7 @@ export default DitoComponent.component('dito-root', {
 
     async logout() {
       try {
-        const response = await this.request({
+        const response = await this.sendRequest({
           resource: this.api.users.logout,
           internal: true
         })
@@ -209,7 +208,7 @@ export default DitoComponent.component('dito-root', {
     async fetchUser() {
       let user = null
       try {
-        const response = await this.request({
+        const response = await this.sendRequest({
           resource: this.api.users.session,
           internal: true
         })
@@ -258,25 +257,6 @@ export default DitoComponent.component('dito-root', {
       }
       await Promise.all(promises)
       this.$router.addRoutes(routes)
-    },
-
-    async request({ method, url, resource, data, params, internal }) {
-      url = url || this.getResourcePath(resource)
-      method = method || resource?.method
-      const checkUser = !internal && this.api.isApiRequest(url)
-      if (checkUser) {
-        await this.ensureUser()
-      }
-      const response = await this.api.request({ method, url, data, params })
-      // Detect change of the own user, and fetch it again if it was changed.
-      if (
-        checkUser &&
-        method === 'patch' &&
-        equals(resource, getMemberResource(this.user.id, this.api.users))
-      ) {
-        await this.fetchUser()
-      }
-      return response
     }
   }
 })

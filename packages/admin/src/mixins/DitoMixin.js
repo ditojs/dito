@@ -3,9 +3,9 @@ import DitoComponent from '@/DitoComponent'
 import EmitterMixin from './EmitterMixin'
 import { ItemContext } from '@/classes'
 import { isMatchingType, convertType } from '@/utils/type'
-import { getResource } from '@/utils/resource'
+import { getResource, getMemberResource } from '@/utils/resource'
 import {
-  isObject, isArray, isString, isFunction, asArray,
+  isObject, isArray, isString, isFunction, asArray, equals,
   getValueAtDataPath, labelize, hyphenate
 } from '@ditojs/utils'
 
@@ -275,6 +275,8 @@ export default {
 
     getResourcePath(resource) {
       resource = getResource(resource)
+      // Resources without a parent inherit the one from `dataComponent`
+      // automatically.
       if (resource.parent === undefined) {
         resource.parent = this.dataComponent?.resource
       }
@@ -304,6 +306,25 @@ export default {
       return url
     },
 
+    async sendRequest({ method, url, resource, data, params, internal }) {
+      url = url || this.getResourcePath(resource)
+      method = method || resource?.method
+      const checkUser = !internal && this.api.isApiRequest(url)
+      if (checkUser) {
+        await this.rootComponent.ensureUser()
+      }
+      const response = await this.api.request({ method, url, data, params })
+      // Detect change of the own user, and fetch it again if it was changed.
+      if (
+        checkUser &&
+        method === 'patch' &&
+        equals(resource, getMemberResource(this.user.id, this.api.users))
+      ) {
+        await this.rootComponent.fetchUser()
+      }
+      return response
+    },
+
     load({ cache, ...options }) {
       // Allow caching of loaded data on two levels:
       // - 'global': cache globally, for the entire admin session
@@ -325,7 +346,7 @@ export default {
         return loadCache[cacheKey]
       }
       // NOTE: No await here, res is a promise that we can easily cache.
-      const res = this.rootComponent.request(options)
+      const res = this.sendRequest(options)
         .then(response => response.data)
         .catch(error => {
           // Convert axios errors to normal errors

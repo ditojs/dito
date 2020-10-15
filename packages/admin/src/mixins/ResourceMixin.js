@@ -118,7 +118,7 @@ export default {
       // be overridden and `super` functionality can still be accessed.
       return getResource(this.sourceSchema?.resource, {
         type: 'collection',
-        parent: this.parentFormComponent?.resource
+        parent: this.parentFormComponent?.resource ?? null
       })
     },
 
@@ -184,7 +184,7 @@ export default {
 
     requestData() {
       const params = this.queryParams
-      this.request('get', { params }, (err, response) => {
+      this.handleRequest({ method: 'get', params }, (err, response) => {
         if (err) {
           if (response) {
             const { data } = response
@@ -212,16 +212,20 @@ export default {
       return response?.status === 401
     },
 
-    async request(method, options, callback) {
-      const settings = {
+    async handleRequest({
+      method,
+      resource = this.resource,
+      data,
+      params
+    }, callback) {
+      const loadingSettings = {
         updateRoot: true, // Display spinner in header when loading in resources
         updateView: this.isInView // Notify view of loading for view components
       }
-      this.setLoading(true, settings)
-      const { resource = this.resource, data, params } = options
+      this.setLoading(true, loadingSettings)
       const request = { method, resource, data, params }
       try {
-        const response = await this.rootComponent.request(request)
+        const response = await this.sendRequest(request)
         // Pass both request and response to the callback, so they can be
         // exposed to further callbacks through ItemContext.
         callback(null, response)
@@ -237,7 +241,7 @@ export default {
           }
         }
       }
-      this.setLoading(false, settings)
+      this.setLoading(false, loadingSettings)
     },
 
     getPayloadData(button, method) {
@@ -277,9 +281,8 @@ export default {
       )
     } = {}) {
       return new Promise(resolve => {
-        this.request(
-          method,
-          { data, resource },
+        this.handleRequest(
+          { method, data, resource },
           async (err, response) => {
             const data = response?.data
             if (err) {
