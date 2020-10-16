@@ -235,9 +235,17 @@ export default {
         if (!callback(error, response)) {
           const data = response?.data
           if (data && isString(data.type)) {
-            this.notify('error', labelize(data.type), data.message || error)
+            this.notify({
+              type: 'error',
+              title: labelize(data.type),
+              text: data.message || error
+            })
           } else {
-            this.notify('error', 'Request Error', error)
+            this.notify({
+              type: 'error',
+              title: 'Request Error',
+              text: error
+            })
           }
         }
       }
@@ -268,17 +276,19 @@ export default {
 
     async submitResource(button, resource, method, data, {
       setData = false,
-      notifySuccess = () => this.notify(
-        'success',
-        'Request Successful',
-        'Request was successfully sent.'
-      ),
-      notifyError = error => this.notify(
-        'error',
-        'Request Error',
-        `Unable to send request${error ? ':' : ''}`,
-        error?.message || error
-      )
+      notifySuccess = () => this.notify({
+        type: 'success',
+        title: 'Request Successful',
+        text: 'Request was successfully sent.'
+      }),
+      notifyError = error => this.notify({
+        type: 'error',
+        title: 'Request Error',
+        text: [
+          `Unable to send request${error ? ':' : ''}`,
+          error?.message || error
+        ]
+      })
     } = {}) {
       return new Promise(resolve => {
         this.handleRequest(

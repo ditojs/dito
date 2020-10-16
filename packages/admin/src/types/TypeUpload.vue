@@ -242,8 +242,11 @@ export default TypeComponent.register('upload', {
         if (file.upload) {
           this.upload.remove(file.upload)
         }
-        this.notify('info',
-          'Successfully Removed', `${name} was ${this.verbs.removed}.`)
+        this.notify({
+          type: 'info',
+          title: 'Successfully Removed',
+          text: `${name} was ${this.verbs.removed}.`
+        })
       }
     },
 
@@ -302,7 +305,7 @@ export default TypeComponent.register('upload', {
             this.removeFile(newFile)
           }
         } else if (error) {
-          const message = {
+          const text = {
             abort: 'Upload aborted',
             denied: 'Upload denied',
             extension: `Unsupported file-type: ${newFile.name}`,
@@ -312,7 +315,11 @@ export default TypeComponent.register('upload', {
             timeout: 'Timeout occurred during upload'
 
           }[error] || `Unknown File Upload Error: '${error}'`
-          this.notify('error', 'File Upload Error', message)
+          this.notify({
+            type: 'error',
+            title: 'File Upload Error',
+            text
+          })
           this.removeFile(newFile)
         }
       }

@@ -568,11 +568,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     notifyErrors(message) {
-      this.notify(
-        'error',
-        'Validation Errors',
-        message || 'Please correct the highlighted errors.'
-      )
+      this.notify({
+        type: 'error',
+        title: 'Validation Errors',
+        text: message || 'Please correct the highlighted errors.'
+      })
     },
 
     resetData() {

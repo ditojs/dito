@@ -377,7 +377,11 @@ export default {
       })
     },
 
-    download(url, filename) {
+    download(options = {}) {
+      if (isString(options)) {
+        options = { url: options }
+      }
+      const { url, filename } = options
       // See: https://stackoverflow.com/a/49917066/1163708
       const a = document.createElement('a')
       a.href = url
@@ -390,8 +394,8 @@ export default {
       body.removeChild(a)
     },
 
-    notify(...args) {
-      this.rootComponent.notify(...args)
+    notify(options) {
+      this.rootComponent.notify(options)
     },
 
     closeNotifications() {

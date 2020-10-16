@@ -361,24 +361,26 @@ export default DitoComponent.component('dito-form', {
         success = await this.submitTransient(button, resource, method, data, {
           notifySuccess: () => {
             const verb = getVerb(false)
-            this.notify(
-              'info',
-              this.isCreating
+            this.notify({
+              type: 'info',
+              title: this.isCreating
                 ? `Item ${capitalize(verb)}`
                 : `Change ${capitalize(verb)}`,
-              this.isCreating
-                ? `${this.itemLabel} was ${verb}.`
-                : `Changes to ${this.itemLabel} were ${verb}.`,
-              this.transientNote
-            )
+              text: [
+                this.isCreating
+                  ? `${this.itemLabel} was ${verb}.`
+                  : `Changes to ${this.itemLabel} were ${verb}.`,
+                this.transientNote
+              ]
+            })
           },
           notifyError: () => {
             const verb = getVerb(true)
-            this.notify(
-              'error',
-              'Request Error',
-              `Unable to ${verb} ${this.itemLabel}.`
-            )
+            this.notify({
+              type: 'error',
+              title: 'Request Error',
+              text: `Unable to ${verb} ${this.itemLabel}.`
+            })
           }
         })
       } else {
@@ -386,20 +388,22 @@ export default DitoComponent.component('dito-form', {
           setData: true,
           notifySuccess: () => {
             const verb = getVerb(false)
-            this.notify(
-              'success',
-              `Successfully ${capitalize(verb)}`,
-              `${this.itemLabel} was ${verb}.`
-            )
+            this.notify({
+              type: 'success',
+              title: `Successfully ${capitalize(verb)}`,
+              text: `${this.itemLabel} was ${verb}.`
+            })
           },
           notifyError: error => {
             const verb = getVerb(true)
-            this.notify(
-              'error',
-              'Request Error',
-              `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,
-              error?.message || error
-            )
+            this.notify({
+              type: 'error',
+              title: 'Request Error',
+              text: [
+                `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,
+                error?.message || error
+              ]
+            })
           }
         })
       }

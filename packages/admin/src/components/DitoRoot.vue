@@ -46,7 +46,7 @@ import DitoUser from '@/DitoUser'
 import DitoView from '@/components/DitoView'
 import DomMixin from '@/mixins/DomMixin'
 import { processView, resolveViews } from '@/utils/schema'
-import { stripTags } from '@ditojs/utils'
+import { asArray, stripTags } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
@@ -110,16 +110,16 @@ export default DitoComponent.component('dito-root', {
   },
 
   methods: {
-    notify(...args) {
-      const type = args.length > 1 ? args.shift() : 'info'
-      const title = args.length > 1 ? args.shift() : {
+    notify({ type = 'info', title, text } = {}) {
+      title ||= {
         warning: 'Warning',
         error: 'Error',
         info: 'Information',
         success: 'Success'
       }[type] || 'Notification'
-      const text = `<p>${args.join('</p> <p>')}</p>`
-        .replace(/\r\n|\n|\r/g, '<br>')
+      text = `<p>${
+        asArray(text).join('</p> <p>')
+      }</p>`.replace(/\r\n|\n|\r/g, '<br>')
       const log = {
         warning: 'warn',
         error: 'error',
@@ -177,7 +177,11 @@ export default DitoComponent.component('dito-root', {
           await this.resolveViews()
         } catch (err) {
           const error = err.response?.data?.error
-          this.notify('error', 'Authentication Error', error || err)
+          this.notify({
+            type: 'error',
+            title: 'Authentication Error',
+            text: error || err
+          })
           if (!error) {
             console.error(err, err.response)
           }
@@ -214,7 +218,11 @@ export default DitoComponent.component('dito-root', {
         })
         user = response.data.user || null
       } catch (err) {
-        this.notify('error', 'Authentication Error', err)
+        this.notify({
+          type: 'error',
+          title: 'Authentication Error',
+          text: err
+        })
       }
       this.setUser(user)
       return user

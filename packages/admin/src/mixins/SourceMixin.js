@@ -415,12 +415,14 @@ export default {
         extended: true
       })
 
-      const notify = () => this.notify(
-        this.isTransient ? 'info' : 'success',
-        'Successfully Removed',
-        `${label} was ${this.verbs.deleted}.`,
-        this.transientNote
-      )
+      const notify = () => this.notify({
+        type: this.isTransient ? 'info' : 'success',
+        title: 'Successfully Removed',
+        text: [
+          `${label} was ${this.verbs.deleted}.`,
+          this.transientNote
+        ]
+      })
 
       if (item && window.confirm(
         `Do you really want to ${this.verbs.delete} ${label}?`)
