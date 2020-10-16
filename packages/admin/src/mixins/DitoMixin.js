@@ -4,6 +4,7 @@ import DitoContext from '@/DitoContext'
 import EmitterMixin from './EmitterMixin'
 import { isMatchingType, convertType } from '@/utils/type'
 import { getResource, getMemberResource } from '@/utils/resource'
+import { deprecate } from '@/utils/deprecate'
 import {
   isObject, isArray, isString, isFunction, asArray, equals,
   getValueAtDataPath, labelize, hyphenate
@@ -325,12 +326,12 @@ export default {
       return response
     },
 
-    load({ cache, ...options }) {
+    request({ cache, ...options }) {
       // Allow caching of loaded data on two levels:
       // - 'global': cache globally, for the entire admin session
       // - 'local': cache locally within the closest route component that is
       //    associated with a resource and loads its own data.
-      const cacheParent = {
+      const cacheParent = cache && {
         global: this.appState,
         local: this.dataComponent
       }[cache]
@@ -359,6 +360,11 @@ export default {
         loadCache[cacheKey] = res
       }
       return res
+    },
+
+    load(options) {
+      deprecate('load() is deprecated. Use request() instead.')
+      return this.request(options)
     },
 
     async navigate(location) {
