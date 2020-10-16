@@ -9,7 +9,7 @@
           ref="element"
           type="checkbox"
           :value="getValueForOption(option)"
-          v-model="selectedValue"
+          v-model="selectedOptions"
           v-bind="attributes"
           v-on="listeners"
         )
@@ -31,6 +31,18 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 // @vue/component
 export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
+
+  computed: {
+    selectedOptions: {
+      get() {
+        return (this.selectedValue || []).filter(value => value)
+      },
+
+      set(option) {
+        this.selectedValue = (option || [])
+      }
+    }
+  },
 
   nativeField: true,
   defaultValue: []
