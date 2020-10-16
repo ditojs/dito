@@ -14,6 +14,10 @@ function get(instance, key) {
   return contexts.get(instance)[key]
 }
 
+function set(instance, key, value) {
+  contexts.get(instance)[key] = value
+}
+
 export default class DitoContext {
   constructor(component, context) {
     // Use the provided params object / function, or create a new one:
@@ -129,13 +133,38 @@ export default class DitoContext {
     return get(this, 'options')
   }
 
-  get search() {
-    return get(this, 'search')
+  get query() {
+    return get(this, 'query')
   }
 
   // The error field is only populated in the context of buttons that send
   // requests, see `ResourceMixin.emitButtonEvent()`:
   get error() {
     return get(this, 'error')
+  }
+
+  // Helper Methods
+
+  get request() {
+    return options => this.component.request(options)
+  }
+
+  get navigate() {
+    return options => this.component.navigate(options)
+  }
+
+  get download() {
+    return options => this.component.download(options)
+  }
+
+  get notify() {
+    return options => {
+      this.component.notify(options)
+      set(this, 'wasNotified', true)
+    }
+  }
+
+  get wasNotified() {
+    return get(this, 'wasNotified') ?? false
   }
 }
