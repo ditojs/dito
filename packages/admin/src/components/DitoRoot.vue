@@ -67,7 +67,6 @@ export default DitoComponent.component('dito-root', {
     return {
       allowLogin: false,
       resolvedViews: {},
-      notificationCount: 0,
       loadingCount: 0
     }
   },
@@ -138,7 +137,6 @@ export default DitoComponent.component('dito-root', {
         const duration = (40 + text.length + title.length) * durationFactor
         this.$notify({ type, title, text, duration })
       }
-      this.notificationCount++
     },
 
     closeNotifications() {

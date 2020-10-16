@@ -3,6 +3,7 @@ import LoadingMixin from './LoadingMixin'
 import { setDefaults } from '@/utils/schema'
 import { isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '@/utils/resource'
+import DitoContext from '@/DitoContext'
 
 // @vue/component
 export default {
@@ -324,26 +325,22 @@ export default {
       })
     },
 
-    // `emitButtonEvent()` returns `true` when the default is not
-    //
     async emitButtonEvent(button, event, { notify, error }) {
-      // Compare notification-count before/after the event to determine if a
-      // notification was already displayed, or if notify() should be called.
-      const { notificationCount } = this.rootComponent
-      const res = await button.emitEvent(event, {
-        params: {
-          data: this.data,
-          itemLabel: this.itemLabel,
-          error
-        }
+      // Create the context outside of `emitEvent()`, so that
+      // `context.wasNotified` can be checked after.
+      const context = new DitoContext(button, {
+        data: this.data,
+        itemLabel: this.itemLabel,
+        error
       })
+      const res = await button.emitEvent(event, { context })
       if (
         notify &&
         // Prevent default if anything was returned from the event handler.
         res === undefined &&
         // Do not display default notification if the event handler already
         // displayed a notification.
-        this.rootComponent.notificationCount === notificationCount
+        !context.wasNotified
       ) {
         notify(error)
       }

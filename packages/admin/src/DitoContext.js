@@ -31,6 +31,12 @@ export default class DitoContext {
     contexts.set(this, Object.setPrototypeOf(context, component))
   }
 
+  static get(component, context) {
+    return context instanceof DitoContext
+      ? context
+      : new DitoContext(component, context)
+  }
+
   get value() {
     return get(this, 'value')
   }

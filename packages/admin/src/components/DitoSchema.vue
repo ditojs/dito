@@ -425,7 +425,10 @@ export default DitoComponent.component('dito-schema', {
     },
 
     onExpand(expand) {
-      this.emitEvent('expand', { params: { expand } })
+      this.emitEvent('expand', {
+        // TODO: Actually expose this on DitoContext?
+        context: { expand }
+      })
       this.opened = expand
     },
 
