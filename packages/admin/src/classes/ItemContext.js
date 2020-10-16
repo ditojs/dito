@@ -119,9 +119,23 @@ export class ItemContext {
     return get(this, 'sourceComponent') || null
   }
 
+  // When used in OptionsMixin for `schema.options.value`,
+  // `schema.options.label`, `schema.search.filter`:
+  get option() {
+    return get(this, 'option')
+  }
+
+  get options() {
+    return get(this, 'options')
+  }
+
+  get search() {
+    return get(this, 'search')
+  }
+
   // The error field is only populated in the context of buttons that send
   // requests, see `ResourceMixin.emitButtonEvent()`:
   get error() {
-    return get(this, 'error') || null
+    return get(this, 'error')
   }
 }

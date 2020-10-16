@@ -228,6 +228,7 @@
 import TypeComponent from '@/TypeComponent'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
+import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
@@ -342,14 +343,14 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    async onSearchChange(query) {
+    async onSearchChange(search) {
       if (this.searchFilter) {
-        if (query) {
+        if (search) {
           // Set `searchedOptions` to an empty array, before it will be
           // populated asynchronously with the actual results.
           this.searchedOptions = []
           this.searchedOptions = await this.loadOptions(
-            () => this.searchFilter(query, this.options)
+            () => this.searchFilter(new ItemContext(this, { search }))
           )
         } else {
           // Clear `searchedOptions` when the query is cleared.

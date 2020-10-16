@@ -223,15 +223,18 @@ export default {
     },
 
     getValueForOption(option) {
-      return this.optionValue
-        ? option?.[this.optionValue]
+      const { optionValue } = this
+      return isFunction(optionValue)
+        ? optionValue.call(this, new ItemContext(this, { option }))
+        : optionValue ? option?.[optionValue]
         : option
     },
 
     getLabelForOption(option) {
-      return isFunction(this.optionLabel)
-        ? this.optionLabel(option)
-        : this.optionLabel ? option?.[this.optionLabel]
+      const { optionLabel } = this
+      return isFunction(optionLabel)
+        ? optionLabel.call(this, new ItemContext(this, { option }))
+        : optionLabel ? option?.[optionLabel]
         : labelize(`${option}`)
     }
   }
