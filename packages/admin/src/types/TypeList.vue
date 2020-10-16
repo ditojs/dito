@@ -90,7 +90,7 @@
               )
               span(
                 v-else-if="render"
-                v-html="render(getItemContext(item, index))"
+                v-html="render(getDitoContext(item, index))"
               )
               span(
                 v-else
@@ -166,11 +166,11 @@
 </style>
 
 <script>
-import VueDraggable from 'vuedraggable'
 import TypeComponent from '@/TypeComponent'
+import DitoContext from '@/DitoContext'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
-import { ItemContext } from '@/classes'
+import VueDraggable from 'vuedraggable'
 import { getNamedSchemas } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
@@ -272,8 +272,8 @@ export default TypeComponent.register('list', {
       return `dito-cell-${hyphenate(column.name)}`
     },
 
-    getItemContext(item, index) {
-      return new ItemContext(this, {
+    getDitoContext(item, index) {
+      return new DitoContext(this, {
         name: undefined,
         value: undefined,
         data: item,

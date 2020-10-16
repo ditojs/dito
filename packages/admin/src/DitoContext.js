@@ -1,20 +1,20 @@
 import { isFunction } from '@ditojs/utils'
 import { getItem, getParentItem } from '@/utils/data'
 
-// `ItemContext` instances are a thin wrapper around raw `context` objects,
+// `DitoContext` instances are a thin wrapper around raw `context` objects,
 // which themselves actually inherit from the linked `component` instance, so
 // that they only need to provide the values that should be different than
 // in the underlying component. In order to not expose all fields from the
 // component, the wrapper is introduced:
 // Use WeakMap for the raw `context` objects, so we don't have to pollute the
-// actual `ItemContext` instance with it.
+// actual `DitoContext` instance with it.
 const contexts = new WeakMap()
 
 function get(instance, key) {
   return contexts.get(instance)[key]
 }
 
-export class ItemContext {
+export default class DitoContext {
   constructor(component, context) {
     // Use the provided params object / function, or create a new one:
     context = context
@@ -89,8 +89,8 @@ export class ItemContext {
     return get(this, 'component') || null
   }
 
-  // TODO: `ItemContext.target` was deprecated in favor of
-  // `ItemContext.component` on 2020-09-11, remove later.
+  // TODO: `DitoContext.target` was deprecated in favor of
+  // `DitoContext.component` on 2020-09-11, remove later.
   get target() {
     return this.component
   }

@@ -28,7 +28,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import { ItemContext } from '@/classes'
+import DitoContext from '@/DitoContext'
 import { appendDataPath } from '@/utils/data'
 import { escapeHtml } from '@ditojs/utils'
 
@@ -58,7 +58,7 @@ export default DitoComponent.component('dito-table-cell', {
       return render
         ? render.call(
           this,
-          new ItemContext(this, {
+          new DitoContext(this, {
             name,
             value,
             data: item,

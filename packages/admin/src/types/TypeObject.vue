@@ -29,7 +29,7 @@
       )
       span(
         v-else-if="render"
-        v-html="render(getItemContext())"
+        v-html="render(getDitoContext())"
       )
       span(
         v-else
@@ -69,8 +69,8 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DitoContext from '@/DitoContext'
 import SourceMixin from '@/mixins/SourceMixin'
-import { ItemContext } from '@/classes'
 
 // @vue/component
 export default TypeComponent.register('object', {
@@ -82,8 +82,8 @@ export default TypeComponent.register('object', {
   },
 
   methods: {
-    getItemContext() {
-      return new ItemContext(this, {
+    getDitoContext() {
+      return new DitoContext(this, {
         name: undefined,
         value: undefined,
         data: this.objectData,

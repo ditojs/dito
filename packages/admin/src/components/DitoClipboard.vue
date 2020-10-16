@@ -19,8 +19,8 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DitoContext from '@/DitoContext'
 import DomMixin from '@/mixins/DomMixin'
-import { ItemContext } from '@/classes'
 import { isObject, clone, deindent } from '@ditojs/utils'
 
 // @vue/component
@@ -49,14 +49,14 @@ export default DitoComponent.component('dito-clipboard', {
     copyData() {
       const { copy } = this.clipboardConfig
       return copy
-        ? data => copy.call(this, data, this.getItemContext())
+        ? data => copy.call(this, data, this.getDitoContext())
         : data => clone(data)
     },
 
     pasteData() {
       const { paste } = this.clipboardConfig
       return paste
-        ? data => paste.call(this, data, this.getItemContext())
+        ? data => paste.call(this, data, this.getDitoContext())
         : data => data
     }
   },
@@ -100,8 +100,8 @@ export default DitoComponent.component('dito-clipboard', {
       return $schema === this.schemaComponent?.schema.name ? data : null
     },
 
-    getItemContext() {
-      return new ItemContext(this, {
+    getDitoContext() {
+      return new DitoContext(this, {
         name: undefined,
         value: undefined,
         data: this.data,

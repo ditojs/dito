@@ -1,4 +1,4 @@
-import { ItemContext } from '@/classes'
+import DitoContext from '@/DitoContext'
 import { getItemFormSchema, isListSource } from '@/utils/schema'
 import { appendDataPath } from '@/utils/data'
 import { getUid } from '@/utils/uid'
@@ -61,7 +61,7 @@ export default {
       if (isFunction(itemLabel)) {
         const label = itemLabel.call(
           this,
-          new ItemContext(this, {
+          new DitoContext(this, {
             name: undefined,
             value: undefined,
             data: item,

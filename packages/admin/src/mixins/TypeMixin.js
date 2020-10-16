@@ -1,5 +1,5 @@
+import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
-import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
 import { isString, isFunction, asArray } from '@ditojs/utils'
@@ -47,8 +47,8 @@ export default {
           const value = compute.call(
             this,
             // Override value to prevent endless recursion through calling the
-            // getter for `this.value` in `ItemContext`:
-            new ItemContext(this, { value: this.data[this.name] })
+            // getter for `this.value` in `DitoContext`:
+            new DitoContext(this, { value: this.data[this.name] })
           )
           if (value !== undefined) {
             // Trigger setter to update computed value, without calling parse():
@@ -59,7 +59,7 @@ export default {
         // property once it's set (e.g. computed)
         let value = this.data[this.name]
         if (format) {
-          value = format.call(this, new ItemContext(this, { value }))
+          value = format.call(this, new DitoContext(this, { value }))
         }
         return value
       },
@@ -67,13 +67,13 @@ export default {
       set(value) {
         const { parse } = this.schema
         if (parse) {
-          value = parse.call(this, new ItemContext(this, { value }))
+          value = parse.call(this, new DitoContext(this, { value }))
         }
         this.$set(this.data, this.name, value)
       }
     },
 
-    // The following computed properties are similar to `ItemContext`
+    // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
     item() {
       return getItem(this.rootItem, this.dataPath, this.dataPathIsValue)
@@ -128,7 +128,7 @@ export default {
         let params = null
         const getParams = () => (
           params ||
-          (params = new ItemContext(null, { value, name, dataPath, rootData }))
+          (params = new DitoContext(null, { value, name, dataPath, rootData }))
         )
         if (
           exclude === true ||

@@ -1,5 +1,5 @@
+import DitoContext from '@/DitoContext'
 import LoadingMixin from './LoadingMixin'
-import { ItemContext } from '@/classes'
 import {
   isObject, isArray, isFunction, isPromise, labelize, debounceAsync
 } from '@ditojs/utils'
@@ -61,7 +61,7 @@ export default {
         const { options = {} } = this.schema
         data = isObject(options) ? options.data : options
         if (isFunction(data)) {
-          data = data.call(this, new ItemContext(this))
+          data = data.call(this, new DitoContext(this))
         }
         if (isArray(data)) {
           this.hasOptions = true
@@ -225,7 +225,7 @@ export default {
     getValueForOption(option) {
       const { optionValue } = this
       return isFunction(optionValue)
-        ? optionValue.call(this, new ItemContext(this, { option }))
+        ? optionValue.call(this, new DitoContext(this, { option }))
         : optionValue ? option?.[optionValue]
         : option
     },
@@ -233,7 +233,7 @@ export default {
     getLabelForOption(option) {
       const { optionLabel } = this
       return isFunction(optionLabel)
-        ? optionLabel.call(this, new ItemContext(this, { option }))
+        ? optionLabel.call(this, new DitoContext(this, { option }))
         : optionLabel ? option?.[optionLabel]
         : labelize(`${option}`)
     }

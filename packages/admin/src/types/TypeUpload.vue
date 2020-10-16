@@ -106,11 +106,11 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DitoContext from '@/DitoContext'
+import OrderedMixin from '@/mixins/OrderedMixin'
 import VueUpload from 'vue-upload-component'
 import VueDraggable from 'vuedraggable'
 import parseFileSize from 'filesize-parser'
-import OrderedMixin from '@/mixins/OrderedMixin'
-import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { formatFileSize } from '@/utils/units'
 import { appendDataPath } from '@/utils/data'
@@ -218,7 +218,7 @@ export default TypeComponent.register('upload', {
       return render
         ? render.call(
           this,
-          new ItemContext(this, {
+          new DitoContext(this, {
             value: file,
             list: this.files,
             index,

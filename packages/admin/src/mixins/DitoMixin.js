@@ -1,7 +1,7 @@
 import appState from '@/appState'
 import DitoComponent from '@/DitoComponent'
+import DitoContext from '@/DitoContext'
 import EmitterMixin from './EmitterMixin'
-import { ItemContext } from '@/classes'
 import { isMatchingType, convertType } from '@/utils/type'
 import { getResource, getMemberResource } from '@/utils/resource'
 import {
@@ -170,7 +170,7 @@ export default {
         : undefined
 
       let params = null
-      const getParams = () => params || (params = new ItemContext(this))
+      const getParams = () => params || (params = new DitoContext(this))
 
       if (value === undefined && def !== undefined) {
         if (isFunction(def) && !isMatchingType(types, def)) {
@@ -481,7 +481,7 @@ export default {
         if (['load', 'change'].includes(event)) {
           await this.$nextTick()
         }
-        const itemParams = new ItemContext(this, params)
+        const itemParams = new DitoContext(this, params)
         const res = hasListeners
           ? await this.emit(event, itemParams)
           : undefined

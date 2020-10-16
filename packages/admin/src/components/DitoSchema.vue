@@ -275,7 +275,7 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    // The following computed properties are similar to `ItemContext`
+    // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
     item() {
       // NOTE: While internally, we speak of `data`, in the API surface the

@@ -1,4 +1,4 @@
-import { ItemContext } from '@/classes'
+import DitoContext from '@/DitoContext'
 import { isFunction } from '@ditojs/utils'
 
 export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
@@ -34,7 +34,7 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       let value = this.getStore(name)
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
-        value = isFunction(def) ? def.call(this, new ItemContext(this)) : def
+        value = isFunction(def) ? def.call(this, new DitoContext(this)) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
       }

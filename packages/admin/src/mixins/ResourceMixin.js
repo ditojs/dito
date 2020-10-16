@@ -227,7 +227,7 @@ export default {
       try {
         const response = await this.sendRequest(request)
         // Pass both request and response to the callback, so they can be
-        // exposed to further callbacks through ItemContext.
+        // exposed to further callbacks through DitoContext.
         callback(null, response)
       } catch (error) {
         // If callback returns true, errors were already handled.

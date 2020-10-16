@@ -226,9 +226,9 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import DitoContext from '@/DitoContext'
 import OptionsMixin from '@/mixins/OptionsMixin'
 import VueMultiselect from 'vue-multiselect'
-import { ItemContext } from '@/classes'
 import { getSchemaAccessor } from '@/utils/accessor'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
@@ -350,7 +350,7 @@ export default TypeComponent.register('multiselect', {
           // populated asynchronously with the actual results.
           this.searchedOptions = []
           this.searchedOptions = await this.loadOptions(
-            () => this.searchFilter(new ItemContext(this, { search }))
+            () => this.searchFilter(new DitoContext(this, { search }))
           )
         } else {
           // Clear `searchedOptions` when the query is cleared.
