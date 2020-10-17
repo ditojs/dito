@@ -16,6 +16,9 @@ Object {
     "month": "long",
     "year": "numeric",
   },
+  "defaultNumberFormat": Object {
+    "style": "decimal",
+  },
   "defaultTimeFormat": Object {
     "hour": "2-digit",
     "minute": "2-digit",
@@ -25,6 +28,7 @@ Object {
   "equals": [Function],
   "escapeHtml": [Function],
   "flatten": [Function],
+  "format": [Function],
   "formatDate": [Function],
   "getCommonOffset": [Function],
   "getCommonPrefix": [Function],
