@@ -9,11 +9,11 @@ describe('format()', () => {
     expect(format()).toBe(undefined)
   })
 
-  it('should return undefined when value is null', () => {
-    expect(format(null)).toBe(undefined)
-    expect(format(null, { number: true })).toBe(undefined)
-    expect(format(null, { date: true })).toBe(undefined)
-    expect(format(null, { time: true })).toBe(undefined)
+  it('should return null when value is null', () => {
+    expect(format(null)).toBe(null)
+    expect(format(null, { number: true })).toBe(null)
+    expect(format(null, { date: true })).toBe(null)
+    expect(format(null, { time: true })).toBe(null)
   })
 
   it('should use the en-US locale by default', () => {
@@ -49,40 +49,33 @@ describe('format()', () => {
     ).toBe('2. Januar 1970, 11:17:36')
   })
 
+  it('should omit time when `options.date = true`', () => {
+    expect(
+      format(date, { locale: 'de-DE', date: true })
+    ).toBe('9. Juni 2012')
+  })
+
+  it('should omit date when `options.time = true`', () => {
+    expect(
+      format(date, { locale: 'de-DE', time: true })
+    ).toBe('22:45:30')
+  })
+
   it('should omit time when `options.time = false`', () => {
     expect(
-      format(
-        date,
-        {
-          locale: 'de-DE',
-          time: false
-        }
-      )
+      format(date, { locale: 'de-DE', time: false })
     ).toBe('9. Juni 2012')
   })
 
   it('should omit date when `options.date = false`', () => {
     expect(
-      format(
-        date,
-        {
-          locale: 'de-DE',
-          date: false
-        }
-      )
+      format(date, { locale: 'de-DE', date: false })
     ).toBe('22:45:30')
   })
 
   it(`should return an empty string when \`options.date = false\` and \`options.time = false\``, () => {
     expect(
-      format(
-        date,
-        {
-          locale: 'de-DE',
-          date: false,
-          time: false
-        }
-      )
+      format(date, { locale: 'de-DE', date: false, time: false })
     ).toBe('')
   })
 
@@ -187,5 +180,17 @@ describe('format()', () => {
         }
       })
     ).toBe('09.06.2012 22_45_30')
+  })
+
+  it('should handle string values', () => {
+    expect(
+      format('2016-05-24T15:54:14.876Z', { date: true })
+    ).toBe('May 24, 2016')
+    expect(
+      format('2016-05-24T15:54:14.876Z', { date: true, time: true })
+    ).toBe('May 24, 2016, 05:54:14 PM')
+    expect(format('123456789', { number: true })).toBe('123,456,789')
+    expect(format('123456.789', { number: true })).toBe('123,456.789')
+    expect(format('Hello World')).toBe('Hello World')
   })
 })
