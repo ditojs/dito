@@ -7,7 +7,7 @@ import { getResource, getMemberResource } from '@/utils/resource'
 import { deprecate } from '@/utils/deprecate'
 import {
   isObject, isArray, isString, isFunction, asArray, equals,
-  getValueAtDataPath, labelize, hyphenate
+  getValueAtDataPath, labelize, hyphenate, format
 } from '@ditojs/utils'
 
 // @vue/component
@@ -365,6 +365,18 @@ export default {
     load(options) {
       deprecate('load() is deprecated. Use request() instead.')
       return this.request(options)
+    },
+
+    format(value, {
+      locale = this.api.locale,
+      defaults = this.api.formats,
+      ...options
+    } = {}) {
+      return format(value, {
+        locale,
+        defaults,
+        ...options
+      })
     },
 
     async navigate(location) {

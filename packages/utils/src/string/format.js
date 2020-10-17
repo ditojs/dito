@@ -16,15 +16,24 @@ export const defaultFormats = {
   }
 }
 
-export function format(value, { locale = 'en-US', number, date, time } = {}) {
-  const formatOptions = { number, date, time }
+export function format(value, {
+  locale = 'en-US',
+  number,
+  date,
+  time,
+  defaults = defaultFormats
+} = {}) {
+  const formats = { number, date, time }
   const getOptions = name => {
-    const def = defaultFormats[name]
-    const opt = formatOptions[name] ?? true
-    return opt === true
-      ? def
-      : isObject(opt)
-        ? Object.entries({ ...def, ...opt }).reduce((opt, [key, value]) => {
+    const defaultOption = defaults[name]
+    const option = formats[name] ?? true
+    return option === true
+      ? defaultOption
+      : isObject(option)
+        ? Object.entries({
+          ...defaultOption,
+          ...option
+        }).reduce((opt, [key, value]) => {
           if (value !== false) {
             opt[key] = value
           }
@@ -33,10 +42,12 @@ export function format(value, { locale = 'en-US', number, date, time } = {}) {
         : {}
   }
 
-  if (number) {
-    value = isNumber(value) ? value : parseFloat(value)
-  } else if (date || time) {
-    value = isDate(value) ? value : new Date(value)
+  if (value != null) {
+    if (number) {
+      value = isNumber(value) ? value : parseFloat(value)
+    } else if (date || time) {
+      value = isDate(value) ? value : new Date(value)
+    }
   }
 
   let options
@@ -78,9 +89,9 @@ export function format(value, { locale = 'en-US', number, date, time } = {}) {
       }).join('')
     }
   }
-  return value !== undefined
+  return value != null
     ? options
       ? value.toLocaleString?.(locale, options)
       : ''
-    : value
+    : undefined
 }

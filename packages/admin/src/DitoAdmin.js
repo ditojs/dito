@@ -10,9 +10,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { getResource } from './utils/resource'
 import {
-  isObject, isAbsoluteUrl, merge,
-  hyphenate, camelize,
-  formatDate, defaultFormats
+  isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -42,23 +40,9 @@ export default class DitoAdmin {
     // Setup default api setttings:
     api.locale ||= 'en-US'
 
-    api.dateFormat ||= defaultFormats.date
+    api.formats = merge({}, defaultFormats, api.formats)
 
     api.request ||= options => this.request(options)
-
-    api.formatDate ||= (data, {
-      locale = api.locale,
-      date = true,
-      time = true
-    } = {}) => formatDate(data, {
-      locale,
-      date: date === true
-        ? api.dateFormat
-        : isObject(date)
-          ? { ...api.dateFormat, ...date }
-          : date,
-      time
-    })
 
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`

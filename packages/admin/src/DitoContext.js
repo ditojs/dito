@@ -155,8 +155,12 @@ export default class DitoContext {
     return options => this.component.request(options)
   }
 
+  get format() {
+    return (value, options) => this.component.format(value, options)
+  }
+
   get navigate() {
-    return options => this.component.navigate(options)
+    return location => this.component.navigate(location)
   }
 
   get download() {

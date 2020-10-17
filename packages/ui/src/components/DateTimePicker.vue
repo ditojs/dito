@@ -13,7 +13,7 @@
         :show.sync="showDate"
         @focus="dateFocused = true"
         @blur="dateFocused = false"
-        v-bind="{ transition, placeholder, dateFormat, locale, disabled }"
+        v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
       )
       time-picker(
         ref="time"

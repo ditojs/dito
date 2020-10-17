@@ -5,7 +5,7 @@
       ref="element"
       :id="dataPath"
       :locale="locale"
-      :dateFormat="{ ...api.dateFormat, ...dateFormat }"
+      :dateFormat="{ ...api.formats.date, ...dateFormat }"
       v-model="dateValue"
       v-bind="attributes"
       v-on="listeners"

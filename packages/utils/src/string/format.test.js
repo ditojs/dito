@@ -9,6 +9,13 @@ describe('format()', () => {
     expect(format()).toBe(undefined)
   })
 
+  it('should return undefined when value is null', () => {
+    expect(format(null)).toBe(undefined)
+    expect(format(null, { number: true })).toBe(undefined)
+    expect(format(null, { date: true })).toBe(undefined)
+    expect(format(null, { time: true })).toBe(undefined)
+  })
+
   it('should use the en-US locale by default', () => {
     expect(format(integer)).toBe('123,456,789')
     expect(format(float)).toBe('123,456.789')
