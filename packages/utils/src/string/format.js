@@ -1,68 +1,68 @@
-import { isNumber, isDate } from '@/base'
+import { isNumber, isDate, isObject } from '@/base'
 
-export const defaultNumberFormat = {
-  style: 'decimal'
+export const defaultFormats = {
+  number: {
+    style: 'decimal'
+  },
+  date: {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  },
+  time: {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }
 }
 
-export const defaultDateFormat = {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric'
-}
-
-export const defaultTimeFormat = {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit'
-}
-
-const defaults = {
-  number: defaultNumberFormat,
-  date: defaultDateFormat,
-  time: defaultTimeFormat
-}
-
-export function format(value, { locale = 'en-US', ...options } = {}) {
+export function format(value, { locale = 'en-US', number, date, time } = {}) {
+  const formatOptions = { number, date, time }
   const getOptions = name => {
-    const def = defaults[name]
-    // Default option for both date and time is: `true` (see signature)
-    const opt = options[name] ?? true
-    return opt === true ? def
-      : opt === false || opt === undefined ? {}
-      : Object.entries({ ...def, ...opt }).reduce((opt, [key, value]) => {
-        if (value !== false) {
-          opt[key] = value
-        }
-        return opt
-      }, {})
+    const def = defaultFormats[name]
+    const opt = formatOptions[name] ?? true
+    return opt === true
+      ? def
+      : isObject(opt)
+        ? Object.entries({ ...def, ...opt }).reduce((opt, [key, value]) => {
+          if (value !== false) {
+            opt[key] = value
+          }
+          return opt
+        }, {})
+        : {}
   }
 
-  if (options.number) {
+  if (number) {
     value = isNumber(value) ? value : parseFloat(value)
-  } else if (options.date || options.time) {
+  } else if (date || time) {
     value = isDate(value) ? value : new Date(value)
   }
 
-  if (isNumber(value)) {
+  let options
+  if (isNumber(value) && number !== false) {
     options = getOptions('number')
     if (options.format) {
-      // Support custom post-formatting of both time and date formats, e.g.
-      // to replace separators and such:
+      // Support custom post-formatting of number formats,
+      // e.g. to replace decimals and such:
       const parts = new Intl.NumberFormat(locale, options).formatToParts(value)
-      return parts.map(
-        ({ type, value }) => options.format(value, type, options) ?? value
+      return parts.map(({ type, value }) =>
+        options.format(value, type, options) ?? value
       ).join('')
     }
-  } else if (isDate(value)) {
-    // Flatten the separate date / time options down to pone
+  } else if (isDate(value) && (date !== false || time !== false)) {
+    // Flatten the separate date / time options down to one
     const opts = {
       date: getOptions('date'),
       time: getOptions('time')
     }
-    options = { ...opts.date, ...opts.time }
+    options = {
+      ...opts.date,
+      ...opts.time
+    }
     if (options.format) {
-      // Support custom post-formatting of both time and date formats, e.g.
-      // to replace separators and such:
+      // Support custom post-formatting of both time and date formats,
+      // e.g. to replace separators and such:
       const parts = new Intl.DateTimeFormat(locale, options)
         .formatToParts(value)
       let modeOpts = null
@@ -78,9 +78,9 @@ export function format(value, { locale = 'en-US', ...options } = {}) {
       }).join('')
     }
   }
-  return value?.toLocaleString?.(locale, options)
-}
-
-export function formatDate(value, options) {
-  return format(value, options)
+  return value !== undefined
+    ? options
+      ? value.toLocaleString?.(locale, options)
+      : ''
+    : value
 }

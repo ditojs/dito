@@ -1,4 +1,4 @@
-import { format, formatDate } from './format'
+import { format } from './format'
 
 describe('format()', () => {
   const integer = 123456789
@@ -11,11 +11,8 @@ describe('format()', () => {
 
   it('should use the en-US locale by default', () => {
     expect(format(integer)).toBe('123,456,789')
-    expect(format(integer, {})).toBe('123,456,789')
     expect(format(float)).toBe('123,456.789')
-    expect(format(float, {})).toBe('123,456.789')
     expect(format(date)).toBe('June 9, 2012, 10:45:30 PM')
-    expect(format(date, {})).toBe('June 9, 2012, 10:45:30 PM')
   })
 
   it('should format numbers with different locale and default options', () => {
@@ -25,10 +22,6 @@ describe('format()', () => {
 
   it('should format dates with different locale and default options', () => {
     expect(format(date, { locale: 'de-DE' })).toBe('9. Juni 2012, 22:45:30')
-  })
-
-  it('should still support `formatDate()`', () => {
-    expect(formatDate(date, { locale: 'de-DE' })).toBe('9. Juni 2012, 22:45:30')
   })
 
   it('should format string as numbers if told so', () => {
@@ -71,6 +64,19 @@ describe('format()', () => {
         }
       )
     ).toBe('22:45:30')
+  })
+
+  it(`should return an empty string when \`options.date = false\` and \`options.time = false\``, () => {
+    expect(
+      format(
+        date,
+        {
+          locale: 'de-DE',
+          date: false,
+          time: false
+        }
+      )
+    ).toBe('')
   })
 
   it('should support fine-grained control of `options.number`', () => {

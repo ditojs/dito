@@ -45,7 +45,7 @@ import Trigger from './Trigger'
 import Calendar from './Calendar'
 import InputField from './InputField'
 import { getKeyNavigation } from '@/utils'
-import { formatDate, defaultDateFormat } from '@ditojs/utils'
+import { formatDate, defaultFormats } from '@ditojs/utils'
 
 export default {
   components: { Trigger, Calendar, InputField },
@@ -55,7 +55,7 @@ export default {
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
     placeholder: { type: String, default: null },
-    dateFormat: { type: Object, default: () => defaultDateFormat },
+    dateFormat: { type: Object, default: () => defaultFormats.date },
     locale: { type: String, default: 'en-US' },
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },

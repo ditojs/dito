@@ -11,18 +11,20 @@ Object {
   "debounce": [Function],
   "debounceAsync": [Function],
   "decamelize": [Function],
-  "defaultDateFormat": Object {
-    "day": "numeric",
-    "month": "long",
-    "year": "numeric",
-  },
-  "defaultNumberFormat": Object {
-    "style": "decimal",
-  },
-  "defaultTimeFormat": Object {
-    "hour": "2-digit",
-    "minute": "2-digit",
-    "second": "2-digit",
+  "defaultFormats": Object {
+    "date": Object {
+      "day": "numeric",
+      "month": "long",
+      "year": "numeric",
+    },
+    "number": Object {
+      "style": "decimal",
+    },
+    "time": Object {
+      "hour": "2-digit",
+      "minute": "2-digit",
+      "second": "2-digit",
+    },
   },
   "deindent": [Function],
   "equals": [Function],

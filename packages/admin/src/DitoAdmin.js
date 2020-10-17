@@ -12,7 +12,7 @@ import { getResource } from './utils/resource'
 import {
   isObject, isAbsoluteUrl, merge,
   hyphenate, camelize,
-  formatDate, defaultDateFormat
+  formatDate, defaultFormats
 } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -42,7 +42,7 @@ export default class DitoAdmin {
     // Setup default api setttings:
     api.locale ||= 'en-US'
 
-    api.dateFormat ||= defaultDateFormat
+    api.dateFormat ||= defaultFormats.date
 
     api.request ||= options => this.request(options)
 
