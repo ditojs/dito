@@ -6,5 +6,8 @@ export function formatDate(value, {
   date = true,
   time = true
 } = {}) {
-  return format(isDate(value) ? value : new Date(value), { locale, date, time })
+  return format(
+    isDate(value) || value == null ? value : new Date(value),
+    { locale, date, time }
+  )
 }

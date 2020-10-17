@@ -45,7 +45,7 @@ import Trigger from './Trigger'
 import Calendar from './Calendar'
 import InputField from './InputField'
 import { getKeyNavigation } from '@/utils'
-import { formatDate, defaultFormats } from '@ditojs/utils'
+import { format, defaultFormats } from '@ditojs/utils'
 
 export default {
   components: { Trigger, Calendar, InputField },
@@ -78,7 +78,7 @@ export default {
     },
 
     currentText() {
-      return formatDate(this.currentValue, {
+      return format(this.currentValue, {
         locale: this.locale,
         date: this.dateFormat,
         time: false
