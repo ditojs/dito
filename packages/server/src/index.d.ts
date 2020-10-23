@@ -138,7 +138,7 @@ declare namespace Dito {
     /**
      * Service configurations. Pass `false` as a value to disable a service.
      */
-    services?: $Services
+    services?: Services
     storages?: StorageConfigs
   }
 
