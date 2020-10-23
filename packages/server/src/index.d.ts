@@ -368,7 +368,7 @@ declare namespace Dito {
          * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
          */
         events?: {
-          [eventName: string]: (this: Application<S>, ...args: []) => void
+          [eventName: string]: (this: Application, ...args: []) => void
         }
         models: Models
         controllers?: ApplicationControllers
@@ -388,7 +388,7 @@ declare namespace Dito {
     addModels(models: Models): void
     addModel(model: Class<Model>): void
   }
-  interface Application<S extends { [key in keyof S]: any }>
+  interface Application
     extends Omit<
         Koa,
         | 'setMaxListeners'
@@ -664,7 +664,7 @@ declare namespace Dito {
       dataPath: string
       parentIndex?: number
       parentKey?: string
-      app: Application<any>
+      app: Application
       validator: Validator
       options: any
     }) => boolean | void
@@ -677,7 +677,7 @@ declare namespace Dito {
       dataPath: string
       parentIndex?: number
       parentKey?: string
-      app: Application<any>
+      app: Application
       validator: Validator
       options: any
     }) => Promise<boolean | void>
@@ -867,7 +867,7 @@ declare namespace Dito {
     QueryBuilderType: QueryBuilder<this, this[]>
 
     // Todo: include application settings
-    $app: Application<any>
+    $app: Application
     $is(model: Model): boolean
     $update(
       attributes: Partial<ExtractModelProperties<this>>,
@@ -1650,7 +1650,7 @@ declare namespace Dito {
   type QueryParameterOptionKey = keyof QueryParameterOptions
 
   class Service {
-    constructor(app: Application<any>, name?: string)
+    constructor(app: Application, name?: string)
 
     setup(config: any): void
 
