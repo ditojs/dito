@@ -73,8 +73,8 @@ export class Controller {
       const value = this[key]
       // NOTE: Only add instance methods that have a @action() decorator,
       // which in turn sets the `verb` property on the method, or action objects
-      // which have the `verb` property:
-      if (value?.verb) {
+      // which have the `handler` property:
+      if (value?.verb || value?.handler) {
         controller[key] = value
       }
     }
