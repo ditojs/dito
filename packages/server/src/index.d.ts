@@ -1823,10 +1823,7 @@ declare namespace Dito {
   class AuthenticationError extends ResponseError {}
   class AuthorizationError extends ResponseError {}
   class WrappedError extends ResponseError {}
-  class ControllerError extends WrapperError {
-    constructor(controller: Controller)
-  }
-  class DatabaseError extends WrapperError {
+  class DatabaseError extends WrappedError {
     constructor(
       error:
         | dbErrors.CheckViolationError
