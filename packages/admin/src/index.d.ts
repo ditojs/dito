@@ -310,7 +310,7 @@ declare module '@ditojs/admin' {
      * Specifies a function which changes the item value into another format,
      * before it is passed to the component.
      */
-    format?: OrItemAccessor<$State, any>
+    format?: ItemAccessor<$State, any>
 
     disabled?: OrItemAccessor<$State, boolean>
 
@@ -318,7 +318,7 @@ declare module '@ditojs/admin' {
      * Specifies a function which parses the component value when it changes,
      *
      */
-    parse?: OrItemAccessor<$State, any>
+    parse?: ItemAccessor<$State, any>
 
     // TODO: document process
     process?: OrItemAccessor<$State, any>
