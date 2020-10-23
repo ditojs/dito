@@ -1144,7 +1144,7 @@ declare namespace Dito {
   > = (
     this: $ModelController,
     ctx: KoaContext,
-    member: InstanceType<$ModelController['modelClass']>,
+    member: InstanceType<Exclude<$ModelController['modelClass'], undefined>>,
     ...args: any[]
   ) => any
 
@@ -1308,11 +1308,11 @@ declare namespace Dito {
             > & {
               parameters?:
                 | MemberActionParameter<
-                    InstanceType<$ModelController['modelClass']>
+                    InstanceType<Exclude<$ModelController['modelClass'], undefined>>
                   >[]
                 | [
                     MemberActionParameter<
-                      InstanceType<$ModelController['modelClass']>
+                      InstanceType<Exclude<$ModelController['modelClass'], undefined>>
                     >[],
                     any
                   ]
