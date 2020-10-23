@@ -16,7 +16,6 @@ import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
 import { DateFormat } from '@ditojs/utils'
 import * as aws from 'aws-sdk'
-import multerS3 from 'multer-s3'
 import * as dbErrors from 'db-errors'
 
 export = Dito
@@ -142,54 +141,17 @@ declare namespace Dito {
     storages?: StorageConfigs
   }
 
-  interface multerS3Options {
-    bucket:
-      | ((
-          req: Express.Request,
-          file: Express.Multer.File,
-          callback: (error: any, bucket?: string) => void
-        ) => void)
-      | string
-    key?(
-      req: Express.Request,
-      file: Express.Multer.File,
-      callback: (error: any, key?: string) => void
-    ): void
-    acl?:
-      | ((
-          req: Express.Request,
-          file: Express.Multer.File,
-          callback: (error: any, acl?: string) => void
-        ) => void)
-      | string
-    contentType?(
-      req: Express.Request,
-      file: Express.Multer.File,
-      callback: (
-        error: any,
-        mime?: string,
-        stream?: NodeJS.ReadableStream
-      ) => void
-    ): void
-    metadata?(
-      req: Express.Request,
-      file: Express.Multer.File,
-      callback: (error: any, metadata?: any) => void
-    ): void
-    cacheControl?:
-      | ((
-          req: Express.Request,
-          file: Express.Multer.File,
-          callback: (error: any, cacheControl?: string) => void
-        ) => void)
-      | string
-    serverSideEncryption?:
-      | ((
-          req: Express.Request,
-          file: Express.Multer.File,
-          callback: (error: any, serverSideEncryption?: string) => void
-        ) => void)
-      | string
+  type MulterS3File = {
+    bucket: string
+    key: string
+    acl: string
+    contentType: string
+    contentDisposition: null
+    storageClass: string
+    serverSideEncryption: null
+    metadata: any
+    location: string
+    etag: string
   }
 
   type StorageConfigs = {
@@ -197,11 +159,59 @@ declare namespace Dito {
   }
 
   type StorageConfig =
-    | (multerS3Options & {
+    | {
         type: 's3'
+        /**
+         * The name of the destination bucket.
+         */
+        bucket: aws.S3.BucketName
+        /**
+         *
+         * @default 'private'
+         */
+        acl: StringSuggestions<
+          | 'private'
+          | 'public-read'
+          | 'public-read-write'
+          | 'authenticated-read'
+          | 'aws-exec-read'
+          | 'bucket-owner-read'
+          | 'bucket-owner-full-control'
+        >
+        /**
+         * Can be used to specify caching behavior along the request/reply
+         * chain.
+         *
+         * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.
+         */
+        cacheControl?: aws.S3.CacheControl
+        /**
+         * The type of storage to use for the object.
+         *
+         * @default 'STANDARD'.
+         */
+        storageClass?: StringSuggestions<
+          | 'STANDARD'
+          | 'REDUCED_REDUNDANCY'
+          | 'STANDARD_IA'
+          | 'ONEZONE_IA'
+          | 'INTELLIGENT_TIERING'
+          | 'GLACIER'
+          | 'DEEP_ARCHIVE'
+        >
+        /**
+         * The server-side encryption algorithm used when storing this object in
+         * Amazon S3 (for example, AES256, aws:kms).
+         */
+        serverSideEncryption?: aws.S3.ServerSideEncryption
+        /**
+         * If present, specifies the ID of the AWS Key Management Service
+         * (AWS KMS) symmetric customer managed customer master key (CMK)
+         */
+        sseKmsKeyId?: aws.S3.SSEKMSKeyId
         s3: aws.S3.ClientConfiguration
         url?: string
-      })
+      }
     | {
         type: 'disk'
         path: string
@@ -382,7 +392,10 @@ declare namespace Dito {
     addServices(services: Services): void
     addService(service: Service): void
     addController(controllers: Controller, namespace?: string): void
-    addControllers(controllers: ApplicationControllers, namespace?: string): void
+    addControllers(
+      controllers: ApplicationControllers,
+      namespace?: string
+    ): void
     addStorages(storages: StorageConfigs): void
     addStorage(storage: StorageConfig): void
     addModels(models: Models): void
