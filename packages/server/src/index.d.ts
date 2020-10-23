@@ -139,6 +139,14 @@ declare namespace Dito {
      */
     services?: Services
     storages?: StorageConfigs
+    assets?: {
+      /**
+       * @example '1 hr 20 mins'
+       * @default `0`
+       * @see https://www.npmjs.com/package/parse-duration
+       */
+      cleanupTimeThreshold?: string | number
+    }
   }
 
   type MulterS3File = {
