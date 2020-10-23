@@ -1031,7 +1031,9 @@ declare namespace Dito {
     [k: string]: ModelProperty
   }
 
-  type ControllerAction = ControllerActionOptions | ControllerActionHandler
+  type ControllerAction<$Controller extends Controller> =
+    | ControllerActionOptions<$Controller>
+    | ControllerActionHandler<$Controller>
 
   type AllowedControllerActionName = StringSuggestions<
     'find' | 'delete' | 'insert' | 'update' | 'patch'
@@ -1067,18 +1069,18 @@ declare namespace Dito {
      * Authorization
      */
     authorize?: Authorize
-    actions?: ControllerActions
+    actions?: ControllerActions<this>
 
     initialize(): void
     setup(isRoot: boolean, setupActionsObject: boolean): void
     // TODO: type reflectActionsObject
     reflectActionsObject(): any
-    setupRoute(
+    setupRoute<$ControllerAction extends ControllerAction<any>>(
       verb: HTTPVerb,
       url: string,
       transacted: boolean,
       authorize: Authorize,
-      action: ControllerAction,
+      action: $ControllerAction,
       handlers: ((ctx: KoaContext, next: Function) => void)[]
     ): void
     setupActions(type: string): string[]
@@ -1125,7 +1127,7 @@ declare namespace Dito {
   type ActionParameter = Schema & { name: string }
 
   type ModelControllerActionHandler<
-    $ModelController extends ModelController
+    $ModelController extends ModelController<Model>
   > = (
     this: $ModelController,
     ctx: KoaContext,
@@ -1133,8 +1135,8 @@ declare namespace Dito {
     ...args: any[]
   ) => any
 
-  type ControllerActionHandler<$Model extends Model> = (
-    this: $Model,
+  type ControllerActionHandler<$Controller extends Controller> = (
+    this: $Controller,
     ctx: KoaContext,
     ...args: any[]
   ) => any
@@ -1225,12 +1227,14 @@ declare namespace Dito {
     transacted?: boolean
   }
 
-  type ControllerActionOptions = BaseControllerActionOptions & {
-    handler: ControllerActionHandler
+  type ControllerActionOptions<
+    $Controller extends Controller
+  > = BaseControllerActionOptions & {
+    handler: ControllerActionHandler<$Controller>
   }
 
   type ModelControllerActionOptions<
-    $ModelController extends ModelController
+    $ModelController extends ModelController<Model>
   > = BaseControllerActionOptions & {
     /**
      * The function to be called when the action route is requested.
@@ -1266,42 +1270,47 @@ declare namespace Dito {
         modify?: (query: QueryBuilder<M>) => QueryBuilder<M>
       }
 
-  type ModelControllerActions<$ModelController = ModelController> = {
+  type ModelControllerActions<
+    $ModelController extends ModelController<Model> = ModelController<Model>
+  > = {
     [key: string]:
       | ModelControllerActionOptions<$ModelController>
       | ModelControllerActionHandler<$ModelController>
       | AllowedControllerActionName[]
+      // NOTE: this is meant only for the 'authorize' key, which due to
+      // typescript limitations we cannot type stricly to the key
+      | {
+          [key: string]: AuthorizationOptions
+        }
   }
 
-  type ModelControllerMemberActions<M extends Model> = {
+  type ModelControllerMemberActions<
+    $ModelController extends ModelController<Model>
+  > = {
     [key: string]:
       | (
-          | (Omit<ModelControllerActionOptions<M>, 'parameters'> & {
+          | (Omit<
+              ModelControllerActionOptions<$ModelController>,
+              'parameters'
+            > & {
               parameters?:
-                | MemberActionParameter<M>[]
-                | [MemberActionParameter<M>[], any]
+                | MemberActionParameter<
+                    InstanceType<$ModelController['modelClass']>
+                  >[]
+                | [
+                    MemberActionParameter<
+                      InstanceType<$ModelController['modelClass']>
+                    >[],
+                    any
+                  ]
             })
-          | ModelControllerActionHandler<M>
+          | ModelControllerActionHandler<$ModelController>
         )
       | AllowedControllerActionName[]
   }
 
-  type ControllerActions = {
-    [key: string]:
-      | ControllerActionOptions
-      | ControllerActionHandler
-      | ControllerAction[]
-  }
-
-  type ControllerMemberActions = {
-    [key: string]:
-      | (
-          | (Omit<ControllerActionOptions, 'parameters'> & {
-              parameters?: ActionParameter[] | [ActionParameter[], any]
-            })
-          | ControllerActionHandler
-        )
-      | ControllerAction[]
+  type ControllerActions<$Controller extends Controller> = {
+    [key: string]: OrArrayOf<ControllerAction<$Controller>>
   }
 
   class UserModel extends Model {
@@ -1386,7 +1395,7 @@ declare namespace Dito {
      * array of action names under the `allow` key. Only the action names listed
      * there will be mapped to routes, everything else will be omitted.
      */
-    collection?: ModelControllerActions<ModelController<$Model>, $Model>
+    collection?: ModelControllerActions<ModelController<$Model>>
     /**
      * The controller's member actions. Instead of being provided on the instance
      * level as in the controller base class, they are to be wrapped in a
@@ -1396,7 +1405,7 @@ declare namespace Dito {
      * of action names under the `allow` key. Only the action names listed there
      * will be mapped to routes, everything else will be omitted.
      */
-    member?: ModelControllerMemberActions<$Model>
+    member?: ModelControllerMemberActions<ModelController<$Model>>
     assets?:
       | boolean
       | {
