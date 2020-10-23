@@ -928,11 +928,11 @@ declare module '@ditojs/admin' {
       /**
        * The form.
        */
-      form?: WrapResolvableForm<$State['item']>
+      form?: WrapResolvableForm<Unpacked<$State['item'][$State['name']]>>
       /**
        * The forms.
        */
-      forms?: WrapResolvableForm<$State['item']>[]
+      forms?: WrapResolvableForm<Unpacked<$State['item'][$State['name']]>>
       /**
        * The label given to the items. If no itemLabel is given, the default is
        * the 'name' property of the item, followed by label of the form of the
@@ -2315,3 +2315,6 @@ type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrObjectOf<T>>>
 
 // https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
 type IsAny<T> = 0 extends 1 & T ? 1 : 0
+
+// https://stackoverflow.com/a/52331580/825205
+type Unpacked<T> = T extends (infer U)[] ? U : T;
