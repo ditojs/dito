@@ -15,7 +15,7 @@ import { opts as koaSessionOpts } from 'koa-session'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
 import { DateFormat } from '@ditojs/utils'
-import aws from 'aws-sdk'
+import * as aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
 import * as dbErrors from 'db-errors'
 
