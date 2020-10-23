@@ -445,7 +445,7 @@ declare module '@ditojs/admin' {
         this: ComponentByType[$State['component']],
         query: string,
         options: any[]
-      ) => OrPromiseOf<any[]> | AxiosResponse<any[]>
+      ) => OrPromiseOf<any[]> | Response<any[]>
       debounce?:
         | number
         | {
