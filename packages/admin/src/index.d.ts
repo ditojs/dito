@@ -96,6 +96,20 @@ declare module '@ditojs/admin' {
      */
     locale?: string
     dateFormat?: DateFormat
+    formatDate?: (data: string | number | Date, options?: {
+      /**
+       * @default `api.locale`
+       */
+      locale?: string,
+      /**
+       * @default true
+       */
+      date?: boolean,
+      /**
+       * @default true
+       */
+      time?: boolean
+    }) => string
     request?: PerformRequest
     /**
      * Whether to display admin notifications.
