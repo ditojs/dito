@@ -344,18 +344,35 @@ declare namespace Utils {
     ) => string
   }
 
+  interface NumberFormat extends Intl.NumberFormatOptions {
+      format?: (
+        value: string,
+        type: Intl.NumberFormatPartTypes,
+        options: Intl.NumberFormatOptions
+      ) => string | undefined
+  }
+
   /**
-   * Formats the date as a string.
+   * Formats the value as a string.
    */
-  function formatDate(
-    date: Date,
+  function format(
+    value: Date,
     options?: {
-      locale: string
-      date?: boolean | DateFormat
-      time?: boolean | TimeFormat
+      /**
+       * @default 'en-US'
+       */
+      locale?: string
+      date?:
+        | boolean
+        | DateFormat
+      time?:
+        | boolean
+        | TimeFormat
+      number?:
+        | boolean
+        | NumberFormat
     }
   ): string
-
   /*-------------------------------- function --------------------------------*/
 
   /**

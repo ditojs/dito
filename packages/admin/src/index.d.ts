@@ -5,6 +5,7 @@
 
 import { AxiosResponse as Response, AxiosRequestConfig as Request } from 'axios'
 import { Schema } from 'inspector'
+import * as DitoUtils from '@ditojs/utils'
 import Vue from 'vue'
 
 declare global {
@@ -95,7 +96,7 @@ declare module '@ditojs/admin' {
      * @defaultValue 'en-US'
      */
     locale?: string
-    dateFormat?: DateFormat
+    dateFormat?: DitoUtils.DateFormat
     formatDate?: (data: string | number | Date, options?: {
       /**
        * @default `api.locale`
@@ -252,7 +253,7 @@ declare module '@ditojs/admin' {
    */
   export type ItemEventHandler<$State extends State = CreateState> = (
     this: ComponentByType<$State>[$State['component']],
-    itemParams: ItemParams<$State>
+    itemParams: DitoContext<$State>
   ) => void | false
 
   export interface SchemaTypeMixin<$State extends State> {
@@ -430,20 +431,22 @@ declare module '@ditojs/admin' {
             OrFunctionReturning<OrPromiseOf<Options>>
           >
           /**
-           * The key of the option property which should be treated as the label.
+           * Either the key of the option property which should be treated as
+           * the option label or a function returning the option label.
            *
            * @defaultValue `'label'` when no label is supplied and the options are
            * objects
            */
-          label?: string | ((option: any) => string)
+          label?: OrItemAccessor<$State, string>
           /**
-           * The key of the option property which should be treated as the value.
+           * Either the key of the option property which should be treated as
+           * the value or a function returning the option value.
            *
            * @defaultValue `'value'` when no label is supplied and the options are
            * objects
            */
           // TODO: when relate is set, the default value is 'id'
-          value?: string
+          value?: OrItemAccessor<$State, string>
           /**
            * The key of the option property which should used to group the options.
            */
@@ -455,11 +458,12 @@ declare module '@ditojs/admin' {
      * specific options.
      */
     search?: {
-      filter: (
-        this: ComponentByType[$State['component']],
-        query: string,
-        options: any[]
-      ) => OrPromiseOf<any[]> | Response<any[]>
+      filter?: ItemAccessor<$State, string>
+      // filter: (
+      //   this: ComponentByType[$State['component']],
+      //   query: string,
+      //   options: any[]
+      // ) => OrPromiseOf<any[]> | Response<any[]>
       debounce?:
         | number
         | {
@@ -1033,7 +1037,7 @@ declare module '@ditojs/admin' {
     $ReturnValue = $State['value']
   > = (
     this: ComponentByType[$State['component']],
-    params: ItemParams<$State>
+    params: DitoContext<$State>
   ) => $ReturnValue
 
   interface ValidatorMixin {
@@ -1178,14 +1182,12 @@ declare module '@ditojs/admin' {
       requestData(): void
       isValidationError(response: { status: number }): boolean
       isUnauthorizedError(response: { status: number }): boolean
-      request(
+      handleRequest(
         method: HTTPVerb,
-        options: { resource?: any; daya: any; params: any },
-        callback: (
-          err: any,
-          value: { request: Request; response: Response }
-        ) => void
-      ): void
+        resource: any,
+        data: any,
+        params: any
+      ): Promise<any>
       getPayloadData(button: any, method: HTTPVerb): any
       submit(button: any): Promise<boolean>
       submitResource(
@@ -1204,9 +1206,6 @@ declare module '@ditojs/admin' {
         event: string,
         options: {
           notify?: () => void
-          request: Request
-          response: Response
-          resource: any
           error: any
         }
       ): Promise<void>
@@ -1339,7 +1338,7 @@ declare module '@ditojs/admin' {
       }
     }): Promise<$Item>
     getResourcePath(resource: any): string | null
-    load<T extends any>(options: {
+    request<T extends any>(options: {
       cache?: 'local' | 'global'
       url: string
       /**
@@ -1350,20 +1349,15 @@ declare module '@ditojs/admin' {
       data?: any
     }): T
     navigate(location: string | { path: string }): Promise<boolean>
-    download(url: string, filename: string): void
-    notify: {
-      (message: string): void
-      (
-        type: StringSuggestions<'warning' | 'error' | 'info' | 'success'>,
-        message: string
-      ): void
-      (
-        type: StringSuggestions<'warning' | 'error' | 'info' | 'success'>,
-        title: string,
-        ...messages: string[]
-      ): void
+    download: {
+      (url: string): void
+      (options: {url: string, filename: string }): void
     }
-    countNotifications(count?: number): number
+    notify(options: {
+      type: StringSuggestions<'warning' | 'error' | 'info' | 'success'>,
+      title: string,
+      text: OrArrayOf<string>
+    }): void
     closeNotifications(): void
     setupSchemaFields(): void
     setupMethods(): void
@@ -1373,11 +1367,19 @@ declare module '@ditojs/admin' {
     //   event: string,
     //   options?: {
     //     params?: OrFunctionReturning<
-    //       Partial<ItemParams<$State>>
+    //       Partial<DitoContext<$State>>
     //     >
     //     parent?: T
     //   }
     // ): Promise<any | boolean>
+    sendRequest(options: {
+      method: HTTPVerb
+      url?: string
+      resource: any
+      data: any
+      params: any
+      internal?: boolean
+    }): Promise<any>
   }
 
   type MixinComponent<$State extends State> = ValidationMixin & {
@@ -1540,7 +1542,7 @@ declare module '@ditojs/admin' {
     relate: boolean
     groupBy: any
     groupByLabel: any
-    groupByOpions: any
+    groupByOptions: any
     optionLabel: any
     optionValue: any
     searchFilter: any
@@ -1710,7 +1712,7 @@ declare module '@ditojs/admin' {
     getDataPath(index: number): string
     getEditPath(item: any, index: any): string | null
     getCellClass(cell: { name: string }): string
-    getItemParams(item: any, index: any): any
+    getDitoContext(item: any, index: any): any
     onFilterErrors(errors: string[]): true | undefined
   }
   interface ListComponent<
@@ -1925,23 +1927,15 @@ declare module '@ditojs/admin' {
     isLoading: boolean
 
     // methods
-    countNotifications(count?: number): number
     closeNotifications(): void
     registerLoading(isLoading: boolean): void
     login(): Promise<void>
     logout(): Promise<void>
+    navigateHome(): Promise<void>
     fetchUser(): Promise<any>
     setUser(user: any): void
     ensureUser(): Promise<void>
     resolveViews(): Promise<void>
-    request(options: {
-      method: HTTPVerb
-      url?: string
-      resource: any
-      data: any
-      params: any
-      internal?: boolean
-    }): Promise<any>
   }
   interface DitoRoot extends DomMixin {}
 
@@ -2041,28 +2035,44 @@ declare module '@ditojs/admin' {
     cancel(): void
   }
 
-  export interface ItemParams<$State extends State> {
+  export interface DitoContext<$State extends State> {
     value: $State['value']
     name: $State['name']
     dataPath: string
     item: $State['item']
+    /**
+     * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
+     * closest parent that isn't an array, e.g. for relations or nested JSON
+     * data.  This is why the term `item` was chosen over `data`, e.g. VS the
+     * use of `parentData` in server-sided validation, which is the closest
+     * parent. If needed, we could expose this data here too, as we can do all
+     * sorts of data processing with `rootData` and `dataPath`.
+     */
     parentItem: any
     rootItem: any
-    target: $State['component']
+    list: any
+    index: any
     user: any
     api: ApiConfig
     itemLabel: string | null
     formLabel: string | null
+    component: $State['component']
     schemaComponent: Vue | null
     formComponent: DitoForm | null
     viewComponent: DitoView | null
     dialogComponent: DitoDialog | null
     panelComponent: Vue | null
     sourceComponent: Vue | null
-    request: Request | null
-    response: Response | null
-    resource: any | null
+    option: any
+    options: any
+    query: string
     error: any | null
+    request: DitoMixin['request']
+    navigate: DitoMixin['navigate']
+    download: DitoMixin['download']
+    notify: DitoMixin['notify']
+    format: DitoUtils.format
+    wasNotified: boolean
   }
 
   type ComponentSchema<$State extends State = CreateState> =
@@ -2168,13 +2178,6 @@ declare module '@ditojs/admin' {
       options?: {
         // `dito` contains the base and api settings passed from `AdminController`
         dito?: DitoGlobal
-        /**
-         * The base url where the dito admin panel is served.
-         *
-         * For example, if the admin is served under `/admin`, then base should
-         * use the value `'/admin'`.
-         */
-        base?: string
         api?: ApiConfig
         views: OrFunctionReturning<OrPromiseOf<$Views>>
         // TODO: options rest type
