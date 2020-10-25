@@ -2067,10 +2067,10 @@ declare module '@ditojs/admin' {
     options: any
     query: string
     error: any | null
-    request: DitoMixin['request']
-    navigate: DitoMixin['navigate']
-    download: DitoMixin['download']
-    notify: DitoMixin['notify']
+    request: DitoMixin<$State>['request']
+    navigate: DitoMixin<$State>['navigate']
+    download: DitoMixin<$State>['download']
+    notify: DitoMixin<$State>['notify']
     format: DitoUtils.format
     wasNotified: boolean
   }
