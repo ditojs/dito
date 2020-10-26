@@ -92,5 +92,5 @@
     "pg": "^8.5.1",
     "sqlite3": "^5.0.0"
   },
-  "types": "./src/index.d.ts"
+  "types": "types"
 }

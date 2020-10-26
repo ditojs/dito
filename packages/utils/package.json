@@ -36,5 +36,5 @@
     "@babel/preset-env": "^7.12.7",
     "@ditojs/babel-preset": "^0.197.0"
   },
-  "types": "./src/index.d.ts"
+  "types": "types"
 }
