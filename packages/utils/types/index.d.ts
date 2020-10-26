@@ -251,7 +251,7 @@ export function isUrl(str: string): boolean
 /**
  * Expands hyphenated, underscored and camel-cased strings to title case.
  */
-export function labelize(str: string): string
+export function labelize(str: string | undefined): string
 
 /*---------------------------------- array ---------------------------------*/
 
