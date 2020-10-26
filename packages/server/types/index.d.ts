@@ -17,6 +17,7 @@ import { KnexSnakeCaseMappersFactory } from 'objection'
 import { DateFormat } from '@ditojs/utils'
 import * as aws from 'aws-sdk'
 import * as dbErrors from 'db-errors'
+import helmet from 'helmet';
 
 export type ApplicationConfig = {
   /**
@@ -91,7 +92,7 @@ export type ApplicationConfig = {
      * headers to make your app more secure by default.
      * @defaultValue `true`
      */
-    helmet?: boolean
+    helmet?: boolean | Parameters<typeof helmet>[0]
     /**
      * Enable or configure Cross-Origin Resource Sharing (CORS)
      * @defaultValue `true`
