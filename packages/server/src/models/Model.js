@@ -522,8 +522,9 @@ export class Model extends objection.Model {
 
   // @override
   $parseDatabaseJson(json) {
+    const { constructor } = this
     json = super.$parseDatabaseJson(json)
-    if (this.constructor.isSQLite()) {
+    if (constructor.isSQLite()) {
       // SQLite does not support boolean natively and needs conversion...
       for (const key of constructor.booleanAttributes) {
         const bool = json[key]
