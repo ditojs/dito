@@ -50,7 +50,7 @@ module.exports = {
       newIsCap: true,
       capIsNew: true,
       capIsNewExceptions: ['Knex'],
-      capIsNewExceptionPattern: 'Mixin$'
+      capIsNewExceptionPattern: 'Mixin'
     }],
     'no-console': [isProduction ? 'error' : 'warn', {
       allow: [

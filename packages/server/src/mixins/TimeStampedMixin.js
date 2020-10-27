@@ -1,4 +1,4 @@
-import { mixin } from '@/utils'
+import { mixin } from '@ditojs/utils'
 
 export const TimeStampedMixin = mixin(Model => class extends Model {
   static properties = {
