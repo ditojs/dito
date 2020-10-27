@@ -94,9 +94,10 @@ export class AdminController extends Controller {
   }
 
   getVueConfig() {
+    const development = this.mode === 'development'
     const {
       build = {},
-      devtool = this.mode === 'development' ? 'source-map' : false,
+      devtool = development ? 'source-map' : false,
       settings
     } = this.config
     return {
@@ -175,9 +176,7 @@ export class AdminController extends Controller {
           })
           return args
         })
-        if (this.mode === 'development') {
-          // Remove HotModuleReplacementPlugin as it gets added by koaWebpack:
-          conf.plugins.delete('hmr')
+        if (development) {
           // Disable the 'compact' option in babel-loader during development to
           // prevent complaints when working with the `yarn watch` versions of
           // dito-admin.umd.min.js and dito-ui.umd.min.js

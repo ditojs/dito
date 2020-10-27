@@ -10,7 +10,7 @@ import TypeComponent from './TypeComponent'
 import DitoRoot from './components/DitoRoot'
 import { getResource } from './utils/resource'
 import {
-  isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
+  isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
 
 Vue.config.productionTip = false
@@ -24,12 +24,16 @@ Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
+    module,
     // `dito` contains the base and api settings passed from `AdminController`
     dito = {},
     api,
     views = {},
     ...options
   } = {}) {
+    // Activate hot reloading if the module is provided.
+    module?.hot?.accept()
+
     this.el = el
     // Merge in `api` settings as passed from `config.admin` and through the
     // `AdminController` with `api` values from from 'admin/index.js'
@@ -146,6 +150,10 @@ export default class DitoAdmin {
       return !isAbsoluteUrl(url) || url.startsWith(api.url)
     }
 
+    if (isString(el)) {
+      el = document.querySelector(el)
+    }
+
     this.root = new Vue({
       el,
       router: new VueRouter({
@@ -176,11 +184,12 @@ export default class DitoAdmin {
         $dialogComponent: () => null,
         $panelComponent: () => null
       },
-      data: {
-        views,
-        options
-      },
+
       render: createElement => createElement(DitoRoot, {
+        // Preserve the root container's id, as required by hot-reloading:
+        attrs: {
+          id: el.id
+        },
         props: {
           unresolvedViews: views,
           options
