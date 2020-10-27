@@ -16,7 +16,6 @@
         "@": "./src"
       }
     }],
-    "@babel/plugin-transform-runtime",
     "dynamic-import-node",
     "transform-promise-to-bluebird"
   ],
