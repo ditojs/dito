@@ -105,14 +105,15 @@ export class Controller {
       values: actions,
       authorize
     } = this.processValues(this.inheritValues(type))
-    for (const name in actions) {
-      this.setupAction(type, name, actions[name], authorize[name])
+    for (const [name, handler] of Object.entries(actions)) {
+      this.setupAction(type, actions, name, handler, authorize[name])
     }
     return actions
   }
 
   setupAction(
     type,
+    actions,
     name,
     handler,
     authorize,
@@ -123,7 +124,7 @@ export class Controller {
     path = this.app.normalizePath(name)
   ) {
     if (!isFunction(handler)) {
-      handler = setupHandlerFromObject(handler)
+      handler = setupHandlerFromObject(handler, actions)
     }
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
@@ -382,7 +383,10 @@ export class Controller {
           }
           return result
         },
-        {}
+        // Create a new object for the filtered `values` that keeps inheritance
+        // intact. This is required by `setupHandlerFromObject()`, to support
+        // `super` in handler functions.
+        Object.create(Object.getPrototypeOf(values))
       ),
       allow: Object.keys(mergedAllow),
       authorize: mergedAuthorize
@@ -484,15 +488,21 @@ EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
 
-function setupHandlerFromObject({
-  handler,
-  action,
-  authorize,
-  parameters,
-  returns,
-  scope,
-  transacted
-}) {
+function setupHandlerFromObject(object, actions) {
+  const {
+    handler,
+    action,
+    authorize,
+    parameters,
+    returns,
+    scope,
+    transacted
+  } = object
+
+  // In order to suport `super` calls in the `handler` function in object
+  // notation, deploy this crazy JS sorcery:
+  Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
+
   handler.authorize = authorize
   handler.transacted = transacted
 

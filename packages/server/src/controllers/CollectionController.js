@@ -25,14 +25,16 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, name, handler, authorize, verb, path) {
+  setupAction(type, actions, name, handler, authorize, verb, path) {
     // These default actions happen directly on the collection / member route
     // and are distinguished by their verbs, not by nested paths.
     if (name in actionToVerb) {
       verb = actionToVerb[name]
       path = ''
     }
-    return super.setupAction(type, name, handler, authorize, verb, path)
+    return super.setupAction(
+      type, actions, name, handler, authorize, verb, path
+    )
   }
 
   // @override
