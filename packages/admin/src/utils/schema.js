@@ -174,36 +174,45 @@ export function hasForms(schema) {
   return isObject(schema) && !!(schema.form || schema.forms)
 }
 
-export function getItemFormSchema(schema, item, views = null) {
+export function getViewSchema(schema, views) {
   const { view } = schema
-  if (view && views) {
-    schema = views[view]
-    if (!schema) {
-      throw new Error(`Unknown view: '${view}'`)
+  return view && views[view] || null
+}
+
+export function getFormSchemas(schema, views = null) {
+  if (views) {
+    const view = getViewSchema(schema, views)
+    if (view) {
+      schema = view
+    } else if (schema.view) {
+      throw new Error(`Unknown view: '${schema.view}'`)
     }
   }
   const { form, forms } = schema
-  const type = item?.type
-  return forms && type ? forms[type] : form
+  return forms || { default: form }
+}
+
+export function getItemFormSchema(schema, item, views = null) {
+  const forms = getFormSchemas(schema, views)
+  return forms[item?.type] || forms.default
+}
+
+export function hasLabel(schema) {
+  return schema.label !== false
+}
+
+export function isCompact(schema) {
+  return schema.compact
 }
 
 export function hasLabels(schema) {
-  const check = components => {
-    for (const component of Object.values(components || {})) {
-      if (component.label !== false) {
-        return true
-      }
-    }
-  }
-  if (check(schema.components)) {
-    return true
-  }
-  for (const tab of Object.values(schema.tabs || {})) {
-    if (check(tab)) {
-      return true
-    }
-  }
-  return false
+  const checkComponents = components =>
+    Object.values(components || {}).some(hasLabel)
+
+  return (
+    checkComponents(schema.components) ||
+    Object.values(schema.tabs || {}).some(checkComponents)
+  )
 }
 
 export function setDefaults(schema, data = {}) {

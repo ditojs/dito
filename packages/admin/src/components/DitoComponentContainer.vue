@@ -66,7 +66,7 @@ import { isString } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
   props: {
-    schema: { type: Object, default: null },
+    schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },

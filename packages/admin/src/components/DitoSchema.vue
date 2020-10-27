@@ -177,7 +177,7 @@ export default DitoComponent.component('dito-schema', {
   ],
 
   props: {
-    schema: { type: Object, default: null },
+    schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: Object, default: null },
     meta: { type: Object, default: () => ({}) },

@@ -40,6 +40,14 @@ export default {
       return !!this.resource
     },
 
+    linksToView() {
+      // Returns `false`here, but is overridden to return `true` in
+      // `SourceMixin` for component that do not provide their own data, but
+      // edit their items through a linked view.  In this case, real ids need to
+      // be used.
+      return false
+    },
+
     isTransient() {
       // Check the form that this component belongs to as well, since it may be
       // in creation mode, which makes it transient.
@@ -47,7 +55,8 @@ export default {
       // `isTransient()` to only return `!this.providesData`.
       const form = this.formComponent
       return (
-        !this.providesData ||
+        !this.providesData &&
+        !this.linksToView ||
         form && (
           form.isTransient ||
           form.isCreating

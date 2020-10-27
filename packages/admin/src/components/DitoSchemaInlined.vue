@@ -5,12 +5,12 @@
     :data="data"
     :meta="meta"
     :store="store"
-    :label="compact ? null : label"
+    :label="isCompact ? null : label"
     :inlined="true"
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
-    :class="{ 'dito-schema-compact': compact }"
+    :class="{ 'dito-schema-compact': isCompact }"
   )
     // Render dito-edit-buttons for inlined shemas separately from all
     // others in `TypeList` as a scope, for better handling of layout.
@@ -51,11 +51,11 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-
+import { isCompact } from '@/utils/schema'
 // @vue/component
 export default DitoComponent.component('dito-schema-inlined', {
   props: {
-    schema: { type: Object, default: null },
+    schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
@@ -71,12 +71,12 @@ export default DitoComponent.component('dito-schema-inlined', {
   },
 
   computed: {
-    compact() {
-      return this.schema.compact
+    isCompact() {
+      return isCompact(this.schema)
     },
 
     hasLabel() {
-      return !this.compact && !!this.label
+      return !this.isCompact && !!this.label
     }
   }
 })

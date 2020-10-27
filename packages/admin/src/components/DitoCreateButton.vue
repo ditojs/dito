@@ -41,7 +41,7 @@ export default DitoComponent.component('dito-create-button', {
   mixins: [PulldownMixin],
 
   props: {
-    schema: { type: Object, default: null },
+    schema: { type: Object, required: true },
     path: { type: String, required: true },
     verb: { type: String, required: true },
     text: { type: String, default: null }

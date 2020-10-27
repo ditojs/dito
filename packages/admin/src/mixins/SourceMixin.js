@@ -4,12 +4,12 @@ import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels,
-  getNamedSchemas, getButtonSchemas,
+  processRouteSchema, processForms, hasForms, hasLabels, isCompact,
+  getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
-  isObject, isString, isArray, isNumber, asArray, equals,
+  isObject, isString, isArray, isNumber, equals,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
@@ -211,8 +211,17 @@ export default {
     },
 
     forms() {
-      const { form, forms } = this.schema
-      return forms && Object.values(forms) || asArray(form)
+      return Object.values(getFormSchemas(this.schema, this.views))
+    },
+
+    // Returns the linked view schema if this source edits it its items through
+    // a linked view.
+    view() {
+      return getViewSchema(this.schema, this.views)
+    },
+
+    linksToView() {
+      return !!this.view
     },
 
     buttonSchemas() {
@@ -220,21 +229,11 @@ export default {
     },
 
     hasLabels() {
-      for (const form of this.forms) {
-        if (hasLabels(form)) {
-          return true
-        }
-      }
-      return false
+      return this.forms.some(hasLabels)
     },
 
     isCompact() {
-      for (const form of this.forms) {
-        if (!form.compact) {
-          return false
-        }
-      }
-      return true
+      return this.forms.every(isCompact)
     },
 
     paginate: getSchemaAccessor('paginate', {

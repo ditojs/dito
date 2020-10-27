@@ -54,15 +54,15 @@ export default DitoComponent.component('dito-components', {
   },
 
   props: {
-    visible: { type: Boolean, default: true },
-    tab: { type: String, default: null },
-    schema: { type: Object, default: null },
+    schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: Object, default: null },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    single: { type: Boolean, required: false },
-    disabled: { type: Boolean, required: true },
+    tab: { type: String, default: null },
+    single: { type: Boolean, default: false },
+    visible: { type: Boolean, default: true },
+    disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: true }
   },
 
