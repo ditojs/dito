@@ -1,4 +1,5 @@
-import { appendDataPath } from '@/utils/data'
+import { appendDataPath } from './data'
+import { getUid } from './uid'
 import {
   isObject, isString, isArray, isFunction, isPromise, asArray, clone, camelize
 } from '@ditojs/utils'
@@ -365,4 +366,13 @@ export function isObjectSource(schemaOrType) {
 
 export function isListSource(schemaOrType) {
   return getSourceType(schemaOrType) === 'list'
+}
+
+export function getItemId(sourceSchema, item) {
+  const id = item[sourceSchema.idName || 'id']
+  return id != null ? String(id) : undefined
+}
+
+export function getItemUid(sourceSchema, item) {
+  return getItemId(sourceSchema, item) || getUid(item)
 }

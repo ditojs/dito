@@ -45,7 +45,7 @@
       )
         tr(
           v-for="item, index in listData"
-          :key="getItemId(schema, item, null)"
+          :key="getItemUid(schema, item)"
           :id="getDataPath(index)"
         )
           template(v-if="columns")

@@ -1,7 +1,8 @@
 import DitoContext from '@/DitoContext'
-import { getItemFormSchema, isListSource } from '@/utils/schema'
+import {
+  getItemFormSchema, getItemId, getItemUid, isListSource
+} from '@/utils/schema'
 import { appendDataPath } from '@/utils/data'
-import { getUid } from '@/utils/uid'
 import { isObject, isString, isFunction } from '@ditojs/utils'
 
 // @vue/component
@@ -9,11 +10,12 @@ export default {
   methods: {
     getItemFormSchema,
 
-    getItemId(sourceSchema, item, index) {
-      const id = this.isTransient
-        ? (index != null ? index : getUid(item))
-        : item[sourceSchema.idName || 'id']
-      return id === undefined ? id : String(id)
+    getItemUid,
+
+    getItemId(sourceSchema, item, index = null) {
+      return this.isTransient && index !== null
+        ? String(index)
+        : getItemId(sourceSchema, item)
     },
 
     getItemDataPath(sourceSchema, index) {
@@ -96,14 +98,14 @@ export default {
         text = item[key]
       }
       const hadLabel = !!text
-      // If no label was found so far, try to produce one from the id or index.
-      if (text == null) {
-        const id = this.getItemId(sourceSchema, item)
-        text = id ? `(id: ${id})`
-          : isListSource(sourceSchema) && index !== null ? `${index + 1}`
-          : ''
+      text = text || ''
+      // If no label was found so far, try to produce one from theindex.
+      if (!text) {
         // Always use extended style when auto-generating labels from index/id:
         extended = true
+        if (isListSource(sourceSchema) && index !== null) {
+          text = `${index + 1}`
+        }
       }
       if (extended) {
         const formLabel = getFormLabel()
@@ -113,7 +115,6 @@ export default {
           text = `${formLabel} ${hadLabel ? `'${text}'` : text}`
         }
       }
-      text = text || ''
       return asObject ? { text, prefix, suffix } : text
     }
   }
