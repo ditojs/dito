@@ -1,5 +1,6 @@
 import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
+import { getDefaultValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
 import { isString, isFunction, asArray } from '@ditojs/utils'
@@ -43,21 +44,28 @@ export default {
     value: {
       get() {
         const { compute, format } = this.schema
+        const { data, name } = this
+        // First, set defaults for missing values:
+        if (!(name in data)) {
+          this.$set(data, name, getDefaultValue(this.schema))
+        }
+        // Now access the value. Always doing so is important for reactivity.
+        let value = data[name]
         if (compute) {
-          const value = compute.call(
+          value = compute.call(
             this,
             // Override value to prevent endless recursion through calling the
             // getter for `this.value` in `DitoContext`:
-            new DitoContext(this, { value: this.data[this.name] })
+            new DitoContext(this, { value })
           )
           if (value !== undefined) {
             // Trigger setter to update computed value, without calling parse():
-            this.$set(this.data, this.name, value)
+            this.$set(data, name, value)
+            // For Vue's change tracking to work, access the property again once
+            // it is set.
+            value = data[name]
           }
         }
-        // For Vue's change tracking to always work, we need to access the
-        // property once it's set (e.g. computed)
-        let value = this.data[this.name]
         if (format) {
           value = format.call(this, new DitoContext(this, { value }))
         }

@@ -205,6 +205,17 @@ export function isCompact(schema) {
   return schema.compact
 }
 
+export function isUnnested(schema) {
+  return getTypeOptions(schema)?.unnested ?? false
+}
+
+export function getDefaultValue(schema) {
+  const value = schema.default ?? getTypeOptions(schema)?.defaultValue
+  return isFunction(value)
+    ? value(schema)
+    : clone(value)
+}
+
 export function hasLabels(schema) {
   const checkComponents = components =>
     Object.values(components || {}).some(hasLabel)
@@ -220,32 +231,26 @@ export function setDefaults(schema, data = {}) {
   // form fields, so they can be correctly watched for changes.
   const processComponents = (components = {}) => {
     for (const [key, componentSchema] of Object.entries(components)) {
-      // Support default values both on schema and on component level.
-      // NOTE: At the time of creation, components may not be instantiated,
-      // (e.g. if entries are created through nested forms, the parent form
-      // isn't mounted) so we can't use `dataPath` to get to components,
-      // and then to the defaultValue from there. That's why defaultValue is
-      // a 'static' value on the component definitions:
-      const typeOptions = getTypeOptions(componentSchema) || {}
-      const { unnested } = typeOptions
-      if (!unnested && !(key in data)) {
-        const defaultValue = (
-          componentSchema.default ??
-          typeOptions.defaultValue
-        )
-        data[key] = isFunction(defaultValue)
-          ? defaultValue(componentSchema)
-          : clone(defaultValue)
-      }
-      if (unnested) {
+      if (isUnnested(componentSchema)) {
         // Recursively set defaults on section components.
         setDefaults(componentSchema, data)
-      } else if (hasForms(componentSchema)) {
-        // Recursively set defaults on nested forms.
-        for (const item of asArray(data[key])) {
-          const formSchema = getItemFormSchema(componentSchema, item)
-          if (item && formSchema) {
-            setDefaults(formSchema, item)
+      } else {
+        // Support default values both on schema and on component level.
+        // NOTE: At the time of creation, components may not be instantiated,
+        // (e.g. if entries are created through nested forms, the parent form
+        // isn't mounted) so we can't use `dataPath` to get to components,
+        // and then to the defaultValue from there. That's why defaultValue is
+        // a 'static' value on the component definitions:
+        if (!(key in data)) {
+          data[key] = getDefaultValue(componentSchema)
+        }
+        if (hasForms(componentSchema)) {
+          // Recursively set defaults on nested forms.
+          for (const item of asArray(data[key])) {
+            const formSchema = getItemFormSchema(componentSchema, item)
+            if (item && formSchema) {
+              setDefaults(formSchema, item)
+            }
           }
         }
       }
