@@ -5,19 +5,23 @@
 
 // Export the entire Dito namespace.
 
-import { Options as CorsOptions } from '@koa/cors'
-import * as Ajv from 'ajv'
-import * as EventEmitter2 from 'eventemitter2'
-import * as Knex from 'knex'
-import * as Koa from 'koa'
-import { CompressOptions } from 'koa-compress'
-import { opts as koaSessionOpts } from 'koa-session'
-import * as objection from 'objection'
-import { KnexSnakeCaseMappersFactory } from 'objection'
 import { DateFormat } from '@ditojs/utils'
+import * as Ajv from 'ajv'
 import * as aws from 'aws-sdk'
 import * as dbErrors from 'db-errors'
+import * as EventEmitter2 from 'eventemitter2'
+import * as Knex from 'knex'
+import { KnexSnakeCaseMappersFactory } from 'objection'
 import helmet from 'helmet';
+import * as Koa from 'koa'
+import koaCompress from 'koa-compress'
+import koaCors from '@koa/cors'
+import koaResponseTime from 'koa-response-time'
+import koaLogger from 'koa-logger'
+import koaSession from 'koa-session'
+import koaPinoLogger from 'koa-pino-logger'
+import koaBodyParser from 'koa-bodyparser'
+import * as objection from 'objection'
 
 export type ApplicationConfig = {
   /**
@@ -79,6 +83,7 @@ export type ApplicationConfig = {
      */
     normalizePaths?: boolean
     /**
+     * Whether proxy header fields will be trusted.
      * @defaultValue `false`
      */
     proxy?: boolean
@@ -86,23 +91,33 @@ export type ApplicationConfig = {
      * Whether to include X-Response-Time header in responses
      * @defaultValue `true`
      */
-    responseTime?: boolean
+    responseTime?: boolean | Parameters<(typeof koaResponseTime)>[0]
     /**
      * Whether to use koa-helmet middleware which provides important security
      * headers to make your app more secure by default.
      * @defaultValue `true`
+     * @see https://github.com/venables/koa-helmet
+     * @see https://github.com/helmetjs/helmet
      */
     helmet?: boolean | Parameters<typeof helmet>[0]
+    logger?: Parameters<typeof koaLogger>[0] | Parameters<typeof koaPinoLogger>[0]
+    /**
+     * Configure body parser.
+     * @see https://github.com/koajs/bodyparser#options
+     */
+    bodyParser?: koaBodyParser.Options
     /**
      * Enable or configure Cross-Origin Resource Sharing (CORS)
      * @defaultValue `true`
+     * @see https://github.com/koajs/cors#corsoptions
      */
-    cors?: boolean | CorsOptions
+    cors?: boolean | koaCors.Options
     /**
      * Enable or configure server response compression
      * @defaultValue `true`
+     * @see https://github.com/koajs/compress#options
      */
-    compress?: boolean | CompressOptions
+    compress?: boolean | koaCompress.CompressOptions
     /**
      * Enable ETag headers in server responses
      * @defaultValue `true`
@@ -110,16 +125,14 @@ export type ApplicationConfig = {
     etag?: boolean
     /**
      * @defaultValue `false`
+     * @see https://github.com/koajs/session
      */
-    session?: boolean | ({ modelClass: string } & koaSessionOpts)
+    session?: boolean | koaSession.opts
     /**
      * Enable passport authentication middleware
      * @defaultValue `false`
      */
     passport?: boolean
-
-    // csrf: boolean,            // TODO: Implement
-
     /**
      * Keys used for session
      */
