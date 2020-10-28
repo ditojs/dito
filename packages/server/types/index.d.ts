@@ -72,6 +72,10 @@ export type ApplicationConfig = {
      * @defaultValue `false`
      */
     sql?: boolean
+    /**
+     * Whether to turn off all logging
+     */
+    silent?: boolean
   }
   api?: ApiConfig
   app?: {
