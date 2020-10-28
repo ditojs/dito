@@ -207,7 +207,7 @@ export function isCompact(schema) {
 }
 
 export function isUnnested(schema) {
-  return getTypeOptions(schema)?.unnested ?? false
+  return !!getTypeOptions(schema)?.unnested
 }
 
 export function getDefaultValue(schema) {
@@ -215,6 +215,11 @@ export function getDefaultValue(schema) {
   return isFunction(value)
     ? value(schema)
     : clone(value)
+}
+
+export function ignoreMissingValue(schema) {
+  const type = getType(schema)
+  return !!getTypeOptions(type)?.ignoreMissingValue?.(type)
 }
 
 export function hasLabels(schema) {
