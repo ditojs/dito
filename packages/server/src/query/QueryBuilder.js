@@ -453,15 +453,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  updateAndFetchById(id, data) {
-    this.context({ byId: id })
-    return super.updateAndFetchById(id, data)
-  }
-
-  // @override
   patchAndFetchById(id, data) {
     this.context({ byId: id })
     return super.patchAndFetchById(id, data)
+  }
+
+  // @override
+  updateAndFetchById(id, data) {
+    this.context({ byId: id })
+    return super.updateAndFetchById(id, data)
   }
 
   // @override
@@ -470,16 +470,48 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.deleteById(id)
   }
 
-  updateById(id, data) {
-    return this.findById(id).update(data)
-  }
-
   patchById(id, data) {
     return this.findById(id).patch(data)
   }
 
-  upsertAndFetch(data, options) {
-    return this.upsert(data, { ...options, fetch: true })
+  updateById(id, data) {
+    return this.findById(id).update(data)
+  }
+
+  // Extend Objection's `patchAndFetch()` and `updateAndFetch()` to also support
+  // arrays of models, not only single instances.
+  // See: https://gitter.im/Vincit/objection.js?at=5f994a5900a0f3369d366d6f
+
+  patchAndFetch(data) {
+    return isArray(data)
+      ? this._upsertAndFetch(data)
+      : super.patchAndFetch(data)
+  }
+
+  updateAndFetch(data) {
+    return isArray(data)
+      ? this._upsertAndFetch(data, { update: true })
+      : super.updateAndFetch(data)
+  }
+
+  upsertAndFetch(data) {
+    return this._upsertAndFetch(data, {
+      // Insert missing nodes only at root by allowing `insertMissing`,
+      // but set `noInsert` for all relations:
+      insertMissing: true,
+      noInsert: this.modelClass().getRelationNames()
+    })
+  }
+
+  _upsertAndFetch(data, options) {
+    return this.upsertGraphAndFetch(data, {
+      fetchStrategy: 'OnlyNeeded',
+      noInset: true,
+      noDelete: true,
+      noRelate: true,
+      noUnrelate: true,
+      ...options
+    })
   }
 
   insertDitoGraph(data, options) {
