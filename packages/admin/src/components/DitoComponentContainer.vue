@@ -95,8 +95,8 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     labelDataPath() {
-      // Flattened types don't have a dataPath for themselves, don't use it:
-      return this.typeOptions.flattenedType ? null : this.dataPath
+      // Unnested types don't have a dataPath for themselves, don't use it:
+      return this.typeOptions.unnested ? null : this.dataPath
     },
 
     width() {

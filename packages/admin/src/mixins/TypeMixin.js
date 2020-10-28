@@ -247,8 +247,8 @@ export default {
 
   methods: {
     _register(add) {
-      // Prevent flattened type components from overriding parent data paths
-      if (!this.$options.flattenedType) {
+      // Prevent unnested type components from overriding parent data paths
+      if (!this.$options.unnested) {
         this.schemaComponent._registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`

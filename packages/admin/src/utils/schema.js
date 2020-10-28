@@ -227,8 +227,8 @@ export function setDefaults(schema, data = {}) {
       // and then to the defaultValue from there. That's why defaultValue is
       // a 'static' value on the component definitions:
       const typeOptions = getTypeOptions(componentSchema) || {}
-      const { flattenedType } = typeOptions
-      if (!flattenedType && !(key in data)) {
+      const { unnested } = typeOptions
+      if (!unnested && !(key in data)) {
         const defaultValue = (
           componentSchema.default ??
           typeOptions.defaultValue
@@ -237,7 +237,7 @@ export function setDefaults(schema, data = {}) {
           ? defaultValue(componentSchema)
           : clone(defaultValue)
       }
-      if (flattenedType) {
+      if (unnested) {
         // Recursively set defaults on section components.
         setDefaults(componentSchema, data)
       } else if (hasForms(componentSchema)) {

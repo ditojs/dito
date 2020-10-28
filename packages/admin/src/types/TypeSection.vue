@@ -15,7 +15,7 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('section', {
-  flattenedType: true,
+  unnested: true,
   defaultValue: undefined,
   generateLabel: false,
   omitFlexGrow: true,

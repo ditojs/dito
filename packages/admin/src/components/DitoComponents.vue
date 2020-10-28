@@ -4,11 +4,11 @@
     v-show="visible"
   )
     dito-component-container(
-      v-for="{ schema, dataPath, flattenedDataPath, store } in componentSchemas"
+      v-for="{ schema, dataPath, unnestedDataPath, store } in componentSchemas"
       v-if="shouldRender(schema)"
       :key="dataPath"
       :schema="schema"
-      :dataPath="flattenedDataPath"
+      :dataPath="unnestedDataPath"
       :data="data"
       :meta="meta"
       :store="store"
@@ -82,18 +82,18 @@ export default DitoComponent.component('dito-components', {
       const wrapPrimitives = this.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
-          // Share dataPath and store with parent if flattenedType is true:
-          const flattened = getTypeOptions(schema)?.flattenedType
+          // Share dataPath and store with parent if unnested is true:
+          const unnested = getTypeOptions(schema)?.unnested
           // Always add name to component schema.
           schema.name = name
           const dataPath = appendDataPath(this.dataPath, name)
           return {
             schema,
             dataPath,
-            flattenedDataPath: flattened || wrapPrimitives
+            unnestedDataPath: unnested || wrapPrimitives
               ? this.dataPath
               : dataPath,
-            store: flattened ? this.store : this.getChildStore(name)
+            store: unnested ? this.store : this.getChildStore(name)
           }
         }
       )
