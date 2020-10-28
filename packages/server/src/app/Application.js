@@ -451,21 +451,21 @@ export class Application extends Koa {
 
     this.use(handleError())
     if (app.responseTime !== false) {
-      this.use(responseTime())
+      this.use(responseTime(getOptions(app.responseTime)))
     }
     if (logger) {
-      this.use(logger())
+      this.use(logger(getOptions(app.logger)))
     }
     if (app.helmet !== false) {
-      this.use(helmet(isObject(app.helmet) ? app.helmet : {}))
+      this.use(helmet(getOptions(app.helmet)))
     }
     if (app.cors !== false) {
-      this.use(cors(isObject(app.cors) ? app.cors : {}))
+      this.use(cors(getOptions(app.cors)))
     }
     if (app.compress !== false) {
       this.use(compress(merge(
         {
-          // Use a reasonable default for Brotli compression when availalble.
+          // Use a reasonable default for Brotli compression.
           // See https://github.com/koajs/compress/issues/126
           br: {
             params: {
@@ -473,7 +473,7 @@ export class Application extends Koa {
             }
           }
         },
-        app.compress
+        getOptions(app.compress)
       )))
     }
     if (app.etag !== false) {
@@ -488,10 +488,10 @@ export class Application extends Koa {
     // session and passport middleware. It is called from `addController()`.
     // Use a flag to only install the middleware once:
     if (!this.hasControllerMiddleware) {
-      const { app = {} } = this.config
+      const { app } = this.config
       // Sequence is important:
       // 1. body parser
-      this.use(bodyParser())
+      this.use(bodyParser(getOptions(app.bodyParser)))
       // 2. find route from routes installed by controllers.
       this.use(findRoute(this.router))
       // 3. respect transacted settings, create and handle transactions.
@@ -501,7 +501,7 @@ export class Application extends Koa {
         const {
           modelClass,
           ...options
-        } = isObject(app.session) ? app.session : {}
+        } = getOptions(app.session)
         if (modelClass) {
           // Create a ContextStore that resolved the specified model class,
           // uses it to persist and retrieve the session, and automatically
@@ -860,3 +860,7 @@ export class Application extends Koa {
 // Override Koa's events with our own EventEmitter that adds support for
 // asynchronous events.
 EventEmitter.mixin(Application.prototype)
+
+function getOptions(options) {
+  return isObject(options) ? options : {}
+}
