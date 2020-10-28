@@ -90,7 +90,7 @@ export type ApplicationConfig = {
      * Whether proxy header fields will be trusted.
      * @defaultValue `false`
      */
-    proxy?: boolean
+    proxy?: Koa['proxy']
     /**
      * Whether to include X-Response-Time header in responses
      * @defaultValue `true`
@@ -138,9 +138,10 @@ export type ApplicationConfig = {
      */
     passport?: boolean
     /**
-     * Keys used for session
+     * Set signed cookie keys.
+     * @see https://github.com/koajs/koa/blob/master/docs/api/index.md#appkeys
      */
-    keys?: string[]
+    keys?: Koa['keys']
   }
   admin?: AdminConfig
   knex?: Knex.Config<any> & {
