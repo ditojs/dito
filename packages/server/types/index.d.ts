@@ -1843,9 +1843,22 @@ export type PartialDitoModelGraph<M extends Partial<Model>> = {
 /*------------------------------ Start Errors -----------------------------*/
 export class ResponseError extends Error {
   constructor()
-  constructor(error: { status: number; message?: string })
-  constructor(message: string, defaults?: { status: number })
+  constructor(error: {
+    /**
+     * The http status code.
+     */
+    status: number
+    /**
+     * The error message.
+     */
+    message?: string
+    /**
+     * An optional code to be used to distinguish different error instances.
+     */
+    code?: string | number
+  }, defaults?: { message: string, status: number })
   status: number
+  code?: string | number
 }
 export class AssetError extends ResponseError {}
 export class AuthenticationError extends ResponseError {}
