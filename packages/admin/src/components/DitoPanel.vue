@@ -8,7 +8,7 @@
     label.dito-panel-title {{ getLabel(schema) }}
     dito-schema.dito-panel-schema(
       :schema="panelSchema"
-      :dataPath="ownDataPath"
+      :dataPath="panelDataPath"
       :data="panelData"
       :meta="meta"
       :store="store"
@@ -18,7 +18,7 @@
       dito-buttons(
         slot="buttons"
         :buttons="buttonSchemas"
-        :dataPath="ownDataPath"
+        :dataPath="panelDataPath"
         :data="panelData"
         :meta="meta"
         :store="store"
@@ -64,6 +64,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DitoContext from '@/DitoContext'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getButtonSchemas } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
@@ -132,7 +133,7 @@ export default DitoComponent.component('dito-panel', {
       return this.hasOwnData ? 'form' : 'div'
     },
 
-    ownDataPath() {
+    panelDataPath() {
       // If the panel provides its own data, then it needs to prefix all
       // components with its data-path, but if it shares data with the schema
       // component, then it should share the data-path name space too.
@@ -152,7 +153,7 @@ export default DitoComponent.component('dito-panel', {
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data)
-        ? data.call(this)
+        ? data.call(this, new DitoContext(this))
         : data
     }
   },

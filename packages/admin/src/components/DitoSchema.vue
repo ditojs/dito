@@ -151,6 +151,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DitoContext from '@/DitoContext'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
 import { getNamedSchemas, getPanelSchemas, setDefaults } from '@/utils/schema'
@@ -198,7 +199,7 @@ export default DitoComponent.component('dito-schema', {
       // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
-          ? data.call(this)
+          ? data.call(this, new DitoContext(this))
           : data
       ),
       componentsContainers: {},
