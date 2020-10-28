@@ -20,6 +20,9 @@ export class AdminController extends Controller {
       ...this.app.config.admin,
       ...this.config
     }
+    // If no mode is specified, use `production` since that's just the hosting
+    // of the pre-built admin files. `development` serves the admin directly
+    // sources with HRM, and thus should be explicitely activated.
     this.mode = this.config.mode || (
       this.app.config.env === 'development' ? 'development' : 'production'
     )
@@ -194,7 +197,8 @@ export class AdminController extends Controller {
   getWebpackConfig() {
     // Use VueService to create full webpack config for us:
     const plugins = [{ id: '@vue/cli-plugin-babel', apply: vuePluginBabel }]
-    if (this.config.build.eslint) {
+    // Activate eslint in vue. Note: This only works in development mode:
+    if (this.config.eslint) {
       plugins.push({ id: '@vue/cli-plugin-eslint', apply: vuePluginEslint })
     }
     const service = new VueService(this.getPath('build'), {

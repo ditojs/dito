@@ -16,6 +16,12 @@ function getCommand(commands, parts) {
     : commands
 }
 
+function setSilent(silent) {
+  const oldValue = process.env.DITO_SILENT
+  process.env.DITO_SILENT = silent
+  return oldValue
+}
+
 async function execute() {
   try {
     // Dynamically load app or config from the path provided package.json script
@@ -24,7 +30,13 @@ async function execute() {
     if (!isFunction(execute)) {
       throw new Error(`Unknown command: ${command}`)
     }
-    let arg = (await import(path.resolve(importPath))).default
+    const silent = setSilent(true)
+    let arg
+    try {
+      arg = (await import(path.resolve(importPath))).default
+    } finally {
+      setSilent(silent)
+    }
     if (isFunction(arg)) {
       arg = await arg()
     } else if (isPlainObject(arg) && arg.knex) {

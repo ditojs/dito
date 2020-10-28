@@ -47,9 +47,17 @@ export class Application extends Koa {
   ) {
     super()
     this._setupEmitter(events)
-    // Pluck keys out of `config.app` to keep them secret
-    const { keys, ...app } = config.app || {}
-    this.config = { ...config, app }
+    const {
+      // Pluck keys out of `config.app` to keep them secret
+      app: { keys, ...app } = {},
+      log = {},
+      ...rest
+    } = config
+    this.config = {
+      app,
+      log: log.silent || process.env.DITO_SILENT ? {} : log,
+      ...rest
+    }
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
@@ -432,10 +440,7 @@ export class Application extends Koa {
   }
 
   setupGlobalMiddleware() {
-    const {
-      log = {},
-      app = {}
-    } = this.config
+    const { app, log } = this.config
 
     const logger = {
       console: koaLogger,
