@@ -777,7 +777,7 @@ export class Application extends Koa {
               }')`
             )
           }
-        } else if (!storage.areFilesEqual(file, asset.file)) {
+        } else {
           // Asset is from a foreign source, but was already imported and can be
           // reused. See above for an explanation of this merge.
           Object.assign(file, asset.file)

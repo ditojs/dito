@@ -108,17 +108,6 @@ export class Storage {
     return file.mimetype.startsWith('image/')
   }
 
-  areFilesEqual(file1, file2) {
-    return !!(
-      file1 &&
-      file2 &&
-      file1.key === file2.key &&
-      file1.name === file2.name &&
-      file1.type === file2.type &&
-      file1.size === file2.size
-    )
-  }
-
   _getUrl(...parts) {
     return this.url
       ? new URL(path.posix.join(...parts), this.url).toString()
