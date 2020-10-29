@@ -116,7 +116,7 @@ class ModelReference {
   }
 
   getThroughProperty(name, property) {
-    return `${name[0].toLowerCase()}${name.substring(1)}${capitalize(property)}`
+    return `${name[0].toLowerCase()}${name.slice(1)}${capitalize(property)}`
   }
 }
 

@@ -93,7 +93,7 @@ export default class Router {
       // '/', and make sure path starts with '/'
       const { length } = path
       if (path.charCodeAt(length - 1) === CHAR_SLASH) {
-        path = path.substring(0, length - 1)
+        path = path.slice(0, length - 1)
       }
       if (path.charCodeAt(0) !== CHAR_SLASH) {
         path = '/' + path

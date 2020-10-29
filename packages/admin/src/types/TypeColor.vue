@@ -100,7 +100,7 @@ export default TypeComponent.register('color', {
           if (color.isValid()) {
             this.convertedHexValue = color
               .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
-              .substring(1)
+              .slice(1)
               .toUpperCase()
           }
         }

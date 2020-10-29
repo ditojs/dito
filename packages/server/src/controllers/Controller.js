@@ -92,7 +92,7 @@ export class Controller {
       `${
         chalk.magenta(verb.toUpperCase())} ${
         chalk.green(this.url)}${
-        chalk.cyan(url.substring(this.url.length))} ${
+        chalk.cyan(url.slice(this.url.length))} ${
         chalk.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1

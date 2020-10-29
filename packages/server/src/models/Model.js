@@ -692,9 +692,9 @@ export class Model extends objection.Model {
         // Note: `applyScope()` will handle the '^' sign.
         return builder.applyScope(modifier)
       case '-': // Ignore scope:
-        return builder.ignoreScope(modifier.substring(1))
+        return builder.ignoreScope(modifier.slice(1))
       case '#': // Select column:
-        return builder.select(modifier.substring(1))
+        return builder.select(modifier.slice(1))
       }
     }
     super.modifierNotFound(builder, modifier)

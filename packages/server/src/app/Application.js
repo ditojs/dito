@@ -549,7 +549,7 @@ export class Application extends Koa {
 
     function trim(str, length = 1024) {
       return str.length > length
-        ? `${str.substring(0, length - 3)}...`
+        ? `${str.slice(0, length - 3)}...`
         : str
     }
 

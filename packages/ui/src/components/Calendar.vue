@@ -362,7 +362,7 @@ export default {
 
     getFirstYearOfDecade(year) {
       const yearStr = year.toString()
-      return +`${yearStr.substring(0, yearStr.length - 1)}0`
+      return +`${yearStr.slice(0, yearStr.length - 1)}0`
     },
 
     navigate({ hor, ver, enter }) {

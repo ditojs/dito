@@ -484,7 +484,7 @@ export default {
       // doing things. Decide which one to remove.
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {
-          addEvent(key, hyphenate(key.substring(2)), value)
+          addEvent(key, hyphenate(key.slice(2)), value)
         }
       }
     },

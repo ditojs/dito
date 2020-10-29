@@ -69,7 +69,7 @@ export default TypeComponent.register([
 
     editPath() {
       // Accessed from DitoTreeItem through `container.editPath`:
-      return this.$route.path.substring(this.path?.length)
+      return this.$route.path.slice(this.path?.length)
     },
 
     treeData() {
@@ -82,7 +82,7 @@ export default TypeComponent.register([
       // Remove `name` from `dataPath`, as it is addeed
       // to `treeData` and `treeSchema`
       return this.isListSource
-        ? this.dataPath.substring(0, this.dataPath.length - this.name.length)
+        ? this.dataPath.slice(0, this.dataPath.length - this.name.length)
         : this.dataPath
     },
 

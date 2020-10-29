@@ -1,5 +1,5 @@
 export function getCommonPrefix(str1, str2) {
-  return str1.substring(0, getCommonOffset(str1, str2))
+  return str1.slice(0, getCommonOffset(str1, str2))
 }
 
 export function getCommonOffset(str1, str2) {

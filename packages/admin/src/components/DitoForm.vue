@@ -269,7 +269,7 @@ export default DitoComponent.component('dito-form', {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(this.path
         // DitoViews have nested routes, so don't remove their path.
-        .substring((route.isView ? 0 : route.path.length) + 1))
+        .slice((route.isView ? 0 : route.path.length) + 1))
     },
 
     // @override ResourceMixin.setupData()

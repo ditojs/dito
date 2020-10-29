@@ -10,6 +10,6 @@ export function parseDataPath(path) {
       .replace(/\.([^.]*)/g, '/$1')
       // Expand array property access notation ([])
       .replace(/\[['"]?([^'"\]]*)['"]?\]/g, '/$1')
-    return /^\//.test(str) ? str.substr(1).split('/') : str.split('/')
+    return /^\//.test(str) ? str.slice(1).split('/') : str.split('/')
   }
 }

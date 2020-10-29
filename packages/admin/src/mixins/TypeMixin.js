@@ -103,7 +103,7 @@ export default {
       return getItem(
         schemaComponent.processedItem,
         // Get the dataPath relative to the schemaComponent's data:
-        this.dataPath.substring(schemaComponent.dataPath.length),
+        this.dataPath.slice(schemaComponent.dataPath.length),
         this.dataPathIsValue
       )
     },

@@ -64,24 +64,24 @@ export default class Node {
     for (let pos = 0, length = path.length; pos < length; pos++) {
       const ch = path.charCodeAt(pos)
       if (ch === CHAR_PARAM) {
-        this.insert(path.substring(0, pos), TYPE_STATIC)
+        this.insert(path.slice(0, pos), TYPE_STATIC)
         pos++ // Skip colon.
         const start = pos
         // Move pos to the next occurrence of the slash or the end:
-        pos += path.substring(pos).match(/^([^/]*)/)[1].length
+        pos += path.slice(pos).match(/^([^/]*)/)[1].length
 
-        paramNames.push(path.substring(start, pos))
+        paramNames.push(path.slice(start, pos))
         // Chop out param name from path, but keep colon.
-        path = path.substring(0, start) + path.substring(pos)
+        path = path.slice(0, start) + path.slice(pos)
         length = path.length // Update length after changing path.
 
         if (start === length) {
           return this.insert(path, TYPE_PARAM, paramNames, handler)
         }
         pos = start
-        this.insert(path.substring(0, pos), TYPE_PARAM, paramNames)
+        this.insert(path.slice(0, pos), TYPE_PARAM, paramNames)
       } else if (ch === CHAR_MATCH_ANY) {
-        this.insert(path.substring(0, pos), TYPE_STATIC)
+        this.insert(path.slice(0, pos), TYPE_STATIC)
         paramNames.push('*')
         return this.insert(path, TYPE_MATCH_ANY, paramNames, handler)
       }
@@ -98,23 +98,23 @@ export default class Node {
       if (pos < prefix.length) {
         // Split node
         const node = new Node(
-          prefix.substring(pos),
+          prefix.slice(pos),
           current.type,
           current.children,
           current.handler,
           current.paramNames
         )
         // Reset parent node and add new node as child to it:
-        current.initialize(prefix.substring(0, pos))
+        current.initialize(prefix.slice(0, pos))
         current.addChild(node)
         if (pos < path.length) {
           // Create child node
-          const node = new Node(path.substring(pos), type)
+          const node = new Node(path.slice(pos), type)
           current.addChild(node)
           current = node // Switch to child to set handler and paramNames
         }
       } else if (pos < path.length) {
-        path = path.substring(pos)
+        path = path.slice(pos)
         const child = current.findChildWithLabel(path.charCodeAt(0))
         if (child !== undefined) {
           // Go deeper
@@ -161,7 +161,7 @@ export default class Node {
     const prefixLength = prefix.length
     const fullMatch = pos === prefixLength
     if (fullMatch) {
-      path = path.substring(prefixLength)
+      path = path.slice(prefixLength)
     } else if (this.type !== TYPE_PARAM) {
       // If the path doesn't fully match the prefix, we only need to look
       // further on param nodes, which can have overlapping static children.
@@ -193,8 +193,8 @@ export default class Node {
       while (pos < max && path.charCodeAt(pos) !== CHAR_SLASH) {
         pos++
       }
-      paramValues.push(path.substring(0, pos))
-      const result = paramChild.find(path.substring(pos), paramValues)
+      paramValues.push(path.slice(0, pos))
+      const result = paramChild.find(path.slice(pos), paramValues)
       if (result) {
         return result
       }
