@@ -228,11 +228,11 @@ export default {
       data,
       params
     }, callback) {
-      const loadingSettings = {
+      const loadingOptions = {
         updateRoot: true, // Display spinner in header when loading in resources
         updateView: this.isInView // Notify view of loading for view components
       }
-      this.setLoading(true, loadingSettings)
+      this.setLoading(true, loadingOptions)
       const request = { method, resource, data, params }
       try {
         const response = await this.sendRequest(request)
@@ -259,7 +259,7 @@ export default {
           }
         }
       }
-      this.setLoading(false, loadingSettings)
+      this.setLoading(false, loadingOptions)
     },
 
     getPayloadData(button, method) {

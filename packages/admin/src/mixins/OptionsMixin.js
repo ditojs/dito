@@ -1,16 +1,15 @@
 import DitoContext from '@/DitoContext'
-import LoadingMixin from './LoadingMixin'
+import DataMixin from './DataMixin'
 import {
-  isObject, isArray, isFunction, isPromise, labelize, debounceAsync
+  isObject, isArray, isFunction, labelize, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  mixins: [LoadingMixin],
+  mixins: [DataMixin],
 
   data() {
     return {
-      loadedOptions: null,
       hasOptions: false
     }
   },
@@ -56,29 +55,14 @@ export default {
     },
 
     options() {
-      let data = this.loadedOptions
-      if (!data) {
-        const { options = {} } = this.schema
-        data = isObject(options) ? options.data : options
-        if (isFunction(data)) {
-          data = data.call(this, new DitoContext(this))
-        }
-        if (isArray(data)) {
-          this.hasOptions = true
-        } else if (isPromise(data)) {
-          // If the data is asynchronous, we can't return it straight away.
-          // But we can "cheat" using computed properties and `loadedOptions`,
-          // which is going to receive the loaded data asynchronously,
-          // triggering a recompute of `options` which depends on its value.
-          this.loadOptions(() => data).then(options => {
-            this.loadedOptions = options || []
-            this.hasOptions = !!options
-          })
-          // Clear data until promise is resolved and `loadedOptions` is set.
-          data = null
-        }
+      const { options } = this.schema
+      const value = isObject(options) ? options.data : options
+      const data = this.handleDataOption(value, 'options') ?? []
+      if (!isArray(data)) {
+        throw new Error(`Invalid options data, should be array: ${data}`)
       }
-      return this.processOptions(data || [])
+      this.hasOptions = data.length > 0
+      return this.processOptions(data)
     },
 
     activeOptions() {
@@ -146,18 +130,6 @@ export default {
     getOptionKey(key) {
       const [option] = this.activeOptions
       return isObject(option) && key in option ? key : null
-    },
-
-    async loadOptions(load, settings) {
-      this.setLoading(true, settings)
-      let options = null
-      try {
-        options = await load()
-      } catch (error) {
-        this.addError(error.message || error)
-      }
-      this.setLoading(false, settings)
-      return options
     },
 
     processOptions(options) {

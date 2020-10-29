@@ -349,7 +349,7 @@ export default TypeComponent.register('multiselect', {
           // Set `searchedOptions` to an empty array, before it will be
           // populated asynchronously with the actual results.
           this.searchedOptions = []
-          this.searchedOptions = await this.loadOptions(
+          this.searchedOptions = await this.resolveData(
             () => this.searchFilter(new DitoContext(this, { query }))
           )
         } else {
