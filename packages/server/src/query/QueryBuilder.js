@@ -232,10 +232,11 @@ export class QueryBuilder extends objection.QueryBuilder {
       // with the nesting and eager-application of graph-scopes, see below.
       if (!this._appliedScopes[scope]) {
         // Only apply graph-scopes that are actually defined on the model:
-        if (!graph || this.modelClass().hasScope(scope)) {
-          this.modify(scope)
-          this._appliedScopes[scope] = true
+        const func = this.modelClass().getScope(scope)
+        if (func) {
+          func.call(this, this)
         }
+        this._appliedScopes[scope] = true
       }
       if (graph) {
         // Also bake the scope into any graph expression that may have been
@@ -815,8 +816,12 @@ function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
     // Only add the scope if it's not already defined by the graph expression
     // and if it's actually available in the model's list of modifiers.
     for (const scope of scopes) {
-      if (!expr.$modify?.includes(scope) &&
-          (modelClass.modifiers[scope] || modifiers?.[scope])) {
+      if (
+        !expr.$modify?.includes(scope) && (
+          modelClass.hasScope(scope) ||
+          modifiers[scope]
+        )
+      ) {
         expr.$modify.push(scope)
       }
     }

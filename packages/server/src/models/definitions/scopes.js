@@ -18,9 +18,7 @@ export default function scopes(values) {
           } else if (isObject(value)) {
             func = query => query.find(value)
           } else {
-            throw new ModelError(this,
-              `Invalid scope '${scope}': Invalid scope type: ${value}.`
-            )
+            throw new ModelError(this, `Invalid scope '${scope}': ${value}.`)
           }
           return func
         }
@@ -33,9 +31,6 @@ export default function scopes(values) {
       }
       return query
     }
-    // Also register the eagerly applied versions of each scope as modifiers:
-    const name = `^${scope}`
-    scopes[name] = query => query.applyScope(name)
   }
   return scopes
 }

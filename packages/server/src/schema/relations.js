@@ -200,18 +200,14 @@ export function convertRelation(schema, models) {
       modify = query => query.find(modify)
     }
     if (scope) {
-      // Convert or merge scope with modify:
+      // Create a new modify function that merges scope and modify them:
       const origModify = modify
-      modify = !origModify
-        // If only scope is set, we can use Objection's support for modify: '..'
-        ? scope
-        // Otherwise, create a new modify function that merges them:
-        : query => {
-          query.applyScope(scope)
-          if (origModify) {
-            query.modify(origModify)
-          }
+      modify = query => {
+        query.applyScope(scope)
+        if (origModify) {
+          query.modify(origModify)
         }
+      }
     }
     return {
       relation: relationClass,

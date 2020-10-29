@@ -4,6 +4,7 @@ import relations from './relations'
 import schema from './schema'
 import scopes from './scopes'
 import filters from './filters'
+import modifiers from './modifiers'
 import assets from './assets'
 import hooks from './hooks'
 
@@ -15,6 +16,7 @@ export default {
   schema,
   scopes,
   filters,
+  modifiers,
   assets,
   hooks
 }

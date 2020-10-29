@@ -8,7 +8,7 @@ import {
   RelationError, WrappedError
 } from '@/errors'
 import {
-  isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
+  isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
   parseDataPath, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
@@ -82,11 +82,14 @@ export class Model extends objection.Model {
 
   // @overridable
   static initialize() {
-    const { hooks, assets } = this.definition
+    const { hooks, assets, modifiers } = this.definition
     this._setupEmitter(hooks)
     if (assets) {
       this._setupAssetsEvents(assets)
     }
+    // Override the static `modifiers` as accessed by Objection with merged ones
+    // from `this.definition.modifiers`.
+    this.modifiers = modifiers
   }
 
   // @overridable
@@ -326,23 +329,12 @@ export class Model extends objection.Model {
     return validator(obj)
   }
 
-  static hasScope(name) {
-    return name in this.modifiers
+  static getScope(name) {
+    return this.definition.scopes[name]
   }
 
-  static get modifiers() {
-    // Convert Dito's scopes to Objection's modifiers and cache result.
-    return this._getCached('modifiers', () => {
-      const modifiers = {}
-      for (const [name, scope] of Object.entries(this.definition.scopes)) {
-        if (isFunction(scope)) {
-          modifiers[name] = scope
-        } else {
-          throw new ModelError(this, `Invalid scope '${name}': (${scope}).`)
-        }
-      }
-      return modifiers
-    })
+  static hasScope(name) {
+    return !!this.getScope(name)
   }
 
   static get relationMappings() {
@@ -688,26 +680,24 @@ export class Model extends objection.Model {
 
   // @override
   static modifierNotFound(builder, modifier) {
-    switch (modifier[0]) {
-    case '^':
-      // Apply the unknown scope eagerly, as it may still be known in
-      // eager-loaded relations. Note: `applyScope()` will handle the '^' sign.
-      builder.applyScope(modifier)
-      break
-    case ':':
-      // Apply the scope marked by `:` normally.
-      builder.applyScope(modifier.substring(1))
-      break
-    case '-':
-      builder.ignoreScope(modifier.substring(1))
-      break
-    case '#':
-      // Select the column marked by `#`.
-      builder.select(modifier.substring(1))
-      break
-    default:
-      super.modifierNotFound(builder, modifier)
+    if (isString(modifier)) {
+      if (builder.modelClass().hasScope(modifier)) {
+        return builder.applyScope(modifier)
+      }
+      // Now check possible scope prefixes and handle them:
+      switch (modifier[0]) {
+      case '^': // Eager-applied scope:
+        // Always apply eager-scopes, even if the model itself doesn't know it.
+        // The scope may still be known in eager-loaded relations.
+        // Note: `applyScope()` will handle the '^' sign.
+        return builder.applyScope(modifier)
+      case '-': // Ignore scope:
+        return builder.ignoreScope(modifier.substring(1))
+      case '#': // Select column:
+        return builder.select(modifier.substring(1))
+      }
     }
+    super.modifierNotFound(builder, modifier)
   }
 
   // @override
