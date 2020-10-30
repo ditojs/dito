@@ -66,7 +66,7 @@
       v-bind="getDragOptions(childrenDraggable)"
       :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
       @start="onStartDrag"
-      @end="onEndDrag"
+      @end="onEndDrag($event, childrenSchema)"
     )
       dito-tree-item(
         v-for="(item, index) in childrenItems"
@@ -151,7 +151,6 @@
 <script>
 import VueDraggable from 'vuedraggable'
 import DitoComponent from '@/DitoComponent'
-import ItemMixin from '@/mixins/ItemMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { appendDataPath } from '@/utils/data'
 import { getSchemaAccessor } from '@/utils/accessor'
@@ -160,7 +159,7 @@ import { getNamedSchemas, hasForms } from '@/utils/schema'
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
   components: { VueDraggable },
-  mixins: [ItemMixin, OrderedMixin],
+  mixins: [OrderedMixin],
   inject: ['container'],
 
   props: {

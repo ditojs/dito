@@ -39,7 +39,7 @@
       vue-draggable(
         tag="tbody"
         v-bind="getDragOptions(draggable)"
-        :list="updateOrder(listData, schema, draggable)"
+        :list="updateOrder(listData, schema, draggable, paginationRange)"
         @start="onStartDrag"
         @end="onEndDrag"
       )

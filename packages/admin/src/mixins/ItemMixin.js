@@ -19,12 +19,14 @@ export default {
     },
 
     getItemDataPath(sourceSchema, index) {
-      return appendDataPath(
-        this.dataPath,
-        index != null
-          ? `${sourceSchema.name}/${index}`
-          : sourceSchema.name
-      )
+      let { dataPath } = this
+      if (sourceSchema !== this.schema) {
+        dataPath = appendDataPath(dataPath, sourceSchema.name)
+      }
+      if (index != null) {
+        dataPath = appendDataPath(dataPath, index)
+      }
+      return dataPath
     },
 
     findItemIdIndex(sourceSchema, data, itemId) {
@@ -47,16 +49,15 @@ export default {
       if (!item || !extended && itemLabel === false) {
         return null
       }
+
       let dataPath
-      const getDataPath = () => (
-        dataPath ||
-        (dataPath = this.getItemDataPath(sourceSchema, index))
-      )
+      const getDataPath = () =>
+        (dataPath ||= this.getItemDataPath(sourceSchema, index))
+
       let formLabel
-      const getFormLabel = () => (
-        formLabel ||
-        (formLabel = this.getLabel(getItemFormSchema(sourceSchema, item)))
-      )
+      const getFormLabel = () =>
+        (formLabel ||= this.getLabel(getItemFormSchema(sourceSchema, item)))
+
       let text
       let prefix
       let suffix

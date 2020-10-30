@@ -1,7 +1,7 @@
 import { parseDataPath, getValueAtDataPath, isInteger } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
-  return dataPath != null && dataPath !== ''
+  return dataPath
     ? `${dataPath}/${token}`
     : token
 }

@@ -391,6 +391,55 @@ export default DitoComponent.component('dito-schema', {
       this._setOrDelete(this.panels, panel.dataPath, panel, add)
     },
 
+    _reorderDataPaths(dataPath, fromIndex, toIndex) {
+      // Go through all the already registered components and dataProcessors,
+      // and if they are affected by the given reordering, deregister them under
+      // the old data-path and re-register them under the new one.
+      dataPath = parseDataPath(dataPath)
+
+      const reorderRegistry = (registry, fromIndex, toIndex) => {
+        const fromDataPath = normalizeDataPath([...dataPath, fromIndex, ''])
+        const toDataPath = normalizeDataPath([...dataPath, toIndex, ''])
+        for (const path of Object.keys(registry)) {
+          if (path.startsWith(fromDataPath)) {
+            const value = registry[path]
+            const newPath = toDataPath + path.slice(fromDataPath.length)
+            this.$delete(registry, path)
+            this.$set(registry, newPath, value)
+          }
+        }
+      }
+
+      const reorder = (fromIndex, toIndex) => {
+        reorderRegistry(this.components, fromIndex, toIndex)
+        reorderRegistry(this.dataProcessors, fromIndex, toIndex)
+      }
+
+      // In order to not override, move to a temporary index first that is
+      // certain to not clash with the matching above.
+      const tempIndex = '_' + fromIndex
+      reorder(fromIndex, tempIndex)
+      const minIndex = Math.min(fromIndex, toIndex)
+      const maxIndex = Math.max(fromIndex, toIndex)
+      if (fromIndex > toIndex) {
+        for (let i = maxIndex - 1; i >= minIndex; i--) {
+          reorder(i, i + 1)
+        }
+      } else {
+        for (let i = minIndex + 1; i <= maxIndex; i++) {
+          reorder(i, i - 1)
+        }
+      }
+      // No finally move it from the temporary index to the destination.
+      reorder(tempIndex, toIndex)
+
+      this.parentSchemaComponent?._reorderDataPaths(
+        dataPath,
+        fromIndex,
+        toIndex
+      )
+    },
+
     getComponent(dataPath) {
       return this._getWithDataPath(this.components, dataPath)
     },

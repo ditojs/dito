@@ -6,16 +6,18 @@
   },
   // Disable VSCode's and Vetur's own validator in favor of ESLint:
   "javascript.validate.enable": false,
+  "typescript.validate.enable": false,
   "npm.validate.enable": false,
-  "vetur.validation.script": false,
-  // Enable ESLint validation:
-  "eslint.enable": true,
-  // Enable ESLint and autoFix in Vue files:
-  // https://github.com/vuejs/eslint-plugin-vue/issues/327
-  "eslint.validate": [
+  "vetur.experimental.templateInterpolationService": true,
+  "vetur.format.styleInitialIndent": false,
+  "vetur.validation.template": false,
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "cSpell.enabled": true,
+  "cSpell.enableFiletypes": [
     "javascript",
-    "javascriptreact",
     "vue"
-  ],
-  "cSpell.enabled": true
+  ]
 }
