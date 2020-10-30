@@ -14,5 +14,7 @@
 import TypeComponent from '@/TypeComponent'
 
 // @vue/component
-export default TypeComponent.register('computed')
+export default TypeComponent.register('computed', {
+  defaultValue: undefined
+})
 </script>

@@ -44,28 +44,21 @@ export default {
     value: {
       get() {
         const { schema, data, name } = this
-        const { compute, format } = schema
-
-        const setValue = value => {
-          if (value !== undefined) {
-            this.$set(data, name, value)
-          }
+        const { compute, format } = this.schema
+        // First, set defaults for missing values:
+        if (!(name in data) && !ignoreMissingValue(schema)) {
+          this.$set(data, name, getDefaultValue(schema))
         }
-
         if (compute) {
-          setValue(compute.call(
+          // Use `$set()` directly instead of `this.value = …` to update value,
+          // without calling parse():
+          this.$set(data, name, compute.call(
             this,
             // Override value to prevent endless recursion through calling the
             // getter for `this.value` in `DitoContext`:
             new DitoContext(this, { value: data[name] })
           ))
-        } else if (!(name in data) && !ignoreMissingValue(schema)) {
-          // If there is no `compute()` and the value is missing, set the
-          // default value.
-          setValue(getDefaultValue(schema))
         }
-        // For Vue's change tracking to always work, we need to access the
-        // property once it's set (e.g. computed)
         const value = data[name]
         return format
           ? format.call(this, new DitoContext(this, { value }))
