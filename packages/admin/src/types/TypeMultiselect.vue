@@ -24,7 +24,7 @@
       :internal-search="!searchFilter"
       :preserve-search="!!searchFilter"
       :clear-on-select="!searchFilter"
-      :close-on-select="true"
+      :close-on-select="!stayOpen"
       :loading="isLoading"
       @open="populate = true"
       @tag="onAddTag"
@@ -284,6 +284,11 @@ export default TypeComponent.register('multiselect', {
     }),
 
     taggable: getSchemaAccessor('taggable', {
+      type: Boolean,
+      default: false
+    }),
+
+    stayOpen: getSchemaAccessor('stayOpen', {
       type: Boolean,
       default: false
     }),
