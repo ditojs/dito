@@ -16,8 +16,7 @@
         "@": "./src"
       }
     }],
-    "dynamic-import-node",
-    "transform-promise-to-bluebird"
+    "dynamic-import-node"
   ],
   "env": {
     "test": {

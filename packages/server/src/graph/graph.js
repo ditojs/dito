@@ -209,9 +209,8 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     // Load all found models by ids asynchronously, within provided transaction.
     // NOTE: Using the same transaction means that all involved tables need to
     // be in the same database.
-    await Promise.map(
-      groups,
-      async ({ modelClass, expr, modify, ids, modelsById }) => {
+    await Promise.all(
+      groups.map(async ({ modelClass, expr, modify, ids, modelsById }) => {
         const query = modelClass.query(trx).findByIds(ids)
         if (expr) {
           // TODO: Make algorithm configurable through options.
@@ -223,7 +222,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
         for (const model of models) {
           modelsById[model.$id()] = model
         }
-      }
+      })
     )
 
     // Finally populate the targets with the loaded models.

@@ -934,9 +934,10 @@ export class Model extends objection.Model {
                 importedFiles.map(file => `'${file.name}'`)
               }`
             )
-            await Promise.map(
-              importedFiles,
-              file => file.storage.removeFile(file)
+            await Promise.all(
+              importedFiles.map(
+                file => file.storage.removeFile(file)
+              )
             )
           }
           if (modifiedFiles.length > 0) {

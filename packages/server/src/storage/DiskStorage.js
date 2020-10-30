@@ -79,14 +79,17 @@ export class DiskStorage extends Storage {
 
   // @override
   async _listKeys() {
+    const readDir = (...parts) =>
+      fs.readdir(this._getPath(...parts), { withFileTypes: true })
+
     const files = []
-    await Promise.map(
-      fs.readdir(this._getPath(), { withFileTypes: true }),
-      async level1 => {
+    const list1 = await readDir()
+    await Promise.all(
+      list1.map(async level1 => {
         if (level1.isDirectory() && level1.name.length === 1) {
-          await Promise.map(
-            fs.readdir(this._getPath(level1.name), { withFileTypes: true }),
-            async level2 => {
+          const list2 = await readDir(level1.name)
+          await Promise.all(
+            list2.map(async level2 => {
               if (level2.isDirectory() && level2.name.length === 1) {
                 const nestedFolder = this._getPath(level1.name, level2.name)
                 for (const file of await fs.readdir(nestedFolder)) {
@@ -95,10 +98,10 @@ export class DiskStorage extends Storage {
                   }
                 }
               }
-            }
+            })
           )
         }
-      }
+      })
     )
     return files
   }

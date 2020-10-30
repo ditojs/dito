@@ -42,7 +42,6 @@
     "axios": "^0.20.0",
     "babel-loader": "^8.1.0",
     "bcryptjs": "^2.4.3",
-    "bluebird": "^3.7.2",
     "chalk": "^4.1.0",
     "core-js": "^3.6.5",
     "data-uri-to-buffer": "^3.0.1",
@@ -83,7 +82,6 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "babel-plugin-transform-promise-to-bluebird": "^2.0.0",
     "knex": "^0.21.6",
     "objection": "^2.2.3",
     "pg": "^8.4.1",
