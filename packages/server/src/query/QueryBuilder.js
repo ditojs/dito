@@ -204,29 +204,32 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  _copyScopes(query, isChildQuery) {
+  _copyScopes(query, isChildQuery = false) {
     const isSameModelClass = this.modelClass() === query.modelClass()
+    // Only copy `_allowScopes` and `_ignoreScopes` if it's for the same model.
     if (isSameModelClass) {
       this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
       this._ignoreScopes = { ...query._ignoreScopes }
     }
-    if (isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)) {
-      // The target is a child graph query for the same model-class as
-      // this query, so copy all scopes, both graph and non-graph.
-      this._scopes = { ...query._scopes }
-    } else {
-      // This is a child query of a related or eager query, copy only the graph
-      // scopes.
-      this._scopes = Object.entries(query._scopes).reduce(
-        (scopes, [scope, graph]) => {
-          if (graph) {
-            scopes[scope] = true
-          }
-          return scopes
-        },
-        {}
-      )
-    }
+    // If he target is a child query of a graph query, copy all scopes, graph
+    // and non-graph. If it is a child query of a related or eager query,
+    // copy only the graph scopes.
+    const copyAllScopes =
+      isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)
+    this._scopes = this._filterScopes(query._scopes, (scope, graph) =>
+      copyAllScopes || graph)
+  }
+
+  _filterScopes(scopes, callback) {
+    return Object.entries(scopes).reduce(
+      (scopes, [scope, graph]) => {
+        if (callback(scope, graph)) {
+          scopes[scope] = graph
+        }
+        return scopes
+      },
+      {}
+    )
   }
 
   _applyScope(scope, graph) {
