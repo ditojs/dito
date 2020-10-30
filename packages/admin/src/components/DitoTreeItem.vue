@@ -70,7 +70,7 @@
     )
       dito-tree-item(
         v-for="(item, index) in childrenItems"
-        :key="index"
+        :key="getItemUid(childrenSchema, item.data)"
         :schema="childrenSchema"
         :dataPath="getItemDataPath(childrenSchema, index)"
         :data="item.data"

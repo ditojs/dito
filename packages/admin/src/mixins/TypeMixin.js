@@ -125,23 +125,23 @@ export default {
       // components than can provide further behavior.
       const dataProcessor = this.getDataProcessor()
       const { exclude, process } = this.schema
-      return (value, name, dataPath, rootData) => {
-        let params = null
-        const getParams = () => (
-          params ||
-          (params = new DitoContext(null, { value, name, dataPath, rootData }))
-        )
-        if (
-          exclude === true ||
-          // Support functions next to booleans for `schema.exclude`:
-          isFunction(exclude) && exclude(getParams())
-        ) {
-          return undefined
+      if (dataProcessor || exclude || process) {
+        return (value, name, dataPath, rootData) => {
+          let context
+          const getContext = () => (context ||=
+            new DitoContext(null, { value, name, dataPath, rootData }))
+          if (
+            exclude === true ||
+            // Support functions next to booleans for `schema.exclude`:
+            isFunction(exclude) && exclude(getContext())
+          ) {
+            return undefined
+          }
+          if (dataProcessor) {
+            value = dataProcessor(value)
+          }
+          return process ? process(getContext()) : value
         }
-        if (dataProcessor) {
-          value = dataProcessor(value)
-        }
-        return process ? process(getParams()) : value
       }
     },
 

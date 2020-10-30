@@ -378,5 +378,9 @@ export function getItemId(sourceSchema, item) {
 }
 
 export function getItemUid(sourceSchema, item) {
-  return getItemId(sourceSchema, item) || getUid(item)
+  // Try to use the item id as the uid, falling back on auto-generated ids, but
+  // either way, pass through `getUid()` so that the ids are associated with the
+  // item through a weak map, as the ids can be filtered out in `processData()`
+  // while the components that use the uids as key are still visible.
+  return getUid(item, getItemId(sourceSchema, item))
 }

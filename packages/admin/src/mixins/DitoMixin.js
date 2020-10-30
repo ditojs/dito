@@ -170,13 +170,13 @@ export default {
           : schema[keyOrDataPath]
         : undefined
 
-      let params = null
-      const getParams = () => params || (params = new DitoContext(this))
+      let context
+      const getContext = () => (context ||= new DitoContext(this))
 
       if (value === undefined && def !== undefined) {
         if (isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
-          def = def.call(this, getParams())
+          def = def.call(this, getContext())
         }
         return def
       }
@@ -187,7 +187,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (isFunction(value)) {
-        value = value.call(this, getParams())
+        value = value.call(this, getContext())
       }
       // For boolean values that are defined as strings or arrays,
       // interpret the values as user roles and match against user:
