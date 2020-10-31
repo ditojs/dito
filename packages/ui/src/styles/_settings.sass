@@ -27,9 +27,9 @@ $color-white:     hsl(0, 0%, 100%)
 
 $color-text: $color-black
 $color-text-inverted: $color-white
-$color-shadow: $color-black
 $color-placeholder: $color-grey
 $color-disabled: $color-grey
+$color-shadow: rgba($color-black, 0.25)
 
 // Borders
 $border-radius: 4px
@@ -38,8 +38,7 @@ $border-width: 1px
 $border-style: $border-width solid $border-color
 
 // Shadows
-$shadow-window: 0 2px 6px 0 rgba($color-shadow, 0.25)
-// $shadow-window: 0 6px 12px rgba($color-shadow, 0.175)
+$shadow-window: 0 2px 6px 0 $color-shadow
 $shadow-focus: 0 0 0 $border-width $color-active
 
 // Input

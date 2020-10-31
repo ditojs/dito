@@ -230,7 +230,9 @@ export default {
         handle: '.dito-button-drag',
         dragClass: 'dito-drag-active',
         chosenClass: 'dito-drag-chosen',
-        ghostClass: 'dito-drag-ghost'
+        ghostClass: 'dito-drag-ghost',
+        fallbackClass: 'dito-drag-fallback',
+        forceFallback: true
       }
     },
 
