@@ -505,13 +505,14 @@ export default {
         if (['load', 'change'].includes(event)) {
           await this.$nextTick()
         }
-        context = DitoContext.get(this, context)
+
+        const getContext = () => (context = DitoContext.get(this, context))
         const res = hasListeners
-          ? await this.emit(event, context)
+          ? await this.emit(event, getContext())
           : undefined
         // Don't bubble to parent if handled event returned `false`
         if (parentHasListeners && res !== false) {
-          parent.emit(event, context)
+          parent.emit(event, getContext())
         }
         return res
       }

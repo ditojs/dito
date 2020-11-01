@@ -82,14 +82,11 @@ export class Model extends objection.Model {
 
   // @overridable
   static initialize() {
-    const { hooks, assets, modifiers } = this.definition
+    const { hooks, assets } = this.definition
     this._setupEmitter(hooks)
     if (assets) {
       this._setupAssetsEvents(assets)
     }
-    // Override the static `modifiers` as accessed by Objection with merged ones
-    // from `this.definition.modifiers`.
-    this.modifiers = modifiers
   }
 
   // @overridable
@@ -337,13 +334,14 @@ export class Model extends objection.Model {
     return !!this.getScope(name)
   }
 
+  static getModifiers() {
+    return this.definition.modifiers
+  }
+
   static get relationMappings() {
-    return this._getCached('relationMappings', () => {
-      const { relations } = this.definition
-      return relations
-        ? convertRelations(this, relations, this.app.models)
-        : null
-    })
+    return this._getCached('relationMappings', () => (
+      convertRelations(this, this.definition.relations, this.app.models)
+    ), {})
   }
 
   static get jsonSchema() {
@@ -357,7 +355,7 @@ export class Model extends objection.Model {
         $schema: 'http://json-schema.org/draft-07/schema#',
         ...schema
       }
-    })
+    }, {})
   }
 
   static get virtualAttributes() {
