@@ -9,9 +9,7 @@ import {
 } from '@ditojs/utils'
 import { createLookup, getScope, deprecate } from '@/utils'
 
-// This code is based on objection-find, and simplified.
-// Instead of a separate class, we extend objection.QueryBuilder to better
-// integrate with Objection.js
+const SYMBOL_ALL = Symbol('all')
 
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
@@ -39,7 +37,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   async execute() {
-    if (!this._ignoreScopes['*']) {
+    if (!this._ignoreScopes[SYMBOL_ALL]) {
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
       const isNormalFind = (
@@ -133,15 +131,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   ignoreScope(...scopes) {
-    if (!this._ignoreScopes['*']) {
-      const ignoreScopes = scopes.length > 0
-        ? createLookup(scopes)
-        : { '*': true } // Empty arguments = '*' -> ignore everything
-      this._ignoreScopes = ignoreScopes['*']
-        ? ignoreScopes
-        : {
+    if (!this._ignoreScopes[SYMBOL_ALL]) {
+      this._ignoreScopes = scopes.length > 0
+        ? {
           ...this._ignoreScopes,
-          ...ignoreScopes
+          ...createLookup(scopes)
+        }
+        // Empty arguments = ignore all scopes
+        : {
+          [SYMBOL_ALL]: true
         }
     }
     return this
@@ -233,7 +231,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _applyScope(scope, graph) {
-    if (!this._ignoreScopes['*'] && !this._ignoreScopes[scope]) {
+    if (!this._ignoreScopes[SYMBOL_ALL] && !this._ignoreScopes[scope]) {
       // Prevent multiple application of scopes. This can easily occur
       // with the nesting and eager-application of graph-scopes, see below.
       if (!this._appliedScopes[scope]) {
