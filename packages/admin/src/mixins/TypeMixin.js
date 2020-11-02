@@ -45,20 +45,25 @@ export default {
       get() {
         const { schema, data, name } = this
         const { compute, format } = this.schema
-        // First, set defaults for missing values:
-        if (!(name in data) && !ignoreMissingValue(schema)) {
-          this.$set(data, name, getDefaultValue(schema))
-        }
         if (compute) {
-          // Use `$set()` directly instead of `this.value = …` to update value,
-          // without calling parse():
-          this.$set(data, name, compute.call(
+          const value = compute.call(
             this,
             // Override value to prevent endless recursion through calling the
             // getter for `this.value` in `DitoContext`:
             new DitoContext(this, { value: data[name] })
-          ))
+          )
+          if (value !== undefined) {
+            // Use `$set()` directly instead of `this.value = …` to update the
+            // value without calling parse():
+            this.$set(data, name, value)
+          }
         }
+        // If the value is still missing after compute, set the default for it:
+        if (!(name in data) && !ignoreMissingValue(schema)) {
+          this.$set(data, name, getDefaultValue(schema))
+        }
+        // Now access the value. This is important for reactivity and needs to
+        // happen after all prior manipulation through `$set()`, see above:
         const value = data[name]
         return format
           ? format.call(this, new DitoContext(this, { value }))
