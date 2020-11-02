@@ -12,7 +12,7 @@ import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import * as Knex from 'knex'
 import { KnexSnakeCaseMappersFactory } from 'objection'
-import helmet from 'helmet';
+import helmet from 'helmet'
 import * as Koa from 'koa'
 import koaCompress from 'koa-compress'
 import koaCors from '@koa/cors'
@@ -22,6 +22,11 @@ import koaSession from 'koa-session'
 import koaPinoLogger from 'koa-pino-logger'
 import koaBodyParser from 'koa-bodyparser'
 import * as objection from 'objection'
+
+export type Page<$Model extends Model> = {
+  total: number;
+  results: $Model[];
+}
 
 export type ApplicationConfig = {
   /**
@@ -95,7 +100,7 @@ export type ApplicationConfig = {
      * Whether to include X-Response-Time header in responses
      * @defaultValue `true`
      */
-    responseTime?: boolean | Parameters<(typeof koaResponseTime)>[0]
+    responseTime?: boolean | Parameters<typeof koaResponseTime>[0]
     /**
      * Whether to use koa-helmet middleware which provides important security
      * headers to make your app more secure by default.
@@ -104,7 +109,9 @@ export type ApplicationConfig = {
      * @see https://github.com/helmetjs/helmet
      */
     helmet?: boolean | Parameters<typeof helmet>[0]
-    logger?: Parameters<typeof koaLogger>[0] | Parameters<typeof koaPinoLogger>[0]
+    logger?:
+      | Parameters<typeof koaLogger>[0]
+      | Parameters<typeof koaPinoLogger>[0]
     /**
      * Configure body parser.
      * @see https://github.com/koajs/bodyparser#options
@@ -1063,8 +1070,14 @@ export type ControllerAction<$Controller extends Controller> =
   | ControllerActionOptions<$Controller>
   | ControllerActionHandler<$Controller>
 
+export type ControllerActionName =
+  | 'find'
+  | 'delete'
+  | 'insert'
+  | 'update'
+  | 'patch'
 export type AllowedControllerActionName = StringSuggestions<
-  'find' | 'delete' | 'insert' | 'update' | 'patch'
+  ControllerActionName
 >
 export class Controller {
   /**
@@ -1159,7 +1172,7 @@ export type ModelControllerActionHandler<
 > = (
   this: $ModelController,
   ctx: KoaContext,
-  member: InstanceType<Exclude<$ModelController['modelClass'], undefined>>,
+  member: modelFromModelController<$ModelController>,
   ...args: any[]
 ) => any
 
@@ -1310,33 +1323,30 @@ export type ModelControllerActions<
       }
 }
 
+type ModelControllerMemberAction<
+  $ModelController extends ModelController<Model>
+> =
+  | (
+      | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
+          parameters?:
+            | MemberActionParameter<
+                modelFromModelController<$ModelController>
+              >[]
+            | [
+                MemberActionParameter<
+                  modelFromModelController<$ModelController>
+                >[],
+                any
+              ]
+        })
+      | ModelControllerActionHandler<$ModelController>
+    )
+  | AllowedControllerActionName[]
+
 export type ModelControllerMemberActions<
   $ModelController extends ModelController<Model>
 > = {
-  [key: string]:
-    | (
-        | (Omit<
-            ModelControllerActionOptions<$ModelController>,
-            'parameters'
-          > & {
-            parameters?:
-              | MemberActionParameter<
-                  InstanceType<
-                    Exclude<$ModelController['modelClass'], undefined>
-                  >
-                >[]
-              | [
-                  MemberActionParameter<
-                    InstanceType<
-                      Exclude<$ModelController['modelClass'], undefined>
-                    >
-                  >[],
-                  any
-                ]
-          })
-        | ModelControllerActionHandler<$ModelController>
-      )
-    | AllowedControllerActionName[]
+  [key: string]: ModelControllerMemberAction<$ModelController>
 }
 
 export type ControllerActions<$Controller extends Controller> = {
@@ -1408,6 +1418,58 @@ export class AdminController extends Controller {
 
 // TODO: UserMixin
 
+type ModelControllerHookType = 'collection' | 'member'
+type ModelControllerHookKeys<
+  $Keys extends string,
+  $ModelControllerHookType extends string
+> = `${'before' | 'after' | '*'}:${$ModelControllerHookType | '*'}:${
+  | Exclude<$Keys, 'allow'>
+  | ControllerActionName
+  | '*'}`
+type ModelControllerHook<
+  $ModelController extends ModelController<Model> = ModelController<Model>
+> = (
+  ctx: KoaContext,
+  result: objection.Page<modelFromModelController<$ModelController>>
+) => any
+
+type HookHandler = () => void
+
+type HookKeysFromController<$ModelController extends ModelController<Model>> =
+  | ModelControllerHookKeys<
+      Exclude<
+        keyof Exclude<$ModelController['collection'], undefined>,
+        symbol | number
+      >,
+      'collection'
+    >
+  | ModelControllerHookKeys<
+      Exclude<
+        keyof Exclude<$ModelController['member'], undefined>,
+        symbol | number
+      >,
+      'member'
+    >
+
+type HandlerFromHookKey<
+  $ModelController extends ModelController<Model>,
+  $Key extends HookKeysFromController<$ModelController>
+> = $Key extends `${'before' | 'after' | '*'}:${
+  | 'collection'
+  | 'member'
+  | '*'}:${string}`
+  ? (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
+  : never
+
+type ModelControllerHooks<
+  $ModelController extends ModelController<Model> = ModelController<Model>
+> = {
+  [$Key in HookKeysFromController<$ModelController>]?: HandlerFromHookKey<
+    $ModelController,
+    HookKeysFromController<$ModelController>
+  >
+}
+
 export class ModelController<$Model extends Model> extends Controller {
   /**
    * The model class that this controller represents. If none is provided,
@@ -1447,9 +1509,7 @@ export class ModelController<$Model extends Model> extends Controller {
   /**
    * When nothing is returned from a hook, the standard action result is used.
    */
-  hooks?: {
-    [k: string]: (ctx: objection.QueryContext, result: any) => any
-  }
+  hooks?: ModelControllerHooks<ModelController<$Model>>
   /**
    * Controls whether normal database methods should be used, or their …Graph…
    * counterparts.
@@ -1843,20 +1903,25 @@ export type PartialDitoModelGraph<M extends Partial<Model>> = {
 /*------------------------------ Start Errors -----------------------------*/
 export class ResponseError extends Error {
   constructor()
-  constructor(error: {
-    /**
-     * The http status code.
-     */
-    status: number
-    /**
-     * The error message.
-     */
-    message?: string
-    /**
-     * An optional code to be used to distinguish different error instances.
-     */
-    code?: string | number
-  }, defaults?: { message: string, status: number })
+  constructor(
+    error:
+      | {
+          /**
+           * The http status code.
+           */
+          status: number
+          /**
+           * The error message.
+           */
+          message?: string
+          /**
+           * An optional code to be used to distinguish different error instances.
+           */
+          code?: string | number
+        }
+      | string,
+    defaults?: { message: string; status: number }
+  )
   status: number
   code?: string | number
 }
@@ -1945,7 +2010,10 @@ export const parameters: (
  * optionally map the value to a key inside a returned object when it
  * contains a `name` property.
  */
-export const returns: (returns: Schema & { name?: string }, options: any) => Mixin
+export const returns: (
+  returns: Schema & { name?: string },
+  options: any
+) => Mixin
 
 /**
  * Apply the scope mixin to a controller action, in order to
@@ -2005,6 +2073,12 @@ export type StringSuggestions<T extends U, U = string> =
   | T
   | (U & { _ignore_me?: never })
 
-export type ReflectArrayType<Source, Target> = Source extends any[] ? Target[] : Target
+export type ReflectArrayType<Source, Target> = Source extends any[]
+  ? Target[]
+  : Target
 
 export type OrArrayOf<T> = T[] | T
+
+type modelFromModelController<
+  $ModelController extends ModelController<Model>
+> = InstanceType<Exclude<$ModelController['modelClass'], undefined>>
