@@ -1984,7 +1984,10 @@ export type Format = Ajv.FormatValidator | Ajv.FormatDefinition
 export type Id = string | number
 export type KoaContext<$State = any> = Koa.ParameterizedContext<
   $State,
-  { transaction: objection.Transaction }
+  {
+    transaction: objection.Transaction
+    session: koaSession.ContextSession & { passport?: { user?: string } }
+  }
 >
 
 // https://stackoverflow.com/a/56363362/825205
