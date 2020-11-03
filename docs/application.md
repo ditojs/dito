@@ -15,7 +15,8 @@ import config from '../config'
 import * as models from './models'
 import * as controllers from './controllers'
 
-const app = new Application(config, {
+const app = new Application({
+  config,
   models,
   controllers
 })

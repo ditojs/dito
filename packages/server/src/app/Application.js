@@ -41,10 +41,16 @@ import {
 } from 'objection'
 
 export class Application extends Koa {
-  constructor(
+  constructor({
     config = {},
-    { validator, router, events, middleware, models, services, controllers }
-  ) {
+    validator,
+    router,
+    events,
+    middleware,
+    models,
+    services,
+    controllers
+  } = {}) {
     super()
     this._setupEmitter(events)
     const {
