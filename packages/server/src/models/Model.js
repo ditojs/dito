@@ -792,13 +792,17 @@ export class Model extends objection.Model {
           configurable: true,
           value: {}
         })
-        const merged = definitions[name].call(this, values)
-        // Once calculated, override definition getter with final merged value.
-        setDefinition(name, {
-          configurable: false,
-          value: merged
-        })
-        return merged
+        try {
+          const merged = definitions[name].call(this, values)
+          // Once calculated, override getter with final merged value.
+          setDefinition(name, {
+            configurable: false,
+            value: merged
+          })
+          return merged
+        } catch (error) {
+          throw new ModelError(this, error.message)
+        }
       }
 
       // If no definition object was defined yet, create one with accessors for

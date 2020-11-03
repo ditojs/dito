@@ -263,9 +263,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       throw new QueryBuilderError(`Query filter '${name}' is not defined.`)
     }
     // NOTE: Filters are automatically combine with and operations!
-    return this.andWhere(function() {
-      filter(this, ...args)
-    })
+    return this.andWhere(query => filter(query, ...args))
   }
 
   allowFilter(...filters) {

@@ -1,28 +1,19 @@
 import { isObject, isFunction } from '@ditojs/utils'
 import { mergeAsReversedArrays } from '@/utils'
-import { ModelError } from '@/errors'
 
 export default function scopes(values) {
+  const scopes = {}
   // Use mergeAsReversedArrays() to keep lists of filters to be inherited per
   // scope, so they can be called in sequence.
-  const scopeArrays = mergeAsReversedArrays(values)
-  const scopes = {}
-  for (const [scope, array] of Object.entries(scopeArrays)) {
+  for (const [scope, array] of Object.entries(mergeAsReversedArrays(values))) {
     // Convert array of inherited scope definitions to scope functions.
-    const functions = array
-      .map(
-        value => {
-          let func
-          if (isFunction(value)) {
-            func = value
-          } else if (isObject(value)) {
-            func = query => query.find(value)
-          } else {
-            throw new ModelError(this, `Invalid scope '${scope}': ${value}.`)
-          }
-          return func
-        }
-      )
+    const functions = array.map(value => {
+      const func = getScope(value)
+      if (!func) {
+        throw new Error(`Invalid scope '${scope}': ${value}.`)
+      }
+      return func
+    })
     // Now define the scope as a function that calls all inherited scope
     // functions.
     scopes[scope] = query => {
@@ -33,4 +24,12 @@ export default function scopes(values) {
     }
   }
   return scopes
+}
+
+function getScope(value) {
+  return isFunction(value)
+    ? value
+    : isObject(value)
+      ? query => query.find(value)
+      : null
 }
