@@ -2,12 +2,12 @@
   "sourceType": "module",
   "sourceMaps": "both",
   "presets": [
-    "@ditojs/babel-preset",
     ["@babel/preset-env", {
       "useBuiltIns": "usage",
       "corejs": 3,
       "modules": false
-    }]
+    }],
+    "@ditojs/babel-preset"
   ],
   "comments": false
 }

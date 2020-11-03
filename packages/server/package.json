@@ -82,6 +82,9 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "@ditojs/babel-preset": "^0.182.0",
     "knex": "^0.21.12",
     "objection": "^2.2.3",
     "pg": "^8.4.2",

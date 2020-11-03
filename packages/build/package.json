@@ -29,5 +29,10 @@
   "dependencies": {
     "mime": "^2.4.6",
     "mini-svg-data-uri": "^1.2.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "@ditojs/babel-preset": "^0.182.0"
   }
 }

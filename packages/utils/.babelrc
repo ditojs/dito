@@ -2,11 +2,11 @@
   "sourceType": "module",
   "sourceMaps": "both",
   "presets": [
-    "@ditojs/babel-preset",
     ["@babel/preset-env", {
       "useBuiltIns": "usage",
       "corejs": 3
-    }]
+    }],
+    "@ditojs/babel-preset"
   ],
   "plugins": [
     ["module-resolver", {
