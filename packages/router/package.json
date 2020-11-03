@@ -24,14 +24,14 @@
     "node 14"
   ],
   "dependencies": {
+    "@ditojs/utils": "^0.184.0",
     "@babel/runtime": "^7.12.1",
     "core-js": "^3.6.5"
   },
   "devDependencies": {
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "^7.12.1",
-    "@ditojs/babel-preset": "^0.184.0",
-    "@ditojs/utils": "^0.184.0"
+    "@ditojs/babel-preset": "^0.184.0"
   },
   "keywords": [
     "route",
