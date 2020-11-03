@@ -1,5 +1,5 @@
-import { mergeAsReversedArrays } from '@/utils'
+import { mergeReversed } from '@/utils'
 
 export default function modifiers(values) {
-  return mergeAsReversedArrays(values)
+  return mergeReversed(values)
 }
