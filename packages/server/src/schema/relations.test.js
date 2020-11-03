@@ -44,7 +44,7 @@ describe('convertRelation()', () => {
       relation: 'belongs-to',
       from: 'ModelOne.modelTwoId',
       to: 'ModelTwo.id',
-      scope: 'myScope'
+      modify: 'myScope'
     }, models)).toEqual({
       relation: BelongsToOneRelation,
       modelClass: ModelTwo,

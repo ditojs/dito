@@ -105,7 +105,8 @@ function displayUsage(app, config, details) {
       modelHandleNames.length > 0
         ? ` - Dito models: ${
           modelHandleNames.map(m => chalk.cyan(m)).join(', ')
-        }` : ''
+        }`
+        : ''
     }
   `)
   if (details) {

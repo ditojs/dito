@@ -164,7 +164,7 @@ export class Controller {
     return assets
   }
 
-  setupAssetRoute(dataPath, config = {}, authorize) {
+  setupAssetRoute(dataPath, config, authorize) {
     const {
       storage: storageName,
       // TODO: What exactly should control the use of `transacted`?

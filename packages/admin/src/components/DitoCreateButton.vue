@@ -58,7 +58,7 @@ export default DitoComponent.component('dito-create-button', {
   },
 
   methods: {
-    createItem(form = this.schema.form, type) {
+    createItem(form = this.schema.form, type = null) {
       if (this.inlined) {
         this.sourceComponent.createItem(form, type)
       } else {

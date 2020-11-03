@@ -46,6 +46,7 @@ module.exports = {
       ignoreTemplateLiterals: true,
       ignoreRegExpLiterals: true
     }],
+    'multiline-ternary': 'off',
     'new-cap': ['error', {
       newIsCap: true,
       capIsNew: true,
