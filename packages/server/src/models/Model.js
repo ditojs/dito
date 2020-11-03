@@ -769,7 +769,7 @@ export class Model extends objection.Model {
         // to super-class. To go from super-class to sub-class when merging,
         // `mergeReversed()` is used to prevent wrong overrides.
         // `mergeAsReversedArrays()` can be used to keep arrays of inherited
-        // values per key, see `definitions.scopes`.
+        // values per key, see `definitions.hooks`.
         const values = []
         while (modelClass !== objection.Model) {
           // Only consider model classes that actually define `name` property.
