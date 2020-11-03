@@ -14,7 +14,7 @@ QueryFilters.register({
       type: 'string'
     }
   )
-  text(builder, property, operator, text) {
+  text(query, property, operator, text) {
     if (text === undefined) {
       text = operator
       operator = 'contains'
@@ -28,10 +28,10 @@ QueryFilters.register({
     if (text) {
       const operand = templates[operator]?.(text)
       if (operand) {
-        if (builder.isPostgreSQL()) {
-          builder.where(property, 'ILIKE', operand)
+        if (query.isPostgreSQL()) {
+          query.where(property, 'ILIKE', operand)
         } else {
-          builder.whereRaw(
+          query.whereRaw(
             `LOWER(??) LIKE ?`,
             [property, operand.toLowerCase()]
           )
@@ -52,13 +52,13 @@ QueryFilters.register({
       nullable: true
     }
   )
-  'date-range'(builder, property, from, to) {
+  'date-range'(query, property, from, to) {
     if (from && to) {
-      builder.whereBetween(property, [new Date(from), new Date(to)])
+      query.whereBetween(property, [new Date(from), new Date(to)])
     } else if (from) {
-      builder.where(property, '>=', new Date(from))
+      query.where(property, '>=', new Date(from))
     } else if (to) {
-      builder.where(property, '<=', new Date(to))
+      query.where(property, '<=', new Date(to))
     } else {
       // TODO: Can we get validation to catch the case where both are empty?
     }

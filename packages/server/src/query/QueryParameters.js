@@ -5,18 +5,18 @@ import Registry from './Registry'
 export const QueryParameters = new Registry()
 
 QueryParameters.register({
-  scope(builder, key, value) {
+  scope(query, key, value) {
     // Use `applyScope()` instead of `withScope()`, so the scope applied here
     // can clear earlier `withScope()` statements before `execute()` is run.
-    builder.applyScope(...asArray(value))
+    query.applyScope(...asArray(value))
   },
 
-  filter(builder, key, value) {
+  filter(query, key, value) {
     try {
       for (const filter of asArray(value)) {
         const [, name, json] = filter.match(/^(\w+):(.*)$/)
         const args = asArray(JSON.parse(`[${json}]`))
-        builder.applyFilter(name, ...args)
+        query.applyFilter(name, ...args)
       }
     } catch (error) {
       throw error instanceof ResponseError
@@ -27,7 +27,7 @@ QueryParameters.register({
     }
   },
 
-  range(builder, key, value) {
+  range(query, key, value) {
     if (value) {
       const [from, to] = isString(value) ? value.split(/\s*,s*/) : value
       const start = +from
@@ -35,19 +35,19 @@ QueryParameters.register({
       if (isNaN(start) || isNaN(end) || end < start) {
         throw new QueryBuilderError(`Invalid range: [${start}, ${end}].`)
       }
-      builder.range(start, end)
+      query.range(start, end)
     }
   },
 
-  limit(builder, key, value) {
-    builder.limit(value)
+  limit(query, key, value) {
+    query.limit(value)
   },
 
-  offset(builder, key, value) {
-    builder.offset(value)
+  offset(query, key, value) {
+    query.offset(value)
   },
 
-  order(builder, key, value) {
+  order(query, key, value) {
     if (value) {
       for (const entry of asArray(value)) {
         const [propertyName, direction] = entry.trim().split(/\s+/)
@@ -56,12 +56,12 @@ QueryParameters.register({
             `Invalid order direction: '${direction}'.`
           )
         }
-        const tableRef = builder.tableRefFor(builder.modelClass())
+        const tableRef = query.tableRefFor(query.modelClass())
         const columnName = `${tableRef}.${propertyName}`
         if (direction) {
-          builder.orderBy(columnName, direction)
+          query.orderBy(columnName, direction)
         } else {
-          builder.orderBy(columnName)
+          query.orderBy(columnName)
         }
       }
     }

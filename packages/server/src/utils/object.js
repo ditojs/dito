@@ -21,7 +21,7 @@ export function createLookup(keys) {
 }
 
 export function mergeReversed(objects) {
-  return Object.assign({}, ...objects.slice().reverse())
+  return Object.assign({}, ...[...objects].reverse())
 }
 
 export function mergeReversedOrNull(objects) {

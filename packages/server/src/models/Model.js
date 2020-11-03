@@ -677,10 +677,10 @@ export class Model extends objection.Model {
   }
 
   // @override
-  static modifierNotFound(builder, modifier) {
+  static modifierNotFound(query, modifier) {
     if (isString(modifier)) {
-      if (builder.modelClass().hasScope(modifier)) {
-        return builder.applyScope(modifier)
+      if (query.modelClass().hasScope(modifier)) {
+        return query.applyScope(modifier)
       }
       // Now check possible scope prefixes and handle them:
       switch (modifier[0]) {
@@ -688,14 +688,14 @@ export class Model extends objection.Model {
         // Always apply eager-scopes, even if the model itself doesn't know it.
         // The scope may still be known in eager-loaded relations.
         // Note: `applyScope()` will handle the '^' sign.
-        return builder.applyScope(modifier)
+        return query.applyScope(modifier)
       case '-': // Ignore scope:
-        return builder.ignoreScope(modifier.slice(1))
+        return query.ignoreScope(modifier.slice(1))
       case '#': // Select column:
-        return builder.select(modifier.slice(1))
+        return query.select(modifier.slice(1))
       }
     }
-    super.modifierNotFound(builder, modifier)
+    super.modifierNotFound(query, modifier)
   }
 
   // @override
@@ -779,9 +779,11 @@ export class Model extends objection.Model {
             // be used to provide abstract base-classes and have them create
             // their relations for `this` inside `get relations()` accessors.
             const desc = Object.getOwnPropertyDescriptor(modelClass, name)
-            const value = desc?.get?.call(this) || desc?.value
-            if (value) {
-              values.push(value)
+            if (desc) {
+              const value = desc.get?.call(this) || desc.value
+              if (value) {
+                values.push(value)
+              }
             }
           }
           modelClass = Object.getPrototypeOf(modelClass)
@@ -1071,14 +1073,14 @@ const DeleteOperation = getOperationClass(query => query.delete())
 
 // @override
 QueryBuilder.prototype.toFindQuery = function() {
-  const builder = this.clone()
+  const query = this.clone()
   const selector = op => (
     op.is(InsertOperation) ||
     op.is(UpdateOperation) ||
     op.is(DeleteOperation)
   )
-  builder.forEachOperation(selector, op => op.onBuild(builder))
-  return builder.clear(selector)
+  query.forEachOperation(selector, op => op.onBuild(query))
+  return query.clear(selector)
 }
 
 // Temporary workaround to fix this issue until a new version is deployed:
