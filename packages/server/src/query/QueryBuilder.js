@@ -14,6 +14,7 @@ const SYMBOL_ALL = Symbol('all')
 export class QueryBuilder extends objection.QueryBuilder {
   constructor(modelClass) {
     super(modelClass)
+    this._ignoreGraph = false
     this._graphAlgorithm = 'fetch'
     this._allowFilters = null
     this._allowScopes = null
@@ -26,6 +27,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   clone() {
     const copy = super.clone()
+    copy._ignoreGraph = this._ignoreGraph
     copy._graphAlgorithm = this._graphAlgorithm
     copy._appliedScopes = { ...this._appliedScopes }
     copy._allowFilters = this._allowFilters ? { ...this._allowFilters } : null
@@ -35,14 +37,16 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   async execute() {
-    // Only apply scopes if scopes aren't ignore and this is a normal find
-    // query, meaning it does not define any write operations or special
-    // selects, e.g. `count`:
-    if (
-      !this._ignoreScopes[SYMBOL_ALL] &&
-      this.isFind() &&
-      !this.hasSpecialSelects()
-    ) {
+    if (!this._ignoreScopes[SYMBOL_ALL]) {
+      // Only apply default scopes if this is a normal find query, meaning it
+      // does not define any write operations or special selects, e.g. `count`:
+      const isNormalFind = (
+        this.isFind() &&
+        !this.hasSpecialSelects()
+      )
+      // If this isn't a normal find query, ignore all graph operations,
+      // to not mess with special selects such as `count`, etc:
+      this._ignoreGraph = !isNormalFind
       // All scopes in `_scopes` were already checked against `_allowScopes`.
       // They themeselves are allowed to apply / request other scopes that
       // aren't listed, so clear `_applyScope` and restore again after:
@@ -60,13 +64,18 @@ export class QueryBuilder extends objection.QueryBuilder {
       while (scopes.length > 0) {
         this._scopes = {}
         for (const [scope, graph] of scopes) {
-          this._applyScope(scope, graph)
-          collectedScopes[scope] ||= graph
+          // Don't apply `default` scopes on anything else than a normal find
+          // query:
+          if (scope !== 'default' || isNormalFind) {
+            this._applyScope(scope, graph)
+            collectedScopes[scope] ||= graph
+          }
         }
         scopes = Object.entries(this._scopes)
       }
       this._scopes = collectedScopes
       this._allowScopes = _allowScopes
+      this._ignoreGraph = false
     }
     // In case of cyclic graphs, run `_executeFirst()` now:
     await this._executeFirst?.()
@@ -274,7 +283,8 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // A algorithm-agnostic version of `withGraphFetched()` / `withGraphJoined()`,
-  // with the algorithm specifiable in the options.
+  // with the algorithm specifiable in the options. Additionally, it handles
+  // `_ignoreGraph` and `_graphAlgorithm`:
   withGraph(expr, options = {}) {
     // To make merging easier, keep the current algorithm if none is specified:
     const { algorithm = this._graphAlgorithm } = options
@@ -287,8 +297,11 @@ export class QueryBuilder extends objection.QueryBuilder {
         `Graph algorithm '${algorithm}' is unsupported.`
       )
     }
-    this._graphAlgorithm = algorithm
-    return super[method](expr, options)
+    if (!this._ignoreGraph) {
+      this._graphAlgorithm = algorithm
+      super[method](expr, options)
+    }
+    return this
   }
 
   // @override
@@ -687,8 +700,8 @@ export class QueryBuilder extends objection.QueryBuilder {
 
 KnexHelper.mixin(QueryBuilder.prototype)
 
-// Override all deprecated eager methods to keep track of `_graphAlgorithm`,
-// as required by `withGraph()`
+// Override all deprecated eager methods to respect the `_ignoreGraph` flag,
+// and also keep track of `_graphAlgorithm`, as required by `withGraph()`
 // TODO: Remove once we move to Objection 3.0
 for (const key of [
   'eager', 'joinEager', 'naiveEager',
@@ -696,8 +709,11 @@ for (const key of [
 ]) {
   const method = QueryBuilder.prototype[key]
   QueryBuilder.prototype[key] = function(...args) {
-    this._graphAlgorithm = /join/i.test(key) ? 'join' : 'fetch'
-    return method.call(this, ...args)
+    if (!this._ignoreGraph) {
+      this._graphAlgorithm = /join/i.test(key) ? 'join' : 'fetch'
+      method.call(this, ...args)
+    }
+    return this
   }
 }
 
