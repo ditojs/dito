@@ -185,10 +185,10 @@ export class AdminController extends Controller {
           conf.module.rule('js')
             .use('babel-loader')
             .options({ compact: false })
+          // Make `stats.warningsFilter` work, see:
+          // https://forum.vuejs.org/t/sppress-warnings-in-vue-cli-3/45905/4
+          conf.plugins.delete('friendly-errors')
         }
-        // Make `stats.warningsFilter` work, see:
-        // https://forum.vuejs.org/t/sppress-warnings-in-vue-cli-3/45905/4
-        conf.plugins.delete('friendly-errors')
       }
     }
   }
