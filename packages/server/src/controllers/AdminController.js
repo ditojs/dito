@@ -138,18 +138,20 @@ export class AdminController extends Controller {
             }
           }
         },
-        // Preserve source-maps in third party dependencies, but do not log
-        // warnings about dependencies that don't come with source-maps.
-        // https://webpack.js.org/loaders/source-map-loader/#ignoring-warnings
-        module: {
-          rules: [
-            {
-              test: /\.(js|css)$/,
-              enforce: 'pre',
-              use: ['source-map-loader']
-            }
-          ]
-        },
+        module: development
+          // Preserve source-maps in third party dependencies, but do not log
+          // warnings about dependencies that don't come with source-maps.
+          // https://webpack.js.org/loaders/source-map-loader/#ignoring-warnings
+          ? {
+            rules: [
+              {
+                test: /\.(js|css)$/,
+                enforce: 'pre',
+                use: ['source-map-loader']
+              }
+            ]
+          }
+          : {},
         stats: {
           warningsFilter: /Failed to parse source map/
         }
