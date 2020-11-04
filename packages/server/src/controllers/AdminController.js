@@ -5,10 +5,9 @@ import serve from 'koa-static'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
 import VueService from '@vue/cli-service'
-import vuePluginBabel from '@vue/cli-plugin-babel'
-import vuePluginEslint from '@vue/cli-plugin-eslint'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
+import { isString, isObject } from '@ditojs/utils'
 
 export class AdminController extends Controller {
   // @override
@@ -194,16 +193,31 @@ export class AdminController extends Controller {
     }
   }
 
+  getVuePlugins() {
+    return this.config.plugins?.map(definition => {
+      const plugin = isString(definition)
+        ? { id: definition }
+        : isObject(definition)
+          ? definition
+          : {}
+      const {
+        id,
+        apply = () => require(id)
+      } = plugin
+      if (!id) {
+        throw new ControllerError(
+          this,
+          `Invalid plugin definition: ${definition}`
+        )
+      }
+      return { id, apply }
+    }) || []
+  }
+
   getWebpackConfig() {
-    // Use VueService to create full webpack config for us:
-    const plugins = [{ id: '@vue/cli-plugin-babel', apply: vuePluginBabel }]
-    // Activate eslint in vue. Note: This only works in development mode:
-    if (this.config.eslint) {
-      plugins.push({ id: '@vue/cli-plugin-eslint', apply: vuePluginEslint })
-    }
     const service = new VueService(this.getPath('build'), {
       inlineOptions: this.getVueConfig(),
-      plugins
+      plugins: this.getVuePlugins()
     })
     service.init(this.mode)
     return service.resolveWebpackConfig()

@@ -34,8 +34,6 @@
     "@ditojs/utils": "^0.184.0",
     "@koa/cors": "^3.1.0",
     "@koa/multer": "^3.0.0",
-    "@vue/cli-plugin-babel": "^4.5.8",
-    "@vue/cli-plugin-eslint": "^4.5.8",
     "@vue/cli-service": "^4.5.8",
     "ajv": "^6.12.6",
     "aws-sdk": "^2.784.0",
