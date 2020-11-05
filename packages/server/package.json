@@ -65,7 +65,6 @@
     "mime-types": "^2.1.27",
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
-    "nodemon": "^2.0.6",
     "parse-duration": "^0.4.4",
     "passport-local": "^1.0.0",
     "pluralize": "^8.0.0",
