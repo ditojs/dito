@@ -184,9 +184,13 @@ export class AdminController extends Controller {
           // Disable the 'compact' option in babel-loader during development to
           // prevent complaints when working with the `yarn watch` versions of
           // dito-admin.umd.min.js and dito-ui.umd.min.js
-          conf.module.rule('js')
-            .use('babel-loader')
-            .options({ compact: false })
+          const jsRule = conf.module.rule('js')
+          const usesBabel = jsRule.toConfig().use.some(
+            ({ loader }) => /\bbabel-loader\b/.test(loader)
+          )
+          if (usesBabel) {
+            jsRule.use('babel-loader').options({ compact: false })
+          }
           // Make `stats.warningsFilter` work, see:
           // https://forum.vuejs.org/t/sppress-warnings-in-vue-cli-3/45905/4
           conf.plugins.delete('friendly-errors')
@@ -204,7 +208,7 @@ export class AdminController extends Controller {
           : {}
       const {
         id,
-        apply = () => require(id)
+        apply = require(id)
       } = plugin
       if (!id) {
         throw new ControllerError(
@@ -213,7 +217,7 @@ export class AdminController extends Controller {
         )
       }
       return { id, apply }
-    }) || []
+    })
   }
 
   getWebpackConfig() {
