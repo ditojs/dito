@@ -185,10 +185,10 @@ export class AdminController extends Controller {
           // prevent complaints when working with the `yarn watch` versions of
           // dito-admin.umd.min.js and dito-ui.umd.min.js
           const jsRule = conf.module.rule('js')
-          const usesBabel = jsRule.toConfig().use.some(
+          const hasBabel = jsRule.toConfig().use?.some(
             ({ loader }) => /\bbabel-loader\b/.test(loader)
           )
-          if (usesBabel) {
+          if (hasBabel) {
             jsRule.use('babel-loader').options({ compact: false })
           }
           // Make `stats.warningsFilter` work, see:

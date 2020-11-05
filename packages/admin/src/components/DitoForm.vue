@@ -308,7 +308,7 @@ export default DitoComponent.component('dito-form', {
     },
 
     // @override ResourceMixin.setData()
-    setData(data, clear = false) {
+    setData(data, clearing = false) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {
         // For components with transient data, modify this.sourceData.
@@ -317,7 +317,7 @@ export default DitoComponent.component('dito-form', {
         this.createdData = null
         this.loadedData = data
       }
-      if (!clear) {
+      if (!clearing) {
         this.mainSchemaComponent.onLoad()
       }
     },

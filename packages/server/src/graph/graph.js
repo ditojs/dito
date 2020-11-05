@@ -84,7 +84,8 @@ export function walkGraph(data, callback, path = []) {
 export function filterGraph(rootModelClass, modelGraph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
   const models = ensureModelArray(rootModelClass, modelGraph, {
-    skipValidation: true
+    skipValidation: true,
+    patch: true
   })
   for (const model of models) {
     if (model) {
@@ -167,7 +168,10 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
           const { modify, relation } = path[i]
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
-            item = ensureModel(modelClass, item, { skipValidation: true })
+            item = ensureModel(modelClass, item, {
+              skipValidation: true,
+              patch: true
+            })
             let add = false
             const isReference = modelClass.isReference(item)
             if (isReference) {
