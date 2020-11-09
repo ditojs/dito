@@ -229,10 +229,10 @@ export default {
 
     listeners() {
       return {
-        focus: () => this.onFocus(),
-        blur: () => this.onBlur(),
-        input: () => this.onInput(),
-        change: () => this.onChange()
+        focus: this.onFocus,
+        blur: this.onBlur,
+        input: this.onInput,
+        change: this.onChange
       }
     },
 
@@ -291,6 +291,7 @@ export default {
 
     clear() {
       this.value = null
+      this.onChange()
     },
 
     onFocus() {

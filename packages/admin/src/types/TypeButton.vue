@@ -37,9 +37,9 @@ export default TypeComponent.register([
 
     listeners() {
       return {
-        focus: () => this.onFocus(),
-        blur: () => this.onBlur(),
-        click: () => this.onClick()
+        focus: this.onFocus,
+        blur: this.onBlur,
+        click: this.onClick
       }
     },
 

@@ -296,9 +296,9 @@ export default TypeComponent.register('multiselect', {
     listeners() {
       // override TypeMixin's listeners to re-route input to onChange()
       return {
-        focus: () => this.onFocus(),
-        blur: () => this.onBlur(),
-        input: () => this.onChange()
+        focus: this.onFocus,
+        blur: this.onBlur,
+        input: this.onChange
       }
     },
 
