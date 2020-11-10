@@ -2,24 +2,22 @@ import { isObject, asArray } from '@ditojs/utils'
 
 export function collectExpressionPaths(expr) {
   const paths = []
-  for (const key in expr) {
-    if (expr.hasOwnProperty(key)) {
-      const child = expr[key]
-      if (isObject(child)) {
-        const relation = child.$relation || key
-        const alias = relation !== key ? key : undefined
-        const modify = child.$modify
-        const entry = { relation, alias, modify }
-        const subPaths = collectExpressionPaths(child)
-        if (subPaths.length > 0) {
-          // The child has itself children.
-          for (const subPath of subPaths) {
-            paths.push([entry, ...subPath])
-          }
-        } else {
-          // The child is a leaf.
-          paths.push([entry])
+  for (const key of Object.keys(expr)) {
+    const child = expr[key]
+    if (isObject(child)) {
+      const relation = child.$relation || key
+      const alias = relation !== key ? key : undefined
+      const modify = child.$modify
+      const entry = { relation, alias, modify }
+      const subPaths = collectExpressionPaths(child)
+      if (subPaths.length > 0) {
+        // The child has itself children.
+        for (const subPath of subPaths) {
+          paths.push([entry, ...subPath])
         }
+      } else {
+        // The child is a leaf.
+        paths.push([entry])
       }
     }
   }

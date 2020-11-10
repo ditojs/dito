@@ -84,8 +84,7 @@ export function walkGraph(data, callback, path = []) {
 export function filterGraph(rootModelClass, modelGraph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
   const models = ensureModelArray(rootModelClass, modelGraph, {
-    skipValidation: true,
-    patch: true
+    skipValidation: true
   })
   for (const model of models) {
     if (model) {
@@ -168,10 +167,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
           const { modify, relation } = path[i]
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
-            item = ensureModel(modelClass, item, {
-              skipValidation: true,
-              patch: true
-            })
+            item = ensureModel(modelClass, item, { skipValidation: true })
             let add = false
             const isReference = modelClass.isReference(item)
             if (isReference) {
@@ -214,14 +210,13 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     // NOTE: Using the same transaction means that all involved tables need to
     // be in the same database.
     await Promise.all(
-      groups.map(async ({ modelClass, expr, modify, ids, modelsById }) => {
-        const query = modelClass.query(trx).findByIds(ids)
+      groups.map(async ({ modelClass, modify, expr, ids, modelsById }) => {
+        const query = modelClass.query(trx).findByIds(ids).modify(modify)
         if (expr) {
           // TODO: Make algorithm configurable through options.
           query.withGraph(expr)
         }
-        query.modify(modify)
-        const models = await query.execute()
+        const models = await query
         // Fill the group.modelsById lookup:
         for (const model of models) {
           modelsById[model.$id()] = model
