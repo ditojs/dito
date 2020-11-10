@@ -101,23 +101,23 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
-  $update(attributes, trx) {
+  $update(properties, trx) {
     return this.$query(trx)
-      .update(attributes)
+      .update(properties)
       .runAfter((result, query) =>
         // Only perform `$set()` and return `this` if the query wasn't modified
         // in a way that would remove the `update()` command, e.g. toFindQuery()
-        query.has('update') ? this.$set(attributes) : result
+        query.has('update') ? this.$set(result) : result
       )
   }
 
-  $patch(attributes, trx) {
+  $patch(properties, trx) {
     return this.$query(trx)
-      .patch(attributes)
+      .patch(properties)
       .runAfter((result, query) =>
         // Only perform `$set()` and return `this` if the query wasn't modified
         // in a way that would remove the `patch()` command, e.g. toFindQuery()
-        query.has('patch') ? this.$set(attributes) : result
+        query.has('patch') ? this.$set(result) : result
       )
   }
 
