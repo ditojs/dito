@@ -534,7 +534,7 @@ export class Model extends objection.Model {
     for (const key of constructor.dateAttributes) {
       const date = json[key]
       if (date !== undefined) {
-        json[key] = date ? new Date(date) : date
+        json[key] = isString(date) ? new Date(date) : date
       }
     }
     // Convert plain asset files objects to AssetFile instances with references

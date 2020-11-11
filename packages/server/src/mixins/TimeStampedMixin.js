@@ -1,4 +1,5 @@
 import { mixin } from '@ditojs/utils'
+import { fn } from 'objection'
 
 export const TimeStampedMixin = mixin(Model => class extends Model {
   static properties = {
@@ -18,27 +19,17 @@ export const TimeStampedMixin = mixin(Model => class extends Model {
       .select('createdAt', 'updatedAt')
   }
 
-  // TODO: Consider converting hooks to dito format.
-  // This would also be future proof since objection is moving to static
-  // callbacks for hooks:
-  //
-  // static hooks = {
-  //   'before:insert'(model) {
-  //     model.createdAt = model.updatedAt = new Date()
-  //   },
-  //
-  //   'before:update'(model) {
-  //     model.updatedAt = new Date()
-  //   }
-  // }
+  static hooks = {
+    'before:insert'({ inputItems }) {
+      for (const item of inputItems) {
+        item.createdAt = item.updatedAt = fn.now()
+      }
+    },
 
-  $beforeInsert(ctx) {
-    this.createdAt = this.updatedAt = new Date()
-    return super.$beforeInsert(ctx)
-  }
-
-  $beforeUpdate(opt, ctx) {
-    this.updatedAt = new Date()
-    return super.$beforeUpdate(opt, ctx)
+    'before:update'({ inputItems }) {
+      for (const item of inputItems) {
+        item.updatedAt = fn.now()
+      }
+    }
   }
 })
