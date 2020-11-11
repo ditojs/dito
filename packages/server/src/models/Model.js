@@ -860,31 +860,37 @@ export class Model extends objection.Model {
   }
 
   static async _emitStaticHook(event, originalArgs) {
-    // Static hooks are emitted in sequence (but each event can be async), and
-    // results are passed through and returned in the end.
-    let { result } = originalArgs
-    // The result of any event handler will override `args.result` in the call
-    // of the next handler in sequence. Since `StaticHookArguments` in Objection
-    // is private, use a JS inheritance trick here to override `args.result`:
-    const args = Object.create(originalArgs, {
-      type: {
-        value: event
-      },
-      result: {
-        get() {
-          return result
+    const listeners = this.listeners(event)
+    if (listeners.length > 0) {
+      // Static hooks are emitted in sequence (but each event can be async), and
+      // results are passed through and returned in the end.
+      let { result } = originalArgs
+      // The result of any event handler will override `args.result` in the call
+      // of the next handler in sequence. As `StaticHookArguments` in Objection
+      // is private, use a JS inheritance trick here to override `args.result`:
+      const args = Object.create(originalArgs, {
+        type: {
+          value: event
+        },
+        result: {
+          get() {
+            return result
+          }
+        }
+      })
+      for (const listener of listeners) {
+        const res = await listener.call(this, args)
+        if (res !== undefined) {
+          result = res
         }
       }
-    })
-    for (const listener of this.listeners(event)) {
-      const res = await listener.call(this, args)
-      if (res !== undefined) {
-        result = res
+      // Unfortunately `result` is always an array, even when the actual result
+      // is a model object. Avoid returning it when it's not actually changed.
+      // See: https://github.com/Vincit/objection.js/issues/1842
+      if (result !== originalArgs.result) {
+        return result
       }
     }
-    // Unfortunately `result` is always an array, even when the actual result is
-    // a model object. Avoid returning it when it's not actually changed.
-    return result !== originalArgs.result ? result : undefined
   }
 
   // Assets handling
