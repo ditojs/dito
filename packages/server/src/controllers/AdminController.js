@@ -5,6 +5,7 @@ import serve from 'koa-static'
 import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
 import VueService from '@vue/cli-service'
+import HtmlWebpackTagsPlugin from 'html-webpack-tags-plugin'
 import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
 import { isString, isObject } from '@ditojs/utils'
@@ -38,17 +39,41 @@ export class AdminController extends Controller {
     return path.resolve(str)
   }
 
+  getDitoObject() {
+    // Expose api config and definitions to browser side:
+    // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
+    const {
+      api = {},
+      settings = {}
+    } = this.config
+    if (api.normalizePaths == null) {
+      api.normalizePaths = this.app.config.app.normalizePaths
+    }
+    return {
+      base: this.url,
+      api,
+      settings
+    }
+  }
+
+  middleware() {
+    // Shield admin views against unauthorized access.
+    const authorization = this.processAuthorize(this.authorize)
+    return async (ctx, next) => {
+      if (/\/views\b/.test(ctx.url)) {
+        await this.handleAuthorization(authorization, ctx)
+      } else if (/^\/dito\b/.test(ctx.url)) {
+        // Send back the global dito object as JavaScript code.
+        ctx.type = 'text/javascript'
+        ctx.body = `window.dito = ${JSON.stringify(this.getDitoObject())}`
+      }
+      await next()
+    }
+  }
+
   compose() {
     this.koa = new Koa()
-
-    const authorization = this.processAuthorize(this.authorize)
-    // Shield admin views against unauthorized access.
-    this.koa.use(async (ctx, next) => {
-      if (/\/views/.test(ctx.request.url)) {
-        await this.handleAuthorization(authorization, ctx)
-      }
-      return next()
-    })
+    this.koa.use(this.middleware())
     if (this.mode === 'development') {
       // Calling getPath() throws exception if admin.build.path is not defined:
       if (this.getPath('build')) {
@@ -99,8 +124,7 @@ export class AdminController extends Controller {
     const development = this.mode === 'development'
     const {
       build = {},
-      devtool = development ? 'source-map' : false,
-      settings
+      devtool = development ? 'source-map' : false
     } = this.config
     return {
       runtimeCompiler: true,
@@ -152,6 +176,16 @@ export class AdminController extends Controller {
             ]
           }
           : {},
+        plugins: [
+          // Use `HtmlWebpackTagsPlugin` plugin to inject a script tag that
+          // load the dito object from the controller, including `dito.settings`
+          new HtmlWebpackTagsPlugin({
+            scripts: ['dito.js'],
+            useHash: true,
+            addHash: (path, hash) => path.replace(/\.js$/, `.${hash}.js`),
+            append: false
+          })
+        ],
         stats: {
           warningsFilter: /Failed to parse source map/
         }
@@ -164,20 +198,6 @@ export class AdminController extends Controller {
           args[0].template = /^[./]/.test(template)
             ? path.resolve(template)
             : path.join(this.getPath('build'), template)
-          return args
-        })
-        // Expose api config and definitions to browser side:
-        // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
-        const { api = {} } = this.config
-        if (api.normalizePaths == null) {
-          api.normalizePaths = this.app.config.app.normalizePaths
-        }
-        conf.plugin('define').tap(args => {
-          args[0].dito = args[0]['window.dito'] = JSON.stringify({
-            base: this.url,
-            api,
-            settings
-          })
           return args
         })
         if (development) {
