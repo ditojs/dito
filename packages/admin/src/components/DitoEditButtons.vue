@@ -10,23 +10,23 @@
   )
     // Firefox doesn't like <button> here, so use <a> instead:
     a.dito-button(
-      v-if="draggable"
+      v-if="isDraggable"
       v-bind="getButtonAttributes(verbs.drag)"
     )
     router-link.dito-button(
-      v-if="editable && editPath"
+      v-if="isEditable"
       :to="{ path: editPath }" append
       v-bind="getButtonAttributes(verbs.edit)"
     )
     dito-create-button(
-      v-if="creatable && createPath"
+      v-if="isCreatable"
       :schema="schema"
       :path="createPath"
       :verb="verbs.create"
       :text="createButtonText"
     )
     button.dito-button(
-      v-if="deletable"
+      v-if="isDeletable"
       type="button"
       v-bind="getButtonAttributes(verbs.delete)"
       @click="$emit('delete')"
@@ -66,10 +66,26 @@ export default DitoComponent.component('dito-edit-buttons', {
       return this.getLabel(this.schema.form)
     },
 
+    isDraggable() {
+      return this.hasOption('draggable')
+    },
+
+    isEditable() {
+      return this.hasOption('editable') && !!this.editPath
+    },
+
+    isCreatable() {
+      return this.hasOption('creatable') && !!this.createPath
+    },
+
+    isDeletable() {
+      return this.hasOption('deletable')
+    },
+
     createButtonText() {
       return (
         // Allow schema to override create button through creatable object:
-        this.schema.creatable.label ||
+        this.schema.creatable?.label ||
         (
           // Auto-generate create button labels from from labels for list
           // sources with only one form:
@@ -78,6 +94,15 @@ export default DitoComponent.component('dito-edit-buttons', {
         ) ||
         null
       )
+    }
+  },
+
+  methods: {
+    hasOption(name) {
+      // The options of the outer component are passed to the buttons component
+      // through properties `this[name]`, but can be disabled on a per-form
+      // basis by setting `schema[name]` to `false`.
+      return !!(this[name] && this.schema[name] !== false)
     }
   }
 })

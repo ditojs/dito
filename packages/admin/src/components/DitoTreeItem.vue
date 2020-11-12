@@ -274,6 +274,9 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     // TODO: Support creatable!
+    // TODO: Add support for creatable, editable and deletable overrides on the
+    // associated forms, just like in `TypeList` and `TypeObject`, through
+    // `DitoEditButtons`. It would be best to use `DitoEditButtons` here too.
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,
       default: false,

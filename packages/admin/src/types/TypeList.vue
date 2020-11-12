@@ -67,7 +67,7 @@
               dito-schema-inlined(
                 v-if="inlined"
                 :label="getItemLabel(schema, item, { index, asObject: true })"
-                :schema="getItemFormSchema(schema, item)"
+                :schema="getItemFormSchema(schema, item, views)"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"

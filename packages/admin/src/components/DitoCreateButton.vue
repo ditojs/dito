@@ -12,6 +12,7 @@
       )
         li(v-for="(form, type) in schema.forms")
           a(
+            v-if="isCreatable(form)"
             :class="`dito-type-${type}`"
             @mousedown.stop="onPulldownMouseDown(type)"
             @mouseup="onPulldownMouseUp(type)"
@@ -58,15 +59,24 @@ export default DitoComponent.component('dito-create-button', {
   },
 
   methods: {
+    isCreatable(form) {
+      // Forms can be excluded from the list by providing `creatable: false`
+      return form.creatable !== false
+    },
+
     createItem(form = this.schema.form, type = null) {
-      if (this.inlined) {
-        this.sourceComponent.createItem(form, type)
+      if (this.isCreatable(form)) {
+        if (this.inlined) {
+          this.sourceComponent.createItem(form, type)
+        } else {
+          this.$router.push({
+            path: `${this.path}/create`,
+            query: { type },
+            append: true
+          })
+        }
       } else {
-        this.$router.push({
-          path: `${this.path}/create`,
-          query: { type },
-          append: true
-        })
+        throw new Error('Not allowed to create item for given form')
       }
     },
 
