@@ -56,16 +56,21 @@ export class AdminController extends Controller {
     }
   }
 
+  sendDitoObject(ctx) {
+    // Send back the global dito object as JavaScript code.
+    ctx.type = 'text/javascript'
+    ctx.body = `window.dito = ${JSON.stringify(this.getDitoObject())}`
+  }
+
   middleware() {
     // Shield admin views against unauthorized access.
     const authorization = this.processAuthorize(this.authorize)
     return async (ctx, next) => {
-      if (/\/views\b/.test(ctx.url)) {
+      if (/^\/dito\b/.test(ctx.url)) {
+        // Return without calling `next()`
+        return this.sendDitoObject(ctx)
+      } else if (/\/views\b/.test(ctx.url)) {
         await this.handleAuthorization(authorization, ctx)
-      } else if (/^\/dito\b/.test(ctx.url)) {
-        // Send back the global dito object as JavaScript code.
-        ctx.type = 'text/javascript'
-        ctx.body = `window.dito = ${JSON.stringify(this.getDitoObject())}`
       }
       await next()
     }
