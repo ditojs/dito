@@ -1,5 +1,6 @@
 import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
+import { getSchemaAccessor } from '@/utils/accessor'
 import {
   isObject, isArray, isFunction, labelize, debounceAsync
 } from '@ditojs/utils'
@@ -71,13 +72,57 @@ export default {
       return this.options
     },
 
-    relate() {
-      return this.schema.relate
-    },
+    relate: getSchemaAccessor('relate', {
+      type: Boolean,
+      default: false
+    }),
 
-    groupBy() {
-      return this.schema.options.groupBy
-    },
+    groupBy: getSchemaAccessor('groupBy', {
+      type: String,
+      default: null
+    }),
+
+    optionLabel: getSchemaAccessor('options.label', {
+      type: String,
+      default: null,
+      get(label) {
+        // If no `label` was provided but the options are objects, assume a
+        // default value of 'label':
+        return (
+          label ||
+          this.getOptionKey('label') ||
+          null
+        )
+      }
+    }),
+
+    optionValue: getSchemaAccessor('options.value', {
+      type: String,
+      default: null,
+      get(value) {
+        // If no `label` was provided but the options are objects, assume a
+        // default value of 'value':
+        return (
+          value ||
+          this.relate && 'id' ||
+          this.getOptionKey('value') ||
+          null
+        )
+      }
+    }),
+
+    searchFilter: getSchemaAccessor('search', {
+      type: Function,
+      default: null,
+      get(search) {
+        if (search) {
+          const { filter, debounce } = isFunction(search)
+            ? { filter: search }
+            : search
+          return debounce ? debounceAsync(filter, debounce) : filter
+        }
+      }
+    }),
 
     groupByLabel() {
       return this.groupBy && 'label' || null
@@ -85,33 +130,6 @@ export default {
 
     groupByOptions() {
       return this.groupBy && 'options' || null
-    },
-
-    optionLabel() {
-      // If no `label` was provided but the options are objects, assume a
-      // default value of 'label':
-      return this.schema.options.label ||
-        this.getOptionKey('label') ||
-        null
-    },
-
-    optionValue() {
-      // If no `label` was provided but the options are objects, assume a
-      // default value of 'value':
-      return this.schema.options.value ||
-        this.relate && 'id' ||
-        this.getOptionKey('value') ||
-        null
-    },
-
-    searchFilter() {
-      const { search } = this.schema
-      if (search) {
-        const { filter, debounce } = isFunction(search)
-          ? { filter: search }
-          : search
-        return debounce ? debounceAsync(filter, debounce) : filter
-      }
     }
   },
 
