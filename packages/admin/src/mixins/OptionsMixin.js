@@ -2,7 +2,7 @@ import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
 import {
-  isObject, isArray, isFunction, labelize, debounceAsync
+  isObject, isArray, isString, isFunction, labelize, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -83,7 +83,7 @@ export default {
     }),
 
     optionLabel: getSchemaAccessor('options.label', {
-      type: String,
+      type: [String, Function],
       default: null,
       get(label) {
         // If no `label` was provided but the options are objects, assume a
@@ -97,7 +97,7 @@ export default {
     }),
 
     optionValue: getSchemaAccessor('options.value', {
-      type: String,
+      type: [String, Function],
       default: null,
       get(value) {
         // If no `label` was provided but the options are objects, assume a
@@ -125,11 +125,11 @@ export default {
     }),
 
     groupByLabel() {
-      return this.groupBy && 'label' || null
+      return this.groupBy ? 'label' : null
     },
 
     groupByOptions() {
-      return this.groupBy && 'options' || null
+      return this.groupBy ? 'options' : null
     }
   },
 
@@ -214,18 +214,20 @@ export default {
 
     getValueForOption(option) {
       const { optionValue } = this
-      return isFunction(optionValue)
-        ? optionValue.call(this, new DitoContext(this, { option }))
-        : optionValue ? option?.[optionValue]
-        : option
+      return isString(optionValue)
+        ? option?.[optionValue]
+        : isFunction(optionValue)
+          ? optionValue.call(this, new DitoContext(this, { option }))
+          : option
     },
 
     getLabelForOption(option) {
       const { optionLabel } = this
-      return isFunction(optionLabel)
-        ? optionLabel.call(this, new DitoContext(this, { option }))
-        : optionLabel ? option?.[optionLabel]
-        : labelize(`${option}`)
+      return isString(optionLabel)
+        ? option?.[optionLabel]
+        : isFunction(optionLabel)
+          ? optionLabel.call(this, new DitoContext(this, { option }))
+          : labelize(`${option}`)
     }
   }
 }
