@@ -163,7 +163,8 @@ export default {
       { type, default: def, schema = this.schema } = {}
     ) {
       const types = type && asArray(type)
-      // For performance reasons, only support dataPaths in array format:
+      // For performance reasons, data-paths in `keyOrDataPath` can only be
+      // provided in in array format here:
       let value = schema
         ? isArray(keyOrDataPath)
           ? getValueAtDataPath(schema, keyOrDataPath, () => undefined)

@@ -1,7 +1,19 @@
 import DitoContext from '@/DitoContext'
-import { isFunction } from '@ditojs/utils'
+import {
+  isFunction, isString, parseDataPath, normalizeDataPath
+} from '@ditojs/utils'
 
-export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
+export function getSchemaAccessor(
+  keyOrDataPath,
+  { type, default: def, get, set } = {}
+) {
+  // `keyOrDataPath` can be a simple property key,
+  // or a data-path into sub-properties, both in array or string format.
+  if (isString(keyOrDataPath) && keyOrDataPath.includes('.')) {
+    keyOrDataPath = parseDataPath(keyOrDataPath)
+  }
+  // Use the normalized data path for the handling overrides
+  const name = normalizeDataPath(keyOrDataPath)
   return {
     get() {
       // Only determine schema value if we have no getter, or the getter
@@ -12,7 +24,7 @@ export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
         // `set()` stores changed values in the separate `overrides` object.
         ? this.overrides && name in this.overrides
           ? this.overrides[name]
-          : this.getSchemaValue(name, { type, default: def })
+          : this.getSchemaValue(keyOrDataPath, { type, default: def })
         : undefined
       return get ? get.call(this, value) : value
     },
@@ -21,7 +33,7 @@ export function getSchemaAccessor(name, { type, default: def, get, set } = {}) {
       if (set) {
         set.call(this, value)
       } else {
-        this.overrides = this.overrides || {}
+        this.overrides ||= {}
         this.$set(this.overrides, name, value)
       }
     }
