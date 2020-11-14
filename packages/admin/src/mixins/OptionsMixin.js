@@ -111,8 +111,9 @@ export default {
       }
     }),
 
+    // TODO: Consider moving search to `options.search`?
     searchFilter: getSchemaAccessor('search', {
-      type: Function,
+      type: [Object, Function],
       default: null,
       get(search) {
         if (search) {
