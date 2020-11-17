@@ -861,6 +861,11 @@ export interface ModelOptions extends objection.ModelOptions {
   mutable?: boolean
 }
 
+
+export type ModelHooks<$Model extends Model> = {
+  [$Key in `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`]?: (model: $Model) => void
+}
+
 export class Model extends objection.Model {
   /**
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md|Model Properties}
@@ -881,6 +886,8 @@ export class Model extends objection.Model {
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
    */
   static filters: ModelFilters<Model>
+
+  static hooks: ModelHooks<Model>
 
   static assets: ModelAssets
 
