@@ -379,7 +379,7 @@ export interface SchemaOptionsMixin<$State extends State> {
          * @defaultValue `'label'` when no label is supplied and the options are
          * objects
          */
-        label?: OrItemAccessor<$State, string>
+        label?: (option: any) => string
         /**
          * Either the key of the option property which should be treated as
          * the value or a function returning the option value.
