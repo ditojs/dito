@@ -1553,6 +1553,7 @@ export class ModelController<$Model extends Model> extends Controller {
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md Model Scopes}
    */
   scope?: boolean | OrArrayOf<string>
+  query(): QueryBuilder<$Model>
 }
 
 export class Validator extends objection.Validator {
