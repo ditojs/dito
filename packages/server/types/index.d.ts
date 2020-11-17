@@ -1179,7 +1179,6 @@ export type ModelControllerActionHandler<
 > = (
   this: $ModelController,
   ctx: KoaContext,
-  member: modelFromModelController<$ModelController>,
   ...args: any[]
 ) => any
 
