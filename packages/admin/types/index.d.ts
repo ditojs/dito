@@ -875,7 +875,8 @@ export type WrapResolvableForm<U> = U extends any
 
 export type ListSchema<
   $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'list'>
+  $State extends State = AddComponent<$InputState, 'list'>,
+  $ListItem = WithoutMethods<Unpacked<$State['item'][$State['name']]>>
 > = SchemaSourceMixin<$State> &
   BaseSchema<$State> & {
     /**
@@ -885,17 +886,17 @@ export type ListSchema<
     /**
      * The form.
      */
-    form?: WrapResolvableForm<Unpacked<$State['item'][$State['name']]>>
+    form?: WrapResolvableForm<$ListItem>
     /**
      * The forms.
      */
-    forms?: WrapResolvableForm<Unpacked<$State['item'][$State['name']]>>
+    forms?: WrapResolvableForm<$ListItem>
     /**
      * The label given to the items. If no itemLabel is given, the default is
      * the 'name' property of the item, followed by label of the form of the
      * view (plus item id) and other defaults.
      */
-    itemLabel?: ItemKeys<$State> | ItemAccessor<$State, string>
+    itemLabel?: ItemNameKeys<$State> | ItemAccessor<$State, string>
     /**
      * The columns displayed in the table. While columns can be supplied as an
      * array where each entry is the name of a property of the item, it is
@@ -903,7 +904,7 @@ export type ListSchema<
      * columns property.
      */
     columns?:
-      | ItemKeys<$State>[]
+      | ItemNameKeys<$State>[]
       | AnyAlternative<
           $State['item'],
           {
@@ -911,12 +912,12 @@ export type ListSchema<
           },
           Partial<
             {
-              [$ItemName in keyof $State['item']]:
+              [$ItemName in keyof $ListItem]:
                 | ColumnSchema<
                     CreateState<
-                      $State['item'],
+                      $ListItem,
                       $ItemName,
-                      $State['item'][$ItemName]
+                      $ListItem[$ItemName]
                     >
                   >
                 | never
@@ -2221,9 +2222,9 @@ export type AnyAlternative<$Type, $WhenAny, $WhenNotAny> = IsAny<$Type> extends 
 
 export type FilteredKeys<T, U> = keyof { [P in keyof T]: T[P] extends U ? never : P }
 
-export type ItemKeys<$State extends State> = IsAny<$State['item']> extends 1
+export type ItemNameKeys<$State extends State> = IsAny<$State['item'][$State['name']]> extends 1
   ? string
-  : keyof $State['item']
+  : keyof WithoutMethods<Unpacked<$State['item'][$State['name']]>>;
 
 // Wrap individual types when T is a discriminated union by using conditional
 // type check:
