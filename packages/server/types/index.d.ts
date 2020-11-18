@@ -861,10 +861,12 @@ export interface ModelOptions extends objection.ModelOptions {
   mutable?: boolean
 }
 
-
 export type ModelHooks<$Model extends Model> = {
-  [$Key in `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`]?:
-    (args: objection.StaticHookArguments<$Model>) => void
+  [$Key in `${'before' | 'after'}:${
+    | 'find'
+    | 'insert'
+    | 'update'
+    | 'delete'}`]?: (args: objection.StaticHookArguments<$Model>) => void
 }
 
 export class Model extends objection.Model {
@@ -982,15 +984,9 @@ export class Model extends objection.Model {
   static upsertDitoGraphAndFetch: QueryBuilder<Model>['upsertDitoGraphAndFetch']
   static updateDitoGraphAndFetch: QueryBuilder<Model>['updateDitoGraphAndFetch']
   static patchDitoGraphAndFetch: QueryBuilder<Model>['patchDitoGraphAndFetch']
-  static upsertDitoGraphAndFetchById: QueryBuilder<
-    Model
-  >['upsertDitoGraphAndFetchById']
-  static updateDitoGraphAndFetchById: QueryBuilder<
-    Model
-  >['updateDitoGraphAndFetchById']
-  static patchDitoGraphAndFetchById: QueryBuilder<
-    Model
-  >['patchDitoGraphAndFetchById']
+  static upsertDitoGraphAndFetchById: QueryBuilder<Model>['upsertDitoGraphAndFetchById']
+  static updateDitoGraphAndFetchById: QueryBuilder<Model>['updateDitoGraphAndFetchById']
+  static patchDitoGraphAndFetchById: QueryBuilder<Model>['patchDitoGraphAndFetchById']
 
   static where: QueryBuilder<Model>['where']
   static whereNot: QueryBuilder<Model>['whereNot']
@@ -1084,9 +1080,7 @@ export type ControllerActionName =
   | 'insert'
   | 'update'
   | 'patch'
-export type AllowedControllerActionName = StringSuggestions<
-  ControllerActionName
->
+export type AllowedControllerActionName = StringSuggestions<ControllerActionName>
 export class Controller {
   /**
    * Optionally provide the controller path. A default is deducted from
@@ -1177,11 +1171,7 @@ export type ActionParameter = Schema & { name: string }
 
 export type ModelControllerActionHandler<
   $ModelController extends ModelController<Model>
-> = (
-  this: $ModelController,
-  ctx: KoaContext,
-  ...args: any[]
-) => any
+> = (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
 
 export type ControllerActionHandler<$Controller extends Controller> = (
   this: $Controller,
@@ -1619,7 +1609,7 @@ export class Validator extends objection.Validator {
 export class EventEmitter {
   static mixin: (target: any) => {}
   constructor(options?: EventEmitter2.ConstructorOptions)
-  responds: (event: EventEmitter2.event) => boolean
+  responds(event: EventEmitter2.event): boolean
   emit(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     ...values: any[]
