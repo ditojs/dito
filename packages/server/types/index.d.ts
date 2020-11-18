@@ -863,7 +863,8 @@ export interface ModelOptions extends objection.ModelOptions {
 
 
 export type ModelHooks<$Model extends Model> = {
-  [$Key in `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`]?: (model: $Model) => void
+  [$Key in `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`]?:
+    (args: objection.StaticHookArguments<$Model>) => void
 }
 
 export class Model extends objection.Model {
