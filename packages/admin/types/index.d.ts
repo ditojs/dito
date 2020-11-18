@@ -170,7 +170,7 @@ export interface BaseSchema<$State extends State>
    */
   component?: Promise<Vue>
 
-  default?: any
+  default?: OrItemAccessor<$State>
   // compute?: V extends never ? never : SchemaAccessor<C, V> | undefined
 }
 
