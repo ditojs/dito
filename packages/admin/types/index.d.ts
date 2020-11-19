@@ -368,49 +368,44 @@ export interface SchemaSourceMixin<$State extends State> {
   resource?: Resource
 }
 
-export type Options = ({ label: string; value: any } | any)[]
-export interface SchemaOptionsMixin<$State extends State> {
-  options?:
-    | ({ label: string; value: any } | any)[]
-    | {
-        /**
-         * The function which is called to load the options.
-         */
-        data?: ItemAccessor<$State, OrFunctionReturning<OrPromiseOf<Options>>>
-        /**
-         * Either the key of the option property which should be treated as
-         * the option label or a function returning the option label.
-         *
-         * @defaultValue `'label'` when no label is supplied and the options are
-         * objects
-         */
-        label?: (option: any) => string
-        /**
-         * Either the key of the option property which should be treated as
-         * the value or a function returning the option value.
-         *
-         * @defaultValue `'value'` when no label is supplied and the options are
-         * objects
-         */
-        // TODO: when relate is set, the default value is 'id'
-        value?: OrItemAccessor<$State, string>
-        /**
-         * The key of the option property which should used to group the options.
-         */
-        groupBy?: string
-      }
+export type Option = { label: string; value: any } | string;
+export type SchemaOptions<$State extends State, $Option = any> = $Option[] | {
+  /**
+   * The function which is called to load the options.
+   */
+  data?: ItemAccessor<$State, {}, OrFunctionReturning<OrPromiseOf<$Option[]>>>
+  /**
+   * Either the key of the option property which should be treated as
+   * the option label or a function returning the option label.
+   *
+   * @defaultValue `'label'` when no label is supplied and the options are
+   * objects
+   */
+  label?: keyof $Option | ItemAccessor<$State, { option: $Option }, string>
+  /**
+   * Either the key of the option property which should be treated as
+   * the value or a function returning the option value.
+   *
+   * @defaultValue `'value'` when no label is supplied and the options are
+   * objects
+   */
+  // TODO: when relate is set, the default value is 'id'
+  value?: keyof $Option | ItemAccessor<$State, { option: $Option }>
+  /**
+   * The key of the option property which should used to group the options.
+   */
+  groupBy?: keyof $Option
+}
+
+export interface SchemaOptionsMixin<$State extends State, $Option = any> {
+  options?: SchemaOptions<$State, $Option>
   relate?: boolean
   /**
    * When defined, a search input field will be added to allow searching for
    * specific options.
    */
   search?: {
-    filter?: ItemAccessor<$State, string>
-    // filter: (
-    //   this: ComponentByType[$State['component']],
-    //   query: string,
-    //   options: any[]
-    // ) => OrPromiseOf<any[]> | Response<any[]>
+    filter?: ItemAccessor<$State, { query: string }, OrPromiseOf<$Option[]>>
     debounce?:
       | number
       | {
@@ -744,8 +739,9 @@ export type MultiselectSchemaMixin = {
 
 export type MultiSelectSchema<
   $InputState extends State = CreateState,
+  $Option = any,
   $State extends State = AddComponent<$InputState, 'multiselect'>
-> = BaseSchema<$State> & SchemaOptionsMixin<$State> & MultiselectSchemaMixin
+> = BaseSchema<$State> & SchemaOptionsMixin<$State, $Option> & MultiselectSchemaMixin
 
 export type SelectSchema<
   $InputState extends State = CreateState,
