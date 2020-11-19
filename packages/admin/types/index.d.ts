@@ -183,7 +183,7 @@ export interface SchemaDitoMixin<$State extends State> {
   /**
    * Only displays the component if the schema accessor returns `true`
    */
-  if?: ItemAccessor<$State, boolean>
+  if?: ItemAccessor<$State, {}, boolean>
 
   /**
    * Specifies validations rules to add, remove (by setting to `undefined`) or
@@ -210,7 +210,7 @@ export interface SchemaTypeMixin<$State extends State> {
    *
    * @defaultValue The title-cased component name.
    */
-  label?: OrItemAccessor<$State, string | boolean>
+  label?: OrItemAccessor<$State, {}, string | boolean>
 
   /**
    * The width of the component. The value can either be given in percent
@@ -218,72 +218,72 @@ export interface SchemaTypeMixin<$State extends State> {
    * depend on its contents or as 'fill' to fill left over space. A line will
    * contain multiple components until their widths exceed 100%.
    */
-  width?: OrItemAccessor<$State, 'auto' | 'fill' | string | number>
+  width?: OrItemAccessor<$State, {}, 'auto' | 'fill' | string | number>
 
   /**
    * Whether the component is visible.
    *
    * @defaultValue `true`
    */
-  visible?: OrItemAccessor<$State, boolean>
+  visible?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * @defaultValue `false`
    */
   // TODO: document exclude
-  exclude?: OrItemAccessor<$State, boolean>
+  exclude?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Whether the field is required.
    * @defaultValue `false`
    */
-  required?: OrItemAccessor<$State, boolean>
+  required?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Whether the value is read only.
    *
    * @defaultValue `false`
    */
-  readonly?: OrItemAccessor<$State, boolean>
+  readonly?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Whether to autofocus the field.
    * @defaultValue `false`
    */
-  autofocus?: OrItemAccessor<$State, boolean>
+  autofocus?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Whether the field can be cleared.
    * @defaultValue `false`
    */
-  clearable?: OrItemAccessor<$State, boolean>
+  clearable?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Specifies a short hint intended to aid the user with data entry when the
    * input has no value.
    */
-  placeholder?: OrItemAccessor<$State, any>
+  placeholder?: OrItemAccessor<$State, {}, any>
 
   /**
    * Whether the input field should have autocomplete enabled.
    */
-  autocomplete?: OrItemAccessor<$State, 'on' | 'off'>
+  autocomplete?: OrItemAccessor<$State, {}, 'on' | 'off'>
 
   /**
    * Specifies a function which changes the item value into another format,
    * before it is passed to the component.
    */
-  format?: ItemAccessor<$State, any>
-  disabled?: OrItemAccessor<$State, boolean>
+  format?: ItemAccessor<$State>
+  disabled?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Specifies a function which parses the component value when it changes,
    *
    */
-  parse?: ItemAccessor<$State, any>
+  parse?: ItemAccessor<$State>
 
   // TODO: document process
-  process?: OrItemAccessor<$State, any>
+  process?: OrItemAccessor<$State>
 
   // TODO: document name
   name?: string
@@ -307,12 +307,12 @@ export interface SchemaSourceMixin<$State extends State> {
    *
    * @defaultValue `false`
    */
-  paginate?: OrItemAccessor<$State, number>
+  paginate?: OrItemAccessor<$State, {}, number>
   // TODO: document inlined
   /**
    * @defaultValue `false`
    */
-  inlined?: OrItemAccessor<$State, boolean>
+  inlined?: OrItemAccessor<$State, {}, boolean>
   /**
    * Whether to add a button to create list items.
    *
@@ -320,6 +320,7 @@ export interface SchemaSourceMixin<$State extends State> {
    */
   creatable?: OrItemAccessor<
     $State,
+    {},
     | boolean
     | {
         label: string
@@ -332,6 +333,7 @@ export interface SchemaSourceMixin<$State extends State> {
    */
   editable?: OrItemAccessor<
     $State,
+    {},
     | boolean
     | {
         label: string
@@ -344,6 +346,7 @@ export interface SchemaSourceMixin<$State extends State> {
    */
   deletable?: OrItemAccessor<
     $State,
+    {},
     | boolean
     | {
         label: string
@@ -352,16 +355,16 @@ export interface SchemaSourceMixin<$State extends State> {
   /**
    * @defaultValue `false`
    */
-  draggable?: OrItemAccessor<$State, boolean>
+  draggable?: OrItemAccessor<$State, {}, boolean>
   /**
    * Whether an inlined form is collapsible.
    * @defaultValue `null`
    */
-  collapsible?: OrItemAccessor<$State, boolean | null>
+  collapsible?: OrItemAccessor<$State, {}, boolean | null>
   /**
    * Whether an inlined form is collapsed.
    */
-  collapsed?: OrItemAccessor<$State, boolean>
+  collapsed?: OrItemAccessor<$State, {}, boolean>
   resource?: Resource
 }
 
@@ -421,26 +424,26 @@ export interface SchemaNumberMixin<$State extends State> {
   /**
    * The minimum value.
    */
-  min?: OrItemAccessor<$State, number>
+  min?: OrItemAccessor<$State, {}, number>
 
   /**
    * The maximum value.
    */
-  max?: OrItemAccessor<$State, number>
+  max?: OrItemAccessor<$State, {}, number>
 
   /**
    * The minimum and maximum value.
    */
-  range?: OrItemAccessor<$State, [number, number]>
+  range?: OrItemAccessor<$State, {}, [number, number]>
   /**
    * When defined, buttons with up and down arrows are added next to the input
    * field. Which when pressed will add or subtract `step` from the value.
    */
-  step?: OrItemAccessor<$State, number>
+  step?: OrItemAccessor<$State, {}, number>
   /**
    * The amount of decimals to round to.
    */
-  decimals?: OrItemAccessor<$State, number>
+  decimals?: OrItemAccessor<$State, {}, number>
   rules?: Omit<SchemaNumberMixin<$State>, 'rules'> & {
     integer?: boolean
   }
@@ -495,7 +498,7 @@ export type DateSchema<
    * @defaultValue `En/US`
    */
   locale?: string
-  dateFormat?: OrItemAccessor<$State, DateFormat>
+  dateFormat?: OrItemAccessor<$State, {}, DateFormat>
 }
 
 export type ButtonSchema<
@@ -507,7 +510,7 @@ export type ButtonSchema<
    * The type of the component.
    */
   type: 'button' | 'submit'
-  closeForm?: OrItemAccessor<$State, boolean>
+  closeForm?: OrItemAccessor<$State, {}, boolean>
   text?: string
   resource?: Resource
   onClick?: $EventHandler
@@ -627,11 +630,11 @@ export type MarkupSchema<
   /**
    * Whether the input element is resizable.
    */
-  resizable?: OrItemAccessor<$State, boolean>
+  resizable?: OrItemAccessor<$State, {}, boolean>
   /**
    * @defaultValue `'collapse'`
    */
-  whitespace?: OrItemAccessor<$State, 'collapse' | 'preserve' | 'preserve-all'>
+  whitespace?: OrItemAccessor<$State, {}, 'collapse' | 'preserve' | 'preserve-all'>
   /**
    * The amount of visible lines.
    *
@@ -642,6 +645,7 @@ export type MarkupSchema<
   // TODO: document enableRules
   enableRules?: OrItemAccessor<
     $State,
+    {},
     | boolean
     | {
         input: boolean
@@ -815,13 +819,13 @@ export type ColorSchema<$State extends State = CreateState> = BaseSchema<
   /**
    * The color format.
    */
-  format?: OrItemAccessor<AddComponent<$State, 'color'>, ColorFormat>
+  format?: OrItemAccessor<AddComponent<$State, 'color'>, {}, ColorFormat>
   /**
    * Whether the color may contain an alpha component.
    *
    * @defaultValue `false`
    */
-  alpha?: OrItemAccessor<AddComponent<$State, 'color'>, boolean>
+  alpha?: OrItemAccessor<AddComponent<$State, 'color'>, {}, boolean>
   /**
    * @defaultValue true
    */
@@ -829,13 +833,13 @@ export type ColorSchema<$State extends State = CreateState> = BaseSchema<
   /**
    * @defaultValue `true`
    */
-  inputs?: OrItemAccessor<AddComponent<$State, 'color'>, boolean>
+  inputs?: OrItemAccessor<AddComponent<$State, 'color'>, {}, boolean>
   /**
    * Color presets as an array of color values as strings in any css
    * compatible format.
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
    */
-  presets?: OrItemAccessor<AddComponent<$State, 'color'>, string[]>
+  presets?: OrItemAccessor<AddComponent<$State, 'color'>, {}, string[]>
 }
 
 export type ColumnSchema<$State extends State = State> = {
@@ -858,7 +862,7 @@ export type ColumnSchema<$State extends State = State> = {
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
-  render?: ItemAccessor<$State, string>
+  render?: ItemAccessor<$State, {}, string>
   /**
    * The provided string is applied to the class property of the column
    * cell html elements.
@@ -903,7 +907,7 @@ export type ListSchema<
      * the 'name' property of the item, followed by label of the form of the
      * view (plus item id) and other defaults.
      */
-    itemLabel?: ItemAccessor<ListSchemaItemState<$State>, string> | string
+    itemLabel?: ItemAccessor<ListSchemaItemState<$State>, {}, string> | string
     /**
      * The columns displayed in the table. While columns can be supplied as an
      * array where each entry is the name of a property of the item, it is
@@ -953,15 +957,17 @@ export type ListSchema<
 
 export type OrItemAccessor<
   $State extends State,
+  $Params extends {} = {},
   $ReturnValue = $State['value']
-> = ItemAccessor<$State, $ReturnValue> | $ReturnValue
+> = ItemAccessor<$State, $Params, $ReturnValue> | $ReturnValue
 
 export type ItemAccessor<
   $State extends State = CreateState,
+  $Params extends {} = {},
   $ReturnValue = $State['value']
 > = (
   this: ComponentByType[$State['component']],
-  params: DitoContext<$State>
+  params: DitoContext<$State> & $Params
 ) => $ReturnValue
 
 export interface ValidatorMixin {
@@ -1724,7 +1730,7 @@ export class SliderComponent<
   schema: SliderSchema<$State>
 
   // computed
-  input: ItemAccessor<$State, boolean>
+  input: ItemAccessor<$State, {}, boolean>
 }
 export interface SliderComponent<
   $InputState extends State = CreateState,
@@ -1762,7 +1768,7 @@ export class TextareaComponent<
   schema: SchemaByType[$State['component']]
   // computed
   lines: number
-  resizable: ItemAccessor<$State, boolean>
+  resizable: ItemAccessor<$State, {}, boolean>
 }
 
 // // TODO: TypeTreeList
@@ -1980,7 +1986,6 @@ export type DitoContext<$State extends State> = {
   dialogComponent: DitoDialog | null
   panelComponent: Vue | null
   sourceComponent: Vue | null
-  option: any
   options: any
   query: string
   error: any | null
@@ -2027,7 +2032,7 @@ export type Form<
   /**
    * The label of the form.
    */
-  label?: OrItemAccessor<$State, string | boolean>
+  label?: OrItemAccessor<$State, {}, string | boolean>
   /**
    * @defaultValue `false`
    */
