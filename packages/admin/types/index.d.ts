@@ -1271,7 +1271,7 @@ export type DitoMixin<$State> = EmitterMixin & {
     method?: HTTPVerb
     params?: any
     data?: any
-  }): T
+  }): Promise<T>
   navigate(location: string | { path: string }): Promise<boolean>
   download: {
     (url: string): void
