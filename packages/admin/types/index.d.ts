@@ -2016,15 +2016,9 @@ export type Components<$State extends State> = {
   [name: string]: ComponentSchema<$State>
 }
 
-export type Buttons<$Item> = AnyAlternative<
-  $Item,
-  {
-    [name: string]: Optional<ButtonSchema, 'type'>
-  },
-  {
-    [name: string]: Optional<ButtonSchema<CreateState<$Item>>, 'type'>
-  }
->
+export type Buttons<$Item> = {
+  [name: string]: Optional<ButtonSchema<CreateState<$Item>>, 'type'>
+}
 
 export type Form<
   $Item = any,
