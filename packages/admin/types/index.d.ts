@@ -197,7 +197,7 @@ export interface SchemaDitoMixin<$State extends State> {
  * schemas.
  */
 export type ItemEventHandler<$State extends State = CreateState> = (
-  this: ComponentByType<$State>[$State['component']],
+  // this: ComponentByType<$State>[$State['component']],
   itemParams: DitoContext<$State>
 ) => void | false
 
@@ -869,14 +869,19 @@ export type ColumnSchema<$State extends State = State> = {
   style?: string
 }
 
-export type WrapResolvableForm<U> = U extends any
-  ? Resolvable<Resolvable<Form<U>>>
-  : never
+export type ResolvableForm<$Item = any> = Resolvable<Resolvable<Form<$Item>>>
+
+type ListSchemaItemState<
+  $State extends State = CreateState,
+> = CreateState<AnyAlternative<
+  $State['name'],
+  any,
+  WithoutMethods<Unpacked<$State['item'][$State['name']]>>
+>>
 
 export type ListSchema<
   $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'list'>,
-  $ListItem = WithoutMethods<Unpacked<$State['item'][$State['name']]>>
+  $State extends State = AddComponent<$InputState, 'list'>
 > = SchemaSourceMixin<$State> &
   BaseSchema<$State> & {
     /**
@@ -886,44 +891,26 @@ export type ListSchema<
     /**
      * The form.
      */
-    form?: WrapResolvableForm<$ListItem>
+    form?: ResolvableForm
     /**
      * The forms.
      */
-    forms?: WrapResolvableForm<$ListItem>
+    forms?: ResolvableForm
     /**
      * The label given to the items. If no itemLabel is given, the default is
      * the 'name' property of the item, followed by label of the form of the
      * view (plus item id) and other defaults.
      */
-    itemLabel?: ItemNameKeys<$State> | ItemAccessor<$State, string>
+    itemLabel?: ItemAccessor<ListSchemaItemState<$State>, string> | string
     /**
      * The columns displayed in the table. While columns can be supplied as an
      * array where each entry is the name of a property of the item, it is
      * usually beneficial to assign an object with further options to the
      * columns property.
      */
-    columns?:
-      | ItemNameKeys<$State>[]
-      | AnyAlternative<
-          $State['item'],
-          {
-            [name: string]: ColumnSchema<$State>
-          },
-          Partial<
-            {
-              [$ItemName in keyof $ListItem]:
-                | ColumnSchema<
-                    CreateState<
-                      $ListItem,
-                      $ItemName,
-                      $ListItem[$ItemName]
-                    >
-                  >
-                | never
-            }
-          >
-        >
+    columns?: {
+      [$Key: string]: ColumnSchema<ListSchemaItemState<$State>>
+    }
     /**
      * Scope names as defined on the model. When set, the admin renders a set of
      * scope buttons, allowing the user to switch between them while editing.
@@ -2026,19 +2013,9 @@ export type ComponentSchema<$State extends State = CreateState> =
   | DateSchema<$State>
   | ComputedSchema<$State>
 
-export type Components<$State extends State> = AnyAlternative<
-  $State['item'],
-  {
-    [name: string]: ComponentSchema<$State>
-  },
-  {
-    [$ItemName in keyof $State['item']]?:
-      | ComponentSchema<
-          CreateState<$State['item'], $ItemName, $State['item'][$ItemName]>
-        >
-      | never
-  }
->
+export type Components<$State extends State> = {
+  [name: string]: ComponentSchema<$State>
+}
 
 export type Buttons<$Item> = AnyAlternative<
   $Item,
