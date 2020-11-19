@@ -878,7 +878,7 @@ type ListSchemaItemState<
 > = CreateState<AnyAlternative<
   $State['name'],
   any,
-  WithoutMethods<Unpacked<$State['item'][$State['name']]>>
+  Unpacked<$State['item'][$State['name']]>
 >>
 
 export type ListSchema<
@@ -2027,8 +2027,7 @@ export type Buttons<$Item> = AnyAlternative<
 >
 
 export type Form<
-  $InputItem = any,
-  $Item = WithoutMethods<$InputItem>,
+  $Item = any,
   $State extends State = CreateState<$Item>
 > = {
   /**
@@ -2059,8 +2058,7 @@ export type Form<
 }
 
 export type View<
-  $InputItem = any,
-  $Item = WithoutMethods<$InputItem>
+  $Item = any
 > = ListSchema<CreateState<$Item>> & {
   /**
    * The route of the view. If no path is given, the hyphenated export name
@@ -2153,7 +2151,7 @@ export type CreateState<
   $Component extends keyof ComponentByType = 'unknown',
   $Schema extends keyof SchemaByType = 'unknown'
 > = {
-  item: $Item
+  item: WithoutMethods<$Item>
   name: $Name
   value: $Value
   component: $Component
@@ -2211,7 +2209,7 @@ export type ItemNameKeys<$State extends State> = IsAny<
   $State['item'][$State['name']]
 > extends 1
   ? string
-  : keyof WithoutMethods<Unpacked<$State['item'][$State['name']]>>
+  : keyof Unpacked<$State['item'][$State['name']]>
 
 // Wrap individual types when T is a discriminated union by using conditional
 // type check:
