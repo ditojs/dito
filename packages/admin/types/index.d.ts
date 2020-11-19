@@ -868,7 +868,7 @@ export type ColumnSchema<$State extends State = State> = {
    * The provided string is applied to the style property of the column
    * cell html elements.
    */
-  style?: string
+  style?: string | Partial<CSSStyleDeclaration>
 }
 
 export type ResolvableForm<$Item = any> = Resolvable<Resolvable<Form<$Item>>>
