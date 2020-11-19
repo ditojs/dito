@@ -1280,8 +1280,8 @@ export type DitoMixin<$State> = EmitterMixin & {
     (options: { url: string; filename: string }): void
   }
   notify(options: {
-    type: StringSuggestions<'warning' | 'error' | 'info' | 'success'>
-    title: string
+    type?: StringSuggestions<'warning' | 'error' | 'info' | 'success'>
+    title?: string
     text: OrArrayOf<string>
   }): void
   closeNotifications(): void
