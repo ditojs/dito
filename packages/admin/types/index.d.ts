@@ -2,7 +2,12 @@
 // Project: <https://github.com/ditojs/dito/>
 
 import { AxiosResponse as Response } from 'axios'
-import { format as utilsFormat, DateFormat, NumberFormat, TimeFormat } from '@ditojs/utils'
+import {
+  format as utilsFormat,
+  DateFormat,
+  NumberFormat,
+  TimeFormat
+} from '@ditojs/utils'
 import Vue from 'vue'
 
 declare global {
@@ -10,8 +15,6 @@ declare global {
 }
 
 export default DitoAdmin
-// export as namespace DitoAdmin;
-
 export interface DitoGlobal {
   api?: ApiConfig
   base?: string
@@ -52,8 +55,8 @@ export interface ApiConfig {
    */
   locale?: string
   formats?: {
-    number?: NumberFormat,
-    date?: DateFormat,
+    number?: NumberFormat
+    date?: DateFormat
     time?: TimeFormat
   }
   request?: PerformRequest
@@ -271,7 +274,6 @@ export interface SchemaTypeMixin<$State extends State> {
    * before it is passed to the component.
    */
   format?: ItemAccessor<$State, any>
-
   disabled?: OrItemAccessor<$State, boolean>
 
   /**
@@ -936,12 +938,7 @@ export type ListSchema<
             /**
              * @defaultValue `['contains']`
              */
-            operators?: readonly (
-              | 'contains'
-              | 'equals'
-              | 'starts-with'
-              | 'ends-with'
-            )[]
+            operators?: ('contains' | 'equals' | 'starts-with' | 'ends-with')[]
           }
         | {
             label?: string
@@ -954,9 +951,10 @@ export type ListSchema<
     }
   }
 
-export type OrItemAccessor<$State extends State, $ReturnValue = $State['value']> =
-  | ItemAccessor<$State, $ReturnValue>
-  | $ReturnValue
+export type OrItemAccessor<
+  $State extends State,
+  $ReturnValue = $State['value']
+> = ItemAccessor<$State, $ReturnValue> | $ReturnValue
 
 export type ItemAccessor<
   $State extends State = CreateState,
@@ -1494,7 +1492,8 @@ export class BaseComponent<$State> extends DitoComponent<$State> {
   static register(types: OrArrayOf<string>, definition: any): Vue
   static get(type: string): Vue
 }
-export interface BaseComponent<$State extends State> extends MixinComponent<$State> {}
+export interface BaseComponent<$State extends State>
+  extends MixinComponent<$State> {}
 
 export class NumberComponent<
   $InputState extends State,
@@ -1829,9 +1828,9 @@ export interface MultiselectComponent<
   $State extends State = AddComponent<$InputState, 'multiselect'>
 > extends OptionsMixin<$State> {}
 
-export class DitoRoot<$State extends State = CreateState> extends DitoComponent<
-  $State
-> {
+export class DitoRoot<
+  $State extends State = CreateState
+> extends DitoComponent<$State> {
   data: DitoComponent<$State>['data'] &
     DomMixin['data'] & {
       allowLogin: boolean
@@ -1953,7 +1952,7 @@ export class DitoDialog extends DitoComponent {
   cancel(): void
 }
 
-export interface DitoContext<$State extends State> {
+export type DitoContext<$State extends State> = {
   value: $State['value']
   name: $State['name']
   dataPath: string
@@ -2027,11 +2026,15 @@ export type Buttons<$Item> = AnyAlternative<
   }
 >
 
-export type Form<$InputItem = any, $Item = WithoutMethods<$InputItem>> = {
+export type Form<
+  $InputItem = any,
+  $Item = WithoutMethods<$InputItem>,
+  $State extends State = CreateState<$Item>
+> = {
   /**
    * The label of the form.
    */
-  label?: OrItemAccessor<CreateState<$Item>, string | boolean>
+  label?: OrItemAccessor<$State, string | boolean>
   /**
    * @defaultValue `false`
    */
@@ -2044,7 +2047,7 @@ export type Form<$InputItem = any, $Item = WithoutMethods<$InputItem>> = {
     [name: string]: Omit<Form<$Item>, 'tabs'>
   }
   // TODO: document components
-  components?: Components<CreateState<$Item>>
+  components?: Components<$State>
   // TODO: document clipboard
   clipboard?:
     | boolean
@@ -2055,9 +2058,10 @@ export type Form<$InputItem = any, $Item = WithoutMethods<$InputItem>> = {
   buttons?: Buttons<$Item>
 }
 
-export type View<$InputItem = any, $Item = WithoutMethods<$InputItem>> = ListSchema<
-  CreateState<$Item>
-> & {
+export type View<
+  $InputItem = any,
+  $Item = WithoutMethods<$InputItem>
+> = ListSchema<CreateState<$Item>> & {
   /**
    * The route of the view. If no path is given, the hyphenated export name
    * is used.
@@ -2193,15 +2197,21 @@ export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
     [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
   }[Keys]
 
-export type AnyAlternative<$Type, $WhenAny, $WhenNotAny> = IsAny<$Type> extends 1
-  ? $WhenAny
-  : $WhenNotAny
+export type AnyAlternative<
+  $Type,
+  $WhenAny,
+  $WhenNotAny
+> = IsAny<$Type> extends 1 ? $WhenAny : $WhenNotAny
 
-export type FilteredKeys<T, U> = keyof { [P in keyof T]: T[P] extends U ? never : P }
+export type FilteredKeys<T, U> = keyof {
+  [P in keyof T]: T[P] extends U ? never : P
+}
 
-export type ItemNameKeys<$State extends State> = IsAny<$State['item'][$State['name']]> extends 1
+export type ItemNameKeys<$State extends State> = IsAny<
+  $State['item'][$State['name']]
+> extends 1
   ? string
-  : keyof WithoutMethods<Unpacked<$State['item'][$State['name']]>>;
+  : keyof WithoutMethods<Unpacked<$State['item'][$State['name']]>>
 
 // Wrap individual types when T is a discriminated union by using conditional
 // type check:
@@ -2219,9 +2229,10 @@ export type Extends<$A extends any, $B extends any> = IsAny<$A> extends 1
   ? 1
   : 0
 
-export type SelectKeysNotExtending<$Object, $Extending extends any> = IsAny<
-  $Object
-> extends 0
+export type SelectKeysNotExtending<
+  $Object,
+  $Extending extends any
+> = IsAny<$Object> extends 0
   ? {
       [K in keyof $Object]-?: {
         1: never
