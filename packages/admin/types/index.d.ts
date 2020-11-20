@@ -183,7 +183,7 @@ export interface SchemaDitoMixin<$State extends State> {
   /**
    * Only displays the component if the schema accessor returns `true`
    */
-  if?: ItemAccessor<$State, {}, boolean>
+  if?: OrItemAccessor<$State, {}, boolean | string[] | string>
 
   /**
    * Specifies validations rules to add, remove (by setting to `undefined`) or
