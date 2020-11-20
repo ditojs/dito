@@ -2038,7 +2038,7 @@ export type Form<
    * Display several forms in different tabs within the form.
    */
   tabs?: {
-    [name: string]: Omit<Form<$Item>, 'tabs'>
+    [name: string]: Omit<Form<$Item>, 'tabs'> & { defaultTab?: boolean }
   }
   // TODO: document components
   components?: Components<$State>
