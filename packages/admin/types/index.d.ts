@@ -871,7 +871,7 @@ export type ColumnSchema<$State extends State = State> = {
   style?: string | Partial<CSSStyleDeclaration>
 }
 
-export type ResolvableForm<$Item = any> = Resolvable<Resolvable<Form<$Item>>>
+export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 type ListSchemaItemState<
   $State extends State = CreateState,
