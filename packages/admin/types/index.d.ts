@@ -2026,6 +2026,10 @@ export type Form<
   $State extends State = CreateState<$Item>
 > = {
   /**
+   * The name of the item model produced by the form.
+   */
+  name?: OrItemAccessor<$State, {}, string>
+   /**
    * The label of the form.
    */
   label?: OrItemAccessor<$State, {}, string | boolean>
