@@ -368,34 +368,42 @@ export interface SchemaSourceMixin<$State extends State> {
   resource?: Resource
 }
 
-export type Option = { label: string; value: any } | string;
-export type SchemaOptions<$State extends State, $Option = any> = $Option[] | {
-  /**
-   * The function which is called to load the options.
-   */
-  data?: ItemAccessor<$State, {}, OrFunctionReturning<OrPromiseOf<$Option[]>>>
-  /**
-   * Either the key of the option property which should be treated as
-   * the option label or a function returning the option label.
-   *
-   * @defaultValue `'label'` when no label is supplied and the options are
-   * objects
-   */
-  label?: keyof $Option | ItemAccessor<$State, { option: $Option }, string>
-  /**
-   * Either the key of the option property which should be treated as
-   * the value or a function returning the option value.
-   *
-   * @defaultValue `'value'` when no label is supplied and the options are
-   * objects
-   */
-  // TODO: when relate is set, the default value is 'id'
-  value?: keyof $Option | ItemAccessor<$State, { option: $Option }>
-  /**
-   * The key of the option property which should used to group the options.
-   */
-  groupBy?: keyof $Option
-}
+export type SchemaOptionsOption<$Value> =
+  | { label: string; value: $Value }
+  | $Value
+export type SchemaOptions<$State extends State, $Option = any> =
+  | SchemaOptionsOption<$Option[]>
+  | {
+      /**
+       * The function which is called to load the options.
+       */
+      data?: OrItemAccessor<
+        $State,
+        {},
+        OrFunctionReturning<OrPromiseOf<SchemaOptionsOption<$Option>[]>>
+      >
+      /**
+       * Either the key of the option property which should be treated as
+       * the option label or a function returning the option label.
+       *
+       * @defaultValue `'label'` when no label is supplied and the options are
+       * objects
+       */
+      label?: keyof $Option | ItemAccessor<$State, { option: $Option }, string>
+      /**
+       * Either the key of the option property which should be treated as
+       * the value or a function returning the option value.
+       *
+       * @defaultValue `'value'` when no label is supplied and the options are
+       * objects
+       */
+      // TODO: when relate is set, the default value is 'id'
+      value?: keyof $Option | ItemAccessor<$State, { option: $Option }>
+      /**
+       * The key of the option property which should used to group the options.
+       */
+      groupBy?: keyof $Option
+    }
 
 export interface SchemaOptionsMixin<$State extends State, $Option = any> {
   options?: SchemaOptions<$State, $Option>
