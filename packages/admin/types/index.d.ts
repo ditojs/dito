@@ -2088,6 +2088,7 @@ export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
         paste?: (...args: any[]) => any
       }
   buttons?: Buttons<$Item>
+  if?: OrItemAccessor<$State, {}, boolean | string[] | string>
 }
 
 export type Resource =
