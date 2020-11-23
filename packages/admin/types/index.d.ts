@@ -923,7 +923,8 @@ export type ListSchema<
       | string[]
       | {
           [scopeName: string]: {
-            label?: string
+            label?: string,
+            defaultScope?: boolean
           }
         }
     /**
