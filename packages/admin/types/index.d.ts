@@ -479,16 +479,6 @@ export type InputSchema<$State extends State> = BaseSchema<
   }
 }
 
-export type ComputedSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'computed'>
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'computed'
-}
-
 export type DateSchema<
   $InputState extends State = CreateState,
   $State extends State = AddComponent<$InputState, 'date'>
@@ -2019,7 +2009,6 @@ export type ComponentSchema<$State extends State = CreateState> =
   | ButtonSchema<$State>
   | SwitchSchema<$State>
   | DateSchema<$State>
-  | ComputedSchema<$State>
 
 export type Components<$State extends State> = {
   [name: string]: ComponentSchema<$State>
@@ -2135,7 +2124,6 @@ export type SchemaByType<$State extends State = CreateState> = {
   checkboxes: CheckboxesSchema<$State>
   code: CodeSchema<$State>
   color: ColorSchema<$State>
-  computed: ComputedSchema<$State>
   date: DateSchema<$State>
   list: ListSchema<$State>
   markup: MarkupSchema<$State>
