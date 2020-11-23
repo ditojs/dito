@@ -2038,7 +2038,7 @@ export type ComponentSchema<$State extends State = CreateState> =
   | SelectSchema<$State>
   | MultiSelectSchema<$State>
   | ListSchema<$State>
-  | TextareaSchema
+  | TextareaSchema<$State>
   | CodeSchema<$State>
   | NumberSchema<$State>
   | SliderSchema<$State>
