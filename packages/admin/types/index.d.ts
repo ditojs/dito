@@ -874,7 +874,8 @@ export type ColumnSchema<$State extends State = State> = {
    */
   style?: string | Partial<CSSStyleDeclaration>
   /**
-   * The columns will be sorted by the first column schema to set defaultSort
+   * Sort the colum in ascending or descending order. Columns are ordered by the
+   * first column to specify `defaultSort`.
    */
    defaultSort?: 'asc' | 'desc'
 }
