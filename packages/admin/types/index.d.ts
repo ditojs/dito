@@ -627,7 +627,11 @@ export type MarkupSchema<
   /**
    * @defaultValue `'collapse'`
    */
-  whitespace?: OrItemAccessor<$State, {}, 'collapse' | 'preserve' | 'preserve-all'>
+  whitespace?: OrItemAccessor<
+    $State,
+    {},
+    'collapse' | 'preserve' | 'preserve-all'
+  >
   /**
    * The amount of visible lines.
    *
@@ -739,7 +743,9 @@ export type MultiSelectSchema<
   $InputState extends State = CreateState,
   $Option = any,
   $State extends State = AddComponent<$InputState, 'multiselect'>
-> = BaseSchema<$State> & SchemaOptionsMixin<$State, $Option> & MultiselectSchemaMixin
+> = BaseSchema<$State> &
+  SchemaOptionsMixin<$State, $Option> &
+  MultiselectSchemaMixin
 
 export type SelectSchema<
   $InputState extends State = CreateState,
@@ -875,16 +881,13 @@ export type ColumnSchema<$State extends State = State> = {
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
-type ListSchemaItemState<
-  $State extends State = CreateState,
-> = CreateState<AnyAlternative<
-  $State['name'],
-  any,
-  Unpacked<$State['item'][$State['name']]>
->>
+type ListSchemaItemState<$State extends State = CreateState> = CreateState<
+  AnyAlternative<$State['name'], any, Unpacked<$State['item'][$State['name']]>>
+>
 
 export type ListSchema<
   $InputState extends State = CreateState,
+  $ListItemState extends State = ListSchemaItemState<$InputState>,
   $State extends State = AddComponent<$InputState, 'list'>
 > = SchemaSourceMixin<$State> &
   BaseSchema<$State> & {
@@ -895,26 +898,28 @@ export type ListSchema<
     /**
      * The form.
      */
-    form?: ResolvableForm
+    form?: ResolvableForm<$ListItemState['item']>
     /**
      * The forms.
      */
-    forms?: ResolvableForm
+    forms?: ResolvableForm<$ListItemState['item']>
     /**
      * The label given to the items. If no itemLabel is given, the default is
      * the 'name' property of the item, followed by label of the form of the
      * view (plus item id) and other defaults.
      */
-    itemLabel?: ItemAccessor<ListSchemaItemState<$State>, {}, string> | string
+    itemLabel?: OrItemAccessor<$ListItemState, {}, string>
     /**
      * The columns displayed in the table. While columns can be supplied as an
      * array where each entry is the name of a property of the item, it is
      * usually beneficial to assign an object with further options to the
      * columns property.
      */
-    columns?: {
-      [$Key: string]: ColumnSchema<ListSchemaItemState<$State>>
-    }
+    columns?:
+      | {
+          [$Key: string]: ColumnSchema<$ListItemState>
+        }
+      | SelectItemKeys<$ListItemState['item']>[]
     /**
      * Scope names as defined on the model. When set, the admin renders a set of
      * scope buttons, allowing the user to switch between them while editing.
@@ -1961,7 +1966,9 @@ export type DitoContext<$State extends State> = {
   value: $State['value']
   name: $State['name']
   dataPath: string
-  item: $State['item']
+  item: {
+    [$Key in SelectItemKeys<$State['item']>]: $State['item'][$Key]
+  }
   /**
    * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
    * closest parent that isn't an array, e.g. for relations or nested JSON
@@ -1996,6 +2003,25 @@ export type DitoContext<$State extends State> = {
   wasNotified: boolean
 }
 
+export type View<$Item = any> =
+  | InputSchema<CreateState<$Item>>
+  | RadioSchema<CreateState<$Item>>
+  | CheckboxSchema<CreateState<$Item>>
+  | CheckboxesSchema<CreateState<$Item>>
+  | ColorSchema<CreateState<$Item>>
+  | SelectSchema<CreateState<$Item>>
+  | MultiSelectSchema<CreateState<$Item>>
+  | ListSchema<CreateState<$Item>, CreateState<$Item>>
+  | TextareaSchema<CreateState<$Item>>
+  | CodeSchema<CreateState<$Item>>
+  | NumberSchema<CreateState<$Item>>
+  | SliderSchema<CreateState<$Item>>
+  | UploadSchema<CreateState<$Item>>
+  | MarkupSchema<CreateState<$Item>>
+  | ButtonSchema<CreateState<$Item>>
+  | SwitchSchema<CreateState<$Item>>
+  | DateSchema<CreateState<$Item>>
+
 export type ComponentSchema<$State extends State = CreateState> =
   | InputSchema<$State>
   | RadioSchema<$State>
@@ -2016,22 +2042,21 @@ export type ComponentSchema<$State extends State = CreateState> =
   | DateSchema<$State>
 
 export type Components<$State extends State> = {
-  [name: string]: ComponentSchema<$State>
+  [$name in SelectItemKeys<$State['item']>]?: ComponentSchema<
+    CreateState<$State['item'], $name, $State['item'][$name]>
+  >
 }
 
 export type Buttons<$Item> = {
   [name: string]: Optional<ButtonSchema<CreateState<$Item>>, 'type'>
 }
 
-export type Form<
-  $Item = any,
-  $State extends State = CreateState<$Item>
-> = {
+export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
   /**
    * The name of the item model produced by the form.
    */
   name?: OrItemAccessor<$State, {}, string>
-   /**
+  /**
    * The label of the form.
    */
   label?: OrItemAccessor<$State, {}, string | boolean>
@@ -2047,7 +2072,7 @@ export type Form<
     [name: string]: Omit<Form<$Item>, 'tabs'> & { defaultTab?: boolean }
   }
   // TODO: document components
-  components?: Components<$State>
+  components?: Components<CreateState<$Item>>
   // TODO: document clipboard
   clipboard?:
     | boolean
@@ -2056,16 +2081,6 @@ export type Form<
         paste?: (...args: any[]) => any
       }
   buttons?: Buttons<$Item>
-}
-
-export type View<
-  $Item = any
-> = ListSchema<CreateState<$Item>> & {
-  /**
-   * The route of the view. If no path is given, the hyphenated export name
-   * is used.
-   */
-  path?: string
 }
 
 export type Resource =
@@ -2151,7 +2166,7 @@ export type CreateState<
   $Component extends keyof ComponentByType = 'unknown',
   $Schema extends keyof SchemaByType = 'unknown'
 > = {
-  item: WithoutMethods<$Item>
+  item: Required<$Item>
   name: $Name
   value: $Value
   component: $Component
@@ -2174,7 +2189,7 @@ export type AddComponent<
   name: $State['name']
   value: $State['value']
   schema: $State['schema']
-  component: $Component
+  component: $Component | 'unknown'
 }
 
 export type SchemaAccessorReturnType<T> = T extends ItemAccessor
@@ -2209,7 +2224,7 @@ export type ItemNameKeys<$State extends State> = IsAny<
   $State['item'][$State['name']]
 > extends 1
   ? string
-  : keyof Unpacked<$State['item'][$State['name']]>
+  : SelectItemKeys<Unpacked<$State['item'][$State['name']]>>
 
 // Wrap individual types when T is a discriminated union by using conditional
 // type check:
@@ -2226,6 +2241,11 @@ export type Extends<$A extends any, $B extends any> = IsAny<$A> extends 1
   : $A extends $B
   ? 1
   : 0
+
+export type SelectItemKeys<T> = Exclude<
+  keyof WithoutMethods<T>,
+  `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
+>
 
 export type SelectKeysNotExtending<
   $Object,
