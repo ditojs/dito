@@ -867,6 +867,10 @@ export type ColumnSchema<$State extends State = State> = {
    * cell html elements.
    */
   style?: string | Partial<CSSStyleDeclaration>
+  /**
+   * The columns will be sorted by the first column schema to set defaultSort
+   */
+   defaultSort?: 'asc' | 'desc'
 }
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
