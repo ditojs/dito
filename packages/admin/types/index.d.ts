@@ -1273,6 +1273,12 @@ export type DitoMixin<$State> = EmitterMixin & {
   }): Promise<$Item>
   getResourcePath(resource: any): string | null
   request<T extends any>(options: {
+    /**
+     * Allows caching of loaded data on two levels:
+     * - 'global': cache globally, for the entire admin session
+     * - 'local': cache locally within the closest route component that is
+     *   associated with a resource and loads its own data.
+     */
     cache?: 'local' | 'global'
     url: string
     /**
