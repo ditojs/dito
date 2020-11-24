@@ -408,19 +408,6 @@ export type SchemaOptions<$State extends State, $Option = any> =
 export interface SchemaOptionsMixin<$State extends State, $Option = any> {
   options?: SchemaOptions<$State, $Option>
   relate?: boolean
-  /**
-   * When defined, a search input field will be added to allow searching for
-   * specific options.
-   */
-  search?: {
-    filter?: ItemAccessor<$State, { query: string }, OrPromiseOf<$Option[]>>
-    debounce?:
-      | number
-      | {
-          delay: number
-          immediate?: boolean
-        }
-  }
 }
 
 export interface SchemaNumberMixin<$State extends State> {
@@ -716,36 +703,46 @@ export type UploadSchema<
   deletable?: boolean
 }
 
-export type MultiselectSchemaMixin = {
-  /**
-   * The type of the component.
-   */
-  type: 'multiselect'
-  /**
-   * Whether more than one option can be selected.
-   *
-   * @defaultValue `false`
-   */
-  multiple?: boolean
-  /**
-   * @defaultValue `false`
-   */
-  // TODO: document searchable
-  searchable?: boolean
-  /**
-   * @defaultValue `false`
-   */
-  // TODO: document taggable
-  taggable?: boolean
-}
-
-export type MultiSelectSchema<
+export type MultiselectSchema<
   $InputState extends State = CreateState,
   $Option = any,
   $State extends State = AddComponent<$InputState, 'multiselect'>
 > = BaseSchema<$State> &
-  SchemaOptionsMixin<$State, $Option> &
-  MultiselectSchemaMixin
+  SchemaOptionsMixin<$State, $Option> & {
+    /**
+     * The type of the component.
+     */
+    type: 'multiselect'
+    /**
+     * Whether more than one option can be selected.
+     *
+     * @defaultValue `false`
+     */
+    multiple?: boolean
+    /**
+     * @defaultValue `false`
+     */
+    // TODO: document searchable
+    searchable?: boolean
+    /**
+     * When defined, a search input field will be added to allow searching for
+     * specific options.
+     */
+    search?: {
+      filter?: ItemAccessor<$State, { query: string }, OrPromiseOf<$Option[]>>
+      debounce?:
+        | number
+        | {
+            delay: number
+            immediate?: boolean
+          }
+    }
+    /**
+     * @defaultValue `false`
+     */
+    // TODO: document taggable
+    taggable?: boolean
+  }
 
 export type SelectSchema<
   $InputState extends State = CreateState,
@@ -2017,7 +2014,7 @@ export type View<$Item = any> =
   | CheckboxesSchema<CreateState<$Item>>
   | ColorSchema<CreateState<$Item>>
   | SelectSchema<CreateState<$Item>>
-  | MultiSelectSchema<CreateState<$Item>>
+  | MultiselectSchema<CreateState<$Item>>
   | ListSchema<CreateState<$Item>, CreateState<$Item>>
   | TextareaSchema<CreateState<$Item>>
   | CodeSchema<CreateState<$Item>>
@@ -2036,7 +2033,7 @@ export type ComponentSchema<$State extends State = CreateState> =
   | CheckboxesSchema<$State>
   | ColorSchema<$State>
   | SelectSchema<$State>
-  | MultiSelectSchema<$State>
+  | MultiselectSchema<$State>
   | ListSchema<$State>
   | TextareaSchema<$State>
   | CodeSchema<$State>
@@ -2155,7 +2152,7 @@ export type SchemaByType<$State extends State = CreateState> = {
   date: DateSchema<$State>
   list: ListSchema<$State>
   markup: MarkupSchema<$State>
-  multiselect: MultiSelectSchema<$State>
+  multiselect: MultiselectSchema<$State>
   number: NumberSchema<$State>
   radio: RadioSchema<$State>
   select: SelectSchema<$State>
