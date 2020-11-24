@@ -874,7 +874,7 @@ export type ColumnSchema<$State extends State = State> = {
    * Sort the colum in ascending or descending order. Columns are ordered by the
    * first column to specify `defaultSort`.
    */
-   defaultSort?: 'asc' | 'desc'
+  defaultSort?: 'asc' | 'desc'
 }
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
@@ -937,7 +937,7 @@ export type ListSchema<
       | string[]
       | {
           [scopeName: string]: {
-            label?: string,
+            label?: string
             defaultScope?: boolean
           }
         }
