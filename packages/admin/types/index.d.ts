@@ -883,6 +883,12 @@ type ListSchemaItemState<$State extends State = CreateState> = CreateState<
   AnyAlternative<$State['name'], any, Unpacked<$State['item'][$State['name']]>>
 >
 
+type ItemFormByType<$Item extends { type: string }, $Type> = $Item extends {
+  type: $Type
+}
+  ? Form<Omit<$Item, 'type'>>
+  : never
+
 export type ListSchema<
   $InputState extends State = CreateState,
   $ListItemState extends State = ListSchemaItemState<$InputState>,
@@ -900,7 +906,12 @@ export type ListSchema<
     /**
      * The forms.
      */
-    forms?: ResolvableForm<$ListItemState['item']>
+    forms?: {
+      [$Type in $ListItemState['item']['type']]: ItemFormByType<
+        $ListItemState['item'],
+        $Type
+      >
+    }
     /**
      * The label given to the items. If no itemLabel is given, the default is
      * the 'name' property of the item, followed by label of the form of the
