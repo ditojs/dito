@@ -250,10 +250,7 @@ export type StorageConfig =
     }
 
 export interface AdminConfig {
-  /**
-   * @default Application.config.env or `'production'` when missing
-   */
-  mode?: 'production' | 'development'
+  api?: ApiConfig
   build?: {
     /**
      * Path to the admin's src directory. Mandatory when in development
@@ -273,18 +270,23 @@ export interface AdminConfig {
     path: string
   }
   /**
-   * Settings accessible on the browser side as `global.dito.settings`.
-   */
-  settings?: {
-    [k: string]: any
-  }
-  /**
    * Whether to use hot reload when in development mode.
    *
    * @default `true`
    */
   hotReload?: boolean
-  api?: ApiConfig
+  /**
+   * @default Application.config.env or `'production'` when missing
+   */
+  mode?: 'production' | 'development'
+  // TODO: document admin plugins
+  plugins?: (string | { id: string; apply: any })[]
+  /**
+   * Settings accessible on the browser side as `global.dito.settings`.
+   */
+  settings?: {
+    [k: string]: any
+  }
 }
 
 export interface ApiResource {
