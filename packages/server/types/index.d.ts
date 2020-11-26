@@ -1815,8 +1815,6 @@ export class QueryBuilder<
   ) => this
   patchById: (id: Id, data: PartialModelObject<M>) => this
   updateById: (id: Id, data: PartialModelObject<M>) => this
-  patchAndFetch: (data: PartialModelObject<M>) => this
-  updateAndFetch: (data: PartialModelObject<M>) => this
   upsertAndFetch: (data: PartialModelObject<M>) => this
   insertDitoGraph: (
     data: PartialDitoModelGraph<M>,
