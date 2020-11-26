@@ -209,13 +209,13 @@ export function isUnnested(schema) {
   return !!getTypeOptions(schema)?.unnested
 }
 
-export function getDefaultValue(schema) {
+export function getDefaultValue(schema, context = schema) {
   const defaultValue = schema.default
   const value = defaultValue !== undefined
     ? defaultValue
     : getTypeOptions(schema)?.defaultValue
   return isFunction(value)
-    ? value(schema)
+    ? value(context)
     : clone(value)
 }
 
