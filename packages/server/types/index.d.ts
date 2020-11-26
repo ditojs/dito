@@ -24,8 +24,8 @@ import koaBodyParser from 'koa-bodyparser'
 import * as objection from 'objection'
 
 export type Page<$Model extends Model> = {
-  total: number;
-  results: $Model[];
+  total: number
+  results: $Model[]
 }
 
 export type ApplicationConfig = {
@@ -1815,15 +1815,9 @@ export class QueryBuilder<
   ) => this
   patchById: (id: Id, data: PartialModelObject<M>) => this
   updateById: (id: Id, data: PartialModelObject<M>) => this
-  patchAndFetch: (
-    data: PartialModelObject<M>
-  ) => this
-  updateAndFetch: (
-    data: PartialModelObject<M>
-  ) => this
-  upsertAndFetch: (
-    data: PartialModelObject<M>
-  ) => this
+  patchAndFetch: (data: PartialModelObject<M>) => this
+  updateAndFetch: (data: PartialModelObject<M>) => this
+  upsertAndFetch: (data: PartialModelObject<M>) => this
   insertDitoGraph: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
