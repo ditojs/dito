@@ -968,8 +968,8 @@ export class Model extends objection.Model {
   static upsertAndFetch: QueryBuilder<Model>['upsertAndFetch']
   static updateAndFetch: QueryBuilder<Model>['updateAndFetch']
   static patchAndFetch: QueryBuilder<Model>['patchAndFetch']
-  static updateAndFetchById: QueryBuilder<Model>['updateAndFetchById']
   static patchAndFetchById: QueryBuilder<Model>['patchAndFetchById']
+  static updateAndFetchById: QueryBuilder<Model>['updateAndFetchById']
 
   static insertGraph: QueryBuilder<Model>['insertGraph']
   static upsertGraph: QueryBuilder<Model>['upsertGraph']
@@ -1813,13 +1813,16 @@ export class QueryBuilder<
       | QueryParameterOptionKey[]
       | { [key in keyof QueryParameterOptionKey]: boolean }
   ) => this
-  updateById: (id: Id, data: PartialModelObject<M>) => this
   patchById: (id: Id, data: PartialModelObject<M>) => this
+  updateById: (id: Id, data: PartialModelObject<M>) => this
+  patchAndFetch: (
+    data: PartialModelObject<M>
+  ) => this
+  updateAndFetch: (
+    data: PartialModelObject<M>
+  ) => this
   upsertAndFetch: (
-    data: PartialModelObject<M>,
-    options?: {
-      update: boolean
-    }
+    data: PartialModelObject<M>
   ) => this
   insertDitoGraph: (
     data: PartialDitoModelGraph<M>,
