@@ -260,12 +260,8 @@ export class Application extends Koa {
     return Object.values(this.services).find(callback)
   }
 
-  async callServices(method, ...args) {
-    return Promise.all(
-      Object.values(this.services).map(
-        service => service[method](...args)
-      )
-    )
+  forEachService(callback) {
+    return Promise.all(Object.values(this.services).map(callback))
   }
 
   addControllers(controllers, namespace) {
@@ -621,7 +617,7 @@ export class Application extends Koa {
       this.on('error', this.onError)
     }
     await this.emit('before:start')
-    await this.callServices('start')
+    await this.forEachService(service => service.start())
     const {
       server: { host, port },
       env
@@ -656,7 +652,7 @@ export class Application extends Koa {
         reject(new Error('Server is not running'))
       }
     })
-    await this.callServices('stop')
+    await this.forEachService(service => service.stop())
     await this.emit('after:stop')
   }
 
