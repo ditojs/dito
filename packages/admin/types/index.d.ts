@@ -175,6 +175,7 @@ export interface BaseSchema<$State extends State>
 
   default?: OrItemAccessor<$State>
   compute?: ItemAccessor<$State>
+  data?: OrItemAccessor<$State, {}, {[key: string: any}>
 }
 
 // TODO: finish off DitoMixin docs
