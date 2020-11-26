@@ -400,25 +400,23 @@ export type Models = {
 }
 
 export class Application {
-  constructor(
-    config: ApplicationConfig,
-    elements: {
-      validator?: Validator
-      // TODO: router types
-      router?: any
-      /**
-       * Subscribe to application events. Event names: `'before:start'`,
-       * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
-       */
-      events?: {
-        [eventName: string]: (this: Application, ...args: []) => void
-      }
-      models: Models
-      controllers?: ApplicationControllers
-      // TODO: services docs
-      services?: Services
+  constructor(options: {
+    config?: ApplicationConfig
+    validator?: Validator
+    // TODO: router types
+    router?: any
+    /**
+     * Subscribe to application events. Event names: `'before:start'`,
+     * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
+     */
+    events?: {
+      [eventName: string]: (this: Application, ...args: []) => void
     }
-  )
+    models: Models
+    controllers?: ApplicationControllers
+    // TODO: services docs
+    services?: Services
+  })
   start(): Promise<void>
   stop(): Promise<void>
   startOrExit(): Promise<void>
