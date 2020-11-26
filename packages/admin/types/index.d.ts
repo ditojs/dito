@@ -720,11 +720,16 @@ export type MultiselectSchema<
      * @defaultValue `false`
      */
     multiple?: boolean
+    // TODO: document searchable
     /**
      * @defaultValue `false`
      */
-    // TODO: document searchable
     searchable?: boolean
+    // TODO: document stayOpen
+    /**
+     * @defaultValue `false`
+     */
+    stayOpen?: boolean
     /**
      * When defined, a search input field will be added to allow searching for
      * specific options.
