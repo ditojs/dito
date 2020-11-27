@@ -167,12 +167,6 @@ export interface ApiConfig {
 export interface BaseSchema<$State extends State>
   extends SchemaDitoMixin<$State>,
     SchemaTypeMixin<$State> {
-  /**
-   * Use a Vue component to render the component. The component is specified
-   * like this: import(...).
-   */
-  component?: Promise<Vue>
-
   default?: OrItemAccessor<$State>
   compute?: ItemAccessor<$State>
   data?: OrItemAccessor<$State, {}, {[key: string]: any}>
@@ -441,9 +435,16 @@ export interface SchemaNumberMixin<$State extends State> {
   }
 }
 
-export type InputSchema<$State extends State> = BaseSchema<
-  AddComponent<$State, 'text'>
-> & {
+export type ComponentSchema<$State extends State> = BaseSchema<$State> & {
+  type: 'component'
+  /**
+   * Use a Vue component to render the component. The component is specified
+   * like this: import(...).
+   */
+  component: OrPromiseOf<Vue>
+}
+
+export type InputSchema<$State extends State> = BaseSchema<$State> & {
   /**
    * The type of the component.
    */
@@ -1055,7 +1056,7 @@ export type View<$Item = any> =
   | SwitchSchema<CreateState<$Item>>
   | DateSchema<CreateState<$Item>>
 
-export type ComponentSchema<$State extends State = CreateState> =
+export type Component<$State extends State = CreateState> =
   | InputSchema<$State>
   | RadioSchema<$State>
   | CheckboxSchema<$State>
@@ -1073,9 +1074,10 @@ export type ComponentSchema<$State extends State = CreateState> =
   | ButtonSchema<$State>
   | SwitchSchema<$State>
   | DateSchema<$State>
+  | ComponentSchema<$State>
 
 export type Components<$State extends State> = {
-  [$name in SelectItemKeys<$State['item']>]?: ComponentSchema<
+  [$name in SelectItemKeys<$State['item']>]?: Component<
     CreateState<$State['item'], $name, $State['item'][$name]>
   >
 }
@@ -1156,6 +1158,7 @@ export type SchemaByType<$State extends State = CreateState> = {
   checkboxes: CheckboxesSchema<$State>
   code: CodeSchema<$State>
   color: ColorSchema<$State>
+  component: ComponentSchema<$State>
   date: DateSchema<$State>
   list: ListSchema<$State>
   markup: MarkupSchema<$State>
