@@ -2,6 +2,7 @@
   .dito-tabs
     router-link.dito-link(
       v-for="(tabSchema, key) in tabs"
+      v-if="shouldRender(tabSchema)"
       :key="key"
       :to="{ hash: key }"
       active-class="dito-active"
