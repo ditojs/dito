@@ -254,7 +254,11 @@ export default DitoComponent.component('dito-schema', {
       if (this.tabs) {
         let first = null
         for (const tab of Object.values(this.tabs)) {
-          if (tab.defaultTab) {
+          const { defaultTab } = tab
+          if (isFunction(defaultTab)
+            ? defaultTab.call(this, new DitoContext(this))
+            : defaultTab
+          ) {
             return tab
           }
           if (!first) {
