@@ -269,14 +269,14 @@ export interface SchemaTypeMixin<$State extends State> {
    * Specifies a function which changes the item value into another format,
    * before it is passed to the component.
    */
-  format?: ItemAccessor<$State>
+  format?: ItemAccessor<$State, {}, any>
   disabled?: OrItemAccessor<$State, {}, boolean>
 
   /**
    * Specifies a function which parses the component value when it changes,
    *
    */
-  parse?: ItemAccessor<$State>
+  parse?: ItemAccessor<$State, any>
 
   // TODO: document process
   process?: OrItemAccessor<$State>
