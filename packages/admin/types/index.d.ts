@@ -470,7 +470,7 @@ export type InputSchema<$State extends State> = BaseSchema<
 
 export type DateSchema<
   $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'date'>
+  $State extends State = $InputState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -484,8 +484,7 @@ export type DateSchema<
 }
 
 export type ButtonSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'button'>,
+  $State extends State = CreateState,
   $EventHandler = ItemEventHandler<$State>
 > = BaseSchema<$State> & {
   /**
@@ -506,8 +505,7 @@ export type ButtonSchema<
 }
 
 export type SwitchSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'switch'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -530,8 +528,7 @@ export type SwitchSchema<
 }
 
 export type NumberSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'number'>
+  $State extends State = CreateState
 > = SchemaNumberMixin<$State> &
   BaseSchema<$State> & {
     /**
@@ -541,8 +538,7 @@ export type NumberSchema<
   }
 
 export type SliderSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'slider'>
+  $State extends State = CreateState
 > = SchemaNumberMixin<$State> &
   BaseSchema<$State> & {
     /**
@@ -554,8 +550,7 @@ export type SliderSchema<
   }
 
 export type TextareaSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'textarea'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -574,8 +569,7 @@ export type TextareaSchema<
 }
 
 export type CodeSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'code'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -602,8 +596,7 @@ export type CodeSchema<
 }
 
 export type MarkupSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'markup'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -661,8 +654,7 @@ export type MarkupSchema<
 }
 
 export type UploadSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'upload'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -706,9 +698,8 @@ export type UploadSchema<
 }
 
 export type MultiselectSchema<
-  $InputState extends State = CreateState,
-  $Option = any,
-  $State extends State = AddComponent<$InputState, 'multiselect'>
+  $State extends State = CreateState,
+  $Option = any
 > = BaseSchema<$State> &
   SchemaOptionsMixin<$State, $Option> & {
     /**
@@ -752,8 +743,7 @@ export type MultiselectSchema<
   }
 
 export type SelectSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'select'>
+  $State extends State = CreateState
 > = BaseSchema<$State> &
   SchemaOptionsMixin<$State> & {
     /**
@@ -763,8 +753,7 @@ export type SelectSchema<
   }
 
 export type RadioSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'radio'>
+  $State extends State = CreateState
 > = BaseSchema<$State> &
   SchemaOptionsMixin<$State> & {
     /**
@@ -778,8 +767,7 @@ export type RadioSchema<
   }
 
 export type CheckboxSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'checkbox'>
+  $State extends State = CreateState
 > = BaseSchema<$State> & {
   /**
    * The type of the component.
@@ -788,8 +776,7 @@ export type CheckboxSchema<
 }
 
 export type CheckboxesSchema<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'checkboxes'>
+  $State extends State = CreateState
 > = BaseSchema<$State> &
   SchemaOptionsMixin<$State> & {
     /**
@@ -813,9 +800,9 @@ export type ColorFormat =
   | 'name'
   | 'hsl'
   | 'hsv'
-export type ColorSchema<$State extends State = CreateState> = BaseSchema<
-  AddComponent<$State, 'color'>
-> & {
+export type ColorSchema<
+  $State extends State = CreateState
+> = BaseSchema<$State> & {
   /**
    * The type of the component.
    */
@@ -823,13 +810,13 @@ export type ColorSchema<$State extends State = CreateState> = BaseSchema<
   /**
    * The color format.
    */
-  format?: OrItemAccessor<AddComponent<$State, 'color'>, {}, ColorFormat>
+  format?: OrItemAccessor<$State, {}, ColorFormat>
   /**
    * Whether the color may contain an alpha component.
    *
    * @defaultValue `false`
    */
-  alpha?: OrItemAccessor<AddComponent<$State, 'color'>, {}, boolean>
+  alpha?: OrItemAccessor<$State, {}, boolean>
   /**
    * @defaultValue true
    */
@@ -837,13 +824,13 @@ export type ColorSchema<$State extends State = CreateState> = BaseSchema<
   /**
    * @defaultValue `true`
    */
-  inputs?: OrItemAccessor<AddComponent<$State, 'color'>, {}, boolean>
+  inputs?: OrItemAccessor<$State, {}, boolean>
   /**
    * Color presets as an array of color values as strings in any css
    * compatible format.
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
    */
-  presets?: OrItemAccessor<AddComponent<$State, 'color'>, {}, string[]>
+  presets?: OrItemAccessor<$State, {}, string[]>
 }
 
 export type ColumnSchema<$State extends State = State> = {
@@ -897,9 +884,8 @@ type ItemFormByType<$Item extends { type: string }, $Type> = $Item extends {
   : never
 
 export type ListSchema<
-  $InputState extends State = CreateState,
-  $ListItemState extends State = ListSchemaItemState<$InputState>,
-  $State extends State = AddComponent<$InputState, 'list'>
+  $State extends State = CreateState,
+  $ListItemState extends State = ListSchemaItemState<$State>
 > = SchemaSourceMixin<$State> &
   BaseSchema<$State> & {
     /**
@@ -985,309 +971,41 @@ export type ItemAccessor<
   $State extends State = CreateState,
   $Params extends {} = {},
   $ReturnValue = $State['value']
-> = (
-  this: ComponentByType[$State['component']],
-  params: DitoContext<$State> & $Params
-) => $ReturnValue
+> = (params: DitoContext<$State> & $Params) => $ReturnValue
 
-export interface ValidatorMixin {
-  // computed
-  mainSchemaComponent: any
-  errors: null | string[]
-  isTouched: boolean
-  isDirty: boolean
-  isValid: boolean
-  isValidated: boolean
-
-  // methods
-  validateAll(match: any, notify?: boolean): boolean
-  verifyAll(match: any): boolean
-  resetValidation(): void
-  clearErrors(): void
-  showValidationErrors(): void
-}
-
-export interface ValidationMixin {
-  data: {
-    isTouched: boolean
-    isDirty: boolean
-    isValidated: boolean
-    isValid: boolean
-    errors: null | any[]
+export type DitoContext<$State extends State> = {
+  value: $State['value']
+  name: $State['name']
+  dataPath: string
+  item: {
+    [$Key in SelectItemKeys<$State['item']>]: $State['item'][$Key]
   }
-
-  // computed
-  events: {
-    focus: () => void
-    blur: () => void
-    change: () => void
-    input: () => void
-  }
-
-  // methods
-  resetValidation(): void
-  validate(notify?: boolean): boolean
-  verify(): boolean
-  markDirty(): void
-  addError(error: string, addLabel?: boolean): void
-  showValidationErrors(errors: string[], focus?: boolean): true
-  getErrors(): string[] | null
-  clearErrors(): void
-}
-
-export interface RouteMixin {
-  data: {
-    reload: boolean
-    store: any
-    loadCache: any
-  }
-
-  // computed
-  routeComponent: Vue
-  routeRecord: any
-  isLastRoute: boolean
-  isLastUnnestedRoute: boolean
-  isNestedRoute: boolean
-  meta?: any
-  path: string
-  label: string
-  breadcrumb: string
-  breadcrumbPrefix: string
-  param: any | null
-  doesMutate: boolean
-
-  // methods
-  beforeRouteChange(to: any, from: any, next: any): void
-  getRoutePath(templatePath: string): string
-  getChildPath(path: string): string
-  isFullRouteChange(to: any, from: any): boolean
-}
-
-export interface ItemMixin {
-  // // methods
-  getItemForm(schema: any, item: any): any
-
-  getItemId(sourceSchema: any, item: any, uid: any): string | undefined
-
-  getItemDataPath(sourceSchema: any, index: any): string
-
-  findItemIdIndex(sourceSchema: any, data: any, itemId: any): number | null
-
-  getItemLabel(
-    sourceSchema: any,
-    item: any,
-    options?: {
-      index?: string | null
-      extended?: boolean
-      asObject?: boolean
-    }
-  ): { text: string; prefix: string; suffix: string } | string
-}
-
-export type LoadingMixin = {
-  data: {
-    isLoading: boolean
-  }
-
-  // methods
-  setLoading(
-    isLoading: boolean,
-    options?: { updateRoot?: boolean; updateView?: boolean }
-  ): void
-}
-export type ResourceMixin = ItemMixin &
-  LoadingMixin & {
-    data: {
-      loadedData: any
-      isResource: boolean
-    }
-
-    // computed
-    resource: any
-    providesData: boolean
-    isTransient: boolean
-    transientNote: string
-    shouldLoad: boolean
-    hasData: string
-    verbs: {
-      [k: string]: string
-    }
-    paginationRange: [number, number]
-    queryParams: {
-      [k: string]: any
-    }
-
-    // methods
-    getResource(): any
-    getVerbs: {
-      [k: string]: string
-    }
-    clearData(): void
-    setData(data: any): void
-    setupData(): void
-    ensureData(): void
-    reloadData(): void
-    loadData(clear?: boolean): void
-    createData(schema: any, type: any): void
-    requestData(): void
-    isValidationError(response: { status: number }): boolean
-    isUnauthorizedError(response: { status: number }): boolean
-    handleRequest(
-      method: HTTPVerb,
-      resource: any,
-      data: any,
-      params: any
-    ): Promise<any>
-    getPayloadData(button: any, method: HTTPVerb): any
-    submit(button: any): Promise<boolean>
-    submitResource(
-      button: any,
-      resource: any,
-      method: HTTPVerb,
-      data: any,
-      options?: {
-        setData?: boolean
-        notifySuccess?: () => void
-        notifyError?: (error: any) => void
-      }
-    ): Promise<boolean>
-    emitButtonEvent(
-      button: any,
-      event: string,
-      options: {
-        notify?: () => void
-        error: any
-      }
-    ): Promise<void>
-  }
-
-export interface SchemaParentMixin {
-  //data
-  schemaComponents: any[]
-  // provide
-  $schemaParentComponent: Vue
-}
-
-export type DomEventHandler = <T extends Event>(e: T) => void
-
-export interface DomMixin {
-  data: {
-    domHandlers: { remove: () => void }[]
-  }
-
-  // methods
-  domOn(
-    element: Element,
-    handlersByEvent: { [eventName: string]: DomEventHandler }
-  ): void
-  domOn(element: Element, type: string, handler?: DomEventHandler): void
-}
-
-export interface EmitterMixin {
-  data: {
-    $events: null | {
-      [eventName: string]: {
-        callbacks: ((...args: any[]) => void)[]
-        queue: { args: any[]; resolve: (result: any) => void }[]
-      }
-    }
-  }
-
-  // methods
-  on(event: string, callback: (...args: any[]) => void): this
-  once(event: string, callback: (...args: any[]) => void): this
-  off(event: string, callback: (...args: any[]) => void): this
-  emit(event: string, ...args: any[]): void
-  responds(event: string): boolean
-  delegate<T extends EmitterMixin>(event: OrArrayOf<string>, target: T): this
-}
-
-export type DitoMixin<$State> = EmitterMixin & {
-  $dataComponent?: () => Vue
-  $sourceComponent?: () => Vue
-  $resourceComponent?: () => Vue
-
-  data: {
-    appState: {
-      title: string
-      routeComponents: any[]
-      user: any | null
-      loadCache: any
-      activeLabel: string | null
-    }
-    overrides: any | null
-  }
-
-  // computed
-  sourceSchema: any
+  /**
+   * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
+   * closest parent that isn't an array, e.g. for relations or nested JSON
+   * data.  This is why the term `item` was chosen over `data`, e.g. VS the
+   * use of `parentData` in server-sided validation, which is the closest
+   * parent. If needed, we could expose this data here too, as we can do all
+   * sorts of data processing with `rootData` and `dataPath`.
+   */
+  parentItem: any
+  rootItem: any
+  list: any
+  index: any
   user: any
-  verbs: {
-    [k: string]: string
-  }
-  isPopulated: boolean
-  locale: string
-  rootComponent: DitoRoot
-  schemaComponent: Vue
-  routeComponent: Vue
-  formComponent: DitoForm | null
-  viewComponent: DitoView | null
-  dataComponent: Vue
-  sourceComponent: Vue
-  resourceComponent: Vue
-  parentSchemaComponent: Vue | undefined
-  parentRouteComponent: Vue | undefined
-  parentFormComponent: Vue | undefined
-  rootData: any | undefined
-
-  // methods
-  getStore(key: string): any
-  setStore<T>(key: string, value: T): T
-  getChildStore<T extends any>(key: string): T
-  getSchemaValue(
-    keyOrDataPath: OrArrayOf<string>,
-    options?: {
-      type?: OrArrayOf<string>
-      default?: (params: any) => any
-      schema?: any
-    }
-  ): any
-  getLabel(schema: any, name?: string): string
-  labelize(string: string): string
-  getButtonAttributes(
-    name: string,
-    button: any
-  ): {
-    class: string
-    title: string
-  }
-  getDragOptions(
-    draggable: boolean
-  ): {
-    animation: number
-    disabled: boolean
-    handle: string
-    dragClass: string
-    chosenClass: string
-    ghostClass: string
-  }
-  getQueryLink<T extends any>(
-    query: T
-  ): {
-    query: T
-    hash: string
-  }
-  shouldRender(schema?: any): boolean
-  showDialog<$Item>(options: {
-    components: Components<any>
-    buttons?: Buttons<$Item>
-    data: any
-    settings?: {
-      width: number
-      height: number | string
-      clickToClose: boolean
-    }
-  }): Promise<$Item>
-  getResourcePath(resource: any): string | null
+  api: ApiConfig
+  itemLabel: string | null
+  formLabel: string | null
+  component: any
+  schemaComponent: Vue | null
+  formComponent: any
+  viewComponent: any
+  dialogComponent: any
+  panelComponent: Vue | null
+  sourceComponent: Vue | null
+  options: any
+  query: string
+  error: any | null
   request<T extends any>(options: {
     /**
      * Allows caching of loaded data on two levels:
@@ -1314,713 +1032,6 @@ export type DitoMixin<$State> = EmitterMixin & {
     title?: string
     text: OrArrayOf<string>
   }): void
-  closeNotifications(): void
-  setupSchemaFields(): void
-  setupMethods(): void
-  setupComputed(): void
-  setupEvents(): void
-  // emitEvent<T extends BaseSchema<any, any, any, any>>(
-  //   event: string,
-  //   options?: {
-  //     params?: OrFunctionReturning<
-  //       Partial<DitoContext<$State>>
-  //     >
-  //     parent?: T
-  //   }
-  // ): Promise<any | boolean>
-  sendRequest(options: {
-    method: HTTPVerb
-    url?: string
-    resource: any
-    data: any
-    params: any
-    internal?: boolean
-  }): Promise<any>
-}
-
-export type MixinComponent<$State extends State> = ValidationMixin & {
-  data: {
-    focused: boolean
-  }
-
-  // computed
-  name: $State['name']
-  type: string
-  value: $State['value']
-  item: $State['item']
-  parentItem: any
-  rootItem: any
-  processedItem: any
-  validations: any
-  dataProcessor: any
-  label: SchemaAccessorReturnType<SchemaTypeMixin<$State>['label']>
-  width: SchemaAccessorReturnType<SchemaTypeMixin<$State>['width']>
-  visible: SchemaAccessorReturnType<SchemaTypeMixin<$State>['visible']>
-  exclude: SchemaAccessorReturnType<SchemaTypeMixin<$State>['exclude']>
-  required: SchemaAccessorReturnType<SchemaTypeMixin<$State>['required']>
-  autofocus: SchemaAccessorReturnType<SchemaTypeMixin<$State>['autofocus']>
-  clearable: SchemaAccessorReturnType<SchemaTypeMixin<$State>['clearable']>
-  placeholder: SchemaAccessorReturnType<SchemaTypeMixin<$State>['placeholder']>
-  autocomplete: SchemaAccessorReturnType<
-    SchemaTypeMixin<$State>['autocomplete']
-  >
-
-  // methods
-  getValidations(): any[] | null
-  getDataProcessor(): any | null
-  focus(): void
-  clear(): void
-}
-
-export type NumberMixin<$State extends State> = {
-  // computed
-  inputValue: string
-  isInteger: boolean
-  stepValue: 'any' | number
-  decimals: SchemaAccessorReturnType<NumberSchema<$State>['decimals']>
-  step: SchemaAccessorReturnType<NumberSchema<$State>['step']>
-  min: SchemaAccessorReturnType<NumberSchema<$State>['min']>
-  max: SchemaAccessorReturnType<NumberSchema<$State>['max']>
-  range: SchemaAccessorReturnType<NumberSchema<$State>['range']>
-
-  // validations
-  getValidations(): any[] | null
-}
-
-export type SourceMixin<$State extends State> = ResourceMixin &
-  SchemaParentMixin & {
-    data: {
-      isSource: boolean
-      wrappedPrimitives: any | null
-      unwrappingPrimitives: boolean
-      ignoreRouteChange: boolean
-    }
-
-    // computed
-    isObjectSource: boolean
-    isListSource: boolean
-    isReady: boolean
-    isInView: boolean
-    wrapPrimitives: any
-    listData: any
-    objectData: any
-    sourceSchema: any
-    path: string
-    defaultQuery: { order?: string }
-    query: any
-    total: any
-    columns: any
-    scopes: any
-    defaultScope: any
-    defaultOrder: any
-    nestedMeta: any
-    forms: any[]
-    buttonSchemas: any
-    hasLabels: boolean
-    isCompact: boolean
-    paginate: SchemaAccessorReturnType<SchemaSourceMixin<$State>['paginate']>
-    /**
-     * @defaultValue `false`
-     */
-    inlined: SchemaAccessorReturnType<SchemaSourceMixin<$State>['inlined']>
-    /**
-     * @defaultValue `false`
-     */
-    creatable: SchemaAccessorReturnType<SchemaSourceMixin<$State>['creatable']>
-    /**
-     * @defaultValue `false`
-     */
-    editable: SchemaAccessorReturnType<SchemaSourceMixin<$State>['editable']>
-    /**
-     * @defaultValue `false`
-     */
-    deletable: SchemaAccessorReturnType<SchemaSourceMixin<$State>['deletable']>
-    /**
-     * @defaultValue `false`
-     */
-    draggable: SchemaAccessorReturnType<SchemaSourceMixin<$State>['draggable']>
-    /**
-     * @defaultValue `false`
-     */
-    collapsible: SchemaAccessorReturnType<
-      SchemaSourceMixin<$State>['collapsible']
-    >
-    /**
-     * @defaultValue `false`
-     */
-    collapsed: SchemaAccessorReturnType<SchemaSourceMixin<$State>['collapsed']>
-
-    // methods
-    setupData(): void
-    clearData(): void
-    unwrapListData(data: any): any[] | undefined
-    createItem(schema: any, type: any): any
-    removeItem(item: any): void
-    deleteItem(item: any, index: any): void
-    openSchemaComponent(index: any): void
-    navigateToComponent(
-      dataPath: OrArrayOf<string>,
-      onComplete: (routeComponent: Vue) => void
-    ): boolean
-    processSchema(
-      api: any,
-      schema: any,
-      name: any,
-      routes: any,
-      level: number,
-      nested?: boolean,
-      flatten?: boolean,
-      process?: (routes: any[], level: number) => Promise<void>
-    ): Promise<void>
-  }
-
-export type OptionsMixin<$State extends State> = {
-  data: {
-    loadedOptions: any | null
-    hasOptions: boolean
-  }
-
-  // computed
-  selectedValue: any
-  selectedOption: any
-  options: any
-  activeOptions: any
-  relate: boolean
-  groupBy: any
-  groupByLabel: any
-  groupByOptions: any
-  optionLabel: any
-  optionValue: any
-  searchFilter: any
-
-  // methods
-  getDataProcessor(): any | null
-  getOptionKey(key: string): any
-  loadOptions<T extends any>(
-    load: () => Promise<T>,
-    settings?: { updateRoot?: boolean; updateView?: boolean }
-  ): Promise<T>
-  processOptions(options: any): any
-  hasOption(option: any): boolean
-  getOptionForValue(value: any): any
-  getValueForOption(option: any): any | undefined
-  getLabelForOption(option: any): string
-}
-
-export type OrderedMixin<$State> = {
-  data: {
-    dragging: false
-  }
-
-  // methods
-  onStartDrag(): void
-  onEndDrag(): void
-  updateOrder(list: any, schema: any, draggable: boolean): any[] | undefined
-}
-
-export class BaseComponent<$State> extends DitoComponent<$State> {
-  data: DitoComponent<$State>['data'] & MixinComponent<$State>['data']
-  component: Vue
-  static register(types: OrArrayOf<string>, definition: any): Vue
-  static get(type: string): Vue
-}
-export interface BaseComponent<$State extends State>
-  extends MixinComponent<$State> {}
-
-export class NumberComponent<
-  $InputState extends State,
-  $State extends State = $InputState & {
-    component: NumberComponent<$InputState>
-  }
-> extends BaseComponent<$State> {
-  schema: NumberSchema<$State>
-
-  // computed:
-  isInteger: boolean
-}
-export interface NumberComponent<
-  $InputState extends State = CreateState,
-  $State extends State = $InputState & {
-    component: NumberComponent<$InputState>
-  }
-> extends NumberMixin<$State> {}
-
-export class ButtonComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'button'>
-> extends BaseComponent<$State> {
-  schema: ButtonSchema<$State>
-
-  // computed
-  verb: string
-  text: string
-  closeForm: SchemaAccessorReturnType<ButtonSchema<$State>['closeForm']>
-
-  // methods
-  onClick(): Promise<void>
-  submit(): Promise<any>
-}
-
-export class CheckboxComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'button'>
-> extends BaseComponent<$State> {
-  schema: CheckboxSchema
-}
-
-export class CheckboxesComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'button'>
-> extends BaseComponent<$State> {
-  schema: CheckboxesSchema
-  data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
-}
-export interface CheckboxesComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'button'>
-> extends OptionsMixin<$State> {}
-
-export class CodeComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'code'>
-> extends BaseComponent<$State> {
-  schema: SchemaByType<$State>[$State['component']]
-
-  // computed
-  lines: number
-  style: string
-
-  /**
-   * Focuses the textarea element.
-   */
-  focus(): void
-}
-
-export class ColorComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'color'>
-> extends BaseComponent<$State> {
-  schema: ColorSchema<$State>
-
-  data: BaseComponent<$State>['data'] & {
-    showPopup: boolean
-    convertedHexValue: string | null
-  }
-
-  // computed
-  colorValue: string
-  hexValue: string
-  format: SchemaAccessorReturnType<ColorSchema['format']>
-  alpha: SchemaAccessorReturnType<ColorSchema['alpha']>
-  inputs: SchemaAccessorReturnType<ColorSchema['inputs']>
-  presets: SchemaAccessorReturnType<ColorSchema['presets']>
-}
-
-export class ComputedComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends BaseComponent<$State> {}
-
-export class DateComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends BaseComponent<$State> {
-  schema: DateSchema<$State>
-
-  // computed
-  dateValue: Date
-  dateFormat: SchemaAccessorReturnType<DateSchema<$State>['dateFormat']>
-
-  // methods
-  getComponent<T extends 'date' | 'time' | 'datetime'>(
-    type: T
-  ): T extends 'date'
-    ? 'date-picker'
-    : T extends 'time'
-    ? 'time-picker'
-    : T extends 'datetime'
-    ? 'date-time-picker'
-    : never
-  getDataProcessor(): any | null
-}
-
-export class ListComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends BaseComponent<$State> {
-  schema: ListSchema<$State>
-
-  data: BaseComponent<$State>['data'] & OrderedSourceMixin<$State>['data']
-
-  // computed
-  hasListButtons: boolean
-  hasEditButtons: boolean
-  hasCellEditButtons: boolean
-  hasEventCount: boolean
-  numColumns: number
-
-  // methods
-  getDataPath(index: number): string
-  getEditPath(item: any, index: any): string | null
-  getCellClass(cell: { name: string }): string
-  getDitoContext(item: any, index: any): any
-  onFilterErrors(errors: string[]): true | undefined
-}
-export interface ListComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends OrderedSourceMixin<$State> {}
-
-export class MarkupComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends BaseComponent<$State> {
-  schema: MarkupSchema
-  data: BaseComponent<$State>['data'] &
-    DomMixin['data'] & {
-      editor: null
-      height: null
-    }
-  // computed
-  lines: number
-  styles: {
-    height: any | null
-  }
-  markButtons: any
-  basicNodeButtons: any
-  otherNodeButtons: any
-  toolButtons: any
-  groupedButtons: any
-  parseOptions: {
-    preserveWhitespace: boolean | 'full'
-  }
-  editorOptions: {
-    editable: boolean
-    autoFocus: boolean
-    disableInputRules: boolean
-    disablePasteRules: boolean
-    parseOptions: MarkupComponent<$State>['parseOptions']
-  }
-  resizable: SchemaAccessorReturnType<MarkupSchema<$State>['resizable']>
-  whitespace: SchemaAccessorReturnType<MarkupSchema<$State>['whitespace']>
-  enableRules: SchemaAccessorReturnType<MarkupSchema<$State>['enableRules']>
-
-  // methods
-  onDragResize(event: { clientX: number; clientY: number }): void
-  updateEditorOptions(): void
-  onClickLink(command: (command: { href: string; title: string }) => void): void
-  createExtensions(): void
-  getButtons(settingsName: string, descriptions: any): any
-  /**
-   * Scrolls the editor into view and focuses it.
-   */
-  focus(): void
-}
-export interface MarkupComponent<$InputState extends State> extends DomMixin {}
-
-export class RadioComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'radio'>
-> extends BaseComponent<$State> {
-  schema: RadioSchema<$State>
-
-  data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
-}
-export interface RadioComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'radio'>
-> extends OptionsMixin<$State> {}
-
-// // TODO: TypeSection
-
-export class SelectComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends BaseComponent<$State> {
-  schema: SelectSchema<$State>
-
-  data: BaseComponent<$State>['data'] &
-    OptionsMixin<$State>['data'] & {
-      populate: true
-    }
-}
-export interface SelectComponent<
-  $InputState extends State,
-  $State extends State = AddComponent<$InputState, 'list'>
-> extends OptionsMixin<$State> {}
-
-export class SliderComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'slider'>
-> extends BaseComponent<$State> {
-  schema: SliderSchema<$State>
-
-  // computed
-  input: ItemAccessor<$State, {}, boolean>
-}
-export interface SliderComponent<
-  $InputState extends State = CreateState,
-  $State = AddComponent<$InputState, 'slider'>
-> extends NumberMixin<$State> {}
-
-export class SwitchComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'text'>
-> extends BaseComponent<$State> {
-  schema: SwitchSchema<$State>
-
-  // computed
-  labels: SwitchSchema<$State>['labels']
-}
-
-export class TextComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'text'>
-> extends BaseComponent<$State> {
-  schema: InputSchema<$State>
-
-  // computed
-  inputType: 'text' | 'password'
-  inputValue?: string
-
-  // methods:
-  // TODO: getValidations()
-}
-
-export class TextareaComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'textarea'>
-> extends BaseComponent<$State> {
-  schema: SchemaByType[$State['component']]
-  // computed
-  lines: number
-  resizable: ItemAccessor<$State, {}, boolean>
-}
-
-// // TODO: TypeTreeList
-
-export class UploadComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'upload'>
-> extends BaseComponent<$State> {
-  schema: UploadSchema
-  data: BaseComponent<$State>['data'] & OrderedMixin<$State>['data']
-  // computed
-  upload: any
-  files: any
-  multiple: ItemAccessor<$State>
-  extensions: NonNullable<UploadSchema['extensions']>
-  // TODO: finish off
-  // accept:
-}
-export interface UploadComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'upload'>
-> extends OrderedMixin<$State> {}
-
-export type OrderedSourceMixin<$State extends State> = SourceMixin<$State> &
-  OrderedMixin<$State>
-
-export class DitoComponent<$State extends State> extends Vue {
-  // schema: BaseSchema<any, any>
-  // methods
-  getTypeComponent(type: string): Vue
-  resolveTypeComponent<T extends any>(
-    component: OrFunctionReturning<
-      OrPromiseOf<T extends { default: infer R } ? R : T>
-    >
-  ): T & {
-    mixins: any[]
-    components: any
-  }
-}
-export interface DitoComponent<$State extends State = CreateState>
-  extends DitoMixin<$State> {}
-
-export class MultiselectComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'multiselect'>
-> extends BaseComponent<$State> {
-  data: BaseComponent<$State>['data'] & OptionsMixin<$State>['data']
-
-  // computed
-  selectedOptions: any
-  activeOptions: any
-  multiple: boolean
-  searchable: boolean
-  taggable: boolean
-
-  // methods
-  addTagOption(tag: any): void
-  onAddTag(tag: any): void
-  onSearchChange(query: any): Promise<void>
-}
-export interface MultiselectComponent<
-  $InputState extends State = CreateState,
-  $State extends State = AddComponent<$InputState, 'multiselect'>
-> extends OptionsMixin<$State> {}
-
-export class DitoRoot<
-  $State extends State = CreateState
-> extends DitoComponent<$State> {
-  data: DitoComponent<$State>['data'] &
-    DomMixin['data'] & {
-      allowLogin: boolean
-      resolvedViews: any
-      notificationCount: number
-      loadingCount: number
-    }
-
-  // computed
-  notifications: any
-  isLoading: boolean
-
-  // methods
-  closeNotifications(): void
-  registerLoading(isLoading: boolean): void
-  login(): Promise<void>
-  logout(): Promise<void>
-  navigateHome(): Promise<void>
-  fetchUser(): Promise<any>
-  setUser(user: any): void
-  ensureUser(): Promise<void>
-  resolveViews(): Promise<void>
-}
-export interface DitoRoot extends DomMixin {}
-
-export class DitoForm extends DitoComponent {
-  data: DitoComponent['data'] &
-    RouteMixin['data'] &
-    ResourceMixin['data'] & {
-      createdData: any | null
-      clonedData?: any
-      sourceKey: any | null
-      isForm: true
-    }
-
-  // computed
-  schema: any
-  buttonSchemas: any
-  isActive: boolean
-  isTransient: boolean
-  isCreating: boolean
-  isDirty: boolean
-  selectedTab: any | null
-  doesMutate: boolean
-  type: any
-  itemId: any | null
-  method: 'post' | 'patch'
-  resource: any
-  breadcrumbPrefix: string
-  // data: any | null
-  dataPath: string
-  sourceData: any
-  inheritedData: any
-
-  // methods
-  getDataPathFrom(route: any): any
-  setSourceData(data: any): boolean
-  addSourceData(data: any): boolean
-  clearClonedData(newValue: any, oldValue: any): void
-  cancel(): Promise<any>
-  close(): Promise<any>
-  submit(
-    button: any,
-    options?: { validate?: boolean; closeForm?: boolean }
-  ): Promise<boolean>
-  submitTransient(
-    button: any,
-    resource: any,
-    method: HTTPVerb,
-    data: any,
-    options: {
-      notifyError?: (error: any) => void
-      notifySuccess?: () => void
-    }
-  ): Promise<boolean>
-}
-export interface DitoForm extends RouteMixin, ResourceMixin {}
-
-export class DitoView extends DitoComponent {
-  data: DitoComponent['data'] &
-    RouteMixin['data'] & {
-      isView: true
-      isLoading: false
-      data: any
-    }
-
-  // computed
-  schema: any
-  name: string
-  isSingleComponentView: boolean
-  mainComponent: Vue
-  viewSchema: any
-  providesData: boolean
-
-  // methods
-  setData(data: any): void
-  getChildPath(path: string): string
-  setLoading(isLoading: boolean): void
-}
-export interface DitoView extends RouteMixin {}
-
-export class DitoDialog extends DitoComponent {
-  data: DitoComponent['data'] & {
-    windowEvents: any | null
-  }
-
-  // computed
-  name: string
-  schema: any
-  buttonSchemas: any
-  hasCancel: boolean
-  meta: any
-
-  // methods
-  hide(): void
-  resolve(value: any): void
-  reject(value: any): void
-  accept(): void
-  cancel(): void
-}
-
-export type DitoContext<$State extends State> = {
-  value: $State['value']
-  name: $State['name']
-  dataPath: string
-  item: {
-    [$Key in SelectItemKeys<$State['item']>]: $State['item'][$Key]
-  }
-  /**
-   * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
-   * closest parent that isn't an array, e.g. for relations or nested JSON
-   * data.  This is why the term `item` was chosen over `data`, e.g. VS the
-   * use of `parentData` in server-sided validation, which is the closest
-   * parent. If needed, we could expose this data here too, as we can do all
-   * sorts of data processing with `rootData` and `dataPath`.
-   */
-  parentItem: any
-  rootItem: any
-  list: any
-  index: any
-  user: any
-  api: ApiConfig
-  itemLabel: string | null
-  formLabel: string | null
-  component: $State['component']
-  schemaComponent: Vue | null
-  formComponent: DitoForm | null
-  viewComponent: DitoView | null
-  dialogComponent: DitoDialog | null
-  panelComponent: Vue | null
-  sourceComponent: Vue | null
-  options: any
-  query: string
-  error: any | null
-  request: DitoMixin<$State>['request']
-  navigate: DitoMixin<$State>['navigate']
-  download: DitoMixin<$State>['download']
-  notify: DitoMixin<$State>['notify']
   format: typeof utilsFormat
   wasNotified: boolean
 }
@@ -2139,28 +1150,6 @@ export class DitoAdmin<
 }
 export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
-export type ComponentByType<$State extends State = CreateState> = {
-  button: ButtonComponent<$State>
-  checkbox: CheckboxComponent<$State>
-  checkboxes: CheckboxesComponent<$State>
-  code: CodeComponent<$State>
-  color: ColorComponent<$State>
-  computed: ComputedComponent<$State>
-  date: DateComponent<$State>
-  list: ListComponent<$State>
-  markup: MarkupComponent<$State>
-  multiselect: MultiselectComponent<$State>
-  number: NumberComponent<$State>
-  radio: RadioComponent<$State>
-  select: SelectComponent<$State>
-  slider: SliderComponent<$State>
-  switch: SwitchComponent<$State>
-  text: TextComponent<$State>
-  textarea: TextareaComponent<$State>
-  upload: UploadComponent<$State>
-  unknown: never
-}
-
 export type SchemaByType<$State extends State = CreateState> = {
   button: ButtonSchema<$State>
   checkbox: CheckboxSchema<$State>
@@ -2186,13 +1175,11 @@ export type CreateState<
   $Item = any,
   $Name = any,
   $Value = any,
-  $Component extends keyof ComponentByType = 'unknown',
   $Schema extends keyof SchemaByType = 'unknown'
 > = {
   item: Required<$Item>
   name: $Name
   value: $Value
-  component: $Component
   schema: $Schema
 }
 
@@ -2200,19 +1187,7 @@ export type State = {
   item: any
   name: any
   value: any
-  component: keyof ComponentByType
   schema: keyof SchemaByType
-}
-
-export type AddComponent<
-  $State extends State,
-  $Component extends keyof ComponentByType
-> = {
-  item: $State['item']
-  name: $State['name']
-  value: $State['value']
-  schema: $State['schema']
-  component: $Component | 'unknown'
 }
 
 export type SchemaAccessorReturnType<T> = T extends ItemAccessor
