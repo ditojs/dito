@@ -224,7 +224,7 @@ export default {
       }
     },
 
-    getDragOptions(draggable) {
+    getDragOptions(draggable, fallback = false) {
       return {
         animation: 150,
         disabled: !draggable,
@@ -233,7 +233,7 @@ export default {
         chosenClass: 'dito-drag-chosen',
         ghostClass: 'dito-drag-ghost',
         fallbackClass: 'dito-drag-fallback',
-        forceFallback: true
+        forceFallback: fallback
       }
     },
 

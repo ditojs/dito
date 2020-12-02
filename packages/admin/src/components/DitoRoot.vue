@@ -91,12 +91,12 @@ export default DitoComponent.component('dito-root', {
   async mounted() {
     // Clear the label marked as active on all mouse and keyboard events, except
     // the ones that DitoLabel itself intercepts.
-    const clearActiveLabel = () => {
-      this.appState.activeLabel = null
+    const setActiveLabel = event => {
+      this.appState.activeLabel = event.activeLabel || null
     }
     this.domOn(document, {
-      mouseup: clearActiveLabel,
-      keyup: clearActiveLabel
+      click: setActiveLabel,
+      keyup: setActiveLabel
     })
     try {
       this.allowLogin = false

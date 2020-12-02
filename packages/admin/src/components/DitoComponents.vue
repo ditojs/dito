@@ -32,6 +32,9 @@
     align-items: baseline
     // Remove padding added by .dito-component-container
     margin: (-$form-spacing) (-$form-spacing-half)
+    .dito-schema-header + &
+      // Clear top-margin if the components are preceded by a schema header.
+      margin-top: 0
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half
     .dito-component-container.dito-omit-padding > &

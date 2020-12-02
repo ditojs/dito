@@ -116,9 +116,10 @@
   .dito-schema-header
     display: flex
     justify-content: space-between
-    // Turn off pointer events in background so that DitoTrail keeps working.
+    // Turn off pointer events in background so that DitoTrail keeps working...
     pointer-events: none
-    > *
+    // ...but allow interaction with tabs that are layered on top of DitoTrail.
+    > .dito-tabs
       pointer-events: auto
     .dito-tabs,
     .dito-clipboard

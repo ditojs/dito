@@ -128,8 +128,7 @@ export default DitoComponent.component('dito-label', {
     listeners() {
       return {
         ...(this.collapsible && {
-          click: this.onClick,
-          mouseup: this.onMouseUp
+          click: this.onClick
         })
       }
     },
@@ -140,14 +139,11 @@ export default DitoComponent.component('dito-label', {
   },
 
   methods: {
-    onClick() {
+    onClick(event) {
       this.$emit('expand', this.collapsed)
-    },
-
-    onMouseUp(event) {
-      this.appState.activeLabel = this
-      // Prevent DitoRoot's document 'mouseup' event from clearing activeLabel:
-      event.stopPropagation()
+      // Pass on the `activeLabel` to the `click` event on root that sets /
+      // clears it.
+      event.activeLabel = this
     }
   }
 })

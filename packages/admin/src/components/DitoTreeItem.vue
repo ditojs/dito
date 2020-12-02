@@ -63,7 +63,7 @@
     vue-draggable(
       v-if="childrenSchema"
       v-show="opened"
-      v-bind="getDragOptions(childrenDraggable)"
+      v-bind="getDragOptions(childrenDraggable, true)"
       :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
       @start="onStartDrag"
       @end="onEndDrag($event, childrenSchema)"
