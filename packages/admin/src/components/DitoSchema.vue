@@ -243,12 +243,15 @@ export default DitoComponent.component('dito-schema', {
     },
 
     selectedTab() {
-      let tab = this.$route.hash?.slice(1)
-      if (!tab && (tab = this.defaultTab?.name)) {
-        // As the route hash doesn't point to the default tab yet, change it now
+      const currentTab = this.$route.hash?.slice(1)
+      const tab = currentTab && this.shouldRender(this.tabs[currentTab])
+        ? currentTab
+        : this.defaultTab?.name || null
+      if (tab !== currentTab) {
+        // Any tab change needs to be reflected in the router also.
         this.$router.replace({ hash: tab })
       }
-      return tab || ''
+      return tab
     },
 
     defaultTab() {
