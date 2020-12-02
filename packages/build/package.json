@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "0.194.0",
+  "version": "0.195.0",
   "private": true,
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/webpack",
@@ -33,6 +33,6 @@
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.12.7",
-    "@ditojs/babel-preset": "^0.194.0"
+    "@ditojs/babel-preset": "^0.195.0"
   }
 }
