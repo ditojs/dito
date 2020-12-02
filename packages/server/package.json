@@ -28,20 +28,20 @@
     "node 14"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.12.1",
+    "@babel/runtime": "^7.12.5",
     "@ditojs/admin": "^0.194.0",
     "@ditojs/router": "^0.194.0",
     "@ditojs/utils": "^0.194.0",
     "@koa/cors": "^3.1.0",
     "@koa/multer": "^3.0.0",
-    "@vue/cli-service": "^4.5.8",
+    "@vue/cli-service": "^4.5.9",
     "ajv": "^6.12.6",
-    "aws-sdk": "^2.784.0",
+    "aws-sdk": "^2.802.0",
     "axios": "^0.21.0",
-    "babel-loader": "^8.1.0",
+    "babel-loader": "^8.2.2",
     "bcryptjs": "^2.4.3",
     "chalk": "^4.1.0",
-    "core-js": "^3.6.5",
+    "core-js": "^3.8.0",
     "data-uri-to-buffer": "^3.0.1",
     "eventemitter2": "^6.4.3",
     "fs-extra": "^9.0.1",
@@ -80,12 +80,12 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.3",
-    "@babel/preset-env": "^7.12.1",
+    "@babel/core": "^7.12.9",
+    "@babel/preset-env": "^7.12.7",
     "@ditojs/babel-preset": "^0.194.0",
     "knex": "^0.21.12",
     "objection": "^2.2.3",
-    "pg": "^8.4.2",
+    "pg": "^8.5.1",
     "sqlite3": "^5.0.0"
   }
 }
