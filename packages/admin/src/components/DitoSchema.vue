@@ -116,11 +116,6 @@
   .dito-schema-header
     display: flex
     justify-content: space-between
-    // Turn off pointer events in background so that DitoTrail keeps working...
-    pointer-events: none
-    // ...but allow interaction with tabs that are layered on top of DitoTrail.
-    > .dito-tabs
-      pointer-events: auto
     .dito-tabs,
     .dito-clipboard
       display: flex
@@ -140,10 +135,13 @@
       left: 0
       right: 0
       z-index: $menu-z-index
-      > *
-        font-size: $menu-font-size
-      .dito-tabs a
+      // Turn off pointer events so that DitoTrail keeps receiving events...
+      pointer-events: none
+      // ...but allow interaction with the tabs layered on top of DitoTrail.
+      .dito-tabs
+        pointer-events: auto
         line-height: $menu-line-height
+        font-size: $menu-font-size
     button.dito-label
       width: 100%
       // Catch all clicks, even when it would be partially covered by schema.

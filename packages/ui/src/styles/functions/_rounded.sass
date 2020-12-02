@@ -1,0 +1,5 @@
+@use 'sass:math'
+
+@function rounded($value, $precision: 1)
+  $pow10: math.pow(10, $precision)
+  @return round($value * $pow10) / $pow10
