@@ -24,7 +24,7 @@
 
 .dito-button-create:empty::before
   content: 'Create'
-.dito-button-add:empty::before,
+.dito-button-add:empty::before
   content: 'Add'
 .dito-button-delete:empty::before
   content: 'Delete'
@@ -53,7 +53,7 @@
 
 .dito-button-drag
   cursor: grab
-  &:active,
+  &:active
     cursor: grabbing
 
 .dito-buttons
@@ -82,8 +82,9 @@
 
 .dito-buttons-round,
 .dito-buttons-small
-  .dito-button-create:empty::before,
-  .dito-button-add:empty::before,
+  // For now, nothing for these:
+  // .dito-button-create:empty::before,
+  // .dito-button-add:empty::before
   // Special .dito-button-add-upload without :empty:
   .dito-button-add-upload::before
     @extend %icon-add

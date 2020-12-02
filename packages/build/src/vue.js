@@ -8,7 +8,7 @@ export function getVueConfig(config) {
       extract: false,
       loaderOptions: {
         sass: {
-          additionalData: `@import './src/styles/_imports';`,
+          additionalData: `@import './src/styles/_imports'`,
           sassOptions: {
             includePaths: ['./src/styles']
           }

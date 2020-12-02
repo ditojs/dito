@@ -37,7 +37,7 @@
     // Cannot use margin here as it needs to be part of box-sizing for
     // percentages in flex-basis to work.
     padding: $form-spacing $form-spacing-half
-    &:empty,
+    &:empty
       padding: 0
     &.dito-omit-padding
       padding: 0

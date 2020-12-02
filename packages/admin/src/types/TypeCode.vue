@@ -33,7 +33,6 @@
       line-height: var(--line-height)
     .codeflask__lines
       padding: $input-padding
-    .codeflask__lines__line
 </style>
 
 <script>

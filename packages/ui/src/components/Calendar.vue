@@ -135,7 +135,7 @@
   .dito-calendar a,
   .dito-calendar-dates span,
   .dito-calendar-months span,
-  .dito-calendar-years span,
+  .dito-calendar-years span
     +user-select(none)
     white-space: nowrap
     cursor: pointer

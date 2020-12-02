@@ -98,7 +98,6 @@
     box-sizing: border-box
     width: calc(100% / 3 + 1px)
     overflow: hidden
-    &:hover
     &:last-child
       border-right: 0
     ul

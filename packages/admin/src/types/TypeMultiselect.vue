@@ -180,9 +180,9 @@
       border-radius: $border-radius
 
     &.dito-multiselect-single
-      --input-width: 100%;
+      --input-width: 100%
     &.dito-multiselect-multiple
-      --input-width: auto;
+      --input-width: auto
 
     .multiselect--active
       .multiselect__single,

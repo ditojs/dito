@@ -65,9 +65,10 @@
     "@vue/cli-plugin-eslint": "^4.5.9",
     "@vue/cli-service": "^4.5.9",
     "babel-loader": "^8.2.2",
-    "node-sass": "^5.0.0",
+    "fibers": "^5.0.0",
     "pug": "^3.0.0",
     "pug-plain-loader": "^1.0.0",
+    "sass": "^1.29.0",
     "sass-loader": "^10.1.0",
     "sass-svg": "^1.2.0",
     "vue-template-compiler": "^2.6.12"
