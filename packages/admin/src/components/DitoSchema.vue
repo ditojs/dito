@@ -243,7 +243,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     selectedTab() {
-      const currentTab = this.$route.hash?.slice(1)
+      const currentTab = this.$route.hash?.slice(1) || null
       const tab = currentTab && this.shouldRender(this.tabs[currentTab])
         ? currentTab
         : this.defaultTab?.name || null
