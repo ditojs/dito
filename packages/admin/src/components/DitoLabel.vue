@@ -1,6 +1,4 @@
 <template lang="pug">
-  // Render the label even if it's empty, when a specific tag (e.g. button) is
-  // specified.
   component.dito-label(
     v-if="text || collapsible"
     :is="tag"
@@ -72,11 +70,7 @@
         // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
         // on its parent to enforce the right text height in the container
         content: '\00a0'
-  button.dito-label
-    // Clear button styles:
-    text-align: left
-    background: none
-    border: 0
+  a.dito-label
     &:hover
       .dito-chevron
         color: $color-darker
@@ -109,7 +103,7 @@ export default DitoComponent.component('dito-label', {
 
   computed: {
     tag() {
-      return this.collapsible ? 'button' : 'div'
+      return this.collapsible ? 'a' : 'div'
     },
 
     text() {
