@@ -137,8 +137,10 @@
       z-index: $menu-z-index
       // Turn off pointer events so that DitoTrail keeps receiving events...
       pointer-events: none
-      // ...but allow interaction with the tabs layered on top of DitoTrail.
-      .dito-tabs
+      // ...but allow interaction with the tabs and buttons (e.g. clipboard)
+      // layered on top of DitoTrail.
+      .dito-tabs,
+      .dito-buttons
         pointer-events: auto
         line-height: $menu-line-height
         font-size: $menu-font-size
