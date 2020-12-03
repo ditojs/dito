@@ -133,11 +133,9 @@ export default DitoComponent.component('dito-label', {
   },
 
   methods: {
-    onClick(event) {
+    onClick() {
+      this.appState.activeLabel = this
       this.$emit('expand', this.collapsed)
-      // Pass on the `activeLabel` to the `click` event on root that sets /
-      // clears it.
-      event.activeLabel = this
     }
   }
 })
