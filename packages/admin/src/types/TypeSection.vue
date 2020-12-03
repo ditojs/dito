@@ -1,14 +1,26 @@
 <template lang="pug">
-  dito-components.dito-section-components(
-    v-if="schema.components"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :disabled="disabled"
+  .dito-section(
+    :class="{ 'dito-section-labelled' : !!schema.label }"
   )
+    dito-components.dito-section-components(
+      v-if="schema.components"
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+    )
 </template>
+
+<style lang="sass">
+  .dito-section
+    &.dito-section-labelled
+      border: $border-style
+      border-radius: $border-radius
+      padding: $form-spacing
+      box-sizing: border-box
+</style>
 
 <script>
 import TypeComponent from '@/TypeComponent'
@@ -19,6 +31,6 @@ export default TypeComponent.register('section', {
   defaultValue: undefined,
   generateLabel: false,
   omitFlexGrow: true,
-  omitPadding: true
+  omitPadding: schema => !schema.label
 })
 </script>

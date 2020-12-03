@@ -42,7 +42,7 @@
     &.dito-omit-padding
       padding: 0
       > .dito-label
-        margin: 0 $form-spacing-half
+        margin: $form-spacing $form-spacing-half 0
     &.dito-single
       height: 100% // So that list buttons can be sticky at the bottom
   // NOTE: This is not nested inside .dito-component-container so that other
@@ -129,7 +129,7 @@ export default DitoComponent.component('dito-component-container', {
         'dito-single': this.single,
         'dito-omit-padding': (
           this.schema.omitPadding ||
-          getTypeOptions(this.schema)?.omitPadding
+          getTypeOptions(this.schema)?.omitPadding?.(this.schema)
         ),
         ...(
           isString(containerClass)

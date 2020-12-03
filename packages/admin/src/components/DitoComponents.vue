@@ -38,7 +38,7 @@
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half
     .dito-component-container.dito-omit-padding > &
-      // Clear above paddings again if parent is omitting padding.
+      // Clear margins set above again if parent is omitting padding.
       margin: 0
       max-width: unset
 </style>
