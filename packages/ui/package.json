@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/ui",
-  "version": "0.196.0",
+  "version": "0.197.0",
   "description": "Dito.js UI is a simple UI library, built with Vue.js for use in Dito.js Admin and elsewhere",
   "main": "dist/dito-ui.umd.min.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
@@ -34,14 +34,14 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.12.5",
-    "@ditojs/utils": "^0.196.0",
+    "@ditojs/utils": "^0.197.0",
     "core-js": "^3.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.12.7",
-    "@ditojs/babel-preset": "^0.196.0",
-    "@ditojs/build": "^0.196.0",
+    "@ditojs/babel-preset": "^0.197.0",
+    "@ditojs/build": "^0.197.0",
     "@vue/cli-plugin-babel": "^4.5.9",
     "@vue/cli-plugin-eslint": "^4.5.9",
     "@vue/cli-service": "^4.5.9",
