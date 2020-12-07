@@ -373,21 +373,11 @@ export type SchemaOptions<$State extends State, $Option = any> =
       /**
        * The function which is called to load the options.
        */
-      data?:
-        | ItemAccessor<
-            $State,
-            {},
-            ItemAccessor<
-              $State,
-              {},
-              OrPromiseOf<SchemaOptionsOption<$Option>[]>
-            >
-          >
-        | OrItemAccessor<
-            $State,
-            {},
-            OrPromiseOf<SchemaOptionsOption<$Option>[]>
-          >
+      data?: OrItemAccessor<
+        $State,
+        {},
+        OrItemAccessor<$State, {}, OrPromiseOf<SchemaOptionsOption<$Option>[]>>
+      >
       /**
        * Either the key of the option property which should be treated as
        * the option label or a function returning the option label.
