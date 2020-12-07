@@ -120,4 +120,18 @@ describe('merge()', () => {
     const actual2 = merge([4, 5, 6], array2)
     expect(actual2).toStrictEqual(expected1)
   })
+
+  it('should merge regexps', () => {
+    const source1 = { a: /1/ }
+    const source2 = { a: /2/ }
+    const expected = { a: /2/ }
+    expect(merge({}, source1, source2)).toStrictEqual(expected)
+  })
+
+  it('should merge dates', () => {
+    const source1 = { a: new Date(2012, 5, 9) }
+    const source2 = { a: new Date(2021, 5, 9) }
+    const expected = { a: new Date(2021, 5, 9) }
+    expect(merge({}, source1, source2)).toStrictEqual(expected)
+  })
 })

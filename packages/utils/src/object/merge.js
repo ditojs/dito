@@ -1,10 +1,10 @@
-import { isArray, isObject } from '@/base'
+import { isArray, isDate, isObject, isRegExp } from '@/base'
 import { clone } from './clone'
 
 export function merge(target, ...sources) {
   const _merge = (target, source) => {
     if (target && source && (
-      isObject(target) && isObject(source) ||
+      isMergeableObject(target) && isMergeableObject(source) ||
       isArray(target) && isArray(source)
     )) {
       for (const key of Object.keys(source)) {
@@ -25,4 +25,8 @@ export function merge(target, ...sources) {
     _merge(target, source)
   }
   return target
+}
+
+function isMergeableObject(arg) {
+  return isObject(arg) && !isRegExp(arg) && !isDate(arg)
 }
