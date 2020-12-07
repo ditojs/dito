@@ -8,7 +8,7 @@ import {
   NumberFormat,
   TimeFormat
 } from '@ditojs/utils'
-import Vue from 'vue'
+import Vue, { VueConstructor } from 'vue'
 
 declare global {
   const dito: DitoGlobal
@@ -441,7 +441,7 @@ export type ComponentSchema<$State extends State> = BaseSchema<$State> & {
    * Use a Vue component to render the component. The component is specified
    * like this: import(...).
    */
-  component: OrPromiseOf<Vue>
+  component: Resolvable<VueConstructor<Vue>>
 }
 
 export type InputSchema<$State extends State> = BaseSchema<$State> & {
@@ -844,7 +844,7 @@ export type ColumnSchema<$State extends State = State> = {
    * Use a Vue component to render the cell. The component is specified
    * like this: import(...).
    */
-  component?: Promise<Vue>
+  component?: Resolvable<VueConstructor<Vue>>
   /**
    * Whether the column should be sortable.
    */
