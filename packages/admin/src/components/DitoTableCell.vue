@@ -65,7 +65,7 @@ export default DitoComponent.component('dito-table-cell', {
             dataPath: appendDataPath(this.dataPath, name)
           })
         )
-        : escapeHtml(value)
+        : escapeHtml(value?.toString())
     }
   }
 })
