@@ -62,16 +62,6 @@ describe('merge()', () => {
     expect(actual).toStrictEqual(expected)
   })
 
-  it('should merge onto non-plain `object` values', () => {
-    class Foo {}
-
-    const object = new Foo()
-    const actual = merge(object, { a: 1 })
-
-    expect(actual).toStrictEqual(object)
-    expect(object.a).toEqual(1)
-  })
-
   it('should not augment source objects', () => {
     const source1 = { a: [{ a: 1 }] }
     const source2 = { a: [{ b: 2 }] }
@@ -88,20 +78,6 @@ describe('merge()', () => {
     expect(source3.a).toStrictEqual([[1, 2, 3]])
     expect(source4.a).toStrictEqual([[4, 5]])
     expect(actual2.a).toStrictEqual([[4, 5, 3]])
-  })
-
-  it('should merge plain objects onto non-plain objects', () => {
-    class Foo {}
-
-    const object = { a: 1 }
-    const actual1 = merge(new Foo(), object)
-
-    expect(actual1).toBeInstanceOf(Foo)
-    expect(actual1).toEqual(object)
-
-    const actual2 = merge([new Foo()], [object])
-    expect(actual2[0]).toBeInstanceOf(Foo)
-    expect(actual2).toEqual([object])
   })
 
   it('should not overwrite existing values with `undefined` in objects', () => {
