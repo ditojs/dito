@@ -1,3 +1,5 @@
 export function stripTags(html) {
-  return html ? `${html}`.replace(/<[^>]+>/g, '') : ''
+  return html != null
+    ? html.toString().replace(/<[^>]+>/g, '')
+    : ''
 }

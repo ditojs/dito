@@ -11,4 +11,9 @@ describe('stripTags()', () => {
     expect(stripTags(null)).toBe('')
     expect(stripTags('')).toBe('')
   })
+
+  it('should handle falsy values correctly', () => {
+    expect(stripTags(0)).toBe('0')
+    expect(stripTags(false)).toBe('false')
+  })
 })

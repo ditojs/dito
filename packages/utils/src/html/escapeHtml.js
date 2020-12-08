@@ -1,6 +1,6 @@
 export function escapeHtml(html) {
-  return html
-    ? `${html}`.replace(/["&<>]/g,
+  return html != null
+    ? html.toString().replace(/["&<>]/g,
       chr => ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' })[chr])
     : ''
 }

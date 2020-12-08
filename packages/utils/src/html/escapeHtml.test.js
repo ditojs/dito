@@ -11,4 +11,9 @@ describe('escapeHtml()', () => {
     expect(escapeHtml(null)).toBe('')
     expect(escapeHtml('')).toBe('')
   })
+
+  it('should handle falsy values correctly', () => {
+    expect(escapeHtml(0)).toBe('0')
+    expect(escapeHtml(false)).toBe('false')
+  })
 })
