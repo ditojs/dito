@@ -2048,7 +2048,7 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
   $State,
   {
     transaction: objection.Transaction
-    session: koaSession.ContextSession & { passport?: { user?: string } }
+    session: koaSession.ContextSession & { state: { user: any } }
   }
 >
 
