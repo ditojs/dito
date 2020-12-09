@@ -60,13 +60,7 @@ export default {
         }
         // If the value is still missing after compute, set the default for it:
         if (!(name in data) && !ignoreMissingValue(schema)) {
-          const defaultValue = getDefaultValue(
-            schema,
-            isFunction(schema.default)
-              ? new DitoContext(this, { value: undefined })
-              : undefined
-          )
-          this.$set(data, name, defaultValue)
+          this.$set(data, name, getDefaultValue(schema))
         }
         // Now access the value. This is important for reactivity and needs to
         // happen after all prior manipulation through `$set()`, see above:
