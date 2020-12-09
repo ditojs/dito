@@ -817,7 +817,8 @@ export interface ModelPropertySchema extends Schema {
 
 export type ModelScope<T extends Model> = (
   this: T,
-  queryBuilder: QueryBuilder<T>
+  query: QueryBuilder<T>,
+  applyParentScope: (query: QueryBuilder<T>) => QueryBuilder<T>
 ) => QueryBuilder<T, any> | void
 
 export interface ModelScopes<T extends Model> {
