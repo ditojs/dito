@@ -15,7 +15,8 @@
     "clean": "rimraf lib",
     "build": "babel src --out-dir lib --copy-files",
     "watch": "yarn build --watch",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "yarn clean && yarn build",
+    "test-types": "tsc --noEmit ./src/index.d.ts"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
@@ -83,9 +84,19 @@
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.12.7",
     "@ditojs/babel-preset": "^0.197.0",
+    "@types/koa-bodyparser": "^4.3.0",
+    "@types/koa-compress": "^4.0.0",
+    "@types/koa-logger": "^3.1.1",
+    "@types/koa-pino-logger": "^3.0.0",
+    "@types/koa-response-time": "^2.1.0",
+    "@types/koa-session": "^5.10.2",
+    "@types/koa-static": "^4.0.1",
+    "@types/koa__cors": "^3.0.1",
+    "@types/node": "^14.14.10",
     "knex": "^0.21.12",
     "objection": "^2.2.3",
     "pg": "^8.5.1",
     "sqlite3": "^5.0.0"
-  }
+  },
+  "types": "types"
 }
