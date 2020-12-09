@@ -1779,7 +1779,7 @@ export class QueryBuilder<
    * default scope.
    */
   clearWithScope: () => this
-  ignoreScope: () => this
+  ignoreScope: (...scopes: string[]) => this
   applyScope: (...scopes: string[]) => this
   allowScope: (...scopes: string[]) => void
   clearAllowScope: () => void
