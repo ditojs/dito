@@ -1104,7 +1104,9 @@ export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
    * Display several forms in different tabs within the form.
    */
   tabs?: {
-    [name: string]: Omit<Form<$Item>, 'tabs'> & { defaultTab?: boolean }
+    [name: string]: Omit<Form<$Item>, 'tabs'> & {
+      defaultTab?: OrItemAccessor<$State, {}, boolean>
+    }
   }
   // TODO: document components
   components?: Components<CreateState<$Item>>
