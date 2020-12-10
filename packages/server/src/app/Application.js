@@ -14,8 +14,6 @@ import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
-import koaLogger from 'koa-logger'
-import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import { EventEmitter } from '@/lib'
@@ -33,12 +31,14 @@ import {
   isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
+import { attachLogToCtx, attachUserToLog, createLogger } from '@/utils/logger'
 import {
   Model,
   BelongsToOneRelation,
   knexSnakeCaseMappers,
   ref
 } from 'objection'
+import { logRequests } from '@/utils/request-logger'
 
 export class Application extends Koa {
   constructor({
@@ -64,6 +64,7 @@ export class Application extends Koa {
       log: log.silent || process.env.DITO_SILENT ? {} : log,
       ...rest
     }
+    this.log = createLogger(getOptions(config.logger)).child({ name: 'app' })
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
@@ -445,19 +446,14 @@ export class Application extends Koa {
   setupGlobalMiddleware() {
     const { app, log } = this.config
 
-    const logger = {
-      console: koaLogger,
-      true: koaLogger,
-      // TODO: Implement logging to actual file instead of console for Pino.
-      file: pinoLogger
-    }[log.requests]
+    this.use(attachLogToCtx(this.log))
 
     this.use(handleError())
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
-    if (logger) {
-      this.use(logger(getOptions(app.logger)))
+    if (log.requests) {
+      this.use(logRequests())
     }
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
@@ -521,7 +517,10 @@ export class Application extends Koa {
           this.use(passport.session())
         }
         this.use(emitUserEvents())
+        // Attach a logger instance with the user to the context.
+        this.use(attachUserToLog())
       }
+
       // 6. finally handle the found route, or set status / allow accordingly.
       this.use(handleRoute())
       this.hasControllerMiddleware = true
