@@ -930,10 +930,13 @@ export type ListSchema<
     scopes?:
       | string[]
       | {
-          [scopeName: string]: {
-            label?: string
-            defaultScope?: boolean
-          }
+          [scopeName: string]:
+            | {
+                label?: string
+                hint?: string
+                defaultScope?: boolean
+              }
+            | string
         }
     /**
      * Default scope name as defined on the model.
