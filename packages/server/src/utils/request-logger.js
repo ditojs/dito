@@ -53,19 +53,21 @@ export function logRequests({ ignoreUrls } = {}) {
 }
 
 function logRequest(ctx) {
-  const log = ctx.log?.child({ name: 'http-request' })
-  log?.trace(
-    {
-      req: ctx.req
-    },
-    `${chalk.gray('<--')} ${chalk.bold(ctx.method)} ${chalk.gray(
-      ctx.originalUrl
-    )}`
-  )
+  const log = ctx.log?.child({ name: 'http' })
+  if (log.isLevelEnabled('trace')) {
+    log?.trace(
+      {
+        req: ctx.req
+      },
+      `${chalk.gray('<--')} ${chalk.bold(ctx.method)} ${chalk.gray(
+        ctx.originalUrl
+      )}`
+    )
+  }
 }
 
 function logResponse({ ctx, start, length, err }) {
-  const log = ctx.log?.child({ name: 'http-response' })
+  const log = ctx.log?.child({ name: 'http' })
 
   if (!log) {
     return
