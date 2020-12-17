@@ -44,26 +44,17 @@ export function logRequests({ ignoreUrls } = {}) {
     res.once('finish', onfinish)
     res.once('close', onclose)
 
-    function done(event) {
+    function done() {
       res.removeListener('finish', onfinish)
       res.removeListener('close', onclose)
-      logResponse({
-        ctx,
-        start,
-        length: counter ? counter.length : length,
-        event
-      })
+      logResponse({ ctx, start, length: counter ? counter.length : length })
     }
   }
 }
 
-function findLogger(ctx) {
-  return ctx.log?.child({ name: 'requests' }) ?? null
-}
-
 function logRequest(ctx) {
-  const log = findLogger(ctx)
-  log?.debug(
+  const log = ctx.log?.child({ name: 'http-request' })
+  log?.trace(
     {
       req: ctx.req
     },
@@ -73,8 +64,8 @@ function logRequest(ctx) {
   )
 }
 
-function logResponse({ ctx, start, length, err, event }) {
-  const log = findLogger(ctx)
+function logResponse({ ctx, start, length, err }) {
+  const log = ctx.log?.child({ name: 'http-response' })
 
   if (!log) {
     return
@@ -94,15 +85,9 @@ function logResponse({ ctx, start, length, err, event }) {
       ? '-'
       : bytes(length).toLowerCase()
 
-  const upstream = err
-    ? chalk.red('xxx')
-    : event === 'close'
-      ? chalk.yellow('-x-')
-      : chalk.gray('-->')
-
   const formattedTime = formatTime(start)
 
-  const msg = `${upstream} ${chalk.bold(ctx.method)} ${chalk.gray(
+  const msg = `${chalk.bold(ctx.method)} ${chalk.gray(
     ctx.originalUrl
   )} ${chalk[color](status)} ${chalk.gray(formattedTime)} ${chalk.gray(
     formattedLength
