@@ -641,13 +641,19 @@ export class Application extends Koa {
     await this.emit('before:stop')
     this.server = await new Promise((resolve, reject) => {
       if (this.server) {
-        this.server.close(err => {
+        const server = this.server
+        server.close(err => {
           if (err) {
             reject(err)
           } else {
             resolve(null)
           }
         })
+        // Hack to make sure that we close the server,
+        //  even if sockets are still open.
+        //  Taken from https://stackoverflow.com/a/36830072.
+        //  A proper solution would be to use a library, ex: https://github.com/godaddy/terminus
+        setImmediate(() => server.emit('close'))
       } else {
         reject(new Error('Server is not running'))
       }
