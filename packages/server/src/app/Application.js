@@ -4,6 +4,7 @@ import util from 'util'
 import axios from 'axios'
 import chalk from 'chalk'
 import zlib from 'zlib'
+import pino from 'pino'
 import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
@@ -25,14 +26,14 @@ import { ValidationError, AssetError } from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
-  handleError,
-  findRoute,
-  handleRoute,
+  attachLogger,
   createTransaction,
-  emitUserEvents,
+  findRoute,
+  handleError,
+  handleRoute,
+  handleUser,
   logRequests
 } from '@/middleware'
-import { attachLogToCtx, attachUserToLog, createLogger } from '@/utils/logger'
 import {
   isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
@@ -68,7 +69,6 @@ export class Application extends Koa {
       log: log.silent || process.env.DITO_SILENT ? {} : log,
       ...rest
     }
-    this.log = createLogger(getOptions(config.logger)).child({ name: 'app' })
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
@@ -79,6 +79,7 @@ export class Application extends Koa {
     this.services = Object.create(null)
     this.controllers = Object.create(null)
     this.hasControllerMiddleware = false
+    this.setupLogger()
     this.setupKnex()
     this.setupGlobalMiddleware()
     if (middleware) {
@@ -450,7 +451,7 @@ export class Application extends Koa {
   setupGlobalMiddleware() {
     const { app, log } = this.config
 
-    this.use(attachLogToCtx(this.log))
+    this.use(attachLogger(this.logger))
 
     this.use(handleError())
     if (app.responseTime !== false) {
@@ -520,15 +521,47 @@ export class Application extends Koa {
         if (app.session) {
           this.use(passport.session())
         }
-        this.use(emitUserEvents())
-        // Attach a logger instance with the user to the context.
-        this.use(attachUserToLog())
+        this.use(handleUser())
       }
 
       // 6. finally handle the found route, or set status / allow accordingly.
       this.use(handleRoute())
       this.hasControllerMiddleware = true
     }
+  }
+
+  setupLogger() {
+    const {
+      level = 'info',
+      prettyPrint = {
+      // List of keys to ignore in pretty mode.
+        ignore: 'req,res,durationMs,user,requestId',
+        // SYS to use system time and not UTC.
+        translateTime: 'SYS:HH:MM:ss.l'
+      },
+      serializers = {}
+    } = getOptions(this.config.logger)
+
+    const { err, req, res } = pino.stdSerializers
+    // Only include `id` from the user, to not inadvertently log PII.
+    const user = user => ({ id: user.id })
+
+    const logger = pino({
+      level,
+      serializers: {
+        err,
+        req,
+        res,
+        user,
+        ...serializers
+      },
+      prettyPrint,
+      // Redact common sensitive headers.
+      redact: ['*.headers.cookie', '*.headers.authorization'],
+      base: null // no pid,hostname,name
+    })
+
+    this.logger = logger.child({ name: 'app' })
   }
 
   setupKnex() {

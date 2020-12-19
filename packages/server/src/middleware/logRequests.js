@@ -53,9 +53,9 @@ export function logRequests({ ignoreUrls } = {}) {
 }
 
 function logRequest(ctx) {
-  const log = ctx.log?.child({ name: 'http' })
-  if (log.isLevelEnabled('trace')) {
-    log.trace(
+  const logger = ctx.logger?.child({ name: 'http' })
+  if (logger?.isLevelEnabled('trace')) {
+    logger.trace(
       { req: ctx.req },
       `${
         chalk.gray('<--')
@@ -69,43 +69,42 @@ function logRequest(ctx) {
 }
 
 function logResponse({ ctx, start, length, err }) {
-  const log = ctx.log?.child({ name: 'http' })
-  if (!log) {
-    return
-  }
-
+  const logger = ctx.logger?.child({ name: 'http' })
+  const level = err ? 'warn' : 'info'
+  if (logger?.isLevelEnabled(level)) {
   // Get the status code of the response
-  const status = err
-    ? err.status || 500
-    : ctx.status || 404
+    const status = err
+      ? err.status || 500
+      : ctx.status || 404
 
-  // Set the color of the status code;
-  const statusRange = (status / 100) | 0
-  const statusColor = colorCodes[statusRange] || colorCodes[0]
+    // Set the color of the status code;
+    const statusRange = (status / 100) | 0
+    const statusColor = colorCodes[statusRange] || colorCodes[0]
 
-  // Get the human readable response length
-  const formattedLength = [204, 205, 304].includes(status)
-    ? ''
-    : length == null
-      ? '-'
-      : bytes(length).toLowerCase()
+    // Get the human readable response length
+    const formattedLength = [204, 205, 304].includes(status)
+      ? ''
+      : length == null
+        ? '-'
+        : bytes(length).toLowerCase()
 
-  const formattedTime = formatTime(start)
+    const formattedTime = formatTime(start)
 
-  log[err ? 'warn' : 'info'](
-    { req: ctx.req, res: ctx.res },
-    `${
-      chalk.bold(ctx.method)
-    } ${
-      chalk.gray(ctx.originalUrl)
-    } ${
-      chalk[statusColor](status)
-    } ${
-      chalk.gray(formattedTime)
-    } ${
-      chalk.gray(formattedLength)
-    }`
-  )
+    logger[level](
+      { req: ctx.req, res: ctx.res },
+      `${
+        chalk.bold(ctx.method)
+      } ${
+        chalk.gray(ctx.originalUrl)
+      } ${
+        chalk[statusColor](status)
+      } ${
+        chalk.gray(formattedTime)
+      } ${
+        chalk.gray(formattedLength)
+      }`
+    )
+  }
 }
 
 function formatTime(start) {

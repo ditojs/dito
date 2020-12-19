@@ -1,8 +1,10 @@
-export function emitUserEvents() {
+export function handleUser() {
   return async (ctx, next) => {
+    // Attach a logger instance with the user to the context.
+    ctx.logger = ctx.logger?.child({ user: ctx.state.user }) || null
+
     // Override `ctx.login()` and `ctx.logout()` with versions that emit events
     // on the user model:
-
     const { login, logout } = ctx
 
     ctx.login = async function(user, options = {}) {
@@ -19,5 +21,7 @@ export function emitUserEvents() {
     }
 
     return next()
+    // Don't set back `ctx.logger` because the context is still valid. It is
+    // used in `logResponse()` of the `logRequests()` middleware, among others.
   }
 }
