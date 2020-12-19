@@ -32,13 +32,13 @@ import {
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 import { attachLogToCtx, attachUserToLog, createLogger } from '@/utils/logger'
+import { logRequests } from '@/utils/request-logger'
 import {
   Model,
   BelongsToOneRelation,
   knexSnakeCaseMappers,
   ref
 } from 'objection'
-import { logRequests } from '@/utils/request-logger'
 
 export class Application extends Koa {
   constructor({
@@ -639,8 +639,8 @@ export class Application extends Koa {
   async stop() {
     await this.emit('before:stop')
     this.server = await new Promise((resolve, reject) => {
-      if (this.server) {
-        const server = this.server
+      const { server } = this
+      if (server) {
         server.close(err => {
           if (err) {
             reject(err)

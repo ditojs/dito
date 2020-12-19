@@ -1,9 +1,9 @@
 /*
  * Module inspired by 'koa-logger'. Adapted and extended to our needs.
  */
-import counterFunc from 'passthrough-counter'
 import bytes from 'bytes'
 import chalk from 'chalk'
+import Counter from 'passthrough-counter'
 
 export function logRequests({ ignoreUrls } = {}) {
   return async function middleware(ctx, next) {
@@ -22,20 +22,20 @@ export function logRequests({ ignoreUrls } = {}) {
       throw err
     }
 
-    // calculate the length of a streaming response
-    // by intercepting the stream with a counter.
-    // only necessary if a content-length header is currently not set.
+    // Calculate the length of a streaming response by intercepting the stream
+    // with a counter. Only necessary if a content-length header is currently
+    // not set.
     const {
       body,
       response: { length }
     } = ctx
+
     let counter
-    if (length === null && body && body.readable) {
-      ctx.body = body.pipe((counter = counterFunc())).on('error', ctx.onerror)
+    if (length === null && body?.readable) {
+      ctx.body = body.pipe((counter = new Counter())).on('error', ctx.onerror)
     }
 
-    // log when the response is finished or closed,
-    // whichever happens first.
+    // Log when the response is finished or closed, whichever happens first.
     const { res } = ctx
 
     const onfinish = done.bind(null, 'finish')
@@ -55,32 +55,35 @@ export function logRequests({ ignoreUrls } = {}) {
 function logRequest(ctx) {
   const log = ctx.log?.child({ name: 'http' })
   if (log.isLevelEnabled('trace')) {
-    log?.trace(
-      {
-        req: ctx.req
-      },
-      `${chalk.gray('<--')} ${chalk.bold(ctx.method)} ${chalk.gray(
-        ctx.originalUrl
-      )}`
+    log.trace(
+      { req: ctx.req },
+      `${
+        chalk.gray('<--')
+      } ${
+        chalk.bold(ctx.method)
+      } ${
+        chalk.gray(ctx.originalUrl)
+      }`
     )
   }
 }
 
 function logResponse({ ctx, start, length, err }) {
   const log = ctx.log?.child({ name: 'http' })
-
   if (!log) {
     return
   }
 
-  // get the status code of the response
-  const status = err ? err.status || 500 : ctx.status || 404
+  // Get the status code of the response
+  const status = err
+    ? err.status || 500
+    : ctx.status || 404
 
-  // set the color of the status code;
-  const s = (status / 100) | 0
-  const color = colorCodes.hasOwnProperty(s) ? colorCodes[s] : colorCodes[0]
+  // Set the color of the status code;
+  const statusRange = (status / 100) | 0
+  const statusColor = colorCodes[statusRange] || colorCodes[0]
 
-  // get the human readable response length
+  // Get the human readable response length
   const formattedLength = [204, 205, 304].includes(status)
     ? ''
     : length == null
@@ -89,16 +92,20 @@ function logResponse({ ctx, start, length, err }) {
 
   const formattedTime = formatTime(start)
 
-  const msg = `${chalk.bold(ctx.method)} ${chalk.gray(
-    ctx.originalUrl
-  )} ${chalk[color](status)} ${chalk.gray(formattedTime)} ${chalk.gray(
-    formattedLength
-  )}`
-
-  log[err ? 'warn' : 'info']({
-    req: ctx.req,
-    res: ctx.res
-  }, msg)
+  log[err ? 'warn' : 'info'](
+    { req: ctx.req, res: ctx.res },
+    `${
+      chalk.bold(ctx.method)
+    } ${
+      chalk.gray(ctx.originalUrl)
+    } ${
+      chalk[statusColor](status)
+    } ${
+      chalk.gray(formattedTime)
+    } ${
+      chalk.gray(formattedLength)
+    }`
+  )
 }
 
 function formatTime(start) {

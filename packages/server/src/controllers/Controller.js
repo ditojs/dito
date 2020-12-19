@@ -44,8 +44,10 @@ export class Controller {
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
         `${
-          namespace ? chalk.green(`/${namespace}/`) : ''}${
-          chalk.cyan(path)}${
+          namespace ? chalk.green(`/${namespace}/`) : ''
+        }${
+          chalk.cyan(path)
+        }${
           chalk.white(':')
         }`,
         this.level
@@ -90,9 +92,12 @@ export class Controller {
   setupRoute(verb, url, transacted, authorize, action, handlers) {
     this.log(
       `${
-        chalk.magenta(verb.toUpperCase())} ${
-        chalk.green(this.url)}${
-        chalk.cyan(url.slice(this.url.length))} ${
+        chalk.magenta(verb.toUpperCase())
+      } ${
+        chalk.green(this.url)
+      }${
+        chalk.cyan(url.slice(this.url.length))
+      } ${
         chalk.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1
