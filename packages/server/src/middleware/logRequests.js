@@ -1,12 +1,12 @@
 /*
- * Module inspired by 'koa-logger'. Adapted and extended to our needs.
+ * Middleware inspired by 'koa-logger'. Adapted and extended to our needs.
  */
 import bytes from 'bytes'
 import chalk from 'chalk'
 import Counter from 'passthrough-counter'
 
 export function logRequests({ ignoreUrls } = {}) {
-  return async function middleware(ctx, next) {
+  return async (ctx, next) => {
     if (ignoreUrls && ctx.req.url.match(ignoreUrls)) {
       return next()
     }

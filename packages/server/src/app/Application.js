@@ -22,17 +22,21 @@ import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
 import { ValidationError, AssetError } from '@/errors'
-import {
-  handleError, findRoute, handleRoute, createTransaction, emitUserEvents
-} from '@/middleware'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
+import {
+  handleError,
+  findRoute,
+  handleRoute,
+  createTransaction,
+  emitUserEvents,
+  logRequests
+} from '@/middleware'
+import { attachLogToCtx, attachUserToLog, createLogger } from '@/utils/logger'
 import {
   isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
-import { attachLogToCtx, attachUserToLog, createLogger } from '@/utils/logger'
-import { logRequests } from '@/utils/request-logger'
 import {
   Model,
   BelongsToOneRelation,
