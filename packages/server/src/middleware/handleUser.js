@@ -1,5 +1,5 @@
 export function handleUser() {
-  return async (ctx, next) => {
+  return (ctx, next) => {
     // Attach a logger instance with the user to the context.
     ctx.logger = ctx.logger?.child({ user: ctx.state.user }) || null
 

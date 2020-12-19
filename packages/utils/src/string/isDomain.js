@@ -1,4 +1,4 @@
-// Note: "punycode/" to import the userland lib, not the deprecated nodejs one.
+// NOTE: 'punycode/' to import the userland lib, not the deprecated nodejs one.
 import punycode from 'punycode/'
 
 // Best effort approach, allowing Internationalized domain name (with punycode)
