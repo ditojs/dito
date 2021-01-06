@@ -26,11 +26,11 @@
   "dependencies": {
     "@babel/runtime": "^7.12.5",
     "@ditojs/utils": "^0.199.0",
-    "core-js": "^3.8.0"
+    "core-js": "^3.8.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.9",
-    "@babel/preset-env": "^7.12.7",
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
     "@ditojs/babel-preset": "^0.199.0"
   },
   "keywords": [
