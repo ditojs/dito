@@ -16,7 +16,7 @@ import { InputField } from '@ditojs/ui'
 const maskedPassword = '****************'
 
 export default TypeComponent.register([
-  'text', 'email', 'url', 'hostname', 'tel', 'password', 'creditcard'
+  'text', 'email', 'url', 'hostname', 'domain', 'tel', 'password', 'creditcard'
 ],
 // @vue/component
 {
@@ -29,7 +29,8 @@ export default TypeComponent.register([
     inputType() {
       return {
         creditcard: 'text',
-        hostname: 'text'
+        hostname: 'text',
+        domain: 'text'
       }[this.type] || this.type
     },
 
@@ -56,6 +57,7 @@ export default TypeComponent.register([
         email: 'email',
         url: 'url',
         hostname: 'hostname',
+        domain: 'domain',
         password: 'password',
         creditcard: 'creditcard'
       }[this.type]
