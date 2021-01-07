@@ -18,11 +18,11 @@ import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import { EventEmitter } from '@/lib'
-import { Controller, AdminController } from '@/controllers'
+import { AdminController, Controller } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
-import { ValidationError, AssetError } from '@/errors'
+import { AssetError, ValidationError } from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
@@ -35,13 +35,20 @@ import {
   logRequests
 } from '@/middleware'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
-  parseDataPath, normalizeDataPath
+  asArray,
+  clone,
+  hyphenate,
+  isObject,
+  isPlainObject,
+  isString,
+  merge,
+  normalizeDataPath,
+  parseDataPath
 } from '@ditojs/utils'
 import {
-  Model,
   BelongsToOneRelation,
   knexSnakeCaseMappers,
+  Model,
   ref
 } from 'objection'
 
@@ -531,35 +538,27 @@ export class Application extends Koa {
   }
 
   setupLogger() {
-    const {
-      level = 'info',
-      prettyPrint = {
-      // List of keys to ignore in pretty mode.
-        ignore: 'req,res,durationMs,user,requestId',
-        // SYS to use system time and not UTC.
-        translateTime: 'SYS:HH:MM:ss.l'
-      },
-      serializers = {}
-    } = getOptions(this.config.logger)
-
     const { err, req, res } = pino.stdSerializers
     // Only include `id` from the user, to not inadvertently log PII.
     const user = user => ({ id: user.id })
+    const serializers = { err, req, res, user }
 
-    const logger = pino({
-      level,
-      serializers: {
-        err,
-        req,
-        res,
-        user,
-        ...serializers
+    const logger = pino(merge(
+      {
+        level: 'info',
+        serializers,
+        prettyPrint: {
+          // List of keys to ignore in pretty mode.
+          ignore: 'req,res,durationMs,user,requestId',
+          // SYS to use system time and not UTC.
+          translateTime: 'SYS:HH:MM:ss.l'
+        },
+        // Redact common sensitive headers.
+        redact: ['*.headers.cookie', '*.headers.authorization'],
+        base: null // no pid,hostname,name
       },
-      prettyPrint,
-      // Redact common sensitive headers.
-      redact: ['*.headers.cookie', '*.headers.authorization'],
-      base: null // no pid,hostname,name
-    })
+      getOptions(this.config.logger)
+    ))
 
     this.logger = logger.child({ name: 'app' })
   }
