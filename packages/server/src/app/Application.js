@@ -702,7 +702,7 @@ export class Application extends Koa {
     try {
       await this.start()
     } catch (err) {
-      this.emit('error', err)
+      this.logger.error(err)
       process.exit(-1)
     }
   }
