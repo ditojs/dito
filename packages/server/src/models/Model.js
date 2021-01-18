@@ -13,7 +13,6 @@ import {
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
-import { AssetFile } from '@/storage'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -550,7 +549,7 @@ export class Model extends objection.Model {
               if (isArray(data)) {
                 data.forEach(convertToAssetFiles)
               } else {
-                AssetFile.convert(data, storage)
+                storage.convertAssetFile(data)
               }
             }
           }

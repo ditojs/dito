@@ -57,6 +57,10 @@ export class Storage {
     return AssetFile.getUniqueKey(name)
   }
 
+  convertAssetFile(file) {
+    return AssetFile.convert(file, this)
+  }
+
   convertStorageFile(storageFile) {
     // Convert multer file object to our own file object format:
     return {
@@ -81,7 +85,7 @@ export class Storage {
     file.url = this._getFileUrl(storageFile)
     // TODO: Support `config.readImageSize`, but this can only be done onces
     // there are separate storage instances per model assets config!
-    return AssetFile.convert(file, this)
+    return this.convertAssetFile(file)
   }
 
   async removeFile(file) {
