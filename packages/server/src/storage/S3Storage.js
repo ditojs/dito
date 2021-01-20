@@ -1,5 +1,4 @@
 import aws from 'aws-sdk'
-import axios from 'axios'
 import multerS3 from 'multer-s3'
 import { Storage } from './Storage'
 
@@ -55,7 +54,7 @@ export class S3Storage extends Storage {
 
   // @override
   _getFileUrl(file) {
-    return this._getUrl(file.key) ?? file.url ?? file.location
+    return this._getUrl(file.key) ?? file.url
   }
 
   // @override
@@ -85,26 +84,13 @@ export class S3Storage extends Storage {
 
   // @override
   async _readFile(file) {
-    let data
-    let type
-    if (file.url) {
-      ({
-        data,
-        'content-type': type
-      } = await axios.request({
-        method: 'get',
-        url: file.url,
-        responseType: 'arraybuffer'
-      }))
-    } else {
-      ({
-        Body: data,
-        ContentType: type
-      } = await this.s3.getObject({
-        Bucket: this.bucket,
-        Key: file.key
-      }).promise())
-    }
+    const {
+      Body: data,
+      ContentType: type
+    } = await this.s3.getObject({
+      Bucket: this.bucket,
+      Key: file.key
+    }).promise()
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)
     // See `AssetFile.data` setter:
     buffer.type = type
