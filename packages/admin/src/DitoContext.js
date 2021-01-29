@@ -149,6 +149,10 @@ export default class DitoContext {
     return get(this, 'error')
   }
 
+  get wasNotified() {
+    return get(this, 'wasNotified') ?? false
+  }
+
   // Helper Methods
 
   get request() {
@@ -167,14 +171,14 @@ export default class DitoContext {
     return options => this.component.download(options)
   }
 
+  get getResourceUrl() {
+    return resource => this.component.getResourceUrl(resource)
+  }
+
   get notify() {
     return options => {
       this.component.notify(options)
       set(this, 'wasNotified', true)
     }
-  }
-
-  get wasNotified() {
-    return get(this, 'wasNotified') ?? false
   }
 }
