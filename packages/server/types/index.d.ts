@@ -613,7 +613,7 @@ export interface Schema {
   maxProperties?: number
   minProperties?: number
 
-  required?: boolean
+  required?: boolean | string[]
 
   properties?: {
     [key: string]: SchemaDefinition
@@ -621,7 +621,7 @@ export interface Schema {
   patternProperties?: {
     [key: string]: SchemaDefinition
   }
-  additionalProperties?: SchemaDefinition
+  additionalProperties?: boolean | SchemaDefinition
   dependencies?: {
     [key: string]: SchemaDefinition | string[]
   }
@@ -1193,13 +1193,10 @@ export type SelectModelPropertyKeys<$Model extends Model> = {
   }[Extends<$Model[K], Model | Function>]
 }[keyof $Model]
 
-export type AuthorizationOptions =
+export type Authorize =
   | boolean
   | OrArrayOf<StringSuggestions<'$self' | '$owner'>>
-
-export type Authorize =
-  | ((ctx: KoaContext) => AuthorizationOptions | Promise<AuthorizationOptions>)
-  | AuthorizationOptions
+  | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
 
 export type BaseControllerActionOptions = {
   /**
@@ -1468,7 +1465,9 @@ type ModelControllerHooks<
   >
 }
 
-export class ModelController<$Model extends Model> extends Controller {
+export type ModelControllerScope = OrArrayOf<string>
+
+export class ModelController<$Model extends Model = Model> extends Controller {
   /**
    * The model class that this controller represents. If none is provided,
    * the singularized controller name is used to look up the model class in
@@ -1544,7 +1543,7 @@ export class ModelController<$Model extends Model> extends Controller {
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md Model Scopes}
    */
-  scope?: boolean | OrArrayOf<string>
+  scope?: ModelControllerScope
   query(): QueryBuilder<$Model>
 }
 
@@ -1914,7 +1913,7 @@ export class ResponseError extends Error {
           code?: string | number
         }
       | string,
-    defaults?: { message: string; status: number }
+    defaults?: { message?: string; status?: number }
   )
   status: number
   code?: string | number
@@ -2072,6 +2071,8 @@ export type ReflectArrayType<Source, Target> = Source extends any[]
   : Target
 
 export type OrArrayOf<T> = T[] | T
+
+export type OrPromiseOf<T> = Promise<T> | T
 
 type modelFromModelController<
   $ModelController extends ModelController<Model>
