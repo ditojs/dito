@@ -8,7 +8,8 @@
   "license": "MIT",
   "files": [
     "src/",
-    "lib/"
+    "lib/",
+    "types/"
   ],
   "scripts": {
     "knex": "babel-node node_modules/.bin/knex",

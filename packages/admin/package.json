@@ -9,7 +9,8 @@
   "files": [
     "src/",
     "dist/",
-    "static/"
+    "static/",
+    "types/"
   ],
   "scripts": {
     "build": "vue-cli-service build --target lib --name dito-admin src/index.js",
