@@ -912,6 +912,13 @@ export class Model extends objection.Model {
           path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
         )
         : assetDataPaths
+
+      // `dataPaths` will be empty in the case of an update/insert that do not
+      // affect the assets.
+      if (dataPaths.length === 0) {
+        return
+      }
+
       // Load the model's asset files in their current state before the query is
       // executed.
       const beforeItems = type === 'before:insert'
