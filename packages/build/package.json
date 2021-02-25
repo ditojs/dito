@@ -27,12 +27,12 @@
     "node 14"
   ],
   "dependencies": {
-    "mime": "^2.4.7",
+    "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.2.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "@babel/preset-env": "^7.12.11",
+    "@babel/core": "^7.13.1",
+    "@babel/preset-env": "^7.13.5",
     "@ditojs/babel-preset": "^0.202.0"
   }
 }

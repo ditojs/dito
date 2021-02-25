@@ -24,13 +24,13 @@
     "node 14"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.12.5",
+    "@babel/runtime": "^7.13.7",
     "@ditojs/utils": "^0.202.0",
-    "core-js": "^3.8.2"
+    "core-js": "^3.9.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.10",
-    "@babel/preset-env": "^7.12.11",
+    "@babel/core": "^7.13.1",
+    "@babel/preset-env": "^7.13.5",
     "@ditojs/babel-preset": "^0.202.0"
   },
   "keywords": [
