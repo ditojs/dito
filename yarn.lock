@@ -8080,12 +8080,12 @@ html-webpack-plugin@^3.2.0:
     toposort "^1.0.0"
     util.promisify "1.0.0"
 
-html-webpack-tags-plugin@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/html-webpack-tags-plugin/-/html-webpack-tags-plugin-3.0.0.tgz#e237c826eec147a22bbe6fcdd93d1de4490d9d9d"
-  integrity sha512-+4H3546xwpiLiznVyvf0Tk/2fKvvkW/BKbFDtbaFilEISINzSwtMeHIssC02qdPiZhNkgJPDJV14P53XvXwAsg==
+html-webpack-tags-plugin@^2.0.17:
+  version "2.0.17"
+  resolved "https://registry.yarnpkg.com/html-webpack-tags-plugin/-/html-webpack-tags-plugin-2.0.17.tgz#1143cb41fa895eca6bc45207d3aadd914cee8b55"
+  integrity sha512-TKT8hnumMni6ztKfWZpP+UBeA7+aUn+qQQ4c9wT/p1IGTO/QWoIc19E+ZrxCcToDMjBO1NMYWkUbW4c4NtlGvg==
   dependencies:
-    glob "^7.1.6"
+    glob "^7.1.4"
     minimatch "^3.0.4"
     slash "^3.0.0"
 

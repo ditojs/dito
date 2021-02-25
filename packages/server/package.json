@@ -46,7 +46,7 @@
     "data-uri-to-buffer": "^3.0.1",
     "eventemitter2": "^6.4.4",
     "fs-extra": "^9.1.0",
-    "html-webpack-tags-plugin": "^3.0.0",
+    "html-webpack-tags-plugin": "^2.0.17",
     "image-size": "^0.9.4",
     "koa": "^2.13.1",
     "koa-bodyparser": "^4.3.0",
