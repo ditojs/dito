@@ -86,9 +86,9 @@
     "@babel/core": "^7.13.1",
     "@babel/preset-env": "^7.13.5",
     "@ditojs/babel-preset": "^0.203.0",
-    "knex": "^0.21.15",
-    "objection": "^2.2.4",
+    "knex": "^0.21.18",
+    "objection": "^2.2.14",
     "pg": "^8.5.1",
-    "sqlite3": "^5.0.0"
+    "sqlite3": "^5.0.2"
   }
 }
