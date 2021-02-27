@@ -924,7 +924,7 @@ export class Model extends objection.Model {
       const beforeItems = type === 'before:insert'
         ? []
         : await loadAssetDataPaths(
-          asFindQuery().select(...assetDataPaths).clear('runAfter'),
+          asFindQuery().clear('runAfter'),
           dataPaths
         )
       const beforeFilesPerDataPath = getFilesPerAssetDataPath(
