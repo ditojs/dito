@@ -434,7 +434,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
-      const param = key.endsWith('[]') ? key.slice(0, key.length - 2) : key
+      const param = key.endsWith('[]') ? key.slice(0, -2) : key
       if (!allowed[param]) {
         throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }
