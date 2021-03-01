@@ -6,14 +6,14 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
-    "bootstrap": "lerna bootstrap",
-    "clean": "lerna run clean --parallel",
-    "build": "lerna run build --stream",
-    "watch": "lerna run watch --parallel",
-    "prepare": "yarn lint && lerna run prepare --stream",
+    "clean": "yarn run foreach run clean",
+    "build": "yarn run foreach --topological run build",
+    "watch": "yarn run foreach --jobs 6 run watch",
+    "prepare": "yarn lint && yarn run foreach --topological run prepare",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
-    "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src"
+    "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/**/src",
+    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,vue}": "cross-env NODE_ENV=production eslint"
