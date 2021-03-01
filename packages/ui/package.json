@@ -11,7 +11,7 @@
     "dist/"
   ],
   "scripts": {
-    "build:icons": "yarn --silent inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.sass",
+    "build:icons": "yarn inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.sass",
     "build:vue": "vue-cli-service build --target lib --name dito-ui src/index.js",
     "build": "yarn build:icons && yarn build:vue",
     "watch": "yarn build:vue --watch",
@@ -33,24 +33,26 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.7",
+    "@babel/runtime": "^7.13.8",
     "@ditojs/utils": "^0.205.0",
-    "core-js": "^3.9.0"
+    "core-js": "^3.9.1"
+  },
+  "peerDependencies": {
+    "webpack": "^4.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.1",
-    "@babel/preset-env": "^7.13.5",
+    "@babel/core": "^7.13.8",
+    "@babel/preset-env": "^7.13.8",
     "@ditojs/babel-preset": "^0.205.0",
     "@ditojs/build": "^0.205.0",
     "@vue/cli-plugin-babel": "^4.5.11",
-    "@vue/cli-plugin-eslint": "^4.5.11",
     "@vue/cli-service": "^4.5.11",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
-    "pug": "^3.0.0",
+    "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
     "sass": "^1.32.8",
-    "sass-loader": "^10.1.0",
+    "sass-loader": "^10.1.1",
     "vue-template-compiler": "^2.6.12"
   }
 }
