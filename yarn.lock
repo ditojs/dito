@@ -1319,17 +1319,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.206.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.207.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.206.0
-    "@ditojs/build": ^0.206.0
-    "@ditojs/ui": ^0.206.0
-    "@ditojs/utils": ^0.206.0
+    "@ditojs/babel-preset": ^0.207.0
+    "@ditojs/build": ^0.207.0
+    "@ditojs/ui": ^0.207.0
+    "@ditojs/utils": ^0.207.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     axios: ^0.21.1
@@ -1365,7 +1365,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/babel-preset@^0.206.0, @ditojs/babel-preset@workspace:packages/babel-preset":
+"@ditojs/babel-preset@^0.207.0, @ditojs/babel-preset@workspace:packages/babel-preset":
   version: 0.0.0-use.local
   resolution: "@ditojs/babel-preset@workspace:packages/babel-preset"
   dependencies:
@@ -1384,14 +1384,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^0.206.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^0.207.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
-    "@ditojs/babel-preset": ^0.206.0
+    "@ditojs/babel-preset": ^0.207.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     mime: ^2.5.2
@@ -1402,7 +1402,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^0.206.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^0.207.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
@@ -1410,8 +1410,8 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.206.0
-    "@ditojs/utils": ^0.206.0
+    "@ditojs/babel-preset": ^0.207.0
+    "@ditojs/utils": ^0.207.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     rimraf: ^3.0.2
@@ -1426,10 +1426,10 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@babel/runtime": ^7.13.8
-    "@ditojs/admin": ^0.206.0
-    "@ditojs/babel-preset": ^0.206.0
-    "@ditojs/router": ^0.206.0
-    "@ditojs/utils": ^0.206.0
+    "@ditojs/admin": ^0.207.0
+    "@ditojs/babel-preset": ^0.207.0
+    "@ditojs/router": ^0.207.0
+    "@ditojs/utils": ^0.207.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
@@ -1477,7 +1477,7 @@ __metadata:
     pluralize: ^8.0.0
     repl: ^0.1.3
     rimraf: ^3.0.2
-    source-map-loader: ^2.0.1
+    source-map-loader: 1.1.1
     sqlite3: ^5.0.2
     uuid: ^8.3.2
     vue: ^2.6.12
@@ -1491,16 +1491,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^0.206.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^0.207.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.206.0
-    "@ditojs/build": ^0.206.0
-    "@ditojs/utils": ^0.206.0
+    "@ditojs/babel-preset": ^0.207.0
+    "@ditojs/build": ^0.207.0
+    "@ditojs/utils": ^0.207.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     babel-loader: ^8.2.2
@@ -1516,7 +1516,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^0.206.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^0.207.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
@@ -1524,7 +1524,7 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.206.0
+    "@ditojs/babel-preset": ^0.207.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     punycode: ^2.1.1
@@ -16986,23 +16986,19 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"source-map-js@npm:^0.6.2":
-  version: 0.6.2
-  resolution: "source-map-js@npm:0.6.2"
-  checksum: 8e2f992cfbedb71286fa6f6e011e2fa756b7f4d944ea4b0f49e9ff6ea34ad0a17dc655f067fdddb32efa7b45000e8c59e47a2e875d91744c86a56329b5f58b32
-  languageName: node
-  linkType: hard
-
-"source-map-loader@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "source-map-loader@npm:2.0.1"
+"source-map-loader@npm:1.1.1":
+  version: 1.1.1
+  resolution: "source-map-loader@npm:1.1.1"
   dependencies:
     abab: ^2.0.5
     iconv-lite: ^0.6.2
-    source-map-js: ^0.6.2
+    loader-utils: ^2.0.0
+    schema-utils: ^3.0.0
+    source-map: ^0.6.1
+    whatwg-mimetype: ^2.3.0
   peerDependencies:
-    webpack: ^5.0.0
-  checksum: d3bf51ed491782eaca87b626d7abc8c1c98a062bbf58dfd362460f86192f7dcb6fd79dffb126e91b78f5cc9e718e00386a6849b742f7c8c1785fb4886fa65350
+    webpack: ^4.0.0 || ^5.0.0
+  checksum: 9fdd9653552fb13b2689c6fc5de83227324f842423bbf62125b2688573ea236ad69e2c5ab20addb21e77b2e7b6b2e872711f0dc2bb6888b0dc3ba48d14ec6f9c
   languageName: node
   linkType: hard
 
