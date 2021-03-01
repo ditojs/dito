@@ -1433,7 +1433,8 @@ __metadata:
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
-    ajv: ^6.12.6
+    ajv: ^7.1.1
+    ajv-formats: ^1.5.1
     aws-sdk: ^2.853.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
@@ -4073,6 +4074,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ajv-formats@npm:^1.5.1":
+  version: 1.5.1
+  resolution: "ajv-formats@npm:1.5.1"
+  dependencies:
+    ajv: ^7.0.0
+  checksum: 0c13847af10b5ad2657d77e5e471ff792d94405e119c2b8345eda797c9a20d98510cdb0f4eac7db330240ca47a5fb4dba891463172ee2ab9426044e15fe1e2e4
+  languageName: node
+  linkType: hard
+
 "ajv-keywords@npm:^3.1.0, ajv-keywords@npm:^3.4.1, ajv-keywords@npm:^3.5.2":
   version: 3.5.2
   resolution: "ajv-keywords@npm:3.5.2"
@@ -4094,7 +4104,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^7.0.2":
+"ajv@npm:^7.0.0, ajv@npm:^7.0.2, ajv@npm:^7.1.1":
   version: 7.1.1
   resolution: "ajv@npm:7.1.1"
   dependencies:

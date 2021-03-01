@@ -1,5 +1,6 @@
 import objection from 'objection'
 import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import * as schema from '@/schema'
 
@@ -46,20 +47,24 @@ export class Validator extends objection.Validator {
       // Patch-validators don't use default values:
       ...(patch && { useDefaults: false })
     })
+    addFormats(ajv, { mode: 'full' })
 
-    const add = (schemas, method) => {
+    const addSchemas = (schemas, callback) => {
       for (const [name, schema] of Object.entries(schemas)) {
         if (schema) {
-          // Ajv appears to not copy the schema before modifying it,
-          // so let's make shallow clones here.
           // Remove leading '_' to simplify special keywords (e.g. instanceof)
-          ajv[method](name.replace(/^_/, ''), { ...schema })
+          callback(name.replace(/^_/, ''), schema)
         }
       }
     }
 
-    add(this.keywords, 'addKeyword')
-    add(this.formats, 'addFormat')
+    addSchemas(this.keywords, (keyword, schema) => ajv.addKeyword({
+      keyword,
+      ...schema
+    }))
+    addSchemas(this.formats, (format, schema) => ajv.addFormat(format, {
+      ...schema
+    }))
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
@@ -336,14 +341,10 @@ function hasDefaults(obj) {
 }
 
 const defaultOptions = {
+  strict: false,
   allErrors: true,
-  errorDataPath: 'property',
-  extendRefs: 'fail',
-  format: 'full',
-  missingRefs: true,
   ownProperties: true,
   passContext: true,
-  schemaId: '$id',
   useDefaults: true,
   validateSchema: true
 }

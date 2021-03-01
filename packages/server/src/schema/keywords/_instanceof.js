@@ -14,13 +14,13 @@ export const _instanceof = {
   },
 
   validate(schema, data) {
-    // Support instanceof for basic JS types and Dito models.  If `this` is the
+    // Support instanceof for basic JS types and Dito models. If `this` is the
     // validator's ctx (see passContext), then we can access the models and
     // check.
-    const models = this?.app.models
+    const models = this?.app?.models
     for (const type of asArray(schema)) {
       const ctor = isString(type)
-        ? constructors[type] || models[type]
+        ? constructors[type] || models?.[type]
         : isFunction(type)
           ? type
           : null

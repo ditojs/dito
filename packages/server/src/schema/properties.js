@@ -1,6 +1,4 @@
-import { isObject, isArray, asArray, isString } from '@ditojs/utils'
-
-// TODO: convert `nullable: true` to `type: [... 'null']` detection?
+import { isObject, isArray, isString } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
@@ -68,7 +66,7 @@ export function convertSchema(schema, options = {}) {
           schema.instanceof = type
         } else {
           // Move `type` to `$ref`, but still keep other properties for now,
-          // to support `nullable` below.
+          // to support `nullable`.
           delete schema.type
           // TODO: Consider moving to `model` keyword instead that would support
           // model validation and still could be combined with other keywords.
@@ -101,12 +99,10 @@ export function convertSchema(schema, options = {}) {
         schema.default = _default
       }
     }
-    if (schema.nullable) {
-      schema = makeNullable(schema)
-    } else if (schema.$ref) {
-      // $ref keywords can't be combined with anything else, but we can't clear
-      // them earlier as it would break support for nullable.
-      schema = { $ref: schema.$ref }
+    // Make nullable work with enum, see the issue for more details:
+    // https://github.com/ajv-validator/ajv/issues/1471
+    if (schema.nullable && schema.enum && !schema.enum.includes(null)) {
+      schema.enum.push(null)
     }
   }
   return schema
@@ -175,49 +171,6 @@ function addFormat(schema, newFormat) {
     schema.format = newFormat
   }
   return schema
-}
-
-function makeNullable(schema) {
-  // Add 'null' to the allowed types through `oneOf`.
-  // Move format along with type, and also support $ref and instanceof:
-  const {
-    type,
-    $ref,
-    nullable, // Keep `nullable` at root level, outside of `anyOf`.
-    validate, // Keep `validate()` at root level, to apply to both.
-    ...rest
-  } = schema
-  // Determine if any of the encountered keywords need separate schema for
-  // not-null / null. The check used to be: Object.keys(rest).length > 0, but
-  // this caused issued with coercing validation, `oneOf`, and null/integer.
-  const needsSeparateSchema = $ref || Object.keys(rest).some(
-    key => ![
-      // Known keywords without side-effects to not-null / null values:
-      'primary', 'foreign', 'nullable', 'unique', 'unsigned',
-      'computed', 'hidden'
-    ].includes(key)
-  )
-
-  return isArray(type) && type.includes('null')
-    ? schema
-    : needsSeparateSchema
-      ? {
-        anyOf: [
-          { type: 'null' },
-          $ref
-            ? { $ref }
-            : { type, ...rest }
-        ],
-        nullable,
-        ...(validate && { validate })
-      }
-      : {
-        // For coercing validation, null needs to come first:
-        type: ['null', ...asArray(type)],
-        nullable,
-        ...(validate && { validate }),
-        ...rest
-      }
 }
 
 // Table to translate schema types to JSON schema types. Other types are allowed

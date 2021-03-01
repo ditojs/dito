@@ -7,9 +7,9 @@ export const validate = {
   },
   errors: 'full',
 
-  validate: function validate(func, ...args) {
+  validate: function validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
-    const params = getParams(this, ...args)
+    const params = getParams(this, data, parentSchema, dataCtx)
     let result
     try {
       result = func(params) ?? true
@@ -29,9 +29,9 @@ export const validateAsync = {
   ...validate,
   async: true,
 
-  async validate(func, ...args) {
+  async validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
-    const params = getParams(this, ...args)
+    const params = getParams(this, data, parentSchema, dataCtx)
     let result
     try {
       result = (await func(params)) ?? true
@@ -43,16 +43,8 @@ export const validateAsync = {
   }
 }
 
-function getParams(
-  ctx,
-  // This is the sequence by which these parameters are received from Ajv.
-  data,
-  parentSchema,
-  dataPath,
-  parentData,
-  parentDataProperty,
-  rootData
-) {
+function getParams(ctx, data, parentSchema, dataCtx) {
+  const { dataPath, parentData, parentDataProperty, rootData } = dataCtx
   return {
     data,
     parentData,

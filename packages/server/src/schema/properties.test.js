@@ -328,7 +328,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('expands `nullable: true` to correct JSON schema representation', () => {
+  it('handles `nullable: true` correctly (now natively supported)', () => {
     expect(convertSchema({
       myString: {
         type: 'string',
@@ -338,7 +338,7 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myString: {
-          type: ['null', 'string'],
+          type: 'string',
           nullable: true
         }
       },
@@ -346,7 +346,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands \`nullable: true\` references to correct JSON schema representation`, () => {
+  it(`handles \`nullable: true\` references correctly (now natively supported)`, () => {
     expect(convertSchema({
       myModel: {
         type: 'MyModel',
@@ -356,14 +356,7 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myModel: {
-          anyOf: [
-            {
-              type: 'null'
-            },
-            {
-              $ref: 'MyModel'
-            }
-          ],
+          $ref: 'MyModel',
           nullable: true
         }
       },
@@ -371,7 +364,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands \`nullable: true\` dates to correct JSON schema representation`, () => {
+  it(`handles \`nullable: true\` dates correctly (now natively supported)`, () => {
     expect(convertSchema({
       myDate: {
         type: 'date',
@@ -381,15 +374,28 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myDate: {
-          anyOf: [
-            {
-              type: 'null'
-            },
-            {
-              type: ['string', 'object'],
-              format: 'date-time'
-            }
-          ],
+          type: ['string', 'object'],
+          format: 'date-time',
+          nullable: true
+        }
+      },
+      additionalProperties: false
+    })
+  })
+
+  it(`handles \`nullable: true\` enums correctly`, () => {
+    expect(convertSchema({
+      myEnum: {
+        type: 'string',
+        enum: ['one', 'two', 'three'],
+        nullable: true
+      }
+    })).toEqual({
+      type: 'object',
+      properties: {
+        myEnum: {
+          type: 'string',
+          enum: ['one', 'two', 'three', null],
           nullable: true
         }
       },
