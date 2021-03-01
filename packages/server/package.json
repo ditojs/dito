@@ -76,12 +76,12 @@
     "source-map-loader": "^2.0.1",
     "uuid": "^8.3.2",
     "vue": "^2.6.12",
-    "vue-template-compiler": "^2.6.12"
+    "vue-template-compiler": "^2.6.12",
+    "webpack": "^4.46.0"
   },
   "peerDependencies": {
     "knex": "^0.20.0",
-    "objection": "^2.2.0",
-    "webpack": "^4.0.0"
+    "objection": "^2.2.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.0",
