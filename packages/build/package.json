@@ -27,6 +27,7 @@
     "node 14"
   ],
   "dependencies": {
+    "@ditojs/utils": "^0.207.0",
     "core-js": "^3.9.1",
     "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.2.3"
@@ -37,6 +38,7 @@
     "@babel/preset-env": "^7.13.8",
     "@ditojs/babel-preset": "^0.207.0",
     "babel-plugin-module-resolver": "^4.1.0",
+    "minimist": "^1.2.5",
     "rimraf": "^3.0.2"
   }
 }

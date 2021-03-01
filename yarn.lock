@@ -1392,10 +1392,12 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.8
     "@ditojs/babel-preset": ^0.207.0
+    "@ditojs/utils": ^0.207.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     mime: ^2.5.2
     mini-svg-data-uri: ^1.2.3
+    minimist: ^1.2.5
     rimraf: ^3.0.2
   bin:
     inline-assets: ./lib/cli/inline-assets.js
@@ -1504,9 +1506,12 @@ __metadata:
     "@ditojs/utils": ^0.207.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
+    autoprefixer: ^9.8.6
     babel-loader: ^8.2.2
     core-js: ^3.9.1
     fibers: ^5.0.0
+    postcss: ^8.2.6
+    postcss-loader: ^4.2.0
     pug: ^3.0.2
     pug-plain-loader: ^1.1.0
     sass: ^1.32.8
@@ -1529,6 +1534,7 @@ __metadata:
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     punycode: ^2.1.1
+    regenerator-runtime: ^0.13.7
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -7139,7 +7145,6 @@ __metadata:
     jest: ^26.6.3
     lerna: ^3.22.1
     lint-staged: ^10.5.4
-    minimist: ^1.2.5
     vue-eslint-parser: ^7.5.0
   languageName: unknown
   linkType: soft
@@ -14641,6 +14646,22 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"postcss-loader@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "postcss-loader@npm:4.2.0"
+  dependencies:
+    cosmiconfig: ^7.0.0
+    klona: ^2.0.4
+    loader-utils: ^2.0.0
+    schema-utils: ^3.0.0
+    semver: ^7.3.4
+  peerDependencies:
+    postcss: ^7.0.0 || ^8.0.1
+    webpack: ^4.0.0 || ^5.0.0
+  checksum: 685a54e5768171d27ada47f304b7a375ac5ec768844e70238bb88089636494efa29ec082525efaac889f7dfac0fbea55cf0f4680c12597b7b80cabf442390c46
+  languageName: node
+  linkType: hard
+
 "postcss-merge-longhand@npm:^4.0.11":
   version: 4.0.11
   resolution: "postcss-merge-longhand@npm:4.0.11"
@@ -14958,6 +14979,17 @@ fsevents@^1.2.7:
     source-map: ^0.6.1
     supports-color: ^6.1.0
   checksum: 8a979ea9799dd48399337708a395ddb8cf0e328515201ed35c99f5ba5eaa7688eae65764c570bf49b5be0b106226e2f222abc210de068b3d3da9a9a3bbb70567
+  languageName: node
+  linkType: hard
+
+"postcss@npm:^8.2.6":
+  version: 8.2.6
+  resolution: "postcss@npm:8.2.6"
+  dependencies:
+    colorette: ^1.2.1
+    nanoid: ^3.1.20
+    source-map: ^0.6.1
+  checksum: 31dcc6632589e5b0d06ae3854122073a38952f3a25280511fa4bd8c2bc254c05d1d1db0913848ed3171c84d41b233ec3fe5d7349de4700f624a16fa93553ccac
   languageName: node
   linkType: hard
 
@@ -15946,7 +15978,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"regenerator-runtime@npm:^0.13.4":
+"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.7":
   version: 0.13.7
   resolution: "regenerator-runtime@npm:0.13.7"
   checksum: 6ef567c662088b1b292214920cbd72443059298d477f72e1a37e0a113bafbfac9057cbfe35ae617284effc4b423493326a78561bbff7b04162c7949bdb9624e8
@@ -16602,7 +16634,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.2.1, semver@npm:^7.3.2":
+"semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.4":
   version: 7.3.4
   resolution: "semver@npm:7.3.4"
   dependencies:
