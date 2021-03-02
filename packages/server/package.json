@@ -28,6 +28,7 @@
     "node 14"
   ],
   "dependencies": {
+    "@babel/core": "^7.13.8",
     "@babel/runtime": "^7.13.8",
     "@ditojs/admin": "^0.208.0",
     "@ditojs/router": "^0.208.0",
@@ -86,7 +87,6 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.13.0",
-    "@babel/core": "^7.13.8",
     "@babel/preset-env": "^7.13.8",
     "@ditojs/babel-preset": "^0.208.0",
     "babel-plugin-dynamic-import-node": "^2.3.3",
