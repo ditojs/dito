@@ -10,6 +10,7 @@
     "build": "yarn run foreach --topological run build",
     "watch": "yarn run foreach --jobs 6 run watch",
     "prepare": "yarn lint",
+    "version": "yarn install",
     "postinstall": "husky install",
     "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/**/src",
