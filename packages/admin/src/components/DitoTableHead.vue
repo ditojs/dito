@@ -5,15 +5,18 @@
         v-for="(column, index) in columns"
         :class="getColumnClass(column)"
       )
-        router-link.dito-button(
+        router-link(
           v-if="column.sortable"
           :to="getSortLink(column)"
-          tag="button"
-          type="button"
-          :class="getSortClass(column)"
+          custom v-slot="{ navigate }"
         )
-          .dito-order-arrows
-          span {{ getLabel(column) }}
+          button.dito-button(
+            type="button"
+            :class="getSortClass(column)"
+            @click="navigate"
+          )
+            .dito-order-arrows
+            span {{ getLabel(column) }}
         span(
           v-else
         ) {{ getLabel(column) }}
