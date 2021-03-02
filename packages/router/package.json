@@ -24,14 +24,14 @@
     "node 14"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.13.8",
+    "@babel/runtime": "^7.13.9",
     "@ditojs/utils": "^0.209.0",
     "core-js": "^3.9.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.8",
-    "@babel/preset-env": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
     "@ditojs/babel-preset": "^0.209.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "rimraf": "^3.0.2"

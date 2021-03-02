@@ -32,7 +32,7 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.8",
+    "@babel/runtime": "^7.13.9",
     "@ditojs/ui": "^0.209.0",
     "@ditojs/utils": "^0.209.0",
     "axios": "^0.21.1",
@@ -59,11 +59,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.13.8",
-    "@babel/preset-env": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
     "@ditojs/babel-preset": "^0.209.0",
     "@ditojs/build": "^0.209.0",
     "@vue/cli-plugin-babel": "^4.5.11",
     "@vue/cli-service": "^4.5.11",
+    "autoprefixer": "^9.8.6",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
     "pug": "^3.0.2",

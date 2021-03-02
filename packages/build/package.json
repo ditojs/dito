@@ -35,7 +35,7 @@
   "devDependencies": {
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.8",
-    "@babel/preset-env": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
     "@ditojs/babel-preset": "^0.209.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "minimist": "^1.2.5",

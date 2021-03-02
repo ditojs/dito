@@ -176,7 +176,7 @@ export class AdminController extends Controller {
               {
                 test: /\.(js|css)$/,
                 enforce: 'pre',
-                use: ['source-map-loader']
+                use: [require.resolve('source-map-loader')]
               }
             ]
           }

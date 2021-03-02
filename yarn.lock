@@ -1159,7 +1159,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/preset-env@npm:^7.11.0, @babel/preset-env@npm:^7.13.8":
+"@babel/preset-env@npm:^7.11.0":
   version: 7.13.8
   resolution: "@babel/preset-env@npm:7.13.8"
   dependencies:
@@ -1237,6 +1237,84 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/preset-env@npm:^7.13.9":
+  version: 7.13.9
+  resolution: "@babel/preset-env@npm:7.13.9"
+  dependencies:
+    "@babel/compat-data": ^7.13.8
+    "@babel/helper-compilation-targets": ^7.13.8
+    "@babel/helper-plugin-utils": ^7.13.0
+    "@babel/helper-validator-option": ^7.12.17
+    "@babel/plugin-proposal-async-generator-functions": ^7.13.8
+    "@babel/plugin-proposal-class-properties": ^7.13.0
+    "@babel/plugin-proposal-dynamic-import": ^7.13.8
+    "@babel/plugin-proposal-export-namespace-from": ^7.12.13
+    "@babel/plugin-proposal-json-strings": ^7.13.8
+    "@babel/plugin-proposal-logical-assignment-operators": ^7.13.8
+    "@babel/plugin-proposal-nullish-coalescing-operator": ^7.13.8
+    "@babel/plugin-proposal-numeric-separator": ^7.12.13
+    "@babel/plugin-proposal-object-rest-spread": ^7.13.8
+    "@babel/plugin-proposal-optional-catch-binding": ^7.13.8
+    "@babel/plugin-proposal-optional-chaining": ^7.13.8
+    "@babel/plugin-proposal-private-methods": ^7.13.0
+    "@babel/plugin-proposal-unicode-property-regex": ^7.12.13
+    "@babel/plugin-syntax-async-generators": ^7.8.4
+    "@babel/plugin-syntax-class-properties": ^7.12.13
+    "@babel/plugin-syntax-dynamic-import": ^7.8.3
+    "@babel/plugin-syntax-export-namespace-from": ^7.8.3
+    "@babel/plugin-syntax-json-strings": ^7.8.3
+    "@babel/plugin-syntax-logical-assignment-operators": ^7.10.4
+    "@babel/plugin-syntax-nullish-coalescing-operator": ^7.8.3
+    "@babel/plugin-syntax-numeric-separator": ^7.10.4
+    "@babel/plugin-syntax-object-rest-spread": ^7.8.3
+    "@babel/plugin-syntax-optional-catch-binding": ^7.8.3
+    "@babel/plugin-syntax-optional-chaining": ^7.8.3
+    "@babel/plugin-syntax-top-level-await": ^7.12.13
+    "@babel/plugin-transform-arrow-functions": ^7.13.0
+    "@babel/plugin-transform-async-to-generator": ^7.13.0
+    "@babel/plugin-transform-block-scoped-functions": ^7.12.13
+    "@babel/plugin-transform-block-scoping": ^7.12.13
+    "@babel/plugin-transform-classes": ^7.13.0
+    "@babel/plugin-transform-computed-properties": ^7.13.0
+    "@babel/plugin-transform-destructuring": ^7.13.0
+    "@babel/plugin-transform-dotall-regex": ^7.12.13
+    "@babel/plugin-transform-duplicate-keys": ^7.12.13
+    "@babel/plugin-transform-exponentiation-operator": ^7.12.13
+    "@babel/plugin-transform-for-of": ^7.13.0
+    "@babel/plugin-transform-function-name": ^7.12.13
+    "@babel/plugin-transform-literals": ^7.12.13
+    "@babel/plugin-transform-member-expression-literals": ^7.12.13
+    "@babel/plugin-transform-modules-amd": ^7.13.0
+    "@babel/plugin-transform-modules-commonjs": ^7.13.8
+    "@babel/plugin-transform-modules-systemjs": ^7.13.8
+    "@babel/plugin-transform-modules-umd": ^7.13.0
+    "@babel/plugin-transform-named-capturing-groups-regex": ^7.12.13
+    "@babel/plugin-transform-new-target": ^7.12.13
+    "@babel/plugin-transform-object-super": ^7.12.13
+    "@babel/plugin-transform-parameters": ^7.13.0
+    "@babel/plugin-transform-property-literals": ^7.12.13
+    "@babel/plugin-transform-regenerator": ^7.12.13
+    "@babel/plugin-transform-reserved-words": ^7.12.13
+    "@babel/plugin-transform-shorthand-properties": ^7.12.13
+    "@babel/plugin-transform-spread": ^7.13.0
+    "@babel/plugin-transform-sticky-regex": ^7.12.13
+    "@babel/plugin-transform-template-literals": ^7.13.0
+    "@babel/plugin-transform-typeof-symbol": ^7.12.13
+    "@babel/plugin-transform-unicode-escapes": ^7.12.13
+    "@babel/plugin-transform-unicode-regex": ^7.12.13
+    "@babel/preset-modules": ^0.1.4
+    "@babel/types": ^7.13.0
+    babel-plugin-polyfill-corejs2: ^0.1.4
+    babel-plugin-polyfill-corejs3: ^0.1.3
+    babel-plugin-polyfill-regenerator: ^0.1.2
+    core-js-compat: ^3.9.0
+    semver: ^6.3.0
+  peerDependencies:
+    "@babel/core": ^7.0.0-0
+  checksum: 55ef45c648da2cf98d703a3f5128eeb883285580f02717059c1ac708ac8cb291e40705838dfdd4f4c59da3c96b816c13e2d2d0d9a7490e3bace4cf41ec8ba151
+  languageName: node
+  linkType: hard
+
 "@babel/preset-modules@npm:^0.1.4":
   version: 0.1.4
   resolution: "@babel/preset-modules@npm:0.1.4"
@@ -1252,12 +1330,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.13.8, @babel/runtime@npm:^7.8.4":
+"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.8.4":
   version: 7.13.8
   resolution: "@babel/runtime@npm:7.13.8"
   dependencies:
     regenerator-runtime: ^0.13.4
   checksum: d8db125d3629c4000322e8264d7510640ac671136f416d1fcd4b74d26d7e703bf671820fab81a29a5ee0bd11e981de518666619398ec29b1ab5e155ab8131812
+  languageName: node
+  linkType: hard
+
+"@babel/runtime@npm:^7.13.9":
+  version: 7.13.9
+  resolution: "@babel/runtime@npm:7.13.9"
+  dependencies:
+    regenerator-runtime: ^0.13.4
+  checksum: e6f79d20e10c2921520c499f3cf295a9ee5c137e73f77f77eedde9f9073bc3541c1fc7fa6c97b0613f4140303ac00d08506e9f090068d219c58781d2b62c662d
   languageName: node
   linkType: hard
 
@@ -1319,19 +1406,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.208.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.209.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.208.0
-    "@ditojs/build": ^0.208.0
-    "@ditojs/ui": ^0.208.0
-    "@ditojs/utils": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.209.0
+    "@ditojs/build": ^0.209.0
+    "@ditojs/ui": ^0.209.0
+    "@ditojs/utils": ^0.209.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
+    autoprefixer: ^9.8.6
     axios: ^0.21.1
     babel-loader: ^8.2.2
     codeflask: ^1.4.1
@@ -1365,7 +1453,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/babel-preset@^0.208.0, @ditojs/babel-preset@workspace:packages/babel-preset":
+"@ditojs/babel-preset@^0.209.0, @ditojs/babel-preset@workspace:packages/babel-preset":
   version: 0.0.0-use.local
   resolution: "@ditojs/babel-preset@workspace:packages/babel-preset"
   dependencies:
@@ -1384,15 +1472,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^0.208.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^0.209.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@ditojs/babel-preset": ^0.208.0
-    "@ditojs/utils": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@ditojs/babel-preset": ^0.209.0
+    "@ditojs/utils": ^0.209.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     mime: ^2.5.2
@@ -1404,16 +1492,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^0.208.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^0.209.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.208.0
-    "@ditojs/utils": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.209.0
+    "@ditojs/utils": ^0.209.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     rimraf: ^3.0.2
@@ -1426,18 +1514,18 @@ __metadata:
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@babel/runtime": ^7.13.8
-    "@ditojs/admin": ^0.208.0
-    "@ditojs/babel-preset": ^0.208.0
-    "@ditojs/router": ^0.208.0
-    "@ditojs/utils": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@babel/runtime": ^7.13.9
+    "@ditojs/admin": ^0.209.0
+    "@ditojs/babel-preset": ^0.209.0
+    "@ditojs/router": ^0.209.0
+    "@ditojs/utils": ^0.209.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
     ajv: ^7.1.1
     ajv-formats: ^1.5.1
-    aws-sdk: ^2.853.0
+    aws-sdk: ^2.854.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1480,30 +1568,31 @@ __metadata:
     pluralize: ^8.0.0
     repl: ^0.1.3
     rimraf: ^3.0.2
-    source-map-loader: 1.1.1
+    source-map-loader: 1.1.3
     sqlite3: ^5.0.2
     uuid: ^8.3.2
     vue: ^2.6.12
     vue-template-compiler: ^2.6.12
     webpack: ^4.46.0
+    webpack-hot-client: ^4.2.0
   peerDependencies:
-    knex: ^0.20.0
+    knex: ^0.21.0
     objection: ^2.2.0
   bin:
     dito: ./lib/cli/index.js
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^0.208.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^0.209.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.208.0
-    "@ditojs/build": ^0.208.0
-    "@ditojs/utils": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.209.0
+    "@ditojs/build": ^0.209.0
+    "@ditojs/utils": ^0.209.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
@@ -1522,15 +1611,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^0.208.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^0.209.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    "@babel/runtime": ^7.13.8
-    "@ditojs/babel-preset": ^0.208.0
+    "@babel/preset-env": ^7.13.9
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.209.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     punycode: ^2.1.1
@@ -4574,9 +4663,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.853.0":
-  version: 2.853.0
-  resolution: "aws-sdk@npm:2.853.0"
+"aws-sdk@npm:^2.854.0":
+  version: 2.854.0
+  resolution: "aws-sdk@npm:2.854.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4587,7 +4676,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 9b3e847d61156c2a56ba2bfdd1beced6b77b198ece98e7038db7abb388d7f15413727525eda6022722c7cf407b8c9863696b8a7a892b600b03c062f2fdccc28f
+  checksum: 0bee9b303ce70ba6d5914c6e48aba838ed04b33c5d49b480a9dadaae90e730377cace2fff6cece0494f8ab69934b9a3e2620ed4a17749acc1e2e454b0af9ace4
   languageName: node
   linkType: hard
 
@@ -7139,13 +7228,13 @@ __metadata:
     eslint-plugin-import: ^2.22.1
     eslint-plugin-node: ^11.1.0
     eslint-plugin-promise: ^4.3.1
-    eslint-plugin-vue: ^7.6.0
+    eslint-plugin-vue: ^7.7.0
     full-icu: ^1.3.1
-    husky: ^5.1.2
+    husky: ^5.1.3
     jest: ^26.6.3
     lerna: ^3.22.1
     lint-staged: ^10.5.4
-    vue-eslint-parser: ^7.5.0
+    vue-eslint-parser: ^7.6.0
   languageName: unknown
   linkType: soft
 
@@ -7781,17 +7870,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-vue@npm:^7.6.0":
-  version: 7.6.0
-  resolution: "eslint-plugin-vue@npm:7.6.0"
+"eslint-plugin-vue@npm:^7.7.0":
+  version: 7.7.0
+  resolution: "eslint-plugin-vue@npm:7.7.0"
   dependencies:
     eslint-utils: ^2.1.0
     natural-compare: ^1.4.0
     semver: ^7.3.2
-    vue-eslint-parser: ^7.5.0
+    vue-eslint-parser: ^7.6.0
   peerDependencies:
     eslint: ^6.2.0 || ^7.0.0
-  checksum: e588a651ef84ab8370da0bc30a802ae130a19b01c6a975d62c4fa0b0b5e244580edcad7c85666a458a79a10bbd1c8afce71c09fd41c144f7845e42d49067a775
+  checksum: 09c1a5ecc9f08a76759535a0fb73b86e9863db115b460efff415e5d5aa86e3fc7d356360ebb2066b7ababbd86bf282e6f6b3c42a1cdcc3f43796b6675c21ef3e
   languageName: node
   linkType: hard
 
@@ -9726,12 +9815,12 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"husky@npm:^5.1.2":
-  version: 5.1.2
-  resolution: "husky@npm:5.1.2"
+"husky@npm:^5.1.3":
+  version: 5.1.3
+  resolution: "husky@npm:5.1.3"
   bin:
     husky: lib/bin.js
-  checksum: 2c20d7132fa8c6f63ba5d7457361351f3c736d60f8faea53e8fde4735e8d75243771fa36bdda94b6e8cbd53f7caa600fa55dbdfc553184903538a9c72cbc61f1
+  checksum: 99baafebe710d3d9008d7e8523a2bba28b73acb71d92c22dfb05cd0fb38160c7d47594b5178ad1979032e1c7334afbc96f6137c3879a5c6c24ee339c74dd972b
   languageName: node
   linkType: hard
 
@@ -17028,9 +17117,9 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"source-map-loader@npm:1.1.1":
-  version: 1.1.1
-  resolution: "source-map-loader@npm:1.1.1"
+"source-map-loader@npm:1.1.3":
+  version: 1.1.3
+  resolution: "source-map-loader@npm:1.1.3"
   dependencies:
     abab: ^2.0.5
     iconv-lite: ^0.6.2
@@ -17040,7 +17129,7 @@ fsevents@^1.2.7:
     whatwg-mimetype: ^2.3.0
   peerDependencies:
     webpack: ^4.0.0 || ^5.0.0
-  checksum: 9fdd9653552fb13b2689c6fc5de83227324f842423bbf62125b2688573ea236ad69e2c5ab20addb21e77b2e7b6b2e872711f0dc2bb6888b0dc3ba48d14ec6f9c
+  checksum: 6bf51f4030fca1abb73c734b948de899b7c290855393bb8e90c9f9bc4df4ed383f66259695ef1bb98d86a74fe6ec0e6acddd3c7d53ecc5f7473ac8659fa35356
   languageName: node
   linkType: hard
 
@@ -18866,9 +18955,9 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"vue-eslint-parser@npm:^7.5.0":
-  version: 7.5.0
-  resolution: "vue-eslint-parser@npm:7.5.0"
+"vue-eslint-parser@npm:^7.6.0":
+  version: 7.6.0
+  resolution: "vue-eslint-parser@npm:7.6.0"
   dependencies:
     debug: ^4.1.1
     eslint-scope: ^5.0.0
@@ -18878,7 +18967,7 @@ fsevents@^1.2.7:
     lodash: ^4.17.15
   peerDependencies:
     eslint: ">=5.0.0"
-  checksum: d6da2a29295325c0fbe2f973662e9b5fdb6477e913e436a20e49025f6e1736c41cdaf73f8273ea5536154685b2a096cf1cf1c77dd121ae4ff86841fb0fb8004b
+  checksum: 27d6bc4acaafe897af8eee41512d0cd2812b533883d7ecbfda30c263533ebf486fdd76cb65f546f3c3737df383fb4bc33ecb358d7397b8b731c161c89db72bcd
   languageName: node
   linkType: hard
 
@@ -19205,7 +19294,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"webpack-hot-client@npm:^4.1.2":
+"webpack-hot-client@npm:^4.1.2, webpack-hot-client@npm:^4.2.0":
   version: 4.2.0
   resolution: "webpack-hot-client@npm:4.2.0"
   dependencies:

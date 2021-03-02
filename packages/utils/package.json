@@ -28,7 +28,7 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.13.8",
+    "@babel/runtime": "^7.13.9",
     "core-js": "^3.9.1",
     "punycode": "^2.1.1",
     "regenerator-runtime": "^0.13.7"
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.8",
-    "@babel/preset-env": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
     "@ditojs/babel-preset": "^0.209.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "rimraf": "^3.0.2"
