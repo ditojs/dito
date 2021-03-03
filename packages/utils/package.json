@@ -28,8 +28,7 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.13.9",
-    "core-js": "^3.9.1",
+    "@babel/runtime-corejs3": "^7.13.9",
     "punycode": "^2.1.1",
     "regenerator-runtime": "^0.13.7"
   },

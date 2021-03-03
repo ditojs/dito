@@ -1252,7 +1252,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.13.9, @babel/runtime@npm:^7.8.4":
+"@babel/runtime-corejs3@npm:^7.13.9":
+  version: 7.13.9
+  resolution: "@babel/runtime-corejs3@npm:7.13.9"
+  dependencies:
+    core-js-pure: ^3.0.0
+    regenerator-runtime: ^0.13.4
+  checksum: bcc0d6171f1b045e81ed0dd7949f570969ffd984139a3bb685625f8281863d48d1f466d1862bd3b4b5d679bdac7271bbfc21fba1cd7b974719b14f532e8c43e1
+  languageName: node
+  linkType: hard
+
+"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.8.4":
   version: 7.13.9
   resolution: "@babel/runtime@npm:7.13.9"
   dependencies:
@@ -1325,7 +1335,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime": ^7.13.9
+    "@babel/runtime-corejs3": ^7.13.9
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/build": ^0.210.0
     "@ditojs/ui": ^0.210.0
@@ -1336,7 +1346,6 @@ __metadata:
     axios: ^0.21.1
     babel-loader: ^8.2.2
     codeflask: ^1.4.1
-    core-js: ^3.9.1
     fibers: ^5.0.0
     filesize: ^6.1.0
     filesize-parser: ^1.5.0
@@ -1380,8 +1389,7 @@ __metadata:
     "@babel/plugin-syntax-dynamic-import": ^7.8.3
   peerDependencies:
     "@babel/core": ^7.13.8
-    "@babel/preset-env": ^7.13.8
-    core-js: ^3.9.1
+    "@babel/preset-env": ^7.13.9
   languageName: unknown
   linkType: soft
 
@@ -1395,7 +1403,6 @@ __metadata:
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/utils": ^0.210.0
     babel-plugin-module-resolver: ^4.1.0
-    core-js: ^3.9.1
     mime: ^2.5.2
     mini-svg-data-uri: ^1.2.3
     minimist: ^1.2.5
@@ -1412,11 +1419,10 @@ __metadata:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime": ^7.13.9
+    "@babel/runtime-corejs3": ^7.13.9
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/utils": ^0.210.0
     babel-plugin-module-resolver: ^4.1.0
-    core-js: ^3.9.1
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -1428,7 +1434,7 @@ __metadata:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime": ^7.13.9
+    "@babel/runtime-corejs3": ^7.13.9
     "@ditojs/admin": ^0.210.0
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/router": ^0.210.0
@@ -1446,7 +1452,6 @@ __metadata:
     bcryptjs: ^2.4.3
     bytes: ^3.1.0
     chalk: ^4.1.0
-    core-js: ^3.9.1
     data-uri-to-buffer: ^3.0.1
     eventemitter2: ^6.4.4
     fs-extra: ^9.1.0
@@ -1502,7 +1507,7 @@ __metadata:
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime": ^7.13.9
+    "@babel/runtime-corejs3": ^7.13.9
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/build": ^0.210.0
     "@ditojs/utils": ^0.210.0
@@ -1511,7 +1516,6 @@ __metadata:
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
     babel-loader: ^8.2.2
-    core-js: ^3.9.1
     fibers: ^5.0.0
     postcss: ^8.2.6
     postcss-loader: ^4.2.0
@@ -1532,10 +1536,9 @@ __metadata:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime": ^7.13.9
+    "@babel/runtime-corejs3": ^7.13.9
     "@ditojs/babel-preset": ^0.210.0
     babel-plugin-module-resolver: ^4.1.0
-    core-js: ^3.9.1
     punycode: ^2.1.1
     regenerator-runtime: ^0.13.7
     rimraf: ^3.0.2
@@ -6314,7 +6317,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.6.5, core-js@npm:^3.9.1":
+"core-js-pure@npm:^3.0.0":
+  version: 3.9.1
+  resolution: "core-js-pure@npm:3.9.1"
+  checksum: 9cbb38523f6360c068991af52bb91a55cfdc3dd3cda0964b8e232caa795b95c08523d2fb1c80b76ffd2a8446e4822a6ba960f3bd762353ad0f8470f2fd3c652e
+  languageName: node
+  linkType: hard
+
+"core-js@npm:^3.6.5":
   version: 3.9.1
   resolution: "core-js@npm:3.9.1"
   checksum: 3f360466246e816ff745f349bf0ea0c54bc3a05203638d84c5f0eae3583f07e7d848d6aa9b69c30467efb418e526bae034a6da50bcfda8b2cd413e5144cd1444
