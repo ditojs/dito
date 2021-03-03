@@ -1593,6 +1593,7 @@ __metadata:
     "@ditojs/babel-preset": ^0.210.0
     "@ditojs/build": ^0.210.0
     "@ditojs/utils": ^0.210.0
+    "@soda/get-current-script": ^1.0.2
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
@@ -3099,7 +3100,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@soda/get-current-script@npm:^1.0.0":
+"@soda/get-current-script@npm:^1.0.0, @soda/get-current-script@npm:^1.0.2":
   version: 1.0.2
   resolution: "@soda/get-current-script@npm:1.0.2"
   checksum: a3222888bf9a71131c01d355b9afb2a53a4c06132a0ad6096cb903ad48c6b788de09902a8348ad1a0cf74467494253ea1bd96a474fe2ea316bc33ea27a842a40
