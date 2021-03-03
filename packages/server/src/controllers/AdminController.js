@@ -141,6 +141,7 @@ export class AdminController extends Controller {
         entry: [this.getPath('build')],
         resolve: {
           alias: {
+            // See https://github.com/webpack-contrib/webpack-hot-client/pull/62
             'webpack-hot-client/client':
               require.resolve('webpack-hot-client/client')
           }
@@ -176,6 +177,8 @@ export class AdminController extends Controller {
               {
                 test: /\.(js|css)$/,
                 enforce: 'pre',
+                // Use `require.resolve()` here too, to avoid issues similar to
+                // 'webpack-hot-client/client' above.
                 use: [require.resolve('source-map-loader')]
               }
             ]

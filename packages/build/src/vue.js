@@ -1,5 +1,4 @@
 import { getExternalsFromDependencies } from './webpack'
-import { getNpmArgs } from './npm'
 import { merge } from '@ditojs/utils'
 
 export function getVueConfig(config) {
@@ -24,7 +23,7 @@ export function getVueConfig(config) {
 
     chainWebpack: config => {
       // When in watch mode, configure webpack a bit differently:
-      if (getNpmArgs().includes('watch')) {
+      if (process.argv.includes('--watch')) {
         // - Disable 'compact' option in babel-loader:
         config.module.rule('js')
           .use('babel-loader')
