@@ -134,7 +134,6 @@ export class AdminController extends Controller {
     return {
       runtimeCompiler: true,
       publicPath: `${this.url}/`,
-      transpileDependencies: [/@ditojs/],
       configureWebpack: {
         devtool,
         // We always need the source build path as entry, even for production,
