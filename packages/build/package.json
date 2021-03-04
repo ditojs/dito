@@ -28,6 +28,7 @@
   ],
   "dependencies": {
     "@ditojs/utils": "^0.211.0",
+    "core-js": "^3.9.1",
     "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.2.3"
   },

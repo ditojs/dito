@@ -1252,17 +1252,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime-corejs3@npm:^7.13.9":
-  version: 7.13.9
-  resolution: "@babel/runtime-corejs3@npm:7.13.9"
-  dependencies:
-    core-js-pure: ^3.0.0
-    regenerator-runtime: ^0.13.4
-  checksum: bcc0d6171f1b045e81ed0dd7949f570969ffd984139a3bb685625f8281863d48d1f466d1862bd3b4b5d679bdac7271bbfc21fba1cd7b974719b14f532e8c43e1
-  languageName: node
-  linkType: hard
-
-"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.8.4":
+"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.13.9, @babel/runtime@npm:^7.8.4":
   version: 7.13.9
   resolution: "@babel/runtime@npm:7.13.9"
   dependencies:
@@ -1329,23 +1319,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.210.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.211.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime-corejs3": ^7.13.9
-    "@ditojs/babel-preset": ^0.210.0
-    "@ditojs/build": ^0.210.0
-    "@ditojs/ui": ^0.210.0
-    "@ditojs/utils": ^0.210.0
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/build": ^0.211.0
+    "@ditojs/ui": ^0.211.0
+    "@ditojs/utils": ^0.211.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
     axios: ^0.21.1
     babel-loader: ^8.2.2
     codeflask: ^1.4.1
+    core-js: ^3.9.1
     fibers: ^5.0.0
     filesize: ^6.1.0
     filesize-parser: ^1.5.0
@@ -1375,7 +1366,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/babel-preset@^0.210.0, @ditojs/babel-preset@workspace:packages/babel-preset":
+"@ditojs/babel-preset@^0.211.0, @ditojs/babel-preset@workspace:packages/babel-preset":
   version: 0.0.0-use.local
   resolution: "@ditojs/babel-preset@workspace:packages/babel-preset"
   dependencies:
@@ -1393,16 +1384,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^0.210.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^0.211.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@ditojs/babel-preset": ^0.210.0
-    "@ditojs/utils": ^0.210.0
+    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/utils": ^0.211.0
     babel-plugin-module-resolver: ^4.1.0
+    core-js: ^3.9.1
     mime: ^2.5.2
     mini-svg-data-uri: ^1.2.3
     minimist: ^1.2.5
@@ -1412,17 +1404,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^0.210.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^0.211.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime-corejs3": ^7.13.9
-    "@ditojs/babel-preset": ^0.210.0
-    "@ditojs/utils": ^0.210.0
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/utils": ^0.211.0
     babel-plugin-module-resolver: ^4.1.0
+    core-js: ^3.9.1
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -1434,11 +1427,11 @@ __metadata:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime-corejs3": ^7.13.9
-    "@ditojs/admin": ^0.210.0
-    "@ditojs/babel-preset": ^0.210.0
-    "@ditojs/router": ^0.210.0
-    "@ditojs/utils": ^0.210.0
+    "@babel/runtime": ^7.13.9
+    "@ditojs/admin": ^0.211.0
+    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/router": ^0.211.0
+    "@ditojs/utils": ^0.211.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
@@ -1452,6 +1445,7 @@ __metadata:
     bcryptjs: ^2.4.3
     bytes: ^3.1.0
     chalk: ^4.1.0
+    core-js: ^3.9.1
     data-uri-to-buffer: ^3.0.1
     eventemitter2: ^6.4.4
     fs-extra: ^9.1.0
@@ -1501,21 +1495,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^0.210.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^0.211.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime-corejs3": ^7.13.9
-    "@ditojs/babel-preset": ^0.210.0
-    "@ditojs/build": ^0.210.0
-    "@ditojs/utils": ^0.210.0
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/build": ^0.211.0
+    "@ditojs/utils": ^0.211.0
     "@soda/get-current-script": ^1.0.2
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
     babel-loader: ^8.2.2
+    core-js: ^3.9.1
     fibers: ^5.0.0
     postcss: ^8.2.6
     postcss-loader: ^4.2.0
@@ -1529,16 +1524,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^0.210.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^0.211.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@babel/runtime-corejs3": ^7.13.9
-    "@ditojs/babel-preset": ^0.210.0
+    "@babel/runtime": ^7.13.9
+    "@ditojs/babel-preset": ^0.211.0
     babel-plugin-module-resolver: ^4.1.0
+    core-js: ^3.9.1
     punycode: ^2.1.1
     regenerator-runtime: ^0.13.7
     rimraf: ^3.0.2
@@ -6317,14 +6313,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js-pure@npm:^3.0.0":
-  version: 3.9.1
-  resolution: "core-js-pure@npm:3.9.1"
-  checksum: 9cbb38523f6360c068991af52bb91a55cfdc3dd3cda0964b8e232caa795b95c08523d2fb1c80b76ffd2a8446e4822a6ba960f3bd762353ad0f8470f2fd3c652e
-  languageName: node
-  linkType: hard
-
-"core-js@npm:^3.6.5":
+"core-js@npm:^3.6.5, core-js@npm:^3.9.1":
   version: 3.9.1
   resolution: "core-js@npm:3.9.1"
   checksum: 3f360466246e816ff745f349bf0ea0c54bc3a05203638d84c5f0eae3583f07e7d848d6aa9b69c30467efb418e526bae034a6da50bcfda8b2cd413e5144cd1444
