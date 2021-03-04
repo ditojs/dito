@@ -1319,17 +1319,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.211.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.212.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
     "@babel/runtime": ^7.13.9
-    "@ditojs/babel-preset": ^0.211.0
-    "@ditojs/build": ^0.211.0
-    "@ditojs/ui": ^0.211.0
-    "@ditojs/utils": ^0.211.0
+    "@ditojs/babel-preset": ^0.212.0
+    "@ditojs/build": ^0.212.0
+    "@ditojs/ui": ^0.212.0
+    "@ditojs/utils": ^0.212.0
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
     autoprefixer: ^9.8.6
@@ -1366,7 +1366,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/babel-preset@^0.211.0, @ditojs/babel-preset@workspace:packages/babel-preset":
+"@ditojs/babel-preset@^0.212.0, @ditojs/babel-preset@workspace:packages/babel-preset":
   version: 0.0.0-use.local
   resolution: "@ditojs/babel-preset@workspace:packages/babel-preset"
   dependencies:
@@ -1384,15 +1384,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^0.211.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^0.212.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.13.0
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
-    "@ditojs/babel-preset": ^0.211.0
-    "@ditojs/utils": ^0.211.0
+    "@ditojs/babel-preset": ^0.212.0
+    "@ditojs/utils": ^0.212.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     mime: ^2.5.2
@@ -1404,7 +1404,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^0.211.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^0.212.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
@@ -1412,8 +1412,8 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
     "@babel/runtime": ^7.13.9
-    "@ditojs/babel-preset": ^0.211.0
-    "@ditojs/utils": ^0.211.0
+    "@ditojs/babel-preset": ^0.212.0
+    "@ditojs/utils": ^0.212.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     rimraf: ^3.0.2
@@ -1428,16 +1428,16 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
     "@babel/runtime": ^7.13.9
-    "@ditojs/admin": ^0.211.0
-    "@ditojs/babel-preset": ^0.211.0
-    "@ditojs/router": ^0.211.0
-    "@ditojs/utils": ^0.211.0
+    "@ditojs/admin": ^0.212.0
+    "@ditojs/babel-preset": ^0.212.0
+    "@ditojs/router": ^0.212.0
+    "@ditojs/utils": ^0.212.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
     ajv: ^7.1.1
     ajv-formats: ^1.5.1
-    aws-sdk: ^2.855.0
+    aws-sdk: ^2.856.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1495,16 +1495,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^0.211.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^0.212.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
     "@babel/runtime": ^7.13.9
-    "@ditojs/babel-preset": ^0.211.0
-    "@ditojs/build": ^0.211.0
-    "@ditojs/utils": ^0.211.0
+    "@ditojs/babel-preset": ^0.212.0
+    "@ditojs/build": ^0.212.0
+    "@ditojs/utils": ^0.212.0
     "@soda/get-current-script": ^1.0.2
     "@vue/cli-plugin-babel": ^4.5.11
     "@vue/cli-service": ^4.5.11
@@ -1512,7 +1512,7 @@ __metadata:
     babel-loader: ^8.2.2
     core-js: ^3.9.1
     fibers: ^5.0.0
-    postcss: ^8.2.6
+    postcss: ^8.2.7
     postcss-loader: ^4.2.0
     pug: ^3.0.2
     pug-plain-loader: ^1.1.0
@@ -1524,7 +1524,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^0.211.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^0.212.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
@@ -1532,7 +1532,7 @@ __metadata:
     "@babel/core": ^7.13.8
     "@babel/preset-env": ^7.13.9
     "@babel/runtime": ^7.13.9
-    "@ditojs/babel-preset": ^0.211.0
+    "@ditojs/babel-preset": ^0.212.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.9.1
     punycode: ^2.1.1
@@ -4551,9 +4551,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.855.0":
-  version: 2.855.0
-  resolution: "aws-sdk@npm:2.855.0"
+"aws-sdk@npm:^2.856.0":
+  version: 2.856.0
+  resolution: "aws-sdk@npm:2.856.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4564,7 +4564,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 93b89918bdcdc1ba542eb210183b9cb6901699fff65a99e6d4b5e89dda0d8c591a0634aef646ae39088a39ebcd1b9ae247afcd77f5aa749b0700cafc45126860
+  checksum: 0ce0d43ce6589f63d8508554d7a81bee2f2cd8caf597f9912659b11307db22af8848467ba031358f3653fcfa8754a71d76a0e7d14c2c245e215deb1fbf2ff228
   languageName: node
   linkType: hard
 
@@ -5895,7 +5895,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"colorette@npm:^1.2.1":
+"colorette@npm:^1.2.1, colorette@npm:^1.2.2":
   version: 1.2.2
   resolution: "colorette@npm:1.2.2"
   checksum: e240f0c94b8d9f34b52bd17b50fc13a3b74f9e662edeaa2b0c65e06ec6b1fc6367fb42b834ec5a1d819d68b74a3d850f3bd3e284f9e614d6c4ffa122f83c6ec5
@@ -7361,9 +7361,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.3.649":
-  version: 1.3.678
-  resolution: "electron-to-chromium@npm:1.3.678"
-  checksum: 61ee1c1359f650fdbd09ac7977c82c39587a17fd0aca6e37565b40ff7e3b7ab5a7dead0f22615a964524bb858f6d2ec84aeb4beeb67e268df5c1abd2eaa64506
+  version: 1.3.680
+  resolution: "electron-to-chromium@npm:1.3.680"
+  checksum: 681c4f43509b86983ef4789c98019b5ffe5627924745aa18dc945b435fda1b423d69bdb5baa4d03d4dc6f6bd194c0640325e84bffeed4b8570383c59a2dc4087
   languageName: node
   linkType: hard
 
@@ -7528,28 +7528,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"es-abstract@npm:^1.17.2":
-  version: 1.17.7
-  resolution: "es-abstract@npm:1.17.7"
-  dependencies:
-    es-to-primitive: ^1.2.1
-    function-bind: ^1.1.1
-    has: ^1.0.3
-    has-symbols: ^1.0.1
-    is-callable: ^1.2.2
-    is-regex: ^1.1.1
-    object-inspect: ^1.8.0
-    object-keys: ^1.1.1
-    object.assign: ^4.1.1
-    string.prototype.trimend: ^1.0.1
-    string.prototype.trimstart: ^1.0.1
-  checksum: e8dfb81bbabcde46d2309436f107d3e795e4bcb83d78614e0c65ca7baac50522603e363be1b81ad5b1943c93fc02ed550198a7dd0580a671a6171960f2490a97
-  languageName: node
-  linkType: hard
-
-"es-abstract@npm:^1.18.0-next.1, es-abstract@npm:^1.18.0-next.2":
-  version: 1.18.0-next.3
-  resolution: "es-abstract@npm:1.18.0-next.3"
+"es-abstract@npm:^1.17.2, es-abstract@npm:^1.18.0-next.1, es-abstract@npm:^1.18.0-next.2":
+  version: 1.18.0
+  resolution: "es-abstract@npm:1.18.0"
   dependencies:
     call-bind: ^1.0.2
     es-to-primitive: ^1.2.1
@@ -7567,7 +7548,7 @@ __metadata:
     string.prototype.trimend: ^1.0.4
     string.prototype.trimstart: ^1.0.4
     unbox-primitive: ^1.0.0
-  checksum: 046a82acbeb727f19efed7f7f1692d5f6699dee78a6788d37361374c4cfb4cf68371136d2660dc87e7265f6ed015c10289430900814533977c0b175f50f706d5
+  checksum: 019fa7c51e10532cd07ca3aa9b76e4c6ad6f421e15064205d144da08da54f8fc057edc262f6f95775e0b249ecbb753b497050dd75ab69a3c1c89cb9b734e42ca
   languageName: node
   linkType: hard
 
@@ -10193,7 +10174,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"is-callable@npm:^1.1.4, is-callable@npm:^1.2.2, is-callable@npm:^1.2.3":
+"is-callable@npm:^1.1.4, is-callable@npm:^1.2.3":
   version: 1.2.3
   resolution: "is-callable@npm:1.2.3"
   checksum: 8180a1c4e227e204e199ff355c4f24a80f74536898e16716583aa6a09167f2cceecc188cea750a2f3ae3b163577691595ae8d22bf7bb94b4bbb9fbdfea1bc5c3
@@ -10519,7 +10500,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"is-regex@npm:^1.0.3, is-regex@npm:^1.0.4, is-regex@npm:^1.1.1, is-regex@npm:^1.1.2":
+"is-regex@npm:^1.0.3, is-regex@npm:^1.0.4, is-regex@npm:^1.1.2":
   version: 1.1.2
   resolution: "is-regex@npm:1.1.2"
   dependencies:
@@ -13560,7 +13541,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"object-inspect@npm:^1.8.0, object-inspect@npm:^1.9.0":
+"object-inspect@npm:^1.9.0":
   version: 1.9.0
   resolution: "object-inspect@npm:1.9.0"
   checksum: 63b412167d716e332b3233090a9e8cc7951479a6971629fb8a3d00135a2329136c697fbd2f56e48bb132928f01bd0f8c5fe2d7386222f217228ca697b8c3932a
@@ -13593,7 +13574,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"object.assign@npm:^4.1.0, object.assign@npm:^4.1.1, object.assign@npm:^4.1.2":
+"object.assign@npm:^4.1.0, object.assign@npm:^4.1.2":
   version: 4.1.2
   resolution: "object.assign@npm:4.1.2"
   dependencies:
@@ -15090,14 +15071,14 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.2.6":
-  version: 8.2.6
-  resolution: "postcss@npm:8.2.6"
+"postcss@npm:^8.2.7":
+  version: 8.2.7
+  resolution: "postcss@npm:8.2.7"
   dependencies:
-    colorette: ^1.2.1
+    colorette: ^1.2.2
     nanoid: ^3.1.20
     source-map: ^0.6.1
-  checksum: 31dcc6632589e5b0d06ae3854122073a38952f3a25280511fa4bd8c2bc254c05d1d1db0913848ed3171c84d41b233ec3fe5d7349de4700f624a16fa93553ccac
+  checksum: cd2a7a8b9c1950783afd05e906d65a6433b13bcce5a52f3c2802c524479e7ba6893f516338ed1bc755b3a8545eb5a181daf0fcf25af694ad2e33e9d9fe7d4254
   languageName: node
   linkType: hard
 
@@ -17572,7 +17553,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"string.prototype.trimend@npm:^1.0.1, string.prototype.trimend@npm:^1.0.4":
+"string.prototype.trimend@npm:^1.0.4":
   version: 1.0.4
   resolution: "string.prototype.trimend@npm:1.0.4"
   dependencies:
@@ -17582,7 +17563,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"string.prototype.trimstart@npm:^1.0.1, string.prototype.trimstart@npm:^1.0.4":
+"string.prototype.trimstart@npm:^1.0.4":
   version: 1.0.4
   resolution: "string.prototype.trimstart@npm:1.0.4"
   dependencies:

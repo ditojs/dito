@@ -4,8 +4,10 @@
   "presets": [
     ["@babel/preset-env", {
       "useBuiltIns": "usage",
-      "corejs": 3,
-      "modules": false
+      "corejs": {
+        "version": "3.9",
+        "proposals": true
+      }
     }],
     "@ditojs/babel-preset"
   ],
