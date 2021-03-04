@@ -320,8 +320,8 @@ export class Application extends Koa {
     )
   }
 
-  getAdminVueConfig(mode = 'production') {
-    return this.getAdminController()?.getVueConfig(mode) || null
+  getAdminVueConfig() {
+    return this.getAdminController()?.getVueConfig() || null
   }
 
   getAssetConfig({
