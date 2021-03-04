@@ -1341,11 +1341,12 @@ __metadata:
     filesize: ^6.1.0
     filesize-parser: ^1.5.0
     hint.css: ^2.6.0
+    postcss: ^8.2.7
+    postcss-loader: ^4.2.0
     pug: ^3.0.2
     pug-plain-loader: ^1.1.0
     sass: ^1.32.8
     sass-loader: ^10.1.1
-    sass-svg: ^1.2.0
     tinycolor2: ^1.4.2
     tiptap: ^1.32.1
     tiptap-commands: ^1.17.1
@@ -1361,8 +1362,7 @@ __metadata:
     vue-template-compiler: ^2.6.12
     vue-upload-component: ^2.8.22
     vuedraggable: ^2.24.3
-  peerDependencies:
-    webpack: ^4.0.0
+    webpack: ^4.46.0
   languageName: unknown
   linkType: soft
 
@@ -1519,8 +1519,7 @@ __metadata:
     sass: ^1.32.8
     sass-loader: ^10.1.1
     vue-template-compiler: ^2.6.12
-  peerDependencies:
-    webpack: ^4.0.0
+    webpack: ^4.46.0
   languageName: unknown
   linkType: soft
 
@@ -3532,7 +3531,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue/cli-plugin-babel@npm:^4.5.11":
+"@vue/cli-plugin-babel@npm:*, @vue/cli-plugin-babel@npm:^4.5.11":
   version: 4.5.11
   resolution: "@vue/cli-plugin-babel@npm:4.5.11"
   dependencies:
@@ -14616,7 +14615,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"pnp-webpack-plugin@npm:^1.6.4":
+"pnp-webpack-plugin@npm:^1.5.0, pnp-webpack-plugin@npm:^1.6.4":
   version: 1.6.4
   resolution: "pnp-webpack-plugin@npm:1.6.4"
   dependencies:
@@ -15525,7 +15524,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"pug-plain-loader@npm:^1.1.0":
+"pug-plain-loader@npm:*, pug-plain-loader@npm:^1.1.0":
   version: 1.1.0
   resolution: "pug-plain-loader@npm:1.1.0"
   dependencies:
@@ -15559,7 +15558,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"pug@npm:^3.0.2":
+"pug@npm:*, pug@npm:^3.0.2":
   version: 3.0.2
   resolution: "pug@npm:3.0.2"
   dependencies:
@@ -16557,7 +16556,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"sass-loader@npm:^10.1.1":
+"sass-loader@npm:^10, sass-loader@npm:^10.1.1":
   version: 10.1.1
   resolution: "sass-loader@npm:10.1.1"
   dependencies:
@@ -16582,15 +16581,6 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"sass-svg@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "sass-svg@npm:1.2.0"
-  dependencies:
-    sassdash: ^0.9.0
-  checksum: 684c0ad90d38118436c0a6f9a6d3f822e7743d6d716807e397fb87baea4cb4a2d2f582d114a165e78e2ef1bc067c56b952c96c3d804342a4b37451906d0c62e0
-  languageName: node
-  linkType: hard
-
 "sass@npm:^1.32.8":
   version: 1.32.8
   resolution: "sass@npm:1.32.8"
@@ -16599,15 +16589,6 @@ fsevents@^1.2.7:
   bin:
     sass: sass.js
   checksum: d319b3d7459451b6532b492984e3cbb37381e6c6379622f668900b196c0d545f5a2c32819cf02b5405fb2ef79720fe1f8f16b7614a2fef3fb7af8dfec83a6597
-  languageName: node
-  linkType: hard
-
-"sassdash@npm:^0.9.0":
-  version: 0.9.0
-  resolution: "sassdash@npm:0.9.0"
-  peerDependencies:
-    node-sass: ^4.0.0
-  checksum: b58145cd43052b42eb4b79787b4f9ead12b461b2f4cead9087e310ee7693bea2b0aaa8864fc009abfcee18da68ac7b72841e51d28c5d9467c4ddafd4db7ebf7f
   languageName: node
   linkType: hard
 
@@ -18943,6 +18924,17 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"vue-cli-plugin-pnp@npm:*":
+  version: 1.0.0
+  resolution: "vue-cli-plugin-pnp@npm:1.0.0"
+  dependencies:
+    pnp-webpack-plugin: ^1.5.0
+  peerDependencies:
+    "@vue/cli-service": ">= 4.1.0-beta.0"
+  checksum: 3c0d2b2abd1a73389129b24e4a04a6e1e8cd31b6ee75e42d7a432218ca16abf0a1a3b9512b0b9c066c267c8d52811c877fc1037d1b8b3dbf407e8941f7d42eef
+  languageName: node
+  linkType: hard
+
 "vue-color@npm:^2.8.1":
   version: 2.8.1
   resolution: "vue-color@npm:2.8.1"
@@ -19059,7 +19051,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"vue-template-compiler@npm:^2.6.12":
+"vue-template-compiler@npm:^2, vue-template-compiler@npm:^2.6.12":
   version: 2.6.12
   resolution: "vue-template-compiler@npm:2.6.12"
   dependencies:

@@ -67,13 +67,12 @@
     "autoprefixer": "^9.8.6",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
+    "postcss": "^8.2.7",
+    "postcss-loader": "^4.2.0",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
     "sass": "^1.32.8",
     "sass-loader": "^10.1.1",
-    "sass-svg": "^1.2.0"
-  },
-  "peerDependencies": {
-    "webpack": "^4.0.0"
+    "webpack": "^4.46.0"
   }
 }
