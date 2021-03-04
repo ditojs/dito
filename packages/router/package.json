@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/router",
-  "version": "0.212.0",
+  "version": "0.213.0",
   "description": "Dito.js Router – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/router",
@@ -25,14 +25,14 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.13.9",
-    "@ditojs/utils": "^0.212.0",
+    "@ditojs/utils": "^0.213.0",
     "core-js": "^3.9.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.8",
     "@babel/preset-env": "^7.13.9",
-    "@ditojs/babel-preset": "^0.212.0",
+    "@ditojs/babel-preset": "^0.213.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "rimraf": "^3.0.2"
   },
