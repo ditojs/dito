@@ -17,7 +17,7 @@ export function deindent(strings, ...values) {
       // See if the value itself contains multiple lines, and if so, indent
       // each of them by the whitespace that precedes it except the first.
       const value = values[i].toString()
-      const lines = value.split(/\r\n|\n|\r/)
+      const lines = value.split(/\n|\r\n|\r/)
       if (lines.length > 1) {
         // Determine the indent by finding the immediately preceding white-space
         // up to the previous line-break or the beginning of the string.
@@ -37,7 +37,7 @@ export function deindent(strings, ...values) {
     }
   }
   const str = parts.join('')
-  const lines = str.split(/\r\n|\n|\r/)
+  const lines = str.split(/\n|\r\n|\r/)
   // Remove the first line-break at the beginning of the result, to allow this:
   // const value = `
   //   content...

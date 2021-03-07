@@ -5,6 +5,7 @@ import axios from 'axios'
 import chalk from 'chalk'
 import zlib from 'zlib'
 import pino from 'pino'
+import os from 'os'
 import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
@@ -22,7 +23,7 @@ import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
-import { ValidationError, AssetError } from '@/errors'
+import { ResponseError, ValidationError, AssetError } from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
@@ -628,21 +629,33 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  onError(err) {
+  formatError(err) {
+    const message = err.toJSON
+      ? JSON.stringify(err.toJSON(), null, 2)
+      : err.message || err
+    const str = `${err.name}: ${message}`
+    return err.stack && this.config.log.errors?.stack !== false
+      ? `${str}\n${err.stack.split(/\n|\r\n|\r/).slice(1).join(os.EOL)}`
+      : str
+  }
+
+  logError(err, ctx) {
     if (!err.expose && !this.silent) {
-      console.error(`${err.name}: ${err.toJSON
-        ? JSON.stringify(err.toJSON(), null, 2)
-        : err.message || err}`
-      )
-      if (err.stack) {
-        console.error(err.stack)
+      try {
+        const text = this.formatError(err)
+        const level =
+          err instanceof ResponseError && err.status < 500 ? 'info' : 'error'
+        const logger = ctx?.logger || this.logger
+        logger[level](text)
+      } catch (e) {
+        console.error('Could not log error', e)
       }
     }
   }
 
   async start() {
-    if (!this.listeners('error').length) {
-      this.on('error', this.onError)
+    if (this.config.log.errors !== false) {
+      this.on('error', this.logError)
     }
     await this.emit('before:start')
     await this.forEachService(service => service.start())
@@ -688,13 +701,16 @@ export class Application extends Koa {
     })
     await this.forEachService(service => service.stop())
     await this.emit('after:stop')
+    if (this.config.log.errors !== false) {
+      this.off('error', this.logError)
+    }
   }
 
   async startOrExit() {
     try {
       await this.start()
     } catch (err) {
-      this.logger.error(err)
+      this.logError(err)
       process.exit(-1)
     }
   }
