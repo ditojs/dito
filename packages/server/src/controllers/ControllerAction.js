@@ -1,4 +1,4 @@
-import { isString, isObject, asArray } from '@ditojs/utils'
+import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(controller, handler, type, name, verb, path, authorize) {
@@ -68,9 +68,9 @@ export default class ControllerAction {
     if (!this.parameters.validate) return
     const root = this.getParams(ctx)
     const { rootName } = this.parameters
-    // Start with a copy of root for params, but maybe we have to switch later,
+    // Start with a clone of root for params, but maybe we have to switch later,
     // see below:
-    let params = { ...root }
+    let params = clone(root)
     let wrappedRoot = false
     // `parameters.validate(query)` coerces data in the query to the required
     // formats, according to the rules specified here:
@@ -98,7 +98,10 @@ export default class ControllerAction {
         }
         try {
           const value = params[name]
-          const coerced = this.coerceValue(type, value)
+          const coerced = this.coerceValue(type, value, {
+            // The model validation is handled separately through `$ref`.
+            skipValidation: true
+          })
           // If coercion happened, replace value in params with coerced one:
           if (coerced !== value) {
             params[name] = coerced
@@ -109,10 +112,7 @@ export default class ControllerAction {
             dataPath: `.${name}`, // JavaScript property access notation
             keyword: 'type',
             message: err.message || err.toString(),
-            params: {
-              type,
-              json: true
-            }
+            params: { type }
           })
         }
       }
@@ -176,7 +176,7 @@ export default class ControllerAction {
     return args
   }
 
-  coerceValue(type, value) {
+  coerceValue(type, value, modelOptions) {
     // See if param needs additional coercion:
     if (['date', 'datetime', 'timestamp'].includes(type)) {
       value = new Date(value)
@@ -194,10 +194,7 @@ export default class ControllerAction {
           // Convert the Pojo to the desired Dito model:
           const modelClass = this.app.models[objectType]
           if (modelClass && !(value instanceof modelClass)) {
-            value = modelClass.fromJson(value, {
-              // The model validation is handled separately through `$ref`.
-              skipValidation: true
-            })
+            value = modelClass.fromJson(value, modelOptions)
           }
         }
       }
