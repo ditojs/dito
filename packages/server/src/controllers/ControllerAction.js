@@ -44,17 +44,9 @@ export default class ControllerAction {
     return name === 'path' ? ctx.params : ctx.request[name]
   }
 
-  setParams(ctx, query, name = this.paramsName) {
-    if (name !== 'path') {
-      ctx.params = query
-    } else {
-      ctx.request[name] = query
-    }
-  }
-
   async callAction(ctx) {
-    await this.validateParameters(ctx)
-    const args = await this.collectArguments(ctx)
+    const params = await this.validateParameters(ctx)
+    const args = await this.collectArguments(ctx, params)
     await this.controller.handleAuthorization(this.authorization, ctx, ...args)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
@@ -75,10 +67,10 @@ export default class ControllerAction {
   async validateParameters(ctx) {
     if (!this.parameters.validate) return
     const root = this.getParams(ctx)
-    let checkRoot = false
     const { rootName } = this.parameters
-    // Start with root for params, but maybe we have to switch later, see below:
-    let params = root
+    // Start with a copy of root for params, but maybe we have to switch later,
+    // see below:
+    let params = { ...root }
     // `parameters.validate(query)` coerces data in the query to the required
     // formats, according to the rules specified here:
     // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
@@ -93,7 +85,6 @@ export default class ControllerAction {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.rootName`
         params = { [rootName]: root }
-        checkRoot = true
       }
       const paramName = name || rootName
       // Allow parameters to be 'borrowed' from other objects. Possible values:
@@ -150,14 +141,6 @@ export default class ControllerAction {
     }
     try {
       await this.parameters.validate(params)
-      // In case the full root params object is validated, see if it was coerced
-      // now and needs replacing too:
-      if (checkRoot) {
-        const value = params[rootName]
-        if (value !== root) {
-          this.setParams(ctx, value)
-        }
-      }
     } catch (error) {
       errors.push(...error.errors)
     }
@@ -168,6 +151,7 @@ export default class ControllerAction {
         errors
       })
     }
+    return params
   }
 
   async validateResult(result) {
@@ -193,13 +177,12 @@ export default class ControllerAction {
     return result
   }
 
-  async collectArguments(ctx) {
+  async collectArguments(ctx, params) {
     const args = []
     const { list } = this.parameters
     if (list.length > 0) {
       // If we have parameters, add them to the arguments now,
       // while also keeping track of consumed parameters:
-      const params = this.getParams(ctx)
       for (const entry of list) {
         // Handle `{ member: true }` parameters separately, by delegating to
         // `getMember()` to resolve to the given member.
