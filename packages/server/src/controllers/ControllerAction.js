@@ -71,7 +71,9 @@ export default class ControllerAction {
 
   async validateParameters(ctx) {
     if (!this.parameters.validate) return
-    let root = this.getParams(ctx)
+    const root = this.getParams(ctx)
+    let checkRoot = false
+    const { rootName } = this.parameters
     // Start with root for params, but maybe we have to switch later, see below:
     let params = root
     // `parameters.validate(query)` coerces data in the query to the required
@@ -84,8 +86,14 @@ export default class ControllerAction {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
       // If no name is provided, use the full root object as value:
-      const useRoot = !name
-      const param = useRoot ? root : params[name]
+      if (!name) {
+        // If root is to be used, replace `params` with a new object on which
+        // to set the root object to validate under `parameters.rootName`
+        params = { [rootName]: root }
+        checkRoot = true
+      }
+      const paramName = name || rootName
+      const param = params[paramName]
       let value = param
       // See if param needs additional coercion:
       if (['date', 'datetime', 'timestamp'].includes(type)) {
@@ -125,23 +133,21 @@ export default class ControllerAction {
           }
         }
       }
-      // See if coercion happened, and replace value in params (or full root)
-      // with coerced one:
+      // See if coercion happened, and replace value in params with coerced one:
       if (value !== param) {
-        if (useRoot) {
-          root = this.setParams(ctx, value)
-        } else {
-          params[name] = value
-        }
-      }
-      if (useRoot) {
-        // If root is to be used, replace `params` with a new object on which
-        // to set the root object to validate under `parameters.rootName`
-        params = { [this.parameters.rootName]: root }
+        params[paramName] = value
       }
     }
     try {
       await this.parameters.validate(params)
+      // In case the full root params object is validated, see if it was coerced
+      // now and needs replacing too:
+      if (checkRoot) {
+        const value = params[rootName]
+        if (value !== root) {
+          this.setParams(ctx, value)
+        }
+      }
     } catch (error) {
       errors.push(...error.errors)
     }
