@@ -40,13 +40,16 @@ export default class ControllerAction {
     })
   }
 
-  getParams(ctx) {
-    return ctx.request[this.paramsName]
+  getParams(ctx, name = this.paramsName) {
+    return name === 'path' ? ctx.params : ctx.request[name]
   }
 
-  setParams(ctx, query) {
-    ctx.request[this.paramsName] = query
-    return query
+  setParams(ctx, query, name = this.paramsName) {
+    if (name !== 'path') {
+      ctx.params = query
+    } else {
+      ctx.request[name] = query
+    }
   }
 
   async callAction(ctx) {
@@ -82,7 +85,7 @@ export default class ControllerAction {
     // Coercion isn't currently offered for `type: 'object'`, so handle this
     // case prior to the call of `parameters.validate()`:
     const errors = []
-    for (const { name, type, member } of this.parameters.list) {
+    for (const { name, type, member, from } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
       // If no name is provided, use the full root object as value:
@@ -93,6 +96,13 @@ export default class ControllerAction {
         checkRoot = true
       }
       const paramName = name || rootName
+      // Allow parameters to be 'borrowed' from other objects. Possible values:
+      // - 'path': Use `ctx.parameters` which is mapped to the route / path
+      // - 'query': Use `ctx.request.query`, regardless of the verb.
+      // - 'body': Use `ctx.request.body`, regardless of the verb.
+      if (from) {
+        params[paramName] = this.getParams(ctx, from)?.[paramName]
+      }
       const param = params[paramName]
       let value = param
       // See if param needs additional coercion:
@@ -154,9 +164,7 @@ export default class ControllerAction {
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${
-          JSON.stringify(this.getParams(ctx))
-        }`,
+        message: `The provided data is not valid: ${JSON.stringify(root)}`,
         errors
       })
     }
