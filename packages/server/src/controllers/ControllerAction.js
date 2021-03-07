@@ -66,17 +66,14 @@ export default class ControllerAction {
 
   async validateParameters(ctx) {
     if (!this.parameters.validate) return
-    const root = this.getParams(ctx)
+    // Since validation also performs coercion, create a clone of the params
+    // so that this doesn't modify the data on `ctx`.
+    // NOTE: The data can be either an object or an array.
+    // TODO: Consider renaming `rootName` to `dataName` and `root` to `data`?
+    const root = clone(this.getParams(ctx))
+    let params = root
     const { rootName } = this.parameters
-    // Start with a clone of root for params, but maybe we have to switch later,
-    // see below:
-    let params = clone(root)
     let wrappedRoot = false
-    // `parameters.validate(query)` coerces data in the query to the required
-    // formats, according to the rules specified here:
-    // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
-    // Coercion isn't currently offered for `type: 'object'`, so handle this
-    // case prior to the call of `parameters.validate()`:
     const errors = []
     for (const { name, type, member, from } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
@@ -85,7 +82,7 @@ export default class ControllerAction {
       if (!name) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.rootName`
-        params = { [rootName]: params }
+        params = { [rootName]: root }
         wrappedRoot = true
       } else {
         if (from) {
@@ -98,6 +95,11 @@ export default class ControllerAction {
         }
         try {
           const value = params[name]
+          // `parameters.validate(params)` coerces data in the query to the
+          // required formats, according to the rules specified here:
+          // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
+          // Coercion isn't currently offered for 'object' and 'date' types,
+          // so handle these cases prior to the call of `parameters.validate()`:
           const coerced = this.coerceValue(type, value, {
             // The model validation is handled separately through `$ref`.
             skipValidation: true
