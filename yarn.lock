@@ -1435,9 +1435,9 @@ __metadata:
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.11
-    ajv: ^7.1.1
+    ajv: ^7.2.0
     ajv-formats: ^1.5.1
-    aws-sdk: ^2.856.0
+    aws-sdk: ^2.858.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1476,7 +1476,7 @@ __metadata:
     passthrough-counter: ^1.0.0
     pg: ^8.5.1
     pino: ^6.11.1
-    pino-pretty: ^4.6.0
+    pino-pretty: ^4.7.0
     pluralize: ^8.0.0
     repl: ^0.1.3
     rimraf: ^3.0.2
@@ -4086,7 +4086,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^7.0.0, ajv@npm:^7.0.2, ajv@npm:^7.1.1":
+"ajv@npm:^7.0.0, ajv@npm:^7.0.2":
   version: 7.1.1
   resolution: "ajv@npm:7.1.1"
   dependencies:
@@ -4095,6 +4095,18 @@ __metadata:
     require-from-string: ^2.0.2
     uri-js: ^4.2.2
   checksum: fe4e138529363bf1c8c429e1f3e88480918b538fe4a44660b989cea863714715af75e874aad129ccd5cbcf6647fa457e20b735bb3279a3bca08f11193bae5d19
+  languageName: node
+  linkType: hard
+
+"ajv@npm:^7.2.0":
+  version: 7.2.0
+  resolution: "ajv@npm:7.2.0"
+  dependencies:
+    fast-deep-equal: ^3.1.1
+    json-schema-traverse: ^1.0.0
+    require-from-string: ^2.0.2
+    uri-js: ^4.2.2
+  checksum: d996aa2af3c2e575ab436d4104b01481826564be56ffc0ded82760a37286358c7593f9f53a474e46f041c5a04e78d10ed33a1843caffec5d6bf32772f125c615
   languageName: node
   linkType: hard
 
@@ -4550,9 +4562,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.856.0":
-  version: 2.856.0
-  resolution: "aws-sdk@npm:2.856.0"
+"aws-sdk@npm:^2.858.0":
+  version: 2.858.0
+  resolution: "aws-sdk@npm:2.858.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4563,7 +4575,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 0ce0d43ce6589f63d8508554d7a81bee2f2cd8caf597f9912659b11307db22af8848467ba031358f3653fcfa8754a71d76a0e7d14c2c245e215deb1fbf2ff228
+  checksum: 55d71c1e07459d393a10148fbaff1c27c0bc908ee34efd34c3eec9278ff9c190c735df983084c7be5029505ade83191b6a0332f92199b093ac93c07d1e77a7d2
   languageName: node
   linkType: hard
 
@@ -14510,9 +14522,9 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"pino-pretty@npm:^4.6.0":
-  version: 4.6.0
-  resolution: "pino-pretty@npm:4.6.0"
+"pino-pretty@npm:^4.7.0":
+  version: 4.7.0
+  resolution: "pino-pretty@npm:4.7.0"
   dependencies:
     "@hapi/bourne": ^2.0.0
     args: ^5.0.1
@@ -14527,7 +14539,7 @@ fsevents@^1.2.7:
     strip-json-comments: ^3.1.1
   bin:
     pino-pretty: bin.js
-  checksum: 5999bfebe2dedf207785e5f60598063be7995f5463fb46b61a1910f756027ac1903cfbda8c0c0dcdca749db7348234829a6b773432c6b0746af4de4382ccb1db
+  checksum: 6ec98566e1a2b878f83756b741263c9aff76c091aad169a944e2a9fcef023e2c13f7bbe15aaa8172ef6d66ae3b4bfc621eedbefc9473778b8ecc7e7d85900c80
   languageName: node
   linkType: hard
 
