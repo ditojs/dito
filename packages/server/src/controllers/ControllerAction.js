@@ -23,21 +23,24 @@ export default class ControllerAction {
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
     this.paramsName = ['post', 'put'].includes(this.verb) ? 'body' : 'query'
-    const { parameters, returns, options } = this.handler
+    const { parameters, returns, options = {} } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
       async: true,
-      ...options?.parameters, // See @parameters() decorator
-      rootName: this.paramsName
+      ...options.parameters, // See @parameters() decorator
+      dataName: this.paramsName
     })
-    this.returns = this.app.compileParametersValidator(returns, {
-      async: true,
-      // Use instanceof checks instead of $ref to check returned values.
-      // TODO: That doesn't guarantee the validity though...
-      // This should always be $ref checks, I think?
-      useInstanceOf: true,
-      ...options?.returns, // See @returns() decorator
-      rootName: 'result'
-    })
+    this.returns = this.app.compileParametersValidator(
+      returns ? [returns] : [],
+      {
+        async: true,
+        // Use instanceof checks instead of $ref to check returned values.
+        // TODO: That doesn't guarantee the validity though...
+        // This should always be $ref checks, I think?
+        useInstanceOf: true,
+        ...options.returns, // See @returns() decorator
+        dataName: 'returns'
+      }
+    )
   }
 
   getParams(ctx, name = this.paramsName) {
@@ -65,15 +68,16 @@ export default class ControllerAction {
   }
 
   async validateParameters(ctx) {
-    if (!this.parameters.validate) return
+    if (!this.parameters.validate) {
+      return null
+    }
     // Since validation also performs coercion, create a clone of the params
     // so that this doesn't modify the data on `ctx`.
     // NOTE: The data can be either an object or an array.
-    // TODO: Consider renaming `rootName` to `dataName` and `root` to `data`?
-    const root = clone(this.getParams(ctx))
-    let params = root
-    const { rootName } = this.parameters
-    let wrappedRoot = false
+    const data = clone(this.getParams(ctx))
+    let params = data
+    const { dataName } = this.parameters
+    let wrappedData = false
     const errors = []
     for (const { name, type, member, from } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
@@ -81,9 +85,9 @@ export default class ControllerAction {
       // If no name is provided, use the full root object as value:
       if (!name) {
         // If root is to be used, replace `params` with a new object on which
-        // to set the root object to validate under `parameters.rootName`
-        params = { [rootName]: root }
-        wrappedRoot = true
+        // to set the root object to validate under `parameters.dataName`
+        params = { [dataName]: data }
+        wrappedData = true
       } else {
         if (from) {
           // Allow parameters to be 'borrowed' from other objects.
@@ -121,57 +125,72 @@ export default class ControllerAction {
     }
     try {
       await this.parameters.validate(params)
+      return wrappedData ? params[dataName] : params
     } catch (error) {
-      errors.push(...error.errors)
+      if (error.errors) {
+        errors.push(...error.errors)
+      } else {
+        throw error
+      }
     }
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${JSON.stringify(root)}`,
+        message: `The provided data is not valid: ${JSON.stringify(data)}`,
         errors
       })
     }
-    return wrappedRoot ? params[rootName] : params
   }
 
   async validateResult(result) {
     if (this.returns.validate) {
-      const resultName = this.handler.returns.name
-      // Use rootName if no name is given, see:
-      // Application.compileParametersValidator(returns, { rootName })
-      const resultData = {
-        [resultName || this.returns.rootName]: result
+      const returnsName = this.handler.returns.name
+      // Use dataName if no name is given, see:
+      // Application.compileParametersValidator(returns, { dataName })
+      const data = {
+        [returnsName || this.returns.dataName]: result
       }
       try {
-        await this.returns.validate(resultData)
+        await this.returns.validate(data)
+        // If a named result is defined, return the data wrapped,
+        // otherwise return the original unwrapped result object.
+        return returnsName ? data : result
       } catch (error) {
         throw this.createValidationError({
           type: 'ResultValidation',
-          message: `Invalid result of action: ${JSON.stringify(result)}`,
+          message: `Invalid result of action: ${JSON.stringify(data)}`,
           errors: error.errors
         })
       }
-      // If no resultName was given, return the full root object (result).
-      return resultName ? resultData : result
     }
     return result
   }
 
   async collectArguments(ctx, params) {
-    const args = []
-    const { list } = this.parameters
+    const { list, asObject } = this.parameters
+
+    const args = asObject ? [{}] : []
+    const addArgument = (name, value) => {
+      if (asObject) {
+        args[0][name] = value
+      } else {
+        args.push(value)
+      }
+    }
+
     if (list.length > 0) {
       // If we have parameters, add them to the arguments now,
       // while also keeping track of consumed parameters:
       for (const entry of list) {
+        const { name } = entry
         // Handle `{ member: true }` parameters separately, by delegating to
         // `getMember()` to resolve to the given member.
         if (entry.member) {
-          args.push(await this.getMember(ctx, entry))
+          const member = await this.getMember(ctx, entry)
+          addArgument(name, member)
         } else {
-          const { name } = entry
           // If no name is provided, use the body object (params)
-          args.push(name ? params[name] : params)
+          addArgument(name, name ? params[name] : params)
         }
       }
     }

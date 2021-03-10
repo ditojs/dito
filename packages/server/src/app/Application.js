@@ -36,7 +36,7 @@ import {
   logRequests
 } from '@/middleware'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
+  isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 import {
@@ -404,16 +404,42 @@ export class Application extends Koa {
 
   compileParametersValidator(parameters, options = {}) {
     const list = []
+    const { dataName = 'data' } = options
+
     let properties = null
-    const rootName = options.rootName || 'root'
-    for (const param of asArray(parameters)) {
-      const schema = isString(param) ? { type: param } : param
-      list.push(schema)
-      if (!(schema.member)) {
-        const { name, type, ...rest } = schema
-        properties = properties || {}
-        properties[name || rootName] = type ? { type, ...rest } : rest
+    const addParameter = (name, schema) => {
+      list.push({
+        name: name ?? null,
+        ...schema
+      })
+      if (!schema.member) {
+        properties ||= {}
+        properties[name || dataName] = schema
       }
+    }
+
+    // Support two formats of parameters definitions:
+    // - An array of parameter schemas, named by their `name` key.
+    // - An object of parameter schemas, named by the key under which each
+    //   schema is stored in the root object.
+    // If an array is passed, then the controller actions receives the
+    // parameters as separate arguments. If an object is passed, then the
+    // actions receives one parameter object where under the same keys the
+    // specified parameter values are stored.
+    let asObject = false
+    if (isArray(parameters)) {
+      for (const { name, ...schema } of parameters) {
+        addParameter(name, schema)
+      }
+    } else if (isObject(parameters)) {
+      asObject = true
+      for (const [name, schema] of Object.entries(parameters)) {
+        if (schema) {
+          addParameter(name, schema)
+        }
+      }
+    } else if (parameters) {
+      throw new Error(`Invalid parameters definition: ${parameters}`)
     }
     // NOTE: If properties is null, schema and validate will become null too:
     const schema = convertSchema(properties, options)
@@ -430,7 +456,8 @@ export class Application extends Koa {
     return {
       list,
       schema,
-      rootName,
+      asObject,
+      dataName,
       validate: validate
         // Use `call()` to pass ctx as context to Ajv, see passContext:
         ? data => validate.call(ctx, data)

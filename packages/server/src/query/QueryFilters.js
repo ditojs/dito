@@ -4,7 +4,7 @@ import { parameters } from '@/decorators'
 export const QueryFilters = new Registry()
 
 QueryFilters.register({
-  @parameters(
+  @parameters([
     {
       name: 'operator',
       type: 'string'
@@ -13,7 +13,7 @@ QueryFilters.register({
       name: 'text',
       type: 'string'
     }
-  )
+  ])
   text(query, property, operator, text) {
     if (text === undefined) {
       text = operator
@@ -40,7 +40,7 @@ QueryFilters.register({
     }
   },
 
-  @parameters(
+  @parameters([
     {
       name: 'from',
       type: 'datetime',
@@ -51,7 +51,7 @@ QueryFilters.register({
       type: 'datetime',
       nullable: true
     }
-  )
+  ])
   'date-range'(query, property, from, to) {
     if (from && to) {
       query.whereBetween(property, [new Date(from), new Date(to)])

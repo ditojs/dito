@@ -57,10 +57,10 @@ function addFunctionSettings(filter, definition) {
 function wrapWithValidation(filter, name, app) {
   // If parameters are defined, wrap the function in a closure that
   // performs parameter validation...
-  const rootName = 'query'
+  const dataName = 'query'
   const validator = filter && app.compileParametersValidator(
     filter.parameters,
-    { ...filter.validate, rootName }
+    { ...filter.validate, dataName }
   )
   if (validator?.validate) {
     return (query, ...args) => {
@@ -68,9 +68,9 @@ function wrapWithValidation(filter, name, app) {
       const object = {}
       let index = 0
       for (const { name } of validator.list) {
-        // Use rootName if no name is given, see:
+        // Use dataName if no name is given, see:
         // Application.compileParametersValidator()
-        object[name || rootName] = args[index++]
+        object[name || dataName] = args[index++]
       }
       try {
         validator.validate(object)

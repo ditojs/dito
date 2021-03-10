@@ -128,21 +128,25 @@ Optionally, if only one parameter is defined, the array can also be omitted and
 the parameter object can be directly provided:
 
 ```js
-@parameters({
-  name: 'message',
-  type: 'string',
-  required: true
-})
+@parameters([
+  {
+    name: 'message',
+    type: 'string',
+    required: true
+  }
+])
 ```
 
 If the `name` key is committed, then the full `ctx.query` object is mapped to
 the argument, and is validated against its schema:
 
 ```js
-@parameters({
-  type: 'object',
-  required: true
-})
+@parameters([
+  {
+    type: 'object',
+    required: true
+  }
+])
 querySomething(ctx, query) {
   return `Just queryin': ${query}`
 }
@@ -365,11 +369,13 @@ export class MyModels extends ModelController {
   collection = {
     allow: ['find', 'helloCollection'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
+    @parameters([
+      {
+        name: 'msg',
+        type: 'string',
+        required: true
+      }
+    ])
     helloCollection(msg) {
       return `Model class '${this.modelClass.name}' says hello: ${msg}`
     }
@@ -378,11 +384,13 @@ export class MyModels extends ModelController {
   member = {
     allow: ['find', 'helloMember'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
+    @parameters([
+      {
+        name: 'msg',
+        type: 'string',
+        required: true
+      }
+    ])
     helloMember(member, msg) {
       return `Model instance '${member.name}' says hello: ${msg}`
     }
