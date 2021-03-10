@@ -319,11 +319,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   raw(...args) {
-    return this.knex().raw(...args)
+    return objection.raw(...args)
   }
 
   selectRaw(...args) {
-    return this.select(this.raw(...args))
+    return this.select(objection.raw(...args))
   }
 
   // Non-deprecated version of Objection's `pluck()`
