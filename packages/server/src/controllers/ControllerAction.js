@@ -49,8 +49,8 @@ export default class ControllerAction {
 
   async callAction(ctx) {
     const params = await this.validateParameters(ctx)
-    const args = await this.collectArguments(ctx, params)
-    await this.controller.handleAuthorization(this.authorization, ctx, ...args)
+    const { args, member } = await this.collectArguments(ctx, params)
+    await this.controller.handleAuthorization(this.authorization, ctx, member)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     const result = await this.callHandler(ctx, ...args)
@@ -92,7 +92,7 @@ export default class ControllerAction {
         if (from) {
           // Allow parameters to be 'borrowed' from other objects.
           // Possible values are:
-          // - 'path': Use `ctx.parameters` which is mapped to the route / path
+          // - 'path': Use `ctx.params` which is mapped to the route / path
           // - 'query': Use `ctx.request.query`, regardless of the verb.
           // - 'body': Use `ctx.request.body`, regardless of the verb.
           params[name] = this.getParams(ctx, from)?.[name]
@@ -178,23 +178,22 @@ export default class ControllerAction {
       }
     }
 
-    if (list.length > 0) {
-      // If we have parameters, add them to the arguments now,
-      // while also keeping track of consumed parameters:
-      for (const entry of list) {
-        const { name } = entry
-        // Handle `{ member: true }` parameters separately, by delegating to
-        // `getMember()` to resolve to the given member.
-        if (entry.member) {
-          const member = await this.getMember(ctx, entry)
-          addArgument(name, member)
-        } else {
-          // If no name is provided, use the body object (params)
-          addArgument(name, name ? params[name] : params)
-        }
+    let member = null
+    // If we have parameters, add them to the arguments now,
+    // while also keeping track of consumed parameters:
+    for (const param of list) {
+      const { name } = param
+      // Handle `{ member: true }` parameters separately, by delegating to
+      // `getMember()` to resolve to the given member.
+      if (param.member) {
+        member = await this.getMember(ctx, param)
+        addArgument(name, member)
+      } else {
+        // If no name is provided, use the body object (params)
+        addArgument(name, name ? params[name] : params)
       }
     }
-    return args
+    return { args, member }
   }
 
   coerceValue(type, value, modelOptions) {
@@ -224,8 +223,8 @@ export default class ControllerAction {
   }
 
   async getMember(/* ctx, param */) {
-    // This is only defined in MemberAction, where it resolves to the member
-    // represented by the given action route.
+    // This is only defined in `MemberAction`, where it resolves to the member
+    // represented by the given route.
     return null
   }
 }

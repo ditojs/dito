@@ -5,6 +5,7 @@ export function findRoute(router) {
     // If none is found, set `ctx.route = result`, for  `{ status, allowed }`.
     const route = result.handler ? { ...result.handler } : result
     ctx.route = route
+    // NOTE: The name for `ctx.params` was inherited from `koa-router`
     ctx.params = result.params || {}
     const { controller, action } = route
     if (controller) {
