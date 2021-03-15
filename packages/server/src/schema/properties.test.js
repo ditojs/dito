@@ -404,6 +404,160 @@ describe('convertSchema()', () => {
   })
 })
 
+it('convert schemas within oneOf properties', () => {
+  expect(convertSchema({
+    myList: {
+      type: 'array',
+      items: {
+        oneOf: [
+          {
+            prop1: {
+              type: 'string',
+              required: true
+            },
+            prop2: {
+              type: 'number',
+              required: true
+            }
+          },
+          {
+            type: 'object',
+            properties: {
+              prop3: {
+                type: 'string',
+                required: true
+              },
+              prop4: {
+                type: 'number',
+                required: true
+              }
+            }
+          }
+        ]
+      }
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myList: {
+        type: 'array',
+        items: {
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                prop1: {
+                  type: 'string',
+                  format: 'required'
+                },
+                prop2: {
+                  type: 'number',
+                  format: 'required'
+                }
+              },
+              required: ['prop1', 'prop2'],
+              additionalProperties: false
+            },
+            {
+              type: 'object',
+              properties: {
+                prop3: {
+                  type: 'string',
+                  format: 'required'
+                },
+                prop4: {
+                  type: 'number',
+                  format: 'required'
+                }
+              },
+              required: ['prop3', 'prop4'],
+              additionalProperties: false
+            }
+          ]
+        }
+      }
+    },
+    additionalProperties: false
+  })
+})
+
+it('support `required: true` on object', () => {
+  expect(convertSchema({
+    myObject: {
+      type: 'object',
+      required: true,
+      properties: {
+        prop1: {
+          type: 'string',
+          required: true
+        },
+        prop2: {
+          type: 'number',
+          required: true
+        }
+      }
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myObject: {
+        type: 'object',
+        properties: {
+          prop1: {
+            format: 'required',
+            type: 'string'
+          },
+          prop2: {
+            format: 'required',
+            type: 'number'
+          }
+        },
+        additionalProperties: false,
+        required: ['prop1', 'prop2']
+      }
+    },
+    additionalProperties: false,
+    required: ['myObject']
+  })
+})
+
+it('support `required` on object short-hand', () => {
+  expect(convertSchema({
+    myObject: {
+      prop1: {
+        type: 'string',
+        required: true
+      },
+      prop2: {
+        type: 'number',
+        required: true
+      },
+      required: true
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myObject: {
+        type: 'object',
+        properties: {
+          prop1: {
+            format: 'required',
+            type: 'string'
+          },
+          prop2: {
+            format: 'required',
+            type: 'number'
+          }
+        },
+        additionalProperties: false,
+        required: ['prop1', 'prop2']
+      }
+    },
+    additionalProperties: false,
+    required: ['myObject']
+  })
+})
+
 describe('expandSchemaShorthand()', () => {
   it('expands strings to schemas', () => {
     expect(expandSchemaShorthand('number')).toEqual({
@@ -434,8 +588,7 @@ describe('expandSchemaShorthand()', () => {
         myNumber: {
           type: 'number'
         }
-      },
-      additionalProperties: false
+      }
     })
   })
 })

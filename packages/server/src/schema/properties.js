@@ -6,7 +6,7 @@ export function convertSchema(schema, options = {}) {
     // Nested shorthand expansion
     schema = { type: schema }
   } else if (isArray(schema)) {
-    // Needed for anyOf, allOf, oneOf, items:
+    // Needed for allOf, anyOf, oneOf, not, items:
     schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
@@ -81,6 +81,12 @@ export function convertSchema(schema, options = {}) {
         // Only call convertSchema() if it actually changed...
         ? convertSchema(expanded, options)
         : expanded
+      // Handle nested allOf, anyOf, oneOf, not properties
+      for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
+        if (key in schema) {
+          schema[key] = convertSchema(schema[key], options)
+        }
+      }
     }
     if (schema.type !== 'object') {
       // Handle `required` and `default` on schemas other than objects.
@@ -147,12 +153,21 @@ export function expandSchemaShorthand(schema) {
       isObject(schema.not)
     )
   ) {
+    // Separate object short-hand into property definitions and other fields.
+    const properties = {}
+    const rest = {}
+    for (const [key, value] of Object.entries(schema)) {
+      // Property definitions are either objects or string / array short-hands:
+      if (isObject(value) || isString(value) || isArray(value)) {
+        properties[key] = value
+      } else {
+        rest[key] = value
+      }
+    }
     schema = {
       type: 'object',
-      properties: {
-        ...schema
-      },
-      additionalProperties: false
+      properties,
+      ...rest
     }
   }
   return schema
@@ -162,7 +177,7 @@ function addFormat(schema, newFormat) {
   // Support multiple `format` keywords through `allOf`:
   let { allOf, format, ...rest } = schema
   if (format || allOf) {
-    allOf = allOf || []
+    allOf ||= []
     if (!allOf.find(({ format }) => format === newFormat)) {
       allOf.push({ format }, { format: newFormat })
       schema = { ...rest, allOf }
