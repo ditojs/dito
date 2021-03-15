@@ -17,7 +17,12 @@
         v-on="listeners"
       )
       .dito-color-preview(
-        :style="{ background: `#${hexValue}` }"
+        :style="{ background: `#${hexValue || '00000000'}` }"
+      )
+      button.dito-button-overlay.dito-button-clear(
+        v-if="clearable && value"
+        @click.stop="clear"
+        :disabled="disabled"
       )
     sketch-picker.dito-color-picker(
       slot="popup"
@@ -36,9 +41,11 @@
         display: block
         position: relative
         input
+          box-sizing: border-box
           font-variant-numeric: tabular-nums
-          margin-right: $color-swatch-width
-          padding-right: 2 * $input-padding-ver
+          padding-right: $color-swatch-width
+      .dito-button-clear
+        margin-right: $color-swatch-width
       .dito-color-picker
         margin: $popup-margin
         border: $border-style
@@ -95,7 +102,9 @@ export default TypeComponent.register('color', {
 
     hexValue: {
       get() {
-        if (!this.focused) {
+        if (this.value == null) {
+          this.convertedHexValue = null
+        } else if (!this.focused) {
           const color = tinycolor(this.value)
           if (color.isValid()) {
             this.convertedHexValue = color
