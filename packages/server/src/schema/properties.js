@@ -93,7 +93,8 @@ export function convertSchema(schema, options = {}) {
     }
     if (required) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
-      // format instead that only validates if required string is not empty.
+      // format instead that only validates if the required value is not
+      // empty, meaning neither nullish nor an empty string.
       schema = addFormat(schema, 'required')
     }
     if (excludeDefaults[schema.default]) {
