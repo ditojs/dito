@@ -28,7 +28,8 @@
   ],
   "postcss": {
     "plugins": {
-      "autoprefixer": {}
+      "autoprefixer": {},
+      "postcss-inset": {}
     }
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "filesize": "^6.1.0",
     "filesize-parser": "^1.5.0",
     "hint.css": "^2.6.0",
+    "postcss-inset": "^1.0.0",
     "tinycolor2": "^1.4.2",
     "tiptap": "^1.32.1",
     "tiptap-commands": "^1.17.1",

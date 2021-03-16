@@ -30,7 +30,7 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
-    button.dito-button-overlay.dito-button-clear(
+    button.dito-button-clear.dito-button-overlay(
       v-if="clearable && value"
       @click="clear"
       :disabled="disabled"
@@ -125,10 +125,7 @@
         // Change the width of the loading spinner
         border-width: 3px
         border-top-color: $color-active
-        top: 0
-        left: 0
-        right: 0
-        bottom: 0
+        inset: 0
         margin: auto
 
     .multiselect__option

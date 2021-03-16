@@ -16,10 +16,11 @@
         v-bind="attributes"
         v-on="listeners"
       )
-      .dito-color-preview(
-        :style="{ background: `#${hexValue || '00000000'}` }"
+      .dito-color-preview.dito-inherit-focus(
+        v-if="value"
       )
-      button.dito-button-overlay.dito-button-clear(
+        div(:style="{ background: `#${hexValue || '00000000'}` }")
+      button.dito-button-clear.dito-button-overlay(
         v-if="clearable && value"
         @click.stop="clear"
         :disabled="disabled"
@@ -53,13 +54,17 @@
         background: $color-white
         box-shadow: $shadow-window
       .dito-color-preview
-        position: absolute
-        top: 0
-        right: 0
-        bottom: 0
-        width: $color-swatch-width
-        border-top-right-radius: $color-swatch-radius
-        border-bottom-right-radius: $color-swatch-radius
+        background: $pattern-transparency
+        border-left: $border-style
+        &,
+        div
+          position: absolute
+          width: $color-swatch-width
+          top: 0
+          right: 0
+          bottom: 0
+          border-top-right-radius: $color-swatch-radius
+          border-bottom-right-radius: $color-swatch-radius
 </style>
 
 <script>

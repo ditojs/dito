@@ -29,14 +29,16 @@
   ],
   "postcss": {
     "plugins": {
-      "autoprefixer": {}
+      "autoprefixer": {},
+      "postcss-inset": {}
     }
   },
   "dependencies": {
     "@babel/runtime": "^7.13.9",
     "@ditojs/utils": "^0.220.0",
     "@soda/get-current-script": "^1.0.2",
-    "core-js": "^3.9.1"
+    "core-js": "^3.9.1",
+    "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.13.8",

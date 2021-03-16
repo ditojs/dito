@@ -1342,6 +1342,7 @@ __metadata:
     filesize-parser: ^1.5.0
     hint.css: ^2.6.0
     postcss: ^8.2.7
+    postcss-inset: ^1.0.0
     postcss-loader: ^4.2.0
     pug: ^3.0.2
     pug-plain-loader: ^1.1.0
@@ -1513,6 +1514,7 @@ __metadata:
     core-js: ^3.9.1
     fibers: ^5.0.0
     postcss: ^8.2.7
+    postcss-inset: ^1.0.0
     postcss-loader: ^4.2.0
     pug: ^3.0.2
     pug-plain-loader: ^1.1.0
@@ -14724,6 +14726,15 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"postcss-inset@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "postcss-inset@npm:1.0.0"
+  dependencies:
+    postcss: ^6.0.1
+  checksum: 9af4ccdfa2f30fc92ea91815cdb507151fa61c3c9301af811d067dce5a9cebcc82d933ed00e65d8f77459c17cf2f7e4faf1afe25ea5b2e6277b0598c4c7bfa87
+  languageName: node
+  linkType: hard
+
 "postcss-load-config@npm:^2.0.0":
   version: 2.1.2
   resolution: "postcss-load-config@npm:2.1.2"
@@ -15068,6 +15079,17 @@ fsevents@^1.2.7:
   version: 4.1.0
   resolution: "postcss-value-parser@npm:4.1.0"
   checksum: 70831403886859289f650550a38889857022c5bbe264fd5d39cfad5207b3e1d33422edc031c1a922f3ae29d0dff98837a8bf126c840374d2b0079e7d57cf7d71
+  languageName: node
+  linkType: hard
+
+"postcss@npm:^6.0.1":
+  version: 6.0.23
+  resolution: "postcss@npm:6.0.23"
+  dependencies:
+    chalk: ^2.4.1
+    source-map: ^0.6.1
+    supports-color: ^5.4.0
+  checksum: 9b61abdfb366491debc6a633ba3703ae43c674b6c1c64def54e131c8ec01862fc95b3271bde221db805389fc76c3b3f1447b5a9c1d0b332c53cfcc9bfe1b1fa6
   languageName: node
   linkType: hard
 
@@ -17733,7 +17755,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"supports-color@npm:^5.3.0":
+"supports-color@npm:^5.3.0, supports-color@npm:^5.4.0":
   version: 5.5.0
   resolution: "supports-color@npm:5.5.0"
   dependencies:

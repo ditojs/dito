@@ -4,10 +4,7 @@ const renderIcons = icons =>
 %icon
   width: 1em
   position: absolute
-  top: 0
-  left: 0
-  right: 0
-  bottom: 0
+  inset: 0
   margin: auto // To align the icon in the center of its container.
   content: ''
   background: currentColor
