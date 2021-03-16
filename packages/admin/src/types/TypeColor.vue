@@ -35,7 +35,7 @@
 </template>
 
 <style lang="sass">
-    $color-swatch-width: $input-height
+    $color-swatch-width: $pattern-transparency-size
     $color-swatch-radius: $border-radius - $border-width
     .dito-color
       .dito-input
@@ -94,6 +94,7 @@ export default TypeComponent.register('color', {
       set(value) {
         const { format } = this
         const key = {
+          // NOTE: vue-color calls it 'hex', while tinycolor calls it 'hex6'
           hex: value?.a < 1 ? 'hex8' : 'hex',
           rgb: 'rgba'
         }[format] || format
@@ -126,6 +127,8 @@ export default TypeComponent.register('color', {
       }
     },
 
+    // TODO: This clashes with TypeMixin.format()`, which shall be renamed soon
+    // to `formatValue()`
     format: getSchemaAccessor('format', {
       type: String,
       default: 'hex'
