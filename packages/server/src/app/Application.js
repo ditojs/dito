@@ -441,7 +441,8 @@ export class Application extends Koa {
     } else if (parameters) {
       throw new Error(`Invalid parameters definition: ${parameters}`)
     }
-    // NOTE: If properties is null, schema and validate will become null too:
+    // NOTE: If properties is null, schema and validate will become null too.
+    // NOTE: If it is not null, it will get expanded to an object schema.
     const schema = convertSchema(properties, options)
     const validate = this.compileValidator(schema, {
       // For parameters, always coerce types, including arrays.

@@ -502,6 +502,7 @@ it('support `required: true` on object', () => {
     properties: {
       myObject: {
         type: 'object',
+        format: 'required',
         properties: {
           prop1: {
             format: 'required',
@@ -524,6 +525,7 @@ it('support `required: true` on object', () => {
 it('support `required` on object short-hand', () => {
   expect(convertSchema({
     myObject: {
+      required: true,
       prop1: {
         type: 'string',
         required: true
@@ -531,22 +533,22 @@ it('support `required` on object short-hand', () => {
       prop2: {
         type: 'number',
         required: true
-      },
-      required: true
+      }
     }
   })).toEqual({
     type: 'object',
     properties: {
       myObject: {
         type: 'object',
+        format: 'required',
         properties: {
           prop1: {
-            format: 'required',
-            type: 'string'
+            type: 'string',
+            format: 'required'
           },
           prop2: {
-            format: 'required',
-            type: 'number'
+            type: 'number',
+            format: 'required'
           }
         },
         additionalProperties: false,

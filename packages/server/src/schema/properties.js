@@ -10,9 +10,12 @@ export function convertSchema(schema, options = {}) {
     schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
-    // Create a shallow clone so we can modify and return:
-    schema = { ...schema }
     const { type } = schema
+    // Create a shallow clone so we can modify and return, excluding our
+    // `required` boolean which will get converted to a format further down, and
+    // to JSON schema's `required` array through `expandProperties()`:
+    const { required, ...rest } = schema
+    schema = rest
     if (isString(type)) {
       // Convert schema property notation to JSON schema
       const jsonType = jsonTypes[type]
@@ -88,22 +91,13 @@ export function convertSchema(schema, options = {}) {
         }
       }
     }
-    if (schema.type !== 'object') {
-      // Handle `required` and `default` on schemas other than objects.
-      const {
-        required,
-        default: _default,
-        ...rest
-      } = schema
-      schema = rest
-      if (required) {
-        // Our 'required' is not the same as JSON Schema's: Use the 'required'
-        // format instead that only validates if required string is not empty.
-        schema = addFormat(schema, 'required')
-      }
-      if (_default !== undefined && !excludeDefaults[_default]) {
-        schema.default = _default
-      }
+    if (required) {
+      // Our 'required' is not the same as JSON Schema's: Use the 'required'
+      // format instead that only validates if required string is not empty.
+      schema = addFormat(schema, 'required')
+    }
+    if (excludeDefaults[schema.default]) {
+      delete schema.default
     }
     // Make nullable work with enum, see the issue for more details:
     // https://github.com/ajv-validator/ajv/issues/1471
