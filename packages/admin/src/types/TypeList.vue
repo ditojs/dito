@@ -171,7 +171,7 @@ import DitoContext from '@/DitoContext'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import VueDraggable from 'vuedraggable'
-import { getNamedSchemas } from '@/utils/schema'
+import { getNamedSchemas, getViewEditPath } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
@@ -259,11 +259,9 @@ export default TypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
+        const path = getViewEditPath(this.schema, this.views) || this.path
         const id = this.getItemId(this.schema, item, index)
-        const { view } = this.schema
-        return view
-          ? `/${this.views[view].path}/${id}`
-          : `${this.path}/${id}`
+        return `${path}/${id}`
       }
       return null
     },

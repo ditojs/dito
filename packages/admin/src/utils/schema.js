@@ -21,14 +21,14 @@ export function getTypeComponent(type) {
   return component
 }
 
-export function forEachSchemaComponent(schema, callback) {
+export function forEachSchema(schema, callback) {
   const schemas = [
     ...Object.values(schema?.tabs || {}),
     schema
   ]
   for (const schema of schemas) {
-    for (const [name, component] of Object.entries(schema?.components || {})) {
-      const res = callback(component, name)
+    if (schema) {
+      const res = callback(schema)
       if (res !== undefined) {
         return res
       }
@@ -36,28 +36,36 @@ export function forEachSchemaComponent(schema, callback) {
   }
 }
 
-export function findSchemaComponent(schema, callback) {
-  return forEachSchemaComponent(schema, component => {
-    if (callback(component)) {
-      return component
+export function forEachSchemaComponent(schema, callback) {
+  return forEachSchema(schema, schema => {
+    for (const [name, component] of Object.entries(schema.components || {})) {
+      const res = callback(component, name)
+      if (res !== undefined) {
+        return res
+      }
     }
-  }) || null
+  })
+}
+
+export function findSchemaComponent(schema, callback) {
+  return forEachSchemaComponent(
+    schema,
+    (component, name) => callback(component, name) ? component : undefined
+  ) || null
 }
 
 export function someSchemaComponent(schema, callback) {
-  return forEachSchemaComponent(schema, component => {
-    if (callback(component)) {
-      return true
-    }
-  }) === true
+  return forEachSchemaComponent(
+    schema,
+    (component, name) => callback(component, name) ? true : undefined
+  ) === true
 }
 
 export function everySchemaComponent(schema, callback) {
-  return forEachSchemaComponent(schema, component => {
-    if (!callback(component)) {
-      return false
-    }
-  }) !== false
+  return forEachSchemaComponent(
+    schema,
+    (component, name) => !callback(component, name) ? false : undefined
+  ) !== false
 }
 
 export async function resolveViews(views) {
@@ -92,6 +100,7 @@ export async function processView(component, api, schema, name, routes) {
 }
 
 export function processComponent(api, schema, name, routes, level) {
+  schema.level = level
   // Delegate schema processing to the actual type components.
   return getTypeOptions(schema)?.processSchema?.(
     api, schema, name, routes, level
@@ -176,7 +185,28 @@ export function hasForms(schema) {
 
 export function getViewSchema(schema, views) {
   const { view } = schema
-  return view && views[view] || null
+  const viewSchema = view && views[view]
+  return viewSchema
+    ? hasForms(viewSchema)
+      ? viewSchema
+      // NOTE: Views can have tabs, in which case the view component is nested
+      // in one of the tabs, go find it.
+      : forEachSchema(viewSchema, schema => {
+        const viewComponent = schema.components?.[view]
+        if (hasForms(viewComponent)) {
+          return viewComponent
+        }
+      })
+    : null
+}
+
+export function getViewEditPath(schema, views) {
+  const view = getViewSchema(schema, views)
+  return view
+    ? view.level === 0
+      ? `/${view.path}` // A single-component view
+      : `/${view.path}/${view.path}` // A multi-component view
+    : null
 }
 
 export function getFormSchemas(schema, views = null) {
