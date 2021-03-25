@@ -20,7 +20,7 @@ export class UserController extends ModelController {
       const success = !!user
       return {
         success,
-        authenticated: success && ctx.isAuthenticated(),
+        authenticated: success && this.isAuthenticated(ctx),
         user,
         error
       }
@@ -29,37 +29,42 @@ export class UserController extends ModelController {
     @action('post')
     async logout(ctx) {
       let success = false
-      if (ctx.isAuthenticated()) {
+      if (this.isAuthenticated(ctx)) {
         await ctx.logout()
         success = ctx.isUnauthenticated()
       }
       return {
         success,
-        authenticated: ctx.isAuthenticated()
+        authenticated: this.isAuthenticated(ctx)
       }
     },
 
     @action('get')
     session(ctx) {
+      const authenticated = this.isAuthenticated(ctx)
       return {
-        authenticated: ctx.isAuthenticated(),
-        user: ctx.state.user
+        authenticated,
+        user: authenticated ? ctx.state.user : null
       }
     },
 
     @action('get')
     self(ctx) {
-      const { user } = ctx.state
-      if (ctx.isAuthenticated() && user instanceof this.modelClass) {
-        return this.member.find.call(
+      return this.isAuthenticated(ctx)
+        ? this.member.find.call(
           this,
-          this.getContextWithMemberId(ctx, user.$id())
+          this.getContextWithMemberId(ctx, ctx.state.user.$id())
         )
-      }
+        : null
     }
   }
 
   member = {
     authorize: ['$self']
+  }
+
+  isAuthenticated(ctx) {
+    // Make sure the currently logged in user has the correct model-class:
+    return ctx.isAuthenticated() && ctx.state.user instanceof this.modelClass
   }
 }
