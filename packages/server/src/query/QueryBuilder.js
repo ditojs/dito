@@ -319,7 +319,9 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   raw(...args) {
-    return objection.raw(...args)
+    // TODO: Figure out a way to support `object.raw()` syntax and return a knex
+    // raw expression without accessing the private `RawBuilder.toKnexRaw()`:
+    return objection.raw(...args).toKnexRaw(this)
   }
 
   selectRaw(...args) {
@@ -373,7 +375,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  async truncate({ restart = true, cascade = false } = {}) {
+  truncate({ restart = true, cascade = false } = {}) {
     if (this.isPostgreSQL()) {
       // Support `restart` and `cascade` in PostgreSQL truncate queries.
       return this.raw(
