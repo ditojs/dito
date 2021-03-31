@@ -573,7 +573,11 @@ export class Application extends Koa {
           translateTime: 'SYS:HH:MM:ss.l'
         },
         // Redact common sensitive headers.
-        redact: ['*.headers.cookie', '*.headers.authorization'],
+        redact: [
+          '*.headers.cookie',
+          '*.headers.set-cookie',
+          '*.headers.authorization'
+        ],
         base: null // no pid,hostname,name
       },
       getOptions(this.config.logger)
