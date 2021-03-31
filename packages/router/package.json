@@ -26,11 +26,11 @@
   "dependencies": {
     "@babel/runtime": "^7.13.10",
     "@ditojs/utils": "^0.223.0",
-    "core-js": "^3.9.1"
+    "core-js": "^3.10.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.10",
-    "@babel/core": "^7.13.10",
+    "@babel/cli": "^7.13.14",
+    "@babel/core": "^7.13.14",
     "@babel/preset-env": "^7.13.12",
     "@ditojs/babel-preset": "^0.223.0",
     "babel-plugin-module-resolver": "^4.1.0",
@@ -42,5 +42,6 @@
     "routing",
     "koa",
     "dito"
-  ]
+  ],
+  "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"
 }

@@ -28,7 +28,7 @@
     "node 14"
   ],
   "dependencies": {
-    "@babel/core": "^7.13.10",
+    "@babel/core": "^7.13.14",
     "@babel/runtime": "^7.13.10",
     "@ditojs/admin": "^0.223.0",
     "@ditojs/router": "^0.223.0",
@@ -36,15 +36,15 @@
     "@koa/cors": "^3.1.0",
     "@koa/multer": "^3.0.0",
     "@vue/cli-service": "^4.5.12",
-    "ajv": "^7.2.3",
-    "ajv-formats": "^1.5.1",
-    "aws-sdk": "^2.871.0",
+    "ajv": "^7.2.4",
+    "ajv-formats": "^1.6.0",
+    "aws-sdk": "^2.876.0",
     "axios": "^0.21.1",
     "babel-loader": "^8.2.2",
     "bcryptjs": "^2.4.3",
     "bytes": "^3.1.0",
     "chalk": "^4.1.0",
-    "core-js": "^3.9.1",
+    "core-js": "^3.10.0",
     "data-uri-to-buffer": "^3.0.1",
     "eventemitter2": "^6.4.4",
     "fs-extra": "^9.1.0",
@@ -61,7 +61,7 @@
     "koa-mount": "^4.0.0",
     "koa-passport": "^4.1.4",
     "koa-response-time": "^2.1.0",
-    "koa-session": "^6.1.0",
+    "koa-session": "^6.2.0",
     "koa-static": "^5.0.0",
     "koa-webpack": "^6.0.0",
     "mime-types": "^2.1.29",
@@ -87,7 +87,7 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.10",
+    "@babel/cli": "^7.13.14",
     "@babel/preset-env": "^7.13.12",
     "@ditojs/babel-preset": "^0.223.0",
     "babel-plugin-dynamic-import-node": "^2.3.3",
@@ -97,5 +97,6 @@
     "pg": "^8.5.1",
     "rimraf": "^3.0.2",
     "sqlite3": "^5.0.2"
-  }
+  },
+  "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"
 }

@@ -37,11 +37,11 @@
     "@babel/runtime": "^7.13.10",
     "@ditojs/utils": "^0.223.0",
     "@soda/get-current-script": "^1.0.2",
-    "core-js": "^3.9.1",
+    "core-js": "^3.10.0",
     "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.10",
+    "@babel/core": "^7.13.14",
     "@babel/preset-env": "^7.13.12",
     "@ditojs/babel-preset": "^0.223.0",
     "@ditojs/build": "^0.223.0",
@@ -50,7 +50,7 @@
     "autoprefixer": "^9.8.6",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
-    "postcss": "^8.2.8",
+    "postcss": "^8.2.9",
     "postcss-loader": "^4.2.0",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
@@ -58,5 +58,6 @@
     "sass-loader": "^10.1.1",
     "vue-template-compiler": "^2.6.12",
     "webpack": "^4.46.0"
-  }
+  },
+  "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"
 }
