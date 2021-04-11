@@ -351,7 +351,7 @@ export interface SchemaSourceMixin<$State extends State> {
   /**
    * @defaultValue `false`
    */
-  draggable?: OrItemAccessor<$State, {}, boolean>
+  draggable?: OrItemAccessor<$State, {}, boolean | { order: string }>
   /**
    * Whether an inlined form is collapsible.
    * @defaultValue `null`
