@@ -574,9 +574,9 @@ export class Application extends Koa {
         },
         // Redact common sensitive headers.
         redact: [
-          '*.headers.cookie',
-          '*.headers.set-cookie',
-          '*.headers.authorization'
+          '*.headers["cookie"]',
+          '*.headers["set-cookie"]',
+          '*.headers["authorization"]'
         ],
         base: null // no pid,hostname,name
       },
