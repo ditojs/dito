@@ -125,6 +125,10 @@ export default class DitoContext {
     return get(this, 'panelComponent') || null
   }
 
+  get resourceComponent() {
+    return get(this, 'resourceComponent') || null
+  }
+
   get sourceComponent() {
     return get(this, 'sourceComponent') || null
   }
@@ -139,6 +143,8 @@ export default class DitoContext {
     return get(this, 'options')
   }
 
+  // TODO: Rename this to `searchTerm` or `searchQuery`, to perhaps free `query`
+  // for the actual `resourceComponent.query` object?
   get query() {
     return get(this, 'query')
   }
