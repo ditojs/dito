@@ -34,15 +34,15 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.10",
+    "@babel/runtime": "^7.13.17",
     "@ditojs/utils": "^0.224.0",
     "@soda/get-current-script": "^1.0.2",
-    "core-js": "^3.10.0",
+    "core-js": "^3.11.1",
     "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.14",
-    "@babel/preset-env": "^7.13.12",
+    "@babel/core": "^7.13.16",
+    "@babel/preset-env": "^7.13.15",
     "@ditojs/babel-preset": "^0.224.0",
     "@ditojs/build": "^0.224.0",
     "@vue/cli-plugin-babel": "^4.5.12",
@@ -50,11 +50,11 @@
     "autoprefixer": "^9.8.6",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
-    "postcss": "^8.2.9",
+    "postcss": "^8.2.13",
     "postcss-loader": "^4.2.0",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
-    "sass": "^1.32.8",
+    "sass": "^1.32.12",
     "sass-loader": "^10.1.1",
     "vue-template-compiler": "^2.6.12",
     "webpack": "^4.46.0"

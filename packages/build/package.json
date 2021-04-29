@@ -28,14 +28,14 @@
   ],
   "dependencies": {
     "@ditojs/utils": "^0.224.0",
-    "core-js": "^3.10.0",
+    "core-js": "^3.11.1",
     "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.2.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.14",
-    "@babel/core": "^7.13.14",
-    "@babel/preset-env": "^7.13.12",
+    "@babel/cli": "^7.13.16",
+    "@babel/core": "^7.13.16",
+    "@babel/preset-env": "^7.13.15",
     "@ditojs/babel-preset": "^0.224.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "minimist": "^1.2.5",

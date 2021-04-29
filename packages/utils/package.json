@@ -28,15 +28,15 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.13.10",
-    "core-js": "^3.10.0",
+    "@babel/runtime": "^7.13.17",
+    "core-js": "^3.11.1",
     "punycode": "^2.1.1",
     "regenerator-runtime": "^0.13.8"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.14",
-    "@babel/core": "^7.13.14",
-    "@babel/preset-env": "^7.13.12",
+    "@babel/cli": "^7.13.16",
+    "@babel/core": "^7.13.16",
+    "@babel/preset-env": "^7.13.15",
     "@ditojs/babel-preset": "^0.224.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "rimraf": "^3.0.2"
