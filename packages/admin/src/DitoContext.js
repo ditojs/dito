@@ -71,10 +71,6 @@ export default class DitoContext {
     return get(this, 'rootData') || null
   }
 
-  get list() {
-    return get(this, 'list')
-  }
-
   get index() {
     return get(this, 'index')
   }

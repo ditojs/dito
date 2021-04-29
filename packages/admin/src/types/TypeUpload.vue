@@ -220,7 +220,7 @@ export default TypeComponent.register('upload', {
           this,
           new DitoContext(this, {
             value: file,
-            list: this.files,
+            data: this.files,
             index,
             dataPath: appendDataPath(this.dataPath, index)
           })
