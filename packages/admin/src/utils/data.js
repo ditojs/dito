@@ -1,4 +1,7 @@
-import { parseDataPath, getValueAtDataPath, isInteger } from '@ditojs/utils'
+import {
+  isString, isInteger,
+  parseDataPath, getValueAtDataPath
+} from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
   return dataPath
@@ -32,4 +35,19 @@ export function getParentItem(rootItem, dataPath, isValue = false) {
     }
   }
   return null
+}
+
+export function getParentToken(dataPath) {
+  const path = parseDataPath(dataPath)
+  return path[path.length - 1]
+}
+
+export function getParentKey(dataPath) {
+  const token = getParentToken(dataPath)
+  return isString(token) ? token : null
+}
+
+export function getParentIndex(dataPath) {
+  const index = +getParentToken(dataPath)
+  return isInteger(index) ? index : null
 }

@@ -1,5 +1,7 @@
 import { isFunction } from '@ditojs/utils'
-import { getItem, getParentItem } from '@/utils/data'
+import {
+  getItem, getParentItem, getParentKey, getParentIndex
+} from '@/utils/data'
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
 // which themselves actually inherit from the linked `component` instance, so
@@ -42,7 +44,11 @@ export default class DitoContext {
   }
 
   get name() {
-    return get(this, 'name')
+    return get(this, 'name') || getParentKey(this.dataPath)
+  }
+
+  get index() {
+    return get(this, 'index') || getParentIndex(this.dataPath)
   }
 
   get dataPath() {
@@ -69,10 +75,6 @@ export default class DitoContext {
 
   get rootItem() {
     return get(this, 'rootData') || null
-  }
-
-  get index() {
-    return get(this, 'index')
   }
 
   get user() {
