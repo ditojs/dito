@@ -34,15 +34,15 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.17",
+    "@babel/runtime": "^7.14.0",
     "@ditojs/utils": "^0.225.0",
     "@soda/get-current-script": "^1.0.2",
     "core-js": "^3.11.1",
     "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.16",
-    "@babel/preset-env": "^7.13.15",
+    "@babel/core": "^7.14.0",
+    "@babel/preset-env": "^7.14.0",
     "@ditojs/babel-preset": "^0.225.0",
     "@ditojs/build": "^0.225.0",
     "@vue/cli-plugin-babel": "^4.5.12",
