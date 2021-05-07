@@ -44,11 +44,11 @@ export default class DitoContext {
   }
 
   get name() {
-    return get(this, 'name') || getParentKey(this.dataPath)
+    return get(this, 'name') ?? getParentKey(this.dataPath)
   }
 
   get index() {
-    return get(this, 'index') || getParentIndex(this.dataPath)
+    return get(this, 'index') ?? getParentIndex(this.dataPath)
   }
 
   get dataPath() {
