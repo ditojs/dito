@@ -53,7 +53,7 @@
               v-for="column in columns"
               :key="column.name"
               :class="getCellClass(column)"
-              :column="column"
+              :cell="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
               :dataPathIsValue="false"

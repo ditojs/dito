@@ -48,13 +48,14 @@
         td
           dito-label(
             v-if="property.label !== false"
-            :dataPath="getDataPath(property)"
+            :dataPath="getPropertyDataPath(property)"
             :label="getLabel(property)"
           )
         dito-table-cell(
-          :column="property"
-          :schema="schema"
-          :dataPath="getDataPath(property)"
+          :cell="property"
+          :schema="property"
+          :dataPath="getPropertyDataPath(property)"
+          :dataPathIsValue="true"
           :data="data"
           :meta="nestedMeta"
           :store="store"
@@ -300,7 +301,7 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   methods: {
-    getDataPath(property) {
+    getPropertyDataPath(property) {
       return appendDataPath(this.dataPath, property.name)
     },
 
