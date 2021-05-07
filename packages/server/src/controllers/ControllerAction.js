@@ -46,7 +46,15 @@ export default class ControllerAction {
   }
 
   getParams(ctx, name = this.paramsName) {
-    return name === 'path' ? ctx.params : ctx.request[name]
+    const value = name === 'path' ? ctx.params : ctx.request[name]
+    // koa-bodyparser always sets an object, even when there is no body...
+    // Detect this here and return null instead.
+    const isNull = (
+      name === 'body' &&
+      ctx.request.headers['content-length'] === '0' &&
+      Object.keys(value).length === 0
+    )
+    return isNull ? null : value
   }
 
   async callAction(ctx) {
