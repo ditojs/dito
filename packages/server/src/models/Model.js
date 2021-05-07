@@ -717,13 +717,13 @@ export class Model extends objection.Model {
   }
 
   // @override
-  static createValidationError({ type, message, errors, options }) {
+  static createValidationError({ type, message, errors, options, json }) {
     switch (type) {
     case 'ModelValidation':
       return this.app.createValidationError({
         type,
         message: message ||
-          `The provided data for the ${this.name} model is not valid`,
+          `The provided data for the ${this.name} model is not valid: ${JSON.stringify(json)}`,
         errors,
         options
       })

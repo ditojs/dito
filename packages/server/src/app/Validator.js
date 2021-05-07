@@ -306,7 +306,8 @@ export class Validator extends objection.Validator {
           throw model.constructor.createValidationError({
             type: 'ModelValidation',
             errors,
-            options
+            options,
+            json
           })
         }
       }

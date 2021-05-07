@@ -134,9 +134,11 @@ export default class ControllerAction {
         })
       }
     }
+
+    const getData = () => wrappedRoot ? params[dataName] : params
     try {
       await this.parameters.validate(params)
-      return wrappedRoot ? params[dataName] : params
+      return getData()
     } catch (error) {
       if (error.errors) {
         errors.push(...error.errors)
@@ -145,10 +147,9 @@ export default class ControllerAction {
       }
     }
     if (errors.length > 0) {
-      const unwrappedData = wrappedRoot ? params[dataName] : params
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${JSON.stringify(unwrappedData)}`,
+        message: `The provided data is not valid: ${JSON.stringify(getData())}`,
         errors
       })
     }
@@ -162,15 +163,17 @@ export default class ControllerAction {
       const data = {
         [returnsName || this.returns.dataName]: result
       }
+
+      // If a named result is defined, return the data wrapped,
+      // otherwise return the original unwrapped result object.
+      const getResult = () => returnsName ? data : result
       try {
         await this.returns.validate(data)
-        // If a named result is defined, return the data wrapped,
-        // otherwise return the original unwrapped result object.
-        return returnsName ? data : result
+        return getResult()
       } catch (error) {
         throw this.createValidationError({
           type: 'ResultValidation',
-          message: `Invalid result of action: ${JSON.stringify(data)}`,
+          message: `Invalid result of action: ${JSON.stringify(getResult())}`,
           errors: error.errors
         })
       }
