@@ -77,55 +77,66 @@ export default class ControllerAction {
     const data = clone(this.getParams(ctx))
     let params = data
     const { dataName } = this.parameters
-    let wrappedData = false
+    let wrappedRoot = false
     const errors = []
-    for (const { name, type, member, from } of this.parameters.list) {
+    for (const {
+      name, // String: Property name to fetch from data. Overridable by `root`
+      type, // String: What type should this validated against / coerced to.
+      member, // Boolean: Fetch member instance insted of data from request.
+      root, // Boolean: Use full root object, instead of data at given property.
+      from // String: Allow parameters to be 'borrowed' from other objects.
+    } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
-      // If no name is provided, use the full root object as value:
-      if (!name) {
+      // If no name is provided, wrap the full root object as value and unwrap
+      // at the end, see `wrappedRoot`.
+      let paramName = name
+      const wrapRoot = !paramName
+      if (root || wrapRoot) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.dataName`
-        params = { [dataName]: data }
-        wrappedData = true
-      } else {
-        if (from) {
-          // Allow parameters to be 'borrowed' from other objects.
-          // Possible values are:
-          // - 'path': Use `ctx.params` which is mapped to the route / path
-          // - 'query': Use `ctx.request.query`, regardless of the verb.
-          // - 'body': Use `ctx.request.body`, regardless of the verb.
-          params[name] = this.getParams(ctx, from)?.[name]
+        if (wrapRoot) {
+          paramName = dataName
+          wrappedRoot = true
         }
-        try {
-          const value = params[name]
-          // `parameters.validate(params)` coerces data in the query to the
-          // required formats, according to the rules specified here:
-          // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
-          // Coercion isn't currently offered for 'object' and 'date' types,
-          // so handle these cases prior to the call of `parameters.validate()`:
-          const coerced = this.coerceValue(type, value, {
-            // The model validation is handled separately through `$ref`.
-            skipValidation: true
-          })
-          // If coercion happened, replace value in params with coerced one:
-          if (coerced !== value) {
-            params[name] = coerced
-          }
-        } catch (err) {
-        // Convert error to Ajv validation error format:
-          errors.push({
-            dataPath: `.${name}`, // JavaScript property access notation
-            keyword: 'type',
-            message: err.message || err.toString(),
-            params: { type }
-          })
+        params = { [paramName]: data }
+      }
+      if (from) {
+        // Allow parameters to be 'borrowed' from other objects.
+        // Possible values are:
+        // - 'path': Use `ctx.params` which is mapped to the route / path
+        // - 'query': Use `ctx.request.query`, regardless of the verb.
+        // - 'body': Use `ctx.request.body`, regardless of the verb.
+        params[paramName] = this.getParams(ctx, from)?.[paramName]
+      }
+      try {
+        const value = params[paramName]
+        // `parameters.validate(params)` coerces data in the query to the
+        // required formats, according to the rules specified here:
+        // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
+        // Coercion isn't currently offered for 'object' and 'date' types,
+        // so handle these cases prior to the call of `parameters.validate()`:
+        const coerced = this.coerceValue(type, value, {
+          // The model validation is handled separately through `$ref`.
+          skipValidation: true
+        })
+        // If coercion happened, replace value in params with coerced one:
+        if (coerced !== value) {
+          params[paramName] = coerced
         }
+      } catch (err) {
+      // Convert error to Ajv validation error format:
+        errors.push({
+          dataPath: `.${paramName}`, // JavaScript property access notation
+          keyword: 'type',
+          message: err.message || err.toString(),
+          params: { type }
+        })
       }
     }
     try {
       await this.parameters.validate(params)
-      return wrappedData ? params[dataName] : params
+      return wrappedRoot ? params[dataName] : params
     } catch (error) {
       if (error.errors) {
         errors.push(...error.errors)
@@ -134,9 +145,10 @@ export default class ControllerAction {
       }
     }
     if (errors.length > 0) {
+      const unwrappedData = wrappedRoot ? params[dataName] : params
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${JSON.stringify(data)}`,
+        message: `The provided data is not valid: ${JSON.stringify(unwrappedData)}`,
         errors
       })
     }
