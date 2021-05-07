@@ -74,6 +74,16 @@ export function convertSchema(schema, options = {}) {
           // TODO: Consider moving to `model` keyword instead that would support
           // model validation and still could be combined with other keywords.
           schema.$ref = type
+          // `$ref` doesn't play with `nullable`, so convert to `oneOf`
+          if (schema.nullable) {
+            delete schema.nullable
+            schema = {
+              oneOf: [
+                { type: 'null' },
+                schema
+              ]
+            }
+          }
         }
       }
     } else {
