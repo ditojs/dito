@@ -102,14 +102,17 @@ export default class ControllerAction {
       // at the end, see `wrappedRoot`.
       let paramName = name
       const wrapRoot = !paramName
-      if (root || wrapRoot) {
+      if (wrapRoot) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.dataName`
-        if (wrapRoot) {
-          paramName = dataName
-          wrappedRoot = true
+        paramName = dataName
+        wrappedRoot = true
+      }
+      if (root || wrapRoot) {
+        if (params === data) {
+          params = {}
         }
-        params = { [paramName]: data }
+        params[paramName] = data
       }
       if (from) {
         // Allow parameters to be 'borrowed' from other objects.
@@ -117,7 +120,9 @@ export default class ControllerAction {
         // - 'path': Use `ctx.params` which is mapped to the route / path
         // - 'query': Use `ctx.request.query`, regardless of the verb.
         // - 'body': Use `ctx.request.body`, regardless of the verb.
-        params[paramName] = this.getParams(ctx, from)?.[paramName]
+        const data = this.getParams(ctx, from)
+        // See above for an explanation of `clone()`:
+        params[paramName] = clone(root ? data : data?.[paramName])
       }
       try {
         const value = params[paramName]
