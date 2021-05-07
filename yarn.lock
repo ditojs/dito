@@ -1757,7 +1757,7 @@ __metadata:
     "@ditojs/utils": ^0.227.0
     "@vue/cli-plugin-babel": ^4.5.12
     "@vue/cli-service": ^4.5.12
-    autoprefixer: ^10.2.5
+    autoprefixer: ^9.8.6
     axios: ^0.21.1
     babel-loader: ^8.2.2
     codeflask: ^1.4.1
@@ -1863,7 +1863,7 @@ __metadata:
     "@vue/cli-service": ^4.5.12
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.902.0
+    aws-sdk: ^2.903.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1934,7 +1934,7 @@ __metadata:
     "@soda/get-current-script": ^1.0.2
     "@vue/cli-plugin-babel": ^4.5.12
     "@vue/cli-service": ^4.5.12
-    autoprefixer: ^10.2.5
+    autoprefixer: ^9.8.6
     babel-loader: ^8.2.2
     core-js: ^3.12.0
     fibers: ^5.0.0
@@ -1962,7 +1962,7 @@ __metadata:
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.12.0
     punycode: ^2.1.1
-    regenerator-runtime: ^0.13.7
+    regenerator-runtime: ^0.13.8
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -4975,24 +4975,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^10.2.5":
-  version: 10.2.5
-  resolution: "autoprefixer@npm:10.2.5"
-  dependencies:
-    browserslist: ^4.16.3
-    caniuse-lite: ^1.0.30001196
-    colorette: ^1.2.2
-    fraction.js: ^4.0.13
-    normalize-range: ^0.1.2
-    postcss-value-parser: ^4.1.0
-  peerDependencies:
-    postcss: ^8.1.0
-  bin:
-    autoprefixer: bin/autoprefixer
-  checksum: bd346dd75b7cb3bc8edca6e36edf1f4e0ae5bf0a51b2ac6d07523efd21d272d8932643f9a9410b4ee2ff36936531f7b6fa9d30d87b044579612f249fb96b9c78
-  languageName: node
-  linkType: hard
-
 "autoprefixer@npm:^9.8.6":
   version: 9.8.6
   resolution: "autoprefixer@npm:9.8.6"
@@ -5010,9 +4992,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.902.0":
-  version: 2.902.0
-  resolution: "aws-sdk@npm:2.902.0"
+"aws-sdk@npm:^2.903.0":
+  version: 2.903.0
+  resolution: "aws-sdk@npm:2.903.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -5023,7 +5005,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: fbc512b35f733a911090094363bc6fb2ef0197381be03676268399589b90617ff807abedc544ee67a5f86971d41fd93a5ef01daa73f631bad4f0ad7b745a65ca
+  checksum: f591f7d7b3bec30248339011b679643c57a4730dd96aa4cea6ca698c430e5efa77688bcc6a6422177c2db67c42eab3e2c4929b3426044f5f6019ee0ba985bb82
   languageName: node
   linkType: hard
 
@@ -5934,13 +5916,6 @@ __metadata:
   version: 1.0.30001204
   resolution: "caniuse-lite@npm:1.0.30001204"
   checksum: 650f320ece8aa5eb1caf406a143d93097af97b84070b9a01028f41a8feab1eae8364478c4e0e0571a962ef245c9b6fbf3ea611295c9882e5f97b8b83d97de2de
-  languageName: node
-  linkType: hard
-
-"caniuse-lite@npm:^1.0.30001196":
-  version: 1.0.30001223
-  resolution: "caniuse-lite@npm:1.0.30001223"
-  checksum: 0a19e4c3689048cf7f6a47d348cc6dc849a141ae814634cc2c9b37a91dc5ba019c08d67ddf3549323ae4b13c84cb2a796204128bcd19f0dbbe844dab0058b25e
   languageName: node
   linkType: hard
 
@@ -9213,13 +9188,6 @@ __metadata:
   version: 0.1.2
   resolution: "forwarded@npm:0.1.2"
   checksum: 568d862ad1c514813fc62dc1bd58b8669b16d4ee2e634a6fc71f4849df798883ab94e63d8e1b35a17af51b2b39ca869e672c7310efe42fc7b9bad43a80b5ff87
-  languageName: node
-  linkType: hard
-
-"fraction.js@npm:^4.0.13":
-  version: 4.0.13
-  resolution: "fraction.js@npm:4.0.13"
-  checksum: 1e9ec132b09f17f3e41aa53508197901277f11896f6adc0b51a4b38511e6236813a471488c319221f4fadf7c854be9566a4924215623b460364591d80e1791c3
   languageName: node
   linkType: hard
 
@@ -16696,7 +16664,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.7":
+"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.8":
   version: 0.13.8
   resolution: "regenerator-runtime@npm:0.13.8"
   checksum: 20178f5753f181d59691e5c3b4c59a2769987f75c7ccf325777673b5478acca61a553b10e895585086c222f72f5ee428090acf50320264de4b79f630f7388653
