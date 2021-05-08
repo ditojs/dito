@@ -13,7 +13,7 @@ export function isPlainObject(arg) {
   // We also need to check for ctor.name === 'Object', in case this is an object
   // from another global scope (e.g. another vm context in Node.js).
   // When an value has no constructor, it was created with `Object.create(null)`
-  return !ctor || (ctor === Object || ctor.name === 'Object')
+  return !!arg && (!ctor || (ctor === Object || ctor.name === 'Object'))
 }
 
 export function isObject(arg) {
