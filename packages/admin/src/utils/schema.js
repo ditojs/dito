@@ -287,15 +287,8 @@ export function setDefaults(schema, data = {}) {
   return processSchemaData(schema, data, null, processBefore)
 }
 
-export function processData(
-  schema,
-  data,
-  dataPath,
-  {
-    processIds = false,
-    removeIds = false
-  } = {}
-) {
+export function processData(schema, data, dataPath, options = {}) {
+  const { processIds = false, removeIds = false } = options
   const rootData = data
 
   function processValue(value) {
@@ -355,7 +348,12 @@ export function processData(
 
     const processComponentValue = typeOptions.processValue
     if (processComponentValue) {
-      value = processComponentValue(schema, value)
+      value = processComponentValue(
+        schema, value, dataPath,
+        // Pass on a `processData()` closure that includes the current options.
+        (schema, data, dataPath) =>
+          processData(schema, data, dataPath, options)
+      )
     }
 
     if (process) {

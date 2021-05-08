@@ -43,6 +43,7 @@
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
 import { hasForms } from '@/utils/schema'
+import { appendDataPath } from '@/utils/data'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -137,6 +138,25 @@ export default TypeComponent.register([
         }
       }
     )
+  },
+
+  processValue(schema, value, dataPath, processData) {
+    const { children } = schema
+    if (children) {
+      // Convert nested children schema to stand-alone schema that can be
+      // passed to `processData()` for processing of nested children data.
+      const childrenSchema = {
+        components: {
+          [children.name]: children
+        }
+      }
+      value = value.map((item, index) => processData(
+        childrenSchema,
+        item,
+        appendDataPath(dataPath, index)
+      ))
+    }
+    return value
   }
 })
 </script>
