@@ -45,6 +45,10 @@ export default class ControllerAction {
     )
   }
 
+  // Possible values for `from` are:
+  // - 'path': Use `ctx.params` which is mapped to the route / path
+  // - 'query': Use `ctx.request.query`, regardless of the action's verb.
+  // - 'body': Use `ctx.request.body`, regardless of the action's verb.
   getParams(ctx, from = this.paramsName) {
     const value = from === 'path' ? ctx.params : ctx.request[from]
     // koa-bodyparser always sets an object, even when there is no body.
@@ -87,7 +91,7 @@ export default class ControllerAction {
     const data = clone(this.getParams(ctx))
     let params = data || {}
     const { dataName } = this.parameters
-    let wrappedRoot = false
+    let unwrapRoot = false
     const errors = []
     for (const {
       name, // String: Property name to fetch from data. Overridable by `root`
@@ -98,17 +102,18 @@ export default class ControllerAction {
     } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
-      // If no name is provided, wrap the full root object as value and unwrap
-      // at the end, see `wrappedRoot`.
+      let wrapRoot = root
       let paramName = name
-      const wrapRoot = !paramName
+      // If no name is provided, wrap the full root object as value and unwrap
+      // at the end, see `unwrapRoot`.
+      if (!paramName) {
+        paramName = dataName
+        wrapRoot = true
+        unwrapRoot = true
+      }
       if (wrapRoot) {
         // If root is to be used, replace `params` with a new object on which
-        // to set the root object to validate under `parameters.dataName`
-        paramName = dataName
-        wrappedRoot = true
-      }
-      if (root || wrapRoot) {
+        // to set the root object to validate under `parameters.paramName`
         if (params === data) {
           params = {}
         }
@@ -116,13 +121,9 @@ export default class ControllerAction {
       }
       if (from) {
         // Allow parameters to be 'borrowed' from other objects.
-        // Possible values are:
-        // - 'path': Use `ctx.params` which is mapped to the route / path
-        // - 'query': Use `ctx.request.query`, regardless of the verb.
-        // - 'body': Use `ctx.request.body`, regardless of the verb.
         const data = this.getParams(ctx, from)
         // See above for an explanation of `clone()`:
-        params[paramName] = clone(root ? data : data?.[paramName])
+        params[paramName] = clone(wrapRoot ? data : data?.[paramName])
       }
       try {
         const value = params[paramName]
@@ -150,7 +151,7 @@ export default class ControllerAction {
       }
     }
 
-    const getData = () => wrappedRoot ? params[dataName] : params
+    const getData = () => unwrapRoot ? params[dataName] : params
     try {
       await this.parameters.validate(params)
       return getData()
