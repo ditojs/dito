@@ -287,16 +287,15 @@ export function setDefaults(schema, data = {}) {
   return processSchemaData(schema, data, null, processBefore)
 }
 
-export function processValue(
-  value, {
+export function processValue(value, options = {}) {
+  const {
     processIds = false,
     removeIds = false
-  } = {}
-) {
+  } = options
   // @ditojs/server specific handling of relates within graphs:
   // Find entries with temporary ids, and convert them to #id / #ref pairs.
   // Also handle items with relate and convert them to only contain ids.
-  if ((processIds || removeIds) && isObject(value)) {
+  if (isObject(value)) {
     if (processIds && hasTemporaryId(value)) {
       const { id, ...rest } = value
       // A reference is a shallow copy that hold nothing more than ids.
@@ -309,6 +308,8 @@ export function processValue(
       const { id, ...rest } = value
       return rest
     }
+  } else if (isArray(value)) {
+    value = value.map(entry => processValue(entry, options))
   }
   return value
 }
