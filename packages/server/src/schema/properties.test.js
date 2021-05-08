@@ -346,7 +346,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`handles \`nullable: true\` references correctly (now natively supported)`, () => {
+  it(`handles \`nullable: true\` references correctly`, () => {
     expect(convertSchema({
       myModel: {
         type: 'MyModel',
@@ -356,8 +356,10 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myModel: {
-          $ref: 'MyModel',
-          nullable: true
+          oneOf: [
+            { type: 'null' },
+            { $ref: 'MyModel' }
+          ]
         }
       },
       additionalProperties: false
