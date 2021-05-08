@@ -45,12 +45,12 @@ export default class ControllerAction {
     )
   }
 
-  getParams(ctx, name = this.paramsName) {
-    const value = name === 'path' ? ctx.params : ctx.request[name]
-    // koa-bodyparser always sets an object, even when there is no body...
+  getParams(ctx, from = this.paramsName) {
+    const value = from === 'path' ? ctx.params : ctx.request[from]
+    // koa-bodyparser always sets an object, even when there is no body.
     // Detect this here and return null instead.
     const isNull = (
-      name === 'body' &&
+      from === 'body' &&
       ctx.request.headers['content-length'] === '0' &&
       Object.keys(value).length === 0
     )
@@ -85,16 +85,16 @@ export default class ControllerAction {
     // so that this doesn't modify the data on `ctx`.
     // NOTE: The data can be either an object or an array.
     const data = clone(this.getParams(ctx))
-    let params = data
+    let params = data || {}
     const { dataName } = this.parameters
     let wrappedRoot = false
     const errors = []
     for (const {
       name, // String: Property name to fetch from data. Overridable by `root`
       type, // String: What type should this validated against / coerced to.
-      member, // Boolean: Fetch member instance insted of data from request.
+      from, // String: Allow parameters to be 'borrowed' from other objects.
       root, // Boolean: Use full root object, instead of data at given property.
-      from // String: Allow parameters to be 'borrowed' from other objects.
+      member // Boolean: Fetch member instance insted of data from request.
     } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
@@ -140,7 +140,7 @@ export default class ControllerAction {
           params[paramName] = coerced
         }
       } catch (err) {
-      // Convert error to Ajv validation error format:
+        // Convert error to Ajv validation error format:
         errors.push({
           dataPath: `.${paramName}`, // JavaScript property access notation
           keyword: 'type',
