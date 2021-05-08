@@ -137,6 +137,10 @@ export default {
     }
   },
 
+  beforeCreate() {
+    this.$uid = ++uid
+  },
+
   methods: {
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
@@ -460,7 +464,7 @@ export default {
           this.$nextTick(() => {
             for (const [key, callback] of Object.entries(handlers)) {
               // Expand property names to 'data.property':
-              const expr = key in this.schemaComponent.components
+              const expr = this.schemaComponent.getComponent(key, false)
                 ? `data.${key}`
                 : key
               this.$watch(expr, callback)
@@ -520,3 +524,5 @@ export default {
     }
   }
 }
+
+let uid = 0

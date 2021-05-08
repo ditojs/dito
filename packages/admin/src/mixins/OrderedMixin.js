@@ -15,16 +15,9 @@ export default {
       this.dragging = true
     },
 
-    onEndDrag({ oldIndex, newIndex }, sourceSchema = this.schema) {
+    onEndDrag({ oldIndex, newIndex }) {
       this.dragging = false
       if (oldIndex !== newIndex) {
-        // When items are reordered, the components and dataProcessers
-        // registered by their data paths need to be updated as well:
-        this.schemaComponent._reorderDataPaths(
-          this.getItemDataPath(sourceSchema),
-          oldIndex,
-          newIndex
-        )
         this.onChange()
       }
     },

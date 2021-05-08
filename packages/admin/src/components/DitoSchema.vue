@@ -205,9 +205,9 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this, new DitoContext(this))
           : data
       ),
-      componentsContainers: {},
-      components: {},
-      panels: {}
+      containersRegistry: {},
+      componentsRegistry: {},
+      panelsRegistry: {}
     }
   },
 
@@ -230,7 +230,7 @@ export default DitoComponent.component('dito-schema', {
         '',
         this.schemaComponent
       )
-      for (const container of Object.values(this.componentsContainers)) {
+      for (const container of Object.values(this.containersRegistry)) {
         schemas.push(...container.panelSchemas)
       }
       return schemas
@@ -345,7 +345,19 @@ export default DitoComponent.component('dito-schema', {
       default() {
         return !this.collapsed
       }
-    })
+    }),
+
+    containers() {
+      return this._getComponentsByDataPath(this.containersRegistry)
+    },
+
+    components() {
+      return this._getComponentsByDataPath(this.componentsRegistry)
+    },
+
+    panels() {
+      return this._getComponentsByDataPath(this.panelsRegistry)
+    }
   },
 
   created() {
@@ -366,103 +378,72 @@ export default DitoComponent.component('dito-schema', {
       this.$schemaParentComponent()?._registerSchemaComponent(this, add)
     },
 
-    _registerComponentsContainer(componentsContainer, add) {
-      this._setOrDelete(
-        this.componentsContainers,
-        componentsContainer.tab || 'main',
-        componentsContainer,
-        add
-      )
+    _registerContainer(container, add) {
+      this._registerEntry(this.containersRegistry, container, add)
     },
 
     _registerComponent(component, add) {
-      this._setOrDelete(this.components, component.dataPath, component, add)
+      this._registerEntry(this.componentsRegistry, component, add)
       // Only register with the parent if schema shares data with it.
       this.parentSchemaComponent?._registerComponent(component, add)
     },
 
     _registerPanel(panel, add) {
-      this._setOrDelete(this.panels, panel.dataPath, panel, add)
+      this._registerEntry(this.panelsRegistry, panel, add)
     },
 
-    _reorderDataPaths(dataPath, fromIndex, toIndex) {
-      // Go through all the already registered components, and if they are
-      // affected by the given reordering, deregister them under the old
-      // data-path and re-register them under the new one.
-      dataPath = parseDataPath(dataPath)
-
-      const { components } = this
-
-      const reorder = (fromIndex, toIndex) => {
-        const fromDataPath = normalizeDataPath([...dataPath, fromIndex, ''])
-        const toDataPath = normalizeDataPath([...dataPath, toIndex, ''])
-        for (const path of Object.keys(components)) {
-          if (path.startsWith(fromDataPath)) {
-            const value = components[path]
-            const newPath = toDataPath + path.slice(fromDataPath.length)
-            this.$delete(components, path)
-            this.$set(components, newPath, value)
-          }
-        }
-      }
-
-      // In order to not override, move to a temporary index first that is
-      // certain to not clash with the matching above.
-      const tempIndex = '_' + fromIndex
-      reorder(fromIndex, tempIndex)
-      const minIndex = Math.min(fromIndex, toIndex)
-      const maxIndex = Math.max(fromIndex, toIndex)
-      if (fromIndex > toIndex) {
-        for (let i = maxIndex - 1; i >= minIndex; i--) {
-          reorder(i, i + 1)
-        }
+    _registerEntry(registry, component, add) {
+      const uid = component.$uid
+      if (add) {
+        this.$set(registry, uid, component)
       } else {
-        for (let i = minIndex + 1; i <= maxIndex; i++) {
-          reorder(i, i - 1)
-        }
-      }
-      // No finally move it from the temporary index to the destination.
-      reorder(tempIndex, toIndex)
-
-      this.parentSchemaComponent?._reorderDataPaths(
-        dataPath,
-        fromIndex,
-        toIndex
-      )
-    },
-
-    getComponent(dataPath) {
-      return this._getWithDataPath(this.components, dataPath)
-    },
-
-    getPanel(dataPath) {
-      return this._getWithDataPath(this.panels, dataPath)
-    },
-
-    _setOrDelete(registry, key, value, set) {
-      if (set) {
-        this.$set(registry, key, value)
-      } else if (registry[key] === value) {
-        this.$delete(registry, key)
+        this.$delete(registry, uid)
       }
     },
 
-    _getWithDataPath(registry, dataPath) {
+    getContainer(dataPath) {
+      return this._getComponentByDataPath(this.containers, dataPath)
+    },
+
+    getComponent(dataPath, isAbsolute) {
+      return this._getComponentByDataPath(this.components, dataPath, isAbsolute)
+    },
+
+    getPanel(dataPath, isAbsolute) {
+      return this._getComponentByDataPath(this.panels, dataPath, isAbsolute)
+    },
+
+    _getComponentsByDataPath(registry) {
+      return Object.values(registry).reduce((components, component) => {
+        components[component.dataPath] = component
+        return components
+      }, {})
+    },
+
+    _getComponentByDataPath(
+      componentsByDataPath,
+      dataPath,
+      isAbsolute = dataPath.startsWith(this.dataPath)
+    ) {
       dataPath = normalizeDataPath(dataPath)
-      // See if the argument starts with this form's data-path. If not, then it
-      // is a key or sub data-path and needs to be prefixed with the full path:
-      dataPath = dataPath.startsWith(this.dataPath)
-        ? dataPath
-        : appendDataPath(this.dataPath, dataPath)
-      return registry[dataPath] || null
+      if (!isAbsolute) {
+        dataPath = appendDataPath(this.dataPath, dataPath)
+      }
+      return componentsByDataPath[dataPath] || null
     },
 
     someComponent(callback) {
-      return this.isPopulated && Object.values(this.components).some(callback)
+      return (
+        this.isPopulated &&
+        Object.values(this.componentsRegistry).some(callback)
+      )
     },
 
     everyComponent(callback) {
-      return this.isPopulated && Object.values(this.components).every(callback)
+      return (
+        this.isPopulated &&
+        Object.values(this.componentsRegistry).every(callback)
+      )
     },
 
     onExpand(expand) {
@@ -482,19 +463,19 @@ export default DitoComponent.component('dito-schema', {
     },
 
     resetValidation() {
-      for (const component of Object.values(this.components)) {
+      for (const component of Object.values(this.componentsRegistry)) {
         component.resetValidation()
       }
     },
 
     clearErrors() {
-      for (const component of Object.values(this.components)) {
+      for (const component of Object.values(this.componentsRegistry)) {
         component.clearErrors()
       }
     },
 
     getErrors(dataPath) {
-      return this.getComponent(dataPath)?.getErrors() || null
+      return this.getComponent(dataPath, true)?.getErrors() || null
     },
 
     focus() {
@@ -523,7 +504,7 @@ export default DitoComponent.component('dito-schema', {
       let isValid = true
       let first = true
       for (const dataPath of (dataPaths || Object.keys(components))) {
-        const component = this.getComponent(dataPath)
+        const component = this.getComponent(dataPath, true)
         if (component) {
           if (!component.validate(notify)) {
             // Focus first error field
@@ -559,14 +540,14 @@ export default DitoComponent.component('dito-schema', {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
-        const component = this.getComponent(dataPathParts)
+        const component = this.getComponent(dataPathParts, true)
         if (!component?.showValidationErrors(errs, first && focus)) {
           // Couldn't find a component in an active form for the given dataPath.
           // See if we can find a component serving a part of the dataPath,
           // and take it from there:
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
-            const component = this.getComponent(dataPathParts)
+            const component = this.getComponent(dataPathParts, true)
             if (component?.navigateToComponent?.(
               fullDataPath,
               subComponent => {
@@ -631,7 +612,7 @@ export default DitoComponent.component('dito-schema', {
       for (const key in data) {
         if (key in this.data) {
           this.$set(this.data, key, data[key])
-          this.getComponent(key)?.markDirty()
+          this.getComponent(key, false)?.markDirty()
         }
       }
     },
@@ -643,7 +624,7 @@ export default DitoComponent.component('dito-schema', {
       const copy = {}
       for (const [key, value] of Object.entries(data)) {
         if (isArray(value) || isObject(value)) {
-          if (this.getComponent(key)?.providesData) {
+          if (this.getComponent(key, false)?.providesData) {
             continue
           }
         }

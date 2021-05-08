@@ -194,7 +194,7 @@ export default TypeComponent.register('list', {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
       // away. Use a proxy and a getter instead, to get around this:
-      const getComponent = () => schemaComponent.getComponent(dataPath)
+      const getComponent = () => schemaComponent.getComponent(dataPath, true)
 
       return getFiltersPanel(
         getNamedSchemas(filters),
