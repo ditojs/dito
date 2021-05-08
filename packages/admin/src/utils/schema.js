@@ -287,30 +287,34 @@ export function setDefaults(schema, data = {}) {
   return processSchemaData(schema, data, null, processBefore)
 }
 
-export function processData(schema, data, dataPath, options = {}) {
-  const { processIds = false, removeIds = false } = options
-  const rootData = data
-
-  function processValue(value) {
-    // @ditojs/server specific handling of relates within graphs:
-    // Find entries with temporary ids, and convert them to #id / #ref pairs.
-    // Also handle items with relate and convert them to only contain ids.
-    if ((processIds || removeIds) && isObject(value)) {
-      if (processIds && hasTemporaryId(value)) {
-        const { id, ...rest } = value
-        // A reference is a shallow copy that hold nothing more than ids.
-        // Use #ref instead of #id for these:
-        return isReference(value)
-          ? { '#ref': id }
-          : { '#id': id, ...rest }
-      } else if (removeIds && value.id != null && !isReference(value)) {
-        // Only remove ids if it isn't a reference.
-        const { id, ...rest } = value
-        return rest
-      }
+export function processValue(
+  value, {
+    processIds = false,
+    removeIds = false
+  } = {}
+) {
+  // @ditojs/server specific handling of relates within graphs:
+  // Find entries with temporary ids, and convert them to #id / #ref pairs.
+  // Also handle items with relate and convert them to only contain ids.
+  if ((processIds || removeIds) && isObject(value)) {
+    if (processIds && hasTemporaryId(value)) {
+      const { id, ...rest } = value
+      // A reference is a shallow copy that hold nothing more than ids.
+      // Use #ref instead of #id for these:
+      return isReference(value)
+        ? { '#ref': id }
+        : { '#id': id, ...rest }
+    } else if (removeIds && value.id != null && !isReference(value)) {
+      // Only remove ids if it isn't a reference.
+      const { id, ...rest } = value
+      return rest
     }
-    return value
   }
+  return value
+}
+
+export function processData(schema, data, dataPath, options) {
+  const rootData = data
 
   function processBefore(schema, data, name, dataPath, clone) {
     const { wrapPrimitives } = schema
@@ -360,7 +364,7 @@ export function processData(schema, data, dataPath, options = {}) {
       value = process(getContext())
     }
 
-    clone[name] = processValue(value)
+    clone[name] = processValue(value, options)
   }
 
   return processSchemaData(
@@ -428,12 +432,10 @@ export function processSchemaData(
           } else if (clone) {
             value = shallowClone(value)
           }
-          if (clone && value !== clone[name]) {
+          if (clone) {
             clone[name] = value
           }
-          if (processAfter) {
-            processAfter(componentSchema, data, name, componentDataPath, clone)
-          }
+          processAfter?.(componentSchema, data, name, componentDataPath, clone)
         }
       }
     }
