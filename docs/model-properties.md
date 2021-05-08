@@ -27,7 +27,7 @@ By default, the following property schema keywords are available. Additional
 keywords can be registered with a custom validator, see
 [Validator](./validator.md):
 
-| Keywords                   | Description
+| Keyword                    | Description
 | -------------------------- | -------------------------------------------------
 | `type`: `string`           | The type of the property. Possible values are:<br>`'string'`, `'text'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'date'`, `'datetime'` and `'timestamp'`.
 | `format`: `string`         | The requried format of the property.<br>Any standard JSON schema formats are supported, such as `'date-time'`, `'email'`, `'hostname'`, `'ipv4'`, `'ipv6'`, `'uri'`. Additional formats can be registered with a custom validator, see [Validator](./validator.md).
