@@ -1,6 +1,7 @@
 import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { setTemporaryId, isReference } from '@/utils/data'
 import {
   isObject, isArray, isString, isFunction, labelize, debounceAsync
 } from '@ditojs/utils'
@@ -33,7 +34,7 @@ export default {
             value === null && this.value !== null ||
             // ...or if the value is a reference, replace it with its option
             // value, so that it'll hold actual data, not just a reference id.
-            this.schemaComponent.isReference(this.value)
+            isReference(this.value)
           )
         ) {
           this.selectedValue = value
@@ -73,8 +74,12 @@ export default {
     },
 
     relate: getSchemaAccessor('relate', {
+      // TODO: Convert to `relateBy: 'id'`
       type: Boolean,
-      default: false
+      default: false,
+      // We cannot use schema accessor callback magic for `relate` as we need
+      // this outside of the component's life-span, see `processData()` below.
+      callback: false
     }),
 
     groupBy: getSchemaAccessor('groupBy', {
@@ -135,17 +140,6 @@ export default {
   },
 
   methods: {
-    getDataProcessor() {
-      // Convert object to a shallow copy with only id.
-      const processRelate = data => data ? { id: data.id } : data
-      return this.relate
-        // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
-        ? value => isArray(value)
-          ? value.map(entry => processRelate(entry))
-          : processRelate(value)
-        : null
-    },
-
     getOptionKey(key) {
       const [option] = this.activeOptions
       return isObject(option) && key in option ? key : null
@@ -161,7 +155,7 @@ export default {
           // we're currently editing.
           for (const option of options) {
             if (!('id' in option)) {
-              this.schemaComponent.setTemporaryId(option)
+              setTemporaryId(option, 'id')
             }
           }
         }
@@ -230,5 +224,16 @@ export default {
           ? optionLabel.call(this, new DitoContext(this, { option }))
           : labelize(`${option}`)
     }
+  },
+
+  processValue(schema, value) {
+    // Convert object to a shallow copy with only id.
+    const processRelate = value => value ? { id: value.id } : value
+    return schema.relate
+    // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
+      ? isArray(value)
+        ? value.map(processRelate)
+        : processRelate(value)
+      : value
   }
 }

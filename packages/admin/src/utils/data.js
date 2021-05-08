@@ -1,5 +1,5 @@
 import {
-  isString, isInteger,
+  isString, isInteger, isArray, isPlainObject,
   parseDataPath, getValueAtDataPath
 } from '@ditojs/utils'
 
@@ -50,4 +50,27 @@ export function getParentKey(dataPath) {
 export function getParentIndex(dataPath) {
   const index = +getParentToken(dataPath)
   return isInteger(index) ? index : null
+}
+
+let temporaryId = 0
+export function setTemporaryId(data, idName = 'id') {
+  // Temporary ids are marked with a '@' at the beginning.
+  data[idName] = `@${++temporaryId}`
+}
+
+export function hasTemporaryId(data) {
+  return /^@/.test(data?.id)
+}
+
+export function isReference(data) {
+  // Returns true if value is an object that holds nothing more than an id.
+  return data?.id != null && Object.keys(data).length === 1
+}
+
+export function shallowClone(value) {
+  return isPlainObject(value)
+    ? { ...value }
+    : isArray(value)
+      ? [...value]
+      : value
 }

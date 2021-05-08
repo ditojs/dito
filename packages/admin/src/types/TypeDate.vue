@@ -55,11 +55,11 @@ export default TypeComponent.register([
         time: 'time-picker',
         datetime: 'date-time-picker'
       }[type]
-    },
-
-    getDataProcessor() {
-      return value => isDate(value) ? value.toISOString() : value
     }
+  },
+
+  processValue(schema, value) {
+    return isDate(value) ? value.toISOString() : value
   }
 })
 </script>

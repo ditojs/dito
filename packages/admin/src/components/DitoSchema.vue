@@ -155,7 +155,9 @@ import DitoComponent from '@/DitoComponent'
 import DitoContext from '@/DitoContext'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
-import { getNamedSchemas, getPanelSchemas, setDefaults } from '@/utils/schema'
+import {
+  getNamedSchemas, getPanelSchemas, setDefaults, processData
+} from '@/utils/schema'
 import { getStoreAccessor } from '@/utils/accessor'
 import {
   isObject, isArray, isFunction, isRegExp,
@@ -205,11 +207,7 @@ export default DitoComponent.component('dito-schema', {
       ),
       componentsContainers: {},
       components: {},
-      panels: {},
-      // Register dataProcessors separate from components, so they can survive
-      // their life-cycles and be used at the end in `processData()`.
-      dataProcessors: {},
-      temporaryId: 0
+      panels: {}
     }
   },
 
@@ -379,18 +377,6 @@ export default DitoComponent.component('dito-schema', {
 
     _registerComponent(component, add) {
       this._setOrDelete(this.components, component.dataPath, component, add)
-      if (add) {
-        // Register `dataProcessors` separate from their components, so they can
-        // survive their life-cycles and be used at the end in `processData()`.
-        this.$set(
-          this.dataProcessors,
-          component.dataPath,
-          component.dataProcessor
-        )
-      } else {
-        // NOTE: We don't remove the dataProcessors when de-registering!
-        // They may still be required after the component itself is destroyed.
-      }
       // Only register with the parent if schema shares data with it.
       this.parentSchemaComponent?._registerComponent(component, add)
     },
@@ -400,27 +386,24 @@ export default DitoComponent.component('dito-schema', {
     },
 
     _reorderDataPaths(dataPath, fromIndex, toIndex) {
-      // Go through all the already registered components and dataProcessors,
-      // and if they are affected by the given reordering, deregister them under
-      // the old data-path and re-register them under the new one.
+      // Go through all the already registered components, and if they are
+      // affected by the given reordering, deregister them under the old
+      // data-path and re-register them under the new one.
       dataPath = parseDataPath(dataPath)
 
-      const reorderRegistry = (registry, fromIndex, toIndex) => {
-        const fromDataPath = normalizeDataPath([...dataPath, fromIndex, ''])
-        const toDataPath = normalizeDataPath([...dataPath, toIndex, ''])
-        for (const path of Object.keys(registry)) {
-          if (path.startsWith(fromDataPath)) {
-            const value = registry[path]
-            const newPath = toDataPath + path.slice(fromDataPath.length)
-            this.$delete(registry, path)
-            this.$set(registry, newPath, value)
-          }
-        }
-      }
+      const { components } = this
 
       const reorder = (fromIndex, toIndex) => {
-        reorderRegistry(this.components, fromIndex, toIndex)
-        reorderRegistry(this.dataProcessors, fromIndex, toIndex)
+        const fromDataPath = normalizeDataPath([...dataPath, fromIndex, ''])
+        const toDataPath = normalizeDataPath([...dataPath, toIndex, ''])
+        for (const path of Object.keys(components)) {
+          if (path.startsWith(fromDataPath)) {
+            const value = components[path]
+            const newPath = toDataPath + path.slice(fromDataPath.length)
+            this.$delete(components, path)
+            this.$set(components, newPath, value)
+          }
+        }
       }
 
       // In order to not override, move to a temporary index first that is
@@ -670,73 +653,10 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processData({ processIds = false, removeIds = false } = {}) {
-      // @ditojs/server specific handling of relates within graphs:
-      // Find entries with temporary ids, and convert them to #id / #ref pairs.
-      // Also handle items with relate and convert them to only contain ids.
-      const process = (value, name, dataPath) => {
-        // First, see if there's an associated component requiring processing.
-        // See TypeMixin.dataProcessor(), OptionsMixin.getDataProcessor():
-        const dataProcessor = this.dataProcessors[dataPath]
-        if (dataProcessor) {
-          value = dataProcessor(value, name, dataPath, this.rootData)
-        }
-        // Special handling is required for temporary ids when processing non
-        // transient data: Replace id with #id, so '#ref' can be used for
-        // relates, see OptionsMixin:
-        const isObj = isObject(value)
-        const isArr = isArray(value)
-        if (
-          isObj &&
-          processIds &&
-          this.hasTemporaryId(value)
-        ) {
-          const { id, ...rest } = value
-          // A reference is a shallow copy that hold nothing more than ids.
-          // Use #ref instead of #id for these:
-          value = this.isReference(value)
-            ? { '#ref': id }
-            : { '#id': id, ...rest }
-        }
-        if (isObj || isArr) {
-          // Use reduce() for both arrays and objects thanks to Object.entries()
-          value = Object.entries(value).reduce(
-            (processed, [key, val]) => {
-              val = process(val, key, appendDataPath(dataPath, key))
-              if (val !== undefined) {
-                processed[key] = val
-              }
-              return processed
-            },
-            isArr ? [] : {}
-          )
-        }
-        if (
-          isObj &&
-          removeIds &&
-          value.id != null &&
-          // Only remove ids if it isn't a reference.
-          !this.isReference(value)
-        ) {
-          delete value.id
-        }
-        return value
-      }
-      return process(this.data, null, this.dataPath)
-    },
-
-    hasTemporaryId(data) {
-      return /^@/.test(data?.id)
-    },
-
-    setTemporaryId(data) {
-      // Temporary ids are marked with a '@' at the beginning.
-      data.id = `@${++this.temporaryId}`
-    },
-
-    isReference(data) {
-      // Returns true if value is an object that holds nothing more than an id.
-      const keys = data && data.id != null && Object.keys(data)
-      return keys?.length === 1
+      return processData(this.schema, this.data, this.dataPath, {
+        processIds,
+        removeIds
+      })
     }
   }
 })

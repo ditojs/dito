@@ -5,7 +5,7 @@ import {
 
 export function getSchemaAccessor(
   keyOrDataPath,
-  { type, default: def, get, set } = {}
+  { type, default: def, get, set, callback = true } = {}
 ) {
   // `keyOrDataPath` can be a simple property key,
   // or a data-path into sub-properties, both in array or string format.
@@ -24,7 +24,7 @@ export function getSchemaAccessor(
         // `set()` stores changed values in the separate `overrides` object.
         ? this.overrides && name in this.overrides
           ? this.overrides[name]
-          : this.getSchemaValue(keyOrDataPath, { type, default: def })
+          : this.getSchemaValue(keyOrDataPath, { type, default: def, callback })
         : undefined
       return get ? get.call(this, value) : value
     },

@@ -32,6 +32,9 @@ import OptionsMixin from '@/mixins/OptionsMixin'
 export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
 
+  nativeField: true,
+  defaultValue: [],
+
   computed: {
     selectedOptions: {
       get() {
@@ -42,9 +45,6 @@ export default TypeComponent.register('checkboxes', {
         this.selectedValue = (option || [])
       }
     }
-  },
-
-  nativeField: true,
-  defaultValue: []
+  }
 })
 </script>

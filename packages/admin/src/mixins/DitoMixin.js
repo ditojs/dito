@@ -160,7 +160,7 @@ export default {
 
     getSchemaValue(
       keyOrDataPath,
-      { type, default: def, schema = this.schema } = {}
+      { type, default: def, schema = this.schema, callback = true } = {}
     ) {
       const types = type && asArray(type)
       // For performance reasons, data-paths in `keyOrDataPath` can only be
@@ -175,7 +175,7 @@ export default {
       const getContext = () => (context ||= new DitoContext(this))
 
       if (value === undefined && def !== undefined) {
-        if (isFunction(def) && !isMatchingType(types, def)) {
+        if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
           def = def.call(this, getContext())
         }
@@ -187,7 +187,7 @@ export default {
       }
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
-      if (isFunction(value)) {
+      if (callback && isFunction(value)) {
         value = value.call(this, getContext())
       }
       // For boolean values that are defined as strings or arrays,
