@@ -320,6 +320,9 @@ export function processData(schema, data, dataPath, options) {
   function processBefore(schema, data, name, dataPath, clone) {
     const { wrapPrimitives } = schema
     const value = clone[name]
+
+    // The schema expects the `wrapPrimitives` transformations to be present on
+    // the data that it is applied on, so warp before and unwrap after.
     if (wrapPrimitives && isArray(value)) {
       clone[name] = value.map(entry => ({
         [wrapPrimitives]: entry
@@ -330,10 +333,6 @@ export function processData(schema, data, dataPath, options) {
   function processAfter(schema, data, name, dataPath, clone) {
     const { wrapPrimitives, exclude, process } = schema
     let value = clone[name]
-
-    if (wrapPrimitives && isArray(value)) {
-      value = value.map(object => object[wrapPrimitives])
-    }
 
     const typeOptions = getTypeOptions(schema) || {}
 
@@ -351,6 +350,7 @@ export function processData(schema, data, dataPath, options) {
       return
     }
 
+    // Each component type can provide its own static `processValue()` method.
     const processComponentValue = typeOptions.processValue
     if (processComponentValue) {
       value = processComponentValue(
@@ -361,11 +361,21 @@ export function processData(schema, data, dataPath, options) {
       )
     }
 
+    // Handle the user's `process()` callback, if one is provided.
     if (process) {
       value = process(getContext())
     }
 
-    clone[name] = processValue(value, options)
+    // `processValue()` handles all the reference conversion and temporary ids
+    value = processValue(value, options)
+
+    // Lastly unwrap the wrapped primitives again, to bring the data back into
+    // its native form. Se `processBefore()` for more details.
+    if (wrapPrimitives && isArray(value)) {
+      value = value.map(object => object[wrapPrimitives])
+    }
+
+    clone[name] = value
   }
 
   return processSchemaData(
