@@ -1,47 +1,8 @@
-const { version: corejsVersion } = require('core-js/package')
+const { config, presets, plugins, env } = require('../../babel.shared')
 
 module.exports = {
-  sourceType: 'module',
-  sourceMaps: 'both',
-  presets: [
-    [
-      '@babel/preset-env',
-      {
-        useBuiltIns: 'usage',
-        corejs: {
-          version: corejsVersion,
-          proposals: true
-        }
-      }
-    ],
-    '@ditojs/babel-preset'
-  ],
-  plugins: [
-    [
-      'module-resolver',
-      {
-        cwd: 'babelrc',
-        alias: {
-          '~': '.',
-          '@': './src'
-        }
-      }
-    ],
-    'dynamic-import-node'
-  ],
-  env: {
-    test: {
-      presets: [
-        [
-          '@babel/preset-env',
-          {
-            targets: {
-              node: 'current'
-            }
-          }
-        ]
-      ]
-    }
-  },
-  comments: false
+  ...config,
+  presets: presets(),
+  plugins: plugins({ resolver: true, dynamicImport: true }),
+  env: env({ test: true })
 }
