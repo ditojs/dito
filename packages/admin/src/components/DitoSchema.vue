@@ -651,42 +651,42 @@ export default DitoComponent.component('dito-schema', {
       this._registerEntry(this.panelsRegistry, panel, add)
     },
 
-    _registerEntry(registry, component, add) {
-      const uid = component.$uid
+    _registerEntry(registry, entry, add) {
+      const uid = entry.$uid
       if (add) {
-        this.$set(registry, uid, component)
+        this.$set(registry, uid, entry)
       } else {
         this.$delete(registry, uid)
       }
     },
 
     _listEntriesByDataPath(registry) {
-      return Object.values(registry).reduce((components, component) => {
-        // Multiple components can be linked to the same data-path, e.g. when
-        // there are tabs. Link each data-path to an array of components.
-        const { dataPath } = component
-        components[dataPath] ||= []
-        components[dataPath].push(component)
-        return components
+      return Object.values(registry).reduce((entriesByDataPath, entry) => {
+        // Multiple entries can be linked to the same data-path, e.g. when
+        // there are tabs. Link each data-path to an array of entries.
+        const { dataPath } = entry
+        const entries = entriesByDataPath[dataPath] ||= []
+        entries.push(entry)
+        return entriesByDataPath
       }, {})
     },
 
-    _getEntries(componentsByDataPath, dataPath, match) {
+    _getEntries(entriesByDataPath, dataPath, match) {
       return normalizeDataPath(dataPath).startsWith(this.dataPath)
-        ? this._getEntriesByDataPath(componentsByDataPath, dataPath, match)
-        : this._getEntriesByName(componentsByDataPath, dataPath, match)
+        ? this._getEntriesByDataPath(entriesByDataPath, dataPath, match)
+        : this._getEntriesByName(entriesByDataPath, dataPath, match)
     },
 
-    _getEntriesByDataPath(componentsByDataPath, dataPath, match) {
+    _getEntriesByDataPath(entriesByDataPath, dataPath, match) {
       return this._filterEntries(
-        componentsByDataPath[normalizeDataPath(dataPath)] || [],
+        entriesByDataPath[normalizeDataPath(dataPath)] || [],
         match
       )
     },
 
-    _getEntriesByName(componentsByDataPath, name, match) {
+    _getEntriesByName(entriesByDataPath, name, match) {
       return this._filterEntries(
-        componentsByDataPath[appendDataPath(this.dataPath, name)] || [],
+        entriesByDataPath[appendDataPath(this.dataPath, name)] || [],
         match
       )
     },
