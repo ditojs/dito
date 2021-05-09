@@ -7,7 +7,7 @@ module.exports = {
     comments: false
   },
 
-  presets({ loose = false } = {}) {
+  presets({ loose = true } = {}) {
     return [
       ['@babel/preset-env', {
         useBuiltIns: 'usage',
