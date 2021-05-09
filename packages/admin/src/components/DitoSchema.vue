@@ -420,12 +420,9 @@ export default DitoComponent.component('dito-schema', {
       }, {})
     },
 
-    _getComponentByDataPath(
-      componentsByDataPath,
-      dataPath,
-      isAbsolute = dataPath.startsWith(this.dataPath)
-    ) {
+    _getComponentByDataPath(componentsByDataPath, dataPath, isAbsolute) {
       dataPath = normalizeDataPath(dataPath)
+      isAbsolute ??= dataPath.startsWith(this.dataPath)
       if (!isAbsolute) {
         dataPath = appendDataPath(this.dataPath, dataPath)
       }
