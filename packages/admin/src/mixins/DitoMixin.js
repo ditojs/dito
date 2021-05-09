@@ -464,7 +464,7 @@ export default {
           this.$nextTick(() => {
             for (const [key, callback] of Object.entries(handlers)) {
               // Expand property names to 'data.property':
-              const expr = this.schemaComponent.getComponent(key, false)
+              const expr = this.schemaComponent.getComponentByName(key)
                 ? `data.${key}`
                 : key
               this.$watch(expr, callback)

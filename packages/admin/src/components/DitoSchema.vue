@@ -347,16 +347,16 @@ export default DitoComponent.component('dito-schema', {
       }
     }),
 
-    containers() {
-      return this._getComponentsByDataPath(this.containersRegistry)
+    containersByDataPath() {
+      return this._listEntriesByDataPath(this.containersRegistry)
     },
 
-    components() {
-      return this._getComponentsByDataPath(this.componentsRegistry)
+    componentsByDataPath() {
+      return this._listEntriesByDataPath(this.componentsRegistry)
     },
 
-    panels() {
-      return this._getComponentsByDataPath(this.panelsRegistry)
+    panelsByDataPath() {
+      return this._listEntriesByDataPath(this.panelsRegistry)
     }
   },
 
@@ -401,32 +401,81 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    getContainer(dataPath) {
-      return this._getComponentByDataPath(this.containers, dataPath)
+    getComponentsByDataPath(dataPath, match) {
+      return this._getEntriesByDataPath(
+        this.componentsByDataPath, dataPath, match
+      )
     },
 
-    getComponent(dataPath, isAbsolute) {
-      return this._getComponentByDataPath(this.components, dataPath, isAbsolute)
+    getComponentByDataPath(dataPath, match) {
+      return this.getComponentsByDataPath(dataPath, match)[0] || null
     },
 
-    getPanel(dataPath, isAbsolute) {
-      return this._getComponentByDataPath(this.panels, dataPath, isAbsolute)
+    getComponentsByName(dataPath, match) {
+      return this._getEntriesByName(this.componentsByDataPath, dataPath, match)
     },
 
-    _getComponentsByDataPath(registry) {
+    getComponentByName(name, match) {
+      return this.getComponentsByName(name, match)[0] || null
+    },
+
+    getComponents(dataPathOrName, match) {
+      return this._getEntries(this.componentsByDataPath, dataPathOrName, match)
+    },
+
+    getComponent(dataPathOrName, match) {
+      return this.getComponents(dataPathOrName, match)[0] || null
+    },
+
+    getPanelsByDataPath(dataPath, match) {
+      return this._getEntriesByDataPath(this.panelsByDataPath, dataPath, match)
+    },
+
+    getPanelByDataPath(dataPath, match) {
+      return this.getPanelsByDataPath(dataPath, match)[0] || null
+    },
+
+    getPanels(dataPathOrName, match) {
+      return this._getEntries(this.panelsByDataPath, dataPathOrName, match)
+    },
+
+    getPanel(dataPathOrName, match) {
+      return this.getPanels(dataPathOrName, match)[0] || null
+    },
+
+    _listEntriesByDataPath(registry) {
       return Object.values(registry).reduce((components, component) => {
-        components[component.dataPath] = component
+        // Multiple components can be linked to the same data-path, e.g. when
+        // there are tabs. Link each data-path to an array of components.
+        const { dataPath } = component
+        components[dataPath] ||= []
+        components[dataPath].push(component)
         return components
       }, {})
     },
 
-    _getComponentByDataPath(componentsByDataPath, dataPath, isAbsolute) {
-      dataPath = normalizeDataPath(dataPath)
-      isAbsolute ??= dataPath.startsWith(this.dataPath)
-      if (!isAbsolute) {
-        dataPath = appendDataPath(this.dataPath, dataPath)
-      }
-      return componentsByDataPath[dataPath] || null
+    _getEntries(componentsByDataPath, dataPath, match) {
+      return normalizeDataPath(dataPath).startsWith(this.dataPath)
+        ? this._getEntriesByDataPath(componentsByDataPath, dataPath, match)
+        : this._getEntriesByName(componentsByDataPath, dataPath, match)
+    },
+
+    _getEntriesByDataPath(componentsByDataPath, dataPath, match) {
+      return this._filterEntries(
+        componentsByDataPath[normalizeDataPath(dataPath)] || [],
+        match
+      )
+    },
+
+    _getEntriesByName(componentsByDataPath, name, match) {
+      return this._filterEntries(
+        componentsByDataPath[appendDataPath(this.dataPath, name)] || [],
+        match
+      )
+    },
+
+    _filterEntries(entries, match) {
+      return match ? entries.filter(match) : entries
     },
 
     someComponent(callback) {
@@ -477,7 +526,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     validateAll(match, notify = true) {
-      const { components } = this
+      const { componentsByDataPath } = this
       let dataPaths
       if (match) {
         const check = isFunction(match)
@@ -486,7 +535,7 @@ export default DitoComponent.component('dito-schema', {
             ? field => match.test(field)
             : null
         dataPaths = check
-          ? Object.keys(components).filter(check)
+          ? Object.keys(componentsByDataPath).filter(check)
           : isArray(match)
             ? match
             : [match]
@@ -496,9 +545,10 @@ export default DitoComponent.component('dito-schema', {
       }
       let isValid = true
       let first = true
-      for (const dataPath of (dataPaths || Object.keys(components))) {
-        const component = this.getComponent(dataPath, true)
-        if (component) {
+      dataPaths ||= Object.keys(componentsByDataPath)
+      for (const dataPath of dataPaths) {
+        const components = this.getComponentsByDataPath(dataPath)
+        for (const component of components) {
           if (!component.validate(notify)) {
             // Focus first error field
             if (notify && first) {
@@ -533,39 +583,48 @@ export default DitoComponent.component('dito-schema', {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
-        const component = this.getComponent(dataPathParts, true)
-        if (!component?.showValidationErrors(errs, first && focus)) {
+        let found = false
+        const components = this.getComponentsByDataPath(dataPathParts)
+        for (const component of components) {
+          if (component.showValidationErrors(errs, first && focus)) {
+            found = true
+            break
+          }
+        }
+        if (!found) {
           // Couldn't find a component in an active form for the given dataPath.
           // See if we can find a component serving a part of the dataPath,
           // and take it from there:
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
-            const component = this.getComponent(dataPathParts, true)
-            if (component?.navigateToComponent?.(
-              fullDataPath,
-              subComponent => {
-                // Filter the errors to only contain those that belong to the
-                // matched dataPath:
-                const parentPath = normalizeDataPath(dataPathParts)
-                const filteredErrors = Object.entries(errors).reduce(
-                  (filtered, [dataPath, errs]) => {
-                    if (normalizeDataPath(dataPath).startsWith(parentPath)) {
-                      filtered[dataPath] = errs
-                    }
-                    return filtered
-                  },
-                  {}
-                )
-                subComponent.showValidationErrors(filteredErrors, true)
+            const components = this.getComponentsByDataPath(dataPathParts)
+            for (const component of components) {
+              if (component.navigateToComponent?.(
+                fullDataPath,
+                subComponent => {
+                  // Filter the errors to only contain those that belong to the
+                  // matched dataPath:
+                  const parentPath = normalizeDataPath(dataPathParts)
+                  const filteredErrors = Object.entries(errors).reduce(
+                    (filtered, [dataPath, errs]) => {
+                      if (normalizeDataPath(dataPath).startsWith(parentPath)) {
+                        filtered[dataPath] = errs
+                      }
+                      return filtered
+                    },
+                    {}
+                  )
+                  subComponent.showValidationErrors(filteredErrors, true)
+                }
+              )) {
+                // Found a nested form to display at least parts fo the errors.
+                // We can't show all errors at once, so we're done. Don't call
+                // `notifyErrors()` yet, as we can only display it once
+                // `showValidationErrors()` was called from `DitoForm.mounted()`
+                return
               }
-            )) {
-              // We found some nested form to display at least parts fo the
-              // errors. We can't display all errors at once, so we're done.
-              // Don't call notifyErrors() yet, as we can only display it
-              // once showValidationErrors() was called from DitoForm.mounted()
-              return
             }
-            // Keep removing the last part until we find a match.
+            // Still here, so keep removing the last part until we find a match.
             dataPathParts.pop()
           }
           // When the error can't be matched, add it to a list of unmatched
@@ -602,10 +661,12 @@ export default DitoComponent.component('dito-schema', {
     },
 
     setData(data) {
-      for (const key in data) {
-        if (key in this.data) {
-          this.$set(this.data, key, data[key])
-          this.getComponent(key, false)?.markDirty()
+      for (const name in data) {
+        if (name in this.data) {
+          this.$set(this.data, name, data[name])
+          for (const component of this.getComponentsByName(name)) {
+            component.markDirty()
+          }
         }
       }
     },
@@ -615,13 +676,14 @@ export default DitoComponent.component('dito-schema', {
       // themselves, as those are already taking care of through their own API
       // resource end-points and shouldn't be set.
       const copy = {}
-      for (const [key, value] of Object.entries(data)) {
+      for (const [name, value] of Object.entries(data)) {
         if (isArray(value) || isObject(value)) {
-          if (this.getComponent(key, false)?.providesData) {
+          const components = this.getComponentsByName(name)
+          if (components.some(component => component.providesData)) {
             continue
           }
         }
-        copy[key] = value
+        copy[name] = value
       }
       return copy
     },

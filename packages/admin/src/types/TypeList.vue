@@ -194,23 +194,26 @@ export default TypeComponent.register('list', {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
       // away. Use a proxy and a getter instead, to get around this:
-      const getComponent = () => schemaComponent.getComponent(dataPath, true)
+      const getListComponent = () => schemaComponent.getComponentByDataPath(
+        dataPath,
+        component => component.type === 'list'
+      )
 
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
         { // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
-            return getComponent()?.query
+            return getListComponent()?.query
           },
           set query(query) {
-            const comp = getComponent()
-            if (comp) {
+            const component = getListComponent()
+            if (component) {
               // Filter out undefined values for comparing with equals()
               const filter = obj => pickBy(obj, value => value !== undefined)
-              if (!equals(filter(query), filter(comp.query))) {
-                comp.query = query
-                comp.loadData(false)
+              if (!equals(filter(query), filter(component.query))) {
+                component.query = query
+                component.loadData(false)
               }
             }
           }
@@ -281,9 +284,9 @@ export default TypeComponent.register('list', {
 
     onFilterErrors(errors) {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      const filtersPanel = this.schemaComponent.getPanel(filtersDataPath)
-      if (filtersPanel) {
-        filtersPanel.showValidationErrors(errors, true)
+      const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
+      if (panel) {
+        panel.showValidationErrors(errors, true)
         return true
       }
     }
