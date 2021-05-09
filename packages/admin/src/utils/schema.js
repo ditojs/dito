@@ -315,7 +315,10 @@ export function processValue(value, options = {}) {
 }
 
 export function processData(schema, data, dataPath, options) {
-  const rootData = data
+  // Read and pass on `rootData` in the options, so tha the `processData()`
+  // closure further down can preserve and pass it on again from nested calls.
+  const rootData = options?.rootData ?? data
+  options = { rootData, ...options }
 
   function processBefore(schema, data, name, dataPath, clone) {
     const { wrapPrimitives } = schema
@@ -334,14 +337,14 @@ export function processData(schema, data, dataPath, options) {
     const { wrapPrimitives, exclude, process } = schema
     let value = clone[name]
 
-    const typeOptions = getTypeOptions(schema) || {}
+    const typeOptions = getTypeOptions(schema)
 
     const getContext = () => new DitoContext(null, {
       value, name, dataPath, rootData
     })
 
     if (
-      typeOptions.excludeValue ||
+      typeOptions?.excludeValue ||
       // Support functions next to booleans for `schema.exclude`:
       exclude === true ||
       isFunction(exclude) && exclude(getContext())
@@ -351,7 +354,7 @@ export function processData(schema, data, dataPath, options) {
     }
 
     // Each component type can provide its own static `processValue()` method.
-    const processComponentValue = typeOptions.processValue
+    const processComponentValue = typeOptions?.processValue
     if (processComponentValue) {
       value = processComponentValue(
         schema, value, dataPath,
@@ -366,7 +369,7 @@ export function processData(schema, data, dataPath, options) {
       value = process(getContext())
     }
 
-    // `processValue()` handles all the reference conversion and temporary ids
+    // `processValue()` handles all the reference conversion and temporary ids.
     value = processValue(value, options)
 
     // Lastly unwrap the wrapped primitives again, to bring the data back into
