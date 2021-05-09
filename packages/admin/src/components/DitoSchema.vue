@@ -471,10 +471,6 @@ export default DitoComponent.component('dito-schema', {
       }
     },
 
-    getErrors(dataPath) {
-      return this.getComponent(dataPath, true)?.getErrors() || null
-    },
-
     focus() {
       this.parentSchemaComponent?.focus()
       this.opened = true

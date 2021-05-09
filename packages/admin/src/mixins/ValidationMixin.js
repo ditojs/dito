@@ -15,23 +15,20 @@ export default {
 
   computed: {
     events() {
-      const focus = () => {
-        this.isTouched = true
+      return {
+        focus: () => {
+          this.isTouched = true
+        },
+        blur: () => {
+          this.validate()
+        },
+        change: () => {
+          this.markDirty()
+        },
+        input: () => {
+          this.markDirty()
+        }
       }
-
-      const blur = () => {
-        this.validate()
-      }
-
-      const change = () => {
-        this.markDirty()
-      }
-
-      const input = () => {
-        this.markDirty()
-      }
-
-      return { focus, blur, change, input }
     }
   },
 
@@ -41,13 +38,13 @@ export default {
       this.isDirty = false
       this.isValidated = false
       this.isValid = false
-      this.errors = null
+      this.clearErrors()
     },
 
     validate(notify = true) {
       let isValid = true
       if (notify) {
-        this.errors = null
+        this.clearErrors()
       }
       const { value } = this
       // console.log('validate', this.dataPath, value, this.validations)
@@ -82,16 +79,17 @@ export default {
       this.isValidated = false
       this.isValid = false
       // Clear currently displayed errors on new input.
-      this.errors = null
+      this.clearErrors()
     },
 
     addError(error, addLabel = false) {
-      this.errors = this.errors || []
+      this.errors ||= []
       if (addLabel) {
         const label = this.label || this.placeholder || this.name
         error = `The ${label} field ${error}.`
       }
       this.errors.push(error)
+      this.$emit('errors', this.errors)
     },
 
     showValidationErrors(errors, focus) {
@@ -112,6 +110,7 @@ export default {
 
     clearErrors() {
       this.errors = null
+      this.$emit('errors', this.errors)
     }
   }
 }
