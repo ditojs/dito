@@ -372,35 +372,6 @@ export default DitoComponent.component('dito-schema', {
   },
 
   methods: {
-    _register(add) {
-      // `$schemaParentComponent()` is only set if one of the ancestors uses
-      // the `SchemaParentMixin`:
-      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
-    },
-
-    _registerContainer(container, add) {
-      this._registerEntry(this.containersRegistry, container, add)
-    },
-
-    _registerComponent(component, add) {
-      this._registerEntry(this.componentsRegistry, component, add)
-      // Only register with the parent if schema shares data with it.
-      this.parentSchemaComponent?._registerComponent(component, add)
-    },
-
-    _registerPanel(panel, add) {
-      this._registerEntry(this.panelsRegistry, panel, add)
-    },
-
-    _registerEntry(registry, component, add) {
-      const uid = component.$uid
-      if (add) {
-        this.$set(registry, uid, component)
-      } else {
-        this.$delete(registry, uid)
-      }
-    },
-
     getComponentsByDataPath(dataPath, match) {
       return this._getEntriesByDataPath(
         this.componentsByDataPath, dataPath, match
@@ -441,41 +412,6 @@ export default DitoComponent.component('dito-schema', {
 
     getPanel(dataPathOrName, match) {
       return this.getPanels(dataPathOrName, match)[0] || null
-    },
-
-    _listEntriesByDataPath(registry) {
-      return Object.values(registry).reduce((components, component) => {
-        // Multiple components can be linked to the same data-path, e.g. when
-        // there are tabs. Link each data-path to an array of components.
-        const { dataPath } = component
-        components[dataPath] ||= []
-        components[dataPath].push(component)
-        return components
-      }, {})
-    },
-
-    _getEntries(componentsByDataPath, dataPath, match) {
-      return normalizeDataPath(dataPath).startsWith(this.dataPath)
-        ? this._getEntriesByDataPath(componentsByDataPath, dataPath, match)
-        : this._getEntriesByName(componentsByDataPath, dataPath, match)
-    },
-
-    _getEntriesByDataPath(componentsByDataPath, dataPath, match) {
-      return this._filterEntries(
-        componentsByDataPath[normalizeDataPath(dataPath)] || [],
-        match
-      )
-    },
-
-    _getEntriesByName(componentsByDataPath, name, match) {
-      return this._filterEntries(
-        componentsByDataPath[appendDataPath(this.dataPath, name)] || [],
-        match
-      )
-    },
-
-    _filterEntries(entries, match) {
-      return match ? entries.filter(match) : entries
     },
 
     someComponent(callback) {
@@ -693,6 +629,70 @@ export default DitoComponent.component('dito-schema', {
         processIds,
         removeIds
       })
+    },
+
+    _register(add) {
+      // `$schemaParentComponent()` is only set if one of the ancestors uses
+      // the `SchemaParentMixin`:
+      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
+    },
+
+    _registerContainer(container, add) {
+      this._registerEntry(this.containersRegistry, container, add)
+    },
+
+    _registerComponent(component, add) {
+      this._registerEntry(this.componentsRegistry, component, add)
+      // Only register with the parent if schema shares data with it.
+      this.parentSchemaComponent?._registerComponent(component, add)
+    },
+
+    _registerPanel(panel, add) {
+      this._registerEntry(this.panelsRegistry, panel, add)
+    },
+
+    _registerEntry(registry, component, add) {
+      const uid = component.$uid
+      if (add) {
+        this.$set(registry, uid, component)
+      } else {
+        this.$delete(registry, uid)
+      }
+    },
+
+    _listEntriesByDataPath(registry) {
+      return Object.values(registry).reduce((components, component) => {
+        // Multiple components can be linked to the same data-path, e.g. when
+        // there are tabs. Link each data-path to an array of components.
+        const { dataPath } = component
+        components[dataPath] ||= []
+        components[dataPath].push(component)
+        return components
+      }, {})
+    },
+
+    _getEntries(componentsByDataPath, dataPath, match) {
+      return normalizeDataPath(dataPath).startsWith(this.dataPath)
+        ? this._getEntriesByDataPath(componentsByDataPath, dataPath, match)
+        : this._getEntriesByName(componentsByDataPath, dataPath, match)
+    },
+
+    _getEntriesByDataPath(componentsByDataPath, dataPath, match) {
+      return this._filterEntries(
+        componentsByDataPath[normalizeDataPath(dataPath)] || [],
+        match
+      )
+    },
+
+    _getEntriesByName(componentsByDataPath, name, match) {
+      return this._filterEntries(
+        componentsByDataPath[appendDataPath(this.dataPath, name)] || [],
+        match
+      )
+    },
+
+    _filterEntries(entries, match) {
+      return match ? entries.filter(match) : entries
     }
   }
 })
