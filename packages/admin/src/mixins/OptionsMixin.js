@@ -1,7 +1,7 @@
 import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { setTemporaryId, isReference } from '@/utils/data'
+import { setTemporaryId, isReference, processReference } from '@/utils/data'
 import {
   isObject, isArray, isString, isFunction, labelize, debounceAsync
 } from '@ditojs/utils'
@@ -226,9 +226,11 @@ export default {
     }
   },
 
-  processValue(schema, value) {
+  processValue(schema, value, dataPath, options) {
     // Convert object to a shallow copy with only id.
-    const processRelate = value => value ? { id: value.id } : value
+    const processRelate = value => value
+      ? processReference({ id: value.id }, options)
+      : value
     return schema.relate
     // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
       ? isArray(value)

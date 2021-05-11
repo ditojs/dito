@@ -1,6 +1,4 @@
-import {
-  appendDataPath, hasTemporaryId, isReference, shallowClone
-} from './data'
+import { appendDataPath, shallowClone } from './data'
 import { getUid } from './uid'
 import DitoContext from '@/DitoContext'
 import {
@@ -287,34 +285,7 @@ export function setDefaults(schema, data = {}) {
   return processSchemaData(schema, data, null, processBefore)
 }
 
-export function processValue(value, options = {}) {
-  const {
-    processIds = false,
-    removeIds = false
-  } = options
-  // @ditojs/server specific handling of relates within graphs:
-  // Find entries with temporary ids, and convert them to #id / #ref pairs.
-  // Also handle items with relate and convert them to only contain ids.
-  if (isObject(value)) {
-    if (processIds && hasTemporaryId(value)) {
-      const { id, ...rest } = value
-      // A reference is a shallow copy that hold nothing more than ids.
-      // Use #ref instead of #id for these:
-      return isReference(value)
-        ? { '#ref': id }
-        : { '#id': id, ...rest }
-    } else if (removeIds && value.id != null && !isReference(value)) {
-      // Only remove ids if it isn't a reference.
-      const { id, ...rest } = value
-      return rest
-    }
-  } else if (isArray(value)) {
-    value = value.map(entry => processValue(entry, options))
-  }
-  return value
-}
-
-export function processData(schema, data, dataPath, options) {
+export function processData(schema, data, dataPath, options = {}) {
   // Include `rootData` in options, so tha it can be passed to components'
   // `processValue()` which pass it to `processData()` again from nested calls.
   const rootData = options?.rootData ?? data
@@ -353,19 +324,16 @@ export function processData(schema, data, dataPath, options) {
       return
     }
 
-    // Each component type can provide its own static `processValue()` method.
-    const processComponentValue = typeOptions?.processValue
-    if (processComponentValue) {
-      value = processComponentValue(schema, value, dataPath, options)
-    }
-
     // Handle the user's `process()` callback, if one is provided.
     if (process) {
       value = process(getContext())
     }
 
-    // `processValue()` handles all the reference conversion and temporary ids.
-    value = processValue(value, options)
+    // Each component type can provide its own static `processValue()` method.
+    const processValue = typeOptions?.processValue
+    if (processValue) {
+      value = processValue.call(typeOptions, schema, value, dataPath, options)
+    }
 
     // Lastly unwrap the wrapped primitives again, to bring the data back into
     // its native form. Se `processBefore()` for more details.

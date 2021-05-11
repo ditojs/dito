@@ -157,7 +157,8 @@ export default TypeComponent.register([
         options
       ))
     }
-    return value
+    // There's no automatic inheritance of added methods, so call this manually:
+    return SourceMixin.processValue(schema, value, dataPath, options)
   }
 })
 </script>
