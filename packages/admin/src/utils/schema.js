@@ -315,8 +315,8 @@ export function processValue(value, options = {}) {
 }
 
 export function processData(schema, data, dataPath, options) {
-  // Read and pass on `rootData` in the options, so tha the `processData()`
-  // closure further down can preserve and pass it on again from nested calls.
+  // Include `rootData` in options, so tha it can be passed to components'
+  // `processValue()` which pass it to `processData()` again from nested calls.
   const rootData = options?.rootData ?? data
   options = { rootData, ...options }
 
@@ -356,12 +356,7 @@ export function processData(schema, data, dataPath, options) {
     // Each component type can provide its own static `processValue()` method.
     const processComponentValue = typeOptions?.processValue
     if (processComponentValue) {
-      value = processComponentValue(
-        schema, value, dataPath,
-        // Pass on a `processData()` closure that includes the current options.
-        (schema, data, dataPath) =>
-          processData(schema, data, dataPath, options)
-      )
+      value = processComponentValue(schema, value, dataPath, options)
     }
 
     // Handle the user's `process()` callback, if one is provided.

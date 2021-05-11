@@ -42,7 +42,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { hasForms } from '@/utils/schema'
+import { hasForms, processData } from '@/utils/schema'
 import { appendDataPath } from '@/utils/data'
 
 export default TypeComponent.register([
@@ -140,7 +140,7 @@ export default TypeComponent.register([
     )
   },
 
-  processValue(schema, value, dataPath, processData) {
+  processValue(schema, value, dataPath, options) {
     const { children } = schema
     if (children) {
       // Convert nested children schema to stand-alone schema that can be
@@ -153,7 +153,8 @@ export default TypeComponent.register([
       value = value.map((item, index) => processData(
         childrenSchema,
         item,
-        appendDataPath(dataPath, index)
+        appendDataPath(dataPath, index),
+        options
       ))
     }
     return value
