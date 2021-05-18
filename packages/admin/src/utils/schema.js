@@ -286,7 +286,6 @@ export function setDefaults(schema, data = {}) {
 }
 
 export function processData(schema, data, dataPath, options = {}) {
-  const clone = shallowClone(data)
   // Include `rootData` in options, so tha it can be passed to components'
   // `processValue()` which pass it to `processData()` again from nested calls.
   // But pass the already cloned data to `process()`, so it can be modified.
@@ -355,7 +354,7 @@ export function processData(schema, data, dataPath, options = {}) {
   }
 
   return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, clone
+    schema, data, dataPath, processBefore, processAfter, shallowClone(data)
   )
 }
 
