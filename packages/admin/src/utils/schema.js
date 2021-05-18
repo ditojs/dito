@@ -314,6 +314,11 @@ export function processData(schema, data, dataPath, options = {}) {
       value, name, dataPath, rootData
     })
 
+    // Handle the user's `process()` callback first, if one is provided.
+    if (process) {
+      value = process(getContext())
+    }
+
     if (
       typeOptions?.excludeValue ||
       // Support functions next to booleans for `schema.exclude`:
@@ -322,11 +327,6 @@ export function processData(schema, data, dataPath, options = {}) {
     ) {
       delete clone[name]
       return
-    }
-
-    // Handle the user's `process()` callback, if one is provided.
-    if (process) {
-      value = process(getContext())
     }
 
     // Each component type can provide its own static `processValue()` method.
