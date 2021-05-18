@@ -502,11 +502,13 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
-    const { components } = schema
+    const { components, compact } = schema
     if (components) {
-      // Expand inlined components to a nested form with inlined = true
+      // Expand inlined components to a nested inline form with inlined = true,
+      // supporting the optional `compact: true` option along with it.
       delete schema.components
-      schema.form = { components }
+      delete schema.compact
+      schema.form = { components, compact }
       schema.inlined = true
     }
     processRouteSchema(api, schema, name)
