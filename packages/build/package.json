@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "0.233.0",
+  "version": "0.234.0",
   "private": true,
   "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/webpack",
@@ -27,7 +27,7 @@
     "node 14"
   ],
   "dependencies": {
-    "@ditojs/utils": "^0.233.0",
+    "@ditojs/utils": "^0.234.0",
     "core-js": "^3.12.0",
     "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.2.3"
@@ -36,7 +36,7 @@
     "@babel/cli": "^7.13.16",
     "@babel/core": "^7.14.0",
     "@babel/preset-env": "^7.14.1",
-    "@ditojs/babel-preset": "^0.233.0",
+    "@ditojs/babel-preset": "^0.234.0",
     "babel-plugin-module-resolver": "^4.1.0",
     "minimist": "^1.2.5",
     "rimraf": "^3.0.2"
