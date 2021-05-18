@@ -77,6 +77,10 @@ export default class DitoContext {
     return get(this, 'rootData') || null
   }
 
+  get processedItem() {
+    return get(this, 'processedData') || null
+  }
+
   get user() {
     return get(this, 'user') || null
   }

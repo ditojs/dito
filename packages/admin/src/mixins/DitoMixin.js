@@ -505,7 +505,7 @@ export default {
       if (hasListeners || parentHasListeners) {
         // The effects of some events need some time to propagate through Vue.
         // Use $nextTick() to make sure our handlers see these changes.
-        // For example, `processedData` is only correct after components that
+        // For example, `processedItem` is only correct after components that
         // are newly rendered due to data changes have registered themselves.
         if (['load', 'change'].includes(event)) {
           await this.$nextTick()

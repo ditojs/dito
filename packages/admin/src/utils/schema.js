@@ -286,8 +286,10 @@ export function setDefaults(schema, data = {}) {
 }
 
 export function processData(schema, data, dataPath, options = {}) {
+  const clone = shallowClone(data)
   // Include `rootData` in options, so tha it can be passed to components'
   // `processValue()` which pass it to `processData()` again from nested calls.
+  // But pass the already cloned data to `process()`, so it can be modified.
   const rootData = options?.rootData ?? data
   options = { rootData, ...options }
 
@@ -311,10 +313,18 @@ export function processData(schema, data, dataPath, options = {}) {
     const typeOptions = getTypeOptions(schema)
 
     const getContext = () => new DitoContext(null, {
-      value, name, dataPath, rootData
+      value,
+      name,
+      data,
+      dataPath,
+      rootData,
+      // Pass the already cloned data to `process()` as `processedData`,
+      // so it can be modified through `processedItem` from there.
+      processedData: clone
     })
 
-    // Handle the user's `process()` callback first, if one is provided.
+    // Handle the user's `process()` callback first, if one is provided, so that
+    // it can modify data in `processedData` even if it provides `exclude: true`
     if (process) {
       value = process(getContext())
     }
@@ -345,7 +355,7 @@ export function processData(schema, data, dataPath, options = {}) {
   }
 
   return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, shallowClone(data)
+    schema, data, dataPath, processBefore, processAfter, clone
   )
 }
 
