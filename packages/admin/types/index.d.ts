@@ -453,6 +453,7 @@ export type InputSchema<$State extends State> = BaseSchema<$State> & {
     | 'email'
     | 'url'
     | 'hostname'
+    | 'domain'
     | 'tel'
     | 'password'
     | 'creditcard'
@@ -462,6 +463,7 @@ export type InputSchema<$State extends State> = BaseSchema<$State> & {
     email?: boolean
     url?: boolean
     hostname?: boolean
+    domain?: boolean
     // TODO: check why there is no 'tel' validation
     // tel: boolean,
     password?: boolean
