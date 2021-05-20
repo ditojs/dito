@@ -58,5 +58,8 @@
     "lint-staged": "^10.5.4",
     "node-gyp": "^8.0.0",
     "vue-eslint-parser": "^7.6.0"
+  },
+  "volta": {
+    "node": "14.17.0"
   }
 }
