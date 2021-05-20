@@ -1860,6 +1860,15 @@ __metadata:
     "@ditojs/utils": ^0.234.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
+    "@types/koa-bodyparser": ^4.3.0
+    "@types/koa-compress": ^4.0.1
+    "@types/koa-logger": ^3.1.1
+    "@types/koa-pino-logger": ^3.0.0
+    "@types/koa-response-time": ^2.1.0
+    "@types/koa-session": ^5.10.3
+    "@types/koa-static": ^4.0.1
+    "@types/koa__cors": ^3.0.2
+    "@types/node": ^14.17.0
     "@vue/cli-service": ^4.5.12
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
@@ -3431,6 +3440,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/accepts@npm:*":
+  version: 1.3.5
+  resolution: "@types/accepts@npm:1.3.5"
+  dependencies:
+    "@types/node": "*"
+  checksum: 78a31c01d948c405a1a6a89061f0acd5a89df40de445c36382538985a3d00a236ba1cc5099bd812118525c2f29bb61d4869cd775ba63dd3e160113b5fa203915
+  languageName: node
+  linkType: hard
+
 "@types/anymatch@npm:*":
   version: 1.3.1
   resolution: "@types/anymatch@npm:1.3.1"
@@ -3508,6 +3526,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/content-disposition@npm:*":
+  version: 0.5.3
+  resolution: "@types/content-disposition@npm:0.5.3"
+  checksum: 1b7d94b19ae8564816233b74df5f662052d393d0fdb317c81d894f5e1e762010c46b1812ce01a1492a72603e182afd18a59673e25ae737efc3e470ba261697d7
+  languageName: node
+  linkType: hard
+
+"@types/cookies@npm:*":
+  version: 0.7.6
+  resolution: "@types/cookies@npm:0.7.6"
+  dependencies:
+    "@types/connect": "*"
+    "@types/express": "*"
+    "@types/keygrip": "*"
+    "@types/node": "*"
+  checksum: c15012d2cd76aebb032998b0fcfb26dec1da65ecb2241daf1269f54b198293e4f71bf412cc1868213b0d9c98c0f532d9e8bc1e145cf0a0aa171dab708c41e959
+  languageName: node
+  linkType: hard
+
 "@types/express-serve-static-core@npm:*, @types/express-serve-static-core@npm:^4.17.18":
   version: 4.17.19
   resolution: "@types/express-serve-static-core@npm:4.17.19"
@@ -3547,6 +3584,20 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: ab79ec306d51775542b94bd768162e85fe2a0d47bd2f6033e2aad65bfcae399614ee7662a1370091fc508a8b639e3de0abf6b7232c9fb52047f207ba114ff390
+  languageName: node
+  linkType: hard
+
+"@types/http-assert@npm:*":
+  version: 1.5.1
+  resolution: "@types/http-assert@npm:1.5.1"
+  checksum: 0c9cbc568be88c60870d96953880c9b2c1d7c290df928a4004693debb715b8ad1b3e8a2f4b13b84e22b41379d20d9255e960532cf613a28126e8a433ddabac01
+  languageName: node
+  linkType: hard
+
+"@types/http-errors@npm:*":
+  version: 1.8.0
+  resolution: "@types/http-errors@npm:1.8.0"
+  checksum: f6a0cf40d026b339f3358771d1a98bce7e637429882255246ccf4056cf0f2df7aaf2997ba3072e13df8688f0cd2f9f99ac4d84bed4665710793de35642b4cdad
   languageName: node
   linkType: hard
 
@@ -3598,6 +3649,124 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/keygrip@npm:*":
+  version: 1.0.2
+  resolution: "@types/keygrip@npm:1.0.2"
+  checksum: 8d86a3d702146ae7012571f1783bdc1228cc42ec89472b7ed14c2a46b12b1fa7423e9ecfbe1167bdbc4f26bdc95ee4b3b757a9df29202f98333cddc379b46f6d
+  languageName: node
+  linkType: hard
+
+"@types/koa-bodyparser@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@types/koa-bodyparser@npm:4.3.0"
+  dependencies:
+    "@types/koa": "*"
+  checksum: 13cac936069a3008c42802bdfed5e2b144ab2c3b56124a8ab04c6e7dce3c0706e24346adcb8c262fad8eaddf2e3519d06b5fd978a2d8b7d099f4a57fc5be4d8f
+  languageName: node
+  linkType: hard
+
+"@types/koa-compose@npm:*":
+  version: 3.2.5
+  resolution: "@types/koa-compose@npm:3.2.5"
+  dependencies:
+    "@types/koa": "*"
+  checksum: bb6cae03095752d2f351e650ec4f5631c4512aec85bf5f7bab210a91a04714fbe0e75edac120cb56aff2cee5c6549bd6bf7a0ccc35f3adc0aa41d463b0a1f310
+  languageName: node
+  linkType: hard
+
+"@types/koa-compress@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@types/koa-compress@npm:4.0.1"
+  dependencies:
+    "@types/koa": "*"
+    "@types/node": "*"
+  checksum: 6bfddd9ed7ade21b580da30136edca4f80299e78903c4c58874e316d8b83cf7840be2509653f1e4ffd02352ec5d8e9ca2eb9fcc8ae4ac78e8f80462b24eff2e1
+  languageName: node
+  linkType: hard
+
+"@types/koa-logger@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "@types/koa-logger@npm:3.1.1"
+  dependencies:
+    "@types/koa": "*"
+  checksum: 554a2a1e5b8991eb1b24a9a137329c38f8424af522aba20bde88d3abc161e98c72a9d5a6142eb605b8c105332d6ceef303ea22f9278453400ccadd8bda01b217
+  languageName: node
+  linkType: hard
+
+"@types/koa-pino-logger@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@types/koa-pino-logger@npm:3.0.0"
+  dependencies:
+    "@types/koa": "*"
+    "@types/pino": "*"
+    "@types/pino-http": "*"
+  checksum: 8a02a934ea5db47e104e62f114736dcc106c1bb0f12de8d8741abd126fab664eb3627c052e2b21dc197d5a0d6ba9f8e654660bd38776999dd0c7262d85803d60
+  languageName: node
+  linkType: hard
+
+"@types/koa-response-time@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "@types/koa-response-time@npm:2.1.0"
+  dependencies:
+    "@types/koa": "*"
+  checksum: 5c08339b94b6b11b2932a63a00677c6adc28c801d94637d54b204b807682de822003794508bac217bc47bcee90e327cff13f244a367053f6cf91e7785b734ef2
+  languageName: node
+  linkType: hard
+
+"@types/koa-send@npm:*":
+  version: 4.1.2
+  resolution: "@types/koa-send@npm:4.1.2"
+  dependencies:
+    "@types/koa": "*"
+  checksum: 64ff7faa6e96b98d0e6ae8c70de031b79ca7aaaab700e5b8197cb2478f3ba0fccc1807c38d1cba40423ba58513b072d20d4504f6f42f9f71d932ac943d9b8561
+  languageName: node
+  linkType: hard
+
+"@types/koa-session@npm:^5.10.3":
+  version: 5.10.3
+  resolution: "@types/koa-session@npm:5.10.3"
+  dependencies:
+    "@types/cookies": "*"
+    "@types/koa": "*"
+  checksum: 0a32309ffba9e2438148788ad1ddb5facf5593b7e56a05b92775237b206235b45545949a5cef13388cb21040aa591aa9f53f348cc256e5e2ae3014f623e89084
+  languageName: node
+  linkType: hard
+
+"@types/koa-static@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@types/koa-static@npm:4.0.1"
+  dependencies:
+    "@types/koa": "*"
+    "@types/koa-send": "*"
+  checksum: 94fcf018b68a93260fc551bd7d97706cc880efefe838ad71cb6e4b89bea66967241dc6f70d530b7b0febf55277961d590a919a89af4d3e45c0b35e07e75aa66a
+  languageName: node
+  linkType: hard
+
+"@types/koa@npm:*":
+  version: 2.13.1
+  resolution: "@types/koa@npm:2.13.1"
+  dependencies:
+    "@types/accepts": "*"
+    "@types/content-disposition": "*"
+    "@types/cookies": "*"
+    "@types/http-assert": "*"
+    "@types/http-errors": "*"
+    "@types/keygrip": "*"
+    "@types/koa-compose": "*"
+    "@types/node": "*"
+  checksum: ba0ccaecc7132b6bdbf83da2f40456f935d04e2eb4270b2c69fc79eee5ab1dc06c9fa08525b6e4bebacc9432cbab918a00102a5f92f210a7c7e50c7b035fca78
+  languageName: node
+  linkType: hard
+
+"@types/koa__cors@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/koa__cors@npm:3.0.2"
+  dependencies:
+    "@types/koa": "*"
+  checksum: f481d9529572b95e460aa2680bc6a9c49fcd70208b697d44387af71b5ca77b654dcd7df96f9758abe6b27cb0afed424ae47ab7184a047f73d879d253db1eb030
+  languageName: node
+  linkType: hard
+
 "@types/mime@npm:^1":
   version: 1.3.2
   resolution: "@types/mime@npm:1.3.2"
@@ -3626,6 +3795,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^14.17.0":
+  version: 14.17.0
+  resolution: "@types/node@npm:14.17.0"
+  checksum: f437147b39e04b23272eae604ec301b5a91956d386f96a2a796efa856d813df116c1afea511b2c23d908c0456c479bad32862aea6d6f0eaffcc1056603b98e64
+  languageName: node
+  linkType: hard
+
 "@types/normalize-package-data@npm:^2.4.0":
   version: 2.4.0
   resolution: "@types/normalize-package-data@npm:2.4.0"
@@ -3637,6 +3813,45 @@ __metadata:
   version: 4.0.0
   resolution: "@types/parse-json@npm:4.0.0"
   checksum: 4a8f720afac47b474d3f2eece312340e72bc31bc9561cda37b596ce2ed218c0099765d302625bb67d659a8452a1f93d514f4863c11c7ebaf65430428687dc426
+  languageName: node
+  linkType: hard
+
+"@types/pino-http@npm:*":
+  version: 5.4.1
+  resolution: "@types/pino-http@npm:5.4.1"
+  dependencies:
+    "@types/pino": "*"
+  checksum: 1619084c573245fcd447abf0eed27a6aa56c68e6bfe58bf8030280e41de2ed0c84cacafc9df46c81a8c74c7a60b8967b55eadf8fa78bc799ec607f38be0b70b5
+  languageName: node
+  linkType: hard
+
+"@types/pino-pretty@npm:*":
+  version: 4.7.0
+  resolution: "@types/pino-pretty@npm:4.7.0"
+  dependencies:
+    "@types/pino": "*"
+  checksum: 083322f62faadb9f035df02b6ab837c56127aedc5ab00a92e6f10338c9d1d4ed0168135f1efe73c3fea7bf2d92514c070370a6036eaa28f8fe60f5515040335d
+  languageName: node
+  linkType: hard
+
+"@types/pino-std-serializers@npm:*":
+  version: 2.4.1
+  resolution: "@types/pino-std-serializers@npm:2.4.1"
+  dependencies:
+    "@types/node": "*"
+  checksum: af90e75d5420b40d327e27294ab5730c08bfacaf52e3cc700bd6dfd006fa2a982340909f2c9b0f808b44d98bd15396780eed1626040189a41910f2fc23fe3461
+  languageName: node
+  linkType: hard
+
+"@types/pino@npm:*":
+  version: 6.3.8
+  resolution: "@types/pino@npm:6.3.8"
+  dependencies:
+    "@types/node": "*"
+    "@types/pino-pretty": "*"
+    "@types/pino-std-serializers": "*"
+    "@types/sonic-boom": "*"
+  checksum: f3cf2324ff72c4472c34dc5019615abfbeb86331a79ed401a135c0d9a1375f560e86d517c18019666d0c1eff2e6cf076925bfa4de836c865214f25f75784f3d4
   languageName: node
   linkType: hard
 
@@ -3682,6 +3897,15 @@ __metadata:
     "@types/mime": ^1
     "@types/node": "*"
   checksum: f261127514057b5c038d76259128d7b765dd92bfeaf769d05b8ddf5f254d066ce6142a935e2fc707bb3009d6544a979591852f0d135d0ed4d0c56db08738df6b
+  languageName: node
+  linkType: hard
+
+"@types/sonic-boom@npm:*":
+  version: 0.7.0
+  resolution: "@types/sonic-boom@npm:0.7.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: b6a7c29c7b7d92307571b44629c94af0cad6674cb4251ce5387cd2e6d8051511fa8397a28cf3b387fd4ef26ce79442cbe8f9cae141fda7628fdf532af274e6ba
   languageName: node
   linkType: hard
 
@@ -7680,6 +7904,7 @@ __metadata:
     jest: ^26.6.3
     lerna: ^4.0.0
     lint-staged: ^10.5.4
+    node-gyp: ^8.0.0
     vue-eslint-parser: ^7.6.0
   languageName: unknown
   linkType: soft
@@ -9720,7 +9945,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"graceful-fs@npm:^4.1.11, graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.2, graceful-fs@npm:^4.2.3, graceful-fs@npm:^4.2.4":
+"graceful-fs@npm:^4.1.11, graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.2, graceful-fs@npm:^4.2.3, graceful-fs@npm:^4.2.4, graceful-fs@npm:^4.2.6":
   version: 4.2.6
   resolution: "graceful-fs@npm:4.2.6"
   checksum: 84d39c7756892553da990a9db7e45f844b3309b37b5a00174cbb4748476f2250c54f24594d4d252f64f085c65c2fdac7c809419bf6d55f0e6e42eb07ac0f5bf2
@@ -12859,7 +13084,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"make-fetch-happen@npm:^8.0.9":
+"make-fetch-happen@npm:^8.0.14, make-fetch-happen@npm:^8.0.9":
   version: 8.0.14
   resolution: "make-fetch-happen@npm:8.0.14"
   dependencies:
@@ -13725,6 +13950,26 @@ fsevents@^1.2.7:
   bin:
     node-gyp: bin/node-gyp.js
   checksum: fca9ecb1be01f707b76c2aec01f0f2ef4ff45c4e24df378c01a4a2c93b4a8172b47ad59f07af91c54a797a8a77fc72e087e29a97a52c892df507245530c46bfa
+  languageName: node
+  linkType: hard
+
+"node-gyp@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "node-gyp@npm:8.0.0"
+  dependencies:
+    env-paths: ^2.2.0
+    glob: ^7.1.4
+    graceful-fs: ^4.2.6
+    make-fetch-happen: ^8.0.14
+    nopt: ^5.0.0
+    npmlog: ^4.1.2
+    rimraf: ^3.0.2
+    semver: ^7.3.5
+    tar: ^6.1.0
+    which: ^2.0.2
+  bin:
+    node-gyp: bin/node-gyp.js
+  checksum: 604a48ca1ee0277a960f4d71a05cea2e9a20007a4cdf7953caec78d26acc4bba765d3a97c649953a2de505de67a1b26f0c8c7c81124c591c81de5659f359adce
   languageName: node
   linkType: hard
 
@@ -17302,7 +17547,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.4":
+"semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.2.1, semver@npm:^7.3.2, semver@npm:^7.3.4, semver@npm:^7.3.5":
   version: 7.3.5
   resolution: "semver@npm:7.3.5"
   dependencies:
