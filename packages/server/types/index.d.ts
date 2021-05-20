@@ -185,9 +185,7 @@ export type MulterS3File = {
   etag: string
 }
 
-export type StorageConfigs = {
-  [k: string]: StorageConfig
-}
+export type StorageConfigs = Record<string, StorageConfig>
 
 export type StorageConfig =
   | {
@@ -284,9 +282,7 @@ export interface AdminConfig {
   /**
    * Settings accessible on the browser side as `global.dito.settings`.
    */
-  settings?: {
-    [k: string]: any
-  }
+  settings?: Record<string, any>
 }
 
 export interface ApiResource {
@@ -375,9 +371,7 @@ export interface ApiConfig {
   /**
    * Optionally override resource path handlers.
    */
-  resources?: {
-    [k: string]: (resource: ApiResource | string) => string
-  }
+  resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
    * Optionally override / extend headers
@@ -385,19 +379,15 @@ export interface ApiConfig {
    *   'Content-Type': 'application/json'
    * }`
    */
-  headers?: { [headerKey: string]: string }
+  headers?: Record<string, string>
 }
 
-export type ApplicationControllers = {
-  [k: string]:
-    | Class<ModelController<Model>>
-    | Class<Controller>
-    | ApplicationControllers
-}
+export type ApplicationControllers = Record<
+  string,
+  Class<ModelController<Model>> | Class<Controller> | ApplicationControllers
+>
 
-export type Models = {
-  [name: string]: Class<Model>
-}
+export type Models = Record<string, Class<Model>>
 
 export class Application<$Models extends Models> {
   constructor(options: {
@@ -409,9 +399,7 @@ export class Application<$Models extends Models> {
      * Subscribe to application events. Event names: `'before:start'`,
      * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
      */
-    events?: {
-      [eventName: string]: (this: Application, ...args: []) => void
-    }
+    events?: Record<string, (this: Application, ...args: []) => void>
     models: $Models
     controllers?: ApplicationControllers
     // TODO: services docs
@@ -553,9 +541,7 @@ export type SchemaValue =
   | string
   | number
   | boolean
-  | {
-      [key: string]: SchemaValue
-    }
+  | Record<string, SchemaValue>
   | SchemaValue[]
   | null
 
@@ -566,9 +552,7 @@ export type SchemaDefinition =
   // Shorthand array schema:
   | SchemaDefinition[]
   // Shorthand object schema:
-  | {
-      [k: string]: SchemaDefinition
-    }
+  | Record<string, SchemaDefinition>
 export interface Schema {
   $id?: string
   $ref?: string
@@ -616,16 +600,10 @@ export interface Schema {
 
   required?: boolean | string[]
 
-  properties?: {
-    [key: string]: SchemaDefinition
-  }
-  patternProperties?: {
-    [key: string]: SchemaDefinition
-  }
+  properties?: Record<string, SchemaDefinition>
+  patternProperties?: Record<string, SchemaDefinition>
   additionalProperties?: boolean | SchemaDefinition
-  dependencies?: {
-    [key: string]: SchemaDefinition | string[]
-  }
+  dependencies?: Record<string, SchemaDefinition | string[]>
   propertyNames?: SchemaDefinition
 
   /**
@@ -676,9 +654,7 @@ export interface Schema {
   /**
    * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-9
    */
-  definitions?: {
-    [key: string]: SchemaDefinition
-  }
+  definitions?: Record<string, SchemaDefinition>
 
   /**
    * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-10
@@ -816,15 +792,16 @@ export interface ModelPropertySchema extends Schema {
   hidden?: boolean
 }
 
-export type ModelScope<T extends Model> = (
-  this: T,
-  query: QueryBuilder<T>,
-  applyParentScope: (query: QueryBuilder<T>) => QueryBuilder<T>
-) => QueryBuilder<T, any> | void
+export type ModelScope<$Model extends Model> = (
+  this: $Model,
+  query: QueryBuilder<$Model>,
+  applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
+) => QueryBuilder<$Model, any> | void
 
-export interface ModelScopes<T extends Model> {
-  [k: string]: ModelScope<T>
-}
+export type ModelScopes<$Model extends Model> = Record<
+  string,
+  ModelScope<$Model>
+>
 
 export type ModelFilterFunction<$Model extends Model> = (
   queryBuilder: QueryBuilder<$Model>,
@@ -844,18 +821,17 @@ export type ModelFilter<$Model extends Model> =
       validate?: any
     }
 
-export interface ModelFilters<$Model extends Model> {
-  [k: string]: ModelFilter<$Model>
-}
+export type ModelFilters<$Model extends Model> = Record<
+  string,
+  ModelFilter<$Model>
+>
 
 export interface ModelAsset {
   storage: string
   readImageSize?: boolean
 }
 
-export interface ModelAssets {
-  [k: string]: ModelAsset
-}
+export type ModelAssets = Record<string, ModelAsset>
 
 export interface ModelOptions extends objection.ModelOptions {
   graph?: boolean
@@ -863,13 +839,13 @@ export interface ModelOptions extends objection.ModelOptions {
   mutable?: boolean
 }
 
-export type ModelHooks<$Model extends Model> = {
-  [$Key in `${'before' | 'after'}:${
-    | 'find'
-    | 'insert'
-    | 'update'
-    | 'delete'}`]?: (args: objection.StaticHookArguments<$Model>) => void
-}
+type ModelHookFunction<$Model extends Model> = (
+  args: objection.StaticHookArguments<$Model>
+) => void
+export type ModelHooks<$Model extends Model> = Record<
+  `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`,
+  ModelHookFunction<$Model>
+>
 
 export class Model extends objection.Model {
   /**
@@ -900,7 +876,7 @@ export class Model extends objection.Model {
 
   static count: {
     (column?: objection.ColumnRef, options?: { as: string }): number
-    (aliasToColumnDict: { [alias: string]: string | string[] }): number
+    (aliasToColumnDict: Record<string, string | string[]>): number
     (...columns: objection.ColumnRef[]): number
   }
 
@@ -932,9 +908,9 @@ export class Model extends objection.Model {
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
   $validate<$JSON extends null | {}>(
     json?: $JSON,
-    options?: ModelOptions & { [k: string]: any }
+    options?: ModelOptions & Record<string, any>
   ): Promise<$JSON | this>
-  $validateGraph(options: ModelOptions & { [k: string]: any }): Promise<this>
+  $validateGraph(options: ModelOptions & Record<string, any>): Promise<this>
 
   //   /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
   static first: QueryBuilder<Model>['first']
@@ -1052,9 +1028,7 @@ export interface Model extends KnexHelper {}
 
 export type ModelClass = Class<Model>
 
-export type ModelRelations = {
-  [k: string]: ModelRelation
-}
+export type ModelRelations = Record<string, ModelRelation>
 
 export type ModelProperty =
   | ModelPropertySchema
@@ -1068,9 +1042,7 @@ export type ModelProperty =
       [k: string]: SchemaDefinition
     }
 
-export type ModelProperties = {
-  [k: string]: ModelProperty
-}
+export type ModelProperties = Record<string, ModelProperty>
 
 export type ControllerAction<$Controller extends Controller> =
   | ControllerActionOptions<$Controller>
@@ -1082,7 +1054,8 @@ export type ControllerActionName =
   | 'insert'
   | 'update'
   | 'patch'
-export type AllowedControllerActionName = StringSuggestions<ControllerActionName>
+export type AllowedControllerActionName =
+  StringSuggestions<ControllerActionName>
 export class Controller {
   /**
    * Optionally provide the controller path. A default is deducted from
@@ -1143,9 +1116,7 @@ export class Controller {
   getPath(type: string, path: string): string
   getUrl(type: string, path: string): string
   inheritValues(type: string): any
-  processValues(
-    values: any
-  ): {
+  processValues(values: any): {
     // Create a filtered `values` object that only contains the allowed fields
     values: any
     allow: string[]
@@ -1262,11 +1233,10 @@ export type BaseControllerActionOptions = {
   transacted?: boolean
 }
 
-export type ControllerActionOptions<
-  $Controller extends Controller
-> = BaseControllerActionOptions & {
-  handler: ControllerActionHandler<$Controller>
-}
+export type ControllerActionOptions<$Controller extends Controller> =
+  BaseControllerActionOptions & {
+    handler: ControllerActionHandler<$Controller>
+  }
 
 export type ModelControllerActionOptions<
   $ModelController extends ModelController<Model>
@@ -1285,9 +1255,7 @@ export type MemberActionParameter<M extends Model> =
       /**
        * Sets ctx.query.
        */
-      query?: {
-        [key: string]: any
-      }
+      query?: Record<string, any>
       /**
        * Adds a FOR UPDATE in PostgreSQL and MySQL during a select statement.
        * FOR UPDATE causes the rows retrieved by the SELECT statement to be locked
@@ -1307,17 +1275,15 @@ export type MemberActionParameter<M extends Model> =
 
 export type ModelControllerActions<
   $ModelController extends ModelController<Model> = ModelController<Model>
-> = {
-  [key: string]:
-    | ModelControllerActionOptions<$ModelController>
-    | ModelControllerActionHandler<$ModelController>
-    | AllowedControllerActionName[]
-    // NOTE: this is meant only for the 'authorize' key, which due to
-    // typescript limitations we cannot type stricly to the key
-    | {
-        [key: string]: AuthorizationOptions
-      }
-}
+> = Record<
+  string,
+  | ModelControllerActionOptions<$ModelController>
+  | ModelControllerActionHandler<$ModelController>
+  | AllowedControllerActionName[]
+  // NOTE: this is meant only for the 'authorize' key, which due to
+  // typescript limitations we cannot type stricly to the key
+  | Authorize
+>
 
 type ModelControllerMemberAction<
   $ModelController extends ModelController<Model>
@@ -1341,13 +1307,12 @@ type ModelControllerMemberAction<
 
 export type ModelControllerMemberActions<
   $ModelController extends ModelController<Model>
-> = {
-  [key: string]: ModelControllerMemberAction<$ModelController>
-}
+> = Record<string, ModelControllerMemberAction<$ModelController>>
 
-export type ControllerActions<$Controller extends Controller> = {
-  [key: string]: OrArrayOf<ControllerAction<$Controller>>
-}
+export type ControllerActions<$Controller extends Controller> = Record<
+  string,
+  OrArrayOf<ControllerAction<$Controller>>
+>
 
 export class UserModel extends Model {
   static options?: {
@@ -1500,9 +1465,7 @@ export class ModelController<$Model extends Model = Model> extends Controller {
     | boolean
     | {
         allow?: OrArrayOf<string>
-        authorize: {
-          [k: string]: OrArrayOf<string>
-        }
+        authorize: Record<string, OrArrayOf<string>>
       }
   /**
    * When nothing is returned from a hook, the standard action result is used.
@@ -1596,12 +1559,8 @@ export class Validator extends objection.Validator {
        */
       verbose?: boolean
     }
-    keywords?: {
-      [keyword: string]: Keyword
-    }
-    formats?: {
-      [format: string]: Format
-    }
+    keywords?: Record<string, Keyword>
+    formats?: Record<string, Format>
   })
 }
 
@@ -1756,7 +1715,7 @@ export class Service {
 
   stop(): Promise<void>
 }
-export type Services = { [k: string]: Class<Service> | Service }
+export type Services = Record<string, Class<Service> | Service>
 
 export class QueryBuilder<
   M extends Model,
@@ -2041,7 +2000,7 @@ export interface KnexHelper {
   isMsSQL(): boolean
 }
 
-export type Keyword = Ajv.KeywordDefinition
+export type Keyword = Optional<Ajv.KeywordDefinition, 'keyword'>
 export type Format = Ajv.FormatValidator | Ajv.FormatDefinition
 export type Id = string | number
 export type KoaContext<$State = any> = Koa.ParameterizedContext<
@@ -2052,10 +2011,10 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
   }
 >
 
-// https://stackoverflow.com/a/56363362/825205
-export interface Class<T> extends Function {
-  new (...args: any[]): T
-}
+// https://github.com/sindresorhus/type-fest/blob/main/source/basic.d.ts#L7
+export type Class<T = unknown, Arguments extends any[] = any[]> = new (
+  ...arguments_: Arguments
+) => T
 
 export type ReplaceReturnType<T extends (...a: any) => any, TNewReturn> = (
   ...a: Parameters<T>
@@ -2075,6 +2034,5 @@ export type OrArrayOf<T> = T[] | T
 
 export type OrPromiseOf<T> = Promise<T> | T
 
-type modelFromModelController<
-  $ModelController extends ModelController<Model>
-> = InstanceType<Exclude<$ModelController['modelClass'], undefined>>
+type modelFromModelController<$ModelController extends ModelController<Model>> =
+  InstanceType<Exclude<$ModelController['modelClass'], undefined>>
