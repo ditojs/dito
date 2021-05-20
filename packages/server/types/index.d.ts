@@ -399,7 +399,7 @@ export type Models = {
   [name: string]: Class<Model>
 }
 
-export class Application {
+export class Application<$Models extends Models> {
   constructor(options: {
     config?: ApplicationConfig
     validator?: Validator
@@ -412,11 +412,12 @@ export class Application {
     events?: {
       [eventName: string]: (this: Application, ...args: []) => void
     }
-    models: Models
+    models: $Models
     controllers?: ApplicationControllers
     // TODO: services docs
     services?: Services
   })
+  models: $Models
   start(): Promise<void>
   stop(): Promise<void>
   startOrExit(): Promise<void>
