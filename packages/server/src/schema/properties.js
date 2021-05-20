@@ -1,6 +1,4 @@
-import { isObject, isArray, asArray, isString } from '@ditojs/utils'
-
-// TODO: convert `nullable: true` to `type: [... 'null']` detection?
+import { isObject, isArray, isString } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isString(schema)) {
@@ -8,13 +6,16 @@ export function convertSchema(schema, options = {}) {
     // Nested shorthand expansion
     schema = { type: schema }
   } else if (isArray(schema)) {
-    // Needed for anyOf, allOf, oneOf, items:
+    // Needed for allOf, anyOf, oneOf, not, items:
     schema = schema.map(entry => convertSchema(entry, options))
   }
   if (isObject(schema)) {
-    // Create a shallow clone so we can modify and return:
-    schema = { ...schema }
     const { type } = schema
+    // Create a shallow clone so we can modify and return, excluding our
+    // `required` boolean which will get converted to a format further down, and
+    // to JSON schema's `required` array through `expandProperties()`:
+    const { required, ...rest } = schema
+    schema = rest
     if (isString(type)) {
       // Convert schema property notation to JSON schema
       const jsonType = jsonTypes[type]
@@ -68,11 +69,21 @@ export function convertSchema(schema, options = {}) {
           schema.instanceof = type
         } else {
           // Move `type` to `$ref`, but still keep other properties for now,
-          // to support `nullable` below.
+          // to support `nullable`.
           delete schema.type
           // TODO: Consider moving to `model` keyword instead that would support
           // model validation and still could be combined with other keywords.
           schema.$ref = type
+          // `$ref` doesn't play with `nullable`, so convert to `oneOf`
+          if (schema.nullable) {
+            delete schema.nullable
+            schema = {
+              oneOf: [
+                { type: 'null' },
+                schema
+              ]
+            }
+          }
         }
       }
     } else {
@@ -83,30 +94,26 @@ export function convertSchema(schema, options = {}) {
         // Only call convertSchema() if it actually changed...
         ? convertSchema(expanded, options)
         : expanded
-    }
-    if (schema.type !== 'object') {
-      // Handle `required` and `default` on schemas other than objects.
-      const {
-        required,
-        default: _default,
-        ...rest
-      } = schema
-      schema = rest
-      if (required) {
-        // Our 'required' is not the same as JSON Schema's: Use the 'required'
-        // format instead that only validates if required string is not empty.
-        schema = addFormat(schema, 'required')
-      }
-      if (_default !== undefined && !excludeDefaults[_default]) {
-        schema.default = _default
+      // Handle nested allOf, anyOf, oneOf, not properties
+      for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
+        if (key in schema) {
+          schema[key] = convertSchema(schema[key], options)
+        }
       }
     }
-    if (schema.nullable) {
-      schema = makeNullable(schema)
-    } else if (schema.$ref) {
-      // $ref keywords can't be combined with anything else, but we can't clear
-      // them earlier as it would break support for nullable.
-      schema = { $ref: schema.$ref }
+    if (required) {
+      // Our 'required' is not the same as JSON Schema's: Use the 'required'
+      // format instead that only validates if the required value is not
+      // empty, meaning neither nullish nor an empty string.
+      schema = addFormat(schema, 'required')
+    }
+    if (excludeDefaults[schema.default]) {
+      delete schema.default
+    }
+    // Make nullable work with enum, see the issue for more details:
+    // https://github.com/ajv-validator/ajv/issues/1471
+    if (schema.nullable && schema.enum && !schema.enum.includes(null)) {
+      schema.enum.push(null)
     }
   }
   return schema
@@ -151,12 +158,21 @@ export function expandSchemaShorthand(schema) {
       isObject(schema.not)
     )
   ) {
+    // Separate object short-hand into property definitions and other fields.
+    const properties = {}
+    const rest = {}
+    for (const [key, value] of Object.entries(schema)) {
+      // Property definitions are either objects or string / array short-hands:
+      if (isObject(value) || isString(value) || isArray(value)) {
+        properties[key] = value
+      } else {
+        rest[key] = value
+      }
+    }
     schema = {
       type: 'object',
-      properties: {
-        ...schema
-      },
-      additionalProperties: false
+      properties,
+      ...rest
     }
   }
   return schema
@@ -166,7 +182,7 @@ function addFormat(schema, newFormat) {
   // Support multiple `format` keywords through `allOf`:
   let { allOf, format, ...rest } = schema
   if (format || allOf) {
-    allOf = allOf || []
+    allOf ||= []
     if (!allOf.find(({ format }) => format === newFormat)) {
       allOf.push({ format }, { format: newFormat })
       schema = { ...rest, allOf }
@@ -175,49 +191,6 @@ function addFormat(schema, newFormat) {
     schema.format = newFormat
   }
   return schema
-}
-
-function makeNullable(schema) {
-  // Add 'null' to the allowed types through `oneOf`.
-  // Move format along with type, and also support $ref and instanceof:
-  const {
-    type,
-    $ref,
-    nullable, // Keep `nullable` at root level, outside of `anyOf`.
-    validate, // Keep `validate()` at root level, to apply to both.
-    ...rest
-  } = schema
-  // Determine if any of the encountered keywords need separate schema for
-  // not-null / null. The check used to be: Object.keys(rest).length > 0, but
-  // this caused issued with coercing validation, `oneOf`, and null/integer.
-  const needsSeparateSchema = $ref || Object.keys(rest).some(
-    key => ![
-      // Known keywords without side-effects to not-null / null values:
-      'primary', 'foreign', 'nullable', 'unique', 'unsigned',
-      'computed', 'hidden'
-    ].includes(key)
-  )
-
-  return isArray(type) && type.includes('null')
-    ? schema
-    : needsSeparateSchema
-      ? {
-        anyOf: [
-          { type: 'null' },
-          $ref
-            ? { $ref }
-            : { type, ...rest }
-        ],
-        nullable,
-        ...(validate && { validate })
-      }
-      : {
-        // For coercing validation, null needs to come first:
-        type: ['null', ...asArray(type)],
-        nullable,
-        ...(validate && { validate }),
-        ...rest
-      }
 }
 
 // Table to translate schema types to JSON schema types. Other types are allowed

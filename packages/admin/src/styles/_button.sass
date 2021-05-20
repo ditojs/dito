@@ -113,8 +113,13 @@
     z-index: 1
     background: $color-white
     display: none
-    @at-root .dito-component:hover > &
-      display: block
+    $button-clear: &
+    @at-root .dito-component:hover
+      // Support two levels of nesting inside .dito-component, used by TypeColor
+      & > #{$button-clear},
+      & > * > #{$button-clear},
+      & > * > * > #{$button-clear}
+        display: block
     &::before
       @extend %icon-clear
       color: $color-grey

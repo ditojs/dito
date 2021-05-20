@@ -127,7 +127,7 @@ export default DitoComponent.component('dito-root', {
       }[type] || 'Notification'
       text = `<p>${
         asArray(text).join('</p> <p>')
-      }</p>`.replace(/\r\n|\n|\r/g, '<br>')
+      }</p>`.replace(/\n|\r\n|\r/g, '<br>')
       const log = {
         warning: 'warn',
         error: 'error',
@@ -271,7 +271,9 @@ export default DitoComponent.component('dito-root', {
         promises.push(processView(DitoView, this.api, schema, name, routes))
       }
       await Promise.all(promises)
-      this.$router.addRoutes(routes)
+      for (const route of routes) {
+        this.$router.addRoute(route)
+      }
     }
   }
 })

@@ -140,10 +140,11 @@ export class AdminController extends Controller {
         // for things like .babelrc to work when building for dist:
         entry: [this.getPath('build')],
         resolve: {
-          // Local Lerna dependencies need their symbolic links unresolved, so
-          // that `node_modules` does not disappear from their name, and
-          // re-transpilation would be triggered.
-          symlinks: false
+          alias: {
+            // See https://github.com/webpack-contrib/webpack-hot-client/pull/62
+            'webpack-hot-client/client':
+              require.resolve('webpack-hot-client/client')
+          }
         },
         output: {
           filename: '[name].[hash].js'
@@ -176,7 +177,9 @@ export class AdminController extends Controller {
               {
                 test: /\.(js|css)$/,
                 enforce: 'pre',
-                use: ['source-map-loader']
+                // Use `require.resolve()` here too, to avoid issues similar to
+                // 'webpack-hot-client/client' above.
+                use: [require.resolve('source-map-loader')]
               }
             ]
           }

@@ -56,7 +56,7 @@ export const UserMixin = mixin(Model => class extends Model {
   }
 
   $hasRole(...roles) {
-    // Support an optional `roles` arry on the model that can contain roles.
+    // Support an optional `roles` array on the model that can contain roles.
     return this.roles?.find(role => roles.includes(role)) || false
   }
 

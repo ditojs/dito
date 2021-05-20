@@ -164,7 +164,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
         // one loop:
         for (let i = 0, l = path.length; i < l; i++) {
           if (items.length === 0) break
-          const { modify, relation } = path[i]
+          const { relation } = path[i]
           const modelClass = modelClasses[i]
           items = items.reduce((items, item) => {
             item = ensureModel(modelClass, item, { skipValidation: true })
@@ -187,6 +187,9 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
               }
             }
             if (add) {
+              // `path[i].modify` is the current relation's modify expression,
+              // get the parent one for `modelClass`:
+              const modify = i > 0 ? path[i - 1].modify : null
               const expr = expressionPathToString(path, i)
               addToGroup(item, modelClass, isReference, modify, relation, expr)
             }

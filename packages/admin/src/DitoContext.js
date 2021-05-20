@@ -1,5 +1,7 @@
 import { isFunction } from '@ditojs/utils'
-import { getItem, getParentItem } from '@/utils/data'
+import {
+  getItem, getParentItem, getParentKey, getParentIndex
+} from '@/utils/data'
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
 // which themselves actually inherit from the linked `component` instance, so
@@ -42,7 +44,11 @@ export default class DitoContext {
   }
 
   get name() {
-    return get(this, 'name')
+    return get(this, 'name') ?? getParentKey(this.dataPath)
+  }
+
+  get index() {
+    return get(this, 'index') ?? getParentIndex(this.dataPath)
   }
 
   get dataPath() {
@@ -71,12 +77,8 @@ export default class DitoContext {
     return get(this, 'rootData') || null
   }
 
-  get list() {
-    return get(this, 'list')
-  }
-
-  get index() {
-    return get(this, 'index')
+  get processedItem() {
+    return get(this, 'processedData') || null
   }
 
   get user() {
@@ -125,6 +127,10 @@ export default class DitoContext {
     return get(this, 'panelComponent') || null
   }
 
+  get resourceComponent() {
+    return get(this, 'resourceComponent') || null
+  }
+
   get sourceComponent() {
     return get(this, 'sourceComponent') || null
   }
@@ -139,6 +145,8 @@ export default class DitoContext {
     return get(this, 'options')
   }
 
+  // TODO: Rename this to `searchTerm` or `searchQuery`, to perhaps free `query`
+  // for the actual `resourceComponent.query` object?
   get query() {
     return get(this, 'query')
   }
@@ -147,6 +155,10 @@ export default class DitoContext {
   // requests, see `ResourceMixin.emitButtonEvent()`:
   get error() {
     return get(this, 'error')
+  }
+
+  get wasNotified() {
+    return get(this, 'wasNotified') ?? false
   }
 
   // Helper Methods
@@ -167,14 +179,14 @@ export default class DitoContext {
     return options => this.component.download(options)
   }
 
+  get getResourceUrl() {
+    return resource => this.component.getResourceUrl(resource)
+  }
+
   get notify() {
     return options => {
       this.component.notify(options)
       set(this, 'wasNotified', true)
     }
-  }
-
-  get wasNotified() {
-    return get(this, 'wasNotified') ?? false
   }
 }

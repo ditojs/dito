@@ -1,4 +1,5 @@
 import { Controller } from './Controller'
+import { ControllerError } from '@/errors'
 import { isObject, isArray, asArray } from '@ditojs/utils'
 
 // Abstract base class for ModelController and RelationController
@@ -66,8 +67,18 @@ export class CollectionController extends Controller {
       : path
   }
 
+  extendContext(ctx, object) {
+    // Create a copy of `ctx` that inherits from the real one, but overrides
+    // some properties with the ones from the passed `object`.
+    return Object.setPrototypeOf(object, ctx)
+  }
+
   getMemberId(ctx) {
     return this.validateId(ctx.params[this.idParam])
+  }
+
+  getContextWithMemberId(ctx, memberId = this.getMemberId(ctx)) {
+    return this.extendContext(ctx, { memberId })
   }
 
   getCollectionIds(ctx) {
@@ -102,6 +113,32 @@ export class CollectionController extends Controller {
     })
     const values = Object.values(reference)
     return values.length > 1 ? values : values[0]
+  }
+
+  async getMember(
+    ctx,
+    base = this,
+    { query = {}, modify = null, forUpdate = false } = {}
+  ) {
+    return this.member.find.call(
+      this,
+      // Extend `ctx` with a new `query` object, while inheriting the route
+      // params in `ctx.params`, so fining the member by id still works.
+      this.extendContext(ctx, { query }),
+      (query, trx) => {
+        this.setupQuery(query, base)
+        query.modify(modify)
+        if (forUpdate) {
+          if (!trx) {
+            throw new ControllerError(
+              this,
+              'Using `forUpdate()` without a transaction is invalid'
+            )
+          }
+          query.forUpdate()
+        }
+      }
+    )
   }
 
   query(trx) {

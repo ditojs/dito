@@ -137,6 +137,10 @@ export default {
     }
   },
 
+  beforeCreate() {
+    this.$uid = ++uid
+  },
+
   methods: {
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
@@ -160,7 +164,7 @@ export default {
 
     getSchemaValue(
       keyOrDataPath,
-      { type, default: def, schema = this.schema } = {}
+      { type, default: def, schema = this.schema, callback = true } = {}
     ) {
       const types = type && asArray(type)
       // For performance reasons, data-paths in `keyOrDataPath` can only be
@@ -175,7 +179,7 @@ export default {
       const getContext = () => (context ||= new DitoContext(this))
 
       if (value === undefined && def !== undefined) {
-        if (isFunction(def) && !isMatchingType(types, def)) {
+        if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
           def = def.call(this, getContext())
         }
@@ -187,7 +191,7 @@ export default {
       }
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
-      if (isFunction(value)) {
+      if (callback && isFunction(value)) {
         value = value.call(this, getContext())
       }
       // For boolean values that are defined as strings or arrays,
@@ -460,7 +464,7 @@ export default {
           this.$nextTick(() => {
             for (const [key, callback] of Object.entries(handlers)) {
               // Expand property names to 'data.property':
-              const expr = key in this.schemaComponent.components
+              const expr = this.schemaComponent.getComponentByName(key)
                 ? `data.${key}`
                 : key
               this.$watch(expr, callback)
@@ -501,7 +505,7 @@ export default {
       if (hasListeners || parentHasListeners) {
         // The effects of some events need some time to propagate through Vue.
         // Use $nextTick() to make sure our handlers see these changes.
-        // For example, `processedData` is only correct after components that
+        // For example, `processedItem` is only correct after components that
         // are newly rendered due to data changes have registered themselves.
         if (['load', 'change'].includes(event)) {
           await this.$nextTick()
@@ -520,3 +524,5 @@ export default {
     }
   }
 }
+
+let uid = 0

@@ -53,7 +53,7 @@
               v-for="column in columns"
               :key="column.name"
               :class="getCellClass(column)"
-              :column="column"
+              :cell="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
               :dataPathIsValue="false"
@@ -171,7 +171,7 @@ import DitoContext from '@/DitoContext'
 import SourceMixin from '@/mixins/SourceMixin'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import VueDraggable from 'vuedraggable'
-import { getNamedSchemas } from '@/utils/schema'
+import { getNamedSchemas, getViewEditPath } from '@/utils/schema'
 import { getFiltersPanel } from '@/utils/filter'
 import { appendDataPath } from '@/utils/data'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
@@ -194,23 +194,26 @@ export default TypeComponent.register('list', {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
       // away. Use a proxy and a getter instead, to get around this:
-      const getComponent = () => schemaComponent.getComponent(dataPath)
+      const getListComponent = () => schemaComponent.getComponentByDataPath(
+        dataPath,
+        component => component.type === 'list'
+      )
 
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
         { // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
-            return getComponent()?.query
+            return getListComponent()?.query
           },
           set query(query) {
-            const comp = getComponent()
-            if (comp) {
+            const component = getListComponent()
+            if (component) {
               // Filter out undefined values for comparing with equals()
               const filter = obj => pickBy(obj, value => value !== undefined)
-              if (!equals(filter(query), filter(comp.query))) {
-                comp.query = query
-                comp.loadData(false)
+              if (!equals(filter(query), filter(component.query))) {
+                component.query = query
+                component.loadData(false)
               }
             }
           }
@@ -259,11 +262,9 @@ export default TypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
+        const path = getViewEditPath(this.schema, this.views) || this.path
         const id = this.getItemId(this.schema, item, index)
-        const { view } = this.schema
-        return view
-          ? `/${this.views[view].path}/${id}`
-          : `${this.path}/${id}`
+        return `${path}/${id}`
       }
       return null
     },
@@ -283,9 +284,9 @@ export default TypeComponent.register('list', {
 
     onFilterErrors(errors) {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      const filtersPanel = this.schemaComponent.getPanel(filtersDataPath)
-      if (filtersPanel) {
-        filtersPanel.showValidationErrors(errors, true)
+      const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
+      if (panel) {
+        panel.showValidationErrors(errors, true)
         return true
       }
     }

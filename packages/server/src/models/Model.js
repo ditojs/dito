@@ -13,7 +13,6 @@ import {
 } from '@ditojs/utils'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
-import { AssetFile } from '@/storage'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -352,7 +351,7 @@ export class Model extends objection.Model {
       merge(schema, this.definition.schema)
       return {
         $id: this.name,
-        $schema: 'http://json-schema.org/draft-07/schema#',
+        $schema: 'http://json-schema.org/draft-07/schema',
         ...schema
       }
     }, {})
@@ -550,7 +549,7 @@ export class Model extends objection.Model {
               if (isArray(data)) {
                 data.forEach(convertToAssetFiles)
               } else {
-                AssetFile.convert(data, storage)
+                storage.convertAssetFile(data)
               }
             }
           }
@@ -718,13 +717,13 @@ export class Model extends objection.Model {
   }
 
   // @override
-  static createValidationError({ type, message, errors, options }) {
+  static createValidationError({ type, message, errors, options, json }) {
     switch (type) {
     case 'ModelValidation':
       return this.app.createValidationError({
         type,
         message: message ||
-          `The provided data for the ${this.name} model is not valid`,
+          `The provided data for the ${this.name} model is not valid: ${JSON.stringify(json)}`,
         errors,
         options
       })
@@ -913,6 +912,13 @@ export class Model extends objection.Model {
           path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
         )
         : assetDataPaths
+
+      // `dataPaths` will be empty in the case of an update/insert that do not
+      // affect the assets.
+      if (dataPaths.length === 0) {
+        return
+      }
+
       // Load the model's asset files in their current state before the query is
       // executed.
       const beforeItems = type === 'before:insert'
@@ -1054,50 +1060,3 @@ function mapFilesByKey(files) {
     {}
   )
 }
-
-// What follows is nasty monkey-patching to fix two new Objection issues:
-function getOperationClass(modify) {
-  Model.knex({})
-  const query = Model.query()
-  let constructor = null
-  // Locally override QueryBuilder#addOperation() in order to extract the
-  // private operation constructor / class:
-  query.addOperation = operation => {
-    constructor = operation.constructor
-  }
-  modify(query)
-  Model.knex(null)
-  return constructor
-}
-
-// Temporary workaround to fix this issue until it is resolved in Objection:
-// https://github.com/Vincit/objection.js/issues/1855
-// TODO: Remove again once the above issue is resolved and published.
-const InsertOperation = getOperationClass(query => query.insert())
-const UpdateOperation = getOperationClass(query => query.update())
-const DeleteOperation = getOperationClass(query => query.delete())
-
-// @override
-QueryBuilder.prototype.toFindQuery = function() {
-  const query = this.clone()
-  const selector = op => (
-    op.is(InsertOperation) ||
-    op.is(UpdateOperation) ||
-    op.is(DeleteOperation)
-  )
-  query.forEachOperation(selector, op => op.onBuild(query))
-  return query.clear(selector)
-}
-
-// Temporary workaround to fix this issue until a new version is deployed:
-// https://github.com/Vincit/objection.js/issues/1839
-// TODO: Remove again once the above issue is resolved and published.
-const InsertAndFetchOperation = getOperationClass(
-  query => query.insertAndFetch({})
-)
-
-Object.defineProperty(InsertAndFetchOperation.prototype, 'models', {
-  get() {
-    return this.delegate.models
-  }
-})

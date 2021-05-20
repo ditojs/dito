@@ -19,6 +19,8 @@
 </template>
 
 <style lang="sass">
+  // TODO: Consider renaming to `DitoContainer`? That's how it's called in
+  // `DitoSchema`
   .dito-components
     display: flex
     flex-flow: row wrap
@@ -141,7 +143,7 @@ export default DitoComponent.component('dito-components', {
 
   methods: {
     _register(add) {
-      this.schemaComponent._registerComponentsContainer(this, add)
+      this.schemaComponent._registerContainer(this, add)
     },
 
     focus() {

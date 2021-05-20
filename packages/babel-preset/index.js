@@ -1,4 +1,4 @@
-module.exports = function() {
+module.exports = function(api, { loose = false } = {}) {
   return {
     plugins: [
       // Stage 1
@@ -13,7 +13,7 @@ module.exports = function() {
       // Stage 3
       [
         require('@babel/plugin-proposal-class-properties'),
-        { loose: false }
+        { loose }
       ],
 
       // Stage 4
@@ -22,11 +22,11 @@ module.exports = function() {
       require('@babel/plugin-proposal-optional-catch-binding'),
       [
         require('@babel/plugin-proposal-optional-chaining'),
-        { loose: false }
+        { loose }
       ],
       [
         require('@babel/plugin-proposal-nullish-coalescing-operator'),
-        { loose: false }
+        { loose }
       ]
     ]
   }

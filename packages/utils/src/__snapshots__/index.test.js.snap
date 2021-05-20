@@ -46,6 +46,7 @@ Object {
   "isBoolean": [Function],
   "isCreditCard": [Function],
   "isDate": [Function],
+  "isDomain": [Function],
   "isEmail": [Function],
   "isEmpty": [Function],
   "isFunction": [Function],

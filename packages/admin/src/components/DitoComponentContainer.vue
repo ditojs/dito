@@ -21,6 +21,7 @@
       :single="single"
       :disabled="componentDisabled"
       :class="componentClass"
+      @errors="onErrors"
     )
     dito-errors(
       :errors="errors"
@@ -76,6 +77,12 @@ export default DitoComponent.component('dito-component-container', {
     generateLabels: { type: Boolean, default: true }
   },
 
+  data() {
+    return {
+      errors: null
+    }
+  },
+
   computed: {
     typeOptions() {
       return getTypeOptions(this.schema) || {}
@@ -114,10 +121,6 @@ export default DitoComponent.component('dito-component-container', {
       return width == null || ['auto', 'fill'].includes(width) ? null
         : /%/.test(width) ? parseFloat(width) // percentage
         : width * 100 // fraction
-    },
-
-    errors() {
-      return this.schemaComponent.getErrors(this.dataPath)
     },
 
     containerClass() {
@@ -174,6 +177,12 @@ export default DitoComponent.component('dito-component-container', {
         return disabled || this.disabled
       }
     })
+  },
+
+  methods: {
+    onErrors(errors) {
+      this.errors = errors
+    }
   }
 })
 </script>

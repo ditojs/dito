@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin'
 import { getDefaultValue, ignoreMissingValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
-import { isString, isFunction, asArray } from '@ditojs/utils'
+import { isString, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -122,34 +122,6 @@ export default {
       return validations
     },
 
-    dataProcessor() {
-      // Produces a `dataProcessor` closure that can exist without the component
-      // still being around, by pulling all required schema settings into the
-      // local scope and generating a closure that processes the data.
-      // It also supports a 'override' `dataProcessor` property on type
-      // components than can provide further behavior.
-      const dataProcessor = this.getDataProcessor()
-      const { exclude, process } = this.schema
-      if (dataProcessor || exclude || process) {
-        return (value, name, dataPath, rootData) => {
-          let context
-          const getContext = () => (context ||=
-            new DitoContext(null, { value, name, dataPath, rootData }))
-          if (
-            exclude === true ||
-            // Support functions next to booleans for `schema.exclude`:
-            isFunction(exclude) && exclude(getContext())
-          ) {
-            return undefined
-          }
-          if (dataProcessor) {
-            value = dataProcessor(value)
-          }
-          return process ? process(getContext()) : value
-        }
-      }
-    },
-
     label: getSchemaAccessor('label', {
       type: [String, Boolean],
       get(label) {
@@ -170,6 +142,7 @@ export default {
       default: true
     }),
 
+    // TODO: Rename to `excluded` for consistent naming
     exclude: getSchemaAccessor('exclude', {
       type: Boolean,
       default: false
@@ -264,11 +237,6 @@ export default {
 
     // @overridable
     getValidations() {
-      return null
-    },
-
-    // @overridable
-    getDataProcessor() {
       return null
     },
 

@@ -4,6 +4,8 @@ import util from 'util'
 import axios from 'axios'
 import chalk from 'chalk'
 import zlib from 'zlib'
+import pino from 'pino'
+import os from 'os'
 import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
@@ -14,8 +16,6 @@ import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
-import koaLogger from 'koa-logger'
-import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import { EventEmitter } from '@/lib'
@@ -23,14 +23,20 @@ import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
-import { ValidationError, AssetError } from '@/errors'
-import {
-  handleError, findRoute, handleRoute, createTransaction, emitUserEvents
-} from '@/middleware'
+import { ResponseError, ValidationError, AssetError } from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
+  attachLogger,
+  createTransaction,
+  findRoute,
+  handleError,
+  handleRoute,
+  handleUser,
+  logRequests
+} from '@/middleware'
+import {
+  isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 import {
@@ -74,6 +80,7 @@ export class Application extends Koa {
     this.services = Object.create(null)
     this.controllers = Object.create(null)
     this.hasControllerMiddleware = false
+    this.setupLogger()
     this.setupKnex()
     this.setupGlobalMiddleware()
     if (middleware) {
@@ -314,8 +321,8 @@ export class Application extends Koa {
     )
   }
 
-  getAdminVueConfig(mode = 'production') {
-    return this.getAdminController()?.getVueConfig(mode) || null
+  getAdminVueConfig() {
+    return this.getAdminController()?.getVueConfig() || null
   }
 
   getAssetConfig({
@@ -397,24 +404,48 @@ export class Application extends Koa {
 
   compileParametersValidator(parameters, options = {}) {
     const list = []
+    const { dataName = 'data' } = options
+
     let properties = null
-    const rootName = options.rootName || 'root'
-    for (const param of asArray(parameters)) {
-      const schema = isString(param) ? { type: param } : param
-      list.push(schema)
-      if (!(schema.member)) {
-        const { name, type, ...rest } = schema
-        properties = properties || {}
-        properties[name || rootName] = type ? { type, ...rest } : rest
+    const addParameter = (name, schema) => {
+      list.push({
+        name: name ?? null,
+        ...schema
+      })
+      if (!schema.member) {
+        properties ||= {}
+        properties[name || dataName] = schema
       }
     }
-    // NOTE: If properties is null, schema and validate will become null too:
+
+    // Support two formats of parameters definitions:
+    // - An array of parameter schemas, named by their `name` key.
+    // - An object of parameter schemas, named by the key under which each
+    //   schema is stored in the root object.
+    // If an array is passed, then the controller actions receives the
+    // parameters as separate arguments. If an object is passed, then the
+    // actions receives one parameter object where under the same keys the
+    // specified parameter values are stored.
+    let asObject = false
+    if (isArray(parameters)) {
+      for (const { name, ...schema } of parameters) {
+        addParameter(name, schema)
+      }
+    } else if (isObject(parameters)) {
+      asObject = true
+      for (const [name, schema] of Object.entries(parameters)) {
+        if (schema) {
+          addParameter(name, schema)
+        }
+      }
+    } else if (parameters) {
+      throw new Error(`Invalid parameters definition: ${parameters}`)
+    }
+    // NOTE: If properties is null, schema and validate will become null too.
+    // NOTE: If it is not null, it will get expanded to an object schema.
     const schema = convertSchema(properties, options)
     const validate = this.compileValidator(schema, {
       // For parameters, always coerce types, including arrays.
-      // TODO: This coerces `null` to 0 for numbers, which is not what we'd want
-      // Implement our own coercion instead, which we already do for objects,
-      // see ControllerAction.validateParameters()
       coerceTypes: 'array',
       ...options
     })
@@ -426,7 +457,8 @@ export class Application extends Koa {
     return {
       list,
       schema,
-      rootName,
+      asObject,
+      dataName,
       validate: validate
         // Use `call()` to pass ctx as context to Ajv, see passContext:
         ? data => validate.call(ctx, data)
@@ -445,19 +477,14 @@ export class Application extends Koa {
   setupGlobalMiddleware() {
     const { app, log } = this.config
 
-    const logger = {
-      console: koaLogger,
-      true: koaLogger,
-      // TODO: Implement logging to actual file instead of console for Pino.
-      file: pinoLogger
-    }[log.requests]
+    this.use(attachLogger(this.logger))
 
     this.use(handleError())
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
-    if (logger) {
-      this.use(logger(getOptions(app.logger)))
+    if (log.requests) {
+      this.use(logRequests())
     }
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
@@ -520,12 +547,43 @@ export class Application extends Koa {
         if (app.session) {
           this.use(passport.session())
         }
-        this.use(emitUserEvents())
+        this.use(handleUser())
       }
+
       // 6. finally handle the found route, or set status / allow accordingly.
       this.use(handleRoute())
       this.hasControllerMiddleware = true
     }
+  }
+
+  setupLogger() {
+    const { err, req, res } = pino.stdSerializers
+    // Only include `id` from the user, to not inadvertently log PII.
+    const user = user => ({ id: user.id })
+    const serializers = { err, req, res, user }
+
+    const logger = pino(merge(
+      {
+        level: 'info',
+        serializers,
+        prettyPrint: {
+          // List of keys to ignore in pretty mode.
+          ignore: 'req,res,durationMs,user,requestId',
+          // SYS to use system time and not UTC.
+          translateTime: 'SYS:HH:MM:ss.l'
+        },
+        // Redact common sensitive headers.
+        redact: [
+          '*.headers["cookie"]',
+          '*.headers["set-cookie"]',
+          '*.headers["authorization"]'
+        ],
+        base: null // no pid,hostname,name
+      },
+      getOptions(this.config.logger)
+    ))
+
+    this.logger = logger.child({ name: 'app' })
   }
 
   setupKnex() {
@@ -600,21 +658,33 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  onError(err) {
+  formatError(err) {
+    const message = err.toJSON
+      ? JSON.stringify(err.toJSON(), null, 2)
+      : err.message || err
+    const str = `${err.name}: ${message}`
+    return err.stack && this.config.log.errors?.stack !== false
+      ? `${str}\n${err.stack.split(/\n|\r\n|\r/).slice(1).join(os.EOL)}`
+      : str
+  }
+
+  logError(err, ctx) {
     if (!err.expose && !this.silent) {
-      console.error(`${err.name}: ${err.toJSON
-        ? JSON.stringify(err.toJSON(), null, 2)
-        : err.message || err}`
-      )
-      if (err.stack) {
-        console.error(err.stack)
+      try {
+        const text = this.formatError(err)
+        const level =
+          err instanceof ResponseError && err.status < 500 ? 'info' : 'error'
+        const logger = ctx?.logger || this.logger
+        logger[level](text)
+      } catch (e) {
+        console.error('Could not log error', e)
       }
     }
   }
 
   async start() {
-    if (!this.listeners('error').length) {
-      this.on('error', this.onError)
+    if (this.config.log.errors !== false) {
+      this.on('error', this.logError)
     }
     await this.emit('before:start')
     await this.forEachService(service => service.start())
@@ -640,27 +710,36 @@ export class Application extends Koa {
   async stop() {
     await this.emit('before:stop')
     this.server = await new Promise((resolve, reject) => {
-      if (this.server) {
-        this.server.close(err => {
+      const { server } = this
+      if (server) {
+        server.close(err => {
           if (err) {
             reject(err)
           } else {
             resolve(null)
           }
         })
+        // Hack to make sure that we close the server,
+        //  even if sockets are still open.
+        //  Taken from https://stackoverflow.com/a/36830072.
+        //  A proper solution would be to use a library, ex: https://github.com/godaddy/terminus
+        setImmediate(() => server.emit('close'))
       } else {
         reject(new Error('Server is not running'))
       }
     })
     await this.forEachService(service => service.stop())
     await this.emit('after:stop')
+    if (this.config.log.errors !== false) {
+      this.off('error', this.logError)
+    }
   }
 
   async startOrExit() {
     try {
       await this.start()
     } catch (err) {
-      this.emit('error', err)
+      this.logError(err)
       process.exit(-1)
     }
   }

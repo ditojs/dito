@@ -18,19 +18,29 @@ instantiation of controllers.
 In their definition, all Dito.js controllers can provide action methods which
 are the functions to be called when their route is requested. Actions can
 specify the paths to which they are mapped, defined in relation to the route
-path of their controller, and the HTTP verb to which they should listen. By
-default, the normalized method name is used as the action's path, and the
+path of their controller, and the HTTP verb to which they should respond to.
+
+By default, the normalized method name is used as the action's path, and the
 `'get'` verb is assigned if none is provided. See [Path Normalization](#path-
 normalization) for more information on how Dito.js normalizes router paths.
 
 Actions can also define mappings and validation schemas for their parameters and
 return values, provided in the same format as is used for model properties,
-mapping the query parameters passed to an action method and the value returned
-from it, and triggering their automatic validation.
+mapping the query or body parameters passed to an action method and the value
+returned from it, and triggering their automatic validation.
 
 Dito.js provides a selection of JavaScript decorators designed to offer a clean,
 streamlined way to configure all these action attributes, see
 [Decorators](#decorators) for more information.
+
+All Dito.js actions receive the full
+[Koa.js `ctx` object](http://koajs.com/#context) as their first argument.
+
+```js
+sayHello(ctx) {
+  return `Just sayin' hello: ${ctx.query.message}`
+}
+```
 
 ### Example
 
@@ -52,7 +62,7 @@ export class GreetingsController extends Controller {
   @returns({
     type: 'string'
   })
-  sayALongwindedGoodbye() {
+  sayALongWindedGoodbye() {
     // Note how the method's name is ignored, because we override
     // the action path with a decorator.
     return 'Goodbye, and thank you for stopping by!'
@@ -77,39 +87,50 @@ desired route.
 See [Path Normalization](#path-normalization) for more information on how
 Dito.js normalizes router paths.
 
-By setting the action's path to `'.'`, it is mapped the controller's own route
-path without an additional action path, assigning the action the function of the
-controller's index action:
+By setting the action's path to an empty string (`''`), it is mapped the
+controller's own route path without an additional action path, essentially
+turning the action into the controller's index action:
 
 ```js
-@action('get', '.')
+@action('get', '')
 @returns({
   type: 'string'
 })
 index() {
-  return 'Hello from the index action. Note: its method name does not matter.'
+  return 'Hello from the index action. Note: the method name does not matter.'
 }
 ```
 
-### `@parameters(parameters)`
+### `@parameters(parameters, options = {})`
 
-All Dito.js actions receive the full
-[Koa.js `ctx` object](http://koajs.com/#context) as their first argument:
+The `@parameters()` decorator can be used if automatic mapping of Koa.js'
+`ctx.query` or `ctx.body` objects to method parameters is desired, along with
+their automatic validation. To do so, call it with an array listing each
+parameter in the same format Dito.js uses for its model property schema, but
+with added `name` keys for each parameter, in order to map it to the entries in
+the object they are read from.
+
+Note the `type` can also be set to the name of any model known to your Dito app,
+in addition to the standard types supported by JSON schema:
 
 ```js
-sayHello(ctx) {
-  return `Just sayin' hello: ${ctx.query.message}`
+@action('post')
+@parameters([
+  {
+    name: 'model',
+    type: 'MyModel'
+  }
+])
+doSomething(ctx, model) {
+  return `Received a validated model instance: ${model}`
 }
 ```
-
-If automatic mapping of Koa.js' `ctx.query` object to method parameters along
-with their automatic validation is desired, `@parameters()` can be provided with
-an array listing each parameter in the same format Dito.js uses for its model
-property schema, but with added `name` keys for each parameter, in order to do
-the mapping.
 
 For information on property schema and validation, see
 [Model Properties](./model-properties.md) and [Validator](./validator.md).
+
+The parameters are read from the `ctx.body` object for post and put requests,
+all other requests read from `ctx.query`.
 
 ```js
 @parameters([
@@ -124,8 +145,37 @@ sayHello(ctx, message) {
 }
 ```
 
-Optionally, if only one parameter is defined, the array can also be omitted and
-the parameter object can be directly provided:
+#### `@parameters()` Validation Options
+
+The optional `options` parameter can be used to provide options controlling both
+the validation itself, as well as the validator instance.
+
+These validation
+options are supported:
+
+| Option            | Default | Description
+| ----------------- | ------- | ------------------------------------------------
+| `patch`           | `false` |
+| `throw`           | `true`  |
+| `graph`           | `false` |
+| `async`           | `false` |
+
+In addition to these, the following Ajv validator options can also  be
+controller through the `options` parameter. See
+[Ajv](https://github.com/epoberezkin/ajv#options) for a description of their
+meaning:
+
+| Option                | Default |
+| --------------------- | ------- |
+| `$data`               | `false` |
+| `$comment`            | `true`  |
+| `coerceTypes`         | `false` |
+| `multipleOfPrecision` | `false` |
+| `ownProperties`       | `true`  |
+| `removeAdditional`    | `false` |
+| `uniqueItems`         | `true` |
+| `useDefaults`         | `true`  |
+| `verbose`             | `false` |
 
 ```js
 @parameters({
@@ -135,25 +185,44 @@ the parameter object can be directly provided:
 })
 ```
 
+If no options need to be passed to `$parameters()`, the parameters array can
+also be omitted and the parameter objects can be directly provided instead as
+multiple arguments:
+
+```js
+@parameters([
+  {
+    name: 'message',
+    type: 'string',
+    required: true
+  }
+])
+```
+
 If the `name` key is committed, then the full `ctx.query` object is mapped to
 the argument, and is validated against its schema:
 
 ```js
-@parameters({
-  type: 'object',
-  required: true
-})
+@parameters([
+  {
+    type: 'object',
+    required: true
+  }
+])
 querySomething(ctx, query) {
   return `Just queryin': ${query}`
 }
 ```
 
+#### Receiving the resolved `member` through `@parameters()`
+
+
 ### `@returns(returns)`
 
 Just as the `@parameters()` decorator allows mapping and validating the
 parameters that the action method receives, the `@returns()` decorator can be
-used to provide a schema for the value returned, and optionally map the value
-to a key inside a returned object.
+used to provide a schema for the action's return value, and optionally map the
+value to a key inside a returned object.
 
 ```js
 @returns({
@@ -165,7 +234,7 @@ sayHello() {
 ```
 
 In symmetry to the parameter name mapping, this value can optionally be wrapped
-in an object under a given key again:
+in an object under a given key:
 
 ```js
 @returns({
@@ -178,9 +247,9 @@ sayHello() {
 ```
 
 Accessing this action's route would return an object instead of a string:
-```js
+```json
 {
-  greetings: 'Greetings, received in an object with a key called "greetings"!'
+  "greetings": "Greetings received in an object with a key called \"greetings\""
 }
 ```
 
@@ -365,11 +434,13 @@ export class MyModels extends ModelController {
   collection = {
     allow: ['find', 'helloCollection'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
+    @parameters([
+      {
+        name: 'msg',
+        type: 'string',
+        required: true
+      }
+    ])
     helloCollection(msg) {
       return `Model class '${this.modelClass.name}' says hello: ${msg}`
     }
@@ -378,11 +449,13 @@ export class MyModels extends ModelController {
   member = {
     allow: ['find', 'helloMember'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
+    @parameters([
+      {
+        name: 'msg',
+        type: 'string',
+        required: true
+      }
+    ])
     helloMember(member, msg) {
       return `Model instance '${member.name}' says hello: ${msg}`
     }

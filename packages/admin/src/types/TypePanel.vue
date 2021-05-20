@@ -4,6 +4,7 @@ import TypeComponent from '@/TypeComponent'
 // @vue/component
 export default TypeComponent.register('panel', {
   defaultValue: undefined,
+  excludeValue: true,
   generateLabel: false,
   omitPadding: () => true,
 

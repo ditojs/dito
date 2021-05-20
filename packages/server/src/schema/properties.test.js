@@ -328,7 +328,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('expands `nullable: true` to correct JSON schema representation', () => {
+  it('handles `nullable: true` correctly (now natively supported)', () => {
     expect(convertSchema({
       myString: {
         type: 'string',
@@ -338,7 +338,7 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myString: {
-          type: ['null', 'string'],
+          type: 'string',
           nullable: true
         }
       },
@@ -346,7 +346,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands \`nullable: true\` references to correct JSON schema representation`, () => {
+  it(`handles \`nullable: true\` references correctly`, () => {
     expect(convertSchema({
       myModel: {
         type: 'MyModel',
@@ -356,22 +356,17 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myModel: {
-          anyOf: [
-            {
-              type: 'null'
-            },
-            {
-              $ref: 'MyModel'
-            }
-          ],
-          nullable: true
+          oneOf: [
+            { type: 'null' },
+            { $ref: 'MyModel' }
+          ]
         }
       },
       additionalProperties: false
     })
   })
 
-  it(`expands \`nullable: true\` dates to correct JSON schema representation`, () => {
+  it(`handles \`nullable: true\` dates correctly (now natively supported)`, () => {
     expect(convertSchema({
       myDate: {
         type: 'date',
@@ -381,20 +376,189 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myDate: {
-          anyOf: [
-            {
-              type: 'null'
-            },
-            {
-              type: ['string', 'object'],
-              format: 'date-time'
-            }
-          ],
+          type: ['string', 'object'],
+          format: 'date-time',
           nullable: true
         }
       },
       additionalProperties: false
     })
+  })
+
+  it(`handles \`nullable: true\` enums correctly`, () => {
+    expect(convertSchema({
+      myEnum: {
+        type: 'string',
+        enum: ['one', 'two', 'three'],
+        nullable: true
+      }
+    })).toEqual({
+      type: 'object',
+      properties: {
+        myEnum: {
+          type: 'string',
+          enum: ['one', 'two', 'three', null],
+          nullable: true
+        }
+      },
+      additionalProperties: false
+    })
+  })
+})
+
+it('convert schemas within oneOf properties', () => {
+  expect(convertSchema({
+    myList: {
+      type: 'array',
+      items: {
+        oneOf: [
+          {
+            prop1: {
+              type: 'string',
+              required: true
+            },
+            prop2: {
+              type: 'number',
+              required: true
+            }
+          },
+          {
+            type: 'object',
+            properties: {
+              prop3: {
+                type: 'string',
+                required: true
+              },
+              prop4: {
+                type: 'number',
+                required: true
+              }
+            }
+          }
+        ]
+      }
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myList: {
+        type: 'array',
+        items: {
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                prop1: {
+                  type: 'string',
+                  format: 'required'
+                },
+                prop2: {
+                  type: 'number',
+                  format: 'required'
+                }
+              },
+              required: ['prop1', 'prop2'],
+              additionalProperties: false
+            },
+            {
+              type: 'object',
+              properties: {
+                prop3: {
+                  type: 'string',
+                  format: 'required'
+                },
+                prop4: {
+                  type: 'number',
+                  format: 'required'
+                }
+              },
+              required: ['prop3', 'prop4'],
+              additionalProperties: false
+            }
+          ]
+        }
+      }
+    },
+    additionalProperties: false
+  })
+})
+
+it('support `required: true` on object', () => {
+  expect(convertSchema({
+    myObject: {
+      type: 'object',
+      required: true,
+      properties: {
+        prop1: {
+          type: 'string',
+          required: true
+        },
+        prop2: {
+          type: 'number',
+          required: true
+        }
+      }
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myObject: {
+        type: 'object',
+        format: 'required',
+        properties: {
+          prop1: {
+            format: 'required',
+            type: 'string'
+          },
+          prop2: {
+            format: 'required',
+            type: 'number'
+          }
+        },
+        additionalProperties: false,
+        required: ['prop1', 'prop2']
+      }
+    },
+    additionalProperties: false,
+    required: ['myObject']
+  })
+})
+
+it('support `required` on object short-hand', () => {
+  expect(convertSchema({
+    myObject: {
+      required: true,
+      prop1: {
+        type: 'string',
+        required: true
+      },
+      prop2: {
+        type: 'number',
+        required: true
+      }
+    }
+  })).toEqual({
+    type: 'object',
+    properties: {
+      myObject: {
+        type: 'object',
+        format: 'required',
+        properties: {
+          prop1: {
+            type: 'string',
+            format: 'required'
+          },
+          prop2: {
+            type: 'number',
+            format: 'required'
+          }
+        },
+        additionalProperties: false,
+        required: ['prop1', 'prop2']
+      }
+    },
+    additionalProperties: false,
+    required: ['myObject']
   })
 })
 
@@ -428,8 +592,7 @@ describe('expandSchemaShorthand()', () => {
         myNumber: {
           type: 'number'
         }
-      },
-      additionalProperties: false
+      }
     })
   })
 })

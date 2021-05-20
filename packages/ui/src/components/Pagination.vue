@@ -144,27 +144,21 @@ export default {
 
     updatePageRange() {
       const { showPrev, showNext, total, currentPageSize, currentPage } = this
-      const showLen = showPrev + showNext + 1
+      const showLength = showPrev + showNext + 1
       const numPages = this.numPages = Math.ceil(total / currentPageSize)
 
-      let start = 0
-      let end = 0
-      if (numPages <= 1) {
-        start = end = 1
-      } else if (numPages <= showLen) {
-        start = 1
+      let start = 1
+      let end = 1
+      if (numPages <= showLength) {
         end = numPages
+      } else if (currentPage <= showPrev + 1) {
+        end = showLength
+      } else if (currentPage >= numPages - showNext) {
+        end = numPages
+        start = numPages - showLength + 1
       } else {
-        if (currentPage <= showPrev + 1) {
-          start = 1
-          end = showLen
-        } else if (currentPage >= numPages - showNext) {
-          end = numPages
-          start = numPages - showLen + 1
-        } else {
-          start = currentPage - showPrev
-          end = currentPage + showNext
-        }
+        start = currentPage - showPrev
+        end = currentPage + showNext
       }
 
       const pageRange = []

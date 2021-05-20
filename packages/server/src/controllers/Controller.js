@@ -7,7 +7,7 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray,
+  isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
@@ -44,8 +44,10 @@ export class Controller {
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
         `${
-          namespace ? chalk.green(`/${namespace}/`) : ''}${
-          chalk.cyan(path)}${
+          namespace ? chalk.green(`/${namespace}/`) : ''
+        }${
+          chalk.cyan(path)
+        }${
           chalk.white(':')
         }`,
         this.level
@@ -90,9 +92,12 @@ export class Controller {
   setupRoute(verb, url, transacted, authorize, action, handlers) {
     this.log(
       `${
-        chalk.magenta(verb.toUpperCase())} ${
-        chalk.green(this.url)}${
-        chalk.cyan(url.slice(this.url.length))} ${
+        chalk.magenta(verb.toUpperCase())
+      } ${
+        chalk.green(this.url)
+      }${
+        chalk.cyan(url.slice(this.url.length))
+      } ${
         chalk.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1
@@ -408,6 +413,12 @@ export class Controller {
     return result
   }
 
+  async getMember(/* ctx, base = this, param = { ... } */) {
+    // This is only defined in `CollectionController`, where it resolves to the
+    // member represented by the given route.
+    return null
+  }
+
   /**
    * Converts the authorize config settings into an authorization function that
    * can be passed to `handleAuthorization()`.
@@ -422,31 +433,35 @@ export class Controller {
     } else if (isBoolean(authorize)) {
       return () => authorize
     } else if (isFunction(authorize)) {
-      return async (...args) => {
-        const res = await authorize(...args)
+      return async (ctx, member) => {
+        const res = await authorize(ctx, member)
         // Pass res through `processAuthorize()` to support strings & arrays.
-        return this.processAuthorize(res)(...args)
+        return this.processAuthorize(res)(ctx, member)
       }
     } else if (isString(authorize) || isArray(authorize)) {
-      return (ctx, member) => {
+      return async (ctx, member) => {
         const { user } = ctx.state
-        return user && !!asArray(authorize).find(
-          // Support 3 scenarios:
-          // - '$self': The requested member is checked against `ctx.state.user`
-          //   and the action is only authorized if it matches the member.
-          // - '$owner': The member is asked if it is owned by `ctx.state.user`
-          //   through the optional `Model.$hasOwner()` method.
-          // - any string:  `ctx.state.user` is checked for this role through
-          //   the overridable `UserModel.hasRole()` method.
+        if (!user) {
+          return false
+        }
+        const values = asArray(authorize)
+        // For '$owner', fetch `member` now in case the action parameters
+        // didn't already request it:
+        if (!member && values.includes('$owner')) {
+          member = await this.getMember(ctx)
+        }
+        return !!values.find(
+        // Support 3 scenarios:
+        // - '$self': The requested member is checked against `ctx.state.user`
+        //   and the action is only authorized if it matches the member.
+        // - '$owner': The member is asked if it is owned by `ctx.state.user`
+        //   through the optional `Model.$hasOwner()` method.
+        // - any string:  `ctx.state.user` is checked for this role through
+        //   the overridable `UserModel.hasRole()` method.
           value => {
             return value === '$self'
-              ? member
-                // member actions
-                ? member.$is(user)
-                // collection actions: match id and modelClass
-                : user.constructor === this.modelClass &&
-                  // TODO: Shouldn't this use `ctx.memberId`?
-                  `${user.id}` === ctx.params.id
+              ? user.constructor === this.modelClass &&
+              equals(user.$id(), ctx.memberId)
               : value === '$owner'
                 ? member?.$hasOwner?.(user)
                 : user.$hasRole(value)
@@ -470,8 +485,8 @@ export class Controller {
           : ''
   }
 
-  async handleAuthorization(authorization, ...args) {
-    const ok = await authorization(...args)
+  async handleAuthorization(authorization, ctx, member) {
+    const ok = await authorization(ctx, member)
     if (ok !== true) {
       throw new AuthorizationError()
     }

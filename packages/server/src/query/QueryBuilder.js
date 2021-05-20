@@ -319,11 +319,13 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   raw(...args) {
-    return this.knex().raw(...args)
+    // TODO: Figure out a way to support `object.raw()` syntax and return a knex
+    // raw expression without accessing the private `RawBuilder.toKnexRaw()`:
+    return objection.raw(...args).toKnexRaw(this)
   }
 
   selectRaw(...args) {
-    return this.select(this.raw(...args))
+    return this.select(objection.raw(...args))
   }
 
   // Non-deprecated version of Objection's `pluck()`
@@ -373,7 +375,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  async truncate({ restart = true, cascade = false } = {}) {
+  truncate({ restart = true, cascade = false } = {}) {
     if (this.isPostgreSQL()) {
       // Support `restart` and `cascade` in PostgreSQL truncate queries.
       return this.raw(
@@ -434,7 +436,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
-      const param = key.endsWith('[]') ? key.slice(0, key.length - 2) : key
+      const param = key.endsWith('[]') ? key.slice(0, -2) : key
       if (!allowed[param]) {
         throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }

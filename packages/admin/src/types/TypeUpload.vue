@@ -139,7 +139,9 @@ export default TypeComponent.register('upload', {
 
     multiple: getSchemaAccessor('multiple', {
       type: Boolean,
-      default: false
+      default: false,
+      // No callback as it's used in `processValue()`, see `OptionsMixin.relate`
+      callback: false
     }),
 
     extensions: getSchemaAccessor('extensions', {
@@ -198,21 +200,6 @@ export default TypeComponent.register('upload', {
   },
 
   methods: {
-    getDataProcessor() {
-      // Since the returned dataProcess may be used after the life-time of this
-      // component, we shouldn't access `this` form inside the returned closure:
-      const { multiple } = this
-      return value => {
-        // Filter out all newly added files that weren't actually uploaded.
-        const files = asFiles(value)
-          .map(
-            ({ upload, ...file }) => !upload || upload.success ? file : null
-          )
-          .filter(file => file)
-        return multiple ? files : files[0] || null
-      }
-    },
-
     renderFile(file, index) {
       const { render } = this.schema
       return render
@@ -220,7 +207,7 @@ export default TypeComponent.register('upload', {
           this,
           new DitoContext(this, {
             value: file,
-            list: this.files,
+            data: this.files,
             index,
             dataPath: appendDataPath(this.dataPath, index)
           })
@@ -331,6 +318,16 @@ export default TypeComponent.register('upload', {
         xhr.withCredentials = true
       }
     }
+  },
+
+  processValue(schema, value) {
+    // Filter out all newly added files that weren't actually uploaded.
+    const files = asFiles(value)
+      .map(
+        ({ upload, ...file }) => !upload || upload.success ? file : null
+      )
+      .filter(file => file)
+    return schema.multiple ? files : files[0] || null
   }
 })
 

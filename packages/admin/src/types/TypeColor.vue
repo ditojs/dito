@@ -16,8 +16,14 @@
         v-bind="attributes"
         v-on="listeners"
       )
-      .dito-color-preview(
-        :style="{ background: `#${hexValue}` }"
+      .dito-color-preview.dito-inherit-focus(
+        v-if="value"
+      )
+        div(:style="{ background: `#${hexValue || '00000000'}` }")
+      button.dito-button-clear.dito-button-overlay(
+        v-if="clearable && value"
+        @click.stop="clear"
+        :disabled="disabled"
       )
     sketch-picker.dito-color-picker(
       slot="popup"
@@ -29,16 +35,18 @@
 </template>
 
 <style lang="sass">
-    $color-swatch-width: $input-height
+    $color-swatch-width: $pattern-transparency-size
     $color-swatch-radius: $border-radius - $border-width
     .dito-color
       .dito-input
         display: block
         position: relative
         input
+          box-sizing: border-box
           font-variant-numeric: tabular-nums
-          margin-right: $color-swatch-width
-          padding-right: 2 * $input-padding-ver
+          padding-right: $color-swatch-width
+      .dito-button-clear
+        margin-right: $color-swatch-width
       .dito-color-picker
         margin: $popup-margin
         border: $border-style
@@ -46,13 +54,17 @@
         background: $color-white
         box-shadow: $shadow-window
       .dito-color-preview
-        position: absolute
-        top: 0
-        right: 0
-        bottom: 0
-        width: $color-swatch-width
-        border-top-right-radius: $color-swatch-radius
-        border-bottom-right-radius: $color-swatch-radius
+        background: $pattern-transparency
+        border-left: $border-style
+        &,
+        div
+          position: absolute
+          width: $color-swatch-width
+          top: 0
+          right: 0
+          bottom: 0
+          border-top-right-radius: $color-swatch-radius
+          border-bottom-right-radius: $color-swatch-radius
 </style>
 
 <script>
@@ -82,6 +94,7 @@ export default TypeComponent.register('color', {
       set(value) {
         const { format } = this
         const key = {
+          // NOTE: vue-color calls it 'hex', while tinycolor calls it 'hex6'
           hex: value?.a < 1 ? 'hex8' : 'hex',
           rgb: 'rgba'
         }[format] || format
@@ -95,7 +108,9 @@ export default TypeComponent.register('color', {
 
     hexValue: {
       get() {
-        if (!this.focused) {
+        if (this.value == null) {
+          this.convertedHexValue = null
+        } else if (!this.focused) {
           const color = tinycolor(this.value)
           if (color.isValid()) {
             this.convertedHexValue = color
@@ -112,6 +127,8 @@ export default TypeComponent.register('color', {
       }
     },
 
+    // TODO: This clashes with TypeMixin.format()`, which shall be renamed soon
+    // to `formatValue()`
     format: getSchemaAccessor('format', {
       type: String,
       default: 'hex'

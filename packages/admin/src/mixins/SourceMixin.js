@@ -3,6 +3,7 @@ import ResourceMixin from './ResourceMixin'
 import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
+import { processReferences } from '@/utils/data'
 import {
   processRouteSchema, processForms, hasForms, hasLabels, isCompact,
   getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
@@ -501,11 +502,13 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
-    const { components } = schema
+    const { components, compact } = schema
     if (components) {
-      // Expand inlined components to a nested form with inlined = true
+      // Expand inlined components to a nested inline form with inlined = true,
+      // supporting the optional `compact: true` option along with it.
       delete schema.components
-      schema.form = { components }
+      delete schema.compact
+      schema.form = { components, compact }
       schema.inlined = true
     }
     processRouteSchema(api, schema, name)
@@ -597,5 +600,9 @@ export default {
         }
       }
     }
+  },
+
+  processValue(schema, value, dataPath, options) {
+    return processReferences(value, options)
   }
 }

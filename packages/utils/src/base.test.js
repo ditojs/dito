@@ -21,6 +21,7 @@ const asyncLambda = async function() {}
 
 describe('isPlainObject()', () => {
   describe.each([
+    [null, false],
     [object, true],
     [array, false],
     [string, false],
@@ -47,6 +48,7 @@ describe('isPlainObject()', () => {
 
 describe('isObject()', () => {
   describe.each([
+    [null, false],
     [object, true],
     [array, false],
     [string, false],
@@ -76,6 +78,7 @@ describe('isObject()', () => {
 
 describe('isArray()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, true],
     [string, false],
@@ -102,6 +105,7 @@ describe('isArray()', () => {
 
 describe('isFunction()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -128,6 +132,7 @@ describe('isFunction()', () => {
 
 describe('isNumber()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -155,6 +160,7 @@ describe('isNumber()', () => {
 
 describe('isInteger()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -210,6 +216,7 @@ describe('isInteger()', () => {
 
 describe('isString()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, true],
@@ -237,6 +244,7 @@ describe('isString()', () => {
 
 describe('isBoolean()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -264,6 +272,7 @@ describe('isBoolean()', () => {
 
 describe('isDate()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -290,6 +299,7 @@ describe('isDate()', () => {
 
 describe('isRegExp()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -324,6 +334,7 @@ describe('isPromise()', () => {
   }
 
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -352,6 +363,7 @@ describe('isPromise()', () => {
 
 describe('isAsync()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, false],
     [string, false],
@@ -378,6 +390,7 @@ describe('isAsync()', () => {
 
 describe('isArrayLike()', () => {
   describe.each([
+    [null, false],
     [object, false],
     [array, true],
     [string, true],
@@ -404,6 +417,7 @@ describe('isArrayLike()', () => {
 
 describe('isEmpty()', () => {
   describe.each([
+    [null, true],
     [object, false],
     [{}, true],
     [array, false],
