@@ -9,6 +9,12 @@ import {
   TimeFormat
 } from '@ditojs/utils'
 import Vue, { VueConstructor } from 'vue'
+import {
+  IterableElement,
+  RequireAtLeastOne,
+  SetOptional,
+  ConditionalExcept
+} from 'type-fest'
 
 declare global {
   const dito: DitoGlobal
@@ -18,9 +24,7 @@ export default DitoAdmin
 export interface DitoGlobal {
   api?: ApiConfig
   base?: string
-  settings?: {
-    [k: string]: any
-  }
+  settings?: Record<string, any>
 }
 export type PerformRequest = <T>({
   url,
@@ -140,9 +144,7 @@ export interface ApiConfig {
   /**
    * Optionally override resource path handlers.
    */
-  resources?: {
-    [k: string]: (resource: ApiResource | string) => string
-  }
+  resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
    * Optionally override / extend headers
@@ -150,7 +152,7 @@ export interface ApiConfig {
    *   'Content-Type': 'application/json'
    * }`
    */
-  headers?: { [headerKey: string]: string }
+  headers?: Record<string, string>
 
   /**
    * Configures how urls passed to `DitoAdmin.request` are checked to see if
@@ -169,7 +171,7 @@ export interface BaseSchema<$State extends State>
     SchemaTypeMixin<$State> {
   default?: OrItemAccessor<$State>
   compute?: ItemAccessor<$State>
-  data?: OrItemAccessor<$State, {}, {[key: string]: any}>
+  data?: OrItemAccessor<$State, {}, Record<string, any>>
   omitPadding?: boolean
 }
 
@@ -507,198 +509,191 @@ export type ButtonSchema<
   }
 }
 
-export type SwitchSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'switch'
-  labels?: {
-    /**
-     * The displayed label when the switch is checked.
-     *
-     * @defaultValue `'on'`
-     */
-    checked?: string
-    /**
-     * The displayed label when the switch is unchecked.
-     *
-     * @defaultValue `'off'`
-     */
-    unchecked?: string
-  }
-}
-
-export type NumberSchema<
-  $State extends State = CreateState
-> = SchemaNumberMixin<$State> &
+export type SwitchSchema<$State extends State = CreateState> =
   BaseSchema<$State> & {
     /**
      * The type of the component.
      */
-    type: 'number' | 'integer'
+    type: 'switch'
+    labels?: {
+      /**
+       * The displayed label when the switch is checked.
+       *
+       * @defaultValue `'on'`
+       */
+      checked?: string
+      /**
+       * The displayed label when the switch is unchecked.
+       *
+       * @defaultValue `'off'`
+       */
+      unchecked?: string
+    }
   }
 
-export type SliderSchema<
-  $State extends State = CreateState
-> = SchemaNumberMixin<$State> &
+export type NumberSchema<$State extends State = CreateState> =
+  SchemaNumberMixin<$State> &
+    BaseSchema<$State> & {
+      /**
+       * The type of the component.
+       */
+      type: 'number' | 'integer'
+    }
+
+export type SliderSchema<$State extends State = CreateState> =
+  SchemaNumberMixin<$State> &
+    BaseSchema<$State> & {
+      /**
+       * The type of the component.
+       */
+      type: 'slider'
+      // TODO: document what the input SliderSchema option does
+      input?: OrItemAccessor<$State>
+    }
+
+export type TextareaSchema<$State extends State = CreateState> =
   BaseSchema<$State> & {
     /**
      * The type of the component.
      */
-    type: 'slider'
-    // TODO: document what the input SliderSchema option does
-    input?: OrItemAccessor<$State>
+    type: 'textarea'
+    /**
+     * Whether the input element is resizable.
+     */
+    resizable?: boolean
+    /**
+     * The amount of visible lines.
+     *
+     * @defaultValue `4`
+     */
+    lines?: number
   }
 
-export type TextareaSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'textarea'
-  /**
-   * Whether the input element is resizable.
-   */
-  resizable?: boolean
-  /**
-   * The amount of visible lines.
-   *
-   * @defaultValue `4`
-   */
-  lines?: number
-}
-
-export type CodeSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'code'
-  /**
-   * The code language.
-   *
-   * @defaultValue `js`
-   */
-  language?: string
-  /**
-   * The indent size.
-   *
-   * @defaultValue `2`
-   */
-  indentSize?: number
-  /**
-   * The amount of visible lines.
-   *
-   * @defaultValue `3`
-   */
-  lines?: number
-}
-
-export type MarkupSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'markup'
-  /**
-   * Whether the input element is resizable.
-   */
-  resizable?: OrItemAccessor<$State, {}, boolean>
-  /**
-   * @defaultValue `'collapse'`
-   */
-  whitespace?: OrItemAccessor<
-    $State,
-    {},
-    'collapse' | 'preserve' | 'preserve-all'
-  >
-  /**
-   * The amount of visible lines.
-   *
-   * @defaultValue `10`
-   */
-  lines?: number
-
-  // TODO: document enableRules
-  enableRules?: OrItemAccessor<
-    $State,
-    {},
-    | boolean
-    | {
-        input: boolean
-        paste: boolean
-      }
-  >
-  marks?: {
-    bold?: boolean
-    italic?: boolean
-    underline?: boolean
-    strike?: boolean
-    small?: boolean
-    code?: boolean
-    link?: boolean
+export type CodeSchema<$State extends State = CreateState> =
+  BaseSchema<$State> & {
+    /**
+     * The type of the component.
+     */
+    type: 'code'
+    /**
+     * The code language.
+     *
+     * @defaultValue `js`
+     */
+    language?: string
+    /**
+     * The indent size.
+     *
+     * @defaultValue `2`
+     */
+    indentSize?: number
+    /**
+     * The amount of visible lines.
+     *
+     * @defaultValue `3`
+     */
+    lines?: number
   }
-  nodes?: {
-    blockquote?: boolean
-    codeBlock?: boolean
-    heading?: (1 | 2 | 3 | 4 | 5 | 6)[]
-    horizontalRule?: boolean
-    orderedList?: boolean
-    bulletList?: boolean
-  }
-  tools?: {
-    history?: boolean
-  }
-}
 
-export type UploadSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'upload'
-  /**
-   * Whether multiple files can be uploaded.
-   *
-   * @default false
-   */
-  multiple?: boolean
-  /**
-   * Allowed file extensions for upload.
-   * @example 'zip' // Only files with zip extension
-   * @example ['jpg', 'jpeg', 'gif', 'png']
-   * @example /\.(gif|jpe?g|png)$/i
-   */
-  extensions?: OrArrayOf<RegExp | string>
-  /**
-   * One or more unique file type specifiers that describe the type of file
-   * that may be selected for upload by the user.
-   *
-   * @example 'audio/*' // Any type of audio file
-   * @example ['image/png', 'image/gif', 'image/jpeg']
-   * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#Unique_file_type_specifiers }
-   */
-  accept?: OrArrayOf<string>
-  /**
-   * The maximum size of the file expressed as number of bytes or as a string
-   * like `'200kb'`, `'1mb'`, `'3.2gb'`, etc.
-   *
-   * @see {@link https://github.com/patrickkettner/filesize-parser/blob/master/test.js String Examples}
-   */
-  maxSize?: string | number
-  // TODO: UploadSchema draggable type
-  draggable?: boolean
-  /**
-   * Whether files can be deleted.
-   */
-  deletable?: boolean
-}
+export type MarkupSchema<$State extends State = CreateState> =
+  BaseSchema<$State> & {
+    /**
+     * The type of the component.
+     */
+    type: 'markup'
+    /**
+     * Whether the input element is resizable.
+     */
+    resizable?: OrItemAccessor<$State, {}, boolean>
+    /**
+     * @defaultValue `'collapse'`
+     */
+    whitespace?: OrItemAccessor<
+      $State,
+      {},
+      'collapse' | 'preserve' | 'preserve-all'
+    >
+    /**
+     * The amount of visible lines.
+     *
+     * @defaultValue `10`
+     */
+    lines?: number
+
+    // TODO: document enableRules
+    enableRules?: OrItemAccessor<
+      $State,
+      {},
+      | boolean
+      | {
+          input: boolean
+          paste: boolean
+        }
+    >
+    marks?: {
+      bold?: boolean
+      italic?: boolean
+      underline?: boolean
+      strike?: boolean
+      small?: boolean
+      code?: boolean
+      link?: boolean
+    }
+    nodes?: {
+      blockquote?: boolean
+      codeBlock?: boolean
+      heading?: (1 | 2 | 3 | 4 | 5 | 6)[]
+      horizontalRule?: boolean
+      orderedList?: boolean
+      bulletList?: boolean
+    }
+    tools?: {
+      history?: boolean
+    }
+  }
+
+export type UploadSchema<$State extends State = CreateState> =
+  BaseSchema<$State> & {
+    /**
+     * The type of the component.
+     */
+    type: 'upload'
+    /**
+     * Whether multiple files can be uploaded.
+     *
+     * @default false
+     */
+    multiple?: boolean
+    /**
+     * Allowed file extensions for upload.
+     * @example 'zip' // Only files with zip extension
+     * @example ['jpg', 'jpeg', 'gif', 'png']
+     * @example /\.(gif|jpe?g|png)$/i
+     */
+    extensions?: OrArrayOf<RegExp | string>
+    /**
+     * One or more unique file type specifiers that describe the type of file
+     * that may be selected for upload by the user.
+     *
+     * @example 'audio/*' // Any type of audio file
+     * @example ['image/png', 'image/gif', 'image/jpeg']
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#Unique_file_type_specifiers }
+     */
+    accept?: OrArrayOf<string>
+    /**
+     * The maximum size of the file expressed as number of bytes or as a string
+     * like `'200kb'`, `'1mb'`, `'3.2gb'`, etc.
+     *
+     * @see {@link https://github.com/patrickkettner/filesize-parser/blob/master/test.js String Examples}
+     */
+    maxSize?: string | number
+    // TODO: UploadSchema draggable type
+    draggable?: boolean
+    /**
+     * Whether files can be deleted.
+     */
+    deletable?: boolean
+  }
 
 export type MultiselectSchema<
   $State extends State = CreateState,
@@ -745,52 +740,48 @@ export type MultiselectSchema<
     taggable?: boolean
   }
 
-export type SelectSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
+export type SelectSchema<$State extends State = CreateState> =
+  BaseSchema<$State> &
+    SchemaOptionsMixin<$State> & {
+      /**
+       * The type of the component.
+       */
+      type: 'select'
+    }
+
+export type RadioSchema<$State extends State = CreateState> =
+  BaseSchema<$State> &
+    SchemaOptionsMixin<$State> & {
+      /**
+       * The type of the component.
+       */
+      type: 'radio'
+      /**
+       * @defaultValue `'vertical'`
+       */
+      layout?: 'horizontal' | 'vertical'
+    }
+
+export type CheckboxSchema<$State extends State = CreateState> =
+  BaseSchema<$State> & {
     /**
      * The type of the component.
      */
-    type: 'select'
+    type: 'checkbox'
   }
 
-export type RadioSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
-    /**
-     * The type of the component.
-     */
-    type: 'radio'
-    /**
-     * @defaultValue `'vertical'`
-     */
-    layout?: 'horizontal' | 'vertical'
-  }
-
-export type CheckboxSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'checkbox'
-}
-
-export type CheckboxesSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
-    /**
-     * The type of the component.
-     */
-    type: 'checkboxes'
-    /**
-     * @defaultValue `'vertical'`
-     */
-    layout?: 'horizontal' | 'vertical'
-  }
+export type CheckboxesSchema<$State extends State = CreateState> =
+  BaseSchema<$State> &
+    SchemaOptionsMixin<$State> & {
+      /**
+       * The type of the component.
+       */
+      type: 'checkboxes'
+      /**
+       * @defaultValue `'vertical'`
+       */
+      layout?: 'horizontal' | 'vertical'
+    }
 
 export type ColorFormat =
   | 'rgb'
@@ -803,38 +794,37 @@ export type ColorFormat =
   | 'name'
   | 'hsl'
   | 'hsv'
-export type ColorSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
-  /**
-   * The type of the component.
-   */
-  type: 'color'
-  /**
-   * The color format.
-   */
-  format?: OrItemAccessor<$State, {}, ColorFormat>
-  /**
-   * Whether the color may contain an alpha component.
-   *
-   * @defaultValue `false`
-   */
-  alpha?: OrItemAccessor<$State, {}, boolean>
-  /**
-   * @defaultValue true
-   */
-  // TODO: document inputs
-  /**
-   * @defaultValue `true`
-   */
-  inputs?: OrItemAccessor<$State, {}, boolean>
-  /**
-   * Color presets as an array of color values as strings in any css
-   * compatible format.
-   * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
-   */
-  presets?: OrItemAccessor<$State, {}, string[]>
-}
+export type ColorSchema<$State extends State = CreateState> =
+  BaseSchema<$State> & {
+    /**
+     * The type of the component.
+     */
+    type: 'color'
+    /**
+     * The color format.
+     */
+    format?: OrItemAccessor<$State, {}, ColorFormat>
+    /**
+     * Whether the color may contain an alpha component.
+     *
+     * @defaultValue `false`
+     */
+    alpha?: OrItemAccessor<$State, {}, boolean>
+    /**
+     * @defaultValue true
+     */
+    // TODO: document inputs
+    /**
+     * @defaultValue `true`
+     */
+    inputs?: OrItemAccessor<$State, {}, boolean>
+    /**
+     * Color presets as an array of color values as strings in any css
+     * compatible format.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
+     */
+    presets?: OrItemAccessor<$State, {}, string[]>
+  }
 
 export type ColumnSchema<$State extends State = State> = {
   /**
@@ -877,7 +867,7 @@ export type ColumnSchema<$State extends State = State> = {
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 type ListSchemaItemState<$State extends State = CreateState> = CreateState<
-  AnyAlternative<$State['name'], any, Unpacked<$State['item'][$State['name']]>>
+  AnyGate<$State['name'], IterableElement<$State['item'][$State['name']]>>
 >
 
 type ItemFormByType<$Item extends { type: string }, $Type> = $Item extends {
@@ -921,9 +911,7 @@ export type ListSchema<
      * columns property.
      */
     columns?:
-      | {
-          [$Key: string]: ColumnSchema<$ListItemState>
-        }
+      | Record<string, ColumnSchema<$ListItemState>>
       | SelectItemKeys<$ListItemState['item']>[]
     /**
      * Scope names as defined on the model. When set, the admin renders a set of
@@ -1034,7 +1022,7 @@ export type DitoContext<$State extends State> = {
     (options: { url: string; filename: string }): void
   }
   notify(options: {
-    type?: StringSuggestions<'warning' | 'error' | 'info' | 'success'>
+    type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
     title?: string
     text: OrArrayOf<string>
   }): void
@@ -1087,9 +1075,10 @@ export type Components<$State extends State> = {
   >
 }
 
-export type Buttons<$Item> = {
-  [name: string]: Optional<ButtonSchema<CreateState<$Item>>, 'type'>
-}
+export type Buttons<$Item> = Record<
+  string,
+  SetOptional<ButtonSchema<CreateState<$Item>>, 'type'>
+>
 
 export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
   /**
@@ -1108,11 +1097,12 @@ export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
   /**
    * Display several forms in different tabs within the form.
    */
-  tabs?: {
-    [name: string]: Omit<Form<$Item>, 'tabs'> & {
+  tabs?: Record<
+    string,
+    Omit<Form<$Item>, 'tabs'> & {
       defaultTab?: OrItemAccessor<$State, {}, boolean>
     }
-  }
+  >
   // TODO: document components
   components?: Components<CreateState<$Item>>
   // TODO: document clipboard
@@ -1136,7 +1126,7 @@ export type Resource =
     }>
 
 export class DitoAdmin<
-  $Views extends { [name: string]: any } = { [name: string]: View }
+  $Views extends Record<string, any> = Record<string, View>
 > {
   api: ApiConfig
   // TODO: finish off Vue types
@@ -1200,81 +1190,23 @@ export type State = {
   schema: keyof SchemaByType
 }
 
-export type SchemaAccessorReturnType<T> = T extends ItemAccessor
-  ? ReturnType<T>
-  : never
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
-// Allow auto-complete suggestions for string-literal / string unions:
-// https://github.com/microsoft/TypeScript/issues/29729#issuecomment-471566609
-export type StringSuggestions<T extends U, U = string> =
-  | T
-  | (U & { _ignore_me?: never })
-export type NonNullable<T> = Exclude<T, null | undefined>
-export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
+type SelectItemKeys<T> = AnyGate<
   T,
-  Exclude<keyof T, Keys>
-> &
-  {
-    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-  }[Keys]
-
-export type AnyAlternative<
-  $Type,
-  $WhenAny,
-  $WhenNotAny
-> = IsAny<$Type> extends 1 ? $WhenAny : $WhenNotAny
-
-export type FilteredKeys<T, U> = keyof {
-  [P in keyof T]: T[P] extends U ? never : P
-}
-
-export type ItemNameKeys<$State extends State> = IsAny<
-  $State['item'][$State['name']]
-> extends 1
-  ? string
-  : SelectItemKeys<Unpacked<$State['item'][$State['name']]>>
-
-// Wrap individual types when T is a discriminated union by using conditional
-// type check:
-export type WithoutMethods<T> = IsAny<T> extends 1
-  ? any
-  : T extends any
-  ? {
-      [K in SelectKeysNotExtending<T, Function>]: T[K]
-    }
-  : never
-
-export type Extends<$A extends any, $B extends any> = IsAny<$A> extends 1
-  ? 0 // anything `any` is false
-  : $A extends $B
-  ? 1
-  : 0
-
-export type SelectItemKeys<T> = Exclude<
-  keyof WithoutMethods<T>,
-  `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
+  Exclude<
+    keyof ConditionalExcept<T, Function>,
+    `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
+  >,
+  string
 >
 
-export type SelectKeysNotExtending<
-  $Object,
-  $Extending extends any
-> = IsAny<$Object> extends 0
-  ? {
-      [K in keyof $Object]-?: {
-        1: never
-        0: K
-      }[Extends<$Object[K], $Extending>]
-    }[keyof $Object]
-  : any
-
-export type OrObjectOf<T> = T | { [k: string]: T }
-export type OrPromiseOf<T> = T | Promise<T>
-export type OrFunctionReturning<T> = (() => T) | T
-export type OrArrayOf<T> = T | T[]
-export type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrObjectOf<T>>>
+type OrRecordOf<T> = T | Record<string, T>
+type OrPromiseOf<T> = T | Promise<T>
+type OrFunctionReturning<T> = (() => T) | T
+type OrArrayOf<T> = T | T[]
+type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrRecordOf<T>>>
 
 // https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
-export type IsAny<T> = 0 extends 1 & T ? 1 : 0
+type AnyGate<$CheckType, $TypeWhenNotAny, $TypeWhenAny = $CheckType> =
+  0 extends 1 & $CheckType ? $TypeWhenAny : $TypeWhenNotAny
 
-// https://stackoverflow.com/a/52331580/825205
-export type Unpacked<T> = T extends (infer U)[] ? U : T
+type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)

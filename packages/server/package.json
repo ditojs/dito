@@ -17,7 +17,7 @@
     "build": "babel src --out-dir lib --copy-files",
     "watch": "yarn build --watch",
     "prepare": "yarn clean && yarn build",
-    "test-types": "tsc --esModuleInterop --noEmit ./types/index.d.ts"
+    "types": "tsc --esModuleInterop --noEmit ./types/index.d.ts"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
