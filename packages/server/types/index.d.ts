@@ -913,109 +913,109 @@ export class Model extends objection.Model {
   $validateGraph(options: ModelOptions & Record<string, any>): Promise<this>
 
   //   /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
-  static first: QueryBuilder<Model>['first']
-  static find: QueryBuilder<Model>['find']
-  static findOne: QueryBuilder<Model>['findOne']
-  static findById: QueryBuilder<Model>['findById']
+  static first: StaticQueryBuilderMethod<'first'>
+  static find: StaticQueryBuilderMethod<'find'>
+  static findOne: StaticQueryBuilderMethod<'findOne'>
+  static findById: StaticQueryBuilderMethod<'findById'>
 
-  static withGraph: QueryBuilder<Model>['withGraph']
-  static withGraphFetched: QueryBuilder<Model>['withGraphFetched']
-  static withGraphJoined: QueryBuilder<Model>['withGraphJoined']
-  static clearWithGraph: QueryBuilder<Model>['clearWithGraph']
+  static withGraph: StaticQueryBuilderMethod<'withGraph'>
+  static withGraphFetched: StaticQueryBuilderMethod<'withGraphFetched'>
+  static withGraphJoined: StaticQueryBuilderMethod<'withGraphJoined'>
+  static clearWithGraph: StaticQueryBuilderMethod<'clearWithGraph'>
 
-  static withScope: QueryBuilder<Model>['withScope']
-  static applyScope: QueryBuilder<Model>['applyScope']
-  static clearWithScope: QueryBuilder<Model>['clearWithScope']
+  static withScope: StaticQueryBuilderMethod<'withScope'>
+  static applyScope: StaticQueryBuilderMethod<'applyScope'>
+  static clearWithScope: StaticQueryBuilderMethod<'clearWithScope'>
 
-  static clear: QueryBuilder<Model>['clear']
-  static pick: QueryBuilder<Model>['pick']
-  static omit: QueryBuilder<Model>['omit']
-  static select: QueryBuilder<Model>['select']
+  static clear: StaticQueryBuilderMethod<'clear'>
+  static pick: StaticQueryBuilderMethod<'pick'>
+  static omit: StaticQueryBuilderMethod<'omit'>
+  static select: StaticQueryBuilderMethod<'select'>
 
-  static insert: QueryBuilder<Model>['insert']
-  static upsert: QueryBuilder<Model>['upsert']
-  static update: QueryBuilder<Model>['update']
-  static relate: QueryBuilder<Model>['relate']
-  static patch: QueryBuilder<Model>['patch']
+  static insert: StaticQueryBuilderMethod<'insert'>
+  static upsert: StaticQueryBuilderMethod<'upsert'>
+  static update: StaticQueryBuilderMethod<'update'>
+  static relate: StaticQueryBuilderMethod<'relate'>
+  static patch: StaticQueryBuilderMethod<'patch'>
 
-  static truncate: QueryBuilder<Model>['truncate']
-  static delete: QueryBuilder<Model>['delete']
-  static deleteById: QueryBuilder<Model>['deleteById']
+  static truncate: StaticQueryBuilderMethod<'truncate'>
+  static delete: StaticQueryBuilderMethod<'delete'>
+  static deleteById: StaticQueryBuilderMethod<'deleteById'>
 
-  static insertAndFetch: QueryBuilder<Model>['insertAndFetch']
-  static upsertAndFetch: QueryBuilder<Model>['upsertAndFetch']
-  static updateAndFetch: QueryBuilder<Model>['updateAndFetch']
-  static patchAndFetch: QueryBuilder<Model>['patchAndFetch']
-  static patchAndFetchById: QueryBuilder<Model>['patchAndFetchById']
-  static updateAndFetchById: QueryBuilder<Model>['updateAndFetchById']
+  static insertAndFetch: StaticQueryBuilderMethod<'insertAndFetch'>
+  static upsertAndFetch: StaticQueryBuilderMethod<'upsertAndFetch'>
+  static updateAndFetch: StaticQueryBuilderMethod<'updateAndFetch'>
+  static patchAndFetch: StaticQueryBuilderMethod<'patchAndFetch'>
+  static patchAndFetchById: StaticQueryBuilderMethod<'patchAndFetchById'>
+  static updateAndFetchById: StaticQueryBuilderMethod<'updateAndFetchById'>
 
-  static insertGraph: QueryBuilder<Model>['insertGraph']
-  static upsertGraph: QueryBuilder<Model>['upsertGraph']
-  static insertGraphAndFetch: QueryBuilder<Model>['insertGraphAndFetch']
-  static upsertGraphAndFetch: QueryBuilder<Model>['upsertGraphAndFetch']
+  static insertGraph: StaticQueryBuilderMethod<'insertGraph'>
+  static upsertGraph: StaticQueryBuilderMethod<'upsertGraph'>
+  static insertGraphAndFetch: StaticQueryBuilderMethod<'insertGraphAndFetch'>
+  static upsertGraphAndFetch: StaticQueryBuilderMethod<'upsertGraphAndFetch'>
 
-  static insertDitoGraph: QueryBuilder<Model>['insertDitoGraph']
-  static upsertDitoGraph: QueryBuilder<Model>['upsertDitoGraph']
-  static updateDitoGraph: QueryBuilder<Model>['updateDitoGraph']
-  static patchDitoGraph: QueryBuilder<Model>['patchDitoGraph']
-  static insertDitoGraphAndFetch: QueryBuilder<Model>['insertDitoGraphAndFetch']
-  static upsertDitoGraphAndFetch: QueryBuilder<Model>['upsertDitoGraphAndFetch']
-  static updateDitoGraphAndFetch: QueryBuilder<Model>['updateDitoGraphAndFetch']
-  static patchDitoGraphAndFetch: QueryBuilder<Model>['patchDitoGraphAndFetch']
-  static upsertDitoGraphAndFetchById: QueryBuilder<Model>['upsertDitoGraphAndFetchById']
-  static updateDitoGraphAndFetchById: QueryBuilder<Model>['updateDitoGraphAndFetchById']
-  static patchDitoGraphAndFetchById: QueryBuilder<Model>['patchDitoGraphAndFetchById']
+  static insertDitoGraph: StaticQueryBuilderMethod<'insertDitoGraph'>
+  static upsertDitoGraph: StaticQueryBuilderMethod<'upsertDitoGraph'>
+  static updateDitoGraph: StaticQueryBuilderMethod<'updateDitoGraph'>
+  static patchDitoGraph: StaticQueryBuilderMethod<'patchDitoGraph'>
+  static insertDitoGraphAndFetch: StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
+  static upsertDitoGraphAndFetch: StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
+  static updateDitoGraphAndFetch: StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
+  static patchDitoGraphAndFetch: StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
+  static upsertDitoGraphAndFetchById: StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
+  static updateDitoGraphAndFetchById: StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
+  static patchDitoGraphAndFetchById: StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
 
-  static where: QueryBuilder<Model>['where']
-  static whereNot: QueryBuilder<Model>['whereNot']
-  static whereRaw: QueryBuilder<Model>['whereRaw']
-  static whereWrapped: QueryBuilder<Model>['whereWrapped']
-  static whereExists: QueryBuilder<Model>['whereExists']
-  static whereNotExists: QueryBuilder<Model>['whereNotExists']
-  static whereIn: QueryBuilder<Model>['whereIn']
-  static whereNotIn: QueryBuilder<Model>['whereNotIn']
-  static whereNull: QueryBuilder<Model>['whereNull']
-  static whereNotNull: QueryBuilder<Model>['whereNotNull']
-  static whereBetween: QueryBuilder<Model>['whereBetween']
-  static whereNotBetween: QueryBuilder<Model>['whereNotBetween']
-  static whereColumn: QueryBuilder<Model>['whereColumn']
-  static whereNotColumn: QueryBuilder<Model>['whereNotColumn']
-  static whereComposite: QueryBuilder<Model>['whereComposite']
-  static whereInComposite: QueryBuilder<Model>['whereInComposite']
+  static where: StaticQueryBuilderMethod<'where'>
+  static whereNot: StaticQueryBuilderMethod<'whereNot'>
+  static whereRaw: StaticQueryBuilderMethod<'whereRaw'>
+  static whereWrapped: StaticQueryBuilderMethod<'whereWrapped'>
+  static whereExists: StaticQueryBuilderMethod<'whereExists'>
+  static whereNotExists: StaticQueryBuilderMethod<'whereNotExists'>
+  static whereIn: StaticQueryBuilderMethod<'whereIn'>
+  static whereNotIn: StaticQueryBuilderMethod<'whereNotIn'>
+  static whereNull: StaticQueryBuilderMethod<'whereNull'>
+  static whereNotNull: StaticQueryBuilderMethod<'whereNotNull'>
+  static whereBetween: StaticQueryBuilderMethod<'whereBetween'>
+  static whereNotBetween: StaticQueryBuilderMethod<'whereNotBetween'>
+  static whereColumn: StaticQueryBuilderMethod<'whereColumn'>
+  static whereNotColumn: StaticQueryBuilderMethod<'whereNotColumn'>
+  static whereComposite: StaticQueryBuilderMethod<'whereComposite'>
+  static whereInComposite: StaticQueryBuilderMethod<'whereInComposite'>
   // whereNotInComposite:  QueryBuilder<Model>['whereNotInComposite']
-  static whereJsonHasAny: QueryBuilder<Model>['whereJsonHasAny']
-  static whereJsonHasAll: QueryBuilder<Model>['whereJsonHasAll']
-  static whereJsonIsArray: QueryBuilder<Model>['whereJsonIsArray']
-  static whereJsonNotArray: QueryBuilder<Model>['whereJsonNotArray']
-  static whereJsonIsObject: QueryBuilder<Model>['whereJsonIsObject']
-  static whereJsonNotObject: QueryBuilder<Model>['whereJsonNotObject']
-  static whereJsonSubsetOf: QueryBuilder<Model>['whereJsonSubsetOf']
-  static whereJsonNotSubsetOf: QueryBuilder<Model>['whereJsonNotSubsetOf']
-  static whereJsonSupersetOf: QueryBuilder<Model>['whereJsonSupersetOf']
-  static whereJsonNotSupersetOf: QueryBuilder<Model>['whereJsonNotSupersetOf']
+  static whereJsonHasAny: StaticQueryBuilderMethod<'whereJsonHasAny'>
+  static whereJsonHasAll: StaticQueryBuilderMethod<'whereJsonHasAll'>
+  static whereJsonIsArray: StaticQueryBuilderMethod<'whereJsonIsArray'>
+  static whereJsonNotArray: StaticQueryBuilderMethod<'whereJsonNotArray'>
+  static whereJsonIsObject: StaticQueryBuilderMethod<'whereJsonIsObject'>
+  static whereJsonNotObject: StaticQueryBuilderMethod<'whereJsonNotObject'>
+  static whereJsonSubsetOf: StaticQueryBuilderMethod<'whereJsonSubsetOf'>
+  static whereJsonNotSubsetOf: StaticQueryBuilderMethod<'whereJsonNotSubsetOf'>
+  static whereJsonSupersetOf: StaticQueryBuilderMethod<'whereJsonSupersetOf'>
+  static whereJsonNotSupersetOf: StaticQueryBuilderMethod<'whereJsonNotSupersetOf'>
 
-  static having: QueryBuilder<Model>['having']
-  static havingIn: QueryBuilder<Model>['havingIn']
-  static havingNotIn: QueryBuilder<Model>['havingNotIn']
-  static havingNull: QueryBuilder<Model>['havingNull']
-  static havingNotNull: QueryBuilder<Model>['havingNotNull']
-  static havingExists: QueryBuilder<Model>['havingExists']
-  static havingNotExists: QueryBuilder<Model>['havingNotExists']
-  static havingBetween: QueryBuilder<Model>['havingBetween']
-  static havingNotBetween: QueryBuilder<Model>['havingNotBetween']
-  static havingRaw: QueryBuilder<Model>['havingRaw']
-  static havingWrapped: QueryBuilder<Model>['havingWrapped']
+  static having: StaticQueryBuilderMethod<'having'>
+  static havingIn: StaticQueryBuilderMethod<'havingIn'>
+  static havingNotIn: StaticQueryBuilderMethod<'havingNotIn'>
+  static havingNull: StaticQueryBuilderMethod<'havingNull'>
+  static havingNotNull: StaticQueryBuilderMethod<'havingNotNull'>
+  static havingExists: StaticQueryBuilderMethod<'havingExists'>
+  static havingNotExists: StaticQueryBuilderMethod<'havingNotExists'>
+  static havingBetween: StaticQueryBuilderMethod<'havingBetween'>
+  static havingNotBetween: StaticQueryBuilderMethod<'havingNotBetween'>
+  static havingRaw: StaticQueryBuilderMethod<'havingRaw'>
+  static havingWrapped: StaticQueryBuilderMethod<'havingWrapped'>
 
   // deprecated methods that are still supported at the moment.
   // TODO: Remove once we move to Objection 3.0
 
-  static eager: QueryBuilder<Model>['eager']
-  static joinEager: QueryBuilder<Model>['joinEager']
-  static naiveEager: QueryBuilder<Model>['naiveEager']
-  static mergeEager: QueryBuilder<Model>['mergeEager']
-  static mergeJoinEager: QueryBuilder<Model>['mergeJoinEager']
-  static mergeNaiveEager: QueryBuilder<Model>['mergeNaiveEager']
-  static clearEager: QueryBuilder<Model>['clearEager']
+  static eager: StaticQueryBuilderMethod<'eager'>
+  static joinEager: StaticQueryBuilderMethod<'joinEager'>
+  static naiveEager: StaticQueryBuilderMethod<'naiveEager'>
+  static mergeEager: StaticQueryBuilderMethod<'mergeEager'>
+  static mergeJoinEager: StaticQueryBuilderMethod<'mergeJoinEager'>
+  static mergeNaiveEager: StaticQueryBuilderMethod<'mergeNaiveEager'>
+  static clearEager: StaticQueryBuilderMethod<'clearEager'>
 
   // static scope:  QueryBuilder<Model>['scope']
   // static mergeScope:  QueryBuilder<Model>['mergeScope']
@@ -1023,6 +1023,13 @@ export class Model extends objection.Model {
 
   /*--------------------- End QueryBuilder.mixin(Model) --------------------*/
 }
+
+type StaticQueryBuilderMethod<K> = <
+  $Model extends Class<Model>
+>(
+  ...args: Parameters<QueryBuilder<InstanceType<$Model>>[K]>
+) => ReturnType<QueryBuilder<InstanceType<$Model>>[K]>
+
 export interface Model extends EventEmitter {}
 export interface Model extends KnexHelper {}
 
