@@ -17,7 +17,7 @@
     "build": "babel src --out-dir lib --copy-files",
     "watch": "yarn build --watch",
     "prepare": "yarn clean && yarn build",
-    "test-types": "tsc --noEmit ./src/index.d.ts"
+    "test-types": "tsc --esModuleInterop --noEmit ./types/index.d.ts"
   },
   "bin": {
     "dito": "./lib/cli/index.js"
@@ -107,7 +107,8 @@
     "objection": "^2.2.15",
     "pg": "^8.6.0",
     "rimraf": "^3.0.2",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.0.2",
+    "type-fest": "^1.1.3"
   },
   "types": "types",
   "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"

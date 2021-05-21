@@ -22,6 +22,7 @@ import koaSession from 'koa-session'
 import koaPinoLogger from 'koa-pino-logger'
 import koaBodyParser from 'koa-bodyparser'
 import * as objection from 'objection'
+import { SetOptional, Class, SetReturnType, ConditionalKeys } from 'type-fest'
 
 export type Page<$Model extends Model> = {
   total: number
@@ -198,7 +199,7 @@ export type StorageConfig =
        *
        * @default 'private'
        */
-      acl: StringSuggestions<
+      acl: LiteralUnion<
         | 'private'
         | 'public-read'
         | 'public-read-write'
@@ -219,7 +220,7 @@ export type StorageConfig =
        *
        * @default 'STANDARD'.
        */
-      storageClass?: StringSuggestions<
+      storageClass?: LiteralUnion<
         | 'STANDARD'
         | 'REDUCED_REDUNDANCY'
         | 'STANDARD_IA'
@@ -384,7 +385,7 @@ export interface ApiConfig {
 
 export type ApplicationControllers = Record<
   string,
-  Class<ModelController<Model>> | Class<Controller> | ApplicationControllers
+  Class<ModelController<Model>> | Class<Controller>
 >
 
 export type Models = Record<string, Class<Model>>
@@ -399,7 +400,7 @@ export class Application<$Models extends Models> {
      * Subscribe to application events. Event names: `'before:start'`,
      * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
      */
-    events?: Record<string, (this: Application, ...args: []) => void>
+    events?: Record<string, (this: Application<$Models>, ...args: []) => void>
     models: $Models
     controllers?: ApplicationControllers
     // TODO: services docs
@@ -418,7 +419,7 @@ export class Application<$Models extends Models> {
   addModels(models: Models): void
   addModel(model: Class<Model>): void
 }
-export interface Application
+export interface Application<$Models extends Models>
   extends Omit<
       Koa,
       | 'setMaxListeners'
@@ -437,7 +438,7 @@ export interface Application
     >,
     EventEmitter {}
 
-export type SchemaType = StringSuggestions<
+export type SchemaType = LiteralUnion<
   | 'string'
   | 'number'
   | 'integer'
@@ -456,7 +457,7 @@ export interface ModelRelation {
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md#relation-types|Relation Types}
    */
-  relation: StringSuggestions<
+  relation: LiteralUnion<
     'belongsTo' | 'hasMany' | 'hasOne' | 'manyToMany' | 'hasOneThrough'
   >
   /**
@@ -537,22 +538,32 @@ export interface ModelRelation {
  * Primitive type
  * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.1.1
  */
-export type SchemaValue =
-  | string
-  | number
-  | boolean
-  | Record<string, SchemaValue>
-  | SchemaValue[]
-  | null
-
+type SchemaPrimitive = string | number | boolean | null
+interface SchemaValueArray
+  extends Array<SchemaPrimitive | SchemaValueArray | SchemaValueMap> {}
+interface SchemaValueMap {
+  [member: string]: SchemaPrimitive | SchemaValueArray | SchemaValueMap
+}
+export type SchemaValue = SchemaPrimitive | SchemaValueMap | SchemaValueArray
+interface SchemaDefinitionMap {
+  [member: string]:
+    | Schema
+    | SchemaType
+    | SchemaDefinitionArray
+    | SchemaDefinitionMap
+}
+interface SchemaDefinitionArray
+  extends Array<
+    Schema | SchemaType | SchemaDefinitionArray | SchemaDefinitionMap
+  > {}
 export type SchemaDefinition =
   | Schema
   // Shorthand type schema:
   | SchemaType
   // Shorthand array schema:
-  | SchemaDefinition[]
+  | SchemaDefinitionArray
   // Shorthand object schema:
-  | Record<string, SchemaDefinition>
+  | SchemaDefinitionMap
 export interface Schema {
   $id?: string
   $ref?: string
@@ -628,7 +639,7 @@ export interface Schema {
    * and 'timestamp' which are useful for Dito.js when creating migrations.
    * Additional formats can be registered with a custom validator.
    */
-  format?: StringSuggestions<
+  format?: LiteralUnion<
     | 'date'
     | 'time'
     | 'uri'
@@ -682,7 +693,7 @@ export interface Schema {
     dataPath: string
     parentIndex?: number
     parentKey?: string
-    app: Application
+    app: Application<Models>
     validator: Validator
     options: any
   }) => boolean | void
@@ -695,7 +706,7 @@ export interface Schema {
     dataPath: string
     parentIndex?: number
     parentKey?: string
-    app: Application
+    app: Application<Models>
     validator: Validator
     options: any
   }) => Promise<boolean | void>
@@ -712,7 +723,7 @@ export interface Schema {
    * passed types.
    */
   instanceof?: OrArrayOf<
-    | StringSuggestions<
+    | LiteralUnion<
         | 'Object'
         | 'Array'
         | 'Function'
@@ -896,7 +907,7 @@ export class Model extends objection.Model {
   QueryBuilderType: QueryBuilder<this, this[]>
 
   // Todo: include application settings
-  $app: Application
+  $app: Application<Models>
   $is(model: Model): boolean
   $update(
     attributes: Partial<ExtractModelProperties<this>>,
@@ -1024,9 +1035,9 @@ export class Model extends objection.Model {
   /*--------------------- End QueryBuilder.mixin(Model) --------------------*/
 }
 
-type StaticQueryBuilderMethod<K> = <
-  $Model extends Class<Model>
->(
+type StaticQueryBuilderMethod<
+  K extends ConditionalKeys<QueryBuilder<Model>, (...a: any[]) => any>
+> = <$Model extends Class<Model>>(
   ...args: Parameters<QueryBuilder<InstanceType<$Model>>[K]>
 ) => ReturnType<QueryBuilder<InstanceType<$Model>>[K]>
 
@@ -1062,7 +1073,7 @@ export type ControllerActionName =
   | 'update'
   | 'patch'
 export type AllowedControllerActionName =
-  StringSuggestions<ControllerActionName>
+  LiteralUnion<ControllerActionName>
 export class Controller {
   /**
    * Optionally provide the controller path. A default is deducted from
@@ -1174,7 +1185,7 @@ export type SelectModelPropertyKeys<$Model extends Model> = {
 
 export type Authorize =
   | boolean
-  | OrArrayOf<StringSuggestions<'$self' | '$owner'>>
+  | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
   | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
 
 export type BaseControllerActionOptions = {
@@ -1185,7 +1196,7 @@ export type BaseControllerActionOptions = {
    * default, the normalized method name is used as the action's path, and
    * the `'get'` verb is assigned if none is provided.
    */
-  action?: OrArrayOf<StringSuggestions<HTTPVerb>>
+  action?: OrArrayOf<LiteralUnion<HTTPVerb>>
   /**
    * Determines whether or how the request is authorized. This value can
    * either be one of the values as described below, an array of them or
@@ -1492,7 +1503,7 @@ export class ModelController<$Model extends Model = Model> extends Controller {
    *
    * @See {@link https://github.com/ditojs/dito/blob/master/docs/model-queries.md#find-methods) Model Queries – Find Methods}
    */
-  allowParam?: OrArrayOf<StringSuggestions<keyof QueryParameterOptions>>
+  allowParam?: OrArrayOf<LiteralUnion<keyof QueryParameterOptions>>
   /**
    * The scope(s) allowed to be requested when passing the 'scope' query
    * parameter to the default model actions. If none is provided, every
@@ -1712,7 +1723,7 @@ export type QueryParameterOptions = {
 export type QueryParameterOptionKey = keyof QueryParameterOptions
 
 export class Service {
-  constructor(app: Application, name?: string)
+  constructor(app: Application<Models>, name?: string)
 
   setup(config: any): void
 
@@ -1757,7 +1768,7 @@ export class QueryBuilder<
   ) => this
   toSQL: () => string
   raw: Knex.RawBuilder
-  selectRaw: ReplaceReturnType<Knex.RawBuilder, this>
+  selectRaw: SetReturnType<Knex.RawBuilder, this>
   // TODO: add type for Dito's pluck method, which has a different method
   // signature than the objection one:
   // pluck: <K extends objection.ModelProps<M>>(
@@ -2007,8 +2018,8 @@ export interface KnexHelper {
   isMsSQL(): boolean
 }
 
-export type Keyword = Optional<Ajv.KeywordDefinition, 'keyword'>
-export type Format = Ajv.FormatValidator | Ajv.FormatDefinition
+export type Keyword = SetOptional<Ajv.KeywordDefinition, 'keyword'>
+export type Format = Ajv.ValidateFunction | Ajv.FormatDefinition<string>
 export type Id = string | number
 export type KoaContext<$State = any> = Koa.ParameterizedContext<
   $State,
@@ -2018,28 +2029,13 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
   }
 >
 
-// https://github.com/sindresorhus/type-fest/blob/main/source/basic.d.ts#L7
-export type Class<T = unknown, Arguments extends any[] = any[]> = new (
-  ...arguments_: Arguments
-) => T
+type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>);
 
-export type ReplaceReturnType<T extends (...a: any) => any, TNewReturn> = (
-  ...a: Parameters<T>
-) => TNewReturn
+type ReflectArrayType<Source, Target> = Source extends any[] ? Target[] : Target
 
-// Allow auto-complete suggestions for string-literal / string unions:
-// https://github.com/microsoft/TypeScript/issues/29729#issuecomment-471566609
-export type StringSuggestions<T extends U, U = string> =
-  | T
-  | (U & { _ignore_me?: never })
+type OrArrayOf<T> = T[] | T
 
-export type ReflectArrayType<Source, Target> = Source extends any[]
-  ? Target[]
-  : Target
-
-export type OrArrayOf<T> = T[] | T
-
-export type OrPromiseOf<T> = Promise<T> | T
+type OrPromiseOf<T> = Promise<T> | T
 
 type modelFromModelController<$ModelController extends ModelController<Model>> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
