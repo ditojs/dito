@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/admin",
-  "version": "0.234.1",
+  "version": "0.234.3",
   "description": "Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js",
   "main": "dist/dito-admin.umd.min.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/admin",

@@ -1744,7 +1744,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.234.1, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.234.3, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
@@ -1855,7 +1855,7 @@ __metadata:
     "@babel/core": ^7.14.0
     "@babel/preset-env": ^7.14.1
     "@babel/runtime": ^7.14.0
-    "@ditojs/admin": ^0.234.1
+    "@ditojs/admin": ^0.234.3
     "@ditojs/babel-preset": ^0.234.1
     "@ditojs/router": ^0.234.1
     "@ditojs/utils": ^0.234.1
