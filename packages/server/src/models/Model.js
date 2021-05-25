@@ -100,6 +100,13 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
+  $has(...properties) {
+    for (const property of properties) {
+      if (!(property in this)) return false
+    }
+    return true
+  }
+
   $update(properties, trx) {
     return this.$query(trx)
       .update(properties)
