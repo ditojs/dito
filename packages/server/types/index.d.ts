@@ -383,10 +383,9 @@ export interface ApiConfig {
   headers?: Record<string, string>
 }
 
-export type ApplicationControllers = Record<
-  string,
-  Class<ModelController<Model>> | Class<Controller>
->
+export interface ApplicationControllers {
+  [k: string]: Class<ModelController<Model>> | Class<Controller> | ApplicationControllers
+}
 
 export type Models = Record<string, Class<Model>>
 
