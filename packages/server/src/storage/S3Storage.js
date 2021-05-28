@@ -63,6 +63,7 @@ export class S3Storage extends Storage {
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.key,
+      ContentType: file.type,
       Body: buffer
     }).promise()
     // "Convert" `file` to something looking more like a S3 `storageFile`.
@@ -85,8 +86,8 @@ export class S3Storage extends Storage {
   // @override
   async _readFile(file) {
     const {
-      Body: data,
-      ContentType: type
+      ContentType: type,
+      Body: data
     } = await this.s3.getObject({
       Bucket: this.bucket,
       Key: file.key
