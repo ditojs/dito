@@ -278,18 +278,10 @@ export default TypeComponent.register('markup', {
   },
 
   created() {
-    let changed = false
     let ignoreWatch = false
 
     const onFocus = () => this.onFocus()
-
-    const onBlur = () => {
-      this.onBlur()
-      if (changed) {
-        changed = false
-        this.onChange()
-      }
-    }
+    const onBlur = () => this.onBlur()
 
     const setValueDebounced = debounce(getValue => {
       ignoreWatch = true
@@ -297,7 +289,6 @@ export default TypeComponent.register('markup', {
     }, 100)
 
     const onUpdate = ({ getHTML }) => {
-      changed = true
       setValueDebounced(getHTML)
       this.onInput()
     }

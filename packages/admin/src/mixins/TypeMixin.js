@@ -87,6 +87,7 @@ export default {
           value = parse.call(this, new DitoContext(this, { value }))
         }
         this.$set(this.data, this.name, value)
+        this.onChange(value)
       }
     },
 
@@ -215,8 +216,7 @@ export default {
       return {
         focus: this.onFocus,
         blur: this.onBlur,
-        input: this.onInput,
-        change: this.onChange
+        input: this.onInput
       }
     },
 
@@ -270,7 +270,6 @@ export default {
 
     clear() {
       this.value = null
-      this.onChange()
     },
 
     onFocus() {
@@ -287,9 +286,12 @@ export default {
       this.emitEvent('input')
     },
 
-    onChange() {
-      // Pass `schemaComponent` as parent, so change events can propagate up.
-      this.emitEvent('change', { parent: this.schemaComponent })
+    onChange(value) {
+      this.emitEvent('change', {
+        context: value !== undefined ? { value } : null,
+        // Pass `schemaComponent` as parent, so change events can propagate up.
+        parent: this.schemaComponent
+      })
     }
   }
 }
