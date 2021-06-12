@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin'
 import { getDefaultValue, ignoreMissingValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
-import { isString, asArray } from '@ditojs/utils'
+import { isString, asArray, isPromise } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -52,6 +52,17 @@ export default {
             // getter for `this.value` in `DitoContext`:
             new DitoContext(this, { value: data[name] })
           )
+          // Supported promises with deferred setting of value with its own
+          // handling of defaults and missing values.
+          if (isPromise(value)) {
+            value.then(value => {
+              if (value === undefined && !ignoreMissingValue(schema)) {
+                value = getDefaultValue(schema)
+              }
+              this.$set(data, name, value)
+            }).catch(console.error)
+            return undefined
+          }
           if (value !== undefined) {
             // Use `$set()` directly instead of `this.value = …` to update the
             // value without calling parse():
