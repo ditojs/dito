@@ -92,7 +92,7 @@ export default TypeComponent.register('color', {
       },
 
       set(value) {
-        const { format } = this
+        const format = this.colorFormat
         const key = {
           // NOTE: vue-color calls it 'hex', while tinycolor calls it 'hex6'
           hex: value?.a < 1 ? 'hex8' : 'hex',
@@ -127,9 +127,9 @@ export default TypeComponent.register('color', {
       }
     },
 
-    // TODO: This clashes with TypeMixin.format()`, which shall be renamed soon
-    // to `formatValue()`
-    format: getSchemaAccessor('format', {
+    // TODO: `format` clashes with TypeMixin.format()`, which shall be renamed
+    // soon to `formatValue()`. Rename `colorFormat` back to `format` after.
+    colorFormat: getSchemaAccessor('format', {
       type: String,
       default: 'hex'
     }),
@@ -173,7 +173,7 @@ export default TypeComponent.register('color', {
       if (!focused && this.convertedHexValue) {
         const color = tinycolor(`#${this.convertedHexValue}`)
         if (color?.isValid()) {
-          this.value = color.toString(this.format)
+          this.value = color.toString(this.colorFormat)
           // TODO: Emit 'input' here instead, and 'change' in blur, like others.
           this.onChange()
         }
