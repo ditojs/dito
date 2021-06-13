@@ -25,6 +25,11 @@ import { asArray } from '@ditojs/utils'
 
 const TypeComponent = DitoComponent.component('dito-type-component', {
   mixins: [TypeMixin],
+  defaultValue: null,
+  defaultNested: true,
+  defaultOmitPadding: false,
+  generateLabel: true,
+  ignoreMissingValue: null,
 
   computed: {
     component() {
@@ -41,17 +46,6 @@ registerTypeComponent('component', TypeComponent)
 TypeComponent.register = function(types, definition = {}) {
   types = asArray(types)
   const component = this.component(`dito-type-${types[0]}`, definition)
-  const { options } = component
-  // Set defaults for `defaultValue` and `generateLabels` if not specified:
-  if (!('defaultValue' in options)) {
-    options.defaultValue = null
-  }
-  if (!('defaultNested' in options)) {
-    options.defaultNested = true
-  }
-  if (!('generateLabel' in options)) {
-    options.generateLabel = true
-  }
   for (const type of types) {
     registerTypeComponent(type, component)
   }
