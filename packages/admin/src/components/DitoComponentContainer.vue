@@ -62,6 +62,7 @@
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getTypeOptions, shouldOmitPadding, isUnnested } from '@/utils/schema'
+import { parseFraction } from '@/utils/math'
 import { isString } from '@ditojs/utils'
 
 // @vue/component
@@ -133,9 +134,10 @@ export default DitoComponent.component('dito-component-container', {
     widthPercentage() {
       const width = this.componentWidth
       // 'auto' = no fitting:
-      return width == null || ['auto', 'fill'].includes(width) ? null
-        : /%/.test(width) ? parseFloat(width) // percentage
-        : width * 100 // fraction
+      return width == null || width === 'auto' ? null
+        : width === 'fill' ? 100
+        : /%$/.test(width) ? parseFloat(width) // percentage
+        : parseFraction(width) * 100 // fraction
     },
 
     containerClass() {
@@ -155,10 +157,10 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerStyle() {
-      return {
-        'flex-basis': this.widthPercentage && `${this.widthPercentage}%`,
-        'flex-grow': this.componentWidth === 'fill' ? 1 : 0
-      }
+      const basis = this.widthPercentage && `${this.widthPercentage}%`
+      const grow = this.componentWidth === 'fill' ? 1 : 0
+      const shrink = 0
+      return { flex: `${grow} ${shrink} ${basis}` }
     },
 
     componentClass() {
