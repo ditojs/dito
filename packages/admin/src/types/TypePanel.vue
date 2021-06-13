@@ -6,7 +6,7 @@ export default TypeComponent.register('panel', {
   defaultValue: undefined,
   excludeValue: true,
   generateLabel: false,
-  omitPadding: () => true,
+  omitPadding: true,
 
   getPanelSchema(schema) {
     // For a TypePanel, the component schema is also the panel schema, but

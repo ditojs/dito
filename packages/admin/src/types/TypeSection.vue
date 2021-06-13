@@ -31,8 +31,7 @@ export default TypeComponent.register('section', {
   defaultValue: undefined,
   generateLabel: false,
   omitFlexGrow: true,
-  unnested: schema => schema.nested !== true,
-  omitPadding: schema => !schema.label,
+  unnested: true,
 
   computed: {
     components: getSchemaAccessor('components', {
