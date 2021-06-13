@@ -3,7 +3,7 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('panel', {
-  defaultValue: undefined,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
   defaultOmitPadding: true,
   excludeValue: true,
   generateLabel: false,

@@ -29,7 +29,7 @@ import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
 export default TypeComponent.register('section', {
-  defaultValue: undefined,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
   defaultNested: false,
   generateLabel: false,
   omitFlexGrow: true,

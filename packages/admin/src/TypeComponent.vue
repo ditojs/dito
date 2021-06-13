@@ -25,10 +25,12 @@ import { asArray } from '@ditojs/utils'
 
 const TypeComponent = DitoComponent.component('dito-type-component', {
   mixins: [TypeMixin],
+
   defaultValue: null,
   defaultNested: true,
   defaultOmitPadding: false,
   generateLabel: true,
+  excludeValue: false,
   ignoreMissingValue: null,
 
   computed: {

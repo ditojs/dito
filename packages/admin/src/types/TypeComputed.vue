@@ -15,6 +15,6 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('computed', {
-  defaultValue: undefined
+  defaultValue: () => undefined // Callback to override `defaultValue: null`
 })
 </script>

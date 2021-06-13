@@ -21,7 +21,7 @@ export default TypeComponent.register([
 ],
 // @vue/component
 {
-  defaultValue: undefined,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
   excludeValue: true,
   defaultWidth: null,
   // TODO: Consider making this work nicely:
