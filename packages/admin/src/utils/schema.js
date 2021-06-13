@@ -439,6 +439,9 @@ export function processSchemaData(
       processComponents(tab.components)
     }
   }
+  for (const { schema: panel } of getAllPanelSchemas(schema, dataPath)) {
+    processComponents(panel.components)
+  }
 
   return clone || data
 }
@@ -502,38 +505,44 @@ export function getSourceType(schemaOrType) {
   ) ?? null
 }
 
-export function getPanelSchema(schema, dataPath, schemaComponent) {
-  // If the schema doesn't represent a type, assume it's a panel schema already
-  // (.e.g directly from schema.panels):
-  const panel = schema.type
-    ? getTypeOptions(schema)?.getPanelSchema?.(
-      schema,
-      dataPath,
-      schemaComponent
-    )
-    : schema
-  return panel
+export function getPanelSchema(schema, dataPath) {
+  return schema
     ? {
-      schema: panel,
+      schema,
       // If the panel provides its own name, append it to the dataPath.
       // This is used e.g. for $filters panels.
-      dataPath: panel.name
-        ? appendDataPath(dataPath, panel.name)
+      dataPath: schema.name
+        ? appendDataPath(dataPath, schema.name)
         : dataPath
     }
     : null
 }
 
-export function getPanelSchemas(panels, dataPath, schemaComponent) {
-  const schemas = []
-  if (panels) {
-    for (const [key, schema] of Object.entries(panels)) {
-      schemas.push(
-        getPanelSchema(schema, appendDataPath(dataPath, key), schemaComponent)
-      )
+export function getPanelSchemas(schemas, dataPath) {
+  const panels = []
+  if (schemas) {
+    for (const [key, schema] of Object.entries(schemas)) {
+      const panel = getPanelSchema(schema, appendDataPath(dataPath, key))
+      if (panel) {
+        panels.push(panel)
+      }
     }
   }
-  return schemas
+  return panels
+}
+
+export function getAllPanelSchemas(schema, dataPath, schemaComponent = null) {
+  const panel = getTypeOptions(schema)?.getPanelSchema?.(
+    schema,
+    dataPath,
+    schemaComponent
+  )
+  return [
+    ...(panel ? [getPanelSchema(panel, dataPath)] : []),
+    // Allow each component to provide its own set of panels, in
+    // addition to the default one (e.g. $filter):
+    ...getPanelSchemas(schema.panels, dataPath)
+  ]
 }
 
 export function isObjectSource(schemaOrType) {

@@ -70,7 +70,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
-import { getPanelSchema, getPanelSchemas, isNested } from '@/utils/schema'
+import { getAllPanelSchemas, isNested } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -129,21 +129,18 @@ export default DitoComponent.component('dito-components', {
 
     panelSchemas() {
       // Gather all panel schemas from all component schemas, by finding those
-      // that want to provide a panel. See `getPanelSchema()` for details.
+      // that want to provide a panel. See `getAllPanelSchemas()` for details.
       return this.componentSchemas.reduce(
         (schemas, { schema, nestedDataPath: dataPath }) => {
-          for (const panel of [
-            getPanelSchema(schema, dataPath, this.schemaComponent),
-            // Allow each component to provide its own set of panels, in
-            // addition to the default one (e.g. $filter):
-            ...getPanelSchemas(schema.panels, dataPath, this.schemaComponent)
-          ]) {
-            if (panel) {
-              schemas.push({
-                ...panel,
-                tabComponent: this.tabComponent
-              })
-            }
+          for (const panel of getAllPanelSchemas(
+            schema,
+            dataPath,
+            this.schemaComponent
+          )) {
+            schemas.push({
+              ...panel,
+              tabComponent: this.tabComponent
+            })
           }
           return schemas
         },
