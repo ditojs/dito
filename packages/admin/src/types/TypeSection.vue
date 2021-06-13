@@ -6,7 +6,7 @@
       v-if="components"
       :schema="{ components }"
       :dataPath="dataPath"
-      :data="data"
+      :data="nested ? value : data"
       :meta="meta"
       :store="store"
       :nested="nested"
