@@ -157,10 +157,15 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerStyle() {
-      const basis = this.widthPercentage && `${this.widthPercentage}%`
-      const grow = this.componentWidth === 'fill' ? 1 : 0
-      const shrink = 0
-      return { flex: `${grow} ${shrink} ${basis}` }
+      const basis = this.widthPercentage && `${Math.abs(this.widthPercentage)}%`
+      const grow = (
+        /^\+/.test(this.componentWidth) ||
+        this.componentWidth === 'fill'
+      )
+      const shrink = /^-/.test(this.componentWidth)
+      return {
+        flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${basis}`
+      }
     },
 
     componentClass() {
@@ -168,7 +173,7 @@ export default DitoComponent.component('dito-component-container', {
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
         'dito-width-fill':
-          this.componentWidth === 'fill' || this.widthPercentage > 0,
+          this.componentWidth === 'fill' || this.widthPercentage !== null,
         'dito-width-auto': this.componentWidth === 'auto',
         'dito-has-errors': !!this.errors
       }
