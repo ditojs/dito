@@ -106,17 +106,32 @@ export default DitoComponent.component('dito-component-container', {
       return isUnnested(this.schema) ? null : this.dataPath
     },
 
-    width() {
-      const width = (
-        this.schema.width ??
-        this.typeOptions.defaultWidth
-      )
-      // Use 100% == 1.0 as default width when nothing is set:
-      return width === undefined ? 1.0 : width
-    },
+    componentWidth: getSchemaAccessor('width', {
+      type: String,
+      default({ component }) {
+        return component.typeOptions.defaultWidth
+      },
+      get(width) {
+        // Use 100% == 1.0 as default width when nothing is set:
+        return width === undefined ? 1.0 : width
+      }
+    }),
 
-    percentage() {
-      const { width } = this
+    componentVisible: getSchemaAccessor('visible', {
+      type: Boolean,
+      default: true
+    }),
+
+    componentDisabled: getSchemaAccessor('disabled', {
+      type: Boolean,
+      default: false,
+      get(disabled) {
+        return disabled || this.disabled
+      }
+    }),
+
+    widthPercentage() {
+      const width = this.componentWidth
       // 'auto' = no fitting:
       return width == null || ['auto', 'fill'].includes(width) ? null
         : /%/.test(width) ? parseFloat(width) // percentage
@@ -140,40 +155,22 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     containerStyle() {
-      const basis = this.percentage && `${this.percentage}%`
-      const grow = (
-        this.width === 'fill' ||
-        this.width !== 'auto' && !getTypeOptions(this.schema)?.omitFlexGrow
-      ) ? 1 : 0
       return {
-        'flex-basis': basis,
-        'flex-grow': grow
+        'flex-basis': this.widthPercentage && `${this.widthPercentage}%`,
+        'flex-grow': this.componentWidth === 'fill' ? 1 : 0
       }
     },
 
     componentClass() {
-      const { width } = this
       return {
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
-        'dito-width-fill': width === 'fill' || this.percentage > 0,
-        'dito-width-auto': width === 'auto',
+        'dito-width-fill':
+          this.componentWidth === 'fill' || this.widthPercentage > 0,
+        'dito-width-auto': this.componentWidth === 'auto',
         'dito-has-errors': !!this.errors
       }
-    },
-
-    componentVisible: getSchemaAccessor('visible', {
-      type: Boolean,
-      default: true
-    }),
-
-    componentDisabled: getSchemaAccessor('disabled', {
-      type: Boolean,
-      default: false,
-      get(disabled) {
-        return disabled || this.disabled
-      }
-    })
+    }
   },
 
   methods: {
