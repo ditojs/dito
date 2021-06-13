@@ -42,6 +42,7 @@
         :meta="meta"
         :store="store"
         :single="!inlined && !hasMainComponents"
+        :nested="nested"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
@@ -58,6 +59,7 @@
           :meta="meta"
           :store="store"
           :single="!inlined && !hasTabs"
+          :nested="nested"
           :disabled="disabled"
           :generateLabels="generateLabels"
         )
@@ -187,6 +189,7 @@ export default DitoComponent.component('dito-schema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
+    nested: { type: Boolean, default: true },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
