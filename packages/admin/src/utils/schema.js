@@ -439,8 +439,8 @@ export function processSchemaData(
       processComponents(tab.components)
     }
   }
-  for (const { schema: panel } of getAllPanelSchemas(schema, dataPath)) {
-    processComponents(panel.components)
+  for (const panel of getAllPanelSchemas(schema, dataPath)) {
+    processComponents(panel.schema.components)
   }
 
   return clone || data
@@ -518,8 +518,7 @@ export function getPanelSchema(schema, dataPath) {
     : null
 }
 
-export function getPanelSchemas(schemas, dataPath) {
-  const panels = []
+export function getPanelSchemas(schemas, dataPath, panels = []) {
   if (schemas) {
     for (const [key, schema] of Object.entries(schemas)) {
       const panel = getPanelSchema(schema, appendDataPath(dataPath, key))
@@ -537,12 +536,11 @@ export function getAllPanelSchemas(schema, dataPath, schemaComponent = null) {
     dataPath,
     schemaComponent
   )
-  return [
-    ...(panel ? [getPanelSchema(panel, dataPath)] : []),
-    // Allow each component to provide its own set of panels, in
-    // addition to the default one (e.g. $filter):
-    ...getPanelSchemas(schema.panels, dataPath)
-  ]
+  const panels = panel ? [getPanelSchema(panel, dataPath)] : []
+  // Allow each component to provide its own set of panels, in
+  // addition to the default one (e.g. $filter):
+  getPanelSchemas(schema.panels, dataPath, panels)
+  return panels
 }
 
 export function isObjectSource(schemaOrType) {

@@ -228,15 +228,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     panelSchemas() {
-      const schemas = getPanelSchemas(
-        this.schema.panels,
-        '',
-        this.schemaComponent
-      )
+      const panels = getPanelSchemas(this.schema.panels, '')
       for (const container of Object.values(this.containersRegistry)) {
-        schemas.push(...container.panelSchemas)
+        panels.push(...container.panelSchemas)
       }
-      return schemas
+      return panels
     },
 
     tabs() {
