@@ -237,7 +237,11 @@ export function isCompact(schema) {
 }
 
 export function isUnnested(schema) {
-  return !!getTypeOptions(schema)?.unnested
+  return !!getTypeOptions(schema)?.unnested?.(schema)
+}
+
+export function shouldOmitPadding(schema) {
+  return schema.omitPadding || !!getTypeOptions(schema)?.omitPadding?.(schema)
 }
 
 export function getDefaultValue(schema) {

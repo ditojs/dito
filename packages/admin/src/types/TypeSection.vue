@@ -27,10 +27,10 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('section', {
-  unnested: true,
   defaultValue: undefined,
   generateLabel: false,
   omitFlexGrow: true,
+  unnested: schema => schema.nested !== true,
   omitPadding: schema => !schema.label
 })
 </script>

@@ -61,7 +61,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getTypeOptions } from '@/utils/schema'
+import { getTypeOptions, shouldOmitPadding, isUnnested } from '@/utils/schema'
 import { isString } from '@ditojs/utils'
 
 // @vue/component
@@ -103,7 +103,7 @@ export default DitoComponent.component('dito-component-container', {
 
     labelDataPath() {
       // Unnested types don't have a dataPath for themselves, don't use it:
-      return this.typeOptions.unnested ? null : this.dataPath
+      return isUnnested(this.schema) ? null : this.dataPath
     },
 
     width() {
@@ -130,10 +130,7 @@ export default DitoComponent.component('dito-component-container', {
         // dito-button-container automatically works too.
         [this.$options.name]: true,
         'dito-single': this.single,
-        'dito-omit-padding': (
-          this.schema.omitPadding ||
-          getTypeOptions(this.schema)?.omitPadding?.(this.schema)
-        ),
+        'dito-omit-padding': shouldOmitPadding(this.schema),
         ...(
           isString(containerClass)
             ? { [containerClass]: true }
