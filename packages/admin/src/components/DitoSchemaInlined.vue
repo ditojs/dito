@@ -42,8 +42,9 @@
           --label-padding: #{$form-spacing}
           margin: 0
           width: 100%
+          box-sizing: border-box
           // Because tables have a funny way of allowing too much width growth:
-          max-width: $content-width - 2 * $border-width
+          max-width: $content-width
         & +.dito-components
           // Needed for transition-height in DitoSchema:
           min-height: $form-spacing
