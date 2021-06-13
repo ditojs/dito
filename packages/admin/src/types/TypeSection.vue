@@ -6,7 +6,7 @@
       v-if="components"
       :schema="{ components }"
       :dataPath="dataPath"
-      :data="unnested ? data : value"
+      :data="nested ? value : data"
       :meta="meta"
       :store="store"
       :disabled="disabled"
@@ -24,15 +24,15 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import { isUnnested } from '@/utils/schema'
+import { isNested } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
 export default TypeComponent.register('section', {
   defaultValue: undefined,
+  defaultNested: false,
   generateLabel: false,
   omitFlexGrow: true,
-  unnested: true,
 
   computed: {
     components: getSchemaAccessor('components', {
@@ -40,8 +40,8 @@ export default TypeComponent.register('section', {
       default: {}
     }),
 
-    unnested() {
-      return isUnnested(this.schema)
+    nested() {
+      return isNested(this.schema)
     }
   }
 })

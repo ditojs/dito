@@ -46,6 +46,9 @@ TypeComponent.register = function(types, definition = {}) {
   if (!('defaultValue' in options)) {
     options.defaultValue = null
   }
+  if (!('defaultNested' in options)) {
+    options.defaultNested = true
+  }
   if (!('generateLabel' in options)) {
     options.generateLabel = true
   }

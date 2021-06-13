@@ -63,7 +63,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
-import { getPanelSchema, getPanelSchemas, isUnnested } from '@/utils/schema'
+import { getPanelSchema, getPanelSchemas, isNested } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -103,7 +103,7 @@ export default DitoComponent.component('dito-components', {
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
           // Share dataPath and store with parent if unnested is true:
-          const unnested = isUnnested(schema)
+          const unnested = !isNested(schema)
           // Always add name to component schema.
           schema.name = name
           const dataPath = appendDataPath(this.dataPath, name)

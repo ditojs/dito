@@ -1,6 +1,6 @@
 import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
-import { getDefaultValue, ignoreMissingValue, isUnnested } from '@/utils/schema'
+import { getDefaultValue, ignoreMissingValue, isNested } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
 import { isString, asArray, isPromise } from '@ditojs/utils'
@@ -240,7 +240,7 @@ export default {
   methods: {
     _register(add) {
       // Prevent unnested type components from overriding parent data paths
-      if (!isUnnested(this.schema)) {
+      if (isNested(this.schema)) {
         this.schemaComponent._registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`

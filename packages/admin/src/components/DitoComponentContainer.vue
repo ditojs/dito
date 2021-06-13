@@ -61,7 +61,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getTypeOptions, shouldOmitPadding, isUnnested } from '@/utils/schema'
+import { getTypeOptions, shouldOmitPadding, isNested } from '@/utils/schema'
 import { parseFraction } from '@/utils/math'
 import { isString } from '@ditojs/utils'
 
@@ -104,7 +104,7 @@ export default DitoComponent.component('dito-component-container', {
 
     labelDataPath() {
       // Unnested types don't have a dataPath for themselves, don't use it:
-      return isUnnested(this.schema) ? null : this.dataPath
+      return isNested(this.schema) ? this.dataPath : null
     },
 
     componentWidth: getSchemaAccessor('width', {

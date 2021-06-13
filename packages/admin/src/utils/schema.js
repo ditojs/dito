@@ -12,9 +12,9 @@ export function registerTypeComponent(type, component) {
   typeComponents[type] = component
 }
 
-export function getTypeComponent(type) {
+export function getTypeComponent(type, allowNull = false) {
   const component = typeComponents[type] || null
-  if (!component && !unknownTypeReported[type]) {
+  if (!component && !allowNull && !unknownTypeReported[type]) {
     // Report each missing type only once, to avoid flooding the console:
     unknownTypeReported[type] = true
     throw new Error(`Unknown Dito component type: '${type}'`)
@@ -236,12 +236,12 @@ export function isCompact(schema) {
   return schema.compact
 }
 
-export function isUnnested(schema) {
-  return schema.nested !== true && !!getTypeOptions(schema)?.unnested
+export function isNested(schema) {
+  return !!(schema.nested || getTypeOptions(schema)?.defaultNested)
 }
 
 export function shouldOmitPadding(schema) {
-  return schema.omitPadding || !!getTypeOptions(schema)?.omitPadding
+  return !!(schema.omitPadding || getTypeOptions(schema)?.defaultOmitPadding)
 }
 
 export function getDefaultValue(schema) {
@@ -377,7 +377,7 @@ export function processSchemaData(
 
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
-        if (isUnnested(componentSchema)) {
+        if (!isNested(componentSchema)) {
           // Recursively process data on unnested components.
           processSchemaData(
             componentSchema,
@@ -491,7 +491,7 @@ function getType(schemaOrType) {
 }
 
 export function getTypeOptions(schemaOrType) {
-  return getTypeComponent(getType(schemaOrType))?.options
+  return getTypeComponent(getType(schemaOrType), true)?.options ?? null
 }
 
 export function getSourceType(schemaOrType) {
