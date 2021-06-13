@@ -233,7 +233,7 @@ export function hasLabel(schema) {
 }
 
 export function isCompact(schema) {
-  return schema.compact
+  return !!schema.compact
 }
 
 export function isNested(schema) {
