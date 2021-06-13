@@ -263,11 +263,10 @@ export function getDefaultValue(schema) {
 }
 
 export function ignoreMissingValue(schema) {
-  const type = getType(schema)
-  const typeOptions = getTypeOptions(type)
+  const typeOptions = getTypeOptions(schema)
   return !!(
     typeOptions?.excludeValue ||
-    typeOptions?.ignoreMissingValue?.(type)
+    typeOptions?.ignoreMissingValue?.(schema)
   )
 }
 

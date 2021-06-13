@@ -23,7 +23,7 @@ export default TypeComponent.register([
   components: { InputField },
   nativeField: true,
   textField: true,
-  ignoreMissingValue: type => type === 'password',
+  ignoreMissingValue: schema => schema.type === 'password',
 
   computed: {
     inputType() {
