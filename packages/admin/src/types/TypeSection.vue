@@ -3,8 +3,8 @@
     :class="{ 'dito-section-labelled' : !!schema.label }"
   )
     dito-components.dito-section-components(
-      v-if="schema.components"
-      :schema="schema"
+      v-if="components"
+      :schema="{ components }"
       :dataPath="dataPath"
       :data="data"
       :meta="meta"
@@ -24,6 +24,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
 export default TypeComponent.register('section', {
@@ -31,6 +32,13 @@ export default TypeComponent.register('section', {
   generateLabel: false,
   omitFlexGrow: true,
   unnested: schema => schema.nested !== true,
-  omitPadding: schema => !schema.label
+  omitPadding: schema => !schema.label,
+
+  computed: {
+    components: getSchemaAccessor('components', {
+      type: Object,
+      default: {}
+    })
+  }
 })
 </script>
