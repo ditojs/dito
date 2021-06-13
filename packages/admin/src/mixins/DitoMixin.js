@@ -194,11 +194,6 @@ export default {
       if (callback && isFunction(value)) {
         value = value.call(this, getContext())
       }
-      // For boolean values that are defined as strings or arrays,
-      // interpret the values as user roles and match against user:
-      if (types?.includes(Boolean) && (isString(value) || isArray(value))) {
-        value = this.user?.hasRole(...asArray(value))
-      }
       // Now finally see if we can convert to the expect types.
       if (types && value != null && !isMatchingType(types, value)) {
         for (const type of types) {
