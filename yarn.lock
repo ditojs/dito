@@ -2425,17 +2425,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^0.240.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^0.241.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
     "@babel/runtime": ^7.14.5
-    "@ditojs/babel-preset": ^0.240.0
-    "@ditojs/build": ^0.240.0
-    "@ditojs/ui": ^0.240.0
-    "@ditojs/utils": ^0.240.0
+    "@ditojs/babel-preset": ^0.241.0
+    "@ditojs/build": ^0.241.0
+    "@ditojs/ui": ^0.241.0
+    "@ditojs/utils": ^0.241.0
     "@vue/cli-plugin-babel": ^4.5.13
     "@vue/cli-service": ^4.5.13
     autoprefixer: ^9.8.6
@@ -2473,7 +2473,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/babel-preset@^0.240.0, @ditojs/babel-preset@workspace:packages/babel-preset":
+"@ditojs/babel-preset@^0.241.0, @ditojs/babel-preset@workspace:packages/babel-preset":
   version: 0.0.0-use.local
   resolution: "@ditojs/babel-preset@workspace:packages/babel-preset"
   dependencies:
@@ -2491,15 +2491,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^0.240.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^0.241.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.14.5
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
-    "@ditojs/babel-preset": ^0.240.0
-    "@ditojs/utils": ^0.240.0
+    "@ditojs/babel-preset": ^0.241.0
+    "@ditojs/utils": ^0.241.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
     mime: ^2.5.2
@@ -2511,7 +2511,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^0.240.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^0.241.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
@@ -2519,8 +2519,8 @@ __metadata:
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
     "@babel/runtime": ^7.14.5
-    "@ditojs/babel-preset": ^0.240.0
-    "@ditojs/utils": ^0.240.0
+    "@ditojs/babel-preset": ^0.241.0
+    "@ditojs/utils": ^0.241.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
     rimraf: ^3.0.2
@@ -2535,10 +2535,10 @@ __metadata:
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
     "@babel/runtime": ^7.14.5
-    "@ditojs/admin": ^0.240.0
-    "@ditojs/babel-preset": ^0.240.0
-    "@ditojs/router": ^0.240.0
-    "@ditojs/utils": ^0.240.0
+    "@ditojs/admin": ^0.241.0
+    "@ditojs/babel-preset": ^0.241.0
+    "@ditojs/router": ^0.241.0
+    "@ditojs/utils": ^0.241.0
     "@koa/cors": ^3.1.0
     "@koa/multer": ^3.0.0
     "@vue/cli-service": ^4.5.13
@@ -2602,16 +2602,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^0.240.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^0.241.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
     "@babel/runtime": ^7.14.5
-    "@ditojs/babel-preset": ^0.240.0
-    "@ditojs/build": ^0.240.0
-    "@ditojs/utils": ^0.240.0
+    "@ditojs/babel-preset": ^0.241.0
+    "@ditojs/build": ^0.241.0
+    "@ditojs/utils": ^0.241.0
     "@soda/get-current-script": ^1.0.2
     "@vue/cli-plugin-babel": ^4.5.13
     "@vue/cli-service": ^4.5.13
@@ -2631,7 +2631,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^0.240.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^0.241.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
@@ -2639,7 +2639,7 @@ __metadata:
     "@babel/core": ^7.14.5
     "@babel/preset-env": ^7.14.5
     "@babel/runtime": ^7.14.5
-    "@ditojs/babel-preset": ^0.240.0
+    "@ditojs/babel-preset": ^0.241.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
     punycode: ^2.1.1
