@@ -56,10 +56,10 @@
               :cell="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
-              :dataPathIsValue="false"
               :data="item"
               :meta="nestedMeta"
               :store="store"
+              :nested="false"
               :disabled="disabled || isLoading"
             )
           template(v-else)
@@ -85,8 +85,8 @@
                 v-else-if="component"
                 :is="component"
                 :dataPath="getDataPath(index)"
-                :dataPathIsValue="false"
                 :data="item"
+                :nested="false"
               )
               span(
                 v-else-if="render"

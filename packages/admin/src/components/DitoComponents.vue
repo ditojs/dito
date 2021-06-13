@@ -4,20 +4,27 @@
     v-show="visible"
   )
     template(
-      v-for="{ schema, dataPath, unnestedDataPath, store } in componentSchemas"
+      v-for=`{
+        schema,
+        dataPath,
+        nestedDataPath,
+        nested,
+        store
+      } in componentSchemas`
     )
       .dito-break(
         v-if="schema.break === 'before'"
       )
       dito-component-container(
         v-if="shouldRender(schema)"
-        :key="dataPath"
+        :key="nestedDataPath"
         :schema="schema"
-        :dataPath="unnestedDataPath"
+        :dataPath="dataPath"
         :data="data"
         :meta="meta"
         :store="store"
         :single="isSingleComponent"
+        :nested="nested"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
@@ -102,18 +109,19 @@ export default DitoComponent.component('dito-components', {
       const wrapPrimitives = this.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
-          // Share dataPath and store with parent if unnested is true:
-          const unnested = !isNested(schema)
           // Always add name to component schema.
           schema.name = name
-          const dataPath = appendDataPath(this.dataPath, name)
+          // Share dataPath and store with parent if not nested:
+          const nested = isNested(schema)
+          const nestedDataPath = appendDataPath(this.dataPath, name)
           return {
             schema,
-            dataPath,
-            unnestedDataPath: unnested || wrapPrimitives
-              ? this.dataPath
-              : dataPath,
-            store: unnested ? this.store : this.getChildStore(name)
+            dataPath: nested && !wrapPrimitives
+              ? nestedDataPath
+              : this.dataPath,
+            nestedDataPath,
+            nested,
+            store: nested ? this.getChildStore(name) : this.store
           }
         }
       )
@@ -123,7 +131,7 @@ export default DitoComponent.component('dito-components', {
       // Gather all panel schemas from all component schemas, by finding those
       // that want to provide a panel. See `getPanelSchema()` for details.
       return this.componentSchemas.reduce(
-        (schemas, { schema, dataPath }) => {
+        (schemas, { schema, nestedDataPath: dataPath }) => {
           for (const panel of [
             getPanelSchema(schema, dataPath, this.schemaComponent),
             // Allow each component to provide its own set of panels, in

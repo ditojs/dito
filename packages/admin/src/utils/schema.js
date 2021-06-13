@@ -237,7 +237,10 @@ export function isCompact(schema) {
 }
 
 export function isNested(schema) {
-  return !!(schema.nested || getTypeOptions(schema)?.defaultNested)
+  return !!(
+    schema.nested ||
+    getTypeOptions(schema)?.defaultNested === true
+  )
 }
 
 export function shouldOmitPadding(schema) {

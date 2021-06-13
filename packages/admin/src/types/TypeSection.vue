@@ -6,9 +6,10 @@
       v-if="components"
       :schema="{ components }"
       :dataPath="dataPath"
-      :data="nested ? value : data"
+      :data="data"
       :meta="meta"
       :store="store"
+      :nested="nested"
       :disabled="disabled"
     )
 </template>
@@ -24,7 +25,6 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import { isNested } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 
 // @vue/component
@@ -38,11 +38,7 @@ export default TypeComponent.register('section', {
     components: getSchemaAccessor('components', {
       type: Object,
       default: {}
-    }),
-
-    nested() {
-      return isNested(this.schema)
-    }
+    })
   }
 })
 </script>

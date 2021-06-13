@@ -55,7 +55,6 @@
           :cell="property"
           :schema="property"
           :dataPath="getPropertyDataPath(property)"
-          :dataPathIsValue="true"
           :data="data"
           :meta="nestedMeta"
           :store="store"

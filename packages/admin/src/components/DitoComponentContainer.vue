@@ -19,6 +19,7 @@
       :meta="meta"
       :store="store"
       :single="single"
+      :nested="nested"
       :disabled="componentDisabled"
       :class="componentClass"
       @errors="onErrors"
@@ -61,7 +62,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getTypeOptions, shouldOmitPadding, isNested } from '@/utils/schema'
+import { getTypeOptions, shouldOmitPadding } from '@/utils/schema'
 import { parseFraction } from '@/utils/math'
 import { isString } from '@ditojs/utils'
 
@@ -74,6 +75,7 @@ export default DitoComponent.component('dito-component-container', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: true }
   },
@@ -104,7 +106,7 @@ export default DitoComponent.component('dito-component-container', {
 
     labelDataPath() {
       // Unnested types don't have a dataPath for themselves, don't use it:
-      return isNested(this.schema) ? this.dataPath : null
+      return this.nested ? this.dataPath : null
     },
 
     componentWidth: getSchemaAccessor('width', {

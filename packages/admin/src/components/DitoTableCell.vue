@@ -9,10 +9,10 @@
       :is="component"
       :schema="schema"
       :dataPath="dataPath"
-      :dataPathIsValue="dataPathIsValue"
       :data="data"
       :meta="meta"
       :store="store"
+      :nested="nested"
       :disabled="disabled"
     )
     span(
@@ -33,10 +33,10 @@ export default DitoComponent.component('dito-table-cell', {
     cell: { type: Object, required: true },
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
-    dataPathIsValue: { type: Boolean, default: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
   },
 

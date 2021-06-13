@@ -1,6 +1,6 @@
 import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
-import { getDefaultValue, ignoreMissingValue, isNested } from '@/utils/schema'
+import { getDefaultValue, ignoreMissingValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getItem, getParentItem } from '@/utils/data'
 import { isString, asArray, isPromise } from '@ditojs/utils'
@@ -18,11 +18,11 @@ export default {
     // NOTE: While `dataPath` points to the actual `value`, `data` represents
     // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
-    dataPathIsValue: { type: Boolean, default: true },
     data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
   },
 
@@ -95,11 +95,11 @@ export default {
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
     item() {
-      return getItem(this.rootItem, this.dataPath, this.dataPathIsValue)
+      return getItem(this.rootItem, this.dataPath, this.nested)
     },
 
     parentItem() {
-      return getParentItem(this.rootItem, this.dataPath, this.dataPathIsValue)
+      return getParentItem(this.rootItem, this.dataPath, this.nested)
     },
 
     rootItem() {
@@ -115,7 +115,7 @@ export default {
         schemaComponent.processedItem,
         // Get the dataPath relative to the schemaComponent's data:
         this.dataPath.slice(schemaComponent.dataPath.length),
-        this.dataPathIsValue
+        this.nested
       )
     },
 
@@ -240,7 +240,7 @@ export default {
   methods: {
     _register(add) {
       // Prevent unnested type components from overriding parent data paths
-      if (isNested(this.schema)) {
+      if (this.nested) {
         this.schemaComponent._registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`

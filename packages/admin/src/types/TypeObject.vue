@@ -24,8 +24,8 @@
         v-else-if="component"
         :is="component"
         :dataPath="dataPath"
-        :dataPathIsValue="false"
         :data="objectData"
+        :nested="false"
       )
       span(
         v-else-if="render"
