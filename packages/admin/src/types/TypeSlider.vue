@@ -34,6 +34,7 @@
       border: 0
       padding: 0
       text-align: right
+      font-variant-numeric: tabular-nums
 </style>
 
 <script>
