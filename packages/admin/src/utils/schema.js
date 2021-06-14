@@ -182,8 +182,13 @@ export function isSingleComponentView(schema) {
 }
 
 export function hasForms(schema) {
-  // Support both single form and multiple forms notation.
-  return isObject(schema) && !!(schema.form || schema.forms)
+  // Support both single form and multiple forms notation, as well as inlined
+  // components.
+  return isObject(schema) && !!(
+    schema.form ||
+    schema.forms ||
+    schema.components
+  )
 }
 
 export function getViewSchema(schema, context) {
@@ -219,7 +224,15 @@ export function getFormSchemas(schema, context) {
   } else if (schema.view) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
-  const { form, forms } = schema
+  let { form, forms, components, compact } = schema
+  if (!form && !forms && components) {
+    // Convert inlined components to forms, supporting callback to create
+    // components on the fly.
+    if (isFunction(components)) {
+      components = components(DitoContext.get(null, context))
+    }
+    form = { components, compact }
+  }
   return forms || { default: form }
 }
 
@@ -234,6 +247,10 @@ export function hasLabel(schema) {
 
 export function isCompact(schema) {
   return !!schema.compact
+}
+
+export function isInlined(schema) {
+  return !!(schema.inlined || schema.components)
 }
 
 export function isNested(schema) {
@@ -399,23 +416,27 @@ export function processSchemaData(
         } else {
           const componentDataPath = getDataPath(dataPath, name)
 
+          const context = {
+            data,
+            dataPath,
+            rootData: options.rootData,
+            views: resolvedViews
+          }
+
           const processItem = (item, index = null) => {
-            const dataPath = index !== null
-              ? getDataPath(componentDataPath, index)
-              : componentDataPath
-            const context = {
-              data: item,
-              dataPath,
-              rootData: options.rootData,
-              views: resolvedViews
-            }
-            const formSchema = getItemFormSchema(componentSchema, item, context)
+            const formSchema = getItemFormSchema(
+              componentSchema,
+              item,
+              index !== null ? { ...context, index } : context
+            )
             const itemClone = clone ? shallowClone(item) : null
             return formSchema
               ? processSchemaData(
                 formSchema,
                 item,
-                dataPath,
+                index !== null
+                  ? getDataPath(componentDataPath, index)
+                  : componentDataPath,
                 processBefore,
                 processAfter,
                 itemClone,

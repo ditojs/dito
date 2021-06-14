@@ -3,10 +3,9 @@
     :class="{ 'dito-section-labelled' : !!schema.label }"
   )
     dito-components.dito-section-components(
-      v-if="components"
-      :schema="{ components }"
+      :schema="getItemFormSchema(schema, item, context)"
       :dataPath="dataPath"
-      :data="nested ? value : data"
+      :data="item"
       :meta="meta"
       :store="store"
       :nested="nested"
@@ -25,7 +24,7 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getItemFormSchema } from '@/utils/schema'
 
 // @vue/component
 export default TypeComponent.register('section', {
@@ -35,10 +34,13 @@ export default TypeComponent.register('section', {
   omitFlexGrow: true,
 
   computed: {
-    components: getSchemaAccessor('components', {
-      type: Object,
-      default: {}
-    })
+    item() {
+      return this.nested ? this.value : this.data
+    }
+  },
+
+  methods: {
+    getItemFormSchema
   }
 })
 </script>

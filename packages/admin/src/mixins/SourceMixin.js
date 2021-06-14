@@ -5,7 +5,7 @@ import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
 import { processReferences } from '@/utils/data'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels, isCompact,
+  processRouteSchema, processForms, hasForms, hasLabels, isCompact, isInlined,
   getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
   isObjectSource, isListSource
 } from '@/utils/schema'
@@ -502,17 +502,9 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
-    const { components, compact } = schema
-    if (components) {
-      // Expand inlined components to a nested inline form with inlined = true,
-      // supporting the optional `compact: true` option along with it.
-      delete schema.components
-      delete schema.compact
-      schema.form = { components, compact }
-      schema.inlined = true
-    }
     processRouteSchema(api, schema, name)
-    if (schema.inlined && schema.resource) {
+    const inlined = isInlined(schema)
+    if (inlined && schema.resource) {
       throw new Error(
         'Lists with nested forms cannot load data from their own resources'
       )
@@ -537,8 +529,8 @@ export default {
     if (process) {
       await process(childRoutes, level + 1)
     }
-    // Inline forms don't need to actually add routes.
-    if (hasForms(schema) && !schema.inlined) {
+    // Inlined forms don't need to actually add routes.
+    if (hasForms(schema) && !inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`

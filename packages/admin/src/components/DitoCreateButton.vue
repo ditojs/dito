@@ -36,6 +36,7 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import PulldownMixin from '@/mixins/PulldownMixin'
+import { isInlined } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-create-button', {
@@ -54,7 +55,7 @@ export default DitoComponent.component('dito-create-button', {
     },
 
     inlined() {
-      return !!this.schema.inlined
+      return isInlined(this.schema)
     }
   },
 
