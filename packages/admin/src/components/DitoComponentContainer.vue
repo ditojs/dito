@@ -133,15 +133,6 @@ export default DitoComponent.component('dito-component-container', {
       }
     }),
 
-    widthPercentage() {
-      const width = this.componentWidth
-      // 'auto' = no fitting:
-      return width == null || width === 'auto' ? null
-        : width === 'fill' ? 100
-        : /%$/.test(width) ? parseFloat(width) // percentage
-        : parseFraction(width) * 100 // fraction
-    },
-
     containerClass() {
       const { containerClass } = this.schema
       return {
@@ -158,25 +149,39 @@ export default DitoComponent.component('dito-component-container', {
       }
     },
 
+    componentBasis() {
+      const { componentWidth } = this
+      const width = isString(componentWidth)
+        ? componentWidth.match(/([^<>]+)/g)[0] // Remove '<' & '>'
+        : componentWidth
+      // 'auto' = no fitting:
+      const basis = width == null || width === 'auto' ? 'auto'
+        : width === 'fill' ? 100
+        : /%$/.test(width) ? parseFloat(width) // percentage
+        : parseFraction(width) * 100 // fraction
+      return basis !== 'auto' ? `${basis}%` : basis
+    },
+
     containerStyle() {
-      const basis = this.widthPercentage && `${Math.abs(this.widthPercentage)}%`
+      // Interpret '>50%' as '50%, flex-grow: 1`
       const grow = (
-        /^\+/.test(this.componentWidth) ||
+        /^>/.test(this.componentWidth) ||
         this.componentWidth === 'fill'
       )
-      const shrink = /^-/.test(this.componentWidth)
+      // Interpret '<50%' as '50%, flex-shrink: 1`
+      const shrink = /^</.test(this.componentWidth)
       return {
-        flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${basis}`
+        flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${this.componentBasis}`
       }
     },
 
     componentClass() {
+      const auto = this.componentBasis === 'auto'
       return {
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
-        'dito-width-fill':
-          this.componentWidth === 'fill' || this.widthPercentage !== null,
-        'dito-width-auto': this.componentWidth === 'auto',
+        'dito-width-fill': !auto,
+        'dito-width-auto': auto,
         'dito-has-errors': !!this.errors
       }
     }
