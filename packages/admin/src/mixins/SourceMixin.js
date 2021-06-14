@@ -237,13 +237,12 @@ export default {
       return this.forms.every(isCompact)
     },
 
+    isInlined() {
+      return isInlined(this.schema)
+    },
+
     paginate: getSchemaAccessor('paginate', {
       type: Number
-    }),
-
-    inlined: getSchemaAccessor('inlined', {
-      type: Boolean,
-      default: false
     }),
 
     render: getSchemaAccessor('render', {
@@ -267,7 +266,7 @@ export default {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && !this.inlined
+        return editable && !this.isInlined
       }
     }),
 
@@ -288,7 +287,7 @@ export default {
       type: Boolean,
       default: null, // so that `??` below can do its thing:
       get(collapsible) {
-        return this.inlined && !!(collapsible ?? this.collapsed !== null)
+        return this.isInlined && !!(collapsible ?? this.collapsed !== null)
       }
     }),
 

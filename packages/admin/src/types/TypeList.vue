@@ -24,9 +24,9 @@
       )
     table.dito-table(
       :class=`{
-        'dito-table-separators': inlined,
-        'dito-table-larger-padding': hasEditButtons && !inlined,
-        'dito-table-alternate-colors': !inlined,
+        'dito-table-separators': isInlined,
+        'dito-table-larger-padding': hasEditButtons && !isInlined,
+        'dito-table-alternate-colors': !isInlined,
         'dito-table-even-count': hasEvenCount
       }`
     )
@@ -65,7 +65,7 @@
           template(v-else)
             td
               dito-schema-inlined(
-                v-if="inlined"
+                v-if="isInlined"
                 :label="getItemLabel(schema, item, { index, asObject: true })"
                 :schema="getItemFormSchema(schema, item, context)"
                 :dataPath="getDataPath(index)"
@@ -240,7 +240,7 @@ export default TypeComponent.register('list', {
     },
 
     hasCellEditButtons() {
-      return !this.inlined && this.hasEditButtons
+      return !this.isInlined && this.hasEditButtons
     },
 
     hasEvenCount() {
