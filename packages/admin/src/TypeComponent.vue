@@ -28,10 +28,10 @@ const TypeComponent = DitoComponent.component('dito-type-component', {
 
   defaultValue: null,
   defaultNested: true,
-  defaultOmitPadding: false,
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,
+  omitPadding: false,
 
   computed: {
     component() {
