@@ -57,6 +57,7 @@ export default {
         id,
         name,
         type,
+        size,
         title,
         disabled,
         readonly,
@@ -68,6 +69,7 @@ export default {
         id,
         name,
         type,
+        size,
         title,
         disabled,
         readonly,
@@ -82,6 +84,13 @@ export default {
       // but pass on all others to the wrapped native element:
       const { input, ...listeners } = this.$listeners
       return listeners
+    },
+
+    size() {
+      // Determine size based on min & max settings, if they're provided.
+      const { size, min, max } = this.$attrs
+      const getLength = value => value != null ? `${value}`.length : 0
+      return size || getLength(min) || getLength(max) || undefined
     }
   },
 
