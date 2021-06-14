@@ -57,16 +57,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:*, @babel/core@npm:7.14.5, @babel/core@npm:^7.1.0, @babel/core@npm:^7.11.0, @babel/core@npm:^7.14.5, @babel/core@npm:^7.7.2, @babel/core@npm:^7.7.5":
-  version: 7.14.5
-  resolution: "@babel/core@npm:7.14.5"
+"@babel/core@npm:*, @babel/core@npm:7.14.6, @babel/core@npm:^7.1.0, @babel/core@npm:^7.11.0, @babel/core@npm:^7.14.6, @babel/core@npm:^7.7.2, @babel/core@npm:^7.7.5":
+  version: 7.14.6
+  resolution: "@babel/core@npm:7.14.6"
   dependencies:
     "@babel/code-frame": ^7.14.5
     "@babel/generator": ^7.14.5
     "@babel/helper-compilation-targets": ^7.14.5
     "@babel/helper-module-transforms": ^7.14.5
-    "@babel/helpers": ^7.14.5
-    "@babel/parser": ^7.14.5
+    "@babel/helpers": ^7.14.6
+    "@babel/parser": ^7.14.6
     "@babel/template": ^7.14.5
     "@babel/traverse": ^7.14.5
     "@babel/types": ^7.14.5
@@ -76,7 +76,7 @@ __metadata:
     json5: ^2.1.2
     semver: ^6.3.0
     source-map: ^0.5.0
-  checksum: 71c358c7a21b9bc8b6e93d704e1f5fe716f64c5111b2b8f42286a0423a554ed303b5c575f9973c9522976caaa2f6c87d3a4c077538cc8396c6d41ebcf0f3f231
+  checksum: 239c4892d54f1d6e3a9a3972a7579138da6ff5308b9c08e4c80c9cd09282b6a921f58338851675fdb80b1cf9dd14f4176674917b97aa430bf1d50c0052bbb13a
   languageName: node
   linkType: hard
 
@@ -151,8 +151,8 @@ __metadata:
   linkType: hard
 
 "@babel/helper-create-class-features-plugin@npm:^7.14.5":
-  version: 7.14.5
-  resolution: "@babel/helper-create-class-features-plugin@npm:7.14.5"
+  version: 7.14.6
+  resolution: "@babel/helper-create-class-features-plugin@npm:7.14.6"
   dependencies:
     "@babel/helper-annotate-as-pure": ^7.14.5
     "@babel/helper-function-name": ^7.14.5
@@ -162,7 +162,7 @@ __metadata:
     "@babel/helper-split-export-declaration": ^7.14.5
   peerDependencies:
     "@babel/core": ^7.0.0
-  checksum: e5b9f51fe2754d946e65d46303b3eaecf95c560dd5957b92786aea1655f73742791e397bbd8138ec74fb6ffb8315e8ff1fe7547667c518fad76eddd2dd8973fc
+  checksum: 833222da49f33c32d341c99cda796b622bd7cd7824a49c532296ed96bbfe5935187abfe59f6e5886879825140cd7f71516bff8a6afa20ceec1c32cde2d388eb9
   languageName: node
   linkType: hard
 
@@ -360,14 +360,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/helpers@npm:^7.14.5":
-  version: 7.14.5
-  resolution: "@babel/helpers@npm:7.14.5"
+"@babel/helpers@npm:^7.14.6":
+  version: 7.14.6
+  resolution: "@babel/helpers@npm:7.14.6"
   dependencies:
     "@babel/template": ^7.14.5
     "@babel/traverse": ^7.14.5
     "@babel/types": ^7.14.5
-  checksum: 6604a3c82c81289e93dd9883dc1ffc24219bd665d2a0dd72988ac20893698a47cdb8d5824cf500016b711ba18f98f76e1aff947f166e2b3a4c5664915bdbf275
+  checksum: c5c3bd0f9618cdb8895d89171fe0b89c0b119bf8c9f96aff869d95b9208628172a882a132f8f76a218e0e68d8c3316f65b60af9b3a3a778d9b9adce004ca52c7
   languageName: node
   linkType: hard
 
@@ -382,12 +382,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.1.0, @babel/parser@npm:^7.14.5, @babel/parser@npm:^7.6.0, @babel/parser@npm:^7.7.2, @babel/parser@npm:^7.9.6":
-  version: 7.14.5
-  resolution: "@babel/parser@npm:7.14.5"
+"@babel/parser@npm:^7.1.0, @babel/parser@npm:^7.14.5, @babel/parser@npm:^7.14.6, @babel/parser@npm:^7.6.0, @babel/parser@npm:^7.7.2, @babel/parser@npm:^7.9.6":
+  version: 7.14.6
+  resolution: "@babel/parser@npm:7.14.6"
   bin:
     parser: ./bin/babel-parser.js
-  checksum: 55c14793888cb7d54275811e7f13136875df1ee4fc368f3f10cff46ebdf95b6a072e706a0486be0ac5686a597cbfb82f33b5f66aa6ba80ff50b73bca945035c6
+  checksum: 447ca2627e356e4507cf8c89adcf0865217d4c7ee69daeaea1a93207c68923e01d27a492df0809a2d9a51d82b2b0cc70375a2dc2cb3262c46eb0ca911c360fd2
   languageName: node
   linkType: hard
 
@@ -1162,14 +1162,14 @@ __metadata:
   linkType: hard
 
 "@babel/plugin-transform-spread@npm:^7.14.5":
-  version: 7.14.5
-  resolution: "@babel/plugin-transform-spread@npm:7.14.5"
+  version: 7.14.6
+  resolution: "@babel/plugin-transform-spread@npm:7.14.6"
   dependencies:
     "@babel/helper-plugin-utils": ^7.14.5
     "@babel/helper-skip-transparent-expression-wrappers": ^7.14.5
   peerDependencies:
     "@babel/core": ^7.0.0-0
-  checksum: d047ca9c02207ddb336fe90677f441b6b9cfa4a600cd05f0eb6c38f2875d750188e5cb5658663829be9a33b59152cf390425bd1d5334d304d43da215d176a327
+  checksum: 9511fd90a53a2537f209e9165ad7efc28fc50985bedf5fc6fedb5a2acaab3f3e3bb8c8ad6247c0ec164d2e96e9b8afcd3dd8c20310459081cb5ae3f0ba246e56
   languageName: node
   linkType: hard
 
@@ -1327,12 +1327,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.14.5, @babel/runtime@npm:^7.8.4":
-  version: 7.14.5
-  resolution: "@babel/runtime@npm:7.14.5"
+"@babel/runtime@npm:^7.11.0, @babel/runtime@npm:^7.14.6, @babel/runtime@npm:^7.8.4":
+  version: 7.14.6
+  resolution: "@babel/runtime@npm:7.14.6"
   dependencies:
     regenerator-runtime: ^0.13.4
-  checksum: 1e7b7bd939488df0e9af92fac7cf65a38d6de0e5be71883ac2e5f59e6c1199086a9be723b483f9c79adca9f7a62fdffc9ce6f85b953c7efb3469f01f64a41f27
+  checksum: dd931f6ef1c8dab295c4a00c592db6352bf12a5c443f8222304d5c1d3e88d795fa949afcb6f053eec2e69e9827a17ff274524c1cd43813f56b61e3a540274d2f
   languageName: node
   linkType: hard
 
@@ -1385,9 +1385,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
-    "@babel/runtime": ^7.14.5
+    "@babel/runtime": ^7.14.6
     "@ditojs/babel-preset": ^0.244.0
     "@ditojs/build": ^0.244.0
     "@ditojs/ui": ^0.244.0
@@ -1452,7 +1452,7 @@ __metadata:
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
     "@babel/cli": ^7.14.5
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
     "@ditojs/babel-preset": ^0.244.0
     "@ditojs/utils": ^0.244.0
@@ -1472,9 +1472,9 @@ __metadata:
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
     "@babel/cli": ^7.14.5
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
-    "@babel/runtime": ^7.14.5
+    "@babel/runtime": ^7.14.6
     "@ditojs/babel-preset": ^0.244.0
     "@ditojs/utils": ^0.244.0
     babel-plugin-module-resolver: ^4.1.0
@@ -1488,9 +1488,9 @@ __metadata:
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
     "@babel/cli": ^7.14.5
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
-    "@babel/runtime": ^7.14.5
+    "@babel/runtime": ^7.14.6
     "@ditojs/admin": ^0.244.0
     "@ditojs/babel-preset": ^0.244.0
     "@ditojs/router": ^0.244.0
@@ -1500,7 +1500,7 @@ __metadata:
     "@vue/cli-service": ^4.5.13
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.927.0
+    aws-sdk: ^2.928.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1562,9 +1562,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
-    "@babel/runtime": ^7.14.5
+    "@babel/runtime": ^7.14.6
     "@ditojs/babel-preset": ^0.244.0
     "@ditojs/build": ^0.244.0
     "@ditojs/utils": ^0.244.0
@@ -1592,9 +1592,9 @@ __metadata:
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     "@babel/cli": ^7.14.5
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/preset-env": ^7.14.5
-    "@babel/runtime": ^7.14.5
+    "@babel/runtime": ^7.14.6
     "@ditojs/babel-preset": ^0.244.0
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
@@ -4631,7 +4631,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.927.0":
+"aws-sdk@npm:^2.928.0":
   version: 2.928.0
   resolution: "aws-sdk@npm:2.928.0"
   dependencies:
@@ -7206,7 +7206,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dito@workspace:."
   dependencies:
-    "@babel/core": ^7.14.5
+    "@babel/core": ^7.14.6
     "@babel/eslint-parser": ^7.14.5
     "@babel/eslint-plugin": ^7.14.5
     babel-jest: ^27.0.2
