@@ -2447,7 +2447,7 @@ __metadata:
     filesize: ^6.3.0
     filesize-parser: ^1.5.0
     hint.css: ^2.6.0
-    postcss: ^8.3.2
+    postcss: ^8.3.4
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0
     pug: ^3.0.2
@@ -2619,7 +2619,7 @@ __metadata:
     babel-loader: ^8.2.2
     core-js: ^3.14.0
     fibers: ^5.0.0
-    postcss: ^8.3.2
+    postcss: ^8.3.4
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0
     pug: ^3.0.2
@@ -16574,14 +16574,14 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.3.2":
-  version: 8.3.2
-  resolution: "postcss@npm:8.3.2"
+"postcss@npm:^8.3.4":
+  version: 8.3.4
+  resolution: "postcss@npm:8.3.4"
   dependencies:
     colorette: ^1.2.2
     nanoid: ^3.1.23
     source-map-js: ^0.6.2
-  checksum: 31e03ca7a5fdb86b92066bb31c152145254da2fc47dab1bb015ac4a3649a621d1a43d9464c2ce9fe8c13a7a253beb45185ac6ed0b059009c757fe65a2af35ab2
+  checksum: 9b02ccb85c27f43cba22a43b5b6f9babacfe3a0591037ffa17c302efce95332f22ec7ff5f8db99c569df58d8c2b597a813872f29953646d14f12f625be6215f7
   languageName: node
   linkType: hard
 
