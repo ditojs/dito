@@ -1,4 +1,3 @@
-import DitoContext from '@/DitoContext'
 import LoadingMixin from './LoadingMixin'
 import { isFunction, isPromise } from '@ditojs/utils'
 
@@ -15,9 +14,6 @@ export default {
 
   methods: {
     handleDataOption(value, name = 'data', loadingOptions = {}) {
-      let context
-      const getContext = () => (context ||= new DitoContext(this))
-
       // See if there is async data loading already in process.
       const asyncEntry = (
         this.asyncDataEntries[name] ||
@@ -30,7 +26,7 @@ export default {
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataOption()` to force Vue to keep track
       // of the async dependencies.
-      asyncEntry.dependencyFunction?.(this, getContext())
+      asyncEntry.dependencyFunction?.(this, this.context)
 
       const { resolvedData } = asyncEntry
       if (resolvedData) {
@@ -45,7 +41,7 @@ export default {
       // Avoid calling the data function twice:
       if (!asyncEntry.resolving) {
         if (isFunction(value)) {
-          const result = value.call(this, getContext())
+          const result = value.call(this, this.context)
           // If the result of the data function is another function, then the
           // first data function is there to track dependencies and the real
           // data loading happens in the function that it returned. Keep track
@@ -54,7 +50,7 @@ export default {
           // function that it returned once to get the actual data:
           if (isFunction(result)) {
             asyncEntry.dependencyFunction = value
-            data = result.call(this, getContext())
+            data = result.call(this, this.context)
           } else {
             data = result
           }

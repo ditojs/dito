@@ -67,7 +67,7 @@
               dito-schema-inlined(
                 v-if="inlined"
                 :label="getItemLabel(schema, item, { index, asObject: true })"
-                :schema="getItemFormSchema(schema, item, views)"
+                :schema="getItemFormSchema(schema, item, context)"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"
@@ -104,7 +104,7 @@
               :draggable="draggable"
               :editable="editable"
               :editPath="getEditPath(item, index)"
-              :schema="getItemFormSchema(schema, item, views)"
+              :schema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
@@ -262,7 +262,7 @@ export default TypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
-        const path = getViewEditPath(this.schema, this.views) || this.path
+        const path = getViewEditPath(this.schema, this.context) || this.path
         const id = this.getItemId(this.schema, item, index)
         return `${path}/${id}`
       }

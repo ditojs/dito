@@ -56,7 +56,9 @@ export default {
 
       let formLabel
       const getFormLabel = () =>
-        (formLabel ||= this.getLabel(getItemFormSchema(sourceSchema, item)))
+        (formLabel ||= this.getLabel(
+          getItemFormSchema(sourceSchema, item, this.context)
+        ))
 
       let text
       let prefix

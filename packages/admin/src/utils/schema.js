@@ -7,6 +7,7 @@ import {
 
 const typeComponents = {}
 const unknownTypeReported = {}
+let resolvedViews = null
 
 export function registerTypeComponent(type, component) {
   typeComponents[type] = component
@@ -69,15 +70,16 @@ export function everySchemaComponent(schema, callback) {
   ) !== false
 }
 
-export async function resolveViews(views) {
-  if (isFunction(views)) {
-    views = views()
-  }
+export async function resolveViews(unresolvedViews) {
+  let views = isFunction(unresolvedViews)
+    ? unresolvedViews()
+    : unresolvedViews
   if (isPromise(views)) {
     views = await views
   }
-
-  return views
+  // Copy views to convert from module to object, and keep  a global reference:
+  resolvedViews = { ...views }
+  return resolvedViews
 }
 
 export async function processView(component, api, schema, name, routes) {
@@ -184,9 +186,9 @@ export function hasForms(schema) {
   return isObject(schema) && !!(schema.form || schema.forms)
 }
 
-export function getViewSchema(schema, views) {
+export function getViewSchema(schema, context) {
   const { view } = schema
-  const viewSchema = view && views[view]
+  const viewSchema = view && context.views[view]
   return viewSchema
     ? hasForms(viewSchema)
       ? viewSchema
@@ -201,8 +203,8 @@ export function getViewSchema(schema, views) {
     : null
 }
 
-export function getViewEditPath(schema, views) {
-  const view = getViewSchema(schema, views)
+export function getViewEditPath(schema, context) {
+  const view = getViewSchema(schema, context)
   return view
     ? view.level === 0
       ? `/${view.path}` // A single-component view
@@ -210,21 +212,19 @@ export function getViewEditPath(schema, views) {
     : null
 }
 
-export function getFormSchemas(schema, views = null) {
-  if (views) {
-    const view = getViewSchema(schema, views)
-    if (view) {
-      schema = view
-    } else if (schema.view) {
-      throw new Error(`Unknown view: '${schema.view}'`)
-    }
+export function getFormSchemas(schema, context) {
+  const view = getViewSchema(schema, context)
+  if (view) {
+    schema = view
+  } else if (schema.view) {
+    throw new Error(`Unknown view: '${schema.view}'`)
   }
   const { form, forms } = schema
   return forms || { default: form }
 }
 
-export function getItemFormSchema(schema, item, views = null) {
-  const forms = getFormSchemas(schema, views)
+export function getItemFormSchema(schema, item, context) {
+  const forms = getFormSchemas(schema, context)
   return forms[item?.type] || forms.default
 }
 
@@ -281,14 +281,17 @@ export function hasLabels(schema) {
 }
 
 export function setDefaults(schema, data = {}) {
-  function processBefore(schema, data, name) {
+  const processBefore = (schema, data, name) => {
     if (!(name in data) && !ignoreMissingValue(schema)) {
       data[name] = getDefaultValue(schema)
     }
   }
+
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
-  return processSchemaData(schema, data, null, processBefore)
+  return processSchemaData(schema, data, null, processBefore, null, null, {
+    rootData: data
+  })
 }
 
 export function processData(schema, data, dataPath, options = {}) {
@@ -298,7 +301,7 @@ export function processData(schema, data, dataPath, options = {}) {
   const rootData = options?.rootData ?? data
   options = { rootData, ...options }
 
-  function processBefore(schema, data, name, dataPath, clone) {
+  const processBefore = (schema, data, name, dataPath, clone) => {
     const { wrapPrimitives } = schema
     const value = clone[name]
 
@@ -311,13 +314,14 @@ export function processData(schema, data, dataPath, options = {}) {
     }
   }
 
-  function processAfter(schema, data, name, dataPath, clone) {
+  const processAfter = (schema, data, name, dataPath, clone) => {
     const { wrapPrimitives, exclude, process } = schema
     let value = clone[name]
 
     const typeOptions = getTypeOptions(schema)
 
-    const getContext = () => new DitoContext(null, {
+    let context = null
+    const getContext = () => (context ||= new DitoContext(null, {
       value,
       name,
       data,
@@ -326,7 +330,7 @@ export function processData(schema, data, dataPath, options = {}) {
       // Pass the already cloned data to `process()` as `processedData`,
       // so it can be modified through `processedItem` from there.
       processedData: clone
-    })
+    }))
 
     // Handle the user's `process()` callback first, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
@@ -359,8 +363,9 @@ export function processData(schema, data, dataPath, options = {}) {
     clone[name] = value
   }
 
+  const clone = shallowClone(data)
   return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, shallowClone(data)
+    schema, data, dataPath, processBefore, processAfter, clone, options
   )
 }
 
@@ -370,9 +375,10 @@ export function processSchemaData(
   dataPath,
   processBefore,
   processAfter,
-  clone
+  clone,
+  options
 ) {
-  function processComponents(components) {
+  const processComponents = components => {
     const getDataPath = (dataPath, token) => dataPath != null
       ? appendDataPath(dataPath, token)
       : null
@@ -387,24 +393,33 @@ export function processSchemaData(
             dataPath,
             processBefore,
             processAfter,
-            clone
+            clone,
+            options
           )
         } else {
           const componentDataPath = getDataPath(dataPath, name)
 
           const processItem = (item, index = null) => {
-            const formSchema = getItemFormSchema(componentSchema, item)
+            const dataPath = index !== null
+              ? getDataPath(componentDataPath, index)
+              : componentDataPath
+            const context = {
+              data: item,
+              dataPath,
+              rootData: options.rootData,
+              views: resolvedViews
+            }
+            const formSchema = getItemFormSchema(componentSchema, item, context)
             const itemClone = clone ? shallowClone(item) : null
             return formSchema
               ? processSchemaData(
                 formSchema,
                 item,
-                index !== null
-                  ? getDataPath(componentDataPath, index)
-                  : componentDataPath,
+                dataPath,
                 processBefore,
                 processAfter,
-                itemClone
+                itemClone,
+                options
               )
               : itemClone
           }

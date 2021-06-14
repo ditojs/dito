@@ -11,7 +11,7 @@
       // Support the same rendering options as TypeList:
       dito-schema-inlined(
         v-if="inlined"
-        :schema="getItemFormSchema(schema, objectData)"
+        :schema="getItemFormSchema(schema, objectData, context)"
         :dataPath="dataPath"
         :data="objectData"
         :meta="nestedMeta"

@@ -134,6 +134,10 @@ export default {
     // that loads its own data from an associated API resource.
     rootData() {
       return this.dataComponent?.data
+    },
+
+    context() {
+      return new DitoContext(this)
     }
   },
 
@@ -175,13 +179,10 @@ export default {
           : schema[keyOrDataPath]
         : undefined
 
-      let context
-      const getContext = () => (context ||= new DitoContext(this))
-
       if (value === undefined && def !== undefined) {
         if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
-          def = def.call(this, getContext())
+          def = def.call(this, this.context)
         }
         return def
       }
@@ -192,7 +193,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (callback && isFunction(value)) {
-        value = value.call(this, getContext())
+        value = value.call(this, this.context)
       }
       // Now finally see if we can convert to the expect types.
       if (types && value != null && !isMatchingType(types, value)) {

@@ -212,13 +212,13 @@ export default {
     },
 
     forms() {
-      return Object.values(getFormSchemas(this.schema, this.views))
+      return Object.values(getFormSchemas(this.schema, this.context))
     },
 
     // Returns the linked view schema if this source edits it its items through
     // a linked view.
     view() {
-      return getViewSchema(this.schema, this.views)
+      return getViewSchema(this.schema, this.context)
     },
 
     linksToView() {

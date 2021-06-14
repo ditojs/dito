@@ -89,6 +89,10 @@ export default class DitoContext {
     return get(this, 'api') || null
   }
 
+  get views() {
+    return get(this, 'views') || null
+  }
+
   get itemLabel() {
     return get(this, 'itemLabel') || null
   }

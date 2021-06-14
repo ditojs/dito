@@ -154,7 +154,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
 import {
@@ -205,7 +204,7 @@ export default DitoComponent.component('dito-schema', {
       // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
-          ? data.call(this, new DitoContext(this))
+          ? data.call(this, this.context)
           : data
       ),
       containersRegistry: {},
@@ -257,7 +256,7 @@ export default DitoComponent.component('dito-schema', {
         for (const tab of Object.values(this.tabs)) {
           const { defaultTab } = tab
           if (isFunction(defaultTab)
-            ? defaultTab.call(this, new DitoContext(this))
+            ? defaultTab.call(this, this.context)
             : defaultTab
           ) {
             return tab
@@ -304,7 +303,9 @@ export default DitoComponent.component('dito-schema', {
     },
 
     formLabel() {
-      return this.getLabel(this.getItemFormSchema(this.sourceSchema, this.data))
+      return this.getLabel(
+        this.getItemFormSchema(this.sourceSchema, this.data, this.context)
+      )
     },
 
     isDirty() {
