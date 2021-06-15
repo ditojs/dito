@@ -225,7 +225,7 @@ export function getFormSchemas(schema, context) {
   // Handle `schema.if` here as well, to only ever return forms that are
   // actually to be used.
   const process = isFunction(schema.if)
-    ? schema.if(DitoContext.get(context))
+    ? schema.if(context)
     : schema.if ?? true
   if (!process) return {}
 
@@ -241,7 +241,7 @@ export function getFormSchemas(schema, context) {
       if (isFunction(form.components)) {
         form = {
           ...form,
-          components: form.components(DitoContext.get(context))
+          components: form.components(context)
         }
       }
       return [type, form]
@@ -353,7 +353,7 @@ export function processData(schema, data, dataPath, options = {}) {
     const typeOptions = getTypeOptions(schema)
 
     let context = null
-    const getContext = () => (context ||= DitoContext.get({
+    const getContext = () => (context ||= DitoContext.get(options.component, {
       value,
       name,
       data,
@@ -361,8 +361,7 @@ export function processData(schema, data, dataPath, options = {}) {
       rootData,
       // Pass the already cloned data to `process()` as `processedData`,
       // so it can be modified through `processedItem` from there.
-      processedData: clone,
-      component: options.component
+      processedData: clone
     }))
 
     // Handle the user's `process()` callback first, if one is provided, so that
@@ -436,14 +435,13 @@ export function processSchemaData(
             const dataPath = index !== null
               ? getDataPath(componentDataPath, index)
               : componentDataPath
-            const context = {
+            const context = DitoContext.get(options.component, {
               data,
               value: item,
               dataPath,
               index,
-              rootData: options.rootData,
-              component: options.component
-            }
+              rootData: options.rootData
+            })
             const form = getItemFormSchema(componentSchema, item, context)
             const itemClone = clone ? shallowClone(item) : null
             return form
