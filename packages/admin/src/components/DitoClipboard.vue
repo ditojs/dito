@@ -49,16 +49,18 @@ export default DitoComponent.component('dito-clipboard', {
     copyData() {
       const { copy } = this.clipboardSettings
       return copy
-        ? clipboardData =>
-          copy.call(this, clipboardData, new DitoContext(this))
+        ? clipboardData => copy.call(this, new DitoContext(this, {
+          clipboardData
+        }))
         : clipboardData => clone(clipboardData)
     },
 
     pasteData() {
       const { paste } = this.clipboardSettings
       return paste
-        ? clipboardData =>
-          paste.call(this, clipboardData, new DitoContext(this))
+        ? clipboardData => paste.call(this, new DitoContext(this, {
+          clipboardData
+        }))
         : clipboardData => clipboardData
     }
   },
