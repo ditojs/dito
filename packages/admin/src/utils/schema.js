@@ -315,8 +315,8 @@ export function hasLabels(schema) {
   )
 }
 
-export function setDefaults(schema, data = {}, options = {}) {
-  options = { rootData: data, ...options }
+export function setDefaults(schema, data = {}, component) {
+  const options = { rootData: data, component }
 
   const processBefore = (schema, data, name) => {
     if (!(name in data) && !ignoreMissingValue(schema)) {

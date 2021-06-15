@@ -600,10 +600,7 @@ export default DitoComponent.component('dito-schema', {
       // We can't set `this.data = ...` because it's a property, but we can
       // set all known properties on it to the values returned by
       // `setDefaults()`, as they are all reactive already from the starts:
-      Object.assign(this.data, setDefaults(this.schema, {}, {
-        // Needed for DitoContext handling inside `processSchemaData()`:
-        component: this
-      }))
+      Object.assign(this.data, setDefaults(this.schema, {}, this))
       this.clearErrors()
     },
 

@@ -189,7 +189,7 @@ export default {
     },
 
     createData(schema, type) {
-      return setDefaults(schema, type ? { type } : {})
+      return setDefaults(schema, type ? { type } : {}, this)
     },
 
     requestData() {
