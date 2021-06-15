@@ -7,7 +7,6 @@ import {
 
 const typeComponents = {}
 const unknownTypeReported = {}
-let resolvedViews = null
 
 export function registerTypeComponent(type, component) {
   typeComponents[type] = component
@@ -78,8 +77,7 @@ export async function resolveViews(unresolvedViews) {
     views = await views
   }
   // Copy views to convert from module to object, and keep  a global reference:
-  resolvedViews = { ...views }
-  return resolvedViews
+  return { ...views }
 }
 
 export async function processView(component, api, schema, name, routes) {
