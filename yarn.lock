@@ -1500,7 +1500,7 @@ __metadata:
     "@vue/cli-service": ^4.5.13
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.928.0
+    aws-sdk: ^2.929.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -3725,13 +3725,14 @@ __metadata:
   linkType: hard
 
 "@vue/component-compiler-utils@npm:^3.1.0, @vue/component-compiler-utils@npm:^3.1.2":
-  version: 3.2.1
-  resolution: "@vue/component-compiler-utils@npm:3.2.1"
+  version: 3.2.2
+  resolution: "@vue/component-compiler-utils@npm:3.2.2"
   dependencies:
     consolidate: ^0.15.1
     hash-sum: ^1.0.2
     lru-cache: ^4.1.2
     merge-source-map: ^1.1.0
+    postcss: ^7.0.36
     postcss-selector-parser: ^6.0.2
     prettier: ^1.18.2
     source-map: ~0.6.1
@@ -3739,7 +3740,7 @@ __metadata:
   dependenciesMeta:
     prettier:
       optional: true
-  checksum: b5f010983b230b0a7a690cf10c07a00b8e5ef4451d4d3ccfc7a85551c3c91c67bff7c1e394dffe47212fa8f1f502a5ff27b606be52490808e6d088d23b895a80
+  checksum: 3ce00881ddeaadd5964093af6497944f948095a5570b721cb2185493898ebcaf16830482583ef4adee6e470c01a8759686f706090e7dc10a475651ba1c240566
   languageName: node
   linkType: hard
 
@@ -4281,7 +4282,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"anymatch@npm:^3.0.0, anymatch@npm:^3.0.3, anymatch@npm:~3.1.1":
+"anymatch@npm:^3.0.0, anymatch@npm:^3.0.3, anymatch@npm:~3.1.2":
   version: 3.1.2
   resolution: "anymatch@npm:3.1.2"
   dependencies:
@@ -4631,9 +4632,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.928.0":
-  version: 2.928.0
-  resolution: "aws-sdk@npm:2.928.0"
+"aws-sdk@npm:^2.929.0":
+  version: 2.929.0
+  resolution: "aws-sdk@npm:2.929.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4644,7 +4645,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 5af32f9ce1653bc20e21d0ed7cb2b33d7c2c20849d927a96f62c6bce5a060f747b9ac0182449936e96fc9aa368afe136491384e8784f8907296bd8a6c5929720
+  checksum: ad147f36cb52ac467aa66901536f8b736c23539a4fd7ddeccd8f78f5ed71cbd04b8bd96402c2a7423dd143997e10222b2130d580529d7d590ff453159cec55d5
   languageName: node
   linkType: hard
 
@@ -5547,21 +5548,21 @@ __metadata:
   linkType: hard
 
 "chokidar@npm:>=3.0.0 <4.0.0, chokidar@npm:^3.4.0, chokidar@npm:^3.4.1":
-  version: 3.5.1
-  resolution: "chokidar@npm:3.5.1"
+  version: 3.5.2
+  resolution: "chokidar@npm:3.5.2"
   dependencies:
-    anymatch: ~3.1.1
+    anymatch: ~3.1.2
     braces: ~3.0.2
-    fsevents: ~2.3.1
-    glob-parent: ~5.1.0
+    fsevents: ~2.3.2
+    glob-parent: ~5.1.2
     is-binary-path: ~2.1.0
     is-glob: ~4.0.1
     normalize-path: ~3.0.0
-    readdirp: ~3.5.0
+    readdirp: ~3.6.0
   dependenciesMeta:
     fsevents:
       optional: true
-  checksum: 61b3f710f9e7dc69d76f638d8b0d37bad586497444165125ca8062f7192695f35403b5f622cbd7dfdd06805201ceaba40ff90e53ea2974df9a8087861192a99b
+  checksum: 52fbff3acebf06ec0125872110f6c8403e66cd3d613264c83405496e199554d99380342d9b3a7ffd7910c53c5865e242ed7dd72fcb2e883d8e3ad3f3883aee6c
   languageName: node
   linkType: hard
 
@@ -8856,7 +8857,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"fsevents@^2.3.2, fsevents@~2.3.1":
+"fsevents@^2.3.2, fsevents@~2.3.2":
   version: 2.3.2
   resolution: "fsevents@npm:2.3.2"
   dependencies:
@@ -8875,7 +8876,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"fsevents@patch:fsevents@^2.3.2#builtin<compat/fsevents>, fsevents@patch:fsevents@~2.3.1#builtin<compat/fsevents>":
+"fsevents@patch:fsevents@^2.3.2#builtin<compat/fsevents>, fsevents@patch:fsevents@~2.3.2#builtin<compat/fsevents>":
   version: 2.3.2
   resolution: "fsevents@patch:fsevents@npm%3A2.3.2#builtin<compat/fsevents>::version=2.3.2&hash=11e9ea"
   dependencies:
@@ -9126,7 +9127,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"glob-parent@npm:^5.1.0, glob-parent@npm:^5.1.1, glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.0":
+"glob-parent@npm:^5.1.0, glob-parent@npm:^5.1.1, glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.2":
   version: 5.1.2
   resolution: "glob-parent@npm:5.1.2"
   dependencies:
@@ -13576,13 +13577,13 @@ fsevents@^1.2.7:
   linkType: hard
 
 "npm-package-arg@npm:^8.0.0, npm-package-arg@npm:^8.0.1, npm-package-arg@npm:^8.1.0, npm-package-arg@npm:^8.1.2":
-  version: 8.1.4
-  resolution: "npm-package-arg@npm:8.1.4"
+  version: 8.1.5
+  resolution: "npm-package-arg@npm:8.1.5"
   dependencies:
     hosted-git-info: ^4.0.1
     semver: ^7.3.4
     validate-npm-package-name: ^3.0.0
-  checksum: d7a54ddedc41b5701008bea82f5af143706f8ea11a97ce3380b197ff72440c5014ba97aef233e20fe1b7512aec7c58e6fe4076da7a93a19842e92c8a8dcc3832
+  checksum: f4f1b0753e2c81e2b60f684b9151be4e7326be81febc51c65207713eaead42c3fdfadd0c65ff0726445b03e8eb177f0e17141f4101a0652d72cffd876c2487a8
   languageName: node
   linkType: hard
 
@@ -15282,7 +15283,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"postcss@npm:^7.0.0, postcss@npm:^7.0.1, postcss@npm:^7.0.14, postcss@npm:^7.0.27, postcss@npm:^7.0.32, postcss@npm:^7.0.5, postcss@npm:^7.0.6":
+"postcss@npm:^7.0.0, postcss@npm:^7.0.1, postcss@npm:^7.0.14, postcss@npm:^7.0.27, postcss@npm:^7.0.32, postcss@npm:^7.0.36, postcss@npm:^7.0.5, postcss@npm:^7.0.6":
   version: 7.0.36
   resolution: "postcss@npm:7.0.36"
   dependencies:
@@ -16210,12 +16211,12 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"readdirp@npm:~3.5.0":
-  version: 3.5.0
-  resolution: "readdirp@npm:3.5.0"
+"readdirp@npm:~3.6.0":
+  version: 3.6.0
+  resolution: "readdirp@npm:3.6.0"
   dependencies:
     picomatch: ^2.2.1
-  checksum: a64fe5606937d9655252230003362d95da05dbfd3baecedb4bb8c1bc0df497d051a192f9b75345c944e58a0b362c68349be602d6dbf05d03770e510b35a9f80f
+  checksum: 7da2fe8d5abf17ae0bf97a052718e16d29fa185f3e461153035728d93642326ae8e44c17b9a9b3a5fa616dff160e96be3184e0323efaac7211f80c0aab5f622b
   languageName: node
   linkType: hard
 
