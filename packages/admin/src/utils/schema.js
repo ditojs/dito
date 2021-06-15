@@ -238,12 +238,12 @@ export function getFormSchemas(schema, context) {
   }
   forms ||= { default: form }
   return Object.fromEntries(
-    Object.entries(forms, ([type, form]) => {
-    // Support callbacks to create components on the fly.
+    Object.entries(forms).map(([type, form]) => {
+      // Support `schema.components` callbacks to create components on the fly.
       if (isFunction(form.components)) {
         form = {
           ...form,
-          components: components(DitoContext.get(context))
+          components: form.components(DitoContext.get(context))
         }
       }
       return [type, form]
