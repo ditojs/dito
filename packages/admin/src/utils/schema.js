@@ -230,9 +230,14 @@ export function getFormSchemas(schema, context) {
   if (!process) return {}
 
   let { form, forms, components, compact } = schema
-  if (!form && !forms && components) {
-    // Convert inlined components to forms, supporting `compact` setting.
-    form = { components, compact }
+  if (!form && !forms) {
+    if (components) {
+      // Convert inlined components to forms, supporting `compact` setting.
+      form = { components, compact }
+    } else {
+      // No `forms`, `form` or `components`, return and empty `forms` object.
+      return {}
+    }
   }
   forms ||= { default: form }
   return Object.fromEntries(
@@ -251,7 +256,7 @@ export function getFormSchemas(schema, context) {
 
 export function getItemFormSchema(schema, item, context) {
   const forms = getFormSchemas(schema, context)
-  return forms[item?.type] || forms.default
+  return forms[item?.type] || forms.default || null
 }
 
 export function hasLabel(schema) {
