@@ -229,7 +229,12 @@ export function getFormSchemas(schema, context) {
     // Convert inlined components to forms, supporting callback to create
     // components on the fly.
     if (isFunction(components)) {
-      components = components(DitoContext.get(null, context))
+      context = DitoContext.get(null, context)
+      // TODO: Once we receive the component for `DitoContext.get()`, we could
+      // always check `if` here again before actually returning forms?
+      if (isFunction(schema.if) ? schema.if(context) : schema.if) {
+        components = components(context)
+      }
     }
     form = { components, compact }
   }
@@ -416,27 +421,25 @@ export function processSchemaData(
         } else {
           const componentDataPath = getDataPath(dataPath, name)
 
-          const context = {
-            data,
-            dataPath,
-            rootData: options.rootData,
-            views: resolvedViews
-          }
-
           const processItem = (item, index = null) => {
-            const formSchema = getItemFormSchema(
-              componentSchema,
-              item,
-              index !== null ? { ...context, index } : context
-            )
+            const dataPath = index !== null
+              ? getDataPath(componentDataPath, index)
+              : componentDataPath
+            const context = {
+              data,
+              value: item,
+              dataPath,
+              index,
+              rootData: options.rootData,
+              views: resolvedViews
+            }
+            const form = getItemFormSchema(componentSchema, item, context)
             const itemClone = clone ? shallowClone(item) : null
-            return formSchema
+            return form
               ? processSchemaData(
-                formSchema,
+                form,
                 item,
-                index !== null
-                  ? getDataPath(componentDataPath, index)
-                  : componentDataPath,
+                dataPath,
                 processBefore,
                 processAfter,
                 itemClone,
