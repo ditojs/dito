@@ -42,22 +42,24 @@ export default DitoComponent.component('dito-clipboard', {
   },
 
   computed: {
-    clipboardConfig() {
+    clipboardSettings() {
       return isObject(this.clipboard) ? this.clipboard : {}
     },
 
     copyData() {
-      const { copy } = this.clipboardConfig
+      const { copy } = this.clipboardSettings
       return copy
-        ? data => copy.call(this, data, this.getDitoContext())
-        : data => clone(data)
+        ? clipboardData =>
+          copy.call(this, clipboardData, new DitoContext(this))
+        : clipboardData => clone(clipboardData)
     },
 
     pasteData() {
-      const { paste } = this.clipboardConfig
+      const { paste } = this.clipboardSettings
       return paste
-        ? data => paste.call(this, data, this.getDitoContext())
-        : data => data
+        ? clipboardData =>
+          paste.call(this, clipboardData, new DitoContext(this))
+        : clipboardData => clipboardData
     }
   },
 
@@ -98,15 +100,6 @@ export default DitoComponent.component('dito-clipboard', {
       }
       const { $schema, ...data } = clipboardData || {}
       return $schema === this.schemaComponent?.schema.name ? data : null
-    },
-
-    getDitoContext() {
-      return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
-        data: this.data,
-        dataPath: this.dataPath
-      })
     },
 
     async checkClipboard() {

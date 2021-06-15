@@ -1,6 +1,5 @@
 import {
-  isString, isInteger, isArray, isPlainObject,
-  parseDataPath, getValueAtDataPath
+  isInteger, isArray, isPlainObject, parseDataPath, getValueAtDataPath
 } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
@@ -42,13 +41,14 @@ export function getParentToken(dataPath) {
   return path[path.length - 1]
 }
 
-export function getParentKey(dataPath) {
+export function getParentName(dataPath) {
   const token = getParentToken(dataPath)
-  return isString(token) ? token : null
+  return token == null || isInteger(+token) ? null : token
 }
 
 export function getParentIndex(dataPath) {
-  const index = +getParentToken(dataPath)
+  const token = getParentToken(dataPath)
+  const index = token == null ? null : +token
   return isInteger(index) ? index : null
 }
 

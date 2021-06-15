@@ -273,6 +273,10 @@ export default DitoComponent.component('dito-schema', {
       return this.schema?.clipboard
     },
 
+    processedData() {
+      return this.processData({ processIds: true })
+    },
+
     clipboardData() {
       return {
         $schema: this.schema.name,
@@ -282,16 +286,12 @@ export default DitoComponent.component('dito-schema', {
 
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
+    // NOTE: While internally, we speak of `data`, in the API surface the
+    // term `item` is used for the data that relates to editing objects.
+    // NOTE: This should always return the same as:
+    // return getItem(this.rootData, this.dataPath, false)
     item() {
-      // NOTE: While internally, we speak of `data`, in the API surface the
-      // term `item` is used for the data that relates to editing objects.
-      // NOTE: This should always return the same as:
-      // return getItem(this.rootData, this.dataPath, false)
       return this.data
-    },
-
-    parentItem() {
-      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     rootItem() {
@@ -299,7 +299,15 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedItem() {
-      return this.processData({ processIds: true })
+      return this.processedData
+    },
+
+    clipboardItem() {
+      return this.clipboardData
+    },
+
+    parentItem() {
+      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     formLabel() {

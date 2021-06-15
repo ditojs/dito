@@ -67,9 +67,9 @@ export default {
         const label = itemLabel.call(
           this,
           new DitoContext(this, {
-            name: undefined,
-            value: undefined,
             data: item,
+            value: item,
+            index,
 
             get dataPath() {
               return getDataPath()

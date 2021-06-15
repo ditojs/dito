@@ -29,7 +29,7 @@
       )
       span(
         v-else-if="render"
-        v-html="render(getDitoContext())"
+        v-html="render(getContext())"
       )
       span(
         v-else
@@ -82,13 +82,8 @@ export default TypeComponent.register('object', {
   },
 
   methods: {
-    getDitoContext() {
-      return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
-        data: this.objectData,
-        dataPath: this.dataPath
-      })
+    getContext() {
+      return new DitoContext(this, { data: this.objectData })
     }
   }
 })

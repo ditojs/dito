@@ -90,7 +90,7 @@
               )
               span(
                 v-else-if="render"
-                v-html="render(getDitoContext(item, index))"
+                v-html="render(getContext(item, index))"
               )
               span(
                 v-else
@@ -273,11 +273,11 @@ export default TypeComponent.register('list', {
       return `dito-cell-${hyphenate(column.name)}`
     },
 
-    getDitoContext(item, index) {
+    getContext(item, index) {
       return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
         data: item,
+        value: item,
+        index,
         dataPath: this.getDataPath(index)
       })
     },
