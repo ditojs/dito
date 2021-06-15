@@ -42,6 +42,10 @@ export default class DitoContext {
   }
 
   static get(component, context) {
+    if (context === undefined) {
+      context = component
+      component = context.component || null
+    }
     return context instanceof DitoContext
       ? context
       : new DitoContext(component, context)

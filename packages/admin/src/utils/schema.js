@@ -224,21 +224,31 @@ export function getFormSchemas(schema, context) {
   } else if (schema.view) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
+  // Handle `schema.if` here as well, to only ever return forms that are
+  // actually to be used.
+  const process = isFunction(schema.if)
+    ? schema.if(DitoContext.get(context))
+    : schema.if ?? true
+  if (!process) return {}
+
   let { form, forms, components, compact } = schema
   if (!form && !forms && components) {
-    // Convert inlined components to forms, supporting callback to create
-    // components on the fly.
-    if (isFunction(components)) {
-      context = DitoContext.get(null, context)
-      // TODO: Once we receive the component for `DitoContext.get()`, we could
-      // always check `if` here again before actually returning forms?
-      if (isFunction(schema.if) ? schema.if(context) : schema.if) {
-        components = components(context)
-      }
-    }
+    // Convert inlined components to forms, supporting `compact` setting.
     form = { components, compact }
   }
-  return forms || { default: form }
+  forms ||= { default: form }
+  return Object.fromEntries(
+    Object.entries(forms, ([type, form]) => {
+    // Support callbacks to create components on the fly.
+      if (isFunction(form.components)) {
+        form = {
+          ...form,
+          components: components(DitoContext.get(context))
+        }
+      }
+      return [type, form]
+    })
+  )
 }
 
 export function getItemFormSchema(schema, item, context) {
@@ -302,7 +312,9 @@ export function hasLabels(schema) {
   )
 }
 
-export function setDefaults(schema, data = {}) {
+export function setDefaults(schema, data = {}, options = {}) {
+  options = { rootData: data, ...options }
+
   const processBefore = (schema, data, name) => {
     if (!(name in data) && !ignoreMissingValue(schema)) {
       data[name] = getDefaultValue(schema)
@@ -311,9 +323,9 @@ export function setDefaults(schema, data = {}) {
 
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
-  return processSchemaData(schema, data, null, processBefore, null, null, {
-    rootData: data
-  })
+  return processSchemaData(
+    schema, data, null, processBefore, null, null, options
+  )
 }
 
 export function processData(schema, data, dataPath, options = {}) {
@@ -343,7 +355,7 @@ export function processData(schema, data, dataPath, options = {}) {
     const typeOptions = getTypeOptions(schema)
 
     let context = null
-    const getContext = () => (context ||= new DitoContext(null, {
+    const getContext = () => (context ||= DitoContext.get({
       value,
       name,
       data,
@@ -351,7 +363,8 @@ export function processData(schema, data, dataPath, options = {}) {
       rootData,
       // Pass the already cloned data to `process()` as `processedData`,
       // so it can be modified through `processedItem` from there.
-      processedData: clone
+      processedData: clone,
+      component: options.component
     }))
 
     // Handle the user's `process()` callback first, if one is provided, so that
@@ -431,7 +444,7 @@ export function processSchemaData(
               dataPath,
               index,
               rootData: options.rootData,
-              views: resolvedViews
+              component: options.component
             }
             const form = getItemFormSchema(componentSchema, item, context)
             const itemClone = clone ? shallowClone(item) : null
