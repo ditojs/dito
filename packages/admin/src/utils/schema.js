@@ -124,18 +124,22 @@ export async function processSchemaComponents(api, schema, routes, level) {
 
 export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
-  let { form, forms } = schema
+  let { form, forms, components } = schema
   if (forms) {
     forms = schema.forms = await resolveForms(forms)
   } else if (form) {
     form = schema.form = await resolveForm(form)
-    forms = { default: form } // Only used for loop below.
-  }
-  const children = []
-  if (forms) {
-    for (const form of Object.values(forms)) {
-      await processSchemaComponents(api, form, children, level + 1)
+  } else if (components) {
+    // NOTE: Processing forms in computed components is not supported, since it
+    // only can be computed in conjunction with actual data.
+    if (isObject(components)) {
+      form = { components }
     }
+  }
+  forms ||= { default: form } // Only used for process loop below.
+  const children = []
+  for (const form of Object.values(forms)) {
+    await processSchemaComponents(api, form, children, level + 1)
   }
   return children
 }
@@ -151,13 +155,11 @@ export async function resolveForm(form) {
   // as `default` in a nested object, detect and handle this case:
   if (form && !('components' in form)) {
     const keys = Object.keys(form)
-    // Only extract form if there's only one property (named or default)
-    if (keys.length === 1) {
-      const name = keys[0]
-      form = form[name]
-      if (form && name !== 'default') {
-        form.name = name
-      }
+    // Assume the form is the first export (named or default)
+    const name = keys[0]
+    form = form[name]
+    if (form && name !== 'default') {
+      form.name = name
     }
   }
   return form
