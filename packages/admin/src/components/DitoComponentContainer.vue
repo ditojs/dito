@@ -155,10 +155,11 @@ export default DitoComponent.component('dito-component-container', {
         ? componentWidth.match(/([^<>]+)/g)[0] // Remove '<' & '>'
         : componentWidth
       // 'auto' = no fitting:
-      const basis = width == null || width === 'auto' ? 'auto'
-        : width === 'fill' ? 100
+      const basis = (
+        width == null || width === 'auto' || width === 'fill' ? 'auto'
         : /%$/.test(width) ? parseFloat(width) // percentage
         : parseFraction(width) * 100 // fraction
+      )
       return basis !== 'auto' ? `${basis}%` : basis
     },
 
