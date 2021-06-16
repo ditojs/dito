@@ -24,6 +24,11 @@ describe('parseDataPath()', () => {
       .toStrictEqual(['object', 'array', '1', 'prop'])
   })
 
+  it('should parse relative tokens', () => {
+    expect(parseDataPath('/object/property1/../property2/../value'))
+      .toStrictEqual(['object', 'property1', '..', 'property2', '..', 'value'])
+  })
+
   it('should handle white-space in JSON pointers', () => {
     expect(parseDataPath('/object/property name'))
       .toStrictEqual(['object', 'property name'])
