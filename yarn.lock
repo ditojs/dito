@@ -1403,7 +1403,7 @@ __metadata:
     filesize: ^6.3.0
     filesize-parser: ^1.5.0
     hint.css: ^2.6.0
-    postcss: ^8.3.4
+    postcss: ^8.3.5
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0
     pug: ^3.0.2
@@ -1500,7 +1500,7 @@ __metadata:
     "@vue/cli-service": ^4.5.13
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.929.0
+    aws-sdk: ^2.930.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1575,7 +1575,7 @@ __metadata:
     babel-loader: ^8.2.2
     core-js: ^3.14.0
     fibers: ^5.0.0
-    postcss: ^8.3.4
+    postcss: ^8.3.5
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0
     pug: ^3.0.2
@@ -1599,7 +1599,7 @@ __metadata:
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
     punycode: ^2.1.1
-    regenerator-runtime: ^0.13.8
+    regenerator-runtime: ^0.13.7
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -4632,9 +4632,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.929.0":
-  version: 2.929.0
-  resolution: "aws-sdk@npm:2.929.0"
+"aws-sdk@npm:^2.930.0":
+  version: 2.930.0
+  resolution: "aws-sdk@npm:2.930.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4645,7 +4645,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: ad147f36cb52ac467aa66901536f8b736c23539a4fd7ddeccd8f78f5ed71cbd04b8bd96402c2a7423dd143997e10222b2130d580529d7d590ff453159cec55d5
+  checksum: d482a8937aeabd204bf28d6a332e4b856d9ef9f61c12a81440839da8597f0e7c16a0d0a6dee604d61a702c2eed1594859028b32872984420d1abf1012cb6546e
   languageName: node
   linkType: hard
 
@@ -15294,14 +15294,14 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.3.4":
-  version: 8.3.4
-  resolution: "postcss@npm:8.3.4"
+"postcss@npm:^8.3.5":
+  version: 8.3.5
+  resolution: "postcss@npm:8.3.5"
   dependencies:
     colorette: ^1.2.2
     nanoid: ^3.1.23
     source-map-js: ^0.6.2
-  checksum: 9b02ccb85c27f43cba22a43b5b6f9babacfe3a0591037ffa17c302efce95332f22ec7ff5f8db99c569df58d8c2b597a813872f29953646d14f12f625be6215f7
+  checksum: 87dc16efcf40286fad4ded0a433497ddbc55dfad3d7ddb200ba9c0761ec376280fa2c06a522628583c9284def85894c52bc361cffedf0679f4936370c084a145
   languageName: node
   linkType: hard
 
@@ -16265,7 +16265,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.8":
+"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.7":
   version: 0.13.8
   resolution: "regenerator-runtime@npm:0.13.8"
   checksum: 20178f5753f181d59691e5c3b4c59a2769987f75c7ccf325777673b5478acca61a553b10e895585086c222f72f5ee428090acf50320264de4b79f630f7388653

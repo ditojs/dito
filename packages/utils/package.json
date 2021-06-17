@@ -31,7 +31,7 @@
     "@babel/runtime": "^7.14.6",
     "core-js": "^3.14.0",
     "punycode": "^2.1.1",
-    "regenerator-runtime": "^0.13.8"
+    "regenerator-runtime": "^0.13.7"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.5",
