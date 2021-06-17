@@ -23,7 +23,7 @@ export default TypeComponent.register([
 {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
   excludeValue: true,
-  defaultWidth: null,
+  defaultWidth: 'auto',
   // TODO: Consider making this work nicely:
   // omitFlexGrow: true,
 

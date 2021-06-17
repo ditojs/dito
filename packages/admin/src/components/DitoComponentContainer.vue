@@ -110,13 +110,26 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     componentWidth: getSchemaAccessor('width', {
-      type: String,
+      type: [String, Number],
       default({ component }) {
         return component.typeOptions.defaultWidth
       },
       get(width) {
         // Use 100% == 1.0 as default width when nothing is set:
-        return width === undefined ? 1.0 : width
+        return width === undefined
+          ? 1.0
+          : isString(width)
+            ? width.match(/^\s*[<>]?\s*(.*)$/)[1] // Remove width operator
+            : width
+      }
+    }),
+
+    componentWidthOperator: getSchemaAccessor('width', {
+      type: String,
+      get(width) {
+        return isString(width)
+          ? width.match(/^\s*([<>]?)/)[1] || null
+          : null
       }
     }),
 
@@ -150,13 +163,10 @@ export default DitoComponent.component('dito-component-container', {
     },
 
     componentBasis() {
-      const { componentWidth } = this
-      const width = isString(componentWidth)
-        ? componentWidth.match(/([^<>]+)/g)[0] // Remove '<' & '>'
-        : componentWidth
+      const width = this.componentWidth
       // 'auto' = no fitting:
       const basis = (
-        width == null || width === 'auto' || width === 'fill' ? 'auto'
+        [null, 'auto', 'fill'].includes(width) ? 'auto'
         : /%$/.test(width) ? parseFloat(width) // percentage
         : parseFraction(width) * 100 // fraction
       )
@@ -166,23 +176,23 @@ export default DitoComponent.component('dito-component-container', {
     containerStyle() {
       // Interpret '>50%' as '50%, flex-grow: 1`
       const grow = (
-        /^>/.test(this.componentWidth) ||
+        this.componentWidthOperator === '>' ||
         this.componentWidth === 'fill'
       )
       // Interpret '<50%' as '50%, flex-shrink: 1`
-      const shrink = /^</.test(this.componentWidth)
+      const shrink = this.componentWidthOperator === '<'
       return {
         flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${this.componentBasis}`
       }
     },
 
     componentClass() {
-      const auto = this.componentBasis === 'auto'
+      const basisIsAuto = this.componentBasis === 'auto'
       return {
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
-        'dito-width-fill': !auto,
-        'dito-width-auto': auto,
+        'dito-width-fill': !basisIsAuto || this.componentWidth === 'fill',
+        'dito-width-auto': basisIsAuto,
         'dito-has-errors': !!this.errors
       }
     }
