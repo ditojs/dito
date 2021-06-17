@@ -57,9 +57,7 @@ export default {
     },
 
     options() {
-      const { options } = this.schema
-      const value = isObject(options) ? options.data : options
-      const data = this.handleDataOption(value, 'options') ?? []
+      const data = this.handleDataOption(this.schema.options, 'options') ?? []
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }

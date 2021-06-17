@@ -1,5 +1,7 @@
 import LoadingMixin from './LoadingMixin'
-import { isFunction, isPromise } from '@ditojs/utils'
+import {
+  isObject, isFunction, isPromise, normalizeDataPath, getValueAtDataPath
+} from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -13,7 +15,11 @@ export default {
   },
 
   methods: {
-    handleDataOption(value, name = 'data', loadingOptions = {}) {
+    handleDataOption(schema, name, loadingOptions = {}) {
+      if (!isObject(schema)) {
+        schema = { data: schema }
+      }
+      let { data, dataPath } = schema
       // See if there is async data loading already in process.
       const asyncEntry = (
         this.asyncDataEntries[name] ||
@@ -37,39 +43,45 @@ export default {
         asyncEntry.resolvedData = null
         return resolvedData
       }
-      let data = null
       // Avoid calling the data function twice:
-      if (!asyncEntry.resolving) {
-        if (isFunction(value)) {
-          const result = value.call(this, this.context)
-          // If the result of the data function is another function, then the
-          // first data function is there to track dependencies and the real
-          // data loading happens in the function that it returned. Keep track
-          // it in `dependencyFunction` so it can be called on each call of
-          // `handleDataOption()` to keep the dependencies intact, and call the
-          // function that it returned once to get the actual data:
-          if (isFunction(result)) {
-            asyncEntry.dependencyFunction = value
-            data = result.call(this, this.context)
-          } else {
-            data = result
-          }
+      if (asyncEntry.resolving) {
+        data = null
+      } else {
+        if (dataPath) {
+          data = getValueAtDataPath(
+            this.rootData,
+            normalizeDataPath(`${this.dataPath}/${dataPath}`)
+          )
         } else {
-          data = value
-        }
-        if (isPromise(data)) {
-          // If the data is asynchronous, it can't be returned straight away.
-          // But we can cheat using computed properties and `resolvedData`,
-          // which is going to receive the loaded data asynchronously,
-          // triggering a recompute of the computed property that calls
-          // `handleDataOption()`.
-          asyncEntry.resolving = true
-          this.resolveData(data).then(data => {
-            asyncEntry.resolvedData = data
-            asyncEntry.resolving = false
-          }, loadingOptions)
-          // Clear data until promise is resolved and `resolvedData` is set
-          data = null
+          if (isFunction(data)) {
+            const result = data.call(this, this.context)
+            // If the result of the data function is another function, then the
+            // first data function is there to track dependencies and the real
+            // data loading happens in the function that it returned. Keep track
+            // it in `dependencyFunction` so it can be called on each call of
+            // `handleDataOption()` to keep the dependencies intact, and call
+            // the function that it returned once to get the actual data:
+            if (isFunction(result)) {
+              asyncEntry.dependencyFunction = data
+              data = result.call(this, this.context)
+            } else {
+              data = result
+            }
+          }
+          if (isPromise(data)) {
+            // If the data is asynchronous, it can't be returned straight away.
+            // But we can cheat using computed properties and `resolvedData`,
+            // which is going to receive the loaded data asynchronously,
+            // triggering a recompute of the computed property that calls
+            // `handleDataOption()`.
+            asyncEntry.resolving = true
+            this.resolveData(data).then(data => {
+              asyncEntry.resolvedData = data
+              asyncEntry.resolving = false
+            }, loadingOptions)
+            // Clear data until promise is resolved and `resolvedData` is set
+            data = null
+          }
         }
       }
       return data
