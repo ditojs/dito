@@ -3,7 +3,6 @@ import ResourceMixin from './ResourceMixin'
 import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
-import { processReferences } from '@/utils/data'
 import {
   processRouteSchema, processForms, hasForms, hasLabels, isCompact, isInlined,
   getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
@@ -591,9 +590,5 @@ export default {
         }
       }
     }
-  },
-
-  processValue(schema, value, dataPath, options) {
-    return processReferences(value, options)
   }
 }

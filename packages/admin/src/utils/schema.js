@@ -338,7 +338,9 @@ export function processData(schema, data, dataPath, options = {}) {
   // `processValue()` which pass it to `processData()` again from nested calls.
   // But pass the already cloned data to `process()`, so it can be modified.
   const rootData = options?.rootData ?? data
-  options = { rootData, ...options }
+  const processedData = shallowClone(data)
+  const processedRootData = options?.processedRootData ?? processedData
+  options = { rootData, processedRootData, ...options }
 
   const processBefore = (schema, data, name, dataPath, clone) => {
     const { wrapPrimitives } = schema
@@ -366,9 +368,9 @@ export function processData(schema, data, dataPath, options = {}) {
       data,
       dataPath,
       rootData,
-      // Pass the already cloned data to `process()` as `processedData`,
-      // so it can be modified through `processedItem` from there.
-      processedData: clone
+      // Pass the already processed data to `process()`, so it can be modified
+      // through `processedItem` from there.
+      processedData
     }))
 
     // Handle the user's `process()` callback first, if one is provided, so that
@@ -390,7 +392,7 @@ export function processData(schema, data, dataPath, options = {}) {
     // Each component type can provide its own static `processValue()` method.
     const processValue = typeOptions?.processValue
     if (processValue) {
-      value = processValue.call(typeOptions, schema, value, dataPath, options)
+      value = processValue(schema, value, dataPath, options)
     }
 
     // Lastly unwrap the wrapped primitives again, to bring the data back into
@@ -402,9 +404,8 @@ export function processData(schema, data, dataPath, options = {}) {
     clone[name] = value
   }
 
-  const clone = shallowClone(data)
   return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, clone, options
+    schema, data, dataPath, processBefore, processAfter, processedData, options
   )
 }
 
@@ -414,7 +415,7 @@ export function processSchemaData(
   dataPath,
   processBefore,
   processAfter,
-  clone,
+  processedData,
   options
 ) {
   const processComponents = components => {
@@ -432,7 +433,7 @@ export function processSchemaData(
             dataPath,
             processBefore,
             processAfter,
-            clone,
+            processedData,
             options
           )
         } else {
@@ -450,7 +451,7 @@ export function processSchemaData(
               rootData: options.rootData
             })
             const form = getItemFormSchema(componentSchema, item, context)
-            const itemClone = clone ? shallowClone(item) : null
+            const processedItem = processedData ? shallowClone(item) : null
             return form
               ? processSchemaData(
                 form,
@@ -458,31 +459,35 @@ export function processSchemaData(
                 dataPath,
                 processBefore,
                 processAfter,
-                itemClone,
+                processedItem,
                 options
               )
-              : itemClone
+              : processedItem
           }
 
-          processBefore?.(componentSchema, data, name, componentDataPath, clone)
-          let value = clone ? clone[name] : data[name]
+          processBefore?.(
+            componentSchema, data, name, componentDataPath, processedData
+          )
+          let value = processedData ? processedData[name] : data[name]
           if (value != null && hasForms(componentSchema)) {
             // Recursively process data on nested form items.
             if (isArray(value)) {
               // Optimization: No need to collect values if we're not cloning!
-              value = clone
+              value = processedData
                 ? value.map(processItem)
                 : value.forEach(processItem)
             } else {
               value = processItem(value)
             }
-          } else if (clone) {
+          } else if (processedData) {
             value = shallowClone(value)
           }
-          if (clone) {
-            clone[name] = value
+          if (processedData) {
+            processedData[name] = value
           }
-          processAfter?.(componentSchema, data, name, componentDataPath, clone)
+          processAfter?.(
+            componentSchema, data, name, componentDataPath, processedData
+          )
         }
       }
     }
@@ -498,7 +503,7 @@ export function processSchemaData(
     processComponents(panel.schema.components)
   }
 
-  return clone || data
+  return processedData || data
 }
 
 export function getNamedSchemas(descriptions, defaults) {

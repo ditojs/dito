@@ -67,46 +67,26 @@ export function isReference(data) {
   return data?.id != null && Object.keys(data).length === 1
 }
 
-export function processReference(value, options) {
+export function processReference(value, reference, options) {
   // @ditojs/server specific handling of relates within graphs:
   // Find entries with temporary ids, and convert them to #id / #ref pairs.
   // Also handle items with relate and convert them to only contain ids.
-  if (
-    options.processIds &&
-    hasTemporaryId(value)
-  ) {
+  if (reference && (
+    options.processIds && hasTemporaryId(value) ||
+    options.removeIds && value?.id != null
+  )) {
     const { id, ...rest } = value
-    // A reference is a shallow copy that hold nothing more than ids.
-    // Use #ref instead of #id for these:
-    return isReference(value)
-      ? { '#ref': id }
-      : { '#id': id, ...rest }
-  } else if (
-    options.removeIds &&
-    value?.id != null &&
-    !isReference(value)
-  ) {
-    // Only remove ids if it isn't a reference.
-    // TODO: This doesn't work with references withhin the graph, since we
-    // remove the target's id at the same time, and we have no way of knowing
-    // that it is actually the target of the reference. Not sure how to handle
-    // this in a way that can preserve internal and external references, since
-    // such internal references would need to be converted to #ref / #id, while
-    // external can keep using the id. The only way to fix this is to add an
-    // additional field to options components that tells them if their data is
-    // from inside the graph (e.g. `internal: true`) or outside.
-    const { id, ...rest } = value
-    return rest
+    // TODO: Support `idName` / `relateBy` from schema!
+    if (id !== null) {
+      // A reference is a shallow copy that hold nothing more than ids.
+      // Use #ref instead of #id for these:
+      const ref = `${reference}-${id}`
+      value = isReference(value)
+        ? { '#ref': ref }
+        : { '#id': ref, ...rest }
+    }
   }
   return value
-}
-
-export function processReferences(value, options) {
-  return isPlainObject(value)
-    ? processReference(value, options)
-    : isArray(value)
-      ? value.map(entry => processReference(entry, options))
-      : value
 }
 
 export function shallowClone(value) {

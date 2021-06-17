@@ -15,7 +15,7 @@ export default {
   },
 
   methods: {
-    handleDataOption(schema, name, loadingOptions = {}) {
+    handleDataSchema(schema, name, loadingOptions = {}) {
       if (!isObject(schema)) {
         schema = { data: schema }
       }
@@ -30,7 +30,7 @@ export default {
         })
       )
       // If the data callback provided a dependency function when it was called,
-      // cal it in every call of `handleDataOption()` to force Vue to keep track
+      // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies.
       asyncEntry.dependencyFunction?.(this, this.context)
 
@@ -59,7 +59,7 @@ export default {
             // first data function is there to track dependencies and the real
             // data loading happens in the function that it returned. Keep track
             // it in `dependencyFunction` so it can be called on each call of
-            // `handleDataOption()` to keep the dependencies intact, and call
+            // `handleDataSchema()` to keep the dependencies intact, and call
             // the function that it returned once to get the actual data:
             if (isFunction(result)) {
               asyncEntry.dependencyFunction = data
@@ -73,7 +73,7 @@ export default {
             // But we can cheat using computed properties and `resolvedData`,
             // which is going to receive the loaded data asynchronously,
             // triggering a recompute of the computed property that calls
-            // `handleDataOption()`.
+            // `handleDataSchema()`.
             asyncEntry.resolving = true
             this.resolveData(data).then(data => {
               asyncEntry.resolvedData = data

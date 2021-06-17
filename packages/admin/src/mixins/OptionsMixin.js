@@ -1,9 +1,13 @@
 import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { setTemporaryId, isReference, processReference } from '@/utils/data'
 import {
-  isObject, isArray, isString, isFunction, labelize, debounceAsync
+  setTemporaryId, isReference, processReference, getLastDataPathName
+} from '@/utils/data'
+import {
+  isObject, isArray, isString, isFunction,
+  normalizeDataPath, getValueAtDataPath,
+  labelize, hyphenate, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -57,7 +61,7 @@ export default {
     },
 
     options() {
-      const data = this.handleDataOption(this.schema.options, 'options') ?? []
+      const data = this.handleDataSchema(this.schema.options, 'options') ?? []
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }
@@ -225,15 +229,38 @@ export default {
   },
 
   processValue(schema, value, dataPath, options) {
-    // Convert object to a shallow copy with only id.
-    const processRelate = value => value
-      ? processReference({ id: value.id }, options)
-      : value
-    return schema.relate
-    // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
-      ? isArray(value)
-        ? value.map(processRelate)
-        : processRelate(value)
-      : value
+    if (schema.relate && (options.processIds || options.removeIds)) {
+      let reference = null
+      // For internally relating data (`schema.options.dataPath`), we need to
+      // process both the options (for '#ref') and the value ('#id').
+      const path = schema.options?.dataPath
+      if (path) {
+        // See `DataMixin.handleDataSchema()`:
+        const data = getValueAtDataPath(
+          options.processedRootData,
+          normalizeDataPath(`${dataPath}/${path}`),
+          () => null
+        )
+        if (isArray(data)) {
+          reference = hyphenate(getLastDataPathName(path))
+          let i = 0
+          for (const entry of data) {
+            data[i++] = processReference(entry, reference, options)
+          }
+        }
+      }
+      // Now finally process the actual value:
+      // Convert relating objects to a shallow copy with only the id left.
+      const processRelate = value => value
+        ? processReference({ id: value.id }, reference, options)
+        : value
+      value = schema.relate
+      // Selected options can be both objects & arrays, e.g. 'checkboxes':
+        ? isArray(value)
+          ? value.map(processRelate)
+          : processRelate(value)
+        : value
+    }
+    return value
   }
 }
