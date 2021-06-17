@@ -36,18 +36,18 @@ export function getParentItem(rootItem, dataPath, isValue = false) {
   return null
 }
 
-export function getParentToken(dataPath) {
+export function getLastDataPathToken(dataPath) {
   const path = parseDataPath(dataPath)
   return path[path.length - 1]
 }
 
-export function getParentName(dataPath) {
-  const token = getParentToken(dataPath)
+export function getLastDataPathName(dataPath) {
+  const token = getLastDataPathToken(dataPath)
   return token == null || isInteger(+token) ? null : token
 }
 
-export function getParentIndex(dataPath) {
-  const token = getParentToken(dataPath)
+export function getLastDataPathIndex(dataPath) {
+  const token = getLastDataPathToken(dataPath)
   const index = token == null ? null : +token
   return isInteger(index) ? index : null
 }

@@ -1,6 +1,6 @@
 import { isFunction } from '@ditojs/utils'
 import {
-  getItem, getParentItem, getParentName, getParentIndex
+  getItem, getParentItem, getLastDataPathName, getLastDataPathIndex
 } from '@/utils/data'
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
@@ -52,11 +52,11 @@ export default class DitoContext {
   }
 
   get name() {
-    return get(this, 'name', () => getParentName(this.dataPath))
+    return get(this, 'name', () => getLastDataPathName(this.dataPath))
   }
 
   get index() {
-    return get(this, 'index', () => getParentIndex(this.dataPath))
+    return get(this, 'index', () => getLastDataPathIndex(this.dataPath))
   }
 
   get dataPath() {
