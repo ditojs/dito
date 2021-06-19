@@ -18,9 +18,11 @@ export function getValueAtDataPath(
         // Support wildcards on arrays and objects
         const subPath = parsedPath.slice(index + 1)
         const values = isArray(obj) ? obj : Object.values(obj)
-        return values.map(
+        const results = values.map(
           value => getValueAtDataPath(value, subPath, handleError)
         )
+        const flat = subPath.filter(part => part === '*').length
+        return flat > 0 ? results.flat(flat) : results
       }
     }
     return handleError?.(obj, part, index)
