@@ -218,19 +218,13 @@ export function getViewEditPath(schema, context) {
     : null
 }
 
-export function getFormSchemas(schema, context) {
+export function getFormSchemas(schema, context, modifyForm) {
   const view = getViewSchema(schema, context)
   if (view) {
     schema = view
   } else if (schema.view) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
-  // Handle `schema.if` here as well, to only ever return forms that are
-  // actually to be used.
-  const process = isFunction(schema.if)
-    ? schema.if(context)
-    : schema.if ?? true
-  if (!process) return {}
 
   let { form, forms, components, compact } = schema
   if (!form && !forms) {
@@ -252,13 +246,13 @@ export function getFormSchemas(schema, context) {
           components: form.components(context)
         }
       }
-      return [type, form]
+      return [type, modifyForm?.(form) ?? form]
     })
   )
 }
 
-export function getItemFormSchema(schema, item, context) {
-  const forms = getFormSchemas(schema, context)
+export function getItemFormSchema(schema, item, context, modifyForm) {
+  const forms = getFormSchemas(schema, context, modifyForm)
   return forms[item?.type] || forms.default || null
 }
 
@@ -319,7 +313,7 @@ export function hasLabels(schema) {
 }
 
 export function setDefaults(schema, data = {}, component) {
-  const options = { rootData: data, component }
+  const options = { component, rootData: data }
 
   const processBefore = (schema, data, name) => {
     if (!(name in data) && !ignoreMissingValue(schema)) {
@@ -334,16 +328,17 @@ export function setDefaults(schema, data = {}, component) {
   )
 }
 
-export function processData(schema, data, dataPath, options = {}) {
-  const processedData = shallowClone(data)
-  const isRoot = !options.rootData
-  // Include `rootData`, `processedRootData` and `graph` in options, so that
-  // they can be passed to components' `processValue()` which pass them to
-  // `processData()` again from nested calls.
-  const rootData = options.rootData ?? data
-  const processedRootData = options.processedRootData ?? processedData
-  const graph = options.graph ?? new SchemaGraph()
-  options = { rootData, processedRootData, graph, ...options }
+export function processData(schema, data, dataPath, {
+  component,
+  schemaOnly, // wether to only include data covered by the schema, or all data
+  target
+} = {}) {
+  const rootData = data
+  const processedData = schemaOnly
+    ? isObject(data) ? {} : data
+    : shallowClone(data)
+  const options = { component, schemaOnly, target, rootData }
+  const graph = new SchemaGraph()
 
   const processBefore = (schema, data, name, dataPath, processedData) => {
     const { wrapPrimitives } = schema
@@ -365,7 +360,7 @@ export function processData(schema, data, dataPath, options = {}) {
     const typeOptions = getTypeOptions(schema)
 
     let context = null
-    const getContext = () => (context ||= DitoContext.get(options.component, {
+    const getContext = () => (context ||= DitoContext.get(component, {
       value,
       name,
       data,
@@ -395,7 +390,7 @@ export function processData(schema, data, dataPath, options = {}) {
     // Each component type can provide its own static `processValue()` method.
     const processValue = typeOptions?.processValue
     if (processValue) {
-      value = processValue(schema, value, dataPath, graph, options)
+      value = processValue(schema, value, dataPath, graph)
     }
 
     // Lastly unwrap the wrapped primitives again, to bring the data back into
@@ -408,13 +403,10 @@ export function processData(schema, data, dataPath, options = {}) {
   }
 
   processSchemaData(
-    schema, data, dataPath, processedData, processBefore, null, options
-  )
-  processSchemaData(
-    schema, data, dataPath, processedData, null, processAfter, options
+    schema, data, dataPath, processedData, processBefore, processAfter, options
   )
 
-  return isRoot ? graph.process(processedData, options) : processedData
+  return graph.process(processedData, options)
 }
 
 export function processSchemaData(
@@ -458,10 +450,19 @@ export function processSchemaData(
               index,
               rootData: options.rootData
             })
-            const form = getItemFormSchema(componentSchema, item, context)
-            const processedItem = processedData ? shallowClone(item) : null
-            return form
-              ? processSchemaData(
+            const getForm = (
+              getTypeOptions(componentSchema)?.getFormSchemaForProcessing ||
+               getItemFormSchema
+            )
+            const form = getForm(componentSchema, item, context)
+            if (form) {
+              const idName = form.idName || 'id'
+              const processedItem = processedData
+                ? options.schemaOnly
+                  ? { [idName]: item[idName] }
+                  : shallowClone(item)
+                : null
+              return processSchemaData(
                 form,
                 item,
                 dataPath,
@@ -470,7 +471,8 @@ export function processSchemaData(
                 processAfter,
                 options
               )
-              : processedItem
+            }
+            return { ...item }
           }
 
           processBefore?.(

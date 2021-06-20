@@ -140,7 +140,7 @@ export default TypeComponent.register('upload', {
     multiple: getSchemaAccessor('multiple', {
       type: Boolean,
       default: false,
-      // No callback as it's used in `processValue()`, see `OptionsMixin.relate`
+      // No callback as it's used in `processValue()`
       callback: false
     }),
 

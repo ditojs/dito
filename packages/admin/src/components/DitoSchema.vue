@@ -274,13 +274,14 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedData() {
-      return this.processData({ target: 'server' })
+      // TODO: Switch to schemaOnly here too!
+      return this.processData({ target: 'server', schemaOnly: false })
     },
 
     clipboardData() {
       return {
         $schema: this.schema.name,
-        ...this.processData({ target: 'clipboard' })
+        ...this.processData({ target: 'clipboard', schemaOnly: true })
       }
     },
 
@@ -632,11 +633,12 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData({ target } = {}) {
+    processData({ target = 'clipboard', schemaOnly = true } = {}) {
       return processData(this.schema, this.data, this.dataPath, {
         // Needed for DitoContext handling inside `processData` and
         // `processSchemaData()`:
         component: this,
+        schemaOnly,
         target
       })
     },

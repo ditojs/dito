@@ -83,9 +83,9 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(data, { target }) {
+  process(data, { target, schemaOnly }) {
     const clipboard = target === 'clipboard'
-    if (clipboard) {
+    if (clipboard && !schemaOnly) {
       delete data.id
     }
     for (const [dataPath, settings] of this.flatten()) {
@@ -100,6 +100,7 @@ export class SchemaGraph {
           source && related
         )
         for (const value of asArray(values).flat()) {
+          // TODO: Respect schema.idName / schema.relateBy
           const id = value?.id
           if (id != null) {
             if (removeId) {
