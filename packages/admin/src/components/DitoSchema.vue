@@ -274,13 +274,13 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedData() {
-      return this.processData({ processIds: true })
+      return this.processData({ target: 'server' })
     },
 
     clipboardData() {
       return {
         $schema: this.schema.name,
-        ...this.processData({ removeIds: true })
+        ...this.processData({ target: 'clipboard' })
       }
     },
 
@@ -632,13 +632,12 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData({ processIds = false, removeIds = false } = {}) {
+    processData({ target } = {}) {
       return processData(this.schema, this.data, this.dataPath, {
         // Needed for DitoContext handling inside `processData` and
         // `processSchemaData()`:
         component: this,
-        processIds,
-        removeIds
+        target
       })
     },
 

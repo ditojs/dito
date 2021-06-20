@@ -67,28 +67,6 @@ export function isReference(data) {
   return data?.id != null && Object.keys(data).length === 1
 }
 
-export function processReference(value, reference, options) {
-  // @ditojs/server specific handling of relates within graphs:
-  // Find entries with temporary ids, and convert them to #id / #ref pairs.
-  // Also handle items with relate and convert them to only contain ids.
-  if (reference && (
-    options.processIds && hasTemporaryId(value) ||
-    options.removeIds && value?.id != null
-  )) {
-    const { id, ...rest } = value
-    // TODO: Support `idName` / `relateBy` from schema!
-    if (id !== null) {
-      // A reference is a shallow copy that hold nothing more than ids.
-      // Use #ref instead of #id for these:
-      const ref = `${reference}-${id}`
-      value = isReference(value)
-        ? { '#ref': ref }
-        : { '#id': ref, ...rest }
-    }
-  }
-  return value
-}
-
 export function shallowClone(value) {
   return isPlainObject(value)
     ? { ...value }

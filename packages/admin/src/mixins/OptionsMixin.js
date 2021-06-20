@@ -1,13 +1,10 @@
 import DitoContext from '@/DitoContext'
 import DataMixin from './DataMixin'
 import { getSchemaAccessor } from '@/utils/accessor'
-import {
-  setTemporaryId, isReference, processReference, getLastDataPathName
-} from '@/utils/data'
+import { setTemporaryId, isReference } from '@/utils/data'
 import {
   isObject, isArray, isString, isFunction,
-  normalizeDataPath, getValueAtDataPath,
-  labelize, hyphenate, debounceAsync
+  normalizeDataPath, labelize, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -228,38 +225,23 @@ export default {
     }
   },
 
-  processValue(schema, value, dataPath, options) {
-    if (schema.relate && (options.processIds || options.removeIds)) {
-      let reference = null
+  processValue(schema, value, dataPath, graph) {
+    if (schema.relate) {
       // For internally relating data (`schema.options.dataPath`), we need to
       // process both the options (for '#ref') and the value ('#id').
+      // See `DataMixin.handleDataSchema()`:
       const path = schema.options?.dataPath
+      graph.addRelation(dataPath, path)
       if (path) {
-        // See `DataMixin.handleDataSchema()`:
-        const data = getValueAtDataPath(
-          options.processedRootData,
-          normalizeDataPath(`${dataPath}/${path}`),
-          () => null
-        )
-        if (isArray(data)) {
-          reference = hyphenate(getLastDataPathName(path))
-          let i = 0
-          for (const entry of data) {
-            data[i++] = processReference(entry, reference, options)
-          }
-        }
+        graph.addRelatedSource(normalizeDataPath(`${dataPath}/${path}`))
       }
-      // Now finally process the actual value:
       // Convert relating objects to a shallow copy with only the id left.
-      const processRelate = value => value
-        ? processReference({ id: value.id }, reference, options)
-        : value
-      value = schema.relate
+      // TODO: Convert to using `relateBy`:
+      const processRelate = value => value ? { id: value.id } : value
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
-        ? isArray(value)
-          ? value.map(processRelate)
-          : processRelate(value)
-        : value
+      value = isArray(value)
+        ? value.map(processRelate)
+        : processRelate(value)
     }
     return value
   }

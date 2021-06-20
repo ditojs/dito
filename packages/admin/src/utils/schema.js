@@ -1,6 +1,7 @@
-import { appendDataPath, shallowClone } from './data'
-import { getUid } from './uid'
 import DitoContext from '@/DitoContext'
+import { getUid } from './uid'
+import { SchemaGraph } from './SchemaGraph'
+import { shallowClone, appendDataPath } from './data'
 import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize
 } from '@ditojs/utils'
@@ -329,35 +330,37 @@ export function setDefaults(schema, data = {}, component) {
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
   return processSchemaData(
-    schema, data, null, processBefore, null, null, options
+    schema, data, null, null, processBefore, null, options
   )
 }
 
 export function processData(schema, data, dataPath, options = {}) {
-  // Include `rootData` in options, so tha it can be passed to components'
-  // `processValue()` which pass it to `processData()` again from nested calls.
-  // But pass the already cloned data to `process()`, so it can be modified.
-  const rootData = options?.rootData ?? data
   const processedData = shallowClone(data)
-  const processedRootData = options?.processedRootData ?? processedData
-  options = { rootData, processedRootData, ...options }
+  const isRoot = !options.rootData
+  // Include `rootData`, `processedRootData` and `graph` in options, so that
+  // they can be passed to components' `processValue()` which pass them to
+  // `processData()` again from nested calls.
+  const rootData = options.rootData ?? data
+  const processedRootData = options.processedRootData ?? processedData
+  const graph = options.graph ?? new SchemaGraph()
+  options = { rootData, processedRootData, graph, ...options }
 
-  const processBefore = (schema, data, name, dataPath, clone) => {
+  const processBefore = (schema, data, name, dataPath, processedData) => {
     const { wrapPrimitives } = schema
-    const value = clone[name]
-
+    let value = data[name]
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
     if (wrapPrimitives && isArray(value)) {
-      clone[name] = value.map(entry => ({
+      value = value.map(entry => ({
         [wrapPrimitives]: entry
       }))
     }
+    processedData[name] = value
   }
 
-  const processAfter = (schema, data, name, dataPath, clone) => {
+  const processAfter = (schema, data, name, dataPath, processedData) => {
     const { wrapPrimitives, exclude, process } = schema
-    let value = clone[name]
+    let value = processedData[name]
 
     const typeOptions = getTypeOptions(schema)
 
@@ -385,14 +388,14 @@ export function processData(schema, data, dataPath, options = {}) {
       exclude === true ||
       isFunction(exclude) && exclude(getContext())
     ) {
-      delete clone[name]
+      delete processedData[name]
       return
     }
 
     // Each component type can provide its own static `processValue()` method.
     const processValue = typeOptions?.processValue
     if (processValue) {
-      value = processValue(schema, value, dataPath, options)
+      value = processValue(schema, value, dataPath, graph, options)
     }
 
     // Lastly unwrap the wrapped primitives again, to bring the data back into
@@ -401,21 +404,26 @@ export function processData(schema, data, dataPath, options = {}) {
       value = value.map(object => object[wrapPrimitives])
     }
 
-    clone[name] = value
+    processedData[name] = value
   }
 
-  return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, processedData, options
+  processSchemaData(
+    schema, data, dataPath, processedData, processBefore, null, options
   )
+  processSchemaData(
+    schema, data, dataPath, processedData, null, processAfter, options
+  )
+
+  return isRoot ? graph.process(processedData, options) : processedData
 }
 
 export function processSchemaData(
   schema,
   data,
   dataPath,
+  processedData,
   processBefore,
   processAfter,
-  processedData,
   options
 ) {
   const processComponents = components => {
@@ -431,9 +439,9 @@ export function processSchemaData(
             componentSchema,
             data,
             dataPath,
+            processedData,
             processBefore,
             processAfter,
-            processedData,
             options
           )
         } else {
@@ -457,9 +465,9 @@ export function processSchemaData(
                 form,
                 item,
                 dataPath,
+                processedItem,
                 processBefore,
                 processAfter,
-                processedItem,
                 options
               )
               : processedItem
@@ -480,7 +488,8 @@ export function processSchemaData(
               value = processItem(value)
             }
           } else if (processedData) {
-            value = shallowClone(value)
+            // A value without further schemas: fully clone it.
+            value = clone(value)
           }
           if (processedData) {
             processedData[name] = value

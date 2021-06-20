@@ -590,5 +590,10 @@ export default {
         }
       }
     }
+  },
+
+  processValue(schema, value, dataPath, graph) {
+    graph.addSource(dataPath)
+    return value
   }
 }
