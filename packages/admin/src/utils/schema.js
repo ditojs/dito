@@ -1,7 +1,7 @@
 import DitoContext from '@/DitoContext'
 import { getUid } from './uid'
 import { SchemaGraph } from './SchemaGraph'
-import { shallowClone, appendDataPath } from './data'
+import { appendDataPath } from './data'
 import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize
 } from '@ditojs/utils'
@@ -331,16 +331,24 @@ export function setDefaults(schema, data = {}, component) {
   )
 }
 
+function shallowClone(schema, data, options) {
+  const idName = schema.idName || 'id'
+  return isObject(data)
+    ? options.schemaOnly
+      ? { [idName]: data[idName] }
+      : { ...data }
+    : isArray(data)
+      ? [...data]
+      : data
+}
+
 export function processData(schema, data, dataPath, {
   component,
   schemaOnly, // wether to only include data covered by the schema, or all data
   target
 } = {}) {
-  const rootData = data
-  const processedData = schemaOnly
-    ? isObject(data) ? {} : data
-    : shallowClone(data)
-  const options = { component, schemaOnly, target, rootData }
+  const options = { component, schemaOnly, target, rootData: data }
+  const processedData = shallowClone(schema, data, options)
   const graph = new SchemaGraph()
 
   const processBefore = (schema, data, name, dataPath, processedData) => {
@@ -368,7 +376,7 @@ export function processData(schema, data, dataPath, {
       name,
       data,
       dataPath,
-      rootData,
+      rootData: options.rootData,
       // Pass the already processed data to `process()`, so it can be modified
       // through `processedItem` from there.
       processedData
@@ -460,11 +468,8 @@ export function processSchemaData(
             const forms = getForms(componentSchema, context)
             const form = getItemFormSchemaFromForms(forms, item)
             if (form) {
-              const idName = form.idName || 'id'
               const processedItem = processedData
-                ? options.schemaOnly
-                  ? { [idName]: item[idName] }
-                  : shallowClone(item)
+                ? shallowClone(form, item, options)
                 : null
               // Copy over type in case there are multiple forms to choose from.
               if (processedItem && Object.keys(forms).length > 1) {

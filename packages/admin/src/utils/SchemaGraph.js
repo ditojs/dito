@@ -83,9 +83,9 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(data, { target, schemaOnly }) {
+  process(data, { target }) {
     const clipboard = target === 'clipboard'
-    if (clipboard && !schemaOnly) {
+    if (clipboard) {
       delete data.id
     }
     for (const [dataPath, settings] of this.flatten()) {

@@ -1,6 +1,4 @@
-import {
-  isInteger, isArray, isPlainObject, parseDataPath, getValueAtDataPath
-} from '@ditojs/utils'
+import { isInteger, parseDataPath, getValueAtDataPath } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {
   return dataPath
@@ -65,12 +63,4 @@ export function hasTemporaryId(data) {
 export function isReference(data) {
   // Returns true if value is an object that holds nothing more than an id.
   return data?.id != null && Object.keys(data).length === 1
-}
-
-export function shallowClone(value) {
-  return isPlainObject(value)
-    ? { ...value }
-    : isArray(value)
-      ? [...value]
-      : value
 }
