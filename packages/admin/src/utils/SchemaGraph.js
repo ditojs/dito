@@ -4,6 +4,22 @@ import {
 } from '@ditojs/utils'
 import { nanoid } from 'nanoid'
 
+// SchemaGraph is a class to collect schema graph meta information in order to
+// process sources and relations for the given targets 'server' and 'clipboard',
+// acccording to the following table:
+//
+// | --------------------------------------------| --------- | --------- |
+// | data                                        | server    | clipboard |
+// | --------------------------------------------| --------- | --------- |
+// | type: 'relation', internal: false           | keep id   | keep id   |
+// | type: 'relation', internal: true            | keep id   | ref, #ref |
+// | type: 'relation', internal: true, temporary | ref, #ref | ref, #ref |
+// | type: 'source', related: false              | keep id   | remove id |
+// | type: 'source', related: false, temporary   | ref, #id  | remove id |
+// | type: 'source', related: true               | keep id   | ref, #id  |
+// | type: 'source', related: true, temporary    | ref, #id  | ref, #id  |
+// | --------------------------------------------| --------- | --------- |
+
 export class SchemaGraph {
   graph = {}
   references = {}
