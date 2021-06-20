@@ -1,10 +1,12 @@
-import { hasTemporaryId, getLastDataPathName } from './data'
+import { hasTemporaryId } from './data'
 import {
-  isInteger, asArray, parseDataPath, getValueAtDataPath, hyphenate
+  isInteger, asArray, parseDataPath, getValueAtDataPath
 } from '@ditojs/utils'
+import { nanoid } from 'nanoid'
 
 export class SchemaGraph {
   graph = {}
+  references = {}
 
   add(dataPath, settings, defaults) {
     dataPath = parseDataPath(dataPath)
@@ -43,7 +45,9 @@ export class SchemaGraph {
   }
 
   getReferencePrefix(dataPath) {
-    return dataPath ? hyphenate(getLastDataPathName(dataPath)) : null
+    return dataPath
+      ? (this.references[dataPath] ??= nanoid(6))
+      : null
   }
 
   flatten() {

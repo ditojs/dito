@@ -1403,6 +1403,7 @@ __metadata:
     filesize: ^6.3.0
     filesize-parser: ^1.5.0
     hint.css: ^2.6.0
+    nanoid: ^3.1.23
     postcss: ^8.3.5
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0

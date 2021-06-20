@@ -40,7 +40,9 @@ module.exports = {
       flatTernaryExpressions: true,
       ignoredNodes: ['TemplateLiteral > *']
     }],
-    'lines-between-class-members': ['error', 'always'],
+    'lines-between-class-members': ['error', 'always', {
+      exceptAfterSingleLine: true
+    }],
     'max-len': ['error', 80, 2, {
       ignoreUrls: true,
       ignoreTemplateLiterals: true,

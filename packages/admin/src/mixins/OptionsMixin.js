@@ -231,9 +231,12 @@ export default {
       // process both the options (for '#ref') and the value ('#id').
       // See `DataMixin.handleDataSchema()`:
       const path = schema.options?.dataPath
-      graph.addRelation(dataPath, path)
-      if (path) {
-        graph.addRelatedSource(normalizeDataPath(`${dataPath}/${path}`))
+      const relatedDataPath = path
+        ? normalizeDataPath(`${dataPath}/${path}`)
+        : null
+      graph.addRelation(dataPath, relatedDataPath)
+      if (relatedDataPath) {
+        graph.addRelatedSource(relatedDataPath)
       }
       // Convert relating objects to a shallow copy with only the id left.
       // TODO: Convert to using `relateBy`:
