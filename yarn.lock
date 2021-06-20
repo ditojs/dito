@@ -1501,7 +1501,7 @@ __metadata:
     "@vue/cli-service": ^4.5.13
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.930.0
+    aws-sdk: ^2.931.0
     axios: ^0.21.1
     babel-loader: ^8.2.2
     babel-plugin-dynamic-import-node: ^2.3.3
@@ -1600,7 +1600,7 @@ __metadata:
     babel-plugin-module-resolver: ^4.1.0
     core-js: ^3.14.0
     punycode: ^2.1.1
-    regenerator-runtime: ^0.13.7
+    regenerator-runtime: ^0.13.8
     rimraf: ^3.0.2
   languageName: unknown
   linkType: soft
@@ -4633,9 +4633,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.930.0":
-  version: 2.930.0
-  resolution: "aws-sdk@npm:2.930.0"
+"aws-sdk@npm:^2.931.0":
+  version: 2.931.0
+  resolution: "aws-sdk@npm:2.931.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4646,7 +4646,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: d482a8937aeabd204bf28d6a332e4b856d9ef9f61c12a81440839da8597f0e7c16a0d0a6dee604d61a702c2eed1594859028b32872984420d1abf1012cb6546e
+  checksum: d5e3dec9cd1e54f90ec0ed1c745ffb62d4a213da93ef09f86744895cf4ad74996d7bceffb9839619114c75a95fbb5b4e7a88f327d58ef9c28a8457f9bf5f8e8a
   languageName: node
   linkType: hard
 
@@ -7213,7 +7213,7 @@ __metadata:
     "@babel/eslint-plugin": ^7.14.5
     babel-jest: ^27.0.2
     cross-env: ^7.0.3
-    eslint: ^7.28.0
+    eslint: ^7.29.0
     eslint-config-standard: ^16.0.3
     eslint-friendly-formatter: ^4.0.1
     eslint-plugin-babel: ^5.3.1
@@ -7918,9 +7918,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^7.28.0":
-  version: 7.28.0
-  resolution: "eslint@npm:7.28.0"
+"eslint@npm:^7.29.0":
+  version: 7.29.0
+  resolution: "eslint@npm:7.29.0"
   dependencies:
     "@babel/code-frame": 7.12.11
     "@eslint/eslintrc": ^0.4.2
@@ -7963,7 +7963,7 @@ __metadata:
     v8-compile-cache: ^2.0.3
   bin:
     eslint: bin/eslint.js
-  checksum: 9d49d53ed56a1f1ccba9c71482722a91f2423432df70a3694d36ea478f0e3bb058034f170219f34f3d6b5cd5d47510b269b75e2b4117f88a3241b1db9cb95828
+  checksum: 812f8c5123860cf5bd877018ffd29abd52bbaaca55fdd616008c97da9bf47a20a7b7c7ecb7c8f753c06f77ea5d59480f3d6d76475699b2ea380237fbb7c6b3a2
   languageName: node
   linkType: hard
 
@@ -16266,7 +16266,7 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.7":
+"regenerator-runtime@npm:^0.13.4, regenerator-runtime@npm:^0.13.8":
   version: 0.13.8
   resolution: "regenerator-runtime@npm:0.13.8"
   checksum: 20178f5753f181d59691e5c3b4c59a2769987f75c7ccf325777673b5478acca61a553b10e895585086c222f72f5ee428090acf50320264de4b79f630f7388653
