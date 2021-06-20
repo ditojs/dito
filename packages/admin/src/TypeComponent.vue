@@ -28,6 +28,7 @@ const TypeComponent = DitoComponent.component('dito-type-component', {
 
   defaultValue: null,
   defaultNested: true,
+  defaultVisible: true,
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,

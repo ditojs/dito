@@ -111,8 +111,8 @@ export default DitoComponent.component('dito-component-container', {
 
     componentWidth: getSchemaAccessor('width', {
       type: [String, Number],
-      default({ component }) {
-        return component.typeOptions.defaultWidth
+      default() {
+        return this.typeOptions.defaultWidth
       },
       get(width) {
         // Use 100% == 1.0 as default width when nothing is set:
@@ -135,7 +135,9 @@ export default DitoComponent.component('dito-component-container', {
 
     componentVisible: getSchemaAccessor('visible', {
       type: Boolean,
-      default: true
+      default() {
+        return this.typeOptions.defaultVisible
+      }
     }),
 
     componentDisabled: getSchemaAccessor('disabled', {

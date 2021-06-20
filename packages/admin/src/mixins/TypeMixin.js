@@ -152,7 +152,9 @@ export default {
 
     visible: getSchemaAccessor('visible', {
       type: Boolean,
-      default: true
+      default() {
+        return this.typeOptions.defaultVisible
+      }
     }),
 
     // TODO: Rename to `excluded` for consistent naming
