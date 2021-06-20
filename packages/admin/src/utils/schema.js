@@ -417,7 +417,7 @@ export function processData(schema, data, dataPath, {
     schema, data, dataPath, processedData, processBefore, processAfter, options
   )
 
-  return graph.process(processedData, options)
+  return graph.process(schema, processedData, options)
 }
 
 export function processSchemaData(

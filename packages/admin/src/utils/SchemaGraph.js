@@ -1,4 +1,4 @@
-import { hasTemporaryId } from './data'
+import { isTemporaryId } from './data'
 import {
   isInteger, asArray, parseDataPath, getValueAtDataPath
 } from '@ditojs/utils'
@@ -24,7 +24,7 @@ export class SchemaGraph {
   graph = {}
   references = {}
 
-  add(dataPath, settings, defaults) {
+  set(dataPath, settings, defaults) {
     dataPath = parseDataPath(dataPath)
     let subGraph = this.graph
     for (const part of dataPath) {
@@ -38,23 +38,23 @@ export class SchemaGraph {
     }
   }
 
-  addSource(dataPath) {
-    // Only set `related: false` through the defaults, as `addRelatedSource()`
+  addSource(dataPath, schema) {
+    // Only set `related: false` through the defaults, as `setSourceRelated()`
     // may be called before `addSource()`, depending on the graph structure.
-    this.add(dataPath, { type: 'source' }, { related: false })
+    this.set(dataPath, { type: 'source', schema }, { related: false })
   }
 
-  addRelatedSource(dataPath) {
-    this.add(dataPath, {
-      type: 'source',
+  setSourceRelated(dataPath) {
+    this.set(dataPath, {
       related: true,
       reference: this.getReferencePrefix(dataPath)
     })
   }
 
-  addRelation(dataPath, relatedDataPath) {
-    this.add(dataPath, {
+  addRelation(dataPath, relatedDataPath, schema) {
+    this.set(dataPath, {
       type: 'relation',
+      schema,
       internal: !!relatedDataPath,
       reference: this.getReferencePrefix(relatedDataPath)
     })
@@ -83,13 +83,13 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(data, { target }) {
+  process(schema, data, { target }) {
     const clipboard = target === 'clipboard'
     if (clipboard) {
-      delete data.id
+      delete data[schema.idName || 'id']
     }
     for (const [dataPath, settings] of this.flatten()) {
-      const { type, internal, related, reference } = settings
+      const { type, schema, internal, related, reference } = settings
       const source = type === 'source'
       const relation = type === 'relation'
       if (source || relation && internal) {
@@ -100,16 +100,20 @@ export class SchemaGraph {
           source && related
         )
         for (const value of asArray(values).flat()) {
-          // TODO: Respect schema.idName / schema.relateBy
-          const id = value?.id
+          const idName = (
+            source && schema.idName ||
+            relation && schema.relateBy ||
+            'id'
+          )
+          const id = value?.[idName]
           if (id != null) {
             if (removeId) {
-              delete value.id
-            } if (referenceId || hasTemporaryId(value)) {
+              delete value[idName]
+            } if (referenceId || isTemporaryId(id)) {
               value[source ? '#id' : '#ref'] = reference
                 ? `${reference}-${id}`
                 : id // A temporary id without a related, just preserve it.
-              delete value.id
+              delete value[idName]
             }
           }
         }

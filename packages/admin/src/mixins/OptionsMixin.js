@@ -234,9 +234,9 @@ export default {
       const relatedDataPath = path
         ? normalizeDataPath(`${dataPath}/${path}`)
         : null
-      graph.addRelation(dataPath, relatedDataPath)
+      graph.addRelation(dataPath, relatedDataPath, schema)
       if (relatedDataPath) {
-        graph.addRelatedSource(relatedDataPath)
+        graph.setSourceRelated(relatedDataPath)
       }
       // Convert relating objects to a shallow copy with only the id left.
       // TODO: Convert to using `relateBy`:

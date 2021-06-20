@@ -56,11 +56,15 @@ export function setTemporaryId(data, idName = 'id') {
   data[idName] = `@${++temporaryId}`
 }
 
-export function hasTemporaryId(data) {
-  return /^@/.test(data?.id)
+export function isTemporaryId(id) {
+  return /^@/.test(id)
 }
 
-export function isReference(data) {
+export function hasTemporaryId(data, idName = 'id') {
+  return isTemporaryId(data?.[idName])
+}
+
+export function isReference(data, idName = 'id') {
   // Returns true if value is an object that holds nothing more than an id.
-  return data?.id != null && Object.keys(data).length === 1
+  return data?.[idName] != null && Object.keys(data).length === 1
 }
