@@ -42,7 +42,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { hasForms, getItemFormSchema } from '@/utils/schema'
+import { hasForms, getFormSchemas } from '@/utils/schema'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -139,11 +139,11 @@ export default TypeComponent.register([
     )
   },
 
-  getFormSchemaForProcessing(schema, item, context) {
+  getFormSchemasForProcessing(schema, context) {
     // Convert nested children schema to stand-alone schema component,
     // present in each of the forms, as required by `processSchemaData()`
     const { children } = schema
-    return getItemFormSchema(schema, item, context, children
+    return getFormSchemas(schema, context, children
       ? form => ({
         ...form,
         components: {

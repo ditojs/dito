@@ -251,9 +251,12 @@ export function getFormSchemas(schema, context, modifyForm) {
   )
 }
 
-export function getItemFormSchema(schema, item, context, modifyForm) {
-  const forms = getFormSchemas(schema, context, modifyForm)
+export function getItemFormSchemaFromForms(forms, item) {
   return forms[item?.type] || forms.default || null
+}
+
+export function getItemFormSchema(schema, item, context) {
+  return getItemFormSchemaFromForms(getFormSchemas(schema, context), item)
 }
 
 export function hasLabel(schema) {
@@ -450,11 +453,12 @@ export function processSchemaData(
               index,
               rootData: options.rootData
             })
-            const getForm = (
-              getTypeOptions(componentSchema)?.getFormSchemaForProcessing ||
-               getItemFormSchema
+            const getForms = (
+              getTypeOptions(componentSchema)?.getFormSchemasForProcessing ||
+               getFormSchemas
             )
-            const form = getForm(componentSchema, item, context)
+            const forms = getForms(componentSchema, context)
+            const form = getItemFormSchemaFromForms(forms, item)
             if (form) {
               const idName = form.idName || 'id'
               const processedItem = processedData
@@ -462,6 +466,10 @@ export function processSchemaData(
                   ? { [idName]: item[idName] }
                   : shallowClone(item)
                 : null
+              // Copy over type in case there are multiple forms to choose from.
+              if (processedItem && Object.keys(forms).length > 1) {
+                processedItem.type = item.type
+              }
               return processSchemaData(
                 form,
                 item,
