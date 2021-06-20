@@ -487,12 +487,9 @@ export function processSchemaData(
             } else {
               value = processItem(value)
             }
-          } else if (processedData) {
-            // A value without further schemas: fully clone it.
-            value = clone(value)
-          }
-          if (processedData) {
-            processedData[name] = value
+            if (processedData) {
+              processedData[name] = value
+            }
           }
           processAfter?.(
             componentSchema, data, name, componentDataPath, processedData
