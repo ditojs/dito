@@ -4,8 +4,9 @@ import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels, isCompact, isInlined,
-  getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
+  processRouteSchema, processForms, getNamedSchemas, getButtonSchemas,
+  hasFormSchema, getFormSchemas, getViewSchema,
+  hasLabels, isCompact, isInlined,
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
@@ -253,7 +254,7 @@ export default {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
           ? this.isObjectSource
             ? !this.value
             : true
@@ -528,7 +529,7 @@ export default {
       await process(childRoutes, level + 1)
     }
     // Inlined forms don't need to actually add routes.
-    if (hasForms(schema) && !inlined) {
+    if (hasFormSchema(schema) && !inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`

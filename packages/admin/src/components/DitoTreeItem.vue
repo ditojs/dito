@@ -154,7 +154,7 @@ import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { appendDataPath } from '@/utils/data'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getNamedSchemas, hasForms } from '@/utils/schema'
+import { getNamedSchemas, hasFormSchema } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
@@ -281,7 +281,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
       }
     }),
 
@@ -289,7 +289,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && hasForms(this.schema)
+        return editable && hasFormSchema(this.schema)
       }
     }),
 

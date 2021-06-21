@@ -155,9 +155,8 @@ export async function resolveForm(form) {
   // When dynamically importing forms, the actual form can be received named or
   // as `default` in a nested object, detect and handle this case:
   if (form && !('components' in form)) {
-    const keys = Object.keys(form)
     // Assume the form is the first export (named or default)
-    const name = keys[0]
+    const name = Object.keys(form)[0]
     form = form[name]
     if (form && name !== 'default') {
       form.name = name
@@ -182,7 +181,7 @@ export function isSingleComponentView(schema) {
   return !!schema.type
 }
 
-export function hasForms(schema) {
+export function hasFormSchema(schema) {
   // Support both single form and multiple forms notation, as well as inlined
   // components.
   return isObject(schema) && !!(
@@ -192,17 +191,21 @@ export function hasForms(schema) {
   )
 }
 
+export function hasMultipleFormSchemas(schema) {
+  return Object.keys(schema?.forms || {}).length > 1
+}
+
 export function getViewSchema(schema, context) {
   const { view } = schema
   const viewSchema = view && context.views[view]
   return viewSchema
-    ? hasForms(viewSchema)
+    ? hasFormSchema(viewSchema)
       ? viewSchema
       // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
       : forEachSchema(viewSchema, schema => {
         const viewComponent = schema.components?.[view]
-        if (hasForms(viewComponent)) {
+        if (hasFormSchema(viewComponent)) {
           return viewComponent
         }
       })
@@ -334,13 +337,13 @@ export function setDefaults(schema, data = {}, component) {
 function cloneItem(sourceSchema, item, options) {
   if (options.schemaOnly) {
     const copy = {}
-    const { idKey = 'id', orderKey, forms } = sourceSchema
+    const { idKey = 'id', orderKey } = sourceSchema
     const id = item[idKey]
     if (id !== undefined) {
       copy[idKey] = id
     }
     // Copy over type in case there are multiple forms to choose from.
-    if (forms && Object.keys(forms).length > 1) {
+    if (hasMultipleFormSchemas(sourceSchema)) {
       copy.type = item.type
     }
     if (orderKey) {
@@ -523,7 +526,7 @@ export function processSchemaData(
             componentSchema, data, name, componentDataPath, processedData
           )
           let value = processedData ? processedData[name] : data[name]
-          if (value != null && hasForms(componentSchema)) {
+          if (value != null && hasFormSchema(componentSchema)) {
             // Recursively process data on nested form items.
             if (isArray(value)) {
               // Optimization: No need to collect values if we're not cloning!

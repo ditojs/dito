@@ -42,7 +42,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { hasForms, getFormSchemas } from '@/utils/schema'
+import { hasFormSchema, getFormSchemas } from '@/utils/schema'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -100,7 +100,7 @@ export default TypeComponent.register([
     hasEditableForms() {
       const hasEditableForms = schema => {
         return (
-          hasForms(schema) && (
+          hasFormSchema(schema) && (
             this.getSchemaValue('editable', {
               type: Boolean,
               default: false,
