@@ -332,10 +332,10 @@ export function setDefaults(schema, data = {}, component) {
 }
 
 function shallowClone(schema, data, options) {
-  const idName = schema.idName || 'id'
+  const idKey = schema.idKey || 'id'
   return isObject(data)
     ? options.schemaOnly
-      ? { [idName]: data[idName] }
+      ? { [idKey]: data[idKey] }
       : { ...data }
     : isArray(data)
       ? [...data]
@@ -633,7 +633,7 @@ export function isListSource(schemaOrType) {
 }
 
 export function getItemId(sourceSchema, item) {
-  const id = item[sourceSchema.idName || 'id']
+  const id = item[sourceSchema.idKey || 'id']
   return id != null ? String(id) : undefined
 }
 

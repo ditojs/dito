@@ -51,20 +51,20 @@ export function getLastDataPathIndex(dataPath) {
 }
 
 let temporaryId = 0
-export function setTemporaryId(data, idName = 'id') {
+export function setTemporaryId(data, idKey = 'id') {
   // Temporary ids are marked with a '@' at the beginning.
-  data[idName] = `@${++temporaryId}`
+  data[idKey] = `@${++temporaryId}`
 }
 
 export function isTemporaryId(id) {
   return /^@/.test(id)
 }
 
-export function hasTemporaryId(data, idName = 'id') {
-  return isTemporaryId(data?.[idName])
+export function hasTemporaryId(data, idKey = 'id') {
+  return isTemporaryId(data?.[idKey])
 }
 
-export function isReference(data, idName = 'id') {
+export function isReference(data, idKey = 'id') {
   // Returns true if value is an object that holds nothing more than an id.
-  return data?.[idName] != null && Object.keys(data).length === 1
+  return data?.[idKey] != null && Object.keys(data).length === 1
 }

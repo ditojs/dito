@@ -86,7 +86,7 @@ export class SchemaGraph {
   process(schema, data, { target }) {
     const clipboard = target === 'clipboard'
     if (clipboard) {
-      delete data[schema.idName || 'id']
+      delete data[schema.idKey || 'id']
     }
     for (const [dataPath, settings] of this.flatten()) {
       const { type, schema, internal, related, reference } = settings
@@ -100,20 +100,20 @@ export class SchemaGraph {
           source && related
         )
         for (const value of asArray(values).flat()) {
-          const idName = (
-            source && schema.idName ||
+          const idKey = (
+            source && schema.idKey ||
             relation && schema.relateBy ||
             'id'
           )
-          const id = value?.[idName]
+          const id = value?.[idKey]
           if (id != null) {
             if (removeId) {
-              delete value[idName]
+              delete value[idKey]
             } if (referenceId || isTemporaryId(id)) {
               value[source ? '#id' : '#ref'] = reference
                 ? `${reference}-${id}`
                 : id // A temporary id without a related, just preserve it.
-              delete value[idName]
+              delete value[idKey]
             }
           }
         }
