@@ -378,7 +378,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
         // Always shallow-clone array values:
         value = [...value]
       }
-      if (orderKey) {
+      if (orderKey && target === 'clipboard') {
         // Sort the data back into the natural sequence as defined by their ids,
         // so copy-pasting between servers (e.g. nested font-cuts on Lineto)
         // naturally gets mapped to the same entries in the graph.
