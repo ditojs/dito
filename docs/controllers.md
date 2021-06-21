@@ -162,7 +162,7 @@ options are supported:
 
 In addition to these, the following Ajv validator options can also  be
 controller through the `options` parameter. See
-[Ajv](https://github.com/epoberezkin/ajv#options) for a description of their
+[Ajv](https://ajv.js.org/options.html) for a description of their
 meaning:
 
 | Option                | Default |
