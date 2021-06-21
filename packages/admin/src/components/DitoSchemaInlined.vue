@@ -65,7 +65,7 @@ export default DitoComponent.component('dito-schema-inlined', {
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null }

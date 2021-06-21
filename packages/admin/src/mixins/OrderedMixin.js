@@ -22,17 +22,14 @@ export default {
       }
     },
 
-    updateOrder(list, schema, draggable, paginationRange) {
-      // NOTE: This mixin requires the component to define `this.draggable`.
-      // TODO: Rename to a more meaningfull name, e.g. `orderKey` or
-      // `orderProperty`.
-      const order = draggable?.order
-      if (order) {
+    updateOrder(sourceSchema, list, paginationRange) {
+      const { orderKey } = sourceSchema
+      if (orderKey) {
         // Reorder the changed entries by their order key, taking pagination
         // offsets into account:
         const offset = paginationRange?.[0] || 0
         for (let i = 0; i < list.length; i++) {
-          list[i][order] = i + offset
+          list[i][orderKey] = i + offset
         }
       }
       return list

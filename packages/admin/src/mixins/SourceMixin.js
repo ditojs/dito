@@ -275,7 +275,7 @@ export default {
     }),
 
     draggable: getSchemaAccessor('draggable', {
-      type: [Object, Boolean],
+      type: Boolean,
       default: false,
       get(draggable) {
         return this.isListSource && this.listData.length > 1 && draggable

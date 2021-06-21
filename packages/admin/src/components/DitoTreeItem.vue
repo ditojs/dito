@@ -64,7 +64,7 @@
       v-if="childrenSchema"
       v-show="opened"
       v-bind="getDragOptions(childrenDraggable, true)"
-      :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
+      :list="updateOrder(childrenSchema, childrenList)"
       @start="onStartDrag"
       @end="onEndDrag($event, childrenSchema)"
     )
@@ -169,7 +169,7 @@ export default DitoComponent.component('dito-tree-item', {
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     label: { type: String, default: null },
     level: { type: Number, default: 0 }
   },
@@ -218,7 +218,7 @@ export default DitoComponent.component('dito-tree-item', {
       return (
         this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
-          type: [Object, Boolean],
+          type: Boolean,
           default: false,
           schema: this.childrenSchema
         })
