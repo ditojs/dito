@@ -634,13 +634,18 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processData({ target = 'clipboard', schemaOnly = true } = {}) {
-      return processData(this.schema, this.data, this.dataPath, {
-        // Needed for DitoContext handling inside `processData` and
-        // `processSchemaData()`:
-        component: this,
-        schemaOnly,
-        target
-      })
+      return processData(
+        this.schema,
+        this.sourceSchema,
+        this.data,
+        this.dataPath, {
+          // Needed for DitoContext handling inside `processData` and
+          // `processSchemaData()`:
+          component: this,
+          schemaOnly,
+          target
+        }
+      )
     },
 
     _register(add) {

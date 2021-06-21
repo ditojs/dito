@@ -83,10 +83,10 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(schema, data, { target }) {
+  process(sourceSchema, data, { target }) {
     const clipboard = target === 'clipboard'
     if (clipboard) {
-      delete data[schema.idKey || 'id']
+      delete data[sourceSchema.idKey || 'id']
     }
     for (const [dataPath, settings] of this.flatten()) {
       const { type, schema, internal, related, reference } = settings

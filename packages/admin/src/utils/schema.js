@@ -1,7 +1,7 @@
 import DitoContext from '@/DitoContext'
 import { getUid } from './uid'
 import { SchemaGraph } from './SchemaGraph'
-import { appendDataPath } from './data'
+import { appendDataPath, isTemporaryId } from './data'
 import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize
 } from '@ditojs/utils'
@@ -331,35 +331,61 @@ export function setDefaults(schema, data = {}, component) {
   )
 }
 
-function shallowClone(schema, data, options) {
-  const idKey = schema.idKey || 'id'
-  return isObject(data)
-    ? options.schemaOnly
-      ? { [idKey]: data[idKey] }
-      : { ...data }
-    : isArray(data)
-      ? [...data]
-      : data
+function cloneItem(sourceSchema, item, options) {
+  if (options.schemaOnly) {
+    const copy = {}
+    const { idKey = 'id', orderKey, forms } = sourceSchema
+    const id = item[idKey]
+    if (id !== undefined) {
+      copy[idKey] = id
+    }
+    // Copy over type in case there are multiple forms to choose from.
+    if (forms && Object.keys(forms).length > 1) {
+      copy.type = item.type
+    }
+    if (orderKey) {
+      copy[orderKey] = item[orderKey]
+    }
+    return copy
+  } else {
+    return { ...item }
+  }
 }
 
-export function processData(schema, data, dataPath, {
+export function processData(schema, sourceSchema, data, dataPath, {
   component,
   schemaOnly, // wether to only include data covered by the schema, or all data
   target
 } = {}) {
   const options = { component, schemaOnly, target, rootData: data }
-  const processedData = shallowClone(schema, data, options)
+  const processedData = cloneItem(sourceSchema, data, options)
   const graph = new SchemaGraph()
 
   const processBefore = (schema, data, name, dataPath, processedData) => {
-    const { wrapPrimitives } = schema
     let value = data[name]
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
-    if (wrapPrimitives && isArray(value)) {
-      value = value.map(entry => ({
-        [wrapPrimitives]: entry
-      }))
+    if (isArray(value)) {
+      const { wrapPrimitives, orderKey, idKey = 'id' } = schema
+      if (wrapPrimitives) {
+        value = value.map(entry => ({
+          [wrapPrimitives]: entry
+        }))
+      }
+      if (orderKey) {
+        // Sort the data back into the natural sequence as defined by their ids,
+        // so copy-pasting between servers (e.g. nested font-cuts on Lineto)
+        // naturally gets mapped to the same entries in the graph.
+        value = [...value].sort((a, b) => {
+          const id1 = a?.[idKey]
+          const id2 = b?.[idKey]
+          return (
+            id1 == null || isTemporaryId(id1) ? 1
+            : id2 == null || isTemporaryId(id2) ? -1
+            : id1 - id2
+          )
+        })
+      }
     }
     processedData[name] = value
   }
@@ -414,10 +440,16 @@ export function processData(schema, data, dataPath, {
   }
 
   processSchemaData(
-    schema, data, dataPath, processedData, processBefore, processAfter, options
+    schema,
+    data,
+    dataPath,
+    processedData,
+    processBefore,
+    processAfter,
+    options
   )
 
-  return graph.process(schema, processedData, options)
+  return graph.process(sourceSchema, processedData, options)
 }
 
 export function processSchemaData(
@@ -469,12 +501,8 @@ export function processSchemaData(
             const form = getItemFormSchemaFromForms(forms, item)
             if (form) {
               const processedItem = processedData
-                ? shallowClone(form, item, options)
+                ? cloneItem(componentSchema, item, options)
                 : null
-              // Copy over type in case there are multiple forms to choose from.
-              if (processedItem && Object.keys(forms).length > 1) {
-                processedItem.type = item.type
-              }
               return processSchemaData(
                 form,
                 item,
@@ -484,8 +512,11 @@ export function processSchemaData(
                 processAfter,
                 options
               )
+            } else {
+              // Items without forms still get fully (but shallowly) cloned.
+              // TODO: Find out of this is actually needed / used at all?
+              return { ...item }
             }
-            return { ...item }
           }
 
           processBefore?.(
