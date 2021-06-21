@@ -274,8 +274,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedData() {
-      // TODO: Switch to schemaOnly here too!
-      return this.processData({ target: 'server', schemaOnly: false })
+      return this.processData({ target: 'server', schemaOnly: true })
     },
 
     clipboardData() {
