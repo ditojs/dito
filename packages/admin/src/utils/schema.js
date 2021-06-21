@@ -374,12 +374,15 @@ export function processData(schema, sourceSchema, data, dataPath, {
         value = value.map(entry => ({
           [wrapPrimitives]: entry
         }))
+      } else {
+        // Always shallow-clone array values:
+        value = [...value]
       }
       if (orderKey) {
         // Sort the data back into the natural sequence as defined by their ids,
         // so copy-pasting between servers (e.g. nested font-cuts on Lineto)
         // naturally gets mapped to the same entries in the graph.
-        value = [...value].sort((a, b) => {
+        value.sort((a, b) => {
           const id1 = a?.[idKey]
           const id2 = b?.[idKey]
           return (
