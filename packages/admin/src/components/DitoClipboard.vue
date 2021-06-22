@@ -36,8 +36,7 @@ export default DitoComponent.component('dito-clipboard', {
   data() {
     return {
       copyEnabled: false,
-      pasteEnabled: false,
-      clipboardData: null
+      pasteEnabled: false
     }
   },
 
@@ -83,7 +82,8 @@ export default DitoComponent.component('dito-clipboard', {
 
   methods: {
     async getClipboardData(report) {
-      let { clipboardData } = this // Use the internal clipboard as fallback.
+      // Use the internal clipboard as fallback.
+      let { clipboardData } = this.appState
       try {
         const json = await navigator.clipboard?.readText?.()
         if (json) {
@@ -115,7 +115,7 @@ export default DitoComponent.component('dito-clipboard', {
       let data = this.schemaComponent?.clipboardData
       data = data && this.copyData(data)
       // Keep an internal clipboard as fallback.
-      this.clipboardData = data
+      this.appState.clipboardData = data
       try {
         const json = JSON.stringify(data, null, 2)
         await navigator.clipboard?.writeText?.(json)

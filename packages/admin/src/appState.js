@@ -3,5 +3,6 @@ export default {
   routeComponents: [],
   user: null,
   loadCache: {}, // See TypeMixin.load()
-  activeLabel: null
+  activeLabel: null,
+  clipboardData: null
 }
