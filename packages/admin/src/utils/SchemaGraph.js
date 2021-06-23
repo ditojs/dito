@@ -105,15 +105,30 @@ export class SchemaGraph {
             relation && schema.relateBy ||
             'id'
           )
-          const id = value?.[idKey]
+          let id = value?.[idKey]
           if (id != null) {
             if (removeId) {
               delete value[idKey]
             } if (referenceId || isTemporaryId(id)) {
-              value[source ? '#id' : '#ref'] = reference
-                ? `${reference}-${id}`
-                : id // A temporary id without a related, just preserve it.
-              delete value[idKey]
+              if (isTemporaryId(id)) {
+                id = id.slice(1)
+              }
+              const refKey = clipboard
+                // Clipboard just needs temporary ids under the actual `idKey`.
+                ? idKey
+                // Server wants Objection-style '#id' / '#ref' pairs.
+                : source ? '#id' : '#ref'
+              const revValue = clipboard
+                ? `@${id}`
+                // Keep the ids unique in reference groups, since they reference
+                // accross the full graph.
+                : reference
+                  ? `${reference}-${id}`
+                  : id // A temporary id without a related, just preserve it.
+              value[refKey] = revValue
+              if (refKey !== idKey) {
+                delete value[idKey]
+              }
             }
           }
         }
