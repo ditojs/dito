@@ -113,24 +113,34 @@ export default DitoComponent.component('dito-clipboard', {
 
     async onCopy() {
       let data = this.schemaComponent?.clipboardData
-      data = data && this.copyData(data)
-      // Keep an internal clipboard as fallback.
-      this.appState.clipboardData = data
       try {
-        const json = JSON.stringify(data, null, 2)
-        await navigator.clipboard?.writeText?.(json)
-        // See if we can activate the paste button now, dependding on browsers:
-        await this.checkClipboard()
-      } catch (err) {
-        console.error(err, err.name, err.message)
+        data = data && this.copyData(data)
+        // Keep an internal clipboard as fallback.
+        this.appState.clipboardData = data
+        try {
+          const json = JSON.stringify(data, null, 2)
+          await navigator.clipboard?.writeText?.(json)
+          // See if we can activate the paste button, dependding on browsers:
+          await this.checkClipboard()
+        } catch (err) {
+          console.error(err, err.name, err.message)
+        }
+      } catch (error) {
+        console.error(error)
+        alert(error.message)
       }
     },
 
     async onPaste() {
       let data = await this.getClipboardData(true) // report
-      data = data && this.pasteData(data)
-      if (data) {
-        this.schemaComponent.setData(data)
+      try {
+        data = data && this.pasteData(data)
+        if (data) {
+          this.schemaComponent.setData(data)
+        }
+      } catch (error) {
+        console.error(error)
+        alert(error.message)
       }
     }
   }
