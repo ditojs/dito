@@ -13,8 +13,11 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 
+export default TypeComponent.register([
+  'computed', 'hidden'
+],
 // @vue/component
-export default TypeComponent.register('computed', {
+{
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
   defaultVisible: false
 })
