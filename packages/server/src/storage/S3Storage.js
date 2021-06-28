@@ -57,7 +57,6 @@ export class S3Storage extends Storage {
                 // 3. If that fails, keep collecting all chunks and determine
                 //    the mimetype using the full data.
                 stream.once('end', () => {
-                  data = data ? Buffer.concat([data, chunk]) : chunk
                   const type = (
                     FileType.fromBuffer(data)?.mime ||
                     (isSvg(data) ? 'image/svg+xml' : 'application/octet-stream')
@@ -66,6 +65,7 @@ export class S3Storage extends Storage {
                 })
               }
             }
+            data = data ? Buffer.concat([data, chunk]) : chunk
           }
 
           stream.on('data', onData)
