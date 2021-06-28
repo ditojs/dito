@@ -1,6 +1,9 @@
 import aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
+import FileType from 'file-type'
+import isSvg from 'is-svg'
 import { Storage } from './Storage'
+import { PassThrough } from 'stream'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -12,7 +15,6 @@ export class S3Storage extends Storage {
       s3,
       acl,
       bucket,
-      contentType,
       ...options
     } = config
     this.s3 = new aws.S3(s3)
@@ -23,11 +25,56 @@ export class S3Storage extends Storage {
       s3: this.s3,
       acl,
       bucket,
-      contentType: contentType || multerS3.AUTO_CONTENT_TYPE,
       ...options,
 
       key: (req, file, cb) => {
         cb(null, this.getUniqueKey(file.originalname))
+      },
+
+      contentType: (req, file, cb) => {
+        const { mimetype, stream } = file
+        if (mimetype) {
+          // 1. Trust file.mimetype if provided.
+          cb(null, mimetype)
+        } else {
+          const chunks = []
+
+          const done = type => {
+            // TODO: Can't we use a similar trick to multer-s3:
+            // Use `file.replacementStream` to determine image-size?
+            const outStream = new PassThrough()
+            for (const chunk of chunks) {
+              outStream.write(chunk)
+            }
+            stream.pipe(outStream)
+            cb(null, type, outStream)
+          }
+
+          const onData = chunk => {
+            chunks.push(chunk)
+            if (chunks.length === 1) {
+              // 2. Try reading the mimetype from the first chunk.
+              const type = FileType.fromBuffer(chunk)?.mime
+              if (type) {
+                stream.off('data', onData)
+                done(type)
+              } else {
+                // 3. If that fails, keep collecting all chunks and determine
+                //    the mimetype using the full data.
+                stream.once('end', () => {
+                  const data = Buffer.concat(chunks)
+                  const type = (
+                    FileType.fromBuffer(data)?.mime ||
+                    (isSvg(data) ? 'image/svg+xml' : 'application/octet-stream')
+                  )
+                  done(type)
+                })
+              }
+            }
+          }
+
+          stream.on('data', onData)
+        }
       },
 
       metadata: (req, file, cb) => {
