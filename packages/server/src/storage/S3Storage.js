@@ -37,22 +37,17 @@ export class S3Storage extends Storage {
           // 1. Trust file.mimetype if provided.
           cb(null, mimetype)
         } else {
-          const chunks = []
+          let data = null
 
           const done = type => {
-            // TODO: Can't we use a similar trick to multer-s3:
-            // Use `file.replacementStream` to determine image-size?
             const outStream = new PassThrough()
-            for (const chunk of chunks) {
-              outStream.write(chunk)
-            }
+            outStream.write(data)
             stream.pipe(outStream)
             cb(null, type, outStream)
           }
 
           const onData = chunk => {
-            chunks.push(chunk)
-            if (chunks.length === 1) {
+            if (!data) {
               // 2. Try reading the mimetype from the first chunk.
               const type = FileType.fromBuffer(chunk)?.mime
               if (type) {
@@ -62,7 +57,7 @@ export class S3Storage extends Storage {
                 // 3. If that fails, keep collecting all chunks and determine
                 //    the mimetype using the full data.
                 stream.once('end', () => {
-                  const data = Buffer.concat(chunks)
+                  data = data ? Buffer.concat([data, chunk]) : chunk
                   const type = (
                     FileType.fromBuffer(data)?.mime ||
                     (isSvg(data) ? 'image/svg+xml' : 'application/octet-stream')
