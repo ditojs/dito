@@ -10,16 +10,14 @@ export const validate = {
   validate: function validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
     const params = getParams(this, data, parentSchema, dataCtx)
-    let result
     try {
-      result = func(params) ?? true
+      return func(params) ?? true
     } catch (error) {
       // In sync validation, we have to pass the errors back to Ajv through
       // `validate.errors`.
       validate.errors = getErrors(error, params)
-      result = false
+      return false
     }
-    return result
   }
 }
 
@@ -32,14 +30,12 @@ export const validateAsync = {
   async validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
     const params = getParams(this, data, parentSchema, dataCtx)
-    let result
     try {
-      result = (await func(params)) ?? true
+      return (await func(params)) ?? true
     } catch (error) {
       // Async validate methods need to throw their errors.
       throw new Ajv.ValidationError(getErrors(error, params))
     }
-    return result
   }
 }
 
