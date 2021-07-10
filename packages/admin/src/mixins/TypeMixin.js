@@ -1,9 +1,9 @@
 import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
-import { getDefaultValue, ignoreMissingValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { computeValue } from '@/utils/schema'
 import { getItem, getParentItem } from '@/utils/data'
-import { isString, asArray, isPromise } from '@ditojs/utils'
+import { isString, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -28,7 +28,7 @@ export default {
 
   data() {
     return {
-      setValue: null,
+      parsedValue: null,
       focused: false
     }
   },
@@ -44,39 +44,10 @@ export default {
 
     value: {
       get() {
-        const { schema, data, name } = this
-        const { compute, format } = this.schema
-        if (compute) {
-          const value = compute.call(
-            this,
-            // Override value to prevent endless recursion through calling the
-            // getter for `this.value` in `DitoContext`:
-            new DitoContext(this, { value: data[name] })
-          )
-          // Supported promises with deferred setting of value with its own
-          // handling of defaults and missing values.
-          if (isPromise(value)) {
-            value.then(value => {
-              if (value === undefined && !ignoreMissingValue(schema)) {
-                value = getDefaultValue(schema)
-              }
-              this.$set(data, name, value)
-            }).catch(console.error)
-            return undefined
-          }
-          if (value !== undefined) {
-            // Use `$set()` directly instead of `this.value = …` to update the
-            // value without calling parse():
-            this.$set(data, name, value)
-          }
-        }
-        // If the value is still missing after compute, set the default for it:
-        if (!(name in data) && !ignoreMissingValue(schema)) {
-          this.$set(data, name, getDefaultValue(schema))
-        }
-        // Now access the value. This is important for reactivity and needs to
-        // happen after all prior manipulation through `$set()`, see above:
-        const value = data[name]
+        const value = computeValue(this.schema, this.data, this)
+        const { format } = this.schema
+        // `schema.format` is only ever called in the life-cycle
+        // of the component and thus it's ok to bind it to `this`
         return format
           ? format.call(this, new DitoContext(this, { value }))
           : value
@@ -84,11 +55,12 @@ export default {
 
       set(value) {
         const { parse } = this.schema
-        if (parse) {
-          value = parse.call(this, new DitoContext(this, { value }))
-        }
-        this.setValue = value
-        this.$set(this.data, this.name, value)
+        // `schema.parse` is only ever called in the life-cycle
+        // of the component and thus it's ok to bind it to `this`
+        this.parsedValue = parse
+          ? parse.call(this, new DitoContext(this, { value }))
+          : value
+        this.$set(this.data, this.name, this.parsedValue)
       }
     },
 
@@ -293,7 +265,9 @@ export default {
 
     onChange() {
       this.emitEvent('change', {
-        context: this.setValue !== undefined ? { value: this.setValue } : null,
+        context: this.parsedValue !== undefined
+          ? { value: this.parsedValue }
+          : null,
         // Pass `schemaComponent` as parent, so change events can propagate up.
         parent: this.schemaComponent
       })

@@ -350,6 +350,7 @@ export default {
         return loadCache[cacheKey]
       }
       // NOTE: No await here, res is a promise that we can easily cache.
+      // That's fine because promises can be resolved over and over again.
       const res = this.sendRequest(options)
         .then(response => response.data)
         .catch(error => {

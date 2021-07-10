@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import DitoContext from '@/DitoContext'
 import { getUid } from './uid'
 import { SchemaGraph } from './SchemaGraph'
@@ -332,6 +333,38 @@ export function setDefaults(schema, data = {}, component) {
   return processSchemaData(
     schema, data, null, null, processBefore, null, options
   )
+}
+
+export function computeValue(schema, data, component) {
+  const { name, compute } = schema
+  if (compute) {
+    // Override value to prevent endless recursion through calling the
+    // getter for `this.value` in `DitoContext`:
+    const value = compute(new DitoContext(component, { value: data[name] }))
+    // Supported promises with deferred setting of value with its own
+    // handling of defaults and missing values.
+    if (isPromise(value)) {
+      value.then(value => {
+        if (value === undefined && !ignoreMissingValue(schema)) {
+          value = getDefaultValue(schema)
+        }
+        Vue.set(data, name, value)
+      }).catch(console.error)
+      return undefined
+    }
+    if (value !== undefined) {
+      // Use `$set()` directly instead of `this.value = …` to update the
+      // value without calling parse():
+      Vue.set(data, name, value)
+    }
+  }
+  // If the value is still missing after compute, set the default for it:
+  if (!(name in data) && !ignoreMissingValue(schema)) {
+    Vue.set(data, name, getDefaultValue(schema))
+  }
+  // Now access the value. This is important for reactivity and needs to
+  // happen after all prior manipulation through `$set()`, see above:
+  return data[name]
 }
 
 function cloneItem(sourceSchema, item, options) {
