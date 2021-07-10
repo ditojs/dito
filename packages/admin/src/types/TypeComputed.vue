@@ -1,4 +1,6 @@
 <template lang="pug">
+  //- TODO: Find a better way to trigger evaluation of `value` that dose not
+  //  involve actually rendering it when the component is not visible.
   input.dito-text.dito-input(
     ref="element"
     :id="dataPath"
