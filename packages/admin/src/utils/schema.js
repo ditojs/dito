@@ -341,17 +341,6 @@ export function computeValue(schema, data, component) {
     // Override value to prevent endless recursion through calling the
     // getter for `this.value` in `DitoContext`:
     const value = compute(new DitoContext(component, { value: data[name] }))
-    // Supported promises with deferred setting of value with its own
-    // handling of defaults and missing values.
-    if (isPromise(value)) {
-      value.then(value => {
-        if (value === undefined && !ignoreMissingValue(schema)) {
-          value = getDefaultValue(schema)
-        }
-        Vue.set(data, name, value)
-      }).catch(console.error)
-      return undefined
-    }
     if (value !== undefined) {
       // Use `$set()` directly instead of `this.value = …` to update the
       // value without calling parse():
