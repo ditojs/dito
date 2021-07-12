@@ -335,12 +335,21 @@ export function setDefaults(schema, data = {}, component) {
   )
 }
 
-export function computeValue(schema, data, component) {
-  const { name, compute } = schema
+export function computeValue(schema, data, name, dataPath, {
+  component = null,
+  rootData = component?.rootData
+} = {}) {
+  const { compute } = schema
   if (compute) {
-    // Override value to prevent endless recursion through calling the
-    // getter for `this.value` in `DitoContext`:
-    const value = compute(new DitoContext(component, { value: data[name] }))
+    const value = compute(DitoContext.get(component, {
+      // Override value to prevent endless recursion through calling the
+      // getter for `this.value` in `DitoContext`:
+      value: data[name],
+      name,
+      data,
+      dataPath,
+      rootData
+    }))
     if (value !== undefined) {
       // Use `$set()` directly instead of `this.value = …` to update the
       // value without calling parse():
@@ -387,7 +396,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
   const graph = new SchemaGraph()
 
   const processBefore = (schema, data, name, dataPath, processedData) => {
-    let value = data[name]
+    let value = computeValue(schema, data, name, dataPath, options)
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
     if (isArray(value)) {

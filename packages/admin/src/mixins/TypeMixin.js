@@ -44,7 +44,13 @@ export default {
 
     value: {
       get() {
-        const value = computeValue(this.schema, this.data, this)
+        const value = computeValue(
+          this.schema,
+          this.data,
+          this.name,
+          this.dataPath,
+          { component: this }
+        )
         const { format } = this.schema
         // `schema.format` is only ever called in the life-cycle
         // of the component and thus it's ok to bind it to `this`
