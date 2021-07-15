@@ -15,7 +15,10 @@ export default {
   },
 
   methods: {
-    handleDataSchema(schema, name, loadingOptions = {}) {
+    handleDataSchema(schema, name, {
+      resolveCounter = 1,
+      ...loadingOptions
+    } = {}) {
       if (!isObject(schema)) {
         schema = { data: schema }
       }
@@ -25,6 +28,7 @@ export default {
         this.asyncDataEntries[name] ||
         this.$set(this.asyncDataEntries, name, {
           dependencyFunction: null,
+          resolveCounter: 0,
           resolvedData: null,
           resolving: false
         })
@@ -34,13 +38,18 @@ export default {
       // of the async dependencies.
       asyncEntry.dependencyFunction?.call(this, this.context)
 
-      const { resolvedData } = asyncEntry
-      if (resolvedData) {
-        // If the data was resolved already, return it and clear the value right
-        // away. This works because Vue caches the result of computed properties
-        // and only reevaluates if one of the dependencies changed. This is to
-        // ensure that a cached value here doesn't block async reevaluation:
-        asyncEntry.resolvedData = null
+      if (asyncEntry.resolveCounter > 0) {
+        // If the data was resolved already, return it and clear the value once
+        // `resolveCounter` reaches zero. Counting is needed because depending
+        // on the use of data and reactivity, multiple calls to the computed
+        // getter are triggered when the data is changing. Clearing the resolved
+        // data works because Vue caches the result of computed getters and only
+        // reevaluates if one of the dependencies changed. This is to ensure
+        // that a cached value here doesn't block / override reevaluation:
+        const { resolvedData } = asyncEntry
+        if (--asyncEntry.resolveCounter === 0) {
+          asyncEntry.resolvedData = null
+        }
         return resolvedData
       }
       // Avoid calling the data function twice:
@@ -69,10 +78,11 @@ export default {
           // triggering a recompute of the computed property that calls
           // `handleDataSchema()`.
           asyncEntry.resolving = true
-          this.resolveData(data).then(data => {
+          this.resolveData(data, loadingOptions).then(data => {
+            asyncEntry.resolveCounter = resolveCounter
             asyncEntry.resolvedData = data
             asyncEntry.resolving = false
-          }, loadingOptions)
+          })
           // Clear data until promise is resolved and `resolvedData` is set
           data = null
         }
