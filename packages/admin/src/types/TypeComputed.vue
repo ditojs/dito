@@ -14,13 +14,34 @@
 
 <script>
 import TypeComponent from '@/TypeComponent'
+import TypeMixin from '@/mixins/TypeMixin'
+import DataMixin from '@/mixins/DataMixin'
 
 export default TypeComponent.register([
-  'computed', 'hidden'
+  'computed', 'data', 'hidden'
 ],
 // @vue/component
 {
+  mixins: [DataMixin],
+
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
-  defaultVisible: false
+  defaultVisible: false,
+
+  computed: {
+    value: {
+      get() {
+        const value = this.handleDataSchema(this.schema, 'schema')
+        const { data, name } = this
+        if (value !== data[name]) {
+          this.$set(data, name, value)
+        }
+        return TypeMixin.computed.value.get.call(this)
+      },
+
+      set(value) {
+        TypeMixin.computed.value.set.call(this, value)
+      }
+    }
+  }
 })
 </script>

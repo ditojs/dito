@@ -145,8 +145,8 @@ export default class DitoContext {
     return get(this, 'sourceComponent', null)
   }
 
-  // When used in OptionsMixin for `schema.options.value`,
-  // `schema.options.label`, `schema.search.filter`:
+  // When used in OptionsMixin for `schema.options.value()`,
+  // `schema.options.label()` and  `schema.search.filter()` callbacks:
   get option() {
     return get(this, 'option', undefined)
   }

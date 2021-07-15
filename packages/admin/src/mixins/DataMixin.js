@@ -19,7 +19,7 @@ export default {
       if (!isObject(schema)) {
         schema = { data: schema }
       }
-      let { data, dataPath } = schema
+      let { data = undefined, dataPath = null } = schema
       // See if there is async data loading already in process.
       const asyncEntry = (
         this.asyncDataEntries[name] ||
@@ -32,7 +32,7 @@ export default {
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies.
-      asyncEntry.dependencyFunction?.(this, this.context)
+      asyncEntry.dependencyFunction?.call(this, this.context)
 
       const { resolvedData } = asyncEntry
       if (resolvedData) {
