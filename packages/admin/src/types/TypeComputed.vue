@@ -30,13 +30,16 @@ export default TypeComponent.register([
   computed: {
     value: {
       get() {
-        const value = this.handleDataSchema(this.schema, 'schema', {
-          // Modifying `this.data` below triggers another call of the `value`
-          // getter, so use a value of 2 for `resolveCounter` to return the
-          // resolved data twice.
-          resolveCounter: 2
-        })
-        this.$set(this.data, this.name, value)
+        const { schema } = this
+        if (schema.data || schema.dataPath) {
+          const value = this.handleDataSchema(schema, 'schema', {
+            // Modifying `this.data` below triggers another call of the `value`
+            // getter, so use a value of 2 for `resolveCounter` to return the
+            // resolved data twice.
+            resolveCounter: 2
+          })
+          this.$set(this.data, this.name, value)
+        }
         return TypeMixin.computed.value.get.call(this)
       },
 
