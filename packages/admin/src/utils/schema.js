@@ -433,8 +433,8 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     const typeOptions = getTypeOptions(schema)
 
-    let context = null
-    const getContext = () => (context ||= DitoContext.get(component, {
+    // NOTE: We don't cache this context, since `value` is changing.
+    const getContext = () => DitoContext.get(component, {
       value,
       name,
       data,
@@ -443,7 +443,13 @@ export function processData(schema, sourceSchema, data, dataPath, {
       // Pass the already processed data to `process()`, so it can be modified
       // through `processedItem` from there.
       processedData
-    }))
+    })
+
+    // First unwrap the wrapped primitives again, to bring the data back into
+    // its native form. Se `processBefore()` for more details.
+    if (wrapPrimitives && isArray(value)) {
+      value = value.map(object => object[wrapPrimitives])
+    }
 
     // Handle the user's `process()` callback first, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
@@ -458,22 +464,15 @@ export function processData(schema, sourceSchema, data, dataPath, {
       isFunction(exclude) && exclude(getContext())
     ) {
       delete processedData[name]
-      return
+    } else {
+      // Each component type can provide its own static `processValue()` method
+      // to convert the data for storage.
+      const processValue = typeOptions?.processValue
+      if (processValue) {
+        value = processValue(schema, value, dataPath, graph)
+      }
+      processedData[name] = value
     }
-
-    // Each component type can provide its own static `processValue()` method.
-    const processValue = typeOptions?.processValue
-    if (processValue) {
-      value = processValue(schema, value, dataPath, graph)
-    }
-
-    // Lastly unwrap the wrapped primitives again, to bring the data back into
-    // its native form. Se `processBefore()` for more details.
-    if (wrapPrimitives && isArray(value)) {
-      value = value.map(object => object[wrapPrimitives])
-    }
-
-    processedData[name] = value
   }
 
   processSchemaData(
