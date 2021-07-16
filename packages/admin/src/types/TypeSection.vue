@@ -29,6 +29,7 @@ import { getItemFormSchema } from '@/utils/schema'
 // @vue/component
 export default TypeComponent.register('section', {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  ignoreMissingValue: schema => !schema.nested && !('default' in schema),
   defaultNested: false,
   generateLabel: false,
   omitFlexGrow: true,

@@ -23,7 +23,7 @@ import TypeMixin from './mixins/TypeMixin'
 import { getTypeComponent, registerTypeComponent } from '@/utils/schema'
 import { asArray } from '@ditojs/utils'
 
-const TypeComponent = DitoComponent.component('dito-type-component', {
+const TypeComponent = DitoComponent.extend({
   mixins: [TypeMixin],
 
   defaultValue: null,
@@ -41,11 +41,6 @@ const TypeComponent = DitoComponent.component('dito-type-component', {
   }
 })
 
-// Expose this component as the general purpose 'component' type, which can
-// resolve to any provided custom component through `schema.component`, see
-// `resolveTypeComponent()`
-registerTypeComponent('component', TypeComponent)
-
 TypeComponent.register = function(types, definition = {}) {
   types = asArray(types)
   const component = this.component(`dito-type-${types[0]}`, definition)
@@ -56,6 +51,17 @@ TypeComponent.register = function(types, definition = {}) {
 }
 
 TypeComponent.get = getTypeComponent
+
+// Register the general purpose 'component' type, which can resolve to any
+// custom component through `schema.component`, see `resolveTypeComponent()` For
+// this we actually extend the abstract `TypeComponent` to override the standard
+// `defaultValue: null` to not set any data for custom components by default,
+// unless they provide a default value.
+TypeComponent.register('component', {
+  extends: TypeComponent,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  ignoreMissingValue: schema => !('default' in schema)
+})
 
 export default TypeComponent
 </script>
