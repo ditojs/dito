@@ -42,6 +42,10 @@ export default {
       return this.schema.type
     },
 
+    component() {
+      return this.resolveTypeComponent(this.schema.component)
+    },
+
     value: {
       get() {
         const value = computeValue(
@@ -95,22 +99,6 @@ export default {
         this.dataPath.slice(schemaComponent.dataPath.length),
         this.nested
       )
-    },
-
-    validations() {
-      const validations = { ...this.getValidations() }
-      if (this.required) {
-        validations.required = true
-      }
-      // Allow schema to override default rules and add any new ones:
-      for (const [key, value] of Object.entries(this.schema.rules || {})) {
-        if (value === undefined) {
-          delete validations[key]
-        } else {
-          validations[key] = value
-        }
-      }
-      return validations
     },
 
     label: getSchemaAccessor('label', {
@@ -200,6 +188,22 @@ export default {
         input: this.onInput,
         change: this.onChange
       }
+    },
+
+    validations() {
+      const validations = { ...this.getValidations() }
+      if (this.required) {
+        validations.required = true
+      }
+      // Allow schema to override default rules and add any new ones:
+      for (const [key, value] of Object.entries(this.schema.rules || {})) {
+        if (value === undefined) {
+          delete validations[key]
+        } else {
+          validations[key] = value
+        }
+      }
+      return validations
     },
 
     providesData() {
