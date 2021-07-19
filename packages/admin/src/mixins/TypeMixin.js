@@ -209,6 +209,10 @@ export default {
     providesData() {
       // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
+    },
+
+    showClearButton() {
+      return this.clearable && this.value != null
     }
   },
 

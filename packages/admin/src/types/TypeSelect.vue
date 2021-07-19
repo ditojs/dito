@@ -35,7 +35,7 @@
           :value="selectedValue"
         ) {{ getLabelForOption(selectedOption) }}
     button.dito-button-clear.dito-button-overlay(
-      v-if="clearable && value"
+      v-if="showClearButton"
       @click="clear"
       :disabled="disabled"
     )

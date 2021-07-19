@@ -21,7 +21,7 @@
       )
         div(:style="{ background: `#${hexValue || '00000000'}` }")
       button.dito-button-clear.dito-button-overlay(
-        v-if="clearable && value"
+        v-if="showClearButton"
         @click.stop="clear"
         :disabled="disabled"
       )
