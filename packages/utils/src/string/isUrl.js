@@ -9,7 +9,8 @@ const isUrlRegExp = new RegExp(
     '|' +
     '([0-9a-z_-]+\\.)*' + // sub-domain: www.
     '[0-9a-z][0-9a-z_-]{0,61}[0-9a-z]\\.' + // domain-name
-    '([a-z]{2,6}|xn--[0-9a-z]+)' +
+    // tld - https://tools.ietf.org/id/draft-liman-tld-names-00.html#rfc.section.2
+    '([a-z]{2,61}|xn--[0-9a-z][0-9a-z-]{0,61}[0-9a-z])' +
   ')' + // top level domain.
   '(:[0-9]{1,5})?' + // port
   '((/?)|' + // allow ending in a slash
