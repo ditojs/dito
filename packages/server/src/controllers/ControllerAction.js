@@ -239,7 +239,31 @@ export default class ControllerAction {
       )
       if (objectType) {
         if (value && isString(value)) {
-          value = JSON.parse(value)
+          if (!/^\{.*\}$/.test(value)) {
+            // Convert simplified Dito object notation to JSON, supporting:
+            // - `"key1":X, "key2":Y` (curly braces are added and parsed through
+            //   `JSON.parse()`)
+            // - `key1:X,key2:Y` (a simple parser is applied, splitting into
+            //   entries and key/value pairs, valuse are parsed with
+            //   JSON.parse(), falling back to string.
+            if (/"/.test(value)) {
+              // Just add the curly braces and parse as JSON
+              value = JSON.parse(`{${value}}`)
+            } else {
+              // A simple version of named key/value pairs, values can be
+              // strings or numbers.
+              value = Object.fromEntries(value.split(/\s*,\s*/g).map(entry => {
+                let [key, val] = entry.split(/\s*:\s*/)
+                try {
+                  // Try parsing basic types, but fall back to unquoted string.
+                  val = JSON.parse(val)
+                } catch {}
+                return [key, val]
+              }))
+            }
+          } else {
+            value = JSON.parse(value)
+          }
         }
         if (objectType !== 'object' && isObject(value)) {
           // Convert the Pojo to the desired Dito model:
