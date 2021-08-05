@@ -245,7 +245,7 @@ export default class ControllerAction {
             //   `JSON.parse()`)
             // - `key1:X,key2:Y` (a simple parser is applied, splitting into
             //   entries and key/value pairs, valuse are parsed with
-            //   JSON.parse(), falling back to string.
+            //   `JSON.parse()`, falling back to string.
             if (/"/.test(value)) {
               // Just add the curly braces and parse as JSON
               value = JSON.parse(`{${value}}`)
