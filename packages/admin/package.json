@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/admin",
-  "version": "0.260.0",
+  "version": "0.260.1",
   "description": "Dito.js Admin is a schema based admin interface for Dito.js Server, featuring auto-generated views and forms and built with Vue.js",
   "main": "dist/dito-admin.umd.min.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/admin",
@@ -36,8 +36,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.14.6",
-    "@ditojs/ui": "^0.260.0",
-    "@ditojs/utils": "^0.260.0",
+    "@ditojs/ui": "^0.260.1",
+    "@ditojs/utils": "^0.260.1",
     "axios": "^0.21.1",
     "codeflask": "^1.4.1",
     "core-js": "^3.15.2",
@@ -65,8 +65,8 @@
   "devDependencies": {
     "@babel/core": "^7.14.6",
     "@babel/preset-env": "^7.14.7",
-    "@ditojs/babel-preset": "^0.260.0",
-    "@ditojs/build": "^0.260.0",
+    "@ditojs/babel-preset": "^0.260.1",
+    "@ditojs/build": "^0.260.1",
     "@vue/cli-plugin-babel": "^4.5.13",
     "@vue/cli-service": "^4.5.13",
     "autoprefixer": "^9.8.6",
