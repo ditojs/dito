@@ -64,5 +64,14 @@ describe('getValueAtDataPath()', () => {
       .toEqual(['one', 'two'])
     expect(getValueAtDataPath(data, 'object2.object[*].name'))
       .toEqual(['one', 'two'])
+    expect(getValueAtDataPath(data, '*/*/*'))
+      .toEqual([
+        { name: 'one' },
+        { name: 'two' },
+        { name: 'one' },
+        { name: 'two' }
+      ])
+    expect(getValueAtDataPath(data, '*/*/*/name'))
+      .toEqual(['one', 'two', 'one', 'two'])
   })
 })

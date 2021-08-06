@@ -3,10 +3,10 @@ import TypeComponent from '@/TypeComponent'
 
 // @vue/component
 export default TypeComponent.register('panel', {
-  defaultValue: undefined,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
   excludeValue: true,
   generateLabel: false,
-  omitPadding: () => true,
+  omitPadding: true,
 
   getPanelSchema(schema) {
     // For a TypePanel, the component schema is also the panel schema, but

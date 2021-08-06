@@ -31,7 +31,7 @@
       @search-change="onSearchChange"
     )
     button.dito-button-clear.dito-button-overlay(
-      v-if="clearable && value"
+      v-if="showClearButton"
       @click="clear"
       :disabled="disabled"
     )

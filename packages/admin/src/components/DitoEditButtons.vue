@@ -47,7 +47,7 @@ import { capitalize } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('dito-edit-buttons', {
   props: {
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },

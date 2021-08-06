@@ -36,9 +36,11 @@
   border-bottom-right-radius: $border-radius
 
 table.dito-table
-  width: 100%
-  border-radius: $border-radius
   --separator-width: #{$border-width}
+  width: 100%
+  height: min-content
+  border-radius: $border-radius
+
   > tbody,
   > tfoot
     > tr
@@ -54,28 +56,33 @@ table.dito-table
           .dito-button
             // To align better with `vertical-align: baseline` in normal td:
             vertical-align: top
+
   &.dito-table-larger-padding
     // Add more spacing to cells in tables except those containing edit buttons,
     // to better align cell texts with edit buttons.
     td:not(.dito-cell-edit-buttons)
       $padding: $form-spacing * 1.5
       padding: $padding 0 $padding $padding
+
   // Variants of list styles: separators and alternate colors.
   &.dito-table-separators
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr
       > td
         border-top: var(--separator-width) solid $border-color
+
   &.dito-table-alternate-colors
     > tbody > tr:nth-child(odd),
     &.dito-table-even-count > tfoot > tr
       > td
         background: $color-white
+
   &.dito-table-background
     > tbody,
     > tfoot
        > tr > td
         background: $color-white
+
   // Add top/top-left/top-right borders to the thead cells, using the special
   // convention that they're added to the first element inside them instead of
   // the cell itself, so buttons can keep the border themselves and display
@@ -100,6 +107,7 @@ table.dito-table
       // Don't cover the focused border of buttons:
       &:focus
         z-index: 1
+
   // Add left/rigth borders to the normal tbody cells.
   > tbody > tr > td
     border: 0
@@ -108,6 +116,7 @@ table.dito-table
       +table-border-left
     &:last-child
       +table-border-right
+
   // If there is no thead, add top/top-left/top-right borders borders to the
   // first row of the tbody cells.
   > tbody:first-child > tr:first-child > td,
@@ -118,6 +127,7 @@ table.dito-table
       +table-border-top-left
     &:last-child
       +table-border-top-right
+
   // If there is no toot, add top/top-left/top-right borders borders to the
   // first row of the tbody cells.
   > tbody:last-child > tr:last-child > td
@@ -126,7 +136,8 @@ table.dito-table
       +table-border-bottom-left
     &:last-child
       +table-border-bottom-right
-    // Add bottom/bottom-left/bottom-right borders to the thead cells.
+
+  // Add bottom/bottom-left/bottom-right borders to the thead cells.
   > tfoot > tr > td
     border-width: 0
     +table-border

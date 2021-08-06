@@ -42,8 +42,9 @@
           --label-padding: #{$form-spacing}
           margin: 0
           width: 100%
+          box-sizing: border-box
           // Because tables have a funny way of allowing too much width growth:
-          max-width: $content-width - 2 * $border-width
+          max-width: $content-width
         & +.dito-components
           // Needed for transition-height in DitoSchema:
           min-height: $form-spacing
@@ -64,7 +65,7 @@ export default DitoComponent.component('dito-schema-inlined', {
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null }

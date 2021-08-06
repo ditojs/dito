@@ -42,6 +42,7 @@
         :meta="meta"
         :store="store"
         :single="!inlined && !hasMainComponents"
+        :nested="nested"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
@@ -58,6 +59,7 @@
           :meta="meta"
           :store="store"
           :single="!inlined && !hasTabs"
+          :nested="nested"
           :disabled="disabled"
           :generateLabels="generateLabels"
         )
@@ -152,7 +154,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
 import ItemMixin from '@/mixins/ItemMixin'
 import { appendDataPath, getParentItem } from '@/utils/data'
 import {
@@ -187,6 +188,7 @@ export default DitoComponent.component('dito-schema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
+    nested: { type: Boolean, default: true },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
@@ -202,7 +204,7 @@ export default DitoComponent.component('dito-schema', {
       // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
-          ? data.call(this, new DitoContext(this))
+          ? data.call(this, this.context)
           : data
       ),
       containersRegistry: {},
@@ -225,15 +227,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     panelSchemas() {
-      const schemas = getPanelSchemas(
-        this.schema.panels,
-        '',
-        this.schemaComponent
-      )
+      const panels = getPanelSchemas(this.schema.panels, '')
       for (const container of Object.values(this.containersRegistry)) {
-        schemas.push(...container.panelSchemas)
+        panels.push(...container.panelSchemas)
       }
-      return schemas
+      return panels
     },
 
     tabs() {
@@ -258,7 +256,7 @@ export default DitoComponent.component('dito-schema', {
         for (const tab of Object.values(this.tabs)) {
           const { defaultTab } = tab
           if (isFunction(defaultTab)
-            ? defaultTab.call(this, new DitoContext(this))
+            ? defaultTab.call(this, this.context)
             : defaultTab
           ) {
             return tab
@@ -275,25 +273,25 @@ export default DitoComponent.component('dito-schema', {
       return this.schema?.clipboard
     },
 
+    processedData() {
+      return this.processData({ target: 'server', schemaOnly: true })
+    },
+
     clipboardData() {
       return {
         $schema: this.schema.name,
-        ...this.processData({ removeIds: true })
+        ...this.processData({ target: 'clipboard', schemaOnly: true })
       }
     },
 
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
+    // NOTE: While internally, we speak of `data`, in the API surface the
+    // term `item` is used for the data that relates to editing objects.
+    // NOTE: This should always return the same as:
+    // return getItem(this.rootData, this.dataPath, false)
     item() {
-      // NOTE: While internally, we speak of `data`, in the API surface the
-      // term `item` is used for the data that relates to editing objects.
-      // NOTE: This should always return the same as:
-      // return getItem(this.rootData, this.dataPath, false)
       return this.data
-    },
-
-    parentItem() {
-      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     rootItem() {
@@ -301,11 +299,21 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedItem() {
-      return this.processData({ processIds: true })
+      return this.processedData
+    },
+
+    clipboardItem() {
+      return this.clipboardData
+    },
+
+    parentItem() {
+      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     formLabel() {
-      return this.getLabel(this.getItemFormSchema(this.sourceSchema, this.data))
+      return this.getLabel(
+        this.getItemFormSchema(this.sourceSchema, this.data, this.context)
+      )
     },
 
     isDirty() {
@@ -592,7 +600,7 @@ export default DitoComponent.component('dito-schema', {
       // We can't set `this.data = ...` because it's a property, but we can
       // set all known properties on it to the values returned by
       // `setDefaults()`, as they are all reactive already from the starts:
-      Object.assign(this.data, setDefaults(this.schema, {}))
+      Object.assign(this.data, setDefaults(this.schema, {}, this))
       this.clearErrors()
     },
 
@@ -624,11 +632,19 @@ export default DitoComponent.component('dito-schema', {
       return copy
     },
 
-    processData({ processIds = false, removeIds = false } = {}) {
-      return processData(this.schema, this.data, this.dataPath, {
-        processIds,
-        removeIds
-      })
+    processData({ target = 'clipboard', schemaOnly = true } = {}) {
+      return processData(
+        this.schema,
+        this.sourceSchema,
+        this.data,
+        this.dataPath, {
+          // Needed for DitoContext handling inside `processData` and
+          // `processSchemaData()`:
+          component: this,
+          schemaOnly,
+          target
+        }
+      )
     },
 
     _register(add) {

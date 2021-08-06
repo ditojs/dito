@@ -19,6 +19,7 @@
       :meta="meta"
       :store="store"
       :single="single"
+      :nested="nested"
       :disabled="componentDisabled"
       :class="componentClass"
       @errors="onErrors"
@@ -61,7 +62,8 @@
 <script>
 import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getTypeOptions } from '@/utils/schema'
+import { getTypeOptions, shouldOmitPadding } from '@/utils/schema'
+import { parseFraction } from '@/utils/math'
 import { isString } from '@ditojs/utils'
 
 // @vue/component
@@ -73,6 +75,7 @@ export default DitoComponent.component('dito-component-container', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: true }
   },
@@ -103,71 +106,38 @@ export default DitoComponent.component('dito-component-container', {
 
     labelDataPath() {
       // Unnested types don't have a dataPath for themselves, don't use it:
-      return this.typeOptions.unnested ? null : this.dataPath
+      return this.nested ? this.dataPath : null
     },
 
-    width() {
-      const width = (
-        this.schema.width ??
-        this.typeOptions.defaultWidth
-      )
-      // Use 100% == 1.0 as default width when nothing is set:
-      return width === undefined ? 1.0 : width
-    },
-
-    percentage() {
-      const { width } = this
-      // 'auto' = no fitting:
-      return width == null || ['auto', 'fill'].includes(width) ? null
-        : /%/.test(width) ? parseFloat(width) // percentage
-        : width * 100 // fraction
-    },
-
-    containerClass() {
-      const { containerClass } = this.schema
-      return {
-        // Use the component name as its class, so the extended
-        // dito-button-container automatically works too.
-        [this.$options.name]: true,
-        'dito-single': this.single,
-        'dito-omit-padding': (
-          this.schema.omitPadding ||
-          getTypeOptions(this.schema)?.omitPadding?.(this.schema)
-        ),
-        ...(
-          isString(containerClass)
-            ? { [containerClass]: true }
-            : containerClass
-        )
+    componentWidth: getSchemaAccessor('width', {
+      type: [String, Number],
+      default() {
+        return this.typeOptions.defaultWidth
+      },
+      get(width) {
+        // Use 100% == 1.0 as default width when nothing is set:
+        return width === undefined
+          ? 1.0
+          : isString(width)
+            ? width.match(/^\s*[<>]?\s*(.*)$/)[1] // Remove width operator
+            : width
       }
-    },
+    }),
 
-    containerStyle() {
-      const basis = this.percentage && `${this.percentage}%`
-      const grow = (
-        this.width === 'fill' ||
-        this.width !== 'auto' && !getTypeOptions(this.schema)?.omitFlexGrow
-      ) ? 1 : 0
-      return {
-        'flex-basis': basis,
-        'flex-grow': grow
+    componentWidthOperator: getSchemaAccessor('width', {
+      type: String,
+      get(width) {
+        return isString(width)
+          ? width.match(/^\s*([<>]?)/)[1] || null
+          : null
       }
-    },
-
-    componentClass() {
-      const { width } = this
-      return {
-        'dito-single': this.single,
-        'dito-disabled': this.componentDisabled,
-        'dito-width-fill': width === 'fill' || this.percentage > 0,
-        'dito-width-auto': width === 'auto',
-        'dito-has-errors': !!this.errors
-      }
-    },
+    }),
 
     componentVisible: getSchemaAccessor('visible', {
       type: Boolean,
-      default: true
+      default() {
+        return this.typeOptions.defaultVisible
+      }
     }),
 
     componentDisabled: getSchemaAccessor('disabled', {
@@ -176,7 +146,58 @@ export default DitoComponent.component('dito-component-container', {
       get(disabled) {
         return disabled || this.disabled
       }
-    })
+    }),
+
+    containerClass() {
+      const { containerClass } = this.schema
+      return {
+        // Use the component name as its class, so the extended
+        // dito-button-container automatically works too.
+        [this.$options.name]: true,
+        'dito-single': this.single,
+        'dito-omit-padding': shouldOmitPadding(this.schema),
+        ...(
+          isString(containerClass)
+            ? { [containerClass]: true }
+            : containerClass
+        )
+      }
+    },
+
+    componentBasis() {
+      const width = this.componentWidth
+      // 'auto' = no fitting:
+      const basis = (
+        [null, 'auto', 'fill'].includes(width) ? 'auto'
+        : /%$/.test(width) ? parseFloat(width) // percentage
+        : parseFraction(width) * 100 // fraction
+      )
+      return basis !== 'auto' ? `${basis}%` : basis
+    },
+
+    containerStyle() {
+      // Interpret '>50%' as '50%, flex-grow: 1`
+      const grow = (
+        this.componentWidthOperator === '>' ||
+        this.componentWidth === 'fill'
+      )
+      // Interpret '<50%' as '50%, flex-shrink: 1`
+      const shrink = this.componentWidthOperator === '<'
+      return {
+        flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${this.componentBasis}`
+      }
+    },
+
+    componentClass() {
+      const basisIsAuto = this.componentBasis === 'auto'
+      return {
+        'dito-single': this.single,
+        'dito-disabled': this.componentDisabled,
+        'dito-width-fill': !basisIsAuto || this.componentWidth === 'fill',
+        'dito-width-auto': basisIsAuto,
+        'dito-has-errors': !!this.errors
+      }
+    }
   },
 
   methods: {

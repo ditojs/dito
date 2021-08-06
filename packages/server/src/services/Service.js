@@ -24,4 +24,8 @@ export class Service {
   // @overridable
   async stop() {
   }
+
+  getLogger(ctx) {
+    return ctx.logger.child({ name: this.name })
+  }
 }

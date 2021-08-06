@@ -51,6 +51,7 @@
         content: '\00a0'
     .dito-label-prefix,
     .dito-label-suffix
+      +user-select(none)
       +ellipsis
     .dito-buttons
       // Move the label padding inside .dito-buttons, so that it captures all

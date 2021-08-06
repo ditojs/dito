@@ -3,10 +3,10 @@ import ResourceMixin from './ResourceMixin'
 import SchemaParentMixin from '@/mixins/SchemaParentMixin'
 import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
 import { getMemberResource } from '@/utils/resource'
-import { processReferences } from '@/utils/data'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels, isCompact,
-  getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
+  processRouteSchema, processForms, getNamedSchemas, getButtonSchemas,
+  hasFormSchema, getFormSchemas, getViewSchema,
+  hasLabels, isCompact, isInlined,
   isObjectSource, isListSource
 } from '@/utils/schema'
 import {
@@ -212,13 +212,13 @@ export default {
     },
 
     forms() {
-      return Object.values(getFormSchemas(this.schema, this.views))
+      return Object.values(getFormSchemas(this.schema, this.context))
     },
 
     // Returns the linked view schema if this source edits it its items through
     // a linked view.
     view() {
-      return getViewSchema(this.schema, this.views)
+      return getViewSchema(this.schema, this.context)
     },
 
     linksToView() {
@@ -237,13 +237,12 @@ export default {
       return this.forms.every(isCompact)
     },
 
+    isInlined() {
+      return isInlined(this.schema)
+    },
+
     paginate: getSchemaAccessor('paginate', {
       type: Number
-    }),
-
-    inlined: getSchemaAccessor('inlined', {
-      type: Boolean,
-      default: false
     }),
 
     render: getSchemaAccessor('render', {
@@ -255,7 +254,7 @@ export default {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
           ? this.isObjectSource
             ? !this.value
             : true
@@ -267,7 +266,7 @@ export default {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && !this.inlined
+        return editable && !this.isInlined
       }
     }),
 
@@ -277,7 +276,7 @@ export default {
     }),
 
     draggable: getSchemaAccessor('draggable', {
-      type: [Object, Boolean],
+      type: Boolean,
       default: false,
       get(draggable) {
         return this.isListSource && this.listData.length > 1 && draggable
@@ -288,7 +287,7 @@ export default {
       type: Boolean,
       default: null, // so that `??` below can do its thing:
       get(collapsible) {
-        return this.inlined && !!(collapsible ?? this.collapsed !== null)
+        return this.isInlined && !!(collapsible ?? this.collapsed !== null)
       }
     }),
 
@@ -502,17 +501,9 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
-    const { components, compact } = schema
-    if (components) {
-      // Expand inlined components to a nested inline form with inlined = true,
-      // supporting the optional `compact: true` option along with it.
-      delete schema.components
-      delete schema.compact
-      schema.form = { components, compact }
-      schema.inlined = true
-    }
     processRouteSchema(api, schema, name)
-    if (schema.inlined && schema.resource) {
+    const inlined = isInlined(schema)
+    if (inlined && schema.resource) {
       throw new Error(
         'Lists with nested forms cannot load data from their own resources'
       )
@@ -537,8 +528,8 @@ export default {
     if (process) {
       await process(childRoutes, level + 1)
     }
-    // Inline forms don't need to actually add routes.
-    if (hasForms(schema) && !schema.inlined) {
+    // Inlined forms don't need to actually add routes.
+    if (hasFormSchema(schema) && !inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`
@@ -602,7 +593,8 @@ export default {
     }
   },
 
-  processValue(schema, value, dataPath, options) {
-    return processReferences(value, options)
+  processValue(schema, value, dataPath, graph) {
+    graph.addSource(dataPath, schema)
+    return value
   }
 }

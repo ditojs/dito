@@ -1,4 +1,3 @@
-import DitoContext from '@/DitoContext'
 import {
   isFunction, isString, parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
@@ -46,7 +45,7 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       let value = this.getStore(name)
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
-        value = isFunction(def) ? def.call(this, new DitoContext(this)) : def
+        value = isFunction(def) ? def.call(this, this.context) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
       }

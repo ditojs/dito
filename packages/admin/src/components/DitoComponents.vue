@@ -3,19 +3,34 @@
     v-if="isPopulated && componentSchemas.length > 0"
     v-show="visible"
   )
-    dito-component-container(
-      v-for="{ schema, dataPath, unnestedDataPath, store } in componentSchemas"
-      v-if="shouldRender(schema)"
-      :key="dataPath"
-      :schema="schema"
-      :dataPath="unnestedDataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :single="isSingleComponent"
-      :disabled="disabled"
-      :generateLabels="generateLabels"
+    template(
+      v-for=`{
+        schema,
+        dataPath,
+        nestedDataPath,
+        nested,
+        store
+      } in componentSchemas`
     )
+      .dito-break(
+        v-if="schema.break === 'before'"
+      )
+      dito-component-container(
+        v-if="shouldRender(schema)"
+        :key="nestedDataPath"
+        :schema="schema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :single="isSingleComponent"
+        :nested="nested"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
+      )
+      .dito-break(
+        v-if="schema.break === 'after'"
+      )
 </template>
 
 <style lang="sass">
@@ -23,32 +38,39 @@
   // `DitoSchema`
   .dito-components
     display: flex
+    position: relative
     flex-flow: row wrap
     align-content: flex-start
-    // Use `flex: 0%` for all `.dito-components` except `.dito-components-main`,
-    // so that the `.dito-buttons-main` can be moved all the way to the bottom.
-    flex: 0%
-    &.dito-components-main
-      flex: 100%
-    position: relative
     align-items: baseline
     // Remove padding added by .dito-component-container
     margin: (-$form-spacing) (-$form-spacing-half)
-    .dito-schema-header + &
-      // Clear top-margin if the components are preceded by a schema header.
-      margin-top: 0
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half
+    // Use `flex: 0%` for all `.dito-components` except `.dito-components-main`,
+    // so that the `.dito-buttons-main` can be moved all the way to the bottom.
+    flex: 0%
+
+    &.dito-components-main
+      flex: 100%
+
+    .dito-schema-header:not(.dito-schema-menu-header) + &
+      // Clear top-margin if the components are preceded by a schema header.
+      margin-top: 0
+
     .dito-component-container.dito-omit-padding > &
       // Clear margins set above again if parent is omitting padding.
       margin: 0
       max-width: unset
+
+    .dito-break
+      flex: 100%
+      height: 0
 </style>
 
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
-import { getTypeOptions, getPanelSchema, getPanelSchemas } from '@/utils/schema'
+import { getAllPanelSchemas, isNested } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-components', {
@@ -87,18 +109,19 @@ export default DitoComponent.component('dito-components', {
       const wrapPrimitives = this.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
-          // Share dataPath and store with parent if unnested is true:
-          const unnested = getTypeOptions(schema)?.unnested
           // Always add name to component schema.
           schema.name = name
-          const dataPath = appendDataPath(this.dataPath, name)
+          // Share dataPath and store with parent if not nested:
+          const nested = isNested(schema)
+          const nestedDataPath = appendDataPath(this.dataPath, name)
           return {
             schema,
-            dataPath,
-            unnestedDataPath: unnested || wrapPrimitives
-              ? this.dataPath
-              : dataPath,
-            store: unnested ? this.store : this.getChildStore(name)
+            dataPath: nested && !wrapPrimitives
+              ? nestedDataPath
+              : this.dataPath,
+            nestedDataPath,
+            nested,
+            store: nested ? this.getChildStore(name) : this.store
           }
         }
       )
@@ -106,21 +129,18 @@ export default DitoComponent.component('dito-components', {
 
     panelSchemas() {
       // Gather all panel schemas from all component schemas, by finding those
-      // that want to provide a panel. See `getPanelSchema()` for details.
+      // that want to provide a panel. See `getAllPanelSchemas()` for details.
       return this.componentSchemas.reduce(
-        (schemas, { schema, dataPath }) => {
-          for (const panel of [
-            getPanelSchema(schema, dataPath, this.schemaComponent),
-            // Allow each component to provide its own set of panels, in
-            // addition to the default one (e.g. $filter):
-            ...getPanelSchemas(schema.panels, dataPath, this.schemaComponent)
-          ]) {
-            if (panel) {
-              schemas.push({
-                ...panel,
-                tabComponent: this.tabComponent
-              })
-            }
+        (schemas, { schema, nestedDataPath: dataPath }) => {
+          for (const panel of getAllPanelSchemas(
+            schema,
+            dataPath,
+            this.schemaComponent
+          )) {
+            schemas.push({
+              ...panel,
+              tabComponent: this.tabComponent
+            })
           }
           return schemas
         },

@@ -14,4 +14,17 @@ describe('normalizeDataPath()', () => {
     expect(normalizeDataPath(`['object']['array'][1]['prop']`))
       .toStrictEqual(expected)
   })
+
+  it('should normalize relative tokens', () => {
+    expect(normalizeDataPath('/object/property1/../value'))
+      .toStrictEqual('object/value')
+    expect(normalizeDataPath('/object/property1/../property2/../value'))
+      .toStrictEqual('object/value')
+    expect(normalizeDataPath('/object/property1/property2/../../value'))
+      .toStrictEqual('object/value')
+    expect(normalizeDataPath('/object/property1//object/value'))
+      .toStrictEqual('object/value')
+    expect(normalizeDataPath('/object1/object2/./object3/value'))
+      .toStrictEqual('object1/object2/object3/value')
+  })
 })

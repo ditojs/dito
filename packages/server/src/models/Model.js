@@ -100,6 +100,13 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
+  $has(...properties) {
+    for (const property of properties) {
+      if (!(property in this)) return false
+    }
+    return true
+  }
+
   $update(properties, trx) {
     return this.$query(trx)
       .update(properties)
@@ -172,16 +179,16 @@ export class Model extends objection.Model {
     }
 
     validator.beforeValidate(args)
-    json = validator.validate(args)
-    const handleResult = json => {
+    const result = validator.validate(args)
+    const handleResult = result => {
       validator.afterValidate(args)
       // If `json` was shallow-cloned, copy over the possible default values.
-      return shallow ? inputJson.$set(json) : json
+      return shallow ? inputJson.$set(result) : result
     }
     // Handle both async and sync validation here:
-    return isPromise(json)
-      ? json.then(json => handleResult(json))
-      : handleResult(json)
+    return isPromise(result)
+      ? result.then(handleResult)
+      : handleResult(result)
   }
 
   async $validateGraph(options = {}) {

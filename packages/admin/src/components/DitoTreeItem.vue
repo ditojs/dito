@@ -55,7 +55,6 @@
           :cell="property"
           :schema="property"
           :dataPath="getPropertyDataPath(property)"
-          :dataPathIsValue="true"
           :data="data"
           :meta="nestedMeta"
           :store="store"
@@ -65,7 +64,7 @@
       v-if="childrenSchema"
       v-show="opened"
       v-bind="getDragOptions(childrenDraggable, true)"
-      :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
+      :list="updateOrder(childrenSchema, childrenList)"
       @start="onStartDrag"
       @end="onEndDrag($event, childrenSchema)"
     )
@@ -155,7 +154,7 @@ import DitoComponent from '@/DitoComponent'
 import OrderedMixin from '@/mixins/OrderedMixin'
 import { appendDataPath } from '@/utils/data'
 import { getSchemaAccessor } from '@/utils/accessor'
-import { getNamedSchemas, hasForms } from '@/utils/schema'
+import { getNamedSchemas, hasFormSchema } from '@/utils/schema'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
@@ -170,7 +169,7 @@ export default DitoComponent.component('dito-tree-item', {
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     label: { type: String, default: null },
     level: { type: Number, default: 0 }
   },
@@ -219,7 +218,7 @@ export default DitoComponent.component('dito-tree-item', {
       return (
         this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
-          type: [Object, Boolean],
+          type: Boolean,
           default: false,
           schema: this.childrenSchema
         })
@@ -282,7 +281,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
       }
     }),
 
@@ -290,7 +289,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && hasForms(this.schema)
+        return editable && hasFormSchema(this.schema)
       }
     }),
 

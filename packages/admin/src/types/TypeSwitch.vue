@@ -23,7 +23,7 @@ import { SwitchButton } from '@ditojs/ui'
 // @vue/component
 export default TypeComponent.register('switch', {
   defaultValue: false,
-  defaultWidth: null,
+  defaultWidth: 'auto',
 
   components: {
     SwitchButton

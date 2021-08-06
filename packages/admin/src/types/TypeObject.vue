@@ -10,8 +10,8 @@
     )
       // Support the same rendering options as TypeList:
       dito-schema-inlined(
-        v-if="inlined"
-        :schema="getItemFormSchema(schema, objectData)"
+        v-if="isInlined"
+        :schema="getItemFormSchema(schema, objectData, context)"
         :dataPath="dataPath"
         :data="objectData"
         :meta="nestedMeta"
@@ -24,12 +24,12 @@
         v-else-if="component"
         :is="component"
         :dataPath="dataPath"
-        :dataPathIsValue="false"
         :data="objectData"
+        :nested="false"
       )
       span(
         v-else-if="render"
-        v-html="render(getDitoContext())"
+        v-html="render(getContext())"
       )
       span(
         v-else
@@ -82,13 +82,8 @@ export default TypeComponent.register('object', {
   },
 
   methods: {
-    getDitoContext() {
-      return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
-        data: this.objectData,
-        dataPath: this.dataPath
-      })
+    getContext() {
+      return new DitoContext(this, { data: this.objectData })
     }
   }
 })

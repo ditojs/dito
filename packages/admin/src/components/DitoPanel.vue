@@ -12,6 +12,7 @@
       :data="panelData"
       :meta="meta"
       :store="store"
+      :nested="true"
       :disabled="disabled"
       :hasOwnData="hasOwnData"
     )
@@ -64,7 +65,6 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
 import ValidatorMixin from '@/mixins/ValidatorMixin'
 import { getButtonSchemas } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
@@ -153,7 +153,7 @@ export default DitoComponent.component('dito-panel', {
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data)
-        ? data.call(this, new DitoContext(this))
+        ? data.call(this, this.context)
         : data
     }
   },

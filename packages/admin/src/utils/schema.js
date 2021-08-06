@@ -1,6 +1,8 @@
-import { appendDataPath, shallowClone } from './data'
-import { getUid } from './uid'
+import Vue from 'vue'
 import DitoContext from '@/DitoContext'
+import { getUid } from './uid'
+import { SchemaGraph } from './SchemaGraph'
+import { appendDataPath, isTemporaryId } from './data'
 import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize
 } from '@ditojs/utils'
@@ -12,9 +14,9 @@ export function registerTypeComponent(type, component) {
   typeComponents[type] = component
 }
 
-export function getTypeComponent(type) {
+export function getTypeComponent(type, allowNull = false) {
   const component = typeComponents[type] || null
-  if (!component && !unknownTypeReported[type]) {
+  if (!component && !allowNull && !unknownTypeReported[type]) {
     // Report each missing type only once, to avoid flooding the console:
     unknownTypeReported[type] = true
     throw new Error(`Unknown Dito component type: '${type}'`)
@@ -69,15 +71,15 @@ export function everySchemaComponent(schema, callback) {
   ) !== false
 }
 
-export async function resolveViews(views) {
-  if (isFunction(views)) {
-    views = views()
-  }
+export async function resolveViews(unresolvedViews) {
+  let views = isFunction(unresolvedViews)
+    ? unresolvedViews()
+    : unresolvedViews
   if (isPromise(views)) {
     views = await views
   }
-
-  return views
+  // Copy views to convert from module to object, and keep  a global reference:
+  return { ...views }
 }
 
 export async function processView(component, api, schema, name, routes) {
@@ -124,18 +126,22 @@ export async function processSchemaComponents(api, schema, routes, level) {
 
 export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
-  let { form, forms } = schema
+  let { form, forms, components } = schema
   if (forms) {
     forms = schema.forms = await resolveForms(forms)
   } else if (form) {
     form = schema.form = await resolveForm(form)
-    forms = { default: form } // Only used for loop below.
-  }
-  const children = []
-  if (forms) {
-    for (const form of Object.values(forms)) {
-      await processSchemaComponents(api, form, children, level + 1)
+  } else if (components) {
+    // NOTE: Processing forms in computed components is not supported, since it
+    // only can be computed in conjunction with actual data.
+    if (isObject(components)) {
+      form = { components }
     }
+  }
+  forms ||= { default: form } // Only used for process loop below.
+  const children = []
+  for (const form of Object.values(forms)) {
+    await processSchemaComponents(api, form, children, level + 1)
   }
   return children
 }
@@ -150,14 +156,11 @@ export async function resolveForm(form) {
   // When dynamically importing forms, the actual form can be received named or
   // as `default` in a nested object, detect and handle this case:
   if (form && !('components' in form)) {
-    const keys = Object.keys(form)
-    // Only extract form if there's only one property (named or default)
-    if (keys.length === 1) {
-      const name = keys[0]
-      form = form[name]
-      if (form && name !== 'default') {
-        form.name = name
-      }
+    // Assume the form is the first export (named or default)
+    const name = Object.keys(form)[0]
+    form = form[name]
+    if (form && name !== 'default') {
+      form.name = name
     }
   }
   return form
@@ -179,30 +182,39 @@ export function isSingleComponentView(schema) {
   return !!schema.type
 }
 
-export function hasForms(schema) {
-  // Support both single form and multiple forms notation.
-  return isObject(schema) && !!(schema.form || schema.forms)
+export function hasFormSchema(schema) {
+  // Support both single form and multiple forms notation, as well as inlined
+  // components.
+  return isObject(schema) && !!(
+    schema.form ||
+    schema.forms ||
+    schema.components
+  )
 }
 
-export function getViewSchema(schema, views) {
+export function hasMultipleFormSchemas(schema) {
+  return Object.keys(schema?.forms || {}).length > 1
+}
+
+export function getViewSchema(schema, context) {
   const { view } = schema
-  const viewSchema = view && views[view]
+  const viewSchema = view && context.views[view]
   return viewSchema
-    ? hasForms(viewSchema)
+    ? hasFormSchema(viewSchema)
       ? viewSchema
       // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
       : forEachSchema(viewSchema, schema => {
         const viewComponent = schema.components?.[view]
-        if (hasForms(viewComponent)) {
+        if (hasFormSchema(viewComponent)) {
           return viewComponent
         }
       })
     : null
 }
 
-export function getViewEditPath(schema, views) {
-  const view = getViewSchema(schema, views)
+export function getViewEditPath(schema, context) {
+  const view = getViewSchema(schema, context)
   return view
     ? view.level === 0
       ? `/${view.path}` // A single-component view
@@ -210,22 +222,45 @@ export function getViewEditPath(schema, views) {
     : null
 }
 
-export function getFormSchemas(schema, views = null) {
-  if (views) {
-    const view = getViewSchema(schema, views)
-    if (view) {
-      schema = view
-    } else if (schema.view) {
-      throw new Error(`Unknown view: '${schema.view}'`)
+export function getFormSchemas(schema, context, modifyForm) {
+  const view = getViewSchema(schema, context)
+  if (view) {
+    schema = view
+  } else if (schema.view) {
+    throw new Error(`Unknown view: '${schema.view}'`)
+  }
+
+  let { form, forms, components, compact } = schema
+  if (!form && !forms) {
+    if (components) {
+      // Convert inlined components to forms, supporting `compact` setting.
+      form = { components, compact }
+    } else {
+      // No `forms`, `form` or `components`, return and empty `forms` object.
+      return {}
     }
   }
-  const { form, forms } = schema
-  return forms || { default: form }
+  forms ||= { default: form }
+  return Object.fromEntries(
+    Object.entries(forms).map(([type, form]) => {
+      // Support `schema.components` callbacks to create components on the fly.
+      if (isFunction(form.components)) {
+        form = {
+          ...form,
+          components: form.components(context)
+        }
+      }
+      return [type, modifyForm?.(form) ?? form]
+    })
+  )
 }
 
-export function getItemFormSchema(schema, item, views = null) {
-  const forms = getFormSchemas(schema, views)
-  return forms[item?.type] || forms.default
+export function getItemFormSchemaFromForms(forms, item) {
+  return forms[item?.type] || forms.default || null
+}
+
+export function getItemFormSchema(schema, item, context) {
+  return getItemFormSchemaFromForms(getFormSchemas(schema, context), item)
 }
 
 export function hasLabel(schema) {
@@ -233,11 +268,22 @@ export function hasLabel(schema) {
 }
 
 export function isCompact(schema) {
-  return schema.compact
+  return !!schema.compact
 }
 
-export function isUnnested(schema) {
-  return !!getTypeOptions(schema)?.unnested
+export function isInlined(schema) {
+  return !!(schema.inlined || schema.components)
+}
+
+export function isNested(schema) {
+  return !!(
+    schema.nested ||
+    getTypeOptions(schema)?.defaultNested === true
+  )
+}
+
+export function shouldOmitPadding(schema) {
+  return !!getTypeOptions(schema)?.omitPadding
 }
 
 export function getDefaultValue(schema) {
@@ -256,11 +302,10 @@ export function getDefaultValue(schema) {
 }
 
 export function ignoreMissingValue(schema) {
-  const type = getType(schema)
-  const typeOptions = getTypeOptions(type)
+  const typeOptions = getTypeOptions(schema)
   return !!(
     typeOptions?.excludeValue ||
-    typeOptions?.ignoreMissingValue?.(type)
+    typeOptions?.ignoreMissingValue?.(schema)
   )
 }
 
@@ -274,53 +319,137 @@ export function hasLabels(schema) {
   )
 }
 
-export function setDefaults(schema, data = {}) {
-  function processBefore(schema, data, name) {
+export function setDefaults(schema, data = {}, component) {
+  const options = { component, rootData: data }
+
+  const processBefore = (schema, data, name) => {
     if (!(name in data) && !ignoreMissingValue(schema)) {
       data[name] = getDefaultValue(schema)
     }
   }
+
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
-  return processSchemaData(schema, data, null, processBefore)
+  return processSchemaData(
+    schema, data, null, null, processBefore, null, options
+  )
 }
 
-export function processData(schema, data, dataPath, options = {}) {
-  // Include `rootData` in options, so tha it can be passed to components'
-  // `processValue()` which pass it to `processData()` again from nested calls.
-  // But pass the already cloned data to `process()`, so it can be modified.
-  const rootData = options?.rootData ?? data
-  options = { rootData, ...options }
-
-  function processBefore(schema, data, name, dataPath, clone) {
-    const { wrapPrimitives } = schema
-    const value = clone[name]
-
-    // The schema expects the `wrapPrimitives` transformations to be present on
-    // the data that it is applied on, so warp before and unwrap after.
-    if (wrapPrimitives && isArray(value)) {
-      clone[name] = value.map(entry => ({
-        [wrapPrimitives]: entry
-      }))
+export function computeValue(schema, data, name, dataPath, {
+  component = null,
+  rootData = component?.rootData
+} = {}) {
+  const { compute } = schema
+  if (compute) {
+    const value = compute(DitoContext.get(component, {
+      // Override value to prevent endless recursion through calling the
+      // getter for `this.value` in `DitoContext`:
+      value: data[name],
+      name,
+      data,
+      dataPath,
+      rootData
+    }))
+    if (value !== undefined) {
+      // Use `$set()` directly instead of `this.value = …` to update the
+      // value without calling parse():
+      Vue.set(data, name, value)
     }
   }
+  // If the value is still missing after compute, set the default for it:
+  if (!(name in data) && !ignoreMissingValue(schema)) {
+    Vue.set(data, name, getDefaultValue(schema))
+  }
+  // Now access the value. This is important for reactivity and needs to
+  // happen after all prior manipulation through `$set()`, see above:
+  return data[name]
+}
 
-  function processAfter(schema, data, name, dataPath, clone) {
+function cloneItem(sourceSchema, item, options) {
+  if (options.schemaOnly) {
+    const copy = {}
+    const { idKey = 'id', orderKey } = sourceSchema
+    const id = item[idKey]
+    if (id !== undefined) {
+      copy[idKey] = id
+    }
+    // Copy over type in case there are multiple forms to choose from.
+    if (hasMultipleFormSchemas(sourceSchema)) {
+      copy.type = item.type
+    }
+    if (orderKey) {
+      copy[orderKey] = item[orderKey]
+    }
+    return copy
+  } else {
+    return { ...item }
+  }
+}
+
+export function processData(schema, sourceSchema, data, dataPath, {
+  component,
+  schemaOnly, // wether to only include data covered by the schema, or all data
+  target
+} = {}) {
+  const options = { component, schemaOnly, target, rootData: data }
+  const processedData = cloneItem(sourceSchema, data, options)
+  const graph = new SchemaGraph()
+
+  const processBefore = (schema, data, name, dataPath, processedData) => {
+    let value = computeValue(schema, data, name, dataPath, options)
+    // The schema expects the `wrapPrimitives` transformations to be present on
+    // the data that it is applied on, so warp before and unwrap after.
+    if (isArray(value)) {
+      const { wrapPrimitives, orderKey, idKey = 'id' } = schema
+      if (wrapPrimitives) {
+        value = value.map(entry => ({
+          [wrapPrimitives]: entry
+        }))
+      } else {
+        // Always shallow-clone array values:
+        value = [...value]
+      }
+      if (orderKey && target === 'clipboard') {
+        // Sort the data back into the natural sequence as defined by their ids,
+        // so copy-pasting between servers (e.g. nested font-cuts on Lineto)
+        // naturally gets mapped to the same entries in the graph.
+        value.sort((a, b) => {
+          const id1 = a?.[idKey]
+          const id2 = b?.[idKey]
+          return (
+            id1 == null || isTemporaryId(id1) ? 1
+            : id2 == null || isTemporaryId(id2) ? -1
+            : id1 - id2
+          )
+        })
+      }
+    }
+    processedData[name] = value
+  }
+
+  const processAfter = (schema, data, name, dataPath, processedData) => {
     const { wrapPrimitives, exclude, process } = schema
-    let value = clone[name]
+    let value = processedData[name]
 
     const typeOptions = getTypeOptions(schema)
 
-    const getContext = () => new DitoContext(null, {
+    // NOTE: We don't cache this context, since `value` is changing.
+    const getContext = () => DitoContext.get(component, {
       value,
       name,
       data,
       dataPath,
-      rootData,
-      // Pass the already cloned data to `process()` as `processedData`,
-      // so it can be modified through `processedItem` from there.
-      processedData: clone
+      rootData: options.rootData,
+      // Pass the already processed data to `process()`, so it can be modified
+      // through `processedItem` from there.
+      processedData
     })
+
+    // First unwrap the wrapped primitives again, to bring the data back into
+    // its native form. Se `processBefore()` for more details.
+    if (wrapPrimitives && isArray(value)) {
+      value = value.map(object => object[wrapPrimitives])
+    }
 
     // Handle the user's `process()` callback first, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
@@ -334,94 +463,119 @@ export function processData(schema, data, dataPath, options = {}) {
       exclude === true ||
       isFunction(exclude) && exclude(getContext())
     ) {
-      delete clone[name]
-      return
+      delete processedData[name]
+    } else {
+      // Each component type can provide its own static `processValue()` method
+      // to convert the data for storage.
+      const processValue = typeOptions?.processValue
+      if (processValue) {
+        value = processValue(schema, value, dataPath, graph)
+      }
+      processedData[name] = value
     }
-
-    // Each component type can provide its own static `processValue()` method.
-    const processValue = typeOptions?.processValue
-    if (processValue) {
-      value = processValue.call(typeOptions, schema, value, dataPath, options)
-    }
-
-    // Lastly unwrap the wrapped primitives again, to bring the data back into
-    // its native form. Se `processBefore()` for more details.
-    if (wrapPrimitives && isArray(value)) {
-      value = value.map(object => object[wrapPrimitives])
-    }
-
-    clone[name] = value
   }
 
-  return processSchemaData(
-    schema, data, dataPath, processBefore, processAfter, shallowClone(data)
+  processSchemaData(
+    schema,
+    data,
+    dataPath,
+    processedData,
+    processBefore,
+    processAfter,
+    options
   )
+
+  return graph.process(sourceSchema, processedData, options)
 }
 
 export function processSchemaData(
   schema,
   data,
   dataPath,
+  processedData,
   processBefore,
   processAfter,
-  clone
+  options
 ) {
-  function processComponents(components) {
+  const processComponents = components => {
     const getDataPath = (dataPath, token) => dataPath != null
       ? appendDataPath(dataPath, token)
       : null
 
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
-        if (isUnnested(componentSchema)) {
+        if (!isNested(componentSchema)) {
           // Recursively process data on unnested components.
           processSchemaData(
             componentSchema,
             data,
             dataPath,
+            processedData,
             processBefore,
             processAfter,
-            clone
+            options
           )
         } else {
           const componentDataPath = getDataPath(dataPath, name)
 
           const processItem = (item, index = null) => {
-            const formSchema = getItemFormSchema(componentSchema, item)
-            const itemClone = clone ? shallowClone(item) : null
-            return formSchema
-              ? processSchemaData(
-                formSchema,
+            const dataPath = index !== null
+              ? getDataPath(componentDataPath, index)
+              : componentDataPath
+            const context = DitoContext.get(options.component, {
+              data,
+              value: item,
+              dataPath,
+              index,
+              rootData: options.rootData
+            })
+            const getForms = (
+              getTypeOptions(componentSchema)?.getFormSchemasForProcessing ||
+               getFormSchemas
+            )
+            const forms = getForms(componentSchema, context)
+            const form = getItemFormSchemaFromForms(forms, item)
+            if (form) {
+              const processedItem = processedData
+                ? cloneItem(componentSchema, item, options)
+                : null
+              return processSchemaData(
+                form,
                 item,
-                index !== null
-                  ? getDataPath(componentDataPath, index)
-                  : componentDataPath,
+                dataPath,
+                processedItem,
                 processBefore,
                 processAfter,
-                itemClone
+                options
               )
-              : itemClone
+            } else {
+              // Items without forms still get fully (but shallowly) cloned.
+              // TODO: Find out of this is actually needed / used at all?
+              return { ...item }
+            }
           }
 
-          processBefore?.(componentSchema, data, name, componentDataPath, clone)
-          let value = clone ? clone[name] : data[name]
-          if (value != null && hasForms(componentSchema)) {
+          processBefore?.(
+            componentSchema, data, name, componentDataPath, processedData
+          )
+          let value = processedData ? processedData[name] : data[name]
+          if (value != null && hasFormSchema(componentSchema)) {
             // Recursively process data on nested form items.
             if (isArray(value)) {
               // Optimization: No need to collect values if we're not cloning!
-              value = clone
+              value = processedData
                 ? value.map(processItem)
                 : value.forEach(processItem)
             } else {
               value = processItem(value)
             }
-          } else if (clone) {
-            value = shallowClone(value)
+            if (processedData) {
+              processedData[name] = value
+            }
           }
-          if (clone) {
-            clone[name] = value
-          }
-          processAfter?.(componentSchema, data, name, componentDataPath, clone)
+          processAfter?.(
+            componentSchema, data, name, componentDataPath, processedData
+          )
         }
       }
     }
@@ -433,8 +587,11 @@ export function processSchemaData(
       processComponents(tab.components)
     }
   }
+  for (const panel of getAllPanelSchemas(schema, dataPath)) {
+    processComponents(panel.schema.components)
+  }
 
-  return clone || data
+  return processedData || data
 }
 
 export function getNamedSchemas(descriptions, defaults) {
@@ -487,7 +644,7 @@ function getType(schemaOrType) {
 }
 
 export function getTypeOptions(schemaOrType) {
-  return getTypeComponent(getType(schemaOrType))?.options
+  return getTypeComponent(getType(schemaOrType), true)?.options ?? null
 }
 
 export function getSourceType(schemaOrType) {
@@ -496,38 +653,42 @@ export function getSourceType(schemaOrType) {
   ) ?? null
 }
 
-export function getPanelSchema(schema, dataPath, schemaComponent) {
-  // If the schema doesn't represent a type, assume it's a panel schema already
-  // (.e.g directly from schema.panels):
-  const panel = schema.type
-    ? getTypeOptions(schema)?.getPanelSchema?.(
-      schema,
-      dataPath,
-      schemaComponent
-    )
-    : schema
-  return panel
+export function getPanelSchema(schema, dataPath) {
+  return schema
     ? {
-      schema: panel,
+      schema,
       // If the panel provides its own name, append it to the dataPath.
       // This is used e.g. for $filters panels.
-      dataPath: panel.name
-        ? appendDataPath(dataPath, panel.name)
+      dataPath: schema.name
+        ? appendDataPath(dataPath, schema.name)
         : dataPath
     }
     : null
 }
 
-export function getPanelSchemas(panels, dataPath, schemaComponent) {
-  const schemas = []
-  if (panels) {
-    for (const [key, schema] of Object.entries(panels)) {
-      schemas.push(
-        getPanelSchema(schema, appendDataPath(dataPath, key), schemaComponent)
-      )
+export function getPanelSchemas(schemas, dataPath, panels = []) {
+  if (schemas) {
+    for (const [key, schema] of Object.entries(schemas)) {
+      const panel = getPanelSchema(schema, appendDataPath(dataPath, key))
+      if (panel) {
+        panels.push(panel)
+      }
     }
   }
-  return schemas
+  return panels
+}
+
+export function getAllPanelSchemas(schema, dataPath, schemaComponent = null) {
+  const panel = getTypeOptions(schema)?.getPanelSchema?.(
+    schema,
+    dataPath,
+    schemaComponent
+  )
+  const panels = panel ? [getPanelSchema(panel, dataPath)] : []
+  // Allow each component to provide its own set of panels, in
+  // addition to the default one (e.g. $filter):
+  getPanelSchemas(schema.panels, dataPath, panels)
+  return panels
 }
 
 export function isObjectSource(schemaOrType) {
@@ -539,7 +700,7 @@ export function isListSource(schemaOrType) {
 }
 
 export function getItemId(sourceSchema, item) {
-  const id = item[sourceSchema.idName || 'id']
+  const id = item[sourceSchema.idKey || 'id']
   return id != null ? String(id) : undefined
 }
 

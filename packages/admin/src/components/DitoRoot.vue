@@ -65,8 +65,8 @@ export default DitoComponent.component('dito-root', {
 
   data() {
     return {
-      allowLogin: false,
       resolvedViews: {},
+      allowLogin: false,
       loadingCount: 0
     }
   },
@@ -255,9 +255,7 @@ export default DitoComponent.component('dito-root', {
 
     async resolveViews() {
       try {
-        const resolvedViews = await resolveViews(this.unresolvedViews)
-        // Copy views to convert from module to a plain object:
-        this.resolvedViews = { ...resolvedViews }
+        this.resolvedViews = await resolveViews(this.unresolvedViews)
       } catch (error) {
         if (!error.request) {
           console.error(error)

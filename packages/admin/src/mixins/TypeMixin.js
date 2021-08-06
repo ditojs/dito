@@ -1,7 +1,7 @@
 import DitoContext from '@/DitoContext'
 import ValidationMixin from './ValidationMixin'
-import { getDefaultValue, ignoreMissingValue } from '@/utils/schema'
 import { getSchemaAccessor } from '@/utils/accessor'
+import { computeValue } from '@/utils/schema'
 import { getItem, getParentItem } from '@/utils/data'
 import { isString, asArray } from '@ditojs/utils'
 
@@ -18,16 +18,17 @@ export default {
     // NOTE: While `dataPath` points to the actual `value`, `data` represents
     // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
-    dataPathIsValue: { type: Boolean, default: true },
     data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
   },
 
   data() {
     return {
+      parsedValue: null,
       focused: false
     }
   },
@@ -41,30 +42,22 @@ export default {
       return this.schema.type
     },
 
+    component() {
+      return this.resolveTypeComponent(this.schema.component)
+    },
+
     value: {
       get() {
-        const { schema, data, name } = this
-        const { compute, format } = this.schema
-        if (compute) {
-          const value = compute.call(
-            this,
-            // Override value to prevent endless recursion through calling the
-            // getter for `this.value` in `DitoContext`:
-            new DitoContext(this, { value: data[name] })
-          )
-          if (value !== undefined) {
-            // Use `$set()` directly instead of `this.value = …` to update the
-            // value without calling parse():
-            this.$set(data, name, value)
-          }
-        }
-        // If the value is still missing after compute, set the default for it:
-        if (!(name in data) && !ignoreMissingValue(schema)) {
-          this.$set(data, name, getDefaultValue(schema))
-        }
-        // Now access the value. This is important for reactivity and needs to
-        // happen after all prior manipulation through `$set()`, see above:
-        const value = data[name]
+        const value = computeValue(
+          this.schema,
+          this.data,
+          this.name,
+          this.dataPath,
+          { component: this }
+        )
+        const { format } = this.schema
+        // `schema.format` is only ever called in the life-cycle
+        // of the component and thus it's ok to bind it to `this`
         return format
           ? format.call(this, new DitoContext(this, { value }))
           : value
@@ -72,21 +65,23 @@ export default {
 
       set(value) {
         const { parse } = this.schema
-        if (parse) {
-          value = parse.call(this, new DitoContext(this, { value }))
-        }
-        this.$set(this.data, this.name, value)
+        // `schema.parse` is only ever called in the life-cycle
+        // of the component and thus it's ok to bind it to `this`
+        this.parsedValue = parse
+          ? parse.call(this, new DitoContext(this, { value }))
+          : value
+        this.$set(this.data, this.name, this.parsedValue)
       }
     },
 
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
     item() {
-      return getItem(this.rootItem, this.dataPath, this.dataPathIsValue)
+      return getItem(this.rootItem, this.dataPath, this.nested)
     },
 
     parentItem() {
-      return getParentItem(this.rootItem, this.dataPath, this.dataPathIsValue)
+      return getParentItem(this.rootItem, this.dataPath, this.nested)
     },
 
     rootItem() {
@@ -102,24 +97,8 @@ export default {
         schemaComponent.processedItem,
         // Get the dataPath relative to the schemaComponent's data:
         this.dataPath.slice(schemaComponent.dataPath.length),
-        this.dataPathIsValue
+        this.nested
       )
-    },
-
-    validations() {
-      const validations = { ...this.getValidations() }
-      if (this.required) {
-        validations.required = true
-      }
-      // Allow schema to override default rules and add any new ones:
-      for (const [key, value] of Object.entries(this.schema.rules || {})) {
-        if (value === undefined) {
-          delete validations[key]
-        } else {
-          validations[key] = value
-        }
-      }
-      return validations
     },
 
     label: getSchemaAccessor('label', {
@@ -139,7 +118,9 @@ export default {
 
     visible: getSchemaAccessor('visible', {
       type: Boolean,
-      default: true
+      default() {
+        return this.typeOptions.defaultVisible
+      }
     }),
 
     // TODO: Rename to `excluded` for consistent naming
@@ -209,9 +190,29 @@ export default {
       }
     },
 
+    validations() {
+      const validations = { ...this.getValidations() }
+      if (this.required) {
+        validations.required = true
+      }
+      // Allow schema to override default rules and add any new ones:
+      for (const [key, value] of Object.entries(this.schema.rules || {})) {
+        if (value === undefined) {
+          delete validations[key]
+        } else {
+          validations[key] = value
+        }
+      }
+      return validations
+    },
+
     providesData() {
       // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
+    },
+
+    showClearButton() {
+      return this.clearable && this.value != null
     }
   },
 
@@ -227,7 +228,7 @@ export default {
   methods: {
     _register(add) {
       // Prevent unnested type components from overriding parent data paths
-      if (!this.$options.unnested) {
+      if (this.nested) {
         this.schemaComponent._registerComponent(this, add)
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`
@@ -277,8 +278,13 @@ export default {
     },
 
     onChange() {
-      // Pass `schemaComponent` as parent, so change events can propagate up.
-      this.emitEvent('change', { parent: this.schemaComponent })
+      this.emitEvent('change', {
+        context: this.parsedValue !== undefined
+          ? { value: this.parsedValue }
+          : null,
+        // Pass `schemaComponent` as parent, so change events can propagate up.
+        parent: this.schemaComponent
+      })
     }
   }
 }

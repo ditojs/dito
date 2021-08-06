@@ -79,7 +79,8 @@ export default DitoComponent.component('dito-form', {
         this.sourceSchema,
         // If there is no data yet, provide an empty object with just the right
         // type set, so the form can always be determined.
-        this.data || { type: this.type }
+        this.data || { type: this.type },
+        this.context
       ) || {} // Always return a schema object so we don't need to check for it.
     },
 

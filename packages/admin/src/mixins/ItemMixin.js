@@ -56,7 +56,9 @@ export default {
 
       let formLabel
       const getFormLabel = () =>
-        (formLabel ||= this.getLabel(getItemFormSchema(sourceSchema, item)))
+        (formLabel ||= this.getLabel(
+          getItemFormSchema(sourceSchema, item, this.context)
+        ))
 
       let text
       let prefix
@@ -65,9 +67,9 @@ export default {
         const label = itemLabel.call(
           this,
           new DitoContext(this, {
-            name: undefined,
-            value: undefined,
             data: item,
+            value: item,
+            index,
 
             get dataPath() {
               return getDataPath()

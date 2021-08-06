@@ -142,23 +142,29 @@ export class Application extends Koa {
     const { log } = this.config
     if (log.schema || log.relations) {
       for (const modelClass of sortedModels) {
+        const shouldLog = option => (
+          option === true ||
+          asArray(option).includes(modelClass.name)
+        )
         const data = {}
-        if (log.schema) {
-          data.jsonSchema = modelClass.getJsonSchema()
+        if (shouldLog(log.schema)) {
+          data.schema = modelClass.getJsonSchema()
         }
-        if (log.relations) {
-          data.relationMappings = clone(modelClass.relationMappings, value =>
+        if (shouldLog(log.relations)) {
+          data.relations = clone(modelClass.relationMappings, value =>
             Model.isPrototypeOf(value) ? `[Model: ${value.name}]` : value
           )
         }
-        console.info(
-          chalk.yellow.bold(`\n${modelClass.name}:\n`),
-          util.inspect(data, {
-            colors: true,
-            depth: null,
-            maxArrayLength: null
-          })
-        )
+        if (Object.keys(data).length > 0) {
+          console.info(
+            chalk.yellow.bold(`\n${modelClass.name}:\n`),
+            util.inspect(data, {
+              colors: true,
+              depth: null,
+              maxArrayLength: null
+            })
+          )
+        }
       }
     }
   }
@@ -607,30 +613,19 @@ export class Application extends Koa {
 
   setupKnexLogging() {
     const startTimes = {}
-
-    function trim(str, length = 1024) {
-      return str.length > length
-        ? `${str.slice(0, length - 3)}...`
-        : str
-    }
-
+    const logger = this.logger.child({ name: 'sql' })
     function end(query, { response, error }) {
       const id = query.__knexQueryUid
       const diff = process.hrtime(startTimes[id])
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
-      const bindings = query.bindings.join(', ')
-      console.info(
-        chalk.yellow.bold('knex:sql'),
-        chalk.cyan(trim(query.sql)),
-        chalk.magenta(duration + 'ms'),
-        chalk.gray(`[${trim(bindings)}]`),
-        response
-          ? chalk.green(trim(JSON.stringify(response)))
-          : error
-            ? chalk.red(trim(JSON.stringify(error)))
-            : ''
+      const { sql, bindings } = query
+      response = Object.fromEntries(
+        Object.entries(response).filter(
+          ([key]) => !key.startsWith('_')
+        )
       )
+      logger.info({ duration, bindings, response, error }, sql)
     }
 
     this.knex

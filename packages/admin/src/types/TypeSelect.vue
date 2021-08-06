@@ -1,5 +1,5 @@
 <template lang="pug">
-  // In order to make an arrow appear over the select item, we need nesting:
+  //- Nesting is needed to make an arrow appear over the select item:
   .dito-select
     select(
       ref="element"
@@ -35,7 +35,7 @@
           :value="selectedValue"
         ) {{ getLabelForOption(selectedOption) }}
     button.dito-button-clear.dito-button-overlay(
-      v-if="clearable && value"
+      v-if="showClearButton"
       @click="clear"
       :disabled="disabled"
     )
@@ -44,20 +44,25 @@
 <style lang="sass">
   // TODO: Move to dito-ui
   $select-arrow-right: ($select-arrow-width - $select-arrow-size) / 2
+
   .dito-select
     display: inline-block
     position: relative
+
     select
       padding-right: $select-arrow-width
+
     // Handle .dito-width-fill separately due to required nesting of select:
     &.dito-width-fill
       select
         width: 100%
+
     &::after
       position: absolute
       +arrow($select-arrow-size)
       bottom: $select-arrow-bottom
       right: calc(#{$select-arrow-right} + #{$border-width})
+
     &.dito-disabled::after
       border-color: $border-color
 </style>

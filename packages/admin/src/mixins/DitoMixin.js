@@ -134,6 +134,10 @@ export default {
     // that loads its own data from an associated API resource.
     rootData() {
       return this.dataComponent?.data
+    },
+
+    context() {
+      return new DitoContext(this)
     }
   },
 
@@ -175,13 +179,10 @@ export default {
           : schema[keyOrDataPath]
         : undefined
 
-      let context
-      const getContext = () => (context ||= new DitoContext(this))
-
       if (value === undefined && def !== undefined) {
         if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
-          def = def.call(this, getContext())
+          def = def.call(this, this.context)
         }
         return def
       }
@@ -192,12 +193,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (callback && isFunction(value)) {
-        value = value.call(this, getContext())
-      }
-      // For boolean values that are defined as strings or arrays,
-      // interpret the values as user roles and match against user:
-      if (types?.includes(Boolean) && (isString(value) || isArray(value))) {
-        value = this.user?.hasRole(...asArray(value))
+        value = value.call(this, this.context)
       }
       // Now finally see if we can convert to the expect types.
       if (types && value != null && !isMatchingType(types, value)) {
@@ -354,6 +350,7 @@ export default {
         return loadCache[cacheKey]
       }
       // NOTE: No await here, res is a promise that we can easily cache.
+      // That's fine because promises can be resolved over and over again.
       const res = this.sendRequest(options)
         .then(response => response.data)
         .catch(error => {

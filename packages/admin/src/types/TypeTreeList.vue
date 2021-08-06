@@ -42,8 +42,7 @@
 <script>
 import TypeComponent from '@/TypeComponent'
 import SourceMixin from '@/mixins/SourceMixin'
-import { hasForms, processData } from '@/utils/schema'
-import { appendDataPath } from '@/utils/data'
+import { hasFormSchema, getFormSchemas } from '@/utils/schema'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -101,7 +100,7 @@ export default TypeComponent.register([
     hasEditableForms() {
       const hasEditableForms = schema => {
         return (
-          hasForms(schema) && (
+          hasFormSchema(schema) && (
             this.getSchemaValue('editable', {
               type: Boolean,
               default: false,
@@ -140,25 +139,20 @@ export default TypeComponent.register([
     )
   },
 
-  processValue(schema, value, dataPath, options) {
+  getFormSchemasForProcessing(schema, context) {
+    // Convert nested children schema to stand-alone schema component,
+    // present in each of the forms, as required by `processSchemaData()`
     const { children } = schema
-    if (children) {
-      // Convert nested children schema to stand-alone schema that can be
-      // passed to `processData()` for processing of nested children data.
-      const childrenSchema = {
+    return getFormSchemas(schema, context, children
+      ? form => ({
+        ...form,
         components: {
+          ...form.components,
           [children.name]: children
         }
-      }
-      value = value.map((item, index) => processData(
-        childrenSchema,
-        item,
-        appendDataPath(dataPath, index),
-        options
-      ))
-    }
-    // There's no automatic inheritance of added methods, so call this manually:
-    return SourceMixin.processValue(schema, value, dataPath, options)
+      })
+      : null
+    )
   }
 })
 </script>

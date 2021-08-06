@@ -24,9 +24,9 @@
       )
     table.dito-table(
       :class=`{
-        'dito-table-separators': inlined,
-        'dito-table-larger-padding': hasEditButtons && !inlined,
-        'dito-table-alternate-colors': !inlined,
+        'dito-table-separators': isInlined,
+        'dito-table-larger-padding': hasEditButtons && !isInlined,
+        'dito-table-alternate-colors': !isInlined,
         'dito-table-even-count': hasEvenCount
       }`
     )
@@ -39,7 +39,7 @@
       vue-draggable(
         tag="tbody"
         v-bind="getDragOptions(draggable)"
-        :list="updateOrder(listData, schema, draggable, paginationRange)"
+        :list="updateOrder(sourceSchema, listData, paginationRange)"
         @start="onStartDrag"
         @end="onEndDrag"
       )
@@ -56,18 +56,18 @@
               :cell="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
-              :dataPathIsValue="false"
               :data="item"
               :meta="nestedMeta"
               :store="store"
+              :nested="false"
               :disabled="disabled || isLoading"
             )
           template(v-else)
             td
               dito-schema-inlined(
-                v-if="inlined"
+                v-if="isInlined"
                 :label="getItemLabel(schema, item, { index, asObject: true })"
-                :schema="getItemFormSchema(schema, item, views)"
+                :schema="getItemFormSchema(schema, item, context)"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"
@@ -85,12 +85,12 @@
                 v-else-if="component"
                 :is="component"
                 :dataPath="getDataPath(index)"
-                :dataPathIsValue="false"
                 :data="item"
+                :nested="false"
               )
               span(
                 v-else-if="render"
-                v-html="render(getDitoContext(item, index))"
+                v-html="render(getContext(item, index))"
               )
               span(
                 v-else
@@ -104,7 +104,7 @@
               :draggable="draggable"
               :editable="editable"
               :editPath="getEditPath(item, index)"
-              :schema="getItemFormSchema(schema, item, views)"
+              :schema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
@@ -240,7 +240,7 @@ export default TypeComponent.register('list', {
     },
 
     hasCellEditButtons() {
-      return !this.inlined && this.hasEditButtons
+      return !this.isInlined && this.hasEditButtons
     },
 
     hasEvenCount() {
@@ -262,7 +262,7 @@ export default TypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
-        const path = getViewEditPath(this.schema, this.views) || this.path
+        const path = getViewEditPath(this.schema, this.context) || this.path
         const id = this.getItemId(this.schema, item, index)
         return `${path}/${id}`
       }
@@ -273,11 +273,11 @@ export default TypeComponent.register('list', {
       return `dito-cell-${hyphenate(column.name)}`
     },
 
-    getDitoContext(item, index) {
+    getContext(item, index) {
       return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
         data: item,
+        value: item,
+        index,
         dataPath: this.getDataPath(index)
       })
     },
