@@ -4,7 +4,7 @@ import { QueryBuilderError, RelationError } from '@/errors'
 import { QueryParameters } from './QueryParameters'
 import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
-  isObject, isPlainObject, isString, isArray, clone,
+  isObject, isPlainObject, isString, isArray, clone, mapKeys,
   getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
 import { createLookup, getScope, deprecate } from '@/utils'
@@ -767,12 +767,9 @@ for (const key of [
       if (isString(arg)) {
         arg = expandIdentifier(arg)
       } else if (isArray(arg)) {
-        arg = arg.map(value => expandIdentifier(value))
+        arg = arg.map(expandIdentifier)
       } else if (isPlainObject(arg)) {
-        arg = Object.keys(arg).reduce((converted, key) => {
-          converted[expandIdentifier(key)] = arg[key]
-          return converted
-        }, {})
+        arg = mapKeys(arg, expandIdentifier)
       }
       return arg
     }
