@@ -13,9 +13,4 @@ describe('mapKeys()', () => {
     const actual = mapKeys(array, String)
     expect(actual).toStrictEqual({ 1: 1, 2: 2 })
   })
-
-  it('should work with property names for `iteratee`', () => {
-    const actual = mapKeys({ a: { b: 'c' } }, 'b')
-    expect(actual).toStrictEqual({ c: { b: 'c' } })
-  })
 })

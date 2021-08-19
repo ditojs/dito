@@ -13,9 +13,4 @@ describe('mapValues()', () => {
     const actual = mapValues(array, String)
     expect(actual).toStrictEqual({ 0: '1', 1: '2' })
   })
-
-  it('should work with property names for `iteratee`', () => {
-    const actual = mapValues({ a: { b: 2 } }, 'b')
-    expect(actual).toStrictEqual({ a: 2 })
-  })
 })

@@ -53,7 +53,7 @@ describe('clone()', () => {
     expect(copy).toStrictEqual({ b: 2 })
   })
 
-  it('should transform cloned values by `iteratee`', () => {
+  it('should transform cloned values by `callback`', () => {
     const object = {
       a: { b: 1, c: 2 },
       d: { e: 3, f: 4 }
@@ -71,7 +71,7 @@ describe('clone()', () => {
     expect(copy).toStrictEqual(expected)
   })
 
-  it('should call `iteratee` after cloning all children', () => {
+  it('should call `callback` after cloning all children', () => {
     const array = [
       { a: 1, b: 2 },
       { a: 3, b: 4 }
