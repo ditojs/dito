@@ -113,10 +113,22 @@ export default class DitoContext {
     return get(this, 'formLabel', null)
   }
 
+  // TODO: Remove exposure since the associated component doesn't always exist,
+  // e.g. nested forms in `processData()`. Instead, bind component to `this`
+  // only where available.
   get component() {
     return get(this, 'component', null)
   }
 
+  // TODO: Add `componentSchema` getter for the schema of the current component,
+  // even when the component isn't actually instantiated. Consider adding
+  // `sourceSchema` as well?
+
+  // TODO: Fix unclear naming: Which schema is this, that of the component or of
+  // its parent? Isn't exposing `formComponent` and `viewComponent` enough, once
+  // we offer access to their components there through `getComponent()` & co. on
+  // `DitoMixin` perhaps?  Also, there could be a `tabComponent` getter for
+  // schemas in tabs?
   get schemaComponent() {
     return get(this, 'schemaComponent', null)
   }

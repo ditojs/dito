@@ -756,6 +756,8 @@ for (const key of [
     const { properties } = modelClass.definition
 
     // Expands all identifiers known to the model to their extended versions.
+    // TODO: Also support expansion of identifiers with aliases, e.g.
+    // `propertyName as renamedPropertyName`
     const expandIdentifier = identifier =>
       identifier === '*' || identifier in properties
         ? `${this.tableRefFor(modelClass)}.${identifier}`
