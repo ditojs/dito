@@ -109,6 +109,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
+  toFindQuery() {
+    // Temporary workaround to fix this issue until it is resolved in Objection:
+    // https://github.com/Vincit/objection.js/issues/2093
+    return super.toFindQuery().clear(RunAfterOperation)
+  }
+
   withScope(...scopes) {
     for (const expr of scopes) {
       if (expr) {
@@ -680,6 +686,19 @@ export class QueryBuilder extends objection.QueryBuilder {
     return model
   }
 
+  static getOperationClass(modify) {
+    // Deploy nasty monkey-patching to extract private query operation classes:
+    let constructor = null
+    const query = new QueryBuilder({ knex() { return {} } })
+    // Locally override `QueryBuilder#addOperation()` in order to extract the
+    // private operation class:
+    query.addOperation = operation => {
+      constructor = operation.constructor
+    }
+    modify(query)
+    return constructor
+  }
+
   static mixin(target) {
     // Expose a selection of QueryBuilder methods directly on the target,
     // redirecting the calls to `this.query()[method](...)`
@@ -848,6 +867,10 @@ function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
   }
   return expr
 }
+
+const RunAfterOperation = QueryBuilder.getOperationClass(
+  query => query.runAfter()
+)
 
 // List of all `QueryBuilder` methods to be mixed into `Model` as a short-cut
 // for `model.query().METHOD()`
