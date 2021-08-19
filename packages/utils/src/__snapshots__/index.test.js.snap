@@ -2,6 +2,7 @@
 
 exports[`index exports all symbols 1`] = `
 Object {
+  "__esModule": true,
   "asArray": [Function],
   "asFunction": [Function],
   "asObject": [Function],

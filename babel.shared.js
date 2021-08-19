@@ -44,7 +44,7 @@ module.exports = {
     return plugins
   },
 
-  env({ test = false } = {}) {
+  env({ loose = true, test = false } = {}) {
     const env = {}
     if (test) {
       env.test = {
@@ -52,6 +52,7 @@ module.exports = {
           [
             '@babel/preset-env',
             {
+              loose,
               targets: {
                 node: 'current'
               }
