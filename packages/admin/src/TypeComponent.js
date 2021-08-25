@@ -9,6 +9,8 @@ import { asArray } from '@ditojs/utils'
 const TypeComponent = DitoComponent.extend({
   mixins: [TypeMixin],
 
+  nativeField: false,
+  textField: false,
   // Set reasonable defaults for all of these that are used by most type
   // components. These only need defining in sub-classes when they differ.
   defaultValue: null,

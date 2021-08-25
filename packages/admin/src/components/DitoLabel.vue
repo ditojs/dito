@@ -85,7 +85,7 @@
     > .dito-schema-content
       > .dito-components
         > .dito-component-container
-          > .dito-label
+          > .dito-label:not(.dito-label-component)
             display: inline-block
 </style>
 
