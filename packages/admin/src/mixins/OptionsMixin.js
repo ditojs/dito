@@ -20,14 +20,14 @@ export default {
   computed: {
     selectedValue: {
       get() {
-        const convert = value => this.relate
+        const convertValue = value => this.relate
           ? this.hasOption(value)
             ? this.getValueForOption(value)
             : null
           : value
         const value = isArray(this.value)
-          ? this.value.map(convert).filter(value => value !== null)
-          : convert(this.value)
+          ? this.value.map(convertValue).filter(value => value !== null)
+          : convertValue(this.value)
         if (
           // When relating and as soon as the options are available...
           this.relate && this.hasOptions && (

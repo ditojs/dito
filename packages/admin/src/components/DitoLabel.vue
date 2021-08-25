@@ -30,16 +30,18 @@
     --label-padding: 0
     // For buttons and chevron to align right:
     display: flex
-    padding: var(--label-padding)
-    margin: 0 0 $form-spacing-half 0
     position: relative
     // Vertically center all items in the label, e.g. chevron, edit-buttons.
     align-items: center
+    padding: var(--label-padding)
+    margin: 0 0 $form-spacing-half 0
+
     label
       display: inline
       cursor: inherit
       font-weight: bold
       white-space: nowrap
+
     label,
     .dito-label-prefix,
     .dito-label-suffix
@@ -49,16 +51,19 @@
         flex: 1 1 auto
       &::after
         content: '\00a0'
+
     .dito-label-prefix,
     .dito-label-suffix
       +user-select(none)
       +ellipsis
+
     .dito-buttons
       // Move the label padding inside .dito-buttons, so that it captures all
       // near mouse events:
-      margin: calc(var(--label-padding) * -1)
+      margin: calc(-1 * var(--label-padding))
       margin-left: 0
       padding: var(--label-padding)
+
     &.dito-width-fill
       width: 100%
       // In order for ellipsis to work on labels without affecting other layout,
@@ -71,6 +76,7 @@
         // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
         // on its parent to enforce the right text height in the container
         content: '\00a0'
+
   a.dito-label
     &:hover
       .dito-chevron
@@ -78,6 +84,7 @@
     &:focus:not(:active):not(.dito-active)
       .dito-chevron
         -webkit-text-stroke: $border-width $color-active
+
   // Display labels in compact schema as inline-blocks, to allow compact layouts
   // with `width: 'auto'` elements:
   // TODO: Find a better way to control this behavior.
