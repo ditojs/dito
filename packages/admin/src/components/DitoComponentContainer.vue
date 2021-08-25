@@ -149,7 +149,7 @@ export default DitoComponent.component('dito-component-container', {
     }),
 
     containerClass() {
-      const { containerClass } = this.schema
+      const { class: containerClass } = this.schema
       return {
         // Use the component name as its class, so the extended
         // dito-button-container automatically works too.
