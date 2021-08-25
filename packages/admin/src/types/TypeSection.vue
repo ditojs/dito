@@ -8,7 +8,6 @@
       :data="item"
       :meta="meta"
       :store="store"
-      :nested="nested"
       :disabled="disabled"
     )
 </template>

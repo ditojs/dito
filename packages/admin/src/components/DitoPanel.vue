@@ -12,7 +12,6 @@
       :data="panelData"
       :meta="meta"
       :store="store"
-      :nested="true"
       :disabled="disabled"
       :hasOwnData="hasOwnData"
     )
