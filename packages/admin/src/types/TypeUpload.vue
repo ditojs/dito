@@ -229,6 +229,7 @@ export default TypeComponent.register('upload', {
         if (file.upload) {
           this.upload.remove(file.upload)
         }
+        this.onChange()
         this.notify({
           type: 'info',
           title: 'Successfully Removed',
