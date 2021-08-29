@@ -21,7 +21,7 @@
       .dito-tree-leaf(v-else)
         .dito-tree-label(v-html="label")
       .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
-        // Firefox doesn't like <button> here, so use <a> instead:
+        //- Firefox doesn't like <button> here, so use <a> instead:
         a.dito-button(
           v-if="draggable"
           v-bind="getButtonAttributes(verbs.drag)"

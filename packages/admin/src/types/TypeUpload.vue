@@ -1,7 +1,7 @@
 <template lang="pug">
   .dito-upload
     table.dito-table.dito-table-separators.dito-table-background
-      // Styling comes from DitoTableHead
+      //- Styling comes from DitoTableHead
       thead.dito-table-head
         tr
           th
@@ -37,7 +37,7 @@
               | Stored
           td.dito-cell-edit-buttons
             .dito-buttons.dito-buttons-round
-              // Firefox doesn't like <button> here, so use <a> instead:
+              //- Firefox doesn't like <button> here, so use <a> instead:
               a.dito-button(
                 v-if="draggable"
                 v-bind="getButtonAttributes(verbs.drag)"
