@@ -32,9 +32,12 @@ export default TypeComponent.register([
       return this.verbs[this.name] || this.name
     },
 
-    text() {
-      return this.schema.text || labelize(this.verb)
-    },
+    text: getSchemaAccessor('text', {
+      type: String,
+      get(text) {
+        return text || labelize(this.verb)
+      }
+    }),
 
     listeners() {
       return {
