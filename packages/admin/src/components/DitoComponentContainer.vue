@@ -64,7 +64,7 @@ import DitoComponent from '@/DitoComponent'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getTypeOptions, shouldOmitPadding } from '@/utils/schema'
 import { parseFraction } from '@/utils/math'
-import { isString } from '@ditojs/utils'
+import { isString, isNumber } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-component-container', {
@@ -170,9 +170,10 @@ export default DitoComponent.component('dito-component-container', {
       const basis = (
         [null, 'auto', 'fill'].includes(width) ? 'auto'
         : /%$/.test(width) ? parseFloat(width) // percentage
+        : /[a-z]/.test(width) ? width // native units
         : parseFraction(width) * 100 // fraction
       )
-      return basis !== 'auto' ? `${basis}%` : basis
+      return isNumber(basis) ? `${basis}%` : basis
     },
 
     containerStyle() {
