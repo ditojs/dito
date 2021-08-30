@@ -61,6 +61,7 @@
 
 <script>
 import DitoComponent from '@/DitoComponent'
+import DitoContext from '@/DitoContext'
 import { getSchemaAccessor } from '@/utils/accessor'
 import { getTypeOptions, shouldOmitPadding } from '@/utils/schema'
 import { parseFraction } from '@/utils/math'
@@ -87,6 +88,10 @@ export default DitoComponent.component('dito-component-container', {
   },
 
   computed: {
+    context() {
+      return new DitoContext(this, { nested: this.nested })
+    },
+
     typeOptions() {
       return getTypeOptions(this.schema) || {}
     },

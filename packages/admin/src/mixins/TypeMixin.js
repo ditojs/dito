@@ -47,7 +47,7 @@ export default {
     },
 
     context() {
-      return new DitoContext(this, { nested: true })
+      return new DitoContext(this, { nested: this.nested })
     },
 
     value: {
