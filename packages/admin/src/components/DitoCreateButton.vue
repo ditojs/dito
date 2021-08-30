@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-create-button
-    template(v-if="hasMultipleForms")
+    template(v-if="showPulldown")
       button.dito-button(
         type="button"
         @mousedown.stop="onPulldownMouseDown()"
@@ -58,8 +58,8 @@ export default DitoComponent.component('dito-create-button', {
       return isInlined(this.schema)
     },
 
-    hasMultipleForms() {
-      return Object.keys(this.forms).length > 1
+    showPulldown() {
+      return Object.keys(this.forms).length > 1 || !this.forms.default
     }
   },
 
@@ -87,7 +87,7 @@ export default DitoComponent.component('dito-create-button', {
 
     onPulldownSelect(type) {
       this.createItem(this.forms[type], type)
-      this.showPulldown(false)
+      this.setPulldownOpen(false)
     }
   }
 })
