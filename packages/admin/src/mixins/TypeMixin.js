@@ -46,6 +46,10 @@ export default {
       return this.resolveTypeComponent(this.schema.component)
     },
 
+    context() {
+      return new DitoContext(this, { nested: true })
+    },
+
     value: {
       get() {
         const value = computeValue(

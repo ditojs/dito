@@ -1,6 +1,7 @@
 import { isFunction } from '@ditojs/utils'
 import {
-  getItem, getParentItem, getLastDataPathName, getLastDataPathIndex
+  getItemDataPath, getParentItemDataPath, getParentItem, getItem,
+  getLastDataPathName, getLastDataPathIndex
 } from '@/utils/data'
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
@@ -31,8 +32,11 @@ export default class DitoContext {
   constructor(component, context) {
     // Use the provided params object / function, or create a new one:
     context = context
-      ? (isFunction(context) ? context() : context)
+      ? (isFunction(context) ? context() : { ...context })
       : {}
+    // If not explicitly set (to false), default to true so we don't fall back
+    // to `component` for its value.
+    context.nested ??= true
     context.component = component
     // Have `object` inherit from the `component` instance, so it can override
     // its values and still retrieve from it, and associate it with `this`
@@ -47,8 +51,18 @@ export default class DitoContext {
       : new DitoContext(component, context)
   }
 
+  // `nested` is `true` when the data-path points a value inside an item, and
+  // `false` when it points to the item itself.
+  get nested() {
+    return get(this, 'nested', true)
+  }
+
   get value() {
     return get(this, 'value', undefined)
+  }
+
+  get dataPath() {
+    return get(this, 'dataPath', '')
   }
 
   get name() {
@@ -59,15 +73,29 @@ export default class DitoContext {
     return get(this, 'index', () => getLastDataPathIndex(this.dataPath))
   }
 
-  get dataPath() {
-    return get(this, 'dataPath', '')
+  get itemDataPath() {
+    return getItemDataPath(this.dataPath, this.nested)
+  }
+
+  get parentItemDataPath() {
+    return getParentItemDataPath(this.dataPath, this.nested)
+  }
+
+  get itemIndex() {
+    return getLastDataPathIndex(this.itemDataPath)
+  }
+
+  get parentItemIndex() {
+    return getLastDataPathIndex(this.parentItemDataPath)
   }
 
   get item() {
     // NOTE: While internally, we speak of `data`, in the API surface the
     // term `item` is used for the data that relates to editing objects:
     // If `data` isn't provided, we can determine it from rootData & dataPath:
-    return get(this, 'data', () => getItem(this.rootItem, this.dataPath, true))
+    return get(this, 'data', () =>
+      getItem(this.rootItem, this.dataPath, this.nested)
+    )
   }
 
   // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
@@ -77,7 +105,8 @@ export default class DitoContext {
   // parent. If needed, we could expose this data here too, as we can do all
   // sorts of data processing with `rootData` and `dataPath`.
   get parentItem() {
-    const parentItem = getParentItem(this.rootItem, this.dataPath, true) || null
+    const parentItem =
+      getParentItem(this.rootItem, this.dataPath, this.nested) || null
     return parentItem !== this.item ? parentItem : null
   }
 

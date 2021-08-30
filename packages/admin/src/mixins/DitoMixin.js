@@ -69,6 +69,10 @@ export default {
       return this.api.locale
     },
 
+    context() {
+      return new DitoContext(this, { nested: false })
+    },
+
     rootComponent() {
       return this.$root.$children[0]
     },
@@ -134,10 +138,6 @@ export default {
     // that loads its own data from an associated API resource.
     rootData() {
       return this.dataComponent?.data
-    },
-
-    context() {
-      return new DitoContext(this)
     }
   },
 

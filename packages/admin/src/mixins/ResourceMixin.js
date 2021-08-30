@@ -340,6 +340,7 @@ export default {
       // Create the context outside of `emitEvent()`, so that
       // `context.wasNotified` can be checked after.
       const context = new DitoContext(button, {
+        nested: false,
         data: this.data,
         itemLabel: this.itemLabel,
         error

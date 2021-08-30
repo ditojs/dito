@@ -67,6 +67,7 @@ export default {
         const label = itemLabel.call(
           this,
           new DitoContext(this, {
+            nested: false,
             data: item,
             value: item,
             index,
