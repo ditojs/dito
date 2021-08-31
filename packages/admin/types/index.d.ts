@@ -351,9 +351,16 @@ export interface SchemaSourceMixin<$State extends State> {
       }
   >
   /**
+   * The column used for the order resulting from dragging around list entries
+   * when the `draggable` property of the list schema is set to `true`.
+   */
+  orderKey?: string;
+  /**
+   * Whether the items can be reordered by the user. Set the `orderKey` property
+   * if you want the order to be persisted into a column.
    * @defaultValue `false`
    */
-  draggable?: OrItemAccessor<$State, {}, boolean | { order: string }>
+  draggable?: OrItemAccessor<$State, {}, boolean>
   /**
    * Whether an inlined form is collapsible.
    * @defaultValue `null`
