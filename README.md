@@ -19,8 +19,9 @@ This is then also the reason for the name *Dito.js* itself:
 > past participle of the verb *dīcere*, "to say."
 > https://www.thefreedictionary.com/ditto
 
-Dito.js was created  by [Jürg Lehni](http://juerglehni.com) and released in 2018
-under the MIT license, with support by [Lineto.com](https://lineto.com/).
+Dito.js was developed at [Lineto](https://lineto.com/) by [Jürg
+Lehni](http://juerglehni.com), and was made available by Lineto in 2018 under
+the MIT license.
 
 ## Structuring a Dito.js Application
 
