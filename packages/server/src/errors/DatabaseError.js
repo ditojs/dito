@@ -31,8 +31,10 @@ export class DatabaseError extends WrappedError {
   }
 
   toJSON() {
-    // Remove SQL query from displayed data in front-end in production.
-    if (process.env.NODE_ENV === 'production') {
+    // Remove SQL query from displayed data in front-end when not in development
+    // or test.
+    if (process.env.NODE_ENV !== 'development' ||
+    process.env.NODE_ENV !== 'test') {
       const { sql, ...data } = this.data
       return data
     }
