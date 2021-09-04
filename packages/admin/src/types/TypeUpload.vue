@@ -233,7 +233,7 @@ export default TypeComponent.register('upload', {
         this.notify({
           type: 'info',
           title: 'Successfully Removed',
-          text: `${name} was ${this.verbs.removed}.`
+          text: `${name} was ${this.verbs.deleted}.`
         })
       }
     },
