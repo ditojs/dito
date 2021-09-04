@@ -472,7 +472,7 @@ export default {
 
       const addEvent = (key, event, callback) => {
         if (isFunction(callback)) {
-          this.on(event, callback)
+          this.on(hyphenate(event), callback)
         } else {
           console.error(`Invalid event definition: ${key}: ${callback}`)
         }
@@ -488,7 +488,7 @@ export default {
       // doing things. Decide which one to remove.
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {
-          addEvent(key, hyphenate(key.slice(2)), value)
+          addEvent(key, key.slice(2), value)
         }
       }
     },

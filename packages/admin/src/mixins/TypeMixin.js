@@ -186,12 +186,16 @@ export default {
     },
 
     listeners() {
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        input: this.onInput,
-        change: this.onChange
+      const listeners = this.getListeners()
+      const { events = {} } = this.schema
+      if (events) {
+        // Register callbacks for all provides non-recognized events,
+        // assuming they are native events.
+        for (const event of Object.keys(events)) {
+          listeners[event] ||= () => this.emitEvent(event)
+        }
       }
+      return listeners
     },
 
     validations() {
@@ -237,6 +241,16 @@ export default {
         // Install / remove the field events to watch of changes and handle
         // validation flags. `events` is provided by `ValidationMixin.events()`
         this[add ? 'on' : 'off'](this.events)
+      }
+    },
+
+    // @overridable
+    getListeners() {
+      return {
+        focus: this.onFocus,
+        blur: this.onBlur,
+        input: this.onInput,
+        change: this.onChange
       }
     },
 

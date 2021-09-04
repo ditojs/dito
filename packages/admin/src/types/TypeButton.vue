@@ -39,14 +39,6 @@ export default TypeComponent.register([
       }
     }),
 
-    listeners() {
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        click: this.onClick
-      }
-    },
-
     closeForm: getSchemaAccessor('closeForm', {
       type: Boolean,
       default: false
@@ -54,6 +46,19 @@ export default TypeComponent.register([
   },
 
   methods: {
+    // @override
+    getListeners() {
+      return {
+        focus: this.onFocus,
+        blur: this.onBlur,
+        click: this.onClick
+      }
+    },
+
+    async submit(options) {
+      return this.resourceComponent?.submit(this, options)
+    },
+
     async onClick() {
       const res = await this.emitEvent('click', {
         parent: this.schemaComponent
@@ -65,10 +70,6 @@ export default TypeComponent.register([
       ) {
         await this.submit()
       }
-    },
-
-    async submit(options) {
-      return this.resourceComponent?.submit(this, options)
     }
   }
 })

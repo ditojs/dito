@@ -290,15 +290,6 @@ export default TypeComponent.register('multiselect', {
       default: false
     }),
 
-    listeners() {
-      // override TypeMixin's listeners to re-route input to onChange()
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        input: this.onChange
-      }
-    },
-
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema
       return placeholder || (
@@ -318,6 +309,16 @@ export default TypeComponent.register('multiselect', {
   },
 
   methods: {
+    // @override
+    getListeners() {
+      // override `TypeMixin.getListeners()` to re-route 'input' to `onChange()`
+      return {
+        focus: this.onFocus,
+        blur: this.onBlur,
+        input: this.onChange
+      }
+    },
+
     addTagOption(tag) {
       if (this.taggable) {
         const { optionLabel, optionValue } = this
