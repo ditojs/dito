@@ -266,6 +266,10 @@ export default DitoComponent.component('dito-form', {
   },
 
   methods: {
+    emitSchemaEvent(event, params) {
+      return this.mainSchemaComponent.emitEvent(event, params)
+    },
+
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(this.path

@@ -28,10 +28,6 @@ export default {
       } else {
         schemaComponents.splice(schemaComponents.indexOf(schemaComponent), 1)
       }
-    },
-
-    emitSchemaEvent(event, params) {
-      return this.mainSchemaComponent.emitEvent(event, params)
     }
   }
 }
