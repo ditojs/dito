@@ -443,10 +443,6 @@ export default DitoComponent.component('dito-schema', {
       this.opened = expand
     },
 
-    onLoad() {
-      this.emitEvent('load')
-    },
-
     onChange() {
       this.emitEvent('change')
     },

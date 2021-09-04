@@ -362,7 +362,6 @@ export default {
         // including the nested list data.
         this.viewComponent.setData(data)
       }
-      this.schemaComponent.onLoad()
     },
 
     unwrapListData(data) {

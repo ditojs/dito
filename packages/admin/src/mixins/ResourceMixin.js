@@ -210,6 +210,7 @@ export default {
           }
         } else {
           this.setData(response.data)
+          this.emitSchemaEvent('load')
         }
       })
     },

@@ -518,6 +518,10 @@ export default {
         }
         return res
       }
+    },
+
+    emitSchemaEvent(event, params) {
+      return this.schemaComponent.emitEvent(event, params)
     }
   }
 }
