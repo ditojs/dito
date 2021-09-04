@@ -370,7 +370,7 @@ export default DitoComponent.component('dito-schema', {
     this.setupSchemaFields()
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
-    this.emitEvent('create')
+    this.emitEvent('initialize') // Not `'create'`, since that's for data.
   },
 
   beforeDestroy() {

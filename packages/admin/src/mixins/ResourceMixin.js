@@ -289,6 +289,8 @@ export default {
 
     async submitResource(button, resource, method, data, {
       setData = false,
+      onSuccess,
+      onError,
       notifySuccess = () => this.notify({
         type: 'success',
         title: 'Request Successful',
@@ -315,6 +317,7 @@ export default {
                 this.showValidationErrors(errors, true)
               } else {
                 const error = isObject(data) ? data : err
+                onError?.(error)
                 await this.emitButtonEvent(button, 'error', {
                   notify: notifyError,
                   error
@@ -327,6 +330,7 @@ export default {
               if (setData && data) {
                 this.setData(data)
               }
+              onSuccess?.()
               await this.emitButtonEvent(button, 'success', {
                 notify: notifySuccess
               })
