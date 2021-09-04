@@ -33,12 +33,12 @@
     }
   },
   "dependencies": {
-    "@babel/runtime": "^7.15.3",
+    "@babel/runtime": "^7.15.4",
     "@ditojs/ui": "^0.265.0",
     "@ditojs/utils": "^0.265.0",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "codeflask": "^1.4.1",
-    "core-js": "^3.16.4",
+    "core-js": "^3.17.2",
     "filesize": "^8.0.0",
     "filesize-parser": "^1.5.0",
     "hint.css": "^2.6.0",
@@ -61,8 +61,8 @@
     "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.0",
-    "@babel/preset-env": "^7.15.0",
+    "@babel/core": "^7.15.5",
+    "@babel/preset-env": "^7.15.4",
     "@ditojs/babel-preset": "^0.265.0",
     "@ditojs/build": "^0.265.0",
     "@vue/cli-plugin-babel": "^4.5.13",

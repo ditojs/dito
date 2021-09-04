@@ -28,8 +28,8 @@
     "node 14"
   ],
   "dependencies": {
-    "@babel/core": "^7.15.0",
-    "@babel/runtime": "^7.15.3",
+    "@babel/core": "^7.15.5",
+    "@babel/runtime": "^7.15.4",
     "@ditojs/admin": "^0.265.0",
     "@ditojs/router": "^0.265.0",
     "@ditojs/utils": "^0.265.0",
@@ -38,13 +38,13 @@
     "@vue/cli-service": "^4.5.13",
     "ajv": "^7.2.4",
     "ajv-formats": "^1.6.1",
-    "aws-sdk": "^2.978.0",
-    "axios": "^0.21.1",
+    "aws-sdk": "^2.983.0",
+    "axios": "^0.21.2",
     "babel-loader": "^8.2.2",
     "bcryptjs": "^2.4.3",
     "bytes": "^3.1.0",
     "chalk": "^4.1.2",
-    "core-js": "^3.16.4",
+    "core-js": "^3.17.2",
     "data-uri-to-buffer": "^3.0.1",
     "eventemitter2": "^6.4.4",
     "file-type": "^16.5.3",
@@ -89,8 +89,8 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.14.8",
-    "@babel/preset-env": "^7.15.0",
+    "@babel/cli": "^7.15.4",
+    "@babel/preset-env": "^7.15.4",
     "@ditojs/babel-preset": "^0.265.0",
     "babel-plugin-dynamic-import-node": "^2.3.3",
     "babel-plugin-module-resolver": "^4.1.0",
