@@ -314,7 +314,7 @@ export default {
               // See if we're dealing with a Dito validation error:
               const errors = this.isValidationError(response) && data.errors
               if (errors) {
-                this.showValidationErrors(errors, true)
+                await this.showValidationErrors(errors, true)
               } else {
                 const error = isObject(data) ? data : err
                 onError?.(error)

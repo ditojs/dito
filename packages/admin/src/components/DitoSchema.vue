@@ -49,8 +49,7 @@
         :enabled="inlined"
       )
         dito-components.dito-components-main(
-          v-if="hasMainComponents"
-          v-show="opened"
+          v-if="hasMainComponents && opened"
           ref="components"
           :schema="schema"
           :dataPath="dataPath"
@@ -508,7 +507,7 @@ export default DitoComponent.component('dito-schema', {
       return this.validateAll(match, false)
     },
 
-    showValidationErrors(errors, focus) {
+    async showValidationErrors(errors, focus) {
       this.clearErrors()
       let first = true
       const unmatched = []
@@ -527,7 +526,7 @@ export default DitoComponent.component('dito-schema', {
         for (const component of components) {
           if (component.showValidationErrors(errs, first && focus)) {
             found = true
-            break
+            first = false
           }
         }
         if (!found) {
@@ -538,22 +537,21 @@ export default DitoComponent.component('dito-schema', {
           while (dataPathParts.length > 0) {
             const components = this.getComponentsByDataPath(dataPathParts)
             for (const component of components) {
-              if (component.navigateToComponent?.(
+              if (await component.navigateToComponent?.(
                 fullDataPath,
-                subComponent => {
-                  // Filter the errors to only contain those that belong to the
-                  // matched dataPath:
-                  const parentPath = normalizeDataPath(dataPathParts)
-                  const filteredErrors = Object.entries(errors).reduce(
-                    (filtered, [dataPath, errs]) => {
-                      if (normalizeDataPath(dataPath).startsWith(parentPath)) {
-                        filtered[dataPath] = errs
-                      }
-                      return filtered
-                    },
-                    {}
-                  )
-                  subComponent.showValidationErrors(filteredErrors, true)
+                subComponents => {
+                  let found = false
+                  for (const component of subComponents) {
+                    const errs = errors[component.dataPath]
+                    if (
+                      errs &&
+                      component.showValidationErrors(errs, first && focus)
+                    ) {
+                      found = true
+                      first = false
+                    }
+                  }
+                  return found
                 }
               )) {
                 // Found a nested form to display at least parts fo the errors.
