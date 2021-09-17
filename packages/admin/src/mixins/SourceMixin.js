@@ -447,8 +447,8 @@ export default {
     openSchemaComponent(index) {
       const { schemaComponents } = this
       const { length } = schemaComponents
-      const idx = ((index % length) + length) % length
-      const schemaComponent = schemaComponents[idx]
+      const i = ((index % length) + length) % length
+      const schemaComponent = schemaComponents[i]
       if (schemaComponent) {
         schemaComponent.opened = true
       }

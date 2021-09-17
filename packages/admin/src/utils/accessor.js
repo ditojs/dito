@@ -48,6 +48,8 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
         value = isFunction(def) ? def.call(this, this.context) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
+        // Now access store again, for reactivity tracking
+        this.getStore(name)
       }
       // Allow the provided getter to further change or process the value
       // retrieved from the store:
