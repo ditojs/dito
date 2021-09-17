@@ -36,17 +36,18 @@ export default DitoComponent.component('dito-clipboard', {
   data() {
     return {
       copyEnabled: false,
-      pasteEnabled: false
+      pasteEnabled: false,
+      fixClipboard: true
     }
   },
 
   computed: {
-    clipboardSettings() {
+    clipboardOptions() {
       return isObject(this.clipboard) ? this.clipboard : {}
     },
 
     copyData() {
-      const { copy } = this.clipboardSettings
+      const { copy } = this.clipboardOptions
       return copy
         ? clipboardData => copy.call(this, new DitoContext(this, {
           clipboardData
@@ -55,7 +56,7 @@ export default DitoComponent.component('dito-clipboard', {
     },
 
     pasteData() {
-      const { paste } = this.clipboardSettings
+      const { paste } = this.clipboardOptions
       return paste
         ? clipboardData => paste.call(this, new DitoContext(this, {
           clipboardData
@@ -73,11 +74,15 @@ export default DitoComponent.component('dito-clipboard', {
     this.domOn(window, {
       focus: this.checkClipboard
     })
-    this.$watch('data', this.checkClipboard)
-    // If we already have data (e.g. create form), then check right away also:
-    if (this.data) {
-      this.checkClipboard()
-    }
+    this.$watch('data', {
+      // Check right away also in case there's already data (e.g. create form).
+      immediate: true,
+      handler: (to, from) => {
+        if (to !== from) {
+          this.checkClipboard()
+        }
+      }
+    })
   },
 
   methods: {
@@ -86,6 +91,12 @@ export default DitoComponent.component('dito-clipboard', {
       let { clipboardData } = this.appState
       try {
         const json = await navigator.clipboard?.readText?.()
+        if (this.fixClipboard && json) {
+          // This appears to be needed on Safari to prevent a strange "Paste"
+          // button from appearing when the clipboard is accessed (why?!).
+          await navigator.clipboard?.writeText?.(json)
+          this.fixClipboard = false
+        }
         if (json) {
           clipboardData = JSON.parse(json)
         }

@@ -213,8 +213,8 @@ export default class DitoAdmin {
     return axios.request({
       url,
       method,
-      ...(data && { data }),
       params,
+      ...(data && { data }),
       baseURL: isApiRequest ? this.api.url : null,
       headers: {
         ...(isApiRequest && this.api.headers),

@@ -9,10 +9,11 @@
     )
       li(
         v-for="(label, value) of items"
-        @mousedown.stop="onPulldownMouseDown(value)"
-        @mouseup="onPulldownMouseUp(value)"
       )
-        a {{ label }}
+        a(
+          @mousedown.stop="onPulldownMouseDown(value)"
+          @mouseup="onPulldownMouseUp(value)"
+        ) {{ label }}
 </template>
 
 <style lang="sass">
