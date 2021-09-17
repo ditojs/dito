@@ -439,7 +439,16 @@ export default DitoComponent.component('dito-schema', {
         // TODO: Actually expose this on DitoContext?
         context: { expand }
       })
-      this.opened = expand
+      // Prevent closing the schema with invalid data, since the in-component
+      // validation will not be executed once it's closed.
+
+      // TODO: Move validation out of components, to schema, just like
+      // processing, and use `showValidationErrors()` for the resulting errors,
+      // then remove this requirement, since we can validate closed forms and
+      // schemas then.
+      if (!this.opened || expand || this.validateAll()) {
+        this.opened = expand
+      }
     },
 
     onChange() {
