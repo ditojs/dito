@@ -491,7 +491,7 @@ export default TypeComponent.register('markup', {
       return list
     },
 
-    focus() {
+    focusElement() {
       this.$el.scrollIntoView?.()
       this.editor.focus()
     }

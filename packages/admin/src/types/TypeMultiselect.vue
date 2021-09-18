@@ -335,7 +335,7 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    focus() {
+    focusElement() {
       this.$refs.element.activate()
     },
 

@@ -259,21 +259,26 @@ export default {
       return null
     },
 
+    // @overridable
+    focusElement() {
+      const [element] = asArray(this.$refs.element)
+      if (element) {
+        this.$nextTick(() => {
+          element.focus()
+          // If the element is disabled, `focus()` will likely not have the
+          // desired effect. Use `scrollIntoView()` if available:
+          if (this.disabled) {
+            (element.$el || element).scrollIntoView?.()
+          }
+        })
+      }
+    },
+
     focus() {
       // Also focus this component's schema and panel in case it's a tab.
       this.schemaComponent.focus()
       this.tabComponent?.focus()
-      const [focus] = asArray(this.$refs.element)
-      if (focus) {
-        this.$nextTick(() => {
-          focus.focus()
-          // If the element is disabled, `focus()` will likely not have the
-          // desired effect. Use `scrollIntoView()` if available:
-          if (this.disabled) {
-            (focus.$el || focus).scrollIntoView?.()
-          }
-        })
-      }
+      this.focusElement()
     },
 
     clear() {
