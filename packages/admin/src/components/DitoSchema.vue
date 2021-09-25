@@ -69,9 +69,8 @@
         v-if="!hasLabel"
         name="edit-buttons"
       )
-    template(ve-else)
+    template(v-else-if="isPopulated")
       dito-panels(
-        v-if="isPopulated && panelSchemas.length > 0"
         :panels="panelSchemas"
         :data="data"
         :meta="meta"
@@ -224,7 +223,7 @@ export default DitoComponent.component('dito-schema', {
 
     panelSchemas() {
       const panels = getPanelSchemas(this.schema.panels, '')
-      for (const pane of Object.values(this.panesRegistry)) {
+      for (const pane of this.panes) {
         panels.push(...pane.panelSchemas)
       }
       return panels
@@ -351,6 +350,18 @@ export default DitoComponent.component('dito-schema', {
       }
     }),
 
+    components() {
+      return Object.values(this.componentsRegistry)
+    },
+
+    panes() {
+      return Object.values(this.panesRegistry)
+    },
+
+    panels() {
+      return Object.values(this.panelsRegistry)
+    },
+
     componentsByDataPath() {
       return this._listEntriesByDataPath(this.componentsRegistry)
     },
@@ -421,17 +432,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     someComponent(callback) {
-      return (
-        this.isPopulated &&
-        Object.values(this.componentsRegistry).some(callback)
-      )
+      return this.isPopulated && this.components.some(callback)
     },
 
     everyComponent(callback) {
-      return (
-        this.isPopulated &&
-        Object.values(this.componentsRegistry).every(callback)
-      )
+      return this.isPopulated && this.components.every(callback)
     },
 
     onExpand(expand) {
@@ -456,13 +461,13 @@ export default DitoComponent.component('dito-schema', {
     },
 
     resetValidation() {
-      for (const component of Object.values(this.componentsRegistry)) {
+      for (const component of this.components) {
         component.resetValidation()
       }
     },
 
     clearErrors() {
-      for (const component of Object.values(this.componentsRegistry)) {
+      for (const component of this.components) {
         component.clearErrors()
       }
     },

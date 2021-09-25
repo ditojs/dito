@@ -460,14 +460,18 @@ export default {
     async navigateToComponent(dataPath, onComplete) {
       if (this.collapsible) {
         const index = dataPath.startsWith(this.dataPath)
-          ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
+          ? this.isListSource
+            ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
+            : 0
           : null
         if (index !== null && isNumber(+index)) {
           const schemaComponent = this.getSchemaComponent(+index)
           if (schemaComponent) {
             const { opened } = schemaComponent
-            schemaComponent.opened = true
-            await this.$nextTick()
+            if (!opened) {
+              schemaComponent.opened = true
+              await this.$nextTick()
+            }
             const components = schemaComponent.getComponentsByDataPath(dataPath)
             if (components.length > 0 && (onComplete?.(components) ?? true)) {
               return true

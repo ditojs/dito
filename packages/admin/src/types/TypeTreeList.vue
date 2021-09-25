@@ -52,9 +52,7 @@ export default TypeComponent.register([
   mixins: [SourceMixin],
 
   provide() {
-    return {
-      container: this
-    }
+    return { container: this }
   },
 
   getSourceType(type) {

@@ -182,7 +182,8 @@ export default class DitoAdmin {
         $sourceComponent: () => null,
         $resourceComponent: () => null,
         $dialogComponent: () => null,
-        $panelComponent: () => null
+        $panelComponent: () => null,
+        $tabComponent: () => null
       },
 
       render: createElement => createElement(DitoRoot, {

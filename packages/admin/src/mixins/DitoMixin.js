@@ -25,7 +25,8 @@ export default {
     '$sourceComponent',
     '$resourceComponent',
     '$dialogComponent',
-    '$panelComponent'
+    '$panelComponent',
+    '$tabComponent'
   ],
 
   provide() {
@@ -120,6 +121,10 @@ export default {
 
     panelComponent() {
       return this.$panelComponent()
+    },
+
+    tabComponent() {
+      return this.$tabComponent()
     },
 
     parentSchemaComponent() {

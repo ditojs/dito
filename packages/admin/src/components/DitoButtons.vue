@@ -32,7 +32,7 @@ import { appendDataPath } from '@/utils/data'
 // @vue/component
 export default DitoComponent.component('dito-buttons', {
   provide: {
-    tabComponent: null
+    $tabComponent: () => null
   },
 
   props: {

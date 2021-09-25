@@ -653,7 +653,7 @@ export function getSourceType(schemaOrType) {
   ) ?? null
 }
 
-export function getPanelSchema(schema, dataPath) {
+export function getPanelSchema(schema, dataPath, tabComponent) {
   return schema
     ? {
       schema,
@@ -661,15 +661,20 @@ export function getPanelSchema(schema, dataPath) {
       // This is used e.g. for $filters panels.
       dataPath: schema.name
         ? appendDataPath(dataPath, schema.name)
-        : dataPath
+        : dataPath,
+      tabComponent
     }
     : null
 }
 
-export function getPanelSchemas(schemas, dataPath, panels = []) {
+export function getPanelSchemas(schemas, dataPath, tabComponent, panels = []) {
   if (schemas) {
     for (const [key, schema] of Object.entries(schemas)) {
-      const panel = getPanelSchema(schema, appendDataPath(dataPath, key))
+      const panel = getPanelSchema(
+        schema,
+        appendDataPath(dataPath, key),
+        tabComponent
+      )
       if (panel) {
         panels.push(panel)
       }
@@ -678,16 +683,21 @@ export function getPanelSchemas(schemas, dataPath, panels = []) {
   return panels
 }
 
-export function getAllPanelSchemas(schema, dataPath, schemaComponent = null) {
+export function getAllPanelSchemas(
+  schema,
+  dataPath,
+  schemaComponent = null,
+  tabComponent = null
+) {
   const panel = getTypeOptions(schema)?.getPanelSchema?.(
     schema,
     dataPath,
     schemaComponent
   )
-  const panels = panel ? [getPanelSchema(panel, dataPath)] : []
+  const panels = panel ? [getPanelSchema(panel, dataPath, tabComponent)] : []
   // Allow each component to provide its own set of panels, in
   // addition to the default one (e.g. $filter):
-  getPanelSchemas(schema.panels, dataPath, panels)
+  getPanelSchemas(schema.panels, dataPath, tabComponent, panels)
   return panels
 }
 

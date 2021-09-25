@@ -1,5 +1,7 @@
 <template lang="pug">
-  .dito-panels
+  .dito-panels(
+    v-if="panels.length > 0"
+  )
     dito-panel(
       v-for="{ schema, dataPath, tabComponent } in panels"
       v-if="shouldRender(schema)"
@@ -10,7 +12,7 @@
       :meta="meta"
       :store="getChildStore(schema.name)"
       :disabled="schema.disabled != null ? schema.disabled : disabled"
-      :tabComponent="tabComponent"
+      :panelTabComponent="tabComponent"
     )
 </template>
 

@@ -74,7 +74,7 @@ import { getAllPanelSchemas, isNested } from '@/utils/schema'
 export default DitoComponent.component('dito-pane', {
   provide() {
     return {
-      tabComponent: this.tabComponent
+      $tabComponent: () => this.tabComponent
     }
   },
 
@@ -93,7 +93,7 @@ export default DitoComponent.component('dito-pane', {
 
   computed: {
     tabComponent() {
-      return this.tab ? this : null
+      return this.tab ? this : this.$tabComponent()
     },
 
     componentSchemas() {
@@ -128,21 +128,13 @@ export default DitoComponent.component('dito-pane', {
     panelSchemas() {
       // Gather all panel schemas from all component schemas, by finding those
       // that want to provide a panel. See `getAllPanelSchemas()` for details.
-      return this.componentSchemas.reduce(
-        (schemas, { schema, nestedDataPath: dataPath }) => {
-          for (const panel of getAllPanelSchemas(
-            schema,
-            dataPath,
-            this.schemaComponent
-          )) {
-            schemas.push({
-              ...panel,
-              tabComponent: this.tabComponent
-            })
-          }
-          return schemas
-        },
-        []
+      return this.componentSchemas.flatMap(
+        ({ schema, nestedDataPath: dataPath }) => getAllPanelSchemas(
+          schema,
+          dataPath,
+          this.schemaComponent,
+          this.tabComponent
+        )
       )
     },
 

@@ -2,7 +2,7 @@
   // Only show panels in tabs when the tabs are also visible.
   component.dito-panel(
     :is="panelTag"
-    v-show="visible && (!tabComponent || tabComponent.visible)"
+    v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
     @submit.prevent
   )
     label.dito-panel-title {{ getLabel(schema) }}
@@ -75,7 +75,8 @@ export default DitoComponent.component('dito-panel', {
 
   provide() {
     return {
-      $panelComponent: () => this
+      $panelComponent: () => this,
+      $tabComponent: () => this.panelTabComponent
     }
   },
 
@@ -86,7 +87,7 @@ export default DitoComponent.component('dito-panel', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    tabComponent: { type: DitoComponent, default: null }
+    panelTabComponent: { type: DitoComponent, default: null }
   },
 
   data() {
@@ -98,6 +99,10 @@ export default DitoComponent.component('dito-panel', {
   computed: {
     panelComponent() {
       return this
+    },
+
+    tabComponent() {
+      return this.panelTabComponent
     },
 
     buttonSchemas() {

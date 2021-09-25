@@ -9,10 +9,6 @@ import { isString, asArray } from '@ditojs/utils'
 export default {
   mixins: [ValidationMixin],
 
-  inject: [
-    'tabComponent'
-  ],
-
   props: {
     schema: { type: Object, required: true },
     // NOTE: While `dataPath` points to the actual `value`, `data` represents

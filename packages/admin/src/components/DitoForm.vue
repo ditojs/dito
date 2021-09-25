@@ -23,7 +23,6 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
-      :selectedTab="selectedTab"
       :menuHeader="true"
     )
       dito-buttons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
