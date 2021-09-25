@@ -2,7 +2,7 @@
   .dito-section(
     :class="{ 'dito-section-labelled' : !!schema.label }"
   )
-    dito-components.dito-section-components(
+    dito-pane.dito-section-pane(
       :schema="getItemFormSchema(schema, item, context)"
       :dataPath="dataPath"
       :data="item"

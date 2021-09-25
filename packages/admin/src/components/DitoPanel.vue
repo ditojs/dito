@@ -56,7 +56,7 @@
         margin: 0
         label
           font-weight: normal
-      .dito-components
+      .dito-pane
         margin: 0 (-$form-spacing-half)
       .dito-component-container
         padding: $form-spacing-half

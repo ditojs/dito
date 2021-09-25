@@ -1,5 +1,5 @@
 <template lang="pug">
-  // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
+  // NOTE: This is similar to DitoPane, but uses the DitoButtonContainer
   // sub-class as the component container for different layout:
   .dito-buttons(
     v-if="buttonSchemas || $slots.default"

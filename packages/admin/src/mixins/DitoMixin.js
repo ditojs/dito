@@ -153,7 +153,7 @@ export default {
     // We can't store this in `data`, as this is already the pure data from the
     // API server. That's what the `store` is for: Memory that's available as
     // long as the current editing path is still valid. For type components,
-    // this memory is provided by the parent, see RouteMixin and DitoComponents.
+    // this memory is provided by the parent, see RouteMixin and DitoPane.
     getStore(key) {
       return this.store[key]
     },

@@ -45,7 +45,7 @@
           box-sizing: border-box
           // Because tables have a funny way of allowing too much width growth:
           max-width: $content-width
-        & +.dito-components
+        & +.dito-pane
           // Needed for transition-height in DitoSchema:
           min-height: $form-spacing
 </style>

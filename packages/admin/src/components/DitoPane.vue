@@ -1,5 +1,5 @@
 <template lang="pug">
-  .dito-components(
+  .dito-pane(
     v-if="isPopulated && componentSchemas.length > 0"
     v-show="visible"
   )
@@ -34,9 +34,7 @@
 </template>
 
 <style lang="sass">
-  // TODO: Consider renaming to `DitoContainer`? That's how it's called in
-  // `DitoSchema`
-  .dito-components
+  .dito-pane
     display: flex
     position: relative
     flex-flow: row wrap
@@ -46,11 +44,11 @@
     margin: (-$form-spacing) (-$form-spacing-half)
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half
-    // Use `flex: 0%` for all `.dito-components` except `.dito-components-main`,
+    // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
     // so that the `.dito-buttons-main` can be moved all the way to the bottom.
     flex: 0%
 
-    &.dito-components-main
+    &.dito-pane-main
       flex: 100%
 
     .dito-schema-header:not(.dito-schema-menu-header) + &
@@ -73,7 +71,7 @@ import { appendDataPath } from '@/utils/data'
 import { getAllPanelSchemas, isNested } from '@/utils/schema'
 
 // @vue/component
-export default DitoComponent.component('dito-components', {
+export default DitoComponent.component('dito-pane', {
   provide() {
     return {
       tabComponent: this.tabComponent
@@ -163,7 +161,7 @@ export default DitoComponent.component('dito-components', {
 
   methods: {
     _register(add) {
-      this.schemaComponent._registerContainer(this, add)
+      this.schemaComponent._registerPane(this, add)
     },
 
     focus() {

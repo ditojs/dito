@@ -29,7 +29,7 @@
           :dataPath="dataPath"
           :data="data"
         )
-      dito-components.dito-components-tab(
+      dito-pane.dito-pane-tab(
         v-if="hasTabs"
         v-for="(schema, tab) in tabs"
         ref="tabs"
@@ -41,15 +41,15 @@
         :data="data"
         :meta="meta"
         :store="store"
-        :single="!inlined && !hasMainComponents"
+        :single="!inlined && !hasMainPane"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
       transition-height(
         :enabled="inlined"
       )
-        dito-components.dito-components-main(
-          v-if="hasMainComponents && opened"
+        dito-pane.dito-pane-main(
+          v-if="hasMainPane && opened"
           ref="components"
           :schema="schema"
           :dataPath="dataPath"
@@ -103,7 +103,7 @@
     > .dito-panels
       padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
-    .dito-components-tab + .dito-components-main
+    .dito-pane-tab + .dito-pane-main
       &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
@@ -203,8 +203,8 @@ export default DitoComponent.component('dito-schema', {
           ? data.call(this, this.context)
           : data
       ),
-      containersRegistry: {},
       componentsRegistry: {},
+      panesRegistry: {},
       panelsRegistry: {}
     }
   },
@@ -224,8 +224,8 @@ export default DitoComponent.component('dito-schema', {
 
     panelSchemas() {
       const panels = getPanelSchemas(this.schema.panels, '')
-      for (const container of Object.values(this.containersRegistry)) {
-        panels.push(...container.panelSchemas)
+      for (const pane of Object.values(this.panesRegistry)) {
+        panels.push(...pane.panelSchemas)
       }
       return panels
     },
@@ -340,7 +340,7 @@ export default DitoComponent.component('dito-schema', {
       return !this.inlined && !!this.tabs
     },
 
-    hasMainComponents() {
+    hasMainPane() {
       const { components } = this.schema
       return !!components && Object.keys(components).length > 0
     },
@@ -351,12 +351,12 @@ export default DitoComponent.component('dito-schema', {
       }
     }),
 
-    containersByDataPath() {
-      return this._listEntriesByDataPath(this.containersRegistry)
-    },
-
     componentsByDataPath() {
       return this._listEntriesByDataPath(this.componentsRegistry)
+    },
+
+    panesByDataPath() {
+      return this._listEntriesByDataPath(this.panesRegistry)
     },
 
     panelsByDataPath() {
@@ -655,14 +655,14 @@ export default DitoComponent.component('dito-schema', {
       this.$schemaParentComponent()?._registerSchemaComponent(this, add)
     },
 
-    _registerContainer(container, add) {
-      this._registerEntry(this.containersRegistry, container, add)
-    },
-
     _registerComponent(component, add) {
       this._registerEntry(this.componentsRegistry, component, add)
       // Only register with the parent if schema shares data with it.
       this.parentSchemaComponent?._registerComponent(component, add)
+    },
+
+    _registerPane(pane, add) {
+      this._registerEntry(this.panesRegistry, pane, add)
     },
 
     _registerPanel(panel, add) {

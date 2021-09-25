@@ -90,7 +90,7 @@
   // TODO: Find a better way to control this behavior.
   .dito-schema-compact
     > .dito-schema-content
-      > .dito-components
+      > .dito-pane
         > .dito-component-container
           > .dito-label:not(.dito-label-component)
             display: inline-block

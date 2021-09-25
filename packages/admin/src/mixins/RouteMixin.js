@@ -24,7 +24,7 @@ export default {
       reload: false,
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
-      // their life-cycle. See: DitoComponents, SourceMixin
+      // their life-cycle. See: DitoPane, SourceMixin
       store: {},
       loadCache: {} // See TypeMixin.load()
     }
