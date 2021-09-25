@@ -15,7 +15,7 @@
       .dito-break(
         v-if="schema.break === 'before'"
       )
-      dito-component-container(
+      dito-container(
         v-if="shouldRender(schema)"
         :key="nestedDataPath"
         :schema="schema"
@@ -40,7 +40,7 @@
     flex-flow: row wrap
     align-content: flex-start
     align-items: baseline
-    // Remove padding added by .dito-component-container
+    // Remove padding added by `.dito-container`
     margin: (-$form-spacing) (-$form-spacing-half)
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half
@@ -55,7 +55,7 @@
       // Clear top-margin if the components are preceded by a schema header.
       margin-top: 0
 
-    .dito-component-container.dito-omit-padding > &
+    .dito-container.dito-omit-padding > &
       // Clear margins set above again if parent is omitting padding.
       margin: 0
       max-width: unset

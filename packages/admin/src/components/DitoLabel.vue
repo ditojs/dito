@@ -91,7 +91,7 @@
   .dito-schema-compact
     > .dito-schema-content
       > .dito-pane
-        > .dito-component-container
+        > .dito-container
           > .dito-label:not(.dito-label-component)
             display: inline-block
 </style>

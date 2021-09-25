@@ -1,6 +1,5 @@
 <template lang="pug">
-  // See `containerClass` for the assignment of the class-names to this div:
-  div(
+  .dito-container(
     v-show="componentVisible"
     :class="containerClass"
     :style="containerStyle"
@@ -30,7 +29,7 @@
 </template>
 
 <style lang="sass">
-  .dito-component-container
+  .dito-container
     // Needed for better vertical alignment:
     align-self: stretch
     box-sizing: border-box
@@ -47,7 +46,7 @@
         margin: $form-spacing $form-spacing-half 0
     &.dito-single
       height: 100% // So that list buttons can be sticky at the bottom
-  // NOTE: This is not nested inside .dito-component-container so that other
+  // NOTE: This is not nested inside `.dito-container` so that other
   // type components can override `.dito-width-fill` class (filter precedence).
   .dito-component
     &.dito-width-fill
@@ -68,7 +67,7 @@ import { parseFraction } from '@/utils/math'
 import { isString, isNumber } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-component-container', {
+export default DitoComponent.component('dito-container', {
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
@@ -156,9 +155,6 @@ export default DitoComponent.component('dito-component-container', {
     containerClass() {
       const { class: containerClass } = this.schema
       return {
-        // Use the component name as its class, so the extended
-        // dito-button-container automatically works too.
-        [this.$options.name]: true,
         'dito-single': this.single,
         'dito-omit-padding': shouldOmitPadding(this.schema),
         ...(
