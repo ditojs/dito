@@ -29,12 +29,12 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.15.4",
-    "core-js": "^3.17.3",
+    "core-js": "^3.18.0",
     "punycode": "^2.1.1",
     "regenerator-runtime": "^0.13.9"
   },
   "devDependencies": {
-    "@babel/cli": "^7.15.4",
+    "@babel/cli": "^7.15.7",
     "@babel/core": "^7.15.5",
     "@babel/preset-env": "^7.15.6",
     "@ditojs/babel-preset": "^0.268.0",

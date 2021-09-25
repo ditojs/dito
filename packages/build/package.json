@@ -28,12 +28,12 @@
   ],
   "dependencies": {
     "@ditojs/utils": "^0.268.0",
-    "core-js": "^3.17.3",
+    "core-js": "^3.18.0",
     "mime": "^2.5.2",
     "mini-svg-data-uri": "^1.3.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.15.4",
+    "@babel/cli": "^7.15.7",
     "@babel/core": "^7.15.5",
     "@babel/preset-env": "^7.15.6",
     "@ditojs/babel-preset": "^0.268.0",
