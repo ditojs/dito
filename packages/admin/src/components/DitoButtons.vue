@@ -25,6 +25,12 @@
       dito-vnode(:node="node")
 </template>
 
+<style lang="sass">
+.dito-buttons
+  > .dito-container
+    padding: 0
+</style>
+
 <script>
 import DitoComponent from '@/DitoComponent'
 import { appendDataPath } from '@/utils/data'
