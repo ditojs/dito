@@ -37,7 +37,7 @@
     "@babel/runtime": "^7.15.4",
     "@ditojs/utils": "^0.269.0",
     "@soda/get-current-script": "^1.0.2",
-    "core-js": "^3.18.0",
+    "core-js": "^3.18.1",
     "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
@@ -47,7 +47,7 @@
     "@ditojs/build": "^0.269.0",
     "@vue/cli-plugin-babel": "^4.5.13",
     "@vue/cli-service": "^4.5.13",
-    "autoprefixer": "^9.8.6",
+    "autoprefixer": "^9.8.7",
     "babel-loader": "^8.2.2",
     "fibers": "^5.0.0",
     "postcss": "^8.3.8",

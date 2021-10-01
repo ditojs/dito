@@ -29,7 +29,7 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.15.4",
-    "core-js": "^3.18.0",
+    "core-js": "^3.18.1",
     "punycode": "^2.1.1",
     "regenerator-runtime": "^0.13.9"
   },
