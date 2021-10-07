@@ -16,6 +16,15 @@
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
+    // Prevent implicit submission of the form, for example when typing enter
+    // in an input field.
+    // https://stackoverflow.com/a/51507806
+    button(
+      type="submit"
+      disabled="true"
+      style="display: none"
+      aria-hidden="true"
+    )
     dito-schema(
       :schema="schema"
       :dataPath="dataPath"
