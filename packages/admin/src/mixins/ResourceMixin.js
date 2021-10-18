@@ -264,9 +264,9 @@ export default {
     },
 
     getPayloadData(button, method) {
-      // Convention: only post and patch requests pass the data as payload.
+      // Convention: only post, put and patch requests pass the data as payload.
       return (
-        ['post', 'patch'].includes(method) && (
+        ['post', 'put', 'patch'].includes(method) && (
           // TODO: Use `handleDataSchema()` asynchronously here instead, to
           // offer the same amount of possibilities for data loading.
           button.getSchemaValue(['resource', 'data']) ||
