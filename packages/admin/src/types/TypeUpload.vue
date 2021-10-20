@@ -283,6 +283,7 @@ export default TypeComponent.register('upload', {
       if (newFile && oldFile) {
         const { success, error } = newFile
         if (success) {
+          this.onChange()
           const file = newFile.response[0]
           if (file) {
             file.upload = newFile
