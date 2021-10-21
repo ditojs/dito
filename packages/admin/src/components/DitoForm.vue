@@ -20,9 +20,9 @@
     // in an input field.
     // https://stackoverflow.com/a/51507806
     button(
+      v-show="false"
       type="submit"
       disabled="true"
-      style="display: none"
       aria-hidden="true"
     )
     dito-schema(
