@@ -51,6 +51,7 @@
           template(v-if="columns")
             dito-table-cell(
               v-for="column in columns"
+              v-if="shouldRender(column)"
               :key="column.name"
               :class="getCellClass(column)"
               :cell="column"

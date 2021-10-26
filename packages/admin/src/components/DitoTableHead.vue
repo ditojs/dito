@@ -3,6 +3,7 @@
     tr
       th(
         v-for="(column, index) in columns"
+        v-if="shouldRender(column)"
         :class="getColumnClass(column)"
       )
         router-link(
