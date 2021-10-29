@@ -103,6 +103,7 @@ export default TypeComponent.register('color', {
         } else {
           this.value = tinycolor(value).toString(format)
         }
+        this.onChange()
       }
     },
 
