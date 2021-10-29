@@ -187,9 +187,20 @@ export default class ControllerAction {
         await this.returns.validate(data)
         return getResult()
       } catch (error) {
+        // Include full JSON result in responses during tests and development,
+        // for easier debugging.
+        const message =
+          process.env.NODE_ENV === 'test' ||
+          process.env.NODE_ENV === 'development'
+            ? `Invalid result of action: ${JSON.stringify(
+                getResult(),
+                null,
+                2
+              )}`
+            : 'Invalid result of action'
         throw this.createValidationError({
           type: 'ResultValidation',
-          message: `Invalid result of action: ${JSON.stringify(getResult())}`,
+          message,
           errors: error.errors
         })
       }
