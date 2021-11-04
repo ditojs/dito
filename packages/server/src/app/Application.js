@@ -485,13 +485,15 @@ export class Application extends Koa {
 
     this.use(attachLogger(this.logger))
 
-    this.use(handleError())
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
     if (log.requests) {
       this.use(logRequests())
     }
+    // Needs to be positioned after the request logger to log the correct
+    // response status.
+    this.use(handleError())
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
     }
