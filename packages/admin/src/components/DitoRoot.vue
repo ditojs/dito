@@ -183,7 +183,7 @@ export default DitoComponent.component('dito-root', {
             internal: true
           })
           if (redirectAfterLogin) {
-            return location.replace(redirectAfterLogin)
+            location.replace(redirectAfterLogin)
           } else {
             this.setUser(response.data.user)
             await this.resolveViews()
