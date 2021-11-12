@@ -158,7 +158,10 @@ export default DitoComponent.component('dito-root', {
 
     async login() {
       this.allowLogin = true
-      const { extraComponents, redirectAfterLogin } = this.options.login || {}
+      const {
+        additionalComponents,
+        redirectAfterLogin
+      } = this.options.login || {}
       const loginData = await this.showDialog({
         components: {
           username: {
@@ -168,7 +171,7 @@ export default DitoComponent.component('dito-root', {
           password: {
             type: 'password'
           },
-          ...extraComponents || {}
+          ...additionalComponents
         },
         buttons: {
           cancel: {},
