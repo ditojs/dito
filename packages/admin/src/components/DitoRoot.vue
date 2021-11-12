@@ -158,7 +158,7 @@ export default DitoComponent.component('dito-root', {
 
     async login() {
       this.allowLogin = true
-      const extraComponents = this.options.login.extraComponents
+      const { extraComponents, redirectAfterLogin } = this.options.login || {}
       const loginData = await this.showDialog({
         components: {
           username: {
@@ -182,8 +182,12 @@ export default DitoComponent.component('dito-root', {
             data: loginData,
             internal: true
           })
-          this.setUser(response.data.user)
-          await this.resolveViews()
+          if (redirectAfterLogin) {
+            return location.replace(redirectAfterLogin)
+          } else {
+            this.setUser(response.data.user)
+            await this.resolveViews()
+          }
         } catch (err) {
           const error = err.response?.data?.error
           this.notify({
