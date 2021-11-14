@@ -3,6 +3,7 @@ import { QueryBuilder } from '@/query'
 import { EventEmitter, KnexHelper } from '@/lib'
 import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
+import { formatJson } from '@/utils'
 import {
   ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
   RelationError, WrappedError
@@ -279,9 +280,9 @@ export class Model extends objection.Model {
         throw new ModelError(
           this,
           `Invalid amount of id values provided for reference: Unable to map ${
-            JSON.stringify(modelOrId)
+            formatJson(modelOrId, false)
           } to ${
-            JSON.stringify(idProperties)
+            formatJson(idProperties, false)
           }.`
         )
       }
@@ -730,7 +731,9 @@ export class Model extends objection.Model {
       return this.app.createValidationError({
         type,
         message: message ||
-          `The provided data for the ${this.name} model is not valid: ${JSON.stringify(json)}`,
+          `The provided data for the ${this.name} model is not valid: ${
+            formatJson(json)
+          }`,
         errors,
         options
       })

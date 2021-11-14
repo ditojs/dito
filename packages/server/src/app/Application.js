@@ -23,6 +23,7 @@ import { Controller, AdminController } from '@/controllers'
 import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
+import { formatJson } from '@/utils'
 import { ResponseError, ValidationError, AssetError } from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
@@ -657,7 +658,7 @@ export class Application extends Koa {
 
   formatError(err) {
     const message = err.toJSON
-      ? JSON.stringify(err.toJSON(), null, 2)
+      ? formatJson(err.toJSON())
       : err.message || err
     const str = `${err.name}: ${message}`
     return err.stack && this.config.log.errors?.stack !== false

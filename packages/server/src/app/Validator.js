@@ -2,6 +2,7 @@ import objection from 'objection'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
+import { formatJson } from '@/utils'
 import * as schema from '@/schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
@@ -83,7 +84,7 @@ export class Validator extends objection.Validator {
       }
       return opts
     }, {})
-    const cacheKey = JSON.stringify(opts)
+    const cacheKey = formatJson(opts, false)
     const { ajv } = this.ajvCache[cacheKey] || (this.ajvCache[cacheKey] = {
       ajv: this.createAjv(opts),
       options

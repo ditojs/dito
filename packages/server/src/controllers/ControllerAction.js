@@ -1,3 +1,4 @@
+import { formatJson } from '@/utils'
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
@@ -165,7 +166,7 @@ export default class ControllerAction {
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${JSON.stringify(getData())}`,
+        message: `The provided data is not valid: ${formatJson(getData())}`,
         errors
       })
     }
@@ -192,11 +193,7 @@ export default class ControllerAction {
         const message =
           process.env.NODE_ENV === 'test' ||
           process.env.NODE_ENV === 'development'
-            ? `Invalid result of action: ${JSON.stringify(
-                getResult(),
-                null,
-                2
-              )}`
+            ? `Invalid result of action: ${formatJson(getResult())}`
             : 'Invalid result of action'
         throw this.createValidationError({
           type: 'ResultValidation',

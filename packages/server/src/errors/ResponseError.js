@@ -1,4 +1,5 @@
 import { isPlainObject, isString } from '@ditojs/utils'
+import { formatJson } from '@/utils'
 
 export class ResponseError extends Error {
   constructor(error, defaults = { message: 'Response error', status: 400 }) {
@@ -26,7 +27,7 @@ export class ResponseError extends Error {
       // Include full JSON error in message during tests, for better reporting.
       const { message: _, ...rest } = data
       if (Object.keys(rest).length > 0) {
-        message = `${message}\nError Data:\n${JSON.stringify(rest, null, 2)}`
+        message = `${message}\nError Data:\n${formatJson(rest)}`
       }
     }
     super(message)

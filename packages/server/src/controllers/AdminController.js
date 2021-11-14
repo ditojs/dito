@@ -6,8 +6,9 @@ import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
 import VueService from '@vue/cli-service'
 import HtmlWebpackTagsPlugin from 'html-webpack-tags-plugin'
-import { ControllerError } from '@/errors'
 import { Controller } from './Controller'
+import { ControllerError } from '@/errors'
+import { formatJson } from '@/utils'
 import { isString, isObject } from '@ditojs/utils'
 
 export class AdminController extends Controller {
@@ -59,7 +60,7 @@ export class AdminController extends Controller {
   sendDitoObject(ctx) {
     // Send back the global dito object as JavaScript code.
     ctx.type = 'text/javascript'
-    ctx.body = `window.dito = ${JSON.stringify(this.getDitoObject())}`
+    ctx.body = `window.dito = ${formatJson(this.getDitoObject(), false)}`
   }
 
   middleware() {

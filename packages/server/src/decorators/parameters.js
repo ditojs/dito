@@ -1,5 +1,5 @@
 import { isArray, isObject } from '@ditojs/utils'
-import { createDecorator, deprecate } from '@/utils'
+import { createDecorator, deprecate, formatJson } from '@/utils'
 
 export function parameters(parameters, options) {
   if (isObject(parameters)) {
@@ -7,7 +7,7 @@ export function parameters(parameters, options) {
     if (!isObject(first)) {
       deprecate(
         `@parameters(${
-          JSON.stringify(parameters)
+          formatJson(parameters, false)
         }) with parameter schema object is deprecated: Schema object should be passed nested inside an array or object definition.`
       )
       parameters = [...arguments]

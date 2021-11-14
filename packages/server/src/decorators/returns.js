@@ -1,11 +1,11 @@
 import { isObject } from '@ditojs/utils'
-import { createDecorator } from '@/utils'
+import { createDecorator, formatJson } from '@/utils'
 
 export function returns(returns, options) {
   if (!isObject(returns)) {
     throw new Error(
       `@returns(${
-        JSON.stringify(returns)
+        formatJson(returns, false)
       }) needs to be defined using an object parameter definition`
     )
   }
