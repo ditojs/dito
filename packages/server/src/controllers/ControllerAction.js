@@ -166,7 +166,7 @@ export default class ControllerAction {
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: `The provided data is not valid: ${formatJson(getData())}`,
+        message: 'The provided data is not valid',
         errors
       })
     }
