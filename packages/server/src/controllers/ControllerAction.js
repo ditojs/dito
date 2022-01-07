@@ -237,7 +237,7 @@ export default class ControllerAction {
 
   coerceValue(type, value, modelOptions) {
     // See if param needs additional coercion:
-    if (['date', 'datetime', 'timestamp'].includes(type)) {
+    if (value && ['date', 'datetime', 'timestamp'].includes(type)) {
       value = new Date(value)
     } else {
       // See if the defined type(s) require coercion to objects:
