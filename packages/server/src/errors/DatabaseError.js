@@ -24,20 +24,12 @@ export class DatabaseError extends WrappedError {
     const overrides = {
       type: error.constructor.name,
       message,
-      sql,
       status
     }
-    super(error, overrides, { message: 'Database error', status })
-  }
-
-  toJSON() {
-    // Remove SQL query from displayed data in front-end when not in development
-    // or test.
-    if (process.env.NODE_ENV !== 'development' ||
-    process.env.NODE_ENV !== 'test') {
-      const { sql, ...data } = this.data
-      return data
+    if (process.env.NODE_ENV === 'development' ||
+        process.env.NODE_ENV === 'test') {
+      overrides.sql = sql
     }
-    return this.data
+    super(error, overrides, { message: 'Database error', status })
   }
 }
