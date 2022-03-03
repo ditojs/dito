@@ -21,7 +21,7 @@
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node 14"
+    "node >= 14"
   ],
   "dependencies": {
     "@babel/runtime": "^7.15.4",

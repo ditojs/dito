@@ -21,7 +21,7 @@
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node 14",
+    "node >= 14",
     "> 1%",
     "last 2 versions",
     "ie >= 11",

@@ -24,7 +24,7 @@
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node 14"
+    "node >= 14"
   ],
   "dependencies": {
     "@ditojs/utils": "^0.272.0",

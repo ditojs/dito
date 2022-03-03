@@ -1951,7 +1951,6 @@ __metadata:
     babel-loader: ^8.2.2
     codeflask: ^1.4.1
     core-js: ^3.18.1
-    fibers: ^5.0.0
     filesize: ^8.0.3
     filesize-parser: ^1.5.0
     nanoid: ^3.1.28
@@ -2128,7 +2127,6 @@ __metadata:
     autoprefixer: ^9.8.7
     babel-loader: ^8.2.2
     core-js: ^3.18.1
-    fibers: ^5.0.0
     postcss: ^8.3.8
     postcss-inset: ^1.0.0
     postcss-loader: ^4.3.0
@@ -7758,7 +7756,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"detect-libc@npm:^1.0.2, detect-libc@npm:^1.0.3":
+"detect-libc@npm:^1.0.2":
   version: 1.0.3
   resolution: "detect-libc@npm:1.0.3"
   bin:
@@ -9069,15 +9067,6 @@ __metadata:
   dependencies:
     bser: 2.1.1
   checksum: 8510230778ab3a51c27dffb1b76ef2c24fab672a42742d3c0a45c2e9d1e5f20210b1fbca33486088da4a9a3958bde96b5aec0a63aac9894b4e9df65c88b2cbd6
-  languageName: node
-  linkType: hard
-
-"fibers@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "fibers@npm:5.0.0"
-  dependencies:
-    detect-libc: ^1.0.3
-  checksum: 7ac0b4c2faeb31413c2ac4bec48d06ab8d4ea2294c527a16f5e880ab742c05f2703788e3b728b29676f6d7dda0efb2742fa90c6dd7c269df9c4e6dd0d0beda0c
   languageName: node
   linkType: hard
 
