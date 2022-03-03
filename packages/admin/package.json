@@ -76,6 +76,5 @@
     "sass": "1.32.13",
     "sass-loader": "^10.2.0",
     "webpack": "^4.46.0"
-  },
-  "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"
+  }
 }

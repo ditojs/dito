@@ -23,6 +23,5 @@
   "peerDependencies": {
     "@babel/core": "^7.13.8",
     "@babel/preset-env": "^7.13.9"
-  },
-  "gitHead": "cfff2b26f1c30e8178e954904af186779ba747bb"
+  }
 }
