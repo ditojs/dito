@@ -60,7 +60,7 @@ export class AdminController extends Controller {
   sendDitoObject(ctx) {
     // Send back the global dito object as JavaScript code.
     ctx.type = 'text/javascript'
-    ctx.body = `window.dito = ${formatJson(this.getDitoObject(), false)}`
+    ctx.body = `window.dito = ${formatJson(this.getDitoObject())}`
   }
 
   middleware() {

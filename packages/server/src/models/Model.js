@@ -5,8 +5,11 @@ import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
 import { populateGraph, filterGraph } from '@/graph'
 import { formatJson } from '@/utils'
 import {
-  ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
-  RelationError, WrappedError
+  ResponseError,
+  GraphError, ModelError,
+  NotFoundError,
+  RelationError,
+  WrappedError
 } from '@/errors'
 import {
   isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
@@ -223,7 +226,7 @@ export class Model extends objection.Model {
     return super.query(trx).onError(err => {
       // TODO: Shouldn't this wrapping happen on the Controller level?
       err = err instanceof ResponseError ? err
-        : err instanceof objection.DBError ? new DatabaseError(err)
+        : err instanceof objection.DBError ? this.app.createDatabaseError(err)
         : new WrappedError(err)
       return Promise.reject(err)
     })
@@ -730,12 +733,11 @@ export class Model extends objection.Model {
     case 'ModelValidation':
       return this.app.createValidationError({
         type,
-        message: message ||
-          `The provided data for the ${this.name} model is not valid: ${
-            formatJson(json)
-          }`,
+        message:
+          message || `The provided data for the ${this.name} model is not valid`,
         errors,
-        options
+        options,
+        json
       })
     case 'RelationExpression':
     case 'UnallowedRelation':

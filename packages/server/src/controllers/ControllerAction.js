@@ -1,4 +1,3 @@
-import { formatJson } from '@/utils'
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
@@ -166,8 +165,9 @@ export default class ControllerAction {
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
-        message: 'The provided data is not valid',
-        errors
+        message: 'The provided action parameters are not valid',
+        errors,
+        json: getData()
       })
     }
   }
@@ -188,17 +188,11 @@ export default class ControllerAction {
         await this.returns.validate(data)
         return getResult()
       } catch (error) {
-        // Include full JSON result in responses during tests and development,
-        // for easier debugging.
-        const message =
-          process.env.NODE_ENV === 'test' ||
-          process.env.NODE_ENV === 'development'
-            ? `Invalid result of action: ${formatJson(getResult())}`
-            : 'Invalid result of action'
         throw this.createValidationError({
           type: 'ResultValidation',
-          message,
-          errors: error.errors
+          message: 'The returned action result is not valid',
+          errors: error.errors,
+          json: getResult()
         })
       }
     }

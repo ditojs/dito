@@ -24,7 +24,12 @@ import { Service } from '@/services'
 import { Storage } from '@/storage'
 import { convertSchema } from '@/schema'
 import { formatJson } from '@/utils'
-import { ResponseError, ValidationError, AssetError } from '@/errors'
+import {
+  ResponseError,
+  ValidationError,
+  DatabaseError,
+  AssetError
+} from '@/errors'
 import SessionStore from './SessionStore'
 import { Validator } from './Validator'
 import {
@@ -473,11 +478,26 @@ export class Application extends Koa {
     }
   }
 
-  createValidationError({ type, message, errors, options }) {
+  createValidationError({ type, message, errors, options, json }) {
     return new ValidationError({
       type,
       message,
-      errors: this.validator.parseErrors(errors, options)
+      errors: this.validator.parseErrors(errors, options),
+      // Only include the JSON data in the error if `log.errors.json`is set.
+      json: this.config.log.errors?.json ? json : undefined
+    })
+  }
+
+  createDatabaseError(error) {
+    // Remove knex SQL query and move to separate `sql` property.
+    // TODO: Fix this properly in Knex / Objection instead, see:
+    // https://gitter.im/Vincit/objection.js?at=5a68728f5a9ebe4f75ca40b0
+    const [, sql, message] = error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
+      [null, null, error.message]
+    return new DatabaseError(error, {
+      message,
+      // Only include the SQL query in the error if `log.errors.sql`is set.
+      sql: this.config.log.errors?.sql ? sql : undefined
     })
   }
 
