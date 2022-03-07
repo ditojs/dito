@@ -19,7 +19,7 @@
 <style lang="sass">
   .dito-panels
     max-width: $content-sidebar-width
-    min-width: $content-sidebar-width / 2
+    min-width: calc($content-sidebar-width / 2)
 </style>
 
 <script>

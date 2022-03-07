@@ -113,11 +113,11 @@
 
     .multiselect__select
       width: 0
-      margin-right: $select-arrow-width / 2
+      margin-right: calc($select-arrow-width / 2)
       &::before
         +arrow($select-arrow-size)
         bottom: $select-arrow-bottom
-        right: -$select-arrow-size / 2
+        right: calc(-1 * $select-arrow-size / 2)
 
     .multiselect__spinner
       width: $spinner-width

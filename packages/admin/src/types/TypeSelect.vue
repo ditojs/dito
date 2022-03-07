@@ -43,7 +43,7 @@
 
 <style lang="sass">
   // TODO: Move to dito-ui
-  $select-arrow-right: ($select-arrow-width - $select-arrow-size) / 2
+  $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2)
 
   .dito-select
     display: inline-block

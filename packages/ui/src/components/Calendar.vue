@@ -101,7 +101,7 @@
     padding: 0 0.5em
     span
       display: inline-block
-      width: (100% / 7)
+      width: calc(100% / 7)
       height: $input-height
       line-height: calc(#{$input-height} - 2px)
       box-sizing: border-box
@@ -126,11 +126,11 @@
   .dito-calendar-months,
   .dito-calendar-years
     span
-      width: (100% / 4)
+      width: calc(100% / 4)
       margin: 0.5em 0
 
   .dito-calendar-years span
-    width: (100% / 5)
+    width: calc(100% / 5)
 
   .dito-calendar a,
   .dito-calendar-dates span,

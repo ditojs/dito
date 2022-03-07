@@ -4,7 +4,7 @@
     display: inline-block
     width: round($button-order-arrow-size * $math-sqrt2)
     padding-left: $form-spacing
-    $arrow-offset: $button-order-arrow-size / 2 + $border-width
+    $arrow-offset: calc($button-order-arrow-size / 2 + $border-width)
     &::before
       +arrow($button-order-arrow-size, 'up')
       bottom: $arrow-offset
