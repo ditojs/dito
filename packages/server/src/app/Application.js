@@ -628,6 +628,12 @@ export class Application extends Koa {
         }
       }
       this.knex = Knex(knex)
+      // Support PostgreSQL type parser mappings in the config.
+      if (knex.client === 'postgresql' && knex.typeParsers) {
+        for (const [type, parser] of Object.entries(knex.typeParsers)) {
+          this.knex.client.driver.types.setTypeParser(type, parser)
+        }
+      }
       if (log.sql) {
         this.setupKnexLogging()
       }
