@@ -6,6 +6,9 @@ module.exports = getVueConfig({
     devtool: 'source-map',
     performance: false,
     resolve: {
+      fallback: {
+        os: require.resolve('os-browserify/browser')
+      },
       alias: {
         // This is required for sym-linked dev folder to work during yarn serve:
         '@ditojs/admin': path.resolve('./src')

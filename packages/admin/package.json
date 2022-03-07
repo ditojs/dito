@@ -12,7 +12,7 @@
     "static/"
   ],
   "scripts": {
-    "build": "vue-cli-service build --target lib --name dito-admin src/index.js",
+    "build": "vue-cli-service build --target lib --name dito-admin --no-module src/index.js",
     "watch": "yarn build --watch",
     "prepare": "yarn build"
   },
@@ -64,16 +64,17 @@
     "@babel/preset-env": "^7.16.11",
     "@ditojs/babel-preset": "^0.274.0",
     "@ditojs/build": "^0.274.0",
-    "@vue/cli-plugin-babel": "^4.5.15",
-    "@vue/cli-service": "^4.5.15",
-    "autoprefixer": "^9.8.8",
+    "@vue/cli-plugin-babel": "^5.0.1",
+    "@vue/cli-service": "^5.0.1",
+    "autoprefixer": "^10.4.2",
     "babel-loader": "^8.2.3",
+    "os-browserify": "^0.3.0",
     "postcss": "^8.4.8",
-    "postcss-loader": "^4.3.0",
+    "postcss-loader": "^6.2.1",
     "pug": "^3.0.2",
     "pug-plain-loader": "^1.1.0",
     "sass": "1.49.9",
-    "sass-loader": "^10.2.1",
-    "webpack": "^4.46.0"
+    "sass-loader": "^12.6.0",
+    "webpack": "^5.70.0"
   }
 }
