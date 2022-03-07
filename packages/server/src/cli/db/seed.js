@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import chalk from 'chalk'
+import pico from 'picocolors'
 import util from 'util'
 import pluralize from 'pluralize'
 import { isFunction, isArray, camelize } from '@ditojs/utils'
@@ -57,18 +57,18 @@ async function handleSeed(app, base, seed, modelClass) {
     }
     if (isArray(res)) {
       console.info(
-        chalk.green(`${base}:`),
-        chalk.cyan(`${res.length} seed records created.`)
+        pico.green(`${base}:`),
+        pico.cyan(`${res.length} seed records created.`)
       )
     } else {
       console.info(
-        chalk.red(`${base}:`),
-        chalk.cyan('No seed records created.')
+        pico.red(`${base}:`),
+        pico.cyan('No seed records created.')
       )
     }
   } catch (err) {
     console.error(
-      chalk.red(`${base}:`),
+      pico.red(`${base}:`),
       util.inspect(err, {
         colors: true,
         depth: null,

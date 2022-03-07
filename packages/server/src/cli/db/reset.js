@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import pico from 'picocolors'
 import { migrate } from './migrate'
 
 export async function reset(knex) {
@@ -11,10 +11,10 @@ export async function reset(knex) {
     migrations.push(...log)
   }
   console.info(migrations.length === 0
-    ? chalk.cyan('Already at the base migration')
-    : chalk.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
+    ? pico.cyan('Already at the base migration')
+    : pico.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
       `rolled back: ${migrations.length} migrations\n`) +
-      chalk.cyan(migrations.join('\n')))
+      pico.cyan(migrations.join('\n')))
   await migrate(knex)
   return true
 }

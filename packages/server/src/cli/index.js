@@ -1,7 +1,7 @@
 #!/usr/bin/env babel-node
 
 import path from 'path'
-import chalk from 'chalk'
+import pico from 'picocolors'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
 import * as db from './db'
@@ -47,10 +47,10 @@ async function execute() {
   } catch (err) {
     if (err instanceof Error) {
       console.error(
-        chalk.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
+        pico.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
       )
     } else {
-      console.error(chalk.red(err))
+      console.error(pico.red(err))
     }
     process.exit(1)
   }

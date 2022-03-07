@@ -2,7 +2,7 @@
  * Middleware inspired by 'koa-logger'. Adapted and extended to our needs.
  */
 import bytes from 'bytes'
-import chalk from 'chalk'
+import pico from 'picocolors'
 import Counter from 'passthrough-counter'
 
 export function logRequests({ ignoreUrls } = {}) {
@@ -58,11 +58,11 @@ function logRequest(ctx) {
     logger.trace(
       { req: ctx.req },
       `${
-        chalk.gray('<--')
+        pico.gray('<--')
       } ${
-        chalk.bold(ctx.method)
+        pico.bold(ctx.method)
       } ${
-        chalk.gray(ctx.originalUrl)
+        pico.gray(ctx.originalUrl)
       }`
     )
   }
@@ -93,15 +93,15 @@ function logResponse({ ctx, start, length, err }) {
     logger[level](
       { req: ctx.req, res: ctx.res },
       `${
-        chalk.bold(ctx.method)
+        pico.bold(ctx.method)
       } ${
-        chalk.gray(ctx.originalUrl)
+        pico.gray(ctx.originalUrl)
       } ${
-        chalk[statusColor](status)
+        pico[statusColor](status)
       } ${
-        chalk.gray(formattedTime)
+        pico.gray(formattedTime)
       } ${
-        chalk.gray(formattedLength)
+        pico.gray(formattedLength)
       }`
     )
   }

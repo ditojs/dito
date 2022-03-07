@@ -21,5 +21,9 @@
   "cSpell.enableFiletypes": [
     "javascript",
     "vue"
+  ],
+  "cSpell.words": [
+    "pico",
+    "picocolors"
   ]
 }

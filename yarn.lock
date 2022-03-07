@@ -2615,7 +2615,6 @@ __metadata:
     babel-plugin-module-resolver: ^4.1.0
     bcryptjs: ^2.4.3
     bytes: ^3.1.2
-    chalk: ^4.1.2
     core-js: ^3.21.1
     data-uri-to-buffer: ^3.0.1
     eventemitter2: ^6.4.5
@@ -2648,6 +2647,7 @@ __metadata:
     passport-local: ^1.0.0
     passthrough-counter: ^1.0.0
     pg: ^8.7.3
+    picocolors: ^1.0.0
     pino: ^6.14.0
     pino-pretty: ^6.0.0
     pluralize: ^8.0.0
@@ -6853,16 +6853,6 @@ __metadata:
     ansi-styles: ^4.1.0
     supports-color: ^7.1.0
   checksum: 036e973e665ba1a32c975e291d5f3d549bceeb7b1b983320d4598fb75d70fe20c5db5d62971ec0fe76cdbce83985a00ee42372416abfc3a5584465005a7855ed
-  languageName: node
-  linkType: hard
-
-"chalk@npm:^4.1.2":
-  version: 4.1.2
-  resolution: "chalk@npm:4.1.2"
-  dependencies:
-    ansi-styles: ^4.1.0
-    supports-color: ^7.1.0
-  checksum: fe75c9d5c76a7a98d45495b91b2172fa3b7a09e0cc9370e5c8feb1c567b85c4288e2b3fded7cfdd7359ac28d6b3844feb8b82b8686842e93d23c827c417e83fc
   languageName: node
   linkType: hard
 

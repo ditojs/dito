@@ -1,7 +1,7 @@
 import repl from 'repl'
 import path from 'path'
 import fs from 'fs-extra'
-import chalk from 'chalk'
+import pico from 'picocolors'
 import objection from 'objection'
 import { isFunction, deindent } from '@ditojs/utils'
 
@@ -100,11 +100,11 @@ function displayUsage(app, config, details) {
     Dito Console
 
     Available references:
-     - Dito app: ${chalk.cyan('app')}
+     - Dito app: ${pico.cyan('app')}
     ${
       modelHandleNames.length > 0
         ? ` - Dito models: ${
-          modelHandleNames.map(m => chalk.cyan(m)).join(', ')
+          modelHandleNames.map(m => pico.cyan(m)).join(', ')
         }`
         : ''
     }

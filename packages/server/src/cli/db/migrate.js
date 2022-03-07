@@ -1,10 +1,10 @@
-import chalk from 'chalk'
+import pico from 'picocolors'
 
 export async function migrate(knex) {
   const [batch, log] = await knex.migrate.latest()
   console.info(log.length === 0
-    ? chalk.cyan('Already up to date')
-    : chalk.green(`Batch ${batch} run: ${log.length} migrations\n`) +
-      chalk.cyan(log.join('\n')))
+    ? pico.cyan('Already up to date')
+    : pico.green(`Batch ${batch} run: ${log.length} migrations\n`) +
+      pico.cyan(log.join('\n')))
   return true
 }

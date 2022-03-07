@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import pico from 'picocolors'
 import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
 import { EventEmitter } from '@/lib'
 import ControllerAction from './ControllerAction'
@@ -44,11 +44,11 @@ export class Controller {
       this.url = namespace ? `/${namespace}${url}` : url
       this.log(
         `${
-          namespace ? chalk.green(`/${namespace}/`) : ''
+          namespace ? pico.green(`/${namespace}/`) : ''
         }${
-          chalk.cyan(path)
+          pico.cyan(path)
         }${
-          chalk.white(':')
+          pico.white(':')
         }`,
         this.level
       )
@@ -92,13 +92,13 @@ export class Controller {
   setupRoute(verb, url, transacted, authorize, action, handlers) {
     this.log(
       `${
-        chalk.magenta(verb.toUpperCase())
+        pico.magenta(verb.toUpperCase())
       } ${
-        chalk.green(this.url)
+        pico.green(this.url)
       }${
-        chalk.cyan(url.slice(this.url.length))
+        pico.cyan(url.slice(this.url.length))
       } ${
-        chalk.white(this.describeAuthorize(authorize))
+        pico.white(this.describeAuthorize(authorize))
       }`,
       this.level + 1
     )

@@ -2,7 +2,7 @@ import Koa from 'koa'
 import Knex from 'knex'
 import util from 'util'
 import axios from 'axios'
-import chalk from 'chalk'
+import pico from 'picocolors'
 import zlib from 'zlib'
 import pino from 'pino'
 import os from 'os'
@@ -163,7 +163,7 @@ export class Application extends Koa {
         }
         if (Object.keys(data).length > 0) {
           console.info(
-            chalk.yellow.bold(`\n${modelClass.name}:\n`),
+            pico.yellow.bold(`\n${modelClass.name}:\n`),
             util.inspect(data, {
               colors: true,
               depth: null,
@@ -846,13 +846,13 @@ export class Application extends Koa {
               if (!data) {
                 console.info(
                   `${
-                    chalk.red('INFO:')
+                    pico.red('INFO:')
                   } Asset ${
-                    chalk.green(`'${file.name}'`)
+                    pico.green(`'${file.name}'`)
                   } is from a foreign source, fetching from ${
-                    chalk.green(`'${file.url}'`)
+                    pico.green(`'${file.url}'`)
                   } and adding to storage ${
-                    chalk.green(`'${storage.name}'`)
+                    pico.green(`'${storage.name}'`)
                   }...`
                 )
                 const response = await axios.request({
