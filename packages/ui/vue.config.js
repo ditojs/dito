@@ -5,7 +5,9 @@ module.exports = getVueConfig({
     devtool: 'source-map',
     performance: false,
     resolve: {
-      fallback: {
+      alias: {
+        // @ditojs/utils use 'os' internally, webpack 5 now needs this:
+        // TODO: Remove dependency on 'os' in @ditojs/utils.
         os: require.resolve('os-browserify/browser')
       }
     }

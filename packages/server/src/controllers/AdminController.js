@@ -2,12 +2,12 @@ import path from 'path'
 import Koa from 'koa'
 import mount from 'koa-mount'
 import serve from 'koa-static'
-import koaWebpack from 'koa-webpack'
 import historyApiFallback from 'koa-connect-history-api-fallback'
 import VueService from '@vue/cli-service'
 import HtmlWebpackTagsPlugin from 'html-webpack-tags-plugin'
 import { Controller } from './Controller'
 import { ControllerError } from '@/errors'
+import { koaWebpack } from '@/middleware'
 import { formatJson } from '@/utils'
 import { isString, isObject } from '@ditojs/utils'
 
@@ -114,7 +114,7 @@ export class AdminController extends Controller {
         publicPath: '/',
         stats
       },
-      hotClient: this.config.hotReload !== false && {
+      hotMiddleware: this.config.hotReload !== false && {
         // The only way to not log `Failed to parse source map` warnings is
         // sadly to ignore all warnings:
         // https://github.com/webpack-contrib/webpack-hot-client/issues/94
@@ -142,13 +142,13 @@ export class AdminController extends Controller {
         entry: [this.getPath('build')],
         resolve: {
           alias: {
-            // See https://github.com/webpack-contrib/webpack-hot-client/pull/62
-            'webpack-hot-client/client':
-              require.resolve('webpack-hot-client/client')
+            // @ditojs/utils use 'os' internally, webpack 5 now needs this:
+            // TODO: Remove dependency on 'os' in @ditojs/utils.
+            os: require.resolve('os-browserify/browser')
           }
         },
         output: {
-          filename: '[name].[hash].js'
+          filename: '[name].[contenthash].js'
         },
         optimization: {
           splitChunks: {
@@ -178,8 +178,6 @@ export class AdminController extends Controller {
               {
                 test: /\.(js|css)$/,
                 enforce: 'pre',
-                // Use `require.resolve()` here too, to avoid issues similar to
-                // 'webpack-hot-client/client' above.
                 use: [require.resolve('source-map-loader')]
               }
             ]
