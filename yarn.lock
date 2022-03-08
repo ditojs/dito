@@ -2657,6 +2657,7 @@ __metadata:
     koa-compose: ^4.1.0
     koa-compress: ^5.1.0
     koa-conditional-get: ^3.0.0
+    koa-connect: ^2.1.0
     koa-connect-history-api-fallback: ^0.3.1
     koa-etag: ^4.0.0
     koa-helmet: ^6.1.0
@@ -2665,6 +2666,7 @@ __metadata:
     koa-response-time: ^2.1.0
     koa-session: ^6.2.0
     koa-static: ^5.0.0
+    koa2-connect: ^1.0.2
     mime-types: ^2.1.34
     multer: ^1.4.4
     multer-s3: ^2.10.0
@@ -13169,6 +13171,13 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"koa-connect@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "koa-connect@npm:2.1.0"
+  checksum: d4975a4845ba1ad62a67b114cf9fcce6444ad1423595c927d6d800d620e39feacaa551de967bdf936c10443a1ae4b9b1e2b8e82bb096964343a252ed41dd957a
+  languageName: node
+  linkType: hard
+
 "koa-convert@npm:^2.0.0":
   version: 2.0.0
   resolution: "koa-convert@npm:2.0.0"
@@ -13260,6 +13269,13 @@ fsevents@^1.2.7:
     debug: ^3.1.0
     koa-send: ^5.0.0
   checksum: 8d9b9c4d2b3b13e8818e804245d784099c4b353b55ddd7dbeeb90f27a2e9f5b6f86bd16a4909e337cb89db4d332d9002e6c0f5056caf75749cab62f93c1f0cc5
+  languageName: node
+  linkType: hard
+
+"koa2-connect@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "koa2-connect@npm:1.0.2"
+  checksum: b69396d2d5e1999348143dc33869aba1aac10e9f0cd09d4c23f4415c86639332f54c740c24a463c33bce9d69c22459c8fe6ba9387fafef5d24ca7855592914db
   languageName: node
   linkType: hard
 

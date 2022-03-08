@@ -1,3 +1,5 @@
+import compose from 'koa-compose'
+import connect from 'koa2-connect'
 import webpack from 'webpack'
 import webpackDevMiddleware from 'webpack-dev-middleware'
 import webpackHotMiddleware from 'webpack-hot-middleware'
@@ -20,6 +22,9 @@ export function koaWebpack({
   const devMiddleware = webpackDevMiddleware(compiler, devConfig)
   const hotMiddleware = hotConfig && webpackHotMiddleware(compiler, hotConfig)
 
+  return compose([connect(devMiddleware), connect(hotMiddleware)])
+
+  /*
   return (ctx, next) => {
     return new Promise(resolve => {
       const res = {
@@ -48,4 +53,5 @@ export function koaWebpack({
       })
     })
   }
+  */
 }
