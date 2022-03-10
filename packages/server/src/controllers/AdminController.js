@@ -7,6 +7,7 @@ import { createVuePlugin } from 'vite-plugin-vue2'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
+import { isMatch } from 'picomatch'
 import { handleConnectMiddleware } from '@/middleware'
 import { Controller } from './Controller'
 import { ControllerError } from '@/errors'
@@ -88,10 +89,11 @@ export class AdminController extends Controller {
       }
     } else {
       // Statically serve the pre-built admin SPA. But in order for vue-router
-      // routes inside the SPA to work, use a tiny rewriting middleware:
+      // routes inside the SPA to work for sub-routes, use a tiny rewriting
+      // middleware that serves up the `index.html` fur sub-routes:
       this.koa.use(async (ctx, next) => {
-        // // Exclude asset requests (css, js, app)
-        if (!ctx.url.match(/^\/(app\.|css\/|js\/)/)) {
+        // // Exclude asset requests (css, js)
+        if (!ctx.url.match(/\.(?:css|js)$/)) {
           ctx.url = '/'
         }
         await next()
@@ -123,13 +125,9 @@ export class AdminController extends Controller {
   getViteConfig() {
     const development = this.mode === 'development'
 
+    const cwd = path.resolve('.')
     const root = this.getPath('build')
-
-    const ditoDeps = [
-      '@ditojs/admin',
-      '@ditojs/ui',
-      '@ditojs/utils'
-    ]
+    const views = path.join(root, 'views')
 
     return defineConfig({
       root,
@@ -138,17 +136,38 @@ export class AdminController extends Controller {
       envFile: false,
       configFile: false,
       plugins: [createVuePlugin(), createCommonJsPlugin()],
+      build: {
+        ...(development
+          ? {}
+          : {
+            outDir: this.getPath('dist'),
+            assetsDir: '.',
+            emptyOutDir: true,
+            chunkSizeWarningLimit: 1000,
+            rollupOptions: {
+              output: {
+                manualChunks(id) {
+                  if (id.startsWith(views)) {
+                    return 'views'
+                  } else if (id.startsWith(cwd)) {
+                    return 'common'
+                  } else {
+                    const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
+                    return isMatch(module, CORE_DEPENDENCIES)
+                      ? 'core'
+                      : 'vendor'
+                  }
+                }
+              }
+            }
+          }
+        )
+      },
       optimizeDeps: {
-        exclude: development ? ditoDeps : [],
+        exclude: development ? DITO_PACKAGES : [],
         include: [
-          ...(development ? [] : ditoDeps),
-          // All non-es modules need to be explicitly included here, and some of
-          // them only work due to the use of `createCommonJsPlugin()`.
-          'vue-color',
-          'vue-js-modal',
-          'vue-multiselect',
-          'vue-notification',
-          'lowlight'
+          ...(development ? [] : DITO_PACKAGES),
+          ...NON_ESM_DEPENDENCIES
         ]
       },
       resolve: {
@@ -164,31 +183,8 @@ export class AdminController extends Controller {
     })
 
     /*
-    const {
-      build: {
-        template = 'index.html'
-      } = {},
-      devtool = development ? 'source-map' : false
-    } = this.config
     return {
-      runtimeCompiler: true,
-      publicPath: `${this.url}/`,
       configureWebpack: {
-        devtool,
-        // We always need the source build path as entry, even for production,
-        // for things like .babelrc to work when building for dist:
-        entry: [this.getPath('build')],
-        resolve: {
-          alias: {
-            // See https://github.com/webpack-contrib/webpack-hot-client/pull/62
-            'webpack-hot-client/client':
-              require.resolve('webpack-hot-client/client')
-          }
-        },
-        output: {
-          filename: '[name].[hash].js'
-        },
-        optimization: {
           splitChunks: {
             // Split dependencies into two chunks, one for all common libraries,
             // and one for all views, so they can be loaded separately, and only
@@ -206,28 +202,62 @@ export class AdminController extends Controller {
               }
             }
           }
-        },
-        module: development
-          // Preserve source-maps in third party dependencies, but do not log
-          // warnings about dependencies that don't come with source-maps.
-          // https://webpack.js.org/loaders/source-map-loader/#ignoring-warnings
-          ? {
-            rules: [
-              {
-                test: /\.(js|css)$/,
-                enforce: 'pre',
-                // Use `require.resolve()` here too, to avoid issues similar to
-                // 'webpack-hot-client/client' above.
-                use: [require.resolve('source-map-loader')]
-              }
-            ]
-          }
-          : {},
-        stats: {
-          warningsFilter: /Failed to parse source map/
         }
       }
     }
     */
   }
 }
+
+const DITO_PACKAGES = [
+  '@ditojs/admin',
+  '@ditojs/ui',
+  '@ditojs/utils'
+]
+
+const NON_ESM_DEPENDENCIES = [
+  // All non-es modules need to be explicitly included here, and some of
+  // them only work due to the use of `createCommonJsPlugin()`.
+  'vue-color',
+  'vue-js-modal',
+  'vue-multiselect',
+  'vue-notification',
+  'lowlight'
+]
+
+const CORE_DEPENDENCIES = [
+  ...DITO_PACKAGES,
+
+  // TODO: Figure out a way to generate this automatically for the current
+  // dito-admin dependencies, e.g. similar to
+  // `getRollupExternalsFromDependencies()`, perhaps as a script to persist to
+  // a json file?
+
+  'vue',
+  'vue-color',
+  'vue-js-modal',
+  'vue-multiselect',
+  'vue-notification',
+  'vue-router',
+  'vue-upload-component',
+  'vuedraggable',
+
+  'axios',
+  'core-js',
+  'lowlight',
+  'sortablejs',
+  'tiptap',
+  'tiptap-*',
+  'tslib',
+  'prosemirror-*',
+  'codeflask',
+  'rope-sequence',
+  'tinycolor2',
+  'fault',
+  'filesize',
+  'filesize-parser',
+  'format',
+  'highlight.js',
+  'orderedmap',
+  'w3c-keyname'
+]

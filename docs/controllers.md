@@ -605,12 +605,11 @@ actions.
 The `AdminController` extends the base `Controller` and provides a mounting
 point for the Dito.js Admin interface.
 
-During development, it runs a
-[koa-webpack](https://github.com/shellscape/koa-webpack) development server with
-support for hot-reloading, capable of compiling and serving the Dito.js Admin
-views and forms that are automatically recompiled and reloaded on code changes.
-In production, it hosts a pre-built version of these admin view and forms
-instead.
+During development, it runs a [vite](https://vitejs.dev/) development server
+with support for hot-reloading, capable of compiling and serving the Dito.js
+Admin views and forms that are automatically recompiled and reloaded on code
+changes. In production, a pre-built version of these admin views and forms
+is statically hosted instead.
 
 The app-wide configuration object `config.admin` is used to determine the
 location of the admin views and forms.
