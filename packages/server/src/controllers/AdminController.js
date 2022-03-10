@@ -2,14 +2,15 @@ import path from 'path'
 import Koa from 'koa'
 import mount from 'koa-mount'
 import serve from 'koa-static'
-import koaWebpack from 'koa-webpack'
-import historyApiFallback from 'koa-connect-history-api-fallback'
-import VueService from '@vue/cli-service'
-import HtmlWebpackTagsPlugin from 'html-webpack-tags-plugin'
+import { defineConfig, createServer } from 'vite'
+import { createVuePlugin } from 'vite-plugin-vue2'
+import {
+  viteCommonjs as createCommonJsPlugin
+} from '@originjs/vite-plugin-commonjs'
+import { handleConnectMiddleware } from '@/middleware'
 import { Controller } from './Controller'
 import { ControllerError } from '@/errors'
 import { formatJson } from '@/utils'
-import { isString, isObject } from '@ditojs/utils'
 
 export class AdminController extends Controller {
   // @override
@@ -83,7 +84,7 @@ export class AdminController extends Controller {
     if (this.mode === 'development') {
       // Calling getPath() throws exception if admin.build.path is not defined:
       if (this.getPath('build')) {
-        this.app.once('after:start', () => this.setupKoaWebpack())
+        this.app.once('after:start', () => this.setupViteServer())
       }
     } else {
       // Statically serve the pre-built admin SPA. But in order for vue-router
@@ -100,36 +101,73 @@ export class AdminController extends Controller {
     return mount(this.url, this.koa)
   }
 
-  async setupKoaWebpack() {
-    // https://webpack.js.org/configuration/stats/#stats
-    const stats = {
-      all: false,
-      errors: true,
-      errorDetails: true
-    }
-
-    const middleware = await koaWebpack({
-      config: this.getWebpackConfig(),
-      devMiddleware: {
-        publicPath: '/',
-        stats
-      },
-      hotClient: this.config.hotReload !== false && {
-        // The only way to not log `Failed to parse source map` warnings is
-        // sadly to ignore all warnings:
-        // https://github.com/webpack-contrib/webpack-hot-client/issues/94
-        logLevel: 'error',
-        stats
+  async setupViteServer() {
+    const config = this.getViteConfig()
+    const server = await createServer({
+      ...config,
+      server: {
+        middlewareMode: 'html',
+        watch: {
+          // Watch the @ditojs packages while in dev mode, although they are
+          // inside the node_modules folder.
+          // TODO: This should only really be done if they are symlinked.
+          ignored: ['!**/node_modules/@ditojs/**']
+        }
       }
     })
-    this.koa.use(historyApiFallback())
-    this.koa.use(middleware)
+    this.koa.use(handleConnectMiddleware(server.middlewares, {
+      expandMountPath: true
+    }))
   }
 
-  getVueConfig() {
+  getViteConfig() {
     const development = this.mode === 'development'
+
+    const root = this.getPath('build')
+
+    const ditoDeps = [
+      '@ditojs/admin',
+      '@ditojs/ui',
+      '@ditojs/utils'
+    ]
+
+    return defineConfig({
+      root,
+      base: `${this.url}/`,
+      mode: this.mode,
+      envFile: false,
+      configFile: false,
+      plugins: [createVuePlugin(), createCommonJsPlugin()],
+      optimizeDeps: {
+        exclude: development ? ditoDeps : [],
+        include: [
+          ...(development ? [] : ditoDeps),
+          // All non-es modules need to be explicitly included here, and some of
+          // them only work due to the use of `createCommonJsPlugin()`.
+          'vue-color',
+          'vue-js-modal',
+          'vue-multiselect',
+          'vue-notification',
+          'lowlight'
+        ]
+      },
+      resolve: {
+        extensions: ['.js', '.json', '.vue'],
+        preserveSymlinks: true,
+        alias: [
+          {
+            find: '@',
+            replacement: root
+          }
+        ]
+      }
+    })
+
+    /*
     const {
-      build = {},
+      build: {
+        template = 'index.html'
+      } = {},
       devtool = development ? 'source-map' : false
     } = this.config
     return {
@@ -185,76 +223,11 @@ export class AdminController extends Controller {
             ]
           }
           : {},
-        plugins: [
-          // Use `HtmlWebpackTagsPlugin` plugin to inject a script tag that
-          // load the dito object from the controller, including `dito.settings`
-          new HtmlWebpackTagsPlugin({
-            scripts: ['dito.js'],
-            useHash: true,
-            addHash: (path, hash) => path.replace(/\.js$/, `.${hash}.js`),
-            append: false
-          })
-        ],
         stats: {
           warningsFilter: /Failed to parse source map/
         }
-      },
-
-      chainWebpack: conf => {
-        // Change the location of the HTML template:
-        const { template = 'index.html' } = build
-        conf.plugin('html').tap(args => {
-          args[0].template = /^[./]/.test(template)
-            ? path.resolve(template)
-            : path.join(this.getPath('build'), template)
-          return args
-        })
-        if (development) {
-          // Disable the 'compact' option in babel-loader during development to
-          // prevent complaints when working with the `yarn watch` versions of
-          // dito-admin.umd.min.js and dito-ui.umd.min.js
-          const jsRule = conf.module.rule('js')
-          const hasBabel = jsRule.toConfig().use?.some(
-            ({ loader }) => /\bbabel-loader\b/.test(loader)
-          )
-          if (hasBabel) {
-            jsRule.use('babel-loader').options({ compact: false })
-          }
-          // Make `stats.warningsFilter` work, see:
-          // https://forum.vuejs.org/t/sppress-warnings-in-vue-cli-3/45905/4
-          conf.plugins.delete('friendly-errors')
-        }
       }
     }
-  }
-
-  getVuePlugins() {
-    return this.config.plugins?.map(definition => {
-      const plugin = isString(definition)
-        ? { id: definition }
-        : isObject(definition)
-          ? definition
-          : {}
-      const {
-        id,
-        apply = require(id)
-      } = plugin
-      if (!id) {
-        throw new ControllerError(
-          this,
-          `Invalid plugin definition: ${definition}`
-        )
-      }
-      return { id, apply }
-    })
-  }
-
-  getWebpackConfig() {
-    const service = new VueService(this.getPath('build'), {
-      inlineOptions: this.getVueConfig(),
-      plugins: this.getVuePlugins()
-    })
-    service.init(this.mode)
-    return service.resolveWebpackConfig()
+    */
   }
 }
