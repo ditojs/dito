@@ -5,12 +5,8 @@ module.exports = {
   root: true,
   parser: 'vue-eslint-parser',
   parserOptions: {
-    parser: '@babel/eslint-parser',
     sourceType: 'module',
-    ecmaVersion: 2020,
-    ecmaFeatures: {
-      legacyDecorators: true
-    }
+    ecmaVersion: 2022
   },
   env: {
     es6: true
@@ -22,10 +18,7 @@ module.exports = {
     // https://github.com/vuejs/eslint-plugin-vue#priority-c-recommended-minimizing-arbitrary-choices-and-cognitive-overhead
     'plugin:vue/recommended'
   ],
-  plugins: [
-    '@babel',
-    'vue'
-  ],
+  plugins: ['vue'],
   rules: {
     'accessor-pairs': 'error',
     'array-bracket-spacing': ['error', 'never'],
@@ -106,6 +99,7 @@ module.exports = {
     'vue/no-async-in-computed-properties': 'off',
     'vue/no-side-effects-in-computed-properties': 'off',
     'vue/require-default-prop': 'off',
-    'vue/return-in-computed-property': 'off'
+    'vue/return-in-computed-property': 'off',
+    'vue/multi-word-component-names': 'off'
   }
 }

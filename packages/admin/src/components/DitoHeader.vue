@@ -86,6 +86,8 @@ const Spinner = DitoComponent.component('spinner', PulseLoader)
 
 // @vue/component
 export default DitoComponent.component('dito-header', {
+  components: { Spinner },
+
   props: {
     spinner: {
       type: Object,

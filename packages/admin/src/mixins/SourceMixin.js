@@ -513,7 +513,9 @@ export default {
                 { path },
                 // Wait for the last route component to be mounted in the next
                 // tick before calling `onComplete()`
-                () => this.$nextTick(callOnComplete),
+                () => {
+                  this.$nextTick(callOnComplete)
+                },
                 reject
               )
             }

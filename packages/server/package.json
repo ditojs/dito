@@ -2,23 +2,22 @@
   "name": "@ditojs/server",
   "version": "0.275.0",
   "description": "Dito.js Server – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
-  "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/server",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
+  "main": "./dist/dito-server.umd.js",
+  "module": "./dist/dito-server.es.mjs",
   "files": [
     "src/",
-    "lib/"
+    "dist/"
   ],
   "scripts": {
-    "knex": "babel-node node_modules/.bin/knex",
-    "clean": "rimraf lib",
-    "build": "babel src --out-dir lib --copy-files",
+    "build": "vite build",
     "watch": "yarn build --watch",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "yarn build"
   },
   "bin": {
-    "dito": "./lib/cli/index.js"
+    "dito": "./cli/index.mjs"
   },
   "engines": {
     "node": ">= 14.0.0",
@@ -28,8 +27,6 @@
     "node >= 14"
   ],
   "dependencies": {
-    "@babel/core": "^7.17.5",
-    "@babel/runtime": "^7.17.2",
     "@ditojs/admin": "^0.275.0",
     "@ditojs/router": "^0.275.0",
     "@ditojs/utils": "^0.275.0",
@@ -40,10 +37,8 @@
     "ajv-formats": "^1.6.1",
     "aws-sdk": "^2.1087.0",
     "axios": "^0.26.0",
-    "babel-loader": "^8.2.3",
     "bcryptjs": "^2.4.3",
     "bytes": "^3.1.2",
-    "core-js": "^3.21.1",
     "data-uri-to-buffer": "^3.0.1",
     "eventemitter2": "^6.4.5",
     "file-type": "^16.5.3",
@@ -89,15 +84,10 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.17.6",
-    "@babel/preset-env": "^7.16.11",
-    "@ditojs/babel-preset": "^0.275.0",
-    "babel-plugin-dynamic-import-node": "^2.3.3",
-    "babel-plugin-module-resolver": "^4.1.0",
     "knex": "^0.21.21",
     "objection": "^2.2.18",
     "pg": "^8.7.3",
-    "rimraf": "^3.0.2",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.0.2",
+    "vite": "^2.8.6"
   }
 }

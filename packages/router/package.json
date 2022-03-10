@@ -2,19 +2,19 @@
   "name": "@ditojs/router",
   "version": "0.275.0",
   "description": "Dito.js Router – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
-  "main": "lib/index.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/router",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
+  "main": "./dist/dito-router.umd.js",
+  "module": "./dist/dito-router.es.mjs",
   "files": [
     "src/",
-    "lib/"
+    "dist/"
   ],
   "scripts": {
-    "clean": "rimraf lib",
-    "build": "babel src --out-dir lib --copy-files",
+    "build": "vite build",
     "watch": "yarn build --watch",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "yarn build"
   },
   "engines": {
     "node": ">= 14.0.0",
@@ -24,17 +24,10 @@
     "node >= 14"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.17.2",
-    "@ditojs/utils": "^0.275.0",
-    "core-js": "^3.21.1"
+    "@ditojs/utils": "^0.275.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.17.6",
-    "@babel/core": "^7.17.5",
-    "@babel/preset-env": "^7.16.11",
-    "@ditojs/babel-preset": "^0.275.0",
-    "babel-plugin-module-resolver": "^4.1.0",
-    "rimraf": "^3.0.2"
+    "vite": "^2.8.6"
   },
   "keywords": [
     "route",

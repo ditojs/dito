@@ -2,7 +2,6 @@
   "files.exclude": {
     // Exclude Babel build folders:
     "packages/*/dist/**": true,
-    "packages/*/lib/**": true,
     // Exclude yarn caches
     ".yarn/*/**": true
   },

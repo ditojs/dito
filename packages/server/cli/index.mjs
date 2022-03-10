@@ -5,7 +5,7 @@ import pico from 'picocolors'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
 import * as db from './db'
-import startConsole from './console'
+import startConsole from './console.mjs'
 
 const commands = { db, console: startConsole }
 
@@ -56,7 +56,7 @@ async function execute() {
   }
 }
 
-// Start the console if `node ./lib/cli/index.js`
+// Start the console if `node ./cli/index.js`
 if (require.main === module) {
   execute()
 }
