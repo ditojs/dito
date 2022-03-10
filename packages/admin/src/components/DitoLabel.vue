@@ -50,7 +50,7 @@
         // so that buttons always appear right-aligned:
         flex: 1 1 auto
       &::after
-        content: '\00a0'
+        content: '\a0' // &nbps;
 
     .dito-label-prefix,
     .dito-label-suffix
@@ -73,9 +73,9 @@
         position: absolute
         max-width: 100%
       &::after
-        // Since <label> uses `position: absolute`, add `content: '&nbsp;'`
-        // on its parent to enforce the right text height in the container
-        content: '\00a0'
+        // Since <label> uses `position: absolute`, set content to a zero-width
+        // space on its parent to enforce the right text height in the container
+        content: '\200b' // zero-width space
 
   a.dito-label
     &:hover

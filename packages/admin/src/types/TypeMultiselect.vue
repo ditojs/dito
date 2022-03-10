@@ -140,7 +140,7 @@
         line-height: $tag-line-height
     .multiselect__option--highlight
       &::after
-        diplay: block
+        display: block
         position: absolute
         background: transparent
         color: $color-white

@@ -30,7 +30,6 @@ module.exports = {
         ['module-resolver', {
           cwd: 'babelrc',
           alias: {
-            '~': '.',
             '@': './src'
           }
         }]

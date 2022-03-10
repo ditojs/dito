@@ -71,15 +71,32 @@ export function everySchemaComponent(schema, callback) {
   ) !== false
 }
 
-export async function resolveViews(unresolvedViews) {
-  let views = isFunction(unresolvedViews)
-    ? unresolvedViews()
-    : unresolvedViews
-  if (isPromise(views)) {
-    views = await views
+export async function resolveModule(module) {
+  // Copy module to convert from module to object:
+  module = { ...await module }
+  return module.default && Object.keys(module).length === 1
+    ? module.default
+    : module
+}
+
+export async function resolveSchemas(unresolvedSchemas) {
+  let schemas = isFunction(unresolvedSchemas)
+    ? unresolvedSchemas()
+    : unresolvedSchemas
+  if (isPromise(schemas)) {
+    schemas = await resolveModule(schemas)
   }
-  // Copy views to convert from module to object, and keep  a global reference:
-  return { ...views }
+  if (isArray(schemas)) {
+    // Array of import statements, each importing one named schema module.
+    const entries = await Promise.all(schemas.map(
+      async module => {
+        const schema = await resolveModule(module)
+        return Object.entries(schema)[0]
+      }
+    ))
+    schemas = Object.fromEntries(entries)
+  }
+  return schemas
 }
 
 export async function processView(component, api, schema, name, routes) {

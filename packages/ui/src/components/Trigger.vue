@@ -57,7 +57,7 @@
 </template>
 
 <style lang="sass">
-  @import 'transitions/index'
+  @import '../styles/transitions/index.sass'
 
   .dito-trigger-container
     position: relative

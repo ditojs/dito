@@ -2,22 +2,26 @@
   "name": "@ditojs/build",
   "version": "0.275.0",
   "private": true,
-  "main": "lib/index.js",
-  "repository": "https://github.com/ditojs/dito/tree/master/packages/webpack",
+  "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
+  "main": "./dist/dito-build.umd.js",
+  "module": "./dist/dito-build.es.mjs",
+  "exports": {
+    "require": "./dist/dito-build.umd.js",
+    "import": "./dist/dito-build.es.mjs"
+  },
   "files": [
     "src/",
-    "lib/"
+    "dist/"
   ],
   "scripts": {
-    "clean": "rimraf lib",
-    "build": "babel src --out-dir lib --copy-files",
+    "build": "vite build",
     "watch": "yarn build --watch",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "yarn build"
   },
   "bin": {
-    "inline-assets": "./lib/cli/inline-assets.js"
+    "inline-assets": "./cli/inline-assets.mjs"
   },
   "engines": {
     "node": ">= 14.0.0",
@@ -27,18 +31,14 @@
     "node >= 14"
   ],
   "dependencies": {
-    "@ditojs/utils": "^0.275.0",
-    "core-js": "^3.21.1",
+    "autoprefixer": "^9.8.8",
     "mime": "^3.0.0",
-    "mini-svg-data-uri": "^1.4.3"
+    "mini-svg-data-uri": "^1.4.3",
+    "postcss-inset": "^1.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.17.6",
-    "@babel/core": "^7.17.5",
-    "@babel/preset-env": "^7.16.11",
-    "@ditojs/babel-preset": "^0.275.0",
-    "babel-plugin-module-resolver": "^4.1.0",
     "minimist": "^1.2.5",
-    "rimraf": "^3.0.2"
+    "vite": "^2.8.6",
+    "vite-plugin-vue2": "^1.9.3"
   }
 }

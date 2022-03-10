@@ -24,7 +24,7 @@
 </template>
 
 <style lang="sass">
-  @import 'dito.sass'
+  @import '../styles/dito.sass'
   .dito-root
     height: 100%
     display: flex
@@ -45,7 +45,7 @@ import DitoComponent from '@/DitoComponent'
 import DitoUser from '@/DitoUser'
 import DitoView from '@/components/DitoView'
 import DomMixin from '@/mixins/DomMixin'
-import { processView, resolveViews } from '@/utils/schema'
+import { processView, resolveSchemas } from '@/utils/schema'
 import { asArray, stripTags } from '@ditojs/utils'
 
 // @vue/component
@@ -264,7 +264,7 @@ export default DitoComponent.component('dito-root', {
 
     async resolveViews() {
       try {
-        this.resolvedViews = await resolveViews(this.unresolvedViews)
+        this.resolvedViews = await resolveSchemas(this.unresolvedViews)
       } catch (error) {
         if (!error.request) {
           console.error(error)

@@ -47,7 +47,7 @@
           padding: $input-padding
           &:empty::after
             // Prevent empty <th> from collapsing
-            content: '\00a0'
+            content: '\200b' // zero-width space
         > span
           display: block
 </style>
