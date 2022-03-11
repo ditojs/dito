@@ -1,10 +1,11 @@
-#!/usr/bin/env babel-node
+#!/usr/bin/env node
 
 import path from 'path'
+import fs from 'fs'
 import pico from 'picocolors'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
-import * as db from './db'
+import * as db from './db/index.mjs'
 import startConsole from './console.mjs'
 
 const commands = { db, console: startConsole }
@@ -57,7 +58,11 @@ async function execute() {
 }
 
 // Start the console if `node ./cli/index.js`
-if (require.main === module) {
+
+// See module was not imported but called directly
+const path1 = fs.realpathSync(import.meta.url.replace(/^file:\/\//, ''))
+const path2 = fs.realpathSync(process.argv[1])
+if (path1 === path2) {
   execute()
 }
 

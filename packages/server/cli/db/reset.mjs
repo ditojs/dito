@@ -1,5 +1,5 @@
 import pico from 'picocolors'
-import { migrate } from './migrate'
+import { migrate } from './migrate.mjs'
 
 export async function reset(knex) {
   const batches = []

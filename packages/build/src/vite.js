@@ -8,6 +8,8 @@ import { getRollupExternalsFromDependencies } from './rollup.js'
 export function getViteConfig({
   name,
   css = false,
+  minify = true,
+  sourcemap = true,
   externals: {
     include = [],
     exclude = []
@@ -22,12 +24,10 @@ export function getViteConfig({
       // form other node hybrid packages.
       renameJsExtensionPlugin({ from: '.es.js', to: '.es.mjs' })
     ],
-    esbuild: {
-      minify: true
-    },
+    esbuild: { minify },
     build: {
-      minify: true,
-      sourcemap: true,
+      minify,
+      sourcemap,
       // This will result in the css being a separate file in es builds and
       // inlined in umd builds, which is almost what we want for the library.
       // For the es build, `injectCssIntoJsPlugin()` is then subsequently used

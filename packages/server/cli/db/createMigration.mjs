@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
 import pico from 'picocolors'
-import { getRelationClass, isThroughRelationClass } from '@/schema'
+import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
 import {
   isObject, isArray, isString, deindent, capitalize
 } from '@ditojs/utils'

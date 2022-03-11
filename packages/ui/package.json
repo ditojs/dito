@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@ditojs/build": "^0.275.0",
-    "autoprefixer": "^9.8.8",
+    "autoprefixer": "^10.4.2",
     "pug": "^3.0.2",
     "sass": "1.49.9",
     "vite": "^2.8.6",
