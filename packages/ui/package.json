@@ -7,6 +7,14 @@
   "license": "MIT",
   "main": "./dist/dito-ui.umd.js",
   "module": "./dist/dito-ui.es.mjs",
+  "exports": {
+    ".": {
+      "require": "./dist/dito-ui.umd.js",
+      "import": "./dist/dito-ui.es.mjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./imports.sass": "./src/styles/_imports.sass"
+  },
   "files": [
     "src/",
     "dist/"
