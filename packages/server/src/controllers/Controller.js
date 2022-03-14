@@ -6,6 +6,7 @@ import MemberAction from './MemberAction'
 import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '@/errors'
+import { deprecate } from '@/utils/deprecate'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
   parseDataPath, normalizeDataPath
@@ -504,8 +505,10 @@ EventEmitter.mixin(Controller.prototype)
 const inheritanceMap = new WeakMap()
 
 function setupHandlerFromObject(object, actions) {
-  const {
+  let {
     handler,
+    method,
+    path,
     action,
     authorize,
     transacted,
@@ -519,8 +522,13 @@ function setupHandlerFromObject(object, actions) {
   Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
 
   if (action) {
-    const [method, path] = asArray(action)
+    deprecate(`action.action is deprecated. Use action.method and action.path instead.`)
+    ;([method, path] = asArray(action))
+  }
+  if (method) {
     handler.method = method
+  }
+  if (path) {
     handler.path = path
   }
 
