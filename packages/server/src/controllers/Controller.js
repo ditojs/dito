@@ -73,10 +73,10 @@ export class Controller {
 
     const addAction = key => {
       const value = this[key]
-      // NOTE: Only add instance methods that have a @action() decorator,
-      // which in turn sets the `verb` property on the method, or action objects
-      // which have the `verb` property:
-      if (value?.verb) {
+      // NOTE: Only add instance methods that have a @action() decorator, which
+      // in turn sets the `method` property on the method, as well as action
+      // objects which provide the `method` property:
+      if (value?.method) {
         controller[key] = value
       }
     }
@@ -89,10 +89,10 @@ export class Controller {
     return controller
   }
 
-  setupRoute(verb, url, transacted, authorize, action, handlers) {
+  setupRoute(method, url, transacted, authorize, action, handlers) {
     this.log(
       `${
-        pico.magenta(verb.toUpperCase())
+        pico.magenta(method.toUpperCase())
       } ${
         pico.green(this.url)
       }${
@@ -102,7 +102,7 @@ export class Controller {
       }`,
       this.level + 1
     )
-    this.app.addRoute(verb, url, transacted, handlers, this, action)
+    this.app.addRoute(method, url, transacted, handlers, this, action)
   }
 
   setupActions(type) {
@@ -124,7 +124,7 @@ export class Controller {
     authorize,
     // These values are only changed when called from
     // `CollectionController.setupAction()`:
-    verb = 'get',
+    method = 'get',
     // The default path for actions is the normalized name.
     path = this.app.normalizePath(name)
   ) {
@@ -137,14 +137,14 @@ export class Controller {
     this.setupActionRoute(
       type,
       // eslint-disable-next-line new-cap
-      new actionClass(this, handler, type, name, verb, path, authorize)
+      new actionClass(this, handler, type, name, method, path, authorize)
     )
   }
 
   setupActionRoute(type, action) {
     const url = this.getUrl(type, action.path)
-    const { verb, transacted, authorize } = action
-    this.setupRoute(verb, url, transacted, authorize, action, [
+    const { method, transacted, authorize } = action
+    this.setupRoute(method, url, transacted, authorize, action, [
       async ctx => {
         try {
           const res = await action.callAction(ctx)
@@ -250,11 +250,11 @@ export class Controller {
 
   inheritValues(type) {
     // Gets the controller class's instance field for a given action type, e.g.
-    // `controller` (Controller), `collection`, `member` (ModelController,
-    // RelationController), `relation` (RelationController), and sets up an
+    // `controller` (`Controller`), `collection`, `member` (`ModelController`,
+    // `RelationController`), `relation` (`RelationController`), and sets up an
     // inheritance chain for it that goes all the way up to it base class (e.g.
-    // CollectionController), so that the default definitions for all http verbs
-    // can be correctly inherited and overridden while using `super.<action>()`.
+    // `CollectionController`), so that the default definitions for all HTTP
+    // methods can be inherited and overridden while using `super.<action>()`.
     const parentClass = Object.getPrototypeOf(this.constructor)
     // Create one instance of each controller class up the chain in order to
     // get to their definitions of the inheritable values. Cache both instance
@@ -508,33 +508,32 @@ function setupHandlerFromObject(object, actions) {
     handler,
     action,
     authorize,
+    transacted,
     parameters,
     returns,
-    scope,
-    transacted
+    scope
   } = object
 
   // In order to suport `super` calls in the `handler` function in object
   // notation, deploy this crazy JS sorcery:
   Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
 
-  handler.authorize = authorize
-  handler.transacted = transacted
-
   if (action) {
-    const [verb, path] = asArray(action)
-    handler.verb = verb
+    const [method, path] = asArray(action)
+    handler.method = method
     handler.path = path
   }
 
+  handler.authorize = authorize
+  handler.transacted = transacted
+
   if (parameters) {
-    const [_parameters, options] = parameters
-    const hasOptions = isArray(_parameters)
-    handler.parameters = hasOptions ? _parameters : parameters
+    const [_parameters, options] = asArray(parameters)
+    handler.parameters = _parameters
 
     // If validation options are provided, expose them through
-    // `handler.options.parameters`, see ControllerAction
-    if (hasOptions) {
+    // `handler.options.parameters`, see `ControllerAction`.
+    if (options) {
       handler.options = {
         ...handler.options,
         parameters: options
@@ -547,7 +546,7 @@ function setupHandlerFromObject(object, actions) {
     handler.returns = _returns
 
     // If validation options are provided, expose them through
-    // `handler.options.returns`, see ControllerAction
+    // `handler.options.returns`, see `ControllerAction`.
     if (options) {
       handler.options = {
         ...handler.options,

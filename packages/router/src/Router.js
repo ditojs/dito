@@ -7,7 +7,7 @@ const CHAR_SLASH = '/'.charCodeAt(0)
 export default class Router {
   constructor(options) {
     this.trees = {}
-    // `this.options()` is already a method for the OPTIONS verb!
+    // `this.options()` is already a method for the OPTIONS method!
     this._options = options || {}
   }
 

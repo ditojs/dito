@@ -106,20 +106,22 @@ export class Application extends Koa {
     }
   }
 
-  addRoute(verb, path, transacted, handlers, controller = null, action = null) {
+  addRoute(
+    method, path, transacted, handlers, controller = null, action = null
+  ) {
     handlers = asArray(handlers)
     const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
     // Instead of directly passing `handler`, pass a `route` object that also
     // will be exposed through `ctx.route`, see `routerHandler()`:
     const route = {
-      verb,
+      method,
       path,
       transacted,
       handler,
       controller,
       action
     }
-    this.router[verb](path, route)
+    this.router[method](path, route)
   }
 
   addModels(models) {

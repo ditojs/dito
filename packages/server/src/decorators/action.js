@@ -1,8 +1,8 @@
 import { createDecorator } from '@/utils'
 
-export function action(verb, path) {
+export function action(method, path) {
   return createDecorator(value => {
-    value.verb = verb
+    value.method = method
     value.path = path
   })
 }

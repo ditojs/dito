@@ -1,28 +1,31 @@
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
-  constructor(controller, handler, type, name, verb, path, authorize) {
+  constructor(controller, handler, type, name, method, path, authorize) {
     this.controller = controller
     this.handler = handler
     this.type = type
     this.name = name
     this.identifier = `${type}:${name}`
     // Allow decorators on actions to override the predetermined defaults for
-    // `verb`, `path` and `authorize`:
-    this.verb = handler.verb || verb
+    // `method`, `path` and `authorize`:
+    this.method = handler.method || method
     // Use ?? instead of || to allow '' to override the path.
     this.path = handler.path ?? path
     this.authorize = handler.authorize || authorize
     this.transacted = !!(
       handler.transacted ||
-      controller.transacted ||
-      // Core graph and assets operations are always transacted, unless the verb
-      // is 'get':
-      handler.core && verb !== 'get' && (controller.graph || controller.assets)
+      controller.transacted || (
+        // Core graph and assets operations are always transacted, unless the
+        // method is 'get':
+        handler.core &&
+        method !== 'get' &&
+        (controller.graph || controller.assets)
+      )
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
-    this.paramsName = ['post', 'put', 'patch'].includes(this.verb)
+    this.paramsName = ['post', 'put', 'patch'].includes(this.method)
       ? 'body'
       : 'query'
     const { parameters, returns, options = {} } = this.handler
@@ -47,8 +50,8 @@ export default class ControllerAction {
 
   // Possible values for `from` are:
   // - 'path': Use `ctx.params` which is mapped to the route / path
-  // - 'query': Use `ctx.request.query`, regardless of the action's verb.
-  // - 'body': Use `ctx.request.body`, regardless of the action's verb.
+  // - 'query': Use `ctx.request.query`, regardless of the action's method.
+  // - 'body': Use `ctx.request.body`, regardless of the action's method.
   getParams(ctx, from = this.paramsName) {
     const value = from === 'path' ? ctx.params : ctx.request[from]
     // koa-bodyparser always sets an object, even when there is no body.

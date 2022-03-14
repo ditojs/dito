@@ -26,15 +26,15 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, actions, name, handler, authorize, verb, path) {
+  setupAction(type, actions, name, handler, authorize, method, path) {
     // These default actions happen directly on the collection / member route
-    // and are distinguished by their verbs, not by nested paths.
-    if (name in actionToVerb) {
-      verb = actionToVerb[name]
+    // and are distinguished by their methods, not by nested paths.
+    if (name in ACTION_TO_METHOD) {
+      method = ACTION_TO_METHOD[name]
       path = ''
     }
     return super.setupAction(
-      type, actions, name, handler, authorize, verb, path
+      type, actions, name, handler, authorize, method, path
     )
   }
 
@@ -286,7 +286,7 @@ function getModify(modify, trx) {
     : null
 }
 
-const actionToVerb = {
+const ACTION_TO_METHOD = {
   find: 'get',
   delete: 'delete',
   insert: 'post',

@@ -18,10 +18,10 @@ instantiation of controllers.
 In their definition, all Dito.js controllers can provide action methods which
 are the functions to be called when their route is requested. Actions can
 specify the paths to which they are mapped, defined in relation to the route
-path of their controller, and the HTTP verb to which they should respond to.
+path of their controller, and the HTTP method to which they should respond to.
 
 By default, the normalized method name is used as the action's path, and the
-`'get'` verb is assigned if none is provided. See [Path Normalization](#path-
+`'get'` method is assigned if none is provided. See [Path Normalization](#path-
 normalization) for more information on how Dito.js normalizes router paths.
 
 Actions can also define mappings and validation schemas for their parameters and
@@ -77,10 +77,10 @@ Dito.js provides the following decorators to configure the controller actions.
 For more information on JavaScript decorators, see
 [Exploring EcmaScript Decorators](https://medium.com/google-developers/exploring-es7-decorators-76ecb65fb841).
 
-### `@action(verb[, path])`
+### `@action(method[, path])`
 
 It is only necessary to provide the `@action()` decorator when an action
-requires a verb other than `'get'`, or when the default path that is
+requires a method other than `'get'`, or when the default path that is
 automatically determined by normalizing the action method's name is not the
 desired route.
 
@@ -377,10 +377,10 @@ activated by default and mapped to database methods and default model routes:
 ### Collection Actions
 
 Collection actions are all mapped to the controller's route path (`this.path`),
-and distinguished only by their verbs. Here's the mapping of their verbs to the 
-collection actions and the database methods they execute:
+and distinguished only by their methods. Here's the mapping of their methods to
+the collection actions and the database methods they execute:
 
-| Verb       | Collection Action | Database Method
+| Method     | Collection Action | Database Method
 | ---------- | ----------------- | ---------------------------------------------
 | `'get'`    | `find()`          | `find()`
 | `'delete'` | `delete()`        | `delete()`
@@ -390,12 +390,12 @@ collection actions and the database methods they execute:
 
 ### Member Actions
 
-Member actions are all mapped to the controller's member route path
-(`` `${this.path}/:id` ``),
-and distinguished only by their verbs. Here's the mapping of their verbs to the 
-member actions and the database methods they execute:
+Member actions are all mapped to the controller's member route path (``
+`${this.path}/:id` ``), and distinguished only by their methods. Here's the
+mapping of their methods to the member actions and the database methods they
+execute:
 
-| Verb       | Member Action | Database Method
+| Method     | Member Action | Database Method
 | ---------- | ------------- | -------------------------------------------------
 | `'get'`    | `find()`      | `findById()`
 | `'delete'` | `delete()`    | `deleteById()`
@@ -403,7 +403,7 @@ member actions and the database methods they execute:
 | `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
 
 In comparison to the `collection` actions, the `insert()` action assigned to the
-`post` verb is missing here, but with good reason: Inserting into an existing
+`post` method is missing here, but with good reason: Inserting into an existing
 member is an undefined operation.
 
 ### Graph Methods
