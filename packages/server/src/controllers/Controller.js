@@ -551,7 +551,7 @@ function setupHandlerFromObject(object, actions) {
     if (options) {
       handler.options = {
         ...handler.options,
-        parameters: options
+        returns: options
       }
     }
   }
