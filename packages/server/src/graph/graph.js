@@ -1,6 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
-import { QueryBuilder } from '@/query'
-import { collectExpressionPaths, expressionPathToString } from './expression.js'
+import { QueryBuilder } from '../query'
+import { collectExpressionPaths, expressionPathToString } from './expression'
 
 // Similar to Objection's private `modelClass.ensureModel(model)`:
 export function ensureModel(modelClass, model, options) {

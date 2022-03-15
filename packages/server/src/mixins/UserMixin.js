@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { AuthenticationError } from '@/errors'
 import { mixin, asArray } from '@ditojs/utils'
+import { AuthenticationError } from '../errors'
 
 export const UserMixin = mixin(Model => class extends Model {
   static options = {

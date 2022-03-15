@@ -18,20 +18,24 @@ import etag from 'koa-etag'
 import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
-import { EventEmitter } from '@/lib'
-import { Controller, AdminController } from '@/controllers'
-import { Service } from '@/services'
-import { Storage } from '@/storage'
-import { convertSchema } from '@/schema'
-import { formatJson } from '@/utils'
+import {
+  isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
+  parseDataPath, normalizeDataPath
+} from '@ditojs/utils'
+import SessionStore from './SessionStore'
+import { Validator } from './Validator'
+import { EventEmitter } from '../lib'
+import { Controller, AdminController } from '../controllers'
+import { Service } from '../services'
+import { Storage } from '../storage'
+import { convertSchema } from '../schema'
+import { formatJson } from '../utils'
 import {
   ResponseError,
   ValidationError,
   DatabaseError,
   AssetError
-} from '@/errors'
-import SessionStore from './SessionStore'
-import { Validator } from './Validator'
+} from '../errors'
 import {
   attachLogger,
   createTransaction,
@@ -40,11 +44,7 @@ import {
   handleRoute,
   handleUser,
   logRequests
-} from '@/middleware'
-import {
-  isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
-  parseDataPath, normalizeDataPath
-} from '@ditojs/utils'
+} from '../middleware'
 import {
   Model,
   BelongsToOneRelation,

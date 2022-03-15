@@ -1,8 +1,8 @@
 import pico from 'picocolors'
-import { ControllerError } from '@/errors'
-import { CollectionController } from './CollectionController'
-import { setupPropertyInheritance, getScope } from '@/utils'
 import { asArray } from '@ditojs/utils'
+import { CollectionController } from './CollectionController'
+import { ControllerError } from '../errors'
+import { setupPropertyInheritance, getScope } from '../utils'
 
 export class RelationController extends CollectionController {
   constructor(parent, object, relationInstance, relationDefinition) {

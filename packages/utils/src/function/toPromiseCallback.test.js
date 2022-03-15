@@ -1,4 +1,5 @@
 import { toPromiseCallback } from './toPromiseCallback'
+import { jest } from '@jest/globals'
 
 describe('toPromiseCallback()', () => {
   it('should call reject() when called with an error', () => {

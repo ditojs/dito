@@ -1,4 +1,4 @@
-import { QueryBuilder } from '@/query'
+import { QueryBuilder } from '../query'
 
 export default class RelationAccessor {
   constructor(relation, modelClass, model) {

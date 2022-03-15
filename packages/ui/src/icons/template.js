@@ -18,4 +18,4 @@ const renderIcon = ({ name, url }) =>
   @extend %icon
   mask-image: ${url}`
 
-module.exports = renderIcons
+export default renderIcons

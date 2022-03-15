@@ -1,20 +1,20 @@
 import objection from 'objection'
-import { QueryBuilder } from '@/query'
-import { EventEmitter, KnexHelper } from '@/lib'
-import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
-import { populateGraph, filterGraph } from '@/graph'
-import { formatJson } from '@/utils'
+import {
+  isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
+  parseDataPath, normalizeDataPath, getValueAtDataPath
+} from '@ditojs/utils'
+import { QueryBuilder } from '../query'
+import { EventEmitter, KnexHelper } from '../lib'
+import { convertSchema, addRelationSchemas, convertRelations } from '../schema'
+import { populateGraph, filterGraph } from '../graph'
+import { formatJson } from '../utils'
 import {
   ResponseError,
   GraphError, ModelError,
   NotFoundError,
   RelationError,
   WrappedError
-} from '@/errors'
-import {
-  isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
-  parseDataPath, normalizeDataPath, getValueAtDataPath
-} from '@ditojs/utils'
+} from '../errors'
 import RelationAccessor from './RelationAccessor'
 import definitions from './definitions'
 

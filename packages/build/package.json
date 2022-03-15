@@ -1,27 +1,19 @@
 {
+  "type": "module",
   "name": "@ditojs/build",
   "version": "0.275.0",
-  "private": true,
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
-  "main": "./dist/dito-build.umd.js",
-  "module": "./dist/dito-build.es.mjs",
+  "module": "./src/index.js",
   "exports": {
-    "require": "./dist/dito-build.umd.js",
-    "import": "./dist/dito-build.es.mjs"
+    "import": "./src/index.js"
   },
   "files": [
-    "src/",
-    "dist/"
+    "src/"
   ],
-  "scripts": {
-    "build": "vite build",
-    "watch": "yarn build --watch",
-    "prepare": "yarn build"
-  },
   "bin": {
-    "inline-assets": "./cli/inline-assets.mjs"
+    "inline-assets": "./src/cli/inline-assets.js"
   },
   "engines": {
     "node": ">= 14.0.0",
@@ -31,14 +23,11 @@
     "node >= 14"
   ],
   "dependencies": {
-    "autoprefixer": "^9.8.8",
+    "autoprefixer": "^10.4.2",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.3",
-    "postcss-inset": "^1.0.0"
-  },
-  "devDependencies": {
     "minimist": "^1.2.5",
-    "vite": "^2.8.6",
-    "vite-plugin-vue2": "^1.9.3"
+    "postcss": "^8.4.8",
+    "postcss-inset": "^1.0.0"
   }
 }

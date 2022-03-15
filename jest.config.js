@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   projects: [
     // '<rootDir>/packages/*' <- Use this once all projects have tests.
     '<rootDir>/packages/utils',

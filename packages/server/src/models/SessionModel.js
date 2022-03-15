@@ -1,4 +1,4 @@
-import { SessionMixin } from '@/mixins'
+import { SessionMixin } from '../mixins'
 import { Model } from './Model'
 
 export const SessionModel = SessionMixin(Model)

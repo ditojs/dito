@@ -1,4 +1,5 @@
-import module from 'module'
+import { builtinModules, createRequire } from 'module'
+const require = createRequire(import.meta.url)
 
 export function getRollupExternalsFromDependencies({
   start = process.cwd(),
@@ -6,7 +7,7 @@ export function getRollupExternalsFromDependencies({
   exclude = []
 }) {
   const externals = Object.fromEntries(
-    [...module.builtinModules, ...include].map(name => [name, name])
+    [...builtinModules, ...include].map(name => [name, name])
   )
   const excludes = Object.fromEntries(exclude.map(name => [name, name]))
   const addDependencies = (dependencies = []) => {

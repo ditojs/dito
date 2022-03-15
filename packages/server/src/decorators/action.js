@@ -1,4 +1,4 @@
-import { createDecorator } from '@/utils'
+import { createDecorator } from '../utils'
 
 export function action(method, path) {
   return createDecorator(value => {

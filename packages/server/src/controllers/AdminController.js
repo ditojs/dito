@@ -8,10 +8,10 @@ import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
 import { isMatch } from 'picomatch'
-import { handleConnectMiddleware } from '@/middleware'
 import { Controller } from './Controller'
-import { ControllerError } from '@/errors'
-import { formatJson } from '@/utils'
+import { handleConnectMiddleware } from '../middleware'
+import { ControllerError } from '../errors'
+import { formatJson } from '../utils'
 
 export class AdminController extends Controller {
   // @override

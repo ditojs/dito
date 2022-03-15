@@ -1,4 +1,4 @@
-import { isNumber, isDate, isObject } from '@/base'
+import { isNumber, isDate, isObject } from '../base'
 
 export const defaultFormats = {
   number: {

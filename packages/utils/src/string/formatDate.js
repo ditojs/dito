@@ -1,4 +1,4 @@
-import { isDate } from '@/base'
+import { isDate } from '../base'
 import { format } from './format'
 
 export function formatDate(value, {

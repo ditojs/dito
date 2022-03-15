@@ -18,10 +18,7 @@ export function getViteConfig({
   const externals = getRollupExternalsFromDependencies({ include, exclude })
   return defineConfig({
     plugins: [
-      createVuePlugin(),
-      // Node.js hybrid packages without type: "module" need `mjs` to work
-      // form other node hybrid packages.
-      renameJsExtensionPlugin({ from: '.es.js', to: '.es.mjs' })
+      createVuePlugin()
     ],
     esbuild: { minify },
     build: {
@@ -64,11 +61,11 @@ export function getViteConfig({
             postcssInset(),
             {
               // https://github.com/vitejs/vite/issues/5833
-              postcssPlugin: 'internal:charset-removal',
+              postcssPlugin: 'internal:remove-charset',
               AtRule: {
-                charset: atRule => {
-                  if (atRule.name === 'charset') {
-                    atRule.remove()
+                charset: rule => {
+                  if (rule.name === 'charset') {
+                    rule.remove()
                   }
                 }
               }
@@ -78,24 +75,4 @@ export function getViteConfig({
       }
       : null
   })
-}
-
-export function renameJsExtensionPlugin({ from, to }) {
-  return {
-    name: 'rename-file-plugin',
-    apply: 'build',
-    enforce: 'post',
-
-    generateBundle(options, bundle) {
-      for (const chunk of Object.values(bundle)) {
-        const name = chunk.fileName
-        if (
-          chunk.type === 'chunk' &&
-          chunk.fileName.endsWith(from)
-        ) {
-          chunk.fileName = name.substring(0, name.length - from.length) + to
-        }
-      }
-    }
-  }
 }

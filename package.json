@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "dito",
   "private": true,
   "description": "Dito.js is a declarative and modern web framework with a focus on API driven development, based on Koa.js, Objection.js and Vue.js",
@@ -12,7 +13,7 @@
     "prepare": "yarn lint",
     "version": "yarn install && git stage yarn.lock",
     "postinstall": "husky install",
-    "test": "node --icu-data-dir=node_modules/full-icu node_modules/.bin/jest",
+    "test": "node --experimental-vm-modules --icu-data-dir=node_modules/full-icu $(yarn bin jest)",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/*/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/*/src",
     "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito"
@@ -34,10 +35,9 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "eslint": "^8.10.0",
+    "eslint": "^8.11.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-friendly-formatter": "^4.0.1",
-    "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",

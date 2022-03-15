@@ -1,4 +1,4 @@
-import { isArray, isPlainObject } from '@/base'
+import { isArray, isPlainObject } from '../base'
 import { clone } from './clone'
 
 export function merge(target, ...sources) {

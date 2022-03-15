@@ -1,4 +1,4 @@
-import { isArray, isString } from '@/base'
+import { isArray, isString } from '../base'
 
 export function parseDataPath(path) {
   if (isArray(path)) {

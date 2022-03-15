@@ -1,5 +1,5 @@
-import { isArray, isObject, isDate, isRegExp, isFunction } from '@/base'
-import { pick } from '@/object'
+import { isArray, isObject, isDate, isRegExp, isFunction } from '../base'
+import { pick } from '../object'
 
 export function clone(arg, callback = null) {
   let copy

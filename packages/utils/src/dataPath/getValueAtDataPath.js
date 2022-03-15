@@ -1,4 +1,4 @@
-import { isArray } from '@/base'
+import { isArray } from '../base'
 import { parseDataPath } from './parseDataPath'
 
 export function getValueAtDataPath(

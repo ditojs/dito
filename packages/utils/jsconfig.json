@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "commonjs",
+    "module": "esnext",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
       "@ditojs/*": ["../*/src/index.js"]
     }
   },

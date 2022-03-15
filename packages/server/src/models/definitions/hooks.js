@@ -1,4 +1,4 @@
-import { mergeAsReversedArrays } from '@/utils'
+import { mergeAsReversedArrays } from '../../utils'
 
 export default function hooks(values) {
   // Use `mergeAsReversedArrays()` so that for each event there is an array

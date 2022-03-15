@@ -1,6 +1,6 @@
-import { Controller } from './Controller'
-import { ControllerError } from '@/errors'
 import { isObject, isArray, asArray } from '@ditojs/utils'
+import { Controller } from './Controller'
+import { ControllerError } from '../errors'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {

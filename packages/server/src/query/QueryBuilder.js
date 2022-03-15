@@ -1,13 +1,13 @@
 import objection from 'objection'
-import { KnexHelper } from '@/lib'
-import { QueryBuilderError, RelationError } from '@/errors'
-import { QueryParameters } from './QueryParameters'
-import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
   isObject, isPlainObject, isString, isArray, clone, mapKeys,
   getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
-import { createLookup, getScope, deprecate } from '@/utils'
+import { KnexHelper } from '../lib'
+import { QueryParameters } from './QueryParameters'
+import { DitoGraphProcessor, walkGraph } from '../graph'
+import { QueryBuilderError, RelationError } from '../errors'
+import { createLookup, getScope, deprecate } from '../utils'
 
 const SYMBOL_ALL = Symbol('all')
 

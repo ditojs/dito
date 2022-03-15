@@ -1,12 +1,13 @@
 import pico from 'picocolors'
-import { getOwnProperty, getAllKeys, describeFunction } from '@/utils'
-import { EventEmitter } from '@/lib'
+import { EventEmitter } from '../lib'
 import ControllerAction from './ControllerAction'
 import MemberAction from './MemberAction'
 import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
-} from '@/errors'
-import { deprecate } from '@/utils/deprecate'
+} from '../errors'
+import {
+  getOwnProperty, getAllKeys, describeFunction, deprecate
+} from '../utils'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
   parseDataPath, normalizeDataPath

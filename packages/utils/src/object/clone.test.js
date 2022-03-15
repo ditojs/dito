@@ -1,4 +1,5 @@
 import { clone } from './clone'
+import { jest } from '@jest/globals'
 
 describe('clone()', () => {
   it('should clone objects', () => {

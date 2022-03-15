@@ -321,14 +321,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/helper-plugin-utils@npm:^7.0.0, @babel/helper-plugin-utils@npm:^7.10.4, @babel/helper-plugin-utils@npm:^7.12.13, @babel/helper-plugin-utils@npm:^7.14.5, @babel/helper-plugin-utils@npm:^7.8.0, @babel/helper-plugin-utils@npm:^7.8.3":
+"@babel/helper-plugin-utils@npm:^7.0.0, @babel/helper-plugin-utils@npm:^7.10.4, @babel/helper-plugin-utils@npm:^7.12.13, @babel/helper-plugin-utils@npm:^7.14.5, @babel/helper-plugin-utils@npm:^7.8.0":
   version: 7.14.5
   resolution: "@babel/helper-plugin-utils@npm:7.14.5"
   checksum: fe20e90a24d02770a60ebe80ab9f0dfd7258503cea8006c71709ac9af1aa3e47b0de569499673f11ea6c99597f8c0e4880ae1d505986e61101b69716820972fe
   languageName: node
   linkType: hard
 
-"@babel/helper-plugin-utils@npm:^7.16.7":
+"@babel/helper-plugin-utils@npm:^7.16.7, @babel/helper-plugin-utils@npm:^7.8.3":
   version: 7.16.7
   resolution: "@babel/helper-plugin-utils@npm:7.16.7"
   checksum: d08dd86554a186c2538547cd537552e4029f704994a9201d41d82015c10ed7f58f9036e8d1527c3760f042409163269d308b0b3706589039c5f1884619c6d4ce
@@ -958,15 +958,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
-    autoprefixer: ^9.8.8
+    autoprefixer: ^10.4.2
     mime: ^3.0.0
     mini-svg-data-uri: ^1.4.3
     minimist: ^1.2.5
+    postcss: ^8.4.8
     postcss-inset: ^1.0.0
-    vite: ^2.8.6
-    vite-plugin-vue2: ^1.9.3
   bin:
-    inline-assets: ./cli/inline-assets.mjs
+    inline-assets: ./src/cli/inline-assets.js
   languageName: unknown
   linkType: soft
 
@@ -975,7 +974,6 @@ __metadata:
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
     "@ditojs/utils": ^0.275.0
-    vite: ^2.8.6
   languageName: unknown
   linkType: soft
 
@@ -1040,7 +1038,7 @@ __metadata:
     knex: ^0.21.0
     objection: ^2.2.0
   bin:
-    dito: ./cli/index.mjs
+    dito: ./src/cli/index.js
   languageName: unknown
   linkType: soft
 
@@ -1051,7 +1049,6 @@ __metadata:
     "@ditojs/build": ^0.275.0
     "@ditojs/utils": ^0.275.0
     "@soda/get-current-script": ^1.0.2
-    autoprefixer: ^10.4.2
     pug: ^3.0.2
     sass: 1.49.9
     vite: ^2.8.6
@@ -1065,24 +1062,23 @@ __metadata:
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     punycode: ^2.1.1
-    vite: ^2.8.6
   languageName: unknown
   linkType: soft
 
-"@eslint/eslintrc@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@eslint/eslintrc@npm:1.2.0"
+"@eslint/eslintrc@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "@eslint/eslintrc@npm:1.2.1"
   dependencies:
     ajv: ^6.12.4
     debug: ^4.3.2
     espree: ^9.3.1
     globals: ^13.9.0
-    ignore: ^4.0.6
+    ignore: ^5.2.0
     import-fresh: ^3.2.1
     js-yaml: ^4.1.0
     minimatch: ^3.0.4
     strip-json-comments: ^3.1.1
-  checksum: a5e51dcf02627363567094456d7880b46b6a14a285d7a057f083ca903bdd862483bb6314cbc9fb6fa2d2c4537d50e0d28bd5e39650840241ae4796faaec65d2e
+  checksum: 1f797b9f94d71b965992cf6c44e3bcb574643014fd1e3d4862d25056bd5568f59c488461a7e9a1c1758ca7f0def5d3cb69c3d8b38581bcf4a53af74371243797
   languageName: node
   linkType: hard
 
@@ -3267,23 +3263,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^9.8.8":
-  version: 9.8.8
-  resolution: "autoprefixer@npm:9.8.8"
-  dependencies:
-    browserslist: ^4.12.0
-    caniuse-lite: ^1.0.30001109
-    normalize-range: ^0.1.2
-    num2fraction: ^1.2.2
-    picocolors: ^0.2.1
-    postcss: ^7.0.32
-    postcss-value-parser: ^4.1.0
-  bin:
-    autoprefixer: bin/autoprefixer
-  checksum: 8f017672fbac248db0cf4e86aa707d8b148d9abadb842b5cf4c6be306d80fa6a654fadefd17e46213234c1f0947612acce2864f93e903f3e736b183fc1aedc45
-  languageName: node
-  linkType: hard
-
 "aws-sdk@npm:^2.1087.0":
   version: 2.1087.0
   resolution: "aws-sdk@npm:2.1087.0"
@@ -3538,7 +3517,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.12.0, browserslist@npm:^4.16.6":
+"browserslist@npm:^4.16.6":
   version: 4.16.6
   resolution: "browserslist@npm:4.16.6"
   dependencies:
@@ -3797,7 +3776,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.30001109, caniuse-lite@npm:^1.0.30001219, caniuse-lite@npm:^1.0.30001312":
+"caniuse-lite@npm:^1.0.30001219, caniuse-lite@npm:^1.0.30001312":
   version: 1.0.30001312
   resolution: "caniuse-lite@npm:1.0.30001312"
   checksum: 753fb9ea1e02e999430b323a71b5acab5120f3b5fc0161b01669f54a3ef5c5296240b6ae9b79b12a3742e3aed216aa9ee3d5398a23c16d08625ccd376b79545d
@@ -4898,10 +4877,9 @@ __metadata:
   resolution: "dito@workspace:."
   dependencies:
     cross-env: ^7.0.3
-    eslint: ^8.10.0
+    eslint: ^8.11.0
     eslint-config-standard: ^16.0.3
     eslint-friendly-formatter: ^4.0.1
-    eslint-plugin-babel: ^5.3.1
     eslint-plugin-import: ^2.25.4
     eslint-plugin-node: ^11.1.0
     eslint-plugin-promise: ^6.0.0
@@ -5471,17 +5449,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-babel@npm:^5.3.1":
-  version: 5.3.1
-  resolution: "eslint-plugin-babel@npm:5.3.1"
-  dependencies:
-    eslint-rule-composer: ^0.3.0
-  peerDependencies:
-    eslint: ">=4.0.0"
-  checksum: 18b0bfda53deab4056160a4f3a89a4649b6ae17e4970cc836f7d586c8abab5ebb492440e2acf4770a463138a44a4ee7f9b22b4ed1fdbe69c652f714c1d973e38
-  languageName: node
-  linkType: hard
-
 "eslint-plugin-es@npm:^3.0.0":
   version: 3.0.1
   resolution: "eslint-plugin-es@npm:3.0.1"
@@ -5556,13 +5523,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-rule-composer@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "eslint-rule-composer@npm:0.3.0"
-  checksum: c2f57cded8d1c8f82483e0ce28861214347e24fd79fd4144667974cd334d718f4ba05080aaef2399e3bbe36f7d6632865110227e6b176ed6daa2d676df9281b1
-  languageName: node
-  linkType: hard
-
 "eslint-scope@npm:^5.1.1":
   version: 5.1.1
   resolution: "eslint-scope@npm:5.1.1"
@@ -5624,11 +5584,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^8.10.0":
-  version: 8.10.0
-  resolution: "eslint@npm:8.10.0"
+"eslint@npm:^8.11.0":
+  version: 8.11.0
+  resolution: "eslint@npm:8.11.0"
   dependencies:
-    "@eslint/eslintrc": ^1.2.0
+    "@eslint/eslintrc": ^1.2.1
     "@humanwhocodes/config-array": ^0.9.2
     ajv: ^6.10.0
     chalk: ^4.0.0
@@ -5665,7 +5625,7 @@ __metadata:
     v8-compile-cache: ^2.0.3
   bin:
     eslint: bin/eslint.js
-  checksum: 8b31ab3de5b48b6828bf13c09c9e62ee0045fa0afa017efaa73eedcf4dc33bc204ee4c467d4677e37967d1645f73816ddef4271422e691fded352040f8f83093
+  checksum: a06a2ea37002d6c0a4f462fe31b4411185dc3da7857fafb896eb392ba95a1289cc3538056474b2f44f08012f265bede01a39d46df4ac39ebc6d7be90e2c8f9fa
   languageName: node
   linkType: hard
 
@@ -7030,13 +6990,6 @@ __metadata:
   dependencies:
     minimatch: ^3.0.4
   checksum: 9e9c5ef6c3e0ed7ef5d797991abb554dbb7e60d5fedf6cf05c7129819689eba2b462f625c6e3561e0fc79841904eb829565513eeeab1b44f4fbec4d3146b1a8d
-  languageName: node
-  linkType: hard
-
-"ignore@npm:^4.0.6":
-  version: 4.0.6
-  resolution: "ignore@npm:4.0.6"
-  checksum: 248f82e50a430906f9ee7f35e1158e3ec4c3971451dd9f99c9bc1548261b4db2b99709f60ac6c6cac9333494384176cc4cc9b07acbe42d52ac6a09cad734d800
   languageName: node
   linkType: hard
 
@@ -10098,13 +10051,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"num2fraction@npm:^1.2.2":
-  version: 1.2.2
-  resolution: "num2fraction@npm:1.2.2"
-  checksum: 1da9c6797b505d3f5b17c7f694c4fa31565bdd5c0e5d669553253aed848a580804cd285280e8a73148bd9628839267daee4967f24b53d4e893e44b563e412635
-  languageName: node
-  linkType: hard
-
 "number-is-nan@npm:^1.0.0":
   version: 1.0.1
   resolution: "number-is-nan@npm:1.0.1"
@@ -10839,13 +10785,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picocolors@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "picocolors@npm:0.2.1"
-  checksum: 3b0f441f0062def0c0f39e87b898ae7461c3a16ffc9f974f320b44c799418cabff17780ee647fda42b856a1dc45897e2c62047e1b546d94d6d5c6962f45427b2
-  languageName: node
-  linkType: hard
-
 "picocolors@npm:^1.0.0":
   version: 1.0.0
   resolution: "picocolors@npm:1.0.0"
@@ -11006,13 +10945,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss-value-parser@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "postcss-value-parser@npm:4.1.0"
-  checksum: 68a9ea27c780fa3cc350be37b47cc46385c61dd9627990909230e0e9c3debf6d5beb49006bd743a2e506cdd6fa7d07637f2d9504a394f67cc3011d1ff0134886
-  languageName: node
-  linkType: hard
-
 "postcss-value-parser@npm:^4.2.0":
   version: 4.2.0
   resolution: "postcss-value-parser@npm:4.2.0"
@@ -11031,7 +10963,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^7.0.32, postcss@npm:^7.0.36":
+"postcss@npm:^7.0.36":
   version: 7.0.36
   resolution: "postcss@npm:7.0.36"
   dependencies:
@@ -11042,7 +10974,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.4.6":
+"postcss@npm:^8.4.6, postcss@npm:^8.4.8":
   version: 8.4.8
   resolution: "postcss@npm:8.4.8"
   dependencies:

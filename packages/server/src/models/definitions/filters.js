@@ -1,6 +1,6 @@
 import { isObject, isFunction } from '@ditojs/utils'
-import { QueryFilters } from '@/query'
-import { mergeReversed } from '@/utils'
+import { mergeReversed } from '../../utils'
+import { QueryFilters } from '../../query'
 
 export default function filters(values) {
   const filters = {}

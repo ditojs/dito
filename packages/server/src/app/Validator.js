@@ -2,8 +2,8 @@ import objection from 'objection'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
-import { formatJson } from '@/utils'
-import * as schema from '@/schema'
+import { formatJson } from '../utils'
+import * as schema from '../schema'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
 // validator instance that is shared across the whole app and handles schema

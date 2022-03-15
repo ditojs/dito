@@ -1,3 +1,1 @@
-module.exports = {
-  ...require('../../jest.base.config.js')
-}
+export { default } from '../../jest.base.config.js'

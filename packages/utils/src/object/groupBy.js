@@ -1,4 +1,4 @@
-import { isArray } from '@/base'
+import { isArray } from '../base'
 
 export function groupBy(collection, callback) {
   const array = isArray(collection)
