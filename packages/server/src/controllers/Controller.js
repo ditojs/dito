@@ -6,7 +6,8 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '../errors'
 import {
-  getOwnProperty, getAllKeys, describeFunction, deprecate
+  getOwnProperty, getAllKeys, processHandlerParameters, describeFunction,
+  deprecate
 } from '../utils'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
@@ -112,26 +113,21 @@ export class Controller {
       values: actions,
       authorize
     } = this.processValues(this.inheritValues(type))
-    for (const [name, handler] of Object.entries(actions)) {
-      this.setupAction(type, actions, name, handler, authorize[name])
+    for (const [name, action] of Object.entries(actions)) {
+      this.setupAction(type, actions, name, action, authorize[name])
     }
     return actions
   }
 
-  setupAction(
-    type,
-    actions,
-    name,
-    handler,
-    authorize,
-    // These values are only changed when called from
-    // `CollectionController.setupAction()`:
-    method = 'get',
-    // The default path for actions is the normalized name.
-    path = this.app.normalizePath(name)
-  ) {
-    if (!isFunction(handler)) {
-      handler = convertActionObject(handler, actions)
+  setupAction(type, actions, name, action, authorize) {
+    const handler = isFunction(action) ? action
+      : isObject(action) ? convertActionObject(action, actions)
+      : null
+    // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
+    // the default methods.
+    let [method, path = ''] = name.split(' ')
+    if (!isMethodAction(method)) {
+      path = name
     }
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
@@ -506,16 +502,15 @@ EventEmitter.mixin(Controller.prototype)
 const inheritanceMap = new WeakMap()
 
 function convertActionObject(object, actions) {
-  let {
+  const {
     handler,
-    method,
-    path,
     action,
     authorize,
     transacted,
     scope,
     parameters,
-    returns
+    returns,
+    ...rest
   } = object
 
   // In order to suport `super` calls in the `handler` function in object
@@ -524,33 +519,31 @@ function convertActionObject(object, actions) {
 
   if (action) {
     deprecate(`action.action is deprecated. Use action.method and action.path instead.`)
-    ;([method, path] = asArray(action))
+    const [method, path] = asArray(action)
+    handler.method = method
+    handler.path = path
   }
 
-  handler.method = method ?? null
-  handler.path = path ?? null
   handler.authorize = authorize ?? null
   handler.transacted = transacted ?? null
   handler.scope = scope ? asArray(scope) : null
 
-  const processParameters = (name, value) => {
-    if (value) {
-      const [schema, options] = asArray(value)
-      handler[name] = schema
+  processHandlerParameters(handler, 'parameters', parameters)
+  processHandlerParameters(handler, 'returns', returns)
 
-      // If validation options are provided, expose them through
-      // `handler.options[name]`, see `ControllerAction`.
-      if (options) {
-        handler.options = {
-          ...handler.options,
-          [name]: options
-        }
-      }
-    }
-  }
+  return Object.assign(handler, rest)
+}
 
-  processParameters('parameters', parameters)
-  processParameters('returns', returns)
-
-  return handler
+function isMethodAction(name) {
+  return {
+    get: true,
+    delete: true,
+    post: true,
+    put: true,
+    patch: true,
+    head: true,
+    options: true,
+    trace: true,
+    connect: true
+  }[name]
 }

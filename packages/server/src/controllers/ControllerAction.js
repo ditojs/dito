@@ -9,6 +9,8 @@ export default class ControllerAction {
     this.identifier = `${type}:${name}`
     // Allow decorators on actions to override the predetermined defaults for
     // `method`, `path` and `authorize`:
+    // TODO: `handler.method` and `handler.path` were deprecated in March 2022,
+    // remove later.
     this.method = handler.method || method
     // Use ?? instead of || to allow '' to override the path.
     this.path = handler.path ?? path
@@ -31,10 +33,11 @@ export default class ControllerAction {
     const { parameters, returns, options = {} } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
       async: true,
-      ...options.parameters, // See @parameters() decorator
+      ...options.parameters,
       dataName: this.paramsName
     })
     this.returns = this.app.compileParametersValidator(
+      // TODO: Shouldn't we set `this.returns` to null instead?
       returns ? [returns] : [],
       {
         async: true,

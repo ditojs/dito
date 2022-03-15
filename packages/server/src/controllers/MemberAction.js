@@ -9,7 +9,7 @@ export default class MemberAction extends ControllerAction {
 
   // @override
   async getMember(ctx, param) {
-    // member @parameters() can provide special query parameters as well,
+    // member parameters can provide special query parameters as well,
     // and they can even controll `forUpdate()` behavior:
     // {
     //   member: true,

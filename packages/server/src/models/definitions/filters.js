@@ -1,5 +1,5 @@
 import { isObject, isFunction } from '@ditojs/utils'
-import { mergeReversed } from '../../utils'
+import { mergeReversed, processHandlerParameters } from '../../utils'
 import { QueryFilters } from '../../query'
 
 export default function filters(values) {
@@ -21,6 +21,14 @@ export default function filters(values) {
 }
 
 function convertFilterObject(definition, name) {
+  const addHandlerSettings = (handler, definition) => {
+  // Copy over parameters, returns and their validation options settings.
+    const { parameters, returns, ...rest } = definition
+    processHandlerParameters(handler, 'parameters', parameters)
+    processHandlerParameters(handler, 'returns', returns)
+    return Object.assign(handler, rest)
+  }
+
   const { handler, filter, properties } = definition
   if (handler) {
     return addHandlerSettings(handler, definition)
@@ -32,60 +40,61 @@ function convertFilterObject(definition, name) {
         `Invalid filter '${name}': Unknown filter type '${filter}'.`
       )
     }
+    // Support both object and function definitions.
+    const queryHandler = isObject(queryFilter)
+      ? queryFilter.handler
+      : queryFilter
     const func = properties
       ? (query, ...args) => {
         // When the filter provides multiple properties, match them
         // all, but combine the expressions with OR.
         for (const property of properties) {
-          query.orWhere(query => queryFilter(query, property, ...args))
+          query.orWhere(query => queryHandler(query, property, ...args))
         }
       }
       : (query, ...args) => {
-        queryFilter(query, name, ...args)
+        queryHandler(query, name, ...args)
       }
     return addHandlerSettings(func, queryFilter)
   }
 }
 
-function addHandlerSettings(handler, definition) {
-  // Copy over @parameters() and @validate() settings
-  handler.parameters = definition.parameters
-  handler.validate = definition.validate
-  return handler
-}
-
 function wrapWithValidation(filter, name, app) {
-  // If parameters are defined, wrap the function in a closure that
-  // performs parameter validation...
-  const dataName = 'query'
-  const validator = filter && app.compileParametersValidator(
-    filter.parameters,
-    { ...filter.validate, dataName }
-  )
-  if (validator?.validate) {
-    return (query, ...args) => {
+  if (filter) {
+    // TODO: Implement `returns` validation for filters too.
+    const { parameters, options } = filter
+    // If parameters are defined, wrap the function in a closure that
+    // performs parameter validation...
+    const dataName = 'query'
+    const validator = app.compileParametersValidator(parameters, {
+      ...options.parameters,
+      dataName
+    })
+    if (validator?.validate) {
+      return (query, ...args) => {
       // Convert args to object for validation:
-      const object = {}
-      let index = 0
-      for (const { name } of validator.list) {
+        const object = {}
+        let index = 0
+        for (const { name } of validator.list) {
         // Use dataName if no name is given, see:
         // Application.compileParametersValidator()
-        object[name || dataName] = args[index++]
-      }
-      try {
-        validator.validate(object)
-      } catch (error) {
-        throw app.createValidationError({
-          type: 'FilterValidation',
-          message:
+          object[name || dataName] = args[index++]
+        }
+        try {
+          validator.validate(object)
+        } catch (error) {
+          throw app.createValidationError({
+            type: 'FilterValidation',
+            message:
             `The provided data for query filter '${name}' is not valid`,
-          errors: app.validator.prefixDataPaths(
-            error.errors,
+            errors: app.validator.prefixDataPaths(
+              error.errors,
             `.${name}`
-          )
-        })
+            )
+          })
+        }
+        return filter(query, ...args)
       }
-      return filter(query, ...args)
     }
   }
   // ...otherwise use the defined filter function unmodified.

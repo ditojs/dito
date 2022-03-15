@@ -26,19 +26,6 @@ export class CollectionController extends Controller {
   }
 
   // @override
-  setupAction(type, actions, name, handler, authorize, method, path) {
-    // The default method actions are installed directly on the collection /
-    // member route and are distinguished by their methods, not by nested paths.
-    if (isMethodAction(name)) {
-      method = name
-      path = ''
-    }
-    return super.setupAction(
-      type, actions, name, handler, authorize, method, path
-    )
-  }
-
-  // @override
   setupAssets() {
     const { modelClass } = this
     if (this.assets === true) {
@@ -284,14 +271,4 @@ function getModify(modify, trx) {
   return modify
     ? query => modify(query, trx)
     : null
-}
-
-function isMethodAction(name) {
-  return {
-    get: true,
-    delete: true,
-    post: true,
-    put: true,
-    patch: true
-  }[name]
 }

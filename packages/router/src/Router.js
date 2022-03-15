@@ -47,12 +47,16 @@ export default class Router {
     return this.add('GET', ...args)
   }
 
+  post(...args) {
+    return this.add('POST', ...args)
+  }
+
   put(...args) {
     return this.add('PUT', ...args)
   }
 
-  post(...args) {
-    return this.add('POST', ...args)
+  patch(...args) {
+    return this.add('PATCH', ...args)
   }
 
   delete(...args) {
@@ -61,10 +65,6 @@ export default class Router {
 
   head(...args) {
     return this.add('HEAD', ...args)
-  }
-
-  patch(...args) {
-    return this.add('PATCH', ...args)
   }
 
   options(...args) {
