@@ -1,6 +1,6 @@
 import aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
-import FileType from 'file-type'
+import { fileTypeFromBuffer } from 'file-type'
 import isSvg from 'is-svg'
 import { Storage } from './Storage'
 import { PassThrough } from 'stream'
@@ -49,7 +49,7 @@ export class S3Storage extends Storage {
           const onData = chunk => {
             if (!data) {
               // 2. Try reading the mimetype from the first chunk.
-              const type = FileType.fromBuffer(chunk)?.mime
+              const type = fileTypeFromBuffer(chunk)?.mime
               if (type) {
                 stream.off('data', onData)
                 done(type)
@@ -58,7 +58,7 @@ export class S3Storage extends Storage {
                 //    the mimetype using the full data.
                 stream.once('end', () => {
                   const type = (
-                    FileType.fromBuffer(data)?.mime ||
+                    fileTypeFromBuffer(data)?.mime ||
                     (isSvg(data) ? 'image/svg+xml' : 'application/octet-stream')
                   )
                   done(type)
