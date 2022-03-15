@@ -21,11 +21,11 @@ export default function filters(values) {
 }
 
 function convertFilterObject(definition, name) {
-  const { filter, properties } = definition
-  if (isFunction(filter)) {
-    return addFunctionSettings(filter, definition)
-  } else {
-    // Convert QueryFilters to normal filter functions
+  const { handler, filter, properties } = definition
+  if (handler) {
+    return addHandlerSettings(handler, definition)
+  } else if (filter) {
+    // Convert QueryFilter to normal filter function.
     const queryFilter = QueryFilters.get(filter)
     if (!queryFilter) {
       throw new Error(
@@ -43,15 +43,15 @@ function convertFilterObject(definition, name) {
       : (query, ...args) => {
         queryFilter(query, name, ...args)
       }
-    return addFunctionSettings(func, queryFilter)
+    return addHandlerSettings(func, queryFilter)
   }
 }
 
-function addFunctionSettings(filter, definition) {
+function addHandlerSettings(handler, definition) {
   // Copy over @parameters() and @validate() settings
-  filter.parameters = definition.parameters
-  filter.validate = definition.validate
-  return filter
+  handler.parameters = definition.parameters
+  handler.validate = definition.validate
+  return handler
 }
 
 function wrapWithValidation(filter, name, app) {
