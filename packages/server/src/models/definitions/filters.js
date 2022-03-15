@@ -8,7 +8,7 @@ export default function filters(values) {
     const filter = isFunction(definition)
       ? definition
       : isObject(definition)
-        ? convertObjectFilter(definition, name)
+        ? convertFilterObject(definition, name)
         : null
     if (!filter) {
       throw new Error(
@@ -20,7 +20,7 @@ export default function filters(values) {
   return filters
 }
 
-function convertObjectFilter(definition, name) {
+function convertFilterObject(definition, name) {
   const { filter, properties } = definition
   if (isFunction(filter)) {
     return addFunctionSettings(filter, definition)

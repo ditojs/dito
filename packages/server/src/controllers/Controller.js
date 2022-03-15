@@ -130,7 +130,7 @@ export class Controller {
     path = this.app.normalizePath(name)
   ) {
     if (!isFunction(handler)) {
-      handler = setupHandlerFromObject(handler, actions)
+      handler = convertActionObject(handler, actions)
     }
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
@@ -390,7 +390,7 @@ export class Controller {
           return result
         },
         // Create a new object for the filtered `values` that keeps inheritance
-        // intact. This is required by `setupHandlerFromObject()`, to support
+        // intact. This is required by `convertActionObject()`, to support
         // `super` in handler functions.
         Object.create(Object.getPrototypeOf(values))
       ),
@@ -504,7 +504,7 @@ EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
 
-function setupHandlerFromObject(object, actions) {
+function convertActionObject(object, actions) {
   let {
     handler,
     method,
@@ -512,9 +512,9 @@ function setupHandlerFromObject(object, actions) {
     action,
     authorize,
     transacted,
+    scope,
     parameters,
-    returns,
-    scope
+    returns
   } = object
 
   // In order to suport `super` calls in the `handler` function in object
@@ -525,47 +525,31 @@ function setupHandlerFromObject(object, actions) {
     deprecate(`action.action is deprecated. Use action.method and action.path instead.`)
     ;([method, path] = asArray(action))
   }
-  if (method) {
-    handler.method = method
-  }
-  if (path) {
-    handler.path = path
-  }
 
-  handler.authorize = authorize
-  handler.transacted = transacted
+  handler.method = method ?? null
+  handler.path = path ?? null
+  handler.authorize = authorize ?? null
+  handler.transacted = transacted ?? null
+  handler.scope = scope ? asArray(scope) : null
 
-  if (parameters) {
-    const [_parameters, options] = asArray(parameters)
-    handler.parameters = _parameters
+  const processParameters = (name, value) => {
+    if (value) {
+      const [schema, options] = asArray(value)
+      handler[name] = schema
 
-    // If validation options are provided, expose them through
-    // `handler.options.parameters`, see `ControllerAction`.
-    if (options) {
-      handler.options = {
-        ...handler.options,
-        parameters: options
+      // If validation options are provided, expose them through
+      // `handler.options[name]`, see `ControllerAction`.
+      if (options) {
+        handler.options = {
+          ...handler.options,
+          [name]: options
+        }
       }
     }
   }
 
-  if (returns) {
-    const [_returns, options] = asArray(returns)
-    handler.returns = _returns
-
-    // If validation options are provided, expose them through
-    // `handler.options.returns`, see `ControllerAction`.
-    if (options) {
-      handler.options = {
-        ...handler.options,
-        returns: options
-      }
-    }
-  }
-
-  if (scope) {
-    handler.scope = asArray(scope)
-  }
+  processParameters('parameters', parameters)
+  processParameters('returns', returns)
 
   return handler
 }
