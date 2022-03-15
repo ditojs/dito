@@ -27,10 +27,10 @@ export class CollectionController extends Controller {
 
   // @override
   setupAction(type, actions, name, handler, authorize, method, path) {
-    // These default actions happen directly on the collection / member route
-    // and are distinguished by their methods, not by nested paths.
-    if (name in ACTION_TO_METHOD) {
-      method = ACTION_TO_METHOD[name]
+    // The default method actions are installed directly on the collection /
+    // member route and are distinguished by their methods, not by nested paths.
+    if (isMethodAction(name)) {
+      method = name
       path = ''
     }
     return super.setupAction(
@@ -120,7 +120,7 @@ export class CollectionController extends Controller {
     base = this,
     { query = {}, modify = null, forUpdate = false } = {}
   ) {
-    return this.member.find.call(
+    return this.member.get.call(
       this,
       // Extend `ctx` with a new `query` object, while inheriting the route
       // params in `ctx.params`, so fining the member by id still works.
@@ -202,7 +202,7 @@ export class CollectionController extends Controller {
   }
 
   collection = this.toCoreActions({
-    async find(ctx, modify) {
+    async get(ctx, modify) {
       const result = await this.execute(ctx, (query, trx) => {
         query.find(ctx.query, this.allowParam).modify(getModify(modify, trx))
         return this.isOneToOne ? query.first() : query
@@ -224,7 +224,7 @@ export class CollectionController extends Controller {
       return { count }
     },
 
-    async insert(ctx, modify) {
+    async post(ctx, modify) {
       const result = this.relate
         // Use patchDitoGraphAndFetch() to handle relates for us.
         ? await this.execute(ctx, (query, trx) => query
@@ -239,7 +239,7 @@ export class CollectionController extends Controller {
       return result
     },
 
-    async update(ctx, modify) {
+    async put(ctx, modify) {
       return this.executeAndFetch('update', ctx, modify)
     },
 
@@ -249,7 +249,7 @@ export class CollectionController extends Controller {
   })
 
   member = this.toCoreActions({
-    async find(ctx, modify) {
+    async get(ctx, modify) {
       return this.execute(ctx, (query, trx) => query
         .findById(ctx.memberId)
         .find(ctx.query, this.allowParam)
@@ -270,7 +270,7 @@ export class CollectionController extends Controller {
       return { count }
     },
 
-    async update(ctx, modify) {
+    async put(ctx, modify) {
       return this.executeAndFetchById('update', ctx, modify)
     },
 
@@ -286,10 +286,12 @@ function getModify(modify, trx) {
     : null
 }
 
-const ACTION_TO_METHOD = {
-  find: 'get',
-  delete: 'delete',
-  insert: 'post',
-  update: 'put',
-  patch: 'patch'
+function isMethodAction(name) {
+  return {
+    get: true,
+    delete: true,
+    post: true,
+    put: true,
+    patch: true
+  }[name]
 }

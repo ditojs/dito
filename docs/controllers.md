@@ -377,34 +377,34 @@ activated by default and mapped to database methods and default model routes:
 ### Collection Actions
 
 Collection actions are all mapped to the controller's route path (`this.path`),
-and distinguished only by their methods. Here's the mapping of their methods to
+and distinguished only by their methods. Here's the mapping of the methods to
 the collection actions and the database methods they execute:
 
-| Method     | Collection Action | Database Method
-| ---------- | ----------------- | ---------------------------------------------
-| `'get'`    | `find()`          | `find()`
-| `'delete'` | `delete()`        | `delete()`
-| `'post'`   | `insert()`        | `insertAndFetch()` or `insertDitoGraphAndFetch()`
-| `'put'`    | `update()`        | `updateAndFetch()` or `updateDitoGraphAndFetch()`
-| `'patch'`  | `patch()`         | `patchAndFetch()` or `patchDitoGraphAndFetch()`
+| HTTP Method | Collection Action | Database Method
+| ----------- | ----------------- | --------------------------------------------
+| `'get'`     | `get()`           | `find()`
+| `'delete'`  | `delete()`        | `delete()`
+| `'post'`    | `post()`          | `insertAndFetch()` or `insertDitoGraphAndFetch()`
+| `'put'`     | `put()`           | `updateAndFetch()` or `updateDitoGraphAndFetch()`
+| `'patch'`   | `patch()`         | `patchAndFetch()` or `patchDitoGraphAndFetch()`
 
 ### Member Actions
 
 Member actions are all mapped to the controller's member route path (``
 `${this.path}/:id` ``), and distinguished only by their methods. Here's the
-mapping of their methods to the member actions and the database methods they
+mapping of the methods to the member actions and the database methods they
 execute:
 
-| Method     | Member Action | Database Method
-| ---------- | ------------- | -------------------------------------------------
-| `'get'`    | `find()`      | `findById()`
-| `'delete'` | `delete()`    | `deleteById()`
-| `'put'`    | `update()`    | `updateAndFetchById()` or `updateDitoGraphAndFetchById()`
-| `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
+| HTTP Method | Member Action | Database Method
+| ----------- | ------------- | ------------------------------------------------
+| `'get'`     | `get()`       | `findById()`
+| `'delete'`  | `delete()`    | `deleteById()`
+| `'put'`     | `put()`       | `updateAndFetchById()` or `updateDitoGraphAndFetchById()`
+| `'patch'`   | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
 
-In comparison to the `collection` actions, the `insert()` action assigned to the
-`post` method is missing here, but with good reason: Inserting into an existing
-member is an undefined operation.
+In comparison to the `collection` actions, the `post()` action is missing here,
+but with good reason: Inserting into an existing member is an undefined
+operation.
 
 ### Graph Methods
 
@@ -432,7 +432,7 @@ export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['find', 'helloCollection'],
+    allow: ['get', 'helloCollection'],
 
     @parameters([
       {
@@ -447,7 +447,7 @@ export class MyModels extends ModelController {
   }
 
   member = {
-    allow: ['find', 'helloMember'],
+    allow: ['get', 'helloMember'],
 
     @parameters([
       {
@@ -507,10 +507,10 @@ export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    // Let's override the default `collection.find(ctx)` method and add some
+    // Let's override the default `collection.get(ctx)` method and add some
     // additional data to its returns value.
-    async find(ctx) {
-      const results = await super.find(ctx)
+    async get(ctx) {
+      const results = await super.get(ctx)
       return {
         results,
         additional: `Whatever you'd like to send back, really`
@@ -564,20 +564,20 @@ class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['find']
+    allow: ['get']
   }
 
   member = {
-    allow: ['find']
+    allow: ['get']
   }
 
   relations = {
     myRelation: {
       relation: {
-        allow: ['find']
+        allow: ['get']
       },
       member: {
-        allow: ['find']
+        allow: ['get']
       }
     }
   }
