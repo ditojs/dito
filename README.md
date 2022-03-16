@@ -64,9 +64,9 @@ which a selection of predefined tasks are executed:
   "console": "dito console src/server/app",
   "db:seed": "dito db:seed src/server/app",
   "db:create_migration": "dito db:create_migration src/server/app",
-  "db:migrate": "dito db:migrate src/config",
-  "db:rollback": "dito db:rollback src/config",
-  "db:reset": "dito db:reset src/config"
+  "db:migrate": "dito db:migrate src/config/index.js",
+  "db:rollback": "dito db:rollback src/config/index.js",
+  "db:reset": "dito db:reset src/config/index.js"
 }
 ```
 
