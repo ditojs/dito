@@ -8,7 +8,7 @@ export default function filters(values) {
     const filter = isFunction(definition)
       ? definition
       : isObject(definition)
-        ? convertFilterObject(definition, name)
+        ? convertFilterObject(name, definition)
         : null
     if (!filter) {
       throw new Error(
@@ -20,18 +20,18 @@ export default function filters(values) {
   return filters
 }
 
-function convertFilterObject(definition, name) {
+function convertFilterObject(name, object) {
   const addHandlerSettings = (handler, definition) => {
-  // Copy over parameters, returns and their validation options settings.
+    // Copy over parameters, returns and their validation options settings.
     const { parameters, returns, ...rest } = definition
     processHandlerParameters(handler, 'parameters', parameters)
     processHandlerParameters(handler, 'returns', returns)
     return Object.assign(handler, rest)
   }
 
-  const { handler, filter, properties } = definition
+  const { handler, filter, properties } = object
   if (handler) {
-    return addHandlerSettings(handler, definition)
+    return addHandlerSettings(handler, object)
   } else if (filter) {
     // Convert QueryFilter to normal filter function.
     const queryFilter = QueryFilters.get(filter)
@@ -62,7 +62,9 @@ function convertFilterObject(definition, name) {
 function wrapWithValidation(filter, name, app) {
   if (filter) {
     // TODO: Implement `returns` validation for filters too.
-    const { parameters, options } = filter
+    // TODO: Share additional coercion handling with
+    // `ControllerAction#coerceValue()`
+    const { parameters, options = {} } = filter
     // If parameters are defined, wrap the function in a closure that
     // performs parameter validation...
     const dataName = 'query'
@@ -93,7 +95,9 @@ function wrapWithValidation(filter, name, app) {
             )
           })
         }
-        return filter(query, ...args)
+        return validator.asObject
+          ? filter(query, object)
+          : filter(query, ...args)
       }
     }
   }
