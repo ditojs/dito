@@ -718,15 +718,12 @@ export class Application extends Koa {
     }
     await this.emit('before:start')
     await this.forEachService(service => service.start())
-    const {
-      server: { host, port },
-      env
-    } = this.config
+    const { server: { host, port } } = this.config
     this.server = await new Promise((resolve, reject) => {
       const server = this.listen(port, host, () => {
         const { port } = server.address()
         console.info(
-          `${env} server started at http://${host}:${port}`
+          `Dito server started at http://${host}:${port}`
         )
         resolve(server)
       })
