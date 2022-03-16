@@ -1,4 +1,5 @@
 import path from 'path'
+import fs from 'fs'
 import Koa from 'koa'
 import mount from 'koa-mount'
 import serve from 'koa-static'
@@ -8,6 +9,8 @@ import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
 import picomatch from 'picomatch'
+import { findUpSync } from 'find-up'
+import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
@@ -122,14 +125,19 @@ export class AdminController extends Controller {
     }))
   }
 
-  getViteConfig() {
+  getViteConfig(config = {}) {
     const development = this.mode === 'development'
 
     const cwd = path.resolve('.')
     const root = this.getPath('build')
     const views = path.join(root, 'views')
 
-    return defineConfig({
+    // Read `package.json` from the closest package.json, so we can emulate
+    // ESM-style imports mappings in rollup / vite.
+    const pkg = findUpSync('package.json', { cwd: root })
+    const { imports } = JSON.parse(fs.readFileSync(pkg, 'utf8'))
+
+    return defineConfig(merge({
       root,
       base: `${this.url}/`,
       mode: this.mode,
@@ -177,35 +185,31 @@ export class AdminController extends Controller {
           {
             find: '@',
             replacement: root
+          },
+          {
+            // Use a custom rollup resolver to emulate ESM-style imports
+            // mappings in vite, as read from `package.json` above:
+            find: /^#/,
+            replacement: '#',
+            customResolver(id) {
+              for (const [find, replacement] of Object.entries(imports)) {
+                picomatch.isMatch(id, find, {
+                  capture: true,
+                  onMatch({ input, regex }) {
+                    const replacementPath = path.resolve(replacement)
+                    const match = input.match(regex)?.[1]
+                    id = match
+                      ? replacementPath.replace('*', match)
+                      : replacementPath
+                  }
+                })
+              }
+              return id
+            }
           }
         ]
       }
-    })
-
-    /*
-    return {
-      configureWebpack: {
-          splitChunks: {
-            // Split dependencies into two chunks, one for all common libraries,
-            // and one for all views, so they can be loaded separately, and only
-            // once authentication was successful.
-            cacheGroups: {
-              common: {
-                name: 'common',
-                test: /\/node_modules\//,
-                chunks: 'all'
-              },
-              views: {
-                name: 'views',
-                test: /\/views\//,
-                chunks: 'all'
-              }
-            }
-          }
-        }
-      }
-    }
-    */
+    }, config))
   }
 }
 

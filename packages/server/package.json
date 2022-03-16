@@ -36,6 +36,7 @@
     "data-uri-to-buffer": "^4.0.0",
     "eventemitter2": "^6.4.5",
     "file-type": "^17.1.1",
+    "find-up": "^6.3.0",
     "fs-extra": "^10.0.1",
     "image-size": "^1.0.1",
     "is-svg": "^4.3.2",

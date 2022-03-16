@@ -335,8 +335,8 @@ export class Application extends Koa {
     )
   }
 
-  getAdminViteConfig() {
-    return this.getAdminController()?.getViteConfig() || null
+  getAdminViteConfig(config) {
+    return this.getAdminController()?.getViteConfig(config) || null
   }
 
   getAssetConfig({
