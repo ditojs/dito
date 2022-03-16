@@ -3,18 +3,16 @@ export const QueryFilters = new Registry()
 
 QueryFilters.register({
   'text': {
-    parameters: [
-      {
-        name: 'operator',
+    parameters: {
+      operator: {
         type: 'string'
       },
-      {
-        name: 'text',
+      text: {
         type: 'string'
       }
-    ],
+    },
 
-    handler(query, property, operator, text) {
+    handler(query, property, { operator, text }) {
       if (text === undefined) {
         text = operator
         operator = 'contains'
@@ -42,20 +40,18 @@ QueryFilters.register({
   },
 
   'date-range': {
-    parameters: [
-      {
-        name: 'from',
+    parameters: {
+      from: {
         type: 'datetime',
         nullable: true
       },
-      {
-        name: 'to',
+      to: {
         type: 'datetime',
         nullable: true
       }
-    ],
+    },
 
-    handler(query, property, from, to) {
+    handler(query, property, { from, to }) {
       if (from && to) {
         query.whereBetween(property, [new Date(from), new Date(to)])
       } else if (from) {
