@@ -114,7 +114,11 @@ export class Controller {
       authorize
     } = this.processValues(this.inheritValues(type))
     for (const [name, action] of Object.entries(actions)) {
-      this.setupAction(type, actions, name, action, authorize[name])
+      // Replace the action object with the converted action handler, so they
+      // too can benefit from prototypal inheritance:
+      actions[name] = this.setupAction(
+        type, actions, name, action, authorize[name]
+      )
     }
     return actions
   }
@@ -137,6 +141,7 @@ export class Controller {
       // eslint-disable-next-line new-cap
       new actionClass(this, handler, type, name, method, path, authorize)
     )
+    return handler
   }
 
   setupActionRoute(type, action) {
