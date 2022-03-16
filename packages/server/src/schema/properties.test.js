@@ -1,4 +1,4 @@
-import { convertSchema, expandSchemaShorthand } from './properties'
+import { convertSchema, expandSchemaShorthand } from './properties.js'
 
 describe('convertSchema()', () => {
   it('expands objects with properties to full JSON schemas', () => {

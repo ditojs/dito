@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
 import { InputField } from '@ditojs/ui'
 
 const maskedPassword = '****************'

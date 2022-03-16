@@ -1,4 +1,4 @@
-import { equals } from './equals'
+import { equals } from './equals.js'
 
 describe('equals()', () => {
   const symbol1 = Symbol('a')

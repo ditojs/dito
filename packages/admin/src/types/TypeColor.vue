@@ -70,9 +70,9 @@
 <script>
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from 'vue-color'
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
 import { Trigger } from '@ditojs/ui'
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default TypeComponent.register('color', {

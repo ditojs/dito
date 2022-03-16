@@ -35,7 +35,7 @@ An admin of a model consists of two parts, the view and the form. The view repre
 In order to add a new model to the admin create a new folder in dito-admin/src/schemas. The name of the folder is irrelevant however the convention is to use the hyphenated model name. Also export the new folder in the index.js file in the schemas folder like this:
 
 ```js
-export * from './folder-name'
+export * from './folder-name/index.js'
 ```
 
 Within the folder create a new index.js file. Within this file the View is exported. An empty view looks like this:

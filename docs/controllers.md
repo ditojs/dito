@@ -305,13 +305,13 @@ such a structure being exported:
 
 #### `src/controllers/index.js`:
 ```js
-export * as api from './api'
+export * as api from './api/index.js'
 ```
 
 #### `src/controllers/api/index.js`:
 ```js
-export * as frontend from './frontend'
-export * as admin from './admin'
+export * as frontend from './frontend/index.js'
+export * as admin from './admin/index.js'
 ```
 
 ## `Controller` Class
@@ -426,7 +426,7 @@ control which actions should be exposed.
 
 ```js
 import { ModelController } from '@ditojs/server'
-import { MyModel } from '@/models'
+import { MyModel } from './models/index.js'
 
 export class MyModels extends ModelController {
   modelClass = MyModel
@@ -503,7 +503,7 @@ them:
 
 ```js
 import { ModelController } from '@ditojs/server'
-import { MyModel } from '@/models'
+import { MyModel } from './models/index.js'
 
 export class MyModels extends ModelController {
   modelClass = MyModel

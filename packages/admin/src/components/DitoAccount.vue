@@ -24,8 +24,8 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import PulldownMixin from '@/mixins/PulldownMixin'
+import DitoComponent from '../DitoComponent.js'
+import PulldownMixin from '../mixins/PulldownMixin.js'
 
 // @vue/component
 export default DitoComponent.component('dito-account', {

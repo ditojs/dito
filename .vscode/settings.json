@@ -8,6 +8,8 @@
   // Disable VSCode's and Vetur's own validator in favor of ESLint:
   "javascript.validate.enable": false,
   "typescript.validate.enable": false,
+  "javascript.preferences.importModuleSpecifierEnding": "js",
+  "typescript.preferences.importModuleSpecifierEnding": "js",
   "npm.validate.enable": false,
   "vetur.experimental.templateInterpolationService": true,
   "vetur.format.styleInitialIndent": false,

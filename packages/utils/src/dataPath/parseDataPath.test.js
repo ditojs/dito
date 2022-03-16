@@ -1,4 +1,4 @@
-import { parseDataPath } from './parseDataPath'
+import { parseDataPath } from './parseDataPath.js'
 
 describe('parseDataPath()', () => {
   it('should parse JSON pointers', () => {

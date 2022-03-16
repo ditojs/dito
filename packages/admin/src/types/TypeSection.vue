@@ -22,8 +22,8 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import { getItemFormSchema } from '@/utils/schema'
+import TypeComponent from '../TypeComponent.js'
+import { getItemFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default TypeComponent.register('section', {

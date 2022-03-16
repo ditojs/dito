@@ -1,4 +1,4 @@
-import { toPromiseCallback } from './toPromiseCallback'
+import { toPromiseCallback } from './toPromiseCallback.js'
 import { jest } from '@jest/globals'
 
 describe('toPromiseCallback()', () => {

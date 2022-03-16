@@ -11,9 +11,9 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { hasResource } from '@/utils/resource'
+import TypeComponent from '../TypeComponent.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { hasResource } from '../utils/resource.js'
 import { labelize } from '@ditojs/utils'
 
 export default TypeComponent.register([

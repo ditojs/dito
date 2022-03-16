@@ -1,4 +1,4 @@
-import { pickBy } from './pickBy'
+import { pickBy } from './pickBy.js'
 
 describe('pickBy()', () => {
   it('should work with a predicate argument', () => {

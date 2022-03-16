@@ -22,20 +22,20 @@ import {
   isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
   parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
-import SessionStore from './SessionStore'
-import { Validator } from './Validator'
-import { EventEmitter } from '../lib'
-import { Controller, AdminController } from '../controllers'
-import { Service } from '../services'
-import { Storage } from '../storage'
-import { convertSchema } from '../schema'
-import { formatJson } from '../utils'
+import SessionStore from './SessionStore.js'
+import { Validator } from './Validator.js'
+import { EventEmitter } from '../lib/index.js'
+import { Controller, AdminController } from '../controllers/index.js'
+import { Service } from '../services/index.js'
+import { Storage } from '../storage/index.js'
+import { convertSchema } from '../schema/index.js'
+import { formatJson } from '../utils/index.js'
 import {
   ResponseError,
   ValidationError,
   DatabaseError,
   AssetError
-} from '../errors'
+} from '../errors/index.js'
 import {
   attachLogger,
   createTransaction,
@@ -44,7 +44,7 @@ import {
   handleRoute,
   handleUser,
   logRequests
-} from '../middleware'
+} from '../middleware/index.js'
 import {
   Model,
   BelongsToOneRelation,

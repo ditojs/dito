@@ -23,7 +23,7 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
 export default DitoComponent.component('dito-panels', {

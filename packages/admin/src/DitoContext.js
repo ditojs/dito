@@ -2,7 +2,7 @@ import { isFunction } from '@ditojs/utils'
 import {
   getItemDataPath, getParentItemDataPath, getParentItem, getItem,
   getLastDataPathName, getLastDataPathIndex
-} from '@/utils/data'
+} from './utils/data.js'
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
 // which themselves actually inherit from the linked `component` instance, so

@@ -1,4 +1,4 @@
-import { clone } from './clone'
+import { clone } from './clone.js'
 import { jest } from '@jest/globals'
 
 describe('clone()', () => {

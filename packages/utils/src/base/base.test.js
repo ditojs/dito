@@ -2,7 +2,7 @@ import {
   isPlainObject, isObject, isArray, isFunction, isString, isBoolean, isNumber,
   isDate, isRegExp, isPromise, isAsync, isInteger, isArrayLike, isEmpty,
   asObject, asArray, asFunction
-} from './base'
+} from './base.js'
 
 const object = { a: 1 }
 const array = [1, 2, 3]

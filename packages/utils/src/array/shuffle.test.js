@@ -1,4 +1,4 @@
-import { shuffle } from './shuffle'
+import { shuffle } from './shuffle.js'
 
 describe('shuffle()', () => {
   const array = [1, 2, 3]

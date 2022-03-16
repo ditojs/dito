@@ -1,1 +1,1 @@
-export * from './mixin'
+export * from './mixin.js'

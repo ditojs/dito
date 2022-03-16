@@ -5,7 +5,7 @@
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
-  "module": "./src/index.js",
+  "main": "./src/index.js",
   "exports": {
     "import": "./src/index.js"
   },

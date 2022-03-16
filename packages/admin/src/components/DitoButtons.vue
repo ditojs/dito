@@ -32,8 +32,8 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import { appendDataPath } from '@/utils/data'
+import DitoComponent from '../DitoComponent.js'
+import { appendDataPath } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('dito-buttons', {

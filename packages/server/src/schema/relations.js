@@ -9,7 +9,7 @@ import {
 import {
   isObject, isArray, isString, asArray, capitalize, camelize
 } from '@ditojs/utils'
-import { RelationError } from '../errors'
+import { RelationError } from '../errors/index.js'
 
 const relationLookup = {
   // one:

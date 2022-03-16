@@ -66,9 +66,9 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import { appendDataPath } from '@/utils/data'
-import { getAllPanelSchemas, isNested } from '@/utils/schema'
+import DitoComponent from '../DitoComponent.js'
+import { appendDataPath } from '../utils/data.js'
+import { getAllPanelSchemas, isNested } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-pane', {

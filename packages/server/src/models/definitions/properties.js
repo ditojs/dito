@@ -1,5 +1,5 @@
-import { mergeReversed } from '../../utils'
-import { expandSchemaShorthand } from '../../schema'
+import { mergeReversed } from '../../utils/index.js'
+import { expandSchemaShorthand } from '../../schema/index.js'
 
 export default function properties(values) {
   const properties = mergeReversed(values)

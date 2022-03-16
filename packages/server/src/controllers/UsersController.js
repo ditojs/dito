@@ -1,4 +1,4 @@
-import { ModelController } from './ModelController'
+import { ModelController } from './ModelController.js'
 
 export class UsersController extends ModelController {
   collection = {

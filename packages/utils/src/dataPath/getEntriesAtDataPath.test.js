@@ -1,4 +1,4 @@
-import { getEntriesAtDataPath } from './getEntriesAtDataPath'
+import { getEntriesAtDataPath } from './getEntriesAtDataPath.js'
 
 describe('getEntriesAtDataPath()', () => {
   const data = {

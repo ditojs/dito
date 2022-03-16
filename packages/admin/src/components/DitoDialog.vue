@@ -17,10 +17,10 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import { getButtonSchemas } from '@/utils/schema'
-import { addEvents } from '@ditojs/ui'
 import { clone } from '@ditojs/utils'
+import { addEvents } from '@ditojs/ui'
+import DitoComponent from '../DitoComponent.js'
+import { getButtonSchemas } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {

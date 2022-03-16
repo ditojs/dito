@@ -223,11 +223,11 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DitoContext from '@/DitoContext'
-import OptionsMixin from '@/mixins/OptionsMixin'
+import TypeComponent from '../TypeComponent.js'
+import DitoContext from '../DitoContext.js'
+import OptionsMixin from '../mixins/OptionsMixin.js'
 import VueMultiselect from 'vue-multiselect'
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 // @vue/component

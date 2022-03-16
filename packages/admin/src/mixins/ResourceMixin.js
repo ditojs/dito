@@ -1,9 +1,9 @@
-import ItemMixin from './ItemMixin'
-import LoadingMixin from './LoadingMixin'
-import { setDefaults } from '@/utils/schema'
+import ItemMixin from './ItemMixin.js'
+import LoadingMixin from './LoadingMixin.js'
+import { setDefaults } from '../utils/schema.js'
 import { isObject, isString, labelize } from '@ditojs/utils'
-import { getResource } from '@/utils/resource'
-import DitoContext from '@/DitoContext'
+import { getResource } from '../utils/resource.js'
+import DitoContext from '../DitoContext.js'
 
 // @vue/component
 export default {

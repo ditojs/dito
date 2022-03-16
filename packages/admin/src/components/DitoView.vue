@@ -22,10 +22,10 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import RouteMixin from '@/mixins/RouteMixin'
-import { someSchemaComponent, isSingleComponentView } from '@/utils/schema'
-import { hasResource } from '@/utils/resource'
+import DitoComponent from '../DitoComponent.js'
+import RouteMixin from '../mixins/RouteMixin.js'
+import { someSchemaComponent, isSingleComponentView } from '../utils/schema.js'
+import { hasResource } from '../utils/resource.js'
 
 // @vue/component
 export default DitoComponent.component('dito-view', {

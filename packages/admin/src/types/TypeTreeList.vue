@@ -40,9 +40,9 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import SourceMixin from '@/mixins/SourceMixin'
-import { hasFormSchema, getFormSchemas } from '@/utils/schema'
+import TypeComponent from '../TypeComponent.js'
+import SourceMixin from '../mixins/SourceMixin.js'
+import { hasFormSchema, getFormSchemas } from '../utils/schema.js'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'

@@ -97,7 +97,7 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 import { isObject, asArray } from '@ditojs/utils'
 
 // @vue/component

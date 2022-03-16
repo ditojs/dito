@@ -204,7 +204,7 @@
 </style>
 
 <script>
-import { copyDate } from '@/utils'
+import { copyDate } from '../utils/index.js'
 
 export default {
   props: {

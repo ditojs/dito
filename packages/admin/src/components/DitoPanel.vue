@@ -63,11 +63,11 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import ValidatorMixin from '@/mixins/ValidatorMixin'
-import { getButtonSchemas } from '@/utils/schema'
-import { getSchemaAccessor } from '@/utils/accessor'
 import { isFunction } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import { getButtonSchemas } from '../utils/schema.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {

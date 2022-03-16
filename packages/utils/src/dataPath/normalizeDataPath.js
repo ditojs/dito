@@ -1,4 +1,4 @@
-import { parseDataPath } from './parseDataPath'
+import { parseDataPath } from './parseDataPath.js'
 
 export function normalizeDataPath(path) {
   path = parseDataPath(path)

@@ -1,4 +1,4 @@
-import Router from './Router'
+import Router from './Router.js'
 import { deindent, shuffle } from '@ditojs/utils'
 import http from 'http'
 

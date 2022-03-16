@@ -1,9 +1,12 @@
 import objection from 'objection'
-import Ajv from 'ajv'
+import ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
-import { formatJson } from '../utils'
-import * as schema from '../schema'
+import { formatJson } from '../utils/index.js'
+import * as schema from '../schema/index.js'
+
+// TODO: Switch to direct import once Ajv is updated / supports ESM.
+const Ajv = ajv.default
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
 // validator instance that is shared across the whole app and handles schema

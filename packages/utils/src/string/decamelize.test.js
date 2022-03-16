@@ -1,4 +1,4 @@
-import { decamelize, hyphenate, underscore } from './decamelize'
+import { decamelize, hyphenate, underscore } from './decamelize.js'
 
 const strings = [
   'foo bar', 'Foo bar', 'foo Bar', 'Foo Bar', 'FOO BAR', 'FooBar', 'fooBar'

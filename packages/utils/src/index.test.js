@@ -1,4 +1,4 @@
-import * as index from './index'
+import * as index from './index.js'
 
 describe('index', () => {
   it('exports all symbols', () => {

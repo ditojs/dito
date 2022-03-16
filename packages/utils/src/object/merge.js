@@ -1,5 +1,5 @@
-import { isArray, isPlainObject } from '../base'
-import { clone } from './clone'
+import { isArray, isPlainObject } from '../base/index.js'
+import { clone } from './clone.js'
 
 export function merge(target, ...sources) {
   const _merge = (target, source, cloneTarget) => {

@@ -1,4 +1,4 @@
-import { ResponseError } from './ResponseError'
+import { ResponseError } from './ResponseError.js'
 
 export class QueryBuilderError extends ResponseError {
   constructor(error) {

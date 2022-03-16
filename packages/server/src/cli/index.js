@@ -5,8 +5,8 @@ import fs from 'fs'
 import pico from 'picocolors'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
-import * as db from './db/index.mjs'
-import startConsole from './console.mjs'
+import * as db from './db/index.js'
+import startConsole from './console.js'
 
 const commands = { db, console: startConsole }
 

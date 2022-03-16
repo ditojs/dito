@@ -17,7 +17,7 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
 import { SwitchButton } from '@ditojs/ui'
 
 // @vue/component

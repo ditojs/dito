@@ -6,11 +6,11 @@
   "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
-  "module": "./dist/dito-ui.es.mjs",
+  "module": "./dist/dito-ui.es.js",
   "main": "./dist/dito-ui.umd.js",
   "exports": {
     ".": {
-      "import": "./dist/dito-ui.es.mjs",
+      "import": "./dist/dito-ui.es.js",
       "require": "./dist/dito-ui.umd.js"
     },
     "./style.css": "./dist/style.css",

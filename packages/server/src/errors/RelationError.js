@@ -1,4 +1,4 @@
-import { WrappedError } from './WrappedError'
+import { WrappedError } from './WrappedError.js'
 import { isObject } from '@ditojs/utils'
 
 export class RelationError extends WrappedError {

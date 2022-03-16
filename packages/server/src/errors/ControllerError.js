@@ -1,5 +1,5 @@
 import { isFunction } from '@ditojs/utils'
-import { ResponseError } from './ResponseError'
+import { ResponseError } from './ResponseError.js'
 
 export class ControllerError extends ResponseError {
   constructor(controller, error) {

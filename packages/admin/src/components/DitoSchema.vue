@@ -149,18 +149,18 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import ItemMixin from '@/mixins/ItemMixin'
-import { appendDataPath, getParentItem } from '@/utils/data'
-import {
-  getNamedSchemas, getPanelSchemas, setDefaults, processData
-} from '@/utils/schema'
-import { getStoreAccessor } from '@/utils/accessor'
 import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui'
+import DitoComponent from '../DitoComponent.js'
+import ItemMixin from '../mixins/ItemMixin.js'
+import { appendDataPath, getParentItem } from '../utils/data.js'
+import {
+  getNamedSchemas, getPanelSchemas, setDefaults, processData
+} from '../utils/schema.js'
+import { getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {

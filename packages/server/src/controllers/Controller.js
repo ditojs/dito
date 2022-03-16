@@ -1,14 +1,14 @@
 import pico from 'picocolors'
-import { EventEmitter } from '../lib'
-import ControllerAction from './ControllerAction'
-import MemberAction from './MemberAction'
+import { EventEmitter } from '../lib/index.js'
+import ControllerAction from './ControllerAction.js'
+import MemberAction from './MemberAction.js'
 import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
-} from '../errors'
+} from '../errors/index.js'
 import {
   getOwnProperty, getAllKeys, processHandlerParameters, describeFunction,
   deprecate
-} from '../utils'
+} from '../utils/index.js'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
   parseDataPath, normalizeDataPath

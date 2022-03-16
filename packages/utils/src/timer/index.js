@@ -1,2 +1,2 @@
-export * from './debounce'
-export * from './debounceAsync'
+export * from './debounce.js'
+export * from './debounceAsync.js'

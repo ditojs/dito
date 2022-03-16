@@ -1,6 +1,6 @@
 import { isArray } from '@ditojs/utils'
-import { ensureModelArray } from './graph'
-import { modelGraphToExpression } from './expression'
+import { ensureModelArray } from './graph.js'
+import { modelGraphToExpression } from './expression.js'
 
 export class DitoGraphProcessor {
   constructor(rootModelClass, data, options = {}, settings = {}) {

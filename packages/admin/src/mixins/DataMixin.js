@@ -1,7 +1,7 @@
-import LoadingMixin from './LoadingMixin'
 import {
   isObject, isFunction, isPromise, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
+import LoadingMixin from './LoadingMixin.js'
 
 // @vue/component
 export default {

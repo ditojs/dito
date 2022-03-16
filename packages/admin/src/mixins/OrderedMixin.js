@@ -1,4 +1,4 @@
-import ItemMixin from '@/mixins/ItemMixin'
+import ItemMixin from '../mixins/ItemMixin.js'
 
 // @vue/component
 export default {

@@ -22,9 +22,9 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import { appendDataPath } from '@/utils/data'
+import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
+import { appendDataPath } from '../utils/data.js'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component

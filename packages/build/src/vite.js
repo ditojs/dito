@@ -1,4 +1,3 @@
-import path from 'path'
 import { defineConfig } from 'vite'
 import { createVuePlugin } from 'vite-plugin-vue2'
 import autoprefixer from 'autoprefixer'
@@ -38,15 +37,6 @@ export function getViteConfig({
           globals: externals
         }
       }
-    },
-    resolve: {
-      extensions: ['.js', '.json', '.vue'],
-      alias: [
-        {
-          find: '@',
-          replacement: path.resolve('./src')
-        }
-      ]
     },
     css: css
       ? {

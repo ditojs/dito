@@ -3,20 +3,24 @@ import {
   isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
   parseDataPath, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
-import { QueryBuilder } from '../query'
-import { EventEmitter, KnexHelper } from '../lib'
-import { convertSchema, addRelationSchemas, convertRelations } from '../schema'
-import { populateGraph, filterGraph } from '../graph'
-import { formatJson } from '../utils'
+import { QueryBuilder } from '../query/index.js'
+import { EventEmitter, KnexHelper } from '../lib/index.js'
+import {
+  convertSchema,
+  addRelationSchemas,
+  convertRelations
+} from '../schema/index.js'
+import { populateGraph, filterGraph } from '../graph/index.js'
+import { formatJson } from '../utils/index.js'
 import {
   ResponseError,
   GraphError, ModelError,
   NotFoundError,
   RelationError,
   WrappedError
-} from '../errors'
-import RelationAccessor from './RelationAccessor'
-import definitions from './definitions'
+} from '../errors/index.js'
+import RelationAccessor from './RelationAccessor.js'
+import definitions from './definitions/index.js'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to

@@ -1,8 +1,8 @@
 import Vue from 'vue'
-import DitoContext from '@/DitoContext'
-import { getUid } from './uid'
-import { SchemaGraph } from './SchemaGraph'
-import { appendDataPath, isTemporaryId } from './data'
+import DitoContext from '../DitoContext.js'
+import { getUid } from './uid.js'
+import { SchemaGraph } from './SchemaGraph.js'
+import { appendDataPath, isTemporaryId } from './data.js'
 import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize
 } from '@ditojs/utils'

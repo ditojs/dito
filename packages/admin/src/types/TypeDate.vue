@@ -13,8 +13,8 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import { getSchemaAccessor } from '@/utils/accessor'
+import TypeComponent from '../TypeComponent.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
 import { isDate } from '@ditojs/utils'
 

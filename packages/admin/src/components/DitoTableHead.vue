@@ -53,7 +53,7 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 import { hyphenate } from '@ditojs/utils'
 
 // @vue/component

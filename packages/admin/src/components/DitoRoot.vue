@@ -41,12 +41,12 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoUser from '@/DitoUser'
-import DitoView from '@/components/DitoView'
-import DomMixin from '@/mixins/DomMixin'
-import { processView, resolveSchemas } from '@/utils/schema'
 import { asArray, stripTags } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import DitoUser from '../DitoUser.js'
+import DitoView from '../components/DitoView.vue'
+import DomMixin from '../mixins/DomMixin.js'
+import { processView, resolveSchemas } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {

@@ -41,7 +41,7 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 import { capitalize } from '@ditojs/utils'
 
 // @vue/component

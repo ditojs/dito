@@ -1,4 +1,4 @@
-import { toAsync } from './toAsync'
+import { toAsync } from './toAsync.js'
 
 describe('toAsync()', () => {
   it('should convert callback functions to async', async () => {

@@ -46,12 +46,12 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import RouteMixin from '@/mixins/RouteMixin'
-import ResourceMixin from '@/mixins/ResourceMixin'
-import { getResource, getMemberResource } from '@/utils/resource'
-import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import RouteMixin from '../mixins/RouteMixin.js'
+import ResourceMixin from '../mixins/ResourceMixin.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
+import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {

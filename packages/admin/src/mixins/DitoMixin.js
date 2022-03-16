@@ -1,14 +1,14 @@
-import appState from '@/appState'
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import EmitterMixin from './EmitterMixin'
-import { isMatchingType, convertType } from '@/utils/type'
-import { getResource, getMemberResource } from '@/utils/resource'
-import { deprecate } from '@/utils/deprecate'
 import {
   isObject, isArray, isString, isFunction, asArray, equals,
   getValueAtDataPath, labelize, hyphenate, format
 } from '@ditojs/utils'
+import appState from '../appState.js'
+import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
+import EmitterMixin from './EmitterMixin.js'
+import { isMatchingType, convertType } from '../utils/type.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
+import { deprecate } from '../utils/deprecate.js'
 
 // @vue/component
 export default {

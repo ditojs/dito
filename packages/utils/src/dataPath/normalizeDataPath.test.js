@@ -1,4 +1,4 @@
-import { normalizeDataPath } from './normalizeDataPath'
+import { normalizeDataPath } from './normalizeDataPath.js'
 
 describe('normalizeDataPath()', () => {
   it('should normalize JSON pointers', () => {

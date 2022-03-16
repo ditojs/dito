@@ -1,4 +1,4 @@
-import { isArray, isString } from '../base'
+import { isArray, isString } from '../base/index.js'
 
 export function parseDataPath(path) {
   if (isArray(path)) {

@@ -1,5 +1,5 @@
 import { isObject } from '@ditojs/utils'
-import { createDecorator, formatJson } from '../utils'
+import { createDecorator, formatJson } from '../utils/index.js'
 
 export function returns(returns, options) {
   if (!isObject(returns)) {

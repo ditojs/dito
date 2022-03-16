@@ -3,15 +3,15 @@ import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
 import axios from 'axios'
-import * as components from './components'
-import * as types from './types'
-import TypeComponent from './TypeComponent'
-import DitoRoot from './components/DitoRoot'
-import { getResource } from './utils/resource'
-import verbs from './verbs'
 import {
   isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
+import * as components from './components/index.js'
+import * as types from './types/index.js'
+import DitoRoot from './components/DitoRoot.vue'
+import TypeComponent from './TypeComponent.js'
+import { getResource } from './utils/resource.js'
+import verbs from './verbs.js'
 
 Vue.config.productionTip = false
 

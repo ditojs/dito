@@ -1,5 +1,5 @@
 import { mixin } from '@ditojs/utils'
-import { TimeStampedMixin } from './TimeStampedMixin'
+import { TimeStampedMixin } from './TimeStampedMixin.js'
 
 // Asset models are always to be time-stamped:
 export const AssetMixin = mixin(Model => class extends TimeStampedMixin(Model) {

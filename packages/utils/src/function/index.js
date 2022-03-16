@@ -1,3 +1,3 @@
-export * from './toAsync'
-export * from './toCallback'
-export * from './toPromiseCallback'
+export * from './toAsync.js'
+export * from './toCallback.js'
+export * from './toPromiseCallback.js'

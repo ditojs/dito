@@ -1,5 +1,5 @@
-import { parseDataPath } from './parseDataPath'
-import { getValueAtDataPath } from './getValueAtDataPath'
+import { parseDataPath } from './parseDataPath.js'
+import { getValueAtDataPath } from './getValueAtDataPath.js'
 
 export function setValueAtDataPath(obj, path, value) {
   const parts = parseDataPath(path)

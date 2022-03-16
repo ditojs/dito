@@ -1,4 +1,4 @@
-import { mapKeys } from './mapKeys'
+import { mapKeys } from './mapKeys.js'
 
 describe('mapKeys()', () => {
   const array = [1, 2]

@@ -1,5 +1,5 @@
 import os from 'os'
-import { asArray } from '../base'
+import { asArray } from '../base/index.js'
 
 // ES6 string tag that strips indentation from multi-line strings
 // Based on, and further improved from https://github.com/dmnd/dedent

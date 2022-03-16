@@ -1,4 +1,4 @@
-import ValidatorMixin from '@/mixins/ValidatorMixin'
+import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getCommonPrefix } from '@ditojs/utils'
 
 // @vue/component

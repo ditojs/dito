@@ -1,4 +1,4 @@
-import { isTemporaryId } from './data'
+import { isTemporaryId } from './data.js'
 import {
   isInteger, asArray, parseDataPath, getValueAtDataPath
 } from '@ditojs/utils'

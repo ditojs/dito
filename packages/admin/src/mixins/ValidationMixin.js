@@ -1,5 +1,5 @@
 import { isFunction } from '@ditojs/utils'
-import * as validations from '../validations'
+import * as validations from '../validations/index.js'
 
 // @vue/component
 export default {

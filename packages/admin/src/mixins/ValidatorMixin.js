@@ -1,4 +1,4 @@
-import SchemaParentMixin from './SchemaParentMixin'
+import SchemaParentMixin from './SchemaParentMixin.js'
 
 // @vue/component
 export default {

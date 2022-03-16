@@ -1,10 +1,10 @@
 // TypeComponent is the abstract base component for all other type components
 // inside the types/ folder. There's also a separate concrete
 // `TypeComponent.vue` component, use to render the `type: 'component'` types.
-import DitoComponent from './DitoComponent'
-import TypeMixin from './mixins/TypeMixin'
-import { registerTypeComponent, getTypeComponent } from '@/utils/schema'
 import { asArray } from '@ditojs/utils'
+import DitoComponent from './DitoComponent.js'
+import TypeMixin from './mixins/TypeMixin.js'
+import { registerTypeComponent, getTypeComponent } from './utils/schema.js'
 
 const TypeComponent = DitoComponent.extend({
   mixins: [TypeMixin],

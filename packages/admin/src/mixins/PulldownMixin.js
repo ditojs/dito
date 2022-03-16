@@ -1,4 +1,4 @@
-import DomMixin from './DomMixin'
+import DomMixin from './DomMixin.js'
 
 // @vue/component
 export default {

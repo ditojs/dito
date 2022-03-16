@@ -1,4 +1,4 @@
-import Registry from './Registry'
+import Registry from './Registry.js'
 export const QueryFilters = new Registry()
 
 QueryFilters.register({

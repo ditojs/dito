@@ -59,12 +59,12 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { getTypeOptions, shouldOmitPadding } from '@/utils/schema'
-import { parseFraction } from '@/utils/math'
 import { isString, isNumber } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { getTypeOptions, shouldOmitPadding } from '../utils/schema.js'
+import { parseFraction } from '../utils/math.js'
 
 // @vue/component
 export default DitoComponent.component('dito-container', {

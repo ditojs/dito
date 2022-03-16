@@ -1,4 +1,4 @@
-import { UserMixin } from '../mixins'
-import { Model } from './Model'
+import { UserMixin } from '../mixins/index.js'
+import { Model } from './Model.js'
 
 export const UserModel = UserMixin(Model)

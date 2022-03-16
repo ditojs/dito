@@ -1,4 +1,4 @@
-import { pick } from './pick'
+import { pick } from './pick.js'
 
 // Partially based on:
 // https://github.com/lodash/lodash/blob/4.17.11/test/test.js

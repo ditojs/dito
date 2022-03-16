@@ -1,4 +1,4 @@
-import { groupBy } from './groupBy'
+import { groupBy } from './groupBy.js'
 
 describe('groupBy()', () => {
   const array = [6.1, 4.2, 6.3]

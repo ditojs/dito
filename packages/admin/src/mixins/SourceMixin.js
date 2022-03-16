@@ -1,14 +1,14 @@
-import DitoComponent from '@/DitoComponent'
-import ResourceMixin from './ResourceMixin'
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
-import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
-import { getMemberResource } from '@/utils/resource'
+import DitoComponent from '../DitoComponent.js'
+import ResourceMixin from './ResourceMixin.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
+import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
+import { getMemberResource } from '../utils/resource.js'
 import {
   processRouteSchema, processForms, getNamedSchemas, getButtonSchemas,
   hasFormSchema, getFormSchemas, getViewSchema,
   hasLabels, isCompact, isInlined,
   isObjectSource, isListSource
-} from '@/utils/schema'
+} from '../utils/schema.js'
 import {
   isObject, isString, isArray, isNumber, equals,
   parseDataPath, normalizeDataPath

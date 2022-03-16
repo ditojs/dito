@@ -7,11 +7,11 @@ import { createVuePlugin } from 'vite-plugin-vue2'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
-import { isMatch } from 'picomatch'
-import { Controller } from './Controller'
-import { handleConnectMiddleware } from '../middleware'
-import { ControllerError } from '../errors'
-import { formatJson } from '../utils'
+import picomatch from 'picomatch'
+import { Controller } from './Controller.js'
+import { handleConnectMiddleware } from '../middleware/index.js'
+import { ControllerError } from '../errors/index.js'
+import { formatJson } from '../utils/index.js'
 
 export class AdminController extends Controller {
   // @override
@@ -153,7 +153,7 @@ export class AdminController extends Controller {
                     return 'common'
                   } else {
                     const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
-                    return isMatch(module, CORE_DEPENDENCIES)
+                    return picomatch.isMatch(module, CORE_DEPENDENCIES)
                       ? 'core'
                       : 'vendor'
                   }

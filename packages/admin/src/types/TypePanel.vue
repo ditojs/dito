@@ -1,5 +1,5 @@
 <script>
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
 
 // @vue/component
 export default TypeComponent.register('panel', {

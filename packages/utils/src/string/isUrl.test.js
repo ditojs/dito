@@ -1,4 +1,4 @@
-import { isUrl } from './isUrl'
+import { isUrl } from './isUrl.js'
 
 describe('isUrl()', () => {
   describe.each([

@@ -1,6 +1,6 @@
 import http from 'http'
-import Node from './Node'
-import Result from './Result'
+import Node from './Node.js'
+import Result from './Result.js'
 
 const CHAR_SLASH = '/'.charCodeAt(0)
 

@@ -3,11 +3,11 @@ import {
   isObject, isPlainObject, isString, isArray, clone, mapKeys,
   getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
-import { KnexHelper } from '../lib'
-import { QueryParameters } from './QueryParameters'
-import { DitoGraphProcessor, walkGraph } from '../graph'
-import { QueryBuilderError, RelationError } from '../errors'
-import { createLookup, getScope, deprecate } from '../utils'
+import { QueryParameters } from './QueryParameters.js'
+import { KnexHelper } from '../lib/index.js'
+import { DitoGraphProcessor, walkGraph } from '../graph/index.js'
+import { QueryBuilderError, RelationError } from '../errors/index.js'
+import { createLookup, getScope, deprecate } from '../utils/index.js'
 
 const SYMBOL_ALL = Symbol('all')
 

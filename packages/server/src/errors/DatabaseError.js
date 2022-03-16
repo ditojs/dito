@@ -1,4 +1,4 @@
-import { WrappedError } from './WrappedError'
+import { WrappedError } from './WrappedError.js'
 import {
   DBError,
   DataError,

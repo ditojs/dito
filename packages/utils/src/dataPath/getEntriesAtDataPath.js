@@ -1,5 +1,5 @@
-import { parseDataPath } from './parseDataPath'
-import { normalizeDataPath } from './normalizeDataPath'
+import { parseDataPath } from './parseDataPath.js'
+import { normalizeDataPath } from './normalizeDataPath.js'
 
 export function getEntriesAtDataPath(
   obj,

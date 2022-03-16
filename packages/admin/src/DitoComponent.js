@@ -1,8 +1,8 @@
 import Vue from 'vue'
-import DitoMixin from './mixins/DitoMixin'
-import TypeMixin from './mixins/TypeMixin'
-import { getTypeComponent } from '@/utils/schema'
 import { isFunction, isPromise } from '@ditojs/utils'
+import DitoMixin from './mixins/DitoMixin.js'
+import TypeMixin from './mixins/TypeMixin.js'
+import { getTypeComponent } from './utils/schema.js'
 
 const components = {}
 

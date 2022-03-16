@@ -13,9 +13,9 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import TypeMixin from '@/mixins/TypeMixin'
-import DataMixin from '@/mixins/DataMixin'
+import TypeComponent from '../TypeComponent.js'
+import TypeMixin from '../mixins/TypeMixin.js'
+import DataMixin from '../mixins/DataMixin.js'
 
 export default TypeComponent.register([
   'computed', 'data', 'hidden'

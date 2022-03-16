@@ -1,4 +1,4 @@
-import { getValueAtDataPath } from './getValueAtDataPath'
+import { getValueAtDataPath } from './getValueAtDataPath.js'
 
 describe('getValueAtDataPath()', () => {
   const data = {

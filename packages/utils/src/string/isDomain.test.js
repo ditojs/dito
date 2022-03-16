@@ -1,4 +1,4 @@
-import { isDomain } from './isDomain'
+import { isDomain } from './isDomain.js'
 
 describe('isDomain()', () => {
   it('should return true for domains', () => {

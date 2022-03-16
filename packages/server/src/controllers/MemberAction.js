@@ -1,4 +1,4 @@
-import ControllerAction from './ControllerAction'
+import ControllerAction from './ControllerAction.js'
 
 export default class MemberAction extends ControllerAction {
   // @override

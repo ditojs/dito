@@ -1,4 +1,4 @@
-import { isEmail } from './isEmail'
+import { isEmail } from './isEmail.js'
 
 describe('isEmail()', () => {
   describe.each([

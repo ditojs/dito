@@ -1,8 +1,8 @@
-import DitoContext from '@/DitoContext'
-import ValidationMixin from './ValidationMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { computeValue } from '@/utils/schema'
-import { getItem, getParentItem } from '@/utils/data'
+import DitoContext from '../DitoContext.js'
+import ValidationMixin from './ValidationMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { computeValue } from '../utils/schema.js'
+import { getItem, getParentItem } from '../utils/data.js'
 import { isString, asArray } from '@ditojs/utils'
 
 // @vue/component

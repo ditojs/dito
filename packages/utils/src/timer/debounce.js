@@ -1,4 +1,4 @@
-import { isNumber } from '../base'
+import { isNumber } from '../base/index.js'
 
 export function debounce(func, options) {
   const { delay, immediate } = isNumber(options) ? { delay: options } : options

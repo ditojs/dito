@@ -1,7 +1,7 @@
-import DitoContext from '@/DitoContext'
-import DataMixin from './DataMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { setTemporaryId, isReference } from '@/utils/data'
+import DitoContext from '../DitoContext.js'
+import DataMixin from './DataMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { setTemporaryId, isReference } from '../utils/data.js'
 import {
   isObject, isArray, isString, isFunction,
   normalizeDataPath, labelize, debounceAsync

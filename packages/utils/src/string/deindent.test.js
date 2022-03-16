@@ -1,4 +1,4 @@
-import { deindent } from './deindent'
+import { deindent } from './deindent.js'
 
 describe('deindent()', () => {
   it('should deindent indented multi-line strings', () => {

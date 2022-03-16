@@ -2,7 +2,7 @@ import aws from 'aws-sdk'
 import multerS3 from 'multer-s3'
 import { fileTypeFromBuffer } from 'file-type'
 import isSvg from 'is-svg'
-import { Storage } from './Storage'
+import { Storage } from './Storage.js'
 import { PassThrough } from 'stream'
 
 export class S3Storage extends Storage {

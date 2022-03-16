@@ -36,8 +36,8 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DomMixin from '@/mixins/DomMixin'
+import TypeComponent from '../TypeComponent.js'
+import DomMixin from '../mixins/DomMixin.js'
 import CodeFlask from 'codeflask'
 
 // @vue/component

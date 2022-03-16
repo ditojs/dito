@@ -6,11 +6,11 @@
   "repository": "https://github.com/ditojs/dito/tree/master/packages/admin",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
-  "module": "./dist/dito-admin.es.mjs",
+  "module": "./dist/dito-admin.es.js",
   "main": "./dist/dito-admin.umd.js",
   "exports": {
     ".": {
-      "import": "./dist/dito-admin.es.mjs",
+      "import": "./dist/dito-admin.es.js",
       "require": "./dist/dito-admin.umd.js"
     },
     "./style.css": "./dist/style.css"

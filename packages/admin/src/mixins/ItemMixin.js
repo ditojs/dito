@@ -1,8 +1,8 @@
-import DitoContext from '@/DitoContext'
+import DitoContext from '../DitoContext.js'
 import {
   getItemFormSchema, getItemId, getItemUid, isListSource
-} from '@/utils/schema'
-import { appendDataPath } from '@/utils/data'
+} from '../utils/schema.js'
+import { appendDataPath } from '../utils/data.js'
 import { isObject, isString, isFunction } from '@ditojs/utils'
 
 // @vue/component

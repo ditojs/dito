@@ -1,4 +1,4 @@
-import { isHostname } from './isHostname'
+import { isHostname } from './isHostname.js'
 
 describe('isHostname()', () => {
   it('should return true for hostnames', () => {

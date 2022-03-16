@@ -1,5 +1,5 @@
 import { isArray, isObject } from '@ditojs/utils'
-import { createDecorator, deprecate, formatJson } from '../utils'
+import { createDecorator, deprecate, formatJson } from '../utils/index.js'
 
 export function parameters(parameters, options) {
   if (isObject(parameters)) {

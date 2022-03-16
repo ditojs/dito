@@ -1,4 +1,4 @@
-import { debounceAsync } from './debounceAsync'
+import { debounceAsync } from './debounceAsync.js'
 import { jest } from '@jest/globals'
 
 // Tell jest to mock all timeout functions:

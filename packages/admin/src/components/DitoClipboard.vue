@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import DomMixin from '@/mixins/DomMixin'
 import { isObject, clone, deindent } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
+import DomMixin from '../mixins/DomMixin.js'
 
 // @vue/component
 export default DitoComponent.component('dito-clipboard', {

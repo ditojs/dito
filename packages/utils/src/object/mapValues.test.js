@@ -1,4 +1,4 @@
-import { mapValues } from './mapValues'
+import { mapValues } from './mapValues.js'
 
 describe('mapValues()', () => {
   const array = [1, 2]

@@ -31,7 +31,7 @@ export function getRollupExternalsFromDependencies({
     }
   }
 
-  // Start with root to read from './package.json' and take it from there.
+  // Start with root to read from './package.json.js' and take it from there.
   attemptAddingDependencies(start)
   return externals
 }

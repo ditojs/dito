@@ -51,8 +51,8 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import { isCompact } from '@/utils/schema'
+import DitoComponent from '../DitoComponent.js'
+import { isCompact } from '../utils/schema.js'
 // @vue/component
 export default DitoComponent.component('dito-schema-inlined', {
   props: {

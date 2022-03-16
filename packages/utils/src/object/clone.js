@@ -1,5 +1,7 @@
-import { isArray, isObject, isDate, isRegExp, isFunction } from '../base'
-import { pick } from '../object'
+import {
+  isArray, isObject, isDate, isRegExp, isFunction
+} from '../base/index.js'
+import { pick } from '../object/index.js'
 
 export function clone(arg, callback = null) {
   let copy

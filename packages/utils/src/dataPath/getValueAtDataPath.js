@@ -1,5 +1,5 @@
-import { isArray } from '../base'
-import { parseDataPath } from './parseDataPath'
+import { isArray } from '../base/index.js'
+import { parseDataPath } from './parseDataPath.js'
 
 export function getValueAtDataPath(
   obj,

@@ -1,2 +1,2 @@
-export * from './EventEmitter'
-export * from './KnexHelper'
+export * from './EventEmitter.js'
+export * from './KnexHelper.js'

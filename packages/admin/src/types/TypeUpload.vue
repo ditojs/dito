@@ -105,15 +105,15 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DitoContext from '@/DitoContext'
-import OrderedMixin from '@/mixins/OrderedMixin'
+import TypeComponent from '../TypeComponent.js'
+import DitoContext from '../DitoContext.js'
+import OrderedMixin from '../mixins/OrderedMixin.js'
 import VueUpload from 'vue-upload-component'
 import VueDraggable from 'vuedraggable'
 import parseFileSize from 'filesize-parser'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { formatFileSize } from '@/utils/units'
-import { appendDataPath } from '@/utils/data'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { formatFileSize } from '../utils/units.js'
+import { appendDataPath } from '../utils/data.js'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 
 // @vue/component

@@ -1,4 +1,4 @@
-import { getCommonPrefix } from './getCommonPrefix'
+import { getCommonPrefix } from './getCommonPrefix.js'
 
 describe('getCommonPrefix()', () => {
   it('should return the longest common prefix', () => {

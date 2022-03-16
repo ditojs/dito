@@ -1,5 +1,5 @@
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 
 // A component to simply pass through an existing vue vnode.
 // See: https://forum.vuejs.org/t/28162/4

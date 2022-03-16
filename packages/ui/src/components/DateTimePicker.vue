@@ -51,9 +51,9 @@
 </style>
 
 <script>
-import DatePicker from './DatePicker'
-import TimePicker from './TimePicker'
 import { defaultFormats } from '@ditojs/utils'
+import DatePicker from './DatePicker.vue'
+import TimePicker from './TimePicker.vue'
 
 export default {
   components: { DatePicker, TimePicker },

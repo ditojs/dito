@@ -68,9 +68,9 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DitoContext from '@/DitoContext'
-import SourceMixin from '@/mixins/SourceMixin'
+import TypeComponent from '../TypeComponent.js'
+import DitoContext from '../DitoContext.js'
+import SourceMixin from '../mixins/SourceMixin.js'
 
 // @vue/component
 export default TypeComponent.register('object', {
