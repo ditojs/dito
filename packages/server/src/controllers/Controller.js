@@ -7,7 +7,7 @@ import {
 } from '../errors/index.js'
 import {
   getOwnProperty, getAllKeys, processHandlerParameters, describeFunction,
-  deprecate
+  formatJson, deprecate
 } from '../utils/index.js'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
@@ -121,7 +121,7 @@ export class Controller {
 
   setupAction(type, actions, name, action, authorize) {
     const handler = isFunction(action) ? action
-      : isObject(action) ? convertActionObject(action, actions)
+      : isObject(action) ? convertActionObject(name, action, actions)
       : null
     // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
     // the default methods.
@@ -501,7 +501,7 @@ EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
 
-function convertActionObject(object, actions) {
+function convertActionObject(name, object, actions) {
   const {
     handler,
     action,
@@ -522,6 +522,10 @@ function convertActionObject(object, actions) {
     const [method, path] = asArray(action)
     handler.method = method
     handler.path = path
+  }
+
+  if (!handler) {
+    throw new Error(`Missing handler in '${name}' action: ${formatJson(object)}`)
   }
 
   handler.authorize = authorize ?? null
