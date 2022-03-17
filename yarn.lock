@@ -786,7 +786,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^1.0.0-rc.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^1.0.0-rc.1, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
@@ -847,7 +847,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
-    "@ditojs/admin": ^1.0.0-rc.0
+    "@ditojs/admin": ^1.0.0-rc.1
     "@ditojs/router": ^1.0.0-rc.0
     "@ditojs/utils": ^1.0.0-rc.0
     "@koa/cors": ^3.2.0
