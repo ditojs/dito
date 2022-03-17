@@ -71,7 +71,7 @@ export function everySchemaComponent(schema, callback) {
   ) !== false
 }
 
-export async function resolveSchema(schema, unwrapNamed = false) {
+export async function resolveSchema(schema, unwrapModule = false) {
   if (isFunction(schema)) {
     schema = schema()
   }
@@ -81,14 +81,14 @@ export async function resolveSchema(schema, unwrapNamed = false) {
   if (isModule(schema)) {
     // Copy to convert from module to object:
     schema = { ...schema }
-  }
-  // Unwrap default or named schema
-  if (!schema.name && (unwrapNamed || schema.default)) {
-    const keys = Object.keys(schema)
-    if (keys.length === 1) {
-      const name = keys[0]
-      schema = schema[name]
-      schema.name = name
+    // Unwrap default or named schema
+    if (!schema.name && (unwrapModule || schema.default)) {
+      const keys = Object.keys(schema)
+      if (keys.length === 1) {
+        const name = keys[0]
+        schema = schema[name]
+        schema.name = name
+      }
     }
   }
   return schema
