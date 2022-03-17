@@ -24,7 +24,7 @@
     "build:icons": "yarn inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.sass",
     "build:vue": "vite build",
     "build": "yarn build:icons && yarn build:vue",
-    "watch": "yarn build:vue --watch",
+    "watch": "yarn build:vue --mode 'development' --watch",
     "prepare": "yarn build"
   },
   "engines": {

@@ -7,8 +7,8 @@ import { getRollupExternalsFromDependencies } from './rollup.js'
 export function getViteConfig({
   name,
   css = false,
-  minify = true,
-  sourcemap = true,
+  minify = !process.argv.includes('--watch'),
+  sourcemap = 'inline',
   externals: {
     include = [],
     exclude = []

@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "watch": "yarn build --watch",
+    "watch": "yarn build --mode 'development' --watch",
     "prepare": "yarn build"
   },
   "engines": {
