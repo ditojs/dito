@@ -23,7 +23,7 @@
 
 <script>
 import TypeComponent from '../TypeComponent.js'
-import { getItemFormSchema } from '../utils/schema.js'
+import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 
 // @vue/component
 export default TypeComponent.register('section', {
@@ -41,6 +41,11 @@ export default TypeComponent.register('section', {
 
   methods: {
     getItemFormSchema
+  },
+
+  async processSchema(api, schema, name, routes, level) {
+    // Process section components so their forms get resolved too.
+    await processSchemaComponents(api, schema, routes, level)
   }
 })
 </script>
