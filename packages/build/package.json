@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@ditojs/build",
-  "version": "0.275.0",
+  "version": "1.0.0-rc.0",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
