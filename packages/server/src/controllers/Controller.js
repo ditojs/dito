@@ -92,7 +92,7 @@ export class Controller {
     return controller
   }
 
-  setupRoute(method, url, transacted, authorize, action, handlers) {
+  setupRoute(method, url, transacted, authorize, action, middlewares) {
     this.log(
       `${
         pico.magenta(method.toUpperCase())
@@ -105,7 +105,7 @@ export class Controller {
       }`,
       this.level + 1
     )
-    this.app.addRoute(method, url, transacted, handlers, this, action)
+    this.app.addRoute(method, url, transacted, middlewares, this, action)
   }
 
   setupActions(type) {
@@ -235,6 +235,7 @@ export class Controller {
     ])
   }
 
+  // @return {Application|Function} [app or function]
   compose() {
     // To be overridden in sub-classes, if the controller needs to install
     // middleware. For normal routes, use `this.app.addRoute()` instead.
@@ -403,14 +404,14 @@ export class Controller {
 
   async emitHook(type, handleResult, ctx, ...args) {
     let result = handleResult ? args.shift() : undefined
-    for (const handler of this.listeners(type)) {
+    for (const listener of this.listeners(type)) {
       if (handleResult) {
-        const res = await handler.call(this, ctx, result, ...args)
+        const res = await listener.call(this, ctx, result, ...args)
         if (res !== undefined) {
           result = res
         }
       } else {
-        await handler.call(this, ctx, ...args)
+        await listener.call(this, ctx, ...args)
       }
     }
     return result

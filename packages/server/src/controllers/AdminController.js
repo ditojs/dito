@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs'
 import Koa from 'koa'
-import mount from 'koa-mount'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import { createVuePlugin } from 'vite-plugin-vue2'
@@ -103,7 +102,7 @@ export class AdminController extends Controller {
       })
       this.koa.use(serve(this.getPath('dist')))
     }
-    return mount(this.url, this.koa)
+    return this.koa
   }
 
   async setupViteServer() {

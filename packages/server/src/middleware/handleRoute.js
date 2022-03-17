@@ -1,8 +1,8 @@
 export function handleRoute() {
   return async (ctx, next) => {
-    const { handler } = ctx.route
-    if (handler) {
-      await handler(ctx, next)
+    const { middleware } = ctx.route
+    if (middleware) {
+      await middleware(ctx, next)
     } else {
       // No route was found. See if the remaining middleware does something with
       // this request. If not, return the errors as received from the router:

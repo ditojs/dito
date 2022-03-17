@@ -12,6 +12,7 @@ import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
+import mount from 'koa-mount'
 import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
@@ -85,13 +86,10 @@ export class Application extends Koa {
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
-    this.hasControllerMiddleware = false
     this.setupLogger()
     this.setupKnex()
-    this.setupGlobalMiddleware()
-    if (middleware) {
-      this.use(middleware)
-    }
+    this.setupMiddleware(middleware)
+
     if (config.storages) {
       this.addStorages(config.storages)
     }
@@ -107,17 +105,19 @@ export class Application extends Koa {
   }
 
   addRoute(
-    method, path, transacted, handlers, controller = null, action = null
+    method, path, transacted, middlewares, controller = null, action = null
   ) {
-    handlers = asArray(handlers)
-    const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
+    middlewares = asArray(middlewares)
+    const middleware = middlewares.length > 1
+      ? compose(middlewares)
+      : middlewares[0]
     // Instead of directly passing `handler`, pass a `route` object that also
     // will be exposed through `ctx.route`, see `routerHandler()`:
     const route = {
       method,
       path,
       transacted,
-      handler,
+      middleware,
       controller,
       action
     }
@@ -296,8 +296,6 @@ export class Application extends Koa {
   }
 
   addController(controller, namespace) {
-    // Controllers require additional middleware to be installed once.
-    this.setupControllerMiddleware()
     // Auto-instantiate controller classes:
     if (Controller.isPrototypeOf(controller)) {
       // eslint-disable-next-line new-cap
@@ -313,11 +311,11 @@ export class Application extends Koa {
     // Now that the controller is set up, call `initialize()` which can be
     // overridden by controllers.
     controller.initialize()
-    // Each controller can also provide further middleware, e.g.
-    // `AdminController`:
-    const middleware = controller.compose()
-    if (middleware) {
-      this.use(middleware)
+    // Each controller can also compose their own middleware (or app), e.g. as
+    // used in `AdminController`:
+    const composed = controller.compose()
+    if (composed) {
+      this.use(mount(controller.url, composed))
     }
   }
 
@@ -503,18 +501,19 @@ export class Application extends Koa {
     })
   }
 
-  setupGlobalMiddleware() {
+  setupMiddleware(middleware) {
     const { app, log } = this.config
 
-    this.use(attachLogger(this.logger))
+    // Setup global middleware
 
+    this.use(attachLogger(this.logger))
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
     if (log.requests) {
       this.use(logRequests())
     }
-    // Needs to be positioned after the request logger to log the correct
+    // This needs to be positioned after the request logger to log the correct
     // response status.
     this.use(handleError())
     if (app.helmet !== false) {
@@ -541,50 +540,44 @@ export class Application extends Koa {
       this.use(conditional())
       this.use(etag())
     }
-  }
 
-  setupControllerMiddleware() {
-    // NOTE: This is not part of the automatic `setupGlobalMiddleware()` so that
-    // apps can set up the static serving of assets before installing the
-    // session and passport middleware. It is called from `addController()`.
-    // Use a flag to only install the middleware once:
-    if (!this.hasControllerMiddleware) {
-      const { app } = this.config
-      // Sequence is important:
-      // 1. body parser
-      this.use(bodyParser(getOptions(app.bodyParser)))
-      // 2. find route from routes installed by controllers.
-      this.use(findRoute(this.router))
-      // 3. respect transacted settings, create and handle transactions.
-      this.use(createTransaction())
-      // 4. session
-      if (app.session) {
-        const {
-          modelClass,
-          ...options
-        } = getOptions(app.session)
-        if (modelClass) {
-          // Create a ContextStore that resolved the specified model class,
-          // uses it to persist and retrieve the session, and automatically
-          // binds all db operations to `ctx.transaction`, if it is set.
-          // eslint-disable-next-line new-cap
-          options.ContextStore = SessionStore(modelClass)
-        }
-        this.use(session(options, this))
-      }
-      // 5. passport
-      if (app.passport) {
-        this.use(passport.initialize())
-        if (app.session) {
-          this.use(passport.session())
-        }
-        this.use(handleUser())
-      }
+    // Controller-specific middleware
 
-      // 6. finally handle the found route, or set status / allow accordingly.
-      this.use(handleRoute())
-      this.hasControllerMiddleware = true
+    // 1. Find route from routes installed by controllers.
+    this.use(findRoute(this.router))
+    // 2. Additional, user-space application-level middleware.
+    if (middleware) {
+      this.use(middleware)
     }
+    // 3. body parser
+    this.use(bodyParser(getOptions(app.bodyParser)))
+    // 4. respect transacted settings, create and handle transactions.
+    this.use(createTransaction())
+    // 5. session
+    if (app.session) {
+      const {
+        modelClass,
+        ...options
+      } = getOptions(app.session)
+      if (modelClass) {
+        // Create a ContextStore that resolved the specified model class,
+        // uses it to persist and retrieve the session, and automatically
+        // binds all db operations to `ctx.transaction`, if it is set.
+        // eslint-disable-next-line new-cap
+        options.ContextStore = SessionStore(modelClass)
+      }
+      this.use(session(options, this))
+    }
+    // 6. passport
+    if (app.passport) {
+      this.use(passport.initialize())
+      if (app.session) {
+        this.use(passport.session())
+      }
+      this.use(handleUser())
+    }
+    // 6. finally handle the found route, or set status / allow accordingly.
+    this.use(handleRoute())
   }
 
   setupLogger() {

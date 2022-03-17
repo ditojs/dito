@@ -1,36 +1,46 @@
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
-  constructor(controller, handler, type, name, method, path, authorize) {
+  constructor(controller, handler, type, name, _method, _path, _authorize) {
+    const {
+      core = false,
+      // Allow decorators on actions to override the predetermined defaults for
+      // `method`, `path` and `authorize`:
+      // TODO: `handler.method` and `handler.path` were deprecated in March
+      // 2022, remove later and only set the valued passed to constructor then.
+      method = _method,
+      path = _path,
+      scope,
+      authorize = _authorize,
+      transacted = controller.transacted,
+      parameters,
+      returns,
+      options = {},
+      ...additional
+    } = handler
+
     this.controller = controller
     this.handler = handler
     this.type = type
     this.name = name
     this.identifier = `${type}:${name}`
-    // Allow decorators on actions to override the predetermined defaults for
-    // `method`, `path` and `authorize`:
-    // TODO: `handler.method` and `handler.path` were deprecated in March 2022,
-    // remove later.
-    this.method = handler.method || method
-    // Use ?? instead of || to allow '' to override the path.
-    this.path = handler.path ?? path
-    this.authorize = handler.authorize || authorize
-    this.transacted = !!(
-      handler.transacted ||
-      controller.transacted || (
-        // Core graph and assets operations are always transacted, unless the
-        // method is 'get':
-        handler.core &&
-        method !== 'get' &&
-        (controller.graph || controller.assets)
-      )
+    this.method = method
+    this.path = path
+    this.scope = scope
+    this.authorize = authorize
+    this.transacted = !!(transacted || (
+      // Core graph and assets operations are always transacted, unless the
+      // method is 'get':
+      core && method !== 'get' && (
+        controller.graph ||
+        controller.assets
+      ))
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
     this.paramsName = ['post', 'put', 'patch'].includes(this.method)
       ? 'body'
       : 'query'
-    const { parameters, returns, options = {} } = this.handler
     this.parameters = this.app.compileParametersValidator(parameters, {
       async: true,
       ...options.parameters,
@@ -49,6 +59,9 @@ export default class ControllerAction {
         dataName: 'returns'
       }
     )
+    // Copy over the additional properties, e.g. `cached` so application
+    // middleware can implement caching mechanisms:
+    Object.assign(this, additional)
   }
 
   // Possible values for `from` are:
