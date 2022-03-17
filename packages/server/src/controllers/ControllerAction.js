@@ -11,8 +11,8 @@ export default class ControllerAction {
       method = _method,
       path = _path,
       scope,
-      authorize = _authorize,
-      transacted = controller.transacted,
+      authorize,
+      transacted,
       parameters,
       returns,
       options = {},
@@ -27,14 +27,17 @@ export default class ControllerAction {
     this.method = method
     this.path = path
     this.scope = scope
-    this.authorize = authorize
-    this.transacted = !!(transacted || (
-      // Core graph and assets operations are always transacted, unless the
-      // method is 'get':
-      core && method !== 'get' && (
-        controller.graph ||
-        controller.assets
-      ))
+    this.authorize = authorize || _authorize
+    this.transacted = !!(
+      transacted ||
+      controller.transacted || (
+        // Core graph and assets operations are always transacted, unless the
+        // method is 'get':
+        core && method !== 'get' && (
+          controller.graph ||
+          controller.assets
+        )
+      )
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.app = controller.app
