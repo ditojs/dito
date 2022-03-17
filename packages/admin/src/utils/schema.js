@@ -4,7 +4,7 @@ import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
 import { appendDataPath, isTemporaryId } from './data.js'
 import {
-  isObject, isString, isArray, isFunction, isPromise, clone, camelize
+  isObject, isString, isArray, isFunction, isPromise, clone, camelize, isModule
 } from '@ditojs/utils'
 
 const typeComponents = {}
@@ -71,37 +71,61 @@ export function everySchemaComponent(schema, callback) {
   ) !== false
 }
 
-export async function resolveModule(module) {
-  // Copy module to convert from module to object:
-  module = { ...await module }
-  return module.default && Object.keys(module).length === 1
-    ? module.default
-    : module
+export async function resolveSchema(schema, unwrapNamed = false) {
+  if (isFunction(schema)) {
+    schema = schema()
+  }
+  if (isPromise(schema)) {
+    schema = await schema
+  }
+  if (isModule(schema)) {
+    // Copy to convert from module to object:
+    schema = { ...schema }
+  }
+  // Unwrap default or named schema
+  if (!schema.name && (unwrapNamed || schema.default)) {
+    const keys = Object.keys(schema)
+    if (keys.length === 1) {
+      const name = keys[0]
+      schema = schema[name]
+      schema.name = name
+    }
+  }
+  return schema
 }
 
-export async function resolveSchemas(unresolvedSchemas) {
+export async function resolveSchemas(
+  unresolvedSchemas,
+  resolveItem = resolveSchema
+) {
   let schemas = isFunction(unresolvedSchemas)
     ? unresolvedSchemas()
     : unresolvedSchemas
-  if (isPromise(schemas)) {
-    schemas = await resolveModule(schemas)
-  }
+  schemas = await resolveSchema(schemas, false)
   if (isArray(schemas)) {
-    // Array of import statements, each importing one named schema module.
-    const entries = await Promise.all(schemas.map(
-      async module => {
-        const schema = await resolveModule(module)
-        return Object.entries(schema)[0]
+    // Translate an array of dynamic import, each importing one named schema
+    // module to an object with named entries.
+    schemas = Object.fromEntries(await Promise.all(schemas.map(
+      async item => {
+        const schema = await resolveItem(item, true)
+        return [schema.name, schema]
       }
-    ))
-    schemas = Object.fromEntries(entries)
+    )))
   }
   return schemas
+}
+
+export async function resolvePanels(schema) {
+  const { panels } = schema
+  if (schema.panels) {
+    schema.panels = await resolveSchemas(panels)
+  }
 }
 
 export async function processView(component, api, schema, name, routes) {
   const children = []
   processRouteSchema(api, schema, name)
+  await resolvePanels(schema)
   if (isSingleComponentView(schema)) {
     await processComponent(api, schema, name, children, 0)
   } else {
@@ -145,7 +169,7 @@ export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
   let { form, forms, components } = schema
   if (forms) {
-    forms = schema.forms = await resolveForms(forms)
+    forms = schema.forms = await resolveSchemas(forms, resolveForm)
   } else if (form) {
     form = schema.form = await resolveForm(form)
   } else if (components) {
@@ -164,34 +188,11 @@ export async function processForms(api, schema, level) {
 }
 
 export async function resolveForm(form) {
-  if (isFunction(form)) {
-    form = form()
-  }
-  if (isPromise(form)) {
-    form = await form
-  }
-  // When dynamically importing forms, the actual form can be received named or
-  // as `default` in a nested object, detect and handle this case:
-  if (form && !('components' in form)) {
-    // Assume the form is the first export (named or default)
-    const name = Object.keys(form)[0]
-    form = form[name]
-    if (form && name !== 'default') {
-      form.name = name
-    }
+  form = await resolveSchema(form, true)
+  if (form) {
+    await resolvePanels(form)
   }
   return form
-}
-
-export async function resolveForms(forms) {
-  const results = await Promise.all(Object.values(forms).map(resolveForm))
-  return Object.keys(forms).reduce(
-    (mapped, key, index) => {
-      mapped[key] = results[index]
-      return mapped
-    },
-    {}
-  )
 }
 
 export function isSingleComponentView(schema) {
