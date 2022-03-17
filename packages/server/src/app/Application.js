@@ -586,26 +586,32 @@ export class Application extends Koa {
     const user = user => ({ id: user.id })
     const serializers = { err, req, res, user }
 
-    const logger = pino(merge(
-      {
-        level: 'info',
-        serializers,
-        prettyPrint: {
-          // List of keys to ignore in pretty mode.
-          ignore: 'req,res,durationMs,user,requestId',
-          // SYS to use system time and not UTC.
-          translateTime: 'SYS:HH:MM:ss.l'
-        },
-        // Redact common sensitive headers.
-        redact: [
-          '*.headers["cookie"]',
-          '*.headers["set-cookie"]',
-          '*.headers["authorization"]'
-        ],
-        base: null // no pid,hostname,name
+    const { prettyPrint, ...options } = merge({
+      level: 'info',
+      serializers,
+      prettyPrint: {
+        colorize: true,
+        // List of keys to ignore in pretty mode.
+        ignore: 'req,res,durationMs,user,requestId',
+        // SYS to use system time and not UTC.
+        translateTime: 'SYS:HH:MM:ss.l'
       },
-      getOptions(this.config.logger)
-    ))
+      // Redact common sensitive headers.
+      redact: [
+        '*.headers["cookie"]',
+        '*.headers["set-cookie"]',
+        '*.headers["authorization"]'
+      ],
+      base: null // no pid,hostname,name
+    }, getOptions(this.config.logger))
+
+    const transport = prettyPrint
+      ? pino.transport({
+        target: 'pino-pretty',
+        options: prettyPrint
+      }) : null
+
+    const logger = pino(options, transport)
 
     this.logger = logger.child({ name: 'app' })
   }
