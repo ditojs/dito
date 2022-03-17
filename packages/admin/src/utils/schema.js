@@ -111,6 +111,13 @@ export async function resolveSchemas(
         return [schema.name, schema]
       }
     )))
+  } else if (isObject(schemas)) {
+    schemas = Object.fromEntries(await Promise.all(Object.entries(schemas).map(
+      async ([key, item]) => {
+        const schema = await resolveItem(item, true)
+        return [key, schema]
+      }
+    )))
   }
   return schemas
 }
