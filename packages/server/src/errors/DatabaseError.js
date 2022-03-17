@@ -1,11 +1,20 @@
 import { WrappedError } from './WrappedError.js'
-import {
+// TODO: Import directly once we can move to Objection 3 and this is fixed:
+// import {
+//   DBError,
+//   DataError,
+//   CheckViolationError,
+//   NotNullViolationError,
+//   ConstraintViolationError
+// } from 'objection'
+import objection from 'objection'
+const {
   DBError,
   DataError,
   CheckViolationError,
   NotNullViolationError,
   ConstraintViolationError
-} from 'db-errors' // TODO: 'objection' doesn't work! submit a test-case.
+} = objection
 
 export class DatabaseError extends WrappedError {
   constructor(error, overrides) {

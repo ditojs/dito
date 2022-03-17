@@ -77,8 +77,8 @@
     "objection": "^2.2.0"
   },
   "devDependencies": {
-    "knex": "^1.0.4",
-    "objection": "^3.0.1",
+    "knex": "^0.21.17",
+    "objection": "^2.2.18",
     "pg": "^8.7.3",
     "sqlite3": "^5.0.2"
   }

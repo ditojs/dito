@@ -46,10 +46,11 @@ import {
   handleUser,
   logRequests
 } from '../middleware/index.js'
-import {
+import objection, {
   Model,
   BelongsToOneRelation,
-  knexSnakeCaseMappers,
+  // TODO: Import directly once we can move to Objection 3
+  // knexSnakeCaseMappers,
   ref
 } from 'objection'
 
@@ -620,7 +621,7 @@ export class Application extends Koa {
       if (snakeCaseOptions) {
         knex = {
           ...knex,
-          ...knexSnakeCaseMappers(snakeCaseOptions)
+          ...objection.knexSnakeCaseMappers(snakeCaseOptions)
         }
       }
       this.knex = Knex(knex)
