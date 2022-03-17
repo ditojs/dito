@@ -1,7 +1,7 @@
 {
-  "type": "module",
   "name": "dito",
   "private": true,
+  "type": "module",
   "description": "Dito.js is a declarative and modern web framework with a focus on API driven development, based on Koa.js, Objection.js and Vue.js",
   "repository": "https://github.com/ditojs/dito",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
