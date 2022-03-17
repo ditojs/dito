@@ -71,7 +71,7 @@ export class AdminController extends Controller {
     // Shield admin views against unauthorized access.
     const authorization = this.processAuthorize(this.authorize)
     return async (ctx, next) => {
-      if (/^\/dito\b/.test(ctx.url)) {
+      if (ctx.url === '/dito.js') {
         // Return without calling `next()`
         return this.sendDitoObject(ctx)
       } else if (/\/views\b/.test(ctx.url)) {
@@ -129,6 +129,7 @@ export class AdminController extends Controller {
 
     const cwd = path.resolve('.')
     const root = this.getPath('build')
+    const base = `${this.url}/`
     const views = path.join(root, 'views')
 
     // Read `package.json` from the closest package.json, so we can emulate
@@ -138,11 +139,27 @@ export class AdminController extends Controller {
 
     return defineConfig(merge({
       root,
-      base: `${this.url}/`,
+      base,
       mode: this.mode,
       envFile: false,
       configFile: false,
-      plugins: [createVuePlugin(), createCommonJsPlugin()],
+      plugins: [
+        createVuePlugin(),
+        createCommonJsPlugin(),
+        {
+          // Private plugin to inject script tag above main module that loads
+          // the `dito` object through its own end-point, see `sendDitoObject()`
+          name: 'inject-dito-object',
+          transformIndexHtml: {
+            enforce: 'post',
+            transform(html) {
+              return html.replace(
+                /(\s*)(<script type="module"[^>]*?><\/script>)/,
+                `$1<script src="${base}dito.js"></script>$1$2`
+              )
+            }
+          }
+        }],
       build: {
         ...(development
           ? {}
