@@ -13,7 +13,12 @@ export function isPlainObject(arg) {
   // We also need to check for ctor.name === 'Object', in case this is an object
   // from another global scope (e.g. another vm context in Node.js).
   // When an value has no constructor, it was created with `Object.create(null)`
-  return !!arg && (!ctor || (ctor === Object || ctor.name === 'Object'))
+  return !!arg && (
+    ctor && (
+      ctor === Object ||
+      ctor.name === 'Object'
+    ) || !ctor && !isModule(arg)
+  )
 }
 
 export function isObject(arg) {
@@ -30,14 +35,16 @@ function getPrimitiveCheck(name) {
   // here because `new Date().valueOf()` also returns a number.
   const typeName = name.toLowerCase()
   const toStringName = `[object ${name}]`
-  return function(val) {
-    const type = typeof val
+  return function(arg) {
+    const type = typeof arg
     return (
       type === typeName ||
-      !!val && type === 'object' && toString.call(val) === toStringName
+      !!arg && type === 'object' && toString.call(arg) === toStringName
     )
   }
 }
+
+export const isModule = getPrimitiveCheck('Module')
 
 export const isNumber = getPrimitiveCheck('Number')
 

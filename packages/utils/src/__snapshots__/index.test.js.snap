@@ -52,6 +52,7 @@ Object {
   "isFunction": [Function],
   "isHostname": [Function],
   "isInteger": [Function],
+  "isModule": [Function],
   "isNumber": [Function],
   "isObject": [Function],
   "isPlainObject": [Function],

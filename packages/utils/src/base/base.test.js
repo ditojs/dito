@@ -1,8 +1,10 @@
 import {
-  isPlainObject, isObject, isArray, isFunction, isString, isBoolean, isNumber,
-  isDate, isRegExp, isPromise, isAsync, isInteger, isArrayLike, isEmpty,
-  asObject, asArray, asFunction
+  isPlainObject, isObject, isArray, isModule, isFunction, isString, isBoolean,
+  isNumber, isDate, isRegExp, isPromise, isAsync, isInteger, isArrayLike,
+  isEmpty, asObject, asArray, asFunction
 } from './base.js'
+
+import * as module from './index.js'
 
 const object = { a: 1 }
 const array = [1, 2, 3]
@@ -22,6 +24,7 @@ const asyncLambda = async function() {}
 describe('isPlainObject()', () => {
   describe.each([
     [null, false],
+    [module, false],
     [object, true],
     [array, false],
     [string, false],
@@ -49,6 +52,7 @@ describe('isPlainObject()', () => {
 describe('isObject()', () => {
   describe.each([
     [null, false],
+    [module, true],
     [object, true],
     [array, false],
     [string, false],
@@ -79,6 +83,7 @@ describe('isObject()', () => {
 describe('isArray()', () => {
   describe.each([
     [null, false],
+    [module, false],
     [object, false],
     [array, true],
     [string, false],
@@ -103,9 +108,38 @@ describe('isArray()', () => {
   )
 })
 
+describe('isModule()', () => {
+  describe.each([
+    [null, false],
+    [module, true],
+    [object, false],
+    [array, false],
+    [string, false],
+    [number, false],
+    [boolean, false],
+    [date, false],
+    [regexp, false],
+    [symbol, false],
+    [instance, false],
+    [promise, false],
+    [func, false],
+    [lambda, false],
+    [asyncFunc, false],
+    [asyncLambda, false]
+  ])(
+    'isModule(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isModule(value)).toBe(expected)
+      })
+    }
+  )
+})
+
 describe('isFunction()', () => {
   describe.each([
     [null, false],
+    [module, false],
     [object, false],
     [array, false],
     [string, false],
@@ -133,6 +167,7 @@ describe('isFunction()', () => {
 describe('isNumber()', () => {
   describe.each([
     [null, false],
+    [module, false],
     [object, false],
     [array, false],
     [string, false],
@@ -161,6 +196,7 @@ describe('isNumber()', () => {
 describe('isInteger()', () => {
   describe.each([
     [null, false],
+    [module, false],
     [object, false],
     [array, false],
     [string, false],

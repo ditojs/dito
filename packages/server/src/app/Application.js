@@ -21,7 +21,7 @@ import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import {
   isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
-  parseDataPath, normalizeDataPath
+  parseDataPath, normalizeDataPath, isModule
 } from '@ditojs/utils'
 import SessionStore from './SessionStore.js'
 import { Validator } from './Validator.js'
@@ -237,12 +237,7 @@ export class Application extends Koa {
 
   addServices(services) {
     for (const [name, service] of Object.entries(services)) {
-      // Handle ES6 module weirdness that can happen, apparently:
-      if (name === 'default' && isPlainObject(service)) {
-        this.addServices(service)
-      } else {
-        this.addService(service, name)
-      }
+      this.addService(service, name)
     }
   }
 
@@ -287,7 +282,7 @@ export class Application extends Koa {
 
   addControllers(controllers, namespace) {
     for (const [key, value] of Object.entries(controllers)) {
-      if (isPlainObject(value)) {
+      if (isModule(value) || isPlainObject(value)) {
         this.addControllers(value, namespace ? `${namespace}/${key}` : key)
       } else {
         this.addController(value, namespace)
