@@ -23,11 +23,11 @@
     "node >= 14"
   ],
   "dependencies": {
-    "autoprefixer": "^10.4.2",
+    "autoprefixer": "^10.4.4",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.5",
-    "postcss": "^8.4.8",
+    "postcss": "^8.4.12",
     "postcss-inset": "^1.0.0"
   }
 }

@@ -824,11 +824,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
-    autoprefixer: ^10.4.2
+    autoprefixer: ^10.4.4
     mime: ^3.0.0
     mini-svg-data-uri: ^1.4.4
     minimist: ^1.2.5
-    postcss: ^8.4.8
+    postcss: ^8.4.12
     postcss-inset: ^1.0.0
   bin:
     inline-assets: ./src/cli/inline-assets.js
@@ -855,7 +855,7 @@ __metadata:
     "@originjs/vite-plugin-commonjs": ^1.0.3
     ajv: ^7.2.4
     ajv-formats: ^1.6.1
-    aws-sdk: ^2.1093.0
+    aws-sdk: ^2.1095.0
     axios: ^0.26.1
     bcryptjs: ^2.4.3
     bytes: ^3.1.2
@@ -866,7 +866,7 @@ __metadata:
     fs-extra: ^10.0.1
     image-size: ^1.0.1
     is-svg: ^4.3.2
-    knex: ^0.21.17
+    knex: ^0.21.21
     koa: ^2.13.4
     koa-bodyparser: ^4.3.0
     koa-compose: ^4.1.0
@@ -891,8 +891,8 @@ __metadata:
     pg: ^8.7.3
     picocolors: ^1.0.0
     picomatch: ^2.3.1
-    pino: ^7.8.1
-    pino-pretty: ^7.5.3
+    pino: ^7.9.1
+    pino-pretty: ^7.5.4
     pluralize: ^8.0.0
     repl: ^0.1.3
     sqlite3: ^5.0.2
@@ -3095,13 +3095,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^10.4.2":
-  version: 10.4.2
-  resolution: "autoprefixer@npm:10.4.2"
+"autoprefixer@npm:^10.4.4":
+  version: 10.4.4
+  resolution: "autoprefixer@npm:10.4.4"
   dependencies:
-    browserslist: ^4.19.1
-    caniuse-lite: ^1.0.30001297
-    fraction.js: ^4.1.2
+    browserslist: ^4.20.2
+    caniuse-lite: ^1.0.30001317
+    fraction.js: ^4.2.0
     normalize-range: ^0.1.2
     picocolors: ^1.0.0
     postcss-value-parser: ^4.2.0
@@ -3109,13 +3109,13 @@ __metadata:
     postcss: ^8.1.0
   bin:
     autoprefixer: bin/autoprefixer
-  checksum: dbd13e641eaa7d7e3121769c22cc439222f1a9d0371a583d12300849de7287ece1e793767ff9902842dbfd56c4b7c19ed9fe1947c9f343ba2f4f3519dbddfdef
+  checksum: bd42e23d71af0228b6b0b27d0d0b33c95e67562e55eb4ca0e221cf795a06482c90d565d6544a5f4090d8e303b09b200845fa2bcaaa707d1e8777974250dffe1f
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1093.0":
-  version: 2.1093.0
-  resolution: "aws-sdk@npm:2.1093.0"
+"aws-sdk@npm:^2.1095.0":
+  version: 2.1095.0
+  resolution: "aws-sdk@npm:2.1095.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -3126,7 +3126,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 2b2fc480c715fdaadc4ccd6f852afb0dfcb9a947cf1a740cd747959459edb9ec17551f7dcc6c81f9213456343acb9358dd847396a79b3e4fec68235f314b79f9
+  checksum: 29d2fc854479d67f43fec05a6ae93ef50f016d96b458dabd57641fb966ca1fc0b86ed4a15804cd69cd499037369f1f4672a1b403363de88912487a200044559b
   languageName: node
   linkType: hard
 
@@ -3397,18 +3397,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"browserslist@npm:^4.19.1":
-  version: 4.20.0
-  resolution: "browserslist@npm:4.20.0"
+"browserslist@npm:^4.20.2":
+  version: 4.20.2
+  resolution: "browserslist@npm:4.20.2"
   dependencies:
-    caniuse-lite: ^1.0.30001313
-    electron-to-chromium: ^1.4.76
+    caniuse-lite: ^1.0.30001317
+    electron-to-chromium: ^1.4.84
     escalade: ^3.1.1
     node-releases: ^2.0.2
     picocolors: ^1.0.0
   bin:
     browserslist: cli.js
-  checksum: 6d77f54bd43e7e1b86c3f10a3aa84b6c198f2ecc8b345ebd42cb9feb1c143554ad62a0eaf1365f28d14589a4d1fb12b367ade3798fa493dab5cff4ca525384aa
+  checksum: 18e09beeae32e69fea45fc3642240fb63027b1460d90e24da86377177dca3d82c80f8fa44469d95109e3962f08eb2a23e03037bd5e1f1ec38e4866e2a8572435
   languageName: node
   linkType: hard
 
@@ -3633,10 +3633,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"caniuse-lite@npm:^1.0.30001297, caniuse-lite@npm:^1.0.30001313":
-  version: 1.0.30001314
-  resolution: "caniuse-lite@npm:1.0.30001314"
-  checksum: d82e1b8b287b1b2d2ed25c4495fe293276853dd9c77553c722929a6142fc49b3dd5ea21a95f6410d93319434a5bd071c304ea92e93debbcf292a9156cf08b35d
+"caniuse-lite@npm:^1.0.30001317":
+  version: 1.0.30001317
+  resolution: "caniuse-lite@npm:1.0.30001317"
+  checksum: 0a5fc7fb8c54dde515c2d468e5fc9e0cf2e82dd40d596cdffed90f64c50b5dadd0ab0c25e04769d86488b3115f949abd31d54d1f74d0029b45fa8206a031f47a
   languageName: node
   linkType: hard
 
@@ -4731,7 +4731,7 @@ __metadata:
     husky: ^7.0.4
     jest: ^27.5.1
     lerna: ^4.0.0
-    lint-staged: ^12.3.5
+    lint-staged: ^12.3.7
     vue-eslint-parser: ^8.3.0
   languageName: unknown
   linkType: soft
@@ -4845,10 +4845,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-to-chromium@npm:^1.4.76":
-  version: 1.4.81
-  resolution: "electron-to-chromium@npm:1.4.81"
-  checksum: 25284319767536f57b72dc3929e5cea13603dc2ff8e4e2adbb057fa6484b81ca6b8437066cc9f1272af369dd29d550b492bd1c08bb7fc546c25ed3f4bfedce5d
+"electron-to-chromium@npm:^1.4.84":
+  version: 1.4.87
+  resolution: "electron-to-chromium@npm:1.4.87"
+  checksum: ec7d467b7368daa2d624d43d5805290c6e75ad49097088f5028b2f5b71c950083f084c127a1836771a7175c19a90f590419d85a96c290499947c0fa7b846a7b5
   languageName: node
   linkType: hard
 
@@ -6018,7 +6018,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fraction.js@npm:^4.1.2":
+"fraction.js@npm:^4.2.0":
   version: 4.2.0
   resolution: "fraction.js@npm:4.2.0"
   checksum: 8c76a6e21dedea87109d6171a0ac77afa14205794a565d71cb10d2925f629a3922da61bf45ea52dbc30bce4d8636dc0a27213a88cbd600eab047d82f9a3a94c5
@@ -8366,7 +8366,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"knex@npm:^0.21.17":
+"knex@npm:^0.21.21":
   version: 0.21.21
   resolution: "knex@npm:0.21.21"
   dependencies:
@@ -8684,9 +8684,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^12.3.5":
-  version: 12.3.5
-  resolution: "lint-staged@npm:12.3.5"
+"lint-staged@npm:^12.3.7":
+  version: 12.3.7
+  resolution: "lint-staged@npm:12.3.7"
   dependencies:
     cli-truncate: ^3.1.0
     colorette: ^2.0.16
@@ -8698,12 +8698,13 @@ __metadata:
     micromatch: ^4.0.4
     normalize-path: ^3.0.0
     object-inspect: ^1.12.0
+    pidtree: ^0.5.0
     string-argv: ^0.3.1
     supports-color: ^9.2.1
     yaml: ^1.10.2
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 6653c7078b36741e521e5f309b56bb75db198a05cbdd188124ff82a290e352ade3eb1e6080265729e19711ac08d190e300874af00e4e540b57b3c8f0690e2573
+  checksum: b595097556880eb2ab7ce2cf105047f6f22525ccfd608fbdc63ab243259aa36a26949576fadff673748fb885e7cb37ad3f4471d964ad54c1205d57a58999ba24
   languageName: node
   linkType: hard
 
@@ -10663,6 +10664,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pidtree@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "pidtree@npm:0.5.0"
+  bin:
+    pidtree: bin/pidtree.js
+  checksum: 371cd14bbc9bdee2a6a44596dd521dd3565e223481e0b1afffdca3f1c29831850bfa7784114dc30d245d37e7d186cec035e036256b39f75d878d19498fe0df6a
+  languageName: node
+  linkType: hard
+
 "pify@npm:^2.0.0, pify@npm:^2.3.0":
   version: 2.3.0
   resolution: "pify@npm:2.3.0"
@@ -10717,15 +10727,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino-pretty@npm:^7.5.3":
-  version: 7.5.3
-  resolution: "pino-pretty@npm:7.5.3"
+"pino-pretty@npm:^7.5.4":
+  version: 7.5.4
+  resolution: "pino-pretty@npm:7.5.4"
   dependencies:
     args: ^5.0.1
     colorette: ^2.0.7
     dateformat: ^4.6.3
     fast-safe-stringify: ^2.0.7
     joycon: ^3.1.1
+    on-exit-leak-free: ^0.2.0
     pino-abstract-transport: ^0.5.0
     pump: ^3.0.0
     readable-stream: ^3.6.0
@@ -10735,7 +10746,7 @@ __metadata:
     strip-json-comments: ^3.1.1
   bin:
     pino-pretty: bin.js
-  checksum: bb9f0d4b35754cf5205227e7ee66abbd787760bd3150ba9eb147a0b8858f1b55460ef577606a1388098199f9000af6586f45b6dfe27770afecad1390fef0b4bc
+  checksum: 73f1f0c751dfc77029826b252c11ad61cf4b3164bf9fb48297a772e5319ff8d8cdc9b9218e93e6e40418cbb80d7c74eb5d80c044b1aca46562fae33288fb416e
   languageName: node
   linkType: hard
 
@@ -10746,9 +10757,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino@npm:^7.8.1":
-  version: 7.8.1
-  resolution: "pino@npm:7.8.1"
+"pino@npm:^7.9.1":
+  version: 7.9.1
+  resolution: "pino@npm:7.9.1"
   dependencies:
     fast-redact: ^3.0.0
     on-exit-leak-free: ^0.2.0
@@ -10762,7 +10773,7 @@ __metadata:
     thread-stream: ^0.13.0
   bin:
     pino: bin.js
-  checksum: 415ffd418bcc17fbd9c591f95ed9655e2af62b5e86a383ac936215334f032e6f1cf073ccdb71321a414f1f652e1388cf40bf2aabb6baf17d18df35eda88937c6
+  checksum: 08084c1d790bcfa89a7a1e7d2310a0a35883316d56744a33ff8e19cebd8e73d032b253078a3ca8ccd2d72b7d7948dac55dc55eff7478962e385a6a1b6e8087bf
   languageName: node
   linkType: hard
 
@@ -10844,7 +10855,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.4.6, postcss@npm:^8.4.8":
+"postcss@npm:^8.4.12":
+  version: 8.4.12
+  resolution: "postcss@npm:8.4.12"
+  dependencies:
+    nanoid: ^3.3.1
+    picocolors: ^1.0.0
+    source-map-js: ^1.0.2
+  checksum: 248e3d0f9bbb8efaafcfda7f91627a29bdc9a19f456896886330beb28c5abea0e14c7901b35191928602e2eccbed496b1e94097d27a0b2a980854cd00c7a835f
+  languageName: node
+  linkType: hard
+
+"postcss@npm:^8.4.6":
   version: 8.4.8
   resolution: "postcss@npm:8.4.8"
   dependencies:
