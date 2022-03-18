@@ -16,7 +16,9 @@
     "test": "node --experimental-vm-modules --icu-data-dir=node_modules/full-icu $(yarn bin jest)",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/*/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/*/src",
-    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito"
+    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito",
+    "link:objection": "yarn link ../objection.js --all --relative --private",
+    "link:knex": "yarn link ../knex --all --relative --private"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,vue}": "cross-env NODE_ENV=production eslint"
@@ -43,5 +45,8 @@
     "lerna": "^4.0.0",
     "lint-staged": "^12.3.5",
     "vue-eslint-parser": "^8.3.0"
+  },
+  "resolutions": {
+    "knex": "portal:../knex"
   }
 }
