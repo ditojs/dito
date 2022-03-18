@@ -853,8 +853,8 @@ __metadata:
     "@koa/cors": ^3.2.0
     "@koa/multer": ^3.0.0
     "@originjs/vite-plugin-commonjs": ^1.0.3
-    ajv: ^7.2.4
-    ajv-formats: ^1.6.1
+    ajv: ^8.10.0
+    ajv-formats: ^2.1.1
     aws-sdk: ^2.1095.0
     axios: ^0.26.1
     bcryptjs: ^2.4.3
@@ -2730,17 +2730,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv-formats@npm:^1.6.1":
-  version: 1.6.1
-  resolution: "ajv-formats@npm:1.6.1"
+"ajv-formats@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "ajv-formats@npm:2.1.1"
   dependencies:
-    ajv: ^7.0.0
+    ajv: ^8.0.0
   peerDependencies:
-    ajv: ^7.0.0
+    ajv: ^8.0.0
   peerDependenciesMeta:
     ajv:
       optional: true
-  checksum: 6bb02e4ed2edabc1573e4564ba3f477047d73a299fae795b67d4971c384cf2872479f9681bba0dcfae8b844bdecf098acd44b8c827c5dd5e730d4a0b6c60202e
+  checksum: 4a287d937f1ebaad4683249a4c40c0fa3beed30d9ddc0adba04859026a622da0d317851316ea64b3680dc60f5c3c708105ddd5d5db8fe595d9d0207fd19f90b7
   languageName: node
   linkType: hard
 
@@ -2756,15 +2756,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^7.0.0, ajv@npm:^7.2.4":
-  version: 7.2.4
-  resolution: "ajv@npm:7.2.4"
+"ajv@npm:^8.0.0, ajv@npm:^8.10.0":
+  version: 8.10.0
+  resolution: "ajv@npm:8.10.0"
   dependencies:
     fast-deep-equal: ^3.1.1
     json-schema-traverse: ^1.0.0
     require-from-string: ^2.0.2
     uri-js: ^4.2.2
-  checksum: 3c5be34cc37779e167be4406e620e2f4e69f04b50092e5e9cab609c8be822166ad850dac15e60c49642f46f5735eda2ca89efcd399189b116a56ac843a9a5023
+  checksum: 3594728ef1e31219ef97bfacb203d0d72db8ad5c35d6d0578e38ee453e4537c2bf927dad144bb84b0c893f661d71b58337d4643e8ee2f2a6e1d63b041c92fe82
   languageName: node
   linkType: hard
 

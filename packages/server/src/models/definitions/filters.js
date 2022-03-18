@@ -89,7 +89,7 @@ function wrapWithValidation(filter, name, app) {
             type: 'FilterValidation',
             message:
             `The provided data for query filter '${name}' is not valid`,
-            errors: app.validator.prefixDataPaths(
+            errors: app.validator.prefixInstancePaths(
               error.errors,
             `.${name}`
             )

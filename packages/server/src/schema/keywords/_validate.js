@@ -40,12 +40,12 @@ export const validateAsync = {
 }
 
 function getParams(ctx, data, parentSchema, dataCtx) {
-  const { dataPath, parentData, parentDataProperty, rootData } = dataCtx
+  const { instancePath, parentData, parentDataProperty, rootData } = dataCtx
   return {
     data,
     parentData,
     rootData,
-    dataPath,
+    instancePath,
     // NOTE: We rename parentDataProperty to parentKey / parentIndex:
     [isNumber(parentDataProperty) ? 'parentIndex' : 'parentKey']:
       parentDataProperty,
@@ -56,7 +56,7 @@ function getParams(ctx, data, parentSchema, dataCtx) {
   }
 }
 
-function getErrors(error, { validator, dataPath }) {
+function getErrors(error, { validator, instancePath }) {
   const errors = isArray(error.errors)
     // Ajv errors array:
     ? error.errors
@@ -66,6 +66,6 @@ function getErrors(error, { validator, dataPath }) {
       message: error.message || error.toString(),
       params: {}
     }]
-  // Return errors prefixed with the current dataPath:
-  return validator.prefixDataPaths(errors, dataPath)
+  // Return errors prefixed with the current instancePath:
+  return validator.prefixInstancePaths(errors, instancePath)
 }

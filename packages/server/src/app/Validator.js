@@ -1,12 +1,9 @@
 import objection from 'objection'
-import ajv from 'ajv'
+import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import { formatJson } from '../utils/index.js'
 import * as schema from '../schema/index.js'
-
-// TODO: Switch to direct import once Ajv is updated / supports ESM.
-const Ajv = ajv.default
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
 // validator instance that is shared across the whole app and handles schema
@@ -195,7 +192,9 @@ export class Validator extends objection.Validator {
     const duplicates = {}
     for (const error of errors) {
       // Adjust dataPaths to reflect nested validation in Objection.
-      const dataPath = `${options?.dataPath || ''}${error.dataPath}`
+      // NOTE: As of Ajv 8, `error.dataPath` is now called `error.instancePath`,
+      // but we stick to `error.dataPath` in Dito.js
+      const dataPath = `${options?.dataPath || ''}${error.instancePath}`
       // Unknown properties are reported in `['propertyName']` notation,
       // so replace those with dot-notation, see:
       // https://github.com/epoberezkin/ajv/issues/671
@@ -254,12 +253,15 @@ export class Validator extends objection.Validator {
     return errorHash
   }
 
-  prefixDataPaths(errors, dataPathPrefix) {
+  prefixInstancePaths(errors, instancePathPrefix) {
+    // As of Ajv 8, `error.dataPath` is now called `error.instancePath`. In
+    // Dito.js we stick to `error.dataPath`, but until the errors pass through
+    // `parseErrors()`, we stick to `error.instancePath` for consistency.
     return errors.map(error => ({
       ...error,
-      dataPath: error.dataPath
-        ? `${dataPathPrefix}${error.dataPath}`
-        : dataPathPrefix
+      instancePath: error.instancePath
+        ? `${instancePathPrefix}${error.instancePath}`
+        : instancePathPrefix
     }))
   }
 
