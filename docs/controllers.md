@@ -330,14 +330,12 @@ available, to be set on the controller instance.
 | Instance Field             | Description
 | -------------------------- | -------------------------------------------------
 | `name`: `string`           | The controller's name. If not provided, it is automatically deducted from the controller class name. If this name ends in `'Controller'`, that is stripped off the name, so `'GreetingsController'` turns into `'Greetings'`. 
-| `path`: `string`           | The relative path used to determine the controller's route path. 
-| `namespace`: `string`      | The controller's namespace, which is prepended to `path` to generate the absolute controller route. Note that it is rare to provide this manually. Usually Dito.js determines the `namespace` automatically from the controller object passed to the Dito.js application's constructor and its sub-objects. See [Namespaces](#namespaces) for more information.
-| `allow`: `Array`           | A list of allowed actions. If provided, only the action names listed here as strings will be mapped to routes, everything else will be omitted.
+| `path`: `string`           | The relative path used to determine the controller's route path.
+| `actions`: `Object`        | TODO: Document controller actions.
 
 Note: While traditionally, these instance fields would have to be set in the
-controller constructor, we can leverage the proposal for [public class fields in
-ECMAScript](http://2ality.com/2017/07/class-fields.html) through Babel Stage 2
-to set instance fields in a more elegant way.
+controller constructor, we can leverage public class fields in ECMAScript to set
+instance fields in a more elegant way.
 
 So instead of:
 

@@ -29,5 +29,6 @@
     "picocolors",
     "picomatch",
     "vite"
-  ]
+  ],
+  "jest.jestCommandLine": "yarn test"
 }

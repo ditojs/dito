@@ -176,7 +176,7 @@ export class CollectionController extends Controller {
     )
   }
 
-  toCoreActions(actions) {
+  convertToCoreActions(actions) {
     // Mark action object and methods as core, so `Controller.processValues()`
     // can filter correctly.
     for (const action of Object.values(actions)) {
@@ -188,7 +188,7 @@ export class CollectionController extends Controller {
     return actions
   }
 
-  collection = this.toCoreActions({
+  collection = this.convertToCoreActions({
     async get(ctx, modify) {
       const result = await this.execute(ctx, (query, trx) => {
         query.find(ctx.query, this.allowParam).modify(getModify(modify, trx))
@@ -235,7 +235,7 @@ export class CollectionController extends Controller {
     }
   })
 
-  member = this.toCoreActions({
+  member = this.convertToCoreActions({
     async get(ctx, modify) {
       return this.execute(ctx, (query, trx) => query
         .findById(ctx.memberId)

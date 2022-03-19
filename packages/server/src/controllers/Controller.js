@@ -6,8 +6,8 @@ import {
   ResponseError, WrappedError, ControllerError, AuthorizationError
 } from '../errors/index.js'
 import {
-  getOwnProperty, getAllKeys, processHandlerParameters, describeFunction,
-  formatJson, deprecate
+  getOwnProperty, getOwnKeys, getAllKeys, processHandlerParameters,
+  describeFunction, formatJson, deprecate
 } from '../utils/index.js'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
@@ -312,43 +312,44 @@ export class Controller {
     // NOTE: `handleAllow()` and `handleAuthorize()` are applied in sequence of
     // the `values` inheritance, from sub-class to base-class.
 
-    const mergedAllow = {}
-    const mergedAuthorize = {}
-    let hasOwnAllow = false
+    let allowMap = {}
+    const authorizeMap = {}
 
-    const excludeKey = key => ['allow', 'authorize'].includes(key)
+    const includeKey = key => !['allow', 'authorize'].includes(key)
 
     const handleAllow = (allow, current) => {
+      const getFilteredMap = keys =>
+        Object.fromEntries(keys.filter(includeKey).map(key => [key, true]))
+
       if (allow) {
-        allow = asArray(allow)
-        hasOwnAllow = true
-      } else if (!hasOwnAllow) {
-        // Only keep adding to the merged `allow` if we didn't already encounter
-        // an own `allow` object further up the chain.
-        allow = Object.keys(current)
-      }
-      if (allow) {
-        if (allow.includes('*')) {
-          allow = getAllKeys(current)
+        // The controller action object provides its own allow setting:
+        // - Clear whatever has been collected in `mergedAllow` so far
+        // - Merge the `allow` setting with all the own keys of the object,
+        //   unless:
+        // - If the allow setting includes '*', allow all keys of the object,
+        //   even the inherited ones.
+        let keys = asArray(allow)
+        if (keys.includes('*')) {
+          keys = getAllKeys(current)
+        } else {
+          keys = [
+            ...keys,
+            ...getOwnKeys(current)
+          ]
         }
-        for (const key of allow) {
-          if (!excludeKey(key)) {
-            mergedAllow[key] = true
-          }
-        }
+        allowMap = getFilteredMap(keys) // Clear previous keys by overriding.
+      } else {
+        // The controller action object does not provide its own allow setting,
+        // so add its own keys to the already allowed inherited keys so far.
+        Object.assign(allowMap, getFilteredMap(getOwnKeys(current)))
       }
+      // console.log('allow', Object.keys(allowMap))
     }
 
     const handleAuthorize = authorize => {
       const add = (key, value) => {
-        // Since we're walking up in the inheritance chain, only take on an
-        // authorize setting for a given key if it wasn't already defined before
-        if (
-          key in values &&
-          !(key in mergedAuthorize) &&
-          !excludeKey(key)
-        ) {
-          mergedAuthorize[key] = value
+        if (key in values && includeKey(key)) {
+          authorizeMap[key] = value
         }
       }
 
@@ -365,20 +366,23 @@ export class Controller {
       }
     }
 
-    // Process the `allow` and `authorize` settings in sequence of the `values`
-    // inheritance, from sub-class to base-class.
+    // Process the `allow` and `authorize` settings in reversed sequence of the
+    // `values` inheritance, from base-class to sub-class.
+    const chain = []
     let current = values
     while (current !== Object.prototype && !current.hasOwnProperty('$core')) {
-      handleAllow(getOwnProperty(current, 'allow'), current)
-      handleAuthorize(getOwnProperty(current, 'authorize'))
+      chain.unshift(current)
       current = Object.getPrototypeOf(current)
     }
 
-    // At the end of the chain, also support both settings on the controller-
-    // level, and thus applied to all action objects in the controller.
-    if (this.allow) {
-      handleAllow(this.allow, values)
+    for (const current of chain) {
+      handleAllow(getOwnProperty(current, 'allow'), current)
+      handleAuthorize(getOwnProperty(current, 'authorize'))
     }
+
+    // At the end of the chain, also support authorize settings on the
+    // controller-level, and thus applied to all action objects in the
+    // controller.
     if (this.authorize) {
       handleAuthorize(this.authorize)
     }
@@ -387,7 +391,7 @@ export class Controller {
       // Create a filtered `values` object that only contains the allowed fields
       values: getAllKeys(values).reduce(
         (result, key) => {
-          if (mergedAllow[key]) {
+          if (allowMap[key]) {
             result[key] = values[key]
           }
           return result
@@ -397,8 +401,8 @@ export class Controller {
         // `super` in handler functions.
         Object.create(Object.getPrototypeOf(values))
       ),
-      allow: Object.keys(mergedAllow),
-      authorize: mergedAuthorize
+      allow: Object.keys(allowMap),
+      authorize: authorizeMap
     }
   }
 

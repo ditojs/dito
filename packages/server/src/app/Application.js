@@ -122,6 +122,11 @@ export class Application extends Koa {
       controller,
       action
     }
+    if (!(method in this.router)) {
+      throw new Error(
+        `Unsupported HTTP method '${method}' in route '${path}'`
+      )
+    }
     this.router[method](path, route)
   }
 
