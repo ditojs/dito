@@ -25,6 +25,7 @@
 
 <style lang="sass">
   @import '../styles/style.sass'
+
   .dito-root
     height: 100%
     display: flex

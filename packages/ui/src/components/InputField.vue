@@ -10,7 +10,6 @@
 </template>
 
 <style lang="sass">
-  @import '../styles/imports'
   .dito-input
     display: inline-block
     @extend %input
