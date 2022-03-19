@@ -135,7 +135,7 @@ export class AdminController extends Controller {
     // Read `package.json` from the closest package.json, so we can emulate
     // ESM-style imports mappings in rollup / vite.
     const pkg = findUpSync('package.json', { cwd: root })
-    const { imports } = JSON.parse(fs.readFileSync(pkg, 'utf8'))
+    const { imports = {} } = JSON.parse(fs.readFileSync(pkg, 'utf8'))
 
     return defineConfig(merge({
       root,
