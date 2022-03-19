@@ -33,7 +33,7 @@ All Dito.js actions receive the full
 [Koa.js `ctx` object](http://koajs.com/#context) as their first argument.
 
 ```js
-'get:say-hello'(ctx) {
+'get say-hello'(ctx) {
   return `Just sayin' hello: ${ctx.query.message}`
 }
 ```
@@ -50,11 +50,11 @@ export class GreetingsController extends Controller {
 
   actions = {
     // This action will respond to GET /greetings/say-hello
-    'get:say-hello'() {
+    'get say-hello'() {
       return 'Hello!'
     },
 
-    'get:say-named-hello': {
+    'get say-named-hello': {
       parameters: {
         name: {
           type: 'string'
@@ -65,7 +65,7 @@ export class GreetingsController extends Controller {
       }
     },
 
-    'get:say-goodbye': {
+    'get say-goodbye': {
       returns: {
         type: 'string'
       },
@@ -84,7 +84,7 @@ simplest version provides the action handler function directly as the action's
 value, e.g.:
 
 ```js
-'get:values'() {
+'get values'() {
   return [1, 2, 3]
 }
 ```
@@ -93,7 +93,7 @@ For further configuration, e.g. to specify parameters validation, an object with
 further properties can be provided instead:
 
 ```js
-'get:values-multiplied': {
+'get values-multiplied': {
   parameters: {
     factor: {
       type: 'number'
@@ -136,7 +136,7 @@ Note the `type` can also be set to the name of any model known to your Dito app,
 in addition to the standard types supported by JSON schema:
 
 ```js
-'post:do-something: {
+'post do-something: {
 parameters: {
   model: {
     type: 'MyModel'
@@ -154,7 +154,7 @@ The parameters are read from the `ctx.body` object for post and put requests,
 all other requests read from `ctx.query`.
 
 ```js
-'get:say-hello': {
+'get say-hello': {
   parameters: {
     message: {
       type: 'string',
@@ -180,7 +180,7 @@ parameters: {
     required: true
   }
 },
-'get:query-something'(ctx, { query }) {
+'get query-something'(ctx, { query }) {
   return `Just queryin' something: ${query}`
 }
 ```
@@ -243,7 +243,7 @@ the action's return value, and optionally map the value to a key inside a
 returned object.
 
 ```js
-'get:say-hello': {
+'get say-hello': {
   returns: {
     type: 'string'
   },
@@ -432,33 +432,39 @@ export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['get', 'get:hello-collection'],
+    allow: ['get', 'get hello-collection'],
 
-    'get:hello-collection': {
+    'get hello-collection': {
       parameters: {
-        msg: {
+        message: {
           type: 'string',
           required: true
         }
       },
-      handler(msg) {
+      handler(ctx, { message }) {
         return `Model class '${this.modelClass.name}' says hello: ${msg}`
       }
     }
   }
 
   member = {
-    allow: ['get', 'get:hello-member'],
+    allow: ['get', 'get hello-member'],
 
-    'get:hello-member': {
+    'get hello-member': {
       parameters: {
-        msg: {
+        instance: {
+          member: true
+        },
+        message: {
           type: 'string',
           required: true
         }
       },
-      handler (member, msg) {
-        return `Model instance '${member.name}' says hello: ${msg}`
+      returns: {
+        type: 'string'
+      },
+      handler(ctx, { instance, message }) {
+        return `Model instance '${instance.name}' says hello: ${message}`
       }
     }
   }
