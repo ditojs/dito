@@ -18,7 +18,8 @@
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/*/src",
     "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito",
     "link:objection": "yarn link ../objection.js --all --relative --private",
-    "link:knex": "yarn link ../knex --all --relative --private"
+    "link:knex": "yarn link ../knex --all --relative --private",
+    "link:all": "yarn link:objection && yarn link:knex"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,vue}": "cross-env NODE_ENV=production eslint"

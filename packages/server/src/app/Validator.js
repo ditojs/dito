@@ -193,8 +193,10 @@ export class Validator extends objection.Validator {
     for (const error of errors) {
       // Adjust dataPaths to reflect nested validation in Objection.
       // NOTE: As of Ajv 8, `error.dataPath` is now called `error.instancePath`,
-      // but we stick to `error.dataPath` in Dito.js
-      const dataPath = `${options?.dataPath || ''}${error.instancePath}`
+      // but we stick to `error.dataPath` in Dito.js, and support both in errors
+      // passed in here.
+      const instancePath = error.instancePath || error.dataPath
+      const dataPath = `${options?.dataPath || ''}${instancePath}`
       // Unknown properties are reported in `['propertyName']` notation,
       // so replace those with dot-notation, see:
       // https://github.com/epoberezkin/ajv/issues/671
