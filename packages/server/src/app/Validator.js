@@ -195,12 +195,12 @@ export class Validator extends objection.Validator {
       // NOTE: As of Ajv 8, `error.dataPath` is now called `error.instancePath`,
       // but we stick to `error.dataPath` in Dito.js, and support both in errors
       // passed in here.
-      const instancePath = error.instancePath || error.dataPath
+      const instancePath = (error.instancePath ?? error.dataPath) || ''
       const dataPath = `${options?.dataPath || ''}${instancePath}`
       // Unknown properties are reported in `['propertyName']` notation,
       // so replace those with dot-notation, see:
       // https://github.com/epoberezkin/ajv/issues/671
-      const key = dataPath.replace(/\['([^']*)'\]/g, '.$1').slice(1)
+      const key = dataPath.replace(/\['([^']*)'\]/g, '/$1').slice(1)
       const { message, keyword, params } = error
       const definition = keyword === 'format'
         ? this.getFormat(params.format)
