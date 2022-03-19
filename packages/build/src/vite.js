@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import { createVuePlugin } from 'vite-plugin-vue2'
-import autoprefixer from 'autoprefixer'
-import postcssInset from 'postcss-inset'
+import { getPostCssConfig } from './postcss.js'
 import { getRollupExternalsFromDependencies } from './rollup.js'
 
 export function getViteConfig({
@@ -45,23 +44,7 @@ export function getViteConfig({
             additionalData: `@import './src/styles/_imports.sass'\n`
           }
         },
-        postcss: {
-          plugins: [
-            autoprefixer(),
-            postcssInset(),
-            {
-              // https://github.com/vitejs/vite/issues/5833
-              postcssPlugin: 'internal:remove-charset',
-              AtRule: {
-                charset: rule => {
-                  if (rule.name === 'charset') {
-                    rule.remove()
-                  }
-                }
-              }
-            }
-          ]
-        }
+        postcss: getPostCssConfig({ removeCharset: true })
       }
       : null
   })
