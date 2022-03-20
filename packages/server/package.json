@@ -53,7 +53,6 @@
     "koa-session": "^6.2.0",
     "koa-static": "^5.0.0",
     "mime-types": "^2.1.35",
-    "minimatch": "^5.0.1",
     "multer": "^1.4.4",
     "multer-s3": "^2.10.0",
     "nanoid": "^3.3.1",

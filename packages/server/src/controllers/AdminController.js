@@ -13,7 +13,7 @@ import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
-import { formatJson } from '../utils/index.js'
+import { formatJson, deprecate } from '../utils/index.js'
 
 export class AdminController extends Controller {
   // @override
@@ -34,11 +34,19 @@ export class AdminController extends Controller {
   }
 
   getPath(name) {
-    const str = this.config[name]?.path
+    const { config } = this
+    let str = config[name]
+    if (config.build?.path || config.dist?.path) {
+      deprecate(`config.admin.build.path and config.admin.dist.path are deprecated. Use config.admin.root and config.admin.dist instead.`)
+
+      str = name === 'root' ? config.build?.path
+        : name === 'dist' ? config.dist?.path
+        : null
+    }
     if (!str) {
       throw new ControllerError(
         this,
-        `Missing admin.${name}.path configuration.`
+        `Missing \`config.admin.${name}\` configuration.`
       )
     }
     return path.resolve(str)
@@ -85,8 +93,8 @@ export class AdminController extends Controller {
     this.koa = new Koa()
     this.koa.use(this.middleware())
     if (this.mode === 'development') {
-      // Calling getPath() throws exception if admin.build.path is not defined:
-      if (this.getPath('build')) {
+      // Calling getPath() throws exception if config.admin.root is not defined:
+      if (this.getPath('root')) {
         this.app.once('after:start', () => this.setupViteServer())
       }
     } else {
@@ -128,7 +136,7 @@ export class AdminController extends Controller {
     const development = this.mode === 'development'
 
     const cwd = path.resolve('.')
-    const root = this.getPath('build')
+    const root = this.getPath('root')
     const base = `${this.url}/`
     const views = path.join(root, 'views')
 
