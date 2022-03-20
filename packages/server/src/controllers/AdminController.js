@@ -217,7 +217,7 @@ export class AdminController extends Controller {
             replacement: '#',
             customResolver(id) {
               for (const [find, replacement] of Object.entries(imports)) {
-                picomatch.isMatch(id, find, {
+                picomatch.isMatch(id, find.replace('*', '**'), {
                   capture: true,
                   onMatch({ input, regex }) {
                     const replacementPath = path.resolve(replacement)
