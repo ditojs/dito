@@ -16,11 +16,11 @@
     "inline-assets": "./src/cli/inline-assets.js"
   },
   "engines": {
-    "node": ">= 14.0.0",
+    "node": ">= 16.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node >= 14"
+    "node >= 16"
   ],
   "dependencies": {
     "autoprefixer": "^10.4.4",

@@ -14,11 +14,11 @@
     "src/"
   ],
   "engines": {
-    "node": ">= 14.0.0",
+    "node": ">= 16.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node >= 14",
+    "node >= 16",
     "> 1%",
     "last 2 versions",
     "ie >= 11",
