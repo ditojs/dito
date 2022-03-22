@@ -171,7 +171,7 @@ export class Application extends Koa {
         }
         if (Object.keys(data).length > 0) {
           console.info(
-            pico.yellow.bold(`\n${modelClass.name}:\n`),
+            pico.yellow(pico.bold(`\n${modelClass.name}:\n`)),
             util.inspect(data, {
               colors: true,
               depth: null,
