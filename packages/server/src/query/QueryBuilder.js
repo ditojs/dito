@@ -216,7 +216,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
       this._ignoreScopes = { ...query._ignoreScopes }
     }
-    // If he target is a child query of a graph query, copy all scopes, graph
+    // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
     const copyAllScopes =
@@ -255,12 +255,12 @@ export class QueryBuilder extends objection.QueryBuilder {
         const expr = this.graphExpressionObject()
         if (expr) {
           // Add a new modifier to the existing graph expression that
-          // recursively applies the graph-scope to the resulting queries.
-          // This even works if nested scopes expand the graph expression,
-          // because it re-applies itself to the result.
+          // recursively adds the graph-scope to the resulting queries. This
+          // even works if nested scopes expand the graph expression, because it
+          // re-applies itself to the result.
           const name = `^${scope}`
           const modifiers = {
-            [name]: query => query._applyScope(scope, graph)
+            [name]: query => query.withScope(name)
           }
           this.withGraph(
             addGraphScope(this.modelClass(), expr, [name], modifiers, true)
