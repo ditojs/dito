@@ -1,7 +1,9 @@
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
-  constructor(controller, handler, type, name, _method, _path, _authorize) {
+  constructor(
+    controller, actions, handler, type, name, _method, _path, _authorize
+  ) {
     const {
       core = false,
       // Allow decorators on actions to override the predetermined defaults for
@@ -20,6 +22,7 @@ export default class ControllerAction {
     } = handler
 
     this.controller = controller
+    this.actions = actions
     this.handler = handler
     this.type = type
     this.name = name
@@ -96,7 +99,7 @@ export default class ControllerAction {
   }
 
   async callHandler(ctx, ...args) {
-    return this.handler.call(this.controller, ctx, ...args)
+    return this.handler.call(this.actions, ctx, ...args)
   }
 
   createValidationError(options) {

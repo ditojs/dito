@@ -120,6 +120,15 @@ export class Controller {
         type, actions, name, action, authorize[name]
       )
     }
+    // Expose a direct reference to the controller on the action object, but
+    // also make it inherit from the controller so that all its public fields
+    // and functions (`app`, `query()`, `execute()`, etc.) can be accessed
+    // directly through `this` from actions.
+    // NOTE: Inheritance is also set up by `inheritValues()` so that from inside
+    // the handlers, `super` points to the parent controller's actions object,
+    // so that calling `super.patch()` from a patch handler magically works.
+    actions.controller = this
+    Object.setPrototypeOf(actions, this)
     return actions
   }
 
@@ -139,7 +148,9 @@ export class Controller {
     this.setupActionRoute(
       type,
       // eslint-disable-next-line new-cap
-      new actionClass(this, handler, type, name, method, path, authorize)
+      new actionClass(
+        this, actions, handler, type, name, method, path, authorize
+      )
     )
     return handler
   }
@@ -559,5 +570,5 @@ function isMethodAction(name) {
     options: true,
     trace: true,
     connect: true
-  }[name]
+  }[name] || false
 }
