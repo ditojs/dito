@@ -827,7 +827,7 @@ __metadata:
     autoprefixer: ^10.4.4
     mime: ^3.0.0
     mini-svg-data-uri: ^1.4.4
-    minimist: ^1.2.5
+    minimist: ^1.2.6
     postcss: ^8.4.12
     postcss-inset: ^1.0.0
   bin:
@@ -853,9 +853,9 @@ __metadata:
     "@koa/cors": ^3.2.0
     "@koa/multer": ^3.0.0
     "@originjs/vite-plugin-commonjs": ^1.0.3
-    ajv: ^8.10.0
+    ajv: ^8.11.0
     ajv-formats: ^2.1.1
-    aws-sdk: ^2.1095.0
+    aws-sdk: ^2.1098.0
     axios: ^0.26.1
     bcryptjs: ^2.4.3
     bytes: ^3.1.2
@@ -890,7 +890,7 @@ __metadata:
     pg: ^8.7.3
     picocolors: ^1.0.0
     picomatch: ^2.3.1
-    pino: ^7.9.1
+    pino: ^7.9.2
     pino-pretty: ^7.5.4
     pluralize: ^8.0.0
     repl: ^0.1.3
@@ -2755,7 +2755,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^8.0.0, ajv@npm:^8.10.0":
+"ajv@npm:^8.0.0":
   version: 8.10.0
   resolution: "ajv@npm:8.10.0"
   dependencies:
@@ -2764,6 +2764,18 @@ __metadata:
     require-from-string: ^2.0.2
     uri-js: ^4.2.2
   checksum: 3594728ef1e31219ef97bfacb203d0d72db8ad5c35d6d0578e38ee453e4537c2bf927dad144bb84b0c893f661d71b58337d4643e8ee2f2a6e1d63b041c92fe82
+  languageName: node
+  linkType: hard
+
+"ajv@npm:^8.11.0":
+  version: 8.11.0
+  resolution: "ajv@npm:8.11.0"
+  dependencies:
+    fast-deep-equal: ^3.1.1
+    json-schema-traverse: ^1.0.0
+    require-from-string: ^2.0.2
+    uri-js: ^4.2.2
+  checksum: 5e0ff226806763be73e93dd7805b634f6f5921e3e90ca04acdf8db81eed9d8d3f0d4c5f1213047f45ebbf8047ffe0c840fa1ef2ec42c3a644899f69aa72b5bef
   languageName: node
   linkType: hard
 
@@ -3112,9 +3124,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1095.0":
-  version: 2.1095.0
-  resolution: "aws-sdk@npm:2.1095.0"
+"aws-sdk@npm:^2.1098.0":
+  version: 2.1098.0
+  resolution: "aws-sdk@npm:2.1098.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -3125,7 +3137,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 29d2fc854479d67f43fec05a6ae93ef50f016d96b458dabd57641fb966ca1fc0b86ed4a15804cd69cd499037369f1f4672a1b403363de88912487a200044559b
+  checksum: 3e097ec5e2686e3ae2ea66bb92073bd673f3118c854e9fe72a7c530a599c27d0846c11fe5e8b6532dda4844f83ceb624130d6c2bdbfe549248fd038c089da7cf
   languageName: node
   linkType: hard
 
@@ -9215,6 +9227,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"minimist@npm:^1.2.6":
+  version: 1.2.6
+  resolution: "minimist@npm:1.2.6"
+  checksum: d15428cd1e11eb14e1233bcfb88ae07ed7a147de251441d61158619dfb32c4d7e9061d09cab4825fdee18ecd6fce323228c8c47b5ba7cd20af378ca4048fb3fb
+  languageName: node
+  linkType: hard
+
 "minipass-collect@npm:^1.0.2":
   version: 1.0.2
   resolution: "minipass-collect@npm:1.0.2"
@@ -10738,9 +10757,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino@npm:^7.9.1":
-  version: 7.9.1
-  resolution: "pino@npm:7.9.1"
+"pino@npm:^7.9.2":
+  version: 7.9.2
+  resolution: "pino@npm:7.9.2"
   dependencies:
     fast-redact: ^3.0.0
     on-exit-leak-free: ^0.2.0
@@ -10751,10 +10770,10 @@ __metadata:
     real-require: ^0.1.0
     safe-stable-stringify: ^2.1.0
     sonic-boom: ^2.2.1
-    thread-stream: ^0.13.0
+    thread-stream: ^0.15.0
   bin:
     pino: bin.js
-  checksum: 08084c1d790bcfa89a7a1e7d2310a0a35883316d56744a33ff8e19cebd8e73d032b253078a3ca8ccd2d72b7d7948dac55dc55eff7478962e385a6a1b6e8087bf
+  checksum: 4f1c9867c0ed42d3567ca9ee5789fd9249056299a292d90f575e6a4912efd7f50df2d65fee8a2be60763bf21324133cbc36f867011fc4861d7d60b381c76f9c3
   languageName: node
   linkType: hard
 
@@ -12992,12 +13011,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"thread-stream@npm:^0.13.0":
-  version: 0.13.2
-  resolution: "thread-stream@npm:0.13.2"
+"thread-stream@npm:^0.15.0":
+  version: 0.15.1
+  resolution: "thread-stream@npm:0.15.1"
   dependencies:
     real-require: ^0.1.0
-  checksum: 409d76b1b23612ae32750261136201b04384bcaa9e72b85ce793fdb8763a219fbeffb446d366848d0950febaf51ec821f526a0bfd8efde735fab45e3af66dfa5
+  checksum: defe210d026697d5f8967509c896a7c46776192d5b72fa19ace67fb5d21f5280974ff0bbc504134b473343872f045db20089c5d8f55e9878133d4c3d048c2077
   languageName: node
   linkType: hard
 
