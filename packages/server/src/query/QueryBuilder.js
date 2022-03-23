@@ -226,15 +226,9 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   _filterScopes(scopes, callback) {
-    return Object.entries(scopes).reduce(
-      (scopes, [scope, graph]) => {
-        if (callback(scope, graph)) {
-          scopes[scope] = graph
-        }
-        return scopes
-      },
-      {}
-    )
+    return Object.fromEntries(Object.entries(scopes).filter(
+      ([scope, graph]) => callback(scope, graph)
+    ))
   }
 
   _applyScope(scope, graph) {
