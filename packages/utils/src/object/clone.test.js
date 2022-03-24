@@ -88,4 +88,10 @@ describe('clone()', () => {
     ]
     expect(copy).toStrictEqual(expected)
   })
+
+  it('should handle promises', async () => {
+    const promise = (async () => 1)()
+    const result = clone(promise)
+    expect(await result).toStrictEqual(1)
+  })
 })

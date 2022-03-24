@@ -110,4 +110,16 @@ describe('merge()', () => {
     const expected = { a: new Date(2021, 5, 9) }
     expect(merge({}, source1, source2)).toStrictEqual(expected)
   })
+
+  it('should be fine with nested promises', async () => {
+    const promise1 = (async () => 1)()
+    const promise2 = (async () => 2)()
+    const source1 = { nested: { promise1 } }
+    const source2 = { nested: { promise2 } }
+    const expected = { nested: { promise1, promise2 } }
+    const result = merge({}, source1, source2)
+    expect(result).toStrictEqual(expected)
+    expect(await result.nested.promise1).toStrictEqual(1)
+    expect(await result.nested.promise2).toStrictEqual(2)
+  })
 })
