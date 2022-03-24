@@ -221,7 +221,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     // copy only the graph scopes.
     const copyAllScopes =
       isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)
-    this._scopes = this._filterScopes(query._scopes, (scope, graph) =>
+    // When copying scopes for child-queries, we also need to take the already
+    // applied scopes into account and copy those too.
+    const scopes = isChildQuery
+      ? { ...query._appliedScopes, ...query._scopes }
+      : query._scopes
+    this._scopes = this._filterScopes(scopes, (scope, graph) =>
       copyAllScopes || graph)
   }
 
@@ -235,13 +240,15 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (!this._ignoreScopes[SYMBOL_ALL] && !this._ignoreScopes[scope]) {
       // Prevent multiple application of scopes. This can easily occur
       // with the nesting and eager-application of graph-scopes, see below.
-      if (!this._appliedScopes[scope]) {
+      // NOTE: The boolean values indicate the `graph` settings, not whether the
+      // scopes were applied or not.
+      if (!(scope in this._appliedScopes)) {
         // Only apply graph-scopes that are actually defined on the model:
         const func = this.modelClass().getScope(scope)
         if (func) {
           func.call(this, this)
         }
-        this._appliedScopes[scope] = true
+        this._appliedScopes[scope] = graph
       }
       if (graph) {
         // Also bake the scope into any graph expression that may have been

@@ -413,7 +413,7 @@ function cloneItem(sourceSchema, item, options) {
 
 export function processData(schema, sourceSchema, data, dataPath, {
   component,
-  schemaOnly, // wether to only include data covered by the schema, or all data
+  schemaOnly, // whether to only include data covered by the schema, or all data
   target
 } = {}) {
   const options = { component, schemaOnly, target, rootData: data }
