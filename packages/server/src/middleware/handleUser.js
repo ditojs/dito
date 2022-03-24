@@ -17,6 +17,10 @@ export function handleUser() {
       const { user } = ctx.state
       await user?.$emit('before:logout', options)
       await logout.call(this) // No options in passport's logout()
+      // Clear the session after logout, apparently koa-passport doesn't take
+      // care of this itself:
+      // https://stackoverflow.com/questions/55818887/koa-passport-logout-is-not-clearing-session
+      ctx.session = null
       await user?.$emit('after:logout', options)
     }
 
