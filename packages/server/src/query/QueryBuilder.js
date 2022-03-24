@@ -216,24 +216,19 @@ export class QueryBuilder extends objection.QueryBuilder {
       this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
       this._ignoreScopes = { ...query._ignoreScopes }
     }
+    const scopes = isChildQuery
+      // When copying scopes for child-queries, we also need to take the already
+      // applied scopes into account and copy those too.
+      ? { ...query._appliedScopes, ...query._scopes }
+      : { ...query._scopes }
     // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
     const copyAllScopes =
       isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)
-    // When copying scopes for child-queries, we also need to take the already
-    // applied scopes into account and copy those too.
-    const scopes = isChildQuery
-      ? { ...query._appliedScopes, ...query._scopes }
-      : query._scopes
-    this._scopes = this._filterScopes(scopes, (scope, graph) =>
-      copyAllScopes || graph)
-  }
-
-  _filterScopes(scopes, callback) {
-    return Object.fromEntries(Object.entries(scopes).filter(
-      ([scope, graph]) => callback(scope, graph)
-    ))
+    this._scopes = copyAllScopes
+      ? scopes
+      : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
   }
 
   _applyScope(scope, graph) {
@@ -795,6 +790,12 @@ for (const key of [
     }
     return method.call(this, ...args)
   }
+}
+
+function filterScopes(scopes, callback) {
+  return Object.fromEntries(Object.entries(scopes).filter(
+    ([scope, graph]) => callback(scope, graph)
+  ))
 }
 
 // The default options for insertDitoGraph(), upsertDitoGraph(),
