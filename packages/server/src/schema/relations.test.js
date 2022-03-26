@@ -5,7 +5,7 @@ import {
   HasManyRelation,
   ManyToManyRelation
 } from 'objection'
-import { Model } from '../models.js'
+import { Model } from '../models/index.js'
 import {
   getRelationClass, convertRelation, addRelationSchemas
 } from './relations.js'

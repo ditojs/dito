@@ -1,5 +1,5 @@
 import { clone } from './clone.js'
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 
 describe('clone()', () => {
   it('should clone objects', () => {
@@ -47,7 +47,7 @@ describe('clone()', () => {
   it('should use clone() methods if available', () => {
     const object = {
       a: 1,
-      clone: jest.fn(() => ({ b: 2 }))
+      clone: vi.fn(() => ({ b: 2 }))
     }
     const copy = clone(object)
     expect(object.clone).toBeCalledTimes(1)
