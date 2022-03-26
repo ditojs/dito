@@ -7,7 +7,6 @@ import { createVuePlugin } from 'vite-plugin-vue2'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
-import picomatch from 'picomatch'
 import { findUpSync } from 'find-up'
 import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
@@ -185,9 +184,10 @@ export class AdminController extends Controller {
                     return 'common'
                   } else {
                     const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
-                    return picomatch.isMatch(module, CORE_DEPENDENCIES)
-                      ? 'core'
-                      : 'vendor'
+                    const match = CORE_DEPENDENCIES.some(
+                      id => matchIdentifier(module, id).match
+                    )
+                    return match ? 'core' : 'vendor'
                   }
                 }
               }
@@ -217,16 +217,13 @@ export class AdminController extends Controller {
             replacement: '#',
             customResolver(id) {
               for (const [find, replacement] of Object.entries(imports)) {
-                picomatch.isMatch(id, find.replace('*', '**'), {
-                  capture: true,
-                  onMatch({ input, regex }) {
-                    const replacementPath = path.resolve(replacement)
-                    const match = input.match(regex)?.[1]
-                    id = match
-                      ? replacementPath.replace('*', match)
-                      : replacementPath
-                  }
-                })
+                const { match, capture } = matchIdentifier(id, find)
+                if (match) {
+                  const replacementPath = path.resolve(replacement)
+                  id = capture
+                    ? replacementPath.replace('*', capture)
+                    : replacementPath
+                }
               }
               return id
             }
@@ -234,6 +231,15 @@ export class AdminController extends Controller {
         ]
       }
     }, config))
+  }
+}
+
+function matchIdentifier(id, pattern) {
+  const regexp = new RegExp(`^${pattern.replace('*', '(.*)')}$`)
+  const match = id.match(regexp)
+  return {
+    match: !!match,
+    capture: match?.[1]
   }
 }
 
