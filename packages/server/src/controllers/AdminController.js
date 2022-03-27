@@ -1,5 +1,4 @@
 import path from 'path'
-import fs from 'fs'
 import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
@@ -7,7 +6,10 @@ import { createVuePlugin } from 'vite-plugin-vue2'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
-import { findUpSync } from 'find-up'
+import {
+  createRollupImportsResolver,
+  testModuleIdentifier
+} from '@ditojs/build'
 import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
@@ -134,15 +136,10 @@ export class AdminController extends Controller {
   getViteConfig(config = {}) {
     const development = this.mode === 'development'
 
-    const cwd = path.resolve('.')
+    const cwd = process.cwd()
     const root = this.getPath('root')
     const base = `${this.url}/`
     const views = path.join(root, 'views')
-
-    // Read `package.json` from the closest package.json, so we can emulate
-    // ESM-style imports mappings in rollup / vite.
-    const pkg = findUpSync('package.json', { cwd: root })
-    const { imports = {} } = JSON.parse(fs.readFileSync(pkg, 'utf8'))
 
     return defineConfig(merge({
       root,
@@ -184,10 +181,9 @@ export class AdminController extends Controller {
                     return 'common'
                   } else {
                     const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
-                    const match = CORE_DEPENDENCIES.some(
-                      id => matchIdentifier(module, id).match
-                    )
-                    return match ? 'core' : 'vendor'
+                    return testModuleIdentifier(module, CORE_DEPENDENCIES)
+                      ? 'core'
+                      : 'vendor'
                   }
                 }
               }
@@ -210,36 +206,10 @@ export class AdminController extends Controller {
             find: '@',
             replacement: root
           },
-          {
-            // Use a custom rollup resolver to emulate ESM-style imports
-            // mappings in vite, as read from `package.json` above:
-            find: /^#/,
-            replacement: '#',
-            customResolver(id) {
-              for (const [find, replacement] of Object.entries(imports)) {
-                const { match, capture } = matchIdentifier(id, find)
-                if (match) {
-                  const replacementPath = path.resolve(replacement)
-                  id = capture
-                    ? replacementPath.replace('*', capture)
-                    : replacementPath
-                }
-              }
-              return id
-            }
-          }
+          createRollupImportsResolver({ cwd: root })
         ]
       }
     }, config))
-  }
-}
-
-function matchIdentifier(id, pattern) {
-  const regexp = new RegExp(`^${pattern.replace('*', '(.*)')}$`)
-  const match = id.match(regexp)
-  return {
-    match: !!match,
-    capture: match?.[1]
   }
 }
 

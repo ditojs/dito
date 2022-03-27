@@ -1,42 +1,63 @@
-import { defineConfig } from 'vite'
+import { defineConfig as defineViteConfig } from 'vite'
 import { createVuePlugin } from 'vite-plugin-vue2'
 import { getPostCssConfig } from './postcss.js'
-import { getRollupExternalsFromDependencies } from './rollup.js'
+import {
+  getRollupExternalsFromDependencies,
+  createRollupImportsResolver
+} from './rollup.js'
 
 export function getViteConfig({
   name,
+  defineConfig = defineViteConfig,
   css = false,
+  vue = false,
+  build = true,
   minify = !process.argv.includes('--watch'),
   sourcemap = 'inline',
   externals: {
     include = [],
     exclude = []
-  } = {}
+  } = {},
+  ...rest
 } = {}) {
-  const externals = getRollupExternalsFromDependencies({ include, exclude })
+  const externals = build && getRollupExternalsFromDependencies({
+    include,
+    exclude
+  })
   return defineConfig({
-    plugins: [
-      createVuePlugin()
-    ],
-    esbuild: { minify },
-    build: {
-      minify,
-      sourcemap,
-      cssCodeSplit: false,
-      lib: {
-        name,
-        format: ['es', 'umd'],
-        entry: './src/index.js',
-        fileName: format => `${name}.${format}.js`
-      },
-      rollupOptions: {
-        external: id => !!externals[id],
-        output: {
-          manualChunks: undefined,
-          globals: externals
+    plugins: vue
+      ? [
+        createVuePlugin()
+      ]
+      : null,
+    resolve: {
+      alias: [
+        createRollupImportsResolver()
+      ]
+    },
+    esbuild: build
+      ? { minify }
+      : null,
+    build: build
+      ? {
+        minify,
+        sourcemap,
+        cssCodeSplit: false,
+        lib: {
+          name,
+          format: ['es', 'umd'],
+          entry: './src/index.js',
+          fileName: format => `${name}.${format}.js`
+        },
+        rollupOptions: {
+          external: id => !!externals[id],
+          output: {
+            manualChunks: undefined,
+            globals: externals
+          }
         }
       }
-    },
+      : null,
     css: css
       ? {
         preprocessorOptions: {
@@ -46,6 +67,7 @@ export function getViteConfig({
         },
         postcss: getPostCssConfig({ removeCharset: true })
       }
-      : null
+      : null,
+    ...rest
   })
 }
