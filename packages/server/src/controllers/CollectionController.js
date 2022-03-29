@@ -68,17 +68,18 @@ export class CollectionController extends Controller {
     return this.extendContext(ctx, { memberId })
   }
 
-  getCollectionIds(ctx) {
+  getModelId(model) {
     const idProperty = this.modelClass.getIdProperty()
     // Handle both composite keys and normal ones.
-    const getId = isArray(idProperty)
-      ? model => idProperty.reduce(
-        (id, key) => {
-          id.push(model[key])
-          return id
-        }, [])
-      : model => model[idProperty]
-    return asArray(ctx.request.body).map(model => this.validateId(getId(model)))
+    return isArray(idProperty)
+      ? idProperty.map(property => model[property])
+      : model[idProperty]
+  }
+
+  getCollectionIds(ctx) {
+    return asArray(ctx.request.body).map(
+      model => this.validateId(this.getModelId(model))
+    )
   }
 
   getIds(ctx) {
@@ -219,9 +220,9 @@ export class CollectionController extends Controller {
           .modify(getModify(modify, trx))
         )
         : await this.executeAndFetch('insert', ctx, modify)
-      ctx.status = 201
+      ctx.status = 201 // Created
       if (isObject(result)) {
-        ctx.set('Location', this.getUrl('collection', result.id))
+        ctx.set('Location', this.getUrl('collection', this.getModelId(result)))
       }
       return result
     },
