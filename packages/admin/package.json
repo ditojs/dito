@@ -41,7 +41,7 @@
     "codeflask": "^1.4.1",
     "filesize": "^8.0.7",
     "filesize-parser": "^1.5.0",
-    "nanoid": "^3.3.1",
+    "nanoid": "^3.3.2",
     "tinycolor2": "^1.4.2",
     "tiptap": "^1.32.2",
     "tiptap-commands": "^1.17.1",
@@ -61,8 +61,8 @@
   "devDependencies": {
     "@ditojs/build": "^1.4.1",
     "pug": "^3.0.2",
-    "sass": "1.49.9",
-    "vite": "^2.8.6",
+    "sass": "1.49.11",
+    "vite": "^2.9.1",
     "vite-plugin-vue2": "^1.9.3"
   }
 }
