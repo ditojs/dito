@@ -1,11 +1,13 @@
+import os from 'os'
+import path from 'path'
+import util from 'util'
+import zlib from 'zlib'
+import fs from 'fs-extra'
 import Koa from 'koa'
 import Knex from 'knex'
-import util from 'util'
 import axios from 'axios'
 import pico from 'picocolors'
-import zlib from 'zlib'
 import pino from 'pino'
-import os from 'os'
 import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
@@ -852,23 +854,38 @@ export class Application extends Koa {
             if (file.data || file.url) {
               let { data } = file
               if (!data) {
+                const { url } = file
+                if (!storage.isImportSourceAllowed(url)) {
+                  throw new AssetError(
+                    `Unable to import asset from foreign source: '${
+                      file.name
+                    }' ('${
+                      url
+                    }'): The source needs to be explicitly allowed.`
+                  )
+                }
                 console.info(
                   `${
                     pico.red('INFO:')
                   } Asset ${
                     pico.green(`'${file.name}'`)
                   } is from a foreign source, fetching from ${
-                    pico.green(`'${file.url}'`)
+                    pico.green(`'${url}'`)
                   } and adding to storage ${
                     pico.green(`'${storage.name}'`)
                   }...`
                 )
-                const response = await axios.request({
-                  method: 'get',
-                  url: file.url,
-                  responseType: 'arraybuffer'
-                })
-                data = response.data
+                if (url.startsWith('file://')) {
+                  const filepath = path.resolve(url.substring(7))
+                  data = await fs.readFile(filepath)
+                } else {
+                  const response = await axios.request({
+                    method: 'get',
+                    responseType: 'arraybuffer',
+                    url
+                  })
+                  data = response.data
+                }
               }
               const importedFile = await storage.addFile(file, data)
               await this.createAssets(storage, [importedFile], 0, trx)

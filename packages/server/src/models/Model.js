@@ -929,11 +929,9 @@ export class Model extends objection.Model {
         )
         : assetDataPaths
 
-      // `dataPaths` will be empty in the case of an update/insert that do not
+      // `dataPaths` is empty in the case of an update/insert that does not
       // affect the assets.
-      if (dataPaths.length === 0) {
-        return
-      }
+      if (dataPaths.length === 0) return
 
       // Load the model's asset files in their current state before the query is
       // executed.
@@ -972,7 +970,7 @@ export class Model extends objection.Model {
           if (modifiedFiles.length > 0) {
             // TODO: `modifiedFiles` should be restored as well, but that's far
             // from trivial since no backup is kept in `handleModifiedAssets`
-            console.info(
+            console.warn(
               `Unable to restore these already modified files: ${
                 modifiedFiles.map(file => `'${file.name}'`)
               }`
