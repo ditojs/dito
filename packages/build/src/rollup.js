@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { builtinModules, createRequire } from 'module'
 import { findUpSync } from 'find-up'
-import { asArray } from '@ditojs/utils'
+import { asArray, escapeRegexp } from '@ditojs/utils'
 
 const require = createRequire(import.meta.url)
 
@@ -68,7 +68,7 @@ export function createRollupImportsResolver({ cwd = process.cwd() } = {}) {
 }
 
 export function matchModuleIdentifier(id, pattern) {
-  const regexp = new RegExp(`^${pattern.replace('*', '(.*)')}$`)
+  const regexp = new RegExp(`^${escapeRegexp(pattern).replace('\\*', '(.*)')}$`)
   const match = id.match(regexp)
   return {
     match: !!match,

@@ -29,6 +29,7 @@ exports[`index > exports all symbols 1`] = `
   "deindent": [Function],
   "equals": [Function],
   "escapeHtml": [Function],
+  "escapeRegexp": [Function],
   "flatten": [Function],
   "format": [Function],
   "formatDate": [Function],
