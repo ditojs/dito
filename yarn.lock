@@ -553,6 +553,7 @@ __metadata:
     passthrough-counter: ^1.0.0
     pg: ^8.7.3
     picocolors: ^1.0.0
+    picomatch: ^2.3.1
     pino: ^7.9.2
     pino-pretty: ^7.6.0
     pluralize: ^8.0.0
@@ -8559,7 +8560,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"picomatch@npm:^2.2.2":
+"picomatch@npm:^2.2.2, picomatch@npm:^2.3.1":
   version: 2.3.1
   resolution: "picomatch@npm:2.3.1"
   checksum: 050c865ce81119c4822c45d3c84f1ced46f93a0126febae20737bd05ca20589c564d6e9226977df859ed5e03dc73f02584a2b0faad36e896936238238b0446cf

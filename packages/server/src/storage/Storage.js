@@ -1,11 +1,11 @@
 import path from 'path'
+import { URL } from 'url'
 import multer from '@koa/multer'
+import picomatch from 'picomatch'
 import imageSize from 'image-size'
 import { PassThrough } from 'stream'
-import { URL } from 'url'
 import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
-import { matchGlobPattern } from '../utils/glob.js'
 
 const storageClasses = {}
 
@@ -59,11 +59,7 @@ export class Storage {
   }
 
   isImportSourceAllowed(url) {
-    const { allowedImports = [] } = this.config
-    for (const pattern of allowedImports) {
-      if (matchGlobPattern(url, pattern)) return true
-    }
-    return false
+    return picomatch.isMatch(url, this.config.allowedImports || [])
   }
 
   convertAssetFile(file) {
