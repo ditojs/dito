@@ -90,6 +90,7 @@ export class AdminController extends Controller {
     }
   }
 
+  // @override
   compose() {
     this.koa = new Koa()
     this.koa.use(this.middleware())
@@ -128,6 +129,7 @@ export class AdminController extends Controller {
         }
       }
     })
+    this.app.once('before:stop', () => server.close())
     this.koa.use(handleConnectMiddleware(server.middlewares, {
       expandMountPath: true
     }))

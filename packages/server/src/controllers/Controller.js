@@ -26,6 +26,12 @@ export class Controller {
   initialize() {
   }
 
+  // @return {Application|Function} [app or function]
+  compose() {
+    // To be overridden in sub-classes, if the controller needs to install
+    // middleware. For normal routes, use `this.app.addRoute()` instead.
+  }
+
   setup(isRoot = true, setupActionsObject = true) {
     this._setupEmitter(this.hooks, {
       // Support wildcard hooks only on controllers:
@@ -244,12 +250,6 @@ export class Controller {
         return next()
       }
     ])
-  }
-
-  // @return {Application|Function} [app or function]
-  compose() {
-    // To be overridden in sub-classes, if the controller needs to install
-    // middleware. For normal routes, use `this.app.addRoute()` instead.
   }
 
   getPath(type, path) {

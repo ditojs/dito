@@ -11,6 +11,8 @@ export class Service {
 
   setup(config) {
     this.config = config
+    this.app.on('before:start', () => this.start())
+    this.app.on('after:stop', () => this.stop())
   }
 
   // @overridable

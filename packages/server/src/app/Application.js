@@ -22,8 +22,8 @@ import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
 import {
-  isArray, isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
-  parseDataPath, normalizeDataPath, isModule
+  isArray, isObject, isString, asArray, isPlainObject, isModule,
+  hyphenate, clone, merge, parseDataPath, normalizeDataPath, toPromiseCallback
 } from '@ditojs/utils'
 import SessionStore from './SessionStore.js'
 import { Validator } from './Validator.js'
@@ -74,6 +74,7 @@ export class Application extends Koa {
       log = {},
       ...rest
     } = config
+    this.server = null
     this.config = {
       app,
       log: log.silent || process.env.DITO_SILENT ? {} : log,
@@ -104,6 +105,10 @@ export class Application extends Koa {
     if (controllers) {
       this.addControllers(controllers)
     }
+  }
+
+  get isRunning() {
+    return !!this.server
   }
 
   addRoute(
@@ -281,10 +286,6 @@ export class Application extends Koa {
 
   findService(callback) {
     return Object.values(this.services).find(callback)
-  }
-
-  forEachService(callback) {
-    return Promise.all(Object.values(this.services).map(callback))
   }
 
   addControllers(controllers, namespace) {
@@ -718,45 +719,33 @@ export class Application extends Koa {
       this.on('error', this.logError)
     }
     await this.emit('before:start')
-    await this.forEachService(service => service.start())
-    const { server: { host, port } } = this.config
-    this.server = await new Promise((resolve, reject) => {
-      const server = this.listen(port, host, () => {
-        const { port } = server.address()
+    this.server = await new Promise(resolve => {
+      const server = this.listen(this.config.server, () => {
+        const { address, port } = server.address()
         console.info(
-          `Dito server started at http://${host}:${port}`
+          `Dito.js server started at http://${address}:${port}`
         )
         resolve(server)
       })
-      if (!server) {
-        reject(new Error(`Unable to start server at http://${host}:${port}`))
-      }
     })
+    if (!this.server) {
+      throw new Error('Unable to start Dito.js server')
+    }
     await this.emit('after:start')
   }
 
   async stop() {
+    if (!this.server) {
+      throw new Error('Dito.js server is not running')
+    }
     await this.emit('before:stop')
-    this.server = await new Promise((resolve, reject) => {
-      const { server } = this
-      if (server) {
-        server.close(err => {
-          if (err) {
-            reject(err)
-          } else {
-            resolve(null)
-          }
-        })
-        // Hack to make sure that we close the server,
-        //  even if sockets are still open.
-        //  Taken from https://stackoverflow.com/a/36830072.
-        //  A proper solution would be to use a library, ex: https://github.com/godaddy/terminus
-        setImmediate(() => server.emit('close'))
-      } else {
-        reject(new Error('Server is not running'))
-      }
+    await new Promise((resolve, reject) => {
+      this.server.close(toPromiseCallback(resolve, reject))
     })
-    await this.forEachService(service => service.stop())
+    // Hack to make sure that the server is closed, even if sockets are still
+    // open after `server.close()`, see: https://stackoverflow.com/a/36830072
+    this.server.emit('close')
+    this.server = null
     await this.emit('after:stop')
     if (this.config.log.errors !== false) {
       this.off('error', this.logError)
