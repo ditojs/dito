@@ -1,4 +1,5 @@
 import path from 'path'
+import { exit } from 'process'
 import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
@@ -129,7 +130,32 @@ export class AdminController extends Controller {
         }
       }
     })
-    this.app.once('after:stop', () => server.close())
+
+    let closed = false
+
+    // Monkey-patch `process.exit()` to filter out the calls caused by vite's
+    // handling of SIGTERM, see: https://github.com/vitejs/vite/issues/7627
+    process.exit = code => {
+      // Filter out calls from inside vite by looking at the stack trace.
+      if (new Error().stack.includes('/vite/dist/')) {
+        // vite's own `exitProcess()` just called `process.exit(), and this
+        // means it has already called `server.close()` internally.
+        closed = true
+        process.exit = exit
+      } else {
+        exit(code)
+      }
+    }
+
+    this.app.once('before:stop', () => {
+      // For good timing it seems crucial to not add more ticks with async
+      // signature, so we directly return the `server.close()` promise instead.
+      process.exit = exit
+      if (!closed) {
+        closed = true
+        return server.close()
+      }
+    })
     this.koa.use(handleConnectMiddleware(server.middlewares, {
       expandMountPath: true
     }))
