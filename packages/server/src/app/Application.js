@@ -734,19 +734,39 @@ export class Application extends Koa {
     await this.emit('after:start')
   }
 
-  async stop() {
+  async stop(timeout = 0) {
     if (!this.server) {
       throw new Error('Dito.js server is not running')
     }
-    await this.emit('before:stop')
-    await new Promise((resolve, reject) => {
-      this.server.close(toPromiseCallback(resolve, reject))
-    })
-    // Hack to make sure that the server is closed, even if sockets are still
-    // open after `server.close()`, see: https://stackoverflow.com/a/36830072
-    this.server.emit('close')
-    this.server = null
-    await this.emit('after:stop')
+
+    const promise = (async () => {
+      await this.emit('before:stop')
+      await new Promise((resolve, reject) => {
+        this.server.close(toPromiseCallback(resolve, reject))
+      })
+      // Hack to make sure that the server is closed, even if sockets are still
+      // open after `server.close()`, see: https://stackoverflow.com/a/36830072
+      this.server.emit('close')
+      this.server = null
+      await this.emit('after:stop')
+    })()
+
+    if (timeout > 0) {
+      await Promise.race([
+        promise,
+        new Promise((resolve, reject) =>
+          setTimeout(reject,
+            timeout,
+            new Error(
+              `Timeout reached while stopping Dito.js server (${timeout}ms)`
+            )
+          )
+        )
+      ])
+    } else {
+      await promise
+    }
+
     if (this.config.log.errors !== false) {
       this.off('error', this.logError)
     }

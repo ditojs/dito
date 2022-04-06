@@ -129,7 +129,7 @@ export class AdminController extends Controller {
         }
       }
     })
-    this.app.once('before:stop', () => server.close())
+    this.app.once('after:stop', () => server.close())
     this.koa.use(handleConnectMiddleware(server.middlewares, {
       expandMountPath: true
     }))
