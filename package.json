@@ -37,15 +37,15 @@
     "eslint": "^8.12.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-friendly-formatter": "^4.0.1",
-    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-vue": "^8.5.0",
+    "eslint-plugin-vue": "^8.6.0",
     "full-icu": "^1.4.0",
     "husky": "^7.0.4",
     "lerna": "^4.0.0",
     "lint-staged": "^12.3.7",
-    "vitest": "^0.8.3",
+    "vitest": "^0.8.4",
     "vue-eslint-parser": "^8.3.0"
   },
   "packageManager": "yarn@3.2.0"

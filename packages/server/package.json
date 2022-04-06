@@ -30,7 +30,7 @@
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "ajv": "^8.11.0",
     "ajv-formats": "^2.1.1",
-    "aws-sdk": "^2.1106.0",
+    "aws-sdk": "^2.1108.0",
     "axios": "^0.26.1",
     "bcryptjs": "^2.4.3",
     "bytes": "^3.1.2",
@@ -76,7 +76,7 @@
     "objection": "^3.0.1"
   },
   "devDependencies": {
-    "knex": "^1.0.4",
+    "knex": "^1.0.5",
     "objection": "^3.0.1",
     "pg": "^8.7.3",
     "sqlite3": "^5.0.2"
