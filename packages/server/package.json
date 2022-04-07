@@ -77,8 +77,6 @@
   },
   "devDependencies": {
     "knex": "^1.0.5",
-    "objection": "^3.0.1",
-    "pg": "^8.7.3",
-    "sqlite3": "^5.0.2"
+    "objection": "^3.0.1"
   }
 }
