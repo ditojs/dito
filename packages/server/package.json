@@ -72,7 +72,7 @@
     "vue-template-compiler": "^2.6.14"
   },
   "peerDependencies": {
-    "knex": "^1.0.4",
+    "knex": "^1.0.5",
     "objection": "^3.0.1"
   },
   "devDependencies": {

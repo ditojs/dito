@@ -8,10 +8,6 @@ import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
 import * as db from './db/index.js'
 import startConsole from './console.js'
 
-// Tell Knex to use ESM. TODO: Fix this properly in Knex itself, so it works
-// with Yarn too.
-process.env.npm_package_type = 'module'
-
 const commands = { db, console: startConsole }
 
 function getCommand(commands, parts) {
