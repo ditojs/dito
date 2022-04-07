@@ -150,12 +150,12 @@ export class AdminController extends Controller {
     this.app.once('before:stop', () => {
       // For good timing it seems crucial to not add more ticks with async
       // signature, so we directly return the `server.close()` promise instead.
-      process.exit = exit
       if (!closed) {
         closed = true
         return server.close()
       }
     })
+
     this.koa.use(handleConnectMiddleware(server.middlewares, {
       expandMountPath: true
     }))

@@ -1,5 +1,6 @@
 export * from './attachLogger.js'
 export * from './createTransaction.js'
+export * from './ensureRunning.js'
 export * from './findRoute.js'
 export * from './handleConnectMiddleware.js'
 export * from './handleError.js'

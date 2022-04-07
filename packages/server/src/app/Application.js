@@ -42,6 +42,7 @@ import {
 import {
   attachLogger,
   createTransaction,
+  ensureRunning,
   findRoute,
   handleError,
   handleRoute,
@@ -74,7 +75,6 @@ export class Application extends Koa {
       log = {},
       ...rest
     } = config
-    this.server = null
     this.config = {
       app,
       log: log.silent || process.env.DITO_SILENT ? {} : log,
@@ -89,6 +89,9 @@ export class Application extends Koa {
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
+    this.server = null
+    this.isRunning = false
+
     this.setupLogger()
     this.setupKnex()
     this.setupMiddleware(middleware)
@@ -105,10 +108,6 @@ export class Application extends Koa {
     if (controllers) {
       this.addControllers(controllers)
     }
-  }
-
-  get isRunning() {
-    return !!this.server
   }
 
   addRoute(
@@ -509,6 +508,7 @@ export class Application extends Koa {
 
     // Setup global middleware
 
+    this.use(ensureRunning(this))
     this.use(attachLogger(this.logger))
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
@@ -731,6 +731,7 @@ export class Application extends Koa {
     if (!this.server) {
       throw new Error('Unable to start Dito.js server')
     }
+    this.isRunning = true
     await this.emit('after:start')
   }
 
@@ -741,6 +742,7 @@ export class Application extends Koa {
 
     const promise = (async () => {
       await this.emit('before:stop')
+      this.isRunning = false
       await new Promise((resolve, reject) => {
         this.server.close(toPromiseCallback(resolve, reject))
       })
