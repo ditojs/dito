@@ -42,7 +42,6 @@ import {
 import {
   attachLogger,
   createTransaction,
-  ensureRunning,
   findRoute,
   handleError,
   handleRoute,
@@ -508,7 +507,6 @@ export class Application extends Koa {
 
     // Setup global middleware
 
-    this.use(ensureRunning(this))
     this.use(attachLogger(this.logger))
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))

@@ -33,6 +33,7 @@ export class AdminController extends Controller {
     this.mode = this.config.mode || (
       this.app.config.env === 'development' ? 'development' : 'production'
     )
+    this.closed = false
   }
 
   getPath(name) {
@@ -81,13 +82,21 @@ export class AdminController extends Controller {
     // Shield admin views against unauthorized access.
     const authorization = this.processAuthorize(this.authorize)
     return async (ctx, next) => {
-      if (ctx.url === '/dito.js') {
-        // Return without calling `next()`
-        return this.sendDitoObject(ctx)
-      } else if (/\/views\b/.test(ctx.url)) {
-        await this.handleAuthorization(authorization, ctx)
+      if (this.closed) {
+        // Avoid strange behavior during shut-down of the vite dev server.
+        // Sending back a 408 response seems to work best, while a 503 sadly
+        // would put the client into a state that prevents the server from a
+        // proper shut-down, and a 205 would kill future hot-reloads.
+        ctx.status = 408 // Request Timeout
+      } else if (ctx.url === '/dito.js') {
+        // Don't call `next()`
+        this.sendDitoObject(ctx)
+      } else {
+        if (/\/views\b/.test(ctx.url)) {
+          await this.handleAuthorization(authorization, ctx)
+        }
+        await next()
       }
-      await next()
     }
   }
 
@@ -131,7 +140,7 @@ export class AdminController extends Controller {
       }
     })
 
-    let closed = false
+    this.closed = false
 
     // Monkey-patch `process.exit()` to filter out the calls caused by vite's
     // handling of SIGTERM, see: https://github.com/vitejs/vite/issues/7627
@@ -140,18 +149,19 @@ export class AdminController extends Controller {
       if (new Error().stack.includes('/vite/dist/')) {
         // vite's own `exitProcess()` just called `process.exit(), and this
         // means it has already called `server.close()` internally.
-        closed = true
+        this.closed = true
         process.exit = exit
       } else {
         exit(code)
       }
     }
 
-    this.app.once('before:stop', () => {
+    this.app.once('after:stop', () => {
       // For good timing it seems crucial to not add more ticks with async
       // signature, so we directly return the `server.close()` promise instead.
-      if (!closed) {
-        closed = true
+      process.exit = exit
+      if (!this.closed) {
+        this.closed = true
         return server.close()
       }
     })
