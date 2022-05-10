@@ -1,11 +1,11 @@
 import pico from 'picocolors'
 import { migrate } from './migrate.js'
 
-export async function reset(knex, config) {
+export async function reset(knex) {
   const batches = []
   const migrations = []
   while (true) {
-    const [batch, log] = await knex.migrate.rollback(config)
+    const [batch, log] = await knex.migrate.rollback()
     if (log.length === 0) break
     batches.push(batch)
     migrations.push(...log)
