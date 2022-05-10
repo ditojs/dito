@@ -32,20 +32,20 @@
     "packages/*"
   ],
   "devDependencies": {
-    "c8": "^7.11.0",
+    "c8": "^7.11.2",
     "cross-env": "^7.0.3",
-    "eslint": "^8.12.0",
-    "eslint-config-standard": "^16.0.3",
+    "eslint": "^8.15.0",
+    "eslint-config-standard": "^17.0.0",
     "eslint-friendly-formatter": "^4.0.1",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-n": "^15.2.0",
     "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-vue": "^8.6.0",
+    "eslint-plugin-vue": "^8.7.1",
     "full-icu": "^1.4.0",
-    "husky": "^7.0.4",
+    "husky": "^8.0.1",
     "lerna": "^4.0.0",
-    "lint-staged": "^12.3.7",
-    "vitest": "^0.8.4",
+    "lint-staged": "^12.4.1",
+    "vitest": "^0.12.3",
     "vue-eslint-parser": "^8.3.0"
   },
   "packageManager": "yarn@3.2.0"
