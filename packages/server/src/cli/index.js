@@ -40,8 +40,14 @@ async function execute() {
     }
     if (isFunction(arg)) {
       arg = await arg()
-    } else if (isPlainObject(arg) && arg.knex) {
+    }
+    if (isPlainObject(arg) && arg.knex) {
+      // A config object with a knex field was passed in, create a knex object
+      // from it to pass on to the execute function.
       arg = Knex(arg.knex)
+      // Also add `knex.migrations` config as the first argument to `execute()`,
+      // so db:migrate & co. can receive migration configuration settings.
+      args.unshift(arg.knex.migrations || null)
     }
     const res = await execute(arg, ...args)
     process.exit(res === true ? 0 : 1)
