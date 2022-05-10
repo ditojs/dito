@@ -7,7 +7,7 @@ describe('shuffle()', () => {
     expect(shuffle(array)).not.toBe(array)
   })
 
-  it('should contain the same elements after a collection is shuffled', () => {
+  it(`should contain the same elements after a collection is shuffled and sorted again`, () => {
     expect(shuffle(array).sort()).toStrictEqual(array)
   })
 
