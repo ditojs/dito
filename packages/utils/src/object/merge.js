@@ -11,10 +11,7 @@ export function merge(target, ...sources) {
         ? clone(target)
         : target
       for (const key of Object.keys(source)) {
-        const value = _merge(target[key], source[key], true)
-        if (value !== undefined || !(key in result)) {
-          result[key] = value
-        }
+        result[key] = _merge(target[key], source[key], true)
       }
       return result
     }
