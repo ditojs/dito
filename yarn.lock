@@ -546,7 +546,7 @@ __metadata:
     tiptap-commands: ^1.17.1
     tiptap-extensions: ^1.35.2
     to-pascal-case: ^1.0.0
-    vite: ^2.9.8
+    vite: ^2.9.9
     vite-plugin-vue2: ^2.0.0
     vue: ^2.6.14
     vue-color: ^2.8.1
@@ -598,7 +598,7 @@ __metadata:
     "@originjs/vite-plugin-commonjs": ^1.0.3
     ajv: ^8.11.0
     ajv-formats: ^2.1.1
-    aws-sdk: ^2.1131.0
+    aws-sdk: ^2.1135.0
     axios: ^0.27.2
     bcryptjs: ^2.4.3
     bytes: ^3.1.2
@@ -636,7 +636,7 @@ __metadata:
     pluralize: ^8.0.0
     repl: ^0.1.3
     uuid: ^8.3.2
-    vite: ^2.9.8
+    vite: ^2.9.9
     vite-plugin-vue2: ^2.0.0
     vue: ^2.6.14
     vue-template-compiler: ^2.6.14
@@ -657,7 +657,7 @@ __metadata:
     "@soda/get-current-script": ^1.0.2
     pug: ^3.0.2
     sass: 1.51.0
-    vite: ^2.9.8
+    vite: ^2.9.9
     vite-plugin-vue2: ^2.0.0
     vue-template-compiler: ^2.6.14
   languageName: unknown
@@ -2441,9 +2441,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1131.0":
-  version: 2.1131.0
-  resolution: "aws-sdk@npm:2.1131.0"
+"aws-sdk@npm:^2.1135.0":
+  version: 2.1135.0
+  resolution: "aws-sdk@npm:2.1135.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -2454,7 +2454,7 @@ __metadata:
     url: 0.10.3
     uuid: 3.3.2
     xml2js: 0.4.19
-  checksum: 479bc014d767cab9064286f01f63a8643ee0e1959e3235b74407ee7f916a6aae805229444a176361f7dd4d3c5e455e809908cda6333ab9324b9265c158583602
+  checksum: 20a5bdd3dc68b59dc4275916c458987520e1b4fbcab4cce9d0de1222d30ac3e58b1eb21079859b9d150a52419f69fe7c5db8a3375591fd1464388ecc74ee5e19
   languageName: node
   linkType: hard
 
@@ -2672,9 +2672,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"c8@npm:^7.11.2":
-  version: 7.11.2
-  resolution: "c8@npm:7.11.2"
+"c8@npm:^7.11.3":
+  version: 7.11.3
+  resolution: "c8@npm:7.11.3"
   dependencies:
     "@bcoe/v8-coverage": ^0.2.3
     "@istanbuljs/schema": ^0.1.3
@@ -2690,7 +2690,7 @@ __metadata:
     yargs-parser: ^20.2.9
   bin:
     c8: bin/c8.js
-  checksum: 86b515f3936e3e4ddd7843ca24740072f3714d1d96a400f4d7bdbd2746b6a9740d76484a2f838a014f2d4389b662db49269d49e02cd4009e7f83008b7bf39872
+  checksum: 9f7272bb5fd3d4f7d1c2f7fb986c1025a09c3afefce168c3ba62497dd6294f887c1678d23736126485ec534263ec6b4ed9b4bd2a05aa8d1682c949c3db1f5359
   languageName: node
   linkType: hard
 
@@ -3697,7 +3697,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dito@workspace:."
   dependencies:
-    c8: ^7.11.2
+    c8: ^7.11.3
     cross-env: ^7.0.3
     eslint: ^8.15.0
     eslint-config-standard: ^17.0.0
@@ -3710,8 +3710,8 @@ __metadata:
     husky: ^8.0.1
     lerna: ^4.0.0
     lint-staged: ^12.4.1
-    vitest: ^0.12.3
-    vue-eslint-parser: ^8.3.0
+    vitest: ^0.12.6
+    vue-eslint-parser: ^9.0.1
   languageName: unknown
   linkType: soft
 
@@ -4384,7 +4384,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"espree@npm:^9.0.0, espree@npm:^9.3.2":
+"espree@npm:^9.0.0, espree@npm:^9.3.1, espree@npm:^9.3.2":
   version: 9.3.2
   resolution: "espree@npm:9.3.2"
   dependencies:
@@ -9352,7 +9352,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.0.0, semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.3.2, semver@npm:^7.3.4, semver@npm:^7.3.5":
+"semver@npm:^7.0.0, semver@npm:^7.1.1, semver@npm:^7.1.3, semver@npm:^7.3.2, semver@npm:^7.3.4, semver@npm:^7.3.5, semver@npm:^7.3.6":
   version: 7.3.7
   resolution: "semver@npm:7.3.7"
   dependencies:
@@ -10678,9 +10678,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"vite@npm:^2.9.8":
-  version: 2.9.8
-  resolution: "vite@npm:2.9.8"
+"vite@npm:^2.9.8, vite@npm:^2.9.9":
+  version: 2.9.9
+  resolution: "vite@npm:2.9.9"
   dependencies:
     esbuild: ^0.14.27
     fsevents: ~2.3.2
@@ -10703,13 +10703,13 @@ fsevents@~2.3.2:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 7de3450bec4caa06f4540d1d252563ef0b7e1bdd167d04abf03db72cfd8c9a93879e18861283bc7d075e1d094b78b71770ca36f9b965bdf28c66665eafdc29dc
+  checksum: 9292b8ba510a393d0c61c407ebfb4eaa818b2d8d106b3476cdc94cb57a0c59348a535936d698db04b35910a1cfdb16aeaf872f0f995b54cf6d7ed31bc7886deb
   languageName: node
   linkType: hard
 
-"vitest@npm:^0.12.3":
-  version: 0.12.3
-  resolution: "vitest@npm:0.12.3"
+"vitest@npm:^0.12.6":
+  version: 0.12.6
+  resolution: "vitest@npm:0.12.6"
   dependencies:
     "@types/chai": ^4.3.1
     "@types/chai-subset": ^1.3.3
@@ -10734,7 +10734,7 @@ fsevents@~2.3.2:
       optional: true
   bin:
     vitest: vitest.mjs
-  checksum: 78e8d5e14e349c53b3e31a1ae7416175cda08d87ed44d4a25f906ea3a04488355dd650cf7a836a9150f418ccaaaf8fa90d7eb88cce606ca08664459c6b029a62
+  checksum: 8a8d3bc61ef9324663ad47378fc70631a8514b1ccfdbf1a5efc50a90665875db15bb4b89a9877dbdc2d99cc5718274901e6982252fa20ace499b05451dc02508
   languageName: node
   linkType: hard
 
@@ -10757,7 +10757,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"vue-eslint-parser@npm:^8.0.1, vue-eslint-parser@npm:^8.3.0":
+"vue-eslint-parser@npm:^8.0.1":
   version: 8.3.0
   resolution: "vue-eslint-parser@npm:8.3.0"
   dependencies:
@@ -10771,6 +10771,23 @@ fsevents@~2.3.2:
   peerDependencies:
     eslint: ">=6.0.0"
   checksum: 8cc751e9fc2bfba93664ad8945732ab1c97791f9123e703de8669b65670d1e01906d80436bf4932d7ee6fa6174ed4545e8abb059206c88f4bd71957ca6cf7ba8
+  languageName: node
+  linkType: hard
+
+"vue-eslint-parser@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "vue-eslint-parser@npm:9.0.1"
+  dependencies:
+    debug: ^4.3.4
+    eslint-scope: ^7.1.1
+    eslint-visitor-keys: ^3.3.0
+    espree: ^9.3.1
+    esquery: ^1.4.0
+    lodash: ^4.17.21
+    semver: ^7.3.6
+  peerDependencies:
+    eslint: ">=6.0.0"
+  checksum: 56c48ab18eeb5c381dcf68a16ce6fbb8b2b23270dc5929a63b150f07f1dac2d7aeb535532bdeae71ab9e3b3c8688caa84ee1bd5b458e7cfba8d5ac9ee7d41913
   languageName: node
   linkType: hard
 
