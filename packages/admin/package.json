@@ -61,8 +61,8 @@
   "devDependencies": {
     "@ditojs/build": "^1.5.5",
     "pug": "^3.0.2",
-    "sass": "1.51.0",
+    "sass": "1.52.1",
     "vite": "^2.9.9",
-    "vite-plugin-vue2": "^2.0.0"
+    "vite-plugin-vue2": "^2.0.1"
   }
 }
