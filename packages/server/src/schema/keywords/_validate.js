@@ -1,4 +1,4 @@
-import Ajv from 'ajv'
+import Ajv from 'ajv/dist/2020.js'
 import { isNumber, isArray } from '@ditojs/utils'
 
 export const validate = {

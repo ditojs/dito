@@ -366,7 +366,6 @@ export class Model extends objection.Model {
       merge(schema, this.definition.schema)
       return {
         $id: this.name,
-        $schema: 'http://json-schema.org/draft-07/schema',
         ...schema
       }
     }, {})

@@ -2,11 +2,12 @@ export const range = {
   type: ['number', 'integer'],
   metaSchema: {
     type: 'array',
-    items: [
+    prefixItems: [
       { type: 'number' },
       { type: 'number' }
     ],
-    additionalItems: false
+    minItems: 2,
+    items: false
   },
   macro(config) {
     return {

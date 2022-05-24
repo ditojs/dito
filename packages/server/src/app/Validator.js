@@ -1,5 +1,5 @@
 import objection from 'objection'
-import Ajv from 'ajv'
+import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import { formatJson } from '../utils/index.js'
