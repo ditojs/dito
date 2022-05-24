@@ -527,12 +527,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^1.6.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^1.7.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@ditojs/build": ^1.5.5
-    "@ditojs/ui": ^1.6.0
+    "@ditojs/build": ^1.7.0
+    "@ditojs/ui": ^1.7.0
     "@ditojs/utils": ^1.6.0
     axios: ^0.27.2
     codeflask: ^1.4.1
@@ -561,7 +561,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^1.5.5, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^1.7.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
@@ -589,8 +589,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
-    "@ditojs/admin": ^1.6.0
-    "@ditojs/build": ^1.5.5
+    "@ditojs/admin": ^1.7.0
+    "@ditojs/build": ^1.7.0
     "@ditojs/router": ^1.6.0
     "@ditojs/utils": ^1.6.0
     "@koa/cors": ^3.3.0
@@ -648,11 +648,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^1.6.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^1.7.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@ditojs/build": ^1.5.5
+    "@ditojs/build": ^1.7.0
     "@ditojs/utils": ^1.6.0
     "@soda/get-current-script": ^1.0.2
     pug: ^3.0.2
