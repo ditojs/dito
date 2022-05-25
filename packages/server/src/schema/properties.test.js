@@ -118,6 +118,25 @@ describe('convertSchema()', () => {
     })
   })
 
+  it('preserves JSON schema-style `required` arrays', () => {
+    expect(convertSchema({
+      type: 'object',
+      required: ['myString', 'myNumber'],
+      properties: {
+        myString: { type: 'string' },
+        myNumber: { type: 'number' }
+      }
+    })).toEqual({
+      type: 'object',
+      properties: {
+        myString: { type: 'string' },
+        myNumber: { type: 'number' }
+      },
+      additionalProperties: false,
+      required: ['myString', 'myNumber']
+    })
+  })
+
   it(`expands 'object' schemas with properties to JSON schemas allowing no additional properties`, () => {
     expect(convertSchema({
       type: 'object',
@@ -514,6 +533,60 @@ describe('convertSchema()', () => {
       },
       additionalProperties: false,
       required: ['myObject']
+    })
+  })
+
+  it('processes discriminator schemas correctly', () => {
+    expect(convertSchema({
+      type: 'object',
+      discriminator: { propertyName: 'foo' },
+      required: ['foo'],
+      oneOf: [
+        {
+          properties: {
+            foo: { const: 'x' },
+            a: {
+              type: 'string',
+              required: true
+            }
+          }
+        },
+        {
+          properties: {
+            foo: { enum: ['y', 'z'] },
+            b: {
+              type: 'string',
+              required: true
+            }
+          }
+        }
+      ]
+    })).toEqual({
+      type: 'object',
+      discriminator: { propertyName: 'foo' },
+      required: ['foo'],
+      oneOf: [
+        {
+          properties: {
+            foo: { const: 'x' },
+            a: {
+              type: 'string',
+              format: 'required'
+            }
+          },
+          required: ['a']
+        },
+        {
+          properties: {
+            foo: { enum: ['y', 'z'] },
+            b: {
+              type: 'string',
+              format: 'required'
+            }
+          },
+          required: ['b']
+        }
+      ]
     })
   })
 })
