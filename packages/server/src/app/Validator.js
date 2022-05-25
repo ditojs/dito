@@ -368,6 +368,7 @@ const validatorOptions = {
   $data: false,
   $comment: false,
   coerceTypes: false,
+  discriminator: true,
   multipleOfPrecision: false,
   ownProperties: true,
   removeAdditional: false,

@@ -390,7 +390,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('convert schemas within oneOf properties', () => {
+  it('converts schemas within oneOf properties', () => {
     expect(convertSchema({
       type: 'object',
       properties: {
@@ -473,7 +473,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('support `required: true` on object', () => {
+  it('supports `required: true` on object', () => {
     expect(convertSchema({
       type: 'object',
       properties: {
