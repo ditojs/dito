@@ -15,7 +15,7 @@ import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
-import { formatJson, deprecate } from '../utils/index.js'
+import { formatJson, getRandomFreePort, deprecate } from '../utils/index.js'
 
 export class AdminController extends Controller {
   // @override
@@ -131,6 +131,11 @@ export class AdminController extends Controller {
       ...config,
       server: {
         middlewareMode: 'html',
+        hmr: {
+          // Use a random free port instead of vite's default 24678, since we
+          // may be running multiple servers in parallel (e.g. e2e and dev).
+          port: await getRandomFreePort()
+        },
         watch: {
           // Watch the @ditojs packages while in dev mode, although they are
           // inside the node_modules folder.
