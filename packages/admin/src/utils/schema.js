@@ -87,7 +87,9 @@ export async function resolveSchema(schema, unwrapModule = false) {
       if (keys.length === 1) {
         const name = keys[0]
         schema = schema[name]
-        schema.name = name
+        if (name !== 'default') {
+          schema.name = name
+        }
       }
     }
   }
