@@ -360,7 +360,10 @@ export class Model extends objection.Model {
 
   static get jsonSchema() {
     return this._getCached('jsonSchema', () => {
-      const schema = convertSchema(this.definition.properties)
+      const schema = convertSchema({
+        type: 'object',
+        properties: this.definition.properties
+      })
       addRelationSchemas(this, schema.properties)
       // Merge in root-level schema additions
       merge(schema, this.definition.schema)

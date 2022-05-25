@@ -1,19 +1,14 @@
 import { isObject, isArray, isString } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
-  if (isString(schema)) {
-    // TODO: Consider removing string short-hand
-    // Nested shorthand expansion
-    schema = { type: schema }
-  } else if (isArray(schema)) {
+  if (isArray(schema)) {
     // Needed for allOf, anyOf, oneOf, not, items:
     schema = schema.map(entry => convertSchema(entry, options))
-  }
-  if (isObject(schema)) {
+  } else if (isObject(schema)) {
     const { type } = schema
     // Create a shallow clone so we can modify and return, excluding our
     // `required` boolean which will get converted to a format further down, and
-    // to JSON schema's `required` array through `expandProperties()`:
+    // to JSON schema's `required` array through `convertProperties()`:
     const { required, ...rest } = schema
     schema = rest
     if (isString(type)) {
@@ -24,7 +19,7 @@ export function convertSchema(schema, options = {}) {
         if (jsonType === 'object') {
           let setAdditionalProperties = false
           if (schema.properties) {
-            const { properties, required } = expandProperties(
+            const { properties, required } = convertProperties(
               schema.properties,
               options
             )
@@ -35,7 +30,8 @@ export function convertSchema(schema, options = {}) {
             setAdditionalProperties = true
           }
           if (schema.patternProperties) {
-            const { properties } = expandProperties(
+            // TODO: Don't we need to handle required here too?
+            const { properties } = convertProperties(
               schema.patternProperties,
               options
             )
@@ -87,13 +83,6 @@ export function convertSchema(schema, options = {}) {
         }
       }
     } else {
-      // This is a root properties schema or nested object without type that
-      // may need expanding.
-      const expanded = expandSchemaShorthand(schema)
-      schema = expanded !== schema
-        // Only call convertSchema() if it actually changed...
-        ? convertSchema(expanded, options)
-        : expanded
       // Handle nested allOf, anyOf, oneOf, not properties
       for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
         if (key in schema) {
@@ -119,63 +108,16 @@ export function convertSchema(schema, options = {}) {
   return schema
 }
 
-export function expandProperties(schemaProperties, options) {
+export function convertProperties(schemaProperties, options) {
   const properties = {}
   const required = []
-  for (let [key, property] of Object.entries(schemaProperties)) {
-    property = expandSchemaShorthand(property)
+  for (const [key, property] of Object.entries(schemaProperties)) {
     properties[key] = convertSchema(property, options)
     if (property?.required) {
       required.push(key)
     }
   }
   return { properties, required }
-}
-
-export function expandSchemaShorthand(schema) {
-  // TODO: Consider removing all short-hand schema expansion.
-  if (isString(schema)) {
-    schema = {
-      type: schema
-    }
-  } else if (isArray(schema)) {
-    schema = {
-      type: 'array',
-      items: schema.length > 1 ? schema : schema[0],
-      // The array short-forms sets an empty array as the default.
-      default: []
-    }
-  } else if (
-    // Expand objects to `type: 'object'`...
-    isObject(schema) &&
-    !(
-      // ...but only if they don't define any of these properties:
-      isString(schema.type) ||
-      isString(schema.$ref) ||
-      isArray(schema.allOf) ||
-      isArray(schema.anyOf) ||
-      isArray(schema.oneOf) ||
-      isObject(schema.not)
-    )
-  ) {
-    // Separate object short-hand into property definitions and other fields.
-    const properties = {}
-    const rest = {}
-    for (const [key, value] of Object.entries(schema)) {
-      // Property definitions are either objects or string / array short-hands:
-      if (isObject(value) || isString(value) || isArray(value)) {
-        properties[key] = value
-      } else {
-        rest[key] = value
-      }
-    }
-    schema = {
-      type: 'object',
-      properties,
-      ...rest
-    }
-  }
-  return schema
 }
 
 function addFormat(schema, newFormat) {
