@@ -404,91 +404,129 @@ describe('convertSchema()', () => {
       additionalProperties: false
     })
   })
-})
 
-it('convert schemas within oneOf properties', () => {
-  expect(convertSchema({
-    myList: {
-      type: 'array',
-      items: {
-        oneOf: [
-          {
-            prop1: {
-              type: 'string',
-              required: true
-            },
-            prop2: {
-              type: 'number',
-              required: true
-            }
-          },
-          {
-            type: 'object',
-            properties: {
-              prop3: {
-                type: 'string',
-                required: true
-              },
-              prop4: {
-                type: 'number',
-                required: true
-              }
-            }
-          }
-        ]
-      }
-    }
-  })).toEqual({
-    type: 'object',
-    properties: {
+  it('convert schemas within oneOf properties', () => {
+    expect(convertSchema({
       myList: {
         type: 'array',
         items: {
           oneOf: [
             {
-              type: 'object',
-              properties: {
-                prop1: {
-                  type: 'string',
-                  format: 'required'
-                },
-                prop2: {
-                  type: 'number',
-                  format: 'required'
-                }
+              prop1: {
+                type: 'string',
+                required: true
               },
-              required: ['prop1', 'prop2'],
-              additionalProperties: false
+              prop2: {
+                type: 'number',
+                required: true
+              }
             },
             {
               type: 'object',
               properties: {
                 prop3: {
                   type: 'string',
-                  format: 'required'
+                  required: true
                 },
                 prop4: {
                   type: 'number',
-                  format: 'required'
+                  required: true
                 }
-              },
-              required: ['prop3', 'prop4'],
-              additionalProperties: false
+              }
             }
           ]
         }
       }
-    },
-    additionalProperties: false
-  })
-})
-
-it('support `required: true` on object', () => {
-  expect(convertSchema({
-    myObject: {
+    })).toEqual({
       type: 'object',
-      required: true,
       properties: {
+        myList: {
+          type: 'array',
+          items: {
+            oneOf: [
+              {
+                type: 'object',
+                properties: {
+                  prop1: {
+                    type: 'string',
+                    format: 'required'
+                  },
+                  prop2: {
+                    type: 'number',
+                    format: 'required'
+                  }
+                },
+                required: ['prop1', 'prop2'],
+                additionalProperties: false
+              },
+              {
+                type: 'object',
+                properties: {
+                  prop3: {
+                    type: 'string',
+                    format: 'required'
+                  },
+                  prop4: {
+                    type: 'number',
+                    format: 'required'
+                  }
+                },
+                required: ['prop3', 'prop4'],
+                additionalProperties: false
+              }
+            ]
+          }
+        }
+      },
+      additionalProperties: false
+    })
+  })
+
+  it('support `required: true` on object', () => {
+    expect(convertSchema({
+      myObject: {
+        type: 'object',
+        required: true,
+        properties: {
+          prop1: {
+            type: 'string',
+            required: true
+          },
+          prop2: {
+            type: 'number',
+            required: true
+          }
+        }
+      }
+    })).toEqual({
+      type: 'object',
+      properties: {
+        myObject: {
+          type: 'object',
+          format: 'required',
+          properties: {
+            prop1: {
+              format: 'required',
+              type: 'string'
+            },
+            prop2: {
+              format: 'required',
+              type: 'number'
+            }
+          },
+          additionalProperties: false,
+          required: ['prop1', 'prop2']
+        }
+      },
+      additionalProperties: false,
+      required: ['myObject']
+    })
+  })
+
+  it('support `required` on object short-hand', () => {
+    expect(convertSchema({
+      myObject: {
+        required: true,
         prop1: {
           type: 'string',
           required: true
@@ -498,67 +536,29 @@ it('support `required: true` on object', () => {
           required: true
         }
       }
-    }
-  })).toEqual({
-    type: 'object',
-    properties: {
-      myObject: {
-        type: 'object',
-        format: 'required',
-        properties: {
-          prop1: {
-            format: 'required',
-            type: 'string'
+    })).toEqual({
+      type: 'object',
+      properties: {
+        myObject: {
+          type: 'object',
+          format: 'required',
+          properties: {
+            prop1: {
+              type: 'string',
+              format: 'required'
+            },
+            prop2: {
+              type: 'number',
+              format: 'required'
+            }
           },
-          prop2: {
-            format: 'required',
-            type: 'number'
-          }
-        },
-        additionalProperties: false,
-        required: ['prop1', 'prop2']
-      }
-    },
-    additionalProperties: false,
-    required: ['myObject']
-  })
-})
-
-it('support `required` on object short-hand', () => {
-  expect(convertSchema({
-    myObject: {
-      required: true,
-      prop1: {
-        type: 'string',
-        required: true
+          additionalProperties: false,
+          required: ['prop1', 'prop2']
+        }
       },
-      prop2: {
-        type: 'number',
-        required: true
-      }
-    }
-  })).toEqual({
-    type: 'object',
-    properties: {
-      myObject: {
-        type: 'object',
-        format: 'required',
-        properties: {
-          prop1: {
-            type: 'string',
-            format: 'required'
-          },
-          prop2: {
-            type: 'number',
-            format: 'required'
-          }
-        },
-        additionalProperties: false,
-        required: ['prop1', 'prop2']
-      }
-    },
-    additionalProperties: false,
-    required: ['myObject']
+      additionalProperties: false,
+      required: ['myObject']
+    })
   })
 })
 
