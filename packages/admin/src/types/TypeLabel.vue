@@ -13,6 +13,7 @@ import TypeComponent from '../TypeComponent.js'
 
 // @vue/component
 export default TypeComponent.register('label', {
+  excludeValue: true,
   generateLabel: false
 })
 </script>
