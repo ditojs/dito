@@ -1,4 +1,4 @@
-import aws from 'aws-sdk'
+import { S3 } from '@aws-sdk/client-s3'
 import multerS3 from 'multer-s3'
 import { fileTypeFromBuffer } from 'file-type'
 import isSvg from 'is-svg'
@@ -17,7 +17,7 @@ export class S3Storage extends Storage {
       bucket,
       ...options
     } = config
-    this.s3 = new aws.S3(s3)
+    this.s3 = new S3(s3)
     this.acl = acl
     this.bucket = bucket
 
@@ -101,13 +101,13 @@ export class S3Storage extends Storage {
 
   // @override
   async _addFile(file, buffer) {
-    const data = await this.s3.upload({
+    const data = await this.s3.putObject({
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.key,
       ContentType: file.type,
       Body: buffer
-    }).promise()
+    })
     // "Convert" `file` to something looking more like a S3 `storageFile`.
     // For now, only the `location` property is of interest:
     return {
@@ -121,7 +121,7 @@ export class S3Storage extends Storage {
     await this.s3.deleteObject({
       Bucket: this.bucket,
       Key: file.key
-    }).promise()
+    })
     // TODO: Check for errors and throw?
   }
 
@@ -129,12 +129,12 @@ export class S3Storage extends Storage {
   async _readFile(file) {
     const {
       ContentType: type,
-      Body: data
+      Body: stream
     } = await this.s3.getObject({
       Bucket: this.bucket,
       Key: file.key
-    }).promise()
-    const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)
+    })
+    const buffer = await streamToBuffer(stream)
     // See `AssetFile.data` setter:
     buffer.type = type
     return buffer
@@ -146,8 +146,8 @@ export class S3Storage extends Storage {
     const params = { Bucket: this.bucket }
     let result
     do {
-      result = await this.s3.listObjectsV2(params).promise()
-      for (const { Key: key } of result.Contents) {
+      result = await this.s3.listObjectsV2(params)
+      for (const { Key: key } of result.Contents ?? []) {
         files.push(key)
       }
       // Continue it if results are truncated.
@@ -155,4 +155,13 @@ export class S3Storage extends Storage {
     } while (result.IsTruncated)
     return files
   }
+}
+
+function streamToBuffer(stream) {
+  return new Promise((resolve, reject) => {
+    const buffers = []
+    stream.on('data', chunk => buffers.push(chunk))
+    stream.on('end', () => resolve(Buffer.concat(buffers)))
+    stream.on('error', err => reject(err))
+  })
 }
