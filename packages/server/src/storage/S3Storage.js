@@ -4,6 +4,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import isSvg from 'is-svg'
 import { Storage } from './Storage.js'
 import { PassThrough } from 'stream'
+import consumers from 'stream/consumers'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -134,7 +135,7 @@ export class S3Storage extends Storage {
       Bucket: this.bucket,
       Key: file.key
     })
-    const buffer = await streamToBuffer(stream)
+    const buffer = await consumers.buffer(stream)
     // See `AssetFile.data` setter:
     buffer.type = type
     return buffer
@@ -155,13 +156,4 @@ export class S3Storage extends Storage {
     } while (result.IsTruncated)
     return files
   }
-}
-
-function streamToBuffer(stream) {
-  return new Promise((resolve, reject) => {
-    const buffers = []
-    stream.on('data', chunk => buffers.push(chunk))
-    stream.on('end', () => resolve(Buffer.concat(buffers)))
-    stream.on('error', err => reject(err))
-  })
 }
