@@ -1,4 +1,5 @@
 import { isString, isObject, asArray, clone } from '@ditojs/utils'
+import { convertModelsToJsonObjects } from '../utils/model.js'
 
 export default class ControllerAction {
   constructor(
@@ -199,16 +200,17 @@ export default class ControllerAction {
 
   async validateResult(result) {
     if (this.returns.validate) {
+      const jsonResult = convertModelsToJsonObjects(result)
       const returnsName = this.handler.returns.name
       // Use dataName if no name is given, see:
       // Application.compileParametersValidator(returns, { dataName })
       const data = {
-        [returnsName || this.returns.dataName]: result
+        [returnsName || this.returns.dataName]: jsonResult
       }
 
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => returnsName ? data : result
+      const getResult = () => returnsName ? data : jsonResult
       try {
         await this.returns.validate(data)
         return getResult()
