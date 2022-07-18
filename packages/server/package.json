@@ -89,7 +89,8 @@
     "@types/koa__cors": "^3.0.1",
     "@types/node": "^14.14.10",
     "knex": "^2.1.0",
-    "objection": "^3.0.1"
+    "objection": "^3.0.1",
+    "type-fest": "^2.16.0"
   },
   "types": "types"
 }
