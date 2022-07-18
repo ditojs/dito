@@ -547,6 +547,7 @@ __metadata:
     tiptap-extensions: ^1.35.2
     to-pascal-case: ^1.0.0
     type-fest: ^2.16.0
+    typescript: ^4.7.4
     vite: ^2.9.14
     vite-plugin-vue2: ^2.0.1
     vue: ^2.7.4
@@ -646,6 +647,7 @@ __metadata:
     pluralize: ^8.0.0
     repl: ^0.1.3
     type-fest: ^2.16.0
+    typescript: ^4.7.4
     uuid: ^8.3.2
     vite: ^2.9.14
     vite-plugin-vue2: ^2.0.1
@@ -679,6 +681,7 @@ __metadata:
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     punycode: ^2.1.1
+    typescript: ^4.7.4
   languageName: unknown
   linkType: soft
 
@@ -10814,6 +10817,26 @@ fsevents@~2.3.2:
   version: 0.0.6
   resolution: "typedarray@npm:0.0.6"
   checksum: 33b39f3d0e8463985eeaeeacc3cb2e28bc3dfaf2a5ed219628c0b629d5d7b810b0eb2165f9f607c34871d5daa92ba1dc69f49051cf7d578b4cbd26c340b9d1b1
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^4.7.4":
+  version: 4.7.4
+  resolution: "typescript@npm:4.7.4"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 5750181b1cd7e6482c4195825547e70f944114fb47e58e4aa7553e62f11b3f3173766aef9c281783edfd881f7b8299cf35e3ca8caebe73d8464528c907a164df
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^4.7.4#~builtin<compat/typescript>":
+  version: 4.7.4
+  resolution: "typescript@patch:typescript@npm%3A4.7.4#~builtin<compat/typescript>::version=4.7.4&hash=bda367"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 96d3030cb01143570567cb4f3a616b10df65f658f0e74e853e77a089a6a954e35c800be7db8b9bfe9a1ae05d9c2897e281359f65e4caa1caf266368e1c4febd3
   languageName: node
   linkType: hard
 

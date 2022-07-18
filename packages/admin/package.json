@@ -17,12 +17,14 @@
   },
   "files": [
     "src/",
-    "dist/"
+    "dist/",
+    "types/"
   ],
   "scripts": {
     "build": "vite build",
     "watch": "yarn build --mode 'development' --watch",
-    "prepare": "yarn build"
+    "prepare": "yarn build",
+    "types": "tsc --noEmit types/index.d.ts"
   },
   "engines": {
     "node": ">= 16.0.0",
@@ -63,6 +65,7 @@
     "pug": "^3.0.2",
     "sass": "1.53.0",
     "type-fest": "^2.16.0",
+    "typescript": "^4.7.4",
     "vite": "^2.9.14",
     "vite-plugin-vue2": "^2.0.1"
   },
