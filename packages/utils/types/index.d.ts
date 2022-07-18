@@ -118,16 +118,9 @@ export function clone<T extends any>(arg: T, iteratee?: (arg: any) => void): T
 export function equals(arg1: any, arg2: any): boolean
 
 // TODO: document groupBy
-export function groupBy<T, K extends keyof any>(
+export function groupBy<T, K extends string | number | Symbol>(
   list: T[], callback: (item: T) => K
-): {
-  [index: K]: T[]
-}
-
-export function groupBy<T extends object>(
-  collection: T,
-  iteratee?: ValueIteratee<T, NotVoid>
-): Dictionary<Array<T[keyof T]>>
+): Record<K, T[]>
 
 // TODO: document merge
 export function merge<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
