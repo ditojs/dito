@@ -10,8 +10,8 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import NumberMixin from '@/mixins/NumberMixin'
+import TypeComponent from '../TypeComponent.js'
+import NumberMixin from '../mixins/NumberMixin.js'
 
 // @vue/component
 export default TypeComponent.register('progress', {

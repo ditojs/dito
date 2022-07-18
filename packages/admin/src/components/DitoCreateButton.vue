@@ -1,6 +1,6 @@
 <template lang="pug">
   .dito-create-button
-    template(v-if="hasPulldown")
+    template(v-if="showPulldown")
       button.dito-button(
         type="button"
         @mousedown.stop="onPulldownMouseDown()"
@@ -10,7 +10,7 @@
       ul.dito-pulldown(
         :class="{ 'dito-open': pulldown.open }"
       )
-        li(v-for="(form, type) in schema.forms")
+        li(v-for="(form, type) in forms")
           a(
             v-if="isCreatable(form)"
             :class="`dito-type-${type}`"
@@ -19,8 +19,8 @@
           ) {{ getLabel(form) }}
     button.dito-button(
       v-else
-      :type="inlined ? 'button' : 'submit'"
-      @click="createItem()"
+      :type="isInlined ? 'button' : 'submit'"
+      @click="createItem(forms.default)"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
     ) {{ text }}
@@ -34,8 +34,9 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import PulldownMixin from '@/mixins/PulldownMixin'
+import DitoComponent from '../DitoComponent.js'
+import PulldownMixin from '../mixins/PulldownMixin.js'
+import { getFormSchemas, isInlined } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-create-button', {
@@ -49,12 +50,16 @@ export default DitoComponent.component('dito-create-button', {
   },
 
   computed: {
-    hasPulldown() {
-      return !!this.schema.forms
+    forms() {
+      return getFormSchemas(this.schema, this.context)
     },
 
-    inlined() {
-      return !!this.schema.inlined
+    isInlined() {
+      return isInlined(this.schema)
+    },
+
+    showPulldown() {
+      return Object.keys(this.forms).length > 1 || !this.forms.default
     }
   },
 
@@ -64,9 +69,9 @@ export default DitoComponent.component('dito-create-button', {
       return form.creatable !== false
     },
 
-    createItem(form = this.schema.form, type = null) {
+    createItem(form, type = null) {
       if (this.isCreatable(form)) {
-        if (this.inlined) {
+        if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {
           this.$router.push({
@@ -81,8 +86,8 @@ export default DitoComponent.component('dito-create-button', {
     },
 
     onPulldownSelect(type) {
-      this.createItem(this.schema.forms[type], type)
-      this.showPulldown(false)
+      this.createItem(this.forms[type], type)
+      this.setPulldownOpen(false)
     }
   }
 })

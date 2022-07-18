@@ -1,4 +1,4 @@
-import { ResponseError } from '@/errors'
+import { ResponseError } from '../errors/index.js'
 
 export function handleError() {
   return async (ctx, next) => {

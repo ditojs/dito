@@ -1,4 +1,4 @@
-import { labelize } from './labelize'
+import { labelize } from './labelize.js'
 
 describe('labelize()', () => {
   it('should labelize hyphenated text', () => {

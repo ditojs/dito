@@ -1,4 +1,4 @@
-import { mergeReversedOrNull } from '@/utils'
+import { mergeReversedOrNull } from '../../utils/index.js'
 
 export default function assets(values) {
   return mergeReversedOrNull(values)

@@ -1,8 +1,6 @@
-import { isArray } from '@/base'
-import { getCallback } from './getCallback'
+import { isArray } from '../base/index.js'
 
-export function groupBy(collection, iteratee) {
-  const callback = getCallback(iteratee)
+export function groupBy(collection, callback) {
   const array = isArray(collection)
     ? collection
     : Object.values(collection)

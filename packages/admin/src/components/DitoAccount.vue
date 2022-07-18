@@ -9,10 +9,11 @@
     )
       li(
         v-for="(label, value) of items"
-        @mousedown.stop="onPulldownMouseDown(value)"
-        @mouseup="onPulldownMouseUp(value)"
       )
-        a {{ label }}
+        a(
+          @mousedown.stop="onPulldownMouseDown(value)"
+          @mouseup="onPulldownMouseUp(value)"
+        ) {{ label }}
 </template>
 
 <style lang="sass">
@@ -23,8 +24,8 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import PulldownMixin from '@/mixins/PulldownMixin'
+import DitoComponent from '../DitoComponent.js'
+import PulldownMixin from '../mixins/PulldownMixin.js'
 
 // @vue/component
 export default DitoComponent.component('dito-account', {

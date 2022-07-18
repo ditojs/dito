@@ -2,4 +2,4 @@
 
 @function rounded($value, $precision: 1)
   $pow10: math.pow(10, $precision)
-  @return round($value * $pow10) / $pow10
+  @return calc(round($value * $pow10) / $pow10)

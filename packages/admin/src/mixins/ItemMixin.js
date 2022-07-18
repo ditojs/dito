@@ -1,8 +1,8 @@
-import DitoContext from '@/DitoContext'
+import DitoContext from '../DitoContext.js'
 import {
   getItemFormSchema, getItemId, getItemUid, isListSource
-} from '@/utils/schema'
-import { appendDataPath } from '@/utils/data'
+} from '../utils/schema.js'
+import { appendDataPath } from '../utils/data.js'
 import { isObject, isString, isFunction } from '@ditojs/utils'
 
 // @vue/component
@@ -56,7 +56,9 @@ export default {
 
       let formLabel
       const getFormLabel = () =>
-        (formLabel ||= this.getLabel(getItemFormSchema(sourceSchema, item)))
+        (formLabel ||= this.getLabel(
+          getItemFormSchema(sourceSchema, item, this.context)
+        ))
 
       let text
       let prefix
@@ -65,9 +67,10 @@ export default {
         const label = itemLabel.call(
           this,
           new DitoContext(this, {
-            name: undefined,
-            value: undefined,
+            nested: false,
             data: item,
+            value: item,
+            index,
 
             get dataPath() {
               return getDataPath()

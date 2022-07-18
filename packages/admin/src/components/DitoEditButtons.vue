@@ -8,7 +8,7 @@
     /* Prevent click events from bubbling to dito-label: */
     @click.stop
   )
-    // Firefox doesn't like <button> here, so use <a> instead:
+    //- Firefox doesn't like <button> here, so use <a> instead:
     a.dito-button(
       v-if="isDraggable"
       v-bind="getButtonAttributes(verbs.drag)"
@@ -41,13 +41,13 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
+import DitoComponent from '../DitoComponent.js'
 import { capitalize } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('dito-edit-buttons', {
   props: {
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },

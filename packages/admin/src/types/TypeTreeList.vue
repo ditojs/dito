@@ -40,9 +40,9 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import SourceMixin from '@/mixins/SourceMixin'
-import { hasForms } from '@/utils/schema'
+import TypeComponent from '../TypeComponent.js'
+import SourceMixin from '../mixins/SourceMixin.js'
+import { hasFormSchema, getFormSchemas } from '../utils/schema.js'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -52,9 +52,7 @@ export default TypeComponent.register([
   mixins: [SourceMixin],
 
   provide() {
-    return {
-      container: this
-    }
+    return { container: this }
   },
 
   getSourceType(type) {
@@ -100,7 +98,7 @@ export default TypeComponent.register([
     hasEditableForms() {
       const hasEditableForms = schema => {
         return (
-          hasForms(schema) && (
+          hasFormSchema(schema) && (
             this.getSchemaValue('editable', {
               type: Boolean,
               default: false,
@@ -136,6 +134,22 @@ export default TypeComponent.register([
           )
         }
       }
+    )
+  },
+
+  getFormSchemasForProcessing(schema, context) {
+    // Convert nested children schema to stand-alone schema component,
+    // present in each of the forms, as required by `processSchemaData()`
+    const { children } = schema
+    return getFormSchemas(schema, context, children
+      ? form => ({
+        ...form,
+        components: {
+          ...form.components,
+          [children.name]: children
+        }
+      })
+      : null
     )
   }
 })

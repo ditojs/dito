@@ -1,7 +1,9 @@
 import aws from 'aws-sdk'
-import axios from 'axios'
 import multerS3 from 'multer-s3'
-import { Storage } from './Storage'
+import { fileTypeFromBuffer } from 'file-type'
+import isSvg from 'is-svg'
+import { Storage } from './Storage.js'
+import { PassThrough } from 'stream'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -13,7 +15,6 @@ export class S3Storage extends Storage {
       s3,
       acl,
       bucket,
-      contentType,
       ...options
     } = config
     this.s3 = new aws.S3(s3)
@@ -24,11 +25,51 @@ export class S3Storage extends Storage {
       s3: this.s3,
       acl,
       bucket,
-      contentType: contentType || multerS3.AUTO_CONTENT_TYPE,
       ...options,
 
       key: (req, file, cb) => {
         cb(null, this.getUniqueKey(file.originalname))
+      },
+
+      contentType: (req, file, cb) => {
+        const { mimetype, stream } = file
+        if (mimetype) {
+          // 1. Trust file.mimetype if provided.
+          cb(null, mimetype)
+        } else {
+          let data = null
+
+          const done = type => {
+            const outStream = new PassThrough()
+            outStream.write(data)
+            stream.pipe(outStream)
+            cb(null, type, outStream)
+          }
+
+          const onData = chunk => {
+            if (!data) {
+              // 2. Try reading the mimetype from the first chunk.
+              const type = fileTypeFromBuffer(chunk)?.mime
+              if (type) {
+                stream.off('data', onData)
+                done(type)
+              } else {
+                // 3. If that fails, keep collecting all chunks and determine
+                //    the mimetype using the full data.
+                stream.once('end', () => {
+                  const type = (
+                    fileTypeFromBuffer(data)?.mime ||
+                    (isSvg(data) ? 'image/svg+xml' : 'application/octet-stream')
+                  )
+                  done(type)
+                })
+              }
+            }
+            data = data ? Buffer.concat([data, chunk]) : chunk
+          }
+
+          stream.on('data', onData)
+        }
       },
 
       metadata: (req, file, cb) => {
@@ -55,7 +96,7 @@ export class S3Storage extends Storage {
 
   // @override
   _getFileUrl(file) {
-    return this._getUrl(file.key) ?? file.url ?? file.location
+    return this._getUrl(file.key) ?? file.url
   }
 
   // @override
@@ -64,6 +105,7 @@ export class S3Storage extends Storage {
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.key,
+      ContentType: file.type,
       Body: buffer
     }).promise()
     // "Convert" `file` to something looking more like a S3 `storageFile`.
@@ -85,26 +127,13 @@ export class S3Storage extends Storage {
 
   // @override
   async _readFile(file) {
-    let data
-    let type
-    if (file.url) {
-      ({
-        data,
-        'content-type': type
-      } = await axios.request({
-        method: 'get',
-        url: file.url,
-        responseType: 'arraybuffer'
-      }))
-    } else {
-      ({
-        Body: data,
-        ContentType: type
-      } = await this.s3.getObject({
-        Bucket: this.bucket,
-        Key: file.key
-      }).promise())
-    }
+    const {
+      ContentType: type,
+      Body: data
+    } = await this.s3.getObject({
+      Bucket: this.bucket,
+      Key: file.key
+    }).promise()
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)
     // See `AssetFile.data` setter:
     buffer.type = type

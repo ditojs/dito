@@ -6,10 +6,10 @@ import {
   HasManyRelation,
   ManyToManyRelation
 } from 'objection'
-import { RelationError } from '@/errors'
 import {
   isObject, isArray, isString, asArray, capitalize, camelize
 } from '@ditojs/utils'
+import { RelationError } from '../errors/index.js'
 
 const relationLookup = {
   // one:

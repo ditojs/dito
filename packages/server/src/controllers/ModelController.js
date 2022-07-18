@@ -1,9 +1,9 @@
 import pluralize from 'pluralize'
 import { isObject, camelize } from '@ditojs/utils'
-import { ControllerError } from '@/errors'
-import { CollectionController } from './CollectionController'
-import { RelationController } from './RelationController'
-import { setupPropertyInheritance } from '@/utils'
+import { CollectionController } from './CollectionController.js'
+import { RelationController } from './RelationController.js'
+import { ControllerError } from '../errors/index.js'
+import { setupPropertyInheritance } from '../utils/index.js'
 
 export class ModelController extends CollectionController {
   setup() {

@@ -1,5 +1,4 @@
-import { TimeStampedMixin } from '@/mixins'
-import { Model } from './Model'
+import { TimeStampedMixin } from '../mixins/index.js'
+import { Model } from './Model.js'
 
-export class TimeStampedModel extends TimeStampedMixin(Model) {
-}
+export const TimeStampedModel = TimeStampedMixin(Model)

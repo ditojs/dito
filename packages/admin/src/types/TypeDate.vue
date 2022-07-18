@@ -13,8 +13,8 @@
 </template>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import { getSchemaAccessor } from '@/utils/accessor'
+import TypeComponent from '../TypeComponent.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
 import { isDate } from '@ditojs/utils'
 
@@ -55,11 +55,11 @@ export default TypeComponent.register([
         time: 'time-picker',
         datetime: 'date-time-picker'
       }[type]
-    },
-
-    getDataProcessor() {
-      return value => isDate(value) ? value.toISOString() : value
     }
+  },
+
+  processValue(schema, value) {
+    return isDate(value) ? value.toISOString() : value
   }
 })
 </script>

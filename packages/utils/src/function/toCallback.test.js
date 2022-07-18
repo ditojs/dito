@@ -1,4 +1,4 @@
-import { toCallback } from './toCallback'
+import { toCallback } from './toCallback.js'
 
 describe('toCallback()', () => {
   it('should convert async functions to callbacks', async () => {

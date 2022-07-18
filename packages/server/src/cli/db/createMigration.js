@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
-import chalk from 'chalk'
-import { getRelationClass, isThroughRelationClass } from '@/schema'
+import pico from 'picocolors'
+import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
 import {
   isObject, isArray, isString, deindent, capitalize
 } from '@ditojs/utils'
@@ -52,7 +52,7 @@ export async function createMigration(app, name, ...modelNames) {
   const file = path.join(migrationDir, filename)
   if (await fs.exists(file)) {
     // This should never happen, but let's be on the safe side here:
-    console.info(chalk.red(`Migration '${filename}' already exists.`))
+    console.info(pico.red(`Migration '${filename}' already exists.`))
     return false
   } else {
     await fs.writeFile(file, deindent`
@@ -64,7 +64,7 @@ export async function createMigration(app, name, ...modelNames) {
         ${getCode(dropTables)}
       }
     `)
-    console.info(chalk.cyan(`Migration '${filename}' successfully created.`))
+    console.info(pico.cyan(`Migration '${filename}' successfully created.`))
     return true
   }
 }

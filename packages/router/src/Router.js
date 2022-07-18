@@ -1,13 +1,13 @@
 import http from 'http'
-import Node from './Node'
-import Result from './Result'
+import Node from './Node.js'
+import Result from './Result.js'
 
 const CHAR_SLASH = '/'.charCodeAt(0)
 
 export default class Router {
   constructor(options) {
     this.trees = {}
-    // `this.options()` is already a method for the OPTIONS verb!
+    // `this.options()` is already a method for the OPTIONS method!
     this._options = options || {}
   }
 
@@ -47,12 +47,16 @@ export default class Router {
     return this.add('GET', ...args)
   }
 
+  post(...args) {
+    return this.add('POST', ...args)
+  }
+
   put(...args) {
     return this.add('PUT', ...args)
   }
 
-  post(...args) {
-    return this.add('POST', ...args)
+  patch(...args) {
+    return this.add('PATCH', ...args)
   }
 
   delete(...args) {
@@ -61,10 +65,6 @@ export default class Router {
 
   head(...args) {
     return this.add('HEAD', ...args)
-  }
-
-  patch(...args) {
-    return this.add('PATCH', ...args)
   }
 
   options(...args) {

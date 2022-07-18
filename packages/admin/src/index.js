@@ -1,1 +1,1 @@
-export default from './DitoAdmin'
+export { default } from './DitoAdmin.js'

@@ -1,4 +1,4 @@
-import { toPromiseCallback } from './toPromiseCallback'
+import { toPromiseCallback } from './toPromiseCallback.js'
 
 export function toAsync(callbackFunction) {
   return (...args) => {

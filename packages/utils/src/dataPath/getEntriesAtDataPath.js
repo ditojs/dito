@@ -1,5 +1,5 @@
-import { parseDataPath } from './parseDataPath'
-import { normalizeDataPath } from './normalizeDataPath'
+import { parseDataPath } from './parseDataPath.js'
+import { normalizeDataPath } from './normalizeDataPath.js'
 
 export function getEntriesAtDataPath(
   obj,
@@ -21,8 +21,9 @@ export function getEntriesAtDataPath(
         return Object.entries(obj).reduce(
           (map, [key, value]) => {
             const entries = getEntriesAtDataPath(value, pathEnd, handleError)
+            const pathToKey = pathStart ? `${pathStart}/${key}` : key
             for (const [subPath, subVal] of Object.entries(entries)) {
-              map[`${pathStart}/${key}/${subPath}`] = subVal
+              map[`${pathToKey}/${subPath}`] = subVal
             }
             return map
           },

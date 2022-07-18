@@ -1,4 +1,4 @@
-import { formatDate } from './formatDate'
+import { formatDate } from './formatDate.js'
 
 describe('formatDate()', () => {
   const date = new Date(2012, 5, 9, 22, 45, 30)

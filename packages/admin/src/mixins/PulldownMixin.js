@@ -1,4 +1,4 @@
-import DomMixin from './DomMixin'
+import DomMixin from './DomMixin.js'
 
 // @vue/component
 export default {
@@ -12,7 +12,7 @@ export default {
         checkTime: true,
         events: {
           mousedown: () => {
-            this.showPulldown(false)
+            this.setPulldownOpen(false)
             this.pulldown.handlers.remove()
           },
 
@@ -30,7 +30,7 @@ export default {
   methods: {
     onPulldownMouseDown(value) {
       if (!value) {
-        this.showPulldown(true)
+        this.setPulldownOpen(true)
         this.checkTime = true
       } else {
         this.checkTime = false
@@ -40,7 +40,7 @@ export default {
     onPulldownMouseUp(value) {
       const { startTime } = this.pulldown
       if (!this.checkTime || startTime && (Date.now() - startTime > 250)) {
-        this.showPulldown(false)
+        this.setPulldownOpen(false)
         if (value) {
           this.onPulldownSelect(value)
         }
@@ -52,7 +52,7 @@ export default {
       // NOTE: To be overridden.
     },
 
-    showPulldown(open) {
+    setPulldownOpen(open) {
       this.pulldown.open = open
       this.pulldown.startTime = open ? Date.now() : 0
       if (open) {

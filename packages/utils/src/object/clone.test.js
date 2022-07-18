@@ -1,4 +1,5 @@
-import { clone } from './clone'
+import { clone } from './clone.js'
+import { vi } from 'vitest'
 
 describe('clone()', () => {
   it('should clone objects', () => {
@@ -46,14 +47,14 @@ describe('clone()', () => {
   it('should use clone() methods if available', () => {
     const object = {
       a: 1,
-      clone: jest.fn(() => ({ b: 2 }))
+      clone: vi.fn(() => ({ b: 2 }))
     }
     const copy = clone(object)
     expect(object.clone).toBeCalledTimes(1)
     expect(copy).toStrictEqual({ b: 2 })
   })
 
-  it('should transform cloned values by `iteratee`', () => {
+  it('should transform cloned values by `callback`', () => {
     const object = {
       a: { b: 1, c: 2 },
       d: { e: 3, f: 4 }
@@ -71,7 +72,7 @@ describe('clone()', () => {
     expect(copy).toStrictEqual(expected)
   })
 
-  it('should call `iteratee` after cloning all children', () => {
+  it('should call `callback` after cloning all children', () => {
     const array = [
       { a: 1, b: 2 },
       { a: 3, b: 4 }
@@ -86,5 +87,11 @@ describe('clone()', () => {
       { a: 3 }
     ]
     expect(copy).toStrictEqual(expected)
+  })
+
+  it('should handle promises', async () => {
+    const promise = (async () => 1)()
+    const result = clone(promise)
+    expect(await result).toStrictEqual(1)
   })
 })

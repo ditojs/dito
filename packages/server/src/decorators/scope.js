@@ -1,4 +1,4 @@
-import { createDecorator } from '@/utils'
+import { createDecorator } from '../utils/index.js'
 
 export function scope(...scopes) {
   return createDecorator(value => {

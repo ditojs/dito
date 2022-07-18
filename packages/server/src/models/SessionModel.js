@@ -1,5 +1,4 @@
-import { SessionMixin } from '@/mixins'
-import { Model } from './Model'
+import { SessionMixin } from '../mixins/index.js'
+import { Model } from './Model.js'
 
-export class SessionModel extends SessionMixin(Model) {
-}
+export const SessionModel = SessionMixin(Model)

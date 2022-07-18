@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 import path from 'path'
 import multer from '@koa/multer'
-import { Storage } from './Storage'
+import { Storage } from './Storage.js'
 
 export class DiskStorage extends Storage {
   static type = 'disk'

@@ -30,17 +30,17 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
-    button.dito-button-overlay.dito-button-clear(
-      v-if="clearable && value"
+    button.dito-button-clear.dito-button-overlay(
+      type="button"
+      v-if="showClearButton"
       @click="clear"
       :disabled="disabled"
     )
 </template>
 
 <style lang="sass">
-  // Temporary fix for this vue-cli issue:
-  // https://github.com/vuejs/vue-cli/issues/2055#issuecomment-417817527
-  // @import '~vue-multiselect/dist/vue-multiselect.min.css'
+  @import 'vue-multiselect/dist/vue-multiselect.min.css'
+
   $spinner-width: $select-arrow-width
   $tag-icon-width: 1.8em
   $tag-margin: 2px
@@ -112,11 +112,11 @@
 
     .multiselect__select
       width: 0
-      margin-right: $select-arrow-width / 2
+      margin-right: calc($select-arrow-width / 2)
       &::before
         +arrow($select-arrow-size)
         bottom: $select-arrow-bottom
-        right: -$select-arrow-size / 2
+        right: calc(-1 * $select-arrow-size / 2)
 
     .multiselect__spinner
       width: $spinner-width
@@ -125,10 +125,7 @@
         // Change the width of the loading spinner
         border-width: 3px
         border-top-color: $color-active
-        top: 0
-        left: 0
-        right: 0
-        bottom: 0
+        inset: 0
         margin: auto
 
     .multiselect__option
@@ -142,7 +139,7 @@
         line-height: $tag-line-height
     .multiselect__option--highlight
       &::after
-        diplay: block
+        display: block
         position: absolute
         background: transparent
         color: $color-white
@@ -225,11 +222,11 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DitoContext from '@/DitoContext'
-import OptionsMixin from '@/mixins/OptionsMixin'
+import TypeComponent from '../TypeComponent.js'
+import DitoContext from '../DitoContext.js'
+import OptionsMixin from '../mixins/OptionsMixin.js'
 import VueMultiselect from 'vue-multiselect'
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 // @vue/component
@@ -293,15 +290,6 @@ export default TypeComponent.register('multiselect', {
       default: false
     }),
 
-    listeners() {
-      // override TypeMixin's listeners to re-route input to onChange()
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        input: this.onChange
-      }
-    },
-
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema
       return placeholder || (
@@ -321,6 +309,16 @@ export default TypeComponent.register('multiselect', {
   },
 
   methods: {
+    // @override
+    getListeners() {
+      // override `TypeMixin.getListeners()` to re-route 'input' to `onChange()`
+      return {
+        focus: this.onFocus,
+        blur: this.onBlur,
+        input: this.onChange
+      }
+    },
+
     addTagOption(tag) {
       if (this.taggable) {
         const { optionLabel, optionValue } = this
@@ -337,7 +335,7 @@ export default TypeComponent.register('multiselect', {
       }
     },
 
-    focus() {
+    focusElement() {
       this.$refs.element.activate()
     },
 

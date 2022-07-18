@@ -1,7 +1,7 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1
 
-exports[`index exports all symbols 1`] = `
-Object {
+exports[`index > exports all symbols 1`] = `
+{
   "asArray": [Function],
   "asFunction": [Function],
   "asObject": [Function],
@@ -11,16 +11,16 @@ Object {
   "debounce": [Function],
   "debounceAsync": [Function],
   "decamelize": [Function],
-  "defaultFormats": Object {
-    "date": Object {
+  "defaultFormats": {
+    "date": {
       "day": "numeric",
       "month": "long",
       "year": "numeric",
     },
-    "number": Object {
+    "number": {
       "style": "decimal",
     },
-    "time": Object {
+    "time": {
       "hour": "2-digit",
       "minute": "2-digit",
       "second": "2-digit",
@@ -29,6 +29,7 @@ Object {
   "deindent": [Function],
   "equals": [Function],
   "escapeHtml": [Function],
+  "escapeRegexp": [Function],
   "flatten": [Function],
   "format": [Function],
   "formatDate": [Function],
@@ -46,11 +47,13 @@ Object {
   "isBoolean": [Function],
   "isCreditCard": [Function],
   "isDate": [Function],
+  "isDomain": [Function],
   "isEmail": [Function],
   "isEmpty": [Function],
   "isFunction": [Function],
   "isHostname": [Function],
   "isInteger": [Function],
+  "isModule": [Function],
   "isNumber": [Function],
   "isObject": [Function],
   "isPlainObject": [Function],
@@ -75,5 +78,6 @@ Object {
   "toCallback": [Function],
   "toPromiseCallback": [Function],
   "underscore": [Function],
+  Symbol(Symbol.toStringTag): "Module",
 }
 `;

@@ -3,37 +3,31 @@ import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
 import axios from 'axios'
-import './components'
-import './types'
-import verbs from './verbs'
-import TypeComponent from './TypeComponent'
-import DitoRoot from './components/DitoRoot'
-import { getResource } from './utils/resource'
 import {
   isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
+import * as components from './components/index.js'
+import * as types from './types/index.js'
+import DitoRoot from './components/DitoRoot.vue'
+import TypeComponent from './TypeComponent.js'
+import { getResource } from './utils/resource.js'
+import verbs from './verbs.js'
 
 Vue.config.productionTip = false
 
 // All global plugins that need to be registered on `Vue`:
 Vue.use(VueRouter)
-Vue.use(VueModal, {
-  dynamic: true
-})
+Vue.use(VueModal, { dynamic: true })
 Vue.use(VueNotifications)
 
 export default class DitoAdmin {
   constructor(el, {
-    module,
     // `dito` contains the base and api settings passed from `AdminController`
     dito = {},
     api,
     views = {},
     ...options
   } = {}) {
-    // Activate hot reloading if the module is provided.
-    module?.hot?.accept()
-
     this.el = el
     // Merge in `api` settings as passed from `config.admin` and through the
     // `AdminController` with `api` values from from 'admin/index.js'
@@ -182,7 +176,8 @@ export default class DitoAdmin {
         $sourceComponent: () => null,
         $resourceComponent: () => null,
         $dialogComponent: () => null,
-        $panelComponent: () => null
+        $panelComponent: () => null,
+        $tabComponent: () => null
       },
 
       render: createElement => createElement(DitoRoot, {
@@ -193,6 +188,12 @@ export default class DitoAdmin {
         props: {
           unresolvedViews: views,
           options
+        },
+        // This may only be needed to avoid tree-shacking of these components,
+        // since they actually handle registry internally already.
+        components: {
+          ...components,
+          ...types
         }
       })
     })
@@ -213,8 +214,8 @@ export default class DitoAdmin {
     return axios.request({
       url,
       method,
-      data: data !== null ? JSON.stringify(data) : null,
       params,
+      ...(data && { data }),
       baseURL: isApiRequest ? this.api.url : null,
       headers: {
         ...(isApiRequest && this.api.headers),

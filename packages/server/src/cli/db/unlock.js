@@ -1,9 +1,9 @@
-import chalk from 'chalk'
+import pico from 'picocolors'
 
 export async function unlock(knex) {
   await knex.migrate.forceFreeMigrationsLock()
   console.info(
-    chalk.green(`Successfully unlocked the migrations lock table`)
+    pico.green(`Successfully unlocked the migrations lock table`)
   )
   return true
 }

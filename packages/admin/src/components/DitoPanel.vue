@@ -2,7 +2,7 @@
   // Only show panels in tabs when the tabs are also visible.
   component.dito-panel(
     :is="panelTag"
-    v-show="visible && (!tabComponent || tabComponent.visible)"
+    v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
     @submit.prevent
   )
     label.dito-panel-title {{ getLabel(schema) }}
@@ -56,19 +56,18 @@
         margin: 0
         label
           font-weight: normal
-      .dito-components
+      .dito-pane
         margin: 0 (-$form-spacing-half)
-      .dito-component-container
+      .dito-container
         padding: $form-spacing-half
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import ValidatorMixin from '@/mixins/ValidatorMixin'
-import { getButtonSchemas } from '@/utils/schema'
-import { getSchemaAccessor } from '@/utils/accessor'
 import { isFunction } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import { getButtonSchemas } from '../utils/schema.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('dito-panel', {
@@ -76,7 +75,8 @@ export default DitoComponent.component('dito-panel', {
 
   provide() {
     return {
-      $panelComponent: () => this
+      $panelComponent: () => this,
+      $tabComponent: () => this.panelTabComponent
     }
   },
 
@@ -87,7 +87,7 @@ export default DitoComponent.component('dito-panel', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    tabComponent: { type: DitoComponent, default: null }
+    panelTabComponent: { type: DitoComponent, default: null }
   },
 
   data() {
@@ -99,6 +99,10 @@ export default DitoComponent.component('dito-panel', {
   computed: {
     panelComponent() {
       return this
+    },
+
+    tabComponent() {
+      return this.panelTabComponent
     },
 
     buttonSchemas() {
@@ -153,7 +157,7 @@ export default DitoComponent.component('dito-panel', {
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data)
-        ? data.call(this, new DitoContext(this))
+        ? data.call(this, this.context)
         : data
     }
   },

@@ -1,4 +1,4 @@
-import { ResponseError } from './ResponseError'
+import { ResponseError } from './ResponseError.js'
 
 export class NotImplementedError extends ResponseError {
   constructor(error) {

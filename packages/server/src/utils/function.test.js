@@ -1,4 +1,4 @@
-import { describeFunction } from './function'
+import { describeFunction } from './function.js'
 
 describe('describeFunction()', () => {
   it('describes normal functions', () => {

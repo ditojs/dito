@@ -12,6 +12,12 @@ export default {
     }
   },
 
+  computed: {
+    mainSchemaComponent() {
+      return this.schemaComponents[0]
+    }
+  },
+
   methods: {
     // This method is called by `DitoSchema.created()/destroyed()` on its
     // $parent, if the parent uses the `SchemaParentMixin`:

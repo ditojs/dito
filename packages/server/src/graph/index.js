@@ -1,3 +1,3 @@
-export * from './DitoGraphProcessor'
-export * from './graph'
-export * from './expression'
+export * from './DitoGraphProcessor.js'
+export * from './graph.js'
+export * from './expression.js'

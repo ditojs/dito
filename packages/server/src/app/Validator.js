@@ -1,7 +1,9 @@
 import objection from 'objection'
-import Ajv from 'ajv'
+import Ajv from 'ajv/dist/2020.js'
+import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
-import * as schema from '@/schema'
+import { formatJson } from '../utils/index.js'
+import * as schema from '../schema/index.js'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own
 // validator instance that is shared across the whole app and handles schema
@@ -46,20 +48,24 @@ export class Validator extends objection.Validator {
       // Patch-validators don't use default values:
       ...(patch && { useDefaults: false })
     })
+    addFormats(ajv, { mode: 'full' })
 
-    const add = (schemas, method) => {
+    const addSchemas = (schemas, callback) => {
       for (const [name, schema] of Object.entries(schemas)) {
         if (schema) {
-          // Ajv appears to not copy the schema before modifying it,
-          // so let's make shallow clones here.
           // Remove leading '_' to simplify special keywords (e.g. instanceof)
-          ajv[method](name.replace(/^_/, ''), { ...schema })
+          callback(name.replace(/^_/, ''), schema)
         }
       }
     }
 
-    add(this.keywords, 'addKeyword')
-    add(this.formats, 'addFormat')
+    addSchemas(this.keywords, (keyword, schema) => ajv.addKeyword({
+      keyword,
+      ...schema
+    }))
+    addSchemas(this.formats, (format, schema) => ajv.addFormat(format, {
+      ...schema
+    }))
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
@@ -78,7 +84,7 @@ export class Validator extends objection.Validator {
       }
       return opts
     }, {})
-    const cacheKey = JSON.stringify(opts)
+    const cacheKey = formatJson(opts, false)
     const { ajv } = this.ajvCache[cacheKey] || (this.ajvCache[cacheKey] = {
       ajv: this.createAjv(opts),
       options
@@ -186,11 +192,15 @@ export class Validator extends objection.Validator {
     const duplicates = {}
     for (const error of errors) {
       // Adjust dataPaths to reflect nested validation in Objection.
-      const dataPath = `${options?.dataPath || ''}${error.dataPath}`
+      // NOTE: As of Ajv 8, `error.dataPath` is now called `error.instancePath`,
+      // but we stick to `error.dataPath` in Dito.js, and support both in errors
+      // passed in here.
+      const instancePath = (error.instancePath ?? error.dataPath) || ''
+      const dataPath = `${options?.dataPath || ''}${instancePath}`
       // Unknown properties are reported in `['propertyName']` notation,
       // so replace those with dot-notation, see:
       // https://github.com/epoberezkin/ajv/issues/671
-      const key = dataPath.replace(/\['([^']*)'\]/g, '.$1').slice(1)
+      const key = dataPath.replace(/\['([^']*)'\]/g, '/$1').slice(1)
       const { message, keyword, params } = error
       const definition = keyword === 'format'
         ? this.getFormat(params.format)
@@ -245,12 +255,15 @@ export class Validator extends objection.Validator {
     return errorHash
   }
 
-  prefixDataPaths(errors, dataPathPrefix) {
+  prefixInstancePaths(errors, instancePathPrefix) {
+    // As of Ajv 8, `error.dataPath` is now called `error.instancePath`. In
+    // Dito.js we stick to `error.dataPath`, but until the errors pass through
+    // `parseErrors()`, we stick to `error.instancePath` for consistency.
     return errors.map(error => ({
       ...error,
-      dataPath: error.dataPath
-        ? `${dataPathPrefix}${error.dataPath}`
-        : dataPathPrefix
+      instancePath: error.instancePath
+        ? `${instancePathPrefix}${error.instancePath}`
+        : instancePathPrefix
     }))
   }
 
@@ -301,7 +314,8 @@ export class Validator extends objection.Validator {
           throw model.constructor.createValidationError({
             type: 'ModelValidation',
             errors,
-            options
+            options,
+            json
           })
         }
       }
@@ -336,14 +350,10 @@ function hasDefaults(obj) {
 }
 
 const defaultOptions = {
+  strict: false,
   allErrors: true,
-  errorDataPath: 'property',
-  extendRefs: 'fail',
-  format: 'full',
-  missingRefs: true,
   ownProperties: true,
   passContext: true,
-  schemaId: '$id',
   useDefaults: true,
   validateSchema: true
 }
@@ -358,6 +368,7 @@ const validatorOptions = {
   $data: false,
   $comment: false,
   coerceTypes: false,
+  discriminator: true,
   multipleOfPrecision: false,
   ownProperties: true,
   removeAdditional: false,

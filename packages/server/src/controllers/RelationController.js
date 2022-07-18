@@ -1,8 +1,8 @@
-import chalk from 'chalk'
-import { ControllerError } from '@/errors'
-import { CollectionController } from './CollectionController'
-import { setupPropertyInheritance, getScope } from '@/utils'
+import pico from 'picocolors'
 import { asArray } from '@ditojs/utils'
+import { CollectionController } from './CollectionController.js'
+import { ControllerError } from '../errors/index.js'
+import { setupPropertyInheritance, getScope } from '../utils/index.js'
 
 export class RelationController extends CollectionController {
   constructor(parent, object, relationInstance, relationDefinition) {
@@ -32,7 +32,7 @@ export class RelationController extends CollectionController {
     // Initialize:
     this.path = this.app.normalizePath(this.name)
     this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
-    this.log(`${chalk.blue(this.path)}${chalk.white(':')}`, this.level)
+    this.log(`${pico.blue(this.path)}${pico.white(':')}`, this.level)
     // Copy over all fields in the relation object except the ones that are
     // going to be inherited in `setup()` (relation, member, allow), for
     // settings like scope, etc.

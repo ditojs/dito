@@ -1,5 +1,4 @@
-import { mergeReversed } from '@/utils'
-import { expandSchemaShorthand } from '@/schema'
+import { mergeReversed } from '../../utils/index.js'
 
 export default function properties(values) {
   const properties = mergeReversed(values)
@@ -55,8 +54,7 @@ export default function properties(values) {
   // NOTE: Substitutions on all other levels happen in convertSchema()
   const ids = []
   const rest = []
-  for (let [name, property] of Object.entries(properties)) {
-    property = expandSchemaShorthand(property)
+  for (const [name, property] of Object.entries(properties)) {
     // Also sort properties by kind: primary id > foreign id > rest:
     const entry = [name, property]
     if (property.primary) {

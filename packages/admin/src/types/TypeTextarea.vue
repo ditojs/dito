@@ -20,8 +20,8 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import { getSchemaAccessor } from '@/utils/accessor'
+import TypeComponent from '../TypeComponent.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default TypeComponent.register('textarea', {

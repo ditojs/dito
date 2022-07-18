@@ -1,5 +1,6 @@
-import { Controller } from './Controller'
 import { isObject, isArray, asArray } from '@ditojs/utils'
+import { Controller } from './Controller.js'
+import { ControllerError } from '../errors/index.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -22,19 +23,6 @@ export class CollectionController extends Controller {
     // Create a dummy model instance to validate the requested id against.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
-  }
-
-  // @override
-  setupAction(type, actions, name, handler, authorize, verb, path) {
-    // These default actions happen directly on the collection / member route
-    // and are distinguished by their verbs, not by nested paths.
-    if (name in actionToVerb) {
-      verb = actionToVerb[name]
-      path = ''
-    }
-    return super.setupAction(
-      type, actions, name, handler, authorize, verb, path
-    )
   }
 
   // @override
@@ -66,21 +54,32 @@ export class CollectionController extends Controller {
       : path
   }
 
+  extendContext(ctx, object) {
+    // Create a copy of `ctx` that inherits from the real one, but overrides
+    // some properties with the ones from the passed `object`.
+    return Object.setPrototypeOf(object, ctx)
+  }
+
   getMemberId(ctx) {
     return this.validateId(ctx.params[this.idParam])
   }
 
-  getCollectionIds(ctx) {
+  getContextWithMemberId(ctx, memberId = this.getMemberId(ctx)) {
+    return this.extendContext(ctx, { memberId })
+  }
+
+  getModelId(model) {
     const idProperty = this.modelClass.getIdProperty()
     // Handle both composite keys and normal ones.
-    const getId = isArray(idProperty)
-      ? model => idProperty.reduce(
-        (id, key) => {
-          id.push(model[key])
-          return id
-        }, [])
-      : model => model[idProperty]
-    return asArray(ctx.request.body).map(model => this.validateId(getId(model)))
+    return isArray(idProperty)
+      ? idProperty.map(property => model[property])
+      : model[idProperty]
+  }
+
+  getCollectionIds(ctx) {
+    return asArray(ctx.request.body).map(
+      model => this.validateId(this.getModelId(model))
+    )
   }
 
   getIds(ctx) {
@@ -102,6 +101,32 @@ export class CollectionController extends Controller {
     })
     const values = Object.values(reference)
     return values.length > 1 ? values : values[0]
+  }
+
+  async getMember(
+    ctx,
+    base = this,
+    { query = {}, modify = null, forUpdate = false } = {}
+  ) {
+    return this.member.get.call(
+      this,
+      // Extend `ctx` with a new `query` object, while inheriting the route
+      // params in `ctx.params`, so fining the member by id still works.
+      this.extendContext(ctx, { query }),
+      (query, trx) => {
+        this.setupQuery(query, base)
+        query.modify(modify)
+        if (forUpdate) {
+          if (!trx) {
+            throw new ControllerError(
+              this,
+              'Using `forUpdate()` without a transaction is invalid'
+            )
+          }
+          query.forUpdate()
+        }
+      }
+    )
   }
 
   query(trx) {
@@ -152,7 +177,7 @@ export class CollectionController extends Controller {
     )
   }
 
-  toCoreActions(actions) {
+  convertToCoreActions(actions) {
     // Mark action object and methods as core, so `Controller.processValues()`
     // can filter correctly.
     for (const action of Object.values(actions)) {
@@ -164,8 +189,8 @@ export class CollectionController extends Controller {
     return actions
   }
 
-  collection = this.toCoreActions({
-    async find(ctx, modify) {
+  collection = this.convertToCoreActions({
+    async get(ctx, modify) {
       const result = await this.execute(ctx, (query, trx) => {
         query.find(ctx.query, this.allowParam).modify(getModify(modify, trx))
         return this.isOneToOne ? query.first() : query
@@ -187,7 +212,7 @@ export class CollectionController extends Controller {
       return { count }
     },
 
-    async insert(ctx, modify) {
+    async post(ctx, modify) {
       const result = this.relate
         // Use patchDitoGraphAndFetch() to handle relates for us.
         ? await this.execute(ctx, (query, trx) => query
@@ -195,14 +220,14 @@ export class CollectionController extends Controller {
           .modify(getModify(modify, trx))
         )
         : await this.executeAndFetch('insert', ctx, modify)
-      ctx.status = 201
+      ctx.status = 201 // Created
       if (isObject(result)) {
-        ctx.set('Location', this.getUrl('collection', result.id))
+        ctx.set('Location', this.getUrl('collection', this.getModelId(result)))
       }
       return result
     },
 
-    async update(ctx, modify) {
+    async put(ctx, modify) {
       return this.executeAndFetch('update', ctx, modify)
     },
 
@@ -211,8 +236,8 @@ export class CollectionController extends Controller {
     }
   })
 
-  member = this.toCoreActions({
-    async find(ctx, modify) {
+  member = this.convertToCoreActions({
+    async get(ctx, modify) {
       return this.execute(ctx, (query, trx) => query
         .findById(ctx.memberId)
         .find(ctx.query, this.allowParam)
@@ -233,7 +258,7 @@ export class CollectionController extends Controller {
       return { count }
     },
 
-    async update(ctx, modify) {
+    async put(ctx, modify) {
       return this.executeAndFetchById('update', ctx, modify)
     },
 
@@ -247,12 +272,4 @@ function getModify(modify, trx) {
   return modify
     ? query => modify(query, trx)
     : null
-}
-
-const actionToVerb = {
-  find: 'get',
-  delete: 'delete',
-  insert: 'post',
-  update: 'put',
-  patch: 'patch'
 }

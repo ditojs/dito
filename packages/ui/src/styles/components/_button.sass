@@ -40,37 +40,39 @@
     @extend %button-disabled
 
 .dito-buttons
+  --button-margin: 2px
+
   display: flex
   justify-content: flex-end
   white-space: nowrap
   &,
   .dito-button-group
     > *
-      margin-left: var(--button-margin, 2px)
+      margin-left: var(--button-margin)
       &:first-child
         margin-left: 0
   .dito-button-group + .dito-button-group
     margin-left: 1.5em
 
-.dito-buttons-round
-  .dito-button
-    padding: $button-round-padding
-    min-width: $input-height
-    min-height: $input-height
-    border-radius: 1em
+  &.dito-buttons-round
+    .dito-button
+      padding: $button-round-padding
+      min-width: $input-height
+      min-height: $input-height
+      border-radius: 1em
 
-.dito-buttons-small
-  --button-margin: 1px
+  &.dito-buttons-small
+    --button-margin: 1px
 
-.dito-buttons-round,
-.dito-buttons-small
-  line-height: 1em
+  &.dito-buttons-round,
+  &.dito-buttons-small
+    line-height: 1em
 
-.dito-buttons-toolbar
-  justify-content: flex-start
-  .dito-button
-    box-sizing: content-box
-    padding: 0 $input-padding-hor
-    // Zoom icons a little
-    i[class*="dito-icon-"]
-      width: 1.1em
+  &.dito-buttons-toolbar
+    justify-content: flex-start
+    .dito-button
+      box-sizing: content-box
+      padding: 0 $input-padding-hor
+      // Zoom icons a little
+      i[class*="dito-icon-"]
+        width: 1.1em

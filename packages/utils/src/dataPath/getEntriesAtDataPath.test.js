@@ -1,4 +1,4 @@
-import { getEntriesAtDataPath } from './getEntriesAtDataPath'
+import { getEntriesAtDataPath } from './getEntriesAtDataPath.js'
 
 describe('getEntriesAtDataPath()', () => {
   const data = {
@@ -89,6 +89,18 @@ describe('getEntriesAtDataPath()', () => {
             }
           }
         }
+      },
+      object3: {
+        array: [
+          {
+            one: { name: 'one.one' },
+            two: { name: 'one.two' }
+          },
+          {
+            one: { name: 'two.one' },
+            two: { name: 'two.two' }
+          }
+        ]
       }
     }
 
@@ -120,6 +132,13 @@ describe('getEntriesAtDataPath()', () => {
         'object2/object/one/object/two/name': 'one.two',
         'object2/object/two/object/one/name': 'two.one',
         'object2/object/two/object/two/name': 'two.two'
+      })
+    expect(getEntriesAtDataPath(data, 'object3/array/*/*/name'))
+      .toStrictEqual({
+        'object3/array/0/one/name': 'one.one',
+        'object3/array/0/two/name': 'one.two',
+        'object3/array/1/one/name': 'two.one',
+        'object3/array/1/two/name': 'two.two'
       })
   })
 })

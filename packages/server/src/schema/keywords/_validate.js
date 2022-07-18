@@ -1,4 +1,4 @@
-import Ajv from 'ajv'
+import Ajv from 'ajv/dist/2020.js'
 import { isNumber, isArray } from '@ditojs/utils'
 
 export const validate = {
@@ -7,19 +7,17 @@ export const validate = {
   },
   errors: 'full',
 
-  validate: function validate(func, ...args) {
+  validate: function validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
-    const params = getParams(this, ...args)
-    let result
+    const params = getParams(this, data, parentSchema, dataCtx)
     try {
-      result = func(params) ?? true
+      return func(params) ?? true
     } catch (error) {
       // In sync validation, we have to pass the errors back to Ajv through
       // `validate.errors`.
       validate.errors = getErrors(error, params)
-      result = false
+      return false
     }
-    return result
   }
 }
 
@@ -29,35 +27,25 @@ export const validateAsync = {
   ...validate,
   async: true,
 
-  async validate(func, ...args) {
+  async validate(func, data, parentSchema, dataCtx) {
     // The validator's `ctx` as passed to Ajv with passContext as `this`:
-    const params = getParams(this, ...args)
-    let result
+    const params = getParams(this, data, parentSchema, dataCtx)
     try {
-      result = (await func(params)) ?? true
+      return (await func(params)) ?? true
     } catch (error) {
       // Async validate methods need to throw their errors.
       throw new Ajv.ValidationError(getErrors(error, params))
     }
-    return result
   }
 }
 
-function getParams(
-  ctx,
-  // This is the sequence by which these parameters are received from Ajv.
-  data,
-  parentSchema,
-  dataPath,
-  parentData,
-  parentDataProperty,
-  rootData
-) {
+function getParams(ctx, data, parentSchema, dataCtx) {
+  const { instancePath, parentData, parentDataProperty, rootData } = dataCtx
   return {
     data,
     parentData,
     rootData,
-    dataPath,
+    instancePath,
     // NOTE: We rename parentDataProperty to parentKey / parentIndex:
     [isNumber(parentDataProperty) ? 'parentIndex' : 'parentKey']:
       parentDataProperty,
@@ -68,7 +56,7 @@ function getParams(
   }
 }
 
-function getErrors(error, { validator, dataPath }) {
+function getErrors(error, { validator, instancePath }) {
   const errors = isArray(error.errors)
     // Ajv errors array:
     ? error.errors
@@ -78,6 +66,6 @@ function getErrors(error, { validator, dataPath }) {
       message: error.message || error.toString(),
       params: {}
     }]
-  // Return errors prefixed with the current dataPath:
-  return validator.prefixDataPaths(errors, dataPath)
+  // Return errors prefixed with the current instancePath:
+  return validator.prefixInstancePaths(errors, instancePath)
 }

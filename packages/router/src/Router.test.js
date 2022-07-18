@@ -1,4 +1,4 @@
-import Router from './Router'
+import Router from './Router.js'
 import { deindent, shuffle } from '@ditojs/utils'
 import http from 'http'
 
@@ -17,10 +17,12 @@ describe('Router', () => {
       'connect'
     ])(
       'supports %s() short-cut',
-      verb => {
+      method => {
         it('reports correct allowed methods', () => {
-          router[verb]('/', () => {})
-          expect(router.getAllowedMethods()).toStrictEqual([verb.toUpperCase()])
+          router[method]('/', () => {})
+          expect(router.getAllowedMethods()).toStrictEqual(
+            [method.toUpperCase()]
+          )
         })
       }
     )

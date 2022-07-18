@@ -1,2 +1,2 @@
-export * from './flatten'
-export * from './shuffle'
+export * from './flatten.js'
+export * from './shuffle.js'

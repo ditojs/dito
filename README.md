@@ -19,8 +19,9 @@ This is then also the reason for the name *Dito.js* itself:
 > past participle of the verb *dīcere*, "to say."
 > https://www.thefreedictionary.com/ditto
 
-Dito.js was created  by [Jürg Lehni](http://juerglehni.com) and released in 2018
-under the MIT license, with support by [Lineto.com](https://lineto.com/).
+Dito.js was developed at [Lineto](https://lineto.com/) by [Jürg
+Lehni](http://juerglehni.com), and was made available by Lineto in 2018 under
+the MIT license.
 
 ## Structuring a Dito.js Application
 
@@ -63,9 +64,9 @@ which a selection of predefined tasks are executed:
   "console": "dito console src/server/app",
   "db:seed": "dito db:seed src/server/app",
   "db:create_migration": "dito db:create_migration src/server/app",
-  "db:migrate": "dito db:migrate src/config",
-  "db:rollback": "dito db:rollback src/config",
-  "db:reset": "dito db:reset src/config"
+  "db:migrate": "dito db:migrate src/config/index.js",
+  "db:rollback": "dito db:rollback src/config/index.js",
+  "db:reset": "dito db:reset src/config/index.js"
 }
 ```
 

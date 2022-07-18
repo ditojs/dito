@@ -1,4 +1,4 @@
-import { is, isArray, isObject } from '@/base'
+import { is, isArray, isObject } from '../base/index.js'
 
 export function equals(arg1, arg2) {
   if (arg1 === arg2) {

@@ -79,13 +79,15 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import PulseLoader from 'vue-spinner/src/PulseLoader'
+import DitoComponent from '../DitoComponent.js'
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 
 const Spinner = DitoComponent.component('spinner', PulseLoader)
 
 // @vue/component
 export default DitoComponent.component('dito-header', {
+  components: { Spinner },
+
   props: {
     spinner: {
       type: Object,

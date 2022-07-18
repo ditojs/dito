@@ -1,19 +1,26 @@
 import objection from 'objection'
-import { QueryBuilder } from '@/query'
-import { EventEmitter, KnexHelper } from '@/lib'
-import { convertSchema, addRelationSchemas, convertRelations } from '@/schema'
-import { populateGraph, filterGraph } from '@/graph'
-import {
-  ResponseError, DatabaseError, GraphError, ModelError, NotFoundError,
-  RelationError, WrappedError
-} from '@/errors'
 import {
   isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
   parseDataPath, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
-import RelationAccessor from './RelationAccessor'
-import definitions from './definitions'
-import { AssetFile } from '@/storage'
+import { QueryBuilder } from '../query/index.js'
+import { EventEmitter, KnexHelper } from '../lib/index.js'
+import {
+  convertSchema,
+  addRelationSchemas,
+  convertRelations
+} from '../schema/index.js'
+import { populateGraph, filterGraph } from '../graph/index.js'
+import { formatJson } from '../utils/index.js'
+import {
+  ResponseError,
+  GraphError, ModelError,
+  NotFoundError,
+  RelationError,
+  WrappedError
+} from '../errors/index.js'
+import RelationAccessor from './RelationAccessor.js'
+import definitions from './definitions/index.js'
 
 export class Model extends objection.Model {
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -101,6 +108,13 @@ export class Model extends objection.Model {
     return model?.constructor === this.constructor && model?.id === this.id
   }
 
+  $has(...properties) {
+    for (const property of properties) {
+      if (!(property in this)) return false
+    }
+    return true
+  }
+
   $update(properties, trx) {
     return this.$query(trx)
       .update(properties)
@@ -173,16 +187,16 @@ export class Model extends objection.Model {
     }
 
     validator.beforeValidate(args)
-    json = validator.validate(args)
-    const handleResult = json => {
+    const result = validator.validate(args)
+    const handleResult = result => {
       validator.afterValidate(args)
       // If `json` was shallow-cloned, copy over the possible default values.
-      return shallow ? inputJson.$set(json) : json
+      return shallow ? inputJson.$set(result) : result
     }
     // Handle both async and sync validation here:
-    return isPromise(json)
-      ? json.then(json => handleResult(json))
-      : handleResult(json)
+    return isPromise(result)
+      ? result.then(handleResult)
+      : handleResult(result)
   }
 
   async $validateGraph(options = {}) {
@@ -216,7 +230,7 @@ export class Model extends objection.Model {
     return super.query(trx).onError(err => {
       // TODO: Shouldn't this wrapping happen on the Controller level?
       err = err instanceof ResponseError ? err
-        : err instanceof objection.DBError ? new DatabaseError(err)
+        : err instanceof objection.DBError ? this.app.createDatabaseError(err)
         : new WrappedError(err)
       return Promise.reject(err)
     })
@@ -273,9 +287,9 @@ export class Model extends objection.Model {
         throw new ModelError(
           this,
           `Invalid amount of id values provided for reference: Unable to map ${
-            JSON.stringify(modelOrId)
+            formatJson(modelOrId, false)
           } to ${
-            JSON.stringify(idProperties)
+            formatJson(idProperties, false)
           }.`
         )
       }
@@ -346,13 +360,15 @@ export class Model extends objection.Model {
 
   static get jsonSchema() {
     return this._getCached('jsonSchema', () => {
-      const schema = convertSchema(this.definition.properties)
+      const schema = convertSchema({
+        type: 'object',
+        properties: this.definition.properties
+      })
       addRelationSchemas(this, schema.properties)
       // Merge in root-level schema additions
       merge(schema, this.definition.schema)
       return {
         $id: this.name,
-        $schema: 'http://json-schema.org/draft-07/schema#',
         ...schema
       }
     }, {})
@@ -550,7 +566,7 @@ export class Model extends objection.Model {
               if (isArray(data)) {
                 data.forEach(convertToAssetFiles)
               } else {
-                AssetFile.convert(data, storage)
+                storage.convertAssetFile(data)
               }
             }
           }
@@ -718,15 +734,16 @@ export class Model extends objection.Model {
   }
 
   // @override
-  static createValidationError({ type, message, errors, options }) {
+  static createValidationError({ type, message, errors, options, json }) {
     switch (type) {
     case 'ModelValidation':
       return this.app.createValidationError({
         type,
-        message: message ||
-          `The provided data for the ${this.name} model is not valid`,
+        message:
+          message || `The provided data for the ${this.name} model is not valid`,
         errors,
-        options
+        options,
+        json
       })
     case 'RelationExpression':
     case 'UnallowedRelation':
@@ -913,14 +930,16 @@ export class Model extends objection.Model {
           path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
         )
         : assetDataPaths
+
+      // `dataPaths` is empty in the case of an update/insert that does not
+      // affect the assets.
+      if (dataPaths.length === 0) return
+
       // Load the model's asset files in their current state before the query is
       // executed.
       const beforeItems = type === 'before:insert'
         ? []
-        : await loadAssetDataPaths(
-          asFindQuery().clear('runAfter'),
-          dataPaths
-        )
+        : await loadAssetDataPaths(asFindQuery(), dataPaths)
       const beforeFilesPerDataPath = getFilesPerAssetDataPath(
         beforeItems,
         dataPaths
@@ -953,7 +972,7 @@ export class Model extends objection.Model {
           if (modifiedFiles.length > 0) {
             // TODO: `modifiedFiles` should be restored as well, but that's far
             // from trivial since no backup is kept in `handleModifiedAssets`
-            console.info(
+            console.warn(
               `Unable to restore these already modified files: ${
                 modifiedFiles.map(file => `'${file.name}'`)
               }`
@@ -1054,50 +1073,3 @@ function mapFilesByKey(files) {
     {}
   )
 }
-
-// What follows is nasty monkey-patching to fix two new Objection issues:
-function getOperationClass(modify) {
-  Model.knex({})
-  const query = Model.query()
-  let constructor = null
-  // Locally override QueryBuilder#addOperation() in order to extract the
-  // private operation constructor / class:
-  query.addOperation = operation => {
-    constructor = operation.constructor
-  }
-  modify(query)
-  Model.knex(null)
-  return constructor
-}
-
-// Temporary workaround to fix this issue until it is resolved in Objection:
-// https://github.com/Vincit/objection.js/issues/1855
-// TODO: Remove again once the above issue is resolved and published.
-const InsertOperation = getOperationClass(query => query.insert())
-const UpdateOperation = getOperationClass(query => query.update())
-const DeleteOperation = getOperationClass(query => query.delete())
-
-// @override
-QueryBuilder.prototype.toFindQuery = function() {
-  const query = this.clone()
-  const selector = op => (
-    op.is(InsertOperation) ||
-    op.is(UpdateOperation) ||
-    op.is(DeleteOperation)
-  )
-  query.forEachOperation(selector, op => op.onBuild(query))
-  return query.clear(selector)
-}
-
-// Temporary workaround to fix this issue until a new version is deployed:
-// https://github.com/Vincit/objection.js/issues/1839
-// TODO: Remove again once the above issue is resolved and published.
-const InsertAndFetchOperation = getOperationClass(
-  query => query.insertAndFetch({})
-)
-
-Object.defineProperty(InsertAndFetchOperation.prototype, 'models', {
-  get() {
-    return this.delegate.models
-  }
-})

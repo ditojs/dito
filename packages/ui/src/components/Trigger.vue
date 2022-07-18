@@ -57,7 +57,7 @@
 </template>
 
 <style lang="sass">
-  @import 'transitions/index'
+  @import '../styles/transitions/index.sass'
 
   .dito-trigger-container
     position: relative
@@ -81,7 +81,7 @@
 
 <script>
 import { isString, hyphenate } from '@ditojs/utils'
-import { addEvents } from '@/utils'
+import { addEvents } from '../utils/index.js'
 
 export default {
   props: {

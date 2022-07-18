@@ -21,7 +21,7 @@
       .dito-tree-leaf(v-else)
         .dito-tree-label(v-html="label")
       .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
-        // Firefox doesn't like <button> here, so use <a> instead:
+        //- Firefox doesn't like <button> here, so use <a> instead:
         a.dito-button(
           v-if="draggable"
           v-bind="getButtonAttributes(verbs.drag)"
@@ -48,13 +48,13 @@
         td
           dito-label(
             v-if="property.label !== false"
-            :dataPath="getDataPath(property)"
+            :dataPath="getPropertyDataPath(property)"
             :label="getLabel(property)"
           )
         dito-table-cell(
-          :column="property"
-          :schema="schema"
-          :dataPath="getDataPath(property)"
+          :cell="property"
+          :schema="property"
+          :dataPath="getPropertyDataPath(property)"
           :data="data"
           :meta="nestedMeta"
           :store="store"
@@ -64,7 +64,7 @@
       v-if="childrenSchema"
       v-show="opened"
       v-bind="getDragOptions(childrenDraggable, true)"
-      :list="updateOrder(childrenList, childrenSchema, childrenDraggable)"
+      :list="updateOrder(childrenSchema, childrenList)"
       @start="onStartDrag"
       @end="onEndDrag($event, childrenSchema)"
     )
@@ -150,11 +150,11 @@
 
 <script>
 import VueDraggable from 'vuedraggable'
-import DitoComponent from '@/DitoComponent'
-import OrderedMixin from '@/mixins/OrderedMixin'
-import { appendDataPath } from '@/utils/data'
-import { getSchemaAccessor } from '@/utils/accessor'
-import { getNamedSchemas, hasForms } from '@/utils/schema'
+import DitoComponent from '../DitoComponent.js'
+import OrderedMixin from '../mixins/OrderedMixin.js'
+import { appendDataPath } from '../utils/data.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
@@ -169,7 +169,7 @@ export default DitoComponent.component('dito-tree-item', {
     path: { type: String, default: '' },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
-    draggable: { type: [Object, Boolean], default: false },
+    draggable: { type: Boolean, default: false },
     label: { type: String, default: null },
     level: { type: Number, default: 0 }
   },
@@ -218,7 +218,7 @@ export default DitoComponent.component('dito-tree-item', {
       return (
         this.childrenList?.length > 1 &&
         this.getSchemaValue('draggable', {
-          type: [Object, Boolean],
+          type: Boolean,
           default: false,
           schema: this.childrenSchema
         })
@@ -281,7 +281,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
       }
     }),
 
@@ -289,7 +289,7 @@ export default DitoComponent.component('dito-tree-item', {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && hasForms(this.schema)
+        return editable && hasFormSchema(this.schema)
       }
     }),
 
@@ -300,7 +300,7 @@ export default DitoComponent.component('dito-tree-item', {
   },
 
   methods: {
-    getDataPath(property) {
+    getPropertyDataPath(property) {
       return appendDataPath(this.dataPath, property.name)
     },
 

@@ -1,6 +1,6 @@
-import { ResponseError, QueryBuilderError } from '@/errors'
 import { isString, asArray } from '@ditojs/utils'
-import Registry from './Registry'
+import Registry from './Registry.js'
+import { ResponseError, QueryBuilderError } from '../errors/index.js'
 
 export const QueryParameters = new Registry()
 

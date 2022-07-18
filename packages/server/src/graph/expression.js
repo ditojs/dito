@@ -41,9 +41,12 @@ export function modelGraphToExpression(modelGraph, expr) {
   if (modelGraph) {
     expr = expr || {}
     for (const model of asArray(modelGraph)) {
-      for (const { name } of Object.values(model.constructor.getRelations())) {
-        if (model.hasOwnProperty(name)) {
-          expr[name] = modelGraphToExpression(model[name], expr[name])
+      if (model) {
+        const relations = model.constructor.getRelations()
+        for (const { name } of Object.values(relations)) {
+          if (model.hasOwnProperty(name)) {
+            expr[name] = modelGraphToExpression(model[name], expr[name])
+          }
         }
       }
     }

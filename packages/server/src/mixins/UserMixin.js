@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { AuthenticationError } from '@/errors'
 import { mixin, asArray } from '@ditojs/utils'
+import { AuthenticationError } from '../errors/index.js'
 
 export const UserMixin = mixin(Model => class extends Model {
   static options = {
@@ -56,7 +56,7 @@ export const UserMixin = mixin(Model => class extends Model {
   }
 
   $hasRole(...roles) {
-    // Support an optional `roles` arry on the model that can contain roles.
+    // Support an optional `roles` array on the model that can contain roles.
     return this.roles?.find(role => roles.includes(role)) || false
   }
 

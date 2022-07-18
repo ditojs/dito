@@ -1,5 +1,5 @@
-import { ResponseError } from './ResponseError'
 import { isFunction } from '@ditojs/utils'
+import { ResponseError } from './ResponseError.js'
 
 export class ModelError extends ResponseError {
   constructor(model, error) {

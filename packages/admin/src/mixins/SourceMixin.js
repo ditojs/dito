@@ -1,13 +1,14 @@
-import DitoComponent from '@/DitoComponent'
-import ResourceMixin from './ResourceMixin'
-import SchemaParentMixin from '@/mixins/SchemaParentMixin'
-import { getSchemaAccessor, getStoreAccessor } from '@/utils/accessor'
-import { getMemberResource } from '@/utils/resource'
+import DitoComponent from '../DitoComponent.js'
+import ResourceMixin from './ResourceMixin.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
+import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
+import { getMemberResource } from '../utils/resource.js'
 import {
-  processRouteSchema, processForms, hasForms, hasLabels, isCompact,
-  getFormSchemas, getViewSchema, getNamedSchemas, getButtonSchemas,
+  processRouteSchema, processForms, getNamedSchemas, getButtonSchemas,
+  hasFormSchema, getFormSchemas, getViewSchema,
+  hasLabels, isCompact, isInlined,
   isObjectSource, isListSource
-} from '@/utils/schema'
+} from '../utils/schema.js'
 import {
   isObject, isString, isArray, isNumber, equals,
   parseDataPath, normalizeDataPath
@@ -211,13 +212,13 @@ export default {
     },
 
     forms() {
-      return Object.values(getFormSchemas(this.schema, this.views))
+      return Object.values(getFormSchemas(this.schema, this.context))
     },
 
     // Returns the linked view schema if this source edits it its items through
     // a linked view.
     view() {
-      return getViewSchema(this.schema, this.views)
+      return getViewSchema(this.schema, this.context)
     },
 
     linksToView() {
@@ -236,13 +237,12 @@ export default {
       return this.forms.every(isCompact)
     },
 
+    isInlined() {
+      return isInlined(this.schema)
+    },
+
     paginate: getSchemaAccessor('paginate', {
       type: Number
-    }),
-
-    inlined: getSchemaAccessor('inlined', {
-      type: Boolean,
-      default: false
     }),
 
     render: getSchemaAccessor('render', {
@@ -254,7 +254,7 @@ export default {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasForms(this.schema)
+        return creatable && hasFormSchema(this.schema)
           ? this.isObjectSource
             ? !this.value
             : true
@@ -266,7 +266,7 @@ export default {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && !this.inlined
+        return editable && !this.isInlined
       }
     }),
 
@@ -276,7 +276,7 @@ export default {
     }),
 
     draggable: getSchemaAccessor('draggable', {
-      type: [Object, Boolean],
+      type: Boolean,
       default: false,
       get(draggable) {
         return this.isListSource && this.listData.length > 1 && draggable
@@ -287,7 +287,7 @@ export default {
       type: Boolean,
       default: null, // so that `??` below can do its thing:
       get(collapsible) {
-        return this.inlined && !!(collapsible ?? this.collapsed !== null)
+        return this.isInlined && !!(collapsible ?? this.collapsed !== null)
       }
     }),
 
@@ -362,7 +362,6 @@ export default {
         // including the nested list data.
         this.viewComponent.setData(data)
       }
-      this.schemaComponent.onLoad()
     },
 
     unwrapListData(data) {
@@ -445,54 +444,87 @@ export default {
       }
     },
 
-    openSchemaComponent(index) {
+    getSchemaComponent(index) {
       const { schemaComponents } = this
       const { length } = schemaComponents
-      const idx = ((index % length) + length) % length
-      const schemaComponent = schemaComponents[idx]
+      return schemaComponents[((index % length) + length) % length]
+    },
+
+    openSchemaComponent(index) {
+      const schemaComponent = this.getSchemaComponent(index)
       if (schemaComponent) {
         schemaComponent.opened = true
       }
     },
 
-    navigateToComponent(dataPath, onComplete) {
-      const callOnComplete = () => {
-        if (onComplete) {
+    async navigateToComponent(dataPath, onComplete) {
+      if (this.collapsible) {
+        const index = dataPath.startsWith(this.dataPath)
+          ? this.isListSource
+            ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
+            : 0
+          : null
+        if (index !== null && isNumber(+index)) {
+          const schemaComponent = this.getSchemaComponent(+index)
+          if (schemaComponent) {
+            const { opened } = schemaComponent
+            if (!opened) {
+              schemaComponent.opened = true
+              await this.$nextTick()
+            }
+            const components = schemaComponent.getComponentsByDataPath(dataPath)
+            if (components.length > 0 && (onComplete?.(components) ?? true)) {
+              return true
+            } else {
+              schemaComponent.opened = opened
+            }
+          }
+        }
+      }
+      return this.navigateToRouteComponent(dataPath, onComplete)
+    },
+
+    navigateToRouteComponent(dataPath, onComplete) {
+      return new Promise((resolve, reject) => {
+        const callOnComplete = () => {
           // Retrieve the last route component, which will be the component that
           // we just navigated to, and pass it on to `onComplete()`
           const { routeComponents } = this.appState
-          onComplete(routeComponents[routeComponents.length - 1])
+          const routeComponent = routeComponents[routeComponents.length - 1]
+          resolve(onComplete?.([routeComponent]) ?? true)
         }
-      }
 
-      const dataPathParts = parseDataPath(dataPath)
-      // See if we can find a route that can serve part of the given dataPath,
-      // and take it from there:
-      while (dataPathParts.length > 0) {
-        const path = this.routeComponent.getChildPath(
-          this.api.normalizePath(normalizeDataPath(dataPathParts))
-        )
-        // See if there actually is a route for this sub-component:
-        const { matched } = this.$router.match(path)
-        if (matched.length) {
-          if (this.$route.path === path) {
+        const dataPathParts = parseDataPath(dataPath)
+        // See if we can find a route that can serve part of the given dataPath,
+        // and take it from there:
+        while (dataPathParts.length > 0) {
+          const path = this.routeComponent.getChildPath(
+            this.api.normalizePath(normalizeDataPath(dataPathParts))
+          )
+          // See if there actually is a route for this sub-component:
+          const { matched } = this.$router.match(path)
+          if (matched.length) {
+            if (this.$route.path === path) {
             // We're already there, so just call `onComplete()`:
-            callOnComplete()
-          } else {
+              callOnComplete()
+            } else {
             // Navigate to the component's path, then call `onComplete()`_:
-            this.$router.push(
-              { path },
-              // Wait for the last route component to be mounted in the next
-              // tick before calling `onComplete()`
-              () => this.$nextTick(callOnComplete)
-            )
+              this.$router.push(
+                { path },
+                // Wait for the last route component to be mounted in the next
+                // tick before calling `onComplete()`
+                () => {
+                  this.$nextTick(callOnComplete)
+                },
+                reject
+              )
+            }
           }
-          return true
+          // Keep removing the last part until we find a match.
+          dataPathParts.pop()
         }
-        // Keep removing the last part until we find a match.
-        dataPathParts.pop()
-      }
-      return false
+        resolve(false)
+      })
     }
   }, // end of `methods`
 
@@ -501,15 +533,9 @@ export default {
     nested = false, flatten = false,
     process = null
   ) {
-    const { components } = schema
-    if (components) {
-      // Expand inlined components to a nested form with inlined = true
-      delete schema.components
-      schema.form = { components }
-      schema.inlined = true
-    }
     processRouteSchema(api, schema, name)
-    if (schema.inlined && schema.resource) {
+    const inlined = isInlined(schema)
+    if (inlined && schema.resource) {
       throw new Error(
         'Lists with nested forms cannot load data from their own resources'
       )
@@ -534,8 +560,8 @@ export default {
     if (process) {
       await process(childRoutes, level + 1)
     }
-    // Inline forms don't need to actually add routes.
-    if (hasForms(schema) && !schema.inlined) {
+    // Inlined forms don't need to actually add routes.
+    if (hasFormSchema(schema) && !inlined) {
       const getPathWithParam = (path, param) => param
         ? path
           ? `${path}/:${param}`
@@ -597,5 +623,10 @@ export default {
         }
       }
     }
+  },
+
+  processValue(schema, value, dataPath, graph) {
+    graph.addSource(dataPath, schema)
+    return value
   }
 }

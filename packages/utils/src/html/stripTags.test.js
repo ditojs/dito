@@ -1,4 +1,4 @@
-import { stripTags } from './stripTags'
+import { stripTags } from './stripTags.js'
 
 describe('stripTags()', () => {
   it('should remove html tags from strings', () => {

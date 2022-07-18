@@ -115,9 +115,9 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DomMixin from '@/mixins/DomMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
+import TypeComponent from '../TypeComponent.js'
+import DomMixin from '../mixins/DomMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { Editor, EditorContent, EditorMenuBar, Mark } from 'tiptap'
 import { toggleMark } from 'tiptap-commands'
 import {
@@ -281,23 +281,28 @@ export default TypeComponent.register('markup', {
     let changed = false
     let ignoreWatch = false
 
-    const onFocus = () => this.onFocus()
-
-    const onBlur = () => {
-      this.onBlur()
-      if (changed) {
+    const onChange = () => {
+      if (!this.focused && changed) {
         changed = false
         this.onChange()
       }
     }
 
+    const onFocus = () => this.onFocus()
+
+    const onBlur = () => {
+      this.onBlur()
+      onChange()
+    }
+
     const setValueDebounced = debounce(getValue => {
       ignoreWatch = true
       this.value = getValue()
+      changed = true
+      onChange()
     }, 100)
 
     const onUpdate = ({ getHTML }) => {
-      changed = true
       setValueDebounced(getHTML)
       this.onInput()
     }
@@ -486,7 +491,7 @@ export default TypeComponent.register('markup', {
       return list
     },
 
-    focus() {
+    focusElement() {
       this.$el.scrollIntoView?.()
       this.editor.focus()
     }

@@ -1,4 +1,4 @@
-import { camelize } from './camelize'
+import { camelize } from './camelize.js'
 
 const strings = [
   'foo bar', 'Foo bar', 'foo Bar', 'Foo Bar', 'FOO BAR', 'FooBar', 'fooBar'

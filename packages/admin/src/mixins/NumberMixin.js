@@ -1,4 +1,4 @@
-import { getSchemaAccessor } from '@/utils/accessor'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { isArray } from '@ditojs/utils'
 
 // @vue/component

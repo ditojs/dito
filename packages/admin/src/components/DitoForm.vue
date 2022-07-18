@@ -16,6 +16,15 @@
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
+    // Prevent implicit submission of the form, for example when typing enter
+    // in an input field.
+    // https://stackoverflow.com/a/51507806
+    button(
+      v-show="false"
+      type="submit"
+      disabled="true"
+      aria-hidden="true"
+    )
     dito-schema(
       :schema="schema"
       :dataPath="dataPath"
@@ -23,7 +32,6 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
-      :selectedTab="selectedTab"
       :menuHeader="true"
     )
       dito-buttons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
@@ -38,12 +46,12 @@
 </template>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import RouteMixin from '@/mixins/RouteMixin'
-import ResourceMixin from '@/mixins/ResourceMixin'
-import { getResource, getMemberResource } from '@/utils/resource'
-import { getButtonSchemas, isObjectSource } from '@/utils/schema'
 import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
+import DitoComponent from '../DitoComponent.js'
+import RouteMixin from '../mixins/RouteMixin.js'
+import ResourceMixin from '../mixins/ResourceMixin.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
+import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
@@ -79,7 +87,8 @@ export default DitoComponent.component('dito-form', {
         this.sourceSchema,
         // If there is no data yet, provide an empty object with just the right
         // type set, so the form can always be determined.
-        this.data || { type: this.type }
+        this.data || { type: this.type },
+        this.context
       ) || {} // Always return a schema object so we don't need to check for it.
     },
 
@@ -265,6 +274,10 @@ export default DitoComponent.component('dito-form', {
   },
 
   methods: {
+    emitSchemaEvent(event, params) {
+      return this.mainSchemaComponent.emitEvent(event, params)
+    },
+
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(this.path
@@ -304,11 +317,11 @@ export default DitoComponent.component('dito-form', {
 
     // @override ResourceMixin.clearData()
     clearData() {
-      this.setData(null, true)
+      this.setData(null)
     },
 
     // @override ResourceMixin.setData()
-    setData(data, clearing = false) {
+    setData(data) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {
         // For components with transient data, modify this.sourceData.
@@ -316,9 +329,6 @@ export default DitoComponent.component('dito-form', {
       } else {
         this.createdData = null
         this.loadedData = data
-      }
-      if (!clearing) {
-        this.mainSchemaComponent.onLoad()
       }
     },
 
@@ -337,17 +347,18 @@ export default DitoComponent.component('dito-form', {
       return this.navigate(this.parentRouteComponent.path)
     },
 
+    getSubmitVerb(present = true) {
+      return this.isCreating
+        ? present ? 'create' : 'created'
+        : present ? 'submit' : 'submitted'
+    },
+
     async submit(button, { validate = true, closeForm = false } = {}) {
       if (validate && !this.validateAll()) {
         return false
       }
 
-      const getVerb = present => {
-        const verb = this.isCreating
-          ? present ? 'create' : 'created'
-          : present ? 'submit' : 'submitted'
-        return this.verbs[verb]
-      }
+      const getVerb = present => this.verbs[this.getSubmitVerb(present)]
 
       // Allow buttons to override both method and resource path to submit to:
       const butttonResource = getResource(button.schema.resource, {
@@ -359,6 +370,10 @@ export default DitoComponent.component('dito-form', {
       let success
       if (!butttonResource && this.isTransient) {
         success = await this.submitTransient(button, resource, method, data, {
+          onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
+          onError: error => this.emitSchemaEvent('error', {
+            context: { error }
+          }),
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify({
@@ -386,6 +401,10 @@ export default DitoComponent.component('dito-form', {
       } else {
         success = await this.submitResource(button, resource, method, data, {
           setData: true,
+          onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
+          onError: error => this.emitSchemaEvent('error', {
+            context: { error }
+          }),
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify({
@@ -420,22 +439,27 @@ export default DitoComponent.component('dito-form', {
       return success
     },
 
-    async submitTransient(button, resource, method, data, {
-      notifyError,
-      notifySuccess
+    async submitTransient(button, _resource, _method, data, {
+      onSuccess,
+      onError,
+      notifySuccess,
+      notifyError
     }) {
       // Handle the default "submitting" of transient, nested data:
       const success = this.isCreating
         ? this.addSourceData(data)
         : this.setSourceData(data)
       if (success) {
+        onSuccess?.()
         await this.emitButtonEvent(button, 'success', {
           notify: notifySuccess
         })
       } else {
+        const error = 'Could not submit transient item'
+        onError?.(error)
         await this.emitButtonEvent(button, 'error', {
           notify: notifyError,
-          error: 'Could not submit transient item'
+          error
         })
       }
       return success

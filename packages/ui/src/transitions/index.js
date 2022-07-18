@@ -1,1 +1,1 @@
-export TransitionHeight from './TransitionHeight'
+export { default as TransitionHeight } from './TransitionHeight.vue'

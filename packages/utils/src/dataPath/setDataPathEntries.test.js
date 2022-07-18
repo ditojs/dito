@@ -1,4 +1,4 @@
-import { setDataPathEntries } from './setDataPathEntries'
+import { setDataPathEntries } from './setDataPathEntries.js'
 
 describe('setDataPathEntries()', () => {
   const data = {

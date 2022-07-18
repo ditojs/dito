@@ -1,4 +1,4 @@
-import { setValueAtDataPath } from './setValueAtDataPath'
+import { setValueAtDataPath } from './setValueAtDataPath.js'
 
 describe('setValueAtDataPath()', () => {
   const data = {

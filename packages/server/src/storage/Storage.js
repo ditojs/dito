@@ -1,10 +1,11 @@
 import path from 'path'
-import multer from '@koa/multer'
 import { URL } from 'url'
-import { ImageSizeTransform } from './ImageSizeTransform'
-import { ReadableClone } from './ReadableClone'
+import multer from '@koa/multer'
+import picomatch from 'picomatch'
+import imageSize from 'image-size'
+import { PassThrough } from 'stream'
 import { hyphenate, toPromiseCallback } from '@ditojs/utils'
-import { AssetFile } from './AssetFile'
+import { AssetFile } from './AssetFile.js'
 
 const storageClasses = {}
 
@@ -57,6 +58,14 @@ export class Storage {
     return AssetFile.getUniqueKey(name)
   }
 
+  isImportSourceAllowed(url) {
+    return picomatch.isMatch(url, this.config.allowedImports || [])
+  }
+
+  convertAssetFile(file) {
+    return AssetFile.convert(file, this)
+  }
+
   convertStorageFile(storageFile) {
     // Convert multer file object to our own file object format:
     return {
@@ -81,7 +90,7 @@ export class Storage {
     file.url = this._getFileUrl(storageFile)
     // TODO: Support `config.readImageSize`, but this can only be done onces
     // there are separate storage instances per model assets config!
-    return AssetFile.convert(file, this)
+    return this.convertAssetFile(file)
   }
 
   async removeFile(file) {
@@ -140,25 +149,7 @@ export class Storage {
 
   async _handleUpload(req, file, config) {
     if (config.readImageSize && this.isImageFile(file)) {
-      // Handle image size detection in parallel with multer file upload:
-      // Create two readable clones of the stream that can be read from
-      // simultaneously: The first to override `file.stream` with,
-      // the second to run the image size detection on.
-      // Pause the original stream until the original `storage._handleFile()` is
-      // called, to preserve original stream event behavior.
-      const { stream } = file
-      stream.pause() // resume() happens in this.handleFile()
-      const stream1 = new ReadableClone(stream)
-      const stream2 = new ReadableClone(stream)
-      const [res, size] = await Promise.all([
-        this._handleFile(req, file, stream1).finally(() => stream1.destroy()),
-        this._getImageSize(stream2).finally(() => stream2.destroy())
-      ])
-      if (size) {
-        res.width = size.width
-        res.height = size.height
-      }
-      return res
+      return this._handleImageFile(req, file)
     } else {
       return this._handleFile(req, file)
     }
@@ -168,9 +159,7 @@ export class Storage {
     // Calls the original `storage._handleFile()`, wrapped in a promise:
     return new Promise((resolve, reject) => {
       if (stream) {
-        // If there is a ReadableClone stream to read from instead, resume the
-        // original stream now and replace `file.stream` with the clone:
-        file.stream.resume()
+        // Replace the original `file.stream` with the pass-through stream:
         Object.defineProperty(file, 'stream', {
           configurable: true,
           enumerable: false,
@@ -181,19 +170,42 @@ export class Storage {
     })
   }
 
-  _getImageSize(stream) {
-    return new Promise(resolve => {
-      stream
-        .pipe(new ImageSizeTransform())
-        .on('size', resolve)
-        .on('error', err => {
-          // Do not reject with this error, but log it:
-          this.app.emit(
-            'error',
-            `Unable to determine image size: ${err}`
-          )
-          resolve(null)
-        })
+  async _handleImageFile(req, file) {
+    const { size, stream } = await new Promise(resolve => {
+      let data = null
+
+      const done = size => {
+        const stream = new PassThrough()
+        stream.write(data)
+        file.stream
+          .off('data', onData)
+          .off('end', onEnd)
+          .pipe(stream)
+        resolve({ size, stream })
+      }
+
+      const onEnd = () => {
+        this.app.emit('error', 'Unable to determine image size')
+        done(null)
+      }
+
+      const onData = chunk => {
+        data = data ? Buffer.concat([data, chunk]) : chunk
+        const size = imageSize(data)
+        if (size) {
+          done(size)
+        }
+      }
+
+      file.stream
+        .on('data', onData)
+        .on('end', onEnd)
     })
+
+    if (size) {
+      file.width = size.width
+      file.height = size.height
+    }
+    return this._handleFile(req, file, stream)
   }
 }

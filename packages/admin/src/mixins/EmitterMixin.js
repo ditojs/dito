@@ -97,8 +97,10 @@ export default {
                   if (res !== undefined) {
                     result = res
                   }
-                } catch (err) {
-                  console.error(`event handler for '${event}': `, err)
+                } catch (error) {
+                  console.error(
+                    `Error during event handler for '${event}':`, error
+                  )
                 }
               }
               // Resolve the promise that was added to the queue for the event

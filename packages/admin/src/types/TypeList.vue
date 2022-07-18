@@ -24,9 +24,9 @@
       )
     table.dito-table(
       :class=`{
-        'dito-table-separators': inlined,
-        'dito-table-larger-padding': hasEditButtons && !inlined,
-        'dito-table-alternate-colors': !inlined,
+        'dito-table-separators': isInlined,
+        'dito-table-larger-padding': hasEditButtons && !isInlined,
+        'dito-table-alternate-colors': !isInlined,
         'dito-table-even-count': hasEvenCount
       }`
     )
@@ -39,7 +39,7 @@
       vue-draggable(
         tag="tbody"
         v-bind="getDragOptions(draggable)"
-        :list="updateOrder(listData, schema, draggable, paginationRange)"
+        :list="updateOrder(sourceSchema, listData, paginationRange)"
         @start="onStartDrag"
         @end="onEndDrag"
       )
@@ -51,23 +51,24 @@
           template(v-if="columns")
             dito-table-cell(
               v-for="column in columns"
+              v-if="shouldRender(column)"
               :key="column.name"
               :class="getCellClass(column)"
-              :column="column"
+              :cell="column"
               :schema="schema"
               :dataPath="getDataPath(index)"
-              :dataPathIsValue="false"
               :data="item"
               :meta="nestedMeta"
               :store="store"
+              :nested="false"
               :disabled="disabled || isLoading"
             )
           template(v-else)
             td
               dito-schema-inlined(
-                v-if="inlined"
+                v-if="isInlined"
                 :label="getItemLabel(schema, item, { index, asObject: true })"
-                :schema="getItemFormSchema(schema, item, views)"
+                :schema="getItemFormSchema(schema, item, context)"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :meta="nestedMeta"
@@ -85,12 +86,12 @@
                 v-else-if="component"
                 :is="component"
                 :dataPath="getDataPath(index)"
-                :dataPathIsValue="false"
                 :data="item"
+                :nested="false"
               )
               span(
                 v-else-if="render"
-                v-html="render(getDitoContext(item, index))"
+                v-html="render(getContext(item, index))"
               )
               span(
                 v-else
@@ -104,7 +105,7 @@
               :draggable="draggable"
               :editable="editable"
               :editPath="getEditPath(item, index)"
-              :schema="getItemFormSchema(schema, item, views)"
+              :schema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
@@ -166,14 +167,14 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import DitoContext from '@/DitoContext'
-import SourceMixin from '@/mixins/SourceMixin'
-import OrderedMixin from '@/mixins/OrderedMixin'
+import TypeComponent from '../TypeComponent.js'
+import DitoContext from '../DitoContext.js'
+import SourceMixin from '../mixins/SourceMixin.js'
+import OrderedMixin from '../mixins/OrderedMixin.js'
 import VueDraggable from 'vuedraggable'
-import { getNamedSchemas } from '@/utils/schema'
-import { getFiltersPanel } from '@/utils/filter'
-import { appendDataPath } from '@/utils/data'
+import { getNamedSchemas, getViewEditPath } from '../utils/schema.js'
+import { getFiltersPanel } from '../utils/filter.js'
+import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
 // @vue/component
@@ -194,23 +195,26 @@ export default TypeComponent.register('list', {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
       // away. Use a proxy and a getter instead, to get around this:
-      const getComponent = () => schemaComponent.getComponent(dataPath)
+      const getListComponent = () => schemaComponent.getComponentByDataPath(
+        dataPath,
+        component => component.type === 'list'
+      )
 
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
         { // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
-            return getComponent()?.query
+            return getListComponent()?.query
           },
           set query(query) {
-            const comp = getComponent()
-            if (comp) {
+            const component = getListComponent()
+            if (component) {
               // Filter out undefined values for comparing with equals()
               const filter = obj => pickBy(obj, value => value !== undefined)
-              if (!equals(filter(query), filter(comp.query))) {
-                comp.query = query
-                comp.loadData(false)
+              if (!equals(filter(query), filter(component.query))) {
+                component.query = query
+                component.loadData(false)
               }
             }
           }
@@ -237,7 +241,7 @@ export default TypeComponent.register('list', {
     },
 
     hasCellEditButtons() {
-      return !this.inlined && this.hasEditButtons
+      return !this.isInlined && this.hasEditButtons
     },
 
     hasEvenCount() {
@@ -259,11 +263,9 @@ export default TypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
+        const path = getViewEditPath(this.schema, this.context) || this.path
         const id = this.getItemId(this.schema, item, index)
-        const { view } = this.schema
-        return view
-          ? `/${this.views[view].path}/${id}`
-          : `${this.path}/${id}`
+        return `${path}/${id}`
       }
       return null
     },
@@ -272,20 +274,20 @@ export default TypeComponent.register('list', {
       return `dito-cell-${hyphenate(column.name)}`
     },
 
-    getDitoContext(item, index) {
+    getContext(item, index) {
       return new DitoContext(this, {
-        name: undefined,
-        value: undefined,
         data: item,
+        value: item,
+        index,
         dataPath: this.getDataPath(index)
       })
     },
 
     onFilterErrors(errors) {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      const filtersPanel = this.schemaComponent.getPanel(filtersDataPath)
-      if (filtersPanel) {
-        filtersPanel.showValidationErrors(errors, true)
+      const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
+      if (panel) {
+        panel.showValidationErrors(errors, true)
         return true
       }
     }

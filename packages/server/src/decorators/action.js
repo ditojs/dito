@@ -1,8 +1,8 @@
-import { createDecorator } from '@/utils'
+import { createDecorator } from '../utils/index.js'
 
-export function action(verb, path) {
+export function action(method, path) {
   return createDecorator(value => {
-    value.verb = verb
+    value.method = method
     value.path = path
   })
 }

@@ -5,10 +5,10 @@ import {
   HasManyRelation,
   ManyToManyRelation
 } from 'objection'
-import { Model } from '@/models'
+import { Model } from '../models/index.js'
 import {
   getRelationClass, convertRelation, addRelationSchemas
-} from './relations'
+} from './relations.js'
 
 describe('getRelationClass()', () => {
   it('returns the corresponding relation classes', () => {

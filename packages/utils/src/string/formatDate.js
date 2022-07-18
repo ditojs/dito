@@ -1,5 +1,5 @@
-import { isDate } from '@/base'
-import { format } from './format'
+import { isDate } from '../base/index.js'
+import { format } from './format.js'
 
 export function formatDate(value, {
   locale = 'en-US',

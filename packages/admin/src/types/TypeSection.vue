@@ -2,11 +2,10 @@
   .dito-section(
     :class="{ 'dito-section-labelled' : !!schema.label }"
   )
-    dito-components.dito-section-components(
-      v-if="schema.components"
-      :schema="schema"
+    dito-pane.dito-section-pane(
+      :schema="getItemFormSchema(schema, item, context)"
       :dataPath="dataPath"
-      :data="data"
+      :data="item"
       :meta="meta"
       :store="store"
       :disabled="disabled"
@@ -23,14 +22,30 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
+import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 
 // @vue/component
 export default TypeComponent.register('section', {
-  unnested: true,
-  defaultValue: undefined,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  ignoreMissingValue: schema => !schema.nested && !('default' in schema),
+  defaultNested: false,
   generateLabel: false,
   omitFlexGrow: true,
-  omitPadding: schema => !schema.label
+
+  computed: {
+    item() {
+      return this.nested ? this.value : this.data
+    }
+  },
+
+  methods: {
+    getItemFormSchema
+  },
+
+  async processSchema(api, schema, name, routes, level) {
+    // Process section components so their forms get resolved too.
+    await processSchemaComponents(api, schema, routes, level)
+  }
 })
 </script>

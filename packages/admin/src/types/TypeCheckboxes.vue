@@ -25,12 +25,15 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import OptionsMixin from '@/mixins/OptionsMixin'
+import TypeComponent from '../TypeComponent.js'
+import OptionsMixin from '../mixins/OptionsMixin.js'
 
 // @vue/component
 export default TypeComponent.register('checkboxes', {
   mixins: [OptionsMixin],
+
+  nativeField: true,
+  defaultValue: [],
 
   computed: {
     selectedOptions: {
@@ -42,9 +45,6 @@ export default TypeComponent.register('checkboxes', {
         this.selectedValue = (option || [])
       }
     }
-  },
-
-  nativeField: true,
-  defaultValue: []
+  }
 })
 </script>

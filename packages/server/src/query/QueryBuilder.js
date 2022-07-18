@@ -1,13 +1,13 @@
 import objection from 'objection'
-import { KnexHelper } from '@/lib'
-import { QueryBuilderError, RelationError } from '@/errors'
-import { QueryParameters } from './QueryParameters'
-import { DitoGraphProcessor, walkGraph } from '@/graph'
 import {
-  isObject, isPlainObject, isString, isArray, clone,
+  isObject, isPlainObject, isString, isArray, clone, mapKeys,
   getValueAtDataPath, setValueAtDataPath, parseDataPath
 } from '@ditojs/utils'
-import { createLookup, getScope, deprecate } from '@/utils'
+import { QueryParameters } from './QueryParameters.js'
+import { KnexHelper } from '../lib/index.js'
+import { DitoGraphProcessor, walkGraph } from '../graph/index.js'
+import { QueryBuilderError, RelationError } from '../errors/index.js'
+import { createLookup, getScope, deprecate } from '../utils/index.js'
 
 const SYMBOL_ALL = Symbol('all')
 
@@ -107,6 +107,13 @@ export class QueryBuilder extends objection.QueryBuilder {
       this._copyScopes(query, true)
     }
     return this
+  }
+
+  // @override
+  toFindQuery() {
+    // Temporary workaround to fix this issue until it is resolved in Objection:
+    // https://github.com/Vincit/objection.js/issues/2093
+    return super.toFindQuery().clear('runAfter')
   }
 
   withScope(...scopes) {
@@ -209,38 +216,34 @@ export class QueryBuilder extends objection.QueryBuilder {
       this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
       this._ignoreScopes = { ...query._ignoreScopes }
     }
-    // If he target is a child query of a graph query, copy all scopes, graph
+    const scopes = isChildQuery
+      // When copying scopes for child-queries, we also need to take the already
+      // applied scopes into account and copy those too.
+      ? { ...query._appliedScopes, ...query._scopes }
+      : { ...query._scopes }
+    // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
     const copyAllScopes =
       isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)
-    this._scopes = this._filterScopes(query._scopes, (scope, graph) =>
-      copyAllScopes || graph)
-  }
-
-  _filterScopes(scopes, callback) {
-    return Object.entries(scopes).reduce(
-      (scopes, [scope, graph]) => {
-        if (callback(scope, graph)) {
-          scopes[scope] = graph
-        }
-        return scopes
-      },
-      {}
-    )
+    this._scopes = copyAllScopes
+      ? scopes
+      : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
   }
 
   _applyScope(scope, graph) {
     if (!this._ignoreScopes[SYMBOL_ALL] && !this._ignoreScopes[scope]) {
       // Prevent multiple application of scopes. This can easily occur
       // with the nesting and eager-application of graph-scopes, see below.
-      if (!this._appliedScopes[scope]) {
+      // NOTE: The boolean values indicate the `graph` settings, not whether the
+      // scopes were applied or not.
+      if (!(scope in this._appliedScopes)) {
         // Only apply graph-scopes that are actually defined on the model:
         const func = this.modelClass().getScope(scope)
         if (func) {
           func.call(this, this)
         }
-        this._appliedScopes[scope] = true
+        this._appliedScopes[scope] = graph
       }
       if (graph) {
         // Also bake the scope into any graph expression that may have been
@@ -248,12 +251,12 @@ export class QueryBuilder extends objection.QueryBuilder {
         const expr = this.graphExpressionObject()
         if (expr) {
           // Add a new modifier to the existing graph expression that
-          // recursively applies the graph-scope to the resulting queries.
-          // This even works if nested scopes expand the graph expression,
-          // because it re-applies itself to the result.
+          // recursively adds the graph-scope to the resulting queries. This
+          // even works if nested scopes expand the graph expression, because it
+          // re-applies itself to the result.
           const name = `^${scope}`
           const modifiers = {
-            [name]: query => query._applyScope(scope, graph)
+            [name]: query => query.withScope(name)
           }
           this.withGraph(
             addGraphScope(this.modelClass(), expr, [name], modifiers, true)
@@ -319,11 +322,13 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   raw(...args) {
-    return this.knex().raw(...args)
+    // TODO: Figure out a way to support `object.raw()` syntax and return a knex
+    // raw expression without accessing the private `RawBuilder.toKnexRaw()`:
+    return objection.raw(...args).toKnexRaw(this)
   }
 
   selectRaw(...args) {
-    return this.select(this.raw(...args))
+    return this.select(objection.raw(...args))
   }
 
   // Non-deprecated version of Objection's `pluck()`
@@ -373,7 +378,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // @override
-  async truncate({ restart = true, cascade = false } = {}) {
+  truncate({ restart = true, cascade = false } = {}) {
     if (this.isPostgreSQL()) {
       // Support `restart` and `cascade` in PostgreSQL truncate queries.
       return this.raw(
@@ -434,7 +439,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
-      const param = key.endsWith('[]') ? key.slice(0, key.length - 2) : key
+      const param = key.endsWith('[]') ? key.slice(0, -2) : key
       if (!allowed[param]) {
         throw new QueryBuilderError(`Query parameter '${key}' is not allowed.`)
       }
@@ -754,21 +759,25 @@ for (const key of [
     const { properties } = modelClass.definition
 
     // Expands all identifiers known to the model to their extended versions.
-    const expandIdentifier = identifier =>
-      identifier === '*' || identifier in properties
-        ? `${this.tableRefFor(modelClass)}.${identifier}`
-        : identifier
+    const expandIdentifier = identifier => {
+      // Support expansion of identifiers with aliases, e.g. `name AS newName`
+      const alias =
+        isString(identifier) &&
+        identifier.match(/^\s*([a-z][\w_]+)(\s+AS\s+.*)$/i)
+      return alias
+        ? `${expandIdentifier(alias[1])}${alias[2]}`
+        : identifier === '*' || identifier in properties
+          ? `${this.tableRefFor(modelClass)}.${identifier}`
+          : identifier
+    }
 
     const convertArgument = arg => {
       if (isString(arg)) {
         arg = expandIdentifier(arg)
       } else if (isArray(arg)) {
-        arg = arg.map(value => expandIdentifier(value))
+        arg = arg.map(expandIdentifier)
       } else if (isPlainObject(arg)) {
-        arg = Object.keys(arg).reduce((converted, key) => {
-          converted[expandIdentifier(key)] = arg[key]
-          return converted
-        }, {})
+        arg = mapKeys(arg, expandIdentifier)
       }
       return arg
     }
@@ -781,6 +790,12 @@ for (const key of [
     }
     return method.call(this, ...args)
   }
+}
+
+function filterScopes(scopes, callback) {
+  return Object.fromEntries(Object.entries(scopes).filter(
+    ([scope, graph]) => callback(scope, graph)
+  ))
 }
 
 // The default options for insertDitoGraph(), upsertDitoGraph(),

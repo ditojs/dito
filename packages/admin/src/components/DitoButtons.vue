@@ -1,12 +1,10 @@
 <template lang="pug">
-  // NOTE: This is similar to DitoComponents, but uses the DitoButtonContainer
-  // sub-class as the component container for different layout:
   .dito-buttons(
     v-if="buttonSchemas || $slots.default"
     /* Pass on $listeners so that dito-edit-buttons can pass events. */
     v-on="$listeners"
   )
-    dito-button-container(
+    dito-container(
       v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
       v-if="shouldRender(buttonSchema)"
       :key="buttonDataPath"
@@ -19,22 +17,28 @@
       :generateLabels="false"
     )
     // Render each node in the default slot through `dito-vnode`, so it can be
-    // wrapped in a `.dito-button-container` class.
-    .dito-button-container(
+    // wrapped in a `.dito-container` class.
+    .dito-container(
       v-for="node in $slots.default"
       v-if="node.tag"
     )
       dito-vnode(:node="node")
 </template>
 
+<style lang="sass">
+.dito-buttons
+  > .dito-container
+    padding: 0
+</style>
+
 <script>
-import DitoComponent from '@/DitoComponent'
-import { appendDataPath } from '@/utils/data'
+import DitoComponent from '../DitoComponent.js'
+import { appendDataPath } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('dito-buttons', {
   provide: {
-    tabComponent: null
+    $tabComponent: () => null
   },
 
   props: {

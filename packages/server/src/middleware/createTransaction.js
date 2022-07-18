@@ -1,5 +1,5 @@
 import { transaction } from 'objection'
-import { emitAsync } from '@/utils'
+import { emitAsync } from '../utils/index.js'
 
 export function createTransaction() {
   return async (ctx, next) => {

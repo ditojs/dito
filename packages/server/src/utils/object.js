@@ -1,7 +1,9 @@
 import { asArray } from '@ditojs/utils'
 
+export const getOwnKeys = Object.keys
+
 export function getAllKeys(object) {
-  // Unlike `Object.keys()`, this returns all enumerable keys not just own ones.
+  // Unlike `getOwnKeys()`, this returns all enumerable keys not just own ones.
   const keys = []
   for (const key in object) {
     keys.push(key)

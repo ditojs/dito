@@ -1,4 +1,4 @@
-import ItemMixin from '@/mixins/ItemMixin'
+import ItemMixin from '../mixins/ItemMixin.js'
 
 // @vue/component
 export default {
@@ -15,31 +15,21 @@ export default {
       this.dragging = true
     },
 
-    onEndDrag({ oldIndex, newIndex }, sourceSchema = this.schema) {
+    onEndDrag({ oldIndex, newIndex }) {
       this.dragging = false
       if (oldIndex !== newIndex) {
-        // When items are reordered, the components and dataProcessers
-        // registered by their data paths need to be updated as well:
-        this.schemaComponent._reorderDataPaths(
-          this.getItemDataPath(sourceSchema),
-          oldIndex,
-          newIndex
-        )
         this.onChange()
       }
     },
 
-    updateOrder(list, schema, draggable, paginationRange) {
-      // NOTE: This mixin requires the component to define `this.draggable`.
-      // TODO: Rename to a more meaningfull name, e.g. `orderKey` or
-      // `orderProperty`.
-      const order = draggable?.order
-      if (order) {
+    updateOrder(sourceSchema, list, paginationRange) {
+      const { orderKey } = sourceSchema
+      if (orderKey) {
         // Reorder the changed entries by their order key, taking pagination
         // offsets into account:
         const offset = paginationRange?.[0] || 0
         for (let i = 0; i < list.length; i++) {
-          list[i][order] = i + offset
+          list[i][orderKey] = i + offset
         }
       }
       return list

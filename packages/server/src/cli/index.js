@@ -1,11 +1,12 @@
-#!/usr/bin/env babel-node
+#!/usr/bin/env node
 
 import path from 'path'
-import chalk from 'chalk'
+import fs from 'fs'
+import pico from 'picocolors'
 import Knex from 'knex'
 import { isPlainObject, isFunction, camelize } from '@ditojs/utils'
-import * as db from './db'
-import startConsole from './console'
+import * as db from './db/index.js'
+import startConsole from './console.js'
 
 const commands = { db, console: startConsole }
 
@@ -39,7 +40,10 @@ async function execute() {
     }
     if (isFunction(arg)) {
       arg = await arg()
-    } else if (isPlainObject(arg) && arg.knex) {
+    }
+    if (isPlainObject(arg) && arg.knex) {
+      // A config object with a knex field was passed in, create a knex object
+      // from it to pass on to the execute function.
       arg = Knex(arg.knex)
     }
     const res = await execute(arg, ...args)
@@ -47,17 +51,21 @@ async function execute() {
   } catch (err) {
     if (err instanceof Error) {
       console.error(
-        chalk.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
+        pico.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
       )
     } else {
-      console.error(chalk.red(err))
+      console.error(pico.red(err))
     }
     process.exit(1)
   }
 }
 
-// Start the console if `node ./lib/cli/index.js`
-if (require.main === module) {
+// Start the console if `node ./cli/index.js`
+
+// See module was not imported but called directly
+const path1 = fs.realpathSync(import.meta.url.replace(/^file:\/\//, ''))
+const path2 = fs.realpathSync(process.argv[1])
+if (path1 === path2) {
   execute()
 }
 

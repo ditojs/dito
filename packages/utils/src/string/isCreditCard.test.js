@@ -1,4 +1,4 @@
-import { isCreditCard } from './isCreditCard'
+import { isCreditCard } from './isCreditCard.js'
 
 describe('isCreditCard()', () => {
   describe.each([

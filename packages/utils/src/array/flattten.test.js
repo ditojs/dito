@@ -1,4 +1,4 @@
-import { flatten } from './flatten'
+import { flatten } from './flatten.js'
 
 describe('flatten()', () => {
   it('should support flattening of nested arrays', () => {

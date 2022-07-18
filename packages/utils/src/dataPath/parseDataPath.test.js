@@ -1,4 +1,4 @@
-import { parseDataPath } from './parseDataPath'
+import { parseDataPath } from './parseDataPath.js'
 
 describe('parseDataPath()', () => {
   it('should parse JSON pointers', () => {
@@ -22,6 +22,19 @@ describe('parseDataPath()', () => {
   it(`should parse 'relative' property access notation`, () => {
     expect(parseDataPath('object.array[1].prop'))
       .toStrictEqual(['object', 'array', '1', 'prop'])
+  })
+
+  it('should parse relative and absolute tokens', () => {
+    expect(parseDataPath('/object/property1/../property2/../value'))
+      .toStrictEqual(['object', 'property1', '..', 'property2', '..', 'value'])
+    expect(parseDataPath('../object/value'))
+      .toStrictEqual(['..', 'object', 'value'])
+    expect(parseDataPath('./object/value'))
+      .toStrictEqual(['.', 'object', 'value'])
+    // This happens when concanating a data path with another absolute one, an
+    // empty space will be interpreted as "start from scratch" when normalizing.
+    expect(parseDataPath('//object/value'))
+      .toStrictEqual(['', 'object', 'value'])
   })
 
   it('should handle white-space in JSON pointers', () => {

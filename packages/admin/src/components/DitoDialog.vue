@@ -1,5 +1,5 @@
 <template lang="pug">
-  form.dito-dialog(@submit.prevent="")
+  form.dito-dialog(@submit.prevent="submit")
     dito-schema.dito-scroll(
       :schema="schema"
       :data="dialogData"
@@ -17,10 +17,10 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import { getButtonSchemas } from '@/utils/schema'
-import { addEvents } from '@ditojs/ui'
 import { clone } from '@ditojs/utils'
+import { addEvents } from '@ditojs/ui'
+import DitoComponent from '../DitoComponent.js'
+import { getButtonSchemas } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
@@ -73,13 +73,14 @@ export default DitoComponent.component('dito-dialog', {
         (schemas, [key, schema]) => {
           const { type, events } = schema
           if (!events) {
-            const click = type === 'submit' ? () => this.accept()
-              : key === 'cancel' ? () => this.cancel()
-              : null
-            if (click) {
+            if (type === 'cancel') {
               schema = {
                 ...schema,
-                events: { click }
+                events: {
+                  click() {
+                    this.cancel()
+                  }
+                }
               }
             }
           }
@@ -91,14 +92,14 @@ export default DitoComponent.component('dito-dialog', {
     },
 
     hasCancel() {
-      return Object.keys(this.buttonSchemas).includes('cancel')
+      return !!this.buttonSchemas.cancel
     }
   },
 
   mounted() {
     this.windowEvents = addEvents(window, {
       keyup: () => {
-        if (event.keyCode === 27) {
+        if (this.hasCancel && event.keyCode === 27) {
           this.cancel()
         }
       }
@@ -124,14 +125,12 @@ export default DitoComponent.component('dito-dialog', {
       this.hide()
     },
 
-    accept() {
+    submit() {
       this.resolve(this.dialogData)
     },
 
     cancel() {
-      if (this.hasCancel) {
-        this.resolve(null)
-      }
+      this.resolve(null)
     }
   }
 })

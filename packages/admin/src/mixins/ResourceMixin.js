@@ -1,9 +1,9 @@
-import ItemMixin from './ItemMixin'
-import LoadingMixin from './LoadingMixin'
-import { setDefaults } from '@/utils/schema'
+import ItemMixin from './ItemMixin.js'
+import LoadingMixin from './LoadingMixin.js'
+import { setDefaults } from '../utils/schema.js'
 import { isObject, isString, labelize } from '@ditojs/utils'
-import { getResource } from '@/utils/resource'
-import DitoContext from '@/DitoContext'
+import { getResource } from '../utils/resource.js'
+import DitoContext from '../DitoContext.js'
 
 // @vue/component
 export default {
@@ -189,7 +189,7 @@ export default {
     },
 
     createData(schema, type) {
-      return setDefaults(schema, type ? { type } : {})
+      return setDefaults(schema, type ? { type } : {}, this)
     },
 
     requestData() {
@@ -210,6 +210,7 @@ export default {
           }
         } else {
           this.setData(response.data)
+          this.emitSchemaEvent('load')
         }
       })
     },
@@ -263,9 +264,11 @@ export default {
     },
 
     getPayloadData(button, method) {
-      // Convention: only post and patch requests pass the data as payload.
+      // Convention: only post, put and patch requests pass the data as payload.
       return (
-        ['post', 'patch'].includes(method) && (
+        ['post', 'put', 'patch'].includes(method) && (
+          // TODO: Use `handleDataSchema()` asynchronously here instead, to
+          // offer the same amount of possibilities for data loading.
           button.getSchemaValue(['resource', 'data']) ||
           button.processedItem
         )
@@ -286,6 +289,8 @@ export default {
 
     async submitResource(button, resource, method, data, {
       setData = false,
+      onSuccess,
+      onError,
       notifySuccess = () => this.notify({
         type: 'success',
         title: 'Request Successful',
@@ -309,9 +314,10 @@ export default {
               // See if we're dealing with a Dito validation error:
               const errors = this.isValidationError(response) && data.errors
               if (errors) {
-                this.showValidationErrors(errors, true)
+                await this.showValidationErrors(errors, true)
               } else {
                 const error = isObject(data) ? data : err
+                onError?.(error)
                 await this.emitButtonEvent(button, 'error', {
                   notify: notifyError,
                   error
@@ -324,6 +330,7 @@ export default {
               if (setData && data) {
                 this.setData(data)
               }
+              onSuccess?.()
               await this.emitButtonEvent(button, 'success', {
                 notify: notifySuccess
               })
@@ -338,6 +345,7 @@ export default {
       // Create the context outside of `emitEvent()`, so that
       // `context.wasNotified` can be checked after.
       const context = new DitoContext(button, {
+        nested: false,
         data: this.data,
         itemLabel: this.itemLabel,
         error

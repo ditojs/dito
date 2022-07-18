@@ -1,14 +1,14 @@
-import appState from '@/appState'
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import EmitterMixin from './EmitterMixin'
-import { isMatchingType, convertType } from '@/utils/type'
-import { getResource, getMemberResource } from '@/utils/resource'
-import { deprecate } from '@/utils/deprecate'
 import {
   isObject, isArray, isString, isFunction, asArray, equals,
   getValueAtDataPath, labelize, hyphenate, format
 } from '@ditojs/utils'
+import appState from '../appState.js'
+import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
+import EmitterMixin from './EmitterMixin.js'
+import { isMatchingType, convertType } from '../utils/type.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
+import { deprecate } from '../utils/deprecate.js'
 
 // @vue/component
 export default {
@@ -25,7 +25,8 @@ export default {
     '$sourceComponent',
     '$resourceComponent',
     '$dialogComponent',
-    '$panelComponent'
+    '$panelComponent',
+    '$tabComponent'
   ],
 
   provide() {
@@ -67,6 +68,10 @@ export default {
 
     locale() {
       return this.api.locale
+    },
+
+    context() {
+      return new DitoContext(this, { nested: false })
     },
 
     rootComponent() {
@@ -118,6 +123,10 @@ export default {
       return this.$panelComponent()
     },
 
+    tabComponent() {
+      return this.$tabComponent()
+    },
+
     parentSchemaComponent() {
       return this.schemaComponent?.$parent.schemaComponent
     },
@@ -137,6 +146,10 @@ export default {
     }
   },
 
+  beforeCreate() {
+    this.$uid = ++uid
+  },
+
   methods: {
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
@@ -145,7 +158,7 @@ export default {
     // We can't store this in `data`, as this is already the pure data from the
     // API server. That's what the `store` is for: Memory that's available as
     // long as the current editing path is still valid. For type components,
-    // this memory is provided by the parent, see RouteMixin and DitoComponents.
+    // this memory is provided by the parent, see RouteMixin and DitoPane.
     getStore(key) {
       return this.store[key]
     },
@@ -160,7 +173,7 @@ export default {
 
     getSchemaValue(
       keyOrDataPath,
-      { type, default: def, schema = this.schema } = {}
+      { type, default: def, schema = this.schema, callback = true } = {}
     ) {
       const types = type && asArray(type)
       // For performance reasons, data-paths in `keyOrDataPath` can only be
@@ -171,13 +184,10 @@ export default {
           : schema[keyOrDataPath]
         : undefined
 
-      let context
-      const getContext = () => (context ||= new DitoContext(this))
-
       if (value === undefined && def !== undefined) {
-        if (isFunction(def) && !isMatchingType(types, def)) {
+        if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
-          def = def.call(this, getContext())
+          def = def.call(this, this.context)
         }
         return def
       }
@@ -187,13 +197,8 @@ export default {
       }
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
-      if (isFunction(value)) {
-        value = value.call(this, getContext())
-      }
-      // For boolean values that are defined as strings or arrays,
-      // interpret the values as user roles and match against user:
-      if (types?.includes(Boolean) && (isString(value) || isArray(value))) {
-        value = this.user?.hasRole(...asArray(value))
+      if (callback && isFunction(value)) {
+        value = value.call(this, this.context)
       }
       // Now finally see if we can convert to the expect types.
       if (types && value != null && !isMatchingType(types, value)) {
@@ -350,6 +355,7 @@ export default {
         return loadCache[cacheKey]
       }
       // NOTE: No await here, res is a promise that we can easily cache.
+      // That's fine because promises can be resolved over and over again.
       const res = this.sendRequest(options)
         .then(response => response.data)
         .catch(error => {
@@ -460,7 +466,7 @@ export default {
           this.$nextTick(() => {
             for (const [key, callback] of Object.entries(handlers)) {
               // Expand property names to 'data.property':
-              const expr = key in this.schemaComponent.components
+              const expr = this.schemaComponent.getComponentByName(key)
                 ? `data.${key}`
                 : key
               this.$watch(expr, callback)
@@ -471,7 +477,7 @@ export default {
 
       const addEvent = (key, event, callback) => {
         if (isFunction(callback)) {
-          this.on(event, callback)
+          this.on(hyphenate(event), callback)
         } else {
           console.error(`Invalid event definition: ${key}: ${callback}`)
         }
@@ -487,7 +493,7 @@ export default {
       // doing things. Decide which one to remove.
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {
-          addEvent(key, hyphenate(key.slice(2)), value)
+          addEvent(key, key.slice(2), value)
         }
       }
     },
@@ -501,7 +507,7 @@ export default {
       if (hasListeners || parentHasListeners) {
         // The effects of some events need some time to propagate through Vue.
         // Use $nextTick() to make sure our handlers see these changes.
-        // For example, `processedData` is only correct after components that
+        // For example, `processedItem` is only correct after components that
         // are newly rendered due to data changes have registered themselves.
         if (['load', 'change'].includes(event)) {
           await this.$nextTick()
@@ -517,6 +523,12 @@ export default {
         }
         return res
       }
+    },
+
+    emitSchemaEvent(event, params) {
+      return this.schemaComponent.emitEvent(event, params)
     }
   }
 }
+
+let uid = 0

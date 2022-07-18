@@ -1,11 +1,10 @@
-import DitoContext from '@/DitoContext'
 import {
   isFunction, isString, parseDataPath, normalizeDataPath
 } from '@ditojs/utils'
 
 export function getSchemaAccessor(
   keyOrDataPath,
-  { type, default: def, get, set } = {}
+  { type, default: def, get, set, callback = true } = {}
 ) {
   // `keyOrDataPath` can be a simple property key,
   // or a data-path into sub-properties, both in array or string format.
@@ -24,7 +23,7 @@ export function getSchemaAccessor(
         // `set()` stores changed values in the separate `overrides` object.
         ? this.overrides && name in this.overrides
           ? this.overrides[name]
-          : this.getSchemaValue(keyOrDataPath, { type, default: def })
+          : this.getSchemaValue(keyOrDataPath, { type, default: def, callback })
         : undefined
       return get ? get.call(this, value) : value
     },
@@ -46,9 +45,11 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       let value = this.getStore(name)
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
-        value = isFunction(def) ? def.call(this, new DitoContext(this)) : def
+        value = isFunction(def) ? def.call(this, this.context) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
+        // Now access store again, for reactivity tracking
+        this.getStore(name)
       }
       // Allow the provided getter to further change or process the value
       // retrieved from the store:

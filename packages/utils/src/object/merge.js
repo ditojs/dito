@@ -1,9 +1,9 @@
-import { isArray, isPlainObject } from '@/base'
-import { clone } from './clone'
+import { isArray, isPlainObject } from '../base/index.js'
+import { clone } from './clone.js'
 
 export function merge(target, ...sources) {
   const _merge = (target, source, cloneTarget) => {
-    if (target && source && (
+    if (target && source && target !== source && (
       isArray(target) && isArray(source) ||
       isPlainObject(target) && isPlainObject(source)
     )) {
@@ -11,10 +11,7 @@ export function merge(target, ...sources) {
         ? clone(target)
         : target
       for (const key of Object.keys(source)) {
-        const value = _merge(target[key], source[key], true)
-        if (value !== undefined || !(key in result)) {
-          result[key] = value
-        }
+        result[key] = _merge(target[key], source[key], true)
       }
       return result
     }

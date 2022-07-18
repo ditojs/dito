@@ -1,8 +1,10 @@
-import DitoContext from '@/DitoContext'
-import DataMixin from './DataMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
+import DitoContext from '../DitoContext.js'
+import DataMixin from './DataMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
+import { setTemporaryId, isReference } from '../utils/data.js'
 import {
-  isObject, isArray, isString, isFunction, labelize, debounceAsync
+  isObject, isArray, isString, isFunction,
+  normalizeDataPath, labelize, debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -18,14 +20,14 @@ export default {
   computed: {
     selectedValue: {
       get() {
-        const convert = value => this.relate
+        const convertValue = value => this.relate
           ? this.hasOption(value)
             ? this.getValueForOption(value)
             : null
           : value
         const value = isArray(this.value)
-          ? this.value.map(convert).filter(value => value !== null)
-          : convert(this.value)
+          ? this.value.map(convertValue).filter(value => value !== null)
+          : convertValue(this.value)
         if (
           // When relating and as soon as the options are available...
           this.relate && this.hasOptions && (
@@ -33,7 +35,7 @@ export default {
             value === null && this.value !== null ||
             // ...or if the value is a reference, replace it with its option
             // value, so that it'll hold actual data, not just a reference id.
-            this.schemaComponent.isReference(this.value)
+            isReference(this.value)
           )
         ) {
           this.selectedValue = value
@@ -56,9 +58,9 @@ export default {
     },
 
     options() {
-      const { options } = this.schema
-      const value = isObject(options) ? options.data : options
-      const data = this.handleDataOption(value, 'options') ?? []
+      const data = this.handleDataSchema(this.schema.options, 'options', {
+        resolveCounter: 1
+      }) ?? []
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }
@@ -73,8 +75,12 @@ export default {
     },
 
     relate: getSchemaAccessor('relate', {
+      // TODO: Convert to `relateBy: 'id'`
       type: Boolean,
-      default: false
+      default: false,
+      // We cannot use schema accessor callback magic for `relate` as we need
+      // this outside of the component's life-span, see `processData()` below.
+      callback: false
     }),
 
     groupBy: getSchemaAccessor('groupBy', {
@@ -135,17 +141,6 @@ export default {
   },
 
   methods: {
-    getDataProcessor() {
-      // Convert object to a shallow copy with only id.
-      const processRelate = data => data ? { id: data.id } : data
-      return this.relate
-        // Selected options can be both objects & arrays, e.g. TypeCheckboxes:
-        ? value => isArray(value)
-          ? value.map(entry => processRelate(entry))
-          : processRelate(value)
-        : null
-    },
-
     getOptionKey(key) {
       const [option] = this.activeOptions
       return isObject(option) && key in option ? key : null
@@ -161,7 +156,7 @@ export default {
           // we're currently editing.
           for (const option of options) {
             if (!('id' in option)) {
-              this.schemaComponent.setTemporaryId(option)
+              setTemporaryId(option, 'id')
             }
           }
         }
@@ -230,5 +225,29 @@ export default {
           ? optionLabel.call(this, new DitoContext(this, { option }))
           : labelize(`${option}`)
     }
+  },
+
+  processValue(schema, value, dataPath, graph) {
+    if (schema.relate) {
+      // For internally relating data (`schema.options.dataPath`), we need to
+      // process both the options (for '#ref') and the value ('#id').
+      // See `DataMixin.handleDataSchema()`:
+      const path = schema.options?.dataPath
+      const relatedDataPath = path
+        ? normalizeDataPath(`${dataPath}/${path}`)
+        : null
+      graph.addRelation(dataPath, relatedDataPath, schema)
+      if (relatedDataPath) {
+        graph.setSourceRelated(relatedDataPath)
+      }
+      // Convert relating objects to a shallow copy with only the id left.
+      // TODO: Convert to using `relateBy`:
+      const processRelate = value => value ? { id: value.id } : value
+      // Selected options can be both objects & arrays, e.g. 'checkboxes':
+      value = isArray(value)
+        ? value.map(processRelate)
+        : processRelate(value)
+    }
+    return value
   }
 }

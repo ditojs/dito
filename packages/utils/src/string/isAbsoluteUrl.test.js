@@ -1,4 +1,4 @@
-import { isAbsoluteUrl } from './isAbsoluteUrl'
+import { isAbsoluteUrl } from './isAbsoluteUrl.js'
 
 describe('isAbsoluteUrl()', () => {
   it('should return true for absolute URLs starting with schemas', () => {

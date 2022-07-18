@@ -1,4 +1,4 @@
-import { merge } from './merge'
+import { merge } from './merge.js'
 
 describe('merge()', () => {
   it('should merge nested objects', () => {
@@ -80,21 +80,20 @@ describe('merge()', () => {
     expect(actual2.a).toStrictEqual([[4, 5, 3]])
   })
 
-  it('should not overwrite existing values with `undefined` in objects', () => {
+  it('should overwrite existing values with `undefined` in objects', () => {
     const actual = merge({ a: 1 }, { a: undefined, b: undefined })
-    expect(actual).toStrictEqual({ a: 1, b: undefined })
+    expect(actual).toStrictEqual({ a: undefined, b: undefined })
   })
 
-  it('should not overwrite existing values with `undefined` in arrays', () => {
+  it('should overwrite existing values with `undefined` in arrays', () => {
     const array1 = [1]
     array1[2] = 3
     const actual1 = merge([4, 5, 6], array1)
-    const expected1 = [1, 5, 3]
-    expect(actual1).toStrictEqual(expected1)
+    expect(actual1).toStrictEqual([1, 5, 3])
 
     const array2 = [1, undefined, 3]
     const actual2 = merge([4, 5, 6], array2)
-    expect(actual2).toStrictEqual(expected1)
+    expect(actual2).toStrictEqual([1, undefined, 3])
   })
 
   it('should merge regexps', () => {
@@ -109,5 +108,17 @@ describe('merge()', () => {
     const source2 = { a: new Date(2021, 5, 9) }
     const expected = { a: new Date(2021, 5, 9) }
     expect(merge({}, source1, source2)).toStrictEqual(expected)
+  })
+
+  it('should be fine with nested promises', async () => {
+    const promise1 = (async () => 1)()
+    const promise2 = (async () => 2)()
+    const source1 = { nested: { promise1 } }
+    const source2 = { nested: { promise2 } }
+    const expected = { nested: { promise1, promise2 } }
+    const result = merge({}, source1, source2)
+    expect(result).toStrictEqual(expected)
+    expect(await result.nested.promise1).toStrictEqual(1)
+    expect(await result.nested.promise2).toStrictEqual(2)
   })
 })

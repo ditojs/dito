@@ -1,38 +1,53 @@
+import os from 'os'
+import path from 'path'
+import util from 'util'
+import zlib from 'zlib'
+import fs from 'fs-extra'
 import Koa from 'koa'
 import Knex from 'knex'
-import util from 'util'
 import axios from 'axios'
-import chalk from 'chalk'
-import zlib from 'zlib'
+import pico from 'picocolors'
+import pino from 'pino'
 import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
+import mount from 'koa-mount'
 import passport from 'koa-passport'
 import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
-import koaLogger from 'koa-logger'
-import pinoLogger from 'koa-pino-logger'
 import responseTime from 'koa-response-time'
 import Router from '@ditojs/router'
-import { EventEmitter } from '@/lib'
-import { Controller, AdminController } from '@/controllers'
-import { Service } from '@/services'
-import { Storage } from '@/storage'
-import { convertSchema } from '@/schema'
-import { ValidationError, AssetError } from '@/errors'
 import {
-  handleError, findRoute, handleRoute, createTransaction, emitUserEvents
-} from '@/middleware'
-import SessionStore from './SessionStore'
-import { Validator } from './Validator'
-import {
-  isObject, isString, asArray, isPlainObject, hyphenate, clone, merge,
-  parseDataPath, normalizeDataPath
+  isArray, isObject, isString, asArray, isPlainObject, isModule,
+  hyphenate, clone, merge, parseDataPath, normalizeDataPath, toPromiseCallback
 } from '@ditojs/utils'
+import SessionStore from './SessionStore.js'
+import { Validator } from './Validator.js'
+import { EventEmitter } from '../lib/index.js'
+import { Controller, AdminController } from '../controllers/index.js'
+import { Service } from '../services/index.js'
+import { Storage } from '../storage/index.js'
+import { convertSchema } from '../schema/index.js'
+import { formatJson } from '../utils/index.js'
+import {
+  ResponseError,
+  ValidationError,
+  DatabaseError,
+  AssetError
+} from '../errors/index.js'
+import {
+  attachLogger,
+  createTransaction,
+  findRoute,
+  handleError,
+  handleRoute,
+  handleUser,
+  logRequests
+} from '../middleware/index.js'
 import {
   Model,
   BelongsToOneRelation,
@@ -73,12 +88,13 @@ export class Application extends Koa {
     this.models = Object.create(null)
     this.services = Object.create(null)
     this.controllers = Object.create(null)
-    this.hasControllerMiddleware = false
+    this.server = null
+    this.isRunning = false
+
+    this.setupLogger()
     this.setupKnex()
-    this.setupGlobalMiddleware()
-    if (middleware) {
-      this.use(middleware)
-    }
+    this.setupMiddleware(middleware)
+
     if (config.storages) {
       this.addStorages(config.storages)
     }
@@ -93,20 +109,29 @@ export class Application extends Koa {
     }
   }
 
-  addRoute(verb, path, transacted, handlers, controller = null, action = null) {
-    handlers = asArray(handlers)
-    const handler = handlers.length > 1 ? compose(handlers) : handlers[0]
+  addRoute(
+    method, path, transacted, middlewares, controller = null, action = null
+  ) {
+    middlewares = asArray(middlewares)
+    const middleware = middlewares.length > 1
+      ? compose(middlewares)
+      : middlewares[0]
     // Instead of directly passing `handler`, pass a `route` object that also
     // will be exposed through `ctx.route`, see `routerHandler()`:
     const route = {
-      verb,
+      method,
       path,
       transacted,
-      handler,
+      middleware,
       controller,
       action
     }
-    this.router[verb](path, route)
+    if (!(method in this.router)) {
+      throw new Error(
+        `Unsupported HTTP method '${method}' in route '${path}'`
+      )
+    }
+    this.router[method](path, route)
   }
 
   addModels(models) {
@@ -135,23 +160,29 @@ export class Application extends Koa {
     const { log } = this.config
     if (log.schema || log.relations) {
       for (const modelClass of sortedModels) {
+        const shouldLog = option => (
+          option === true ||
+          asArray(option).includes(modelClass.name)
+        )
         const data = {}
-        if (log.schema) {
-          data.jsonSchema = modelClass.getJsonSchema()
+        if (shouldLog(log.schema)) {
+          data.schema = modelClass.getJsonSchema()
         }
-        if (log.relations) {
-          data.relationMappings = clone(modelClass.relationMappings, value =>
+        if (shouldLog(log.relations)) {
+          data.relations = clone(modelClass.relationMappings, value =>
             Model.isPrototypeOf(value) ? `[Model: ${value.name}]` : value
           )
         }
-        console.info(
-          chalk.yellow.bold(`\n${modelClass.name}:\n`),
-          util.inspect(data, {
-            colors: true,
-            depth: null,
-            maxArrayLength: null
-          })
-        )
+        if (Object.keys(data).length > 0) {
+          console.info(
+            pico.yellow(pico.bold(`\n${modelClass.name}:\n`)),
+            util.inspect(data, {
+              colors: true,
+              depth: null,
+              maxArrayLength: null
+            })
+          )
+        }
       }
     }
   }
@@ -216,12 +247,7 @@ export class Application extends Koa {
 
   addServices(services) {
     for (const [name, service] of Object.entries(services)) {
-      // Handle ES6 module weirdness that can happen, apparently:
-      if (name === 'default' && isPlainObject(service)) {
-        this.addServices(service)
-      } else {
-        this.addService(service, name)
-      }
+      this.addService(service, name)
     }
   }
 
@@ -260,13 +286,9 @@ export class Application extends Koa {
     return Object.values(this.services).find(callback)
   }
 
-  forEachService(callback) {
-    return Promise.all(Object.values(this.services).map(callback))
-  }
-
   addControllers(controllers, namespace) {
     for (const [key, value] of Object.entries(controllers)) {
-      if (isPlainObject(value)) {
+      if (isModule(value) || isPlainObject(value)) {
         this.addControllers(value, namespace ? `${namespace}/${key}` : key)
       } else {
         this.addController(value, namespace)
@@ -275,8 +297,6 @@ export class Application extends Koa {
   }
 
   addController(controller, namespace) {
-    // Controllers require additional middleware to be installed once.
-    this.setupControllerMiddleware()
     // Auto-instantiate controller classes:
     if (Controller.isPrototypeOf(controller)) {
       // eslint-disable-next-line new-cap
@@ -292,11 +312,11 @@ export class Application extends Koa {
     // Now that the controller is set up, call `initialize()` which can be
     // overridden by controllers.
     controller.initialize()
-    // Each controller can also provide further middleware, e.g.
-    // `AdminController`:
-    const middleware = controller.compose()
-    if (middleware) {
-      this.use(middleware)
+    // Each controller can also compose their own middleware (or app), e.g. as
+    // used in `AdminController`:
+    const composed = controller.compose()
+    if (composed) {
+      this.use(mount(controller.url, composed))
     }
   }
 
@@ -314,8 +334,8 @@ export class Application extends Koa {
     )
   }
 
-  getAdminVueConfig(mode = 'production') {
-    return this.getAdminController()?.getVueConfig(mode) || null
+  getAdminViteConfig(config) {
+    return this.getAdminController()?.getViteConfig(config) || null
   }
 
   getAssetConfig({
@@ -397,24 +417,48 @@ export class Application extends Koa {
 
   compileParametersValidator(parameters, options = {}) {
     const list = []
+    const { dataName = 'data' } = options
+
     let properties = null
-    const rootName = options.rootName || 'root'
-    for (const param of asArray(parameters)) {
-      const schema = isString(param) ? { type: param } : param
-      list.push(schema)
-      if (!(schema.member)) {
-        const { name, type, ...rest } = schema
-        properties = properties || {}
-        properties[name || rootName] = type ? { type, ...rest } : rest
+    const addParameter = (name, schema) => {
+      list.push({
+        name: name ?? null,
+        ...schema
+      })
+      if (!schema.member) {
+        properties ||= {}
+        properties[name || dataName] = schema
       }
     }
-    // NOTE: If properties is null, schema and validate will become null too:
-    const schema = convertSchema(properties, options)
+
+    // Support two formats of parameters definitions:
+    // - An array of parameter schemas, named by their `name` key.
+    // - An object of parameter schemas, named by the key under which each
+    //   schema is stored in the root object.
+    // If an array is passed, then the controller actions receives the
+    // parameters as separate arguments. If an object is passed, then the
+    // actions receives one parameter object where under the same keys the
+    // specified parameter values are stored.
+    let asObject = false
+    if (isArray(parameters)) {
+      for (const { name, ...schema } of parameters) {
+        addParameter(name, schema)
+      }
+    } else if (isObject(parameters)) {
+      asObject = true
+      for (const [name, schema] of Object.entries(parameters)) {
+        if (schema) {
+          addParameter(name, schema)
+        }
+      }
+    } else if (parameters) {
+      throw new Error(`Invalid parameters definition: ${parameters}`)
+    }
+    const schema = properties
+      ? convertSchema({ type: 'object', properties }, options)
+      : null
     const validate = this.compileValidator(schema, {
       // For parameters, always coerce types, including arrays.
-      // TODO: This coerces `null` to 0 for numbers, which is not what we'd want
-      // Implement our own coercion instead, which we already do for objects,
-      // see ControllerAction.validateParameters()
       coerceTypes: 'array',
       ...options
     })
@@ -426,7 +470,8 @@ export class Application extends Koa {
     return {
       list,
       schema,
-      rootName,
+      asObject,
+      dataName,
       validate: validate
         // Use `call()` to pass ctx as context to Ajv, see passContext:
         ? data => validate.call(ctx, data)
@@ -434,31 +479,44 @@ export class Application extends Koa {
     }
   }
 
-  createValidationError({ type, message, errors, options }) {
+  createValidationError({ type, message, errors, options, json }) {
     return new ValidationError({
       type,
       message,
-      errors: this.validator.parseErrors(errors, options)
+      errors: this.validator.parseErrors(errors, options),
+      // Only include the JSON data in the error if `log.errors.json`is set.
+      json: this.config.log.errors?.json ? json : undefined
     })
   }
 
-  setupGlobalMiddleware() {
+  createDatabaseError(error) {
+    // Remove knex SQL query and move to separate `sql` property.
+    // TODO: Fix this properly in Knex / Objection instead, see:
+    // https://gitter.im/Vincit/objection.js?at=5a68728f5a9ebe4f75ca40b0
+    const [, sql, message] = error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
+      [null, null, error.message]
+    return new DatabaseError(error, {
+      message,
+      // Only include the SQL query in the error if `log.errors.sql`is set.
+      sql: this.config.log.errors?.sql ? sql : undefined
+    })
+  }
+
+  setupMiddleware(middleware) {
     const { app, log } = this.config
 
-    const logger = {
-      console: koaLogger,
-      true: koaLogger,
-      // TODO: Implement logging to actual file instead of console for Pino.
-      file: pinoLogger
-    }[log.requests]
+    // Setup global middleware
 
-    this.use(handleError())
+    this.use(attachLogger(this.logger))
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
-    if (logger) {
-      this.use(logger(getOptions(app.logger)))
+    if (log.requests) {
+      this.use(logRequests())
     }
+    // This needs to be positioned after the request logger to log the correct
+    // response status.
+    this.use(handleError())
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
     }
@@ -483,49 +541,80 @@ export class Application extends Koa {
       this.use(conditional())
       this.use(etag())
     }
+
+    // Controller-specific middleware
+
+    // 1. Find route from routes installed by controllers.
+    this.use(findRoute(this.router))
+    // 2. Additional, user-space application-level middleware.
+    if (middleware) {
+      this.use(middleware)
+    }
+    // 3. body parser
+    this.use(bodyParser(getOptions(app.bodyParser)))
+    // 4. respect transacted settings, create and handle transactions.
+    this.use(createTransaction())
+    // 5. session
+    if (app.session) {
+      const {
+        modelClass,
+        ...options
+      } = getOptions(app.session)
+      if (modelClass) {
+        // Create a ContextStore that resolved the specified model class,
+        // uses it to persist and retrieve the session, and automatically
+        // binds all db operations to `ctx.transaction`, if it is set.
+        // eslint-disable-next-line new-cap
+        options.ContextStore = SessionStore(modelClass)
+      }
+      this.use(session(options, this))
+    }
+    // 6. passport
+    if (app.passport) {
+      this.use(passport.initialize())
+      if (app.session) {
+        this.use(passport.session())
+      }
+      this.use(handleUser())
+    }
+    // 6. finally handle the found route, or set status / allow accordingly.
+    this.use(handleRoute())
   }
 
-  setupControllerMiddleware() {
-    // NOTE: This is not part of the automatic `setupGlobalMiddleware()` so that
-    // apps can set up the static serving of assets before installing the
-    // session and passport middleware. It is called from `addController()`.
-    // Use a flag to only install the middleware once:
-    if (!this.hasControllerMiddleware) {
-      const { app } = this.config
-      // Sequence is important:
-      // 1. body parser
-      this.use(bodyParser(getOptions(app.bodyParser)))
-      // 2. find route from routes installed by controllers.
-      this.use(findRoute(this.router))
-      // 3. respect transacted settings, create and handle transactions.
-      this.use(createTransaction())
-      // 4. session
-      if (app.session) {
-        const {
-          modelClass,
-          ...options
-        } = getOptions(app.session)
-        if (modelClass) {
-          // Create a ContextStore that resolved the specified model class,
-          // uses it to persist and retrieve the session, and automatically
-          // binds all db operations to `ctx.transaction`, if it is set.
-          // eslint-disable-next-line new-cap
-          options.ContextStore = SessionStore(modelClass)
-        }
-        this.use(session(options, this))
-      }
-      // 5. passport
-      if (app.passport) {
-        this.use(passport.initialize())
-        if (app.session) {
-          this.use(passport.session())
-        }
-        this.use(emitUserEvents())
-      }
-      // 6. finally handle the found route, or set status / allow accordingly.
-      this.use(handleRoute())
-      this.hasControllerMiddleware = true
-    }
+  setupLogger() {
+    const { err, req, res } = pino.stdSerializers
+    // Only include `id` from the user, to not inadvertently log PII.
+    const user = user => ({ id: user.id })
+    const serializers = { err, req, res, user }
+
+    const { prettyPrint, ...options } = merge({
+      level: 'info',
+      serializers,
+      prettyPrint: {
+        colorize: true,
+        // List of keys to ignore in pretty mode.
+        ignore: 'req,res,durationMs,user,requestId',
+        // SYS to use system time and not UTC.
+        translateTime: 'SYS:HH:MM:ss.l'
+      },
+      // Redact common sensitive headers.
+      redact: [
+        '*.headers["cookie"]',
+        '*.headers["set-cookie"]',
+        '*.headers["authorization"]'
+      ],
+      base: null // no pid,hostname,name
+    }, getOptions(this.config.logger))
+
+    const transport = prettyPrint
+      ? pino.transport({
+        target: 'pino-pretty',
+        options: prettyPrint
+      }) : null
+
+    const logger = pino(options, transport)
+
+    this.logger = logger.child({ name: 'app' })
   }
 
   setupKnex() {
@@ -541,6 +630,16 @@ export class Application extends Koa {
         }
       }
       this.knex = Knex(knex)
+      // Support PostgreSQL type parser mappings in the config.
+      if (
+        knex.client === 'postgresql' &&
+        knex.typeParsers &&
+        this.knex.client.driver
+      ) {
+        for (const [type, parser] of Object.entries(knex.typeParsers)) {
+          this.knex.client.driver.types.setTypeParser(type, parser)
+        }
+      }
       if (log.sql) {
         this.setupKnexLogging()
       }
@@ -549,30 +648,19 @@ export class Application extends Koa {
 
   setupKnexLogging() {
     const startTimes = {}
-
-    function trim(str, length = 1024) {
-      return str.length > length
-        ? `${str.slice(0, length - 3)}...`
-        : str
-    }
-
+    const logger = this.logger.child({ name: 'sql' })
     function end(query, { response, error }) {
       const id = query.__knexQueryUid
       const diff = process.hrtime(startTimes[id])
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
-      const bindings = query.bindings.join(', ')
-      console.info(
-        chalk.yellow.bold('knex:sql'),
-        chalk.cyan(trim(query.sql)),
-        chalk.magenta(duration + 'ms'),
-        chalk.gray(`[${trim(bindings)}]`),
-        response
-          ? chalk.green(trim(JSON.stringify(response)))
-          : error
-            ? chalk.red(trim(JSON.stringify(error)))
-            : ''
+      const { sql, bindings } = query
+      response = Object.fromEntries(
+        Object.entries(response).filter(
+          ([key]) => !key.startsWith('_')
+        )
       )
+      logger.info({ duration, bindings, response, error }, sql)
     }
 
     this.knex
@@ -600,67 +688,95 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  onError(err) {
+  formatError(err) {
+    const message = err.toJSON
+      ? formatJson(err.toJSON())
+      : err.message || err
+    const str = `${err.name}: ${message}`
+    return err.stack && this.config.log.errors?.stack !== false
+      ? `${str}\n${err.stack.split(/\n|\r\n|\r/).slice(1).join(os.EOL)}`
+      : str
+  }
+
+  logError(err, ctx) {
     if (!err.expose && !this.silent) {
-      console.error(`${err.name}: ${err.toJSON
-        ? JSON.stringify(err.toJSON(), null, 2)
-        : err.message || err}`
-      )
-      if (err.stack) {
-        console.error(err.stack)
+      try {
+        const text = this.formatError(err)
+        const level =
+          err instanceof ResponseError && err.status < 500 ? 'info' : 'error'
+        const logger = ctx?.logger || this.logger
+        logger[level](text)
+      } catch (e) {
+        console.error('Could not log error', e)
       }
     }
   }
 
   async start() {
-    if (!this.listeners('error').length) {
-      this.on('error', this.onError)
+    if (this.config.log.errors !== false) {
+      this.on('error', this.logError)
     }
     await this.emit('before:start')
-    await this.forEachService(service => service.start())
-    const {
-      server: { host, port },
-      env
-    } = this.config
-    this.server = await new Promise((resolve, reject) => {
-      const server = this.listen(port, host, () => {
-        const { port } = server.address()
+    this.server = await new Promise(resolve => {
+      const server = this.listen(this.config.server, () => {
+        const { address, port } = server.address()
         console.info(
-          `${env} server started at http://${host}:${port}`
+          `Dito.js server started at http://${address}:${port}`
         )
         resolve(server)
       })
-      if (!server) {
-        reject(new Error(`Unable to start server at http://${host}:${port}`))
-      }
     })
+    if (!this.server) {
+      throw new Error('Unable to start Dito.js server')
+    }
+    this.isRunning = true
     await this.emit('after:start')
   }
 
-  async stop() {
-    await this.emit('before:stop')
-    this.server = await new Promise((resolve, reject) => {
-      if (this.server) {
-        this.server.close(err => {
-          if (err) {
-            reject(err)
-          } else {
-            resolve(null)
-          }
-        })
-      } else {
-        reject(new Error('Server is not running'))
-      }
-    })
-    await this.forEachService(service => service.stop())
-    await this.emit('after:stop')
+  async stop(timeout = 0) {
+    if (!this.server) {
+      throw new Error('Dito.js server is not running')
+    }
+
+    const promise = (async () => {
+      await this.emit('before:stop')
+      this.isRunning = false
+      await new Promise((resolve, reject) => {
+        this.server.close(toPromiseCallback(resolve, reject))
+      })
+      // Hack to make sure that the server is closed, even if sockets are still
+      // open after `server.close()`, see: https://stackoverflow.com/a/36830072
+      this.server.emit('close')
+      this.server = null
+      await this.emit('after:stop')
+    })()
+
+    if (timeout > 0) {
+      await Promise.race([
+        promise,
+        new Promise((resolve, reject) =>
+          setTimeout(reject,
+            timeout,
+            new Error(
+              `Timeout reached while stopping Dito.js server (${timeout}ms)`
+            )
+          )
+        )
+      ])
+    } else {
+      await promise
+    }
+
+    if (this.config.log.errors !== false) {
+      this.off('error', this.logError)
+    }
   }
 
   async startOrExit() {
     try {
       await this.start()
     } catch (err) {
-      this.emit('error', err)
+      this.logError(err)
       process.exit(-1)
     }
   }
@@ -747,23 +863,38 @@ export class Application extends Koa {
             if (file.data || file.url) {
               let { data } = file
               if (!data) {
+                const { url } = file
+                if (!storage.isImportSourceAllowed(url)) {
+                  throw new AssetError(
+                    `Unable to import asset from foreign source: '${
+                      file.name
+                    }' ('${
+                      url
+                    }'): The source needs to be explicitly allowed.`
+                  )
+                }
                 console.info(
                   `${
-                    chalk.red('INFO:')
+                    pico.red('INFO:')
                   } Asset ${
-                    chalk.green(`'${file.name}'`)
+                    pico.green(`'${file.name}'`)
                   } is from a foreign source, fetching from ${
-                    chalk.green(`'${file.url}'`)
+                    pico.green(`'${url}'`)
                   } and adding to storage ${
-                    chalk.green(`'${storage.name}'`)
+                    pico.green(`'${storage.name}'`)
                   }...`
                 )
-                const response = await axios.request({
-                  method: 'get',
-                  url: file.url,
-                  responseType: 'arraybuffer'
-                })
-                data = response.data
+                if (url.startsWith('file://')) {
+                  const filepath = path.resolve(url.substring(7))
+                  data = await fs.readFile(filepath)
+                } else {
+                  const response = await axios.request({
+                    method: 'get',
+                    responseType: 'arraybuffer',
+                    url
+                  })
+                  data = response.data
+                }
               }
               const importedFile = await storage.addFile(file, data)
               await this.createAssets(storage, [importedFile], 0, trx)

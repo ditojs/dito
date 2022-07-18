@@ -1,14 +1,10 @@
-import SchemaParentMixin from './SchemaParentMixin'
+import SchemaParentMixin from './SchemaParentMixin.js'
 
 // @vue/component
 export default {
   mixins: [SchemaParentMixin],
 
   computed: {
-    mainSchemaComponent() {
-      return this.schemaComponents[0]
-    },
-
     errors() {
       return this.schemaComponents.reduce(
         (result, { errors }) =>

@@ -29,7 +29,7 @@
           :dataPath="dataPath"
           :data="data"
         )
-      dito-components.dito-components-tab(
+      dito-pane.dito-pane-tab(
         v-if="hasTabs"
         v-for="(schema, tab) in tabs"
         ref="tabs"
@@ -41,16 +41,15 @@
         :data="data"
         :meta="meta"
         :store="store"
-        :single="!inlined && !hasMainComponents"
+        :single="!inlined && !hasMainPane"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
       transition-height(
         :enabled="inlined"
       )
-        dito-components.dito-components-main(
-          v-if="hasMainComponents"
-          v-show="opened"
+        dito-pane.dito-pane-main(
+          v-if="hasMainPane && opened"
           ref="components"
           :schema="schema"
           :dataPath="dataPath"
@@ -70,9 +69,8 @@
         v-if="!hasLabel"
         name="edit-buttons"
       )
-    template(ve-else)
+    template(v-else-if="isPopulated")
       dito-panels(
-        v-if="isPopulated && panelSchemas.length > 0"
         :panels="panelSchemas"
         :data="data"
         :meta="meta"
@@ -104,7 +102,7 @@
     > .dito-panels
       padding: $content-padding $content-padding $content-padding 0
     // Display a ruler between tabbed components and towards the .dito-buttons
-    .dito-components-tab + .dito-components-main
+    .dito-pane-tab + .dito-pane-main
       &::before
         // Use a pseudo element to display a ruler with proper margins
         display: block
@@ -151,17 +149,18 @@
 </style>
 
 <script>
-import DitoComponent from '@/DitoComponent'
-import DitoContext from '@/DitoContext'
-import ItemMixin from '@/mixins/ItemMixin'
-import { appendDataPath, getParentItem } from '@/utils/data'
-import { getNamedSchemas, getPanelSchemas, setDefaults } from '@/utils/schema'
-import { getStoreAccessor } from '@/utils/accessor'
 import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui'
+import DitoComponent from '../DitoComponent.js'
+import ItemMixin from '../mixins/ItemMixin.js'
+import { appendDataPath, getParentItem } from '../utils/data.js'
+import {
+  getNamedSchemas, getPanelSchemas, setDefaults, processData
+} from '../utils/schema.js'
+import { getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('dito-schema', {
@@ -200,16 +199,12 @@ export default DitoComponent.component('dito-schema', {
       // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
-          ? data.call(this, new DitoContext(this))
+          ? data.call(this, this.context)
           : data
       ),
-      componentsContainers: {},
-      components: {},
-      panels: {},
-      // Register dataProcessors separate from components, so they can survive
-      // their life-cycles and be used at the end in `processData()`.
-      dataProcessors: {},
-      temporaryId: 0
+      componentsRegistry: {},
+      panesRegistry: {},
+      panelsRegistry: {}
     }
   },
 
@@ -227,15 +222,11 @@ export default DitoComponent.component('dito-schema', {
     },
 
     panelSchemas() {
-      const schemas = getPanelSchemas(
-        this.schema.panels,
-        '',
-        this.schemaComponent
-      )
-      for (const container of Object.values(this.componentsContainers)) {
-        schemas.push(...container.panelSchemas)
+      const panels = getPanelSchemas(this.schema.panels, '')
+      for (const pane of this.panes) {
+        panels.push(...pane.panelSchemas)
       }
-      return schemas
+      return panels
     },
 
     tabs() {
@@ -260,7 +251,7 @@ export default DitoComponent.component('dito-schema', {
         for (const tab of Object.values(this.tabs)) {
           const { defaultTab } = tab
           if (isFunction(defaultTab)
-            ? defaultTab.call(this, new DitoContext(this))
+            ? defaultTab.call(this, this.context)
             : defaultTab
           ) {
             return tab
@@ -277,25 +268,25 @@ export default DitoComponent.component('dito-schema', {
       return this.schema?.clipboard
     },
 
+    processedData() {
+      return this.processData({ target: 'server', schemaOnly: true })
+    },
+
     clipboardData() {
       return {
         $schema: this.schema.name,
-        ...this.processData({ removeIds: true })
+        ...this.processData({ target: 'clipboard', schemaOnly: true })
       }
     },
 
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
+    // NOTE: While internally, we speak of `data`, in the API surface the
+    // term `item` is used for the data that relates to editing objects.
+    // NOTE: This should always return the same as:
+    // return getItem(this.rootData, this.dataPath, false)
     item() {
-      // NOTE: While internally, we speak of `data`, in the API surface the
-      // term `item` is used for the data that relates to editing objects.
-      // NOTE: This should always return the same as:
-      // return getItem(this.rootData, this.dataPath, false)
       return this.data
-    },
-
-    parentItem() {
-      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     rootItem() {
@@ -303,11 +294,21 @@ export default DitoComponent.component('dito-schema', {
     },
 
     processedItem() {
-      return this.processData({ processIds: true })
+      return this.processedData
+    },
+
+    clipboardItem() {
+      return this.clipboardData
+    },
+
+    parentItem() {
+      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     formLabel() {
-      return this.getLabel(this.getItemFormSchema(this.sourceSchema, this.data))
+      return this.getLabel(
+        this.getItemFormSchema(this.sourceSchema, this.data, this.context)
+      )
     },
 
     isDirty() {
@@ -338,7 +339,7 @@ export default DitoComponent.component('dito-schema', {
       return !this.inlined && !!this.tabs
     },
 
-    hasMainComponents() {
+    hasMainPane() {
       const { components } = this.schema
       return !!components && Object.keys(components).length > 0
     },
@@ -347,7 +348,31 @@ export default DitoComponent.component('dito-schema', {
       default() {
         return !this.collapsed
       }
-    })
+    }),
+
+    components() {
+      return Object.values(this.componentsRegistry)
+    },
+
+    panes() {
+      return Object.values(this.panesRegistry)
+    },
+
+    panels() {
+      return Object.values(this.panelsRegistry)
+    },
+
+    componentsByDataPath() {
+      return this._listEntriesByDataPath(this.componentsRegistry)
+    },
+
+    panesByDataPath() {
+      return this._listEntriesByDataPath(this.panesRegistry)
+    },
+
+    panelsByDataPath() {
+      return this._listEntriesByDataPath(this.panelsRegistry)
+    }
   },
 
   created() {
@@ -355,131 +380,63 @@ export default DitoComponent.component('dito-schema', {
     this.setupSchemaFields()
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
+    this.emitEvent('initialize') // Not `'create'`, since that's for data.
   },
 
   beforeDestroy() {
+    this.emitEvent('destroy')
     this._register(false)
   },
 
   methods: {
-    _register(add) {
-      // `$schemaParentComponent()` is only set if one of the ancestors uses
-      // the `SchemaParentMixin`:
-      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
-    },
-
-    _registerComponentsContainer(componentsContainer, add) {
-      this._setOrDelete(
-        this.componentsContainers,
-        componentsContainer.tab || 'main',
-        componentsContainer,
-        add
+    getComponentsByDataPath(dataPath, match) {
+      return this._getEntriesByDataPath(
+        this.componentsByDataPath, dataPath, match
       )
     },
 
-    _registerComponent(component, add) {
-      this._setOrDelete(this.components, component.dataPath, component, add)
-      if (add) {
-        // Register `dataProcessors` separate from their components, so they can
-        // survive their life-cycles and be used at the end in `processData()`.
-        this.$set(
-          this.dataProcessors,
-          component.dataPath,
-          component.dataProcessor
-        )
-      } else {
-        // NOTE: We don't remove the dataProcessors when de-registering!
-        // They may still be required after the component itself is destroyed.
-      }
-      // Only register with the parent if schema shares data with it.
-      this.parentSchemaComponent?._registerComponent(component, add)
+    getComponentByDataPath(dataPath, match) {
+      return this.getComponentsByDataPath(dataPath, match)[0] || null
     },
 
-    _registerPanel(panel, add) {
-      this._setOrDelete(this.panels, panel.dataPath, panel, add)
+    getComponentsByName(dataPath, match) {
+      return this._getEntriesByName(this.componentsByDataPath, dataPath, match)
     },
 
-    _reorderDataPaths(dataPath, fromIndex, toIndex) {
-      // Go through all the already registered components and dataProcessors,
-      // and if they are affected by the given reordering, deregister them under
-      // the old data-path and re-register them under the new one.
-      dataPath = parseDataPath(dataPath)
-
-      const reorderRegistry = (registry, fromIndex, toIndex) => {
-        const fromDataPath = normalizeDataPath([...dataPath, fromIndex, ''])
-        const toDataPath = normalizeDataPath([...dataPath, toIndex, ''])
-        for (const path of Object.keys(registry)) {
-          if (path.startsWith(fromDataPath)) {
-            const value = registry[path]
-            const newPath = toDataPath + path.slice(fromDataPath.length)
-            this.$delete(registry, path)
-            this.$set(registry, newPath, value)
-          }
-        }
-      }
-
-      const reorder = (fromIndex, toIndex) => {
-        reorderRegistry(this.components, fromIndex, toIndex)
-        reorderRegistry(this.dataProcessors, fromIndex, toIndex)
-      }
-
-      // In order to not override, move to a temporary index first that is
-      // certain to not clash with the matching above.
-      const tempIndex = '_' + fromIndex
-      reorder(fromIndex, tempIndex)
-      const minIndex = Math.min(fromIndex, toIndex)
-      const maxIndex = Math.max(fromIndex, toIndex)
-      if (fromIndex > toIndex) {
-        for (let i = maxIndex - 1; i >= minIndex; i--) {
-          reorder(i, i + 1)
-        }
-      } else {
-        for (let i = minIndex + 1; i <= maxIndex; i++) {
-          reorder(i, i - 1)
-        }
-      }
-      // No finally move it from the temporary index to the destination.
-      reorder(tempIndex, toIndex)
-
-      this.parentSchemaComponent?._reorderDataPaths(
-        dataPath,
-        fromIndex,
-        toIndex
-      )
+    getComponentByName(name, match) {
+      return this.getComponentsByName(name, match)[0] || null
     },
 
-    getComponent(dataPath) {
-      return this._getWithDataPath(this.components, dataPath)
+    getComponents(dataPathOrName, match) {
+      return this._getEntries(this.componentsByDataPath, dataPathOrName, match)
     },
 
-    getPanel(dataPath) {
-      return this._getWithDataPath(this.panels, dataPath)
+    getComponent(dataPathOrName, match) {
+      return this.getComponents(dataPathOrName, match)[0] || null
     },
 
-    _setOrDelete(registry, key, value, set) {
-      if (set) {
-        this.$set(registry, key, value)
-      } else if (registry[key] === value) {
-        this.$delete(registry, key)
-      }
+    getPanelsByDataPath(dataPath, match) {
+      return this._getEntriesByDataPath(this.panelsByDataPath, dataPath, match)
     },
 
-    _getWithDataPath(registry, dataPath) {
-      dataPath = normalizeDataPath(dataPath)
-      // See if the argument starts with this form's data-path. If not, then it
-      // is a key or sub data-path and needs to be prefixed with the full path:
-      dataPath = dataPath.startsWith(this.dataPath)
-        ? dataPath
-        : appendDataPath(this.dataPath, dataPath)
-      return registry[dataPath] || null
+    getPanelByDataPath(dataPath, match) {
+      return this.getPanelsByDataPath(dataPath, match)[0] || null
+    },
+
+    getPanels(dataPathOrName, match) {
+      return this._getEntries(this.panelsByDataPath, dataPathOrName, match)
+    },
+
+    getPanel(dataPathOrName, match) {
+      return this.getPanels(dataPathOrName, match)[0] || null
     },
 
     someComponent(callback) {
-      return this.isPopulated && Object.values(this.components).some(callback)
+      return this.isPopulated && this.components.some(callback)
     },
 
     everyComponent(callback) {
-      return this.isPopulated && Object.values(this.components).every(callback)
+      return this.isPopulated && this.components.every(callback)
     },
 
     onExpand(expand) {
@@ -487,11 +444,16 @@ export default DitoComponent.component('dito-schema', {
         // TODO: Actually expose this on DitoContext?
         context: { expand }
       })
-      this.opened = expand
-    },
+      // Prevent closing the schema with invalid data, since the in-component
+      // validation will not be executed once it's closed.
 
-    onLoad() {
-      this.emitEvent('load')
+      // TODO: Move validation out of components, to schema, just like
+      // processing, and use `showValidationErrors()` for the resulting errors,
+      // then remove this requirement, since we can validate closed forms and
+      // schemas then.
+      if (!this.opened || expand || this.validateAll()) {
+        this.opened = expand
+      }
     },
 
     onChange() {
@@ -499,19 +461,15 @@ export default DitoComponent.component('dito-schema', {
     },
 
     resetValidation() {
-      for (const component of Object.values(this.components)) {
+      for (const component of this.components) {
         component.resetValidation()
       }
     },
 
     clearErrors() {
-      for (const component of Object.values(this.components)) {
+      for (const component of this.components) {
         component.clearErrors()
       }
-    },
-
-    getErrors(dataPath) {
-      return this.getComponent(dataPath)?.getErrors() || null
     },
 
     focus() {
@@ -520,7 +478,7 @@ export default DitoComponent.component('dito-schema', {
     },
 
     validateAll(match, notify = true) {
-      const { components } = this
+      const { componentsByDataPath } = this
       let dataPaths
       if (match) {
         const check = isFunction(match)
@@ -529,7 +487,7 @@ export default DitoComponent.component('dito-schema', {
             ? field => match.test(field)
             : null
         dataPaths = check
-          ? Object.keys(components).filter(check)
+          ? Object.keys(componentsByDataPath).filter(check)
           : isArray(match)
             ? match
             : [match]
@@ -539,9 +497,10 @@ export default DitoComponent.component('dito-schema', {
       }
       let isValid = true
       let first = true
-      for (const dataPath of (dataPaths || Object.keys(components))) {
-        const component = this.getComponent(dataPath)
-        if (component) {
+      dataPaths ||= Object.keys(componentsByDataPath)
+      for (const dataPath of dataPaths) {
+        const components = this.getComponentsByDataPath(dataPath)
+        for (const component of components) {
           if (!component.validate(notify)) {
             // Focus first error field
             if (notify && first) {
@@ -562,7 +521,7 @@ export default DitoComponent.component('dito-schema', {
       return this.validateAll(match, false)
     },
 
-    showValidationErrors(errors, focus) {
+    async showValidationErrors(errors, focus) {
       this.clearErrors()
       let first = true
       const unmatched = []
@@ -576,39 +535,47 @@ export default DitoComponent.component('dito-schema', {
         // Convert from JavaScript property access notation, to our own form
         // of relative JSON pointers as data-paths:
         const dataPathParts = parseDataPath(fullDataPath)
-        const component = this.getComponent(dataPathParts)
-        if (!component?.showValidationErrors(errs, first && focus)) {
+        let found = false
+        const components = this.getComponentsByDataPath(dataPathParts)
+        for (const component of components) {
+          if (component.showValidationErrors(errs, first && focus)) {
+            found = true
+            first = false
+          }
+        }
+        if (!found) {
           // Couldn't find a component in an active form for the given dataPath.
           // See if we can find a component serving a part of the dataPath,
           // and take it from there:
           const property = dataPathParts.pop()
           while (dataPathParts.length > 0) {
-            const component = this.getComponent(dataPathParts)
-            if (component?.navigateToComponent?.(
-              fullDataPath,
-              subComponent => {
-                // Filter the errors to only contain those that belong to the
-                // matched dataPath:
-                const parentPath = normalizeDataPath(dataPathParts)
-                const filteredErrors = Object.entries(errors).reduce(
-                  (filtered, [dataPath, errs]) => {
-                    if (normalizeDataPath(dataPath).startsWith(parentPath)) {
-                      filtered[dataPath] = errs
+            const components = this.getComponentsByDataPath(dataPathParts)
+            for (const component of components) {
+              if (await component.navigateToComponent?.(
+                fullDataPath,
+                subComponents => {
+                  let found = false
+                  for (const component of subComponents) {
+                    const errs = errors[component.dataPath]
+                    if (
+                      errs &&
+                      component.showValidationErrors(errs, first && focus)
+                    ) {
+                      found = true
+                      first = false
                     }
-                    return filtered
-                  },
-                  {}
-                )
-                subComponent.showValidationErrors(filteredErrors, true)
+                  }
+                  return found
+                }
+              )) {
+                // Found a nested form to display at least parts fo the errors.
+                // We can't show all errors at once, so we're done. Don't call
+                // `notifyErrors()` yet, as we can only display it once
+                // `showValidationErrors()` was called from `DitoForm.mounted()`
+                return
               }
-            )) {
-              // We found some nested form to display at least parts fo the
-              // errors. We can't display all errors at once, so we're done.
-              // Don't call notifyErrors() yet, as we can only display it
-              // once showValidationErrors() was called from DitoForm.mounted()
-              return
             }
-            // Keep removing the last part until we find a match.
+            // Still here, so keep removing the last part until we find a match.
             dataPathParts.pop()
           }
           // When the error can't be matched, add it to a list of unmatched
@@ -640,15 +607,17 @@ export default DitoComponent.component('dito-schema', {
       // We can't set `this.data = ...` because it's a property, but we can
       // set all known properties on it to the values returned by
       // `setDefaults()`, as they are all reactive already from the starts:
-      Object.assign(this.data, setDefaults(this.schema, {}))
+      Object.assign(this.data, setDefaults(this.schema, {}, this))
       this.clearErrors()
     },
 
     setData(data) {
-      for (const key in data) {
-        if (key in this.data) {
-          this.$set(this.data, key, data[key])
-          this.getComponent(key)?.markDirty()
+      for (const name in data) {
+        if (name in this.data) {
+          this.$set(this.data, name, data[name])
+          for (const component of this.getComponentsByName(name)) {
+            component.markDirty()
+          }
         }
       }
     },
@@ -658,85 +627,95 @@ export default DitoComponent.component('dito-schema', {
       // themselves, as those are already taking care of through their own API
       // resource end-points and shouldn't be set.
       const copy = {}
-      for (const [key, value] of Object.entries(data)) {
+      for (const [name, value] of Object.entries(data)) {
         if (isArray(value) || isObject(value)) {
-          if (this.getComponent(key)?.providesData) {
+          const components = this.getComponentsByName(name)
+          if (components.some(component => component.providesData)) {
             continue
           }
         }
-        copy[key] = value
+        copy[name] = value
       }
       return copy
     },
 
-    processData({ processIds = false, removeIds = false } = {}) {
-      // @ditojs/server specific handling of relates within graphs:
-      // Find entries with temporary ids, and convert them to #id / #ref pairs.
-      // Also handle items with relate and convert them to only contain ids.
-      const process = (value, name, dataPath) => {
-        // First, see if there's an associated component requiring processing.
-        // See TypeMixin.dataProcessor(), OptionsMixin.getDataProcessor():
-        const dataProcessor = this.dataProcessors[dataPath]
-        if (dataProcessor) {
-          value = dataProcessor(value, name, dataPath, this.rootData)
+    processData({ target = 'clipboard', schemaOnly = true } = {}) {
+      return processData(
+        this.schema,
+        this.sourceSchema,
+        this.data,
+        this.dataPath, {
+          // Needed for DitoContext handling inside `processData` and
+          // `processSchemaData()`:
+          component: this,
+          schemaOnly,
+          target
         }
-        // Special handling is required for temporary ids when processing non
-        // transient data: Replace id with #id, so '#ref' can be used for
-        // relates, see OptionsMixin:
-        const isObj = isObject(value)
-        const isArr = isArray(value)
-        if (
-          isObj &&
-          processIds &&
-          this.hasTemporaryId(value)
-        ) {
-          const { id, ...rest } = value
-          // A reference is a shallow copy that hold nothing more than ids.
-          // Use #ref instead of #id for these:
-          value = this.isReference(value)
-            ? { '#ref': id }
-            : { '#id': id, ...rest }
-        }
-        if (isObj || isArr) {
-          // Use reduce() for both arrays and objects thanks to Object.entries()
-          value = Object.entries(value).reduce(
-            (processed, [key, val]) => {
-              val = process(val, key, appendDataPath(dataPath, key))
-              if (val !== undefined) {
-                processed[key] = val
-              }
-              return processed
-            },
-            isArr ? [] : {}
-          )
-        }
-        if (
-          isObj &&
-          removeIds &&
-          value.id != null &&
-          // Only remove ids if it isn't a reference.
-          !this.isReference(value)
-        ) {
-          delete value.id
-        }
-        return value
+      )
+    },
+
+    _register(add) {
+      // `$schemaParentComponent()` is only set if one of the ancestors uses
+      // the `SchemaParentMixin`:
+      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
+    },
+
+    _registerComponent(component, add) {
+      this._registerEntry(this.componentsRegistry, component, add)
+      // Only register with the parent if schema shares data with it.
+      this.parentSchemaComponent?._registerComponent(component, add)
+    },
+
+    _registerPane(pane, add) {
+      this._registerEntry(this.panesRegistry, pane, add)
+    },
+
+    _registerPanel(panel, add) {
+      this._registerEntry(this.panelsRegistry, panel, add)
+    },
+
+    _registerEntry(registry, entry, add) {
+      const uid = entry.$uid
+      if (add) {
+        this.$set(registry, uid, entry)
+      } else {
+        this.$delete(registry, uid)
       }
-      return process(this.data, null, this.dataPath)
     },
 
-    hasTemporaryId(data) {
-      return /^@/.test(data?.id)
+    _listEntriesByDataPath(registry) {
+      return Object.values(registry).reduce((entriesByDataPath, entry) => {
+        // Multiple entries can be linked to the same data-path, e.g. when
+        // there are tabs. Link each data-path to an array of entries.
+        const { dataPath } = entry
+        const entries = entriesByDataPath[dataPath] ||= []
+        entries.push(entry)
+        return entriesByDataPath
+      }, {})
     },
 
-    setTemporaryId(data) {
-      // Temporary ids are marked with a '@' at the beginning.
-      data.id = `@${++this.temporaryId}`
+    _getEntries(entriesByDataPath, dataPath, match) {
+      return normalizeDataPath(dataPath).startsWith(this.dataPath)
+        ? this._getEntriesByDataPath(entriesByDataPath, dataPath, match)
+        : this._getEntriesByName(entriesByDataPath, dataPath, match)
     },
 
-    isReference(data) {
-      // Returns true if value is an object that holds nothing more than an id.
-      const keys = data && data.id != null && Object.keys(data)
-      return keys?.length === 1
+    _getEntriesByDataPath(entriesByDataPath, dataPath, match) {
+      return this._filterEntries(
+        entriesByDataPath[normalizeDataPath(dataPath)] || [],
+        match
+      )
+    },
+
+    _getEntriesByName(entriesByDataPath, name, match) {
+      return this._filterEntries(
+        entriesByDataPath[appendDataPath(this.dataPath, name)] || [],
+        match
+      )
+    },
+
+    _filterEntries(entries, match) {
+      return match ? entries.filter(match) : entries
     }
   }
 })

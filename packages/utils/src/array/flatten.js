@@ -1,4 +1,4 @@
-import { isArray } from '@/base'
+import { isArray } from '../base/index.js'
 
 export function flatten(array, maxDepth = Infinity, _depth = 0) {
   const res = []

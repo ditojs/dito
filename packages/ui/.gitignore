@@ -1,4 +1,4 @@
 .DS_Store
-/node_modules
-/src/styles/mixins/_icons.sass
-/dist
+node_modules
+dist
+src/styles/mixins/_icons.sass

@@ -2,7 +2,7 @@
 
 import path from 'path'
 import minimist from 'minimist'
-import { getDataUri } from '@/css'
+import { getDataUri } from '@ditojs/build'
 
 const argv = minimist(process.argv.slice(2), {
   string: 'template'
@@ -16,7 +16,7 @@ const assets = argv._.map(asset => {
 })
 let out = null
 if (argv.template) {
-  const render = require(path.resolve(argv.template))
+  const { default: render } = await import(path.resolve(argv.template))
   out = render(assets)
 } else {
   // Print out JSON data, but remove generated `url` properties.

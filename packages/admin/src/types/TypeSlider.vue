@@ -34,12 +34,13 @@
       border: 0
       padding: 0
       text-align: right
+      font-variant-numeric: tabular-nums
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
-import NumberMixin from '@/mixins/NumberMixin'
-import { getSchemaAccessor } from '@/utils/accessor'
+import TypeComponent from '../TypeComponent.js'
+import NumberMixin from '../mixins/NumberMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { InputField } from '@ditojs/ui'
 
 // @vue/component

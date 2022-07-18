@@ -11,9 +11,9 @@ exports it:
 import { Application } from '@ditojs/server'
 import mount from 'koa-mount'
 import serve from 'koa-static'
-import config from '../config'
-import * as models from './models'
-import * as controllers from './controllers'
+import config from '../config.js'
+import * as models from './models/index.js'
+import * as controllers from './controllers/index.js'
 
 const app = new Application({
   config,
@@ -32,7 +32,7 @@ following statement:
 
 ##### `src/server/index.js`:
 ```js
-import app from './app'
+import app from './app/index.js'
 
 app.startOrExit()
 ```

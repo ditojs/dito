@@ -1,4 +1,4 @@
-import { shuffle } from './shuffle'
+import { shuffle } from './shuffle.js'
 
 describe('shuffle()', () => {
   const array = [1, 2, 3]
@@ -7,7 +7,7 @@ describe('shuffle()', () => {
     expect(shuffle(array)).not.toBe(array)
   })
 
-  it('should contain the same elements after a collection is shuffled', () => {
+  it(`should contain the same elements after a collection is shuffled and sorted again`, () => {
     expect(shuffle(array).sort()).toStrictEqual(array)
   })
 

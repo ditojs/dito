@@ -36,11 +36,14 @@
 </style>
 
 <script>
-import TypeComponent from '@/TypeComponent'
+import TypeComponent from '../TypeComponent.js'
+import DomMixin from '../mixins/DomMixin.js'
 import CodeFlask from 'codeflask'
 
 // @vue/component
 export default TypeComponent.register('code', {
+  mixins: [DomMixin],
+
   computed: {
     lines() {
       return this.schema.lines || 3
@@ -58,8 +61,28 @@ export default TypeComponent.register('code', {
       lineNumbers: false
     })
 
+    let changed = false
     let ignoreWatch = false
     let ignoreUpdate = false
+
+    const onChange = () => {
+      if (!this.focused && changed) {
+        changed = false
+        this.onChange()
+      }
+    }
+
+    const onFocus = () => this.onFocus()
+
+    const onBlur = () => {
+      this.onBlur()
+      onChange()
+    }
+
+    this.domOn(this.$refs.code.querySelector('textarea'), {
+      focus: onFocus,
+      blur: onBlur
+    })
 
     const setCode = code => {
       if (code !== flask.code) {
@@ -72,6 +95,8 @@ export default TypeComponent.register('code', {
       if (value !== this.value) {
         ignoreWatch = true
         this.value = value
+        changed = true
+        onChange()
       }
     }
 
@@ -95,7 +120,7 @@ export default TypeComponent.register('code', {
   },
 
   methods: {
-    focus() {
+    focusElement() {
       this.$el.querySelector('textarea')?.focus()
     }
   }

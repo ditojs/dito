@@ -101,7 +101,7 @@
     padding: 0 0.5em
     span
       display: inline-block
-      width: (100% / 7)
+      width: calc(100% / 7)
       height: $input-height
       line-height: calc(#{$input-height} - 2px)
       box-sizing: border-box
@@ -126,11 +126,11 @@
   .dito-calendar-months,
   .dito-calendar-years
     span
-      width: (100% / 4)
+      width: calc(100% / 4)
       margin: 0.5em 0
 
   .dito-calendar-years span
-    width: (100% / 5)
+    width: calc(100% / 5)
 
   .dito-calendar a,
   .dito-calendar-dates span,
@@ -204,7 +204,7 @@
 </style>
 
 <script>
-import { copyDate } from '@/utils'
+import { copyDate } from '../utils/index.js'
 
 export default {
   props: {
@@ -362,7 +362,7 @@ export default {
 
     getFirstYearOfDecade(year) {
       const yearStr = year.toString()
-      return +`${yearStr.slice(0, yearStr.length - 1)}0`
+      return +`${yearStr.slice(0, -1)}0`
     },
 
     navigate({ hor, ver, enter }) {

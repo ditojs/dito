@@ -15,172 +15,241 @@ instantiation of controllers.
 
 ## Actions
 
-In their definition, all Dito.js controllers can provide action methods which
-are the functions to be called when their route is requested. Actions can
-specify the paths to which they are mapped, defined in relation to the route
-path of their controller, and the HTTP verb to which they should listen. By
-default, the normalized method name is used as the action's path, and the
-`'get'` verb is assigned if none is provided. See [Path Normalization](#path-
-normalization) for more information on how Dito.js normalizes router paths.
+In their definition, all Dito.js controllers can provide actions which are the
+functions to be called when their route is requested. Actions specify the HTTP
+method to which they should respond to, as well as the paths to which they are
+mapped, defined as a sub-path relatively to the route path of their controller.
+
+Actions are named using a convention that specifies both the method and the path
+in their name: `'<method> <path>'`. A special case are the default actions on
+the controller path, which only specify the method: `'<method>'`.
 
 Actions can also define mappings and validation schemas for their parameters and
 return values, provided in the same format as is used for model properties,
-mapping the query parameters passed to an action method and the value returned
-from it, and triggering their automatic validation.
+mapping the query or body parameters passed to an action method and the value
+returned from it, and triggering their automatic validation.
 
-Dito.js provides a selection of JavaScript decorators designed to offer a clean,
-streamlined way to configure all these action attributes, see
-[Decorators](#decorators) for more information.
+All Dito.js actions receive the full
+[Koa.js `ctx` object](http://koajs.com/#context) as their first argument.
+
+```js
+'get say-hello'(ctx) {
+  return `Just sayin' hello: ${ctx.query.message}`
+}
+```
 
 ### Example
 
 ```js
-import { Controller, action, returns } from '@ditojs/server'
+import { Controller } from '@ditojs/server'
 
 export class GreetingsController extends Controller {
   // Providing the controller path is optional, a default is deducted from
   // the normalized class name otherwise, with the same result in this case:
   path = 'greetings'
 
-  sayHello() {
-    // This action will be mounted at /greetings/say-hello, if path-
-    // normalization is activated, and /greetings/sayHello otherwise.
-    return 'Hello!'
-  }
+  actions = {
+    // This action will respond to GET /greetings/say-hello
+    'get say-hello'() {
+      return 'Hello!'
+    },
 
-  @action('get', 'say-goodbye')
-  @returns({
+    'get say-named-hello': {
+      parameters: {
+        name: {
+          type: 'string'
+        }
+      },
+      handler(ctx, { name }) {
+        return `Hello there, ${name}!`
+      }
+    },
+
+    'get say-goodbye': {
+      returns: {
+        type: 'string'
+      },
+      handler() {
+        return 'Goodbye, and thank you for stopping by!'
+      }
+    }
+  }
+}
+```
+
+## Action Settings
+
+Dito.js supports various settings to configure the controller actions. The
+simplest version provides the action handler function directly as the action's
+value, e.g.:
+
+```js
+'get values'() {
+  return [1, 2, 3]
+}
+```
+
+For further configuration, e.g. to specify parameters validation, an object with
+further properties can be provided instead:
+
+```js
+'get values-multiplied': {
+  parameters: {
+    factor: {
+      type: 'number'
+    }
+  },
+  handler(ctx, { factor }) {
+    return [1 * factor, 2 * factor, 3 * factor]
+  }
+}
+```
+
+Default actions can be defined by only providing the method name:
+
+```js
+get: {
+  returns: ({
     type: 'string'
-  })
-  sayALongwindedGoodbye() {
-    // Note how the method's name is ignored, because we override
-    // the action path with a decorator.
-    return 'Goodbye, and thank you for stopping by!'
+  },
+  handler() {
+    return 'Hello from the index action.'
   }
 }
 ```
 
-## Decorators
+### `action.handler`
 
-Dito.js provides the following decorators to configure the controller actions.
+In action object notation, `action.handler` provides the action function to be
+called when the action's route is requested. It receives [Koa.js `ctx`
+object](http://koajs.com/#context) as its first argument, followed by an object
+containing all parameters, if `action.parameters` validation is provided:
 
-For more information on JavaScript decorators, see
-[Exploring EcmaScript Decorators](https://medium.com/google-developers/exploring-es7-decorators-76ecb65fb841).
+### `action.parameters`
 
-### `@action(verb[, path])`
+The `action.parameters` setting can be used if automatic mapping of Koa.js'
+`ctx.query` or `ctx.body` objects to method parameters is desired, along with
+their automatic validation. To do so, set it to an object containing each
+parameter in the same format Dito.js uses for its model property schema.
 
-It is only necessary to provide the `@action()` decorator when an action
-requires a verb other than `'get'`, or when the default path that is
-automatically determined by normalizing the action method's name is not the
-desired route.
-
-See [Path Normalization](#path-normalization) for more information on how
-Dito.js normalizes router paths.
-
-By setting the action's path to `'.'`, it is mapped the controller's own route
-path without an additional action path, assigning the action the function of the
-controller's index action:
+Note the `type` can also be set to the name of any model known to your Dito app,
+in addition to the standard types supported by JSON schema:
 
 ```js
-@action('get', '.')
-@returns({
-  type: 'string'
-})
-index() {
-  return 'Hello from the index action. Note: its method name does not matter.'
+'post do-something: {
+parameters: {
+  model: {
+    type: 'MyModel'
+  }
+},
+handler(ctx, { model }) {
+  return `Received a validated model instance: ${model}`
 }
 ```
-
-### `@parameters(parameters)`
-
-All Dito.js actions receive the full
-[Koa.js `ctx` object](http://koajs.com/#context) as their first argument:
-
-```js
-sayHello(ctx) {
-  return `Just sayin' hello: ${ctx.query.message}`
-}
-```
-
-If automatic mapping of Koa.js' `ctx.query` object to method parameters along
-with their automatic validation is desired, `@parameters()` can be provided with
-an array listing each parameter in the same format Dito.js uses for its model
-property schema, but with added `name` keys for each parameter, in order to do
-the mapping.
 
 For information on property schema and validation, see
 [Model Properties](./model-properties.md) and [Validator](./validator.md).
 
+The parameters are read from the `ctx.body` object for post and put requests,
+all other requests read from `ctx.query`.
+
 ```js
-@parameters([
-  {
-    name: 'message',
-    type: 'string',
+'get say-hello': {
+  parameters: {
+    message: {
+      type: 'string',
+      required: true
+    }
+  },
+  handler(ctx, { message }) {
+    return `Just sayin' hello: ${message}`
+  }
+}
+```
+
+#### Receiving the full `ctx.query` as a validated parameter
+
+If a parameter schema provides `root: true`, the full `ctx.query` object is
+mapped to this parameter, and is validated against its schema:
+
+```js
+parameters: {
+  query: {
+    type: 'object',
+    root: true,
     required: true
   }
-])
-sayHello(ctx, message) {
-  return `Just sayin' hello: ${message}`
+},
+'get query-something'(ctx, { query }) {
+  return `Just queryin' something: ${query}`
 }
 ```
 
-Optionally, if only one parameter is defined, the array can also be omitted and
-the parameter object can be directly provided:
+#### Receiving the resolved `member` as a parameter
+
+TODO: Docs
+
+#### `action.parameters` Validation Options
+
+In order to configure the validator used for parameters validation, an optional
+`options` parameter can be provided as the second entry of an array of which the
+first entry describes the parameters schema:
 
 ```js
-@parameters({
-  name: 'message',
-  type: 'string',
-  required: true
-})
+parameters: [<schema>, <options>]
 ```
 
-If the `name` key is committed, then the full `ctx.query` object is mapped to
-the argument, and is validated against its schema:
+These validation options are supported:
+
+| Option            | Default | Description
+| ----------------- | ------- | ------------------------------------------------
+| `patch`           | `false` |
+| `throw`           | `true`  |
+| `graph`           | `false` |
+| `async`           | `false` |
+
+In addition to these, the following Ajv validator options can also be controlled
+through the `options` setting. See [Ajv](https://ajv.js.org/options.html) for
+a description of their meaning:
+
+| Option                | Default |
+| --------------------- | ------- |
+| `$data`               | `false` |
+| `$comment`            | `true`  |
+| `coerceTypes`         | `false` |
+| `multipleOfPrecision` | `false` |
+| `ownProperties`       | `true`  |
+| `removeAdditional`    | `false` |
+| `uniqueItems`         | `true` |
+| `useDefaults`         | `true`  |
+| `verbose`             | `false` |
 
 ```js
-@parameters({
-  type: 'object',
-  required: true
-})
-querySomething(ctx, query) {
-  return `Just queryin': ${query}`
-}
+parameters: [{
+  model: {
+    type: 'MyModel',
+    required: true
+  }
+}, {
+  patch: true
+}]
 ```
 
-### `@returns(returns)`
+### `action.returns`
 
-Just as the `@parameters()` decorator allows mapping and validating the
-parameters that the action method receives, the `@returns()` decorator can be
-used to provide a schema for the value returned, and optionally map the value
-to a key inside a returned object.
-
-```js
-@returns({
-  type: 'string'
-})
-sayHello() {
-  return `Greetings, received as a string value!`
-}
-```
-
-In symmetry to the parameter name mapping, this value can optionally be wrapped
-in an object under a given key again:
+Just as `action.parameters` allows mapping and validating the parameters that
+the action method receives, `action.returns` can be used to provide a schema for
+the action's return value, and optionally map the value to a key inside a
+returned object.
 
 ```js
-@returns({
-  name: 'greeting',
-  type: 'string'
-})
-sayHello() {
-  return `Greetings, received in an object with a key called "greetings"!`
-}
-```
-
-Accessing this action's route would return an object instead of a string:
-```js
-{
-  greetings: 'Greetings, received in an object with a key called "greetings"!'
+'get say-hello': {
+  returns: {
+    type: 'string'
+  },
+  handler() {
+    return `Greetings, received as a string value!`
+  }
 }
 ```
 
@@ -189,9 +258,9 @@ Accessing this action's route would return an object instead of a string:
 Dito.js uses the app-wide configuration switch `config.app.normalizePaths`
 to determine if route paths should be normalized or not.
 
-Path normalization means that the controller's or action's name is converted
-with Dito.js Utils' `hyphenate()` method, which has the same effect as
-Lodash's `_.kebabCase()`: It converts the string to so called-kebab case, where
+Path normalization means that the controller's name is converted with Dito.js
+Utils' `hyphenate()` method, which has the same effect as Lodash's
+`_.kebabCase()`: It converts the string to so called-kebab case, where
 camel-cased names are separated by hyphens and all chars are lower-cased, so
 `'myActionName'` turns into `'my-action-name'`.
 
@@ -236,13 +305,13 @@ such a structure being exported:
 
 #### `src/controllers/index.js`:
 ```js
-export * as api from './api'
+export * as api from './api/index.js'
 ```
 
 #### `src/controllers/api/index.js`:
 ```js
-export * as frontend from './frontend'
-export * as admin from './admin'
+export * as frontend from './frontend/index.js'
+export * as admin from './admin/index.js'
 ```
 
 ## `Controller` Class
@@ -261,14 +330,12 @@ available, to be set on the controller instance.
 | Instance Field             | Description
 | -------------------------- | -------------------------------------------------
 | `name`: `string`           | The controller's name. If not provided, it is automatically deducted from the controller class name. If this name ends in `'Controller'`, that is stripped off the name, so `'GreetingsController'` turns into `'Greetings'`. 
-| `path`: `string`           | The relative path used to determine the controller's route path. 
-| `namespace`: `string`      | The controller's namespace, which is prepended to `path` to generate the absolute controller route. Note that it is rare to provide this manually. Usually Dito.js determines the `namespace` automatically from the controller object passed to the Dito.js application's constructor and its sub-objects. See [Namespaces](#namespaces) for more information.
-| `allow`: `Array`           | A list of allowed actions. If provided, only the action names listed here as strings will be mapped to routes, everything else will be omitted.
+| `path`: `string`           | The relative path used to determine the controller's route path.
+| `actions`: `Object`        | TODO: Document controller actions.
 
 Note: While traditionally, these instance fields would have to be set in the
-controller constructor, we can leverage the proposal for [public class fields in
-ECMAScript](http://2ality.com/2017/07/class-fields.html) through Babel Stage 2
-to set instance fields in a more elegant way.
+controller constructor, we can leverage public class fields in ECMAScript to set
+instance fields in a more elegant way.
 
 So instead of:
 
@@ -308,34 +375,34 @@ activated by default and mapped to database methods and default model routes:
 ### Collection Actions
 
 Collection actions are all mapped to the controller's route path (`this.path`),
-and distinguished only by their verbs. Here's the mapping of their verbs to the 
-collection actions and the database methods they execute:
+and distinguished only by their methods. Here's the mapping of the methods to
+the collection actions and the database methods they execute:
 
-| Verb       | Collection Action | Database Method
-| ---------- | ----------------- | ---------------------------------------------
-| `'get'`    | `find()`          | `find()`
-| `'delete'` | `delete()`        | `delete()`
-| `'post'`   | `insert()`        | `insertAndFetch()` or `insertDitoGraphAndFetch()`
-| `'put'`    | `update()`        | `updateAndFetch()` or `updateDitoGraphAndFetch()`
-| `'patch'`  | `patch()`         | `patchAndFetch()` or `patchDitoGraphAndFetch()`
+| HTTP Method | Collection Action | Database Method
+| ----------- | ----------------- | --------------------------------------------
+| `'get'`     | `get()`           | `find()`
+| `'delete'`  | `delete()`        | `delete()`
+| `'post'`    | `post()`          | `insertAndFetch()` or `insertDitoGraphAndFetch()`
+| `'put'`     | `put()`           | `updateAndFetch()` or `updateDitoGraphAndFetch()`
+| `'patch'`   | `patch()`         | `patchAndFetch()` or `patchDitoGraphAndFetch()`
 
 ### Member Actions
 
-Member actions are all mapped to the controller's member route path
-(`` `${this.path}/:id` ``),
-and distinguished only by their verbs. Here's the mapping of their verbs to the 
-member actions and the database methods they execute:
+Member actions are all mapped to the controller's member route path (``
+`${this.path}/:id` ``), and distinguished only by their methods. Here's the
+mapping of the methods to the member actions and the database methods they
+execute:
 
-| Verb       | Member Action | Database Method
-| ---------- | ------------- | -------------------------------------------------
-| `'get'`    | `find()`      | `findById()`
-| `'delete'` | `delete()`    | `deleteById()`
-| `'put'`    | `update()`    | `updateAndFetchById()` or `updateDitoGraphAndFetchById()`
-| `'patch'`  | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
+| HTTP Method | Member Action | Database Method
+| ----------- | ------------- | ------------------------------------------------
+| `'get'`     | `get()`       | `findById()`
+| `'delete'`  | `delete()`    | `deleteById()`
+| `'put'`     | `put()`       | `updateAndFetchById()` or `updateDitoGraphAndFetchById()`
+| `'patch'`   | `patch()`     | `patchAndFetchById()` or `patchDitoGraphAndFetchById()`
 
-In comparison to the `collection` actions, the `insert()` action assigned to the
-`post` verb is missing here, but with good reason: Inserting into an existing
-member is an undefined operation.
+In comparison to the `collection` actions, the `post()` action is missing here,
+but with good reason: Inserting into an existing member is an undefined
+operation.
 
 ### Graph Methods
 
@@ -357,34 +424,46 @@ control which actions should be exposed.
 
 ```js
 import { ModelController } from '@ditojs/server'
-import { MyModel } from '@/models'
+import { MyModel } from './models/index.js'
 
 export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['find', 'helloCollection'],
+    allow: ['get', 'get hello-collection'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
-    helloCollection(msg) {
-      return `Model class '${this.modelClass.name}' says hello: ${msg}`
+    'get hello-collection': {
+      parameters: {
+        message: {
+          type: 'string',
+          required: true
+        }
+      },
+      handler(ctx, { message }) {
+        return `Model class '${this.modelClass.name}' says hello: ${msg}`
+      }
     }
   }
 
   member = {
-    allow: ['find', 'helloMember'],
+    allow: ['get', 'get hello-member'],
 
-    @parameters({
-      name: 'msg',
-      type: 'string',
-      required: true
-    })
-    helloMember(member, msg) {
-      return `Model instance '${member.name}' says hello: ${msg}`
+    'get hello-member': {
+      parameters: {
+        instance: {
+          member: true
+        },
+        message: {
+          type: 'string',
+          required: true
+        }
+      },
+      returns: {
+        type: 'string'
+      },
+      handler(ctx, { instance, message }) {
+        return `Model instance '${instance.name}' says hello: ${message}`
+      }
     }
   }
 }
@@ -428,16 +507,16 @@ them:
 
 ```js
 import { ModelController } from '@ditojs/server'
-import { MyModel } from '@/models'
+import { MyModel } from './models/index.js'
 
 export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    // Let's override the default `collection.find(ctx)` method and add some
+    // Let's override the default `collection.get(ctx)` method and add some
     // additional data to its returns value.
-    async find(ctx) {
-      const results = await super.find(ctx)
+    async get(ctx) {
+      const results = await super.get(ctx)
       return {
         results,
         additional: `Whatever you'd like to send back, really`
@@ -491,20 +570,20 @@ class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['find']
+    allow: ['get']
   }
 
   member = {
-    allow: ['find']
+    allow: ['get']
   }
 
   relations = {
     myRelation: {
       relation: {
-        allow: ['find']
+        allow: ['get']
       },
       member: {
-        allow: ['find']
+        allow: ['get']
       }
     }
   }
@@ -532,12 +611,11 @@ actions.
 The `AdminController` extends the base `Controller` and provides a mounting
 point for the Dito.js Admin interface.
 
-During development, it runs a
-[koa-webpack](https://github.com/shellscape/koa-webpack) development server with
-support for hot-reloading, capable of compiling and serving the Dito.js Admin
-views and forms that are automatically recompiled and reloaded on code changes.
-In production, it hosts a pre-built version of these admin view and forms
-instead.
+During development, it runs a [vite](https://vitejs.dev/) development server
+with support for hot-reloading, capable of compiling and serving the Dito.js
+Admin views and forms that are automatically recompiled and reloaded on code
+changes. In production, a pre-built version of these admin views and forms
+is statically hosted instead.
 
 The app-wide configuration object `config.admin` is used to determine the
 location of the admin views and forms.

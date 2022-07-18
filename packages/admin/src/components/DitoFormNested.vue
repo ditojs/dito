@@ -8,7 +8,7 @@
 </style>
 
 <script>
-import DitoForm from './DitoForm'
+import DitoForm from './DitoForm.vue'
 
 export default DitoForm.component('dito-form-nested', {})
 </script>
