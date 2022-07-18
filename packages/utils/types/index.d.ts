@@ -118,7 +118,7 @@ export function clone<T extends any>(arg: T, iteratee?: (arg: any) => void): T
 export function equals(arg1: any, arg2: any): boolean
 
 // TODO: document groupBy
-export function groupBy<T, K extends string | number | Symbol>(
+export function groupBy<T, K extends string | number | symbol>(
   list: T[], callback: (item: T) => K
 ): Record<K, T[]>
 

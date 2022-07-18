@@ -495,7 +495,7 @@ export type ButtonSchema<
    */
   type: 'button' | 'submit'
   closeForm?: OrItemAccessor<$Item, {}, boolean>
-  text?: OrItemAccessor<$Item, {}, text>
+  text?: OrItemAccessor<$Item, {}, string>
   resource?: Resource
   onClick?: $EventHandler
   onSuccess?: $EventHandler
@@ -868,7 +868,7 @@ export type ColumnSchema<$Item = any> = {
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
-export type ListSchema<$Item = any> = SchemaSourceMixin<$Item> &
+export type ListSchema<$Item = { [key: string]: any }> = SchemaSourceMixin<$Item> &
   BaseSchema<$Item> & {
     /**
      * The type of the view
@@ -896,7 +896,7 @@ export type ListSchema<$Item = any> = SchemaSourceMixin<$Item> &
      * usually beneficial to assign an object with further options to the
      * columns property.
      */
-    columns?: Record<string, ColumnSchema<$Item>> | $Item[string][]
+    columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
     /**
      * Scope names as defined on the model. When set, the admin renders a set of
      * scope buttons, allowing the user to switch between them while editing.
