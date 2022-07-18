@@ -1,13 +1,14 @@
 // Type definitions for Dito.js admin
 // Project: <https://github.com/ditojs/dito/>
 
-import { AxiosResponse as Response } from 'axios'
 import {
-  format as utilsFormat,
   DateFormat,
+  format as utilsFormat,
   NumberFormat,
   TimeFormat
 } from '@ditojs/utils'
+import { AxiosResponse as Response } from 'axios'
+import { RequireAtLeastOne, SetOptional } from 'type-fest'
 import Vue, { VueConstructor } from 'vue'
 
 declare global {
@@ -18,16 +19,14 @@ export default DitoAdmin
 export interface DitoGlobal {
   api?: ApiConfig
   base?: string
-  settings?: {
-    [k: string]: any
-  }
+  settings?: Record<string, any>
 }
 export type PerformRequest = <T>({
   url,
   method,
   data,
   params,
-  headers
+  headers,
 }: {
   url: string
   /**
@@ -140,9 +139,7 @@ export interface ApiConfig {
   /**
    * Optionally override resource path handlers.
    */
-  resources?: {
-    [k: string]: (resource: ApiResource | string) => string
-  }
+  resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
    * Optionally override / extend headers
@@ -150,7 +147,7 @@ export interface ApiConfig {
    *   'Content-Type': 'application/json'
    * }`
    */
-  headers?: { [headerKey: string]: string }
+  headers?: Record<string, string>
 
   /**
    * Configures how urls passed to `DitoAdmin.request` are checked to see if
@@ -164,22 +161,22 @@ export interface ApiConfig {
   isApiRequest?: (url: string) => boolean
 }
 
-export interface BaseSchema<$State extends State>
-  extends SchemaDitoMixin<$State>,
-    SchemaTypeMixin<$State> {
-  default?: OrItemAccessor<$State>
-  compute?: ItemAccessor<$State>
-  data?: OrItemAccessor<$State, {}, {[key: string]: any}>
+export interface BaseSchema<$Item>
+  extends SchemaDitoMixin<$Item>,
+    SchemaTypeMixin<$Item> {
+  default?: OrItemAccessor<$Item>
+  compute?: ItemAccessor<$Item>
+  data?: OrItemAccessor<$Item, {}, Record<string, any>>
   omitPadding?: boolean
 }
 
 // TODO: finish off DitoMixin docs
 // (methods / computed / watch / events / `on[A-Z]`-style callbacks)
-export interface SchemaDitoMixin<$State extends State> {
+export interface SchemaDitoMixin<$Item> {
   /**
    * Only displays the component if the schema accessor returns `true`
    */
-  if?: OrItemAccessor<$State, {}, boolean | string[] | string>
+  if?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Specifies validations rules to add, remove (by setting to `undefined`) or
@@ -195,18 +192,17 @@ export interface SchemaDitoMixin<$State extends State> {
  * Return false to mark event as handled and stop it from propagating to parent
  * schemas.
  */
-export type ItemEventHandler<$State extends State = CreateState> = (
-  // this: ComponentByType<$State>[$State['component']],
-  itemParams: DitoContext<$State>
+export type ItemEventHandler<$Item = any> = (
+  itemParams: DitoContext<$Item>
 ) => void | false
 
-export interface SchemaTypeMixin<$State extends State> {
+export interface SchemaTypeMixin<$Item> {
   /**
    * The label of the component.
    *
    * @defaultValue The title-cased component name.
    */
-  label?: OrItemAccessor<$State, {}, string | boolean>
+  label?: OrItemAccessor<$Item, {}, string | boolean>
 
   /**
    * The width of the component. The value can either be given in percent
@@ -214,108 +210,108 @@ export interface SchemaTypeMixin<$State extends State> {
    * depend on its contents or as 'fill' to fill left over space. A line will
    * contain multiple components until their widths exceed 100%.
    */
-  width?: OrItemAccessor<$State, {}, 'auto' | 'fill' | string | number>
+  width?: OrItemAccessor<$Item, {}, 'auto' | 'fill' | string | number>
 
   /**
    * Whether the component is visible.
    *
    * @defaultValue `true`
    */
-  visible?: OrItemAccessor<$State, {}, boolean>
+  visible?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * @defaultValue `false`
    */
   // TODO: document exclude
-  exclude?: OrItemAccessor<$State, {}, boolean>
+  exclude?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Whether the field is required.
    * @defaultValue `false`
    */
-  required?: OrItemAccessor<$State, {}, boolean>
+  required?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Whether the value is read only.
    *
    * @defaultValue `false`
    */
-  readonly?: OrItemAccessor<$State, {}, boolean>
+  readonly?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Whether to autofocus the field.
    * @defaultValue `false`
    */
-  autofocus?: OrItemAccessor<$State, {}, boolean>
+  autofocus?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Whether the field can be cleared.
    * @defaultValue `false`
    */
-  clearable?: OrItemAccessor<$State, {}, boolean>
+  clearable?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Specifies a short hint intended to aid the user with data entry when the
    * input has no value.
    */
-  placeholder?: OrItemAccessor<$State, {}, any>
+  placeholder?: OrItemAccessor<$Item, {}, any>
 
   /**
    * Whether the input field should have autocomplete enabled.
    */
-  autocomplete?: OrItemAccessor<$State, {}, 'on' | 'off'>
+  autocomplete?: OrItemAccessor<$Item, {}, 'on' | 'off'>
 
   /**
    * Specifies a function which changes the item value into another format,
    * before it is passed to the component.
    */
-  format?: ItemAccessor<$State, {}, any>
-  disabled?: OrItemAccessor<$State, {}, boolean>
+  format?: ItemAccessor<$Item, {}, any>
+  disabled?: OrItemAccessor<$Item, {}, boolean>
 
   /**
    * Specifies a function which parses the component value when it changes,
    *
    */
-  parse?: ItemAccessor<$State, any>
+  parse?: ItemAccessor<$Item, any>
 
   // TODO: document process
-  process?: OrItemAccessor<$State>
+  process?: OrItemAccessor<$Item>
 
   // TODO: document name
   name?: string
 
-  onFocus?: ItemEventHandler<$State>
-  onBlur?: ItemEventHandler<$State>
-  onChange?: ItemEventHandler<$State>
-  onInput?: ItemEventHandler<$State>
+  onFocus?: ItemEventHandler<$Item>
+  onBlur?: ItemEventHandler<$Item>
+  onChange?: ItemEventHandler<$Item>
+  onInput?: ItemEventHandler<$Item>
   events?: {
-    focus?: ItemEventHandler<$State>
-    blur?: ItemEventHandler<$State>
-    change?: ItemEventHandler<$State>
-    input?: ItemEventHandler<$State>
+    focus?: ItemEventHandler<$Item>
+    blur?: ItemEventHandler<$Item>
+    change?: ItemEventHandler<$Item>
+    input?: ItemEventHandler<$Item>
   }
 }
 
-export interface SchemaSourceMixin<$State extends State> {
+export interface SchemaSourceMixin<$Item> {
   /**
    * The number of items displayed per page. When not provided, all items are
    * rendered.
    *
    * @defaultValue `false`
    */
-  paginate?: OrItemAccessor<$State, {}, number>
+  paginate?: OrItemAccessor<$Item, {}, number>
   // TODO: document inlined
   /**
    * @defaultValue `false`
    */
-  inlined?: OrItemAccessor<$State, {}, boolean>
+  inlined?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether to add a button to create list items.
    *
    * @defaultValue `false`
    */
   creatable?: OrItemAccessor<
-    $State,
+    $Item,
     {},
     | boolean
     | {
@@ -328,7 +324,7 @@ export interface SchemaSourceMixin<$State extends State> {
    * @defaultValue `false`
    */
   editable?: OrItemAccessor<
-    $State,
+    $Item,
     {},
     | boolean
     | {
@@ -341,7 +337,7 @@ export interface SchemaSourceMixin<$State extends State> {
    * @defaultValue `false`
    */
   deletable?: OrItemAccessor<
-    $State,
+    $Item,
     {},
     | boolean
     | {
@@ -349,34 +345,41 @@ export interface SchemaSourceMixin<$State extends State> {
       }
   >
   /**
+   * The column used for the order resulting from dragging around list entries
+   * when the `draggable` property of the list schema is set to `true`.
+   */
+  orderKey?: string
+  /**
+   * Whether the items can be reordered by the user. Set the `orderKey` property
+   * if you want the order to be persisted into a column.
    * @defaultValue `false`
    */
-  draggable?: OrItemAccessor<$State, {}, boolean>
+  draggable?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether an inlined form is collapsible.
    * @defaultValue `null`
    */
-  collapsible?: OrItemAccessor<$State, {}, boolean | null>
+  collapsible?: OrItemAccessor<$Item, {}, boolean | null>
   /**
    * Whether an inlined form is collapsed.
    */
-  collapsed?: OrItemAccessor<$State, {}, boolean>
+  collapsed?: OrItemAccessor<$Item, {}, boolean>
   resource?: Resource
 }
 
 export type SchemaOptionsOption<$Value> =
   | { label: string; value: $Value }
   | $Value
-export type SchemaOptions<$State extends State, $Option = any> =
+export type SchemaOptions<$Item, $Option = any> =
   | SchemaOptionsOption<$Option[]>
   | {
       /**
        * The function which is called to load the options.
        */
       data?: OrItemAccessor<
-        $State,
+        $Item,
         {},
-        OrItemAccessor<$State, {}, OrPromiseOf<SchemaOptionsOption<$Option>[]>>
+        OrItemAccessor<$Item, {}, OrPromiseOf<SchemaOptionsOption<$Option>[]>>
       >
       /**
        * Either the key of the option property which should be treated as
@@ -385,7 +388,7 @@ export type SchemaOptions<$State extends State, $Option = any> =
        * @defaultValue `'label'` when no label is supplied and the options are
        * objects
        */
-      label?: keyof $Option | ItemAccessor<$State, { option: $Option }, string>
+      label?: keyof $Option | ItemAccessor<$Item, { option: $Option }, string>
       /**
        * Either the key of the option property which should be treated as
        * the value or a function returning the option value.
@@ -394,48 +397,48 @@ export type SchemaOptions<$State extends State, $Option = any> =
        * objects
        */
       // TODO: when relate is set, the default value is 'id'
-      value?: keyof $Option | ItemAccessor<$State, { option: $Option }>
+      value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
        * The key of the option property which should used to group the options.
        */
       groupBy?: keyof $Option
     }
 
-export interface SchemaOptionsMixin<$State extends State, $Option = any> {
-  options?: SchemaOptions<$State, $Option>
+export interface SchemaOptionsMixin<$Item, $Option = any> {
+  options?: SchemaOptions<$Item, $Option>
   relate?: boolean
 }
 
-export interface SchemaNumberMixin<$State extends State> {
+export interface SchemaNumberMixin<$Item> {
   /**
    * The minimum value.
    */
-  min?: OrItemAccessor<$State, {}, number>
+  min?: OrItemAccessor<$Item, {}, number>
 
   /**
    * The maximum value.
    */
-  max?: OrItemAccessor<$State, {}, number>
+  max?: OrItemAccessor<$Item, {}, number>
 
   /**
    * The minimum and maximum value.
    */
-  range?: OrItemAccessor<$State, {}, [number, number]>
+  range?: OrItemAccessor<$Item, {}, [number, number]>
   /**
    * When defined, buttons with up and down arrows are added next to the input
    * field. Which when pressed will add or subtract `step` from the value.
    */
-  step?: OrItemAccessor<$State, {}, number>
+  step?: OrItemAccessor<$Item, {}, number>
   /**
    * The amount of decimals to round to.
    */
-  decimals?: OrItemAccessor<$State, {}, number>
-  rules?: Omit<SchemaNumberMixin<$State>, 'rules'> & {
+  decimals?: OrItemAccessor<$Item, {}, number>
+  rules?: Omit<SchemaNumberMixin<$Item>, 'rules'> & {
     integer?: boolean
   }
 }
 
-export type ComponentSchema<$State extends State> = BaseSchema<$State> & {
+export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'component'
   /**
    * Use a Vue component to render the component. The component is specified
@@ -444,7 +447,7 @@ export type ComponentSchema<$State extends State> = BaseSchema<$State> & {
   component: Resolvable<VueConstructor<Vue>>
 }
 
-export type InputSchema<$State extends State> = BaseSchema<$State> & {
+export type InputSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -453,6 +456,7 @@ export type InputSchema<$State extends State> = BaseSchema<$State> & {
     | 'email'
     | 'url'
     | 'hostname'
+    | 'domain'
     | 'tel'
     | 'password'
     | 'creditcard'
@@ -462,6 +466,7 @@ export type InputSchema<$State extends State> = BaseSchema<$State> & {
     email?: boolean
     url?: boolean
     hostname?: boolean
+    domain?: boolean
     // TODO: check why there is no 'tel' validation
     // tel: boolean,
     password?: boolean
@@ -469,10 +474,7 @@ export type InputSchema<$State extends State> = BaseSchema<$State> & {
   }
 }
 
-export type DateSchema<
-  $InputState extends State = CreateState,
-  $State extends State = $InputState
-> = BaseSchema<$State> & {
+export type DateSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -481,19 +483,19 @@ export type DateSchema<
    * @defaultValue `En/US`
    */
   locale?: string
-  dateFormat?: OrItemAccessor<$State, {}, DateFormat>
+  dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
 }
 
 export type ButtonSchema<
-  $State extends State = CreateState,
-  $EventHandler = ItemEventHandler<$State>
-> = BaseSchema<$State> & {
+  $Item,
+  $EventHandler = ItemEventHandler<$Item>
+> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
   type: 'button' | 'submit'
-  closeForm?: OrItemAccessor<$State, {}, boolean>
-  text?: string
+  closeForm?: OrItemAccessor<$Item, {}, boolean>
+  text?: OrItemAccessor<$Item, {}, text>
   resource?: Resource
   onClick?: $EventHandler
   onSuccess?: $EventHandler
@@ -505,9 +507,7 @@ export type ButtonSchema<
   }
 }
 
-export type SwitchSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type SwitchSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -528,31 +528,25 @@ export type SwitchSchema<
   }
 }
 
-export type NumberSchema<
-  $State extends State = CreateState
-> = SchemaNumberMixin<$State> &
-  BaseSchema<$State> & {
+export type NumberSchema<$Item = any> = SchemaNumberMixin<$Item> &
+  BaseSchema<$Item> & {
     /**
      * The type of the component.
      */
     type: 'number' | 'integer'
   }
 
-export type SliderSchema<
-  $State extends State = CreateState
-> = SchemaNumberMixin<$State> &
-  BaseSchema<$State> & {
+export type SliderSchema<$Item = any> = SchemaNumberMixin<$Item> &
+  BaseSchema<$Item> & {
     /**
      * The type of the component.
      */
     type: 'slider'
     // TODO: document what the input SliderSchema option does
-    input?: OrItemAccessor<$State>
+    input?: OrItemAccessor<$Item>
   }
 
-export type TextareaSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type TextareaSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -569,9 +563,7 @@ export type TextareaSchema<
   lines?: number
 }
 
-export type CodeSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type CodeSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -596,9 +588,7 @@ export type CodeSchema<
   lines?: number
 }
 
-export type MarkupSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -606,12 +596,12 @@ export type MarkupSchema<
   /**
    * Whether the input element is resizable.
    */
-  resizable?: OrItemAccessor<$State, {}, boolean>
+  resizable?: OrItemAccessor<$Item, {}, boolean>
   /**
    * @defaultValue `'collapse'`
    */
   whitespace?: OrItemAccessor<
-    $State,
+    $Item,
     {},
     'collapse' | 'preserve' | 'preserve-all'
   >
@@ -624,7 +614,7 @@ export type MarkupSchema<
 
   // TODO: document enableRules
   enableRules?: OrItemAccessor<
-    $State,
+    $Item,
     {},
     | boolean
     | {
@@ -654,9 +644,14 @@ export type MarkupSchema<
   }
 }
 
-export type UploadSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
+  /**
+   * The type of the component.
+   */
+  type: 'label'
+}
+
+export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -698,11 +693,8 @@ export type UploadSchema<
   deletable?: boolean
 }
 
-export type MultiselectSchema<
-  $State extends State = CreateState,
-  $Option = any
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State, $Option> & {
+export type MultiselectSchema<$Item = any, $Option = any> = BaseSchema<$Item> &
+  SchemaOptionsMixin<$Item, $Option> & {
     /**
      * The type of the component.
      */
@@ -728,7 +720,7 @@ export type MultiselectSchema<
      * specific options.
      */
     search?: {
-      filter?: ItemAccessor<$State, { query: string }, OrPromiseOf<$Option[]>>
+      filter?: ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
       debounce?:
         | number
         | {
@@ -743,20 +735,16 @@ export type MultiselectSchema<
     taggable?: boolean
   }
 
-export type SelectSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
+export type SelectSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaOptionsMixin<$Item> & {
     /**
      * The type of the component.
      */
     type: 'select'
   }
 
-export type RadioSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
+export type RadioSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaOptionsMixin<$Item> & {
     /**
      * The type of the component.
      */
@@ -767,19 +755,23 @@ export type RadioSchema<
     layout?: 'horizontal' | 'vertical'
   }
 
-export type CheckboxSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type SectionSchema<$Item = any> = BaseSchema<$Item> & {
+  /**
+   * The type of the component.
+   */
+  type: 'section'
+  components?: Components<$Item>
+}
+
+export type CheckboxSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
   type: 'checkbox'
 }
 
-export type CheckboxesSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> &
-  SchemaOptionsMixin<$State> & {
+export type CheckboxesSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaOptionsMixin<$Item> & {
     /**
      * The type of the component.
      */
@@ -801,9 +793,7 @@ export type ColorFormat =
   | 'name'
   | 'hsl'
   | 'hsv'
-export type ColorSchema<
-  $State extends State = CreateState
-> = BaseSchema<$State> & {
+export type ColorSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
    */
@@ -811,13 +801,13 @@ export type ColorSchema<
   /**
    * The color format.
    */
-  format?: OrItemAccessor<$State, {}, ColorFormat>
+  format?: OrItemAccessor<$Item, {}, ColorFormat>
   /**
    * Whether the color may contain an alpha component.
    *
    * @defaultValue `false`
    */
-  alpha?: OrItemAccessor<$State, {}, boolean>
+  alpha?: OrItemAccessor<$Item, {}, boolean>
   /**
    * @defaultValue true
    */
@@ -825,16 +815,16 @@ export type ColorSchema<
   /**
    * @defaultValue `true`
    */
-  inputs?: OrItemAccessor<$State, {}, boolean>
+  inputs?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Color presets as an array of color values as strings in any css
    * compatible format.
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
    */
-  presets?: OrItemAccessor<$State, {}, string[]>
+  presets?: OrItemAccessor<$Item, {}, string[]>
 }
 
-export type ColumnSchema<$State extends State = State> = {
+export type ColumnSchema<$Item = any> = {
   /**
    * The label of the column.
    * @defaultValue The labelized column key.
@@ -854,7 +844,7 @@ export type ColumnSchema<$State extends State = State> = {
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
-  render?: ItemAccessor<$State, {}, string>
+  render?: ItemAccessor<$Item, {}, string>
   /**
    * The provided string is applied to the class property of the column
    * cell html elements.
@@ -870,25 +860,16 @@ export type ColumnSchema<$State extends State = State> = {
    * first column to specify `defaultSort`.
    */
   defaultSort?: 'asc' | 'desc'
+  /**
+   * Only displays the column if the item accessor returns `true`
+   */
+  if?: ItemAccessor<$Item, {}, boolean>
 }
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
-type ListSchemaItemState<$State extends State = CreateState> = CreateState<
-  AnyAlternative<$State['name'], any, Unpacked<$State['item'][$State['name']]>>
->
-
-type ItemFormByType<$Item extends { type: string }, $Type> = $Item extends {
-  type: $Type
-}
-  ? Form<Omit<$Item, 'type'>>
-  : never
-
-export type ListSchema<
-  $State extends State = CreateState,
-  $ListItemState extends State = ListSchemaItemState<$State>
-> = SchemaSourceMixin<$State> &
-  BaseSchema<$State> & {
+export type ListSchema<$Item = any> = SchemaSourceMixin<$Item> &
+  BaseSchema<$Item> & {
     /**
      * The type of the view
      */
@@ -896,33 +877,26 @@ export type ListSchema<
     /**
      * The form.
      */
-    form?: ResolvableForm<$ListItemState['item']>
+    form?: ResolvableForm
     /**
      * The forms.
      */
     forms?: {
-      [$Type in $ListItemState['item']['type']]: ItemFormByType<
-        $ListItemState['item'],
-        $Type
-      >
+      [key: string]: ResolvableForm
     }
     /**
      * The label given to the items. If no itemLabel is given, the default is
      * the 'name' property of the item, followed by label of the form of the
      * view (plus item id) and other defaults.
      */
-    itemLabel?: OrItemAccessor<$ListItemState, {}, string>
+    itemLabel?: OrItemAccessor<any, {}, string>
     /**
      * The columns displayed in the table. While columns can be supplied as an
      * array where each entry is the name of a property of the item, it is
      * usually beneficial to assign an object with further options to the
      * columns property.
      */
-    columns?:
-      | {
-          [$Key: string]: ColumnSchema<$ListItemState>
-        }
-      | SelectItemKeys<$ListItemState['item']>[]
+    columns?: Record<string, ColumnSchema<$Item>> | $Item[string][]
     /**
      * Scope names as defined on the model. When set, the admin renders a set of
      * scope buttons, allowing the user to switch between them while editing.
@@ -966,24 +940,32 @@ export type ListSchema<
   }
 
 export type OrItemAccessor<
-  $State extends State,
+  $Item = any,
   $Params extends {} = {},
-  $ReturnValue = $State['value']
-> = ItemAccessor<$State, $Params, $ReturnValue> | $ReturnValue
+  $ReturnValue = any
+> = ItemAccessor<$Item, $Params, $ReturnValue> | $ReturnValue
 
 export type ItemAccessor<
-  $State extends State = CreateState,
+  $Item = any,
   $Params extends {} = {},
-  $ReturnValue = $State['value']
-> = (params: DitoContext<$State> & $Params) => $ReturnValue
+  $ReturnValue = any
+> = (params: DitoContext<$Item> & $Params) => $ReturnValue
 
-export type DitoContext<$State extends State> = {
-  value: $State['value']
-  name: $State['name']
+export type DitoContext<$Item = any> = {
+  /**
+   * `nested` is `true` when the data-path points a value inside an item, and
+   * `false` when it points to the item itself.
+   */
+  nested: boolean
+  value: any
   dataPath: string
-  item: {
-    [$Key in SelectItemKeys<$State['item']>]: $State['item'][$Key]
-  }
+  name: string
+  index: any
+  itemDataPath: any
+  parentItemDataPath: any
+  itemIndex: any
+  parentItemIndex: any
+  item: $Item
   /**
    * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
    * closest parent that isn't an array, e.g. for relations or nested JSON
@@ -994,10 +976,11 @@ export type DitoContext<$State extends State> = {
    */
   parentItem: any
   rootItem: any
-  list: any
-  index: any
+  processedItem: any
+  clipboardItem: any
   user: any
   api: ApiConfig
+  views: any
   itemLabel: string | null
   formLabel: string | null
   component: any
@@ -1006,10 +989,16 @@ export type DitoContext<$State extends State> = {
   viewComponent: any
   dialogComponent: any
   panelComponent: Vue | null
+  resourceComponent: Vue | null
   sourceComponent: Vue | null
+  option: any
   options: any
   query: string
   error: any | null
+  wasNotified: boolean
+
+  // Helper Methods
+
   request<T extends any>(options: {
     /**
      * Allows caching of loaded data on two levels:
@@ -1026,78 +1015,86 @@ export type DitoContext<$State extends State> = {
     params?: any
     data?: any
   }): Promise<T>
+  format: typeof utilsFormat
   navigate(location: string | { path: string }): Promise<boolean>
   download: {
     (url: string): void
     (options: { url: string; filename: string }): void
   }
+  getResourceUrl: any
   notify(options: {
-    type?: StringSuggestions<'warning' | 'error' | 'info' | 'success'>
+    type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
     title?: string
     text: OrArrayOf<string>
   }): void
-  format: typeof utilsFormat
-  wasNotified: boolean
 }
 
-export type View<$Item = any> =
-  | InputSchema<CreateState<$Item>>
-  | RadioSchema<CreateState<$Item>>
-  | CheckboxSchema<CreateState<$Item>>
-  | CheckboxesSchema<CreateState<$Item>>
-  | ColorSchema<CreateState<$Item>>
-  | SelectSchema<CreateState<$Item>>
-  | MultiselectSchema<CreateState<$Item>>
-  | ListSchema<CreateState<$Item>, CreateState<$Item>>
-  | TextareaSchema<CreateState<$Item>>
-  | CodeSchema<CreateState<$Item>>
-  | NumberSchema<CreateState<$Item>>
-  | SliderSchema<CreateState<$Item>>
-  | UploadSchema<CreateState<$Item>>
-  | MarkupSchema<CreateState<$Item>>
-  | ButtonSchema<CreateState<$Item>>
-  | SwitchSchema<CreateState<$Item>>
-  | DateSchema<CreateState<$Item>>
+export type View<$Item = any> = {
+  resource?: Form['resource'];
+  clipboard?: Form['clipboard']
+} & (
+  | InputSchema<$Item>
+  | RadioSchema<$Item>
+  | CheckboxSchema<$Item>
+  | CheckboxesSchema<$Item>
+  | ColorSchema<$Item>
+  | SelectSchema<$Item>
+  | MultiselectSchema<$Item>
+  | ListSchema<$Item>
+  | TextareaSchema<$Item>
+  | CodeSchema<$Item>
+  | NumberSchema<$Item>
+  | SliderSchema<$Item>
+  | UploadSchema<$Item>
+  | MarkupSchema<$Item>
+  | ButtonSchema<$Item>
+  | SwitchSchema<$Item>
+  | DateSchema<$Item>
+  | ComponentSchema<$Item>
+  | LabelSchema<$Item>
+  | SectionSchema<$Item>
+)
 
-export type Component<$State extends State = CreateState> =
-  | InputSchema<$State>
-  | RadioSchema<$State>
-  | CheckboxSchema<$State>
-  | CheckboxesSchema<$State>
-  | ColorSchema<$State>
-  | SelectSchema<$State>
-  | MultiselectSchema<$State>
-  | ListSchema<$State>
-  | TextareaSchema<$State>
-  | CodeSchema<$State>
-  | NumberSchema<$State>
-  | SliderSchema<$State>
-  | UploadSchema<$State>
-  | MarkupSchema<$State>
-  | ButtonSchema<$State>
-  | SwitchSchema<$State>
-  | DateSchema<$State>
-  | ComponentSchema<$State>
+export type Component<$Item = any> =
+  | InputSchema<$Item>
+  | RadioSchema<$Item>
+  | CheckboxSchema<$Item>
+  | CheckboxesSchema<$Item>
+  | ColorSchema<$Item>
+  | SelectSchema<$Item>
+  | MultiselectSchema<$Item>
+  | ListSchema<$Item>
+  | TextareaSchema<$Item>
+  | CodeSchema<$Item>
+  | NumberSchema<$Item>
+  | SliderSchema<$Item>
+  | UploadSchema<$Item>
+  | MarkupSchema<$Item>
+  | ButtonSchema<$Item>
+  | SwitchSchema<$Item>
+  | DateSchema<$Item>
+  | ComponentSchema<$Item>
+  | LabelSchema<$Item>
+  | SectionSchema<$Item>
 
-export type Components<$State extends State> = {
-  [$name in SelectItemKeys<$State['item']>]?: Component<
-    CreateState<$State['item'], $name, $State['item'][$name]>
-  >
+export type Components<$Item = any> = {
+  [$name: string]: Component<$Item>
 }
 
-export type Buttons<$Item> = {
-  [name: string]: Optional<ButtonSchema<CreateState<$Item>>, 'type'>
-}
+export type Buttons<$Item> = Record<
+  string,
+  SetOptional<ButtonSchema<$Item>, 'type'>
+>
 
-export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
+export type Form<$Item = any> = {
   /**
    * The name of the item model produced by the form.
    */
-  name?: OrItemAccessor<$State, {}, string>
+  name?: OrItemAccessor<$Item, {}, string>
   /**
    * The label of the form.
    */
-  label?: OrItemAccessor<$State, {}, string | boolean>
+  label?: OrItemAccessor<$Item, {}, string | boolean>
   /**
    * @defaultValue `false`
    */
@@ -1106,13 +1103,14 @@ export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
   /**
    * Display several forms in different tabs within the form.
    */
-  tabs?: {
-    [name: string]: Omit<Form<$Item>, 'tabs'> & {
-      defaultTab?: OrItemAccessor<$State, {}, boolean>
+  tabs?: Record<
+    string,
+    Omit<Form<$Item>, 'tabs'> & {
+      defaultTab?: OrItemAccessor<$Item, {}, boolean>
     }
-  }
+  >
   // TODO: document components
-  components?: Components<CreateState<$Item>>
+  components?: Components<$Item>
   // TODO: document clipboard
   clipboard?:
     | boolean
@@ -1121,7 +1119,7 @@ export type Form<$Item = any, $State extends State = CreateState<$Item>> = {
         paste?: (...args: any[]) => any
       }
   buttons?: Buttons<$Item>
-  if?: OrItemAccessor<$State, {}, boolean | string[] | string>
+  if?: OrItemAccessor<$Item, {}, boolean>
 }
 
 export type Resource =
@@ -1134,7 +1132,7 @@ export type Resource =
     }>
 
 export class DitoAdmin<
-  $Views extends { [name: string]: any } = { [name: string]: View }
+  $Views extends Record<string, any> = Record<string, OrPromiseOf<View>>
 > {
   api: ApiConfig
   // TODO: finish off Vue types
@@ -1157,122 +1155,41 @@ export class DitoAdmin<
 }
 export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
-export type SchemaByType<$State extends State = CreateState> = {
-  button: ButtonSchema<$State>
-  checkbox: CheckboxSchema<$State>
-  checkboxes: CheckboxesSchema<$State>
-  code: CodeSchema<$State>
-  color: ColorSchema<$State>
-  component: ComponentSchema<$State>
-  date: DateSchema<$State>
-  list: ListSchema<$State>
-  markup: MarkupSchema<$State>
-  multiselect: MultiselectSchema<$State>
-  number: NumberSchema<$State>
-  radio: RadioSchema<$State>
-  select: SelectSchema<$State>
-  slider: SliderSchema<$State>
-  switch: SwitchSchema<$State>
-  text: InputSchema<$State>
-  textarea: TextareaSchema<$State>
-  upload: UploadSchema<$State>
+export type SchemaByType<$Item = any> = {
+  button: ButtonSchema<$Item>
+  checkbox: CheckboxSchema<$Item>
+  checkboxes: CheckboxesSchema<$Item>
+  code: CodeSchema<$Item>
+  color: ColorSchema<$Item>
+  component: ComponentSchema<$Item>
+  date: DateSchema<$Item>
+  list: ListSchema<$Item>
+  markup: MarkupSchema<$Item>
+  multiselect: MultiselectSchema<$Item>
+  number: NumberSchema<$Item>
+  radio: RadioSchema<$Item>
+  select: SelectSchema<$Item>
+  slider: SliderSchema<$Item>
+  switch: SwitchSchema<$Item>
+  text: InputSchema<$Item>
+  textarea: TextareaSchema<$Item>
+  upload: UploadSchema<$Item>
+  label: LabelSchema<$Item>
+  section: SectionSchema<$Item>
   unknown: never
 }
 
-export type CreateState<
-  $Item = any,
-  $Name = any,
-  $Value = any,
-  $Schema extends keyof SchemaByType = 'unknown'
-> = {
-  item: Required<$Item>
-  name: $Name
-  value: $Value
-  schema: $Schema
-}
-
-export type State = {
-  item: any
-  name: any
-  value: any
-  schema: keyof SchemaByType
-}
-
-export type SchemaAccessorReturnType<T> = T extends ItemAccessor
-  ? ReturnType<T>
-  : never
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
-// Allow auto-complete suggestions for string-literal / string unions:
-// https://github.com/microsoft/TypeScript/issues/29729#issuecomment-471566609
-export type StringSuggestions<T extends U, U = string> =
-  | T
-  | (U & { _ignore_me?: never })
-export type NonNullable<T> = Exclude<T, null | undefined>
-export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
-  T,
-  Exclude<keyof T, Keys>
-> &
-  {
-    [K in Keys]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<Keys, K>>>
-  }[Keys]
-
-export type AnyAlternative<
-  $Type,
-  $WhenAny,
-  $WhenNotAny
-> = IsAny<$Type> extends 1 ? $WhenAny : $WhenNotAny
-
-export type FilteredKeys<T, U> = keyof {
-  [P in keyof T]: T[P] extends U ? never : P
-}
-
-export type ItemNameKeys<$State extends State> = IsAny<
-  $State['item'][$State['name']]
-> extends 1
-  ? string
-  : SelectItemKeys<Unpacked<$State['item'][$State['name']]>>
-
-// Wrap individual types when T is a discriminated union by using conditional
-// type check:
-export type WithoutMethods<T> = IsAny<T> extends 1
-  ? any
-  : T extends any
-  ? {
-      [K in SelectKeysNotExtending<T, Function>]: T[K]
-    }
-  : never
-
-export type Extends<$A extends any, $B extends any> = IsAny<$A> extends 1
-  ? 0 // anything `any` is false
-  : $A extends $B
-  ? 1
-  : 0
-
-export type SelectItemKeys<T> = Exclude<
-  keyof WithoutMethods<T>,
-  `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
->
-
-export type SelectKeysNotExtending<
-  $Object,
-  $Extending extends any
-> = IsAny<$Object> extends 0
-  ? {
-      [K in keyof $Object]-?: {
-        1: never
-        0: K
-      }[Extends<$Object[K], $Extending>]
-    }[keyof $Object]
-  : any
-
-export type OrObjectOf<T> = T | { [k: string]: T }
-export type OrPromiseOf<T> = T | Promise<T>
-export type OrFunctionReturning<T> = (() => T) | T
-export type OrArrayOf<T> = T | T[]
-export type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrObjectOf<T>>>
+type OrRecordOf<T> = T | Record<string, T>
+type OrPromiseOf<T> = T | Promise<T>
+type OrFunctionReturning<T> = (() => T) | T
+type OrArrayOf<T> = T | T[]
+type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrRecordOf<T>>>
 
 // https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
-export type IsAny<T> = 0 extends 1 & T ? 1 : 0
+type AnyGate<
+  $CheckType,
+  $TypeWhenNotAny,
+  $TypeWhenAny = $CheckType
+> = 0 extends 1 & $CheckType ? $TypeWhenAny : $TypeWhenNotAny
 
-// https://stackoverflow.com/a/52331580/825205
-export type Unpacked<T> = T extends (infer U)[] ? U : T
+type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)

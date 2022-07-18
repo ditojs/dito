@@ -118,10 +118,11 @@ export function clone<T extends any>(arg: T, iteratee?: (arg: any) => void): T
 export function equals(arg1: any, arg2: any): boolean
 
 // TODO: document groupBy
-export function groupBy<T>(
-  collection: List<T>,
-  iteratee?: ValueIteratee<T, NotVoid>
-): Dictionary<T[]>
+export function groupBy<T, K extends keyof any>(
+  list: T[], callback: (item: T) => K
+): {
+  [index: K]: T[]
+}
 
 export function groupBy<T extends object>(
   collection: T,
@@ -169,13 +170,22 @@ export function pick(...args: any[]): any
  * Creates an object composed of the object properties predicate returns
  * truthy for.
  * @param object The source object.
- * @param iteratee The key accessed per property or the function invoked with
- * three arguments: (value, key, item).
+ * @param callback Callback invoked with three arguments: (value, key, item).
  */
-export function pickBy<T extends Dictionary<any>>(
+ export function pickBy<T extends Dictionary<any>>(
   object: T,
-  iteratee?: ValueIteratee<T, boolean>
+  callback?: (value: T[keyof T], key: keyof T, object: T) => any
 ): Partial<T>
+
+export function mapKeys<T extends Dictionary<any>, K extends keyof any>(
+  object: T,
+  callback?: (key: keyof T, value: T[keyof T], object: T) => K
+): Record<K, T[keyof T]>
+
+export function mapValues<T extends Dictionary<any>, K>(
+  object: T,
+  callback?: (value: T[keyof T], key: keyof T, object: T) => K
+): Record<keyof T, K>
 
 /*--------------------------------- string ---------------------------------*/
 
@@ -623,9 +633,6 @@ export function stripTags(html: string): string
 /*-------------------------- typescript utilities --------------------------*/
 type PropertyName = string | number | symbol
 type NotVoid = {} | null | undefined
-type ValueIteratee<T, R> =
-  | ((value: T[keyof T], key: keyof T, object: T) => R)
-  | PropertyName
 type List<T> = ArrayLike<T>
 export interface ArrayLike<T> {
   readonly length: number

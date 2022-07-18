@@ -6,22 +6,25 @@
 // Export the entire Dito namespace.
 
 import { DateFormat } from '@ditojs/utils'
-import * as Ajv from 'ajv'
+import koaCors from '@koa/cors'
+import * as Ajv from 'ajv/dist/2020.js'
 import * as aws from 'aws-sdk'
 import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
-import * as Knex from 'knex'
-import { KnexSnakeCaseMappersFactory } from 'objection'
 import helmet from 'helmet'
+import * as Knex from 'knex'
 import * as Koa from 'koa'
-import koaCompress from 'koa-compress'
-import koaCors from '@koa/cors'
-import koaResponseTime from 'koa-response-time'
-import koaLogger from 'koa-logger'
-import koaSession from 'koa-session'
-import koaPinoLogger from 'koa-pino-logger'
 import koaBodyParser from 'koa-bodyparser'
+import koaCompress from 'koa-compress'
+import koaLogger from 'koa-logger'
+import mount from 'koa-mount'
+import koaPinoLogger from 'koa-pino-logger'
+import koaResponseTime from 'koa-response-time'
+import koaSession from 'koa-session'
 import * as objection from 'objection'
+import { KnexSnakeCaseMappersFactory } from 'objection'
+import { Class, ConditionalExcept, ConditionalKeys, Constructor, SetReturnType } from 'type-fest'
+import { UserConfig } from 'vite'
 
 export type Page<$Model extends Model> = {
   total: number
@@ -138,7 +141,7 @@ export type ApplicationConfig = {
      * @defaultValue `false`
      * @see https://github.com/koajs/session
      */
-    session?: boolean | koaSession.opts
+    session?: boolean | (koaSession.opts & { modelClass: string })
     /**
      * Enable passport authentication middleware
      * @defaultValue `false`
@@ -156,6 +159,8 @@ export type ApplicationConfig = {
      * @defaultValue `false`
      */
     normalizeDbNames?: boolean | Parameters<KnexSnakeCaseMappersFactory>
+    // See https://github.com/brianc/node-pg-types/blob/master/index.d.ts#L67
+    typeParsers?: Record<number, <I extends (string | Buffer)>(value: I) => any>
   }
   /**
    * Service configurations. Pass `false` as a value to disable a service.
@@ -164,6 +169,9 @@ export type ApplicationConfig = {
   storages?: StorageConfigs
   assets?: {
     /**
+     * Threshold after which unused assets that haven't seen changes for given
+     * timeframe are removed.
+     *
      * @example '1 hr 20 mins'
      * @default `0`
      * @see https://www.npmjs.com/package/parse-duration
@@ -185,9 +193,7 @@ export type MulterS3File = {
   etag: string
 }
 
-export type StorageConfigs = {
-  [k: string]: StorageConfig
-}
+export type StorageConfigs = Record<string, StorageConfig>
 
 export type StorageConfig =
   | {
@@ -200,7 +206,7 @@ export type StorageConfig =
        *
        * @default 'private'
        */
-      acl: StringSuggestions<
+      acl: LiteralUnion<
         | 'private'
         | 'public-read'
         | 'public-read-write'
@@ -221,7 +227,7 @@ export type StorageConfig =
        *
        * @default 'STANDARD'.
        */
-      storageClass?: StringSuggestions<
+      storageClass?: LiteralUnion<
         | 'STANDARD'
         | 'REDUCED_REDUNDANCY'
         | 'STANDARD_IA'
@@ -251,42 +257,24 @@ export type StorageConfig =
 
 export interface AdminConfig {
   api?: ApiConfig
-  build?: {
-    /**
-     * Path to the admin's src directory. Mandatory when in development
-     * mode.
-     */
-    path: string
-    /**
-     * @default `false`
-     */
-    eslint: boolean
-  }
-  dist?: {
-    /**
-     * Path to the dist/src/admin directory. Mandatory when in production
-     * mode.
-     */
-    path: string
-  }
   /**
-   * Whether to use hot reload when in development mode.
-   *
-   * @default `true`
+   * Path to the admin's src directory. Mandatory when in development
+   * mode.
    */
-  hotReload?: boolean
+  root?: string;
+  /**
+   * Path to the dist/src/admin directory. Mandatory when in production
+   * mode.
+   */
+  dist?: string;
   /**
    * @default Application.config.env or `'production'` when missing
    */
   mode?: 'production' | 'development'
-  // TODO: document admin plugins
-  plugins?: (string | { id: string; apply: any })[]
   /**
    * Settings accessible on the browser side as `global.dito.settings`.
    */
-  settings?: {
-    [k: string]: any
-  }
+  settings?: Record<string, any>
 }
 
 export interface ApiResource {
@@ -349,7 +337,7 @@ export interface ApiConfig {
       /**
        * @defaultValue `'post'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
     logout?: {
       /**
@@ -359,7 +347,7 @@ export interface ApiConfig {
       /**
        * @defaultValue `'post'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
     session?: {
       /**
@@ -369,15 +357,13 @@ export interface ApiConfig {
       /**
        * @defaultValue `'get'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
   }
   /**
    * Optionally override resource path handlers.
    */
-  resources?: {
-    [k: string]: (resource: ApiResource | string) => string
-  }
+  resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
    * Optionally override / extend headers
@@ -385,21 +371,16 @@ export interface ApiConfig {
    *   'Content-Type': 'application/json'
    * }`
    */
-  headers?: { [headerKey: string]: string }
+  headers?: Record<string, string>
 }
 
-export type ApplicationControllers = {
-  [k: string]:
-    | Class<ModelController<Model>>
-    | Class<Controller>
-    | ApplicationControllers
+export interface ApplicationControllers {
+  [k: string]: Class<ModelController<Model>> | Class<Controller> | ApplicationControllers
 }
 
-export type Models = {
-  [name: string]: Class<Model>
-}
+export type Models = Record<string, Class<Model>>
 
-export class Application {
+export class Application<$Models extends Models> {
   constructor(options: {
     config?: ApplicationConfig
     validator?: Validator
@@ -409,16 +390,15 @@ export class Application {
      * Subscribe to application events. Event names: `'before:start'`,
      * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
      */
-    events?: {
-      [eventName: string]: (this: Application, ...args: []) => void
-    }
-    models: Models
+    events?: Record<string, (this: Application<$Models>, ...args: []) => void>
+    models: $Models
     controllers?: ApplicationControllers
     // TODO: services docs
     services?: Services
   })
+  models: $Models
   start(): Promise<void>
-  stop(): Promise<void>
+  stop(timeout?: number): Promise<void>
   startOrExit(): Promise<void>
   addServices(services: Services): void
   addService(service: Service): void
@@ -429,7 +409,7 @@ export class Application {
   addModels(models: Models): void
   addModel(model: Class<Model>): void
 }
-export interface Application
+export interface Application<$Models extends Models>
   extends Omit<
       Koa,
       | 'setMaxListeners'
@@ -448,7 +428,7 @@ export interface Application
     >,
     EventEmitter {}
 
-export type SchemaType = StringSuggestions<
+export type SchemaType = LiteralUnion<
   | 'string'
   | 'number'
   | 'integer'
@@ -467,7 +447,7 @@ export interface ModelRelation {
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md#relation-types|Relation Types}
    */
-  relation: StringSuggestions<
+  relation: LiteralUnion<
     'belongsTo' | 'hasMany' | 'hasOne' | 'manyToMany' | 'hasOneThrough'
   >
   /**
@@ -544,222 +524,7 @@ export interface ModelRelation {
   owner?: boolean
 }
 
-/**
- * Primitive type
- * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.1.1
- */
-export type SchemaValue =
-  | string
-  | number
-  | boolean
-  | {
-      [key: string]: SchemaValue
-    }
-  | SchemaValue[]
-  | null
-
-export type SchemaDefinition =
-  | Schema
-  // Shorthand type schema:
-  | SchemaType
-  // Shorthand array schema:
-  | SchemaDefinition[]
-  // Shorthand object schema:
-  | {
-      [k: string]: SchemaDefinition
-    }
-export interface Schema {
-  $id?: string
-  $ref?: string
-  $schema?: string
-  $comment?: string
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.1
-   */
-  type?: OrArrayOf<SchemaType>
-  enum?: SchemaValue[]
-  const?: SchemaValue
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.2
-   */
-  multipleOf?: number
-  maximum?: number
-  exclusiveMaximum?: number
-  minimum?: number
-  exclusiveMinimum?: number
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.3
-   */
-  maxLength?: number
-  minLength?: number
-  pattern?: string
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.4
-   */
-  items?: OrArrayOf<SchemaDefinition>
-  additionalItems?: SchemaDefinition
-  maxItems?: number
-  minItems?: number
-  uniqueItems?: boolean
-  contains?: Schema
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.5
-   */
-  maxProperties?: number
-  minProperties?: number
-
-  required?: boolean | string[]
-
-  properties?: {
-    [key: string]: SchemaDefinition
-  }
-  patternProperties?: {
-    [key: string]: SchemaDefinition
-  }
-  additionalProperties?: boolean | SchemaDefinition
-  dependencies?: {
-    [key: string]: SchemaDefinition | string[]
-  }
-  propertyNames?: SchemaDefinition
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.6
-   */
-  if?: SchemaDefinition
-  then?: SchemaDefinition
-  else?: SchemaDefinition
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.7
-   */
-  allOf?: SchemaDefinition[]
-  anyOf?: SchemaDefinition[]
-  oneOf?: SchemaDefinition[]
-  not?: SchemaDefinition
-
-  /**
-   * The required format of the property.
-   *
-   * All standard JSON schema formats are supported with the addition of 'datetime'
-   * and 'timestamp' which are useful for Dito.js when creating migrations.
-   * Additional formats can be registered with a custom validator.
-   */
-  format?: StringSuggestions<
-    | 'date'
-    | 'time'
-    | 'uri'
-    | 'uri-reference'
-    | 'uri-template'
-    | 'email'
-    | 'hostname'
-    | 'ipv4'
-    | 'ipv6'
-    | 'uuid'
-    | 'json-pointer'
-    | 'relative-json-pointer'
-    | 'datetime'
-    | 'timestamp'
-  >
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-8
-   */
-  contentMediaType?: string
-  contentEncoding?: string
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-9
-   */
-  definitions?: {
-    [key: string]: SchemaDefinition
-  }
-
-  /**
-   * @see https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-10
-   */
-  title?: string
-  description?: string
-  /**
-   * The default value.
-   *
-   * This impacts both validation as well as migrations: For validation
-   * unless when using patch operations, missing properties are replaced
-   * with their default values. In migrations, the .defaultTo() method is
-   * called for the database column.
-   */
-  default?: SchemaValue
-  readOnly?: boolean
-  writeOnly?: boolean
-  examples?: SchemaValue
-
-  // keywords/_validate.js
-  validate?: (params: {
-    data: any
-    parentData: object | any[]
-    rootData: object | any[]
-    dataPath: string
-    parentIndex?: number
-    parentKey?: string
-    app: Application
-    validator: Validator
-    options: any
-  }) => boolean | void
-
-  // keywords/_validate.js
-  validateAsync?: (params: {
-    data: any
-    parentData: object | any[]
-    rootData: object | any[]
-    dataPath: string
-    parentIndex?: number
-    parentKey?: string
-    app: Application
-    validator: Validator
-    options: any
-  }) => Promise<boolean | void>
-
-  /**
-   * Validates a property of type 'number' or 'integer' to be in a given
-   * range, e.g. a value between 2 and 5: [2, 5]
-   */
-  range?: [number, number]
-
-  // keywords/_instanceof.js
-  /**
-   * Validates whether the value is an instance of at least one of the
-   * passed types.
-   */
-  instanceof?: OrArrayOf<
-    | StringSuggestions<
-        | 'Object'
-        | 'Array'
-        | 'Function'
-        | 'String'
-        | 'Number'
-        | 'Boolean'
-        | 'Date'
-        | 'RegExp'
-        | 'Buffer'
-      >
-    | Function
-    | typeof Object
-    | typeof Array
-    | typeof Function
-    | typeof String
-    | typeof Number
-    | typeof Boolean
-    | typeof Date
-    | typeof RegExp
-    | typeof Buffer
-  >
-}
-
-export interface ModelPropertySchema extends Schema {
+export type ModelProperty<T = any> = Schema<T> & {
   /**
    * Marks the column as the primary key in the database.
    */
@@ -815,15 +580,16 @@ export interface ModelPropertySchema extends Schema {
   hidden?: boolean
 }
 
-export type ModelScope<T extends Model> = (
-  this: T,
-  query: QueryBuilder<T>,
-  applyParentScope: (query: QueryBuilder<T>) => QueryBuilder<T>
-) => QueryBuilder<T, any> | void
+export type ModelScope<$Model extends Model> = (
+  this: $Model,
+  query: QueryBuilder<$Model>,
+  applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
+) => QueryBuilder<$Model, any> | void
 
-export interface ModelScopes<T extends Model> {
-  [k: string]: ModelScope<T>
-}
+export type ModelScopes<$Model extends Model> = Record<
+  string,
+  ModelScope<$Model>
+>
 
 export type ModelFilterFunction<$Model extends Model> = (
   queryBuilder: QueryBuilder<$Model>,
@@ -831,30 +597,29 @@ export type ModelFilterFunction<$Model extends Model> = (
 ) => void
 
 export type ModelFilter<$Model extends Model> =
-  | ModelFilterFunction<$Model>
-  | {
+| {
       filter: 'text' | 'date-range'
       properties?: string[]
     }
   | {
-      filter: ModelFilterFunction<$Model>
-      parameters?: ActionParameter[]
+      handler: ModelFilterFunction<$Model>
+      parameters?: { [key: string]: Schema }
       // TODO: validate type
       validate?: any
     }
+  | ModelFilterFunction<$Model>;
 
-export interface ModelFilters<$Model extends Model> {
-  [k: string]: ModelFilter<$Model>
-}
+export type ModelFilters<$Model extends Model> = Record<
+  string,
+  ModelFilter<$Model>
+>
 
 export interface ModelAsset {
   storage: string
   readImageSize?: boolean
 }
 
-export interface ModelAssets {
-  [k: string]: ModelAsset
-}
+export type ModelAssets = Record<string, ModelAsset>
 
 export interface ModelOptions extends objection.ModelOptions {
   graph?: boolean
@@ -862,12 +627,11 @@ export interface ModelOptions extends objection.ModelOptions {
   mutable?: boolean
 }
 
+type ModelHookFunction<$Model extends Model> = (
+  args: objection.StaticHookArguments<$Model>
+) => void
 export type ModelHooks<$Model extends Model> = {
-  [$Key in `${'before' | 'after'}:${
-    | 'find'
-    | 'insert'
-    | 'update'
-    | 'delete'}`]?: (args: objection.StaticHookArguments<$Model>) => void
+  [key in `${'before' | 'after'}:${'find' | 'insert' | 'update' | 'delete'}`]?: ModelHookFunction<$Model>
 }
 
 export class Model extends objection.Model {
@@ -899,7 +663,7 @@ export class Model extends objection.Model {
 
   static count: {
     (column?: objection.ColumnRef, options?: { as: string }): number
-    (aliasToColumnDict: { [alias: string]: string | string[] }): number
+    (aliasToColumnDict: Record<string, string | string[]>): number
     (...columns: objection.ColumnRef[]): number
   }
 
@@ -919,7 +683,7 @@ export class Model extends objection.Model {
   QueryBuilderType: QueryBuilder<this, this[]>
 
   // Todo: include application settings
-  $app: Application
+  $app: Application<Models>
   $is(model: Model): boolean
   $update(
     attributes: Partial<ExtractModelProperties<this>>,
@@ -931,114 +695,114 @@ export class Model extends objection.Model {
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
   $validate<$JSON extends null | {}>(
     json?: $JSON,
-    options?: ModelOptions & { [k: string]: any }
+    options?: ModelOptions & Record<string, any>
   ): Promise<$JSON | this>
-  $validateGraph(options: ModelOptions & { [k: string]: any }): Promise<this>
+  $validateGraph(options: ModelOptions & Record<string, any>): Promise<this>
 
   //   /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
-  static first: QueryBuilder<Model>['first']
-  static find: QueryBuilder<Model>['find']
-  static findOne: QueryBuilder<Model>['findOne']
-  static findById: QueryBuilder<Model>['findById']
+  static first: StaticQueryBuilderMethod<'first'>
+  static find: StaticQueryBuilderMethod<'find'>
+  static findOne: StaticQueryBuilderMethod<'findOne'>
+  static findById: StaticQueryBuilderMethod<'findById'>
 
-  static withGraph: QueryBuilder<Model>['withGraph']
-  static withGraphFetched: QueryBuilder<Model>['withGraphFetched']
-  static withGraphJoined: QueryBuilder<Model>['withGraphJoined']
-  static clearWithGraph: QueryBuilder<Model>['clearWithGraph']
+  static withGraph: StaticQueryBuilderMethod<'withGraph'>
+  static withGraphFetched: StaticQueryBuilderMethod<'withGraphFetched'>
+  static withGraphJoined: StaticQueryBuilderMethod<'withGraphJoined'>
+  static clearWithGraph: StaticQueryBuilderMethod<'clearWithGraph'>
 
-  static withScope: QueryBuilder<Model>['withScope']
-  static applyScope: QueryBuilder<Model>['applyScope']
-  static clearWithScope: QueryBuilder<Model>['clearWithScope']
+  static withScope: StaticQueryBuilderMethod<'withScope'>
+  static applyScope: StaticQueryBuilderMethod<'applyScope'>
+  static clearWithScope: StaticQueryBuilderMethod<'clearWithScope'>
 
-  static clear: QueryBuilder<Model>['clear']
-  static pick: QueryBuilder<Model>['pick']
-  static omit: QueryBuilder<Model>['omit']
-  static select: QueryBuilder<Model>['select']
+  static clear: StaticQueryBuilderMethod<'clear'>
+  static pick: StaticQueryBuilderMethod<'pick'>
+  static omit: StaticQueryBuilderMethod<'omit'>
+  static select: StaticQueryBuilderMethod<'select'>
 
-  static insert: QueryBuilder<Model>['insert']
-  static upsert: QueryBuilder<Model>['upsert']
-  static update: QueryBuilder<Model>['update']
-  static relate: QueryBuilder<Model>['relate']
-  static patch: QueryBuilder<Model>['patch']
+  static insert: StaticQueryBuilderMethod<'insert'>
+  static upsert: StaticQueryBuilderMethod<'upsert'>
+  static update: StaticQueryBuilderMethod<'update'>
+  static relate: StaticQueryBuilderMethod<'relate'>
+  static patch: StaticQueryBuilderMethod<'patch'>
 
-  static truncate: QueryBuilder<Model>['truncate']
-  static delete: QueryBuilder<Model>['delete']
-  static deleteById: QueryBuilder<Model>['deleteById']
+  static truncate: StaticQueryBuilderMethod<'truncate'>
+  static delete: StaticQueryBuilderMethod<'delete'>
+  static deleteById: StaticQueryBuilderMethod<'deleteById'>
 
-  static insertAndFetch: QueryBuilder<Model>['insertAndFetch']
-  static upsertAndFetch: QueryBuilder<Model>['upsertAndFetch']
-  static updateAndFetch: QueryBuilder<Model>['updateAndFetch']
-  static patchAndFetch: QueryBuilder<Model>['patchAndFetch']
-  static patchAndFetchById: QueryBuilder<Model>['patchAndFetchById']
-  static updateAndFetchById: QueryBuilder<Model>['updateAndFetchById']
+  static insertAndFetch: StaticQueryBuilderMethod<'insertAndFetch'>
+  static upsertAndFetch: StaticQueryBuilderMethod<'upsertAndFetch'>
+  static updateAndFetch: StaticQueryBuilderMethod<'updateAndFetch'>
+  static patchAndFetch: StaticQueryBuilderMethod<'patchAndFetch'>
+  static patchAndFetchById: StaticQueryBuilderMethod<'patchAndFetchById'>
+  static updateAndFetchById: StaticQueryBuilderMethod<'updateAndFetchById'>
 
-  static insertGraph: QueryBuilder<Model>['insertGraph']
-  static upsertGraph: QueryBuilder<Model>['upsertGraph']
-  static insertGraphAndFetch: QueryBuilder<Model>['insertGraphAndFetch']
-  static upsertGraphAndFetch: QueryBuilder<Model>['upsertGraphAndFetch']
+  static insertGraph: StaticQueryBuilderMethod<'insertGraph'>
+  static upsertGraph: StaticQueryBuilderMethod<'upsertGraph'>
+  static insertGraphAndFetch: StaticQueryBuilderMethod<'insertGraphAndFetch'>
+  static upsertGraphAndFetch: StaticQueryBuilderMethod<'upsertGraphAndFetch'>
 
-  static insertDitoGraph: QueryBuilder<Model>['insertDitoGraph']
-  static upsertDitoGraph: QueryBuilder<Model>['upsertDitoGraph']
-  static updateDitoGraph: QueryBuilder<Model>['updateDitoGraph']
-  static patchDitoGraph: QueryBuilder<Model>['patchDitoGraph']
-  static insertDitoGraphAndFetch: QueryBuilder<Model>['insertDitoGraphAndFetch']
-  static upsertDitoGraphAndFetch: QueryBuilder<Model>['upsertDitoGraphAndFetch']
-  static updateDitoGraphAndFetch: QueryBuilder<Model>['updateDitoGraphAndFetch']
-  static patchDitoGraphAndFetch: QueryBuilder<Model>['patchDitoGraphAndFetch']
-  static upsertDitoGraphAndFetchById: QueryBuilder<Model>['upsertDitoGraphAndFetchById']
-  static updateDitoGraphAndFetchById: QueryBuilder<Model>['updateDitoGraphAndFetchById']
-  static patchDitoGraphAndFetchById: QueryBuilder<Model>['patchDitoGraphAndFetchById']
+  static insertDitoGraph: StaticQueryBuilderMethod<'insertDitoGraph'>
+  static upsertDitoGraph: StaticQueryBuilderMethod<'upsertDitoGraph'>
+  static updateDitoGraph: StaticQueryBuilderMethod<'updateDitoGraph'>
+  static patchDitoGraph: StaticQueryBuilderMethod<'patchDitoGraph'>
+  static insertDitoGraphAndFetch: StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
+  static upsertDitoGraphAndFetch: StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
+  static updateDitoGraphAndFetch: StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
+  static patchDitoGraphAndFetch: StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
+  static upsertDitoGraphAndFetchById: StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
+  static updateDitoGraphAndFetchById: StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
+  static patchDitoGraphAndFetchById: StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
 
-  static where: QueryBuilder<Model>['where']
-  static whereNot: QueryBuilder<Model>['whereNot']
-  static whereRaw: QueryBuilder<Model>['whereRaw']
-  static whereWrapped: QueryBuilder<Model>['whereWrapped']
-  static whereExists: QueryBuilder<Model>['whereExists']
-  static whereNotExists: QueryBuilder<Model>['whereNotExists']
-  static whereIn: QueryBuilder<Model>['whereIn']
-  static whereNotIn: QueryBuilder<Model>['whereNotIn']
-  static whereNull: QueryBuilder<Model>['whereNull']
-  static whereNotNull: QueryBuilder<Model>['whereNotNull']
-  static whereBetween: QueryBuilder<Model>['whereBetween']
-  static whereNotBetween: QueryBuilder<Model>['whereNotBetween']
-  static whereColumn: QueryBuilder<Model>['whereColumn']
-  static whereNotColumn: QueryBuilder<Model>['whereNotColumn']
-  static whereComposite: QueryBuilder<Model>['whereComposite']
-  static whereInComposite: QueryBuilder<Model>['whereInComposite']
+  static where: StaticQueryBuilderMethod<'where'>
+  static whereNot: StaticQueryBuilderMethod<'whereNot'>
+  static whereRaw: StaticQueryBuilderMethod<'whereRaw'>
+  static whereWrapped: StaticQueryBuilderMethod<'whereWrapped'>
+  static whereExists: StaticQueryBuilderMethod<'whereExists'>
+  static whereNotExists: StaticQueryBuilderMethod<'whereNotExists'>
+  static whereIn: StaticQueryBuilderMethod<'whereIn'>
+  static whereNotIn: StaticQueryBuilderMethod<'whereNotIn'>
+  static whereNull: StaticQueryBuilderMethod<'whereNull'>
+  static whereNotNull: StaticQueryBuilderMethod<'whereNotNull'>
+  static whereBetween: StaticQueryBuilderMethod<'whereBetween'>
+  static whereNotBetween: StaticQueryBuilderMethod<'whereNotBetween'>
+  static whereColumn: StaticQueryBuilderMethod<'whereColumn'>
+  static whereNotColumn: StaticQueryBuilderMethod<'whereNotColumn'>
+  static whereComposite: StaticQueryBuilderMethod<'whereComposite'>
+  static whereInComposite: StaticQueryBuilderMethod<'whereInComposite'>
   // whereNotInComposite:  QueryBuilder<Model>['whereNotInComposite']
-  static whereJsonHasAny: QueryBuilder<Model>['whereJsonHasAny']
-  static whereJsonHasAll: QueryBuilder<Model>['whereJsonHasAll']
-  static whereJsonIsArray: QueryBuilder<Model>['whereJsonIsArray']
-  static whereJsonNotArray: QueryBuilder<Model>['whereJsonNotArray']
-  static whereJsonIsObject: QueryBuilder<Model>['whereJsonIsObject']
-  static whereJsonNotObject: QueryBuilder<Model>['whereJsonNotObject']
-  static whereJsonSubsetOf: QueryBuilder<Model>['whereJsonSubsetOf']
-  static whereJsonNotSubsetOf: QueryBuilder<Model>['whereJsonNotSubsetOf']
-  static whereJsonSupersetOf: QueryBuilder<Model>['whereJsonSupersetOf']
-  static whereJsonNotSupersetOf: QueryBuilder<Model>['whereJsonNotSupersetOf']
+  static whereJsonHasAny: StaticQueryBuilderMethod<'whereJsonHasAny'>
+  static whereJsonHasAll: StaticQueryBuilderMethod<'whereJsonHasAll'>
+  static whereJsonIsArray: StaticQueryBuilderMethod<'whereJsonIsArray'>
+  static whereJsonNotArray: StaticQueryBuilderMethod<'whereJsonNotArray'>
+  static whereJsonIsObject: StaticQueryBuilderMethod<'whereJsonIsObject'>
+  static whereJsonNotObject: StaticQueryBuilderMethod<'whereJsonNotObject'>
+  static whereJsonSubsetOf: StaticQueryBuilderMethod<'whereJsonSubsetOf'>
+  static whereJsonNotSubsetOf: StaticQueryBuilderMethod<'whereJsonNotSubsetOf'>
+  static whereJsonSupersetOf: StaticQueryBuilderMethod<'whereJsonSupersetOf'>
+  static whereJsonNotSupersetOf: StaticQueryBuilderMethod<'whereJsonNotSupersetOf'>
 
-  static having: QueryBuilder<Model>['having']
-  static havingIn: QueryBuilder<Model>['havingIn']
-  static havingNotIn: QueryBuilder<Model>['havingNotIn']
-  static havingNull: QueryBuilder<Model>['havingNull']
-  static havingNotNull: QueryBuilder<Model>['havingNotNull']
-  static havingExists: QueryBuilder<Model>['havingExists']
-  static havingNotExists: QueryBuilder<Model>['havingNotExists']
-  static havingBetween: QueryBuilder<Model>['havingBetween']
-  static havingNotBetween: QueryBuilder<Model>['havingNotBetween']
-  static havingRaw: QueryBuilder<Model>['havingRaw']
-  static havingWrapped: QueryBuilder<Model>['havingWrapped']
+  static having: StaticQueryBuilderMethod<'having'>
+  static havingIn: StaticQueryBuilderMethod<'havingIn'>
+  static havingNotIn: StaticQueryBuilderMethod<'havingNotIn'>
+  static havingNull: StaticQueryBuilderMethod<'havingNull'>
+  static havingNotNull: StaticQueryBuilderMethod<'havingNotNull'>
+  static havingExists: StaticQueryBuilderMethod<'havingExists'>
+  static havingNotExists: StaticQueryBuilderMethod<'havingNotExists'>
+  static havingBetween: StaticQueryBuilderMethod<'havingBetween'>
+  static havingNotBetween: StaticQueryBuilderMethod<'havingNotBetween'>
+  static havingRaw: StaticQueryBuilderMethod<'havingRaw'>
+  static havingWrapped: StaticQueryBuilderMethod<'havingWrapped'>
 
   // deprecated methods that are still supported at the moment.
   // TODO: Remove once we move to Objection 3.0
 
-  static eager: QueryBuilder<Model>['eager']
-  static joinEager: QueryBuilder<Model>['joinEager']
-  static naiveEager: QueryBuilder<Model>['naiveEager']
-  static mergeEager: QueryBuilder<Model>['mergeEager']
-  static mergeJoinEager: QueryBuilder<Model>['mergeJoinEager']
-  static mergeNaiveEager: QueryBuilder<Model>['mergeNaiveEager']
-  static clearEager: QueryBuilder<Model>['clearEager']
+  static eager: StaticQueryBuilderMethod<'eager'>
+  static joinEager: StaticQueryBuilderMethod<'joinEager'>
+  static naiveEager: StaticQueryBuilderMethod<'naiveEager'>
+  static mergeEager: StaticQueryBuilderMethod<'mergeEager'>
+  static mergeJoinEager: StaticQueryBuilderMethod<'mergeJoinEager'>
+  static mergeNaiveEager: StaticQueryBuilderMethod<'mergeNaiveEager'>
+  static clearEager: StaticQueryBuilderMethod<'clearEager'>
 
   // static scope:  QueryBuilder<Model>['scope']
   // static mergeScope:  QueryBuilder<Model>['mergeScope']
@@ -1046,43 +810,28 @@ export class Model extends objection.Model {
 
   /*--------------------- End QueryBuilder.mixin(Model) --------------------*/
 }
+
+type StaticQueryBuilderMethod<
+  K extends ConditionalKeys<QueryBuilder<Model>, (...a: any[]) => any>
+> = <$Model extends Class<Model>>(
+  ...args: Parameters<QueryBuilder<InstanceType<$Model>>[K]>
+) => ReturnType<QueryBuilder<InstanceType<$Model>>[K]>
+
 export interface Model extends EventEmitter {}
 export interface Model extends KnexHelper {}
 
 export type ModelClass = Class<Model>
 
-export type ModelRelations = {
-  [k: string]: ModelRelation
-}
+export type ModelRelations = Record<string, ModelRelation>
 
-export type ModelProperty =
-  | ModelPropertySchema
-  // Shorthand type schema:
-  | SchemaType
-  // Shorthand array schema:
-  | ModelProperty[]
-  // Shorthand object schema:
-  | {
-      type: never
-      [k: string]: SchemaDefinition
-    }
-
-export type ModelProperties = {
-  [k: string]: ModelProperty
-}
+export type ModelProperties = Record<string, ModelProperty>
 
 export type ControllerAction<$Controller extends Controller> =
   | ControllerActionOptions<$Controller>
   | ControllerActionHandler<$Controller>
 
-export type ControllerActionName =
-  | 'find'
-  | 'delete'
-  | 'insert'
-  | 'update'
-  | 'patch'
-export type AllowedControllerActionName = StringSuggestions<ControllerActionName>
 export class Controller {
+  app: Application
   /**
    * Optionally provide the controller path. A default is deducted from
    * the normalized class name otherwise.
@@ -1107,7 +856,7 @@ export class Controller {
    * A list of allowed actions. If provided, only the action names listed here
    * as strings will be mapped to routes, everything else will be omitted.
    */
-  allow?: AllowedControllerActionName[]
+  allow?: OrReadOnly<ControllerActionName[]>
 
   /**
    * Authorization
@@ -1120,7 +869,7 @@ export class Controller {
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
   setupRoute<$ControllerAction extends ControllerAction<any>>(
-    verb: HTTPVerb,
+    method: HTTPMethod,
     url: string,
     transacted: boolean,
     authorize: Authorize,
@@ -1135,16 +884,14 @@ export class Controller {
     config: any,
     authorize: Authorize
   ): void
-  compose(): Koa.Middleware<any, any>
+  compose(): Parameters<typeof mount>[1]
   /**
    * To be overridden by sub-classes.
    */
   getPath(type: string, path: string): string
   getUrl(type: string, path: string): string
   inheritValues(type: string): any
-  processValues(
-    values: any
-  ): {
+  processValues(values: any): {
     // Create a filtered `values` object that only contains the allowed fields
     values: any
     allow: string[]
@@ -1166,7 +913,6 @@ export class Controller {
    */
   log(str: string, indent?: number): void
 }
-export interface Controller extends EventEmitter {}
 
 export type ActionParameter = Schema & { name: string }
 
@@ -1180,33 +926,40 @@ export type ControllerActionHandler<$Controller extends Controller> = (
   ...args: any[]
 ) => any
 
-export type ExtractModelProperties<$Model extends Model> = {
-  [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key]
+export type ExtractModelProperties<$Model> = {
+  [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key] extends Model
+    ? ExtractModelProperties<$Model[$Key]>
+    : $Model[$Key]
 }
 
 export type Extends<$A extends any, $B extends any> = $A extends $B ? 1 : 0
 
 export type SelectModelPropertyKeys<$Model extends Model> = {
-  [K in keyof $Model]-?: {
-    1: never
-    0: K extends 'QueryBuilderType' ? never : K
-  }[Extends<$Model[K], Model | Function>]
+  [K in keyof $Model]-?: K extends 'QueryBuilderType' | 'foreignKeyId' | `$${string}`
+    ? never
+    : $Model[K] extends Function
+      ? never
+      : K
 }[keyof $Model]
 
 export type Authorize =
   | boolean
-  | OrArrayOf<StringSuggestions<'$self' | '$owner'>>
+  | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
   | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
 
 export type BaseControllerActionOptions = {
   /**
-   * The HTTP verb (`'get'`, `'post'`, `'put'`, `'delete'` or `'patch'`) to
-   * which the action should listen and optionally the path to which it is
-   * mapped, defined in relation to the route path of its controller. By
-   * default, the normalized method name is used as the action's path, and
-   * the `'get'` verb is assigned if none is provided.
+   * The HTTP method (`'get'`, `'post'`, `'put'`, `'delete'` or `'patch'`) to
+   * which the action should listen. By default, the `'get'` method is assigned
+   * if none is provided.
    */
-  action?: OrArrayOf<StringSuggestions<HTTPVerb>>
+  method?: HTTPMethod
+  /**
+   * The path to which the action is mapped, defined in relation to the route
+   * path of its controller. By default, the normalized method name is used as
+   * the action's path.
+   */
+  path?: string
   /**
    * Determines whether or how the request is authorized. This value can
    * either be one of the values as described below, an array of them or
@@ -1222,23 +975,12 @@ export type BaseControllerActionOptions = {
    */
   authorize?: Authorize
   /**
-   * If automatic mapping of Koa.js' `ctx.query` object to method parameters
-   * along with their automatic validation is desired, `parameters` can
-   * be provided with an array listing each parameter in the same format
-   * Dito.js uses for its model property schema, but with added `name` keys
-   * for each parameter, in order to do the mapping.
+   * Validates action parameters and maps them to Koa's `ctx.query` object passed
+   * to the action handler.
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
    */
-  parameters?:
-    | ActionParameter[]
-    | [
-        ActionParameter[],
-        {
-          // TODO: validate type
-          validate?: any
-        }
-      ]
+  parameters?: { [key: string]: Schema }
   /**
    * Provides a schema for the value returned from the action handler and
    * optionally maps the value to a key inside a returned object when it
@@ -1261,11 +1003,10 @@ export type BaseControllerActionOptions = {
   transacted?: boolean
 }
 
-export type ControllerActionOptions<
-  $Controller extends Controller
-> = BaseControllerActionOptions & {
-  handler: ControllerActionHandler<$Controller>
-}
+export type ControllerActionOptions<$Controller extends Controller> =
+  BaseControllerActionOptions & {
+    handler: ControllerActionHandler<$Controller>
+  }
 
 export type ModelControllerActionOptions<
   $ModelController extends ModelController<Model>
@@ -1277,16 +1018,14 @@ export type ModelControllerActionOptions<
 }
 
 export type MemberActionParameter<M extends Model> =
-  | ActionParameter
+  | Schema
   | {
-      member: boolean
+      member: true
 
       /**
        * Sets ctx.query.
        */
-      query?: {
-        [key: string]: any
-      }
+      query?: Record<string, any>
       /**
        * Adds a FOR UPDATE in PostgreSQL and MySQL during a select statement.
        * FOR UPDATE causes the rows retrieved by the SELECT statement to be locked
@@ -1304,18 +1043,18 @@ export type MemberActionParameter<M extends Model> =
       modify?: (query: QueryBuilder<M>) => QueryBuilder<M>
     }
 
+export type ModelControllerAction<
+  $ModelController extends ModelController<Model>
+> =
+  | ModelControllerActionOptions<$ModelController>
+  | ModelControllerActionHandler<$ModelController>;
+
 export type ModelControllerActions<
   $ModelController extends ModelController<Model> = ModelController<Model>
 > = {
-  [key: string]:
-    | ModelControllerActionOptions<$ModelController>
-    | ModelControllerActionHandler<$ModelController>
-    | AllowedControllerActionName[]
-    // NOTE: this is meant only for the 'authorize' key, which due to
-    // typescript limitations we cannot type stricly to the key
-    | {
-        [key: string]: AuthorizationOptions
-      }
+  [name: ControllerActionName]: ModelControllerAction<$ModelController>,
+  allow?: OrReadOnly<ControllerActionName[]>,
+  authorize?: Authorize
 }
 
 type ModelControllerMemberAction<
@@ -1323,96 +1062,47 @@ type ModelControllerMemberAction<
 > =
   | (
       | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
-          parameters?:
-            | MemberActionParameter<
-                modelFromModelController<$ModelController>
-              >[]
-            | [
-                MemberActionParameter<
-                  modelFromModelController<$ModelController>
-                >[],
-                any
-              ]
+          parameters?: {
+            [key: string]: MemberActionParameter<
+              modelFromModelController<$ModelController>
+            >
+          }
         })
       | ModelControllerActionHandler<$ModelController>
     )
-  | AllowedControllerActionName[]
 
 export type ModelControllerMemberActions<
   $ModelController extends ModelController<Model>
 > = {
-  [key: string]: ModelControllerMemberAction<$ModelController>
+  [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>;
+  allow?: OrReadOnly<ControllerActionName[]>;
+  authorize?: Authorize
 }
+
+export type ControllerActionName = `${HTTPMethod}${string}`;
 
 export type ControllerActions<$Controller extends Controller> = {
-  [key: string]: OrArrayOf<ControllerAction<$Controller>>
+  [name: ControllerActionName]: ControllerAction<$Controller>
 }
 
-export class UserModel extends Model {
-  static options?: {
-    usernameProperty?: string
-    passwordProperty?: string
-    /**
-     * This option can be used to specify (eager) scopes to be applied when
-     * the user is deserialized from the session.
-     */
-    sessionScope?: OrArrayOf<string>
-  }
-  username: string
-  password: string
-  hash: string
-  lastLogin: Date
-
-  $verifyPassword(password: string): Promise<boolean>
-
-  $hasRole(...roles: string[]): boolean
-
-  $hasOwner(owner: UserModel): boolean
-
-  $isLoggedIn(ctx: KoaContext): boolean
-
-  // TODO: type options
-  static login(ctx: KoaContext, options: any): Promise<void>
-
-  static sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
-}
-
-export class TimeStampedModel extends Model {
-  // static properties: {
-  //   createdAt: {
-  //     type: 'timestamp'
-  //     default: string
-  //   }
-  //   updatedAt: {
-  //     type: 'timestamp'
-  //     default: string
-  //   }
-  // }
-  // static scopes: {
-  //   timeStamped: ModelScope<Model>
-  // }
-
-  createdAt: Date
-  updatedAt: Date
-}
-
-export class UserController<M extends Model> extends ModelController<M> {}
+export class UsersController<M extends Model> extends ModelController<M> {}
 
 export class AdminController extends Controller {
-  config?: AdminConfig
-  /**
-   * To be overridden in sub-classes, if the controller needs to install
-   * middleware. For normal routes, use `this.app.addRoute()` instead.
-   */
-  setupKoaWebpack(): Promise<void>
-  getVueConfig(): any
-  chainWebpack(conf: any): void
-  getVuePlugins(): { id: string; apply: (...args: any[]) => any }[]
-  getWebpackConfig(): any
+  config: AdminConfig
+  mode: 'production' | 'development'
+  closed: boolean
+  koa: Koa
+  getPath(name: string): string
+  getDitoObject(): {
+    base: string
+    api: AdminConfig['api']
+    settings: AdminConfig['settings']
+  }
+  sendDitoObject(ctx: Koa.Context): void
+  middleware(): Koa.Middleware
+  setupViteServer(): void
+  getViteConfig(config: UserConfig): UserConfig
 }
-
-// TODO: UserMixin
-
 type ModelControllerHookType = 'collection' | 'member'
 type ModelControllerHookKeys<
   $Keys extends string,
@@ -1499,9 +1189,7 @@ export class ModelController<$Model extends Model = Model> extends Controller {
     | boolean
     | {
         allow?: OrArrayOf<string>
-        authorize: {
-          [k: string]: OrArrayOf<string>
-        }
+        authorize: Record<string, OrArrayOf<string>>
       }
   /**
    * When nothing is returned from a hook, the standard action result is used.
@@ -1521,7 +1209,7 @@ export class ModelController<$Model extends Model = Model> extends Controller {
    *
    * @See {@link https://github.com/ditojs/dito/blob/master/docs/model-queries.md#find-methods) Model Queries – Find Methods}
    */
-  allowParam?: OrArrayOf<StringSuggestions<keyof QueryParameterOptions>>
+  allowParam?: OrArrayOf<LiteralUnion<keyof QueryParameterOptions>>
   /**
    * The scope(s) allowed to be requested when passing the 'scope' query
    * parameter to the default model actions. If none is provided, every
@@ -1595,12 +1283,8 @@ export class Validator extends objection.Validator {
        */
       verbose?: boolean
     }
-    keywords?: {
-      [keyword: string]: Keyword
-    }
-    formats?: {
-      [format: string]: Format
-    }
+    keywords?: Record<string, Keyword>
+    formats?: Record<string, Format>
   })
 }
 
@@ -1745,7 +1429,7 @@ export type QueryParameterOptions = {
 export type QueryParameterOptionKey = keyof QueryParameterOptions
 
 export class Service {
-  constructor(app: Application, name?: string)
+  constructor(app: Application<Models>, name?: string)
 
   setup(config: any): void
 
@@ -1755,7 +1439,7 @@ export class Service {
 
   stop(): Promise<void>
 }
-export type Services = { [k: string]: Class<Service> | Service }
+export type Services = Record<string, Class<Service> | Service>
 
 export class QueryBuilder<
   M extends Model,
@@ -1790,7 +1474,7 @@ export class QueryBuilder<
   ) => this
   toSQL: () => string
   raw: Knex.RawBuilder
-  selectRaw: ReplaceReturnType<Knex.RawBuilder, this>
+  selectRaw: SetReturnType<Knex.RawBuilder, this>
   // TODO: add type for Dito's pluck method, which has a different method
   // signature than the objection one:
   // pluck: <K extends objection.ModelProps<M>>(
@@ -1953,15 +1637,103 @@ export type Mixin = (
   propertyDescriptor: PropertyDescriptor
 ) => void
 
+type AssetFileObject = {
+  // The unique key within the storage (uuid/v4 + file extension)
+  key: string;
+  // The original filename
+  name: string;
+  // The file's mime-type
+  type: string;
+  // The amount of bytes consumed by the file
+  size: number;
+  // The public url of the file
+  url: string;
+  // The width of the image if the storage defines `config.readImageSize`
+  width: number;
+  // The height of the image if the storage defines `config.readImageSize`
+  height: number;
+}
+
+export class AssetModel extends TimeStampedModel {
+  key: string;
+  file: AssetFileObject;
+  storage: string;
+  count: number;
+}
+
+export const AssetMixin: <T extends Constructor>(target: T) =>
+  Constructor<InstanceType<T> & {
+    key: string;
+    file: AssetFileObject;
+    storage: string;
+    count: number;
+  }>
+
+type TimeStampedMixinProperties = {
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export class TimeStampedModel extends Model {
+  createdAt: Date
+  updatedAt: Date
+}
+
+export const TimeStampedMixin: <T extends Constructor>(target: T) =>
+  Constructor<InstanceType<T> & AssetMixinModelProperties>
+
+export class UserModel extends Model {
+  static options?: {
+    usernameProperty?: string
+    passwordProperty?: string
+    /**
+     * This option can be used to specify (eager) scopes to be applied when
+     * the user is deserialized from the session.
+     */
+    sessionScope?: OrArrayOf<string>
+  }
+  username: string
+  password: string
+  hash: string
+  lastLogin?: Date
+
+  $verifyPassword(password: string): Promise<boolean>
+
+  $hasRole(...roles: string[]): boolean
+
+  $hasOwner(owner: UserModel): boolean
+
+  $isLoggedIn(ctx: KoaContext): boolean
+
+  // TODO: type options
+  static login(ctx: KoaContext, options: any): Promise<void>
+
+  static sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
+}
+
+export class SessionModel extends Model {
+  id: string;
+  value: {[key: string]: any }
+}
+
+export const SessionMixin: <T extends Constructor>(target: T) =>
+Constructor<InstanceType<T> & AssetMixinModelProperties>
+
+export const UserMixin: <T extends Constructor>(target: T) =>
+  Constructor<InstanceType<T> & {
+    id: string;
+    value: {[key: string]: any }
+  }>
+
 /**
  * Apply the action mixin to a controller action, in order to
- * determine which HTTP verb (`'get'`, `'post'`, `'put'`, `'delete'` or
+ * determine which HTTP method (`'get'`, `'post'`, `'put'`, `'delete'` or
  * `'patch'`) the action should listen to and optionally the path to which it
  * is mapped, defined in relation to the route path of its controller. By
  * default, the normalized method name is used as the action's path, and
- * the `'get'` verb is assigned if none is provided.
+ * the `'get'` method is assigned if none is provided.
  */
-export const action: (verb: string, path: string) => Mixin
+export const action: (method: string, path: string) => Mixin
 
 /**
  * Apply the authorize mixin to a controller action, in order to
@@ -1984,18 +1756,11 @@ export const authorize: (
 /**
  * Apply the parameters mixin to a controller action, in order to
  * apply automatic mapping of Koa.js' `ctx.query` object to method parameters
- * along with their automatic validation. The parameters mixin is supplied
- * with an array listing each parameter in the same format Dito.js uses for
- * its model property schema, but with added `name` keys for each parameter,
- * in order to do the mapping.
+ * along with their automatic validation.
  *
  * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
  */
-export const parameters: (
-  ...args:
-    | [(ActionParameter | MemberActionParameter<any>)[], any]
-    | (ActionParameter | MemberActionParameter<any>)[]
-) => Mixin
+export const parameters: (params: { [key: string]: Schema }) => Mixin
 
 /**
  * Apply the returns mixin to a controller action, in order to
@@ -2026,7 +1791,15 @@ export const transacted: () => Mixin
 
 /*------------------------------ End Mixins -----------------------------*/
 
-export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
+export type HTTPMethod =
+  | 'get'
+  | 'post'
+  | 'put'
+  | 'delete'
+  | 'patch'
+  | 'options'
+  | 'trace'
+  | 'connect'
 
 export interface KnexHelper {
   getDialect(): string
@@ -2040,8 +1813,11 @@ export interface KnexHelper {
   isMsSQL(): boolean
 }
 
-export type Keyword = Ajv.KeywordDefinition
-export type Format = Ajv.FormatValidator | Ajv.FormatDefinition
+export type Keyword =
+  | SetOptional<Ajv.MacroKeywordDefinition, 'keyword'>
+  | SetOptional<Ajv.CodeKeywordDefinition, 'keyword'>
+  | SetOptional<Ajv.FuncKeywordDefinition, 'keyword'>;
+export type Format = Ajv.ValidateFunction | Ajv.FormatDefinition<string>
 export type Id = string | number
 export type KoaContext<$State = any> = Koa.ParameterizedContext<
   $State,
@@ -2051,29 +1827,235 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
   }
 >
 
-// https://stackoverflow.com/a/56363362/825205
-export interface Class<T> extends Function {
-  new (...args: any[]): T
+type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>);
+
+type ReflectArrayType<Source, Target> = Source extends any[] ? Target[] : Target
+
+type OrArrayOf<T> = T[] | T
+
+type OrReadOnly<T> = ReadOnly<T> | T
+
+type OrPromiseOf<T> = Promise<T> | T
+
+type modelFromModelController<$ModelController extends ModelController<Model>> =
+  InstanceType<Exclude<$ModelController['modelClass'], undefined>>
+
+export type SelectModelProperties<T> = {
+  [$Key in SelectModelKeys<T>]: T[$Key] extends Model
+    ? SelectModelProperties<T[$Key]>
+    : T[$Key]
 }
 
-export type ReplaceReturnType<T extends (...a: any) => any, TNewReturn> = (
-  ...a: Parameters<T>
-) => TNewReturn
+// https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
+type AnyGate<$CheckType, $TypeWhenNotAny, $TypeWhenAny = $CheckType> =
+  0 extends 1 & $CheckType ? $TypeWhenAny : $TypeWhenNotAny
 
-// Allow auto-complete suggestions for string-literal / string unions:
-// https://github.com/microsoft/TypeScript/issues/29729#issuecomment-471566609
-export type StringSuggestions<T extends U, U = string> =
-  | T
-  | (U & { _ignore_me?: never })
+export type SelectModelKeys<T> = AnyGate<
+  T,
+  Exclude<
+    keyof ConditionalExcept<T, Function>,
+    `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
+  >,
+  string
+>
 
-export type ReflectArrayType<Source, Target> = Source extends any[]
-  ? Target[]
-  : Target
+/*----------------------- Extended from Ajv JSON Schema ----------------------*/
 
-export type OrArrayOf<T> = T[] | T
+export type Schema<T = any> = JSONSchemaType<T> & {
+  // keywords/_validate.js
+  validate?: (params: {
+    data: any
+    parentData: object | any[]
+    rootData: object | any[]
+    dataPath: string
+    parentIndex?: number
+    parentKey?: string
+    app: Application<Models>
+    validator: Validator
+    options: any
+  }) => boolean | void
 
-export type OrPromiseOf<T> = Promise<T> | T
+  // keywords/_validate.js
+  validateAsync?: (params: {
+    data: any
+    parentData: object | any[]
+    rootData: object | any[]
+    dataPath: string
+    parentIndex?: number
+    parentKey?: string
+    app: Application<Models>
+    validator: Validator
+    options: any
+  }) => Promise<boolean | void>
 
-type modelFromModelController<
-  $ModelController extends ModelController<Model>
-> = InstanceType<Exclude<$ModelController['modelClass'], undefined>>
+  // keywords/_instanceof.js
+  /**
+   * Validates whether the value is an instance of at least one of the
+   * passed types.
+   */
+  instanceof?: OrArrayOf<
+    | LiteralUnion<
+        | 'Object'
+        | 'Array'
+        | 'Function'
+        | 'String'
+        | 'Number'
+        | 'Boolean'
+        | 'Date'
+        | 'RegExp'
+        | 'Buffer'
+      >
+    | Function
+    | typeof Object
+    | typeof Array
+    | typeof Function
+    | typeof String
+    | typeof Number
+    | typeof Boolean
+    | typeof Date
+    | typeof RegExp
+    | typeof Buffer
+  >
+}
+
+declare type StrictNullChecksWrapper<Name extends string, Type> = undefined extends null ? `strictNullChecks must be true in tsconfig to use ${Name}` : Type;
+declare type UnionToIntersection<U> = (U extends any ? (_: U) => void : never) extends (_: infer I) => void ? I : never;
+declare type SomeJSONSchema = UncheckedJSONSchemaType<Known, true>;
+declare type UncheckedPartialSchema<T> = Partial<UncheckedJSONSchemaType<T, true>>;
+declare type PartialSchema<T> = StrictNullChecksWrapper<"PartialSchema", UncheckedPartialSchema<T>>;
+declare type JSONType<T extends string, IsPartial extends boolean> = IsPartial extends true ? T | undefined : T;
+interface NumberKeywords {
+    minimum?: number;
+    maximum?: number;
+    exclusiveMinimum?: number;
+    exclusiveMaximum?: number;
+    multipleOf?: number;
+    format?: string;
+    range?: [number, number]
+  }
+interface StringKeywords {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    format?: LiteralUnion<
+      | 'date'
+      | 'time'
+      | 'uri'
+      | 'uri-reference'
+      | 'uri-template'
+      | 'email'
+      | 'hostname'
+      | 'ipv4'
+      | 'ipv6'
+      | 'uuid'
+      | 'json-pointer'
+      | 'relative-json-pointer'
+      | 'datetime'
+      | 'timestamp'
+    >;
+}
+declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (// these two unions allow arbitrary unions of types
+{
+    anyOf: readonly UncheckedJSONSchemaType<T, IsPartial>[];
+} | {
+    oneOf: readonly UncheckedJSONSchemaType<T, IsPartial>[];
+} | ({
+    type: readonly (T extends number ? JSONType<"number" | "integer", IsPartial> : T extends string ? JSONType<"string", IsPartial> : T extends boolean ? JSONType<"boolean", IsPartial> : never)[];
+} & UnionToIntersection<T extends number ? NumberKeywords : T extends string ? StringKeywords : T extends boolean ? {} : never>) | ((T extends number ? {
+    type: JSONType<"number" | "integer", IsPartial>;
+} & NumberKeywords : T extends string ? ({
+    type: JSONType<"string" | "text" | "date" | "datetime" | "timestamp", IsPartial>;
+} & StringKeywords) : T extends Date ? ({
+  type: JSONType<"date" | "datetime" | "timestamp", IsPartial>;
+}) : T extends boolean ? {
+    type: JSONType<"boolean", IsPartial>;
+} : T extends readonly [any, ...any[]] ? {
+    type: JSONType<"array", IsPartial>;
+    items: {
+        readonly [K in keyof T]-?: UncheckedJSONSchemaType<T[K], false> & Nullable<T[K]>;
+    } & {
+        length: T["length"];
+    };
+    minItems: T["length"];
+} & ({
+    maxItems: T["length"];
+} | {
+    additionalItems: false;
+}) : T extends readonly any[] ? {
+    type: JSONType<"array", IsPartial>;
+    items: UncheckedJSONSchemaType<T[0], false>;
+    contains?: UncheckedPartialSchema<T[0]>;
+    minItems?: number;
+    maxItems?: number;
+    minContains?: number;
+    maxContains?: number;
+    uniqueItems?: true;
+    additionalItems?: never;
+} : T extends Record<string, any> ? {
+    type: JSONType<"object", IsPartial>;
+    additionalProperties?: boolean | UncheckedJSONSchemaType<T[string], false>;
+    unevaluatedProperties?: boolean | UncheckedJSONSchemaType<T[string], false>;
+    properties?: IsPartial extends true ? Partial<UncheckedPropertiesSchema<T>> : UncheckedPropertiesSchema<T>;
+    patternProperties?: Record<string, UncheckedJSONSchemaType<T[string], false>>;
+    propertyNames?: Omit<UncheckedJSONSchemaType<string, false>, "type"> & {
+        type?: "string";
+    };
+    dependencies?: {
+        [K in keyof T]?: Readonly<(keyof T)[]> | UncheckedPartialSchema<T>;
+    };
+    dependentRequired?: {
+        [K in keyof T]?: Readonly<(keyof T)[]>;
+    };
+    dependentSchemas?: {
+        [K in keyof T]?: UncheckedPartialSchema<T>;
+    };
+    minProperties?: number;
+    maxProperties?: number;
+} & (IsPartial extends true ? {
+    required: Readonly<(keyof T)[] | boolean>;
+} : [UncheckedRequiredMembers<T>] extends [never] ? {
+    required?: Readonly<UncheckedRequiredMembers<T>[]> | boolean;
+} : {
+    required: Readonly<UncheckedRequiredMembers<T>[]> | boolean;
+}) : T extends null ? {
+    type: JSONType<"null", IsPartial>;
+    nullable: true;
+} : never) & {
+    allOf?: Readonly<UncheckedPartialSchema<T>[]>;
+    anyOf?: Readonly<UncheckedPartialSchema<T>[]>;
+    oneOf?: Readonly<UncheckedPartialSchema<T>[]>;
+    if?: UncheckedPartialSchema<T>;
+    then?: UncheckedPartialSchema<T>;
+    else?: UncheckedPartialSchema<T>;
+    not?: UncheckedPartialSchema<T>;
+})) & {
+    [keyword: string]: any;
+    $id?: string;
+    $ref?: string;
+    $defs?: Record<string, UncheckedJSONSchemaType<Known, true>>;
+    definitions?: Record<string, UncheckedJSONSchemaType<Known, true>>;
+};
+declare type JSONSchemaType<T> = StrictNullChecksWrapper<"JSONSchemaType", UncheckedJSONSchemaType<T, false>>;
+declare type Known = {
+    [key: string]: Known;
+} | [Known, ...Known[]] | Known[] | number | string | boolean | null;
+declare type UncheckedPropertiesSchema<T> = {
+    [K in keyof T]-?: (UncheckedJSONSchemaType<T[K], false> & Nullable<T[K]>) | {
+        $ref: string;
+    };
+};
+declare type PropertiesSchema<T> = StrictNullChecksWrapper<"PropertiesSchema", UncheckedPropertiesSchema<T>>;
+declare type UncheckedRequiredMembers<T> = {
+    [K in keyof T]-?: undefined extends T[K] ? never : K;
+}[keyof T];
+declare type RequiredMembers<T> = StrictNullChecksWrapper<"RequiredMembers", UncheckedRequiredMembers<T>>;
+declare type Nullable<T> = undefined extends T ? {
+    nullable: true;
+    const?: null;
+    enum?: Readonly<(T | null)[]>;
+    default?: T | null;
+} : {
+    const?: T;
+    enum?: Readonly<T[]>;
+    default?: T;
+};
