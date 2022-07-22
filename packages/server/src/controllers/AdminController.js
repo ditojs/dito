@@ -130,7 +130,7 @@ export class AdminController extends Controller {
     const server = await createServer({
       ...config,
       server: {
-        middlewareMode: 'html',
+        middlewareMode: true,
         hmr: {
           // Use a random free port instead of vite's default 24678, since we
           // may be running multiple servers in parallel (e.g. e2e and dev).
