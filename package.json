@@ -26,7 +26,7 @@
   },
   "engines": {
     "node": ">= 16.0.0",
-    "yarn": ">= 1.0.0"
+    "yarn": ">= 3.2.2"
   },
   "workspaces": [
     "packages/*"
@@ -43,10 +43,10 @@
     "eslint-plugin-vue": "^9.2.0",
     "full-icu": "^1.4.0",
     "husky": "^8.0.1",
-    "lerna": "^5.1.8",
+    "lerna": "^5.2.0",
     "lint-staged": "^13.0.3",
     "vitest": "^0.18.1",
     "vue-eslint-parser": "^9.0.3"
   },
-  "packageManager": "yarn@3.2.0"
+  "packageManager": "yarn@3.2.2"
 }
