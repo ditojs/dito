@@ -579,9 +579,8 @@ export class Model extends objection.Model {
 
   // @override
   $formatJson(json) {
-    const { constructor } = this
     // Remove hidden attributes.
-    for (const key of constructor.hiddenAttributes) {
+    for (const key of this.constructor.hiddenAttributes) {
       delete json[key]
     }
     return json
