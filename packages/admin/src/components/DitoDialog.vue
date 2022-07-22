@@ -71,16 +71,12 @@ export default DitoComponent.component('dito-dialog', {
         // Process the button schemas to add default click events
         // for both 'submit' and 'cancel' buttons:
         (schemas, [key, schema]) => {
-          const { type, events } = schema
-          if (!events) {
-            if (type === 'cancel') {
-              schema = {
-                ...schema,
-                events: {
-                  click() {
-                    this.cancel()
-                  }
-                }
+          const { events } = schema
+          if (key === 'cancel' && !events) {
+            schema = {
+              ...schema,
+              events: {
+                click: () => this.cancel()
               }
             }
           }
