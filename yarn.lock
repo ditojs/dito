@@ -527,12 +527,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^1.9.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^1.9.1, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@ditojs/build": ^1.8.0
-    "@ditojs/ui": ^1.9.0
+    "@ditojs/ui": ^1.9.1
     "@ditojs/utils": ^1.9.0
     axios: ^0.27.2
     codeflask: ^1.4.1
@@ -589,7 +589,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
-    "@ditojs/admin": ^1.9.0
+    "@ditojs/admin": ^1.9.1
     "@ditojs/build": ^1.8.0
     "@ditojs/router": ^1.9.0
     "@ditojs/utils": ^1.9.0
@@ -648,7 +648,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^1.9.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^1.9.1, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
