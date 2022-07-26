@@ -264,6 +264,8 @@ export type StorageConfig =
       type: 'disk'
       path: string
       url?: string
+      mount?: string
+      allowedImports?: string[]
     }
 
 export interface AdminConfig {
