@@ -395,6 +395,7 @@ export class Application<$Models extends Models> {
     controllers?: ApplicationControllers
     // TODO: services docs
     services?: Services
+    middleware?: Koa.Middleware
   })
   models: $Models
   start(): Promise<void>
@@ -408,6 +409,7 @@ export class Application<$Models extends Models> {
   addStorage(storage: StorageConfig): void
   addModels(models: Models): void
   addModel(model: Class<Model>): void
+  getAdminViteConfig(config?: UserConfig): UserConfig
 }
 export interface Application<$Models extends Models>
   extends Omit<
