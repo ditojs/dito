@@ -84,6 +84,17 @@ export type ApplicationConfig = {
      * Whether to turn off all logging
      */
     silent?: boolean
+    errors?: boolean | {
+      /**
+       * Whether to log sql errors
+       */
+      sql?: boolean;
+      /**
+       * Whether to log the error stack
+       */
+       stack?: boolean;
+       json?: boolean
+    }
   }
   api?: ApiConfig
   app?: {
