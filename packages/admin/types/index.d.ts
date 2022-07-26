@@ -978,7 +978,10 @@ export type DitoContext<$Item = any> = {
   rootItem: any
   processedItem: any
   clipboardItem: any
-  user: any
+  user: {
+    roles?: string[]
+    hasRole(...roles: string[]): boolean
+  }
   api: ApiConfig
   views: any
   itemLabel: string | null
