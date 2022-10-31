@@ -1,17 +1,17 @@
-import { isDate, pick } from '@ditojs/utils'
+import { isDate } from '@ditojs/utils'
 
 export function copyDate(date,
-  { year, month, day, hour, minute, second, millisecond } = {}
+  {
+    year = date?.getFullYear() ?? 0,
+    month = date?.getMonth() ?? 0,
+    day = date?.getDate() ?? 0,
+    hour = date?.getHours() ?? 0,
+    minute = date?.getMinutes() ?? 0,
+    second = date?.getSeconds() ?? 0,
+    millisecond = date?.getMilliseconds() ?? 0
+  } = {}
 ) {
-  return new Date(
-    pick(year, date && date.getFullYear(), 0),
-    pick(month, date && date.getMonth(), 0),
-    pick(day, date && date.getDate(), 0),
-    pick(hour, date && date.getHours(), 0),
-    pick(minute, date && date.getMinutes(), 0),
-    pick(second, date && date.getSeconds(), 0),
-    pick(millisecond, date && date.getMilliseconds(), 0)
-  )
+  return new Date(year, month, day, hour, minute, second, millisecond)
 }
 
 export function convertDate(date) {
