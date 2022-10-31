@@ -1,5 +1,4 @@
 import path from 'path'
-import { exit } from 'process'
 import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
@@ -147,24 +146,9 @@ export class AdminController extends Controller {
 
     this.closed = false
 
-    // Monkey-patch `process.exit()` to filter out the calls caused by vite's
-    // handling of SIGTERM, see: https://github.com/vitejs/vite/issues/7627
-    process.exit = code => {
-      // Filter out calls from inside vite by looking at the stack trace.
-      if (new Error().stack.includes('/vite/dist/')) {
-        // vite's own `exitProcess()` just called `process.exit(), and this
-        // means it has already called `server.close()` internally.
-        this.closed = true
-        process.exit = exit
-      } else {
-        exit(code)
-      }
-    }
-
     this.app.once('after:stop', () => {
       // For good timing it seems crucial to not add more ticks with async
       // signature, so we directly return the `server.close()` promise instead.
-      process.exit = exit
       if (!this.closed) {
         this.closed = true
         return server.close()
