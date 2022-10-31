@@ -43,7 +43,7 @@
     "eslint-plugin-vue": "^9.7.0",
     "full-icu": "^1.5.0",
     "husky": "^8.0.1",
-    "lerna": "^5.6.2",
+    "lerna": "^6.0.1",
     "lint-staged": "^13.0.3",
     "vitest": "^0.24.4",
     "vue-eslint-parser": "^9.1.0"
