@@ -7,6 +7,7 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
+    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito",
     "clean": "yarn run foreach run clean",
     "build": "yarn run foreach --topological run build",
     "watch": "yarn run foreach --jobs 2 run watch",
@@ -16,7 +17,6 @@
     "test": "vitest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/*/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/*/src",
-    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito",
     "link:objection": "yarn link ../objection.js --all --relative --private",
     "link:knex": "yarn link ../knex --all --relative --private",
     "link:all": "yarn link:objection && yarn link:knex"
@@ -34,19 +34,19 @@
   "devDependencies": {
     "c8": "^7.12.0",
     "cross-env": "^7.0.3",
-    "eslint": "^8.20.0",
+    "eslint": "^8.26.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-friendly-formatter": "^4.0.1",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.2.4",
-    "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-vue": "^9.2.0",
-    "full-icu": "^1.4.0",
+    "eslint-plugin-n": "^15.4.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-vue": "^9.7.0",
+    "full-icu": "^1.5.0",
     "husky": "^8.0.1",
-    "lerna": "^5.2.0",
+    "lerna": "^5.6.2",
     "lint-staged": "^13.0.3",
-    "vitest": "^0.18.1",
-    "vue-eslint-parser": "^9.0.3"
+    "vitest": "^0.24.4",
+    "vue-eslint-parser": "^9.1.0"
   },
   "packageManager": "yarn@3.2.2"
 }
