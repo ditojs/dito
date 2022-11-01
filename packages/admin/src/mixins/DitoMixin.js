@@ -292,19 +292,14 @@ export default {
     },
 
     getResourceUrl(resource) {
-      const path = this.getResourcePath(resource)
-      if (!path) return null
-      const url = this.api.getApiUrl(path)
-      // Support optional query parameters, to be are added to the URL.
-      const { query } = resource
-      const search = query && new URLSearchParams(query).toString()
-      return search ? `${url}?${search}` : url
+      const url = this.getResourcePath(resource)
+      return url ? this.api.getApiUrl({ url, query: resource.query }) : null
     },
 
     async sendRequest({ method, url, resource, query, data, internal }) {
       url ||= this.getResourcePath(resource)
       method ||= resource?.method
-      const checkUser = !internal && this.api.isApiRequest(url)
+      const checkUser = !internal && this.api.isApiUrl(url)
       if (checkUser) {
         await this.rootComponent.ensureUser()
       }

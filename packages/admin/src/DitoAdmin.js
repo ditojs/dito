@@ -39,8 +39,8 @@ export default class DitoAdmin {
     api.locale ||= 'en-US'
     api.formats = merge({}, defaultFormats, api.formats)
     api.request ||= options => request(api, options)
-    api.getApiUrl ||= path => getApiUrl(api, path)
-    api.isApiRequest ||= url => isApiRequest(api, url)
+    api.getApiUrl ||= options => getApiUrl(api, options)
+    api.isApiUrl ||= url => isApiUrl(api, url)
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
     api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
@@ -210,24 +210,16 @@ async function request(api, {
     deprecate(`request.params is deprecated. Use action.method and action.path instead.`)
   }
 
-  const isApiRequest = api.isApiRequest(url)
-  if (isApiRequest && !isAbsoluteUrl(url)) {
-    url = api.getApiUrl(url)
-  }
+  const isApiUrl = api.isApiUrl(url)
 
-  const search = query && new URLSearchParams(query).toString()
-  if (search) {
-    url = `${url}?${search}`
-  }
-
-  const response = await fetch(url, {
+  const response = await fetch(api.getApiUrl({ url, query }), {
     method: method.toUpperCase(),
     ...(data && { body: JSON.stringify(data) }),
     headers: {
-      ...(isApiRequest && api.headers),
+      ...(isApiUrl && api.headers),
       ...headers
     },
-    credentials: isApiRequest && api.cors?.credentials
+    credentials: isApiUrl && api.cors?.credentials
       ? 'include'
       : 'same-origin'
   })
@@ -242,11 +234,16 @@ async function request(api, {
   return response
 }
 
-function getApiUrl(api, path) {
-  // Use same approach as axios `combineURLs()` to join baseURL with path:
-  return `${api.url.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+function getApiUrl(api, { url, query }) {
+  if (!isAbsoluteUrl(url)) {
+    // Use same approach as axios `combineURLs()` to join baseURL with path:
+    url = `${api.url.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`
+  }
+  // Support optional query parameters, to be are added to the URL.
+  const search = query && new URLSearchParams(query).toString()
+  return search ? `${url}?${search}` : url
 }
 
-function isApiRequest(api, url) {
+function isApiUrl(api, url) {
   return !isAbsoluteUrl(url) || url.startsWith(api.url)
 }
