@@ -39,7 +39,7 @@ export function expressionPathToString(path, start = 0) {
 
 export function modelGraphToExpression(modelGraph, expr) {
   if (modelGraph) {
-    expr = expr || {}
+    expr ||= {}
     for (const model of asArray(modelGraph)) {
       if (model) {
         const relations = model.constructor.getRelations()

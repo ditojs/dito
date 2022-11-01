@@ -316,8 +316,8 @@ export default {
     },
 
     async sendRequest({ method, url, resource, data, params, internal }) {
-      url = url || this.getResourcePath(resource)
-      method = method || resource?.method
+      url ||= this.getResourcePath(resource)
+      method ||= resource?.method
       const checkUser = !internal && this.api.isApiRequest(url)
       if (checkUser) {
         await this.rootComponent.ensureUser()

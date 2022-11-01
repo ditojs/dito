@@ -168,7 +168,7 @@ export class Model extends objection.Model {
       // extensions (async and graph for now):
       return super.$validate(json, options)
     }
-    json = json || this
+    json ||= this
     const inputJson = json
     const shallow = json.$isObjectionModel && !options.graph
     if (shallow) {
@@ -471,7 +471,7 @@ export class Model extends objection.Model {
 
   // @override
   $setJson(json, options) {
-    options = options || {}
+    options ||= {}
     const callInitialize = (
       // Only call initialize when:
       // 1. we're not partially patching:

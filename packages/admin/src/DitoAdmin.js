@@ -42,20 +42,12 @@ export default class DitoAdmin {
 
     api.request ||= options => this.request(options)
 
+    api.isApiRequest ||= url => !isAbsoluteUrl(url) || url.startsWith(api.url)
+
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
-    api.normalizePath = (
-      api.normalizePath ||
-      api.normalizePaths
-        ? hyphenate
-        : val => val
-    )
-    api.denormalizePath = (
-      api.denormalizePath ||
-      api.normalizePaths
-        ? camelize
-        : val => val
-    )
+    api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
+    api.denormalizePath ||= api.normalizePaths ? camelize : val => val
 
     // Allow the configuration of all auth resources, like so:
     // api.users = {
@@ -138,10 +130,6 @@ export default class DitoAdmin {
     api.headers = {
       'Content-Type': 'application/json',
       ...api.headers
-    }
-
-    api.isApiRequest = api.isApiRequest || function(url) {
-      return !isAbsoluteUrl(url) || url.startsWith(api.url)
     }
 
     if (isString(el)) {
