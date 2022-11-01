@@ -2,7 +2,6 @@ import Vue from 'vue'
 import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
-import axios from 'axios'
 import {
   isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
@@ -11,6 +10,7 @@ import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import TypeComponent from './TypeComponent.js'
 import { getResource } from './utils/resource.js'
+import { deprecate } from './utils/deprecate.js'
 import verbs from './verbs.js'
 
 Vue.config.productionTip = false
@@ -37,13 +37,10 @@ export default class DitoAdmin {
 
     // Setup default api setttings:
     api.locale ||= 'en-US'
-
     api.formats = merge({}, defaultFormats, api.formats)
-
-    api.request ||= options => this.request(options)
-
-    api.isApiRequest ||= url => !isAbsoluteUrl(url) || url.startsWith(api.url)
-
+    api.request ||= options => request(api, options)
+    api.getApiUrl ||= path => getApiUrl(api, path)
+    api.isApiRequest ||= url => isApiRequest(api, url)
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
     api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
@@ -190,26 +187,62 @@ export default class DitoAdmin {
   register(type, options) {
     return TypeComponent.register(type, options)
   }
+}
 
-  request({
-    url,
-    method = 'get',
-    data = null,
-    params = null,
-    headers = null
-  }) {
-    const isApiRequest = this.api.isApiRequest(url)
-    return axios.request({
-      url,
-      method,
-      params,
-      ...(data && { data }),
-      baseURL: isApiRequest ? this.api.url : null,
-      headers: {
-        ...(isApiRequest && this.api.headers),
-        ...headers
-      },
-      withCredentials: isApiRequest && !!this.api.cors?.credentials
-    })
+class RequestError extends Error {
+  constructor(response) {
+    super(`Request failed with status code: ${response.status} (${response.statusText})`)
+    this.response = response
   }
+}
+
+async function request(api, {
+  url,
+  method = 'get',
+  // TODO: `params` was deprecated in favor of `query` on 2022-11-01, remove
+  // once not in use anywhere anymore.
+  params = null,
+  query = params || null,
+  headers = null,
+  data = null
+}) {
+  if (params) {
+    deprecate(`request.params is deprecated. Use action.method and action.path instead.`)
+  }
+
+  const isApiRequest = api.isApiRequest(url)
+  if (isApiRequest && !isAbsoluteUrl(url)) {
+    url = api.getApiUrl(url)
+  }
+
+  const search = query && new URLSearchParams(query).toString()
+  if (search) {
+    url = `${url}?${search}`
+  }
+
+  const response = await fetch(url, {
+    method: method.toUpperCase(),
+    ...(data && { body: JSON.stringify(data) }),
+    headers: {
+      ...(isApiRequest && api.headers),
+      ...headers
+    },
+    credentials: isApiRequest && api.cors?.credentials
+      ? 'include'
+      : 'same-origin'
+  })
+  response.data = await response.json()
+  if (!response.ok) {
+    throw new RequestError(response)
+  }
+  return response
+}
+
+function getApiUrl(api, path) {
+  // Use same approach as axios `combineURLs()` to join baseURL with path:
+  return `${api.url.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
+function isApiRequest(api, url) {
+  return !isAbsoluteUrl(url) || url.startsWith(api.url)
 }

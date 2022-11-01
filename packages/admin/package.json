@@ -25,7 +25,7 @@
     "prepare": "yarn build"
   },
   "engines": {
-    "node": ">= 16.0.0",
+    "node": ">= 18.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
@@ -37,7 +37,6 @@
   "dependencies": {
     "@ditojs/ui": "^1.10.1",
     "@ditojs/utils": "^1.10.1",
-    "axios": "^0.27.2",
     "codeflask": "^1.4.1",
     "filesize": "^10.0.5",
     "filesize-parser": "^1.5.0",

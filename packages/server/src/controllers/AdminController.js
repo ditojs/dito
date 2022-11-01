@@ -273,7 +273,6 @@ const CORE_DEPENDENCIES = [
   'vue-upload-component',
   'vuedraggable',
 
-  'axios',
   'core-js',
   'lowlight',
   'sortablejs',

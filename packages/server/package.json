@@ -14,11 +14,11 @@
     "dito": "./src/cli/index.js"
   },
   "engines": {
-    "node": ">= 16.0.0",
+    "node": ">= 18.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node >= 16"
+    "node >= 18"
   ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.200.0",
@@ -31,7 +31,6 @@
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "ajv": "^8.11.0",
     "ajv-formats": "^2.1.1",
-    "axios": "^0.27.2",
     "bcryptjs": "^2.4.3",
     "bytes": "^3.1.2",
     "data-uri-to-buffer": "^4.0.0",

@@ -1672,7 +1672,6 @@ __metadata:
     "@ditojs/build": ^1.10.1
     "@ditojs/ui": ^1.10.1
     "@ditojs/utils": ^1.10.1
-    axios: ^0.27.2
     codeflask: ^1.4.1
     filesize: ^10.0.5
     filesize-parser: ^1.5.0
@@ -1737,7 +1736,6 @@ __metadata:
     "@originjs/vite-plugin-commonjs": ^1.0.3
     ajv: ^8.11.0
     ajv-formats: ^2.1.1
-    axios: ^0.27.2
     bcryptjs: ^2.4.3
     bytes: ^3.1.2
     data-uri-to-buffer: ^4.0.0
@@ -3848,16 +3846,6 @@ __metadata:
   bin:
     autoprefixer: bin/autoprefixer
   checksum: dcb1cb7ae96a3363d65d82e52f9a0a7d8c982256f6fd032d7e1ec311f099c23acfebfd517ff8e96bf93f716a66c4ea2b80c60aa19efd2f474ce434bd75ef7b79
-  languageName: node
-  linkType: hard
-
-"axios@npm:^0.27.2":
-  version: 0.27.2
-  resolution: "axios@npm:0.27.2"
-  dependencies:
-    follow-redirects: ^1.14.9
-    form-data: ^4.0.0
-  checksum: 38cb7540465fe8c4102850c4368053c21683af85c5fdf0ea619f9628abbcb59415d1e22ebc8a6390d2bbc9b58a9806c874f139767389c862ec9b772235f06854
   languageName: node
   linkType: hard
 
@@ -6382,7 +6370,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.14.9, follow-redirects@npm:^1.15.0":
+"follow-redirects@npm:^1.15.0":
   version: 1.15.2
   resolution: "follow-redirects@npm:1.15.2"
   peerDependenciesMeta:
