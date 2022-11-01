@@ -199,8 +199,8 @@ class RequestError extends Error {
 async function request(api, {
   url,
   method = 'get',
-  // TODO: `params` was deprecated in favor of `query` on 2022-11-01, remove
-  // once not in use anywhere anymore.
+  // TODO: `request.params` was deprecated in favor of `query` on 2022-11-01,
+  // remove once not in use anywhere anymore.
   params = null,
   query = params || null,
   headers = null,
@@ -231,7 +231,11 @@ async function request(api, {
       ? 'include'
       : 'same-origin'
   })
-  response.data = await response.json()
+
+  if (response.headers.get('Content-Type')?.includes('application/json')) {
+    response.data = await response.json()
+  }
+
   if (!response.ok) {
     throw new RequestError(response)
   }

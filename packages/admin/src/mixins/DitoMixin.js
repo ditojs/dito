@@ -334,7 +334,9 @@ export default {
       const cacheKey = loadCache && `${
         options.method || 'get'} ${
         options.url} ${
-        JSON.stringify(options.params || '')} ${
+        // TODO: `request.params` was deprecated in favor of `query` on
+        // 2022-11-01, remove once not in use anywhere anymore.
+        JSON.stringify(options.query || options.params || '')} ${
         JSON.stringify(options.data || '')
       }`
       if (loadCache && (cacheKey in loadCache)) {
