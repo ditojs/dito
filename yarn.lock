@@ -523,10 +523,11 @@ __metadata:
   linkType: hard
 
 "@aws-sdk/lib-storage@npm:^3.46.0":
-  version: 3.135.0
-  resolution: "@aws-sdk/lib-storage@npm:3.135.0"
+  version: 3.200.0
+  resolution: "@aws-sdk/lib-storage@npm:3.200.0"
   dependencies:
-    "@aws-sdk/smithy-client": 3.127.0
+    "@aws-sdk/middleware-endpoint": 3.200.0
+    "@aws-sdk/smithy-client": 3.200.0
     buffer: 5.6.0
     events: 3.3.0
     stream-browserify: 3.0.0
@@ -534,7 +535,7 @@ __metadata:
   peerDependencies:
     "@aws-sdk/abort-controller": ^3.0.0
     "@aws-sdk/client-s3": ^3.0.0
-  checksum: eb29ee757670b94c9953771e6adcb37731722452af9d3794d57c503fab223e41562701f4a0159a739408dd4c963f8df40273ad0bf7cdcc41051172fc0e496e77
+  checksum: 1e00ccae18e2832377c8b5a29a662b99ec1b388206de1f27d60ba33265e3b19700ead152152004b3f9e122b538c45c8c27b7077d4a6e70d937618a82eb4dc9af
   languageName: node
   linkType: hard
 
@@ -732,15 +733,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/middleware-stack@npm:3.127.0":
-  version: 3.127.0
-  resolution: "@aws-sdk/middleware-stack@npm:3.127.0"
-  dependencies:
-    tslib: ^2.3.1
-  checksum: 145a44b74681590edc328bb128a8f17af2b13b3e3a0c3bd8803636bafee4370db385fdc132d20ec2b0b331f849a367cb9b8b5ec37b4a705b70156c184ca9f84c
-  languageName: node
-  linkType: hard
-
 "@aws-sdk/middleware-stack@npm:3.200.0":
   version: 3.200.0
   resolution: "@aws-sdk/middleware-stack@npm:3.200.0"
@@ -876,17 +868,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/smithy-client@npm:3.127.0":
-  version: 3.127.0
-  resolution: "@aws-sdk/smithy-client@npm:3.127.0"
-  dependencies:
-    "@aws-sdk/middleware-stack": 3.127.0
-    "@aws-sdk/types": 3.127.0
-    tslib: ^2.3.1
-  checksum: 6e0435ea3f617303c5e003752f7f029dbea12a054a629803ba287a68de56f0726ac3dccb7fa315431f5d66c8482036cbd45724d9991e21f3b79043f90641ba63
-  languageName: node
-  linkType: hard
-
 "@aws-sdk/smithy-client@npm:3.200.0":
   version: 3.200.0
   resolution: "@aws-sdk/smithy-client@npm:3.200.0"
@@ -895,13 +876,6 @@ __metadata:
     "@aws-sdk/types": 3.200.0
     tslib: ^2.3.1
   checksum: ca9f4e5e888982099be526daa3a3b9db485ec33bd6da7876f837c484c24bb7017dfbcf924be1c8febb95b5f4098f2f0c6c42c4824527854fa89e77318ee86a37
-  languageName: node
-  linkType: hard
-
-"@aws-sdk/types@npm:3.127.0":
-  version: 3.127.0
-  resolution: "@aws-sdk/types@npm:3.127.0"
-  checksum: 35467177421fb180ca73eb85a327c814e3aaee11a8eabbf9f048d58ec4133d7205400ce2e3c3ef70d78a64a2359f1df2926e1a0e6f169a415c2896ff6dfb66d9
   languageName: node
   linkType: hard
 
