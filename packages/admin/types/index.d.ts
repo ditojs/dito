@@ -25,6 +25,7 @@ export type PerformRequest = <T>({
   url,
   method,
   data,
+  query,
   params,
   headers,
 }: {
@@ -34,8 +35,10 @@ export type PerformRequest = <T>({
    */
   method: HTTPVerb
   data: any
-  params: any
-  headers: any
+  /** @deprecated use query instead */
+  params: ConstructorParameters<typeof URLSearchParams>[0]
+  query: ConstructorParameters<typeof URLSearchParams>[0]
+  headers: Record<string, string>
 }) => Promise<Response<T>>
 
 export interface ApiResource {
