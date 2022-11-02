@@ -1658,8 +1658,8 @@ __metadata:
     tiptap-commands: ^1.17.1
     tiptap-extensions: ^1.35.2
     to-pascal-case: ^1.0.0
-    type-fest: ^2.16.0
-    typescript: ^4.7.4
+    type-fest: ^3.1.0
+    typescript: ^4.8.4
     vite: ^3.2.2
     vite-plugin-vue2: ^2.0.2
     vue: ^2.7.13
@@ -1711,15 +1711,15 @@ __metadata:
     "@koa/cors": ^4.0.0
     "@koa/multer": ^3.0.0
     "@originjs/vite-plugin-commonjs": ^1.0.3
-    "@types/koa-bodyparser": ^4.3.0
-    "@types/koa-compress": ^4.0.0
-    "@types/koa-logger": ^3.1.1
-    "@types/koa-pino-logger": ^3.0.0
-    "@types/koa-response-time": ^2.1.0
-    "@types/koa-session": ^5.10.2
-    "@types/koa-static": ^4.0.1
-    "@types/koa__cors": ^3.0.1
-    "@types/node": ^14.14.10
+    "@types/koa-bodyparser": ^4.3.9
+    "@types/koa-compress": ^4.0.3
+    "@types/koa-logger": ^3.1.2
+    "@types/koa-pino-logger": ^3.0.1
+    "@types/koa-response-time": ^2.1.2
+    "@types/koa-session": ^5.10.6
+    "@types/koa-static": ^4.0.2
+    "@types/koa__cors": ^3.3.0
+    "@types/node": ^18.11.9
     ajv: ^8.11.0
     ajv-formats: ^2.1.1
     bcryptjs: ^2.4.3
@@ -1757,8 +1757,8 @@ __metadata:
     pino-pretty: ^9.1.1
     pluralize: ^8.0.0
     repl: ^0.1.3
-    type-fest: ^2.16.0
-    typescript: ^4.7.4
+    type-fest: ^3.1.0
+    typescript: ^4.8.4
     uuid: ^9.0.0
     vite: ^3.2.2
     vite-plugin-vue2: ^2.0.2
@@ -1792,7 +1792,7 @@ __metadata:
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
     punycode: ^2.1.1
-    typescript: ^4.7.4
+    typescript: ^4.8.4
   languageName: unknown
   linkType: soft
 
@@ -3305,7 +3305,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-bodyparser@npm:^4.3.0":
+"@types/koa-bodyparser@npm:^4.3.9":
   version: 4.3.9
   resolution: "@types/koa-bodyparser@npm:4.3.9"
   dependencies:
@@ -3323,7 +3323,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-compress@npm:^4.0.0":
+"@types/koa-compress@npm:^4.0.3":
   version: 4.0.3
   resolution: "@types/koa-compress@npm:4.0.3"
   dependencies:
@@ -3333,7 +3333,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-logger@npm:^3.1.1":
+"@types/koa-logger@npm:^3.1.2":
   version: 3.1.2
   resolution: "@types/koa-logger@npm:3.1.2"
   dependencies:
@@ -3342,7 +3342,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-pino-logger@npm:^3.0.0":
+"@types/koa-pino-logger@npm:^3.0.1":
   version: 3.0.1
   resolution: "@types/koa-pino-logger@npm:3.0.1"
   dependencies:
@@ -3353,7 +3353,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-response-time@npm:^2.1.0":
+"@types/koa-response-time@npm:^2.1.2":
   version: 2.1.2
   resolution: "@types/koa-response-time@npm:2.1.2"
   dependencies:
@@ -3371,7 +3371,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-session@npm:^5.10.2":
+"@types/koa-session@npm:^5.10.6":
   version: 5.10.6
   resolution: "@types/koa-session@npm:5.10.6"
   dependencies:
@@ -3381,7 +3381,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-static@npm:^4.0.1":
+"@types/koa-static@npm:^4.0.2":
   version: 4.0.2
   resolution: "@types/koa-static@npm:4.0.2"
   dependencies:
@@ -3407,7 +3407,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa__cors@npm:^3.0.1":
+"@types/koa__cors@npm:^3.3.0":
   version: 3.3.0
   resolution: "@types/koa__cors@npm:3.3.0"
   dependencies:
@@ -3444,10 +3444,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^14.14.10":
-  version: 14.18.33
-  resolution: "@types/node@npm:14.18.33"
-  checksum: 4e23f95186d8ae1d38c999bc6b46fe94e790da88744b0a3bfeedcbd0d9ffe2cb0ff39e85f43014f6739e5270292c1a1f6f97a1fc606fd573a0c17fda9a1d42de
+"@types/node@npm:^18.11.9":
+  version: 18.11.9
+  resolution: "@types/node@npm:18.11.9"
+  checksum: cc0aae109e9b7adefc32eecb838d6fad931663bb06484b5e9cbbbf74865c721b03d16fd8d74ad90e31dbe093d956a7c2c306ba5429ba0c00f3f7505103d7a496
   languageName: node
   linkType: hard
 
@@ -12198,10 +12198,10 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"type-fest@npm:^2.16.0":
-  version: 2.19.0
-  resolution: "type-fest@npm:2.19.0"
-  checksum: a4ef07ece297c9fba78fc1bd6d85dff4472fe043ede98bd4710d2615d15776902b595abf62bd78339ed6278f021235fb28a96361f8be86ed754f778973a0d278
+"type-fest@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "type-fest@npm:3.1.0"
+  checksum: 22a0402afafab05edb7b45456d6ebfdcfc616f84a98266857e89bd656a14b5007e86d1a50b12746624b6aafb17dad3f437065df8adfa1b04bb970894db1fe940
   languageName: node
   linkType: hard
 
@@ -12231,7 +12231,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typescript@npm:^3 || ^4, typescript@npm:^4.7.4":
+"typescript@npm:^3 || ^4, typescript@npm:^4.8.4":
   version: 4.8.4
   resolution: "typescript@npm:4.8.4"
   bin:
@@ -12241,7 +12241,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^3 || ^4#~builtin<compat/typescript>, typescript@patch:typescript@^4.7.4#~builtin<compat/typescript>":
+"typescript@patch:typescript@^3 || ^4#~builtin<compat/typescript>, typescript@patch:typescript@^4.8.4#~builtin<compat/typescript>":
   version: 4.8.4
   resolution: "typescript@patch:typescript@npm%3A4.8.4#~builtin<compat/typescript>::version=4.8.4&hash=f456af"
   bin:
