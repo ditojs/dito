@@ -110,6 +110,7 @@ module.exports = {
         'import/export': 'off',
         'no-dupe-class-members': 'off',
         'no-redeclare': 'off',
+        'no-undef': 'off',
         'no-unused-vars': 'off',
         'no-use-before-define': 'off',
         'max-len': 'off'
