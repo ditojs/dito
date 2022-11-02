@@ -410,6 +410,7 @@ export class Application<$Models extends Models> {
     services?: Services
     middleware?: Koa.Middleware
   })
+
   models: $Models
   start(): Promise<void>
   stop(timeout?: number): Promise<void>
@@ -704,14 +705,17 @@ export class Model extends objection.Model {
     attributes: Partial<ExtractModelProperties<this>>,
     trx?: objection.Transaction
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
+
   $patch(
     attributes: Partial<ExtractModelProperties<this>>,
     trx?: objection.Transaction
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
+
   $validate<$JSON extends null | {}>(
     json?: $JSON,
     options?: ModelOptions & Record<string, any>
   ): Promise<$JSON | this>
+
   $validateGraph(options: ModelOptions & Record<string, any>): Promise<this>
 
   //   /*-------------------- Start QueryBuilder.mixin(Model) -------------------*/
@@ -823,7 +827,7 @@ export class Model extends objection.Model {
   // static mergeScope:  QueryBuilder<Model>['mergeScope']
   // static clearScope:  QueryBuilder<Model>['clearScope']
 
-  /*--------------------- End QueryBuilder.mixin(Model) --------------------*/
+  /* --------------------- End QueryBuilder.mixin(Model) -------------------- */
 }
 
 type StaticQueryBuilderMethod<
@@ -891,6 +895,7 @@ export class Controller {
     action: $ControllerAction,
     handlers: ((ctx: KoaContext, next: Function) => void)[]
   ): void
+
   setupActions(type: string): string[]
   setupActionRoute(type: any, action: any): void
   setupAssets(): any
@@ -899,6 +904,7 @@ export class Controller {
     config: any,
     authorize: Authorize
   ): void
+
   compose(): Parameters<typeof mount>[1]
   /**
    * To be overridden by sub-classes.
@@ -912,12 +918,14 @@ export class Controller {
     allow: string[]
     authorize: Authorize
   }
+
   emitHook(
     type: string,
     handleResult: any,
     ctx: any,
     ...args: any[]
   ): Promise<any>
+
   processAuthorize(authorize: any): any
   describeAuthorize(authorize: any): string
   handleAuthorization(): Promise<void>
@@ -1116,6 +1124,7 @@ export class AdminController extends Controller {
     api: AdminConfig['api']
     settings: AdminConfig['settings']
   }
+
   sendDitoObject(ctx: Koa.Context): void
   middleware(): Koa.Middleware
   setupViteServer(): void
@@ -1209,6 +1218,7 @@ export class ModelController<$Model extends Model = Model> extends Controller {
         allow?: OrArrayOf<string>
         authorize: Record<string, OrArrayOf<string>>
       }
+
   /**
    * When nothing is returned from a hook, the standard action result is used.
    */
@@ -1316,18 +1326,22 @@ export class EventEmitter {
     event: EventEmitter2.event | EventEmitter2.eventNS,
     ...values: any[]
   ): Promise<any[]>
+
   on(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
   ): this
+
   off(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
   ): this
+
   once(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
   ): this
+
   setupEmitter(
     events: Record<string, EventEmitter2.ListenerFn>,
     options: EventEmitter2.ConstructorOptions
@@ -1338,32 +1352,38 @@ export class EventEmitter {
     event: EventEmitter2.event | EventEmitter2.eventNS,
     ...values: any[]
   ): Promise<any[]>
+
   addListener(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
   ): this | EventEmitter2.Listener
+
   prependListener(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn,
     options?: boolean | EventEmitter2.OnOptions
   ): this | EventEmitter2.Listener
+
   prependOnceListener(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn,
     options?: boolean | EventEmitter2.OnOptions
   ): this | EventEmitter2.Listener
+
   many(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     timesToListen: number,
     listener: EventEmitter2.ListenerFn,
     options?: boolean | EventEmitter2.OnOptions
   ): this | EventEmitter2.Listener
+
   prependMany(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     timesToListen: number,
     listener: EventEmitter2.ListenerFn,
     options?: boolean | EventEmitter2.OnOptions
   ): this | EventEmitter2.Listener
+
   onAny(listener: EventEmitter2.EventAndListener): this
   prependAny(listener: EventEmitter2.EventAndListener): this
   offAny(listener: EventEmitter2.ListenerFn): this
@@ -1371,54 +1391,65 @@ export class EventEmitter {
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
   ): this
+
   removeAllListeners(event?: EventEmitter2.event | EventEmitter2.eventNS): this
   setMaxListeners(n: number): void
   getMaxListeners(): number
   eventNames(
     nsAsArray?: boolean
   ): (EventEmitter2.event | EventEmitter2.eventNS)[]
+
   listenerCount(event?: EventEmitter2.event | EventEmitter2.eventNS): number
   listeners(
     event?: EventEmitter2.event | EventEmitter2.eventNS
   ): EventEmitter2.ListenerFn[]
+
   listenersAny(): EventEmitter2.ListenerFn[]
   waitFor(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     timeout?: number
   ): EventEmitter2.CancelablePromise<any[]>
+
   waitFor(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     filter?: EventEmitter2.WaitForFilter
   ): EventEmitter2.CancelablePromise<any[]>
+
   waitFor(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     options?: EventEmitter2.WaitForOptions
   ): EventEmitter2.CancelablePromise<any[]>
+
   listenTo(
     target: EventEmitter2.GeneralEventEmitter,
     events: EventEmitter2.event | EventEmitter2.eventNS,
     options?: EventEmitter2.ListenToOptions
   ): this
+
   listenTo(
     target: EventEmitter2.GeneralEventEmitter,
     events: EventEmitter2.event[],
     options?: EventEmitter2.ListenToOptions
   ): this
+
   listenTo(
     target: EventEmitter2.GeneralEventEmitter,
     events: Object,
     options?: EventEmitter2.ListenToOptions
   ): this
+
   stopListeningTo(
     target?: EventEmitter2.GeneralEventEmitter,
     event?: EventEmitter2.event | EventEmitter2.eventNS
   ): Boolean
+
   hasListeners(event?: String): Boolean
   static once(
     emitter: EventEmitter2.EventEmitter2,
     event: EventEmitter2.event | EventEmitter2.eventNS,
     options?: EventEmitter2.OnceOptions
   ): EventEmitter2.CancelablePromise<any[]>
+
   static defaultMaxListeners: number
 }
 
@@ -1490,6 +1521,7 @@ export class QueryBuilder<
     expr: objection.RelationExpression<M>,
     options?: objection.GraphOptions & { algorithm: 'fetch' | 'join' }
   ) => this
+
   toSQL: () => string
   raw: Knex.RawBuilder
   selectRaw: SetReturnType<Knex.RawBuilder, this>
@@ -1502,6 +1534,7 @@ export class QueryBuilder<
     dataPath: string[] | string,
     options: objection.GraphOptions & { algorithm: 'fetch' | 'join' }
   ) => this
+
   upsert: (
     data: PartialModelObject<M>,
     options?: {
@@ -1509,12 +1542,14 @@ export class QueryBuilder<
       fetch: boolean
     }
   ) => this
+
   find: (
     query: QueryParameterOptions,
     allowParam?:
       | QueryParameterOptionKey[]
       | { [key in keyof QueryParameterOptionKey]: boolean }
   ) => this
+
   patchById: (id: Id, data: PartialModelObject<M>) => this
   updateById: (id: Id, data: PartialModelObject<M>) => this
   upsertAndFetch: (data: PartialModelObject<M>) => this
@@ -1522,41 +1557,50 @@ export class QueryBuilder<
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   insertDitoGraphAndFetch: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   upsertDitoGraph: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   upsertDitoGraphAndFetch: (data: any, options?: DitoGraphOptions) => this
   upsertDitoGraphAndFetchById: (
     id: Id,
     data: any,
     options?: DitoGraphOptions
   ) => QueryBuilder<M, M>
+
   updateDitoGraph: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => Promise<any>
+
   updateDitoGraphAndFetch: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   updateDitoGraphAndFetchById: (
     id: Id,
     data: any,
     options?: DitoGraphOptions
   ) => QueryBuilder<M, M>
+
   patchDitoGraph: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   patchDitoGraphAndFetch: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => this
+
   patchDitoGraphAndFetchById: (
     id: Id,
     data: PartialDitoModelGraph<M>,
@@ -1595,7 +1639,7 @@ export type PartialDitoModelGraph<M extends Partial<Model>> = {
     : M[K]
 }
 
-/*------------------------------ Start Errors -----------------------------*/
+/* ------------------------------ Start Errors ----------------------------- */
 export class ResponseError extends Error {
   constructor()
   constructor(
@@ -1617,6 +1661,7 @@ export class ResponseError extends Error {
       | string,
     defaults?: { message?: string; status?: number }
   )
+
   status: number
   code?: string | number
 }
@@ -1646,9 +1691,9 @@ export class ValidationError extends ResponseError {}
 export class ControllerError extends ResponseError {
   constructor(controller: { name: string } | { constructor: { name: string } })
 }
-/*------------------------------- End Errors ------------------------------*/
+/* ------------------------------- End Errors ------------------------------ */
 
-/*------------------------------ Start Mixins -----------------------------*/
+/* ------------------------------ Start Mixins ----------------------------- */
 export type Mixin = (
   target: Object,
   propertyName: string,
@@ -1673,10 +1718,10 @@ type AssetFileObject = {
 }
 
 export class AssetModel extends TimeStampedModel {
-  key: string;
-  file: AssetFileObject;
-  storage: string;
-  count: number;
+  key: string
+  file: AssetFileObject
+  storage: string
+  count: number
 }
 
 export const AssetMixin: <T extends Constructor>(target: T) =>
@@ -1710,6 +1755,7 @@ export class UserModel extends Model {
      */
     sessionScope?: OrArrayOf<string>
   }
+
   username: string
   password: string
   hash: string
@@ -1730,7 +1776,7 @@ export class UserModel extends Model {
 }
 
 export class SessionModel extends Model {
-  id: string;
+  id: string
   value: {[key: string]: any }
 }
 
@@ -1807,7 +1853,7 @@ export const scope: (...scopes: string[]) => Mixin
  */
 export const transacted: () => Mixin
 
-/*------------------------------ End Mixins -----------------------------*/
+/* ------------------------------ End Mixins ----------------------------- */
 
 export type HTTPMethod =
   | 'get'
@@ -1877,7 +1923,7 @@ export type SelectModelKeys<T> = AnyGate<
   string
 >
 
-/*----------------------- Extended from Ajv JSON Schema ----------------------*/
+/* ----------------------- Extended from Ajv JSON Schema ---------------------- */
 
 export type Schema<T = any> = JSONSchemaType<T> & {
   // keywords/_validate.js
@@ -1940,7 +1986,7 @@ declare type StrictNullChecksWrapper<Name extends string, Type> = undefined exte
 declare type UnionToIntersection<U> = (U extends any ? (_: U) => void : never) extends (_: infer I) => void ? I : never;
 declare type SomeJSONSchema = UncheckedJSONSchemaType<Known, true>;
 declare type UncheckedPartialSchema<T> = Partial<UncheckedJSONSchemaType<T, true>>;
-declare type PartialSchema<T> = StrictNullChecksWrapper<"PartialSchema", UncheckedPartialSchema<T>>;
+declare type PartialSchema<T> = StrictNullChecksWrapper<'PartialSchema', UncheckedPartialSchema<T>>;
 declare type JSONType<T extends string, IsPartial extends boolean> = IsPartial extends true ? T | undefined : T;
 interface NumberKeywords {
     minimum?: number;
@@ -1978,29 +2024,29 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (// these t
 } | {
     oneOf: readonly UncheckedJSONSchemaType<T, IsPartial>[];
 } | ({
-    type: readonly (T extends number ? JSONType<"number" | "integer", IsPartial> : T extends string ? JSONType<"string", IsPartial> : T extends boolean ? JSONType<"boolean", IsPartial> : never)[];
+    type: readonly (T extends number ? JSONType<'number' | 'integer', IsPartial> : T extends string ? JSONType<'string', IsPartial> : T extends boolean ? JSONType<'boolean', IsPartial> : never)[];
 } & UnionToIntersection<T extends number ? NumberKeywords : T extends string ? StringKeywords : T extends boolean ? {} : never>) | ((T extends number ? {
-    type: JSONType<"number" | "integer", IsPartial>;
+    type: JSONType<'number' | 'integer', IsPartial>;
 } & NumberKeywords : T extends string ? ({
-    type: JSONType<"string" | "text" | "date" | "datetime" | "timestamp", IsPartial>;
+    type: JSONType<'string' | 'text' | 'date' | 'datetime' | 'timestamp', IsPartial>;
 } & StringKeywords) : T extends Date ? ({
-  type: JSONType<"date" | "datetime" | "timestamp", IsPartial>;
+  type: JSONType<'date' | 'datetime' | 'timestamp', IsPartial>;
 }) : T extends boolean ? {
-    type: JSONType<"boolean", IsPartial>;
+    type: JSONType<'boolean', IsPartial>;
 } : T extends readonly [any, ...any[]] ? {
-    type: JSONType<"array", IsPartial>;
+    type: JSONType<'array', IsPartial>;
     items: {
         readonly [K in keyof T]-?: UncheckedJSONSchemaType<T[K], false> & Nullable<T[K]>;
     } & {
-        length: T["length"];
+        length: T['length'];
     };
-    minItems: T["length"];
+    minItems: T['length'];
 } & ({
-    maxItems: T["length"];
+    maxItems: T['length'];
 } | {
     additionalItems: false;
 }) : T extends readonly any[] ? {
-    type: JSONType<"array", IsPartial>;
+    type: JSONType<'array', IsPartial>;
     items: UncheckedJSONSchemaType<T[0], false>;
     contains?: UncheckedPartialSchema<T[0]>;
     minItems?: number;
@@ -2010,13 +2056,13 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (// these t
     uniqueItems?: true;
     additionalItems?: never;
 } : T extends Record<string, any> ? {
-    type: JSONType<"object", IsPartial>;
+    type: JSONType<'object', IsPartial>;
     additionalProperties?: boolean | UncheckedJSONSchemaType<T[string], false>;
     unevaluatedProperties?: boolean | UncheckedJSONSchemaType<T[string], false>;
     properties?: IsPartial extends true ? Partial<UncheckedPropertiesSchema<T>> : UncheckedPropertiesSchema<T>;
     patternProperties?: Record<string, UncheckedJSONSchemaType<T[string], false>>;
-    propertyNames?: Omit<UncheckedJSONSchemaType<string, false>, "type"> & {
-        type?: "string";
+    propertyNames?: Omit<UncheckedJSONSchemaType<string, false>, 'type'> & {
+        type?: 'string';
     };
     dependencies?: {
         [K in keyof T]?: Readonly<(keyof T)[]> | UncheckedPartialSchema<T>;
@@ -2036,7 +2082,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (// these t
 } : {
     required: Readonly<UncheckedRequiredMembers<T>[]> | boolean;
 }) : T extends null ? {
-    type: JSONType<"null", IsPartial>;
+    type: JSONType<'null', IsPartial>;
     nullable: true;
 } : never) & {
     allOf?: Readonly<UncheckedPartialSchema<T>[]>;
@@ -2053,7 +2099,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (// these t
     $defs?: Record<string, UncheckedJSONSchemaType<Known, true>>;
     definitions?: Record<string, UncheckedJSONSchemaType<Known, true>>;
 };
-declare type JSONSchemaType<T> = StrictNullChecksWrapper<"JSONSchemaType", UncheckedJSONSchemaType<T, false>>;
+declare type JSONSchemaType<T> = StrictNullChecksWrapper<'JSONSchemaType', UncheckedJSONSchemaType<T, false>>;
 declare type Known = {
     [key: string]: Known;
 } | [Known, ...Known[]] | Known[] | number | string | boolean | null;
@@ -2062,11 +2108,11 @@ declare type UncheckedPropertiesSchema<T> = {
         $ref: string;
     };
 };
-declare type PropertiesSchema<T> = StrictNullChecksWrapper<"PropertiesSchema", UncheckedPropertiesSchema<T>>;
+declare type PropertiesSchema<T> = StrictNullChecksWrapper<'PropertiesSchema', UncheckedPropertiesSchema<T>>;
 declare type UncheckedRequiredMembers<T> = {
     [K in keyof T]-?: undefined extends T[K] ? never : K;
 }[keyof T];
-declare type RequiredMembers<T> = StrictNullChecksWrapper<"RequiredMembers", UncheckedRequiredMembers<T>>;
+declare type RequiredMembers<T> = StrictNullChecksWrapper<'RequiredMembers', UncheckedRequiredMembers<T>>;
 declare type Nullable<T> = undefined extends T ? {
     nullable: true;
     const?: null;

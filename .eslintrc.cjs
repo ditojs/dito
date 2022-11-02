@@ -101,5 +101,19 @@ module.exports = {
     'vue/require-default-prop': 'off',
     'vue/return-in-computed-property': 'off',
     'vue/multi-word-component-names': 'off'
-  }
+  },
+  overrides: [
+    {
+      files: ['*.d.ts'],
+      parser: '@typescript-eslint/parser',
+      rules: {
+        'import/export': 'off',
+        'no-dupe-class-members': 'off',
+        'no-redeclare': 'off',
+        'no-unused-vars': 'off',
+        'no-use-before-define': 'off',
+        'max-len': 'off'
+      }
+    }
+  ]
 }

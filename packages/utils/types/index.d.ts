@@ -1,7 +1,7 @@
 // Type definitions for Dito.js utils
 // Project: <https://github.com/ditojs/dito/>
 
-/*---------------------------------- base ----------------------------------*/
+/* ---------------------------------- base ---------------------------------- */
 
 /**
  * Determines whether both supplied values are the same value, using the
@@ -103,7 +103,7 @@ export function asArray<T extends any>(o: T): T extends any[] ? T : T[]
  */
 export function asFunction<T extends any>(o: T): T extends Function ? T : () => T
 
-/*--------------------------------- object ---------------------------------*/
+/* --------------------------------- object --------------------------------- */
 
 /**
  * Performs a deep (recursive) clone on the supplied value.
@@ -165,7 +165,7 @@ export function pick(...args: any[]): any
  * @param object The source object.
  * @param callback Callback invoked with three arguments: (value, key, item).
  */
- export function pickBy<T extends Dictionary<any>>(
+export function pickBy<T extends Dictionary<any>>(
   object: T,
   callback?: (value: T[keyof T], key: keyof T, object: T) => any
 ): Partial<T>
@@ -180,7 +180,7 @@ export function mapValues<T extends Dictionary<any>, K>(
   callback?: (value: T[keyof T], key: keyof T, object: T) => K
 ): Record<keyof T, K>
 
-/*--------------------------------- string ---------------------------------*/
+/* --------------------------------- string --------------------------------- */
 
 /**
  * Converts a string seperated by spaces, dashes and underscores to camel-case
@@ -256,7 +256,7 @@ export function isUrl(str: string): boolean
  */
 export function labelize(str: string | undefined): string
 
-/*---------------------------------- array ---------------------------------*/
+/* ---------------------------------- array --------------------------------- */
 
 /**
  * Recursively flattens a nested array.
@@ -275,7 +275,7 @@ export function flatten<T>(array: RecursiveArray<T>, maxDepth?: number): T[]
  */
 export function shuffle<T>(array: T[]): T[]
 
-/*---------------------------------- date ----------------------------------*/
+/* ---------------------------------- date ---------------------------------- */
 
 export interface TimeFormat {
   /**
@@ -344,7 +344,7 @@ export function format(
     number?: boolean | NumberFormat
   }
 ): string
-/*-------------------------------- function --------------------------------*/
+/* -------------------------------- function -------------------------------- */
 
 /**
  * Creates a debounced function that delays invoking func until after wait
@@ -592,7 +592,7 @@ export function toPromiseCallback<T extends any, R extends any>(
   reject: (reason: R) => void
 ): (err: R, res: T) => void
 
-/*-------------------------------- dataPath --------------------------------*/
+/* -------------------------------- dataPath -------------------------------- */
 
 export function getDataPath(
   obj: any,
@@ -606,7 +606,7 @@ export function parseDataPath(path: OrArrayOf<string>): string
 
 export function setDataPath<O>(obj: O, path: OrArrayOf<string>, value: any): O
 
-/*---------------------------------- html ----------------------------------*/
+/* ---------------------------------- html ---------------------------------- */
 
 /**
    * Escapes quotes, ampersands, and smaller/greater than signs (`&<>'"`).
@@ -623,7 +623,7 @@ export function escapeHtml(html: string): string
  */
 export function stripTags(html: string): string
 
-/*-------------------------- typescript utilities --------------------------*/
+/* -------------------------- typescript utilities -------------------------- */
 type PropertyName = string | number | symbol
 type NotVoid = {} | null | undefined
 type List<T> = ArrayLike<T>

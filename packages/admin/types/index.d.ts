@@ -27,7 +27,7 @@ export type PerformRequest = <T>({
   data,
   query,
   params,
-  headers,
+  headers
 }: {
   url: string
   /**
