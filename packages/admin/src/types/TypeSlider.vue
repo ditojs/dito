@@ -50,6 +50,7 @@ export default TypeComponent.register('slider', {
   nativeField: true,
 
   computed: {
+    // TODO: Rename to `showInput`?
     input: getSchemaAccessor('input', {
       type: Boolean,
       default: true

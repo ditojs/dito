@@ -135,11 +135,13 @@ export default TypeComponent.register('color', {
       default: 'hex'
     }),
 
+    // TODO: Rename to `showAlpha`?
     alpha: getSchemaAccessor('alpha', {
       type: Boolean,
       default: false
     }),
 
+    // TODO: Rename to `showInputs`?
     inputs: getSchemaAccessor('inputs', {
       type: Boolean,
       default: true

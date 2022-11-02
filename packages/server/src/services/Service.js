@@ -31,4 +31,10 @@ export class Service {
     const logger = ctx?.logger ?? this.app.logger
     return logger.child({ name: this.name })
   }
+
+  get logger() {
+    const value = this.getLogger()
+    Object.defineProperties(this, 'logger', { value })
+    return value
+  }
 }
