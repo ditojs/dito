@@ -8,7 +8,6 @@ import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
 import { isMatchingType, convertType } from '../utils/type.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
-import { deprecate } from '../utils/deprecate.js'
 
 // @vue/component
 export default {
@@ -293,36 +292,18 @@ export default {
     },
 
     getResourceUrl(resource) {
-      const path = this.getResourcePath(resource)
-      let url = null
-      if (path) {
-        // Use same approach as axios internally to join baseURL with path:
-        url = `${
-          this.api.url.replace(/\/+$/, '')
-        }/${
-          path.replace(/^\/+/, '')
-        }`
-        // Support optional query parameters, which are added to the URL:
-        const { query } = resource
-        if (query) {
-          const params = Object.entries(query).map(
-            ([key, value]) =>
-              `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
-          )
-          url = `${url}?${params.join('&')}`
-        }
-      }
-      return url
+      const url = this.getResourcePath(resource)
+      return url ? this.api.getApiUrl({ url, query: resource.query }) : null
     },
 
-    async sendRequest({ method, url, resource, data, params, internal }) {
-      url = url || this.getResourcePath(resource)
-      method = method || resource?.method
-      const checkUser = !internal && this.api.isApiRequest(url)
+    async sendRequest({ method, url, resource, query, data, internal }) {
+      url ||= this.getResourcePath(resource)
+      method ||= resource?.method
+      const checkUser = !internal && this.api.isApiUrl(url)
       if (checkUser) {
         await this.rootComponent.ensureUser()
       }
-      const response = await this.api.request({ method, url, data, params })
+      const response = await this.api.request({ method, url, data, query })
       // Detect change of the own user, and fetch it again if it was changed.
       if (
         checkUser &&
@@ -348,7 +329,9 @@ export default {
       const cacheKey = loadCache && `${
         options.method || 'get'} ${
         options.url} ${
-        JSON.stringify(options.params || '')} ${
+        // TODO: `request.params` was deprecated in favor of `query` on
+        // 2022-11-01, remove once not in use anywhere anymore.
+        JSON.stringify(options.query || options.params || '')} ${
         JSON.stringify(options.data || '')
       }`
       if (loadCache && (cacheKey in loadCache)) {
@@ -369,11 +352,6 @@ export default {
         loadCache[cacheKey] = res
       }
       return res
-    },
-
-    load(options) {
-      deprecate('load() is deprecated. Use request() instead.')
-      return this.request(options)
     },
 
     format(value, {

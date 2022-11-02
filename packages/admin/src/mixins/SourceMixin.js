@@ -79,7 +79,7 @@ export default {
           // at the root in `setData()`, but here instead.
           data = this.unwrapListData(data) || data
         }
-        data = data || []
+        data ||= []
         const { wrapPrimitives } = this
         if (wrapPrimitives) {
           if (this.unwrappingPrimitives) {

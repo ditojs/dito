@@ -102,7 +102,7 @@ export default {
         text = item[key]
       }
       const hadLabel = !!text
-      text = text || ''
+      text ||= ''
       // If no label was found so far, try to produce one from theindex.
       if (!text) {
         // Always use extended style when auto-generating labels from index/id:

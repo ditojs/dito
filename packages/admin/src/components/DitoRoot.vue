@@ -1,6 +1,5 @@
 <template lang="pug">
   .dito-root
-    modals-container
     notifications.dito-notifications(
       ref="notifications"
       position="top right"

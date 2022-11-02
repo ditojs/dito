@@ -64,11 +64,10 @@ export const AssetMixin = mixin(Model => class extends TimeStampedMixin(Model) {
 
   // @override
   $parseJson(json) {
-    const { constructor } = this
     const { file, storage } = json
     // Convert `AssetMixin#file` to an `AssetFile` instance:
     if (file && storage) {
-      constructor.app.getStorage(storage)?.convertAssetFile(file)
+      this.constructor.app.getStorage(storage)?.convertAssetFile(file)
     }
     return json
   }

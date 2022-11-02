@@ -49,7 +49,7 @@ function parseRelationArray(json, relation, options) {
   let changed = false
   for (let i = 0, l = json.length; i < l; i++) {
     const model = parseRelationObject(json[i], relation, options)
-    changed = changed || (model !== json[i])
+    changed ||= model !== json[i]
     models[i] = model
   }
   return changed ? models : json

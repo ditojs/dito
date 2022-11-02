@@ -65,7 +65,7 @@ export function getViteConfig({
             additionalData: `@import './src/styles/_imports.sass'\n`
           }
         },
-        postcss: getPostCssConfig({ removeCharset: true })
+        postcss: getPostCssConfig()
       }
       : null,
     ...rest

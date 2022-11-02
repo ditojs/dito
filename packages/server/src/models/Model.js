@@ -168,7 +168,7 @@ export class Model extends objection.Model {
       // extensions (async and graph for now):
       return super.$validate(json, options)
     }
-    json = json || this
+    json ||= this
     const inputJson = json
     const shallow = json.$isObjectionModel && !options.graph
     if (shallow) {
@@ -471,7 +471,7 @@ export class Model extends objection.Model {
 
   // @override
   $setJson(json, options) {
-    options = options || {}
+    options ||= {}
     const callInitialize = (
       // Only call initialize when:
       // 1. we're not partially patching:
@@ -579,20 +579,8 @@ export class Model extends objection.Model {
 
   // @override
   $formatJson(json) {
-    const { constructor } = this
-    // Calculate and set the computed properties.
-    for (const key of constructor.computedAttributes) {
-      // Perhaps the computed property is produced in the SQL statement,
-      // in which case we don't have to do anything anymore here.
-      if (!(key in json)) {
-        const value = this[key]
-        if (value !== undefined) {
-          json[key] = value
-        }
-      }
-    }
     // Remove hidden attributes.
-    for (const key of constructor.hiddenAttributes) {
+    for (const key of this.constructor.hiddenAttributes) {
       delete json[key]
     }
     return json

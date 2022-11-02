@@ -2,7 +2,6 @@ import Vue from 'vue'
 import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
-import axios from 'axios'
 import {
   isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
 } from '@ditojs/utils'
@@ -11,6 +10,7 @@ import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import TypeComponent from './TypeComponent.js'
 import { getResource } from './utils/resource.js'
+import { deprecate } from './utils/deprecate.js'
 import verbs from './verbs.js'
 
 Vue.config.productionTip = false
@@ -37,25 +37,14 @@ export default class DitoAdmin {
 
     // Setup default api setttings:
     api.locale ||= 'en-US'
-
     api.formats = merge({}, defaultFormats, api.formats)
-
-    api.request ||= options => this.request(options)
-
+    api.request ||= options => request(api, options)
+    api.getApiUrl ||= options => getApiUrl(api, options)
+    api.isApiUrl ||= url => isApiUrl(api, url)
     // Setting `api.normalizePaths = true (plural) sets both:
     // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
-    api.normalizePath = (
-      api.normalizePath ||
-      api.normalizePaths
-        ? hyphenate
-        : val => val
-    )
-    api.denormalizePath = (
-      api.denormalizePath ||
-      api.normalizePaths
-        ? camelize
-        : val => val
-    )
+    api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
+    api.denormalizePath ||= api.normalizePaths ? camelize : val => val
 
     // Allow the configuration of all auth resources, like so:
     // api.users = {
@@ -140,10 +129,6 @@ export default class DitoAdmin {
       ...api.headers
     }
 
-    api.isApiRequest = api.isApiRequest || function(url) {
-      return !isAbsoluteUrl(url) || url.startsWith(api.url)
-    }
-
     if (isString(el)) {
       el = document.querySelector(el)
     }
@@ -202,26 +187,63 @@ export default class DitoAdmin {
   register(type, options) {
     return TypeComponent.register(type, options)
   }
+}
 
-  request({
-    url,
-    method = 'get',
-    data = null,
-    params = null,
-    headers = null
-  }) {
-    const isApiRequest = this.api.isApiRequest(url)
-    return axios.request({
-      url,
-      method,
-      params,
-      ...(data && { data }),
-      baseURL: isApiRequest ? this.api.url : null,
-      headers: {
-        ...(isApiRequest && this.api.headers),
-        ...headers
-      },
-      withCredentials: isApiRequest && !!this.api.cors?.credentials
-    })
+class RequestError extends Error {
+  constructor(response) {
+    super(`Request failed with status code: ${response.status} (${response.statusText})`)
+    this.response = response
   }
+}
+
+async function request(api, {
+  url,
+  method = 'get',
+  // TODO: `request.params` was deprecated in favor of `query` on 2022-11-01,
+  // remove once not in use anywhere anymore.
+  params = null,
+  query = params || null,
+  headers = null,
+  data = null
+}) {
+  if (params) {
+    deprecate(`request.params is deprecated. Use action.method and action.path instead.`)
+  }
+
+  const isApiUrl = api.isApiUrl(url)
+
+  const response = await fetch(api.getApiUrl({ url, query }), {
+    method: method.toUpperCase(),
+    ...(data && { body: JSON.stringify(data) }),
+    headers: {
+      ...(isApiUrl && api.headers),
+      ...headers
+    },
+    credentials: isApiUrl && api.cors?.credentials
+      ? 'include'
+      : 'same-origin'
+  })
+
+  if (response.headers.get('Content-Type')?.includes('application/json')) {
+    response.data = await response.json()
+  }
+
+  if (!response.ok) {
+    throw new RequestError(response)
+  }
+  return response
+}
+
+function getApiUrl(api, { url, query }) {
+  if (!isAbsoluteUrl(url)) {
+    // Use same approach as axios `combineURLs()` to join baseURL with path:
+    url = `${api.url.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`
+  }
+  // Support optional query parameters, to be are added to the URL.
+  const search = query && new URLSearchParams(query).toString()
+  return search ? `${url}?${search}` : url
+}
+
+function isApiUrl(api, url) {
+  return !isAbsoluteUrl(url) || url.startsWith(api.url)
 }

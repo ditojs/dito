@@ -192,7 +192,7 @@ export default {
         // Create a new Date() object with the time set to 0, to be used when
         // first setting any of the times, for meaningful dates in case the
         // object is shared with a DatePicker, e.g. through DateTimePicker.
-        copyDate(new Date(), { hour: 0, minute: 0, second: 0 })
+        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
       )
     },
 
@@ -281,8 +281,11 @@ export default {
       return ('0' + value).slice(-2)
     },
 
-    setTime(param) {
-      this.currentValue = copyDate(this.currentDate, param)
+    setTime(overrides) {
+      this.currentValue = copyDate(this.currentDate, {
+        ...overrides,
+        millisecond: 0
+      })
     },
 
     updateSelection(force = false) {

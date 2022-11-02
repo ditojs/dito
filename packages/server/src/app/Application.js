@@ -5,7 +5,6 @@ import zlib from 'zlib'
 import fs from 'fs-extra'
 import Koa from 'koa'
 import Knex from 'knex'
-import axios from 'axios'
 import pico from 'picocolors'
 import pino from 'pino'
 import parseDuration from 'parse-duration'
@@ -888,12 +887,8 @@ export class Application extends Koa {
                   const filepath = path.resolve(url.substring(7))
                   data = await fs.readFile(filepath)
                 } else {
-                  const response = await axios.request({
-                    method: 'get',
-                    responseType: 'arraybuffer',
-                    url
-                  })
-                  data = response.data
+                  const response = await fetch(url)
+                  data = await response.arrayBuffer()
                 }
               }
               const importedFile = await storage.addFile(file, data)

@@ -5,7 +5,7 @@ let uid = 0
 export function getUid(object, itemId) {
   let id = uidMap.get(object)
   if (!id) {
-    id = id = itemId || `@${++uid}`
+    id = itemId || `@${++uid}`
     uidMap.set(object, id)
   }
   return id

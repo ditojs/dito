@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "1.8.0",
+  "version": "1.12.0",
   "type": "module",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
@@ -16,19 +16,19 @@
     "inline-assets": "./src/cli/inline-assets.js"
   },
   "engines": {
-    "node": ">= 16.0.0",
+    "node": ">= 18.0.0",
     "yarn": ">= 1.0.0"
   },
   "browserslist": [
-    "node >= 16"
+    "node >= 18"
   ],
   "dependencies": {
-    "autoprefixer": "^10.4.7",
+    "autoprefixer": "^10.4.13",
     "find-up": "^6.3.0",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
-    "minimist": "^1.2.6",
-    "postcss": "^8.4.14",
+    "minimist": "^1.2.7",
+    "postcss": "^8.4.18",
     "postcss-inset": "^1.0.0"
   }
 }

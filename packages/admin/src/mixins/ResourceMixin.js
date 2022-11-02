@@ -193,8 +193,8 @@ export default {
     },
 
     requestData() {
-      const params = this.queryParams
-      this.handleRequest({ method: 'get', params }, (err, response) => {
+      const query = this.queryParams
+      this.handleRequest({ method: 'get', query }, (err, response) => {
         if (err) {
           if (response) {
             const { data } = response
@@ -226,15 +226,15 @@ export default {
     async handleRequest({
       method,
       resource = this.resource,
-      data,
-      params
+      query,
+      data
     }, callback) {
       const loadingOptions = {
         updateRoot: true, // Display spinner in header when loading in resources
         updateView: this.isInView // Notify view of loading for view components
       }
       this.setLoading(true, loadingOptions)
-      const request = { method, resource, data, params }
+      const request = { method, resource, data, query }
       try {
         const response = await this.sendRequest(request)
         // Pass both request and response to the callback, so they can be
@@ -307,7 +307,7 @@ export default {
     } = {}) {
       return new Promise(resolve => {
         this.handleRequest(
-          { method, data, resource },
+          { method, resource, data },
           async (err, response) => {
             const data = response?.data
             if (err) {

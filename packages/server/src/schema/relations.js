@@ -193,7 +193,7 @@ export function convertRelation(schema, models) {
       throw new RelationError('Unsupported through join definition')
     }
     // Combine `modify` and `filter`. Setting both together is not supported.
-    modify = modify || filter
+    modify ||= filter
     if (isObject(modify)) {
       // Convert a find-filter object to a filter function, same as in the
       // handling of definition.scopes, see Model.js

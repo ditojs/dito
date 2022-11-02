@@ -224,7 +224,7 @@ export default {
       currentValue:
         this.value ||
         // If no value is provided, use current date but clear time fields:
-        copyDate(new Date(), { hour: 0, minute: 0, second: 0 }),
+        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 }),
       currentMode: this.mode
     }
   },
@@ -291,7 +291,7 @@ export default {
       this.setDate({
         month,
         day: Math.min(
-          this.getDayCount(year, month),
+          this.getDaysInMonth(year, month),
           this.currentValue.getDate()
         )
       })
@@ -320,7 +320,9 @@ export default {
 
     selectMonth(month) {
       this.setMode('day')
-      this.setDate({ month })
+      // Set day to 1 to avoid selecting a date that is not available in the
+      // new month, e.g. Feb 31 -> Mar 3.
+      this.setDate({ month, day: 1 })
     },
 
     selectYear(year) {
@@ -352,12 +354,8 @@ export default {
       return `${year} – ${year + 9}`
     },
 
-    getDayCount(year, month) {
-      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-      // Handle leap year:
-      return month === 1 && (!(year % 400) || !(year % 4) && (year % 100))
-        ? 29
-        : daysInMonth[month]
+    getDaysInMonth(year, month) {
+      return new Date(year, month + 1, 0).getDate()
     },
 
     getFirstYearOfDecade(year) {
@@ -418,15 +416,15 @@ export default {
       if (firstDayWeek === 0) {
         firstDayWeek = 7
       }
-      const dayCount = this.getDayCount(year, month)
+      const numDays = this.getDaysInMonth(year, month)
       if (firstDayWeek > 1) {
         const prevMonth = this.getYearMonth(year, month - 1)
-        const prevMonthDayCount = this.getDayCount(
+        const prevMonthNumDays = this.getDaysInMonth(
           prevMonth.year,
           prevMonth.month
         )
         for (let i = 1; i < firstDayWeek; i++) {
-          const day = prevMonthDayCount - firstDayWeek + i + 1
+          const day = prevMonthNumDays - firstDayWeek + i + 1
           const date = new Date(prevMonth.year, prevMonth.month, day)
           this.dateRange.push({
             text: day,
@@ -437,7 +435,7 @@ export default {
       }
 
       const today = new Date()
-      for (let i = 1; i <= dayCount; i++) {
+      for (let i = 1; i <= numDays; i++) {
         const date = new Date(year, month, i)
         const isDay = date => date &&
           date.getDate() === i &&

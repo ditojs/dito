@@ -67,27 +67,22 @@ export default DitoComponent.component('dito-dialog', {
     },
 
     buttonSchemas() {
-      return Object.entries(getButtonSchemas(this.buttons)).reduce(
-        // Process the button schemas to add default click events
-        // for both 'submit' and 'cancel' buttons:
-        (schemas, [key, schema]) => {
-          const { type, events } = schema
-          if (!events) {
-            if (type === 'cancel') {
+      return Object.fromEntries(
+        Object.entries(getButtonSchemas(this.buttons)).map(
+          // Process the button schemas to add default click events
+          // for both 'submit' and 'cancel' buttons:
+          ([key, schema]) => {
+            if (key === 'cancel' && !schema.events) {
               schema = {
                 ...schema,
                 events: {
-                  click() {
-                    this.cancel()
-                  }
+                  click: () => this.cancel()
                 }
               }
             }
+            return [key, schema]
           }
-          schemas[key] = schema
-          return schemas
-        },
-        {}
+        )
       )
     },
 
