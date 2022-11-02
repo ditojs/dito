@@ -78,6 +78,5 @@ exports[`index > exports all symbols 1`] = `
   "toCallback": [Function],
   "toPromiseCallback": [Function],
   "underscore": [Function],
-  Symbol(Symbol.toStringTag): "Module",
 }
 `;
