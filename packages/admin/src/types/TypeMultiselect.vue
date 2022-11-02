@@ -293,8 +293,8 @@ export default TypeComponent.register('multiselect', {
     placeholder() {
       const { placeholder, searchable, taggable } = this.schema
       return placeholder || (
-        searchable && taggable ? 'Search or add a tag'
-        : searchable ? 'Select or search entry'
+        searchable && taggable ? `Search or add a ${this.label}`
+        : searchable ? `Select or search ${this.label}`
         : undefined
       )
     }
