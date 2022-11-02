@@ -74,7 +74,7 @@ export interface ApiConfig {
          * The amount of milliseconds multiplied with the amount of characters
          * displayed in the notification, plus 40 (40 + title + message).
          * @defaultValue `20`
-         **/
+         */
         durationFactor: number
       }
   cors?: {
@@ -214,7 +214,11 @@ export interface SchemaTypeMixin<$Item> {
    * depend on its contents or as 'fill' to fill left over space. A line will
    * contain multiple components until their widths exceed 100%.
    */
-  width?: OrItemAccessor<$Item, {}, 'auto' | 'fill' | `${number}%` | `${number}/${number}` | number>
+  width?: OrItemAccessor<
+    $Item,
+    {},
+    'auto' | 'fill' | `${number}%` | `${number}/${number}` | number
+  >
 
   /**
    * Whether the component is visible.
@@ -879,76 +883,83 @@ export type ColumnSchema<$Item = any> = {
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
-export type ListSchema<$Item = { [key: string]: any }> = SchemaSourceMixin<$Item> &
-  BaseSchema<$Item> & {
-    /**
-     * The type of the view
-     */
-    type: 'list'
-    /**
-     * The form.
-     */
-    form?: ResolvableForm
-    /**
-     * The forms.
-     */
-    forms?: {
-      [key: string]: ResolvableForm
-    }
-    /**
-     * The label given to the items. If no itemLabel is given, the default is
-     * the 'name' property of the item, followed by label of the form of the
-     * view (plus item id) and other defaults.
-     */
-    itemLabel?: OrItemAccessor<any, {}, string>
-    /**
-     * The columns displayed in the table. While columns can be supplied as an
-     * array where each entry is the name of a property of the item, it is
-     * usually beneficial to assign an object with further options to the
-     * columns property.
-     */
-    columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
-    /**
-     * Scope names as defined on the model. When set, the admin renders a set of
-     * scope buttons, allowing the user to switch between them while editing.
-     */
-    scopes?:
-      | string[]
-      | {
-          [scopeName: string]:
-            | {
-                label?: string
-                hint?: string
-                defaultScope?: boolean
-              }
-            | string
-        }
-    /**
-     * Default scope name as defined on the model.
-     */
-    scope?: string
+export type ListSchema<$Item = { [key: string]: any }> =
+  SchemaSourceMixin<$Item> &
+    BaseSchema<$Item> & {
+      /**
+       * The type of the view
+       */
+      type: 'list'
+      /**
+       * The form.
+       */
+      form?: ResolvableForm
+      /**
+       * The forms.
+       */
+      forms?: {
+        [key: string]: ResolvableForm
+      }
+      /**
+       * The label given to the items. If no itemLabel is given, the default is
+       * the 'name' property of the item, followed by label of the form of the
+       * view (plus item id) and other defaults.
+       */
+      itemLabel?: OrItemAccessor<any, {}, string>
+      /**
+       * The columns displayed in the table. While columns can be supplied as an
+       * array where each entry is the name of a property of the item, it is
+       * usually beneficial to assign an object with further options to the
+       * columns property.
+       */
+      columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
+      /**
+       * Scope names as defined on the model. When set, the admin renders a set
+       * of scope buttons, allowing the user to switch between them while
+       * editing.
+       */
+      scopes?:
+        | string[]
+        | {
+            [scopeName: string]:
+              | {
+                  label?: string
+                  hint?: string
+                  defaultScope?: boolean
+                }
+              | string
+          }
+      /**
+       * Default scope name as defined on the model.
+       */
+      scope?: string
 
-    // TODO: document filters
-    filters?: {
-      [k: string]:
-        | {
-            label?: string
-            filter: 'text'
-            /**
-             * @defaultValue `['contains']`
-             */
-            operators?: ('contains' | 'equals' | 'starts-with' | 'ends-with')[]
-          }
-        | {
-            label?: string
-            filter: 'date-range'
-          }
-        | {
-            label?: string
-            components: Components<any>
-          }
+      // TODO: document filters
+      filters?: {
+        [k: string]:
+          | {
+              label?: string
+              filter: 'text'
+              /**
+               * @defaultValue `['contains']`
+               */
+              operators?: (
+                | 'contains'
+                | 'equals'
+                | 'starts-with'
+                | 'ends-with'
+              )[]
+            }
+          | {
+              label?: string
+              filter: 'date-range'
+            }
+          | {
+              label?: string
+              components: Components<any>
+            }
+      }
     }
-  }
 
 export type OrItemAccessor<
   $Item = any,
@@ -1013,7 +1024,7 @@ export type DitoContext<$Item = any> = {
 
   // Helper Methods
 
-  request<T extends any>(options: {
+  request<T>(options: {
     /**
      * Allows caching of loaded data on two levels:
      * - 'global': cache globally, for the entire admin session
@@ -1044,7 +1055,7 @@ export type DitoContext<$Item = any> = {
 }
 
 export type View<$Item = any> = {
-  resource?: Form['resource'];
+  resource?: Form['resource']
   clipboard?: Form['clipboard']
 } & (
   | InputSchema<$Item>

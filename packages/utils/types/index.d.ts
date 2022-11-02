@@ -93,7 +93,7 @@ export function asObject<O extends {}, T extends any>(arg: T): T & O
  * the supplied value is undefined, an empty array is returned. Otherwise an
  * array is returned containing the supplied value as its only element.
  */
-export function asArray<T extends any>(o: T): T extends any[] ? T : T[]
+export function asArray<T>(o: T): T extends any[] ? T : T[]
 
 /**
  * Returns the supplied value as a function.
@@ -101,14 +101,16 @@ export function asArray<T extends any>(o: T): T extends any[] ? T : T[]
  * When the supplied value is a function, the original function is returned.
  * Otherwise a function is returned that returns the value when called.
  */
-export function asFunction<T extends any>(o: T): T extends Function ? T : () => T
+export function asFunction<T>(
+  o: T
+): T extends Function ? T : () => T
 
 /* --------------------------------- object --------------------------------- */
 
 /**
  * Performs a deep (recursive) clone on the supplied value.
  */
-export function clone<T extends any>(arg: T, iteratee?: (arg: any) => void): T
+export function clone<T>(arg: T, iteratee?: (arg: any) => void): T
 
 /**
  * Determines whether the supplied values can be considered equal through
@@ -119,12 +121,17 @@ export function equals(arg1: any, arg2: any): boolean
 
 // TODO: document groupBy
 export function groupBy<T, K extends string | number | symbol>(
-  list: T[], callback: (item: T) => K
+  list: T[],
+  callback: (item: T) => K
 ): Record<K, T[]>
 
 // TODO: document merge
 export function merge<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
-export function merge<ArgA, ArgB, ArgC>(a: ArgA, b: ArgB, c: ArgC): ArgA & ArgB & ArgC
+export function merge<ArgA, ArgB, ArgC>(
+  a: ArgA,
+  b: ArgB,
+  c: ArgC
+): ArgA & ArgB & ArgC
 export function merge<ArgA, ArgB, ArgC, ArgD>(
   a: ArgA,
   b: ArgB,
@@ -144,7 +151,11 @@ export function merge(...args: any[]): any
  * Returns the first argument which is not undefined.
  */
 export function pick<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA | ArgB
-export function pick<ArgA, ArgB, ArgC>(a: ArgA, b: ArgB, c: ArgC): ArgA | ArgB | ArgC
+export function pick<ArgA, ArgB, ArgC>(
+  a: ArgA,
+  b: ArgB,
+  c: ArgC
+): ArgA | ArgB | ArgC
 export function pick<ArgA, ArgB, ArgC, ArgD>(
   a: ArgA,
   b: ArgB,
@@ -196,7 +207,8 @@ export function capitalize(str: string): string
  * supplied seperator string.
  *
  * @param str The string to decamelize.
- * @param {string} [sep=' '] -  The string to seperate the decamelized words with.
+ * @param {string} [sep=' '] -  The string to seperate the decamelized words
+ * with.
  */
 export function decamelize(str: string, sep?: string): string
 /**
@@ -216,7 +228,10 @@ export function underscore(str: string): string
  *                      you need to break it over multiple lines.`
  * console.log(str)
  */
-export function deindent(strings: OrArrayOf<string>, ...values: Array<string>): string
+export function deindent(
+  strings: OrArrayOf<string>,
+  ...values: Array<string>
+): string
 /**
  * Returns the longest prefix string that is common to both supplied strings.
  */
@@ -401,11 +416,12 @@ export function debounceAsync<T extends (...args: any[]) => Promise<any>>(
       }
 ): T & { cancel: () => boolean }
 
-// Adjusted version of @types/node's promisify (which includes support for overloaded
-// node function types), excluding the custom promisified function
+// Adjusted version of @types/node's promisify (which includes support for
+// overloaded node function types), excluding the custom promisified function
 // functionality, which toAsync does not support:
 // https://github.com/DefinitelyTyped/DefinitelyTyped/blob/fa723dee727e433add7e700420523f0f90e87a01/types/node/util.d.ts#L86
-export interface CustomPromisifyLegacy<TCustom extends Function> extends Function {
+interface CustomPromisifyLegacy<TCustom extends Function>
+  extends Function {
   __promisify__: TCustom
 }
 type CustomToAsync<TCustom extends Function> = CustomPromisifyLegacy<TCustom>
@@ -416,7 +432,9 @@ type CustomToAsync<TCustom extends Function> = CustomPromisifyLegacy<TCustom>
  *
  * @param fn function following the error-first callback style
  */
-export function toAsync<TCustom extends Function>(fn: CustomToAsync<TCustom>): TCustom
+export function toAsync<TCustom extends Function>(
+  fn: CustomToAsync<TCustom>
+): TCustom
 export function toAsync<R>(
   fn: (callback: (err: any, result: R) => void) => void
 ): () => Promise<R>
@@ -587,7 +605,7 @@ export function toCallback<T1, T2, T3, T4, T5, T6, R>(
   callback: (err: any | null, result: R) => void
 ) => void
 
-export function toPromiseCallback<T extends any, R extends any>(
+export function toPromiseCallback<T, R>(
   resolve: (value: T) => void,
   reject: (reason: R) => void
 ): (err: R, res: T) => void
@@ -634,5 +652,5 @@ export interface ArrayLike<T> {
 export interface Dictionary<T> {
   [index: string]: T
 }
-export interface RecursiveArray<T> extends Array<T | RecursiveArray<T>> {}
+export type RecursiveArray<T> = Array<T | RecursiveArray<T>>
 type OrArrayOf<T> = T | T[]
