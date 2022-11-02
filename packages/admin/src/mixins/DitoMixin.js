@@ -380,13 +380,10 @@ export default {
       if (isString(options)) {
         options = { url: options }
       }
-      const { url, filename } = options
       // See: https://stackoverflow.com/a/49917066/1163708
       const a = document.createElement('a')
-      a.href = url
-      if (filename) {
-        a.download = filename
-      }
+      a.href = this.api.getApiUrl(options)
+      a.download = options.filename ?? null
       const { body } = document
       body.appendChild(a)
       a.click()
