@@ -204,7 +204,7 @@ export type MulterS3File = {
   etag: string
 }
 
-export type StorageConfigs = Record<string, StorageConfig>
+export type StorageConfigs = {[key: string]: StorageConfig}
 
 export type StorageConfig =
   | {
@@ -961,6 +961,7 @@ export type Authorize =
   | boolean
   | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
   | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
+  | Record<HTTPMethod, string | string[]>
 
 export type BaseControllerActionOptions = {
   /**
@@ -1098,6 +1099,8 @@ export type ControllerActionName = `${HTTPMethod}${string}`;
 
 export type ControllerActions<$Controller extends Controller> = {
   [name: ControllerActionName]: ControllerAction<$Controller>
+  allow?: OrReadOnly<ControllerActionName[]>;
+  authorize?: Authorize
 }
 
 export class UsersController<M extends Model> extends ModelController<M> {}
@@ -1848,7 +1851,7 @@ type ReflectArrayType<Source, Target> = Source extends any[] ? Target[] : Target
 
 type OrArrayOf<T> = T[] | T
 
-type OrReadOnly<T> = ReadOnly<T> | T
+type OrReadOnly<T> = Readonly<T> | T
 
 type OrPromiseOf<T> = Promise<T> | T
 

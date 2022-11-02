@@ -168,6 +168,7 @@ export interface BaseSchema<$Item>
   compute?: ItemAccessor<$Item>
   data?: OrItemAccessor<$Item, {}, Record<string, any>>
   omitPadding?: boolean
+  break?: 'before' | 'after'
 }
 
 // TODO: finish off DitoMixin docs
@@ -210,7 +211,7 @@ export interface SchemaTypeMixin<$Item> {
    * depend on its contents or as 'fill' to fill left over space. A line will
    * contain multiple components until their widths exceed 100%.
    */
-  width?: OrItemAccessor<$Item, {}, 'auto' | 'fill' | string | number>
+  width?: OrItemAccessor<$Item, {}, 'auto' | 'fill' | `${number}%` | `${number}/${number}` | number>
 
   /**
    * Whether the component is visible.
@@ -651,6 +652,13 @@ export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'label'
 }
 
+export type HiddenSchema<$Item = any> = BaseSchema<$Item> & {
+  /**
+   * The type of the component.
+   */
+  type: 'hidden'
+}
+
 export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
@@ -1056,6 +1064,7 @@ export type View<$Item = any> = {
   | ComponentSchema<$Item>
   | LabelSchema<$Item>
   | SectionSchema<$Item>
+  | HiddenSchema<$Item>
 )
 
 export type Component<$Item = any> =
@@ -1079,6 +1088,7 @@ export type Component<$Item = any> =
   | ComponentSchema<$Item>
   | LabelSchema<$Item>
   | SectionSchema<$Item>
+  | HiddenSchema<$Item>
 
 export type Components<$Item = any> = {
   [$name: string]: Component<$Item>
@@ -1179,6 +1189,7 @@ export type SchemaByType<$Item = any> = {
   upload: UploadSchema<$Item>
   label: LabelSchema<$Item>
   section: SectionSchema<$Item>
+  hidden: HiddenSchema<$Item>
   unknown: never
 }
 
