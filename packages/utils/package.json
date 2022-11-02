@@ -11,8 +11,12 @@
     ".": "./src/index.js"
   },
   "files": [
-    "src/"
+    "src/",
+    "types/"
   ],
+  "scripts": {
+    "types": "tsc --noEmit types/index.d.ts"
+  },
   "engines": {
     "node": ">= 18.0.0",
     "yarn": ">= 1.0.0"
@@ -26,5 +30,9 @@
   ],
   "dependencies": {
     "punycode": "^2.1.1"
-  }
+  },
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  },
+  "types": "types"
 }
