@@ -34,7 +34,7 @@ export class Service {
 
   get logger() {
     const value = this.getLogger()
-    Object.defineProperties(this, 'logger', { value })
+    Object.defineProperty(this, 'logger', { value })
     return value
   }
 }
