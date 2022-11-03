@@ -7,7 +7,6 @@ import {
   NumberFormat,
   TimeFormat
 } from '@ditojs/utils'
-import { AxiosResponse as Response } from 'axios'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
 import Vue, { VueConstructor } from 'vue'
 
@@ -21,7 +20,7 @@ export interface DitoGlobal {
   base?: string
   settings?: Record<string, any>
 }
-export type PerformRequest = <T>({
+export type RequestMethod = <T>({
   url,
   method,
   data,
@@ -39,7 +38,9 @@ export type PerformRequest = <T>({
   params: ConstructorParameters<typeof URLSearchParams>[0]
   query: ConstructorParameters<typeof URLSearchParams>[0]
   headers: Record<string, string>
-}) => Promise<Response<T>>
+}) => Promise<RequestMethodResponse<T>>
+
+export type RequestMethodResponse<T> = Response & { data: T }
 
 export interface ApiResource {
   type: string
@@ -61,7 +62,7 @@ export interface ApiConfig {
     date?: DateFormat
     time?: TimeFormat
   }
-  request?: PerformRequest
+  request?: RequestMethod
   /**
    * Whether to display admin notifications.
    *
@@ -1178,7 +1179,7 @@ export class DitoAdmin<
 
   // TODO: options and return type
   register(type: OrArrayOf<string>, options: any): any
-  request: PerformRequest
+  request: RequestMethod
 }
 export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
