@@ -3,7 +3,9 @@ import VueModal from 'vue-js-modal'
 import VueRouter from 'vue-router'
 import VueNotifications from 'vue-notification'
 import {
-  isString, isAbsoluteUrl, merge, hyphenate, camelize, defaultFormats
+  isString, isArray, asArray, isAbsoluteUrl,
+  merge, hyphenate, camelize,
+  defaultFormats
 } from '@ditojs/utils'
 import * as components from './components/index.js'
 import * as types from './types/index.js'
@@ -234,16 +236,41 @@ async function request(api, {
   return response
 }
 
+function isApiUrl(api, url) {
+  return !isAbsoluteUrl(url) || url.startsWith(api.url)
+}
+
 function getApiUrl(api, { url, query }) {
   if (!isAbsoluteUrl(url)) {
-    // Use same approach as axios `combineURLs()` to join baseURL with path:
-    url = `${api.url.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`
+    url = combineUrls(api.url, url)
   }
   // Support optional query parameters, to be are added to the URL.
-  const search = query && new URLSearchParams(query).toString()
+  const search = formatQuery(query)
   return search ? `${url}?${search}` : url
 }
 
-function isApiUrl(api, url) {
-  return !isAbsoluteUrl(url) || url.startsWith(api.url)
+function combineUrls(baseUrl, relativeUrl) {
+  // Use same approach as axios `combineURLs()` to join baseUrl & relativeUrl:
+  return `${baseUrl.replace(/\/+$/, '')}/${relativeUrl.replace(/^\/+/, '')}`
+}
+
+function formatQuery(query) {
+  const entries = query
+    ? isArray(query)
+      ? query
+      : Object.entries(query)
+    : []
+  return new URLSearchParams(
+    // Expand array values into multiple entries under the same key, so
+    // `formatQuery({ foo: [1, 2], bar: 3 })` => 'foo=1&foo=2&bar=3'.
+    entries.reduce(
+      (entries, [key, value]) => {
+        for (const val of asArray(value)) {
+          entries.push([key, val])
+        }
+        return entries
+      },
+      []
+    )
+  ).toString()
 }
