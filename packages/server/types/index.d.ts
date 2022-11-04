@@ -27,11 +27,13 @@ import {
   Class,
   ConditionalExcept,
   ConditionalKeys,
-  Constructor, SetOptional, SetReturnType
+  Constructor,
+  SetOptional,
+  SetReturnType
 } from 'type-fest'
 import { UserConfig } from 'vite'
 
-export type Page<$Model extends Model> = {
+export type Page<$Model extends Model = Model> = {
   total: number
   results: $Model[]
 }
@@ -357,14 +359,14 @@ export interface ApiConfig {
 
 export interface ApplicationControllers {
   [k: string]:
-    | Class<ModelController<Model>>
+    | Class<ModelController>
     | Class<Controller>
     | ApplicationControllers
 }
 
 export type Models = Record<string, Class<Model>>
 
-export class Application<$Models extends Models> {
+export class Application<$Models extends Models = Models> {
   constructor(options: {
     config?: ApplicationConfig
     validator?: Validator
@@ -564,23 +566,23 @@ export type ModelProperty<T = any> = Schema<T> & {
   hidden?: boolean
 }
 
-export type ModelScope<$Model extends Model> = (
+export type ModelScope<$Model extends Model = Model> = (
   this: $Model,
   query: QueryBuilder<$Model>,
   applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
 ) => QueryBuilder<$Model, any> | void
 
-export type ModelScopes<$Model extends Model> = Record<
+export type ModelScopes<$Model extends Model = Model> = Record<
   string,
   ModelScope<$Model>
 >
 
-export type ModelFilterFunction<$Model extends Model> = (
+export type ModelFilterFunction<$Model extends Model = Model> = (
   queryBuilder: QueryBuilder<$Model>,
   ...args: any[]
 ) => void
 
-export type ModelFilter<$Model extends Model> =
+export type ModelFilter<$Model extends Model = Model> =
   | {
       filter: 'text' | 'date-range'
       properties?: string[]
@@ -593,7 +595,7 @@ export type ModelFilter<$Model extends Model> =
     }
   | ModelFilterFunction<$Model>
 
-export type ModelFilters<$Model extends Model> = Record<
+export type ModelFilters<$Model extends Model = Model> = Record<
   string,
   ModelFilter<$Model>
 >
@@ -614,7 +616,8 @@ export interface ModelOptions extends objection.ModelOptions {
 type ModelHookFunction<$Model extends Model> = (
   args: objection.StaticHookArguments<$Model>
 ) => void
-export type ModelHooks<$Model extends Model> = {
+
+export type ModelHooks<$Model extends Model = Model> = {
   [key in `${'before' | 'after'}:${
     | 'find'
     | 'insert'
@@ -823,7 +826,7 @@ export type ModelRelations = Record<string, ModelRelation>
 
 export type ModelProperties = Record<string, ModelProperty>
 
-export type ControllerAction<$Controller extends Controller> =
+export type ControllerAction<$Controller extends Controller = Controller> =
   | ControllerActionOptions<$Controller>
   | ControllerActionHandler<$Controller>
 
@@ -864,7 +867,7 @@ export class Controller {
   setup(isRoot: boolean, setupActionsObject: boolean): void
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
-  setupRoute<$ControllerAction extends ControllerAction<any>>(
+  setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
     method: HTTPMethod,
     url: string,
     transacted: boolean,
@@ -915,14 +918,12 @@ export class Controller {
 export type ActionParameter = Schema & { name: string }
 
 export type ModelControllerActionHandler<
-  $ModelController extends ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
 
-export type ControllerActionHandler<$Controller extends Controller> = (
-  this: $Controller,
-  ctx: KoaContext,
-  ...args: any[]
-) => any
+export type ControllerActionHandler<
+  $Controller extends Controller = Controller
+> = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
 
 export type ExtractModelProperties<$Model> = {
   [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key] extends Model
@@ -1005,19 +1006,20 @@ export type BaseControllerActionOptions = {
   transacted?: boolean
 }
 
-export type ControllerActionOptions<$Controller extends Controller> =
-  BaseControllerActionOptions & {
-    handler: ControllerActionHandler<$Controller>
-  }
+export type ControllerActionOptions<
+  $Controller extends Controller = Controller
+> = BaseControllerActionOptions & {
+  handler: ControllerActionHandler<$Controller>
+}
 
 export type ModelControllerActionOptions<
-  $ModelController extends ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = BaseControllerActionOptions & {
   /** The function to be called when the action route is requested. */
   handler: ModelControllerActionHandler<$ModelController>
 }
 
-export type MemberActionParameter<M extends Model> =
+export type MemberActionParameter<$Model extends Model = Model> =
   | Schema
   | {
       member: true
@@ -1037,17 +1039,17 @@ export type MemberActionParameter<M extends Model> =
        */
       forUpdate?: boolean
       /** Modify the member query. */
-      modify?: (query: QueryBuilder<M>) => QueryBuilder<M>
+      modify?: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
     }
 
 export type ModelControllerAction<
-  $ModelController extends ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > =
   | ModelControllerActionOptions<$ModelController>
   | ModelControllerActionHandler<$ModelController>
 
 export type ModelControllerActions<
-  $ModelController extends ModelController<Model> = ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = {
   [name: ControllerActionName]: ModelControllerAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
@@ -1055,19 +1057,19 @@ export type ModelControllerActions<
 }
 
 type ModelControllerMemberAction<
-  $ModelController extends ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > =
   | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
       parameters?: {
         [key: string]: MemberActionParameter<
-          modelFromModelController<$ModelController>
+          ModelFromModelController<$ModelController>
         >
       }
     })
   | ModelControllerActionHandler<$ModelController>
 
 export type ModelControllerMemberActions<
-  $ModelController extends ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
@@ -1076,7 +1078,7 @@ export type ModelControllerMemberActions<
 
 export type ControllerActionName = `${HTTPMethod}${string}`
 
-export type ControllerActions<$Controller extends Controller> = {
+export type ControllerActions<$Controller extends Controller = Controller> = {
   [name: ControllerActionName]: ControllerAction<$Controller>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
@@ -1110,15 +1112,15 @@ type ModelControllerHookKeys<
   | ControllerActionName
   | '*'}`
 type ModelControllerHook<
-  $ModelController extends ModelController<Model> = ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = (
   ctx: KoaContext,
-  result: objection.Page<modelFromModelController<$ModelController>>
+  result: objection.Page<ModelFromModelController<$ModelController>>
 ) => any
 
 type HookHandler = () => void
 
-type HookKeysFromController<$ModelController extends ModelController<Model>> =
+type HookKeysFromController<$ModelController extends ModelController> =
   | ModelControllerHookKeys<
       Exclude<
         keyof Exclude<$ModelController['collection'], undefined>,
@@ -1135,7 +1137,7 @@ type HookKeysFromController<$ModelController extends ModelController<Model>> =
     >
 
 type HandlerFromHookKey<
-  $ModelController extends ModelController<Model>,
+  $ModelController extends ModelController,
   $Key extends HookKeysFromController<$ModelController>
 > = $Key extends `${'before' | 'after' | '*'}:${
   | 'collection'
@@ -1145,7 +1147,7 @@ type HandlerFromHookKey<
   : never
 
 type ModelControllerHooks<
-  $ModelController extends ModelController<Model> = ModelController<Model>
+  $ModelController extends ModelController = ModelController
 > = {
   [$Key in HookKeysFromController<$ModelController>]?: HandlerFromHookKey<
     $ModelController,
@@ -1853,7 +1855,7 @@ type OrReadOnly<T> = Readonly<T> | T
 
 type OrPromiseOf<T> = Promise<T> | T
 
-type modelFromModelController<$ModelController extends ModelController<Model>> =
+type ModelFromModelController<$ModelController extends ModelController> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
 export type SelectModelProperties<T> = {
