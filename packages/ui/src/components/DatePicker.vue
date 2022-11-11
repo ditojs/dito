@@ -31,7 +31,7 @@
 
 <style lang="sass">
   .dito-date-picker
-    min-width: 240px
+    min-width: 10em
     .dito-input
       font-variant-numeric: tabular-nums
       cursor: pointer
