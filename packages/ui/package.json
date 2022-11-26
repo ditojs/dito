@@ -44,9 +44,9 @@
   "devDependencies": {
     "@ditojs/build": "^1.13.0",
     "pug": "^3.0.2",
-    "sass": "1.55.0",
-    "vite": "^3.2.2",
+    "sass": "1.56.1",
+    "vite": "^3.2.4",
     "vite-plugin-vue2": "^2.0.2",
-    "vue-template-compiler": "^2.7.13"
+    "vue-template-compiler": "^2.7.14"
   }
 }
