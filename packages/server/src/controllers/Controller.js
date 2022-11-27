@@ -17,7 +17,7 @@ import {
 export class Controller {
   constructor(app, namespace) {
     this.app = app
-    this.namespace = this.namespace || namespace
+    this.namespace ||= namespace
     this.logging = this.app.config.log.routes
     this.level = 0
   }
@@ -38,8 +38,7 @@ export class Controller {
       wildcard: true
     })
     // If the class name ends in 'Controller', remove it from controller name.
-    this.name = this.name ||
-      this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
+    this.name ||= this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
     if (this.path === undefined) {
       this.path = this.app.normalizePath(this.name)
     }
@@ -62,7 +61,7 @@ export class Controller {
         this.level
       )
       if (setupActionsObject) {
-        this.actions = this.actions || this.reflectActionsObject()
+        this.actions ||= this.reflectActionsObject()
         // Now that the instance fields are reflected in the `controller` object
         // we can use the normal inheritance mechanism through `setupActions()`:
         this.actions = this.setupActions('actions')

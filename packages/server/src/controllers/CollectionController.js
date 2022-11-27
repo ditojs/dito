@@ -17,7 +17,7 @@ export class CollectionController extends Controller {
     this.idParam = this.level ? `id${this.level}` : 'id'
     this.graph = !!this.graph
     this.transacted = !!this.transacted
-    this.scope = this.scope || null
+    this.scope ||= null
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
     // Create a dummy model instance to validate the requested id against.

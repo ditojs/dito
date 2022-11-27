@@ -8,7 +8,7 @@ import { setupPropertyInheritance } from '../utils/index.js'
 export class ModelController extends CollectionController {
   setup() {
     super.setup(true)
-    this.modelClass = this.modelClass ||
+    this.modelClass ||=
       this.app.models[camelize(pluralize.singular(this.name), true)]
     this.relations = this.setupRelations()
   }

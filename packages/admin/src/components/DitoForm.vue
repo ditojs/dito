@@ -288,8 +288,7 @@ export default DitoComponent.component('dito-form', {
     // @override ResourceMixin.setupData()
     setupData() {
       if (this.isCreating) {
-        this.createdData = this.createdData ||
-          this.createData(this.schema, this.type)
+        this.createdData ||= this.createData(this.schema, this.type)
       } else {
         this.ensureData()
       }

@@ -163,7 +163,7 @@ export function processComponent(api, schema, name, routes, level) {
 export function processRouteSchema(api, schema, name) {
   // Used for view and source schemas, see SourceMixin
   schema.name = name
-  schema.path = schema.path || api.normalizePath(name)
+  schema.path ||= api.normalizePath(name)
 }
 
 export async function processSchemaComponents(api, schema, routes, level) {

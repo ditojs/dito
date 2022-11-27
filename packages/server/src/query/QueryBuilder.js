@@ -167,7 +167,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   allowScope(...scopes) {
-    this._allowScopes = this._allowScopes || {
+    this._allowScopes ||= {
       default: true // The default scope is always allowed.
     }
     for (const expr of scopes) {
@@ -279,7 +279,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   allowFilter(...filters) {
-    this._allowFilters = this._allowFilters || {}
+    this._allowFilters ||= {}
     for (const filter of filters) {
       this._allowFilters[filter] = true
     }

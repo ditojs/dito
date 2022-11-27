@@ -151,7 +151,7 @@ export class Application extends Koa {
       if (models[modelClass.name] === modelClass) {
         modelClass.setup(this.knex)
         // Now that the modelClass is set up, call `initialize()`, which can be
-        // overridden by sub-classes,without having to call `super.initialize()`
+        // overridden by sub-classes without having to call `super.initialize()`
         modelClass.initialize()
         this.validator.addSchema(modelClass.getJsonSchema())
       }
