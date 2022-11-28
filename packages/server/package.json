@@ -25,7 +25,6 @@
     "node >= 18"
   ],
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.200.0",
     "@ditojs/admin": "^1.13.1",
     "@ditojs/build": "^1.13.0",
     "@ditojs/router": "^1.13.1",
@@ -75,10 +74,12 @@
     "vue-template-compiler": "^2.7.14"
   },
   "peerDependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
     "knex": ">=2.0.5",
     "objection": "^3.0.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.200.0",
     "@types/koa-bodyparser": "^4.3.10",
     "@types/koa-compress": "^4.0.3",
     "@types/koa-logger": "^3.1.2",

@@ -1,4 +1,3 @@
-import { S3 } from '@aws-sdk/client-s3'
 import multerS3 from 'multer-s3'
 import { fileTypeFromBuffer } from 'file-type'
 import isSvg from 'is-svg'
@@ -13,7 +12,7 @@ export class S3Storage extends Storage {
   acl = null
   bucket = null
 
-  setup() {
+  async setup() {
     const {
       name,
       s3,
@@ -22,6 +21,9 @@ export class S3Storage extends Storage {
       ...options
     } = this.config
 
+    // "@aws-sdk/client-s3" is a peer-dependency, and importing it costly,
+    // so we do it lazily.
+    const { S3 } = await import('@aws-sdk/client-s3')
     this.s3 = new S3(s3)
     this.acl = acl
     this.bucket = bucket
