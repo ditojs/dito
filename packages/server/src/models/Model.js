@@ -23,6 +23,10 @@ import RelationAccessor from './RelationAccessor.js'
 import definitions from './definitions/index.js'
 
 export class Model extends objection.Model {
+  static app = null // Set by `Application.addModel()`
+  static initialized = false
+  static referenceValidator = null
+
   // Define a default constructor to allow new Model(json) as a short-cut to
   // `Model.fromJson(json, { skipValidation: true })`
   constructor(json) {
@@ -32,19 +36,24 @@ export class Model extends objection.Model {
     }
   }
 
-  static setup(knex) {
-    this.knex(knex)
+  static configure(app) {
+    this.app = app
+    this.knex(app.knex)
+    const { hooks, assets } = this.definition
+    this._configureEmitter(hooks)
+    if (assets) {
+      this._configureAssetsEvents(assets)
+    }
     try {
       for (const relation of Object.values(this.getRelations())) {
-        this.setupRelation(relation)
+        this._configureRelation(relation)
       }
     } catch (error) {
       throw error instanceof RelationError ? error : new RelationError(error)
     }
-    this.referenceValidator = null
   }
 
-  static setupRelation(relation) {
+  static _configureRelation(relation) {
     // Add this relation to the related model's relatedRelations, so it can
     // register all required foreign keys in its properties.
     relation.relatedModelClass.getRelatedRelations().push(relation)
@@ -88,12 +97,11 @@ export class Model extends objection.Model {
   }
 
   // @overridable
+  static setup() {
+  }
+
+  // @overridable
   static initialize() {
-    const { hooks, assets } = this.definition
-    this._setupEmitter(hooks)
-    if (assets) {
-      this._setupAssetsEvents(assets)
-    }
   }
 
   // @overridable
@@ -900,7 +908,7 @@ export class Model extends objection.Model {
 
   // Assets handling
 
-  static _setupAssetsEvents(assets) {
+  static _configureAssetsEvents(assets) {
     const assetDataPaths = Object.keys(assets)
 
     this.on([

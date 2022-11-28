@@ -1,6 +1,8 @@
 import { camelize } from '@ditojs/utils'
 
 export class Service {
+  initialized = false
+
   constructor(app, name) {
     this.app = app
     this.name = camelize(
@@ -16,7 +18,7 @@ export class Service {
   }
 
   // @overridable
-  initialize() {
+  async initialize() {
   }
 
   // @overridable

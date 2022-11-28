@@ -4,25 +4,29 @@ import { ControllerError } from '../errors/index.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
-  constructor(app, namespace) {
-    super(app, namespace)
-    this.modelClass = null // To be defined by sub-classes
-    this.isOneToOne = false
-    this.relate = false
-    this.unrelate = false
-  }
+  graph = false
+  scope = null
+  relate = false
+  unrelate = false
+  modelClass = null // To be defined by sub-classes
+  isOneToOne = false
+  idParam = null
+  idValidator = null
 
-  setup(isRoot) {
-    super.setup(isRoot, false)
+  // @override
+  configure() {
+    super.configure()
     this.idParam = this.level ? `id${this.level}` : 'id'
-    this.graph = !!this.graph
-    this.transacted = !!this.transacted
-    this.scope ||= null
-    this.collection = this.setupActions('collection')
-    this.member = this.isOneToOne ? {} : this.setupActions('member')
     // Create a dummy model instance to validate the requested id against.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
+  }
+
+  // @override
+  setup() {
+    this.collection = this.setupActions('collection')
+    this.member = this.isOneToOne ? {} : this.setupActions('member')
+    this.assets = this.setupAssets()
   }
 
   // @override

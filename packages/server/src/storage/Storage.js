@@ -10,6 +10,8 @@ import { AssetFile } from './AssetFile.js'
 const storageClasses = {}
 
 export class Storage {
+  initialized = false
+
   constructor(app, config) {
     this.app = app
     this.config = config
@@ -18,6 +20,14 @@ export class Storage {
     this.path = config.path
     // The actual multer storage object.
     this.storage = null
+  }
+
+  // @overridable
+  async setup() {
+  }
+
+  // @overridable
+  async initialize() {
   }
 
   static register(storageClass) {

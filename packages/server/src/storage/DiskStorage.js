@@ -6,12 +6,10 @@ import { Storage } from './Storage.js'
 export class DiskStorage extends Storage {
   static type = 'disk'
 
-  constructor(app, config) {
-    super(app, config)
+  setup() {
     if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
-
     this.storage = multer.diskStorage({
       destination: (req, storageFile, cb) => {
         // Add `storageFile.key` property to internal storage file object.

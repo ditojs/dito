@@ -3,7 +3,7 @@ import { isPlainObject, isString, isArray, asArray } from '@ditojs/utils'
 
 export class EventEmitter extends EventEmitter2 {
   // Method for classes that use `EventEmitter.mixin()` to setup the emitter.
-  _setupEmitter(events, options) {
+  _configureEmitter(events, options) {
     EventEmitter2.call(this, {
       delimiter: ':',
       maxListeners: 0,

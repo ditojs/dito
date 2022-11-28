@@ -15,35 +15,35 @@ import {
 } from '@ditojs/utils'
 
 export class Controller {
+  name = null
+  path = null
+  url = null
+  actions = null
+  assets = null
+  transacted = false
+  initialized = false
+
   constructor(app, namespace) {
     this.app = app
-    this.namespace ||= namespace
+    this.namespace = namespace
     this.logging = this.app.config.log.routes
     this.level = 0
   }
 
+  // `configure()` is called right after the constructor, but before `setup()`
+  // which sets up the actions and routes, and the custom `async initialize()`.
   // @overridable
-  initialize() {
-  }
-
-  // @return {Application|Function} [app or function]
-  compose() {
-    // To be overridden in sub-classes, if the controller needs to install
-    // middleware. For normal routes, use `this.app.addRoute()` instead.
-  }
-
-  setup(isRoot = true, setupActionsObject = true) {
-    this._setupEmitter(this.hooks, {
+  configure() {
+    this._configureEmitter(this.hooks, {
       // Support wildcard hooks only on controllers:
       wildcard: true
     })
     // If the class name ends in 'Controller', remove it from controller name.
     this.name ||= this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
-    if (this.path === undefined) {
-      this.path = this.app.normalizePath(this.name)
-    }
-    this.transacted = !!this.transacted
-    if (isRoot) {
+    this.path ??= this.app.normalizePath(this.name)
+    if (!this.url) {
+      // NOTE: `RelationController.configure()` sets the `url` before calling
+      // `super.configure()` and has its own handling of logging.
       const { path, namespace } = this
       // TODO: The distinction between  `url` and `path` is a bit tricky, since
       // what we call `url` here is called `path` in Router, and may contain
@@ -60,14 +60,28 @@ export class Controller {
         }`,
         this.level
       )
-      if (setupActionsObject) {
-        this.actions ||= this.reflectActionsObject()
-        // Now that the instance fields are reflected in the `controller` object
-        // we can use the normal inheritance mechanism through `setupActions()`:
-        this.actions = this.setupActions('actions')
-      }
-      this.assets = this.setupAssets()
     }
+  }
+
+  // @overridable
+  setup() {
+    this.actions ||= this.reflectActionsObject()
+    // Now that the instance fields are reflected in the `controller` object
+    // we can use the normal inheritance mechanism through `setupActions()`:
+    this.actions = this.setupActions('actions')
+    this.assets = this.setupAssets()
+  }
+
+  // @overridable
+  async initialize() {
+    // To be overridden in sub-classes, if the controller needs to initialize.
+  }
+
+  // @return {Application|Function} [app or function]
+  // @overridable
+  compose() {
+    // To be overridden in sub-classes, if the controller needs to install
+    // middleware. For normal routes, use `this.app.addRoute()` instead.
   }
 
   reflectActionsObject() {
@@ -77,7 +91,7 @@ export class Controller {
     // these other controllers, we reflect these instance fields in a separate
     // `actions` object.
     const { allow } = this
-    const controller = allow ? { allow } : {}
+    const actions = allow ? { allow } : {}
 
     const addAction = key => {
       const value = this[key]
@@ -85,7 +99,7 @@ export class Controller {
       // in turn sets the `method` property on the method, as well as action
       // objects which provide the `method` property:
       if (value?.method) {
-        controller[key] = value
+        actions[key] = value
       }
     }
     // Use `Object.getOwnPropertyNames()` to get the fields, in order to
@@ -94,7 +108,7 @@ export class Controller {
     const proto = Object.getPrototypeOf(this)
     Object.getOwnPropertyNames(proto).forEach(addAction)
     Object.getOwnPropertyNames(this).forEach(addAction)
-    return controller
+    return actions
   }
 
   setupRoute(method, url, transacted, authorize, action, middlewares) {

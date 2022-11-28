@@ -68,8 +68,7 @@ export const UserMixin = mixin(Model => class extends Model {
     return this.$is(ctx.state.user)
   }
 
-  static initialize() {
-    super.initialize()
+  static setup() {
     userClasses[this.name] = this
     const {
       usernameProperty,

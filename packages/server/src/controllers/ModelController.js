@@ -6,10 +6,14 @@ import { ControllerError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/index.js'
 
 export class ModelController extends CollectionController {
-  setup() {
-    super.setup(true)
+  configure() {
+    super.configure()
     this.modelClass ||=
       this.app.models[camelize(pluralize.singular(this.name), true)]
+  }
+
+  setup() {
+    super.setup()
     this.relations = this.setupRelations()
   }
 
@@ -36,9 +40,14 @@ export class ModelController extends CollectionController {
     if (!relationInstance || !relationDefinition) {
       throw new ControllerError(this, `Relation '${name}' not found.`)
     }
-    return new RelationController(
+    const relation = new RelationController(
       this, object, relationInstance, relationDefinition
     )
+    // RelationController instances are not registered with the app, but are
+    // manged by their parent controller instead.
+    relation.configure()
+    relation.setup()
+    return relation
   }
 
   // @override

@@ -19,6 +19,7 @@ import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
+import { Model, knexSnakeCaseMappers, ref } from 'objection'
 import Router from '@ditojs/router'
 import {
   isArray, isObject, isString, asArray, isPlainObject, isModule,
@@ -31,7 +32,7 @@ import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
-import { formatJson } from '../utils/index.js'
+import { deprecate, formatJson } from '../utils/index.js'
 import {
   ResponseError,
   ValidationError,
@@ -47,12 +48,6 @@ import {
   handleUser,
   logRequests
 } from '../middleware/index.js'
-import {
-  Model,
-  BelongsToOneRelation,
-  knexSnakeCaseMappers,
-  ref
-} from 'objection'
 
 export class Application extends Koa {
   constructor({
@@ -61,12 +56,12 @@ export class Application extends Koa {
     router,
     events,
     middleware,
-    models,
     services,
+    models,
     controllers
   } = {}) {
     super()
-    this._setupEmitter(events)
+    this._configureEmitter(events)
     const {
       // Pluck keys out of `config.app` to keep them secret
       app: { keys, ...app } = {},
@@ -84,12 +79,13 @@ export class Application extends Koa {
     this.router = router || new Router()
     this.validator.app = this
     this.storages = Object.create(null)
-    this.models = Object.create(null)
     this.services = Object.create(null)
+    this.models = Object.create(null)
     this.controllers = Object.create(null)
     this.server = null
     this.isRunning = false
 
+    // TODO: Rename setup to configure?
     this.setupLogger()
     this.setupKnex()
     this.setupMiddleware(middleware)
@@ -97,15 +93,22 @@ export class Application extends Koa {
     if (config.storages) {
       this.addStorages(config.storages)
     }
-    if (models) {
-      this.addModels(models)
-    }
     if (services) {
       this.addServices(services)
+    }
+    if (models) {
+      this.addModels(models)
     }
     if (controllers) {
       this.addControllers(controllers)
     }
+  }
+
+  async setup() {
+    await this.setupStorages()
+    await this.setupServices()
+    await this.setupModels()
+    await this.setupControllers()
   }
 
   addRoute(
@@ -133,32 +136,151 @@ export class Application extends Koa {
     this.router[method](path, route)
   }
 
-  addModels(models) {
-    // First add all models then call initialize() for each in a second loop,
-    // since they may be referencing each other in relations.
-    for (const modelClass of Object.values(models)) {
-      this.addModel(modelClass)
+  getStorage(name) {
+    return this.storages[name] || null
+  }
+
+  addStorage(config, name) {
+    let storage = null
+    if (isPlainObject(config)) {
+      const storageClass = Storage.get(config.type)
+      if (!storageClass) {
+        throw new Error(`Unsupported storage: ${config}`)
+      }
+      // eslint-disable-next-line new-cap
+      storage = new storageClass(this, config)
+    } else if (config instanceof Storage) {
+      storage = config
     }
-    // Now (re-)sort all models based on their relations.
-    this.models = this.sortModels(this.models)
-    // Filter through all sorted models, keeping only the newly added ones.
-    const sortedModels = Object.values(this.models).filter(
-      modelClass => models[modelClass.name] === modelClass
+    if (storage) {
+      if (name) {
+        storage.name = name
+      }
+      this.storages[storage.name] = storage
+    }
+    return storage
+  }
+
+  addStorages(storages) {
+    for (const [name, config] of Object.entries(storages)) {
+      this.addStorage(config, name)
+    }
+  }
+
+  async setupStorages() {
+    await Promise.all(Object.values(this.storages)
+      .filter(storage => !storage.initialized)
+      .map(async storage => {
+        // Different from models, services and controllers, storages can have
+        // async `setup()` methods, as used by `S3Storage`.
+        await storage.setup()
+        await storage.initialize()
+        storage.initialized = true
+      })
     )
-    // Initialize the added models in correct sorted sequence, so that for every
-    // model, getRelatedRelations() returns the full list of relating relations.
-    for (const modelClass of sortedModels) {
-      if (models[modelClass.name] === modelClass) {
-        modelClass.setup(this.knex)
-        // Now that the modelClass is set up, call `initialize()`, which can be
-        // overridden by sub-classes without having to call `super.initialize()`
-        modelClass.initialize()
-        this.validator.addSchema(modelClass.getJsonSchema())
+  }
+
+  getService(name) {
+    return this.services[name] || null
+  }
+
+  findService(callback) {
+    return Object.values(this.services).find(callback) || null
+  }
+
+  addService(service, name) {
+    // Auto-instantiate controller classes:
+    if (Service.isPrototypeOf(service)) {
+      // eslint-disable-next-line new-cap
+      service = new service(this, name)
+    }
+    if (!(service instanceof Service)) {
+      throw new Error(`Invalid service: ${service}`)
+    }
+    this.services[service.name] = service
+  }
+
+  addServices(services) {
+    for (const [name, service] of Object.entries(services)) {
+      this.addService(service, name)
+    }
+  }
+
+  async setupServices() {
+    await Promise.all(Object.values(this.services)
+      .filter(service => !service.initialized)
+      .map(async service => {
+        const { name } = service
+        const config = this.config.services[name]
+        if (config === undefined) {
+          throw new Error(`Configuration missing for service '${name}'`)
+        }
+        // As a convention, the configuration of a service can be set to `false`
+        // in order to entirely deactivate the service.
+        if (config === false) {
+          delete this.services[name]
+        } else {
+          service.setup(config)
+          await service.initialize()
+          service.initialized = true
+        }
+      })
+    )
+  }
+
+  getModel(name) {
+    return (
+      this.models[name] ||
+      !name.endsWith('Model') && this.models[`${name}Model`] ||
+      null
+    )
+  }
+
+  findModel(callback) {
+    return Object.values(this.models).find(callback) || null
+  }
+
+  addModel(modelClass) {
+    this.addModels([modelClass])
+  }
+
+  addModels(models) {
+    models = Object.values(models)
+    // First, add all models to the application, so that they can be referenced
+    // by other models, e.g. in `jsonSchema` and  `relationMappings`:
+    for (const modelClass of models) {
+      if (Model.isPrototypeOf(modelClass)) {
+        this.models[modelClass.name] = modelClass
+      } else {
+        throw new Error(`Invalid model class: ${modelClass}`)
       }
     }
+    // Then, configure all models and add their schemas to the validator:
+    for (const modelClass of models) {
+      modelClass.configure(this)
+      this.validator.addSchema(modelClass.getJsonSchema())
+    }
+    this.logModels(models)
+  }
+
+  async setupModels() {
+    await Promise.all(Object.values(this.models)
+      .filter(modelClass => !modelClass.initialized)
+      .map(async modelClass => {
+        // While `setup()` is used for internal dito things, `initialize()` is
+        // called async and meant to be used by the user, without the need to
+        // call `super.initialize()`.
+        modelClass.setup()
+        await modelClass.initialize()
+        modelClass.initialized = true
+      })
+    )
+  }
+
+  logModels(models) {
     const { log } = this.config
     if (log.schema || log.relations) {
-      for (const modelClass of sortedModels) {
+      for (const modelClass of models) {
         const shouldLog = option => (
           option === true ||
           asArray(option).includes(modelClass.name)
@@ -168,8 +290,11 @@ export class Application extends Koa {
           data.schema = modelClass.getJsonSchema()
         }
         if (shouldLog(log.relations)) {
-          data.relations = clone(modelClass.relationMappings, value =>
-            Model.isPrototypeOf(value) ? `[Model: ${value.name}]` : value
+          data.relations = clone(
+            modelClass.getRelationMappings(),
+            value => Model.isPrototypeOf(value)
+              ? `[Model: ${value.name}]`
+              : value
           )
         }
         if (Object.keys(data).length > 0) {
@@ -186,113 +311,12 @@ export class Application extends Koa {
     }
   }
 
-  addModel(modelClass) {
-    if (Model.isPrototypeOf(modelClass)) {
-      modelClass.app = this
-      this.models[modelClass.name] = modelClass
-    } else {
-      throw new Error(`Invalid model class: ${modelClass}`)
-    }
+  getController(url) {
+    return this.controllers[url] || null
   }
 
-  sortModels(models) {
-    const sortByRelations = (list, collected = {}, excluded = {}) => {
-      for (const modelClass of list) {
-        const { name } = modelClass
-        if (!collected[name] && !excluded[name]) {
-          for (const relation of Object.values(modelClass.getRelations())) {
-            if (!(relation instanceof BelongsToOneRelation)) {
-              const { relatedModelClass, joinTableModelClass } = relation
-              for (const related of [joinTableModelClass, relatedModelClass]) {
-                // Exclude self-references and generated join models:
-                if (related && related !== modelClass && models[related.name]) {
-                  sortByRelations([related], collected, {
-                    // Exclude modelClass to prevent endless recursions:
-                    [name]: modelClass,
-                    ...excluded
-                  })
-                }
-              }
-            }
-          }
-          collected[name] = modelClass
-        }
-      }
-      return Object.values(collected)
-    }
-    // Return a new object with the sorted models as its key/value pairs.
-    // NOTE: We need to reverse for the above algorithm to sort properly,
-    // and then reverse the result back.
-    return sortByRelations(Object.values(models).reverse()).reverse().reduce(
-      (models, modelClass) => {
-        models[modelClass.name] = modelClass
-        return models
-      },
-      Object.create(null)
-    )
-  }
-
-  getModel(name) {
-    return (
-      this.models[name] ||
-      !name.endsWith('Model') && this.models[`${name}Model`] ||
-      null
-    )
-  }
-
-  findModel(callback) {
-    return Object.values(this.models).find(callback)
-  }
-
-  addServices(services) {
-    for (const [name, service] of Object.entries(services)) {
-      this.addService(service, name)
-    }
-  }
-
-  addService(service, name) {
-    // Auto-instantiate controller classes:
-    if (Service.isPrototypeOf(service)) {
-      // eslint-disable-next-line new-cap
-      service = new service(this, name)
-    }
-    if (!(service instanceof Service)) {
-      throw new Error(`Invalid service: ${service}`)
-    }
-    // Only after the constructor is called, `service.name` is guaranteed to be
-    // set to the correct value, e.g. with an after-constructor class property.
-    ({ name } = service)
-    const config = this.config.services[name]
-    if (config === undefined) {
-      throw new Error(`Configuration missing for service '${name}'`)
-    }
-    // As a convention, the configuration of a service can be set to `false`
-    // in order to entirely deactivate the service.
-    if (config !== false) {
-      service.setup(config)
-      this.services[name] = service
-      // Now that the service is set up, call `initialize()` which can be
-      // overridden by services.
-      service.initialize()
-    }
-  }
-
-  getService(name) {
-    return this.services[name] || null
-  }
-
-  findService(callback) {
-    return Object.values(this.services).find(callback)
-  }
-
-  addControllers(controllers, namespace) {
-    for (const [key, value] of Object.entries(controllers)) {
-      if (isModule(value) || isPlainObject(value)) {
-        this.addControllers(value, namespace ? `${namespace}/${key}` : key)
-      } else {
-        this.addController(value, namespace)
-      }
-    }
+  findController(callback) {
+    return Object.values(this.controllers).find(callback) || null
   }
 
   addController(controller, namespace) {
@@ -305,26 +329,36 @@ export class Application extends Koa {
       throw new Error(`Invalid controller: ${controller}`)
     }
     // Inheritance of action methods cannot happen in the constructor itself,
-    // so call separate `setup()` method after in order to take care of it.
-    controller.setup()
+    // so call separate `configure()` method after in order to take care of it.
+    controller.configure()
     this.controllers[controller.url] = controller
-    // Now that the controller is set up, call `initialize()` which can be
-    // overridden by controllers.
-    controller.initialize()
-    // Each controller can also compose their own middleware (or app), e.g. as
-    // used in `AdminController`:
-    const composed = controller.compose()
-    if (composed) {
-      this.use(mount(controller.url, composed))
+  }
+
+  addControllers(controllers, namespace) {
+    for (const [key, value] of Object.entries(controllers)) {
+      if (isModule(value) || isPlainObject(value)) {
+        this.addControllers(value, namespace ? `${namespace}/${key}` : key)
+      } else {
+        this.addController(value, namespace)
+      }
     }
   }
 
-  getController(url) {
-    return this.controllers[url] || null
-  }
-
-  findController(callback) {
-    return Object.values(this.controllers).find(callback)
+  async setupControllers() {
+    await Promise.all(Object.values(this.controllers)
+      .filter(controller => !controller.initialized)
+      .map(async controller => {
+        controller.setup()
+        await controller.initialize()
+        // Each controller can also compose their own middleware (or app), e.g.
+        // as used in `AdminController`:
+        const composed = controller.compose()
+        if (composed) {
+          this.use(mount(controller.url, composed))
+        }
+        controller.initialized = true
+      })
+    )
   }
 
   getAdminController() {
@@ -375,37 +409,6 @@ export class Application extends Koa {
       }
     }
     return assetConfig
-  }
-
-  addStorages(storages) {
-    for (const [name, config] of Object.entries(storages)) {
-      this.addStorage(config, name)
-    }
-  }
-
-  addStorage(config, name) {
-    let storage = null
-    if (isPlainObject(config)) {
-      const storageClass = Storage.get(config.type)
-      if (!storageClass) {
-        throw new Error(`Unsupported storage: ${config}`)
-      }
-      // eslint-disable-next-line new-cap
-      storage = new storageClass(this, config)
-    } else if (config instanceof Storage) {
-      storage = config
-    }
-    if (storage) {
-      if (name) {
-        storage.name = name
-      }
-      this.storages[storage.name] = storage
-    }
-    return storage
-  }
-
-  getStorage(name) {
-    return this.storages[name] || null
   }
 
   compileValidator(jsonSchema, options) {
@@ -715,6 +718,10 @@ export class Application extends Koa {
     if (this.config.log.errors !== false) {
       this.on('error', this.logError)
     }
+    // It's ok to call this multiple times, because only the entries in the
+    // registres (storages, services, models, controllers) that weren't
+    // initialized yet will be initialized.
+    await this.setup()
     await this.emit('before:start')
     this.server = await new Promise(resolve => {
       const server = this.listen(this.config.server, () => {
@@ -771,13 +778,18 @@ export class Application extends Koa {
     }
   }
 
-  async startOrExit() {
+  async execute() {
     try {
       await this.start()
     } catch (err) {
       this.logError(err)
       process.exit(-1)
     }
+  }
+
+  startOrExit() {
+    deprecate(`app.startOrExit() is deprecated. Call app.execute() instead.`)
+    return this.execute()
   }
 
   // Assets handling

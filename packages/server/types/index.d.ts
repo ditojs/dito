@@ -385,17 +385,22 @@ export class Application<$Models extends Models = Models> {
   })
 
   models: $Models
+  setup(): Promise<void>
+  execute(): Promise<void>
   start(): Promise<void>
   stop(timeout?: number): Promise<void>
-  startOrExit(): Promise<void>
-  addServices(services: Services): void
+  addStorage(storage: StorageConfig): void
+  addStorages(storages: StorageConfigs): void
+  setupStorages(): Promise<void>
   addService(service: Service): void
+  addServices(services: Services): void
+  setupServices(): Promise<void>
+  addModel(model: Class<Model>): void
+  addModels(models: Models): void
+  setupModels(): Promise<void>
   addController(controllers: Controller, namespace?: string): void
   addControllers(controllers: ApplicationControllers, namespace?: string): void
-  addStorages(storages: StorageConfigs): void
-  addStorage(storage: StorageConfig): void
-  addModels(models: Models): void
-  addModel(model: Class<Model>): void
+  setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
 }
 export interface Application
@@ -863,8 +868,9 @@ export class Controller {
   authorize?: Authorize
   actions?: ControllerActions<this>
 
+  configure(): void
+  setup(): void
   initialize(): void
-  setup(isRoot: boolean, setupActionsObject: boolean): void
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
   setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
@@ -1430,13 +1436,9 @@ export type QueryParameterOptionKey = keyof QueryParameterOptions
 
 export class Service {
   constructor(app: Application<Models>, name?: string)
-
   setup(config: any): void
-
   initialize(): void
-
   start(): Promise<void>
-
   stop(): Promise<void>
 }
 export type Services = Record<string, Class<Service> | Service>

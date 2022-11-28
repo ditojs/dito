@@ -29,10 +29,6 @@ export class RelationController extends CollectionController {
       // relations:
       this.scope = asArray(parent.scope).filter(scope => getScope(scope).graph)
     }
-    // Initialize:
-    this.path = this.app.normalizePath(this.name)
-    this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
-    this.log(`${pico.blue(this.path)}${pico.white(':')}`, this.level)
     // Copy over all fields in the relation object except the ones that are
     // going to be inherited in `setup()` (relation, member, allow), for
     // settings like scope, etc.
@@ -41,7 +37,15 @@ export class RelationController extends CollectionController {
         this[key] = this.object[key]
       }
     }
-    this.setup(false)
+  }
+
+  // @override
+  configure() {
+    // Setup the `url` before calling `super.configure()` to override its
+    // default behavior for `RelationController`:
+    this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
+    this.log(`${pico.blue(this.path)}${pico.white(':')}`, this.level)
+    super.configure()
   }
 
   // @override

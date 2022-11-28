@@ -34,7 +34,7 @@ following statement:
 ```js
 import app from './app/index.js'
 
-app.startOrExit()
+app.execute()
 ```
 
 Dito.js applications can register custom keywords and formats for JSON schema

@@ -9,15 +9,19 @@ import consumers from 'stream/consumers'
 export class S3Storage extends Storage {
   static type = 's3'
 
-  constructor(app, config) {
-    super(app, config)
+  s3 = null
+  acl = null
+  bucket = null
+
+  setup() {
     const {
       name,
       s3,
       acl,
       bucket,
       ...options
-    } = config
+    } = this.config
+
     this.s3 = new S3(s3)
     this.acl = acl
     this.bucket = bucket
