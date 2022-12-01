@@ -18,9 +18,9 @@ export class ResponseError extends Error {
         : isString(error)
           ? { message: error }
           : error || {}
-    const { status, ...data } = { ...defaults, ...object }
+    const { status, cause, ...data } = { ...defaults, ...object }
     const { message, code } = data
-    super(message)
+    super(message, { cause })
     this.name = this.constructor.name
     this.status = status
     this.code = code
