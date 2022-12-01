@@ -1,4 +1,3 @@
-import os from 'os'
 import path from 'path'
 import util from 'util'
 import zlib from 'zlib'
@@ -32,7 +31,7 @@ import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
-import { deprecate, formatJson } from '../utils/index.js'
+import { deprecate } from '../utils/index.js'
 import {
   ResponseError,
   ValidationError,
@@ -595,7 +594,7 @@ export class Application extends Koa {
       prettyPrint: {
         colorize: true,
         // List of keys to ignore in pretty mode.
-        ignore: 'req,res,durationMs,user,requestId',
+        ignore: 'req,res,durationMs,user,requestId,err.message',
         // SYS to use system time and not UTC.
         translateTime: 'SYS:HH:MM:ss.l'
       },
@@ -690,24 +689,20 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  formatError(err) {
-    const message = err.toJSON
-      ? formatJson(err.toJSON())
-      : err.message || err
-    const str = `${err.name}: ${message}`
-    return err.stack && this.config.log.errors?.stack !== false
-      ? `${str}\n${err.stack.split(/\n|\r\n|\r/).slice(1).join(os.EOL)}`
-      : str
-  }
-
   logError(err, ctx) {
     if (!err.expose && !this.silent) {
       try {
-        const text = this.formatError(err)
+        const errorObject = structuredClone(err)
+        // Remove headers added by the cors middleware.
+        delete errorObject.headers
+        if (err.stack && this.config.log.errors?.stack === false) {
+          delete errorObject.stack
+          delete errorObject.cause
+        }
         const level =
           err instanceof ResponseError && err.status < 500 ? 'info' : 'error'
         const logger = ctx?.logger || this.logger
-        logger[level](text)
+        logger[level](errorObject)
       } catch (e) {
         console.error('Could not log error', e)
       }
