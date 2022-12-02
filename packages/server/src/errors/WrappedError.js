@@ -13,6 +13,7 @@ export class WrappedError extends ResponseError {
     )
     if (error?.stack) {
       this.stack = error.stack
+      this.cause = error.cause
     }
   }
 }
