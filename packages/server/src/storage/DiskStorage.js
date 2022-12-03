@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import fs from 'fs/promises'
 import path from 'path'
 import multer from '@koa/multer'
 import { Storage } from './Storage.js'
@@ -15,7 +15,7 @@ export class DiskStorage extends Storage {
         // Add `storageFile.key` property to internal storage file object.
         storageFile.key = this.getUniqueKey(storageFile.originalname)
         const dir = this._getPath(this._getNestedFolder(storageFile.key))
-        fs.ensureDir(dir)
+        fs.mkdir(dir, { recursive: true })
           .then(() => cb(null, dir))
           .catch(cb)
       },
@@ -41,7 +41,7 @@ export class DiskStorage extends Storage {
   async _addFile(file, buffer) {
     const filePath = this._getFilePath(file)
     const dir = path.dirname(filePath)
-    await fs.ensureDir(dir)
+    await fs.mkdir(dir, { recursive: true })
     await fs.writeFile(filePath, buffer)
     return file
   }

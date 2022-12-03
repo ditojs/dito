@@ -1,5 +1,5 @@
 import path from 'path'
-import fs from 'fs-extra'
+import fs from 'fs/promises'
 import pico from 'picocolors'
 import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
 import {
@@ -50,7 +50,7 @@ export async function createMigration(app, name, ...modelNames) {
     : ''
   const filename = `${getTimestamp()}_${name}.js`
   const file = path.join(migrationDir, filename)
-  if (await fs.exists(file)) {
+  if (await exists(file)) {
     // This should never happen, but let's be on the safe side here:
     console.info(pico.red(`Migration '${filename}' already exists.`))
     return false
@@ -203,4 +203,13 @@ function getTimestamp() {
     padDate(d.getHours()) +
     padDate(d.getMinutes()) +
     padDate(d.getSeconds())
+}
+
+async function exists(path) {
+  try {
+    await fs.access(path)
+    return true
+  } catch {
+    return false
+  }
 }

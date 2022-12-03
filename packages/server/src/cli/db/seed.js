@@ -1,5 +1,5 @@
 import path from 'path'
-import fs from 'fs-extra'
+import fs from 'fs/promises'
 import pico from 'picocolors'
 import util from 'util'
 import pluralize from 'pluralize'
