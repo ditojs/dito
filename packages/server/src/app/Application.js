@@ -594,7 +594,7 @@ export class Application extends Koa {
       prettyPrint: {
         colorize: true,
         // List of keys to ignore in pretty mode.
-        ignore: 'req,res,durationMs,user,requestId,err.message',
+        ignore: 'req,res,durationMs,user,requestId',
         // SYS to use system time and not UTC.
         translateTime: 'SYS:HH:MM:ss.l'
       },
@@ -689,20 +689,40 @@ export class Application extends Koa {
     return this.config.app.normalizePaths ? hyphenate(path) : path
   }
 
-  logError(err, ctx) {
-    if (!err.expose && !this.silent) {
+  formatError(error) {
+    // Clone the error to be able to delete hidden properties.
+    const copy = clone(error)
+    // Remove headers added by the CORS middleware.
+    delete copy.headers
+    if (this.config.log.errors?.stack === false) {
+      delete copy.stack
+      delete copy.cause
+    } else {
+      // These aren't enumerable and thus couldn't be cloned above.
+      if (error.stack !== undefined) {
+        copy.stack = error.stack
+      }
+      if (error.cause !== undefined) {
+        copy.cause = error.cause
+      }
+    }
+    // Use `util.inspect()` instead of Pino's internal error logging for better
+    // stack traces and logging of error data.
+    return util.inspect(copy, {
+      compact: false,
+      depth: null,
+      maxArrayLength: null
+    })
+  }
+
+  logError(error, ctx) {
+    if (!error.expose && !this.silent) {
       try {
-        const clone = structuredClone(err)
-        // Remove headers added by the CORS middleware.
-        delete clone.headers
-        if (this.config.log.errors?.stack === false) {
-          delete clone.stack
-          delete clone.cause
-        }
-        const level =
-          err instanceof ResponseError && err.status < 500 ? 'info' : 'error'
         const logger = ctx?.logger || this.logger
-        logger[level](clone)
+        const level = error instanceof ResponseError && error.status < 500
+          ? 'info'
+          : 'error'
+        logger[level](this.formatError(error))
       } catch (e) {
         console.error('Could not log error', e)
       }
