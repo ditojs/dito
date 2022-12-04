@@ -7,12 +7,16 @@ export function clone(arg, options) {
   const {
     shallow = false,
     enumerable = true,
+    descriptors = false,
+    transferables = null,
     processValue = null
   } = isFunction(options)
     ? { processValue: options } // TODO: `callback` deprecated in December 2022.
     : options || {}
 
-  const handleValue = value => shallow ? value : clone(value, options)
+  const handleValue = value => shallow || transferables?.includes(value)
+    ? value
+    : clone(value, options)
 
   let copy = arg
   if (isDate(arg)) {
@@ -37,11 +41,15 @@ export function clone(arg, options) {
       copy = Object.create(Object.getPrototypeOf(arg))
       const keys = enumerable ? Object.keys(arg) : Reflect.ownKeys(arg)
       for (const key of keys) {
-        const desc = Reflect.getOwnPropertyDescriptor(arg, key)
-        if (desc.value != null) {
-          desc.value = handleValue(desc.value)
+        if (descriptors || !enumerable) {
+          const desc = Reflect.getOwnPropertyDescriptor(arg, key)
+          if (desc.value != null) {
+            desc.value = handleValue(desc.value)
+          }
+          Reflect.defineProperty(copy, key, desc)
+        } else {
+          copy[key] = handleValue(arg[key])
         }
-        Reflect.defineProperty(copy, key, desc)
       }
     }
   }
