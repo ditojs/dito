@@ -20,7 +20,9 @@ export class ResponseError extends Error {
     }
     super(message, cause ? { cause } : {})
     this.status = status
-    this.data = data
+    if (Object.keys(data).length > 0) {
+      this.data = data
+    }
     // Allow `stack` overrides, e.g. for `RelationError`.
     if (stack != null) {
       this.stack = stack
