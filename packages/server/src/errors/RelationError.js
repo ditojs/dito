@@ -5,17 +5,17 @@ export class RelationError extends ResponseError {
     super(
       error,
       { message: 'Relation error', status: 400 },
-      error instanceof Error ? getParsedOverrides(error) : null
+      error instanceof Error ? getFormattedOverrides(error) : null
     )
   }
 }
 
-function getParsedOverrides(error) {
+function getFormattedOverrides(error) {
   // Adjust Objection.js error messages to point to the right property.
-  const parse = str => str?.replace(/\brelationMappings\b/g, 'relations')
+  const format = str => str?.replace(/\brelationMappings\b/g, 'relations')
   const { message, stack } = error
   return {
-    message: parse(message),
-    stack: parse(stack)
+    message: format(message),
+    stack: format(stack)
   }
 }

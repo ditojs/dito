@@ -21,6 +21,7 @@ export class ResponseError extends Error {
     super(message, cause ? { cause } : {})
     this.status = status
     this.data = data
+    // Allow `stack` overrides, e.g. for `RelationError`.
     if (stack != null) {
       this.stack = stack
     }
@@ -36,8 +37,11 @@ export class ResponseError extends Error {
 }
 
 function getErrorObject(error) {
-  // For generic errors, explicitly copy message.
-  const object = error.toJSON?.() ?? { message: error.message }
+  const object = {
+    // For generic errors, explicitly copy message.
+    message: error.message,
+    ...error.toJSON?.()
+  }
   // Additionally copy status and code if present.
   if (error.status != null) {
     object.status = error.status
@@ -45,8 +49,6 @@ function getErrorObject(error) {
   if (error.code != null) {
     object.code = error.code
   }
-  // Preserve the cause if already set in the original error, and set it to the
-  // error itself otherwise.
-  object.cause = error.cause ?? error
+  object.cause = error
   return object
 }
