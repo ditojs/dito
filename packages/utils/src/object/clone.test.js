@@ -54,6 +54,14 @@ describe('clone()', () => {
     expect(copy).toStrictEqual({ b: 2 })
   })
 
+  it('should handle non-enumerable properties', async () => {
+    const object = { a: 1 }
+    Object.defineProperty(object, 'b', { value: 2, enumerable: false })
+    const copy = clone(object)
+    expect(copy.a).toEqual(1)
+    expect(copy.b).toEqual(2)
+  })
+
   it('should transform cloned values by `callback`', () => {
     const object = {
       a: { b: 1, c: 2 },

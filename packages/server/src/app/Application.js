@@ -697,14 +697,6 @@ export class Application extends Koa {
     if (this.config.log.errors?.stack === false) {
       delete copy.stack
       delete copy.cause
-    } else {
-      // These aren't enumerable and thus couldn't be cloned above.
-      if (error.stack !== undefined) {
-        copy.stack = error.stack
-      }
-      if (error.cause !== undefined) {
-        copy.cause = error.cause
-      }
     }
     // Use `util.inspect()` instead of Pino's internal error logging for better
     // stack traces and logging of error data.

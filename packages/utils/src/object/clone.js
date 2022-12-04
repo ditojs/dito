@@ -25,8 +25,12 @@ export function clone(arg, callback = null) {
       // Prevent calling the actual constructor since it is not guaranteed to
       // work as intended here, and only clone the non-inherited own properties.
       copy = Object.create(Object.getPrototypeOf(arg))
-      for (const key of Object.keys(arg)) {
-        copy[key] = clone(arg[key], callback)
+      for (const key of Reflect.ownKeys(arg)) {
+        const desc = Reflect.getOwnPropertyDescriptor(arg, key)
+        if (desc.value != null) {
+          desc.value = clone(desc.value, callback)
+        }
+        Reflect.defineProperty(copy, key, desc)
       }
     }
   }
