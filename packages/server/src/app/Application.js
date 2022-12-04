@@ -289,12 +289,11 @@ export class Application extends Koa {
           data.schema = modelClass.getJsonSchema()
         }
         if (shouldLog(log.relations)) {
-          data.relations = clone(
-            modelClass.getRelationMappings(),
-            value => Model.isPrototypeOf(value)
+          data.relations = clone(modelClass.getRelationMappings(), {
+            processValue: value => Model.isPrototypeOf(value)
               ? `[Model: ${value.name}]`
               : value
-          )
+          })
         }
         if (Object.keys(data).length > 0) {
           console.info(

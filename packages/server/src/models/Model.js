@@ -180,7 +180,7 @@ export class Model extends objection.Model {
     const shallow = json.$isObjectionModel && !options.graph
     if (shallow) {
       // Strip away relations and other internal stuff.
-      json = json.clone({ shallow: true })
+      json = json.$clone({ shallow: true })
       // We can mutate `json` now that we took a copy of it.
       options = { ...options, mutable: true }
     }

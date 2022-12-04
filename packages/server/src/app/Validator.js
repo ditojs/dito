@@ -153,27 +153,29 @@ export class Validator extends objection.Validator {
 
   processSchema(jsonSchema, options = {}) {
     const { patch, async } = options
-    const schema = clone(jsonSchema, value => {
-      if (isObject(value)) {
-        if (patch) {
-          // Remove all required keywords and formats from schema for patch
-          // validation.
-          delete value.required
-          if (value.format === 'required') {
-            delete value.format
+    const schema = clone(jsonSchema, {
+      processValue: value => {
+        if (isObject(value)) {
+          if (patch) {
+            // Remove all required keywords and formats from schema for patch
+            // validation.
+            delete value.required
+            if (value.format === 'required') {
+              delete value.format
+            }
           }
-        }
-        // Convert async `validate()` keywords to `validateAsync()`:
-        if (isAsync(value.validate)) {
-          value.validateAsync = value.validate
-          delete value.validate
-        }
-        if (!async) {
-          // Remove all async keywords for synchronous validation.
-          for (const key in value) {
-            const keyword = this.getKeyword(key)
-            if (keyword?.async) {
-              delete value[key]
+          // Convert async `validate()` keywords to `validateAsync()`:
+          if (isAsync(value.validate)) {
+            value.validateAsync = value.validate
+            delete value.validate
+          }
+          if (!async) {
+            // Remove all async keywords for synchronous validation.
+            for (const key in value) {
+              const keyword = this.getKeyword(key)
+              if (keyword?.async) {
+                delete value[key]
+              }
             }
           }
         }

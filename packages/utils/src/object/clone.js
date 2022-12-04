@@ -3,7 +3,13 @@ import {
 } from '../base/index.js'
 import { pick } from '../object/index.js'
 
-export function clone(arg, callback = null) {
+export function clone(arg, options) {
+  const { shallow = false, processValue = null } = isFunction(options)
+    ? { processValue: options } // TODO: `callback` deprecated in December 2022.
+    : options || {}
+
+  const handleValue = value => shallow ? value : clone(value, options)
+
   let copy = arg
   if (isDate(arg)) {
     copy = new arg.constructor(+arg)
@@ -12,12 +18,12 @@ export function clone(arg, callback = null) {
   } else if (isArray(arg)) {
     copy = new arg.constructor(arg.length)
     for (let i = 0, l = arg.length; i < l; i++) {
-      copy[i] = clone(arg[i], callback)
+      copy[i] = handleValue(arg[i])
     }
   } else if (isObject(arg)) {
     // Rely on arg.clone() if it exists and assume it creates an actual clone.
     if (isFunction(arg.clone)) {
-      copy = arg.clone()
+      copy = arg.clone(options)
     } else if (isPromise(arg)) {
       // https://stackoverflow.com/questions/37063293/can-i-clone-a-promise
       copy = arg.then()
@@ -28,11 +34,11 @@ export function clone(arg, callback = null) {
       for (const key of Reflect.ownKeys(arg)) {
         const desc = Reflect.getOwnPropertyDescriptor(arg, key)
         if (desc.value != null) {
-          desc.value = clone(desc.value, callback)
+          desc.value = handleValue(desc.value)
         }
         Reflect.defineProperty(copy, key, desc)
       }
     }
   }
-  return pick(callback?.(copy), copy)
+  return pick(processValue?.(copy), copy)
 }

@@ -44,6 +44,12 @@ describe('clone()', () => {
     expect(copy.b).not.toBe(object.b)
   })
 
+  it('should support shallow-cloning', () => {
+    const object = { a: [1, 2, 3] }
+    const copy = clone(object, { shallow: true })
+    expect(object.a).toBe(copy.a)
+  })
+
   it('should use clone() methods if available', () => {
     const object = {
       a: 1,
@@ -62,14 +68,16 @@ describe('clone()', () => {
     expect(copy.b).toEqual(2)
   })
 
-  it('should transform cloned values by `callback`', () => {
+  it('should transform cloned values by `processValue`', () => {
     const object = {
       a: { b: 1, c: 2 },
       d: { e: 3, f: 4 }
     }
-    const copy = clone(object, value => {
-      if (typeof value === 'object') {
-        value.g = 5
+    const copy = clone(object, {
+      processValue: value => {
+        if (typeof value === 'object') {
+          value.g = 5
+        }
       }
     })
     const expected = {
@@ -80,14 +88,16 @@ describe('clone()', () => {
     expect(copy).toStrictEqual(expected)
   })
 
-  it('should call `callback` after cloning all children', () => {
+  it('should call `processValue` after cloning all children', () => {
     const array = [
       { a: 1, b: 2 },
       { a: 3, b: 4 }
     ]
-    const copy = clone(array, value => {
-      if (typeof value === 'object') {
-        delete value.b
+    const copy = clone(array, {
+      processValue: value => {
+        if (typeof value === 'object') {
+          delete value.b
+        }
       }
     })
     const expected = [
