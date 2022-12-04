@@ -1,33 +1,52 @@
 import { isPlainObject, isString } from '@ditojs/utils'
 
 export class ResponseError extends Error {
-  constructor(error, defaults = { message: 'Response error', status: 400 }) {
+  constructor(
+    error,
+    defaults = { message: 'Response error', status: 500 },
+    overrides
+  ) {
     const object = isPlainObject(error)
       ? error
       : error instanceof Error
-        ? {
-          // Copy error into object so they can be merged with defaults after.
-          // First copy everything that is enumerable, unless the error is from
-          // axios, in which case we don't want to leak config information.
-          ...(error.isAxiosError ? null : error),
-          // Also explicitly copy message, status and code.
-          message: error.message,
-          status: error.status,
-          code: error.code
-        }
+        ? getErrorObject(error)
         : isString(error)
           ? { message: error }
           : error || {}
-    const { status, cause, ...data } = { ...defaults, ...object }
-    const { message, code } = data
-    super(message, { cause })
-    this.name = this.constructor.name
+    const { message, status, stack, cause, ...data } = {
+      ...defaults,
+      ...object,
+      ...overrides
+    }
+    super(message, cause ? { cause } : {})
     this.status = status
-    this.code = code
     this.data = data
+    if (stack != null) {
+      this.stack = stack
+    }
   }
 
   toJSON() {
-    return this.data
+    return {
+      // Include the message in the JSON data sent back.
+      message: this.message,
+      ...this.data
+    }
   }
+}
+
+function getErrorObject(error) {
+  // For generic errors, explicitly copy message.
+  const object = error.toJSON?.() ?? { message: error.message }
+  // Additionally copy status and code if present.
+  if (error.status != null) {
+    object.status = error.status
+  }
+  if (error.code != null) {
+    object.code = error.code
+  }
+  // Preserve the cause if already set in the original error, and set it to the
+  // error itself otherwise.
+  object.cause = error.cause ?? error
+  return object
 }

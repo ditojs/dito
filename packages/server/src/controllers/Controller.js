@@ -3,7 +3,7 @@ import { EventEmitter } from '../lib/index.js'
 import ControllerAction from './ControllerAction.js'
 import MemberAction from './MemberAction.js'
 import {
-  ResponseError, WrappedError, ControllerError, AuthorizationError
+  ResponseError, ControllerError, AuthorizationError
 } from '../errors/index.js'
 import {
   getOwnProperty, getOwnKeys, getAllKeys, processHandlerParameters,
@@ -185,7 +185,7 @@ export class Controller {
             ctx.body = res
           }
         } catch (err) {
-          throw err instanceof ResponseError ? err : new WrappedError(err)
+          throw err instanceof ResponseError ? err : new ResponseError(err)
         }
       }
     ])

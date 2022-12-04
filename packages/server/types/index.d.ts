@@ -1617,8 +1617,7 @@ export class ResponseError extends Error {
 export class AssetError extends ResponseError {}
 export class AuthenticationError extends ResponseError {}
 export class AuthorizationError extends ResponseError {}
-export class WrappedError extends ResponseError {}
-export class DatabaseError extends WrappedError {
+export class DatabaseError extends ResponseError {
   constructor(
     error:
       | dbErrors.CheckViolationError

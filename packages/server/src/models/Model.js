@@ -16,8 +16,7 @@ import {
   ResponseError,
   GraphError, ModelError,
   NotFoundError,
-  RelationError,
-  WrappedError
+  RelationError
 } from '../errors/index.js'
 import RelationAccessor from './RelationAccessor.js'
 import definitions from './definitions/index.js'
@@ -239,7 +238,7 @@ export class Model extends objection.Model {
       // TODO: Shouldn't this wrapping happen on the Controller level?
       err = err instanceof ResponseError ? err
         : err instanceof objection.DBError ? this.app.createDatabaseError(err)
-        : new WrappedError(err)
+        : new ResponseError(err)
       return Promise.reject(err)
     })
   }
