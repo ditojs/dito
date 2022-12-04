@@ -63,7 +63,7 @@ describe('clone()', () => {
   it('should handle non-enumerable properties', async () => {
     const object = { a: 1 }
     Object.defineProperty(object, 'b', { value: 2, enumerable: false })
-    const copy = clone(object)
+    const copy = clone(object, { enumerable: false })
     expect(copy.a).toEqual(1)
     expect(copy.b).toEqual(2)
   })

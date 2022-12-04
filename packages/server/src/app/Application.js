@@ -690,7 +690,7 @@ export class Application extends Koa {
 
   formatError(error) {
     // Shallow-clone the error to be able to delete hidden properties.
-    const copy = clone(error, { shallow: true })
+    const copy = clone(error, { shallow: true, enumerable: false })
     // Remove headers added by the CORS middleware.
     delete copy.headers
     if (this.config.log.errors?.stack === false) {

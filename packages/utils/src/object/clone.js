@@ -4,7 +4,11 @@ import {
 import { pick } from '../object/index.js'
 
 export function clone(arg, options) {
-  const { shallow = false, processValue = null } = isFunction(options)
+  const {
+    shallow = false,
+    enumerable = true,
+    processValue = null
+  } = isFunction(options)
     ? { processValue: options } // TODO: `callback` deprecated in December 2022.
     : options || {}
 
@@ -31,7 +35,8 @@ export function clone(arg, options) {
       // Prevent calling the actual constructor since it is not guaranteed to
       // work as intended here, and only clone the non-inherited own properties.
       copy = Object.create(Object.getPrototypeOf(arg))
-      for (const key of Reflect.ownKeys(arg)) {
+      const keys = enumerable ? Object.keys(arg) : Reflect.ownKeys(arg)
+      for (const key of keys) {
         const desc = Reflect.getOwnPropertyDescriptor(arg, key)
         if (desc.value != null) {
           desc.value = handleValue(desc.value)
