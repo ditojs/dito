@@ -7,7 +7,7 @@ export function clone(arg, options) {
   const {
     shallow = false,
     enumerable = true,
-    descriptors = false,
+    descriptors = !enumerable,
     transferables = null,
     processValue = null
   } = isFunction(options)
@@ -41,7 +41,7 @@ export function clone(arg, options) {
       copy = Object.create(Object.getPrototypeOf(arg))
       const keys = enumerable ? Object.keys(arg) : Reflect.ownKeys(arg)
       for (const key of keys) {
-        if (descriptors || !enumerable) {
+        if (descriptors) {
           const desc = Reflect.getOwnPropertyDescriptor(arg, key)
           if (desc.value != null) {
             desc.value = handleValue(desc.value)
