@@ -40,7 +40,7 @@
     flex-flow: row wrap
     align-content: flex-start
     align-items: baseline
-    // Remove padding added by `.dito-container`
+    // Remove the padding added by `.dito-container` inside `.dito-pane`:
     margin: (-$form-spacing) (-$form-spacing-half)
     // Add removed horizontal margin again to max-width:
     max-width: $content-width + 2 * $form-spacing-half

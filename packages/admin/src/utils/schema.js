@@ -40,14 +40,21 @@ export function forEachSchema(schema, callback) {
 }
 
 export function forEachSchemaComponent(schema, callback) {
-  return forEachSchema(schema, schema => {
-    for (const [name, component] of Object.entries(schema.components || {})) {
-      const res = callback(component, name)
-      if (res !== undefined) {
-        return res
-      }
+  if (isSingleComponentView(schema)) {
+    const res = callback(schema.component, schema.name)
+    if (res !== undefined) {
+      return res
     }
-  })
+  } else {
+    return forEachSchema(schema, schema => {
+      for (const [name, component] of Object.entries(schema.components || {})) {
+        const res = callback(component, name)
+        if (res !== undefined) {
+          return res
+        }
+      }
+    })
+  }
 }
 
 export function findSchemaComponent(schema, callback) {
@@ -69,6 +76,22 @@ export function everySchemaComponent(schema, callback) {
     schema,
     (component, name) => !callback(component, name) ? false : undefined
   ) !== false
+}
+
+export function isSchema(schema) {
+  return isObject(schema) && isString(schema.type)
+}
+
+export function isForm(schema) {
+  return isSchema(schema) && schema.type === 'form'
+}
+
+export function isView(schema) {
+  return isSchema(schema) && schema.type === 'view'
+}
+
+export function getSchemaIdentifier(schema) {
+  return schema.name || schema.label || schema.type
 }
 
 export async function resolveSchema(schema, unwrapModule = false) {
@@ -126,7 +149,7 @@ export async function resolveSchemas(
 
 export async function resolvePanels(schema) {
   const { panels } = schema
-  if (schema.panels) {
+  if (panels) {
     schema.panels = await resolveSchemas(panels)
   }
 }
@@ -135,11 +158,15 @@ export async function processView(component, api, schema, name, routes) {
   const children = []
   processRouteSchema(api, schema, name)
   await resolvePanels(schema)
-  if (isSingleComponentView(schema)) {
-    await processComponent(api, schema, name, children, 0)
+  if (isView(schema)) {
+    if (isSingleComponentView(schema)) {
+      await processComponent(api, schema.component, name, children, 0)
+    } else {
+      // A multi-component view, start at level 1
+      await processSchemaComponents(api, schema, children, 1)
+    }
   } else {
-    // A multi-component view, start at level 1
-    await processSchemaComponents(api, schema, children, 1)
+    throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
   routes.push({
     path: `/${schema.path}`,
@@ -198,29 +225,36 @@ export async function processForms(api, schema, level) {
 
 export async function resolveForm(form) {
   form = await resolveSchema(form, true)
+  if (!isForm(form)) {
+    throw new Error(`Invalid form schema: '${getSchemaIdentifier(form)}'`)
+  }
   if (form) {
     await resolvePanels(form)
   }
   return form
 }
 
-export function isSingleComponentView(schema) {
-  // If the schema has a type, it is a single-component view.
-  return !!schema.type
-}
-
 export function hasFormSchema(schema) {
   // Support both single form and multiple forms notation, as well as inlined
   // components.
-  return isObject(schema) && !!(
-    schema.form ||
-    schema.forms ||
-    schema.components
+  return (
+    isSchema(schema) &&
+    isObject(schema.form || schema.forms || schema.components)
   )
 }
 
 export function hasMultipleFormSchemas(schema) {
-  return Object.keys(schema?.forms || {}).length > 1
+  return (
+    isSchema(schema) &&
+    Object.keys(schema?.forms || {}).length > 1
+  )
+}
+
+export function isSingleComponentView(schema) {
+  return (
+    isView(schema) &&
+    isObject(schema.component)
+  )
 }
 
 export function getViewSchema(schema, context) {

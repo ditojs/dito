@@ -17,7 +17,7 @@
     "test": "vitest",
     "lint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/*/src",
     "lint:fix": "cross-env NODE_ENV=production eslint --fix --ext .js,.vue packages/*/src",
-    "link:objection": "yarn link ../objection.js --all --relative --private",
+    "link:objection": "yarn link ../objection --all --relative --private",
     "link:knex": "yarn link ../knex --all --relative --private",
     "link:all": "yarn link:objection && yarn link:knex"
   },
