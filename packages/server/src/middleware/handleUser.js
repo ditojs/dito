@@ -7,16 +7,16 @@ export function handleUser() {
     // on the user model:
     const { login, logout } = ctx
 
-    ctx.login = async function(user, options = {}) {
+    ctx.login = ctx.logIn = async function(user, options = {}) {
       await user.$emit('before:login', options)
       await login.call(this, user, options)
       await user.$emit('after:login', options)
     }
 
-    ctx.logout = async function(options = {}) {
+    ctx.logout = ctx.logOut = async function(options = {}) {
       const { user } = ctx.state
       await user?.$emit('before:logout', options)
-      await logout.call(this) // No options in passport's logout()
+      await logout.call(this, options)
       // Clear the session after logout, apparently koa-passport doesn't take
       // care of this itself:
       // https://stackoverflow.com/questions/55818887/koa-passport-logout-is-not-clearing-session

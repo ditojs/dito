@@ -1965,9 +1965,9 @@ __metadata:
     koa-etag: ^4.0.0
     koa-helmet: ^6.1.0
     koa-mount: ^4.0.0
-    koa-passport: ^4.1.4
+    koa-passport: "https://github.com/ditojs/koa-passport#dito"
     koa-response-time: ^2.1.0
-    koa-session: ^6.2.0
+    koa-session: "https://github.com/ditojs/koa-session#dito"
     koa-static: ^5.0.0
     mime-types: ^2.1.35
     multer: ^1.4.5-lts.1
@@ -4587,7 +4587,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"buffer@npm:^5.1.0, buffer@npm:^5.5.0":
+"buffer@npm:^5.5.0":
   version: 5.7.1
   resolution: "buffer@npm:5.7.1"
   dependencies:
@@ -5356,12 +5356,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"crc@npm:^3.4.4":
-  version: 3.8.0
-  resolution: "crc@npm:3.8.0"
-  dependencies:
-    buffer: ^5.1.0
-  checksum: dabbc4eba223b206068b92ca82bb471d583eb6be2384a87f5c3712730cfd6ba4b13a45e8ba3ef62174d5a781a2c5ac5c20bf36cf37bba73926899bd0aa19186f
+"crc@npm:^4.1.1":
+  version: 4.1.1
+  resolution: "crc@npm:4.1.1"
+  peerDependencies:
+    buffer: ">=6.0.3"
+  checksum: b2ab89547bd47ac8bdaadcd362d94aa9ddda2ddfe7267e0b449f62a83739bd8f99e9874e4933652d5653ab5f9703eebba9665d03206d600cef2ded9ff3c5c1e2
   languageName: node
   linkType: hard
 
@@ -8218,7 +8218,7 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"is-type-of@npm:^1.0.0":
+"is-type-of@npm:^1.2.1":
   version: 1.2.1
   resolution: "is-type-of@npm:1.2.1"
   dependencies:
@@ -8648,12 +8648,12 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"koa-passport@npm:^4.1.4":
-  version: 4.1.4
-  resolution: "koa-passport@npm:4.1.4"
+"koa-passport@https://github.com/ditojs/koa-passport#dito":
+  version: 5.0.0
+  resolution: "koa-passport@https://github.com/ditojs/koa-passport.git#commit=9e9bc887579d847ab1f2430468422670eebb99b3"
   dependencies:
-    passport: ^0.4.0
-  checksum: 652627a4980ad637df445fad3cb8247afe35f50376ed181a37ecda9ff6281574b29e65e87e69b58cfae3c0677d3669b121407f31dfdaa629aa11d024cf2f5333
+    passport: ^0.6.0
+  checksum: aa299da91bcc417415dd9266704fef9ba146d7e4b5681b9f8af62ba6c4f841c4e7c0114f6403a87a86adf9fd4f7f2a0c949b3069c993bbce416a1728f5ec18e7
   languageName: node
   linkType: hard
 
@@ -8675,15 +8675,15 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"koa-session@npm:^6.2.0":
+"koa-session@https://github.com/ditojs/koa-session#dito":
   version: 6.2.0
-  resolution: "koa-session@npm:6.2.0"
+  resolution: "koa-session@https://github.com/ditojs/koa-session.git#commit=dc9dff39e85bfb2a0c1b1c35cecc974c041b946e"
   dependencies:
-    crc: ^3.4.4
-    debug: ^3.1.0
-    is-type-of: ^1.0.0
-    uuid: ^3.3.2
-  checksum: bdaa96cb6fe58c37d60ca0502cf86ac747894fa35d48fdc2d34fd0c53fc356a0d21355549856d3a7de5df3c44b177730d5eda65ed4668f13856763e424bdc8d5
+    crc: ^4.1.1
+    debug: ^4.3.4
+    is-type-of: ^1.2.1
+    uuid: ^9.0.0
+  checksum: 2d716892575db981a17aab1ad6d176c5243d3998300f41fe1597860df2cb17758918e3521c74cecf7502b3b73794cd97175ecc1c8a893447f2ceb3c439cbaa7f
   languageName: node
   linkType: hard
 
@@ -10311,13 +10311,14 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"passport@npm:^0.4.0":
-  version: 0.4.1
-  resolution: "passport@npm:0.4.1"
+"passport@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "passport@npm:0.6.0"
   dependencies:
     passport-strategy: 1.x.x
     pause: 0.0.1
-  checksum: 6e0d855e281df8568f4b361d8377995295e59b08391a1b57d18d1404dbaa67af1523c987e9a071d6b0d1550f022637d62f9854bbd31ebc30372f0bfb1acb2567
+    utils-merge: ^1.0.1
+  checksum: ef932ad671d50de34765c7a53cd1e058d8331a82a6df09265a9c6c1168911aee4a7b5215803d0101110ab7f317e096b4954ca7e18fb2c33b9929f0bd17dbe159
   languageName: node
   linkType: hard
 
@@ -12686,12 +12687,10 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"uuid@npm:^3.3.2":
-  version: 3.4.0
-  resolution: "uuid@npm:3.4.0"
-  bin:
-    uuid: ./bin/uuid
-  checksum: 58de2feed61c59060b40f8203c0e4ed7fd6f99d42534a499f1741218a1dd0c129f4aa1de797bcf822c8ea5da7e4137aa3673431a96dae729047f7aca7b27866f
+"utils-merge@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "utils-merge@npm:1.0.1"
+  checksum: c81095493225ecfc28add49c106ca4f09cdf56bc66731aa8dabc2edbbccb1e1bfe2de6a115e5c6a380d3ea166d1636410b62ef216bb07b3feb1cfde1d95d5080
   languageName: node
   linkType: hard
 
