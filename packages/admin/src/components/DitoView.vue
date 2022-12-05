@@ -9,6 +9,7 @@ router-view(
 )
 .dito-view.dito-scroll-parent(
   v-else-if="shouldRender(viewSchema)"
+  :data-resource="sourceSchema.path"
 )
   dito-schema.dito-scroll(
     :schema="viewSchema"

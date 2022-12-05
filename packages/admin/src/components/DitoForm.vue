@@ -1,6 +1,7 @@
 <template lang="pug">
 .dito-form.dito-scroll-parent(
   :class="{ 'dito-form-nested': isNestedRoute }"
+  :data-resource="sourceSchema.path"
 )
   // NOTE: Nested form components are kept alive by using `v-show` instead of
   // `v-if` here, so event handling and other things still work with nested
