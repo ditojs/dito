@@ -64,12 +64,16 @@ export class Application extends Koa {
     const {
       // Pluck keys out of `config.app` to keep them secret
       app: { keys, ...app } = {},
-      log = {},
+      log,
+      logger,
       ...rest
     } = config
     this.config = {
       app,
-      log: log.silent || process.env.DITO_SILENT ? {} : log,
+      log: log === false || log?.silent || process.env.DITO_SILENT
+        ? {}
+        : getOptions(log),
+      logger: merge(defaultLoggerOptions, getOptions(logger)),
       ...rest
     }
     this.keys = keys
@@ -582,39 +586,13 @@ export class Application extends Koa {
   }
 
   setupLogger() {
-    const { err, req, res } = pino.stdSerializers
-    // Only include `id` from the user, to not inadvertently log PII.
-    const user = user => ({ id: user.id })
-    const serializers = { err, req, res, user }
-
-    const { prettyPrint, ...options } = merge({
-      level: 'info',
-      serializers,
-      prettyPrint: {
-        colorize: true,
-        // List of keys to ignore in pretty mode.
-        ignore: 'req,res,durationMs,user,requestId',
-        // SYS to use system time and not UTC.
-        translateTime: 'SYS:HH:MM:ss.l'
-      },
-      // Redact common sensitive headers.
-      redact: [
-        '*.headers["cookie"]',
-        '*.headers["set-cookie"]',
-        '*.headers["authorization"]'
-      ],
-      base: null // no pid,hostname,name
-    }, getOptions(this.config.logger))
-
+    const { prettyPrint, ...options } = this.config.logger
     const transport = prettyPrint
       ? pino.transport({
         target: 'pino-pretty',
         options: prettyPrint
       }) : null
-
-    const logger = pino(options, transport)
-
-    this.logger = logger.child({ name: 'app' })
+    this.logger = pino(options, transport).child({ name: 'app' })
   }
 
   setupKnex() {
@@ -699,11 +677,14 @@ export class Application extends Koa {
     }
     // Use `util.inspect()` instead of Pino's internal error logging for better
     // stack traces and logging of error data.
-    return util.inspect(copy, {
-      compact: false,
-      depth: null,
-      maxArrayLength: null
-    })
+    return this.config.logger.prettyPrint
+      ? util.inspect(copy, {
+        colors: !!this.config.logger.prettyPrint.colorize,
+        compact: false,
+        depth: null,
+        maxArrayLength: null
+      })
+      : copy
   }
 
   logError(error, ctx) {
@@ -1014,4 +995,30 @@ EventEmitter.mixin(Application.prototype)
 
 function getOptions(options) {
   return isObject(options) ? options : {}
+}
+
+const { err, req, res } = pino.stdSerializers
+const defaultLoggerOptions = {
+  level: 'info',
+  serializers: {
+    err,
+    req,
+    res,
+    // Only include `id` from the user, to not inadvertently log PII.
+    user: user => ({ id: user.id })
+  },
+  prettyPrint: {
+    colorize: true,
+    // List of keys to ignore in pretty mode.
+    ignore: 'req,res,durationMs,user,requestId',
+    // SYS to use system time and not UTC.
+    translateTime: 'SYS:HH:MM:ss.l'
+  },
+  // Redact common sensitive headers.
+  redact: [
+    '*.headers["cookie"]',
+    '*.headers["set-cookie"]',
+    '*.headers["authorization"]'
+  ],
+  base: null // no pid,hostname,name
 }

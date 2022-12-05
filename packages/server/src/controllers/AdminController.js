@@ -208,7 +208,7 @@ export class AdminController extends Controller {
                     return 'common'
                   } else {
                     const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
-                    return testModuleIdentifier(module, CORE_DEPENDENCIES)
+                    return testModuleIdentifier(module, coreDependencies)
                       ? 'core'
                       : 'vendor'
                   }
@@ -219,10 +219,10 @@ export class AdminController extends Controller {
         )
       },
       optimizeDeps: {
-        exclude: development ? DITO_PACKAGES : [],
+        exclude: development ? ditoPackages : [],
         include: [
-          ...(development ? [] : DITO_PACKAGES),
-          ...NON_ESM_DEPENDENCIES
+          ...(development ? [] : ditoPackages),
+          ...nonEsmDependencies
         ]
       },
       resolve: {
@@ -240,13 +240,13 @@ export class AdminController extends Controller {
   }
 }
 
-const DITO_PACKAGES = [
+const ditoPackages = [
   '@ditojs/admin',
   '@ditojs/ui',
   '@ditojs/utils'
 ]
 
-const NON_ESM_DEPENDENCIES = [
+const nonEsmDependencies = [
   // All non-es modules need to be explicitly included here, and some of
   // them only work due to the use of `createCommonJsPlugin()`.
   'vue-color',
@@ -256,8 +256,8 @@ const NON_ESM_DEPENDENCIES = [
   'lowlight'
 ]
 
-const CORE_DEPENDENCIES = [
-  ...DITO_PACKAGES,
+const coreDependencies = [
+  ...ditoPackages,
 
   // TODO: Figure out a way to generate this automatically for the current
   // dito-admin dependencies, e.g. similar to
