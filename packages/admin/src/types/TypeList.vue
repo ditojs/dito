@@ -5,7 +5,9 @@
     :class="schema.class"
     :style="schema.style"
   )
-    .dito-navigation
+    .dito-navigation(
+      v-if="scopes || paginate"
+    )
       dito-scopes(
         v-if="scopes"
         :query="query"
