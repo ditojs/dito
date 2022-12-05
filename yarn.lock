@@ -1887,7 +1887,7 @@ __metadata:
     to-pascal-case: ^1.0.0
     type-fest: ^3.3.0
     typescript: ^4.9.3
-    vite: ^3.2.4
+    vite: ^3.2.5
     vite-plugin-vue2: ^2.0.2
     vue: ^2.7.14
     vue-color: ^2.8.1
@@ -1986,7 +1986,7 @@ __metadata:
     type-fest: ^3.3.0
     typescript: ^4.9.3
     uuid: ^9.0.0
-    vite: ^3.2.4
+    vite: ^3.2.5
     vite-plugin-vue2: ^2.0.2
     vue: ^2.7.14
     vue-template-compiler: ^2.7.14
@@ -2008,7 +2008,7 @@ __metadata:
     "@soda/get-current-script": ^1.0.2
     pug: ^3.0.2
     sass: 1.56.1
-    vite: ^3.2.4
+    vite: ^3.2.5
     vite-plugin-vue2: ^2.0.2
     vue-template-compiler: ^2.7.14
   languageName: unknown
@@ -5649,13 +5649,13 @@ __metadata:
     eslint-config-standard: ^17.0.0
     eslint-friendly-formatter: ^4.0.1
     eslint-plugin-import: ^2.26.0
-    eslint-plugin-n: ^15.5.1
+    eslint-plugin-n: ^15.6.0
     eslint-plugin-promise: ^6.1.1
     eslint-plugin-vue: ^9.8.0
     full-icu: ^1.5.0
     husky: ^8.0.2
     lerna: ^6.1.0
-    lint-staged: ^13.0.4
+    lint-staged: ^13.1.0
     vitest: ^0.25.3
     vue-eslint-parser: ^9.1.0
   languageName: unknown
@@ -6409,9 +6409,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-n@npm:^15.5.1":
-  version: 15.5.1
-  resolution: "eslint-plugin-n@npm:15.5.1"
+"eslint-plugin-n@npm:^15.6.0":
+  version: 15.6.0
+  resolution: "eslint-plugin-n@npm:15.6.0"
   dependencies:
     builtins: ^5.0.1
     eslint-plugin-es: ^4.1.0
@@ -6423,7 +6423,7 @@ __metadata:
     semver: ^7.3.8
   peerDependencies:
     eslint: ">=7.0.0"
-  checksum: b97e547fd5429a564c84aace2803d82f4b031e0c4a8896fbe06ab2a116618d08e97435edd9f58e380771adc2ad43d53039e87fb0c91a007425a1ae412708714a
+  checksum: 629dc3e8c83010cf8aced555f4d36f6fceeea65b0c580123ca36e44b7cb6a19a71718c30168a506a569d205b1f961a74ebe9e44148c33ed923116180b04be45b
   languageName: node
   linkType: hard
 
@@ -8810,9 +8810,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^13.0.4":
-  version: 13.0.4
-  resolution: "lint-staged@npm:13.0.4"
+"lint-staged@npm:^13.1.0":
+  version: 13.1.0
+  resolution: "lint-staged@npm:13.1.0"
   dependencies:
     cli-truncate: ^3.1.0
     colorette: ^2.0.19
@@ -8829,7 +8829,7 @@ fsevents@~2.3.2:
     yaml: ^2.1.3
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 4676172df5dc734a7f409ad786a72d39bd2239de8b2e5eb1d99eaa751479f60f7b4ef85c8508698855b51b125a512f395ac6a3c7d2d57de8e8221e0aaaab6f4f
+  checksum: adf20c4ca9285c4a93b06598b970d71b04cfe58a1a4c9006f753b83e02c1c622d1866c32a4f1e7e29a98091c501eac3345f7678af247b4f97d5be88b3d8727c1
   languageName: node
   linkType: hard
 
@@ -12805,9 +12805,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"vite@npm:^3.0.0, vite@npm:^3.2.4":
-  version: 3.2.4
-  resolution: "vite@npm:3.2.4"
+"vite@npm:^3.0.0, vite@npm:^3.2.5":
+  version: 3.2.5
+  resolution: "vite@npm:3.2.5"
   dependencies:
     esbuild: ^0.15.9
     fsevents: ~2.3.2
@@ -12839,7 +12839,7 @@ fsevents@~2.3.2:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 0f3e8f89c15809bd6bd8dec54b04b7c9b87374314d00928035f9d70190b4b220e8206b5d77a1e4097a5019cebf7862df4fbc11fbbb35c4f75f359999123d2c25
+  checksum: ad35b7008c2b62a167d1d1a82f0a0c60fa457733f1969e9eedf0b0077f67a7ac74b4c9477e75a397895150f09b6551f0c17841c5b05c34d9fe302bb0b5dc28a8
   languageName: node
   linkType: hard
 
