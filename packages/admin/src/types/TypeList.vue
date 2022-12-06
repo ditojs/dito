@@ -6,7 +6,7 @@
     :style="schema.style"
   )
     .dito-navigation(
-      v-if="scopes || paginate"
+      v-if="scopes || hasPagination"
     )
       dito-scopes(
         v-if="scopes"
@@ -16,10 +16,10 @@
       // When there's only pagination without scopes, we need a good ol' spacer
       // div, for the layout not to break...
       .dito-spacer(
-        v-else-if="paginate"
+        v-else-if="hasPagination"
       )
       dito-pagination(
-        v-if="paginate"
+        v-if="hasPagination"
         :query="query"
         :limit="paginate"
         :total="total || 0"
@@ -226,6 +226,10 @@ export default TypeComponent.register('list', {
   },
 
   computed: {
+    hasPagination() {
+      return this.paginate && this.total > this.paginate
+    },
+
     hasListButtons() {
       return !!(
         this.buttonSchemas ||

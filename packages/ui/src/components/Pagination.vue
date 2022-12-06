@@ -1,7 +1,5 @@
 <template lang="pug">
-  .dito-pagination(
-    v-if="numPages > 1"
-  )
+  .dito-pagination
     .dito-pagination-total(
       v-if="showTotal"
     )
