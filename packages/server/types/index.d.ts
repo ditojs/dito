@@ -32,6 +32,7 @@ import {
   SetReturnType
 } from 'type-fest'
 import { UserConfig } from 'vite'
+import { Logger } from 'pino'
 
 export type Page<$Model extends Model = Model> = {
   total: number
@@ -402,6 +403,7 @@ export class Application<$Models extends Models = Models> {
   addControllers(controllers: ApplicationControllers, namespace?: string): void
   setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
+  logger: Logger
 }
 export interface Application
   extends Omit<
@@ -1440,6 +1442,8 @@ export class Service {
   initialize(): void
   start(): Promise<void>
   stop(): Promise<void>
+  get logger(): Logger
+  getLogger(ctx: KoaContext): Logger
 }
 export type Services = Record<string, Class<Service> | Service>
 
