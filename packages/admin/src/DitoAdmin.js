@@ -22,9 +22,11 @@ Vue.use(VueRouter)
 Vue.use(VueModal, { dynamic: true })
 Vue.use(VueNotifications)
 
-// Workaround for a strange Vite hot-reloading bug, see:
-// https://github.com/vitejs/vite/issues/7839#issuecomment-1340109679
-import.meta.hot?.on('vite:beforeUpdate', onBeforeViteUpdate)
+if (import.meta.hot) {
+  // Workaround for a strange Vite hot-reloading bug, see:
+  // https://github.com/vitejs/vite/issues/7839#issuecomment-1340109679
+  import.meta.hot.on('vite:beforeUpdate', onBeforeViteUpdate)
+}
 
 export default class DitoAdmin {
   constructor(el, {
