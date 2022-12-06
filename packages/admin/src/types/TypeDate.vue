@@ -15,7 +15,7 @@
 <script>
 import TypeComponent from '../TypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui'
+import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui/src'
 import { isDate } from '@ditojs/utils'
 
 export default TypeComponent.register([

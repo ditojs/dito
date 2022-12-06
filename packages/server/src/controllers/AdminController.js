@@ -8,7 +8,8 @@ import {
 } from '@originjs/vite-plugin-commonjs'
 import {
   createRollupImportsResolver,
-  testModuleIdentifier
+  testModuleIdentifier,
+  getPostCssConfig
 } from '@ditojs/build'
 import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
@@ -217,6 +218,9 @@ export class AdminController extends Controller {
             }
           }
         )
+      },
+      css: {
+        postcss: getPostCssConfig()
       },
       optimizeDeps: {
         exclude: development ? ditoPackages : [],

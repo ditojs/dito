@@ -60,11 +60,6 @@ export function getViteConfig({
       : null,
     css: css
       ? {
-        preprocessorOptions: {
-          sass: {
-            additionalData: `@import './src/styles/_imports.sass'\n`
-          }
-        },
         postcss: getPostCssConfig()
       }
       : null,

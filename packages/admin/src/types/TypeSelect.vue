@@ -42,6 +42,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   // TODO: Move to dito-ui
   $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2)
 

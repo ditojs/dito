@@ -8,6 +8,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-errors
     position: absolute
     z-index: 1

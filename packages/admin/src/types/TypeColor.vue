@@ -35,6 +35,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   $color-swatch-width: $pattern-transparency-size
   $color-swatch-radius: $border-radius - $border-width
   .dito-color
@@ -71,7 +73,7 @@
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from 'vue-color'
 import TypeComponent from '../TypeComponent.js'
-import { Trigger } from '@ditojs/ui'
+import { Trigger } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component

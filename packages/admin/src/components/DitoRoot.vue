@@ -23,7 +23,7 @@
 </template>
 
 <style lang="sass">
-  @import '../styles/style.sass'
+  @import '../styles/style'
 
   .dito-root
     height: 100%

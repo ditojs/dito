@@ -11,6 +11,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-menu
     flex: initial
     font-size: $menu-font-size

@@ -53,6 +53,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-object
     display: flex
     border: $border-style

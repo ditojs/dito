@@ -80,6 +80,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-schema
     box-sizing: border-box
     // To display schema next to panels:
@@ -153,7 +155,7 @@ import {
   isObject, isArray, isFunction, isRegExp,
   parseDataPath, normalizeDataPath, labelize
 } from '@ditojs/utils'
-import { TransitionHeight } from '@ditojs/ui'
+import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath, getParentItem } from '../utils/data.js'

@@ -18,7 +18,7 @@
 
 <script>
 import { clone } from '@ditojs/utils'
-import { addEvents } from '@ditojs/ui'
+import { addEvents } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import { getButtonSchemas } from '../utils/schema.js'
 

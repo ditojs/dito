@@ -27,6 +27,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-panel
     margin-bottom: $content-padding
     .dito-panel-title

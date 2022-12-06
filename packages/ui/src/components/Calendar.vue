@@ -86,6 +86,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-calendar
     min-width: 240px
     box-sizing: border-box

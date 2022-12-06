@@ -30,6 +30,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-date-picker
     min-width: 10em
     .dito-input

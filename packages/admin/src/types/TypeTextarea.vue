@@ -11,6 +11,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-textarea
     display: block
     resize: none

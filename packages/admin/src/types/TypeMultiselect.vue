@@ -39,6 +39,7 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
   @import 'vue-multiselect/dist/vue-multiselect.min.css'
 
   $spinner-width: $select-arrow-width
@@ -227,7 +228,6 @@ import DitoContext from '../DitoContext.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 // @vue/component
 export default TypeComponent.register('multiselect', {

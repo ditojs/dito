@@ -24,7 +24,7 @@
 <script>
 import TypeComponent from '../TypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
-import { InputField } from '@ditojs/ui'
+import { InputField } from '@ditojs/ui/src'
 
 export default TypeComponent.register([
   'number', 'integer'

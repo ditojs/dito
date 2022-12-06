@@ -13,7 +13,9 @@
       "import": "./dist/dito-admin.es.js",
       "require": "./dist/dito-admin.umd.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./src": "./src/index.js",
+    "./imports.sass": "./src/styles/_imports.sass"
   },
   "files": [
     "src/",
@@ -37,6 +39,7 @@
     "not ie_mob > 0"
   ],
   "dependencies": {
+    "@ditojs/build": "^1.19.0",
     "@ditojs/ui": "^1.19.1",
     "@ditojs/utils": "^1.19.0",
     "codeflask": "^1.4.1",

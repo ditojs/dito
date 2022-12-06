@@ -1,5 +1,5 @@
 import { isObject } from '@ditojs/utils'
-import { addEvents } from '@ditojs/ui'
+import { addEvents } from '@ditojs/ui/src'
 
 // @vue/component
 export default {

@@ -3,6 +3,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   // `yarn build:icons` converts the icon SVG files to silent classes inside
   // `src/styles/mixins/_icons.sass`, making them available to all other sass
   // code through `_imports`.

@@ -29,6 +29,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-container
     // Needed for better vertical alignment:
     align-self: stretch

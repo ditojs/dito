@@ -11,7 +11,7 @@
 
 <script>
 import TypeComponent from '../TypeComponent.js'
-import { InputField } from '@ditojs/ui'
+import { InputField } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 

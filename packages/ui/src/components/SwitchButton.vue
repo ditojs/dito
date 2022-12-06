@@ -25,6 +25,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-switch
     // Use whole multiples of `rem` for sizes and `px` margins/padding along
     // with `calc()` to end up with even pixel sizes. `rem` is needed because we

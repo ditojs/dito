@@ -11,6 +11,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   $tab-color-background: $color-lightest
   $tab-color-inactive: $color-light
   $tab-color-active: $color-lightest

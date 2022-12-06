@@ -34,6 +34,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-pane
     display: flex
     position: relative

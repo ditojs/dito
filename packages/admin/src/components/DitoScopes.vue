@@ -15,6 +15,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-scopes
     white-space: nowrap
     display: flex

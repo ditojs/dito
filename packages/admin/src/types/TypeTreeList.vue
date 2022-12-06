@@ -21,6 +21,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-tree-list
     @extend %field
     .dito-tree-panel

@@ -19,6 +19,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-pagination
     display: flex
     .dito-pagination-total

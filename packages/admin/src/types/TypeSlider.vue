@@ -24,6 +24,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-slider
     @extend %input
     display: flex
@@ -41,7 +43,7 @@
 import TypeComponent from '../TypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { InputField } from '@ditojs/ui'
+import { InputField } from '@ditojs/ui/src'
 
 // @vue/component
 export default TypeComponent.register('slider', {

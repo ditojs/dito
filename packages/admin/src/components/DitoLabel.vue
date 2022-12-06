@@ -26,6 +26,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-label
     --label-padding: 0
     // For buttons and chevron to align right:

@@ -11,6 +11,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-switch
     .dito-switch-label
       font-size: $font-size-small
@@ -18,7 +20,7 @@
 
 <script>
 import TypeComponent from '../TypeComponent.js'
-import { SwitchButton } from '@ditojs/ui'
+import { SwitchButton } from '@ditojs/ui/src'
 
 // @vue/component
 export default TypeComponent.register('switch', {

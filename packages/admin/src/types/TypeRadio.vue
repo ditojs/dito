@@ -17,6 +17,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-radio-buttons
     label
       @extend %input-borderless

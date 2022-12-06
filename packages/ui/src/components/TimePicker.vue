@@ -61,6 +61,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-time-picker
     .dito-input
       width: 100%

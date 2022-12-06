@@ -13,6 +13,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-section
     &.dito-section-labelled
       border: $border-style

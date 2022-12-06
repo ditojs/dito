@@ -31,6 +31,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-schema-inlined
     > .dito-schema-content
       padding: 0

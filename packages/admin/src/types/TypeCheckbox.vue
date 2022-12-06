@@ -10,6 +10,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-checkbox
     @extend %input-borderless
 </style>

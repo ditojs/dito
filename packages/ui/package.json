@@ -14,6 +14,7 @@
       "require": "./dist/dito-ui.umd.js"
     },
     "./style.css": "./dist/style.css",
+    "./src": "./src/index.js",
     "./imports.sass": "./src/styles/_imports.sass"
   },
   "files": [
@@ -38,6 +39,7 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
+    "@ditojs/build": "^1.19.0",
     "@ditojs/utils": "^1.19.0",
     "@soda/get-current-script": "^1.0.2"
   },

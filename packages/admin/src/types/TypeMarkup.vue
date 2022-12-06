@@ -27,6 +27,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-markup
     @extend %input
     position: relative
@@ -133,7 +135,7 @@ import {
   // Tools:
   History
 } from 'tiptap-extensions'
-import { Icon } from '@ditojs/ui'
+import { Icon } from '@ditojs/ui/src'
 import {
   isArray, isObject, underscore, hyphenate, debounce
 } from '@ditojs/utils'

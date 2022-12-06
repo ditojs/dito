@@ -1,4 +1,6 @@
 <style lang="sass">
+  @import '../styles/_imports'
+
   $duration: 0.15s
   .height-enter-active,
   .height-leave-active

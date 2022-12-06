@@ -29,6 +29,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-date-time-picker
     .dito-pickers
       @extend %input

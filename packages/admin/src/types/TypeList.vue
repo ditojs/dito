@@ -147,6 +147,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-list
     position: relative
     .dito-navigation

@@ -27,6 +27,8 @@
 </template>
 
 <style lang="sass">
+  @import '../styles/_imports'
+
   .dito-table-head
     +user-select(none)
     tr
