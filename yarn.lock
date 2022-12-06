@@ -1867,12 +1867,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^1.19.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^1.19.1, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@ditojs/build": ^1.19.0
-    "@ditojs/ui": ^1.19.0
+    "@ditojs/ui": ^1.19.1
     "@ditojs/utils": ^1.19.0
     codeflask: ^1.4.1
     filesize: ^10.0.5
@@ -1931,7 +1931,7 @@ __metadata:
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
     "@aws-sdk/client-s3": ^3.223.0
-    "@ditojs/admin": ^1.19.0
+    "@ditojs/admin": ^1.19.1
     "@ditojs/build": ^1.19.0
     "@ditojs/router": ^1.19.0
     "@ditojs/utils": ^1.19.0
@@ -1999,7 +1999,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^1.19.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^1.19.1, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
