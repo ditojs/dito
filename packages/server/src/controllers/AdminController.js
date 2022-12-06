@@ -127,6 +127,7 @@ export class AdminController extends Controller {
 
   async setupViteServer() {
     const config = this.getViteConfig()
+    const development = this.mode === 'development'
     const server = await createServer({
       ...config,
       server: {
@@ -136,12 +137,13 @@ export class AdminController extends Controller {
           // may be running multiple servers in parallel (e.g. e2e and dev).
           port: await getRandomFreePort()
         },
-        watch: {
-          // Watch the @ditojs packages while in dev mode, although they are
-          // inside the node_modules folder.
-          // TODO: This should only really be done if they are symlinked.
-          ignored: ['!**/node_modules/@ditojs/**']
-        }
+        ...(development && {
+          watch: {
+            // Watch the @ditojs packages while in dev mode, although they are
+            // inside the node_modules folder.
+            ignored: ['!**/node_modules/@ditojs/**']
+          }
+        })
       }
     })
 
@@ -193,31 +195,28 @@ export class AdminController extends Controller {
           }
         }],
       build: {
-        ...(development
-          ? {}
-          : {
-            outDir: this.getPath('dist'),
-            assetsDir: '.',
-            emptyOutDir: true,
-            chunkSizeWarningLimit: 1000,
-            rollupOptions: {
-              output: {
-                manualChunks(id) {
-                  if (id.startsWith(views)) {
-                    return 'views'
-                  } else if (id.startsWith(cwd)) {
-                    return 'common'
-                  } else {
-                    const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
-                    return testModuleIdentifier(module, coreDependencies)
-                      ? 'core'
-                      : 'vendor'
-                  }
+        ...(!development && {
+          outDir: this.getPath('dist'),
+          assetsDir: '.',
+          emptyOutDir: true,
+          chunkSizeWarningLimit: 1000,
+          rollupOptions: {
+            output: {
+              manualChunks(id) {
+                if (id.startsWith(views)) {
+                  return 'views'
+                } else if (id.startsWith(cwd)) {
+                  return 'common'
+                } else {
+                  const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
+                  return testModuleIdentifier(module, coreDependencies)
+                    ? 'core'
+                    : 'vendor'
                 }
               }
             }
           }
-        )
+        })
       },
       css: {
         postcss: getPostCssConfig()

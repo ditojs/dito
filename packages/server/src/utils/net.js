@@ -4,7 +4,7 @@ export async function getRandomFreePort() {
   return new Promise((resolve, reject) => {
     const srv = net.createServer()
     srv.listen(0, () => {
-      const port = srv.address().port
+      const { port } = srv.address()
       srv.close(err => {
         if (err) {
           reject(err)

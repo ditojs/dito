@@ -22,6 +22,10 @@ Vue.use(VueRouter)
 Vue.use(VueModal, { dynamic: true })
 Vue.use(VueNotifications)
 
+// Workaround for a strange Vite hot-reloading bug, see:
+// https://github.com/vitejs/vite/issues/7839#issuecomment-1340109679
+import.meta.hot?.on('vite:beforeUpdate', onBeforeViteUpdate)
+
 export default class DitoAdmin {
   constructor(el, {
     // `dito` contains the base and api settings passed from `AdminController`
@@ -273,4 +277,20 @@ function formatQuery(query) {
       []
     )
   ).toString()
+}
+
+function onBeforeViteUpdate(event) {
+  if (event.type === 'update') {
+    // Patch `event.updates` to remove the version query parameter from path,
+    // so that the update gets picked up.
+    // Why the stored `deps` are missing this part of the URL, I cannot say…
+    const updates = []
+    for (const update of event.updates) {
+      updates.push(update, {
+        ...update,
+        acceptedPath: update.acceptedPath.replace(/\?v=[0-9a-f]+&/, '?')
+      })
+    }
+    event.updates = updates
+  }
 }
