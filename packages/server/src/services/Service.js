@@ -2,7 +2,7 @@ import { camelize, hyphenate } from '@ditojs/utils'
 
 export class Service {
   initialized = false
-  #loggerName = null
+  #loggerName
 
   constructor(app, name) {
     this.app = app
