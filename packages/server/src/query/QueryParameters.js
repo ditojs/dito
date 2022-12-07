@@ -50,15 +50,22 @@ QueryParameters.register({
   order(query, key, value) {
     if (value) {
       for (const entry of asArray(value)) {
-        const [propertyName, direction] = entry.trim().split(/\s+/)
+        const [propertyName, direction, nulls] = entry.trim().split(/\s+/)
         if (direction && !['asc', 'desc'].includes(direction)) {
           throw new QueryBuilderError(
             `Invalid order direction: '${direction}'.`
           )
         }
+        if (nulls && !['first', 'last'].includes(nulls)) {
+          throw new QueryBuilderError(
+            `Invalid nulls order: '${null}'.`
+          )
+        }
         const tableRef = query.tableRefFor(query.modelClass())
         const columnName = `${tableRef}.${propertyName}`
-        if (direction) {
+        if (nulls) {
+          query.orderBy(columnName, direction, nulls)
+        } else if (direction) {
           query.orderBy(columnName, direction)
         } else {
           query.orderBy(columnName)
