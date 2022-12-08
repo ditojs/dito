@@ -245,19 +245,11 @@ export default {
         const { response } = error
         if (!callback(error, response)) {
           const data = response?.data
-          if (data && isString(data.type)) {
-            this.notify({
-              type: 'error',
-              title: labelize(data.type),
-              text: data.message || error
-            })
-          } else {
-            this.notify({
-              type: 'error',
-              title: 'Request Error',
-              text: error
-            })
-          }
+          const title = isString(data?.type)
+            ? labelize(data.type)
+            : 'Error'
+          const text = data?.message ?? error
+          this.notify({ type: 'error', title, text })
         }
       }
       this.setLoading(false, loadingOptions)
