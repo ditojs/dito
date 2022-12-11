@@ -32,7 +32,7 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@typescript-eslint/parser": "^5.45.1",
+    "@typescript-eslint/parser": "^5.46.1",
     "c8": "^7.12.0",
     "cross-env": "^7.0.3",
     "eslint": "^8.29.0",
@@ -44,9 +44,9 @@
     "eslint-plugin-vue": "^9.8.0",
     "full-icu": "^1.5.0",
     "husky": "^8.0.2",
-    "lerna": "^6.1.0",
+    "lerna": "^6.2.0",
     "lint-staged": "^13.1.0",
-    "vitest": "^0.25.5",
+    "vitest": "^0.25.8",
     "vue-eslint-parser": "^9.1.0"
   },
   "packageManager": "yarn@3.2.2"
