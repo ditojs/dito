@@ -288,10 +288,11 @@ function onBeforeViteUpdate(event) {
     // Why the stored `deps` are missing this part of the URL, I cannot say…
     const updates = []
     for (const update of event.updates) {
-      updates.push(update, {
-        ...update,
-        acceptedPath: update.acceptedPath.replace(/\?v=[0-9a-f]+&/, '?')
-      })
+      updates.push(update) // Keep the original update.
+      const acceptedPath = update.acceptedPath.replace(/\?v=[0-9a-f]+&/i, '?')
+      if (acceptedPath !== update.acceptedPath) {
+        updates.push({ ...update, acceptedPath })
+      }
     }
     event.updates = updates
   }
