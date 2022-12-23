@@ -108,9 +108,32 @@ export function asFunction<T>(
 /* --------------------------------- object --------------------------------- */
 
 /**
- * Performs a deep (recursive) clone on the supplied value.
+ * Clones the supplied value.
  */
-export function clone<T>(arg: T, iteratee?: (arg: any) => void): T
+export function clone<T>(arg: T, options?: {
+  /**
+   * Wether to clone the value shallowly.
+   *
+   * @default false
+   */
+  shallow?: boolean,
+  /**
+   * Wether to clone all object properties, or only those that are defined
+   * directly on that object, and are not inherited from the object's prototype.
+   *
+   * @default true
+   */
+  enumerable?: boolean,
+  /**
+   * @default `true` if `options.enumerable` is true, `false` otherwise
+   */
+  descriptors?: boolean,
+  transferables?: any[],
+  /**
+   * Optional callback to process the cloned value.
+   */
+  processValue?: <S>(arg: T) => S,
+}): T
 
 /**
  * Determines whether the supplied values can be considered equal through
