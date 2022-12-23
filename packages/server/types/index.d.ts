@@ -389,6 +389,7 @@ export class Application<$Models extends Models = Models> {
   setup(): Promise<void>
   execute(): Promise<void>
   start(): Promise<void>
+  execute(): Promise<void>
   stop(timeout?: number): Promise<void>
   addStorage(storage: StorageConfig): void
   addStorages(storages: StorageConfigs): void
@@ -872,7 +873,11 @@ export class Controller {
 
   configure(): void
   setup(): void
-  initialize(): void
+  /**
+   * To be overridden in sub-classes, if the controller needs to initialize.
+   * @overridable
+   */
+  initialize(): Promise<void>
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
   setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
@@ -1439,7 +1444,11 @@ export type QueryParameterOptionKey = keyof QueryParameterOptions
 export class Service {
   constructor(app: Application<Models>, name?: string)
   setup(config: any): void
-  initialize(): void
+  /**
+   * To be overridden in sub-classes, if the service needs to initialize.
+   * @overridable
+   */
+  initialize(): Promise<void>
   start(): Promise<void>
   stop(): Promise<void>
   get logger(): Logger
