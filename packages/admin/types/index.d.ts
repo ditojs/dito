@@ -1056,31 +1056,16 @@ export type DitoContext<$Item = any> = {
 }
 
 export type View<$Item = any> = {
+  type: 'view',
   resource?: Form['resource']
   clipboard?: Form['clipboard']
-} & (
-  | InputSchema<$Item>
-  | RadioSchema<$Item>
-  | CheckboxSchema<$Item>
-  | CheckboxesSchema<$Item>
-  | ColorSchema<$Item>
-  | SelectSchema<$Item>
-  | MultiselectSchema<$Item>
-  | ListSchema<$Item>
-  | TextareaSchema<$Item>
-  | CodeSchema<$Item>
-  | NumberSchema<$Item>
-  | SliderSchema<$Item>
-  | UploadSchema<$Item>
-  | MarkupSchema<$Item>
-  | ButtonSchema<$Item>
-  | SwitchSchema<$Item>
-  | DateSchema<$Item>
-  | ComponentSchema<$Item>
-  | LabelSchema<$Item>
-  | SectionSchema<$Item>
-  | HiddenSchema<$Item>
-)
+  component?: Component<$Item>
+} | {
+  type: 'view',
+  resource?: Form['resource']
+  clipboard?: Form['clipboard']
+  components?: Components<$Item>
+}
 
 export type Component<$Item = any> =
   | InputSchema<$Item>
@@ -1115,6 +1100,7 @@ export type Buttons<$Item> = Record<
 >
 
 export type Form<$Item = any> = {
+  type: 'form',
   /**
    * The name of the item model produced by the form.
    */
@@ -1133,9 +1119,9 @@ export type Form<$Item = any> = {
    */
   tabs?: Record<
     string,
-    Omit<Form<$Item>, 'tabs'> & {
+    Omit<Form<$Item>, 'tabs' | 'type'> & {
       defaultTab?: OrItemAccessor<$Item, {}, boolean>
-    }
+  }
   >
   // TODO: document components
   components?: Components<$Item>
