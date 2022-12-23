@@ -35,8 +35,8 @@ export type RequestMethod = <T>({
   method: HTTPVerb
   data: any
   /** @deprecated use query instead */
-  params: ConstructorParameters<typeof URLSearchParams>[0]
-  query: ConstructorParameters<typeof URLSearchParams>[0]
+  params: Record<string, string | string[]> | [string, string][]
+  query: Record<string, string | string[]> | [string, string][]
   headers: Record<string, string>
 }) => Promise<RequestMethodResponse<T>>
 
@@ -1035,11 +1035,14 @@ export type DitoContext<$Item = any> = {
     cache?: 'local' | 'global'
     url: string
     /**
-     * @defaultValue `'get'`
+     * @default 'get'
      */
     method?: HTTPVerb
-    params?: any
+    /** @deprecated use query instead */
+    params?: Record<string, string | string[]> | [string, string][]
+    query?: Record<string, string | string[]> | [string, string][]
     data?: any
+    resource?: Resource
   }): Promise<T>
   format: typeof utilsFormat
   navigate(location: string | { path: string }): Promise<boolean>
@@ -1100,7 +1103,8 @@ export type Buttons<$Item> = Record<
 >
 
 export type Form<$Item = any> = {
-  type: 'form',
+  type: 'form'
+
   /**
    * The name of the item model produced by the form.
    */
