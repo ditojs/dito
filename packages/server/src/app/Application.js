@@ -575,7 +575,14 @@ export class Application extends Koa {
         // eslint-disable-next-line new-cap
         options.ContextStore = SessionStore(modelClass)
       }
+      options.autoCommit = false
       this.use(session(options, this))
+      // Manually commit the session after the route has been handled without
+      // errors.
+      this.use(async (ctx, next) => {
+        await next()
+        await ctx.session.manuallyCommit()
+      })
     }
     // 6. passport
     if (app.passport) {
