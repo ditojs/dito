@@ -389,7 +389,6 @@ export class Application<$Models extends Models = Models> {
   setup(): Promise<void>
   execute(): Promise<void>
   start(): Promise<void>
-  execute(): Promise<void>
   stop(timeout?: number): Promise<void>
   addStorage(storage: StorageConfig): void
   addStorages(storages: StorageConfigs): void
