@@ -23,6 +23,7 @@ import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
+import { Logger } from 'pino'
 import {
   Class,
   ConditionalExcept,
@@ -32,7 +33,6 @@ import {
   SetReturnType
 } from 'type-fest'
 import { UserConfig } from 'vite'
-import { Logger } from 'pino'
 
 export type Page<$Model extends Model = Model> = {
   total: number
@@ -870,9 +870,19 @@ export class Controller {
   authorize?: Authorize
   actions?: ControllerActions<this>
 
+  /**
+   * `configure()` is called right after the constructor, but before `setup()`
+   * which sets up the actions and routes, and the custom `async initialize()`.
+   * @overridable
+   */
   configure(): void
+  /* @overridable */
   setup(): void
-  initialize(): void
+  /**
+   * To be overridden in sub-classes, if the controller needs to initialize.
+   * @overridable
+   */
+  initialize(): Promise<void>
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
   setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
@@ -893,6 +903,11 @@ export class Controller {
     authorize: Authorize
   ): void
 
+  /**
+   * To be overridden in sub-classes, if the controller needs to install
+   * middleware.
+   * @overridable
+   */
   compose(): Parameters<typeof mount>[1]
   /** To be overridden by sub-classes. */
   getPath(type: string, path: string): string
@@ -1439,8 +1454,14 @@ export type QueryParameterOptionKey = keyof QueryParameterOptions
 export class Service {
   constructor(app: Application<Models>, name?: string)
   setup(config: any): void
-  initialize(): void
+  /**
+   * To be overridden in sub-classes, if the service needs to initialize.
+   * @overridable
+   */
+  initialize(): Promise<void>
+  /* @overridable */
   start(): Promise<void>
+  /* @overridable */
   stop(): Promise<void>
   get logger(): Logger
   getLogger(ctx: KoaContext): Logger
