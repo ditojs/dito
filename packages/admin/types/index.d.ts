@@ -1093,7 +1093,7 @@ export type Component<$Item = any> =
   | SectionSchema<$Item>
   | HiddenSchema<$Item>
 
-export type Components<$Item = any> = {
+export type Components<$Item = any> =  Component<$Item>[] | {
   [$name: string]: Component<$Item>
 }
 
