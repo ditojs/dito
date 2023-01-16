@@ -29,7 +29,7 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "punycode": "^2.1.1"
+    "punycode": "^2.2.0"
   },
   "devDependencies": {
     "typescript": "^4.9.4"
