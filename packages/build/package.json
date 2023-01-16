@@ -28,7 +28,7 @@
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.7",
-    "postcss": "^8.4.20",
+    "postcss": "^8.4.21",
     "postcss-inset": "^1.0.0"
   }
 }

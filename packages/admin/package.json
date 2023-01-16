@@ -46,7 +46,7 @@
     "filesize": "^10.0.6",
     "filesize-parser": "^1.5.0",
     "nanoid": "^4.0.0",
-    "tinycolor2": "^1.5.1",
+    "tinycolor2": "^1.5.2",
     "tiptap": "^1.32.2",
     "tiptap-commands": "^1.17.1",
     "tiptap-extensions": "^1.35.2",
@@ -66,9 +66,9 @@
     "@ditojs/build": "^1.19.0",
     "pug": "^3.0.2",
     "sass": "1.57.1",
-    "type-fest": "^3.4.0",
+    "type-fest": "^3.5.2",
     "typescript": "^4.9.4",
-    "vite": "^4.0.3",
+    "vite": "^4.0.4",
     "vite-plugin-vue2": "^2.0.3"
   },
   "types": "types"
