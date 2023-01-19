@@ -34,7 +34,7 @@ export class Controller {
   // which sets up the actions and routes, and the custom `async initialize()`.
   // @overridable
   configure() {
-    this._configureEmitter(this.hooks, {
+    this._configureEmitter(this.inheritValues('hooks'), {
       // Support wildcard hooks only on controllers:
       wildcard: true
     })
