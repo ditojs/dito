@@ -46,13 +46,24 @@ export function mergeAsReversedArrays(objects) {
   return res
 }
 
-export function setupPropertyInheritance(object, key, baseValue = null) {
-  // Loops up the inheritance chain of object until the base object is met,
-  // and sets up a related inheritance chain for the given property `key`.
-  // At the end, the resulting value with proper inheritance is returned.
+export function getInheritanceChain(object) {
+  // Returns an array of objects from the inheritance chain of `object`,
+  // starting with the object itself and ending at `Object.prototype`.
+  const chain = []
   let current = object
-  while (current !== Object.prototype) {
-    const parent = Object.getPrototypeOf(current)
+  while (current && current !== Object.prototype) {
+    chain.push(current)
+    current = Object.getPrototypeOf(current)
+  }
+  return chain
+}
+
+export function setupPropertyInheritance(object, key, baseValue = null) {
+  // Loops through the inheritance chain of `object` and sets up a related
+  // inheritance chain for the given property `key`. The resulting value with
+  // proper inheritance is returned.
+  let [current, ...parents] = getInheritanceChain(object)
+  for (const parent of parents) {
     if (current.hasOwnProperty(key)) {
       const value = current[key]
       const parentValue = parent[key] || baseValue

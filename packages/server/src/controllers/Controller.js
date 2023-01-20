@@ -6,8 +6,8 @@ import {
   ResponseError, ControllerError, AuthorizationError
 } from '../errors/index.js'
 import {
-  getOwnProperty, getOwnKeys, getAllKeys, processHandlerParameters,
-  describeFunction, formatJson, deprecate
+  getOwnProperty, getOwnKeys, getAllKeys, getInheritanceChain,
+  processHandlerParameters, describeFunction, formatJson, deprecate
 } from '../utils/index.js'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
@@ -34,7 +34,17 @@ export class Controller {
   // which sets up the actions and routes, and the custom `async initialize()`.
   // @overridable
   configure() {
-    this._configureEmitter(this.inheritValues('hooks'), {
+    const hooks = this.inheritValues('hooks')
+    // Collect callbacks from the full inheritance chain of the hooks, so that
+    // the callbacks from base classes are also run. And reverse the chain so
+    // that the base class callbacks are run first.
+    const chain = getInheritanceChain(hooks).reverse()
+    const events = Object.fromEntries(
+      Object.keys(hooks || {}).map(
+        event => [event, chain.map(hooks => hooks[event]).filter(Boolean)]
+      )
+    )
+    this._configureEmitter(events, {
       // Support wildcard hooks only on controllers:
       wildcard: true
     })
