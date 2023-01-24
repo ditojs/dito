@@ -60,6 +60,22 @@ describe('clone()', () => {
     expect(copy).toStrictEqual({ b: 2 })
   })
 
+  it('should preserve identity', async () => {
+    const object = { a: { b: 1 } }
+    object.c = object.a
+    const copy = clone(object)
+    expect(copy).toEqual(object)
+    expect(copy.c).toBe(copy.a)
+  })
+
+  it('should handle circular references', async () => {
+    const object = { a: { b: 1 } }
+    object.c = object
+    const copy = clone(object)
+    expect(copy).toEqual(object)
+    expect(copy.c).toBe(copy)
+  })
+
   it('should handle non-enumerable properties', async () => {
     const object = { a: 1 }
     Object.defineProperty(object, 'b', { value: 2, enumerable: false })
