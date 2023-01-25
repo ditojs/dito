@@ -1,7 +1,7 @@
 import {
   isArray, isObject, isDate, isRegExp, isFunction, isPromise
 } from '../base/index.js'
-import { pick } from '../object/index.js'
+import { pick } from './pick.js'
 
 export function clone(value, options) {
   const {
