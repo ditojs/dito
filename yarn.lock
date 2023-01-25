@@ -1873,13 +1873,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^1.21.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^1.22.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@ditojs/build": ^1.19.0
-    "@ditojs/ui": ^1.21.0
-    "@ditojs/utils": ^1.21.0
+    "@ditojs/ui": ^1.22.0
+    "@ditojs/utils": ^1.22.0
     codeflask: ^1.4.1
     filesize: ^10.0.6
     filesize-parser: ^1.5.0
@@ -1908,7 +1908,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^1.19.0, @ditojs/build@^1.21.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^1.19.0, @ditojs/build@^1.22.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
@@ -1924,11 +1924,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^1.21.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^1.22.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
-    "@ditojs/utils": ^1.21.0
+    "@ditojs/utils": ^1.22.0
   languageName: unknown
   linkType: soft
 
@@ -1937,10 +1937,10 @@ __metadata:
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
     "@aws-sdk/client-s3": ^3.258.0
-    "@ditojs/admin": ^1.21.0
-    "@ditojs/build": ^1.21.0
-    "@ditojs/router": ^1.21.0
-    "@ditojs/utils": ^1.21.0
+    "@ditojs/admin": ^1.22.0
+    "@ditojs/build": ^1.22.0
+    "@ditojs/router": ^1.22.0
+    "@ditojs/utils": ^1.22.0
     "@koa/cors": ^4.0.0
     "@koa/multer": ^3.0.2
     "@originjs/vite-plugin-commonjs": ^1.0.3
@@ -2005,12 +2005,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^1.21.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^1.22.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
     "@ditojs/build": ^1.19.0
-    "@ditojs/utils": ^1.21.0
+    "@ditojs/utils": ^1.22.0
     "@soda/get-current-script": ^1.0.2
     pug: ^3.0.2
     sass: 1.57.1
@@ -2020,7 +2020,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^1.21.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^1.22.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
