@@ -78,7 +78,7 @@
     "objection": "^3.0.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.252.0",
+    "@aws-sdk/client-s3": "^3.258.0",
     "@types/koa-bodyparser": "^4.3.10",
     "@types/koa-compress": "^4.0.3",
     "@types/koa-logger": "^3.1.2",
@@ -88,9 +88,9 @@
     "@types/koa-static": "^4.0.2",
     "@types/koa__cors": "^3.3.0",
     "@types/node": "^18.11.18",
-    "knex": "^2.4.1",
+    "knex": "^2.4.2",
     "objection": "^3.0.1",
-    "type-fest": "^3.5.2",
+    "type-fest": "^3.5.3",
     "typescript": "^4.9.4"
   },
   "types": "types"
