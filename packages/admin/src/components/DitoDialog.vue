@@ -93,7 +93,7 @@ export default DitoComponent.component('dito-dialog', {
 
   mounted() {
     this.windowEvents = addEvents(window, {
-      keyup: () => {
+      keyup: event => {
         if (this.hasCancel && event.keyCode === 27) {
           this.cancel()
         }
