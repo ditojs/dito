@@ -985,14 +985,14 @@ export class Model extends objection.Model {
         const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
         const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
         // Also handle modified files, which are files where the data property
-        // is changed before update / patch, meanting the file is changed.
+        // is changed before update / patch, meaning the file is changed.
         // NOTE: This will change the content for all the references to it,
         // and thus should only really be used when there's only one reference.
         const modifiedFiles = afterFiles.filter(
           file => file.data && beforeByKey[file.key]
         )
         importedFiles.push(
-          ...await this.app.handleAdddedAndRemovedAssets(
+          ...await this.app.handleAddedAndRemovedAssets(
             storage,
             addedFiles,
             removedFiles,

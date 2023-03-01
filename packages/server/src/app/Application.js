@@ -706,7 +706,7 @@ export class Application extends Koa {
       this.on('error', this.logError)
     }
     // It's ok to call this multiple times, because only the entries in the
-    // registres (storages, services, models, controllers) that weren't
+    // registers (storages, services, models, controllers) that weren't
     // initialized yet will be initialized.
     await this.setup()
     await this.emit('before:start')
@@ -797,7 +797,7 @@ export class Application extends Koa {
     return null
   }
 
-  async handleAdddedAndRemovedAssets(
+  async handleAddedAndRemovedAssets(
     storage,
     addedFiles,
     removedFiles,
@@ -808,7 +808,7 @@ export class Application extends Koa {
         cleanupTimeThreshold = 0
       } = {}
     } = this.config
-    // Only remove unused assets that haven't seen changes for given timeframe.
+    // Only remove unused assets that haven't seen changes for given time frame.
     const timeThreshold = isString(cleanupTimeThreshold)
       ? parseDuration(cleanupTimeThreshold)
       : cleanupTimeThreshold
