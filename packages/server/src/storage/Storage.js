@@ -94,9 +94,9 @@ export class Storage {
     return storageFiles.map(storageFile => this.convertStorageFile(storageFile))
   }
 
-  async addFile(file, buffer) {
-    const storageFile = await this._addFile(file, buffer)
-    file.size = Buffer.byteLength(buffer)
+  async addFile(file, data) {
+    const storageFile = await this._addFile(file, data)
+    file.size = Buffer.byteLength(data)
     file.url = this._getFileUrl(storageFile)
     // TODO: Support `config.readImageSize`, but this can only be done onces
     // there are separate storage instances per model assets config!
@@ -146,7 +146,7 @@ export class Storage {
   _getFileUrl(_file) {}
 
   // @overridable
-  async _addFile(_file, _buffer) {}
+  async _addFile(_file, _data) {}
 
   // @overridable
   async _removeFile(_file) {}

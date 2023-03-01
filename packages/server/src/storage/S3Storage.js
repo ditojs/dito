@@ -107,19 +107,19 @@ export class S3Storage extends Storage {
   }
 
   // @override
-  async _addFile(file, buffer) {
-    const data = await this.s3.putObject({
+  async _addFile(file, data) {
+    const result = await this.s3.putObject({
       Bucket: this.bucket,
       ACL: this.acl,
       Key: file.key,
       ContentType: file.type,
-      Body: buffer
+      Body: data
     })
     // "Convert" `file` to something looking more like a S3 `storageFile`.
     // For now, only the `location` property is of interest:
     return {
       ...file,
-      location: data.Location
+      location: result.Location
     }
   }
 

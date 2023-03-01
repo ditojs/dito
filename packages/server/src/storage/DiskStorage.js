@@ -38,11 +38,11 @@ export class DiskStorage extends Storage {
   }
 
   // @override
-  async _addFile(file, buffer) {
+  async _addFile(file, data) {
     const filePath = this._getFilePath(file)
     const dir = path.dirname(filePath)
     await fs.mkdir(dir, { recursive: true })
-    await fs.writeFile(filePath, buffer)
+    await fs.writeFile(filePath, data)
     return file
   }
 
