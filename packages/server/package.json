@@ -40,7 +40,6 @@
     "eventemitter2": "^6.4.9",
     "file-type": "^18.2.0",
     "image-size": "^1.0.2",
-    "is-svg": "^4.3.2",
     "koa": "^2.14.1",
     "koa-bodyparser": "^4.3.0",
     "koa-compose": "^4.1.0",
