@@ -27,7 +27,7 @@
     "find-up": "^6.3.0",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
-    "minimist": "^1.2.7",
+    "minimist": "^1.2.8",
     "postcss": "^8.4.21",
     "postcss-inset": "^1.0.0"
   }
