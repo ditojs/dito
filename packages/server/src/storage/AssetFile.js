@@ -8,11 +8,13 @@ const SYMBOL_STORAGE = Symbol('storage')
 const SYMBOL_DATA = Symbol('data')
 
 export class AssetFile {
-  constructor(name, data, type) {
+  constructor({ name, data, type, width, height }) {
     this.key = AssetFile.getUniqueKey(name)
     this.name = name
     // Set `type` before `data`, so it can be used as default in `set data`
     this.type = type
+    this.width = width
+    this.height = height
     this.data = data
   }
 
@@ -60,8 +62,8 @@ export class AssetFile {
     return object
   }
 
-  static create({ name, data, type }) {
-    return new AssetFile(name, data, type)
+  static create(options) {
+    return new AssetFile(options)
   }
 
   static getUniqueKey(name) {
