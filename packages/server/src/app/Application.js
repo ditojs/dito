@@ -814,11 +814,13 @@ export class Application extends Koa {
       ? parseDuration(cleanupTimeThreshold)
       : cleanupTimeThreshold
 
-    const importedFiles = []
+    let importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      importedFiles.push(
-        ...await this.addForeignAssets(storage, addedFiles, trx)
+      importedFiles = await this.addForeignAssets(
+        storage,
+        addedFiles,
+        trx
       )
       if (
         addedFiles.length > 0 ||
@@ -914,7 +916,7 @@ export class Application extends Koa {
           // NOTE: No need to add `file` to `importedFiles`, since it's
           // already been imported to the storage before.
         }
-      })
+      }, { concurrency: storage.concurrency })
     }
     return importedFiles
   }
