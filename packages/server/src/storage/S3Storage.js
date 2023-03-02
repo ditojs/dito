@@ -47,6 +47,7 @@ export class S3Storage extends Storage {
           let data = null
 
           const done = type => {
+            stream.off('data', onData)
             const outStream = new PassThrough()
             outStream.write(data)
             stream.pipe(outStream)
@@ -58,16 +59,13 @@ export class S3Storage extends Storage {
               // 2. Try reading the mimetype from the first chunk.
               const type = getFileTypeFromBuffer(chunk)
               if (type) {
-                stream.off('data', onData)
                 done(type)
               } else {
                 // 3. If that fails, keep collecting all chunks and determine
                 //    the mimetype using the full data.
-                stream.once('end', () => {
-                  done(
-                    getFileTypeFromBuffer(data) || 'application/octet-stream'
-                  )
-                })
+                stream.once('end', () => done(
+                  getFileTypeFromBuffer(data) || 'application/octet-stream'
+                ))
               }
             }
             data = data ? Buffer.concat([data, chunk]) : chunk
