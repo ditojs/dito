@@ -1,4 +1,4 @@
-// Vitest Snapshot v1
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`index > exports all symbols 1`] = `
 {
@@ -62,7 +62,9 @@ exports[`index > exports all symbols 1`] = `
   "isString": [Function],
   "isUrl": [Function],
   "labelize": [Function],
+  "mapConcurrently": [Function],
   "mapKeys": [Function],
+  "mapSequentially": [Function],
   "mapValues": [Function],
   "merge": [Function],
   "mixin": [Function],
