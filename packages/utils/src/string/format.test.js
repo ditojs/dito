@@ -19,7 +19,7 @@ describe('format()', () => {
   it('should use the en-US locale by default', () => {
     expect(format(integer)).toBe('123,456,789')
     expect(format(float)).toBe('123,456.789')
-    expect(format(date)).toBe('June 9, 2012 at 10:45:30 PM')
+    expect(format(date)).toBe('June 9, 2012 at 10:45:30 PM')
   })
 
   it('should format numbers with different locale and default options', () => {
@@ -188,7 +188,7 @@ describe('format()', () => {
     ).toBe('May 24, 2016')
     expect(
       format('2016-05-24T15:54:14.876Z', { date: true, time: true })
-    ).toBe('May 24, 2016 at 05:54:14 PM')
+    ).toBe('May 24, 2016 at 05:54:14 PM')
     expect(format('123456789', { number: true })).toBe('123,456,789')
     expect(format('123456.789', { number: true })).toBe('123,456.789')
     expect(format('Hello World')).toBe('Hello World')
