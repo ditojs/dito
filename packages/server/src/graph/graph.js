@@ -1,4 +1,4 @@
-import { isObject, isArray, asArray } from '@ditojs/utils'
+import { isObject, isArray, asArray, mapConcurrently } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { collectExpressionPaths, expressionPathToString } from './expression.js'
 
@@ -212,8 +212,9 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
     // Load all found models by ids asynchronously, within provided transaction.
     // NOTE: Using the same transaction means that all involved tables need to
     // be in the same database.
-    await Promise.all(
-      groups.map(async ({ modelClass, modify, expr, ids, modelsById }) => {
+    await mapConcurrently(
+      groups,
+      async ({ modelClass, modify, expr, ids, modelsById }) => {
         const query = modelClass.query(trx).findByIds(ids).modify(modify)
         if (expr) {
           // TODO: Make algorithm configurable through options.
@@ -224,7 +225,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
         for (const model of models) {
           modelsById[model.$id()] = model
         }
-      })
+      }
     )
 
     // Finally populate the targets with the loaded models.

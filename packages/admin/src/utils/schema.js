@@ -4,7 +4,8 @@ import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
 import { appendDataPath, isTemporaryId } from './data.js'
 import {
-  isObject, isString, isArray, isFunction, isPromise, clone, camelize, isModule
+  isObject, isString, isArray, isFunction, isPromise, clone, camelize, isModule,
+  mapConcurrently
 } from '@ditojs/utils'
 
 const typeComponents = {}
@@ -130,19 +131,25 @@ export async function resolveSchemas(
   if (isArray(schemas)) {
     // Translate an array of dynamic import, each importing one named schema
     // module to an object with named entries.
-    schemas = Object.fromEntries(await Promise.all(schemas.map(
-      async item => {
-        const schema = await resolveItem(item, true)
-        return [schema.name, schema]
-      }
-    )))
+    schemas = Object.fromEntries(
+      await mapConcurrently(
+        schemas,
+        async item => {
+          const schema = await resolveItem(item, true)
+          return [schema.name, schema]
+        }
+      )
+    )
   } else if (isObject(schemas)) {
-    schemas = Object.fromEntries(await Promise.all(Object.entries(schemas).map(
-      async ([key, item]) => {
-        const schema = await resolveItem(item, true)
-        return [key, schema]
-      }
-    )))
+    schemas = Object.fromEntries(
+      await mapConcurrently(
+        Object.entries(schemas),
+        async ([key, item]) => {
+          const schema = await resolveItem(item, true)
+          return [key, schema]
+        }
+      )
+    )
   }
   return schemas
 }

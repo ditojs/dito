@@ -22,7 +22,8 @@ import { Model, knexSnakeCaseMappers, ref } from 'objection'
 import Router from '@ditojs/router'
 import {
   isArray, isObject, isString, asArray, isPlainObject, isModule,
-  hyphenate, clone, merge, parseDataPath, normalizeDataPath, toPromiseCallback
+  hyphenate, clone, merge, parseDataPath, normalizeDataPath, toPromiseCallback,
+  mapConcurrently
 } from '@ditojs/utils'
 import SessionStore from './SessionStore.js'
 import { Validator } from './Validator.js'
@@ -854,24 +855,23 @@ export class Application extends Koa {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
-      await Promise.all(
-        files.map(async file => {
-          const asset = await AssetModel.query(trx).findOne('key', file.key)
-          if (!asset) {
-            if (file.data || file.url) {
-              let { data } = file
-              if (!data) {
-                const { url } = file
-                if (!storage.isImportSourceAllowed(url)) {
-                  throw new AssetError(
+      await mapConcurrently(files, async file => {
+        const asset = await AssetModel.query(trx).findOne('key', file.key)
+        if (!asset) {
+          if (file.data || file.url) {
+            let { data } = file
+            if (!data) {
+              const { url } = file
+              if (!storage.isImportSourceAllowed(url)) {
+                throw new AssetError(
                     `Unable to import asset from foreign source: '${
                       file.name
                     }' ('${
                       url
                     }'): The source needs to be explicitly allowed.`
-                  )
-                }
-                console.info(
+                )
+              }
+              console.info(
                   `${
                     pico.red('INFO:')
                   } Asset ${
@@ -881,41 +881,40 @@ export class Application extends Koa {
                   } and adding to storage ${
                     pico.green(`'${storage.name}'`)
                   }...`
-                )
-                if (url.startsWith('file://')) {
-                  const filepath = path.resolve(url.substring(7))
-                  data = await fs.readFile(filepath)
-                } else {
-                  const response = await fetch(url)
-                  const buffer = await response.arrayBuffer()
-                  data = new DataView(buffer)
-                }
+              )
+              if (url.startsWith('file://')) {
+                const filepath = path.resolve(url.substring(7))
+                data = await fs.readFile(filepath)
+              } else {
+                const response = await fetch(url)
+                const buffer = await response.arrayBuffer()
+                data = new DataView(buffer)
               }
-              const importedFile = await storage.addFile(file, data)
-              await this.createAssets(storage, [importedFile], 0, trx)
-              // Merge back the changed file properties into the actual files
-              // object, so that the data from the static model hook can be used
-              // directly for the actual running query.
-              Object.assign(file, importedFile)
-              importedFiles.push(importedFile)
-            } else {
-              throw new AssetError(
+            }
+            const importedFile = await storage.addFile(file, data)
+            await this.createAssets(storage, [importedFile], 0, trx)
+            // Merge back the changed file properties into the actual files
+            // object, so that the data from the static model hook can be used
+            // directly for the actual running query.
+            Object.assign(file, importedFile)
+            importedFiles.push(importedFile)
+          } else {
+            throw new AssetError(
                 `Unable to import asset from foreign source: '${
                   file.name
                 }' ('${
                   file.key
                 }')`
-              )
-            }
-          } else {
-            // Asset is from a foreign source, but was already imported and can
-            // be reused. See above for an explanation of this merge.
-            Object.assign(file, asset.file)
-            // NOTE: No need to add `file` to `importedFiles`, since it's
-            // already been imported to the storage before.
+            )
           }
-        })
-      )
+        } else {
+          // Asset is from a foreign source, but was already imported and can
+          // be reused. See above for an explanation of this merge.
+          Object.assign(file, asset.file)
+          // NOTE: No need to add `file` to `importedFiles`, since it's
+          // already been imported to the storage before.
+        }
+      })
     }
     return importedFiles
   }
@@ -924,29 +923,27 @@ export class Application extends Koa {
     const modifiedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      await Promise.all(
-        files.map(async file => {
-          if (file.data) {
-            const asset = await AssetModel.query(trx).findOne('key', file.key)
-            if (asset) {
-              const changedFile = await storage.addFile(file, file.data)
-              // Merge back the changed file properties into the actual files
-              // object, so that the data from the static model hook can be used
-              // directly for the actual running query.
-              Object.assign(file, changedFile)
-              modifiedFiles.push(changedFile)
-            } else {
-              throw new AssetError(
+      await mapConcurrently(files, async file => {
+        if (file.data) {
+          const asset = await AssetModel.query(trx).findOne('key', file.key)
+          if (asset) {
+            const changedFile = await storage.addFile(file, file.data)
+            // Merge back the changed file properties into the actual files
+            // object, so that the data from the static model hook can be used
+            // directly for the actual running query.
+            Object.assign(file, changedFile)
+            modifiedFiles.push(changedFile)
+          } else {
+            throw new AssetError(
                 `Unable to update modified asset from memory source: '${
                   file.name
                 }' ('${
                   file.key
                 }')`
-              )
-            }
+            )
           }
-        })
-      )
+        }
+      })
     }
     return modifiedFiles
   }
@@ -967,8 +964,9 @@ export class Application extends Koa {
           // .e.g. when `config.assets.cleanupTimeThreshold = 0`
           .andWhere('updatedAt', '>', ref('createdAt'))
         if (orphanedAssets.length > 0) {
-          const orphanedKeys = await Promise.all(
-            orphanedAssets.map(async asset => {
+          const orphanedKeys = await mapConcurrently(
+            orphanedAssets,
+            async asset => {
               try {
                 await this.getStorage(asset.storage).removeFile(asset.file)
               } catch (error) {
@@ -976,7 +974,7 @@ export class Application extends Koa {
                 asset.error = error
               }
               return asset.key
-            })
+            }
           )
           await AssetModel
             .query(trx)

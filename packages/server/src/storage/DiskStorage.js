@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import multer from '@koa/multer'
+import { mapConcurrently } from '@ditojs/utils'
 import { Storage } from './Storage.js'
 
 export class DiskStorage extends Storage {
@@ -82,12 +83,14 @@ export class DiskStorage extends Storage {
 
     const files = []
     const list1 = await readDir()
-    await Promise.all(
-      list1.map(async level1 => {
+    await mapConcurrently(
+      list1,
+      async level1 => {
         if (level1.isDirectory() && level1.name.length === 1) {
           const list2 = await readDir(level1.name)
-          await Promise.all(
-            list2.map(async level2 => {
+          await mapConcurrently(
+            list2,
+            async level2 => {
               if (level2.isDirectory() && level2.name.length === 1) {
                 const nestedFolder = this._getPath(level1.name, level2.name)
                 for (const file of await fs.readdir(nestedFolder)) {
@@ -96,10 +99,10 @@ export class DiskStorage extends Storage {
                   }
                 }
               }
-            })
+            }
           )
         }
-      })
+      }
     )
     return files
   }

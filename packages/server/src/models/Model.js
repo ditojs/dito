@@ -1,7 +1,8 @@
 import objection from 'objection'
 import {
   isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
-  parseDataPath, normalizeDataPath, getValueAtDataPath
+  parseDataPath, normalizeDataPath, getValueAtDataPath,
+  mapConcurrently
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { EventEmitter, KnexHelper } from '../lib/index.js'
@@ -958,10 +959,9 @@ export class Model extends objection.Model {
                 importedFiles.map(file => `'${file.name}'`)
               }`
             )
-            await Promise.all(
-              importedFiles.map(
-                file => file.storage.removeFile(file)
-              )
+            await mapConcurrently(
+              importedFiles,
+              file => file.storage.removeFile(file)
             )
           }
           if (modifiedFiles.length > 0) {
