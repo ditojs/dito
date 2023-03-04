@@ -1,14 +1,15 @@
 import { getCommonOffset } from '@ditojs/utils'
 
 // Node Types:
-const TYPE_STATIC = 0
-const TYPE_PARAM = 1
-const TYPE_MATCH_ANY = 2
+const TYPE_STATIC = 0 //       /static/patch
+const TYPE_PARAM = 1 //        /prefix/:param/suffix
+const TYPE_PLACEHOLDER = 2 //  /prefix/*/suffix  (a.k.a shallow wildcard)
+const TYPE_MATCH_ANY = 3 //    /prefix/**/suffix (a.k.a deep wildcard)
 
 // Char Codes
-const CHAR_PARAM = ':'.charCodeAt(0)
-const CHAR_MATCH_ANY = '*'.charCodeAt(0)
-const CHAR_SLASH = '/'.charCodeAt(0)
+const CHAR_SLASH = '/'[0]
+const CHAR_PARAM = ':'[0]
+const CHAR_WILDCARD = '*'[0]
 
 export default class Node {
   constructor(...args) {
@@ -16,124 +17,117 @@ export default class Node {
   }
 
   initialize(
-    prefix = '/',
     type = TYPE_STATIC,
+    prefix = '/',
     children = [],
-    handler = null,
-    paramNames = null
+    parameters = null,
+    handler = null
   ) {
-    this.label = prefix.charCodeAt(0)
-    this.prefix = prefix
     this.type = type
+    this.label = prefix[0]
+    this.prefix = prefix
     this.children = children
+    this.parameters = parameters
     this.handler = handler
-    this.paramNames = paramNames
-    this.paramName = null
+    this.paramKey = null
+    this.hasMatchAny = false
+  }
+
+  setup(parameters, handler) {
+    this.parameters = parameters
+    this.handler = handler
+    if (this.type === TYPE_MATCH_ANY) {
+      parameters.setupPathPattern(this.prefix)
+    }
   }
 
   addChild(child) {
     this.children.push(child)
-  }
-
-  findChild(label, type) {
-    for (const child of this.children) {
-      if (child.label === label && child.type === type) {
-        return child
-      }
-    }
-  }
-
-  findChildWithLabel(label) {
-    for (const child of this.children) {
-      if (child.label === label) {
-        return child
-      }
-    }
-  }
-
-  findChildWithType(type) {
-    for (const child of this.children) {
-      if (child.type === type) {
-        return child
-      }
-    }
+    this.hasMatchAny ||= child.type === TYPE_MATCH_ANY
   }
 
   add(path, handler) {
-    const paramNames = []
+    const parameters = new Parameters()
     for (let pos = 0, length = path.length; pos < length; pos++) {
-      const ch = path.charCodeAt(pos)
-      if (ch === CHAR_PARAM) {
-        this.insert(path.slice(0, pos), TYPE_STATIC)
-        pos++ // Skip colon.
+      const ch = path[pos]
+      if (ch === CHAR_WILDCARD && path[pos + 1] === CHAR_WILDCARD) {
+        // Deep wildcard (**): matches any path, with a optional suffix:
+        this.insert(TYPE_STATIC, path.slice(0, pos))
+        pos += 2 // Skip '**'.
+        this.insert(TYPE_MATCH_ANY, path, parameters, handler)
+        return
+      } else if (ch === CHAR_PARAM || ch === CHAR_WILDCARD) {
+        // Param (:param) or shallow wildcard (*):
+        const isWildcard = ch === CHAR_WILDCARD
+        const type = isWildcard ? TYPE_PLACEHOLDER : TYPE_PARAM
+        this.insert(TYPE_STATIC, path.slice(0, pos))
+        pos++ // Skip colon or wildcard.
         const start = pos
         // Move pos to the next occurrence of the slash or the end:
         pos += path.slice(pos).match(/^([^/]*)/)[1].length
-
-        paramNames.push(path.slice(start, pos))
+        parameters.add(
+          isWildcard ? parameters.getPlaceholderKey() : path.slice(start, pos)
+        )
         // Chop out param name from path, but keep colon.
         path = path.slice(0, start) + path.slice(pos)
         length = path.length // Update length after changing path.
 
         if (start === length) {
-          return this.insert(path, TYPE_PARAM, paramNames, handler)
+          this.insert(type, path, parameters, handler)
+          return
         }
         pos = start
-        this.insert(path.slice(0, pos), TYPE_PARAM, paramNames)
-      } else if (ch === CHAR_MATCH_ANY) {
-        this.insert(path.slice(0, pos), TYPE_STATIC)
-        paramNames.push('*')
-        return this.insert(path, TYPE_MATCH_ANY, paramNames, handler)
+        this.insert(type, path.slice(0, pos), parameters)
       }
     }
-    this.insert(path, TYPE_STATIC, paramNames, handler)
+    this.insert(TYPE_STATIC, path, parameters, handler)
   }
 
-  insert(path, type, paramNames, handler) {
+  insert(type, prefix, parameters = null, handler = null) {
     let current = this
     while (true) {
       // Find the position where the path and the node's prefix start diverging.
-      const pos = getCommonOffset(current.prefix, path)
-      const { prefix } = current
-      if (pos < prefix.length) {
+      const curPrefix = current.prefix
+      const pos = getCommonOffset(curPrefix, prefix)
+      if (pos < curPrefix.length) {
         // Split node
         const node = new Node(
-          prefix.slice(pos),
           current.type,
+          curPrefix.slice(pos),
           current.children,
-          current.handler,
-          current.paramNames
+          current.parameters,
+          current.handler
         )
-        // Reset parent node and add new node as child to it:
-        current.initialize(prefix.slice(0, pos))
+        // Reset parent node to a static and add new node as child to it:
+        current.initialize(TYPE_STATIC, curPrefix.slice(0, pos))
         current.addChild(node)
-        if (pos < path.length) {
+        if (pos < prefix.length) {
           // Create child node
-          const node = new Node(path.slice(pos), type)
+          const node = new Node(type, prefix.slice(pos))
           current.addChild(node)
-          current = node // Switch to child to set handler and paramNames
+          current = node // Switch to child to set handler and parameters
         }
-      } else if (pos < path.length) {
-        path = path.slice(pos)
-        const child = current.findChildWithLabel(path.charCodeAt(0))
-        if (child !== undefined) {
+      } else if (pos < prefix.length) {
+        prefix = prefix.slice(pos)
+        const label = prefix[0]
+        const child = current.children.find(child => child.label === label)
+        if (child !== undefined && child.type !== TYPE_MATCH_ANY) {
           // Go deeper
           current = child
           continue
         }
         // Create child node
-        const node = new Node(path, type)
+        const node = new Node(type, prefix)
         current.addChild(node)
-        current = node // Switch to child to set handler and paramNames
+        current = node // Switch to child to set handler and parameters
       }
       if (handler) {
-        current.handler = handler
-        current.paramNames = paramNames
+        current.setup(parameters, handler)
       }
-      if (paramNames) {
+      if (parameters) {
         // Remember the last entry from the list of param names that keeps
         // growing during parsing as the name of the current node.
-        current.paramName = paramNames[paramNames.length - 1]
+        current.paramKey = parameters.getLastKey()
       }
       break
     }
@@ -145,12 +139,7 @@ export default class Node {
       // It's a match!
       const { handler } = this
       if (handler) {
-        // Convert paramNames and values to params.
-        const params = {}
-        let i = 0
-        for (const name of this.paramNames) {
-          params[name] = paramValues[i++]
-        }
+        const params = this.parameters.getObject(paramValues)
         // Support HTTP status on found entries.
         return { handler, params, status: 200 }
       }
@@ -162,7 +151,7 @@ export default class Node {
     const fullMatch = pos === prefixLength
     if (fullMatch) {
       path = path.slice(prefixLength)
-    } else if (this.type !== TYPE_PARAM) {
+    } else if (this.type !== TYPE_PARAM && this.type !== TYPE_PLACEHOLDER) {
       // If the path doesn't fully match the prefix, we only need to look
       // further on param nodes, which can have overlapping static children.
       return null
@@ -171,7 +160,10 @@ export default class Node {
     // Search order: Static > Param > Match-any
 
     // Static node
-    const staticChild = this.findChild(path.charCodeAt(0), TYPE_STATIC)
+    const label = path[0]
+    const staticChild = this.children.find(
+      child => child.type === TYPE_STATIC && child.label === label
+    )
     if (staticChild) {
       const result = staticChild.find(path, paramValues)
       if (result) {
@@ -180,17 +172,17 @@ export default class Node {
     }
 
     // Node not found
-    if (!fullMatch) {
-      return null
-    }
+    if (!fullMatch) return null
 
-    // Param node
-    const paramChild = this.findChildWithType(TYPE_PARAM)
+    // Param / placeholder node
+    const paramChild = this.children.find(
+      child => child.type === TYPE_PARAM || child.type === TYPE_PLACEHOLDER
+    )
     if (paramChild) {
       // Find the position of the next slash:
       let pos = 0
       const max = path.length
-      while (pos < max && path.charCodeAt(pos) !== CHAR_SLASH) {
+      while (pos < max && path[pos] !== CHAR_SLASH) {
         pos++
       }
       paramValues.push(path.slice(0, pos))
@@ -201,11 +193,15 @@ export default class Node {
       paramValues.pop()
     }
 
-    // Match-any node
-    const matchAnyChild = this.findChildWithType(TYPE_MATCH_ANY)
-    if (matchAnyChild) {
-      paramValues.push(path)
-      return matchAnyChild.find('', paramValues) // '' == End
+    // Match-any nodes
+    if (this.hasMatchAny) {
+      for (const child of this.children) {
+        const match = child.parameters?.matchPathPattern(path)
+        if (match) {
+          paramValues.push(...Object.values(match.groups))
+          return child.find('', paramValues) // '' == End
+        }
+      }
     }
 
     return null
@@ -219,7 +215,7 @@ export default class Node {
     const lines = [
       `${format(prefix, tail, '└── ', '├── ')}${
         this.type === TYPE_PARAM
-          ? `${this.prefix}${this.paramName}`
+          ? `${this.prefix}${this.paramKey}`
           : this.prefix
       }${
         handler ? ` ${handler}` : ''
@@ -233,5 +229,80 @@ export default class Node {
       lines.push(children[i].toString(str, i === l, false))
     }
     return lines.join('\n')
+  }
+}
+
+class Parameters {
+  constructor() {
+    this.keys = []
+    this.pathPattern = null
+    this.matchAnyIndex = 0
+    this.placeholderIndex = 0
+  }
+
+  add(...keys) {
+    this.keys.push(...keys)
+  }
+
+  getMatchAnyKey() {
+    return `$$${this.matchAnyIndex++}`
+  }
+
+  getPlaceholderKey() {
+    return `$${this.placeholderIndex++}`
+  }
+
+  getLastKey() {
+    return this.keys[this.keys.length - 1]
+  }
+
+  matchPathPattern(path) {
+    return this.pathPattern?.exec(path)
+  }
+
+  setupPathPattern(path) {
+    // Replace all '**' with '.+?' and all '*' with '[^/]+'.
+    // Use named groups to merge multiple ** or * into one.
+    const pattern = []
+    const keys = []
+    for (const token of path.split('/')) {
+      if (token === '**') {
+        const key = this.getMatchAnyKey()
+        pattern.push(`(?<${key}>.+?)`)
+        keys.push(key)
+      } else if (token === '*') {
+        const key = this.getPlaceholderKey()
+        pattern.push(`(?<${key}>[^/]+)`)
+        keys.push(key)
+      } else if (token.startsWith(':')) {
+        const key = token.slice(1)
+        pattern.push(`(?<${key}>[^/]+)`)
+        keys.push(key)
+      } else {
+        pattern.push(token)
+      }
+    }
+    this.pathPattern = new RegExp(`^${pattern.join('/')}$`)
+    this.add(...keys)
+  }
+
+  getObject(values) {
+    // Convert parameters and values to a params object, but rename path pattern
+    // groups back to param names
+    const params = {}
+    let i = 0
+    for (const key of this.keys) {
+      const name = key.startsWith('$$')
+        ? this.matchAnyIndex === 1
+          ? '$$'
+          : key
+        : key.startsWith('$')
+          ? this.placeholderIndex === 1
+            ? '$'
+            : key
+          : key
+      params[name] = values[i++]
+    }
+    return params
   }
 }

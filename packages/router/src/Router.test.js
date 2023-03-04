@@ -121,13 +121,13 @@ describe('Router', () => {
     expect(result.allowed).toStrictEqual(['GET', 'PUT'])
   })
 
-  it('handles match-any nodes (catch-all / wildcard)', () => {
-    router.add('GET', '/static/*', handler)
+  it('handles match-any nodes (catch-all)', () => {
+    router.add('GET', '/static/**', handler)
 
     expect(router.toString()).toBe(deindent`
       / children=1
       └── static/ children=1
-          └── * handler() children=0
+          └── ** handler() children=0
     `.trim())
 
     result = router.find('GET', '/static')
@@ -139,13 +139,109 @@ describe('Router', () => {
     result = router.find('GET', '/static/js')
     expect(result.handler).toBe(handler)
     expect(result.params).toEqual({
-      '*': 'js'
+      $$: 'js'
     })
 
     result = router.find('GET', '/static/css')
     expect(result.handler).toBe(handler)
     expect(result.params).toEqual({
-      '*': 'css'
+      $$: 'css'
+    })
+  })
+
+  it('handles match-any nodes (wildcard)', () => {
+    router.add('GET', '/prefix/*/suffix', handler)
+
+    expect(router.toString()).toBe(deindent`
+      / children=1
+      └── prefix/ children=1
+          └── * children=1
+              └── /suffix handler() children=0
+    `.trim())
+
+    result = router.find('GET', '/prefix')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/prefix/*')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/prefix/hello/there')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/prefix/hello/suffix')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $: 'hello'
+    })
+  })
+
+  it('handles match-any nodes with suffixes', () => {
+    router.add('GET', '/static/**/suffix', handler)
+    router.add('GET', '/static/**/suffix/**/more', handler)
+    router.add('GET', '/static/**/suffix/*/1/:param/2', handler)
+    router.add('GET', '/static/**/suffix/*/1/:param/2/**/end', handler)
+
+    expect(router.toString()).toBe(deindent`
+      / children=1
+      └── static/ children=4
+          ├── **/suffix handler() children=0
+          ├── **/suffix/**/more handler() children=0
+          ├── **/suffix/*/1/:param/2 handler() children=0
+          └── **/suffix/*/1/:param/2/**/end handler() children=0
+    `.trim())
+
+    result = router.find('GET', '/static')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/static/js')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/static/one/prefix')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/static/one/two/prefix')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/static/one/suffix')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $$: 'one'
+    })
+
+    result = router.find('GET', '/static/one/two/suffix')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $$: 'one/two'
+    })
+
+    result = router.find('GET', '/static/one/two/suffix/three/four')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', '/static/one/two/suffix/three/four/more')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $$0: 'one/two',
+      $$1: 'three/four'
+    })
+
+    result = router.find('GET', '/static/one/two/suffix/three/1/bla/2')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $$: 'one/two',
+      $: 'three',
+      param: 'bla'
+    })
+
+    result = router.find('GET', '/static/one/two/suffix/three/1/bla/3')
+    expect(result.handler).toBeUndefined()
+
+    result = router.find('GET', `/static/one/two/suffix/three/1/bla/2/what/ever/end`)
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({
+      $: 'three',
+      param: 'bla',
+      $$0: 'one/two',
+      $$1: 'what/ever'
     })
   })
 
@@ -164,7 +260,7 @@ describe('Router', () => {
       ['/geocoder/exchange/:item', 'exchangeItemGeocoder'],
       ['/geocoder/:id/echo', 'echoGeocoder'],
       ['/geocoder/:action', 'actionGeocoder'],
-      ['/geocoder/*', 'anyGeocoder']
+      ['/geocoder/**', 'anyGeocoder']
     ])
 
     expect(router.toString()).toBe(deindent`
@@ -185,7 +281,7 @@ describe('Router', () => {
               │           └── :item exchangeItemGeocoder() children=0
               ├── :action actionGeocoder() children=1
               │   └── /echo echoGeocoder() children=0
-              └── * anyGeocoder() children=0
+              └── ** anyGeocoder() children=0
     `.trim())
     result = router.find('GET', '')
     expect(result.handler).not.toBeUndefined()
@@ -203,12 +299,12 @@ describe('Router', () => {
 
     result = router.find('GET', '/geocoder/delete/any')
     expect(result.handler.name).toBe('anyGeocoder')
-    expect(result.params).toEqual({ '*': 'delete/any' })
+    expect(result.params).toEqual({ $$: 'delete/any' })
 
     result = router.find('GET', '/geocoder/any/action')
     expect(result.handler).not.toBeUndefined()
     expect(result.handler.name).toBe('anyGeocoder')
-    expect(result.params).toEqual({ '*': 'any/action' })
+    expect(result.params).toEqual({ $$: 'any/action' })
 
     result = router.find('GET', '/geocoder/exchange/trekjs')
     expect(result.handler).not.toBeUndefined()
@@ -270,14 +366,15 @@ describe('Router', () => {
     createRoutes(router, [
       ['/users', 'users'],
       ['/users/new', 'newUser'],
-      ['/users/nnw', 'newUser'],
+      ['/users/noi', 'newUser'],
+      ['/users/nei', 'newUser'],
       ['/users/:id', 'user'],
       ['/users/:id/edit', 'editUser'],
       ['/users/:id/:hello/:good/:bad/ddd', 'editUser'],
       ['/users/:id/:action', 'actionUser'],
       ['/users/:userId/photos/:id', 'photo'],
       ['/users/:userId/books/:id', 'book'],
-      ['/users/*', 'anyUser']
+      ['/users/**', 'anyUser']
     ])
 
     expect(router.toString()).toBe(deindent`
@@ -285,8 +382,10 @@ describe('Router', () => {
       └── users users() children=1
           └── / children=3
               ├── n children=2
-              │   ├── ew newUser() children=0
-              │   └── nw newUser() children=0
+              │   ├── e children=2
+              │   │   ├── w newUser() children=0
+              │   │   └── i newUser() children=0
+              │   └── oi newUser() children=0
               ├── :userId user() children=1
               │   └── / children=4
               │       ├── edit editUser() children=0
@@ -300,13 +399,13 @@ describe('Router', () => {
               │       │   └── :id photo() children=0
               │       └── books/ children=1
               │           └── :id book() children=0
-              └── * anyUser() children=0
+              └── ** anyUser() children=0
     `.trim())
 
     result = router.find('GET', '/users/610/books/987/edit')
     expect(result.handler).not.toBeUndefined()
     expect(result.handler.name).toBe('anyUser')
-    expect(result.params).toEqual({ '*': '610/books/987/edit' })
+    expect(result.params).toEqual({ $$: '610/books/987/edit' })
 
     result = router.find('GET', '/users/610/books/987')
     expect(result.handler).not.toBeUndefined()
