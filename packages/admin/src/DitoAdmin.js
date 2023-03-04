@@ -43,7 +43,7 @@ export default class DitoAdmin {
     this.api = api = merge({ base: '/' }, dito.api, api)
     this.options = options
 
-    // Setup default api setttings:
+    // Setup default api settings:
     api.locale ||= 'en-US'
     api.formats = merge({}, defaultFormats, api.formats)
     api.request ||= options => request(api, options)
@@ -207,8 +207,8 @@ class RequestError extends Error {
 async function request(api, {
   url,
   method = 'get',
-  // TODO: `request.params` was deprecated in favor of `query` on 2022-11-01,
-  // remove once not in use anywhere anymore.
+  // TODO: `request.params` was deprecated in favour of `query` on 2022-11-01,
+  // remove once not in use anywhere any more.
   params = null,
   query = params || null,
   headers = null,

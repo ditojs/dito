@@ -6,7 +6,7 @@ import { nanoid } from 'nanoid'
 
 // SchemaGraph is a class to collect schema graph meta information in order to
 // process sources and relations for the given targets 'server' and 'clipboard',
-// acccording to the following table:
+// according to the following table:
 //
 // | --------------------------------------------| --------- | --------- |
 // | data                                        | server    | clipboard |
@@ -121,7 +121,7 @@ export class SchemaGraph {
               const revValue = clipboard
                 ? `@${id}`
                 // Keep the ids unique in reference groups, since they reference
-                // accross the full graph.
+                // across the full graph.
                 : reference
                   ? `${reference}-${id}`
                   : id // A temporary id without a related, just preserve it.

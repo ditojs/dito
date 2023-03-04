@@ -123,7 +123,7 @@ export default class ControllerAction {
       type, // String: What type should this validated against / coerced to.
       from, // String: Allow parameters to be 'borrowed' from other objects.
       root, // Boolean: Use full root object, instead of data at given property.
-      member // Boolean: Fetch member instance insted of data from request.
+      member // Boolean: Fetch member instance instead of data from request.
     } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
       if (member) continue
@@ -271,7 +271,7 @@ export default class ControllerAction {
             // - `"key1":X, "key2":Y` (curly braces are added and parsed through
             //   `JSON.parse()`)
             // - `key1:X,key2:Y` (a simple parser is applied, splitting into
-            //   entries and key/value pairs, valuse are parsed with
+            //   entries and key/value pairs, values are parsed with
             //   `JSON.parse()`, falling back to string.
             if (/"/.test(value)) {
               // Just add the curly braces and parse as JSON

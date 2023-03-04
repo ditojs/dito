@@ -103,7 +103,7 @@ export default {
       }
       const hadLabel = !!text
       text ||= ''
-      // If no label was found so far, try to produce one from theindex.
+      // If no label was found so far, try to produce one from the index.
       if (!text) {
         // Always use extended style when auto-generating labels from index/id:
         extended = true

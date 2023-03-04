@@ -36,7 +36,7 @@ export class CollectionController extends Controller {
       this.assets = modelClass.definition.assets || null
     } else if (isObject(this.assets)) {
       // Merge in the assets definition from the model into the assets config.
-      // That way, we can still use `allow` and `authorize` to controll the
+      // That way, we can still use `allow` and `authorize` to control the
       // upload access, while keeping the assets definitions in one central
       // location on the model.
       this.assets = {

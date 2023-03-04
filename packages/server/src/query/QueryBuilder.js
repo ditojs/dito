@@ -48,7 +48,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       // to not mess with special selects such as `count`, etc:
       this._ignoreGraph = !isNormalFind
       // All scopes in `_scopes` were already checked against `_allowScopes`.
-      // They themeselves are allowed to apply / request other scopes that
+      // They themselves are allowed to apply / request other scopes that
       // aren't listed, so clear `_applyScope` and restore again after:
       const { _allowScopes } = this
       this._allowScopes = null

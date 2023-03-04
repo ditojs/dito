@@ -12,14 +12,14 @@
   .dito-code
     @extend %input
     position: relative
-    // For propper sizing of content along with :style="style" setting above,
+    // For proper sizing of content along with :style="style" setting above,
     // for proper line-height calculation.
     padding: $input-padding
     &.dito-width-fill
       width: auto
     .codeflask
       background: none
-      // Ignore theparent padding defined above which is only needed to set
+      // Ignore the parent padding defined above which is only needed to set
       // the desired height with :style="style".
       top: 0
       left: 0

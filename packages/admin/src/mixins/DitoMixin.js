@@ -329,8 +329,8 @@ export default {
       const cacheKey = loadCache && `${
         options.method || 'get'} ${
         options.url} ${
-        // TODO: `request.params` was deprecated in favor of `query` on
-        // 2022-11-01, remove once not in use anywhere anymore.
+        // TODO: `request.params` was deprecated in favour of `query` on
+        // 2022-11-01, remove once not in use anywhere any more.
         JSON.stringify(options.query || options.params || '')} ${
         JSON.stringify(options.data || '')
       }`
@@ -464,7 +464,7 @@ export default {
         }
       }
       // Also scan schema for `on[A-Z]`-style callbacks and add them
-      // TODO: Deperecate one format or the other, in favour of only one way of
+      // TODO: Deprecate one format or the other, in favour of only one way of
       // doing things. Decide which one to remove.
       for (const [key, value] of Object.entries(this.schema)) {
         if (/^on[A-Z]/.test(key)) {

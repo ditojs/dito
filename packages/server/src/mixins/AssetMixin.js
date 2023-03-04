@@ -36,7 +36,7 @@ export const AssetMixin = mixin(Model => class extends TimeStampedMixin(Model) {
           type: 'integer',
           required: true
         },
-        // Use for storages configured for files to be publically accessible:
+        // Use for storages configured for files to be publicly accessible:
         url: {
           type: 'string'
         },

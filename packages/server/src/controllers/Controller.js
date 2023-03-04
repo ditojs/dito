@@ -557,7 +557,7 @@ function convertActionObject(name, object, actions) {
     ...rest
   } = object
 
-  // In order to suport `super` calls in the `handler` function in object
+  // In order to support `super` calls in the `handler` function in object
   // notation, deploy this crazy JS sorcery:
   Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
 

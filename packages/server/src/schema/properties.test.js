@@ -69,7 +69,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands 'text' typess to 'string' JSON schema typess`, () => {
+  it(`expands 'text' types to 'string' JSON schema types`, () => {
     expect(convertSchema({
       type: 'object',
       properties: {
@@ -159,7 +159,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('preserves preexisting settings for no additional properties', () => {
+  it('preserves pre-existing settings for no additional properties', () => {
     expect(convertSchema({
       type: 'object',
       properties: {

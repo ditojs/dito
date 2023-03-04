@@ -40,7 +40,7 @@ export function handleConnectMiddleware(middleware, {
           if (isArray(headers)) {
             // Convert raw headers array to object.
             headers = Object.fromEntries(headers.reduce(
-              // Translate raw array to [field, value] tuplets.
+              // Translate raw array to [field, value] tuples.
               (entries, value, index) => {
                 if (index & 1) { // Odd: value
                   entries[entries.length - 1].push(value)

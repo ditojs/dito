@@ -44,7 +44,7 @@ export class ModelController extends CollectionController {
       this, object, relationInstance, relationDefinition
     )
     // RelationController instances are not registered with the app, but are
-    // manged by their parent controller instead.
+    // managed by their parent controller instead.
     relation.configure()
     relation.setup()
     return relation

@@ -79,7 +79,7 @@ export default TypeComponent.register([
     },
 
     treeDataPath() {
-      // Remove `name` from `dataPath`, as it is addeed
+      // Remove `name` from `dataPath`, as it is added
       // to `treeData` and `treeSchema`
       return this.isListSource
         ? this.dataPath.slice(0, this.dataPath.length - this.name.length)

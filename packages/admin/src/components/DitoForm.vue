@@ -361,14 +361,14 @@ export default DitoComponent.component('dito-form', {
       const getVerb = present => this.verbs[this.getSubmitVerb(present)]
 
       // Allow buttons to override both method and resource path to submit to:
-      const butttonResource = getResource(button.schema.resource, {
+      const buttonResource = getResource(button.schema.resource, {
         parent: this.resource
       })
-      const resource = butttonResource || this.resource
+      const resource = buttonResource || this.resource
       const method = resource?.method || this.method
       const data = this.getPayloadData(button, method)
       let success
-      if (!butttonResource && this.isTransient) {
+      if (!buttonResource && this.isTransient) {
         success = await this.submitTransient(button, resource, method, data, {
           onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
           onError: error => this.emitSchemaEvent('error', {

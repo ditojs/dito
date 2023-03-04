@@ -10,12 +10,12 @@ export default class MemberAction extends ControllerAction {
   // @override
   async getMember(ctx, param) {
     // member parameters can provide special query parameters as well,
-    // and they can even controll `forUpdate()` behavior:
+    // and they can even control `forUpdate()` behavior:
     // {
     //   member: true,
     //   query: { ... },
     //   forUpdate: true,
-    //   modify: query => query.degbug()
+    //   modify: query => query.debug()
     // }
     // These are passed on to and handled in `CollectionController#getMember()`.
     // For handling of `member: true` and calling of `MemberAction.getMember()`,

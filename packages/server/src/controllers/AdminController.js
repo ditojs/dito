@@ -29,7 +29,7 @@ export class AdminController extends Controller {
     }
     // If no mode is specified, use `production` since that's just the hosting
     // of the pre-built admin files. `development` serves the admin directly
-    // sources with HRM, and thus should be explicitely activated.
+    // sources with HRM, and thus should be explicitly activated.
     this.mode = this.config.mode || (
       this.app.config.env === 'development' ? 'development' : 'production'
     )

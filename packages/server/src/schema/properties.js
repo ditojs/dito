@@ -12,7 +12,7 @@ export function convertSchema(schema, options = {}) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
       // format instead that only validates if the required value is not empty,
       // meaning neither nullish nor an empty string. The JSON schema `required`
-      // array is generated seperately below through `convertProperties()`.
+      // array is generated separately below through `convertProperties()`.
       delete schema.required
       schema = addFormat(schema, 'required')
     }
@@ -58,7 +58,7 @@ export function convertSchema(schema, options = {}) {
         schema.type = jsonType
         if (hasConvertedProperties && !('additionalProperties' in schema)) {
           // Invert the logic of `additionalProperties` so that it needs to be
-          // explicitely set to `true`:
+          // explicitly set to `true`:
           schema.additionalProperties = false
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {

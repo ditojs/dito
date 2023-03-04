@@ -12,7 +12,7 @@
     :collapsible="collapsible"
     :class="{ 'dito-schema-compact': isCompact }"
   )
-    // Render dito-edit-buttons for inlined shemas separately from all
+    // Render dito-edit-buttons for inlined schemas separately from all
     // others in `TypeList` as a scope, for better handling of layout.
     template(#edit-buttons)
       dito-edit-buttons(

@@ -22,16 +22,5 @@
   "cSpell.enableFiletypes": [
     "javascript",
     "vue"
-  ],
-  "cSpell.words": [
-    "brotli",
-    "esbuild",
-    "middlewares",
-    "pico",
-    "picocolors",
-    "picomatch",
-    "unallowed",
-    "vite",
-    "vitest"
   ]
 }

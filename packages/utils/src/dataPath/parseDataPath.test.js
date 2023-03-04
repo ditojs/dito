@@ -31,7 +31,7 @@ describe('parseDataPath()', () => {
       .toStrictEqual(['..', 'object', 'value'])
     expect(parseDataPath('./object/value'))
       .toStrictEqual(['.', 'object', 'value'])
-    // This happens when concanating a data path with another absolute one, an
+    // This happens when concatenating a data path with another absolute one, an
     // empty space will be interpreted as "start from scratch" when normalizing.
     expect(parseDataPath('//object/value'))
       .toStrictEqual(['', 'object', 'value'])
