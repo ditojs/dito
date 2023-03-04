@@ -52,7 +52,7 @@ describe('getEntriesAtDataPath()', () => {
       .toStrictEqual({})
   })
 
-  it('should return wildcard matches', () => {
+  it('should return shallow wildcard matches', () => {
     const data = {
       object1: {
         array: [
@@ -140,5 +140,65 @@ describe('getEntriesAtDataPath()', () => {
         'object3/array/1/one/name': 'two.one',
         'object3/array/1/two/name': 'two.two'
       })
+  })
+
+  it('should return deep wildcard matches', () => {
+    const data = {
+      object: {
+        array: [
+          { name: 'one' },
+          { name: 'two' },
+          {
+            object: {
+              one: { name: 'three' },
+              two: { name: 'four' }
+            },
+            array: [
+              { name: 'five' },
+              { name: 'six' },
+              {
+                object: {
+                  one: { name: 'seven' },
+                  two: { name: 'eight' }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+    const expected = {
+      'object/array/0/name': 'one',
+      'object/array/1/name': 'two',
+      'object/array/2/object/one/name': 'three',
+      'object/array/2/object/two/name': 'four',
+      'object/array/2/array/0/name': 'five',
+      'object/array/2/array/1/name': 'six',
+      'object/array/2/array/2/object/one/name': 'seven',
+      'object/array/2/array/2/object/two/name': 'eight'
+    }
+
+    let result = getEntriesAtDataPath(data, '**/name')
+    expect(result).toEqual(expected)
+    expect(Object.values(result)).toEqual(Object.values(expected))
+
+    result = getEntriesAtDataPath(data, 'object/**/name')
+    expect(result).toEqual(expected)
+    expect(Object.values(result)).toEqual(Object.values(expected))
+
+    expect(getEntriesAtDataPath(data, 'object/**/array/**/name')).toEqual({
+      'object/array/2/array/0/name': 'five',
+      'object/array/2/array/1/name': 'six',
+      'object/array/2/array/2/object/one/name': 'seven',
+      'object/array/2/array/2/object/two/name': 'eight'
+    })
+
+    expect(getEntriesAtDataPath(data, 'object/**/object/**/name')).toEqual({
+      'object/array/2/object/one/name': 'three',
+      'object/array/2/object/two/name': 'four',
+      'object/array/2/array/2/object/one/name': 'seven',
+      'object/array/2/array/2/object/two/name': 'eight'
+    })
   })
 })

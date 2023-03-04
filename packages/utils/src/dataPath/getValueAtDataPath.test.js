@@ -40,7 +40,7 @@ describe('getValueAtDataPath()', () => {
       .toBe('Error: unknown, 1')
   })
 
-  it('should return wildcard matches', () => {
+  it('should return shallow wildcard matches', () => {
     const data = {
       object1: {
         array: [
@@ -73,5 +73,52 @@ describe('getValueAtDataPath()', () => {
       ])
     expect(getValueAtDataPath(data, '*/*/*/name'))
       .toEqual(['one', 'two', 'one', 'two'])
+
+    expect(getValueAtDataPath(data, '**/name'))
+      .toEqual(['one', 'two', 'one', 'two'])
+  })
+
+  it('should return deep wildcard matches', () => {
+    const data = {
+      object: {
+        object: {
+          array: [
+            { name: 'one' },
+            { name: 'two' },
+            {
+              object: {
+                one: { name: 'three' },
+                two: { name: 'four' }
+              },
+              array: [
+                { name: 'five' },
+                { name: 'six' },
+                {
+                  object: {
+                    one: { name: 'seven' },
+                    two: { name: 'eight' }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+
+    expect(getValueAtDataPath(data, 'object/**/name'))
+      .toEqual(['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'])
+
+    expect(getValueAtDataPath(data, 'object/**/object/one/name'))
+      .toEqual(['three', 'seven'])
+
+    expect(getValueAtDataPath(data, 'object/**/object/two/name'))
+      .toEqual(['four', 'eight'])
+
+    expect(getValueAtDataPath(data, 'object/**/array/0/name'))
+      .toEqual(['one', 'five'])
+
+    expect(getValueAtDataPath(data, 'object/**/array/1/name'))
+      .toEqual(['two', 'six'])
   })
 })
