@@ -1894,7 +1894,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^1.25.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^1.25.1, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
@@ -1909,7 +1909,7 @@ __metadata:
     "@aws-sdk/client-s3": ^3.282.0
     "@ditojs/admin": ^1.25.0
     "@ditojs/build": ^1.25.0
-    "@ditojs/router": ^1.25.0
+    "@ditojs/router": ^1.25.1
     "@ditojs/utils": ^1.25.0
     "@koa/cors": ^4.0.0
     "@koa/multer": ^3.0.2
