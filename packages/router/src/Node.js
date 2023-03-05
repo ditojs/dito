@@ -133,13 +133,13 @@ export default class Node {
     }
   }
 
-  find(path, paramValues = []) {
+  find(path, parameterValues = []) {
     const { prefix } = this
     if (!path || path === prefix) {
       // It's a match!
       const { handler } = this
       if (handler) {
-        const params = this.parameters.getObject(paramValues)
+        const params = this.parameters.getObject(parameterValues)
         // Support HTTP status on found entries.
         return { handler, params, status: 200 }
       }
@@ -165,7 +165,7 @@ export default class Node {
       child => child.type === TYPE_STATIC && child.label === label
     )
     if (staticChild) {
-      const result = staticChild.find(path, paramValues)
+      const result = staticChild.find(path, parameterValues)
       if (result) {
         return result
       }
@@ -185,21 +185,21 @@ export default class Node {
       while (pos < max && path[pos] !== CHAR_SLASH) {
         pos++
       }
-      paramValues.push(path.slice(0, pos))
-      const result = paramChild.find(path.slice(pos), paramValues)
+      parameterValues.push(path.slice(0, pos))
+      const result = paramChild.find(path.slice(pos), parameterValues)
       if (result) {
         return result
       }
-      paramValues.pop()
+      parameterValues.pop()
     }
 
     // Match-any nodes
     if (this.hasMatchAny) {
       for (const child of this.children) {
-        const match = child.parameters?.matchPathPattern(path)
-        if (match) {
-          paramValues.push(...Object.values(match.groups))
-          return child.find('', paramValues) // '' == End
+        const values = child.parameters?.matchPathPattern(path)
+        if (values) {
+          parameterValues.push(...values)
+          return child.find('', parameterValues) // '' == End
         }
       }
     }
@@ -240,8 +240,8 @@ class Parameters {
     this.placeholderIndex = 0
   }
 
-  add(...keys) {
-    this.keys.push(...keys)
+  add(key) {
+    this.keys.push(key)
   }
 
   getMatchAnyKey() {
@@ -257,39 +257,38 @@ class Parameters {
   }
 
   matchPathPattern(path) {
-    return this.pathPattern?.exec(path)
+    const match = this.pathPattern?.exec(path)
+    return match ? Object.values(match.groups) : null
   }
 
   setupPathPattern(path) {
     // Replace all '**' with '.+?' and all '*' with '[^/]+'.
     // Use named groups to merge multiple ** or * into one.
     const pattern = []
-    const keys = []
     for (const token of path.split('/')) {
       if (token === '**') {
         const key = this.getMatchAnyKey()
         pattern.push(`(?<${key}>.+?)`)
-        keys.push(key)
+        this.add(key)
       } else if (token === '*') {
         const key = this.getPlaceholderKey()
         pattern.push(`(?<${key}>[^/]+)`)
-        keys.push(key)
+        this.add(key)
       } else if (token.startsWith(':')) {
         const key = token.slice(1)
         pattern.push(`(?<${key}>[^/]+)`)
-        keys.push(key)
+        this.add(key)
       } else {
         pattern.push(token)
       }
     }
     this.pathPattern = new RegExp(`^${pattern.join('/')}$`)
-    this.add(...keys)
   }
 
   getObject(values) {
     // Convert parameters and values to a params object, but rename path pattern
     // groups back to param names
-    const params = {}
+    const object = {}
     let i = 0
     for (const key of this.keys) {
       const name = key.startsWith('$$')
@@ -301,8 +300,8 @@ class Parameters {
             ? '$'
             : key
           : key
-      params[name] = values[i++]
+      object[name] = values[i++]
     }
-    return params
+    return object
   }
 }
