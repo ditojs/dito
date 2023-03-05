@@ -6,7 +6,6 @@ import Koa from 'koa'
 import Knex from 'knex'
 import pico from 'picocolors'
 import pino from 'pino'
-import parseDuration from 'parse-duration'
 import bodyParser from 'koa-bodyparser'
 import cors from '@koa/cors'
 import compose from 'koa-compose'
@@ -21,9 +20,9 @@ import responseTime from 'koa-response-time'
 import { Model, knexSnakeCaseMappers, ref } from 'objection'
 import Router from '@ditojs/router'
 import {
-  isArray, isObject, isString, asArray, isPlainObject, isModule,
-  hyphenate, clone, merge, parseDataPath, normalizeDataPath, toPromiseCallback,
-  mapConcurrently
+  isArray, isObject, asArray, isPlainObject, isModule,
+  hyphenate, clone, merge, parseDataPath, normalizeDataPath,
+  toPromiseCallback, mapConcurrently
 } from '@ditojs/utils'
 import SessionStore from './SessionStore.js'
 import { Validator } from './Validator.js'
@@ -32,7 +31,7 @@ import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
-import { deprecate } from '../utils/index.js'
+import { getDuration, subtractDuration, deprecate } from '../utils/index.js'
 import {
   ResponseError,
   ValidationError,
@@ -66,6 +65,7 @@ export class Application extends Koa {
       // Pluck keys out of `config.app` to keep them secret
       app: { keys, ...app } = {},
       log,
+      assets,
       logger,
       ...rest
     } = config
@@ -74,6 +74,7 @@ export class Application extends Koa {
       log: log === false || log?.silent || process.env.DITO_SILENT
         ? {}
         : getOptions(log),
+      assets: merge(defaultAssetOptions, getOptions(assets)),
       logger: merge(defaultLoggerOptions, getOptions(logger)),
       ...rest
     }
@@ -805,16 +806,6 @@ export class Application extends Koa {
     removedFiles,
     trx = null
   ) {
-    const {
-      assets: {
-        cleanupTimeThreshold = 0
-      } = {}
-    } = this.config
-    // Only remove unused assets that haven't seen changes for given time frame.
-    const timeThreshold = isString(cleanupTimeThreshold)
-      ? parseDuration(cleanupTimeThreshold)
-      : cleanupTimeThreshold
-
     let importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
@@ -837,18 +828,20 @@ export class Application extends Koa {
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)
         ])
-        if (timeThreshold > 0) {
+        const cleanupTimeThreshold =
+          getDuration(this.config.assets.cleanupTimeThreshold)
+        if (cleanupTimeThreshold > 0) {
           setTimeout(
             // Don't pass `trx` here, as we want this delayed execution to
             // create its own transaction.
-            () => this.releaseUnusedAssets(timeThreshold),
-            timeThreshold
+            () => this.releaseUnusedAssets(),
+            cleanupTimeThreshold
           )
         }
       }
       // Also execute releaseUnusedAssets() immediately in the same
       // transaction, to potentially clean up other pending assets.
-      await this.releaseUnusedAssets(timeThreshold, trx)
+      await this.releaseUnusedAssets(null, trx)
       return importedFiles
     }
   }
@@ -951,21 +944,34 @@ export class Application extends Koa {
     return modifiedFiles
   }
 
-  async releaseUnusedAssets(timeThreshold = 0, trx = null) {
+  async releaseUnusedAssets(timeThreshold = null, trx = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
+      const { assets } = this.config
+      const cleanupTimeThreshold =
+        getDuration(timeThreshold ?? assets.cleanupTimeThreshold)
+      const danglingTimeThreshold =
+        getDuration(timeThreshold ?? assets.danglingTimeThreshold)
       return AssetModel.transaction(trx, async trx => {
-        // Determine the time threshold in JS instead of SQL, as there is no
-        // easy cross-SQL way to do `now() - interval X hours`:
-        const date = new Date()
-        date.setMilliseconds(date.getMilliseconds() - timeThreshold)
+        // Calculate the date math in JS instead of SQL, as there is no easy
+        // cross-SQL way to do `now() - interval X hours`:
+        const now = new Date()
+        const cleanupDate = subtractDuration(now, cleanupTimeThreshold)
+        const danglingDate = subtractDuration(now, danglingTimeThreshold)
         const orphanedAssets = await AssetModel
           .query(trx)
           .where('count', 0)
-          .andWhere('updatedAt', '<=', date)
-          // Protect freshly created assets from being deleted again right away,
-          // .e.g. when `config.assets.cleanupTimeThreshold = 0`
-          .andWhere('updatedAt', '>', ref('createdAt'))
+          .andWhere(
+            query => query
+              .where('updatedAt', '<=', cleanupDate)
+              .orWhere(
+                // Protect freshly created assets from being deleted again right
+                // away, .e.g. when `config.assets.cleanupTimeThreshold = 0`
+                query => query
+                  .where('updatedAt', '=', ref('createdAt'))
+                  .andWhere('updatedAt', '<=', danglingDate)
+              )
+          )
         if (orphanedAssets.length > 0) {
           const orphanedKeys = await mapConcurrently(
             orphanedAssets,
@@ -996,6 +1002,17 @@ EventEmitter.mixin(Application.prototype)
 
 function getOptions(options) {
   return isObject(options) ? options : {}
+}
+
+const defaultAssetOptions = {
+  // Only remove unused or dangling assets that haven't seen changes for
+  // these given time frames. Set to `0` to clean up instantly.
+  cleanupTimeThreshold: '24h',
+  // Dangling assets are those that got uploaded but never actually persisted in
+  // the model. This can happen when the admin uploads a file but doesn't store
+  // the associated form. This cannot be set to 0 or else the the file would be
+  // deleted immediately after upload.
+  danglingTimeThreshold: '24h'
 }
 
 const { err, req, res } = pino.stdSerializers

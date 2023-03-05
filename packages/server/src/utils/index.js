@@ -1,3 +1,4 @@
+export * from './date.js'
 export * from './decorator.js'
 export * from './deprecate.js'
 export * from './emitter.js'
