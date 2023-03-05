@@ -347,16 +347,22 @@ export class QueryBuilder extends objection.QueryBuilder {
 
     const {
       property,
+      relation,
+      wildcard,
       expression,
       nestedDataPath,
-      name,
-      index
+      name
     } = this.modelClass().getPropertyOrRelationAtDataPath(parsedDataPath)
 
     if (nestedDataPath) {
       // Once a JSON data type is reached, even if it's not at the end of the
       // provided path, load it and assume we're done with the loading part.
-      if (!(property && ['object', 'array'].includes(property.type))) {
+      if (
+        !(
+          wildcard ||
+          property && ['object', 'array'].includes(property.type)
+        )
+      ) {
         throw new QueryBuilderError(
           `Unable to load full data-path '${
             dataPath
@@ -369,7 +375,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
     // Handle the special case of root-level property separately,
     // because `withGraph('(#propertyName)')` is not supported.
-    if (property && index === 0) {
+    if (name && !relation) {
       this.select(name)
     } else {
       this.withGraph(expression, options)

@@ -618,9 +618,13 @@ export class Model extends objection.Model {
     const parsedDataPath = parseDataPath(dataPath)
     let index = 0
 
-    const getResult = (property = null, relation = null) => {
-      const found = property || relation
-      const name = parsedDataPath[index]
+    const getResult = ({
+      property = null,
+      relation = null,
+      wildcard = null
+    } = {}) => {
+      const found = !!(property || relation || wildcard)
+      const name = wildcard ? '*' : parsedDataPath[index]
       const next = index + 1
       const dataPath = found
         ? normalizeDataPath(parsedDataPath.slice(0, next))
@@ -635,18 +639,20 @@ export class Model extends objection.Model {
       return {
         property,
         relation,
+        wildcard,
         dataPath,
         nestedDataPath,
         name,
-        expression,
-        index
+        expression
       }
     }
 
     const [firstToken, ...otherTokens] = parsedDataPath
     const property = this.definition.properties[firstToken]
     if (property) {
-      return getResult(property)
+      return getResult({ property })
+    } else if (firstToken === '*' || firstToken === '**') {
+      return getResult({ wildcard: firstToken })
     } else {
       let relation = this.getRelations()[firstToken]
       if (relation) {
@@ -655,27 +661,32 @@ export class Model extends objection.Model {
           index++
           const property = relatedModelClass.definition.properties[token]
           if (property) {
-            return getResult(property)
+            return getResult({ property, relation })
           } else if (token === '*') {
             if (relation.isOneToOne()) {
               // Do not support wildcards on one-to-one relations:
-              return getResult()
+              return getResult() // Not found.
             } else {
               continue
             }
+          } else if (token === '**') {
+            throw new ModelError(
+              this,
+              'Deep wildcards on relations are unsupported.'
+            )
           } else {
             // Found a relation? Keep iterating.
             relation = relatedModelClass.getRelations()[token]
             if (relation) {
               relatedModelClass = relation.relatedModelClass
             } else {
-              return getResult()
+              return getResult() // Not found.
             }
           }
         }
         if (relation) {
           // Still here? Found a relation at the end of the data-path.
-          return getResult(null, relation)
+          return getResult({ relation })
         }
       }
     }
@@ -705,6 +716,10 @@ export class Model extends objection.Model {
         return query.ignoreScope(modifier.slice(1))
       case '#': // Select column:
         return query.select(modifier.slice(1))
+      case '*': // Select all columns:
+        if (modifier.length === 1) {
+          return query.select('*')
+        }
       }
     }
     super.modifierNotFound(query, modifier)

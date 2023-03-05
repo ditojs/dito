@@ -228,14 +228,10 @@ export class Controller {
     const tokens = parseDataPath(dataPath)
     const getDataPath = callback => normalizeDataPath(tokens.map(callback))
 
-    // Replace wildcards with numbered indices and convert to '/'-notation:
-    let index = 0
-    const multipleWildcards = tokens.filter(token => token === '*').length > 1
     const normalizedPath = getDataPath(
-      token => token === '*'
-        ? multipleWildcards
-          ? `:index${++index}`
-          : ':index'
+      // Router supports both shallow & deep wildcards, no normalization needed.
+      token => token === '*' || token === '**'
+        ? token
         : this.app.normalizePath(token)
     )
 
@@ -243,7 +239,16 @@ export class Controller {
     // against, but convert wildcards (*) to match both numeric ids and words,
     // e.g. 'create':
     const matchDataPath = new RegExp(
-      `^${getDataPath(token => token === '*' ? '\\w+' : token)}$`
+      `^${
+        getDataPath(
+          // Use the exact same regexps as in `Router`:
+          token => token === '*'
+            ? '[^/]+' // shallow wildcard
+            : token === '**'
+              ? '.+?' // deep wildcard
+              : token
+        )
+      }$`
     )
 
     const url = this.getUrl('controller', `upload/${normalizedPath}`)

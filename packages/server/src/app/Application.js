@@ -390,22 +390,23 @@ export class Application extends Koa {
         for (const [assetDataPath, config] of Object.entries(assets)) {
           const {
             property,
+            relation,
+            wildcard,
             nestedDataPath,
-            name,
-            index
+            name
           } = modelClass.getPropertyOrRelationAtDataPath(assetDataPath)
-          if (property && index === 0) {
+          if (relation) {
+            throw new Error('Assets on nested relations are not supported')
+          } else if (property || wildcard) {
             const normalizedName = normalizeDbNames
               ? this.normalizeIdentifier(name)
               : name
             const dataPath = normalizeDataPath([
-              normalizedName,
+              wildcard || normalizedName,
               ...parseDataPath(nestedDataPath)
             ])
             const assetConfigs = convertedAssets[normalizedName] ||= {}
             assetConfigs[dataPath] = config
-          } else {
-            throw new Error('Nested graph properties are not supported yet')
           }
         }
         assetConfig[normalizedModelName] = convertedAssets
