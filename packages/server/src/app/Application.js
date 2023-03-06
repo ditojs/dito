@@ -867,10 +867,8 @@ export class Application extends Koa {
                   }'): The source needs to be explicitly allowed.`
                 )
               }
-              console.info(
-                `${
-                  pico.red('INFO:')
-                } Asset ${
+              this.logger.info(
+                `Asset ${
                   pico.green(`'${file.name}'`)
                 } is from a foreign source, fetching from ${
                   pico.green(`'${url}'`)
