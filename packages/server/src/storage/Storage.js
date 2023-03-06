@@ -18,7 +18,9 @@ export class Storage {
     this.name = config.name
     this.url = config.url
     this.path = config.path
-    this.concurrency = config.concurrency || 0
+    // Use a default concurrency of 8 for storage IO, e.g. the importing of
+    // foreign assets.
+    this.concurrency = config.concurrency ?? 8
     // The actual multer storage object.
     this.storage = null
   }
@@ -96,8 +98,8 @@ export class Storage {
   }
 
   async addFile(file, data) {
-    file.size = Buffer.byteLength(data)
     await this._addFile(file, data)
+    file.size = Buffer.byteLength(data)
     file.url = this._getFileUrl(file)
     // TODO: Support `config.readImageSize`, but this can only be done once
     // there are separate storage instances per model assets config!
