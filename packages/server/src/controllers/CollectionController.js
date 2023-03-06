@@ -24,6 +24,7 @@ export class CollectionController extends Controller {
 
   // @override
   setup() {
+    this.logController()
     this.collection = this.setupActions('collection')
     this.member = this.isOneToOne ? {} : this.setupActions('member')
     this.assets = this.setupAssets()

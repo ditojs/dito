@@ -26,7 +26,7 @@ export class Controller {
   constructor(app, namespace) {
     this.app = app
     this.namespace = namespace
-    this.logging = this.app.config.log.routes
+    this.logRoutes = this.app.config.log.routes
     this.level = 0
   }
 
@@ -60,21 +60,12 @@ export class Controller {
       // mapped parameters or wildcards. Consider `path` / `route` instead?
       const url = path ? `/${path}` : ''
       this.url = namespace ? `/${namespace}${url}` : url
-      this.log(
-        `${
-          namespace ? pico.green(`/${namespace}/`) : ''
-        }${
-          pico.cyan(path)
-        }${
-          pico.white(':')
-        }`,
-        this.level
-      )
     }
   }
 
   // @overridable
   setup() {
+    this.logController()
     this.actions ||= this.reflectActionsObject()
     // Now that the instance fields are reflected in the `controller` object
     // we can use the normal inheritance mechanism through `setupActions()`:
@@ -92,6 +83,27 @@ export class Controller {
   compose() {
     // To be overridden in sub-classes, if the controller needs to install
     // middleware. For normal routes, use `this.app.addRoute()` instead.
+  }
+
+  // @overridable
+  logController() {
+    const { path, namespace } = this
+    this.logRoute(
+      `${
+        namespace ? pico.green(`/${namespace}/`) : ''
+      }${
+        pico.cyan(path)
+      }${
+        pico.white(':')
+      }`,
+      this.level
+    )
+  }
+
+  logRoute(str, indent = 0) {
+    if (this.logRoutes) {
+      console.info(`${'  '.repeat(indent)}${str}`)
+    }
   }
 
   reflectActionsObject() {
@@ -122,7 +134,7 @@ export class Controller {
   }
 
   setupRoute(method, url, transacted, authorize, action, middlewares) {
-    this.log(
+    this.logRoute(
       `${
         pico.magenta(method.toUpperCase())
       } ${
@@ -382,7 +394,6 @@ export class Controller {
         // so add its own keys to the already allowed inherited keys so far.
         Object.assign(allowMap, getFilteredMap(getOwnKeys(current)))
       }
-      // console.log('allow', Object.keys(allowMap))
     }
 
     const handleAuthorize = authorize => {
@@ -536,12 +547,6 @@ export class Controller {
     const ok = await authorization(ctx, member)
     if (ok !== true) {
       throw new AuthorizationError()
-    }
-  }
-
-  log(str, indent = 0) {
-    if (this.logging) {
-      console.info(`${'  '.repeat(indent)}${str}`)
     }
   }
 }

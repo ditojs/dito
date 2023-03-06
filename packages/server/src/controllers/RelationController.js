@@ -49,6 +49,11 @@ export class RelationController extends CollectionController {
   }
 
   // @override
+  logController() {
+    // The parent controller logs itself already, that's enough.
+  }
+
+  // @override
   inheritValues(type) {
     // Since RelationController are mapped to nested `relations` objects in
     // ModelController parents and are never extended directly in the user land
