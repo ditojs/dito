@@ -1,10 +1,10 @@
 export async function mapConcurrently(
   input,
   callback,
-  { concurrency = null } = {}
+  { concurrency = 0 } = {}
 ) {
   const array = await input
-  if (concurrency === null) {
+  if (!concurrency) {
     return Promise.all(array.map(callback))
   } else {
     const promises = []

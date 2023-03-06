@@ -18,7 +18,7 @@ export class Storage {
     this.name = config.name
     this.url = config.url
     this.path = config.path
-    this.concurrency = config.concurrency ?? null
+    this.concurrency = config.concurrency || 0
     // The actual multer storage object.
     this.storage = null
   }
