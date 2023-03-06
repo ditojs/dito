@@ -96,10 +96,10 @@ export class Storage {
   }
 
   async addFile(file, data) {
-    const storageFile = await this._addFile(file, data)
     file.size = Buffer.byteLength(data)
-    file.url = this._getFileUrl(storageFile)
-    // TODO: Support `config.readImageSize`, but this can only be done onces
+    await this._addFile(file, data)
+    file.url = this._getFileUrl(file)
+    // TODO: Support `config.readImageSize`, but this can only be done once
     // there are separate storage instances per model assets config!
     return this.convertAssetFile(file)
   }

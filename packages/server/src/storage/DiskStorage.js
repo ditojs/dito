@@ -44,7 +44,6 @@ export class DiskStorage extends Storage {
     const dir = path.dirname(filePath)
     await fs.mkdir(dir, { recursive: true })
     await fs.writeFile(filePath, data)
-    return file
   }
 
   // @override

@@ -111,12 +111,10 @@ export class S3Storage extends Storage {
       ContentType: file.type,
       Body: data
     })
-    // "Convert" `file` to something looking more like a S3 `storageFile`.
-    // For now, only the `location` property is of interest:
-    return {
-      ...file,
-      location: result.Location
-    }
+    // In `Storage.addFile()` this will get overridden with the result of
+    // `_getUrl()` if it exists, but is used as a fallback otherwise,
+    // see `_getFileUrl()`.
+    file.url = result.Location
   }
 
   // @override
