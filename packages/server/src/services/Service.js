@@ -32,7 +32,7 @@ export class Service {
   }
 
   // Only use this method to get a logger instance that is bound to the context,
-  // otherwise use the getter.
+  // otherwise use the cached getter.
   getLogger(ctx) {
     const logger = ctx?.logger ?? this.app.logger
     return logger.child({ name: this.#loggerName })

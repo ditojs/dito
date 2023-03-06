@@ -106,6 +106,19 @@ export class Controller {
     }
   }
 
+  // Only use this method to get a logger instance that is bound to the context,
+  // otherwise use the cached getter.
+  getLogger(ctx) {
+    const logger = ctx?.logger ?? this.app.logger
+    return logger.child({ name: this.name })
+  }
+
+  get logger() {
+    const value = this.getLogger()
+    Object.defineProperty(this, 'logger', { value })
+    return value
+  }
+
   reflectActionsObject() {
     // On base controllers, the actions can be defined directly in the class
     // instead of inside an actions object, as is done with model and relation
