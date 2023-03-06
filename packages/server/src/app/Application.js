@@ -860,23 +860,23 @@ export class Application extends Koa {
               const { url } = file
               if (!storage.isImportSourceAllowed(url)) {
                 throw new AssetError(
-                    `Unable to import asset from foreign source: '${
-                      file.name
-                    }' ('${
-                      url
-                    }'): The source needs to be explicitly allowed.`
+                  `Unable to import asset from foreign source: '${
+                    file.name
+                  }' ('${
+                    url
+                  }'): The source needs to be explicitly allowed.`
                 )
               }
               console.info(
-                  `${
-                    pico.red('INFO:')
-                  } Asset ${
-                    pico.green(`'${file.name}'`)
-                  } is from a foreign source, fetching from ${
-                    pico.green(`'${url}'`)
-                  } and adding to storage ${
-                    pico.green(`'${storage.name}'`)
-                  }...`
+                `${
+                  pico.red('INFO:')
+                } Asset ${
+                  pico.green(`'${file.name}'`)
+                } is from a foreign source, fetching from ${
+                  pico.green(`'${url}'`)
+                } and adding to storage ${
+                  pico.green(`'${storage.name}'`)
+                }...`
               )
               if (url.startsWith('file://')) {
                 const filepath = path.resolve(url.substring(7))
@@ -896,11 +896,11 @@ export class Application extends Koa {
             importedFiles.push(importedFile)
           } else {
             throw new AssetError(
-                `Unable to import asset from foreign source: '${
-                  file.name
-                }' ('${
-                  file.key
-                }')`
+              `Unable to import asset from foreign source: '${
+                file.name
+              }' ('${
+                file.key
+              }')`
             )
           }
         } else {
