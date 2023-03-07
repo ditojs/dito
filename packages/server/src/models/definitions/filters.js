@@ -1,5 +1,6 @@
 import { isObject, isFunction } from '@ditojs/utils'
-import { mergeReversed, processHandlerParameters } from '../../utils/index.js'
+import { processHandlerParameters } from '../../utils/handler.js'
+import { mergeReversed } from '../../utils/object.js'
 import { QueryFilters } from '../../query/index.js'
 
 export default function filters(values) {

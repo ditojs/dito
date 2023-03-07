@@ -144,9 +144,10 @@
 <script>
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
-import {
-  copyDate, scrollTo, setSelection, getKeyNavigation
-} from '../utils/index.js'
+import { copyDate } from '../utils/date.js'
+import { scrollTo } from '../utils/scroll.js'
+import { setSelection } from '../utils/selection.js'
+import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, InputField },

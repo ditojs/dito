@@ -47,7 +47,7 @@ import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import Calendar from './Calendar.vue'
 import InputField from './InputField.vue'
-import { getKeyNavigation } from '../utils/index.js'
+import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, Calendar, InputField },

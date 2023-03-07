@@ -15,7 +15,9 @@ import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
-import { formatJson, getRandomFreePort, deprecate } from '../utils/index.js'
+import { getRandomFreePort } from '../utils/net.js'
+import { formatJson } from '../utils/json.js'
+import { deprecate } from '../utils/deprecate.js'
 
 export class AdminController extends Controller {
   // @override

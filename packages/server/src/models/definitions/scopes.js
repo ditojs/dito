@@ -1,6 +1,6 @@
 import { isObject, isFunction } from '@ditojs/utils'
 import { ModelError } from '../../errors/index.js'
-import { mergeReversed } from '../../utils/index.js'
+import { mergeReversed } from '../../utils/object.js'
 
 export default function scopes(values) {
   const scopes = {}

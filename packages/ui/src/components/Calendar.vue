@@ -206,7 +206,7 @@
 </style>
 
 <script>
-import { copyDate } from '../utils/index.js'
+import { copyDate } from '../utils/date.js'
 
 export default {
   props: {

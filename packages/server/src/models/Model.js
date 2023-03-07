@@ -12,7 +12,7 @@ import {
   convertRelations
 } from '../schema/index.js'
 import { populateGraph, filterGraph } from '../graph/index.js'
-import { formatJson } from '../utils/index.js'
+import { formatJson } from '../utils/json.js'
 import {
   ResponseError,
   GraphError, ModelError,

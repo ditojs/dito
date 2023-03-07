@@ -7,7 +7,9 @@ import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
 import { DitoGraphProcessor, walkGraph } from '../graph/index.js'
 import { QueryBuilderError, RelationError } from '../errors/index.js'
-import { createLookup, getScope, deprecate } from '../utils/index.js'
+import { createLookup } from '../utils/object.js'
+import { getScope } from '../utils/scope.js'
+import { deprecate } from '../utils/deprecate.js'
 
 const SYMBOL_ALL = Symbol('all')
 

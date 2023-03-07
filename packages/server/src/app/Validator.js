@@ -2,7 +2,7 @@ import objection from 'objection'
 import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
-import { formatJson } from '../utils/index.js'
+import { formatJson } from '../utils/json.js'
 import * as schema from '../schema/index.js'
 
 // Dito does not rely on objection.AjvValidator but instead implements its own

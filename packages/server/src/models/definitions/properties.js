@@ -1,4 +1,4 @@
-import { mergeReversed } from '../../utils/index.js'
+import { mergeReversed } from '../../utils/object.js'
 
 export default function properties(values) {
   const properties = mergeReversed(values)

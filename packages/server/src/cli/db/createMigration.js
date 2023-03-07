@@ -1,10 +1,14 @@
 import path from 'path'
 import fs from 'fs/promises'
 import pico from 'picocolors'
-import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
+import {
+  getRelationClass,
+  isThroughRelationClass
+} from '@ditojs/server'
 import {
   isObject, isArray, isString, deindent, capitalize
 } from '@ditojs/utils'
+import { exists } from '../../utils/fs.js'
 
 const typeToKnex = {
   number: 'double',
@@ -203,13 +207,4 @@ function getTimestamp() {
     padDate(d.getHours()) +
     padDate(d.getMinutes()) +
     padDate(d.getSeconds())
-}
-
-async function exists(path) {
-  try {
-    await fs.access(path)
-    return true
-  } catch {
-    return false
-  }
 }

@@ -3,7 +3,7 @@ import { isObject, camelize } from '@ditojs/utils'
 import { CollectionController } from './CollectionController.js'
 import { RelationController } from './RelationController.js'
 import { ControllerError } from '../errors/index.js'
-import { setupPropertyInheritance } from '../utils/index.js'
+import { setupPropertyInheritance } from '../utils/object.js'
 
 export class ModelController extends CollectionController {
   configure() {

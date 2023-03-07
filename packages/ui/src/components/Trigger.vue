@@ -82,7 +82,7 @@
 
 <script>
 import { isString, hyphenate } from '@ditojs/utils'
-import { addEvents } from '../utils/index.js'
+import { addEvents } from '../utils/event.js'
 
 export default {
   props: {

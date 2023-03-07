@@ -31,7 +31,8 @@ import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
-import { getDuration, subtractDuration, deprecate } from '../utils/index.js'
+import { getDuration, subtractDuration } from '../utils/duration.js'
+import { deprecate } from '../utils/deprecate.js'
 import {
   ResponseError,
   ValidationError,

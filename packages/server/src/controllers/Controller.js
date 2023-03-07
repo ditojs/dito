@@ -6,9 +6,12 @@ import {
   ResponseError, ControllerError, AuthorizationError
 } from '../errors/index.js'
 import {
-  getOwnProperty, getOwnKeys, getAllKeys, getInheritanceChain,
-  processHandlerParameters, describeFunction, formatJson, deprecate
-} from '../utils/index.js'
+  getOwnProperty, getOwnKeys, getAllKeys, getInheritanceChain
+} from '../utils/object.js'
+import { processHandlerParameters } from '../utils/handler.js'
+import { describeFunction } from '../utils/function.js'
+import { formatJson } from '../utils/json.js'
+import { deprecate } from '../utils/deprecate.js'
 import {
   isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
   parseDataPath, normalizeDataPath
