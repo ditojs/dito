@@ -882,7 +882,9 @@ export class Application extends Koa {
                 data = await fs.readFile(filepath)
               } else {
                 const response = await fetch(url)
-                data = await response.arrayBuffer()
+                const arrayBuffer = await response.arrayBuffer()
+                // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
+                data = Buffer.from(arrayBuffer)
               }
             }
             const importedFile = await storage.addFile(file, data)
