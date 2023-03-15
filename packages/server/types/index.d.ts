@@ -5,10 +5,10 @@
 
 // Export the entire Dito namespace.
 
+import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat } from '@dito/utils'
 import koaCors from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
-import * as aws from 'aws-sdk'
 import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
@@ -21,6 +21,7 @@ import mount from 'koa-mount'
 import koaPinoLogger from 'koa-pino-logger'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
+import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
 import { Logger } from 'pino'
@@ -212,61 +213,39 @@ export type MulterS3File = {
 
 export type StorageConfigs = { [key: string]: StorageConfig }
 
-export type StorageConfig =
-  | {
-      type: 's3'
-      /** The name of the destination bucket. */
-      bucket: aws.S3.BucketName
-      /** @default 'private'  */
-      acl: LiteralUnion<
-        | 'private'
-        | 'public-read'
-        | 'public-read-write'
-        | 'authenticated-read'
-        | 'aws-exec-read'
-        | 'bucket-owner-read'
-        | 'bucket-owner-full-control'
-      >
-      /**
-       * Can be used to specify caching behavior along the request/reply chain.
-       *
-       * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.
-       */
-      cacheControl?: aws.S3.CacheControl
-      /**
-       * The type of storage to use for the object.
-       *
-       * @default 'STANDARD'
-       */
-      storageClass?: LiteralUnion<
-        | 'STANDARD'
-        | 'REDUCED_REDUNDANCY'
-        | 'STANDARD_IA'
-        | 'ONEZONE_IA'
-        | 'INTELLIGENT_TIERING'
-        | 'GLACIER'
-        | 'DEEP_ARCHIVE'
-      >
-      /**
-       * The server-side encryption algorithm used when storing this object in
-       * Amazon S3 (for example, AES256, aws:kms).
-       */
-      serverSideEncryption?: aws.S3.ServerSideEncryption
-      /**
-       * If present, specifies the ID of the AWS Key Management Service (AWS
-       * KMS) symmetric customer managed customer master key (CMK)
-       */
-      sseKmsKeyId?: aws.S3.SSEKMSKeyId
-      s3: aws.S3.ClientConfiguration
-      url?: string
-    }
-  | {
-      type: 'disk'
-      path: string
-      url?: string
-      mount?: string
-      allowedImports?: string[]
-    }
+type CommonStorageConfig = {
+  /**
+   * The concurrency to use when adding assets.
+   *
+   * @default `0` (unlimited)
+   */
+  concurrency?: number
+  /**
+   * The base URL at which assets are accessible.
+   */
+  url?: string
+  allowedImports?: string[]
+}
+
+export type S3StorageConfig = CommonStorageConfig & {
+  type: 's3'
+  bucket: string
+  acl?: ObjectCannedACL | string
+  s3: S3ClientConfig
+} & Omit<
+    Parameters<typeof multerS3>[0],
+    's3' | 'key' | 'contentType' | 'metadata'
+  >
+
+export type DiskStorageConfig = CommonStorageConfig & {
+  type: 'disk'
+  /**
+   * The path to the directory where assets are stored on.
+   */
+  path: string
+}
+
+export type StorageConfig = S3StorageConfig | DiskStorageConfig
 
 export interface AdminConfig {
   api?: ApiConfig
