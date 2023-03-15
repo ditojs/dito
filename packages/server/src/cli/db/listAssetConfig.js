@@ -1,4 +1,4 @@
-import { formatJson } from '@ditojs/server'
+import { formatJson } from '../../utils/json.js'
 
 export async function listAssetConfig(app, ...args) {
   const assetConfig = app.getAssetConfig({
