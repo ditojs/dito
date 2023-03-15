@@ -302,7 +302,7 @@ export default {
       const scroll = (ref, value) => {
         const target = this.$refs[ref]
         if (target) {
-          // First and alst one add 3 times the margin
+          // First and last one add 3 times the margin
           const lineHeight = target.scrollHeight / (target.children.length + 6)
           scrollTo(target, Math.round(value * lineHeight), duration)
         }
