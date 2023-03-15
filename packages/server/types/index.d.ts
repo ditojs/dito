@@ -215,9 +215,9 @@ export type StorageConfigs = { [key: string]: StorageConfig }
 
 type CommonStorageConfig = {
   /**
-   * The concurrency to use when adding assets.
+   * The concurrency at which assets are added to storage.
    *
-   * @default `0` (unlimited)
+   * @default `8`
    */
   concurrency?: number
   /**
