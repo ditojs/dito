@@ -112,13 +112,13 @@ export function asFunction<T>(
  */
 export function clone<T>(arg: T, options?: {
   /**
-   * Wether to clone the value shallowly.
+   * Whether to clone the value shallowly.
    *
    * @default false
    */
   shallow?: boolean,
   /**
-   * Wether to clone all object properties, or only those that are defined
+   * Whether to clone all object properties, or only those that are defined
    * directly on that object, and are not inherited from the object's prototype.
    *
    * @default true
@@ -217,7 +217,7 @@ export function mapValues<T extends Dictionary<any>, K>(
 /* --------------------------------- string --------------------------------- */
 
 /**
- * Converts a string seperated by spaces, dashes and underscores to camel-case
+ * Converts a string separated by spaces, dashes and underscores to camel-case
  * (`'camelCase'`) or optionally pascal-case (`'CamelCase'`).
  */
 export function camelize(str: string, pascalCase?: boolean): string
@@ -226,20 +226,20 @@ export function camelize(str: string, pascalCase?: boolean): string
  */
 export function capitalize(str: string): string
 /**
- * Convert a string from camel-case to a string seperated by spaces or a
- * supplied seperator string.
+ * Convert a string from camel-case to a string separated by spaces or a
+ * supplied separator string.
  *
  * @param str The string to decamelize.
- * @param {string} [sep=' '] -  The string to seperate the decamelized words
+ * @param {string} [sep=' '] -  The string to separate the decamelized words
  * with.
  */
 export function decamelize(str: string, sep?: string): string
 /**
- * Converts a camelized string to a string seperated by dashes.
+ * Converts a camelized string to a string separated by dashes.
  */
 export function hyphenate(str: string): string
 /**
- * Converts a camelized string to a string seperated by underscores.
+ * Converts a camelized string to a string separated by underscores.
  */
 export function underscore(str: string): string
 /**
