@@ -110,7 +110,7 @@ export function asFunction<T>(
 /**
  * Clones the supplied value.
  */
-export function clone<T>(arg: T, options?: {
+export function clone<T>(value: T, options?: {
   /**
    * Whether to clone the value shallowly.
    *
@@ -132,7 +132,7 @@ export function clone<T>(arg: T, options?: {
   /**
    * Optional callback to process the cloned value.
    */
-  processValue?: <S>(arg: T) => S,
+  processValue?: <S>(value: T) => S,
 }): T
 
 /**
@@ -213,6 +213,21 @@ export function mapValues<T extends Dictionary<any>, K>(
   object: T,
   callback?: (value: T[keyof T], key: keyof T, object: T) => K
 ): Record<keyof T, K>
+
+/* -------------------------------- promise -------------------------------- */
+
+export function mapConcurrently<T, R>(
+  input: Promise<T[]> | T[],
+  callback: (value: T, index: number, array: T[]) => Promise<R> | R,
+  options?: {
+    concurrency?: number;
+  }
+): Promise<R[]>;
+
+export function mapSequentially<T, R>(
+  input: Promise<T[]> | T[],
+  callback: (value: T, index: number) => Promise<R> | R
+): Promise<R[]>;
 
 /* --------------------------------- string --------------------------------- */
 
