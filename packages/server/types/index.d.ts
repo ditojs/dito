@@ -864,6 +864,16 @@ export class Controller {
   initialize(): Promise<void>
   // TODO: type reflectActionsObject
   reflectActionsObject(): any
+  /**
+   * @overridable
+   */
+  logController(): void
+  /**
+   * @param str The string to log.
+   * @param [indent=0] The amount of levels to indent (in pairs of two spaces).
+   *   Default is `0`
+   */
+  logRoute(str: string, indent?: number): void
   setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
     method: HTTPMethod,
     url: string,
@@ -909,12 +919,6 @@ export class Controller {
   processAuthorize(authorize: any): any
   describeAuthorize(authorize: any): string
   handleAuthorization(): Promise<void>
-  /**
-   * @param str The string to log.
-   * @param [indent=0] The amount of levels to indent (in pairs of two spaces).
-   *   Default is `0`
-   */
-  log(str: string, indent?: number): void
 }
 
 export type ActionParameter = Schema & { name: string }
