@@ -763,8 +763,7 @@ export class Model extends objection.Model {
   static whereJsonSubsetOf: StaticQueryBuilderMethod<'whereJsonSubsetOf'>
   static whereJsonNotSubsetOf: StaticQueryBuilderMethod<'whereJsonNotSubsetOf'>
   static whereJsonSupersetOf: StaticQueryBuilderMethod<'whereJsonSupersetOf'>
-  static whereJsonNotSupersetOf:
-    StaticQueryBuilderMethod<'whereJsonNotSupersetOf'>
+  static whereJsonNotSupersetOf: StaticQueryBuilderMethod<'whereJsonNotSupersetOf'>
 
   static having: StaticQueryBuilderMethod<'having'>
   static havingIn: StaticQueryBuilderMethod<'havingIn'>
