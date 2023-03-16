@@ -42,7 +42,7 @@ export class Model extends objection.Model {
     const { hooks, assets } = this.definition
     this._configureEmitter(hooks)
     if (assets) {
-      this._configureAssetsEvents(assets)
+      this._configureAssetsHooks(assets)
     }
     try {
       for (const relation of Object.values(this.getRelations())) {
@@ -923,7 +923,7 @@ export class Model extends objection.Model {
 
   // Assets handling
 
-  static _configureAssetsEvents(assets) {
+  static _configureAssetsHooks(assets) {
     const assetDataPaths = Object.keys(assets)
 
     this.on([
@@ -931,32 +931,48 @@ export class Model extends objection.Model {
       'before:update',
       'before:delete'
     ], async ({ type, transaction, inputItems, asFindQuery }) => {
-      const afterItems = type === 'before:delete'
-        ? []
-        : inputItems
+      const isInsert = type === 'before:insert'
+      const isDelete = type === 'before:delete'
       // Figure out which asset data paths where actually present in the
       // submitted data, and only compare these. But when deleting, use all.
-      const dataPaths = afterItems.length > 0
-        ? assetDataPaths.filter(
-          path => getValueAtAssetDataPath(afterItems[0], path) !== undefined
+      const dataPaths = isDelete
+        ? assetDataPaths
+        : assetDataPaths.filter(
+          dataPath => (
+            // Skip check for wildcard data-paths.
+            /^\*\*?/.test(dataPath) ||
+            // Only keep normal data paths that match present properties.
+            (parseDataPath(dataPath)[0] in inputItems[0])
+          )
         )
-        : assetDataPaths
-
       // `dataPaths` is empty in the case of an update/insert that does not
       // affect the assets.
       if (dataPaths.length === 0) return
 
-      // Load the model's asset files in their current state before the query is
-      // executed.
-      const beforeItems = type === 'before:insert'
+      const afterItems = isDelete
         ? []
-        : await loadAssetDataPaths(asFindQuery(), dataPaths)
-      const beforeFilesPerDataPath = getFilesPerAssetDataPath(
-        beforeItems,
-        dataPaths
-      )
+        : inputItems
+      // Load the model's asset files in their current state before the query is
+      // executed. For deletes, load the data for all asset data-paths.
+      // Otherwise, only load the columns present in the input data.
+      const beforeItems = isInsert
+        ? []
+        : isDelete
+          ? await loadAssetDataPaths(asFindQuery(), dataPaths)
+          : await asFindQuery().select(
+            // Select all columns that are present in the data and not computed.
+            Object.keys(inputItems[0]).filter(key => {
+              const property = this.definition.properties[key]
+              return property && !property.computed
+            })
+          )
+
       const afterFilesPerDataPath = getFilesPerAssetDataPath(
         afterItems,
+        dataPaths
+      )
+      const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+        beforeItems,
         dataPaths
       )
 
