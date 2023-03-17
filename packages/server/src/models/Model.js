@@ -958,9 +958,12 @@ export class Model extends objection.Model {
       const beforeItems = isInsert
         ? []
         : isDelete
+          // When deleting it's ok to load all columns when data-paths contain
+          // wildcards unfiltered, since `afterItems` will be empty anyway.
           ? await loadAssetDataPaths(asFindQuery(), dataPaths)
           : await asFindQuery().select(
-            // Select all columns that are present in the data and not computed.
+            // Select only the properties that are present in the data,
+            // and which aren't the result of computed properties.
             Object.keys(inputItems[0]).filter(key => {
               const property = this.definition.properties[key]
               return property && !property.computed
