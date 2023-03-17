@@ -120,5 +120,17 @@ describe('getValueAtDataPath()', () => {
 
     expect(getValueAtDataPath(data, 'object/**/array/1/name'))
       .toEqual(['two', 'six'])
+
+    expect(getValueAtDataPath(data, 'object/**/object'))
+      .toEqual([
+        {
+          one: { name: 'three' },
+          two: { name: 'four' }
+        },
+        {
+          one: { name: 'seven' },
+          two: { name: 'eight' }
+        }
+      ])
   })
 })

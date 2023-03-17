@@ -31,22 +31,22 @@ describe('describeFunction()', () => {
       .toBe('async function (a, b, c) { ... }')
   })
 
-  it('describes lambdas with one param and a body', () => {
+  it('describes async lambdas with one param and a body', () => {
     expect(describeFunction(async a => { return a }))
       .toBe('async a => { ... }')
   })
 
-  it('describes lambdas with one param and no body', () => {
+  it('describes async lambdas with one param and no body', () => {
     expect(describeFunction(async a => a))
       .toBe('async a => ...')
   })
 
-  it('describes lambdas with multiple params and a body', () => {
+  it('describes async lambdas with multiple params and a body', () => {
     expect(describeFunction(async (a, b, c) => { return a + b + c }))
       .toBe('async (a, b, c) => { ... }')
   })
 
-  it('describes lambdas with multiple params and no body', () => {
+  it('describes async lambdas with multiple params and no body', () => {
     expect(describeFunction(async (a, b, c) => a + b + c))
       .toBe('async (a, b, c) => ...')
   })
