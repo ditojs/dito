@@ -6,11 +6,7 @@ import { createVuePlugin } from 'vite-plugin-vue2'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
-import {
-  createRollupImportsResolver,
-  testModuleIdentifier,
-  getPostCssConfig
-} from '@ditojs/build'
+import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
 import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
@@ -237,8 +233,7 @@ export class AdminController extends Controller {
           {
             find: '@',
             replacement: root
-          },
-          createRollupImportsResolver({ cwd: root })
+          }
         ]
       }
     }, config))

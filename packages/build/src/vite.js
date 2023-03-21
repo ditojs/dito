@@ -1,10 +1,7 @@
 import { defineConfig as defineViteConfig } from 'vite'
 import { createVuePlugin } from 'vite-plugin-vue2'
 import { getPostCssConfig } from './postcss.js'
-import {
-  getRollupExternalsFromDependencies,
-  createRollupImportsResolver
-} from './rollup.js'
+import { getRollupExternalsFromDependencies } from './rollup.js'
 
 export function getViteConfig({
   name,
@@ -26,15 +23,8 @@ export function getViteConfig({
   })
   return defineConfig({
     plugins: vue
-      ? [
-        createVuePlugin()
-      ]
+      ? [createVuePlugin()]
       : null,
-    resolve: {
-      alias: [
-        createRollupImportsResolver()
-      ]
-    },
     esbuild: build
       ? { minify }
       : null,
@@ -59,9 +49,7 @@ export function getViteConfig({
       }
       : null,
     css: css
-      ? {
-        postcss: getPostCssConfig()
-      }
+      ? { postcss: getPostCssConfig() }
       : null,
     ...rest
   })
