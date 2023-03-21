@@ -1930,7 +1930,6 @@ __metadata:
     data-uri-to-buffer: ^4.0.1
     eventemitter2: ^6.4.9
     file-type: ^18.2.1
-    image-size: ^1.0.2
     knex: ^2.4.2
     koa: ^2.14.1
     koa-bodyparser: ^4.3.0
@@ -1944,6 +1943,7 @@ __metadata:
     koa-response-time: ^2.1.0
     koa-session: ^6.4.0
     koa-static: ^5.0.0
+    leather: ^2.1.4
     mime-types: ^2.1.35
     multer: ^1.4.5-lts.1
     multer-s3: "https://github.com/ditojs/multer-s3#dito"
@@ -7163,17 +7163,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"image-size@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "image-size@npm:1.0.2"
-  dependencies:
-    queue: 6.0.2
-  bin:
-    image-size: bin/image-size.js
-  checksum: 01745fdb47f87cecf538e69c63f9adc5bfab30a345345c2de91105f3afbd1bfcfba1256af02bf3323077b33b0004469a837e077bf0cbb9c907e9c1e9e7547585
-  languageName: node
-  linkType: hard
-
 "immutable@npm:^4.0.0":
   version: 4.2.4
   resolution: "immutable@npm:4.2.4"
@@ -8142,6 +8131,13 @@ __metadata:
     type-is: ^1.6.16
     vary: ^1.1.2
   checksum: 84cfce48d72cf434831bd9f4f06beb3815da030325a7e89b13ee684f5afd158221e16c2d450ca637b221aa0c4a0ab235edd129e4efea656dc5d8384801d3e90f
+  languageName: node
+  linkType: hard
+
+"leather@npm:^2.1.4":
+  version: 2.1.4
+  resolution: "leather@npm:2.1.4"
+  checksum: 8842b6f7d0ef28b40d3f538bae6067d6fd5506ec70f811d6fe724aa2461c9e0a56d55086dddc585c91c862b6e26d390e4afac533759726f494404288a3a2f9f6
   languageName: node
   linkType: hard
 
@@ -10625,15 +10621,6 @@ __metadata:
   version: 1.2.3
   resolution: "queue-microtask@npm:1.2.3"
   checksum: b676f8c040cdc5b12723ad2f91414d267605b26419d5c821ff03befa817ddd10e238d22b25d604920340fd73efd8ba795465a0377c4adf45a4a41e4234e42dc4
-  languageName: node
-  linkType: hard
-
-"queue@npm:6.0.2":
-  version: 6.0.2
-  resolution: "queue@npm:6.0.2"
-  dependencies:
-    inherits: ~2.0.3
-  checksum: ebc23639248e4fe40a789f713c20548e513e053b3dc4924b6cb0ad741e3f264dcff948225c8737834dd4f9ec286dbc06a1a7c13858ea382d9379f4303bcc0916
   languageName: node
   linkType: hard
 

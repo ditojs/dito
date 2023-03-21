@@ -3,7 +3,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import { Storage } from './Storage.js'
 import { PassThrough } from 'stream'
 import consumers from 'stream/consumers'
-import imageSize from 'image-size'
+import { attributes as readMediaAttributes } from 'leather'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -159,31 +159,9 @@ export class S3Storage extends Storage {
 }
 
 function getFileTypeFromBuffer(buffer) {
-  const type = fileTypeFromBuffer(buffer)
-  if (type) {
-    return type.mime
-  }
   try {
-    const { type } = imageSize(buffer)
-    return {
-      jpg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      svg: 'image/svg+xml',
-      webp: 'image/webp',
-      tiff: 'image/tiff',
-      j2c: 'image/jp2',
-      jp2: 'image/jp2',
-      ktx: 'image/ktx',
-      bmp: 'image/bmp',
-      tga: 'image/x-targa',
-      cur: 'image/x-win-bitmap',
-      icns: 'image/x-icon',
-      ico: 'image/x-icon',
-      pnm: 'image/x-portable-anymap',
-      dds: 'image/vnd-ms.dds',
-      psd: 'image/vnd.adobe.photoshop'
-    }[type]
+    // Use leather as fall-back for better media file mime type detection.
+    return fileTypeFromBuffer(buffer)?.mime || readMediaAttributes(buffer)?.mime
   } catch (err) {}
   return null
 }

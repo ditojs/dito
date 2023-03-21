@@ -40,7 +40,7 @@ export const AssetMixin = mixin(Model => class extends TimeStampedMixin(Model) {
         url: {
           type: 'string'
         },
-        // These are only used when the storage defines `config.readImageSize`:
+        // These are only used when the storage defines `config.readDimensions`:
         width: {
           type: 'integer'
         },

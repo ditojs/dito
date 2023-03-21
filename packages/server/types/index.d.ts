@@ -588,7 +588,7 @@ export type ModelFilters<$Model extends Model = Model> = Record<
 
 export interface ModelAsset {
   storage: string
-  readImageSize?: boolean
+  readDimensions?: boolean
 }
 
 export type ModelAssets = Record<string, ModelAsset>
@@ -1666,9 +1666,9 @@ type AssetFileObject = {
   size: number
   // The public url of the file
   url: string
-  // The width of the image if the storage defines `config.readImageSize`
+  // The width of the image if the storage defines `config.readDimensions`
   width: number
-  // The height of the image if the storage defines `config.readImageSize`
+  // The height of the image if the storage defines `config.readDimensions`
   height: number
 }
 

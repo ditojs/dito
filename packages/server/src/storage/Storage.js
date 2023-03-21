@@ -2,10 +2,11 @@ import path from 'path'
 import { URL } from 'url'
 import multer from '@koa/multer'
 import picomatch from 'picomatch'
-import imageSize from 'image-size'
 import { PassThrough } from 'stream'
+import { attributes as readMediaAttributes } from 'leather'
 import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
+import { deprecate } from '../utils/deprecate.js'
 
 const storageClasses = {}
 
@@ -87,7 +88,7 @@ export class Storage {
       type: storageFile.mimetype,
       size: storageFile.size,
       url: this._getFileUrl(storageFile),
-      // In case `config.readImageSize` is set:
+      // In case `config.readDimensions` is set:
       width: storageFile.width,
       height: storageFile.height
     }
@@ -101,7 +102,7 @@ export class Storage {
     await this._addFile(file, data)
     file.size = Buffer.byteLength(data)
     file.url = this._getFileUrl(file)
-    // TODO: Support `config.readImageSize`, but this can only be done once
+    // TODO: Support `config.readDimensions`, but this can only be done once
     // there are separate storage instances per model assets config!
     return this.convertAssetFile(file)
   }
@@ -124,10 +125,6 @@ export class Storage {
 
   getFileUrl(file) {
     return this._getFileUrl(file)
-  }
-
-  isImageFile(file) {
-    return file.mimetype.startsWith('image/')
   }
 
   _getUrl(...parts) {
@@ -161,8 +158,20 @@ export class Storage {
   async _listKeys() {}
 
   async _handleUpload(req, file, config) {
-    if (config.readImageSize && this.isImageFile(file)) {
-      return this._handleImageFile(req, file)
+    if (config.readImageSize) {
+      deprecate(
+        `config.readImageSize is deprecated in favour of config.readDimensions`
+      )
+    }
+    if (
+      (
+        config.readDimensions ||
+        // TODO: `config.readImageSize` was deprecated in favour of
+        // `config.readDimensions` in March 2023. Remove in 1 year.
+        config.readImageSize
+      ) && /^(image|video)\//.test(file.mimetype)
+    ) {
+      return this._handleMediaFile(req, file)
     } else {
       return this._handleFile(req, file)
     }
@@ -183,7 +192,7 @@ export class Storage {
     })
   }
 
-  async _handleImageFile(req, file) {
+  async _handleMediaFile(req, file) {
     const { size, stream } = await new Promise(resolve => {
       let data = null
 
@@ -204,9 +213,15 @@ export class Storage {
 
       const onData = chunk => {
         data = data ? Buffer.concat([data, chunk]) : chunk
-        const size = imageSize(data)
-        if (size) {
-          done(size)
+        try {
+          const size = readMediaAttributes(data)
+          // On partial data, sometimes we get results back from leather without
+          // actual dimensions, so check for that.
+          if (size.mime && (size.width > 0 || size.height > 0)) {
+            done(size)
+          }
+        } catch {
+          // Ignore errors in `readMediaAttributes()` on partial data.
         }
       }
 
