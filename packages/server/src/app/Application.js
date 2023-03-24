@@ -819,12 +819,13 @@ export class Application extends Koa {
         addedFiles.length > 0 ||
         removedFiles.length > 0
       ) {
-        const changeCount = (files, increment) => (
-          files.length > 0 &&
-          AssetModel.query(trx)
-            .whereIn('key', files.map(file => file.key))
-            .increment('count', increment)
-        )
+        const changeCount = async (files, increment) => {
+          if (files.length > 0) {
+            await AssetModel.query(trx)
+              .whereIn('key', files.map(file => file.key))
+              .increment('count', increment)
+          }
+        }
         await Promise.all([
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)

@@ -11,6 +11,7 @@
       // Support the same rendering options as TypeList:
       dito-schema-inlined(
         v-if="isInlined"
+        :label="objectLabel"
         :schema="getItemFormSchema(schema, objectData, context)"
         :dataPath="dataPath"
         :data="objectData"
@@ -81,6 +82,15 @@ export default TypeComponent.register('object', {
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
     return type
+  },
+
+  computed: {
+    objectLabel() {
+      // Only show a label if the object is collapsible.
+      return this.collapsible
+        ? this.getItemLabel(this.schema, this.objectData, { asObject: true })
+        : null
+    }
   },
 
   methods: {

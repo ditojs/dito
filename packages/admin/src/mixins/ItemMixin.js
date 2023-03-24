@@ -88,6 +88,9 @@ export default {
         }
         // It's up to `itemLabel()` entirely to produce the label:
         extended = false
+      } else if (isString(itemLabel) && !(itemLabel in item)) {
+        // `itemLabel` can be both a key, or simply a label.
+        text = itemLabel
       } else {
         // Look up the name on the item, by these rules:
         // 1. If `itemLabel` is a string, use it as the property key
