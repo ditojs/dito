@@ -105,14 +105,13 @@ export default {
         text = item[key]
       }
       const hadLabel = !!text
-      text ||= ''
       // If no label was found so far, try to produce one from the index.
-      if (!text) {
+      if (text == null) {
         // Always use extended style when auto-generating labels from index/id:
         extended = true
-        if (isListSource(sourceSchema) && index !== null) {
-          text = `${index + 1}`
-        }
+        text = (isListSource(sourceSchema) && index !== null)
+          ? text = `${index + 1}`
+          : ''
       }
       if (extended) {
         const formLabel = getFormLabel()
