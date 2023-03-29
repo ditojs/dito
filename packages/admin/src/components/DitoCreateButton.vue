@@ -1,29 +1,29 @@
 <template lang="pug">
-  .dito-create-button
-    template(v-if="showPulldown")
-      button.dito-button(
-        type="button"
-        @mousedown.stop="onPulldownMouseDown()"
-        :class="`dito-button-${verb}`"
-        :title="labelize(verb)"
-      ) {{ text }}
-      ul.dito-pulldown(
-        :class="{ 'dito-open': pulldown.open }"
-      )
-        li(v-for="(form, type) in forms")
-          a(
-            v-if="isCreatable(form)"
-            :class="`dito-type-${type}`"
-            @mousedown.stop="onPulldownMouseDown(type)"
-            @mouseup="onPulldownMouseUp(type)"
-          ) {{ getLabel(form) }}
+.dito-create-button
+  template(v-if="showPulldown")
     button.dito-button(
-      v-else
-      :type="isInlined ? 'button' : 'submit'"
-      @click="createItem(forms.default)"
+      type="button"
+      @mousedown.stop="onPulldownMouseDown()"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
     ) {{ text }}
+    ul.dito-pulldown(
+      :class="{ 'dito-open': pulldown.open }"
+    )
+      li(v-for="(form, type) in forms")
+        a(
+          v-if="isCreatable(form)"
+          :class="`dito-type-${type}`"
+          @mousedown.stop="onPulldownMouseDown(type)"
+          @mouseup="onPulldownMouseUp(type)"
+        ) {{ getLabel(form) }}
+  button.dito-button(
+    v-else
+    :type="isInlined ? 'button' : 'submit'"
+    @click="createItem(forms.default)"
+    :class="`dito-button-${verb}`"
+    :title="labelize(verb)"
+  ) {{ text }}
 </template>
 
 <style lang="sass">
@@ -76,8 +76,7 @@ export default DitoComponent.component('dito-create-button', {
         } else {
           this.$router.push({
             path: `${this.path}/create`,
-            query: { type },
-            append: true
+            query: { type }
           })
         }
       } else {

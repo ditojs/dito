@@ -1,10 +1,10 @@
 <template lang="pug">
-  .dito-errors(
-    v-if="errors"
-  )
-    ul
-      li(v-for="error of errors")
-        | {{ error }}
+.dito-errors(
+  v-if="errors"
+)
+  ul
+    li(v-for="error of errors")
+      | {{ error }}
 </template>
 
 <style lang="sass">

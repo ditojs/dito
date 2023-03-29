@@ -1,12 +1,11 @@
 <template lang="pug">
-  progress.dito-progress(
-    ref="element"
-    :id="dataPath"
-    :value="progressValue"
-    :max="progressMax"
-    v-bind="attributes"
-    v-on="listeners"
-  )
+progress.dito-progress(
+  ref="element"
+  :id="dataPath"
+  :value="progressValue"
+  :max="progressMax"
+  v-bind="attributes"
+)
 </template>
 
 <script>

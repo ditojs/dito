@@ -1,13 +1,12 @@
 <template lang="pug">
-  button.dito-button(
-    ref="element"
-    :id="dataPath"
-    :type="type"
-    :title="text"
-    :class="`dito-button-${verb}`"
-    v-bind="attributes"
-    v-on="listeners"
-  ) {{ text }}
+button.dito-button(
+  ref="element"
+  :id="dataPath"
+  :type="type"
+  :title="text"
+  :class="`dito-button-${verb}`"
+  v-bind="attributes"
+) {{ text }}
 </template>
 
 <script>
@@ -47,12 +46,9 @@ export default TypeComponent.register([
 
   methods: {
     // @override
-    getListeners() {
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        click: this.onClick
-      }
+    getEvents() {
+      const { onFocus, onBlur, onClick } = this
+      return { onFocus, onBlur, onClick }
     },
 
     async submit(options) {

@@ -1,19 +1,20 @@
 <template lang="pug">
-  ul.dito-radio-buttons(
-    :id="dataPath"
-    :class="`dito-layout-${schema.layout || 'vertical'}`"
+ul.dito-radio-buttons(
+  :id="dataPath"
+  :class="`dito-layout-${schema.layout || 'vertical'}`"
+)
+  li(
+    v-for="option in options"
   )
-    li(v-for="option in options")
-      label
-        input.dito-radio-button(
-          ref="element"
-          type="radio"
-          :value="getValueForOption(option)"
-          v-model="selectedValue"
-          v-bind="attributes"
-          v-on="listeners"
-        )
-        | {{ getLabelForOption(option) }}
+    label
+      input.dito-radio-button(
+        ref="element"
+        type="radio"
+        :value="getValueForOption(option)"
+        v-model="selectedValue"
+        v-bind="attributes"
+      )
+      | {{ getLabelForOption(option) }}
 </template>
 
 <style lang="sass">

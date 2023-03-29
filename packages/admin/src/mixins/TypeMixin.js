@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { computeValue } from '../utils/schema.js'
 import { getItem, getParentItem } from '../utils/data.js'
-import { isString, asArray } from '@ditojs/utils'
+import { isString, asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -38,10 +38,6 @@ export default {
       return this.schema.type
     },
 
-    component() {
-      return this.resolveTypeComponent(this.schema.component)
-    },
-
     context() {
       return new DitoContext(this, { nested: this.nested })
     },
@@ -70,7 +66,8 @@ export default {
         this.parsedValue = parse
           ? parse.call(this, new DitoContext(this, { value }))
           : value
-        this.$set(this.data, this.name, this.parsedValue)
+        // eslint-disable-next-line vue/no-mutating-props
+        this.data[this.name] = this.parsedValue
       }
     },
 
@@ -119,7 +116,7 @@ export default {
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default() {
-        return this.typeOptions.defaultVisible
+        return this.$options.defaultVisible
       }
     }),
 
@@ -178,20 +175,26 @@ export default {
           attributes.autocomplete = this.autocomplete
         }
       }
-      return attributes
+
+      return {
+        ...Object.fromEntries(
+          Object.entries(this.$attrs).filter(([key]) => key.startsWith('on'))
+        ),
+        ...this.events,
+        ...attributes
+      }
     },
 
-    listeners() {
-      const listeners = this.getListeners()
-      const { events = {} } = this.schema
-      if (events) {
-        // Register callbacks for all provides non-recognized events,
-        // assuming they are native events.
-        for (const event of Object.keys(events)) {
-          listeners[event] ||= () => this.emitEvent(event)
-        }
+    events() {
+      const events = this.getEvents()
+      // Register callbacks for all provides non-recognized events,
+      // assuming they are native events.
+      // TODO: Move to vue3-style `on[A-Z]` event handlers naming that aren't
+      // namespaced in `schema.events` once the transition is complete.
+      for (const event of Object.keys(this.schema.events || {})) {
+        events[`on${camelize(event, true)}`] ||= () => this.emitEvent(event)
       }
-      return listeners
+      return events
     },
 
     validations() {
@@ -210,11 +213,6 @@ export default {
       return validations
     },
 
-    providesData() {
-      // NOTE: This is overridden in ResourceMixin, used by lists.
-      return false
-    },
-
     showClearButton() {
       return this.clearable && this.value != null
     }
@@ -225,7 +223,7 @@ export default {
     this.setupSchemaFields()
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this._register(false)
   },
 
@@ -234,20 +232,13 @@ export default {
       // Prevent unnested type components from overriding parent data paths
       if (this.nested) {
         this.schemaComponent._registerComponent(this, add)
-        // Install / remove the field events to watch of changes and handle
-        // validation flags. `events` is provided by `ValidationMixin.events()`
-        this[add ? 'on' : 'off'](this.events)
       }
     },
 
     // @overridable
-    getListeners() {
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        input: this.onInput,
-        change: this.onChange
-      }
+    getEvents() {
+      const { onFocus, onBlur, onInput, onChange } = this
+      return { onFocus, onBlur, onInput, onChange }
     },
 
     // @overridable
@@ -284,19 +275,23 @@ export default {
 
     onFocus() {
       this.focused = true
+      this.markTouched()
       this.emitEvent('focus')
     },
 
     onBlur() {
       this.focused = false
+      this.validate()
       this.emitEvent('blur')
     },
 
     onInput() {
+      this.markDirty()
       this.emitEvent('input')
     },
 
     onChange() {
+      this.markDirty()
       this.emitEvent('change', {
         context: this.parsedValue !== undefined
           ? { value: this.parsedValue }

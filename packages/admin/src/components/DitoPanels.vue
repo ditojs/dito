@@ -1,9 +1,11 @@
 <template lang="pug">
-  .dito-panels(
-    v-if="panels.length > 0"
+.dito-panels(
+  v-if="panels.length > 0"
+)
+  template(
+    v-for="{ schema, dataPath, tabComponent } in panels"
   )
     dito-panel(
-      v-for="{ schema, dataPath, tabComponent } in panels"
       v-if="shouldRender(schema)"
       :key="getPanelKey(dataPath, tabComponent)"
       :schema="schema"

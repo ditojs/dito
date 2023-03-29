@@ -1,56 +1,56 @@
 <template lang="pug">
-  .dito-object(
-    v-if="isReady"
-    :id="dataPath"
-    :class="schema.class"
-    :style="schema.style"
+.dito-object(
+  v-if="isReady"
+  :id="dataPath"
+  :class="schema.class"
+  :style="schema.style"
+)
+  .dito-object-content(
+    v-if="objectData"
   )
-    .dito-object-content(
-      v-if="objectData"
-    )
-      // Support the same rendering options as TypeList:
-      dito-schema-inlined(
-        v-if="isInlined"
+    //- Support the same rendering options as TypeList:
+    dito-schema-inlined(
+      v-if="isInlined"
         :label="objectLabel"
-        :schema="getItemFormSchema(schema, objectData, context)"
-        :dataPath="dataPath"
-        :data="objectData"
-        :meta="nestedMeta"
-        :store="store"
-        :disabled="disabled || isLoading"
-        :collapsed="collapsed"
-        :collapsible="collapsible"
-      )
-      component(
-        v-else-if="component"
-        :is="component"
-        :dataPath="dataPath"
-        :data="objectData"
-        :nested="false"
-      )
-      span(
-        v-else-if="render"
-        v-html="render(getContext())"
-      )
-      span(
-        v-else
-        v-html="getItemLabel(schema, objectData)"
-      )
-    dito-edit-buttons(
-      :creatable="creatable"
-      :deletable="objectData && deletable"
-      :editable="objectData && editable"
-      :createPath="path"
-      :editPath="path"
-      :buttons="buttonSchemas"
-      :schema="schema"
+      :schema="getItemFormSchema(schema, objectData, context)"
       :dataPath="dataPath"
       :data="objectData"
-      :path="path"
-      :meta="meta"
+      :meta="nestedMeta"
       :store="store"
-      @delete="deleteItem(objectData)"
+      :disabled="disabled || isLoading"
+      :collapsed="collapsed"
+      :collapsible="collapsible"
     )
+    component(
+      v-else-if="schema.component"
+      :is="schema.component"
+      :dataPath="dataPath"
+      :data="objectData"
+      :nested="false"
+    )
+    span(
+      v-else-if="render"
+      v-html="render(getContext())"
+    )
+    span(
+      v-else
+      v-html="getItemLabel(schema, objectData)"
+    )
+  dito-edit-buttons(
+    :creatable="creatable"
+    :deletable="objectData && deletable"
+    :editable="objectData && editable"
+    :createPath="path"
+    :editPath="path"
+    :buttons="buttonSchemas"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="objectData"
+    :path="path"
+    :meta="meta"
+    :store="store"
+    @delete="deleteItem(objectData)"
+  )
 </template>
 
 <style lang="sass">
@@ -74,6 +74,7 @@
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
+import { resolveSchemaComponent } from '../utils/schema.js'
 
 // @vue/component
 export default TypeComponent.register('object', {
@@ -97,6 +98,21 @@ export default TypeComponent.register('object', {
     getContext() {
       return new DitoContext(this, { data: this.objectData })
     }
+  },
+
+  async processSchema(
+    api, schema, name, routes, level,
+    nested = false, flatten = false,
+    process = null
+  ) {
+    await Promise.all([
+      resolveSchemaComponent(schema),
+      SourceMixin.processSchema(
+        api, schema, name, routes, level,
+        nested, flatten,
+        process
+      )
+    ])
   }
 })
 </script>

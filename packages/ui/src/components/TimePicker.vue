@@ -1,17 +1,17 @@
 // Derived from ATUI, and further extended: https://aliqin.github.io/atui/
 
 <template lang="pug">
-  trigger.dito-time-picker(
-    ref="trigger"
-    trigger="click"
-    :show.sync="showPopup"
-    v-bind="{ transition, placement, disabled, target }"
-  )
+trigger.dito-time-picker(
+  ref="trigger"
+  trigger="click"
+  v-model:show="showPopup"
+  v-bind="{ transition, placement, disabled, target }"
+)
+  template(#trigger)
     input-field.dito-time-picker-input(
-      slot="trigger"
       ref="input"
       type="text"
-      :value="currentText"
+      v-model="currentText"
       readonly
       :class="{ 'dito-focus': showPopup }"
       @focus="inputFocused = true"
@@ -19,45 +19,50 @@
       @keydown="onKeyDown"
       v-bind="{ placeholder, disabled }"
     )
-    // icon(type="time"
-    //   :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
-    // )
-    .dito-time-picker-popup(
-      slot="popup"
-    )
+    //- icon(type="time"
+    //-   :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
+    //- )
+  template(#popup)
+    .dito-time-picker-popup
       .dito-time-picker-panel
         ul.dito-time-picker-hour(
           ref="hour"
           @mouseover="selection = 0"
         )
-          li(
+          template(
             v-for="index in 24"
-            v-if="!disabledHour(index - 1)"
-            :class="{ selected: hour === index - 1 }"
-            @click="hour = index - 1"
-          ) {{ leftPad(index - 1) }}
+          )
+            li(
+              v-if="!disabledHour(index - 1)"
+              :class="{ selected: hour === index - 1 }"
+              @click="hour = index - 1"
+            ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
         ul.dito-time-picker-minute(
           ref="minute"
           @mouseover="selection = 1"
         )
-          li(
+          template(
             v-for="index in 60"
-            v-if="!disabledMinute(index - 1)"
-            :class="{ selected: minute === index - 1 }"
-            @click="minute = index - 1"
-          ) {{ leftPad(index - 1) }}
+          )
+            li(
+              v-if="!disabledMinute(index - 1)"
+              :class="{ selected: minute === index - 1 }"
+              @click="minute = index - 1"
+            ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
         ul.dito-time-picker-second(
           ref="second"
           @mouseover="selection = 2"
         )
-          li(
+          template(
             v-for="index in 60"
-            v-if="!disabledSecond(index - 1)"
-            :class="{ selected: second === index - 1 }"
-            @click="second = index - 1"
-          ) {{ leftPad(index - 1) }}
+          )
+            li(
+              v-if="!disabledSecond(index - 1)"
+              :class="{ selected: second === index - 1 }"
+              @click="second = index - 1"
+            ) {{ leftPad(index - 1) }}
 </template>
 
 <style lang="sass">
@@ -153,7 +158,7 @@ export default {
   components: { Trigger, InputField },
 
   props: {
-    value: { type: Date, default: null },
+    modelValue: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
     placeholder: { type: String, default: null },
@@ -167,7 +172,7 @@ export default {
 
   data() {
     return {
-      currentValue: this.value,
+      currentValue: this.modelValue,
       showPopup: this.show,
       inputFocused: false,
       selection: 0,
@@ -231,16 +236,16 @@ export default {
   },
 
   watch: {
-    value(newVal, oldVal) {
-      if (+newVal !== +oldVal) {
-        this.currentValue = newVal
+    modelValue(to, from) {
+      if (+to !== +from) {
+        this.currentValue = to
       }
     },
 
     currentValue(date) {
-      if (+date !== +this.value) {
+      if (+date !== +this.modelValue) {
         this.changed = true
-        this.$emit('input', date)
+        this.$emit('update:modelValue', date)
         this.scrollAll()
       }
     },
@@ -253,30 +258,25 @@ export default {
       this.showPopup = show
     },
 
-    showPopup(newVal, oldVal) {
-      if (newVal) {
+    showPopup(to, from) {
+      if (to) {
         this.updateSelection()
         this.scrollAll(0)
       }
-      if (!newVal !== !oldVal) {
-        this.$emit('update:show', newVal)
+      if (to ^ from) {
+        this.$emit('update:show', to)
       }
     },
 
-    focused(newVal, oldVal) {
-      if (!newVal !== !oldVal) {
-        this.$emit(newVal ? 'focus' : 'blur')
+    focused(to, from) {
+      if (to ^ from) {
+        this.$emit(to ? 'focus' : 'blur')
+        if (!to && this.changed) {
+          this.changed = false
+          this.$emit('change', this.currentValue)
+        }
       }
     }
-  },
-
-  mounted() {
-    this.$on('blur', () => {
-      if (this.changed) {
-        this.changed = false
-        this.$emit('change', this.currentValue)
-      }
-    })
   },
 
   methods: {

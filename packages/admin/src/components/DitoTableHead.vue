@@ -1,15 +1,18 @@
 <template lang="pug">
-  thead.dito-table-head
-    tr
+thead.dito-table-head
+  tr
+    template(
+      v-for="(column, index) in columns"
+    )
       th(
-        v-for="(column, index) in columns"
         v-if="shouldRender(column)"
         :class="getColumnClass(column)"
       )
         router-link(
           v-if="column.sortable"
           :to="getSortLink(column)"
-          custom v-slot="{ navigate }"
+          custom
+          v-slot="{ navigate }"
         )
           button.dito-button(
             type="button"
@@ -21,9 +24,9 @@
         span(
           v-else
         ) {{ getLabel(column) }}
-      th(v-if="hasEditButtons")
-        // Empty <span> is needed for styling, see _table.sass
-        span
+    th(v-if="hasEditButtons")
+      //- Empty <span> is needed for styling, see _table.sass
+      span
 </template>
 
 <style lang="sass">

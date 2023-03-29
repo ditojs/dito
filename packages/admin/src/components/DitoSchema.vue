@@ -1,82 +1,82 @@
 <template lang="pug">
-  .dito-schema
-    .dito-schema-content
-      .dito-schema-header(
-        v-if="hasLabel || hasTabs || clipboard"
-        :class="{ 'dito-schema-menu-header': menuHeader }"
+.dito-schema
+  .dito-schema-content
+    .dito-schema-header(
+      v-if="hasLabel || hasTabs || clipboard"
+      :class="{ 'dito-schema-menu-header': menuHeader }"
+    )
+      dito-label(
+        v-if="hasLabel"
+        :label="label"
+        :dataPath="dataPath"
+        :collapsible="collapsible"
+        :collapsed="!opened"
+        @expand="onExpand"
       )
-        dito-label(
-          v-if="hasLabel"
-          :label="label"
-          :dataPath="dataPath"
-          :collapsible="collapsible"
-          :collapsed="!opened"
-          @expand="onExpand"
+        //- Pass edit-buttons through to dito-label's own edit-buttons slot:
+        template(
+          #edit-buttons
+          v-if="inlined"
         )
-          // Pass edit-buttons through to dito-label's own edit-buttons slot:
-          template(
-            #edit-buttons
-            v-if="inlined"
-          )
-            slot(name="edit-buttons")
-        dito-tabs(
-          v-if="tabs"
-          :tabs="tabs"
-          :selectedTab="selectedTab"
-        )
-        dito-clipboard(
-          :clipboard="clipboard"
-          :dataPath="dataPath"
-          :data="data"
-        )
-      dito-pane.dito-pane-tab(
-        v-if="hasTabs"
-        v-for="(schema, tab) in tabs"
-        ref="tabs"
-        :key="tab"
-        :visible="selectedTab === tab"
-        :tab="tab"
+          slot(name="edit-buttons")
+      dito-tabs(
+        v-if="tabs"
+        :tabs="tabs"
+        :selectedTab="selectedTab"
+      )
+      dito-clipboard(
+        :clipboard="clipboard"
+        :dataPath="dataPath"
+        :data="data"
+      )
+    dito-pane.dito-pane-tab(
+      v-if="hasTabs"
+      v-for="(schema, tab) in tabs"
+      ref="tabs"
+      :key="tab"
+      :visible="selectedTab === tab"
+      :tab="tab"
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :single="!inlined && !hasMainPane"
+      :disabled="disabled"
+      :generateLabels="generateLabels"
+    )
+    transition-height(
+      :enabled="inlined"
+    )
+      dito-pane.dito-pane-main(
+        v-if="hasMainPane && opened"
+        ref="components"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
         :meta="meta"
         :store="store"
-        :single="!inlined && !hasMainPane"
+        :single="!inlined && !hasTabs"
         :disabled="disabled"
         :generateLabels="generateLabels"
       )
-      transition-height(
-        :enabled="inlined"
-      )
-        dito-pane.dito-pane-main(
-          v-if="hasMainPane && opened"
-          ref="components"
-          :schema="schema"
-          :dataPath="dataPath"
-          :data="data"
-          :meta="meta"
-          :store="store"
-          :single="!inlined && !hasTabs"
-          :disabled="disabled"
-          :generateLabels="generateLabels"
-        )
-      slot(
-        name="buttons"
-        v-if="!inlined && isPopulated"
-      )
-    template(v-if="inlined")
-      slot(
-        v-if="!hasLabel"
-        name="edit-buttons"
-      )
-    template(v-else-if="isPopulated")
-      dito-panels(
-        :panels="panelSchemas"
-        :data="data"
-        :meta="meta"
-        :store="store"
-        :disabled="disabled"
-      )
+    slot(
+      v-if="!inlined && isPopulated"
+      name="buttons"
+    )
+  template(v-if="inlined")
+    slot(
+      v-if="!hasLabel"
+      name="edit-buttons"
+    )
+  template(v-else-if="isPopulated")
+    dito-panels(
+      :panels="panelSchemas"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+    )
 </template>
 
 <style lang="sass">
@@ -220,7 +220,7 @@ export default DitoComponent.component('dito-schema', {
       // Don't return the actual parent schema is this schema handles its own
       // data. This prevents delegating events to the parent, and registering
       // components with the parent that would cause it to set isDirty flags.
-      return this.hasOwnData ? null : this.$parent.schemaComponent
+      return this.hasOwnData ? null : this.parentComponent.schemaComponent
     },
 
     panelSchemas() {
@@ -241,8 +241,9 @@ export default DitoComponent.component('dito-schema', {
         ? currentTab
         : this.defaultTab?.name || null
       if (tab !== currentTab) {
+        // TODO: Move this watcher!
         // Any tab change needs to be reflected in the router also.
-        this.$router.replace({ hash: tab })
+        this.$router.replace({ hash: `#${tab}` })
       }
       return tab
     },
@@ -385,7 +386,7 @@ export default DitoComponent.component('dito-schema', {
     this.emitEvent('initialize') // Not `'create'`, since that's for data.
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.emitEvent('destroy')
     this._register(false)
   },
@@ -616,7 +617,8 @@ export default DitoComponent.component('dito-schema', {
     setData(data) {
       for (const name in data) {
         if (name in this.data) {
-          this.$set(this.data, name, data[name])
+          // eslint-disable-next-line vue/no-mutating-props
+          this.data[name] = data[name]
           for (const component of this.getComponentsByName(name)) {
             component.markDirty()
           }
@@ -679,9 +681,9 @@ export default DitoComponent.component('dito-schema', {
     _registerEntry(registry, entry, add) {
       const uid = entry.$uid
       if (add) {
-        this.$set(registry, uid, entry)
+        registry[uid] = entry
       } else {
-        this.$delete(registry, uid)
+        delete registry[uid]
       }
     },
 

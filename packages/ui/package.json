@@ -39,16 +39,15 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@ditojs/build": "^1.30.0",
     "@ditojs/utils": "^1.30.0",
     "@soda/get-current-script": "^1.0.2"
   },
   "devDependencies": {
-    "@ditojs/build": "^1.19.0",
+    "@ditojs/build": "^1.30.0",
+    "@vitejs/plugin-vue": "^4.1.0",
+    "@vue/compiler-sfc": "^3.2.47",
     "pug": "^3.0.2",
     "sass": "1.59.3",
-    "vite": "^4.2.1",
-    "vite-plugin-vue2": "^2.0.3",
-    "vue-template-compiler": "^2.7.14"
+    "vite": "^4.2.1"
   }
 }

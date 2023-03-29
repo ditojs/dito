@@ -1,21 +1,21 @@
 <template lang="pug">
-  .dito-pagination
-    .dito-pagination-total(
-      v-if="showTotal"
+.dito-pagination
+  .dito-pagination-total(
+    v-if="showTotal"
+  )
+    template(v-if="total > 0") {{ first }} – {{ last }}
+    template(v-else) 0
+    |  / {{ total }}
+  .dito-buttons.dito-buttons-round
+    button.dito-button(
+      v-for="page in pageRange"
+      @click="onClickPage(page)"
+      :class="getPageClass(page)"
+      :disabled="page.disabled"
     )
-      template(v-if="total > 0") {{ first }} – {{ last }}
-      template(v-else) 0
-      |  / {{ total }}
-    .dito-buttons.dito-buttons-round
-      button.dito-button(
-        v-for="page in pageRange"
-        @click="onClickPage(page)"
-        :class="getPageClass(page)"
-        :disabled="page.disabled"
-      )
-        span(
-          v-if="page.text"
-        ) {{ page.text }}
+      span(
+        v-if="page.text"
+      ) {{ page.text }}
 </template>
 
 <style lang="sass">
@@ -108,10 +108,10 @@ export default {
       this.$emit('size-change', this.page, currentPageSize)
     },
 
-    currentPage(newVal, oldVal) {
-      if (newVal !== oldVal) {
+    currentPage(to, from) {
+      if (to !== from) {
         this.updatePageRange()
-        this.$emit('update:page', newVal)
+        this.$emit('update:page', to)
       }
     }
   },

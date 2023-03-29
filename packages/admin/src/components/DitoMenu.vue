@@ -1,13 +1,13 @@
 <template lang="pug">
-  nav.dito-menu.dito-scroll-parent
-    h1 {{ appState.title }}
-    ul.dito-scroll
-      li(v-for="view in views")
-        router-link.dito-link(
-          v-if="shouldRender(view)"
-          :to="`/${view.path}`"
-          active-class="dito-active"
-        ) {{ getLabel(view) }}
+nav.dito-menu.dito-scroll-parent
+  h1 {{ appState.title }}
+  ul.dito-scroll
+    li(v-for="view in views")
+      router-link.dito-link(
+        v-if="shouldRender(view)"
+        :to="`/${view.path}`"
+        active-class="dito-active"
+      ) {{ getLabel(view) }}
 </template>
 
 <style lang="sass">

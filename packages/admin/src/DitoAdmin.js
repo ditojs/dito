@@ -1,7 +1,6 @@
-import Vue from 'vue'
-import VueModal from 'vue-js-modal'
-import VueRouter from 'vue-router'
-import VueNotifications from 'vue-notification'
+import { createApp, h as createElement } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+import VueNotifications from '@kyvg/vue3-notification'
 import {
   isString, isArray, asArray, isAbsoluteUrl,
   merge, hyphenate, camelize,
@@ -14,19 +13,6 @@ import TypeComponent from './TypeComponent.js'
 import { getResource } from './utils/resource.js'
 import { deprecate } from './utils/deprecate.js'
 import verbs from './verbs.js'
-
-Vue.config.productionTip = false
-
-// All global plugins that need to be registered on `Vue`:
-Vue.use(VueRouter)
-Vue.use(VueModal, { dynamic: true })
-Vue.use(VueNotifications)
-
-if (import.meta.hot) {
-  // Workaround for a strange Vite hot-reloading bug, see:
-  // https://github.com/vitejs/vite/issues/7839#issuecomment-1340109679
-  import.meta.hot.on('vite:beforeUpdate', onBeforeViteUpdate)
-}
 
 export default class DitoAdmin {
   constructor(el, {
@@ -141,15 +127,17 @@ export default class DitoAdmin {
       el = document.querySelector(el)
     }
 
-    this.root = new Vue({
-      el,
-      router: new VueRouter({
-        mode: 'history',
-        base: dito.base,
-        linkActiveClass: '',
-        linkExactActiveClass: ''
-      }),
-      components: { DitoRoot },
+    const app = this.app = createApp({
+      components: {
+        DitoRoot,
+        VueNotifications,
+        // This may only be needed to avoid tree-shacking of these components,
+        // since they actually handle registry internally already.
+        // TODO: Remove this once we have a better solution.
+        ...components,
+        ...types
+      },
+
       // Most injects are defined as functions, to preserve reactiveness across
       // provide/inject, see:
       // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
@@ -162,6 +150,7 @@ export default class DitoAdmin {
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $views: () => {},
         $isPopulated: () => true,
+        $parentComponent: () => null,
         $schemaComponent: () => null,
         $schemaParentComponent: () => null,
         $routeComponent: () => null,
@@ -173,23 +162,37 @@ export default class DitoAdmin {
         $tabComponent: () => null
       },
 
-      render: createElement => createElement(DitoRoot, {
-        // Preserve the root container's id, as required by hot-reloading:
-        attrs: {
-          id: el.id
-        },
-        props: {
-          unresolvedViews: views,
-          options
-        },
-        // This may only be needed to avoid tree-shacking of these components,
-        // since they actually handle registry internally already.
-        components: {
-          ...components,
-          ...types
-        }
+      render: () => createElement(DitoRoot, {
+        ref: 'root',
+        class: dito.settings.rootClass,
+        unresolvedViews: views,
+        options
       })
     })
+
+    app.use(VueNotifications, {
+      name: 'notify',
+      componentName: 'VueNotifications'
+    })
+
+    // root.component('vue-modal', VueModal)
+
+    app.use(createRouter({
+      // Start with a catch-all route, to be replaced by the actual routes once
+      // the schemas are loaded, to prevent vue-router from complaining, see:
+      // `resolveViews()` in `DitoRoot` for the actual route setup.
+      routes: [{
+        name: 'catch-all',
+        path: '/:_(.*)',
+        components: {}
+      }],
+      history: createWebHistory(dito.base),
+      linkActiveClass: '',
+      linkExactActiveClass: ''
+    }))
+
+    el.classList.add('dito-app')
+    app.mount(el)
   }
 
   register(type, options) {
@@ -279,21 +282,4 @@ function formatQuery(query) {
       []
     )
   ).toString()
-}
-
-function onBeforeViteUpdate(event) {
-  if (event.type === 'update') {
-    // Patch `event.updates` to remove the version query parameter from path,
-    // so that the update gets picked up.
-    // Why the stored `deps` are missing this part of the URL, I cannot say…
-    const updates = []
-    for (const update of event.updates) {
-      updates.push(update) // Keep the original update.
-      const acceptedPath = update.acceptedPath.replace(/\?v=[0-9a-f]+&/i, '?')
-      if (acceptedPath !== update.acceptedPath) {
-        updates.push({ ...update, acceptedPath })
-      }
-    }
-    event.updates = updates
-  }
 }

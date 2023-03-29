@@ -1,5 +1,6 @@
-import Vue from 'vue'
 import DitoContext from '../DitoContext.js'
+import DitoMixin from '../mixins/DitoMixin.js'
+import TypeMixin from '../mixins/TypeMixin.js'
 import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
 import { appendDataPath, isTemporaryId } from './data.js'
@@ -7,6 +8,7 @@ import {
   isObject, isString, isArray, isFunction, isPromise, clone, camelize, isModule,
   mapConcurrently
 } from '@ditojs/utils'
+import { markRaw } from 'vue'
 
 const typeComponents = {}
 const unknownTypeReported = {}
@@ -25,21 +27,6 @@ export function getTypeComponent(type, allowNull = false) {
   return component
 }
 
-export function forEachSchema(schema, callback) {
-  const schemas = [
-    ...Object.values(schema?.tabs || {}),
-    schema
-  ]
-  for (const schema of schemas) {
-    if (schema) {
-      const res = callback(schema)
-      if (res !== undefined) {
-        return res
-      }
-    }
-  }
-}
-
 export function forEachSchemaComponent(schema, callback) {
   if (isSingleComponentView(schema)) {
     const res = callback(schema.component, schema.name)
@@ -47,14 +34,17 @@ export function forEachSchemaComponent(schema, callback) {
       return res
     }
   } else {
-    return forEachSchema(schema, schema => {
+    const schemas = schema
+      ? [...Object.values(schema.tabs || {}), schema]
+      : []
+    for (const schema of schemas) {
       for (const [name, component] of Object.entries(schema.components || {})) {
         const res = callback(component, name)
         if (res !== undefined) {
           return res
         }
       }
-    })
+    }
   }
 }
 
@@ -161,21 +151,45 @@ export async function resolvePanels(schema) {
   }
 }
 
-export async function processView(component, api, schema, name, routes) {
+export async function resolveSchemaComponent(schema) {
+  // Resolves async schema components and adds DitoMixin and TypeMixin to them.
+  let { component } = schema
+  if (component) {
+    component = await resolveSchema(component, true)
+    if (component) {
+      // Prevent warning: "Vue received a Component which was made a reactive
+      // object. This can lead to unnecessary performance overhead, and should
+      // be avoided by marking the component with `markRaw`":
+      schema.component = markRaw({
+        ...component,
+        mixins: [DitoMixin, TypeMixin, ...(component.mixins || [])]
+      })
+    }
+  }
+}
+
+export async function resolveSchemaComponents(schemas) {
+  // `schemas` are of the same possible forms as passed to `getNamedSchemas()`
+  await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
+}
+
+export async function processView(component, api, schema, name) {
   const children = []
   processRouteSchema(api, schema, name)
   await resolvePanels(schema)
   if (isView(schema)) {
+    let level = 0
     if (isSingleComponentView(schema)) {
-      await processComponent(api, schema.component, name, children, 0)
+      await processComponent(api, schema.component, name, children, level)
     } else {
       // A multi-component view, start at level 1
-      await processSchemaComponents(api, schema, children, 1)
+      await processSchemaComponents(api, schema, children, ++level)
     }
+    schema.level = level
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
-  routes.push({
+  return {
     path: `/${schema.path}`,
     children,
     component,
@@ -183,13 +197,13 @@ export async function processView(component, api, schema, name, routes) {
       api,
       schema
     }
-  })
+  }
 }
 
-export function processComponent(api, schema, name, routes, level) {
+export async function processComponent(api, schema, name, routes, level) {
   schema.level = level
   // Delegate schema processing to the actual type components.
-  return getTypeOptions(schema)?.processSchema?.(
+  await getTypeOptions(schema)?.processSchema?.(
     api, schema, name, routes, level
   )
 }
@@ -230,15 +244,15 @@ export async function processForms(api, schema, level) {
   return children
 }
 
-export async function resolveForm(form) {
-  form = await resolveSchema(form, true)
-  if (!isForm(form)) {
-    throw new Error(`Invalid form schema: '${getSchemaIdentifier(form)}'`)
+export async function resolveForm(schema) {
+  schema = await resolveSchema(schema, true)
+  if (!isForm(schema)) {
+    throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  if (form) {
-    await resolvePanels(form)
+  if (schema) {
+    await resolvePanels(schema)
   }
-  return form
+  return schema
 }
 
 export function hasFormSchema(schema) {
@@ -264,20 +278,23 @@ export function isSingleComponentView(schema) {
   )
 }
 
-export function getViewSchema(schema, context) {
+export function getViewFormSchema(schema, context) {
   const { view } = schema
   const viewSchema = view && context.views[view]
   return viewSchema
-    ? hasFormSchema(viewSchema)
-      ? viewSchema
-      // NOTE: Views can have tabs, in which case the view component is nested
-      // in one of the tabs, go find it.
-      : forEachSchema(viewSchema, schema => {
-        const viewComponent = schema.components?.[view]
-        if (hasFormSchema(viewComponent)) {
-          return viewComponent
-        }
-      })
+    // NOTE: Views can have tabs, in which case the view component is nested
+    // in one of the tabs, go find it.
+    ? forEachSchemaComponent(viewSchema, schema => {
+      if (hasFormSchema(schema)) {
+        return schema
+      }
+    }) || null
+    : null
+}
+
+export function getViewSchema(schema, context) {
+  return getViewFormSchema(schema, context)
+    ? context.views[schema.view]
     : null
 }
 
@@ -291,9 +308,9 @@ export function getViewEditPath(schema, context) {
 }
 
 export function getFormSchemas(schema, context, modifyForm) {
-  const view = getViewSchema(schema, context)
-  if (view) {
-    schema = view
+  const viewSchema = getViewFormSchema(schema, context)
+  if (viewSchema) {
+    schema = viewSchema
   } else if (schema.view) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
@@ -419,17 +436,17 @@ export function computeValue(schema, data, name, dataPath, {
       rootData
     }))
     if (value !== undefined) {
-      // Use `$set()` directly instead of `this.value = …` to update the
+      // Access `data[name]` directly instead of `this.value = …` to update the
       // value without calling parse():
-      Vue.set(data, name, value)
+      data[name] = value
     }
   }
   // If the value is still missing after compute, set the default for it:
   if (!(name in data) && !ignoreMissingValue(schema)) {
-    Vue.set(data, name, getDefaultValue(schema))
+    data[name] = getDefaultValue(schema)
   }
   // Now access the value. This is important for reactivity and needs to
-  // happen after all prior manipulation through `$set()`, see above:
+  // happen after all prior manipulation of `data[name]`, see above:
   return data[name]
 }
 
@@ -662,7 +679,7 @@ export function processSchemaData(
   return processedData || data
 }
 
-export function getNamedSchemas(descriptions, defaults) {
+export function getNamedSchemas(schemas, defaults) {
   const toObject = (array, toSchema) => {
     return array.length > 0
       ? array.reduce((object, value) => {
@@ -677,15 +694,15 @@ export function getNamedSchemas(descriptions, defaults) {
       : null
   }
 
-  return isArray(descriptions)
-    ? toObject(descriptions, value => (
+  return isArray(schemas)
+    ? toObject(schemas, value => (
       isObject(value) ? value : {
         name: camelize(value, false)
       }
     ))
-    : isObject(descriptions)
+    : isObject(schemas)
       ? toObject(
-        Object.entries(descriptions),
+        Object.entries(schemas),
         ([name, value]) =>
           isObject(value) ? {
             name,
@@ -712,7 +729,7 @@ function getType(schemaOrType) {
 }
 
 export function getTypeOptions(schemaOrType) {
-  return getTypeComponent(getType(schemaOrType), true)?.options ?? null
+  return getTypeComponent(getType(schemaOrType), true) ?? null
 }
 
 export function getSourceType(schemaOrType) {

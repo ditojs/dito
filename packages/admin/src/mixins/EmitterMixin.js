@@ -4,14 +4,14 @@ import { isArray, isPlainObject } from '@ditojs/utils'
 export default {
   data() {
     return {
-      $events: null
+      listeners: null
     }
   },
 
   methods: {
-    // Async versions of Vue's $on() and $off() methods that keep track of the
-    // events added / removed, and provide a hasListeners() method that checks
-    // if the component has listeners for a given event.
+    // Async on() and $off() methods that keep track of the events added /
+    // removed, and provide a hasListeners() method that checks if the component
+    // has listeners for a given event.
 
     // Also adds proper handling of async events, including a async emit() that
     // deals with proper event queueing.
@@ -25,8 +25,8 @@ export default {
           this.on(key, event[key])
         }
       } else {
-        const events = this.$events || (this.$events = Object.create(null))
-        const { callbacks } = events[event] || (events[event] = {
+        const listeners = (this.listeners ||= Object.create(null))
+        const { callbacks } = (listeners[event] ||= {
           callbacks: [],
           queue: []
         })
@@ -47,7 +47,7 @@ export default {
     off(event, callback) {
       if (!arguments.length) {
         // Remove all events
-        delete this.$events
+        delete this.listeners
       } else if (isArray(event)) {
         for (const ev of event) {
           this.off(ev, callback)
@@ -58,11 +58,11 @@ export default {
         }
       } else {
         // Remove specific event
-        const entry = this.$events?.[event]
+        const entry = this.listeners?.[event]
         if (entry) {
           if (!callback) {
             // Remove all handlers for this event
-            delete this.$events[event]
+            delete this.listeners[event]
           } else {
             // Remove a specific handler: find the index in callbacks
             const { callbacks } = entry
@@ -81,7 +81,7 @@ export default {
 
     emit(event, ...args) {
       // Only queue event if there actually are listeners for it.
-      const entry = this.$events?.[event]
+      const entry = this.listeners?.[event]
       if (entry) {
         const { queue, callbacks } = entry
         return new Promise(resolve => {
@@ -129,7 +129,7 @@ export default {
         }
         return event.length > 0
       } else {
-        return !!this.$events?.[event]
+        return !!this.listeners?.[event]
       }
     },
 

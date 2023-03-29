@@ -1,10 +1,10 @@
 <template lang="pug">
-  component(
-    v-if="content"
-    :is="options.tag || tag"
-    :class="classes"
-    :style="styles"
-  ) {{ options.text }}
+component(
+  v-if="content"
+  :is="options.tag || tag"
+  :class="classes"
+  :style="styles"
+) {{ options.text }}
 </template>
 
 <script>

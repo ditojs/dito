@@ -1,15 +1,15 @@
 <template lang="pug">
-  .dito-section(
-    :class="{ 'dito-section-labelled' : !!schema.label }"
+.dito-section(
+  :class="{ 'dito-section-labelled' : !!schema.label }"
+)
+  dito-pane.dito-section-pane(
+    :schema="getItemFormSchema(schema, item, context)"
+    :dataPath="dataPath"
+    :data="item"
+    :meta="meta"
+    :store="store"
+    :disabled="disabled"
   )
-    dito-pane.dito-section-pane(
-      :schema="getItemFormSchema(schema, item, context)"
-      :dataPath="dataPath"
-      :data="item"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-    )
 </template>
 
 <style lang="sass">

@@ -1,19 +1,63 @@
 <template lang="pug">
-  form.dito-dialog(@submit.prevent="submit")
+.dito-dialog(
+  role="dialog"
+  aria-expanded="true"
+  aria-modal="true"
+  :style="{ '--width': `${settings.width}px` }"
+  @click="settings.clickToClose && close()"
+)
+  form.dito-scroll-parent(@submit.prevent="submit")
     dito-schema.dito-scroll(
       :schema="schema"
       :data="dialogData"
     )
-      dito-buttons.dito-buttons-large(
-        slot="buttons"
-        :buttons="buttonSchemas"
-        :data="dialogData"
-      )
+      template(#buttons)
+        dito-buttons.dito-buttons-large(
+          :buttons="buttonSchemas"
+          :data="dialogData"
+        )
 </template>
 
 <style lang="sass">
-  .v--modal-overlay
+  @import '../styles/_imports'
+
+  .dito-dialog
+    position: fixed
+    display: flex
+    inset: 0
     z-index: 2000
+    padding: $content-padding
+    align-items: center
+    justify-content: center
+    // Prevent scrolling of the page behind the dialog:
+    overflow: hidden
+    background: rgba(0, 0, 0, 0.2)
+
+    // TODO: `&__inner`
+    form
+      position: relative
+      display: flex
+      overflow: hidden
+      box-sizing: border-box
+      background: white
+      border-radius: $border-radius
+      max-width: var(--width, 480px)
+      max-height: 100%
+      box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4)
+
+  .dito-dialog-enter-active,
+  .dito-dialog-leave-active
+    transition: opacity 0.15s
+
+    form
+      transition: transform 0.25s
+
+  .dito-dialog-enter-from,
+  .dito-dialog-leave-to
+    opacity: 0
+
+    form
+      transform: translateY(-20px)
 </style>
 
 <script>
@@ -34,7 +78,14 @@ export default DitoComponent.component('dito-dialog', {
     components: { type: Object, required: true },
     buttons: { type: Object, required: true },
     promise: { type: Object, required: true },
-    data: { type: Object, default: () => ({}) }
+    data: { type: Object, default: () => ({}) },
+    settings: {
+      type: Object,
+      default: () => ({
+        width: 480,
+        clickToClose: false
+      })
+    }
   },
 
   data() {
@@ -54,10 +105,6 @@ export default DitoComponent.component('dito-dialog', {
   computed: {
     dialogComponent() {
       return this
-    },
-
-    name() {
-      return this.$parent.name
     },
 
     schema() {
@@ -86,6 +133,10 @@ export default DitoComponent.component('dito-dialog', {
       )
     },
 
+    hasButtons() {
+      return Object.keys(this.buttonSchemas).length > 0
+    },
+
     hasCancel() {
       return !!this.buttonSchemas.cancel
     }
@@ -94,30 +145,30 @@ export default DitoComponent.component('dito-dialog', {
   mounted() {
     this.windowEvents = addEvents(window, {
       keyup: event => {
-        if (this.hasCancel && event.keyCode === 27) {
+        if ((this.hasCancel || !this.hasButtons) && event.keyCode === 27) {
           this.cancel()
         }
       }
     })
   },
 
-  destroyed() {
+  unmounted() {
     this.windowEvents.remove()
   },
 
   methods: {
-    hide() {
-      this.$modal.hide(this.name)
+    remove() {
+      this.$emit('remove')
     },
 
     resolve(value) {
       this.promise.resolve(value)
-      this.hide()
+      this.remove()
     },
 
     reject(value) {
       this.promise.reject(value)
-      this.hide()
+      this.remove()
     },
 
     submit() {
@@ -126,6 +177,10 @@ export default DitoComponent.component('dito-dialog', {
 
     cancel() {
       this.resolve(null)
+    },
+
+    close() {
+      this.cancel()
     }
   }
 })

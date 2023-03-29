@@ -1,15 +1,14 @@
 <template lang="pug">
-  input-field.dito-number(
-    ref="element"
-    :id="dataPath"
-    type="number"
-    v-model="inputValue"
-    v-bind="attributes"
-    v-on="listeners"
-    :min="min"
-    :max="max"
-    :step="stepValue"
-  )
+input-field.dito-number(
+  ref="element"
+  :id="dataPath"
+  type="number"
+  v-model="inputValue"
+  v-bind="attributes"
+  :min="min"
+  :max="max"
+  :step="stepValue"
+)
 </template>
 
 <style lang="sass">

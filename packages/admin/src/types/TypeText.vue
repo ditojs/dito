@@ -1,12 +1,11 @@
 <template lang="pug">
-  input-field.dito-text(
-    ref="element"
-    :id="dataPath"
-    :type="inputType"
-    v-model="inputValue"
-    v-bind="attributes"
-    v-on="listeners"
-  )
+input-field.dito-text(
+  ref="element"
+  :id="dataPath"
+  :type="inputType"
+  v-model="inputValue"
+  v-bind="attributes"
+)
 </template>
 
 <script>

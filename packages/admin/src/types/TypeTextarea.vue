@@ -1,13 +1,12 @@
 <template lang="pug">
-  textarea.dito-textarea.dito-input(
-    ref="element"
-    :id="dataPath"
-    v-model="value"
-    v-bind="attributes"
-    v-on="listeners"
-    :rows="lines"
-    :class="{ 'dito-resizable': resizable }"
-  )
+textarea.dito-textarea.dito-input(
+  ref="element"
+  :id="dataPath"
+  v-model="value"
+  v-bind="attributes"
+  :rows="lines"
+  :class="{ 'dito-resizable': resizable }"
+)
 </template>
 
 <style lang="sass">

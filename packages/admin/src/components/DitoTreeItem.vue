@@ -1,76 +1,76 @@
 <template lang="pug">
-  .dito-tree-item(
-    :id="dataPath"
-    :class=`{
-      'dito-dragging': dragging,
-      'dito-active': active
-    }`
-    :style="level > 0 && { '--level': level }"
-  )
-    .dito-tree-header(v-if="label")
-      .dito-tree-branch(
+.dito-tree-item(
+  :id="dataPath"
+  :class=`{
+    'dito-dragging': dragging,
+    'dito-active': active
+  }`
+  :style="level > 0 && { '--level': level }"
+)
+  .dito-tree-header(v-if="label")
+    .dito-tree-branch(
+      v-if="numEntries"
+      @click.stop="opened = !opened"
+    )
+      .dito-chevron(
         v-if="numEntries"
-        @click.stop="opened = !opened"
+        :class="{ 'dito-opened': opened }"
       )
-        .dito-chevron(
-          v-if="numEntries"
-          :class="{ 'dito-opened': opened }"
-        )
-        .dito-tree-label(v-html="label")
-        .dito-tree-info(v-if="details") {{ details }}
-      .dito-tree-leaf(v-else)
-        .dito-tree-label(v-html="label")
-      .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
-        //- Firefox doesn't like <button> here, so use <a> instead:
-        a.dito-button(
-          v-if="draggable"
-          v-bind="getButtonAttributes(verbs.drag)"
-        )
-        button.dito-button(
-          v-if="editable"
-          type="button"
-          @click="onEdit"
-          v-bind="getButtonAttributes(verbs.edit)"
-        )
-        button.dito-button(
-          v-if="deletable"
-          type="button"
-          @click="onDelete"
-          v-bind="getButtonAttributes(verbs.delete)"
-        )
-    table.dito-properties(
-      v-if="properties"
-      v-show="opened"
+      .dito-tree-label(v-html="label")
+      .dito-tree-info(v-if="details") {{ details }}
+    .dito-tree-leaf(v-else)
+      .dito-tree-label(v-html="label")
+    .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
+      //- Firefox doesn't like <button> here, so use <a> instead:
+      a.dito-button(
+        v-if="draggable"
+        v-bind="getButtonAttributes(verbs.drag)"
+      )
+      button.dito-button(
+        v-if="editable"
+        type="button"
+        @click="onEdit"
+        v-bind="getButtonAttributes(verbs.edit)"
+      )
+      button.dito-button(
+        v-if="deletable"
+        type="button"
+        @click="onDelete"
+        v-bind="getButtonAttributes(verbs.delete)"
+      )
+  table.dito-properties(
+    v-if="properties"
+    v-show="opened"
+  )
+    tr(
+      v-for="property in properties"
     )
-      tr(
-        v-for="property in properties"
-      )
-        td
-          dito-label(
-            v-if="property.label !== false"
-            :dataPath="getPropertyDataPath(property)"
-            :label="getLabel(property)"
-          )
-        dito-table-cell(
-          :cell="property"
-          :schema="property"
+      td
+        dito-label(
+          v-if="property.label !== false"
           :dataPath="getPropertyDataPath(property)"
-          :data="data"
-          :meta="nestedMeta"
-          :store="store"
-          :disabled="disabled"
+          :label="getLabel(property)"
         )
-    vue-draggable(
-      v-if="childrenSchema"
-      v-show="opened"
-      v-bind="getDragOptions(childrenDraggable, true)"
-      :list="updateOrder(childrenSchema, childrenList)"
-      @start="onStartDrag"
-      @end="onEndDrag($event, childrenSchema)"
-    )
+      dito-table-cell(
+        :cell="property"
+        :schema="property"
+        :dataPath="getPropertyDataPath(property)"
+        :data="data"
+        :meta="nestedMeta"
+        :store="store"
+        :disabled="disabled"
+      )
+  vue-sortable(
+    v-if="childrenSchema"
+    v-show="opened"
+    :list="childrenItems"
+    :options="getDragOptions(childrenDraggable, true)"
+    :itemKey="item => getItemUid(childrenSchema, item.data)"
+    @start="onStartDrag"
+    @end="onEndDrag($event, childrenSchema)"
+  )
+    template(#item="{ element: item, index }")
       dito-tree-item(
-        v-for="(item, index) in childrenItems"
-        :key="getItemUid(childrenSchema, item.data)"
         :schema="childrenSchema"
         :dataPath="getItemDataPath(childrenSchema, index)"
         :data="item.data"
@@ -81,8 +81,8 @@
         :label="getItemLabel(childrenSchema, item.data, { index })"
         :level="level + 1"
       )
-      // TODO: Convert dito-tree-item to use dito-label internally, and then
-      // pass `asObject: true` in the `getItemLabel()` call above.
+      //- TODO: Convert dito-tree-item to use dito-label internally, and then
+      //- pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
 <style lang="sass">
@@ -151,7 +151,7 @@
 </style>
 
 <script>
-import VueDraggable from 'vuedraggable'
+import { Sortable as VueSortable } from 'sortablejs-vue3'
 import DitoComponent from '../DitoComponent.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
 import { appendDataPath } from '../utils/data.js'
@@ -160,7 +160,7 @@ import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
-  components: { VueDraggable },
+  components: { VueSortable },
   mixins: [OrderedMixin],
   inject: ['container'],
 
@@ -240,28 +240,32 @@ export default DitoComponent.component('dito-tree-item', {
     },
 
     childrenItems() {
-      const { childrenSchema } = this
-      if (childrenSchema) {
+      const { childrenSchema, childrenList } = this
+      if (childrenSchema && childrenList) {
         const { editPath } = this.container
         const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
-        return this.childrenList?.map((data, index) => {
-          const path = (
-            childrenSchema.path &&
+        return this.updateOrder(
+          childrenSchema,
+          childrenList.map((data, index) => {
+            const path = (
+              childrenSchema.path &&
             `${this.path}/${childrenSchema.path}/${index}`
-          )
-          const open = childrenOpen ||
+            )
+            const open = childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
             editPath.startsWith(path) && path.length < editPath.length
-          const active = editPath === path
-          return {
-            data,
-            path,
-            open,
-            active
-          }
-        }) || []
+            const active = editPath === path
+            return {
+              data,
+              path,
+              open,
+              active
+            }
+          })
+        )
       }
+      return []
     },
 
     details() {

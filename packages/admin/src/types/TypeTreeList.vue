@@ -1,23 +1,23 @@
 <template lang="pug">
-  .dito-tree-list
-    dito-scopes(
-      v-if="scopes"
-      :query="query"
-      :scopes="scopes"
+.dito-tree-list
+  dito-scopes(
+    v-if="scopes"
+    :query="query"
+    :scopes="scopes"
+  )
+  .dito-tree-panel
+    dito-tree-item(
+      :schema="treeSchema"
+      :dataPath="treeDataPath"
+      :data="treeData"
+      :draggable="draggable"
+      :open="true"
     )
-    .dito-tree-panel
-      dito-tree-item(
-        :schema="treeSchema"
-        :dataPath="treeDataPath"
-        :data="treeData"
-        :draggable="draggable"
-        :open="true"
-      )
-      .dito-tree-form-container(
-        v-if="hasEditableForms"
-      )
-        // Include a router-view for the optional DitoFormInlined
-        router-view
+    .dito-tree-form-container(
+      v-if="hasEditableForms"
+    )
+      //- Include a router-view for the optional DitoFormInlined
+      router-view
 </template>
 
 <style lang="sass">
@@ -44,7 +44,9 @@
 <script>
 import TypeComponent from '../TypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
-import { hasFormSchema, getFormSchemas } from '../utils/schema.js'
+import {
+  hasFormSchema, getFormSchemas, resolveSchemaComponents
+} from '../utils/schema.js'
 
 export default TypeComponent.register([
   'tree-list', 'tree-object'
@@ -120,23 +122,27 @@ export default TypeComponent.register([
     nested = true, flatten = false,
     process = null
   ) {
-    return SourceMixin.processSchema(
-      api, schema, name, routes, level,
-      nested, flatten,
-      // Pass process() to add more routes to childRoutes:
-      (childRoutes, level) => {
-        const { children } = schema
-        if (children) {
+    await Promise.all([
+      resolveSchemaComponents(schema.properties),
+      SourceMixin.processSchema(
+        api, schema, name, routes, level,
+        nested, flatten,
+        // Pass process() to add more routes to childRoutes:
+        (childRoutes, level) => {
+          const { children } = schema
+          if (children) {
           // Add `type` to the nested tree list.
-          children.type = 'tree-list'
-          return this.processSchema(
-            api, children, children.name, childRoutes, level,
-            nested, true, // Pass `true` for `flatten` in tree lists.
-            process
-          )
+            children.type = 'tree-list'
+            // Recursively call `processSchema()` for the nested tree list:
+            return this.processSchema(
+              api, children, children.name, childRoutes, level,
+              nested, true, // Pass `true` for `flatten` in tree lists.
+              process
+            )
+          }
         }
-      }
-    )
+      )
+    ])
   },
 
   getFormSchemasForProcessing(schema, context) {

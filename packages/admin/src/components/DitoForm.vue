@@ -3,29 +3,20 @@
   :class="{ 'dito-form-nested': isNestedRoute }"
   :data-resource="sourceSchema.path"
 )
-  // NOTE: Nested form components are kept alive by using `v-show` instead of
-  // `v-if` here, so event handling and other things still work with nested
-  // editing. Only render a router-view here if this isn't the last data route
-  // and not a nested form route, which will appear elsewhere in its own view.
+  //- NOTE: Nested form components are kept alive by using `v-show` instead of
+  //- `v-if` here, so event handling and other things still work with nested
+  //- editing. Only render a router-view here if this isn't the last data route
+  //- and not a nested form route, which will appear elsewhere in its own view.
   router-view(
     v-if="!(isLastUnnestedRoute || isNestedRoute)"
     v-show="!isActive"
   )
-  // Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
+  //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
   component.dito-scroll(
     v-show="isActive"
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
-    // Prevent implicit submission of the form, for example when typing enter
-    // in an input field.
-    // https://stackoverflow.com/a/51507806
-    button(
-      v-show="false"
-      type="submit"
-      disabled="true"
-      aria-hidden="true"
-    )
     dito-schema(
       :schema="schema"
       :dataPath="dataPath"
@@ -35,15 +26,23 @@
       :disabled="isLoading"
       :menuHeader="true"
     )
-      dito-buttons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
-        slot="buttons"
-        :buttons="buttonSchemas"
-        :dataPath="dataPath"
-        :data="data"
-        :meta="meta"
-        :store="store"
-        :disabled="isLoading"
-      )
+      template(#buttons)
+        dito-buttons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
+          :buttons="buttonSchemas"
+          :dataPath="dataPath"
+          :data="data"
+          :meta="meta"
+          :store="store"
+          :disabled="isLoading"
+        )
+    //- Prevent implicit submission of the form, for example when typing enter
+    //- in an input field.
+    //- https://stackoverflow.com/a/51507806
+    button(
+      v-show="false"
+      type="submit"
+      disabled
+    )
 </template>
 
 <script>
@@ -53,6 +52,7 @@ import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
+import { resolvePath } from '../utils/path.js'
 
 // @vue/component
 export default DitoComponent.component('dito-form', {
@@ -104,7 +104,7 @@ export default DitoComponent.component('dito-form', {
               }
             },
 
-            submit: !this.doesMutate && {
+            submit: !this.isMutating && {
               type: 'submit',
               // Submit buttons close the form by default:
               closeForm: true,
@@ -132,18 +132,18 @@ export default DitoComponent.component('dito-form', {
     },
 
     isDirty() {
-      return !this.doesMutate && !!this.mainSchemaComponent?.isDirty
+      return !this.isMutating && !!this.mainSchemaComponent?.isDirty
+    },
+
+    isMutating() {
+      // When `sourceSchema.mutate` is true, the form edits the inherited data
+      // directly instead of making a copy for persistence upon submission.
+      // See `inheritedData()` computed property for more details.
+      return !!this.sourceSchema.mutate
     },
 
     selectedTab() {
       return this.mainSchemaComponent?.selectedTab || null
-    },
-
-    doesMutate() {
-      // When `sourceSchema.mutate` is true, the form edits the inherited data
-      // directly instead of making a copy for application upon submit.
-      // See `inheritedData()` computed property for more details.
-      return this.sourceSchema.mutate
     },
 
     type() {
@@ -190,7 +190,9 @@ export default DitoComponent.component('dito-form', {
       // Possible parents are DitoForm for forms, or DitoView for root lists.
       // Both have a data property which abstracts away loading and inheriting
       // of data.
-      let { data } = this.parentRouteComponent
+      // Forms that are about to be destroyed due to navigation loose their
+      // route-record, but might still trigger this getter. Filter those out.
+      let data = this.routeRecord ? this.parentRouteComponent.data : null
       if (data) {
         // Handle nested data by splitting the dataPath, iterate through the
         // actual data and look nest child-data up.
@@ -240,7 +242,7 @@ export default DitoComponent.component('dito-form', {
         this.sourceKey !== null
       ) {
         let data = this.sourceData[this.sourceKey]
-        if (!this.doesMutate) {
+        if (!this.isMutating) {
           // Use a trick to store cloned inherited data in clonedData, to make
           // it reactive and prevent it from being cloned multiple times.
           this.clonedData = data = clone(data)
@@ -251,7 +253,8 @@ export default DitoComponent.component('dito-form', {
           isObjectSource(this.sourceSchema)
         ) {
           // If data of an object source is null, redirect to its create route.
-          this.$router.push({ path: 'create', append: true })
+          // TODO: This is a hack, move to a watcher!
+          this.$router.push({ path: `${this.path}/create` })
         }
         return data
       }
@@ -298,11 +301,7 @@ export default DitoComponent.component('dito-form', {
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
         const { mainSchemaComponent } = this
-        this.$set(
-          this.sourceData,
-          this.sourceKey,
-          mainSchemaComponent.filterData(data)
-        )
+        this.sourceData[this.sourceKey] = mainSchemaComponent.filterData(data)
         mainSchemaComponent.onChange()
         return true
       }
@@ -332,9 +331,9 @@ export default DitoComponent.component('dito-form', {
       }
     },
 
-    clearClonedData(newValue, oldValue) {
+    clearClonedData(to, from) {
       // Only clear if the watched sourceData itself changes in the form.
-      if (newValue !== oldValue) {
+      if (to !== from) {
         this.clonedData = undefined
       }
     },
@@ -433,7 +432,7 @@ export default DitoComponent.component('dito-form', {
         } else if (this.isCreating) {
           // Redirect to the form editing the newly created item:
           const id = this.getItemId(this.schema, this.data)
-          this.$router.replace({ path: `../${id}`, append: true })
+          this.$router.replace({ path: resolvePath(`${this.path}/../${id}`) })
         }
       }
       return success

@@ -1,26 +1,24 @@
 <template lang="pug">
-  .dito-slider
-    input.dito-range(
-      ref="element"
-      :id="dataPath"
-      type="range"
-      v-model="inputValue"
-      v-bind="attributes"
-      v-on="listeners"
-      :min="min"
-      :max="max"
-      :step="stepValue"
-    )
-    input-field.dito-number(
-      v-if="input"
-      type="number"
-      v-model="inputValue"
-      v-bind="attributes"
-      v-on="listeners"
-      :min="min"
-      :max="max"
-      :step="stepValue"
-    )
+.dito-slider
+  input.dito-range(
+    ref="element"
+    :id="dataPath"
+    type="range"
+    v-model="inputValue"
+    v-bind="attributes"
+    :min="min"
+    :max="max"
+    :step="stepValue"
+  )
+  input-field.dito-number(
+    v-if="input"
+    type="number"
+    v-model="inputValue"
+    v-bind="attributes"
+    :min="min"
+    :max="max"
+    :step="stepValue"
+  )
 </template>
 
 <style lang="sass">

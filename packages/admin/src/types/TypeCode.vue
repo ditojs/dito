@@ -1,9 +1,9 @@
 <template lang="pug">
-  .dito-code(
-    ref="code"
-    :id="dataPath"
-    :style="style"
-  )
+.dito-code(
+  ref="code"
+  :id="dataPath"
+  :style="style"
+)
 </template>
 
 <style lang="sass">

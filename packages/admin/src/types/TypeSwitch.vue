@@ -1,13 +1,12 @@
 <template lang="pug">
-  switch-button.dito-switch(
-    ref="element"
-    :id="dataPath"
-    :sync="true"
-    :labels="labels"
-    v-model="value"
-    v-bind="attributes"
-    v-on="listeners"
-  )
+switch-button.dito-switch(
+  ref="element"
+  :id="dataPath"
+  :sync="true"
+  :labels="labels"
+  v-model="value"
+  v-bind="attributes"
+)
 </template>
 
 <style lang="sass">

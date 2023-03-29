@@ -1,33 +1,48 @@
 <template lang="pug">
-  .dito-root
-    notifications.dito-notifications(
-      ref="notifications"
-      position="top right"
-      classes="dito-notification"
+.dito-root
+  vue-notifications.dito-notifications(
+    ref="notifications"
+    position="top right"
+    classes="dito-notification"
+  )
+  transition-group(name="dito-dialog")
+    dito-dialog(
+      v-for="(dialog, key) in dialogs"
+      :key="key"
+      :components="dialog.components"
+      :buttons="dialog.buttons"
+      :promise="dialog.promise"
+      :data="dialog.data"
+      :settings="dialog.settings"
+      @remove="removeDialog(key)"
     )
-    dito-menu
-    main.dito-page.dito-scroll-parent
-      dito-header(
-        :spinner="options.spinner"
-        :isLoading="isLoading"
+  dito-menu
+  main.dito-page.dito-scroll-parent
+    dito-header(
+      :spinner="options.spinner"
+      :isLoading="isLoading"
+    )
+      dito-account(
+        v-if="user"
       )
-        dito-account(
-          v-if="user"
-        )
-        a.dito-login(
-          v-else-if="allowLogin"
-          @click="rootComponent.login()"
-        )
-          span Login
-      router-view
+      a.dito-login(
+        v-else-if="allowLogin"
+        @click="rootComponent.login()"
+      )
+        span Login
+    router-view
 </template>
 
 <style lang="sass">
   @import '../styles/style'
 
+  .dito-app,
   .dito-root
+    width: 100%
     height: 100%
     display: flex
+
+  .dito-root
     .dito-page
       background: $content-color-background
       // The root-level views and forms may have a `.dito-schema-header` that
@@ -41,15 +56,19 @@
 </style>
 
 <script>
-import { asArray, stripTags } from '@ditojs/utils'
+import { asArray, mapConcurrently, stripTags } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoUser from '../DitoUser.js'
 import DitoView from '../components/DitoView.vue'
+import DitoDialog from './DitoDialog.vue'
 import DomMixin from '../mixins/DomMixin.js'
-import { processView, resolveSchemas } from '../utils/schema.js'
+import {
+  processView, resolveSchemas, processSchemaComponents
+} from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-root', {
+  components: { DitoDialog },
   mixins: [DomMixin],
 
   provide() {
@@ -66,6 +85,8 @@ export default DitoComponent.component('dito-root', {
   data() {
     return {
       resolvedViews: {},
+      removeRoutes: null,
+      dialogs: {},
       allowLogin: false,
       loadingCount: 0
     }
@@ -154,6 +175,37 @@ export default DitoComponent.component('dito-root', {
 
     registerLoading(isLoading) {
       this.loadingCount += isLoading ? 1 : -1
+    },
+
+    showDialog({ components, buttons, data, settings }) {
+      // Shows a dito-dialog component and wraps it in a promise so that the
+      // buttons in the dialog can use `dialog.resolve()` and `dialog.reject()`
+      // to close the modal dialog and resolve / reject the promise at once.
+      return new Promise(
+        // eslint-disable-next-line no-async-promise-executor
+        async (resolve, reject) => {
+          // Process components to resolve async schemas.
+          const routes = []
+          await processSchemaComponents(this.api, { components }, routes, 0)
+          if (routes.length > 0) {
+            throw new Error(
+              `Dialog components cannot contain routes, only components with schemas.`
+            )
+          }
+          const key = `dialog-${++dialogId}`
+          this.dialogs[key] = {
+            components,
+            buttons,
+            data,
+            settings,
+            promise: { resolve, reject }
+          }
+        }
+      )
+    },
+
+    removeDialog(key) {
+      delete this.dialogs[key]
     },
 
     async login() {
@@ -272,16 +324,41 @@ export default DitoComponent.component('dito-root', {
         return this.login()
       }
       // Collect all routes from the root schema components
-      const routes = []
-      const promises = []
-      for (const [name, schema] of Object.entries(this.resolvedViews)) {
-        promises.push(processView(DitoView, this.api, schema, name, routes))
-      }
-      await Promise.all(promises)
-      for (const route of routes) {
-        this.$router.addRoute(route)
-      }
+      const routes = await mapConcurrently(
+        Object.entries(this.resolvedViews),
+        ([name, schema]) => processView(DitoView, this.api, schema, name)
+      )
+      // Now that the routes are loaded, replace all existing routes with the
+      // new routes, and restore the current path.
+      const { fullPath } = this.$route
+      this.removeRoutes?.()
+      this.removeRoutes = addRoutes(this.$router, [
+        {
+          name: 'root',
+          path: '/',
+          components: {}
+        },
+        ...routes
+      ])
+      this.$router.replace(fullPath)
     }
   }
+
 })
+
+let dialogId = 0
+
+function addRoutes(router, routes) {
+  const removers = []
+  for (const route of routes) {
+    const removeRoute = router.addRoute(route)
+    removers.push(removeRoute)
+  }
+
+  return () => {
+    for (const remove of removers) {
+      remove()
+    }
+  }
+}
 </script>

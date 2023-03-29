@@ -1,13 +1,14 @@
 <template lang="pug">
-  .dito-tabs
+.dito-tabs
+  template(
+    v-for="(tabSchema, key) in tabs"
+  )
     router-link.dito-link(
-      v-for="(tabSchema, key) in tabs"
       v-if="shouldRender(tabSchema)"
       :key="key"
-      :to="{ hash: key }"
-      active-class="dito-active"
-    )
-      | {{ getLabel(tabSchema, key) }}
+      :to="{ hash: `#${key}` }"
+      :class="{ 'dito-active': selectedTab === key }"
+    ) {{ getLabel(tabSchema, key) }}
 </template>
 
 <style lang="sass">

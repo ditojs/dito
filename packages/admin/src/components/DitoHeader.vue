@@ -1,18 +1,18 @@
 <template lang="pug">
-  nav.dito-header
-    .dito-trail
-      ul
-        li(
-          v-for="(component, index) in trail"
-        )
-          template(v-if="index === trail.length - 1")
-            span(:class="getBreadcrumbClass(component)")
-              | {{ component.breadcrumb }}
-          router-link.dito-breadcrumb(v-else, :to="component.path")
-            span(:class="getBreadcrumbClass(component)")
-              | {{ component.breadcrumb }}
-      spinner.dito-spinner(v-if="isLoading")
-    slot
+nav.dito-header
+  .dito-trail
+    ul
+      li(
+        v-for="(component, index) in trail"
+      )
+        template(v-if="index === trail.length - 1")
+          span(:class="getBreadcrumbClass(component)")
+            | {{ component.breadcrumb }}
+        router-link.dito-breadcrumb(v-else, :to="component.path")
+          span(:class="getBreadcrumbClass(component)")
+            | {{ component.breadcrumb }}
+    dito-spinner(v-if="isLoading")
+  slot
 </template>
 
 <style lang="sass">
@@ -82,13 +82,11 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
-
-const Spinner = DitoComponent.component('spinner', PulseLoader)
+import DitoSpinner from './DitoSpinner.vue'
 
 // @vue/component
 export default DitoComponent.component('dito-header', {
-  components: { Spinner },
+  components: { DitoSpinner },
 
   props: {
     spinner: {
@@ -114,7 +112,9 @@ export default DitoComponent.component('dito-header', {
       size = '8px',
       color = '#999'
     } = this.spinner || {}
-    const { props } = Spinner.options
+    // TODO: This is a hack to set the default props for the DitoSpinner.
+    // Pass them on through the template instead!
+    const { props } = DitoSpinner
     props.size.default = size
     props.color.default = color
   },

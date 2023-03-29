@@ -1,11 +1,11 @@
 <template lang="pug">
-  .dito-buttons(
-    v-if="buttonSchemas || $slots.default"
-    /* Pass on $listeners so that dito-edit-buttons can pass events. */
-    v-on="$listeners"
+.dito-buttons(
+  v-if="buttonSchemas || hasSlotContent($slots.default)"
+)
+  template(
+    v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
   )
     dito-container(
-      v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
       v-if="shouldRender(buttonSchema)"
       :key="buttonDataPath"
       :schema="buttonSchema"
@@ -16,13 +16,15 @@
       :disabled="disabled"
       :generateLabels="false"
     )
-    // Render each node in the default slot through `dito-vnode`, so it can be
-    // wrapped in a `.dito-container` class.
+  template(
+    v-for="vnode of $slots.default?.()"
+  )
+    //- Render each node in the default slot through `dito-vnode`,
+    //- so it can be wrapped in a `.dito-container` class.
     .dito-container(
-      v-for="node in $slots.default"
-      v-if="node.tag"
+      v-if="hasVNodeContent(vnode)"
     )
-      dito-vnode(:node="node")
+      dito-vnode(:vnode="vnode")
 </template>
 
 <style lang="sass">
@@ -34,6 +36,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { appendDataPath } from '../utils/data.js'
+import { hasSlotContent, hasVNodeContent } from '../utils/vue.js'
 
 // @vue/component
 export default DitoComponent.component('dito-buttons', {
@@ -61,6 +64,11 @@ export default DitoComponent.component('dito-buttons', {
         }, {})
         : null
     }
+  },
+
+  methods: {
+    hasSlotContent,
+    hasVNodeContent
   }
 })
 </script>

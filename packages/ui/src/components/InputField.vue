@@ -1,12 +1,15 @@
 <template lang="pug">
-  .dito-input
-    input(
-      ref="input"
-      v-model="currentValue"
-      v-bind="attributes"
-      v-on="listeners"
-      :aria-label="title"
-    )
+.dito-input
+  input(
+    ref="input"
+    :type="type"
+    :id="id"
+    :name="name"
+    :title="title"
+    :aria-label="title"
+    v-bind="attributes"
+    v-model="currentValue"
+  )
 </template>
 
 <style lang="sass">
@@ -28,8 +31,8 @@
 <script>
 export default {
   props: {
+    modelValue: { type: [String, Number], default: null },
     type: { type: String, default: 'text' },
-    value: { type: [String, Number], default: null },
     id: { type: String, default: null },
     name: { type: String, default: null },
     title: { type: String, default: null },
@@ -46,7 +49,7 @@ export default {
 
   data() {
     return {
-      currentValue: this.value,
+      currentValue: this.modelValue,
       hovering: false,
       focused: false
     }
@@ -54,37 +57,10 @@ export default {
 
   computed: {
     attributes() {
-      const {
-        id,
-        name,
-        type,
-        size,
-        title,
-        disabled,
-        readonly,
-        placeholder,
-        autocomplete,
-        $attrs
-      } = this
-      return {
-        id,
-        name,
-        type,
-        size,
-        title,
-        disabled,
-        readonly,
-        placeholder,
-        autocomplete,
-        ...$attrs
-      }
-    },
-
-    listeners() {
-      // Remove 'input' listener because we're handling it separately below,
+      // Remove 'onInput' handler because we're handling it separately below,
       // but pass on all others to the wrapped native element:
-      const { input, ...listeners } = this.$listeners
-      return listeners
+      const { onInput, ...attributes } = this.$attrs
+      return attributes
     },
 
     size() {
@@ -96,15 +72,15 @@ export default {
   },
 
   watch: {
-    value(newVal, oldVal) {
-      if (newVal !== oldVal) {
-        this.currentValue = newVal
+    modelValue(to, from) {
+      if (to !== from) {
+        this.currentValue = to
       }
     },
 
-    currentValue(newVal) {
-      if (newVal !== this.value) {
-        this.$emit('input', newVal)
+    currentValue(currentValue) {
+      if (currentValue !== this.modelValue) {
+        this.$emit('update:modelValue', currentValue)
       }
     }
   },

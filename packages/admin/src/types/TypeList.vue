@@ -1,71 +1,75 @@
 <template lang="pug">
-  .dito-list(
-    v-if="isReady"
-    :id="dataPath"
-    :class="schema.class"
-    :style="schema.style"
+.dito-list(
+  v-if="isReady"
+  :id="dataPath"
+  :class="schema.class"
+  :style="schema.style"
+)
+  .dito-navigation(
+    v-if="scopes || hasPagination"
   )
-    .dito-navigation(
-      v-if="scopes || hasPagination"
+    dito-scopes(
+      v-if="scopes"
+      :query="query"
+      :scopes="scopes"
     )
-      dito-scopes(
-        v-if="scopes"
-        :query="query"
-        :scopes="scopes"
-      )
-      // When there's only pagination without scopes, we need a good ol' spacer
-      // div, for the layout not to break...
-      .dito-spacer(
-        v-else-if="hasPagination"
-      )
-      dito-pagination(
-        v-if="hasPagination"
-        :query="query"
-        :limit="paginate"
-        :total="total || 0"
-      )
-    table.dito-table(
-      :class=`{
-        'dito-table-separators': isInlined,
-        'dito-table-larger-padding': hasEditButtons && !isInlined,
-        'dito-table-alternate-colors': !isInlined,
-        'dito-table-even-count': hasEvenCount
-      }`
+    //- When there's only pagination without scopes, we need a good ol' spacer
+    //- div, for the layout not to break...
+    .dito-spacer(
+      v-else-if="hasPagination"
     )
-      dito-table-head(
-        v-if="columns"
-        :query="query"
-        :columns="columns"
-        :hasEditButtons="hasEditButtons"
-      )
-      vue-draggable(
-        tag="tbody"
-        v-bind="getDragOptions(draggable)"
-        :list="updateOrder(sourceSchema, listData, paginationRange)"
-        @start="onStartDrag"
-        @end="onEndDrag"
-      )
+    dito-pagination(
+      v-if="hasPagination"
+      :query="query"
+      :limit="paginate"
+      :total="total || 0"
+    )
+  table.dito-table(
+    :class=`{
+      'dito-table-separators': isInlined,
+      'dito-table-larger-padding': hasEditButtons && !isInlined,
+      'dito-table-alternate-colors': !isInlined,
+      'dito-table-even-count': hasEvenCount
+    }`
+  )
+    dito-table-head(
+      v-if="columns"
+      :query="query"
+      :columns="columns"
+      :hasEditButtons="hasEditButtons"
+    )
+    vue-sortable(
+      tag="tbody"
+      :list="updateOrder(sourceSchema, listData, paginationRange)"
+      :options="getDragOptions(draggable)"
+      :itemKey="item => getItemUid(schema, item)"
+      @start="onStartDrag"
+      @end="onEndDrag"
+    )
+      template(#item="{ element: item, index }")
         tr(
-          v-for="item, index in listData"
-          :key="getItemUid(schema, item)"
           :id="getDataPath(index)"
         )
           template(v-if="columns")
-            dito-table-cell(
+            template(
               v-for="column in columns"
-              v-if="shouldRender(column)"
-              :key="column.name"
-              :class="getCellClass(column)"
-              :cell="column"
-              :schema="schema"
-              :dataPath="getDataPath(index)"
-              :data="item"
-              :meta="nestedMeta"
-              :store="store"
-              :nested="false"
-              :disabled="disabled || isLoading"
             )
-          template(v-else)
+              dito-table-cell(
+                v-if="shouldRender(column)"
+                :key="column.name"
+                :class="getCellClass(column)"
+                :cell="column"
+                :schema="schema"
+                :dataPath="getDataPath(index)"
+                :data="item"
+                :meta="nestedMeta"
+                :store="store"
+                :nested="false"
+                :disabled="disabled || isLoading"
+              )
+          template(
+            v-else
+          )
             td
               dito-schema-inlined(
                 v-if="isInlined"
@@ -85,8 +89,8 @@
                 @delete="deleteItem(item, index)"
               )
               component(
-                v-else-if="component"
-                :is="component"
+                v-else-if="schema.component"
+                :is="schema.component"
                 :dataPath="getDataPath(index)"
                 :data="item"
                 :nested="false"
@@ -114,36 +118,36 @@
               :store="getChildStore(index)"
               @delete="deleteItem(item, index)"
             )
-      // Render create buttons inside table when not in a single component view:
-      tfoot(
-        v-if="hasListButtons && !single"
-      )
-        tr
-          td.dito-cell-edit-buttons(
-            :colspan="numColumns"
-          )
-            dito-edit-buttons(
-              :creatable="creatable"
-              :createPath="path"
-              :buttons="buttonSchemas"
-              :schema="schema"
-              :dataPath="dataPath"
-              :data="listData"
-              :meta="meta"
-              :store="store"
-            )
-    // Render create buttons outside table when in a single component view:
-    dito-edit-buttons.dito-buttons-main.dito-buttons-large(
-      v-if="hasListButtons && single"
-      :creatable="creatable"
-      :createPath="path"
-      :buttons="buttonSchemas"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="listData"
-      :meta="meta"
-      :store="store"
+    //- Render create buttons inside table when not in a single component view:
+    tfoot(
+      v-if="hasListButtons && !single"
     )
+      tr
+        td.dito-cell-edit-buttons(
+          :colspan="numColumns"
+        )
+          dito-edit-buttons(
+            :creatable="creatable"
+            :createPath="path"
+            :buttons="buttonSchemas"
+            :schema="schema"
+            :dataPath="dataPath"
+            :data="listData"
+            :meta="meta"
+            :store="store"
+          )
+  //- Render create buttons outside table when in a single component view:
+  dito-edit-buttons.dito-buttons-main.dito-buttons-large(
+    v-if="hasListButtons && single"
+    :creatable="creatable"
+    :createPath="path"
+    :buttons="buttonSchemas"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="listData"
+    :meta="meta"
+    :store="store"
+  )
 </template>
 
 <style lang="sass">
@@ -175,15 +179,18 @@ import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
-import VueDraggable from 'vuedraggable'
-import { getNamedSchemas, getViewEditPath } from '../utils/schema.js'
+import { Sortable as VueSortable } from 'sortablejs-vue3'
+import {
+  getNamedSchemas, getViewEditPath,
+  resolveSchemaComponent, resolveSchemaComponents
+} from '../utils/schema.js'
 import { getFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('list', {
-  components: { VueDraggable },
+  components: { VueSortable },
   mixins: [SourceMixin, OrderedMixin],
 
   getSourceType(type) {
@@ -299,6 +306,22 @@ export default TypeComponent.register('list', {
         return true
       }
     }
+  },
+
+  async processSchema(
+    api, schema, name, routes, level,
+    nested = false, flatten = false,
+    process = null
+  ) {
+    await Promise.all([
+      resolveSchemaComponent(schema),
+      resolveSchemaComponents(schema.columns),
+      SourceMixin.processSchema(
+        api, schema, name, routes, level,
+        nested, flatten,
+        process
+      )
+    ])
   }
 })
 </script>

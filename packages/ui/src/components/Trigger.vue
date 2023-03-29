@@ -1,59 +1,59 @@
 // Derived from ATUI, and further extended: https://aliqin.github.io/atui/
 
 <template lang="pug">
-  .dito-trigger-container
-    .dito-trigger(
-      v-if="alwaysShow"
-      ref="trigger"
-      :class="triggerClass"
-    )
-      slot(name="trigger")
-    .dito-trigger(
-      v-else-if="trigger === 'click'"
-      ref="trigger"
-      :class="triggerClass"
-      @click="onClick"
-    )
-      slot(name="trigger")
-    .dito-trigger(
-      v-else-if="trigger === 'hover'"
-      ref="trigger"
-      :class="triggerClass"
+.dito-trigger-container
+  .dito-trigger(
+    v-if="alwaysShow"
+    ref="trigger"
+    :class="triggerClass"
+  )
+    slot(name="trigger")
+  .dito-trigger(
+    v-else-if="trigger === 'click'"
+    ref="trigger"
+    :class="triggerClass"
+    @click="onClick"
+  )
+    slot(name="trigger")
+  .dito-trigger(
+    v-else-if="trigger === 'hover'"
+    ref="trigger"
+    :class="triggerClass"
+    @mouseenter="onHover(true)"
+    @mouseleave="onHover(false)"
+  )
+    slot(name="trigger")
+  .dito-trigger(
+    v-else-if="trigger === 'focus' || trigger === 'always'"
+    ref="trigger"
+    :class="triggerClass"
+  )
+    slot(name="trigger")
+  transition(:name="transition")
+    .dito-popup(
+      v-if="trigger === 'hover'"
+      ref="popup"
+      v-show="showPopup"
+      :class="popupClass"
+      :style="popupStyle"
       @mouseenter="onHover(true)"
       @mouseleave="onHover(false)"
     )
-      slot(name="trigger")
-    .dito-trigger(
-      v-else-if="trigger === 'focus' || trigger === 'always'"
-      ref="trigger"
-      :class="triggerClass"
+      slot(
+        v-if="showPopup"
+        name="popup"
+      )
+    .dito-popup(
+      v-else
+      ref="popup"
+      v-show="showPopup"
+      :class="popupClass"
+      :style="popupStyle"
     )
-      slot(name="trigger")
-    transition(:name="transition")
-      .dito-popup(
-        v-if="trigger === 'hover'"
-        ref="popup"
-        v-show="showPopup"
-        :class="popupClass"
-        :style="popupStyle"
-        @mouseenter="onHover(true)"
-        @mouseleave="onHover(false)"
+      slot(
+        v-if="showPopup"
+        name="popup"
       )
-        slot(
-          name="popup"
-          v-if="showPopup"
-        )
-      .dito-popup(
-        v-else
-        ref="popup"
-        v-show="showPopup"
-        :class="popupClass"
-        :style="popupStyle"
-      )
-        slot(
-          name="popup"
-          v-if="showPopup"
-        )
 </template>
 
 <style lang="sass">
@@ -135,10 +135,10 @@ export default {
       this.showPopup = show || this.alwaysShow
     },
 
-    showPopup(newVal, oldVal) {
-      if (!newVal !== !oldVal) {
-        this.$emit('update:show', newVal)
-        if (newVal) {
+    showPopup(to, from) {
+      if (to ^ from) {
+        this.$emit('update:show', to)
+        if (to) {
           this.$nextTick(() => this.updatePosition())
         }
       }
@@ -191,7 +191,7 @@ export default {
     this.showPopup = this.show
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.focusEvents?.remove()
     this.closeEvents?.remove()
     this.mouseLeaveTimer = null
@@ -210,8 +210,10 @@ export default {
         : this.target
       if (target) {
         // Actually resize the popup's first child, so they can set size limits.
-        const el = target === popup ? trigger : popup.firstChild
-        el.style.width = getComputedStyle(target).width
+        const el = target === popup ? trigger : popup.firstElementChild
+        if (el) {
+          el.style.width = getComputedStyle(target).width
+        }
       }
 
       const bounds = (target || trigger).getBoundingClientRect()

@@ -1,27 +1,30 @@
 <template lang="pug">
-  .dito-switch(
-    :class="classes"
-    :style="styles"
-  )
-    .dito-switch-pane
-      input(
-        type="checkbox"
-        ref="input"
-        v-model="checked"
-        v-bind="attributes"
-      )
-      .dito-switch-button
-      span.dito-switch-label(
-        v-if="labels"
-      )
-        slot(
-          v-if="checked"
-          name="checked"
-        ) {{ labels.checked || 'on' }}
-        slot(
-          v-else
-          name="unchecked"
-        ) {{ labels.unchecked || 'off' }}
+.dito-switch(
+  :class="classes"
+  :style="styles"
+)
+  .dito-switch-pane
+    input(
+      ref="input"
+      type="checkbox"
+      :id="id"
+      :name="name"
+      :disabled="disabled"
+      v-bind="$attrs"
+      v-model="checked"
+    )
+    .dito-switch-button
+    span.dito-switch-label(
+      v-if="labels"
+    )
+      slot(
+        v-if="checked"
+        name="checked"
+      ) {{ labels.checked || 'on' }}
+      slot(
+        v-else
+        name="unchecked"
+      ) {{ labels.unchecked || 'off' }}
 </template>
 
 <style lang="sass">
@@ -103,7 +106,7 @@
 <script>
 export default {
   props: {
-    value: { type: Boolean, default: false },
+    modelValue: { type: Boolean, default: false },
     id: { type: String, default: null },
     name: { type: String, default: null },
     disabled: { type: Boolean, default: false },
@@ -112,7 +115,7 @@ export default {
 
   data() {
     return {
-      checked: this.value
+      checked: this.modelValue
     }
   },
 
@@ -132,22 +135,17 @@ export default {
       return {
         '--switch-width': length ? `${length * 1.5}rem` : null
       }
-    },
-
-    attributes() {
-      const { id, name, disabled, $attrs } = this
-      return { id, name, disabled, ...$attrs }
     }
   },
 
   watch: {
-    value(value) {
-      this.checked = value
+    modelValue(modelValue) {
+      this.checked = modelValue
     },
 
     checked(checked) {
-      if (checked !== this.value) {
-        this.$emit('input', checked)
+      if (checked !== this.modelValue) {
+        this.$emit('update:modelValue', checked)
         this.$emit('change', checked)
       }
     }

@@ -1,19 +1,18 @@
 <template lang="pug">
-  ul.dito-checkboxes(
-    :id="dataPath"
-    :class="`dito-layout-${schema.layout || 'vertical'}`"
-  )
-    li(v-for="option in options")
-      label
-        input.dito-checkbox(
-          ref="element"
-          type="checkbox"
-          :value="getValueForOption(option)"
-          v-model="selectedOptions"
-          v-bind="attributes"
-          v-on="listeners"
-        )
-        | {{ getLabelForOption(option) }}
+ul.dito-checkboxes(
+  :id="dataPath"
+  :class="`dito-layout-${schema.layout || 'vertical'}`"
+)
+  li(v-for="option in options")
+    label
+      input.dito-checkbox(
+        ref="element"
+        type="checkbox"
+        :value="getValueForOption(option)"
+        v-model="selectedOptions"
+        v-bind="attributes"
+      )
+      | {{ getLabelForOption(option) }}
 </template>
 
 <style lang="sass">

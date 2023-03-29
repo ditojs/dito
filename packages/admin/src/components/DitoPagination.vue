@@ -1,9 +1,9 @@
 <template lang="pug">
-  pagination(
-    :pageSize="limit"
-    :total="total"
-    :page.sync="page"
-  )
+pagination(
+  :pageSize="limit"
+  :total="total"
+  v-model:page="page"
+)
 </template>
 
 <script>

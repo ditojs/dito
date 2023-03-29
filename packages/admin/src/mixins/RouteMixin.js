@@ -12,11 +12,11 @@ export default {
   },
 
   beforeRouteUpdate(to, from, next) {
-    this.beforeRouteChange(to, from, next)
+    this?.beforeRouteChange(to, from, next)
   },
 
   beforeRouteLeave(to, from, next) {
-    this.beforeRouteChange(to, from, next)
+    this?.beforeRouteChange(to, from, next)
   },
 
   data() {
@@ -36,11 +36,17 @@ export default {
       return this
     },
 
+    routeLevel() {
+      let level = 0
+      let routeComponent = this
+      while ((routeComponent = routeComponent.parentComponent.routeComponent)) {
+        level++
+      }
+      return level
+    },
+
     routeRecord() {
-      // TODO: Can this.$route.currentRoute be of use somewhere here?
-      // Retrieve the route-record to which this component was mapped to:
-      // https://github.com/vuejs/vue-router/issues/1338#issuecomment-296381459
-      return this.$route.matched[this.$vnode.data.routerViewDepth]
+      return this.$route.matched[this.routeLevel]
     },
 
     isLastRoute() {
@@ -66,8 +72,12 @@ export default {
       return this.meta.nested
     },
 
+    isView() {
+      return false
+    },
+
     meta() {
-      return this.routeRecord?.meta
+      return this.routeRecord.meta
     },
 
     path() {
@@ -95,7 +105,7 @@ export default {
     },
 
     // @overridable, see DitoForm
-    doesMutate() {
+    isMutating() {
       return false
     }
   },
@@ -107,7 +117,7 @@ export default {
     this.appState.routeComponents.push(this)
   },
 
-  destroyed() {
+  unmounted() {
     const { routeComponents } = this.appState
     routeComponents.splice(routeComponents.indexOf(this), 1)
   },
@@ -131,7 +141,7 @@ export default {
         )
       )
       if (isClosing) {
-        if (this.doesMutate) {
+        if (this.isMutating) {
           // For active directly mutating (nested) forms that were not validated
           // yet, validate them once. If the user then still wants to leave
           // them, they can click close / navigate away again.

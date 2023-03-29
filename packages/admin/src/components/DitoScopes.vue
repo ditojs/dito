@@ -1,17 +1,18 @@
 <template lang="pug">
-  .dito-scopes
-    router-link(
-      v-for="(scope, key) in scopes"
-      :key="key"
-      :to="getScopeLink(scope)"
-      custom v-slot="{ navigate }"
-    )
-      button.dito-button(
-        type="button"
-        :class="{ 'dito-selected': scope.name === query.scope }"
-        :title="scope.hint || getLabel(scope)"
-        @click="navigate"
-      ) {{ getLabel(scope) }}
+.dito-scopes
+  router-link(
+    v-for="(scope, key) in scopes"
+    :key="key"
+    :to="getScopeLink(scope)"
+    custom
+    v-slot="{ navigate }"
+  )
+    button.dito-button(
+      type="button"
+      :class="{ 'dito-selected': scope.name === query.scope }"
+      :title="scope.hint || getLabel(scope)"
+      @click="navigate"
+    ) {{ getLabel(scope) }}
 </template>
 
 <style lang="sass">

@@ -1,29 +1,29 @@
 <template lang="pug">
-  .dito-markup(
-    :id="dataPath"
-  )
-    editor-menu-bar.dito-markup-toolbar(:editor="editor")
-      .dito-buttons.dito-buttons-toolbar(
-        v-if="groupedButtons.length > 0"
+.dito-markup(
+  :id="dataPath"
+)
+  .dito-markup-toolbar(:editor="editor")
+    .dito-buttons.dito-buttons-toolbar(
+      v-if="groupedButtons.length > 0"
+    )
+      .dito-button-group(
+        v-for="buttons in groupedButtons"
       )
-        .dito-button-group(
-          v-for="buttons in groupedButtons"
+        button.dito-button(
+          v-for="{ name, icon, isActive, onClick } in buttons"
+          :class="{ 'dito-active': isActive }",
+          @click="onClick"
         )
-          button.dito-button(
-            v-for="{ name, icon, isActive, onClick } in buttons"
-            :class="{ 'dito-active': isActive }",
-            @click="onClick"
-          )
-            icon(:name="icon")
-    editor-content.dito-markup-editor(
-      ref="editor"
-      :editor="editor"
-      :style="styles"
-    )
-    .dito-resize(
-      v-if="resizable"
-      @mousedown.stop.prevent="onDragResize"
-    )
+          icon(:name="icon")
+  editor-content.dito-markup-editor(
+    ref="editor"
+    :editor="editor"
+    :style="styles"
+  )
+  .dito-resize(
+    v-if="resizable"
+    @mousedown.stop.prevent="onDragResize"
+  )
 </template>
 
 <style lang="sass">
@@ -120,31 +120,51 @@
 import TypeComponent from '../TypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { Editor, EditorContent, EditorMenuBar, Mark } from 'tiptap'
-import { toggleMark } from 'tiptap-commands'
-import {
-  // Marks:
-  Bold, Code, Italic, Link, Strike, Underline,
-  // Nodes:
-  Blockquote, CodeBlock, HardBreak, Heading, HorizontalRule,
-  OrderedList, BulletList, ListItem,
-  // TODO:
-  // - Image, Mention, CodeBlockHighlight
-  // - Table, TableCell, TableHeader, TableNodes, TableRow,
-  // - TodoItem, TodoList
-  // Tools:
-  History
-} from 'tiptap-extensions'
+import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
+// import { toggleMark } from 'tiptap-commands'
+// Essentials:
+import { Document } from '@tiptap/extension-document'
+import { Text } from '@tiptap/extension-text'
+// Marks:
+import { Bold } from '@tiptap/extension-bold'
+import { Code } from '@tiptap/extension-code'
+import { Italic } from '@tiptap/extension-italic'
+import { Link } from '@tiptap/extension-link'
+import { Strike } from '@tiptap/extension-strike'
+import { Underline } from '@tiptap/extension-underline'
+// Nodes:
+import { Blockquote } from '@tiptap/extension-blockquote'
+import { CodeBlock } from '@tiptap/extension-code-block'
+import { HardBreak } from '@tiptap/extension-hard-break'
+import { Heading } from '@tiptap/extension-heading'
+import { Paragraph } from '@tiptap/extension-paragraph'
+import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
+import { OrderedList } from '@tiptap/extension-ordered-list'
+import { BulletList } from '@tiptap/extension-bullet-list'
+import { ListItem } from '@tiptap/extension-list-item'
+// TODO:
+// import { Image } from '@tiptap/extension-image'
+// import { Mention } from '@tiptap/extension-mention'
+// import { CodeBlockHighlight } from '@tiptap/extension-code-block-highlight'
+// import { Table } from '@tiptap/extension-table'
+// import { TableCell } from '@tiptap/extension-table-cell'
+// import { TableHeader } from '@tiptap/extension-table-header'
+// import { TableNodes } from '@tiptap/extension-table-nodes'
+// import { TableRow } from '@tiptap/extension-table-row'
+// import { TaskList } from '@tiptap/extension-task-list'
+// import { TaskItem } from '@tiptap/extension-task-item'
+// Tools:
+import { History } from '@tiptap/extension-history'
+
 import { Icon } from '@ditojs/ui/src'
 import {
-  isArray, isObject, underscore, hyphenate, debounce
+  isArray, isObject, underscore, hyphenate, debounce, camelize
 } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('markup', {
   components: {
     EditorContent,
-    EditorMenuBar,
     Icon
   },
 
@@ -177,7 +197,7 @@ export default TypeComponent.register('markup', {
         small: true,
         code: true,
         link: {
-          onClick: command => this.onClickLink(command)
+          onClick: editor => this.onClickLink(editor)
         }
       })
     },
@@ -191,7 +211,7 @@ export default TypeComponent.register('markup', {
             this.otherNodeButtons.some(button => button.isActive)
         },
         heading: {
-          attr: 'level',
+          attribute: 'level',
           values: [1, 2, 3, 4, 5, 6]
         }
       })
@@ -297,15 +317,15 @@ export default TypeComponent.register('markup', {
       onChange()
     }
 
-    const setValueDebounced = debounce(getValue => {
+    const setValueDebounced = debounce(editor => {
       ignoreWatch = true
-      this.value = getValue()
+      this.value = editor.getHTML()
       changed = true
       onChange()
     }, 100)
 
-    const onUpdate = ({ getHTML }) => {
-      setValueDebounced(getHTML)
+    const onUpdate = ({ editor }) => {
+      setValueDebounced(editor)
       this.onInput()
     }
 
@@ -322,12 +342,12 @@ export default TypeComponent.register('markup', {
       onFocus,
       onBlur,
       onUpdate,
-      extensions: this.createExtensions(),
+      extensions: this.getExtensions(),
       content: this.value || ''
     })
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.editor.destroy()
   },
 
@@ -359,8 +379,8 @@ export default TypeComponent.register('markup', {
       this.editor.setOptions(this.editorOptions)
     },
 
-    async onClickLink(command) {
-      const attrs = await this.showDialog({
+    async onClickLink(editor) {
+      const attributes = await this.rootComponent.showDialog({
         components: {
           href: {
             type: 'url',
@@ -378,81 +398,90 @@ export default TypeComponent.register('markup', {
           remove: {
             events: {
               click({ dialogComponent }) {
-                dialogComponent.resolve({
-                  href: null,
-                  title: null
-                })
+                dialogComponent.resolve(null)
               }
             }
           }
         },
-        data: this.editor.getMarkAttrs('link')
+        data: getMarkAttributes(this.editor.state, 'link')
       })
-      if (attrs) {
-        let { href, title } = attrs
+      if (attributes) {
+        let { href, title } = attributes
         if (href) {
-          // See if `href` can be parsed as a URL, and if not, prefix it with
-          // a default protocol.
+          // See if `href` can be parsed as a URL, and if not,
+          // prefix it with a default protocol.
           try {
             new URL(href)
           } catch {
-            href = `http://${href}`
+            href = `https://${href}`
           }
         }
-        command({ href, title })
+        editor.commands.setLink({ href, title })
+      } else {
+        editor.commands.unsetLink()
       }
     },
 
-    createExtensions() {
+    getExtensions() {
       const {
         marks = {},
         nodes = {},
         tools = {}
       } = this.schema
       return [
-        // schema.marks:
-        marks.bold && new Bold(),
-        marks.italic && new Italic(),
-        marks.underline && new Underline(),
-        marks.strike && new Strike(),
-        marks.small && new Small(),
-        marks.code && new Code(),
-        marks.link && new LinkWithTitle(),
+        // Essentials:
+        Document,
+        Text,
+        Paragraph, // button can be controlled, but node needs to be on.
 
-        // schema.nodes:
-        nodes.blockquote && new Blockquote(),
-        nodes.codeBlock && new CodeBlock(),
-        new HardBreak(), // TODO: Should this always on?
-        nodes.heading && new Heading({ levels: nodes.heading }),
-        nodes.horizontalRule && new HorizontalRule(),
-        (nodes.orderedList || nodes.bulletList) && new ListItem(),
-        nodes.bulletList && new BulletList(),
-        nodes.orderedList && new OrderedList(),
+        // Marks: `schema.marks`
+        marks.bold && Bold,
+        marks.italic && Italic,
+        marks.underline && Underline,
+        marks.strike && Strike,
+        marks.small && Small,
+        marks.code && Code,
+        marks.link && LinkWithTitle,
+
+        // Nodes: `schema.nodes`
+        nodes.blockquote && Blockquote,
+        nodes.codeBlock && CodeBlock,
+        HardBreak, // TODO: Should this always on?
+        nodes.heading && Heading.configure({ levels: nodes.heading }),
+        nodes.horizontalRule && HorizontalRule,
+        (nodes.orderedList || nodes.bulletList) && ListItem,
+        nodes.bulletList && BulletList,
+        nodes.orderedList && OrderedList,
         // TODO:
-        // nodes.todoList && new TodoItem(),
-        // nodes.todoList && new TodoList(),
+        // nodes.todoList && TodoItem,
+        // nodes.todoList && TodoList,
 
-        // schema.tools:
-        tools.history && new History()
+        // Tools: `schema.tools`
+        tools.history && History
       ].filter(extension => !!extension)
     },
 
     getButtons(settingsName, descriptions) {
       const list = []
 
-      const addButton = ({ name, icon, attrs, ignoreActive, onClick }) => {
-        const isActive = this.editor.isActive[name]
-        const command = this.editor.commands[name]
+      const addButton = ({ name, icon, attributes, ignoreActive, onClick }) => {
         list.push({
           name,
           icon,
           isActive: (
-            isActive?.(attrs) &&
+            this.editor.isActive(name, attributes) &&
             (ignoreActive == null || !ignoreActive())
           ),
-          onClick: () => onClick
-            ? onClick(command, attrs)
-            : command(attrs)
+          onClick: () => {
+            const key = `toggle${camelize(name, true)}`
+            if (this.editor.commands[key]) {
+              const command = attributes =>
+                this.editor.chain()[key](attributes).focus().run()
+              onClick
+                ? onClick(this.editor, attributes)
+                : command(attributes)
+            }
+          }
         })
       }
 
@@ -467,8 +496,8 @@ export default TypeComponent.register('markup', {
             if (description === true) {
               addButton({ name, icon })
             } else if (isObject(description)) {
-              const { attr, values, ignoreActive, onClick } = description
-              if (attr) {
+              const { attribute, values, ignoreActive, onClick } = description
+              if (attribute) {
                 if (isArray(values) && isArray(setting)) {
                   // Support heading level attrs:
                   for (const value of values) {
@@ -476,7 +505,7 @@ export default TypeComponent.register('markup', {
                       addButton({
                         name,
                         icon: `${icon}-${value}`,
-                        attrs: { [attr]: value },
+                        attributes: { [attribute]: value },
                         ignoreActive,
                         onClick
                       })
@@ -500,45 +529,57 @@ export default TypeComponent.register('markup', {
   }
 })
 
-class Small extends Mark {
-  get name() {
-    return 'small'
-  }
+const Small = Mark.create({
+  name: 'small',
 
-  get schema() {
-    return {
-      parseDOM: [
-        { tag: 'small' }
-      ],
-      toDOM: () => ['small', 0]
-    }
-  }
+  parseHTML() {
+    return [{ tag: 'small' }]
+  },
 
-  commands({ type }) {
-    return () => toggleMark(type)
-  }
-}
-class LinkWithTitle extends Link {
-  get schema() {
+  renderHTML() {
+    return ['small', 0]
+  },
+
+  addCommands() {
     return {
-      attrs: {
-        href: {
-          default: null
-        },
-        title: {
-          default: null
-        }
+      setSmall: attributes => ({ commands }) => {
+        return commands.setMark(this.name, attributes)
       },
-      inclusive: false,
-      parseDOM: [{
-        tag: 'a',
-        getAttrs: dom => ({
-          href: dom.getAttribute('href'),
-          title: dom.getAttribute('title')
-        })
-      }],
-      toDOM: node => ['a', node.attrs, 0]
+      toggleSmall: attributes => ({ commands }) => {
+        return commands.toggleMark(this.name, attributes)
+      },
+      unsetSmall: () => ({ commands }) => {
+        return commands.unsetMark(this.name)
+      }
     }
   }
-}
+})
+
+const LinkWithTitle = Link.extend({
+  inclusive: false,
+  schema: {
+    attrs: {
+      href: {
+        default: null
+      },
+      title: {
+        default: null
+      }
+    },
+
+    parseHTML() {
+      return [{
+        tag: 'a',
+        getAttrs: element => ({
+          href: element.getAttribute('href'),
+          title: element.getAttribute('title')
+        })
+      }]
+    },
+
+    renderHTML(node) {
+      return ['a', node.attrs, 0]
+    }
+  }
+})
 </script>

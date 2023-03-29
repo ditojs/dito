@@ -1,20 +1,20 @@
 <template lang="pug">
-  .dito-clipboard.dito-buttons.dito-buttons-round(
-    v-if="clipboard"
+.dito-clipboard.dito-buttons.dito-buttons-round(
+  v-if="clipboard"
+)
+  button.dito-button.dito-button-copy(
+    type="button"
+    ref="copyData"
+    title="Copy Data"
+    :disabled="!copyEnabled"
+    @click="onCopy"
   )
-    button.dito-button.dito-button-copy(
-      type="button"
-      ref="copyData"
-      title="Copy Data"
-      :disabled="!copyEnabled"
-      @click="onCopy"
-    )
-    button.dito-button.dito-button-paste(
-      type="button"
-      title="Paste Data"
-      :disabled="!pasteEnabled"
-      @click="onPaste"
-    )
+  button.dito-button.dito-button-paste(
+    type="button"
+    title="Paste Data"
+    :disabled="!pasteEnabled"
+    @click="onPaste"
+  )
 </template>
 
 <script>
@@ -131,7 +131,7 @@ export default DitoComponent.component('dito-clipboard', {
         try {
           const json = JSON.stringify(data, null, 2)
           await navigator.clipboard?.writeText?.(json)
-          // See if we can activate the paste button, dependding on browsers:
+          // See if we can activate the paste button, depending on browsers:
           await this.checkClipboard()
         } catch (err) {
           console.error(err, err.name, err.message)

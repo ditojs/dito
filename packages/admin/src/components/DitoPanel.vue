@@ -1,22 +1,22 @@
 <template lang="pug">
-  // Only show panels in tabs when the tabs are also visible.
-  component.dito-panel(
-    :is="panelTag"
-    v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
-    @submit.prevent
+//- Only show panels in tabs when the tabs are also visible.
+component.dito-panel(
+  :is="panelTag"
+  v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
+  @submit.prevent
+)
+  label.dito-panel-title {{ getLabel(schema) }}
+  dito-schema.dito-panel-schema(
+    :schema="panelSchema"
+    :dataPath="panelDataPath"
+    :data="panelData"
+    :meta="meta"
+    :store="store"
+    :disabled="disabled"
+    :hasOwnData="hasOwnData"
   )
-    label.dito-panel-title {{ getLabel(schema) }}
-    dito-schema.dito-panel-schema(
-      :schema="panelSchema"
-      :dataPath="panelDataPath"
-      :data="panelData"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
-      :hasOwnData="hasOwnData"
-    )
+    template(#buttons)
       dito-buttons(
-        slot="buttons"
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
@@ -89,7 +89,7 @@ export default DitoComponent.component('dito-panel', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    panelTabComponent: { type: DitoComponent, default: null }
+    panelTabComponent: { type: Object, default: null }
   },
 
   data() {
@@ -164,7 +164,7 @@ export default DitoComponent.component('dito-panel', {
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this._register(false)
   },
 

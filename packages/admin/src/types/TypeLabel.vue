@@ -1,5 +1,5 @@
 <template lang="pug">
-  dito-label.dito-label-component(:label="value" :dataPath="dataPath")
+dito-label.dito-label-component(:label="value" :dataPath="dataPath")
 </template>
 
 <style lang="sass">

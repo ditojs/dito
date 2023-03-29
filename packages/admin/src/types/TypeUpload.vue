@@ -1,30 +1,29 @@
 <template lang="pug">
-  .dito-upload
-    table.dito-table.dito-table-separators.dito-table-background
-      //- Styling comes from DitoTableHead
-      thead.dito-table-head
+.dito-upload
+  table.dito-table.dito-table-separators.dito-table-background
+    //- Styling comes from DitoTableHead
+    thead.dito-table-head
+      tr
+        th
+          span Name
+        th
+          span Size
+        th
+          span Status
+        th
+          span
+    vue-sortable(
+      tag="tbody"
+      :list="files"
+      :options="getDragOptions(draggable)"
+      itemKey="key"
+      @start="onStartDrag"
+      @end="onEndDrag"
+    )
+      template(#item="{ element: file, index }")
         tr
-          th
-            span Name
-          th
-            span Size
-          th
-            span Status
-          th
-            span
-      vue-draggable(
-        tag="tbody"
-        v-bind="getDragOptions(draggable)"
-        :list="files"
-        @start="onStartDrag"
-        @end="onEndDrag"
-      )
-        tr(
-          v-for="(file, index) in files"
-          :key="file.key"
-        )
           td(v-html="renderFile(file, index)")
-          td {{ file.size | formatFileSize }}
+          td {{ formatFileSize(file.size) }}
           td
             template(v-if="file.upload")
               template(v-if="file.upload.error")
@@ -48,41 +47,41 @@
                 @click="deleteFile(file, index)"
                 v-bind="getButtonAttributes(verbs.delete)"
               )
-      tfoot
-        tr
-          td(:colspan="4")
-            .dito-upload-footer
-              progress.dito-progress(
+    tfoot
+      tr
+        td(:colspan="4")
+          .dito-upload-footer
+            progress.dito-progress(
+              v-if="isUploadActive"
+              :value="uploadProgress"
+              max="100"
+            )
+            .dito-buttons.dito-buttons-round
+              button.dito-button(
                 v-if="isUploadActive"
-                :value="uploadProgress"
-                max="100"
+                type="button"
+                @click.prevent="upload.active = false"
+              ) Cancel All
+              button.dito-button(
+                v-else-if="isUploadReady"
+                type="button"
+                @click.prevent="upload.active = true"
+              ) Upload All
+              vue-upload.dito-button.dito-button-add-upload(
+                :input-id="dataPath"
+                :name="dataPath"
+                :disabled="disabled"
+                :post-action="uploadPath"
+                :extensions="extensions"
+                :accept="accept"
+                :multiple="multiple"
+                :size="maxSize"
+                v-model="uploads"
+                @input-filter="inputFilter"
+                @input-file="inputFile"
+                ref="upload"
+                title="Upload Files"
               )
-              .dito-buttons.dito-buttons-round
-                button.dito-button(
-                  v-if="isUploadActive"
-                  type="button"
-                  @click.prevent="upload.active = false"
-                ) Cancel All
-                button.dito-button(
-                  v-else-if="isUploadReady"
-                  type="button"
-                  @click.prevent="upload.active = true"
-                ) Upload All
-                vue-upload.dito-button.dito-button-add-upload(
-                  :input-id="dataPath"
-                  :name="dataPath"
-                  :disabled="disabled"
-                  :post-action="uploadPath"
-                  :extensions="extensions"
-                  :accept="accept"
-                  :multiple="multiple"
-                  :size="maxSize"
-                  v-model="uploads"
-                  @input-filter="inputFilter"
-                  @input-file="inputFile"
-                  ref="upload"
-                  title="Upload Files"
-                )
 </template>
 
 <style lang="sass">
@@ -111,7 +110,7 @@ import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
 import VueUpload from 'vue-upload-component'
-import VueDraggable from 'vuedraggable'
+import { Sortable as VueSortable } from 'sortablejs-vue3'
 import parseFileSize from 'filesize-parser'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize } from '../utils/units.js'
@@ -120,8 +119,7 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('upload', {
-  components: { VueUpload, VueDraggable },
-  filters: { formatFileSize },
+  components: { VueUpload, VueSortable },
   mixins: [OrderedMixin],
 
   data() {
@@ -202,6 +200,8 @@ export default TypeComponent.register('upload', {
   },
 
   methods: {
+    formatFileSize,
+
     renderFile(file, index) {
       const { render } = this.schema
       return render
@@ -263,7 +263,7 @@ export default TypeComponent.register('upload', {
         const index = this.getFileIndex(file)
         if (index >= 0) {
           if (newFile) {
-            this.$set(this.value, index, newFile)
+            this.value[index] = newFile
           } else {
             this.value.splice(index, 1)
           }

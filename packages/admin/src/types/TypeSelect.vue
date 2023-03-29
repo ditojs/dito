@@ -1,44 +1,43 @@
 <template lang="pug">
-  //- Nesting is needed to make an arrow appear over the select item:
-  .dito-select
-    select(
-      ref="element"
-      :id="dataPath"
-      v-model="selectedValue"
-      v-bind="attributes"
-      v-on="listeners"
-      @mousedown="populate = true"
-      @focus="populate = true"
+//- Nesting is needed to make an arrow appear over the select item:
+.dito-select
+  select(
+    ref="element"
+    :id="dataPath"
+    v-model="selectedValue"
+    v-bind="attributes"
+    @mousedown="populate = true"
+    @focus="populate = true"
+  )
+    template(
+      v-if="populate"
     )
       template(
-        v-if="populate"
+        v-for="option in options"
       )
-        template(
-          v-for="option in options"
+        optgroup(
+          v-if="groupBy"
+          :label="option[groupByLabel]"
         )
-          optgroup(
-            v-if="groupBy"
-            :label="option[groupByLabel]"
-          )
-            option(
-              v-for="opt in option[groupByOptions]"
-              :value="getValueForOption(opt)"
-            ) {{ getLabelForOption(opt) }}
           option(
-            v-else
-            :value="getValueForOption(option)"
-          ) {{ getLabelForOption(option) }}
-      template(
-        v-else-if="selectedOption"
-      )
+            v-for="opt in option[groupByOptions]"
+            :value="getValueForOption(opt)"
+          ) {{ getLabelForOption(opt) }}
         option(
-          :value="selectedValue"
-        ) {{ getLabelForOption(selectedOption) }}
-    button.dito-button-clear.dito-button-overlay(
-      v-if="showClearButton"
-      @click="clear"
-      :disabled="disabled"
+          v-else
+          :value="getValueForOption(option)"
+        ) {{ getLabelForOption(option) }}
+    template(
+      v-else-if="selectedOption"
     )
+      option(
+        :value="selectedValue"
+      ) {{ getLabelForOption(selectedOption) }}
+  button.dito-button-clear.dito-button-overlay(
+    v-if="showClearButton"
+    @click="clear"
+    :disabled="disabled"
+  )
 </template>
 
 <style lang="sass">

@@ -1,31 +1,31 @@
 <template lang="pug">
-  .dito-container(
-    v-show="componentVisible"
-    :class="containerClass"
-    :style="containerStyle"
+.dito-container(
+  v-show="componentVisible"
+  :class="containerClass"
+  :style="containerStyle"
+)
+  dito-label(
+    v-if="label"
+    :label="label"
+    :dataPath="labelDataPath"
+    :class="componentClass"
   )
-    dito-label(
-      v-if="label"
-      :label="label"
-      :dataPath="labelDataPath"
-      :class="componentClass"
-    )
-    component.dito-component(
-      :is="getTypeComponent(schema.type)"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :single="single"
-      :nested="nested"
-      :disabled="componentDisabled"
-      :class="componentClass"
-      @errors="onErrors"
-    )
-    dito-errors(
-      :errors="errors"
-    )
+  component.dito-component(
+    :is="typeComponent"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :single="single"
+    :nested="nested"
+    :disabled="componentDisabled"
+    :class="componentClass"
+    @errors="onErrors"
+  )
+  dito-errors(
+    :errors="errors"
+  )
 </template>
 
 <style lang="sass">
@@ -65,7 +65,7 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeOptions, shouldOmitPadding } from '../utils/schema.js'
+import { getTypeComponent, shouldOmitPadding } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
@@ -93,8 +93,8 @@ export default DitoComponent.component('dito-container', {
       return new DitoContext(this, { nested: this.nested })
     },
 
-    typeOptions() {
-      return getTypeOptions(this.schema) || {}
+    typeComponent() {
+      return getTypeComponent(this.schema.type)
     },
 
     hasLabel() {
@@ -102,7 +102,7 @@ export default DitoComponent.component('dito-container', {
       const { label } = schema
       return (
         label !== false &&
-        (!!label || this.typeOptions.generateLabel && this.generateLabels)
+        (!!label || this.typeComponent?.generateLabel && this.generateLabels)
       )
     },
 
@@ -118,7 +118,7 @@ export default DitoComponent.component('dito-container', {
     componentWidth: getSchemaAccessor('width', {
       type: [String, Number],
       default() {
-        return this.typeOptions.defaultWidth
+        return this.typeComponent?.defaultWidth
       },
       get(width) {
         // Use 100% == 1.0 as default width when nothing is set:
@@ -142,7 +142,7 @@ export default DitoComponent.component('dito-container', {
     componentVisible: getSchemaAccessor('visible', {
       type: Boolean,
       default() {
-        return this.typeOptions.defaultVisible
+        return this.typeComponent?.defaultVisible
       }
     }),
 

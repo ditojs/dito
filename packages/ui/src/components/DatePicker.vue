@@ -1,17 +1,17 @@
 // Derived from ATUI, and further extended: https://aliqin.github.io/atui/
 
 <template lang="pug">
-  trigger.dito-date-picker(
-    ref="trigger"
-    trigger="click"
-    :show.sync="showPopup"
-    v-bind="{ transition, placement, disabled, target }"
-  )
+trigger.dito-date-picker(
+  ref="trigger"
+  trigger="click"
+  v-model:show="showPopup"
+  v-bind="{ transition, placement, disabled, target }"
+)
+  template(#trigger)
     input-field.dito-date-picker-input(
-      slot="trigger"
       ref="input"
       type="text"
-      :value="currentText"
+      v-model="currentText"
       readonly
       :class="{ 'dito-focus': showPopup }"
       @focus="inputFocused = true"
@@ -19,12 +19,12 @@
       @keydown="onKeyDown"
       v-bind="{ placeholder, disabled }"
     )
-    // icon(type="calendar" :color="iconColor")
+  // icon(type="calendar" :color="iconColor")
+  template(#popup)
     calendar.dito-date-picker-popup(
-      slot="popup"
       ref="calendar"
       @input="selectDate"
-      :value="currentValue"
+      v-model="currentValue"
       v-bind="{ locale, disabledDate }"
     )
 </template>
@@ -53,7 +53,7 @@ export default {
   components: { Trigger, Calendar, InputField },
 
   props: {
-    value: { type: Date, default: null },
+    modelValue: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom-left' },
     placeholder: { type: String, default: null },
@@ -67,7 +67,7 @@ export default {
 
   data() {
     return {
-      currentValue: this.value,
+      currentValue: this.modelValue,
       showPopup: this.show,
       inputFocused: false,
       changed: false
@@ -89,16 +89,16 @@ export default {
   },
 
   watch: {
-    value(newVal, oldVal) {
-      if (+newVal !== +oldVal) {
-        this.currentValue = newVal
+    modelValue(to, from) {
+      if (+to !== +from) {
+        this.currentValue = to
       }
     },
 
     currentValue(date) {
-      if (+date !== +this.value) {
+      if (+date !== +this.modelValue) {
         this.changed = true
-        this.$emit('input', date)
+        this.$emit('update:modelValue', date)
       }
     },
 
@@ -106,26 +106,22 @@ export default {
       this.showPopup = show
     },
 
-    showPopup(newVal, oldVal) {
-      if (!newVal !== !oldVal) {
-        this.$emit('update:show', newVal)
+    showPopup(to, from) {
+      if (to ^ from) {
+        this.$emit('update:show', to)
       }
     },
 
-    focused(newVal, oldVal) {
-      if (!newVal !== !oldVal) {
-        this.$emit(newVal ? 'focus' : 'blur')
+    focused(to, from) {
+      if (to ^ from) {
+        this.$emit(to ? 'focus' : 'blur')
+        if (!to && this.changed) {
+          this.changed = false
+          // TODO:
+          this.$emit('change', this.currentValue)
+        }
       }
     }
-  },
-
-  mounted() {
-    this.$on('blur', () => {
-      if (this.changed) {
-        this.changed = false
-        this.$emit('change', this.currentValue)
-      }
-    })
   },
 
   methods: {

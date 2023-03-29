@@ -1,19 +1,19 @@
 <template lang="pug">
-  .dito-account
-    a(
-      @mousedown.stop="onPulldownMouseDown()"
+.dito-account
+  a(
+    @mousedown.stop="onPulldownMouseDown()"
+  )
+    span {{ user.username }}
+  ul.dito-pulldown(
+    :class="{ 'dito-open': pulldown.open }"
+  )
+    li(
+      v-for="(label, value) of items"
     )
-      span {{ user.username }}
-    ul.dito-pulldown(
-      :class="{ 'dito-open': pulldown.open }"
-    )
-      li(
-        v-for="(label, value) of items"
-      )
-        a(
-          @mousedown.stop="onPulldownMouseDown(value)"
-          @mouseup="onPulldownMouseUp(value)"
-        ) {{ label }}
+      a(
+        @mousedown.stop="onPulldownMouseDown(value)"
+        @mouseup="onPulldownMouseUp(value)"
+      ) {{ label }}
 </template>
 
 <style lang="sass">

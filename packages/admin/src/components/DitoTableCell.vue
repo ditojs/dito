@@ -1,24 +1,24 @@
 <template lang="pug">
-  td(
-    :class="cell.class"
-    :style="cell.style"
+td(
+  :class="cell.class"
+  :style="cell.style"
+)
+  //- TODO: Implement inlined components in cell mode!
+  component(
+    v-if="cell.component"
+    :is="cell.component"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :nested="nested"
+    :disabled="disabled"
   )
-    // TODO: Implement inlined components in cell mode!
-    component(
-      v-if="component"
-      :is="component"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :nested="nested"
-      :disabled="disabled"
-    )
-    span(
-      v-else
-      v-html="renderCell(data)"
-    )
+  span(
+    v-else
+    v-html="renderCell(data)"
+  )
 </template>
 
 <script>
@@ -38,12 +38,6 @@ export default DitoComponent.component('dito-table-cell', {
     store: { type: Object, required: true },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
-  },
-
-  computed: {
-    component() {
-      return this.resolveTypeComponent(this.cell.component)
-    }
   },
 
   methods: {

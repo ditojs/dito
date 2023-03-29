@@ -19,8 +19,8 @@ export default {
   },
 
   methods: {
-    // This method is called by `DitoSchema.created()/destroyed()` on its
-    // $parent, if the parent uses the `SchemaParentMixin`:
+    // This method is called by `DitoSchema.created()/unmounted()` on its
+    // `$schemaParentComponent`, if the parent uses the `SchemaParentMixin`:
     _registerSchemaComponent(schemaComponent, add) {
       const { schemaComponents } = this
       if (add) {

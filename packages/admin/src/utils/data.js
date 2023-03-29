@@ -83,10 +83,6 @@ export function isTemporaryId(id) {
   return /^@/.test(id)
 }
 
-export function hasTemporaryId(data, idKey = 'id') {
-  return isTemporaryId(data?.[idKey])
-}
-
 export function isReference(data, idKey = 'id') {
   // Returns true if value is an object that holds nothing more than an id.
   return data?.[idKey] != null && Object.keys(data).length === 1

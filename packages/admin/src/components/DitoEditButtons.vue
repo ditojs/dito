@@ -1,36 +1,36 @@
 <template lang="pug">
-  dito-buttons.dito-edit-buttons.dito-buttons-round(
-    :buttons="buttons"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    /* Prevent click events from bubbling to dito-label: */
-    @click.stop
+dito-buttons.dito-edit-buttons.dito-buttons-round(
+  :buttons="buttons"
+  :dataPath="dataPath"
+  :data="data"
+  :meta="meta"
+  :store="store"
+  /* Prevent click events from bubbling to dito-label: */
+  @click.stop
+)
+  //- Firefox doesn't like <button> here, so use <a> instead:
+  a.dito-button(
+    v-if="isDraggable"
+    v-bind="getButtonAttributes(verbs.drag)"
   )
-    //- Firefox doesn't like <button> here, so use <a> instead:
-    a.dito-button(
-      v-if="isDraggable"
-      v-bind="getButtonAttributes(verbs.drag)"
-    )
-    router-link.dito-button(
-      v-if="isEditable"
-      :to="{ path: editPath }" append
-      v-bind="getButtonAttributes(verbs.edit)"
-    )
-    dito-create-button(
-      v-if="isCreatable"
-      :schema="schema"
-      :path="createPath"
-      :verb="verbs.create"
-      :text="createButtonText"
-    )
-    button.dito-button(
-      v-if="isDeletable"
-      type="button"
-      v-bind="getButtonAttributes(verbs.delete)"
-      @click="$emit('delete')"
-    )
+  router-link.dito-button(
+    v-if="isEditable"
+    :to="{ path: editPath }"
+    v-bind="getButtonAttributes(verbs.edit)"
+  )
+  dito-create-button(
+    v-if="isCreatable"
+    :schema="schema"
+    :path="createPath"
+    :verb="verbs.create"
+    :text="createButtonText"
+  )
+  button.dito-button(
+    v-if="isDeletable"
+    type="button"
+    v-bind="getButtonAttributes(verbs.delete)"
+    @click="$emit('delete')"
+  )
 </template>
 
 <style lang="sass">

@@ -18,9 +18,9 @@ function getCommand(commands, parts) {
 }
 
 function setSilent(silent) {
-  const oldValue = process.env.DITO_SILENT
+  const wasSilent = process.env.DITO_SILENT
   process.env.DITO_SILENT = silent
-  return oldValue
+  return wasSilent
 }
 
 async function execute() {

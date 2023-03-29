@@ -1,28 +1,28 @@
 <template lang="pug">
-  component.dito-label(
-    v-if="text || collapsible"
-    :is="tag"
-    v-on="listeners"
-    :class="{ 'dito-active': isActive }"
+component.dito-label(
+  v-if="text || collapsible"
+  :is="tag"
+  v-bind="attributes"
+  :class="{ 'dito-active': isActive }"
+)
+  .dito-chevron(
+    v-if="collapsible"
+    :class="{ 'dito-opened': !collapsed }"
   )
-    .dito-chevron(
-      v-if="collapsible"
-      :class="{ 'dito-opened': !collapsed }"
-    )
-    dito-element.dito-label-prefix(
-      v-for="(prefix, index) of prefixes"
-      tag="span"
-      :key="`prefix-${index}`"
-      :content="prefix"
-    )
-    label(:for="dataPath" v-html="text")
-    dito-element.dito-label-suffix(
-      v-for="(suffix, index) of suffixes"
-      tag="span"
-      :key="`suffix-${index}`"
-      :content="suffix"
-    )
-    slot(name="edit-buttons")
+  dito-element.dito-label-prefix(
+    v-for="(prefix, index) of prefixes"
+    tag="span"
+    :key="`prefix-${index}`"
+    :content="prefix"
+  )
+  label(:for="dataPath" v-html="text")
+  dito-element.dito-label-suffix(
+    v-for="(suffix, index) of suffixes"
+    tag="span"
+    :key="`suffix-${index}`"
+    :content="suffix"
+  )
+  slot(name="edit-buttons")
 </template>
 
 <style lang="sass">
@@ -129,10 +129,10 @@ export default DitoComponent.component('dito-label', {
       return asArray(this.label?.suffix)
     },
 
-    listeners() {
+    attributes() {
       return {
         ...(this.collapsible && {
-          click: this.onClick
+          onClick: this.onClick
         })
       }
     },

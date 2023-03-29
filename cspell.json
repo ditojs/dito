@@ -32,7 +32,6 @@
     "unallowed",
     "upserting",
     "vite",
-    "vitest",
-    "vuedraggable"
+    "vitest"
   ]
 }

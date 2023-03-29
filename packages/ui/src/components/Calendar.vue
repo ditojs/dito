@@ -1,88 +1,88 @@
 // Derived from ATUI, and further extended: https://aliqin.github.io/atui/
 
 <template lang="pug">
-  .dito-calendar
-    .dito-calendar-popup
-      .dito-calendar-inner
-        template(
-          v-if="currentMode === 'day'"
-        )
-          .dito-calendar-header
-            a.dito-calendar-step-prev.dito-calendar-step-year(
-              @click="stepYear(-1)"
-            )
-            a.dito-calendar-step-prev.dito-calendar-step-month(
-              @click="stepMonth(-1)"
-            )
-            span
-              a.dito-calendar-select-year(
-                @click="setMode('year')"
-              ) {{ dateToString(currentValue, { year: 1 }) }}
-              a.dito-calendar-select-month(
-                @click="setMode('month')"
-              ) {{ dateToString(currentValue, { month: 1 }) }}
-            a.dito-calendar-step-next.dito-calendar-step-month(
-              @click="stepMonth(1)"
-            )
-            a.dito-calendar-step-next.dito-calendar-step-year(
-              @click="stepYear(1)"
-            )
-          .dito-calendar-body
-            .dito-calendar-weekdays
-              span(
-                v-for="weekday in weekdayNames"
-              ) {{ weekday.short }}
-            .dito-calendar-dates
-              span(
-                v-for="date in dateRange"
-                :class="date.state && `dito-calendar-item-${date.state}`"
-                @click="selectDate(date.date, date.state, true)"
-              ) {{ date.text }}
-          .dito-calendar-footer
-            a.dito-calendar-select-today(
-              role="button"
-              @click="selectDate(new Date())"
-              :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
-            )
-        template(
-          v-else-if="currentMode === 'month'"
-        )
-          .dito-calendar-header
-            a.dito-calendar-step-prev(
-              @click="stepYear(-1)"
-            )
-            span
-              a.dito-calendar-select-year(
-                @click="setMode('year')"
-              ) {{ dateToString(currentValue, { year: 1 }) }}
-            a.dito-calendar-step-next(
-              @click="stepYear(1)"
-            )
-          .dito-calendar-body
-            .dito-calendar-months
-              span(
-                v-for="(month, index) in monthNames"
-                :class="getMonthClass(index)"
-                @click="selectMonth(index)"
-              ) {{ month.short }}
-        template(
-          v-else-if="currentMode === 'year'"
-        )
-          .dito-calendar-header
-            a.dito-calendar-step-prev(
-              @click="stepDecade(-1)"
-            )
-            span {{ decadeToString(currentValue) }}
-            a.dito-calendar-step-next(
-              @click="stepDecade(1)"
-            )
-          .dito-calendar-body
-            .dito-calendar-years
-              span(
-                v-for="year in yearRange"
-                :class="getYearClass(year)"
-                @click="selectYear(year)"
-              ) {{ year }}
+.dito-calendar
+  .dito-calendar-popup
+    .dito-calendar-inner
+      template(
+        v-if="currentMode === 'day'"
+      )
+        .dito-calendar-header
+          a.dito-calendar-step-prev.dito-calendar-step-year(
+            @click="stepYear(-1)"
+          )
+          a.dito-calendar-step-prev.dito-calendar-step-month(
+            @click="stepMonth(-1)"
+          )
+          span
+            a.dito-calendar-select-year(
+              @click="setMode('year')"
+            ) {{ dateToString(currentValue, { year: 1 }) }}
+            a.dito-calendar-select-month(
+              @click="setMode('month')"
+            ) {{ dateToString(currentValue, { month: 1 }) }}
+          a.dito-calendar-step-next.dito-calendar-step-month(
+            @click="stepMonth(1)"
+          )
+          a.dito-calendar-step-next.dito-calendar-step-year(
+            @click="stepYear(1)"
+          )
+        .dito-calendar-body
+          .dito-calendar-weekdays
+            span(
+              v-for="weekday in weekdayNames"
+            ) {{ weekday.short }}
+          .dito-calendar-dates
+            span(
+              v-for="date in dateRange"
+              :class="date.state && `dito-calendar-item-${date.state}`"
+              @click="selectDate(date.date, date.state, true)"
+            ) {{ date.text }}
+        .dito-calendar-footer
+          a.dito-calendar-select-today(
+            role="button"
+            @click="selectDate(new Date())"
+            :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
+          )
+      template(
+        v-else-if="currentMode === 'month'"
+      )
+        .dito-calendar-header
+          a.dito-calendar-step-prev(
+            @click="stepYear(-1)"
+          )
+          span
+            a.dito-calendar-select-year(
+              @click="setMode('year')"
+            ) {{ dateToString(currentValue, { year: 1 }) }}
+          a.dito-calendar-step-next(
+            @click="stepYear(1)"
+          )
+        .dito-calendar-body
+          .dito-calendar-months
+            span(
+              v-for="(month, index) in monthNames"
+              :class="getMonthClass(index)"
+              @click="selectMonth(index)"
+            ) {{ month.short }}
+      template(
+        v-else-if="currentMode === 'year'"
+      )
+        .dito-calendar-header
+          a.dito-calendar-step-prev(
+            @click="stepDecade(-1)"
+          )
+          span {{ decadeToString(currentValue) }}
+          a.dito-calendar-step-next(
+            @click="stepDecade(1)"
+          )
+        .dito-calendar-body
+          .dito-calendar-years
+            span(
+              v-for="year in yearRange"
+              :class="getYearClass(year)"
+              @click="selectYear(year)"
+            ) {{ year }}
 </template>
 
 <style lang="sass">
@@ -210,7 +210,7 @@ import { copyDate } from '../utils/date.js'
 
 export default {
   props: {
-    value: { type: Date, default: null },
+    modelValue: { type: Date, default: null },
     locale: { type: String, default: 'en-US' },
     disabledDate: { type: Function, default: () => false },
     mode: { type: String, default: 'day' }
@@ -224,7 +224,7 @@ export default {
       dateRange: [],
       yearRange: [],
       currentValue:
-        this.value ||
+        this.modelValue ||
         // If no value is provided, use current date but clear time fields:
         copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 }),
       currentMode: this.mode
@@ -232,14 +232,20 @@ export default {
   },
 
   watch: {
-    currentValue: 'updateDateRange',
-    disabledDate: 'updateDateRange',
-
-    value(newVal, oldVal) {
-      if (+newVal !== +oldVal) {
-        this.currentValue = newVal || new Date()
+    modelValue(to, from) {
+      if (+to !== +from) {
+        this.currentValue = to || new Date()
+        this.updateDateRange()
       }
     },
+
+    currentValue(to, from) {
+      if (+to !== +from) {
+        this.updateDateRange()
+      }
+    },
+
+    disabledDate: 'updateDateRange',
 
     mode(mode) {
       this.currentMode = mode
@@ -254,8 +260,8 @@ export default {
     getMonthClass(month) {
       return {
         'dito-calendar-item-active':
-          this.value && month === this.value.getMonth() &&
-          this.currentValue.getFullYear() === this.value.getFullYear(),
+          this.modelValue && month === this.modelValue.getMonth() &&
+          this.currentValue.getFullYear() === this.modelValue.getFullYear(),
         'dito-calendar-item-current':
           month === this.currentValue.getMonth()
       }
@@ -264,7 +270,7 @@ export default {
     getYearClass(year) {
       return {
         'dito-calendar-item-active':
-          this.value && year === this.value.getFullYear(),
+          this.modelValue && year === this.modelValue.getFullYear(),
         'dito-calendar-item-current':
           year === this.currentValue.getFullYear()
       }
@@ -316,7 +322,7 @@ export default {
         } else {
           this.currentValue = date
         }
-        this.$emit('input', this.currentValue)
+        this.$emit('update:modelValue', this.currentValue)
       }
     },
 
@@ -443,7 +449,7 @@ export default {
           date.getDate() === i &&
           date.getFullYear() === year &&
           date.getMonth() === month
-        const state = isDay(this.value) ? 'active'
+        const state = isDay(this.modelValue) ? 'active'
           : isDay(today) ? 'today'
           : this.disabledDate(date) ? 'disabled'
           : isDay(currentValue) ? 'current'

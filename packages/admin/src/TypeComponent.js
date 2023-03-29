@@ -6,7 +6,9 @@ import DitoComponent from './DitoComponent.js'
 import TypeMixin from './mixins/TypeMixin.js'
 import { registerTypeComponent, getTypeComponent } from './utils/schema.js'
 
-const TypeComponent = DitoComponent.extend({
+// @vue/component
+export default {
+  extends: DitoComponent,
   mixins: [TypeMixin],
 
   nativeField: false,
@@ -19,18 +21,18 @@ const TypeComponent = DitoComponent.extend({
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,
-  omitPadding: false
-})
+  omitPadding: false,
 
-TypeComponent.register = function(types, definition = {}) {
-  types = asArray(types)
-  const component = this.component(`dito-type-${types[0]}`, definition)
-  for (const type of types) {
-    registerTypeComponent(type, component)
+  component: DitoComponent.component,
+
+  get: getTypeComponent,
+
+  register(types, definition = {}) {
+    types = asArray(types)
+    const component = this.component(`dito-type-${types[0]}`, definition)
+    for (const type of types) {
+      registerTypeComponent(type, component)
+    }
+    return component
   }
-  return component
 }
-
-TypeComponent.get = getTypeComponent
-
-export default TypeComponent

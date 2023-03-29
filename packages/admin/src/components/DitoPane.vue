@@ -1,36 +1,36 @@
 <template lang="pug">
-  .dito-pane(
-    v-if="isPopulated && componentSchemas.length > 0"
-    v-show="visible"
+.dito-pane(
+  v-if="isPopulated && componentSchemas.length > 0"
+  v-show="visible"
+)
+  template(
+    v-for=`{
+      schema,
+      dataPath,
+      nestedDataPath,
+      nested,
+      store
+    } in componentSchemas`
   )
-    template(
-      v-for=`{
-        schema,
-        dataPath,
-        nestedDataPath,
-        nested,
-        store
-      } in componentSchemas`
+    .dito-break(
+      v-if="schema.break === 'before'"
     )
-      .dito-break(
-        v-if="schema.break === 'before'"
-      )
-      dito-container(
-        v-if="shouldRender(schema)"
-        :key="nestedDataPath"
-        :schema="schema"
-        :dataPath="dataPath"
-        :data="data"
-        :meta="meta"
-        :store="store"
-        :single="isSingleComponent"
-        :nested="nested"
-        :disabled="disabled"
-        :generateLabels="generateLabels"
-      )
-      .dito-break(
-        v-if="schema.break === 'after'"
-      )
+    dito-container(
+      v-if="shouldRender(schema)"
+      :key="nestedDataPath"
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :single="isSingleComponent"
+      :nested="nested"
+      :disabled="disabled"
+      :generateLabels="generateLabels"
+    )
+    .dito-break(
+      v-if="schema.break === 'after'"
+    )
 </template>
 
 <style lang="sass">
@@ -149,7 +149,7 @@ export default DitoComponent.component('dito-pane', {
     this._register(true)
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this._register(false)
   },
 
@@ -160,7 +160,7 @@ export default DitoComponent.component('dito-pane', {
 
     focus() {
       if (this.tab) {
-        this.$router.push({ hash: this.tab })
+        this.$router.push({ hash: `#${this.tab}` })
       }
     }
   }

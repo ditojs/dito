@@ -2,7 +2,7 @@ import path from 'path'
 import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
-import { createVuePlugin } from 'vite-plugin-vue2'
+import createVuePlugin from '@vitejs/plugin-vue'
 import {
   viteCommonjs as createCommonJsPlugin
 } from '@originjs/vite-plugin-commonjs'
@@ -206,7 +206,9 @@ export class AdminController extends Controller {
                 } else if (id.startsWith(cwd)) {
                   return 'common'
                 } else {
-                  const module = id.match(/node_modules\/([^/$]*)/)?.[1] || ''
+                  const module = (
+                    id.match(/node_modules\/((?:@[^/]*\/)?[^/$]*)/)?.[1] || ''
+                  )
                   return testModuleIdentifier(module, coreDependencies)
                     ? 'core'
                     : 'vendor'
@@ -222,7 +224,16 @@ export class AdminController extends Controller {
       optimizeDeps: {
         exclude: development ? ditoPackages : [],
         include: [
-          ...(development ? [] : ditoPackages),
+          ...(development
+            // https://discuss.prosemirror.net/t/rangeerror-adding-different-instances-of-a-keyed-plugin-plugin/4242/13
+            ? [
+              'prosemirror-state',
+              'prosemirror-transform',
+              'prosemirror-model',
+              'prosemirror-view'
+            ]
+            : ditoPackages
+          ),
           ...nonEsmDependencies
         ]
       },
@@ -249,11 +260,7 @@ const ditoPackages = [
 const nonEsmDependencies = [
   // All non-es modules need to be explicitly included here, and some of
   // them only work due to the use of `createCommonJsPlugin()`.
-  'vue-color',
-  'vue-js-modal',
-  'vue-multiselect',
-  'vue-notification',
-  'lowlight'
+  '@lk77/vue3-color'
 ]
 
 const coreDependencies = [
@@ -265,29 +272,21 @@ const coreDependencies = [
   // a json file?
 
   'vue',
-  'vue-color',
-  'vue-js-modal',
+  '@lk77/vue3-color',
+  '@kyvg/vue3-notification',
   'vue-multiselect',
-  'vue-notification',
   'vue-router',
   'vue-upload-component',
-  'vuedraggable',
-
-  'core-js',
-  'lowlight',
+  'tinycolor2',
+  'sortablejs-vue3',
   'sortablejs',
-  'tiptap',
-  'tiptap-*',
-  'tslib',
+  '@tiptap/*',
   'prosemirror-*',
   'codeflask',
   'rope-sequence',
-  'tinycolor2',
-  'fault',
   'filesize',
   'filesize-parser',
-  'format',
-  'highlight.js',
+  'tslib',
   'orderedmap',
   'w3c-keyname'
 ]

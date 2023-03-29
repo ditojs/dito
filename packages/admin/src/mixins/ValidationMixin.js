@@ -13,25 +13,6 @@ export default {
     }
   },
 
-  computed: {
-    events() {
-      return {
-        focus: () => {
-          this.isTouched = true
-        },
-        blur: () => {
-          this.validate()
-        },
-        change: () => {
-          this.markDirty()
-        },
-        input: () => {
-          this.markDirty()
-        }
-      }
-    }
-  },
-
   methods: {
     resetValidation() {
       this.isTouched = false
@@ -72,6 +53,10 @@ export default {
 
     verify() {
       return this.validate(false)
+    },
+
+    markTouched() {
+      this.isTouched = true
     },
 
     markDirty() {

@@ -1,5 +1,5 @@
 <template lang="pug">
-  i.dito-icon(:class="`dito-icon-${name}`")
+i.dito-icon(:class="`dito-icon-${name}`")
 </template>
 
 <style lang="sass">

@@ -1,15 +1,14 @@
 <template lang="pug">
-  .dito-date
-    component(
-      :is="getComponent(type)"
-      ref="element"
-      :id="dataPath"
-      :locale="locale"
-      :dateFormat="{ ...api.formats.date, ...dateFormat }"
-      v-model="dateValue"
-      v-bind="attributes"
-      v-on="listeners"
-    )
+.dito-date
+  component(
+    :is="getComponent(type)"
+    ref="element"
+    :id="dataPath"
+    :locale="locale"
+    :dateFormat="{ ...api.formats.date, ...dateFormat }"
+    v-model="dateValue"
+    v-bind="attributes"
+  )
 </template>
 
 <script>

@@ -1,33 +1,33 @@
 <template lang="pug">
-  dito-schema.dito-schema-inlined(
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :label="isCompact ? null : label"
-    :inlined="true"
-    :disabled="disabled"
-    :collapsed="collapsed"
-    :collapsible="collapsible"
-    :class="{ 'dito-schema-compact': isCompact }"
-  )
-    // Render dito-edit-buttons for inlined schemas separately from all
-    // others in `TypeList` as a scope, for better handling of layout.
-    template(#edit-buttons)
-      dito-edit-buttons(
-        v-if="deletable || draggable || editable"
-        :deletable="deletable"
-        :draggable="draggable"
-        :editable="editable"
-        :editPath="editPath"
-        :schema="schema"
-        :dataPath="dataPath"
-        :data="data"
-        :meta="meta"
-        :store="store"
-        @delete="$emit('delete')"
-      )
+dito-schema.dito-schema-inlined(
+  :schema="schema"
+  :dataPath="dataPath"
+  :data="data"
+  :meta="meta"
+  :store="store"
+  :label="isCompact ? null : label"
+  :inlined="true"
+  :disabled="disabled"
+  :collapsed="collapsed"
+  :collapsible="collapsible"
+  :class="{ 'dito-schema-compact': isCompact }"
+)
+  //- Render dito-edit-buttons for inlined schemas separately from all
+  //- others in `TypeList` as a scope, for better handling of layout.
+  template(#edit-buttons)
+    dito-edit-buttons(
+      v-if="deletable || draggable || editable"
+      :deletable="deletable"
+      :draggable="draggable"
+      :editable="editable"
+      :editPath="editPath"
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      @delete="$emit('delete')"
+    )
 </template>
 
 <style lang="sass">

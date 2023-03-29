@@ -1,12 +1,10 @@
 <template lang="pug">
-  trigger.dito-color(
-    trigger="click"
-    :show.sync="showPopup"
-  )
-    .dito-input(
-      slot="trigger"
-      :class="{ 'dito-focus': showPopup }"
-    )
+trigger.dito-color(
+  trigger="click"
+  v-model:show="showPopup"
+)
+  template(#trigger)
+    .dito-input(:class="{ 'dito-focus': showPopup }")
       input(
         ref="element"
         :id="dataPath"
@@ -14,7 +12,6 @@
         size="8"
         v-model="hexValue"
         v-bind="attributes"
-        v-on="listeners"
       )
       .dito-color-preview.dito-inherit-focus(
         v-if="value"
@@ -25,8 +22,8 @@
         @click.stop="clear"
         :disabled="disabled"
       )
+  template(#popup)
     sketch-picker.dito-color-picker(
-      slot="popup"
       v-model="colorValue"
       :disable-alpha="!alpha"
       :disable-fields="!inputs"
@@ -71,7 +68,7 @@
 
 <script>
 import tinycolor from 'tinycolor2'
-import { Sketch as SketchPicker } from 'vue-color'
+import { Sketch as SketchPicker } from '@lk77/vue3-color'
 import TypeComponent from '../TypeComponent.js'
 import { Trigger } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -96,7 +93,7 @@ export default TypeComponent.register('color', {
       set(value) {
         const format = this.colorFormat
         const key = {
-          // NOTE: vue-color calls it 'hex', while tinycolor calls it 'hex6'
+          // NOTE: vue3-color calls it 'hex', while tinycolor calls it 'hex6'
           hex: value?.a < 1 ? 'hex8' : 'hex',
           rgb: 'rgba'
         }[format] || format

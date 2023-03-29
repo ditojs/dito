@@ -313,16 +313,16 @@ export default {
 
     wrappedPrimitives: {
       deep: true,
-      handler(newValue, oldValue) {
+      handler(to, from) {
         const { wrapPrimitives } = this
         // Skip the initial setting of wrappedPrimitives array
-        if (wrapPrimitives && oldValue !== null) {
+        if (wrapPrimitives && from !== null) {
           // Whenever the wrappedPrimitives change, map their values back to
           // the array of primitives, in a primitive way :)
           // But set `unwrappingPrimitives = true`, so the `listData` computed
           // property knows about it, which sets it to `false` again.
           this.unwrappingPrimitives = true
-          this.value = newValue.map(object => object[wrapPrimitives])
+          this.value = to.map(object => object[wrapPrimitives])
         }
       }
     }
@@ -509,15 +509,13 @@ export default {
               callOnComplete()
             } else {
             // Navigate to the component's path, then call `onComplete()`_:
-              this.$router.push(
-                { path },
+              this.$router.push({ path })
+                .catch(reject)
                 // Wait for the last route component to be mounted in the next
                 // tick before calling `onComplete()`
-                () => {
+                .then(() => {
                   this.$nextTick(callOnComplete)
-                },
-                reject
-              )
+                })
             }
           }
           // Keep removing the last part until we find a match.

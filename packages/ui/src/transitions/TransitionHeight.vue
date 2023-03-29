@@ -10,45 +10,43 @@
     animation: slide-enter $duration $easeOutQuart
   .height-leave-active
     animation: slide-leave $duration $easeOutQuart
-  .height-enter,
+  .height-enter-from,
   .height-leave-to
     height: 0
 </style>
 
 <script>
-export default {
-  functional: true,
+import { h as createElement, Transition } from 'vue'
 
-  props: {
-    enabled: { type: Boolean, default: true }
-  },
-
-  render: (createElement, context) => createElement(
-    'transition',
-    context.props.enabled
-      ? {
-        props: { name: 'height' },
-        on: events
-      }
-      : {},
-    context.children
-  )
+// @vue/component
+function TransitionHeight({ enabled }, { slots }) {
+  return enabled
+    ? createElement(Transition, props, slots)
+    : slots.default()
 }
+
+TransitionHeight.props = {
+  enabled: { type: Boolean, default: true }
+}
+
+export default TransitionHeight
 
 const setStyle = (element, style) => Object.assign(element.style, style)
 
 // Force repaint to make sure the animation is triggered correctly.
 const forceRepaint = element => getComputedStyle(element).height
 
-const events = {
-  afterEnter(element) {
+const props = {
+  name: 'height',
+
+  onAfterEnter(element) {
     // A timeout before setting style is only really needed after calls to
     // `forceRepaint()`, but using one here too preserves execution sequence so
     // that the call from `enter()` can never outrun the one from `afterEnter()`
     setTimeout(() => setStyle(element, { height: 'auto' }))
   },
 
-  enter(element) {
+  onEnter(element) {
     const { width } = getComputedStyle(element)
     setStyle(element, {
       width,
@@ -67,7 +65,7 @@ const events = {
     setTimeout(() => setStyle(element, { height }))
   },
 
-  leave(element) {
+  onLeave(element) {
     const { height } = getComputedStyle(element)
     setStyle(element, { height })
     forceRepaint(element)

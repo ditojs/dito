@@ -3,11 +3,11 @@ import {
   getValueAtDataPath, labelize, hyphenate, format
 } from '@ditojs/utils'
 import appState from '../appState.js'
-import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
 import { isMatchingType, convertType } from '../utils/type.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
+import { reactive } from 'vue'
 
 // @vue/component
 export default {
@@ -18,6 +18,7 @@ export default {
     '$verbs',
     '$views',
     '$isPopulated',
+    '$parentComponent',
     '$schemaComponent',
     '$routeComponent',
     '$dataComponent',
@@ -30,8 +31,13 @@ export default {
 
   provide() {
     return this.providesData
-      ? { $dataComponent: () => this }
-      : {}
+      ? {
+        $parentComponent: () => this,
+        $dataComponent: () => this
+      }
+      : {
+        $parentComponent: () => this
+      }
   },
 
   data() {
@@ -42,6 +48,11 @@ export default {
   },
 
   computed: {
+    providesData() {
+      // NOTE: This is overridden in ResourceMixin, used by lists.
+      return false
+    },
+
     sourceSchema() {
       return this.meta?.schema
     },
@@ -74,18 +85,20 @@ export default {
     },
 
     rootComponent() {
-      return this.$root.$children[0]
+      return this.$root.$refs.root
+    },
+
+    // Use computed properties as links to injects, so DitoSchema can
+    // override the property and return `this` instead of the parent.
+    parentComponent() {
+      return this.$parentComponent()
     },
 
     schemaComponent() {
-      // Use computed properties as links to injects, so DitoSchema can
-      // override the property and return `this` instead of the parent.
       return this.$schemaComponent()
     },
 
     routeComponent() {
-      // Use computed properties as links to injects, so RouteMixin can
-      // override the property and return `this` instead of the parent.
       return this.$routeComponent()
     },
 
@@ -127,15 +140,15 @@ export default {
     },
 
     parentSchemaComponent() {
-      return this.schemaComponent?.$parent.schemaComponent
+      return this.schemaComponent?.parentComponent.schemaComponent
     },
 
     parentRouteComponent() {
-      return this.routeComponent?.$parent.routeComponent
+      return this.routeComponent?.parentComponent.routeComponent
     },
 
     parentFormComponent() {
-      return this.formComponent?.$parent.formComponent
+      return this.formComponent?.parentComponent.formComponent
     },
 
     // Returns the data of the first route component in the chain of parents
@@ -146,7 +159,10 @@ export default {
   },
 
   beforeCreate() {
-    this.$uid = ++uid
+    const uid = nextUid++
+    Object.defineProperty(this, '$uid', {
+      get() { return uid }
+    })
   },
 
   methods: {
@@ -163,11 +179,12 @@ export default {
     },
 
     setStore(key, value) {
-      return this.$set(this.store, key, value)
+      this.store[key] = value
+      return value
     },
 
     getChildStore(key) {
-      return this.getStore(key) || this.setStore(key, {})
+      return this.getStore(key) || this.setStore(key, reactive({}))
     },
 
     getSchemaValue(
@@ -241,6 +258,7 @@ export default {
       }
     },
 
+    // TODO: Rename *Link() to *Route().
     getQueryLink(query) {
       return {
         query,
@@ -254,30 +272,6 @@ export default {
         type: Boolean,
         default: true,
         schema
-      })
-    },
-
-    showDialog({
-      components,
-      buttons,
-      data,
-      settings = {
-        width: 480,
-        height: 'auto',
-        clickToClose: false
-      }
-    }) {
-      // Shows a dito-dialog component through vue-js-modal, and wraps it in a
-      // promise so that the buttons in the dialog can use `dialog.resolve()`
-      // and `dialog.reject()` to close the modal dialog and resolve / reject
-      // the promise at once.
-      return new Promise((resolve, reject) => {
-        this.$modal.show(DitoComponent.component('dito-dialog'), {
-          components,
-          buttons,
-          data,
-          promise: { resolve, reject }
-        }, settings)
       })
     },
 
@@ -313,6 +307,15 @@ export default {
         await this.rootComponent.fetchUser()
       }
       return response
+    },
+
+    showDialog({ components, buttons, data, settings }) {
+      return this.rootComponent.showDialog({
+        components,
+        buttons,
+        data,
+        settings
+      })
     },
 
     request({ cache, ...options }) {
@@ -367,13 +370,7 @@ export default {
     },
 
     async navigate(location) {
-      return new Promise(resolve => {
-        this.$router.push(
-          location,
-          () => resolve(true),
-          () => resolve(false)
-        )
-      })
+      return this.$router.push(location)
     },
 
     download(options = {}) {
@@ -506,4 +503,4 @@ export default {
   }
 }
 
-let uid = 0
+let nextUid = 0

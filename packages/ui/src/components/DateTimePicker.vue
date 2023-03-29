@@ -1,31 +1,31 @@
 <template lang="pug">
-  .dito-date-time-picker(
-    ref="picker"
+.dito-date-time-picker(
+  ref="picker"
+)
+  .dito-pickers(
+    :class="{ 'dito-focus': focused }"
   )
-    .dito-pickers(
-      :class="{ 'dito-focus': focused }"
+    date-picker(
+      ref="date"
+      v-model="currentValue"
+      v-model:show="showDate"
+      placement="bottom-left"
+      :target="$refs.picker"
+      @focus="dateFocused = true"
+      @blur="dateFocused = false"
+      v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
     )
-      date-picker(
-        ref="date"
-        v-model="currentValue"
-        placement="bottom-left"
-        :target="$refs.picker"
-        :show.sync="showDate"
-        @focus="dateFocused = true"
-        @blur="dateFocused = false"
-        v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
-      )
-      time-picker(
-        ref="time"
-        v-model="currentValue"
-        placeholder=""
-        placement="bottom-right"
-        :target="$refs.picker"
-        :show.sync="showTime"
-        @focus="timeFocused = true"
-        @blur="timeFocused = false"
-        v-bind="{ transition, disabled }"
-      )
+    time-picker(
+      ref="time"
+      v-model="currentValue"
+      v-model:show="showTime"
+      placeholder=""
+      placement="bottom-right"
+      :target="$refs.picker"
+      @focus="timeFocused = true"
+      @blur="timeFocused = false"
+      v-bind="{ transition, disabled }"
+    )
 </template>
 
 <style lang="sass">
@@ -61,7 +61,7 @@ export default {
   components: { DatePicker, TimePicker },
 
   props: {
-    value: { type: Date, default: null },
+    modelValue: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placeholder: { type: String, default: null },
     dateFormat: { type: Object, default: () => defaultFormats.date },
@@ -71,7 +71,7 @@ export default {
 
   data() {
     return {
-      currentValue: this.value,
+      currentValue: this.modelValue,
       showDate: false,
       showTime: false,
       dateFocused: false,
@@ -87,33 +87,28 @@ export default {
   },
 
   watch: {
-    value(newVal, oldVal) {
-      if (+newVal !== +oldVal) {
-        this.currentValue = newVal
+    modelValue(to, from) {
+      if (+to !== +from) {
+        this.currentValue = to
       }
     },
 
     currentValue(date) {
-      if (+date !== +this.value) {
+      if (+date !== +this.modelValue) {
         this.changed = true
-        this.$emit('input', date)
+        this.$emit('update:modelValue', date)
       }
     },
 
-    focused(newVal, oldVal) {
-      if (!newVal !== !oldVal) {
-        this.$emit(newVal ? 'focus' : 'blur')
+    focused(to, from) {
+      if (to ^ from) {
+        this.$emit(to ? 'focus' : 'blur')
+        if (!to && this.changed) {
+          this.changed = false
+          this.$emit('change', this.currentValue)
+        }
       }
     }
-  },
-
-  mounted() {
-    this.$on('blur', () => {
-      if (this.changed) {
-        this.changed = false
-        this.$emit('change', this.currentValue)
-      }
-    })
   },
 
   methods: {

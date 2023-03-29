@@ -1,6 +1,7 @@
 import {
   isObject, isFunction, isPromise, normalizeDataPath, getValueAtDataPath
 } from '@ditojs/utils'
+import { reactive } from 'vue'
 import LoadingMixin from './LoadingMixin.js'
 
 // @vue/component
@@ -25,8 +26,7 @@ export default {
       let { data = undefined, dataPath = null } = schema
       // See if there is async data loading already in process.
       const asyncEntry = (
-        this.asyncDataEntries[name] ||
-        this.$set(this.asyncDataEntries, name, {
+        this.asyncDataEntries[name] ||= reactive({
           dependencyFunction: null,
           resolveCounter: 0,
           resolvedData: null,

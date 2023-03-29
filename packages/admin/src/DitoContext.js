@@ -1,8 +1,11 @@
+import { toRaw } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import {
   getItemDataPath, getParentItemDataPath, getParentItem, getItem,
   getLastDataPathName, getLastDataPathIndex
 } from './utils/data.js'
+
+const { hasOwnProperty } = Object.prototype
 
 // `DitoContext` instances are a thin wrapper around raw `context` objects,
 // which themselves actually inherit from the linked `component` instance, so
@@ -14,10 +17,10 @@ import {
 const contexts = new WeakMap()
 
 function get(context, key, defaultValue) {
-  const object = contexts.get(context)
+  const object = contexts.get(toRaw(context))
   const value = object[key]
   // If `object` explicitly sets the key to `undefined`, return it.
-  return value !== undefined || object.hasOwnProperty(key)
+  return value !== undefined || hasOwnProperty.call(object, key)
     ? value
     : isFunction(defaultValue)
       ? defaultValue()
@@ -25,7 +28,7 @@ function get(context, key, defaultValue) {
 }
 
 function set(context, key, value) {
-  contexts.get(context)[key] = value
+  contexts.get(toRaw(context))[key] = value
 }
 
 export default class DitoContext {
@@ -42,6 +45,7 @@ export default class DitoContext {
     // its values and still retrieve from it, and associate it with `this`
     // through `contexts` map:
     const object = Object.setPrototypeOf(context, component)
+    // No need for `toRaw(this)` here as it's always raw inside the constructor.
     contexts.set(this, object)
   }
 

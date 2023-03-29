@@ -33,7 +33,7 @@ export function getSchemaAccessor(
         set.call(this, value)
       } else {
         this.overrides ||= {}
-        this.$set(this.overrides, name, value)
+        this.overrides[name] = value
       }
     }
   }

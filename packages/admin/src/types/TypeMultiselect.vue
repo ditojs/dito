@@ -1,46 +1,45 @@
 <template lang="pug">
-  .dito-multiselect(
-    :class=`{
-      'dito-multiselect-single': !multiple,
-      'dito-multiselect-multiple': multiple
-    }`
+.dito-multiselect(
+  :class=`{
+    'dito-multiselect-single': !multiple,
+    'dito-multiselect-multiple': multiple
+  }`
+)
+  vue-multiselect(
+    ref="element"
+    v-model="selectedOptions"
+    v-bind="attributes"
+    :show-labels="false"
+    :placeholder="placeholder"
+    tag-placeholder="Press enter to add new tag",
+    :options="populate && activeOptions || []"
+    :custom-label="getLabelForOption"
+    :track-by="optionValue"
+    :group-label="groupByLabel"
+    :group-values="groupByOptions"
+    :multiple="multiple"
+    :taggable="taggable"
+    :searchable="searchable"
+    :internal-search="!searchFilter"
+    :preserve-search="!!searchFilter"
+    :clear-on-select="!searchFilter"
+    :close-on-select="!stayOpen"
+    :loading="isLoading"
+    @open="populate = true"
+    @tag="onAddTag"
+    @search-change="onSearchChange"
   )
-    vue-multiselect(
-      ref="element"
-      v-model="selectedOptions"
-      v-bind="attributes"
-      v-on="listeners"
-      :show-labels="false"
-      :placeholder="placeholder"
-      tag-placeholder="Press enter to add new tag",
-      :options="populate && activeOptions || []"
-      :custom-label="getLabelForOption"
-      :track-by="optionValue"
-      :group-label="groupByLabel"
-      :group-values="groupByOptions"
-      :multiple="multiple"
-      :taggable="taggable"
-      :searchable="searchable"
-      :internal-search="!searchFilter"
-      :preserve-search="!!searchFilter"
-      :clear-on-select="!searchFilter"
-      :close-on-select="!stayOpen"
-      :loading="isLoading"
-      @open="populate = true"
-      @tag="onAddTag"
-      @search-change="onSearchChange"
-    )
-    button.dito-button-clear.dito-button-overlay(
-      type="button"
-      v-if="showClearButton"
-      @click="clear"
-      :disabled="disabled"
-    )
+  button.dito-button-clear.dito-button-overlay(
+    type="button"
+    v-if="showClearButton"
+    @click="clear"
+    :disabled="disabled"
+  )
 </template>
 
 <style lang="sass">
   @import '../styles/_imports'
-  @import 'vue-multiselect/dist/vue-multiselect.min.css'
+  @import 'vue-multiselect/dist/vue-multiselect.css'
 
   $spinner-width: $select-arrow-width
   $tag-icon-width: 1.8em
@@ -263,6 +262,7 @@ export default TypeComponent.register('multiselect', {
         this.selectedValue = this.multiple
           ? (option || []).map(value => this.getValueForOption(value))
           : this.getValueForOption(option)
+        this.onChange()
       }
     },
 
@@ -309,16 +309,6 @@ export default TypeComponent.register('multiselect', {
   },
 
   methods: {
-    // @override
-    getListeners() {
-      // override `TypeMixin.getListeners()` to re-route 'input' to `onChange()`
-      return {
-        focus: this.onFocus,
-        blur: this.onBlur,
-        input: this.onChange
-      }
-    },
-
     addTagOption(tag) {
       if (this.taggable) {
         const { optionLabel, optionValue } = this
