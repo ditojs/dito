@@ -1571,6 +1571,7 @@ export class QueryBuilder<
   SingleQueryBuilderType: QueryBuilder<M, M>
   NumberQueryBuilderType: QueryBuilder<M, number>
   PageQueryBuilderType: QueryBuilder<M, objection.Page<M>>
+  MaybeSingleQueryBuilderType: QueryBuilder<M, M | undefined>
 }
 export interface QueryBuilder<M extends Model, R = M[]> extends KnexHelper {}
 
