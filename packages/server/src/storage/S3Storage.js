@@ -3,7 +3,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import { Storage } from './Storage.js'
 import { PassThrough } from 'stream'
 import consumers from 'stream/consumers'
-import { attributes as readMediaAttributes } from 'leather'
+import { readMediaAttributes } from 'leather'
 
 export class S3Storage extends Storage {
   static type = 's3'

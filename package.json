@@ -32,22 +32,22 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@typescript-eslint/parser": "^5.56.0",
+    "@typescript-eslint/parser": "^5.57.0",
     "c8": "^7.13.0",
     "cross-env": "^7.0.3",
-    "eslint": "^8.36.0",
+    "eslint": "^8.37.0",
     "eslint-config-standard": "^17.0.0",
     "eslint-friendly-formatter": "^4.0.1",
     "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-vue": "^9.9.0",
+    "eslint-plugin-vue": "^9.10.0",
     "full-icu": "^1.5.0",
     "husky": "^8.0.3",
-    "lerna": "^6.5.1",
+    "lerna": "^6.6.1",
     "lint-staged": "^13.2.0",
-    "vitest": "^0.29.7",
-    "vue-eslint-parser": "^9.1.0"
+    "vitest": "^0.29.8",
+    "vue-eslint-parser": "^9.1.1"
   },
   "packageManager": "yarn@3.5.0"
 }
