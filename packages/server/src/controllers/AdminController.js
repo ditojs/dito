@@ -272,6 +272,7 @@ const coreDependencies = [
   // a json file?
 
   'vue',
+  '@vue/*',
   '@lk77/vue3-color',
   '@kyvg/vue3-notification',
   'vue-multiselect',
@@ -282,7 +283,9 @@ const coreDependencies = [
   'sortablejs',
   '@tiptap/*',
   'prosemirror-*',
+  'linkifyjs',
   'codeflask',
+  'punycode',
   'rope-sequence',
   'filesize',
   'filesize-parser',
