@@ -1608,7 +1608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^2.0.1, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^2.0.2, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
@@ -1686,7 +1686,7 @@ __metadata:
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
     "@aws-sdk/client-s3": ^3.304.0
-    "@ditojs/admin": ^2.0.1
+    "@ditojs/admin": ^2.0.2
     "@ditojs/build": ^2.0.0
     "@ditojs/router": ^2.0.1
     "@ditojs/utils": ^2.0.1
