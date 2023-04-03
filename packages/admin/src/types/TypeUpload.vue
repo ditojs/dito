@@ -12,41 +12,42 @@
           span Status
         th
           span
-    vue-sortable(
+    vue-draggable(
       tag="tbody"
-      :list="files"
-      :options="getDragOptions(draggable)"
-      itemKey="key"
       @start="onStartDrag"
       @end="onEndDrag"
+      v-model="files"
+      v-bind="getDragOptions(draggable)"
     )
-      template(#item="{ element: file, index }")
-        tr
-          td(v-html="renderFile(file, index)")
-          td {{ formatFileSize(file.size) }}
-          td
-            template(v-if="file.upload")
-              template(v-if="file.upload.error")
-                | Error: {{ file.upload.error }}
-              template(v-else-if="file.upload.active")
-                | Uploading...
-              template(v-else-if="file.upload.success")
-                | Uploaded
-            template(v-else)
-              | Stored
-          td.dito-cell-edit-buttons
-            .dito-buttons.dito-buttons-round
-              //- Firefox doesn't like <button> here, so use <a> instead:
-              a.dito-button(
-                v-if="draggable"
-                v-bind="getButtonAttributes(verbs.drag)"
-              )
-              button.dito-button(
-                v-if="deletable"
-                type="button"
-                @click="deleteFile(file, index)"
-                v-bind="getButtonAttributes(verbs.delete)"
-              )
+      tr(
+        v-for="(file, index) in files"
+        :key="file.key"
+      )
+        td(v-html="renderFile(file, index)")
+        td {{ formatFileSize(file.size) }}
+        td
+          template(v-if="file.upload")
+            template(v-if="file.upload.error")
+              | Error: {{ file.upload.error }}
+            template(v-else-if="file.upload.active")
+              | Uploading...
+            template(v-else-if="file.upload.success")
+              | Uploaded
+          template(v-else)
+            | Stored
+        td.dito-cell-edit-buttons
+          .dito-buttons.dito-buttons-round
+            //- Firefox doesn't like <button> here, so use <a> instead:
+            a.dito-button(
+              v-if="draggable"
+              v-bind="getButtonAttributes(verbs.drag)"
+            )
+            button.dito-button(
+              v-if="deletable"
+              type="button"
+              @click="deleteFile(file, index)"
+              v-bind="getButtonAttributes(verbs.delete)"
+            )
     tfoot
       tr
         td(:colspan="4")
@@ -106,11 +107,11 @@
 </style>
 
 <script>
+import VueUpload from 'vue-upload-component'
+import { VueDraggable } from 'vue-draggable-plus'
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
-import VueUpload from 'vue-upload-component'
-import { Sortable as VueSortable } from 'sortablejs-vue3'
 import parseFileSize from 'filesize-parser'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize } from '../utils/units.js'
@@ -119,7 +120,7 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('upload', {
-  components: { VueUpload, VueSortable },
+  components: { VueUpload, VueDraggable },
   mixins: [OrderedMixin],
 
   data() {

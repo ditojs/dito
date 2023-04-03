@@ -38,86 +38,87 @@
       :columns="columns"
       :hasEditButtons="hasEditButtons"
     )
-    vue-sortable(
+    vue-draggable(
       tag="tbody"
-      :list="updateOrder(sourceSchema, listData, paginationRange)"
-      :options="getDragOptions(draggable)"
-      :itemKey="item => getItemUid(schema, item)"
+      :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
+      @update:modelValue="value => listData = value"
       @start="onStartDrag"
       @end="onEndDrag"
+      :v-bind="getDragOptions(draggable)"
     )
-      template(#item="{ element: item, index }")
-        tr(
-          :id="getDataPath(index)"
-        )
-          template(v-if="columns")
-            template(
-              v-for="column in columns"
-            )
-              dito-table-cell(
-                v-if="shouldRender(column)"
-                :key="column.name"
-                :class="getCellClass(column)"
-                :cell="column"
-                :schema="schema"
-                :dataPath="getDataPath(index)"
-                :data="item"
-                :meta="nestedMeta"
-                :store="store"
-                :nested="false"
-                :disabled="disabled || isLoading"
-              )
+      tr(
+        v-for="item, index in listData"
+        :key="getItemUid(schema, item)"
+        :id="getDataPath(index)"
+      )
+        template(v-if="columns")
           template(
-            v-else
+            v-for="column in columns"
           )
-            td
-              dito-schema-inlined(
-                v-if="isInlined"
-                :label="getItemLabel(schema, item, { index, asObject: true })"
-                :schema="getItemFormSchema(schema, item, context)"
-                :dataPath="getDataPath(index)"
-                :data="item"
-                :meta="nestedMeta"
-                :store="getChildStore(index)"
-                :disabled="disabled || isLoading"
-                :collapsed="collapsed"
-                :collapsible="collapsible"
-                :deletable="deletable"
-                :draggable="draggable"
-                :editable="editable"
-                :editPath="getEditPath(item, index)"
-                @delete="deleteItem(item, index)"
-              )
-              component(
-                v-else-if="schema.component"
-                :is="schema.component"
-                :dataPath="getDataPath(index)"
-                :data="item"
-                :nested="false"
-              )
-              span(
-                v-else-if="render"
-                v-html="render(getContext(item, index))"
-              )
-              span(
-                v-else
-                v-html="getItemLabel(schema, item, { index })"
-              )
-          td.dito-cell-edit-buttons(
-            v-if="hasCellEditButtons"
-          )
-            dito-edit-buttons(
-              :deletable="deletable"
-              :draggable="draggable"
-              :editable="editable"
-              :editPath="getEditPath(item, index)"
+            dito-table-cell(
+              v-if="shouldRender(column)"
+              :key="column.name"
+              :class="getCellClass(column)"
+              :cell="column"
+              :schema="schema"
+              :dataPath="getDataPath(index)"
+              :data="item"
+              :meta="nestedMeta"
+              :store="store"
+              :nested="false"
+              :disabled="disabled || isLoading"
+            )
+        template(
+          v-else
+        )
+          td
+            dito-schema-inlined(
+              v-if="isInlined"
+              :label="getItemLabel(schema, item, { index, asObject: true })"
               :schema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
               :store="getChildStore(index)"
+              :disabled="disabled || isLoading"
+              :collapsed="collapsed"
+              :collapsible="collapsible"
+              :deletable="deletable"
+              :draggable="draggable"
+              :editable="editable"
+              :editPath="getEditPath(item, index)"
               @delete="deleteItem(item, index)"
             )
+            component(
+              v-else-if="schema.component"
+              :is="schema.component"
+              :dataPath="getDataPath(index)"
+              :data="item"
+              :nested="false"
+            )
+            span(
+              v-else-if="render"
+              v-html="render(getContext(item, index))"
+            )
+            span(
+              v-else
+              v-html="getItemLabel(schema, item, { index })"
+            )
+        td.dito-cell-edit-buttons(
+          v-if="hasCellEditButtons"
+        )
+          dito-edit-buttons(
+            :deletable="deletable"
+            :draggable="draggable"
+            :editable="editable"
+            :editPath="getEditPath(item, index)"
+            :schema="getItemFormSchema(schema, item, context)"
+            :dataPath="getDataPath(index)"
+            :data="item"
+            :meta="nestedMeta"
+            :store="getChildStore(index)"
+            @delete="deleteItem(item, index)"
+          )
     //- Render create buttons inside table when not in a single component view:
     tfoot(
       v-if="hasListButtons && !single"
@@ -175,11 +176,11 @@
 </style>
 
 <script>
+import { VueDraggable } from 'vue-draggable-plus'
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
-import { Sortable as VueSortable } from 'sortablejs-vue3'
 import {
   getNamedSchemas, getViewEditPath,
   resolveSchemaComponent, resolveSchemaComponents
@@ -190,7 +191,7 @@ import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('list', {
-  components: { VueSortable },
+  components: { VueDraggable },
   mixins: [SourceMixin, OrderedMixin],
 
   getSourceType(type) {

@@ -60,29 +60,30 @@
         :store="store"
         :disabled="disabled"
       )
-  vue-sortable(
+  vue-draggable(
     v-if="childrenSchema"
     v-show="opened"
-    :list="childrenItems"
-    :options="getDragOptions(childrenDraggable, true)"
-    :itemKey="item => getItemUid(childrenSchema, item.data)"
+    :modelValue="updateOrder(childrenSchema, childrenList)"
+    @update:modelValue="value => childrenList = value"
     @start="onStartDrag"
     @end="onEndDrag($event, childrenSchema)"
+    v-bind="getDragOptions(childrenDraggable, true)"
   )
-    template(#item="{ element: item, index }")
-      dito-tree-item(
-        :schema="childrenSchema"
-        :dataPath="getItemDataPath(childrenSchema, index)"
-        :data="item.data"
-        :path="item.path"
-        :open="item.open"
-        :active="item.active"
-        :draggable="childrenDraggable"
-        :label="getItemLabel(childrenSchema, item.data, { index })"
-        :level="level + 1"
-      )
-      //- TODO: Convert dito-tree-item to use dito-label internally, and then
-      //- pass `asObject: true` in the `getItemLabel()` call above.
+    dito-tree-item(
+      v-for="(item, index) in childrenItems"
+      :key="getItemUid(childrenSchema, item.data)"
+      :schema="childrenSchema"
+      :dataPath="getItemDataPath(childrenSchema, index)"
+      :data="item.data"
+      :path="item.path"
+      :open="item.open"
+      :active="item.active"
+      :draggable="childrenDraggable"
+      :label="getItemLabel(childrenSchema, item.data, { index })"
+      :level="level + 1"
+    )
+    //- TODO: Convert dito-tree-item to use dito-label internally, and then
+    //- pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
 <style lang="sass">
@@ -151,7 +152,7 @@
 </style>
 
 <script>
-import { Sortable as VueSortable } from 'sortablejs-vue3'
+import { VueDraggable } from 'vue-draggable-plus'
 import DitoComponent from '../DitoComponent.js'
 import OrderedMixin from '../mixins/OrderedMixin.js'
 import { appendDataPath } from '../utils/data.js'
@@ -160,7 +161,7 @@ import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
-  components: { VueSortable },
+  components: { VueDraggable },
   mixins: [OrderedMixin],
   inject: ['container'],
 

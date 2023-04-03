@@ -1646,13 +1646,12 @@ __metadata:
     nanoid: ^4.0.2
     pug: ^3.0.2
     sass: 1.60.0
-    sortablejs: ^1.15.0
-    sortablejs-vue3: ^1.2.9
     tinycolor2: ^1.6.0
     type-fest: ^3.7.2
     typescript: ^5.0.3
     vite: ^4.2.1
     vue: ^3.2.47
+    vue-draggable-plus: ^0.1.1
     vue-multiselect: ^3.0.0-beta.1
     vue-router: ^4.1.6
     vue-upload-component: ^3.1.8
@@ -11897,26 +11896,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sortablejs-vue3@npm:^1.2.9":
-  version: 1.2.9
-  resolution: "sortablejs-vue3@npm:1.2.9"
-  dependencies:
-    sortablejs: ^1.15.0
-    vue: ^3.2.37
-  peerDependencies:
-    sortablejs: ^1.15.0
-    vue: ^3.2.25
-  checksum: f72785df33706b148cf9978375c6e76f62d4681ebb82f41dc6475322557bb7d584c931ab39d12019faaec890c6d124982f8be7a8dc06f1348878ee9694809000
-  languageName: node
-  linkType: hard
-
-"sortablejs@npm:^1.15.0":
-  version: 1.15.0
-  resolution: "sortablejs@npm:1.15.0"
-  checksum: bb82223a663484640d317cad510ac987f26b7a443631040407224de1be069afcc6c39048b6d8527f10f269e33595e8128d7de2fac23517c8260470f77f932d55
-  languageName: node
-  linkType: hard
-
 "source-map-js@npm:>=0.6.2 <2.0.0, source-map-js@npm:^1.0.2":
   version: 1.0.2
   resolution: "source-map-js@npm:1.0.2"
@@ -13094,6 +13073,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vue-draggable-plus@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "vue-draggable-plus@npm:0.1.1"
+  peerDependenciesMeta:
+    "@vue/composition-api":
+      optional: true
+  checksum: 6ce3338eac480a710c6899ef48b08274d09ed0a12a50d872f5ae6c3392d69344f07b4fd240b4ca36bf088d5dfa746f04212ea5940aa085a3fbe753fc485e99e4
+  languageName: node
+  linkType: hard
+
 "vue-eslint-parser@npm:^9.0.1, vue-eslint-parser@npm:^9.1.1":
   version: 9.1.1
   resolution: "vue-eslint-parser@npm:9.1.1"
@@ -13136,7 +13125,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue@npm:^3.2.37, vue@npm:^3.2.47":
+"vue@npm:^3.2.47":
   version: 3.2.47
   resolution: "vue@npm:3.2.47"
   dependencies:
