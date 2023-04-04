@@ -6,9 +6,14 @@
     :id="id"
     :name="name"
     :title="title"
+    :disabled="disabled"
+    :readonly="readonly"
+    :autofocus="autofocus"
+    :placeholder="placeholder"
+    :autocomplete="autocomplete"
     :aria-label="title"
-    v-bind="attributes"
     v-model="currentValue"
+    v-bind="$attrs"
   )
 </template>
 
@@ -38,6 +43,7 @@ export default {
     title: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
+    autofocus: { type: Boolean, default: false },
     placeholder: { type: String, default: null },
     autocomplete: { type: String, default: 'off' }
     /*
@@ -56,13 +62,6 @@ export default {
   },
 
   computed: {
-    attributes() {
-      // Remove 'onInput' handler because we're handling it separately below,
-      // but pass on all others to the wrapped native element:
-      const { onInput, ...attributes } = this.$attrs
-      return attributes
-    },
-
     size() {
       // Determine size based on min & max settings, if they're provided.
       const { size, min, max } = this.$attrs
