@@ -579,19 +579,21 @@ export class Application extends Koa {
       options.autoCommit = false
       this.use(session(options, this))
       this.use(async (ctx, next) => {
-        const { transacted } = ctx.route
+        // Get hold of `session` now, since it may not be available from the
+        // `ctx` if the session is destroyed.
+        const { session, route: { transacted } } = ctx
         try {
           await next()
           if (autoCommit && transacted) {
             // When transacted, only commit when there are no errors. Otherwise,
             // the commit will fail and the original error will be lost.
-            await ctx.session.commit()
+            await session.commit()
           }
         } finally {
           // When not transacted, keep the original behavior of always
           // committing.
           if (autoCommit && !transacted) {
-            await ctx.session.commit()
+            await session.commit()
           }
         }
       })
