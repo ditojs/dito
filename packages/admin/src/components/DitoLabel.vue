@@ -52,7 +52,7 @@ component.dito-label(
         // so that buttons always appear right-aligned:
         flex: 1 1 auto
       &::after
-        content: '\a0' // &nbps;
+        content: '\a0' // &nbsp;
 
     .dito-label-prefix,
     .dito-label-suffix
@@ -131,11 +131,7 @@ export default DitoComponent.component('dito-label', {
     },
 
     attributes() {
-      return {
-        ...(this.collapsible && {
-          onClick: this.onClick
-        })
-      }
+      return this.collapsible ? { onClick: this.onClick } : {}
     },
 
     isActive() {

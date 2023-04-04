@@ -41,16 +41,17 @@ export default TypeComponent.register([
     closeForm: getSchemaAccessor('closeForm', {
       type: Boolean,
       default: false
-    })
+    }),
+
+    // @override
+    events() {
+      const { onFocus, onBlur, onClick } = this
+      return { onFocus, onBlur, onClick }
+    }
+
   },
 
   methods: {
-    // @override
-    getEvents() {
-      const { onFocus, onBlur, onClick } = this
-      return { onFocus, onBlur, onClick }
-    },
-
     async submit(options) {
       return this.resourceComponent?.submit(this, options)
     },
