@@ -1,7 +1,9 @@
-import ItemMixin from '../mixins/ItemMixin.js'
+import ItemMixin from './ItemMixin.js'
+import { UseSortable } from '@vueuse/integrations/useSortable/component'
 
 // @vue/component
 export default {
+  components: { UseSortable },
   mixins: [ItemMixin],
 
   data() {
@@ -11,6 +13,21 @@ export default {
   },
 
   methods: {
+    getSortableOptions(draggable, fallback = false) {
+      return {
+        animation: 150,
+        disabled: !draggable,
+        handle: '.dito-button-drag',
+        dragClass: 'dito-sortable-active',
+        chosenClass: 'dito-sortable-chosen',
+        ghostClass: 'dito-sortable-ghost',
+        fallbackClass: 'dito-sortable-fallback',
+        forceFallback: fallback,
+        onStart: this.onStartDrag,
+        onEnd: this.onEndDrag
+      }
+    },
+
     onStartDrag() {
       this.dragging = true
     },

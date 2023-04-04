@@ -12,12 +12,10 @@
           span Status
         th
           span
-    vue-draggable(
+    use-sortable(
       tag="tbody"
-      @start="onStartDrag"
-      @end="onEndDrag"
       v-model="files"
-      v-bind="getDragOptions(draggable)"
+      :options="getSortableOptions(draggable)"
     )
       tr(
         v-for="(file, index) in files"
@@ -107,21 +105,20 @@
 </style>
 
 <script>
-import VueUpload from 'vue-upload-component'
-import { VueDraggable } from 'vue-draggable-plus'
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
-import OrderedMixin from '../mixins/OrderedMixin.js'
+import SortableMixin from '../mixins/SortableMixin.js'
 import parseFileSize from 'filesize-parser'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
+import VueUpload from 'vue-upload-component'
 
 // @vue/component
 export default TypeComponent.register('upload', {
-  components: { VueUpload, VueDraggable },
-  mixins: [OrderedMixin],
+  components: { VueUpload },
+  mixins: [SortableMixin],
 
   data() {
     return {

@@ -245,19 +245,6 @@ export default {
       }
     },
 
-    getDragOptions(draggable, fallback = false) {
-      return {
-        animation: 150,
-        disabled: !draggable,
-        handle: '.dito-button-drag',
-        dragClass: 'dito-drag-active',
-        chosenClass: 'dito-drag-chosen',
-        ghostClass: 'dito-drag-ghost',
-        fallbackClass: 'dito-drag-fallback',
-        forceFallback: fallback
-      }
-    },
-
     // TODO: Rename *Link() to *Route().
     getQueryLink(query) {
       return {

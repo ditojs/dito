@@ -38,13 +38,11 @@
       :columns="columns"
       :hasEditButtons="hasEditButtons"
     )
-    vue-draggable(
+    use-sortable(
       tag="tbody"
       :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
       @update:modelValue="value => listData = value"
-      @start="onStartDrag"
-      @end="onEndDrag"
-      :v-bind="getDragOptions(draggable)"
+      :options="getSortableOptions(draggable)"
     )
       tr(
         v-for="item, index in listData"
@@ -176,11 +174,10 @@
 </style>
 
 <script>
-import { VueDraggable } from 'vue-draggable-plus'
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
-import OrderedMixin from '../mixins/OrderedMixin.js'
+import SortableMixin from '../mixins/SortableMixin.js'
 import {
   getNamedSchemas, getViewEditPath,
   resolveSchemaComponent, resolveSchemaComponents
@@ -191,8 +188,7 @@ import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('list', {
-  components: { VueDraggable },
-  mixins: [SourceMixin, OrderedMixin],
+  mixins: [SourceMixin, SortableMixin],
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.

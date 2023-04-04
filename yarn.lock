@@ -1640,18 +1640,19 @@ __metadata:
     "@tiptap/vue-3": ^2.0.2
     "@vitejs/plugin-vue": ^4.1.0
     "@vue/compiler-sfc": ^3.2.47
+    "@vueuse/integrations": ^10.0.0-beta.2
     codeflask: ^1.4.1
     filesize: ^10.0.7
     filesize-parser: ^1.5.0
     nanoid: ^4.0.2
     pug: ^3.0.2
     sass: 1.60.0
+    sortablejs: ^1.15.0
     tinycolor2: ^1.6.0
     type-fest: ^3.7.2
     typescript: ^5.0.3
     vite: ^4.2.1
     vue: ^3.2.47
-    vue-draggable-plus: ^0.1.1
     vue-multiselect: ^3.0.0-beta.1
     vue-router: ^4.1.6
     vue-upload-component: ^3.1.8
@@ -3516,6 +3517,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/web-bluetooth@npm:^0.0.16":
+  version: 0.0.16
+  resolution: "@types/web-bluetooth@npm:0.0.16"
+  checksum: f68a630d062202a25c46d48686ebae1cf429dc70b4578fcf13b8357b2db63e4aedfb6f6d752bd388366be46ebd19c1c9de45f8a15c2631bb79e904fdfc454f94
+  languageName: node
+  linkType: hard
+
 "@typescript-eslint/parser@npm:^5.57.1":
   version: 5.57.1
   resolution: "@typescript-eslint/parser@npm:5.57.1"
@@ -3747,6 +3755,83 @@ __metadata:
   version: 3.2.47
   resolution: "@vue/shared@npm:3.2.47"
   checksum: 0aa711dc9160fa0e476e6e94eea4e019398adf2211352d0e4a672cfb6b65b104bbd5d234807d1c091107bdc0f5d818d0f12378987eb7861d39be3aa9f6cd6e3e
+  languageName: node
+  linkType: hard
+
+"@vueuse/core@npm:10.0.0-beta.2":
+  version: 10.0.0-beta.2
+  resolution: "@vueuse/core@npm:10.0.0-beta.2"
+  dependencies:
+    "@types/web-bluetooth": ^0.0.16
+    "@vueuse/metadata": 10.0.0-beta.2
+    "@vueuse/shared": 10.0.0-beta.2
+    vue-demi: "*"
+  checksum: cdaf5320a561ea0c8abfc4e430e46d5545f8068f555bf1a951da5510d34f59a3c0ee4ee58d8a2bef2db9b309c01a932c9a0e011ffa8894e671a37ce31c7b97c3
+  languageName: node
+  linkType: hard
+
+"@vueuse/integrations@npm:^10.0.0-beta.2":
+  version: 10.0.0-beta.2
+  resolution: "@vueuse/integrations@npm:10.0.0-beta.2"
+  dependencies:
+    "@vueuse/core": 10.0.0-beta.2
+    "@vueuse/shared": 10.0.0-beta.2
+    vue-demi: "*"
+  peerDependencies:
+    async-validator: "*"
+    axios: "*"
+    change-case: "*"
+    drauu: "*"
+    focus-trap: "*"
+    fuse.js: "*"
+    idb-keyval: "*"
+    jwt-decode: "*"
+    nprogress: "*"
+    qrcode: "*"
+    sortablejs: "*"
+    universal-cookie: "*"
+  peerDependenciesMeta:
+    async-validator:
+      optional: true
+    axios:
+      optional: true
+    change-case:
+      optional: true
+    drauu:
+      optional: true
+    focus-trap:
+      optional: true
+    fuse.js:
+      optional: true
+    idb-keyval:
+      optional: true
+    jwt-decode:
+      optional: true
+    nprogress:
+      optional: true
+    qrcode:
+      optional: true
+    sortablejs:
+      optional: true
+    universal-cookie:
+      optional: true
+  checksum: e733a298b87fdad03f90130bd8ddf390cde06b11f1c6c41669a72b41b2c73653ecbd924676e9b49aa0f43f07963fd42611244e237574ed7acfb465fb7a3647e4
+  languageName: node
+  linkType: hard
+
+"@vueuse/metadata@npm:10.0.0-beta.2":
+  version: 10.0.0-beta.2
+  resolution: "@vueuse/metadata@npm:10.0.0-beta.2"
+  checksum: 95daecc079ee1f6efef17e0fb51ba797ad218cc801f3d7cca3a081424de12b3eca289dfca6aa6e0a0271a075794fec816d89966ea1aee078d9a9bb218d8361e3
+  languageName: node
+  linkType: hard
+
+"@vueuse/shared@npm:10.0.0-beta.2":
+  version: 10.0.0-beta.2
+  resolution: "@vueuse/shared@npm:10.0.0-beta.2"
+  dependencies:
+    vue-demi: "*"
+  checksum: 2124b336dc51a9f517ef9d620f48106bcce00bf45d6f8f738b7d7a82ad63dc6a14474a23f9af6a7943eab37b3e06e25c4c58342a2403e1b2873bdf5f04bcb3b1
   languageName: node
   linkType: hard
 
@@ -11896,6 +11981,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"sortablejs@npm:^1.15.0":
+  version: 1.15.0
+  resolution: "sortablejs@npm:1.15.0"
+  checksum: bb82223a663484640d317cad510ac987f26b7a443631040407224de1be069afcc6c39048b6d8527f10f269e33595e8128d7de2fac23517c8260470f77f932d55
+  languageName: node
+  linkType: hard
+
 "source-map-js@npm:>=0.6.2 <2.0.0, source-map-js@npm:^1.0.2":
   version: 1.0.2
   resolution: "source-map-js@npm:1.0.2"
@@ -13073,13 +13165,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vue-draggable-plus@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "vue-draggable-plus@npm:0.1.1"
+"vue-demi@npm:*":
+  version: 0.13.11
+  resolution: "vue-demi@npm:0.13.11"
+  peerDependencies:
+    "@vue/composition-api": ^1.0.0-rc.1
+    vue: ^3.0.0-0 || ^2.6.0
   peerDependenciesMeta:
     "@vue/composition-api":
       optional: true
-  checksum: 6ce3338eac480a710c6899ef48b08274d09ed0a12a50d872f5ae6c3392d69344f07b4fd240b4ca36bf088d5dfa746f04212ea5940aa085a3fbe753fc485e99e4
+  bin:
+    vue-demi-fix: bin/vue-demi-fix.js
+    vue-demi-switch: bin/vue-demi-switch.js
+  checksum: 0fbe9bf8ab7fe498ffa2bbd0cfc8f6f43a6bbaa5eda3e20ef1b70dca7c8b0ddb216a7ff2f632b694fe0735805638975abb441c621ec0bd2e6d4656353f316c15
   languageName: node
   linkType: hard
 

@@ -60,14 +60,12 @@
         :store="store"
         :disabled="disabled"
       )
-  vue-draggable(
+  use-sortable(
     v-if="childrenSchema"
     v-show="opened"
     :modelValue="updateOrder(childrenSchema, childrenList)"
     @update:modelValue="value => childrenList = value"
-    @start="onStartDrag"
-    @end="onEndDrag($event, childrenSchema)"
-    v-bind="getDragOptions(childrenDraggable, true)"
+    :options="getSortableOptions(childrenDraggable, true)"
   )
     dito-tree-item(
       v-for="(item, index) in childrenItems"
@@ -152,17 +150,15 @@
 </style>
 
 <script>
-import { VueDraggable } from 'vue-draggable-plus'
 import DitoComponent from '../DitoComponent.js'
-import OrderedMixin from '../mixins/OrderedMixin.js'
+import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('dito-tree-item', {
-  components: { VueDraggable },
-  mixins: [OrderedMixin],
+  mixins: [SortableMixin],
   inject: ['container'],
 
   props: {
