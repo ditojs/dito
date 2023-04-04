@@ -23,7 +23,6 @@ trigger.dito-date-picker(
   template(#popup)
     calendar.dito-date-picker-popup(
       ref="calendar"
-      @input="selectDate"
       v-model="currentValue"
       v-bind="{ locale, disabledDate }"
     )
@@ -95,10 +94,11 @@ export default {
       }
     },
 
-    currentValue(date) {
-      if (+date !== +this.modelValue) {
+    currentValue(currentValue) {
+      if (+currentValue !== +this.modelValue) {
         this.changed = true
-        this.$emit('update:modelValue', date)
+        this.showPopup = false
+        this.$emit('update:modelValue', currentValue)
       }
     },
 
@@ -118,18 +118,13 @@ export default {
         if (!to && this.changed) {
           this.changed = false
           // TODO:
-          this.$emit('change', this.currentValue)
+          this.$emit('update:modelValue', this.currentValue)
         }
       }
     }
   },
 
   methods: {
-    selectDate(date) {
-      this.currentValue = date
-      this.showPopup = false
-    },
-
     onKeyDown(event) {
       if (this.$refs.calendar?.navigate(getKeyNavigation(event))) {
         event.preventDefault()
