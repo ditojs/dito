@@ -2,7 +2,6 @@
 switch-button.dito-switch(
   ref="element"
   :id="dataPath"
-  :sync="true"
   :labels="labels"
   v-model="value"
   v-bind="attributes"

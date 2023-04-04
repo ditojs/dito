@@ -49,7 +49,7 @@
     position: relative
     height: var(--switch-height)
     // To make inline labels appear on consistent baseline:
-    vertical-align: -25%
+    vertical-align: bottom
     +user-select(none)
     .dito-switch-pane
       position: relative

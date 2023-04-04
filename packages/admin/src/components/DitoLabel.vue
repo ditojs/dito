@@ -94,8 +94,9 @@ component.dito-label(
     > .dito-schema-content
       > .dito-pane
         > .dito-container
-          > .dito-label:not(.dito-label-component)
-            display: inline-block
+          display: flex
+          flex-flow: row wrap
+          align-items: baseline
 </style>
 
 <script>
