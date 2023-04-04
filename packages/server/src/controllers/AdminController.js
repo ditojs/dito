@@ -280,6 +280,8 @@ const coreDependencies = [
   'vue-router',
   'vue-upload-component',
   'tinycolor2',
+  'focus-trap',
+  'tabbable',
   'sortablejs',
   '@tiptap/*',
   'prosemirror-*',

@@ -1644,6 +1644,7 @@ __metadata:
     codeflask: ^1.4.1
     filesize: ^10.0.7
     filesize-parser: ^1.5.0
+    focus-trap: ^7.4.0
     nanoid: ^4.0.2
     pug: ^3.0.2
     sass: 1.60.0
@@ -6749,6 +6750,15 @@ __metadata:
   version: 3.2.7
   resolution: "flatted@npm:3.2.7"
   checksum: 427633049d55bdb80201c68f7eb1cbd533e03eac541f97d3aecab8c5526f12a20ccecaeede08b57503e772c769e7f8680b37e8d482d1e5f8d7e2194687f9ea35
+  languageName: node
+  linkType: hard
+
+"focus-trap@npm:^7.4.0":
+  version: 7.4.0
+  resolution: "focus-trap@npm:7.4.0"
+  dependencies:
+    tabbable: ^6.1.1
+  checksum: e55d07295f1facf3a82fb7b78713c196f893a82a04ec9a8ab95306a3099ac8fc30dba982651e4fa8a0f3fba623e3120baf419a1c31da3c25223c0bfbece340aa
   languageName: node
   linkType: hard
 
@@ -12339,6 +12349,13 @@ __metadata:
   version: 1.0.0
   resolution: "supports-preserve-symlinks-flag@npm:1.0.0"
   checksum: 53b1e247e68e05db7b3808b99b892bd36fb096e6fba213a06da7fab22045e97597db425c724f2bbd6c99a3c295e1e73f3e4de78592289f38431049e1277ca0ae
+  languageName: node
+  linkType: hard
+
+"tabbable@npm:^6.1.1":
+  version: 6.1.1
+  resolution: "tabbable@npm:6.1.1"
+  checksum: 348639497262241ce8e0ccb0664ea582a386183107299ee8f27cf7b56bc84f36e09eaf667d3cb4201e789634012a91f7129bcbd49760abe874fbace35b4cf429
   languageName: node
   linkType: hard
 

@@ -6,16 +6,17 @@
   :style="{ '--width': `${settings.width}px` }"
   @click="settings.clickToClose && close()"
 )
-  form.dito-scroll-parent(@submit.prevent="submit")
-    dito-schema.dito-scroll(
-      :schema="schema"
-      :data="dialogData"
-    )
-      template(#buttons)
-        dito-buttons.dito-buttons-large(
-          :buttons="buttonSchemas"
-          :data="dialogData"
-        )
+  use-focus-trap(:options="{ immediate: true }")
+    form.dito-scroll-parent(@submit.prevent="submit")
+      dito-schema.dito-scroll(
+        :schema="schema"
+        :data="dialogData"
+      )
+        template(#buttons)
+          dito-buttons.dito-buttons-large(
+            :buttons="buttonSchemas"
+            :data="dialogData"
+          )
 </template>
 
 <style lang="sass">
@@ -65,9 +66,12 @@ import { clone } from '@ditojs/utils'
 import { addEvents } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import { getButtonSchemas } from '../utils/schema.js'
+import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
 export default DitoComponent.component('dito-dialog', {
+  components: { UseFocusTrap },
+
   provide() {
     return {
       $dialogComponent: () => this

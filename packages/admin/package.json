@@ -68,6 +68,7 @@
     "codeflask": "^1.4.1",
     "filesize": "^10.0.7",
     "filesize-parser": "^1.5.0",
+    "focus-trap": "^7.4.0",
     "nanoid": "^4.0.2",
     "sortablejs": "^1.15.0",
     "tinycolor2": "^1.6.0",
