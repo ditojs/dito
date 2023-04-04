@@ -566,6 +566,7 @@ export class Application extends Koa {
     if (app.session) {
       const {
         modelClass,
+        autoCommit = true,
         ...options
       } = getOptions(app.session)
       if (modelClass) {
@@ -575,7 +576,25 @@ export class Application extends Koa {
         // eslint-disable-next-line new-cap
         options.ContextStore = SessionStore(modelClass)
       }
+      options.autoCommit = false
       this.use(session(options, this))
+      this.use(async (ctx, next) => {
+        const { transacted } = ctx.route
+        try {
+          await next()
+          if (autoCommit && transacted) {
+            // When transacted, only commit when there are no errors. Otherwise,
+            // the commit will fail and the original error will be lost.
+            await ctx.session.commit()
+          }
+        } finally {
+          // When not transacted, keep the original behavior of always
+          // committing.
+          if (autoCommit && !transacted) {
+            await ctx.session.commit()
+          }
+        }
+      })
     }
     // 6. passport
     if (app.passport) {
