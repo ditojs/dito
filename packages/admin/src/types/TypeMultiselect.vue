@@ -7,8 +7,6 @@
 )
   vue-multiselect(
     ref="element"
-    v-model="selectedOptions"
-    v-bind="attributes"
     :show-labels="false"
     :placeholder="placeholder"
     tag-placeholder="Press enter to add new tag",
@@ -25,9 +23,12 @@
     :clear-on-select="!searchFilter"
     :close-on-select="!stayOpen"
     :loading="isLoading"
-    @open="populate = true"
+    @open="onOpen"
+    @close="onClose"
     @tag="onAddTag"
     @search-change="onSearchChange"
+    v-model="selectedOptions"
+    v-bind="attributes"
   )
   button.dito-button-clear.dito-button-overlay(
     type="button"
@@ -224,6 +225,7 @@
 <script>
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
+import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -327,6 +329,24 @@ export default TypeComponent.register('multiselect', {
 
     focusElement() {
       this.$refs.element.activate()
+    },
+
+    onOpen() {
+      this.populate = true
+    },
+
+    onClose() {
+      // Since we don't fire blur events while the multiselect is open (see
+      // below), we need to do it here, when it's actually closed.
+      if (this.focused) {
+        this.onBlur()
+      }
+    },
+
+    onBlur() {
+      if (!this.$refs.element.isOpen) {
+        TypeMixin.methods.onBlur.call(this)
+      }
     },
 
     onAddTag(tag) {
