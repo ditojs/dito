@@ -577,11 +577,22 @@ export class Application extends Koa {
       }
       options.autoCommit = false
       this.use(session(options, this))
-      // Manually commit the session after the route has been handled without
-      // errors.
       this.use(async (ctx, next) => {
-        await next()
-        await ctx.session.manuallyCommit()
+        const { transacted } = ctx.route
+        try {
+          await next()
+          if (transacted) {
+            // When transacted, only commit when there are no errors. Otherwise,
+            // the commit will fail and the original error will be lost.
+            await ctx.session.manuallyCommit()
+          }
+        } finally {
+          // When not transacted, keep the original behavior of always
+          // committing.
+          if (!transacted) {
+            await ctx.session.manuallyCommit()
+          }
+        }
       })
     }
     // 6. passport
