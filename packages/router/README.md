@@ -18,7 +18,6 @@ prefixes, essentially a [prefix tree](https://en.wikipedia.org/wiki/Trie).
 
 ```js
 import Koa from 'koa'
-import compose from 'koa-compose'
 import Router from '@ditojs/router'
 
 const app = new Koa()

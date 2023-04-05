@@ -13,7 +13,6 @@ import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
 import mount from 'koa-mount'
 import passport from 'koa-passport'
-import session from 'koa-session'
 import etag from 'koa-etag'
 import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
@@ -24,7 +23,6 @@ import {
   hyphenate, clone, merge, parseDataPath, normalizeDataPath,
   toPromiseCallback, mapConcurrently
 } from '@ditojs/utils'
-import SessionStore from './SessionStore.js'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
 import { Controller, AdminController } from '../controllers/index.js'
@@ -45,6 +43,7 @@ import {
   findRoute,
   handleError,
   handleRoute,
+  handleSession,
   handleUser,
   logRequests
 } from '../middleware/index.js'
@@ -564,39 +563,7 @@ export class Application extends Koa {
     this.use(createTransaction())
     // 5. session
     if (app.session) {
-      const {
-        modelClass,
-        autoCommit = true,
-        ...options
-      } = getOptions(app.session)
-      if (modelClass) {
-        // Create a ContextStore that resolved the specified model class,
-        // uses it to persist and retrieve the session, and automatically
-        // binds all db operations to `ctx.transaction`, if it is set.
-        // eslint-disable-next-line new-cap
-        options.ContextStore = SessionStore(modelClass)
-      }
-      options.autoCommit = false
-      this.use(session(options, this))
-      this.use(async (ctx, next) => {
-        // Get hold of `session` now, since it may not be available from the
-        // `ctx` if the session is destroyed.
-        const { session, route: { transacted } } = ctx
-        try {
-          await next()
-          if (autoCommit && transacted) {
-            // When transacted, only commit when there are no errors. Otherwise,
-            // the commit will fail and the original error will be lost.
-            await session.commit()
-          }
-        } finally {
-          // When not transacted, keep the original behavior of always
-          // committing.
-          if (autoCommit && !transacted) {
-            await session.commit()
-          }
-        }
-      })
+      this.use(handleSession(this, getOptions(app.session)))
     }
     // 6. passport
     if (app.passport) {
