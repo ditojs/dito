@@ -12,7 +12,7 @@ export function handleSession(app, {
     // uses it to persist and retrieve the session, and automatically
     // binds all db operations to `ctx.transaction`, if it is set.
     // eslint-disable-next-line new-cap
-    options.ContextStore = SessionStore(modelClass)
+    options.ContextStore = createSessionStore(modelClass)
   }
   options.autoCommit = false
   return compose([
@@ -39,7 +39,7 @@ export function handleSession(app, {
   ])
 }
 
-const SessionStore = modelClass => class SessionStore {
+const createSessionStore = modelClass => class SessionStore {
   constructor(ctx) {
     this.ctx = ctx
     this.modelClass = isString(modelClass)
@@ -69,6 +69,6 @@ const SessionStore = modelClass => class SessionStore {
   }
 
   async destroy(key) {
-    return this.query().deleteById(key)
+    await this.query().deleteById(key)
   }
 }
