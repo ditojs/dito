@@ -519,7 +519,9 @@ export class Application extends Koa {
       this.use(responseTime(getOptions(app.responseTime)))
     }
     if (log.requests) {
-      this.use(logRequests())
+      this.use(logRequests({
+        ignoreUrlPattern: /(\.js$|\.scss$|\.vue$|\/@vite\/|\/@fs\/|\/@id\/)/
+      }))
     }
     // This needs to be positioned after the request logger to log the correct
     // response status.

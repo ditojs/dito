@@ -5,9 +5,9 @@ import bytes from 'bytes'
 import pico from 'picocolors'
 import Counter from 'passthrough-counter'
 
-export function logRequests({ ignoreUrls } = {}) {
+export function logRequests({ ignoreUrlPattern } = {}) {
   return async (ctx, next) => {
-    if (ignoreUrls && ctx.req.url.match(ignoreUrls)) {
+    if (ignoreUrlPattern && ctx.req.url.match(ignoreUrlPattern)) {
       return next()
     }
     // request
