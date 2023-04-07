@@ -76,9 +76,11 @@ export class DitoGraphProcessor {
             // since `relation.graphOptions` is across insert  / upsert & co.,
             // but not all of them use all options (insert defines less).
             for (const key in this.options) {
-              if (key in graphOptions &&
-                  graphOptions[key] !== this.options[key] &&
-                  !this.overrides[key]) {
+              if (
+                key in graphOptions &&
+                graphOptions[key] !== this.options[key] &&
+                !this.overrides[key]
+              ) {
                 this.numOverrides++
                 this.overrides[key] = []
               }
@@ -104,40 +106,44 @@ export class DitoGraphProcessor {
   processOverrides() {
     const expr = modelGraphToExpression(this.data)
 
-    const processExpression =
-      (expr, modelClass, relation, relationPath = '') => {
-        if (relation) {
-          const graphOptions = this.getGraphOptions(relation)
-          // Loop through all override options, figure out their settings for
-          // the current relation and build relation expression arrays for each
-          // override reflecting their nested settings in arrays of expressions.
-          for (const key in this.overrides) {
-            const option = graphOptions[key] ?? this.options[key]
-            if (option) {
-              this.overrides[key].push(relationPath)
-            }
-          }
-
-          // Also collect any many-to-many pivot table extra properties.
-          const extra = relation.through?.extra
-          if (extra?.length > 0) {
-            this.extras[relationPath] = extra
+    const processExpression = (
+      expr,
+      modelClass,
+      relation,
+      relationPath = ''
+    ) => {
+      if (relation) {
+        const graphOptions = this.getGraphOptions(relation)
+        // Loop through all override options, figure out their settings for
+        // the current relation and build relation expression arrays for each
+        // override reflecting their nested settings in arrays of expressions.
+        for (const key in this.overrides) {
+          const option = graphOptions[key] ?? this.options[key]
+          if (option) {
+            this.overrides[key].push(relationPath)
           }
         }
 
-        const { relations } = modelClass.definition
-        const relationInstances = modelClass.getRelations()
-        for (const key in expr) {
-          const childExpr = expr[key]
-          const { relatedModelClass } = relationInstances[key]
-          processExpression(
-            childExpr,
-            relatedModelClass,
-            relations[key],
-            appendPath(relationPath, '.', key)
-          )
+        // Also collect any many-to-many pivot table extra properties.
+        const extra = relation.through?.extra
+        if (extra?.length > 0) {
+          this.extras[relationPath] = extra
         }
       }
+
+      const { relations } = modelClass.definition
+      const relationInstances = modelClass.getRelations()
+      for (const key in expr) {
+        const childExpr = expr[key]
+        const { relatedModelClass } = relationInstances[key]
+        processExpression(
+          childExpr,
+          relatedModelClass,
+          relations[key],
+          appendPath(relationPath, '.', key)
+        )
+      }
+    }
 
     processExpression(expr, this.rootModelClass)
   }
@@ -147,9 +153,9 @@ export class DitoGraphProcessor {
     if (relationPath !== '') {
       const { relate } = this.overrides
       return relate
-        // See if the relate overrides contain this particular relation-Path
-        // and only remove and restore relation data if relate is to be used
-        ? relate.includes(relationPath)
+        ? // See if the relate overrides contain this particular relation-Path
+          // and only remove and restore relation data if relate is to be used
+          relate.includes(relationPath)
         : this.options.relate
     }
   }
@@ -189,11 +195,13 @@ export class DitoGraphProcessor {
         return copy
       } else if (isArray(data)) {
         // Potentially a has-many relation, so keep processing relates:
-        return data.map((entry, index) => this.processRelates(
-          entry,
-          relationPath,
-          appendPath(dataPath, '/', index)
-        ))
+        return data.map((entry, index) =>
+          this.processRelates(
+            entry,
+            relationPath,
+            appendPath(dataPath, '/', index)
+          )
+        )
       }
     }
     return data

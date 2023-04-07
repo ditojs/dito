@@ -1,16 +1,18 @@
 <template lang="pug">
 .dito-create-button
-  template(v-if="showPulldown")
+  template(
+    v-if="showPulldown"
+  )
     button.dito-button(
       type="button"
-      @mousedown.stop="onPulldownMouseDown()"
       :class="`dito-button-${verb}`"
       :title="labelize(verb)"
+      @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
-    ul.dito-pulldown(
-      :class="{ 'dito-open': pulldown.open }"
-    )
-      li(v-for="(form, type) in forms")
+    ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
+      li(
+        v-for="(form, type) in forms"
+      )
         a(
           v-if="isCreatable(form)"
           :class="`dito-type-${type}`"
@@ -20,18 +22,11 @@
   button.dito-button(
     v-else
     :type="isInlined ? 'button' : 'submit'"
-    @click="createItem(forms.default)"
     :class="`dito-button-${verb}`"
     :title="labelize(verb)"
+    @click="createItem(forms.default)"
   ) {{ text }}
 </template>
-
-<style lang="sass">
-  .dito-create-button
-    position: relative
-    .dito-pulldown
-      right: 0
-</style>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
@@ -39,7 +34,7 @@ import PulldownMixin from '../mixins/PulldownMixin.js'
 import { getFormSchemas, isInlined } from '../utils/schema.js'
 
 // @vue/component
-export default DitoComponent.component('dito-create-button', {
+export default DitoComponent.component('DitoCreateButton', {
   mixins: [PulldownMixin],
 
   props: {
@@ -91,3 +86,10 @@ export default DitoComponent.component('dito-create-button', {
   }
 })
 </script>
+
+<style lang="sass">
+.dito-create-button
+  position: relative
+  .dito-pulldown
+    right: 0
+</style>

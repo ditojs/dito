@@ -3,8 +3,8 @@
   v-if="clipboard"
 )
   button.dito-button.dito-button-copy(
-    type="button"
     ref="copyData"
+    type="button"
     title="Copy Data"
     :disabled="!copyEnabled"
     @click="onCopy"
@@ -24,7 +24,7 @@ import DitoContext from '../DitoContext.js'
 import DomMixin from '../mixins/DomMixin.js'
 
 // @vue/component
-export default DitoComponent.component('dito-clipboard', {
+export default DitoComponent.component('DitoClipboard', {
   mixins: [DomMixin],
 
   props: {
@@ -49,18 +49,26 @@ export default DitoComponent.component('dito-clipboard', {
     copyData() {
       const { copy } = this.clipboardOptions
       return copy
-        ? clipboardData => copy.call(this, new DitoContext(this, {
-          clipboardData
-        }))
+        ? clipboardData =>
+            copy.call(
+              this,
+              new DitoContext(this, {
+                clipboardData
+              })
+            )
         : clipboardData => clone(clipboardData)
     },
 
     pasteData() {
       const { paste } = this.clipboardOptions
       return paste
-        ? clipboardData => paste.call(this, new DitoContext(this, {
-          clipboardData
-        }))
+        ? clipboardData =>
+            paste.call(
+              this,
+              new DitoContext(this, {
+                clipboardData
+              })
+            )
         : clipboardData => clipboardData
     }
   },

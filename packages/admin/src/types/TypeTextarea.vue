@@ -1,24 +1,13 @@
 <template lang="pug">
 textarea.dito-textarea.dito-input(
-  ref="element"
   :id="dataPath"
+  ref="element"
   v-model="value"
   v-bind="attributes"
   :rows="lines"
   :class="{ 'dito-resizable': resizable }"
 )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-textarea
-    display: block
-    resize: none
-    min-height: calc(1em * var(--line-height) + #{ 2 * $input-padding-ver })
-    &.dito-resizable
-      resize: vertical
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -41,3 +30,14 @@ export default TypeComponent.register('textarea', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-textarea
+  display: block
+  resize: none
+  min-height: calc(1em * var(--line-height) + #{ 2 * $input-padding-ver })
+  &.dito-resizable
+    resize: vertical
+</style>

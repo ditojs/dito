@@ -2,8 +2,8 @@
 //- Nesting is needed to make an arrow appear over the select item:
 .dito-select
   select(
-    ref="element"
     :id="dataPath"
+    ref="element"
     v-model="selectedValue"
     v-bind="attributes"
     @mousedown="populate = true"
@@ -30,43 +30,13 @@
     template(
       v-else-if="selectedOption"
     )
-      option(
-        :value="selectedValue"
-      ) {{ getLabelForOption(selectedOption) }}
+      option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
   button.dito-button-clear.dito-button-overlay(
     v-if="showClearButton"
-    @click="clear"
     :disabled="disabled"
+    @click="clear"
   )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  // TODO: Move to dito-ui
-  $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2)
-
-  .dito-select
-    display: inline-block
-    position: relative
-
-    select
-      padding-right: $select-arrow-width
-
-    // Handle .dito-width-fill separately due to required nesting of select:
-    &.dito-width-fill
-      select
-        width: 100%
-
-    &::after
-      position: absolute
-      +arrow($select-arrow-size)
-      bottom: $select-arrow-bottom
-      right: calc(#{$select-arrow-right} + #{$border-width})
-
-    &.dito-disabled::after
-      border-color: $border-color
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -87,3 +57,31 @@ export default TypeComponent.register('select', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+// TODO: Move to dito-ui
+$select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2)
+
+.dito-select
+  display: inline-block
+  position: relative
+
+  select
+    padding-right: $select-arrow-width
+
+  // Handle .dito-width-fill separately due to required nesting of select:
+  &.dito-width-fill
+    select
+      width: 100%
+
+  &::after
+    position: absolute
+    +arrow($select-arrow-size)
+    bottom: $select-arrow-bottom
+    right: calc(#{$select-arrow-right} + #{$border-width})
+
+  &.dito-disabled::after
+    border-color: $border-color
+</style>

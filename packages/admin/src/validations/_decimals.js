@@ -4,9 +4,8 @@ export const decimals = {
     return new RegExp(`^[-+]?\\d*(\\.\\d${match})?$`).test(value)
   },
 
-  message: (value, decimals) => (
+  message: (value, decimals) =>
     `must be numeric and may contain ${
       !decimals || decimals === '*' ? '' : decimals
     } decimal points`
-  )
 }

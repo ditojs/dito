@@ -8,7 +8,7 @@ describe('deindent()', () => {
           indented
             text`
     ).toBe(
-`some
+      `some
   indented
     text`
     )
@@ -22,7 +22,7 @@ describe('deindent()', () => {
             text
       `
     ).toBe(
-`some
+      `some
   indented
     text
 `
@@ -39,7 +39,7 @@ describe('deindent()', () => {
             text
       `
     ).toBe(
-`
+      `
 
 some
   indented
@@ -58,7 +58,7 @@ some
 
       `
     ).toBe(
-`some
+      `some
   indented
     text
 
@@ -76,7 +76,7 @@ some
   indented
     text`
     ).toBe(
-`some
+      `some
   indented
     text
 some
@@ -91,7 +91,7 @@ some
     indented
       text`
     ).toBe(
-`some
+      `some
   indented
     text`
     )
@@ -106,7 +106,7 @@ some
             ${singleLineText}
       `
     ).toBe(
-`some
+      `some
   indented
     single-line text
 `
@@ -122,7 +122,7 @@ indented
 ${multiLineText}
 `
     ).toBe(
-`some
+      `some
 indented
 multi-
 line
@@ -140,7 +140,7 @@ text
             ${multiLineText}
       `
     ).toBe(
-`some
+      `some
   indented
     multi-
     line
@@ -158,7 +158,7 @@ text
             content: ${multiLineText}
       `
     ).toBe(
-`some
+      `some
   indented
     content: multi-
     line
@@ -173,7 +173,7 @@ text
         indented
           text`
     ).toBe(
-`some
+      `some
         indented
           text`
     )

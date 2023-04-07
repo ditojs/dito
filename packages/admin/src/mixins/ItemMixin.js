@@ -1,6 +1,9 @@
 import DitoContext from '../DitoContext.js'
 import {
-  getItemFormSchema, getItemId, getItemUid, isListSource
+  getItemFormSchema,
+  getItemId,
+  getItemUid,
+  isListSource
 } from '../utils/schema.js'
 import { appendDataPath } from '../utils/data.js'
 import { isObject, isString, isFunction } from '@ditojs/utils'
@@ -31,12 +34,13 @@ export default {
 
     findItemIdIndex(sourceSchema, data, itemId) {
       const index = this.isTransient
-        // For transient data, the index is used as the id
-        ? itemId
+        ? // For transient data, the index is used as the id
+          itemId
         : data?.findIndex(
-          (item, index) =>
-            this.getItemId(sourceSchema, item, index) === itemId
-        )
+            (item, index) => (
+              this.getItemId(sourceSchema, item, index) === itemId
+            )
+          )
       return index !== -1 ? index : null
     },
 
@@ -82,7 +86,7 @@ export default {
           })
         )
         if (isObject(label)) {
-          ({ text, prefix, suffix } = label)
+          ;({ text, prefix, suffix } = label)
         } else {
           text = label
         }
@@ -109,9 +113,10 @@ export default {
       if (text == null) {
         // Always use extended style when auto-generating labels from index/id:
         extended = true
-        text = (isListSource(sourceSchema) && index !== null)
-          ? text = `${index + 1}`
-          : ''
+        text =
+          isListSource(sourceSchema) && index !== null
+            ? (text = `${index + 1}`)
+            : ''
       }
       if (extended) {
         const formLabel = getFormLabel()

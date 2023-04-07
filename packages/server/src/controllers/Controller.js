@@ -3,18 +3,30 @@ import { EventEmitter } from '../lib/index.js'
 import ControllerAction from './ControllerAction.js'
 import MemberAction from './MemberAction.js'
 import {
-  ResponseError, ControllerError, AuthorizationError
+  ResponseError,
+  ControllerError,
+  AuthorizationError
 } from '../errors/index.js'
 import {
-  getOwnProperty, getOwnKeys, getAllKeys, getInheritanceChain
+  getOwnProperty,
+  getOwnKeys,
+  getAllKeys,
+  getInheritanceChain
 } from '../utils/object.js'
 import { processHandlerParameters } from '../utils/handler.js'
 import { describeFunction } from '../utils/function.js'
 import { formatJson } from '../utils/json.js'
 import { deprecate } from '../utils/deprecate.js'
 import {
-  isObject, isString, isArray, isBoolean, isFunction, asArray, equals,
-  parseDataPath, normalizeDataPath
+  isObject,
+  isString,
+  isArray,
+  isBoolean,
+  isFunction,
+  asArray,
+  equals,
+  parseDataPath,
+  normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -43,9 +55,10 @@ export class Controller {
     // that the base class callbacks are run first.
     const chain = getInheritanceChain(hooks).reverse()
     const events = Object.fromEntries(
-      Object.keys(hooks || {}).map(
-        event => [event, chain.map(hooks => hooks[event]).filter(Boolean)]
-      )
+      Object.keys(hooks || {}).map(event => [
+        event,
+        chain.map(hooks => hooks[event]).filter(Boolean)
+      ])
     )
     this._configureEmitter(events, {
       // Support wildcard hooks only on controllers:
@@ -174,7 +187,11 @@ export class Controller {
       // Replace the action object with the converted action handler, so they
       // too can benefit from prototypal inheritance:
       actions[name] = this.setupAction(
-        type, actions, name, action, authorize[name]
+        type,
+        actions,
+        name,
+        action,
+        authorize[name]
       )
     }
     // Expose a direct reference to the controller on the action object, but
@@ -190,9 +207,11 @@ export class Controller {
   }
 
   setupAction(type, actions, name, action, authorize) {
-    const handler = isFunction(action) ? action
-      : isObject(action) ? convertActionObject(name, action, actions)
-      : null
+    const handler = isFunction(action)
+      ? action
+      : isObject(action)
+        ? convertActionObject(name, action, actions)
+        : null
     // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
     // the default methods.
     let [method, path = ''] = name.split(' ')
@@ -206,7 +225,14 @@ export class Controller {
       type,
       // eslint-disable-next-line new-cap
       new actionClass(
-        this, actions, handler, type, name, method, path, authorize
+        this,
+        actions,
+        handler,
+        type,
+        name,
+        method,
+        path,
+        authorize
       )
     )
     return handler
@@ -249,7 +275,8 @@ export class Controller {
     } = config
     const storage = this.app.getStorage(storageName)
     if (!storage) {
-      throw new ControllerError(this,
+      throw new ControllerError(
+        this,
         `Unknown storage configuration: '${storageName}'`
       )
     }
@@ -258,9 +285,10 @@ export class Controller {
 
     const normalizedPath = getDataPath(
       // Router supports both shallow & deep wildcards, no normalization needed.
-      token => token === '*' || token === '**'
-        ? token
-        : this.app.normalizePath(token)
+      token =>
+        token === '*' || token === '**'
+          ? token
+          : this.app.normalizePath(token)
     )
 
     // Convert `dataPath` to a regular expression to match field names
@@ -270,11 +298,12 @@ export class Controller {
       `^${
         getDataPath(
           // Use the exact same regexps as in `Router`:
-          token => token === '*'
-            ? '[^/]+' // shallow wildcard
-            : token === '**'
-              ? '.+?' // deep wildcard
-              : token
+          token =>
+            token === '*'
+              ? '[^/]+' // shallow wildcard
+              : token === '**'
+                ? '.+?' // deep wildcard
+                : token
         )
       }$`
     )
@@ -525,17 +554,17 @@ export class Controller {
           member = await this.getMember(ctx)
         }
         return !!values.find(
-        // Support 3 scenarios:
-        // - '$self': The requested member is checked against `ctx.state.user`
-        //   and the action is only authorized if it matches the member.
-        // - '$owner': The member is asked if it is owned by `ctx.state.user`
-        //   through the optional `Model.$hasOwner()` method.
-        // - any string:  `ctx.state.user` is checked for this role through
-        //   the overridable `UserModel.hasRole()` method.
+          // Support 3 scenarios:
+          // - '$self': The requested member is checked against `ctx.state.user`
+          //   and the action is only authorized if it matches the member.
+          // - '$owner': The member is asked if it is owned by `ctx.state.user`
+          //   through the optional `Model.$hasOwner()` method.
+          // - any string:  `ctx.state.user` is checked for this role through
+          //   the overridable `UserModel.hasRole()` method.
           value => {
             return value === '$self'
               ? user.constructor === this.modelClass &&
-              equals(user.$id(), ctx.memberId)
+                equals(user.$id(), ctx.memberId)
               : value === '$owner'
                 ? member?.$hasOwner?.(user)
                 : user.$hasRole(value)
@@ -543,7 +572,8 @@ export class Controller {
         )
       }
     } else {
-      throw new ControllerError(this,
+      throw new ControllerError(
+        this,
         `Unsupported authorize setting: '${authorize}'`
       )
     }
@@ -588,14 +618,18 @@ function convertActionObject(name, object, actions) {
   Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
 
   if (action) {
-    deprecate(`action.action is deprecated. Use action.method and action.path instead.`)
+    deprecate(
+      `action.action is deprecated. Use action.method and action.path instead.`
+    )
     const [method, path] = asArray(action)
     handler.method = method
     handler.path = path
   }
 
   if (!handler) {
-    throw new Error(`Missing handler in '${name}' action: ${formatJson(object)}`)
+    throw new Error(
+      `Missing handler in '${name}' action: ${formatJson(object)}`
+    )
   }
 
   handler.authorize = authorize ?? null
@@ -609,15 +643,18 @@ function convertActionObject(name, object, actions) {
 }
 
 function isMethodAction(name) {
-  return {
-    get: true,
-    delete: true,
-    post: true,
-    put: true,
-    patch: true,
-    head: true,
-    options: true,
-    trace: true,
-    connect: true
-  }[name] || false
+  return (
+    {
+      get: true,
+      delete: true,
+      post: true,
+      put: true,
+      patch: true,
+      head: true,
+      options: true,
+      trace: true,
+      connect: true
+    }[name] ||
+    false
+  )
 }

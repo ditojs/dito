@@ -1,20 +1,12 @@
 <template lang="pug">
-switch-button.dito-switch(
-  ref="element"
+SwitchButton.dito-switch(
   :id="dataPath"
-  :labels="labels"
+  ref="element"
   v-model="value"
+  :labels="labels"
   v-bind="attributes"
 )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-switch
-    .dito-switch-label
-      font-size: $font-size-small
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -36,3 +28,11 @@ export default TypeComponent.register('switch', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-switch
+  .dito-switch-label
+    font-size: $font-size-small
+</style>

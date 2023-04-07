@@ -1,7 +1,7 @@
 import { isArray, asArray, labelize } from '@ditojs/utils'
 
 export const filterComponents = {
-  text(filter) {
+  'text'(filter) {
     const options = [
       {
         label: 'contains',
@@ -23,15 +23,14 @@ export const filterComponents = {
     return {
       operator: filter.operators
         ? {
-          type: 'select',
-          options:
-            isArray(filter.operators)
+            type: 'select',
+            options: isArray(filter.operators)
               ? options.filter(
-                option => filter.operators.includes(option.value)
-              )
+                  option => filter.operators.includes(option.value)
+                )
               : options,
-          width: '40%'
-        }
+            width: '40%'
+          }
         : null,
       text: {
         type: 'text',
@@ -186,8 +185,7 @@ function parseFiltersData(schema, query) {
       const [, name, json] = filter.match(/^(\w+):(.*)$/)
       try {
         filters[name] = asArray(JSON.parse(`[${json}]`))
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   }
   const filtersData = {}

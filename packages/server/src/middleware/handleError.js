@@ -11,11 +11,12 @@ export function handleError() {
       // error. But don't do so if the request actually went to js file.
       if (ctx.accepts('json') && !ctx.request.path.endsWith('.js')) {
         // Format error as JSON
-        ctx.body = err instanceof ResponseError
-          ? err.toJSON()
-          : {
-            message: err.message || 'An error has occurred.'
-          }
+        ctx.body =
+          err instanceof ResponseError
+            ? err.toJSON()
+            : {
+                message: err.message || 'An error has occurred.'
+              }
       } else {
         // TODO: Consider handling html and xml responses also, see:
         // https://github.com/strongloop/strong-error-handler/blob/master/lib/send-html.js

@@ -1,0 +1,19 @@
+{
+  "disallowAttributeInterpolation": true,
+  "disallowBlockExpansion": true,
+  "disallowDuplicateAttributes": true,
+  "disallowIdAttributeWithStaticValue": true,
+  "disallowLegacyMixinCall": true,
+  "disallowMultipleLineBreaks": true,
+  "maximumLineLength": 100,
+  "requireClassLiteralsBeforeAttributes": true,
+  "requireIdLiteralsBeforeAttributes": true,
+  "requireLowerCaseTags": true,
+  "validateAttributeQuoteMarks": "\"",
+  "validateAttributeSeparator": {
+    "separator": " ",
+    "multiLineSeparator": "\n  "
+  },
+  "validateDivTags": true,
+  "validateIndentation": 2
+}

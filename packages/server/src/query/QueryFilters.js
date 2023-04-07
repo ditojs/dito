@@ -30,8 +30,8 @@ QueryFilters.register({
             query.where(property, 'ILIKE', operand)
           } else {
             query.whereRaw(
-            `LOWER(??) LIKE ?`,
-            [property, operand.toLowerCase()]
+              `LOWER(??) LIKE ?`,
+              [property, operand.toLowerCase()]
             )
           }
         }
@@ -59,7 +59,7 @@ QueryFilters.register({
       } else if (to) {
         query.where(property, '<=', new Date(to))
       } else {
-      // TODO: Can we get validation to catch the case where both are empty?
+        // TODO: Can we get validation to catch the case where both are empty?
       }
     }
   }

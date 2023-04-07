@@ -11,11 +11,13 @@ export function deindent(strings, ...values) {
   // First, perform interpolation
   let parts = []
   for (let i = 0; i < strings.length; i++) {
-    parts.push(strings[i]
-      // Join lines when there is a line-break suppressed by a preceding '\\'
-      .replace(/\\\n\s*/g, '')
-      // Handle escaped back-ticks
-      .replace(/\\`/g, '`'))
+    parts.push(
+      strings[i]
+        // Join lines when there is a line-break suppressed by a preceding '\\'
+        .replace(/\\\n\s*/g, '')
+        // Handle escaped back-ticks
+        .replace(/\\`/g, '`')
+    )
     if (i < values.length) {
       // See if the value itself contains multiple lines, and if so, indent
       // each of them by the whitespace that precedes it except the first.
@@ -32,7 +34,9 @@ export function deindent(strings, ...values) {
         //                      # line, by making sure no line breaks follow
         //                      # until the end.
         const str = parts.join('')
-        const match = str.match(/((?:^[\n\r]*|[\n\r])(?:[\n\r]*))(\s+)(?:[^\n\r]*)$/)
+        const match = str.match(
+          /((?:^[\n\r]*|[\n\r])(?:[\n\r]*))(\s+)(?:[^\n\r]*)$/
+        )
         const [, lineBreaks = '', indent = ''] = match || []
         parts = [str]
         parts.push(lines.join(`${getLineBreak(lineBreaks)}${indent}`))

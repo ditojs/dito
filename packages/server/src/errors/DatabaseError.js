@@ -18,19 +18,28 @@ const {
 
 export class DatabaseError extends ResponseError {
   constructor(error, overrides) {
-    super(error, {
-      type: error.constructor.name,
-      message: 'Database error',
-      status: getStatus(error)
-    }, overrides)
+    super(
+      error,
+      {
+        type: error.constructor.name,
+        message: 'Database error',
+        status: getStatus(error)
+      },
+      overrides
+    )
   }
 }
 
 function getStatus(error) {
-  return error instanceof CheckViolationError ? 400
-    : error instanceof NotNullViolationError ? 400
-    : error instanceof ConstraintViolationError ? 409
-    : error instanceof DataError ? 400
-    : error instanceof DBError ? 500
-    : 400
+  return error instanceof CheckViolationError
+    ? 400
+    : error instanceof NotNullViolationError
+      ? 400
+      : error instanceof ConstraintViolationError
+        ? 409
+        : error instanceof DataError
+          ? 400
+          : error instanceof DBError
+            ? 500
+            : 400
 }

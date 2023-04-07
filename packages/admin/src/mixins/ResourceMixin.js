@@ -66,9 +66,10 @@ export default {
 
     transientNote() {
       return (
-        this.isTransient &&
-        '<b>Note</b>: the parent still needs to be saved ' +
-        'in order to persist this change.'
+        this.isTransient && (
+          '<b>Note</b>: the parent still needs to be saved ' +
+          'in order to persist this change.'
+        )
       )
     },
 
@@ -99,6 +100,7 @@ export default {
         const start = page * amount
         return [start, start + amount - 1]
       }
+      return null
     },
 
     queryParams() {
@@ -136,15 +138,15 @@ export default {
       const verbs = this.$verbs()
       return this.isTransient
         ? {
-          ...verbs,
-          // Override default verbs with their transient versions:
-          create: 'add',
-          created: 'added',
-          save: 'apply',
-          saved: 'applied',
-          delete: 'remove',
-          deleted: 'removed'
-        }
+            ...verbs,
+            // Override default verbs with their transient versions:
+            create: 'add',
+            created: 'added',
+            save: 'apply',
+            saved: 'applied',
+            delete: 'remove',
+            deleted: 'removed'
+          }
         : verbs
     },
 
@@ -200,7 +202,8 @@ export default {
             const { data } = response
             if (
               data?.type === 'FilterValidation' &&
-              this.onFilterErrors?.(data.errors)) {
+              this.onFilterErrors?.(data.errors)
+            ) {
               return true
             } else if (this.isUnauthorizedError(response)) {
               // TODO: Can we really swallow these errors?
@@ -223,12 +226,15 @@ export default {
       return response?.status === 401
     },
 
-    async handleRequest({
-      method,
-      resource = this.resource,
-      query,
-      data
-    }, callback) {
+    async handleRequest(
+      {
+        method,
+        resource = this.resource,
+        query,
+        data
+      },
+      callback
+    ) {
       const loadingOptions = {
         updateRoot: true, // Display spinner in header when loading in resources
         updateView: this.isInView // Notify view of loading for view components
@@ -283,19 +289,21 @@ export default {
       setData = false,
       onSuccess,
       onError,
-      notifySuccess = () => this.notify({
-        type: 'success',
-        title: 'Request Successful',
-        text: 'Request was successfully sent.'
-      }),
-      notifyError = error => this.notify({
-        type: 'error',
-        title: 'Request Error',
-        text: [
-          `Unable to send request${error ? ':' : ''}`,
-          error?.message || error
-        ]
-      })
+      notifySuccess = () =>
+        this.notify({
+          type: 'success',
+          title: 'Request Successful',
+          text: 'Request was successfully sent.'
+        }),
+      notifyError = error =>
+        this.notify({
+          type: 'error',
+          title: 'Request Error',
+          text: [
+            `Unable to send request${error ? ':' : ''}`,
+            error?.message || error
+          ]
+        })
     } = {}) {
       return new Promise(resolve => {
         this.handleRequest(

@@ -32,14 +32,14 @@ export function format(value, {
       ? defaultOption
       : isObject(option)
         ? Object.entries({
-          ...defaultOption,
-          ...option
-        }).reduce((opt, [key, value]) => {
-          if (value !== false) {
-            opt[key] = value
-          }
-          return opt
-        }, {})
+            ...defaultOption,
+            ...option
+          }).reduce((opt, [key, value]) => {
+            if (value !== false) {
+              opt[key] = value
+            }
+            return opt
+          }, {})
         : {}
   }
 
@@ -62,9 +62,11 @@ export function format(value, {
         // e.g. to replace decimals and such:
         const parts = new Intl.NumberFormat(locale, options)
           .formatToParts(value)
-        return parts.map(({ type, value }) =>
-          options.format(value, type, options) ?? value
-        ).join('')
+        return parts
+          .map(
+            ({ type, value }) => options.format(value, type, options) ?? value
+          )
+          .join('')
       }
     }
   } else if (isDate(value)) {
@@ -86,16 +88,18 @@ export function format(value, {
         const parts = new Intl.DateTimeFormat(locale, options)
           .formatToParts(value)
         let modeOpts = null
-        return parts.map(({ type, value }) => {
-          if (type !== 'literal') {
-            // Switch mode between date & time to pick the right format methdod:
-            const mode = ['weekday', 'day', 'month', 'year'].includes(type)
-              ? 'date'
-              : 'time'
-            modeOpts = opts[mode]
-          }
-          return modeOpts?.format?.(value, type, modeOpts) ?? value
-        }).join('')
+        return parts
+          .map(({ type, value }) => {
+            if (type !== 'literal') {
+              // Switch mode between date/time to pick the right format method:
+              const mode = ['weekday', 'day', 'month', 'year'].includes(type)
+                ? 'date'
+                : 'time'
+              modeOpts = opts[mode]
+            }
+            return modeOpts?.format?.(value, type, modeOpts) ?? value
+          })
+          .join('')
       }
     }
   }

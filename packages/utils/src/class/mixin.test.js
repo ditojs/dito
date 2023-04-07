@@ -5,13 +5,19 @@ describe('mixin()', () => {
     function() {}
   }
 
-  const SomeMixin1 = mixin(Class => class extends Class {
-    function1() {}
-  })
+  const SomeMixin1 = mixin(
+    Class =>
+      class extends Class {
+        function1() {}
+      }
+  )
 
-  const SomeMixin2 = mixin(Class => class extends Class {
-    function2() {}
-  })
+  const SomeMixin2 = mixin(
+    Class =>
+      class extends Class {
+        function2() {}
+      }
+  )
 
   it('should apply mixin to class', () => {
     const NewClass = SomeMixin1(SomeClass)
@@ -57,8 +63,7 @@ describe('mixin()', () => {
 
   it(`should not apply mixin more than once, even if it was applied higher up`, () => {
     const NewClass1 = SomeMixin1(SomeClass)
-    class NewClass2 extends NewClass1 {
-    }
+    class NewClass2 extends NewClass1 {}
     const NewClass3 = SomeMixin1(NewClass2)
     expect(NewClass3).toBe(NewClass2)
   })

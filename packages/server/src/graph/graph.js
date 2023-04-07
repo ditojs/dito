@@ -127,13 +127,21 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
   // contain path entries with relation names and modify settings.
 
   const grouped = {}
-  const addToGroup =
-    (item, modelClass, isReference, modify, relation, expr) => {
-      const id = item.$id()
-      if (id != null) {
-        // Group models by model-name + modify + expr, for faster loading:
-        const key = `${modelClass.name}_${modify}_${expr || ''}`
-        const group = grouped[key] || (grouped[key] = {
+  const addToGroup = (
+    item,
+    modelClass,
+    isReference,
+    modify,
+    relation,
+    expr
+  ) => {
+    const id = item.$id()
+    if (id != null) {
+      // Group models by model-name + modify + expr, for faster loading:
+      const key = `${modelClass.name}_${modify}_${expr || ''}`
+      const group = (
+        grouped[key] ||
+        (grouped[key] = {
           modelClass,
           modify,
           relation,
@@ -142,11 +150,12 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
           ids: [],
           modelsById: {}
         })
-        group.targets.push({ item, isReference })
-        // Collect ids to be loaded for the targets.
-        group.ids.push(id)
-      }
+      )
+      group.targets.push({ item, isReference })
+      // Collect ids to be loaded for the targets.
+      group.ids.push(id)
     }
+  }
 
   for (const path of collectExpressionPaths(expr)) {
     let modelClass = rootModelClass

@@ -1,5 +1,5 @@
 <template lang="pug">
-dito-schema.dito-schema-inlined(
+DitoSchema.dito-schema-inlined(
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
@@ -15,7 +15,7 @@ dito-schema.dito-schema-inlined(
   //- Render dito-edit-buttons for inlined schemas separately from all
   //- others in `TypeList` as a scope, for better handling of layout.
   template(#edit-buttons)
-    dito-edit-buttons(
+    DitoEditButtons(
       v-if="deletable || draggable || editable"
       :deletable="deletable"
       :draggable="draggable"
@@ -30,36 +30,13 @@ dito-schema.dito-schema-inlined(
     )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-schema-inlined
-    > .dito-schema-content
-      padding: 0
-      > .dito-schema-header
-        // Change spacing so .dito-label covers the full .dito-schema-header.
-        margin: -$form-spacing
-        .dito-label
-          // Add removed $form-spacing again
-          --label-padding: #{$form-spacing}
-          margin: 0
-          width: 100%
-          box-sizing: content-box
-          // Because tables have a funny way of allowing too much width growth:
-          max-width: $content-width
-          // Prevent collapsing to min-height when alone in
-          // .dito-schema-content, due to grid-template-rows: min-content
-          min-height: 2em
-        & +.dito-pane
-          // Needed for transition-height in DitoSchema:
-          min-height: $form-spacing
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { isCompact } from '../utils/schema.js'
 // @vue/component
-export default DitoComponent.component('dito-schema-inlined', {
+export default DitoComponent.component('DitoSchemaInlined', {
+  emits: ['delete'],
+
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
@@ -87,3 +64,28 @@ export default DitoComponent.component('dito-schema-inlined', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-schema-inlined
+  > .dito-schema-content
+    padding: 0
+    > .dito-schema-header
+      // Change spacing so .dito-label covers the full .dito-schema-header.
+      margin: -$form-spacing
+      .dito-label
+        // Add removed $form-spacing again
+        --label-padding: #{$form-spacing}
+        margin: 0
+        width: 100%
+        box-sizing: content-box
+        // Because tables have a funny way of allowing too much width growth:
+        max-width: $content-width
+        // Prevent collapsing to min-height when alone in
+        // .dito-schema-content, due to grid-template-rows: min-content
+        min-height: 2em
+      & +.dito-pane
+        // Needed for transition-height in DitoSchema:
+        min-height: $form-spacing
+</style>

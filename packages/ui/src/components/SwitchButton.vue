@@ -5,13 +5,13 @@
 )
   .dito-switch-pane
     input(
-      ref="input"
-      type="checkbox"
       :id="id"
-      :name="name"
-      :disabled="disabled"
+      ref="input"
       v-bind="$attrs"
       v-model="checked"
+      type="checkbox"
+      :name="name"
+      :disabled="disabled"
     )
     .dito-switch-button
     span.dito-switch-label(
@@ -27,84 +27,10 @@
       ) {{ labels.unchecked || 'off' }}
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-switch
-    // Use whole multiples of `rem` for sizes and `px` margins/padding along
-    // with `calc()` to end up with even pixel sizes. `rem` is needed because we
-    // change `font-size` inside `.dito-switch-button`
-    --switch-width: 4rem
-    --switch-height: 2rem
-    --switch-margin: 2px
-    --switch-padding: 3px
-    --switch-speed: 300ms
-    --label-margin: 0.5em
-
-    --width: calc(var(--switch-width) - 2 * var(--switch-margin))
-    --height: calc(var(--switch-height) - 2 * var(--switch-margin))
-    --offset: calc(var(--width) - var(--height))
-
-    display: inline-block
-    position: relative
-    height: var(--switch-height)
-    // To make inline labels appear on consistent baseline:
-    vertical-align: bottom
-    +user-select(none)
-    .dito-switch-pane
-      position: relative
-      width: var(--width)
-      height: var(--height)
-    .dito-switch-pane,
-    .dito-switch-label
-      top: 50%
-      transform: translateY(-50%)
-    input
-      cursor: pointer
-      appearance: none
-      width: 100%
-      height: 100%
-      border-radius: 1em
-      background: $color-light
-      transition: border-color .3s, background-color .3s
-    .dito-switch-button
-      position: absolute
-      // Set font-size to height, so we can use width/height = 1em for circle:
-      font-size: calc(var(--height) - 2 * var(--switch-padding))
-      top: var(--switch-padding)
-      left: var(--switch-padding)
-      width: 1em
-      height: 1em
-      border-radius: 0.5em
-      box-sizing: border-box
-      background: $color-white
-      transition: transform var(--switch-speed)
-      transform: translateX(0)
-    .dito-switch-button,
-    .dito-switch-label
-      pointer-events: none
-    .dito-switch-label
-      position: absolute
-      right: var(--label-margin)
-      text-transform: uppercase
-      color: $color-white
-    &.dito-checked
-      input
-        background: $color-active
-      .dito-switch-button
-        transform: translateX(var(--offset))
-      .dito-switch-label
-        left: var(--label-margin)
-        right: unset
-    &.dito-disabled
-      @extend %button-disabled
-    &:focus-within:not(:hover)
-      .dito-switch-button
-        box-shadow: $shadow-focus
-</style>
-
 <script>
 export default {
+  emits: ['update:modelValue', 'change'],
+
   props: {
     modelValue: { type: Boolean, default: false },
     id: { type: String, default: null },
@@ -158,3 +84,79 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-switch
+  // Use whole multiples of `rem` for sizes and `px` margins/padding along
+  // with `calc()` to end up with even pixel sizes. `rem` is needed because we
+  // change `font-size` inside `.dito-switch-button`
+  --switch-width: 4rem
+  --switch-height: 2rem
+  --switch-margin: 2px
+  --switch-padding: 3px
+  --switch-speed: 300ms
+  --label-margin: 0.5em
+
+  --width: calc(var(--switch-width) - 2 * var(--switch-margin))
+  --height: calc(var(--switch-height) - 2 * var(--switch-margin))
+  --offset: calc(var(--width) - var(--height))
+
+  display: inline-block
+  position: relative
+  height: var(--switch-height)
+  // To make inline labels appear on consistent baseline:
+  vertical-align: bottom
+  +user-select(none)
+  .dito-switch-pane
+    position: relative
+    width: var(--width)
+    height: var(--height)
+  .dito-switch-pane,
+  .dito-switch-label
+    top: 50%
+    transform: translateY(-50%)
+  input
+    cursor: pointer
+    appearance: none
+    width: 100%
+    height: 100%
+    border-radius: 1em
+    background: $color-light
+    transition: border-color .3s, background-color .3s
+  .dito-switch-button
+    position: absolute
+    // Set font-size to height, so we can use width/height = 1em for circle:
+    font-size: calc(var(--height) - 2 * var(--switch-padding))
+    top: var(--switch-padding)
+    left: var(--switch-padding)
+    width: 1em
+    height: 1em
+    border-radius: 0.5em
+    box-sizing: border-box
+    background: $color-white
+    transition: transform var(--switch-speed)
+    transform: translateX(0)
+  .dito-switch-button,
+  .dito-switch-label
+    pointer-events: none
+  .dito-switch-label
+    position: absolute
+    right: var(--label-margin)
+    text-transform: uppercase
+    color: $color-white
+  &.dito-checked
+    input
+      background: $color-active
+    .dito-switch-button
+      transform: translateX(var(--offset))
+    .dito-switch-label
+      left: var(--label-margin)
+      right: unset
+  &.dito-disabled
+    @extend %button-disabled
+  &:focus-within:not(:hover)
+    .dito-switch-button
+      box-shadow: $shadow-focus
+</style>

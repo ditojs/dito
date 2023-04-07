@@ -1,41 +1,10 @@
 <template lang="pug">
 .dito-code(
-  ref="code"
   :id="dataPath"
+  ref="code"
   :style="style"
 )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-code
-    @extend %input
-    position: relative
-    // For proper sizing of content along with :style="style" setting above,
-    // for proper line-height calculation.
-    padding: $input-padding
-    &.dito-width-fill
-      width: auto
-    .codeflask
-      background: none
-      // Ignore the parent padding defined above which is only needed to set
-      // the desired height with :style="style".
-      top: 0
-      left: 0
-    .codeflask__textarea,
-    .codeflask__pre
-      // Use same padding as .dito-code
-      padding: $input-padding
-    .codeflask__textarea,
-    .codeflask__code,
-    .codeflask__lines
-      font-family: $font-family-mono
-      font-size: var(--font-size)
-      line-height: var(--line-height)
-    .codeflask__lines
-      padding: $input-padding
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -128,3 +97,34 @@ export default TypeComponent.register('code', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-code
+  @extend %input
+  position: relative
+  // For proper sizing of content along with :style="style" setting above,
+  // for proper line-height calculation.
+  padding: $input-padding
+  &.dito-width-fill
+    width: auto
+  .codeflask
+    background: none
+    // Ignore the parent padding defined above which is only needed to set
+    // the desired height with :style="style".
+    top: 0
+    left: 0
+  .codeflask__textarea,
+  .codeflask__pre
+    // Use same padding as .dito-code
+    padding: $input-padding
+  .codeflask__textarea,
+  .codeflask__code,
+  .codeflask__lines
+    font-family: $font-family-mono
+    font-size: var(--font-size)
+    line-height: var(--line-height)
+  .codeflask__lines
+    padding: $input-padding
+</style>

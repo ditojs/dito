@@ -1,8 +1,12 @@
 import { toRaw } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import {
-  getItemDataPath, getParentItemDataPath, getParentItem, getItem,
-  getLastDataPathName, getLastDataPathIndex
+  getItemDataPath,
+  getParentItemDataPath,
+  getParentItem,
+  getItem,
+  getLastDataPathName,
+  getLastDataPathIndex
 } from './utils/data.js'
 
 const { hasOwnProperty } = Object.prototype
@@ -35,7 +39,9 @@ export default class DitoContext {
   constructor(component, context) {
     // Use the provided params object / function, or create a new one:
     context = context
-      ? (isFunction(context) ? context() : { ...context })
+      ? isFunction(context)
+        ? context()
+        : { ...context }
       : {}
     // If not explicitly set (to false), default to true so we don't fall back
     // to `component` for its value.
@@ -109,8 +115,10 @@ export default class DitoContext {
   // parent. If needed, we could expose this data here too, as we can do all
   // sorts of data processing with `rootData` and `dataPath`.
   get parentItem() {
-    const parentItem =
-      getParentItem(this.rootItem, this.dataPath, this.nested) || null
+    const parentItem = (
+      getParentItem(this.rootItem, this.dataPath, this.nested) ||
+      null
+    )
     return parentItem !== this.item ? parentItem : null
   }
 

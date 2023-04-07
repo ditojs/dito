@@ -1,9 +1,10 @@
 <template lang="pug">
 .dito-input
   input(
-    ref="input"
-    :type="type"
     :id="id"
+    ref="input"
+    v-model="currentValue"
+    :type="type"
     :name="name"
     :title="title"
     :disabled="disabled"
@@ -12,29 +13,14 @@
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     :aria-label="title"
-    v-model="currentValue"
     v-bind="$attrs"
   )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-input
-    display: inline-block
-    @extend %input
-    input
-      // Inherit all styling from .dito-input
-      all: inherit
-      display: inline-block
-      width: 100%
-      border: 0
-      margin: 0
-      padding: 0
-</style>
-
 <script>
 export default {
+  emits: ['update:modelValue'],
+
   props: {
     modelValue: { type: [String, Number], default: null },
     type: { type: String, default: 'text' },
@@ -65,7 +51,7 @@ export default {
     size() {
       // Determine size based on min & max settings, if they're provided.
       const { size, min, max } = this.$attrs
-      const getLength = value => value != null ? `${value}`.length : 0
+      const getLength = value => (value != null ? `${value}`.length : 0)
       return size || getLength(min) || getLength(max) || undefined
     }
   },
@@ -95,3 +81,19 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-input
+  display: inline-block
+  @extend %input
+  input
+    // Inherit all styling from .dito-input
+    all: inherit
+    display: inline-block
+    width: 100%
+    border: 0
+    margin: 0
+    padding: 0
+</style>

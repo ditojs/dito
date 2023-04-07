@@ -1,63 +1,32 @@
+<!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
 .dito-pagination
   .dito-pagination-total(
     v-if="showTotal"
   )
-    template(v-if="total > 0") {{ first }} – {{ last }}
-    template(v-else) 0
-    |  / {{ total }}
+    template(
+      v-if="total > 0"
+    ) {{ first }} – {{ last }}
+    template(
+      v-else
+    ) 0
+    | / {{ total }}
   .dito-buttons.dito-buttons-round
     button.dito-button(
       v-for="page in pageRange"
-      @click="onClickPage(page)"
       :class="getPageClass(page)"
       :disabled="page.disabled"
+      @click="onClickPage(page)"
     )
       span(
         v-if="page.text"
       ) {{ page.text }}
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-pagination
-    display: flex
-    .dito-pagination-total
-      +ellipsis
-      margin: 0 0.5em
-      line-height: $input-height
-    .dito-button
-      transition: all .3s ease, color 0s, background 0s, border 0s
-      font-variant-numeric: tabular-nums
-      padding: 0 0.5em
-      &-prev,
-      &-next
-        &::before
-          @extend %icon-arrow
-      &-prev::before
-        transform: scaleX(-1)
-      &-ellipsis-prev,
-      &-ellipsis-next
-        &::before
-          @extend %icon-ellipsis
-        &:hover::before
-          @extend %icon-chevrons
-        background: none
-        border: 0
-        padding: 0
-        margin: 0
-        color: $color-text
-        &:focus
-          color: $color-active
-        &:active
-          box-shadow: none
-      &-ellipsis-prev::before
-        transform: scaleX(-1)
-</style>
-
 <script>
 export default {
+  emits: ['update:page'],
+
   props: {
     total: { type: Number, default: 0 },
     page: { type: Number, default: 1 },
@@ -105,7 +74,6 @@ export default {
         this.currentPage = this.numPages
       }
       this.updatePageRange()
-      this.$emit('size-change', this.page, currentPageSize)
     },
 
     currentPage(to, from) {
@@ -145,7 +113,7 @@ export default {
     updatePageRange() {
       const { showPrev, showNext, total, currentPageSize, currentPage } = this
       const showLength = showPrev + showNext + 1
-      const numPages = this.numPages = Math.ceil(total / currentPageSize)
+      const numPages = (this.numPages = Math.ceil(total / currentPageSize))
 
       let start = 1
       let end = 1
@@ -203,3 +171,41 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-pagination
+  display: flex
+  .dito-pagination-total
+    +ellipsis
+    margin: 0 0.5em
+    line-height: $input-height
+  .dito-button
+    transition: all .3s ease, color 0s, background 0s, border 0s
+    font-variant-numeric: tabular-nums
+    padding: 0 0.5em
+    &-prev,
+    &-next
+      &::before
+        @extend %icon-arrow
+    &-prev::before
+      transform: scaleX(-1)
+    &-ellipsis-prev,
+    &-ellipsis-next
+      &::before
+        @extend %icon-ellipsis
+      &:hover::before
+        @extend %icon-chevrons
+      background: none
+      border: 0
+      padding: 0
+      margin: 0
+      color: $color-text
+      &:focus
+        color: $color-active
+      &:active
+        box-shadow: none
+    &-ellipsis-prev::before
+      transform: scaleX(-1)
+</style>

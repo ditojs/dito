@@ -20,7 +20,10 @@ export function handleSession(app, {
     async (ctx, next) => {
       // Get hold of `session` now, since it may not be available from the
       // `ctx` if the session is destroyed.
-      const { session, route: { transacted } } = ctx
+      const {
+        session,
+        route: { transacted }
+      } = ctx
       try {
         await next()
         if (autoCommit && transacted) {
@@ -39,36 +42,37 @@ export function handleSession(app, {
   ])
 }
 
-const createSessionStore = modelClass => class SessionStore {
-  constructor(ctx) {
-    this.ctx = ctx
-    this.modelClass = isString(modelClass)
-      ? ctx.app.models[modelClass]
-      : modelClass
-    if (!this.modelClass) {
-      throw new Error(`Unable to find model class: '${modelClass}'`)
+const createSessionStore = modelClass =>
+  class SessionStore {
+    constructor(ctx) {
+      this.ctx = ctx
+      this.modelClass = isString(modelClass)
+        ? ctx.app.models[modelClass]
+        : modelClass
+      if (!this.modelClass) {
+        throw new Error(`Unable to find model class: '${modelClass}'`)
+      }
+    }
+
+    query() {
+      return this.modelClass.query(this.ctx.transaction)
+    }
+
+    async get(id) {
+      const session = await this.query().findById(id)
+      return session?.value || {}
+    }
+
+    async set(id, value) {
+      await this.query()
+        .findById(id)
+        .upsert({
+          ...this.modelClass.getReference(id),
+          value
+        })
+    }
+
+    async destroy(key) {
+      await this.query().deleteById(key)
     }
   }
-
-  query() {
-    return this.modelClass.query(this.ctx.transaction)
-  }
-
-  async get(id) {
-    const session = await this.query().findById(id)
-    return session?.value || {}
-  }
-
-  async set(id, value) {
-    await this.query()
-      .findById(id)
-      .upsert({
-        ...this.modelClass.getReference(id),
-        value
-      })
-  }
-
-  async destroy(key) {
-    await this.query().deleteById(key)
-  }
-}

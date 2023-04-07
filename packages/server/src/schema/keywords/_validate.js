@@ -58,14 +58,16 @@ function getParams(ctx, data, parentSchema, dataCtx) {
 
 function getErrors(error, { validator, instancePath }) {
   const errors = isArray(error.errors)
-    // Ajv errors array:
-    ? error.errors
-    // Convert string error message to errors array:
-    : [{
-      keyword: 'validate',
-      message: error.message || error.toString(),
-      params: {}
-    }]
+    ? // Ajv errors array:
+      error.errors
+    : // Convert string error message to errors array:
+      [
+        {
+          keyword: 'validate',
+          message: error.message || error.toString(),
+          params: {}
+        }
+      ]
   // Return errors prefixed with the current instancePath:
   return validator.prefixInstancePaths(errors, instancePath)
 }

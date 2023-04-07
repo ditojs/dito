@@ -5,7 +5,7 @@
   template(
     v-for="{ schema, dataPath, tabComponent } in panels"
   )
-    dito-panel(
+    DitoPanel(
       v-if="shouldRender(schema)"
       :key="getPanelKey(dataPath, tabComponent)"
       :schema="schema"
@@ -18,19 +18,11 @@
     )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-panels
-    max-width: $content-sidebar-width
-    min-width: calc($content-sidebar-width / 2)
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
-export default DitoComponent.component('dito-panels', {
+export default DitoComponent.component('DitoPanels', {
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },
@@ -48,3 +40,11 @@ export default DitoComponent.component('dito-panels', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-panels
+  max-width: $content-sidebar-width
+  min-width: calc($content-sidebar-width / 2)
+</style>

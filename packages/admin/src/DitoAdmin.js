@@ -2,8 +2,13 @@ import { createApp, h as createElement } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import VueNotifications from '@kyvg/vue3-notification'
 import {
-  isString, isArray, asArray, isAbsoluteUrl,
-  merge, hyphenate, camelize,
+  isString,
+  isArray,
+  asArray,
+  isAbsoluteUrl,
+  merge,
+  hyphenate,
+  camelize,
   defaultFormats
 } from '@ditojs/utils'
 import * as components from './components/index.js'
@@ -57,9 +62,9 @@ export default class DitoAdmin {
     //     method: 'get'
     //   }
     // }
-    const users = api.users = getResource(api.users, {
+    const users = (api.users = getResource(api.users, {
       type: 'collection'
-    }) || {}
+    }) || {})
     users.login = getResource(users.login || 'login', {
       method: 'post',
       parent: users
@@ -127,7 +132,7 @@ export default class DitoAdmin {
       el = document.querySelector(el)
     }
 
-    const app = this.app = createApp({
+    const app = (this.app = createApp({
       components: {
         DitoRoot,
         VueNotifications,
@@ -162,13 +167,14 @@ export default class DitoAdmin {
         $tabComponent: () => null
       },
 
-      render: () => createElement(DitoRoot, {
-        ref: 'root',
-        class: dito.settings.rootClass,
-        unresolvedViews: views,
-        options
-      })
-    })
+      render: () =>
+        createElement(DitoRoot, {
+          ref: 'root',
+          class: dito.settings.rootClass,
+          unresolvedViews: views,
+          options
+        })
+    }))
 
     app.use(VueNotifications, {
       name: 'notify',
@@ -177,19 +183,23 @@ export default class DitoAdmin {
 
     // root.component('vue-modal', VueModal)
 
-    app.use(createRouter({
-      // Start with a catch-all route, to be replaced by the actual routes once
-      // the schemas are loaded, to prevent vue-router from complaining, see:
-      // `resolveViews()` in `DitoRoot` for the actual route setup.
-      routes: [{
-        name: 'catch-all',
-        path: '/:_(.*)',
-        components: {}
-      }],
-      history: createWebHistory(dito.base),
-      linkActiveClass: '',
-      linkExactActiveClass: ''
-    }))
+    app.use(
+      createRouter({
+        // Start with a catch-all route, to be replaced by the actual routes
+        // once the schemas are loaded, to prevent vue-router from complaining,
+        // see: `resolveViews()` in `DitoRoot` for the actual route setup.
+        routes: [
+          {
+            name: 'catch-all',
+            path: '/:_(.*)',
+            components: {}
+          }
+        ],
+        history: createWebHistory(dito.base),
+        linkActiveClass: '',
+        linkExactActiveClass: ''
+      })
+    )
 
     el.classList.add('dito-app')
     app.mount(el)
@@ -202,7 +212,11 @@ export default class DitoAdmin {
 
 class RequestError extends Error {
   constructor(response) {
-    super(`Request failed with status code: ${response.status} (${response.statusText})`)
+    super(
+      `Request failed with status code: ${response.status} (${
+        response.statusText
+      })`
+    )
     this.response = response
   }
 }
@@ -218,7 +232,9 @@ async function request(api, {
   data = null
 }) {
   if (params) {
-    deprecate(`request.params is deprecated. Use action.method and action.path instead.`)
+    deprecate(
+      `request.params is deprecated. Use action.method and action.path instead.`
+    )
   }
 
   const isApiUrl = api.isApiUrl(url)
@@ -230,9 +246,10 @@ async function request(api, {
       ...(isApiUrl && api.headers),
       ...headers
     },
-    credentials: isApiUrl && api.cors?.credentials
-      ? 'include'
-      : 'same-origin'
+    credentials:
+      isApiUrl && api.cors?.credentials
+        ? 'include'
+        : 'same-origin'
   })
 
   if (response.headers.get('Content-Type')?.includes('application/json')) {

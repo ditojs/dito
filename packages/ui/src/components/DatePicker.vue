@@ -1,45 +1,31 @@
-// Derived from ATUI, and further extended: https://aliqin.github.io/atui/
-
+<!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-trigger.dito-date-picker(
+Trigger.dito-date-picker(
   ref="trigger"
-  trigger="click"
   v-model:show="showPopup"
+  trigger="click"
   v-bind="{ transition, placement, disabled, target }"
 )
   template(#trigger)
-    input-field.dito-date-picker-input(
+    InputField.dito-date-picker-input(
       ref="input"
-      type="text"
       v-model="currentText"
+      type="text"
       readonly
       :class="{ 'dito-focus': showPopup }"
+      v-bind="{ placeholder, disabled }"
       @focus="inputFocused = true"
       @blur="inputFocused = false"
       @keydown="onKeyDown"
-      v-bind="{ placeholder, disabled }"
     )
   // icon(type="calendar" :color="iconColor")
   template(#popup)
-    calendar.dito-date-picker-popup(
+    Calendar.dito-date-picker-popup(
       ref="calendar"
       v-model="currentValue"
       v-bind="{ locale, disabledDate }"
     )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-date-picker
-    min-width: 10em
-    .dito-input
-      font-variant-numeric: tabular-nums
-      cursor: pointer
-      width: 100%
-  .dito-date-picker-popup
-    margin: $popup-margin
-</style>
 
 <script>
 import { format, defaultFormats } from '@ditojs/utils'
@@ -50,6 +36,7 @@ import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, Calendar, InputField },
+  emits: ['update:modelValue', 'update:show'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -79,11 +66,13 @@ export default {
     },
 
     currentText() {
-      return format(this.currentValue, {
-        locale: this.locale,
-        date: this.dateFormat,
-        time: false
-      }) || ''
+      return (
+        format(this.currentValue, {
+          locale: this.locale,
+          date: this.dateFormat,
+          time: false
+        }) || ''
+      )
     }
   },
 
@@ -116,8 +105,9 @@ export default {
       if (to ^ from) {
         this.$emit(to ? 'focus' : 'blur')
         if (!to && this.changed) {
+          // TODO: This seems to contradict the `currentValue()` watcher above.
+          //       Is this needed at all?
           this.changed = false
-          // TODO:
           this.$emit('update:modelValue', this.currentValue)
         }
       }
@@ -141,3 +131,16 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-date-picker
+  min-width: 10em
+  .dito-input
+    font-variant-numeric: tabular-nums
+    cursor: pointer
+    width: 100%
+.dito-date-picker-popup
+  margin: $popup-margin
+</style>

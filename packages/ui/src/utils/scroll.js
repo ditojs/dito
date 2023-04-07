@@ -1,7 +1,10 @@
 export function scrollTo(element, to, duration) {
-  const requestAnimationFrame = window.requestAnimationFrame || function() {
-    return setTimeout(arguments[0], 10)
-  }
+  const requestAnimationFrame = (
+    window.requestAnimationFrame ||
+    function () {
+      return setTimeout(arguments[0], 10)
+    }
+  )
   if (duration <= 0) {
     element.scrollTop = to
   } else {

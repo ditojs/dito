@@ -148,11 +148,12 @@ describe('format()', () => {
         number: {
           style: 'currency',
           currency: 'GBP',
-          format: (value, type) => type === 'group'
-            ? `’`
-            : type === 'decimal'
-              ? ','
-              : undefined
+          format: (value, type) =>
+            type === 'group'
+              ? `’`
+              : type === 'decimal'
+                ? ','
+                : undefined
         }
       })
     ).toBe(`£123’456’789,00`)
@@ -166,11 +167,10 @@ describe('format()', () => {
           day: 'numeric',
           month: 'numeric',
           year: 'numeric',
-          format: (value, type, options) => (
+          format: (value, type, options) =>
             type === 'literal' && options.month === 'numeric'
               ? value.replace(/\//, '.').replace(/,/, '')
               : undefined
-          )
         },
         time: {
           hour: '2-digit',

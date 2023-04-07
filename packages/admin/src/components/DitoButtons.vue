@@ -5,7 +5,7 @@
   template(
     v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
   )
-    dito-container(
+    DitoContainer(
       v-if="shouldRender(buttonSchema)"
       :key="buttonDataPath"
       :schema="buttonSchema"
@@ -24,14 +24,8 @@
     .dito-container(
       v-if="hasVNodeContent(vnode)"
     )
-      dito-vnode(:vnode="vnode")
+      DitoVnode(:vnode="vnode")
 </template>
-
-<style lang="sass">
-.dito-buttons
-  > .dito-container
-    padding: 0
-</style>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
@@ -39,7 +33,7 @@ import { appendDataPath } from '../utils/data.js'
 import { hasSlotContent, hasVNodeContent } from '../utils/vue.js'
 
 // @vue/component
-export default DitoComponent.component('dito-buttons', {
+export default DitoComponent.component('DitoButtons', {
   provide: {
     $tabComponent: () => null
   },
@@ -59,9 +53,9 @@ export default DitoComponent.component('dito-buttons', {
       const { dataPath, buttons } = this
       return buttons
         ? Object.values(buttons).reduce((schemas, button) => {
-          schemas[appendDataPath(dataPath, button.name)] = button
-          return schemas
-        }, {})
+            schemas[appendDataPath(dataPath, button.name)] = button
+            return schemas
+          }, {})
         : null
     }
   },
@@ -72,3 +66,9 @@ export default DitoComponent.component('dito-buttons', {
   }
 })
 </script>
+
+<style lang="sass">
+.dito-buttons
+  > .dito-container
+    padding: 0
+</style>

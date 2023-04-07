@@ -28,7 +28,7 @@ import { appendDataPath } from '../utils/data.js'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-table-cell', {
+export default DitoComponent.component('DitoTableCell', {
   props: {
     cell: { type: Object, required: true },
     schema: { type: Object, required: true },
@@ -46,14 +46,14 @@ export default DitoComponent.component('dito-table-cell', {
       const value = item[name]
       return render
         ? render.call(
-          this,
-          new DitoContext(this, {
-            name,
-            value,
-            data: item,
-            dataPath: appendDataPath(this.dataPath, name)
-          })
-        )
+            this,
+            new DitoContext(this, {
+              name,
+              value,
+              data: item,
+              dataPath: appendDataPath(this.dataPath, name)
+            })
+          )
         : escapeHtml(value)
     }
   }

@@ -8,6 +8,11 @@
       "@ditojs/*": ["../*/src/index.js"]
     }
   },
+  "vueCompilerOptions": {
+    "plugins": [
+      "@volar/vue-language-plugin-pug"
+    ]
+  },
   "include": [
     "./src/**/*"
   ],

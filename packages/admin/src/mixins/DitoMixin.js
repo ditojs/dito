@@ -1,6 +1,14 @@
 import {
-  isObject, isArray, isString, isFunction, asArray, equals,
-  getValueAtDataPath, labelize, hyphenate, format
+  isObject,
+  isArray,
+  isString,
+  isFunction,
+  asArray,
+  equals,
+  getValueAtDataPath,
+  labelize,
+  hyphenate,
+  format
 } from '@ditojs/utils'
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
@@ -32,12 +40,12 @@ export default {
   provide() {
     return this.providesData
       ? {
-        $parentComponent: () => this,
-        $dataComponent: () => this
-      }
+          $parentComponent: () => this,
+          $dataComponent: () => this
+        }
       : {
-        $parentComponent: () => this
-      }
+          $parentComponent: () => this
+        }
   },
 
   data() {
@@ -161,7 +169,9 @@ export default {
   beforeCreate() {
     const uid = nextUid++
     Object.defineProperty(this, '$uid', {
-      get() { return uid }
+      get() {
+        return uid
+      }
     })
   },
 
@@ -255,11 +265,14 @@ export default {
     },
 
     shouldRender(schema = null) {
-      return !!schema && this.getSchemaValue('if', {
-        type: Boolean,
-        default: true,
-        schema
-      })
+      return (
+        !!schema &&
+        this.getSchemaValue('if', {
+          type: Boolean,
+          default: true,
+          schema
+        })
+      )
     },
 
     getResourcePath(resource) {
@@ -310,20 +323,29 @@ export default {
       // - 'global': cache globally, for the entire admin session
       // - 'local': cache locally within the closest route component that is
       //    associated with a resource and loads its own data.
-      const cacheParent = cache && {
-        global: this.appState,
-        local: this.dataComponent
-      }[cache]
+      const cacheParent = (
+        cache &&
+        {
+          global: this.appState,
+          local: this.dataComponent
+        }[cache]
+      )
       const loadCache = cacheParent?.loadCache
       // Build a cache key from the config:
-      const cacheKey = loadCache && `${
-        options.method || 'get'} ${
-        options.url} ${
-        // TODO: `request.params` was deprecated in favour of `query` on
-        // 2022-11-01, remove once not in use anywhere any more.
-        JSON.stringify(options.query || options.params || '')} ${
-        JSON.stringify(options.data || '')
-      }`
+      const cacheKey = (
+        loadCache &&
+        `${
+          options.method || 'get'
+        } ${
+          options.url
+        } ${
+          // TODO: `request.params` was deprecated in favour of `query` on
+          // 2022-11-01, remove once not in use anywhere any more.
+          JSON.stringify(options.query || options.params || '')
+        } ${
+          JSON.stringify(options.data || '')
+        }`
+      )
       if (loadCache && (cacheKey in loadCache)) {
         return loadCache[cacheKey]
       }

@@ -1,9 +1,9 @@
 <template lang="pug">
-input-field.dito-text(
-  ref="element"
+InputField.dito-text(
   :id="dataPath"
-  :type="inputType"
+  ref="element"
   v-model="inputValue"
+  :type="inputType"
   v-bind="attributes"
 )
 </template>
@@ -14,54 +14,58 @@ import { InputField } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 
-export default TypeComponent.register([
-  'text', 'email', 'url', 'hostname', 'domain', 'tel', 'password', 'creditcard'
-],
-// @vue/component
-{
-  components: { InputField },
-  nativeField: true,
-  textField: true,
-  ignoreMissingValue: schema => schema.type === 'password',
+export default TypeComponent.register(
+  [
+    'text', 'email', 'url', 'hostname', 'domain', 'tel', 'password',
+    'creditcard'
+  ],
+  // @vue/component
+  {
+    components: { InputField },
+    nativeField: true,
+    textField: true,
+    ignoreMissingValue: schema => schema.type === 'password',
 
-  computed: {
-    inputType() {
-      return {
-        creditcard: 'text',
-        hostname: 'text',
-        domain: 'text'
-      }[this.type] || this.type
-    },
-
-    inputValue: {
-      get() {
+    computed: {
+      inputType() {
         return (
-          this.type === 'password' &&
-          this.value === undefined &&
-          !this.focused
+          {
+            creditcard: 'text',
+            hostname: 'text',
+            domain: 'text'
+          }[this.type] ||
+          this.type
         )
-          ? maskedPassword
-          : this.value
       },
 
-      set(value) {
-        this.value = value
+      inputValue: {
+        get() {
+          return this.type === 'password' &&
+            this.value === undefined &&
+            !this.focused
+            ? maskedPassword
+            : this.value
+        },
+
+        set(value) {
+          this.value = value
+        }
+      }
+    },
+
+    methods: {
+      getValidations() {
+        const rule = {
+          email: 'email',
+          url: 'url',
+          hostname: 'hostname',
+          domain: 'domain',
+          password: 'password',
+          creditcard: 'creditcard'
+        }[this.type]
+        return rule ? { [rule]: true } : {}
       }
     }
-  },
-
-  methods: {
-    getValidations() {
-      const rule = {
-        email: 'email',
-        url: 'url',
-        hostname: 'hostname',
-        domain: 'domain',
-        password: 'password',
-        creditcard: 'creditcard'
-      }[this.type]
-      return rule ? { [rule]: true } : {}
-    }
   }
-})
+)
 </script>

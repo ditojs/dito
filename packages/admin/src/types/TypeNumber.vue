@@ -1,9 +1,9 @@
 <template lang="pug">
-input-field.dito-number(
-  ref="element"
+InputField.dito-number(
   :id="dataPath"
-  type="number"
+  ref="element"
   v-model="inputValue"
+  type="number"
   v-bind="attributes"
   :min="min"
   :max="max"
@@ -11,34 +11,36 @@ input-field.dito-number(
 )
 </template>
 
-<style lang="sass">
-  // Only show spin buttons if the number component defines a step size.
-  input[type="number"]:not([step])
-    &::-webkit-inner-spin-button,
-    &::-webkit-outer-spin-button
-      -webkit-appearance: none
-      margin: 0
-</style>
-
 <script>
 import TypeComponent from '../TypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { InputField } from '@ditojs/ui/src'
 
-export default TypeComponent.register([
-  'number', 'integer'
-],
-// @vue/component
-{
-  components: { InputField },
-  mixins: [NumberMixin],
-  nativeField: true,
-  textField: true,
+export default TypeComponent.register(
+  [
+    'number', 'integer'
+  ],
+  // @vue/component
+  {
+    mixins: [NumberMixin],
+    components: { InputField },
+    nativeField: true,
+    textField: true,
 
-  computed: {
-    isInteger() {
-      return this.type === 'integer'
+    computed: {
+      isInteger() {
+        return this.type === 'integer'
+      }
     }
   }
-})
+)
 </script>
+
+<style lang="sass">
+// Only show spin buttons if the number component defines a step size.
+input[type="number"]:not([step])
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button
+    -webkit-appearance: none
+    margin: 0
+</style>

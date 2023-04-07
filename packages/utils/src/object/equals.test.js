@@ -4,27 +4,52 @@ describe('equals()', () => {
   const symbol1 = Symbol('a')
   const symbol2 = Symbol('b')
   describe.each([
-    [1, 1, true], [1, Object(1), true], [1, '1', false], [1, 2, false],
-    [-0, -0, true], [0, 0, true], [0, Object(0), true],
-    [Object(0), Object(0), true], [-0, 0, true], [0, '0', false],
+    [1, 1, true],
+    [1, Object(1), true],
+    [1, '1', false],
+    [1, 2, false],
+    [-0, -0, true],
+    [0, 0, true],
+    [0, Object(0), true],
+    [Object(0), Object(0), true],
+    [-0, 0, true],
+    [0, '0', false],
     [0, null, false],
 
-    [NaN, NaN, true], [NaN, Object(NaN), true],
-    [Object(NaN), Object(NaN), true], [NaN, 'a', false], [NaN, Infinity, false],
+    [NaN, NaN, true],
+    [NaN, Object(NaN), true],
+    [Object(NaN), Object(NaN), true],
+    [NaN, 'a', false],
+    [NaN, Infinity, false],
 
-    ['a', 'a', true], ['a', Object('a'), true],
-    [Object('a'), Object('a'), true], ['a', 'b', false], ['a', ['a'], false],
+    ['a', 'a', true],
+    ['a', Object('a'), true],
+    [Object('a'), Object('a'), true],
+    ['a', 'b', false],
+    ['a', ['a'], false],
 
-    [true, true, true], [true, Object(true), true],
-    [Object(true), Object(true), true], [true, 1, false], [true, 'a', false],
-    [false, false, true], [false, Object(false), true],
-    [Object(false), Object(false), true], [false, 0, false], [false, '', false],
+    [true, true, true],
+    [true, Object(true), true],
+    [Object(true), Object(true), true],
+    [true, 1, false],
+    [true, 'a', false],
+    [false, false, true],
+    [false, Object(false), true],
+    [Object(false), Object(false), true],
+    [false, 0, false],
+    [false, '', false],
 
-    [symbol1, symbol1, true], [symbol1, Object(symbol1), true],
-    [Object(symbol1), Object(symbol1), true], [symbol1, symbol2, false],
+    [symbol1, symbol1, true],
+    [symbol1, Object(symbol1), true],
+    [Object(symbol1), Object(symbol1), true],
+    [symbol1, symbol2, false],
 
-    [null, null, true], [null, undefined, false], [null, {}, false],
-    [null, '', false], [undefined, undefined, true], [undefined, null, false],
+    [null, null, true],
+    [null, undefined, false],
+    [null, {}, false],
+    [null, '', false],
+    [undefined, undefined, true],
+    [undefined, null, false],
     [undefined, '', false]
   ])(
     'equals(%o, %o) (should compare primitives)',
@@ -91,13 +116,27 @@ describe('equals()', () => {
     let array1 = [1, 2, 3]
     let array2 = [1, 2, 3]
 
-    array1.every = array1.filter = array1.forEach =
-    array1.indexOf = array1.lastIndexOf = array1.map =
-    array1.some = array1.reduce = array1.reduceRight = null
+    array1.every =
+      array1.filter =
+      array1.forEach =
+      array1.indexOf =
+      array1.lastIndexOf =
+      array1.map =
+      array1.some =
+      array1.reduce =
+      array1.reduceRight =
+        null
 
-    array2.concat = array2.join = array2.pop =
-    array2.reverse = array2.shift = array2.slice =
-    array2.sort = array2.splice = array2.unshift = null
+    array2.concat =
+      array2.join =
+      array2.pop =
+      array2.reverse =
+      array2.shift =
+      array2.slice =
+      array2.sort =
+      array2.splice =
+      array2.unshift =
+        null
 
     expect(equals(array1, array2)).toBe(true)
 
@@ -217,8 +256,12 @@ describe('equals()', () => {
   })
 
   it('should compare functions', () => {
-    function a() { return 1 + 2 }
-    function b() { return 1 + 2 }
+    function a() {
+      return 1 + 2
+    }
+    function b() {
+      return 1 + 2
+    }
 
     expect(equals(a, a)).toBe(true)
     expect(equals(a, b)).toBe(false)

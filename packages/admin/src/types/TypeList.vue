@@ -8,7 +8,7 @@
   .dito-navigation(
     v-if="scopes || hasPagination"
   )
-    dito-scopes(
+    DitoScopes(
       v-if="scopes"
       :query="query"
       :scopes="scopes"
@@ -18,7 +18,7 @@
     .dito-spacer(
       v-else-if="hasPagination"
     )
-    dito-pagination(
+    DitoPagination(
       v-if="hasPagination"
       :query="query"
       :limit="paginate"
@@ -32,28 +32,30 @@
       'dito-table-even-count': hasEvenCount
     }`
   )
-    dito-table-head(
+    DitoTableHead(
       v-if="columns"
       :query="query"
       :columns="columns"
       :hasEditButtons="hasEditButtons"
     )
-    use-sortable(
+    UseSortable(
       tag="tbody"
       :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
-      @update:modelValue="value => listData = value"
       :options="getSortableOptions(draggable)"
+      @update:modelValue="value => (listData = value)"
     )
       tr(
-        v-for="item, index in listData"
-        :key="getItemUid(schema, item)"
+        v-for="(item, index) in listData"
         :id="getDataPath(index)"
+        :key="getItemUid(schema, item)"
       )
-        template(v-if="columns")
+        template(
+          v-if="columns"
+        )
           template(
             v-for="column in columns"
           )
-            dito-table-cell(
+            DitoTableCell(
               v-if="shouldRender(column)"
               :key="column.name"
               :class="getCellClass(column)"
@@ -70,7 +72,7 @@
           v-else
         )
           td
-            dito-schema-inlined(
+            DitoSchemaInlined(
               v-if="isInlined"
               :label="getItemLabel(schema, item, { index, asObject: true })"
               :schema="getItemFormSchema(schema, item, context)"
@@ -105,7 +107,7 @@
         td.dito-cell-edit-buttons(
           v-if="hasCellEditButtons"
         )
-          dito-edit-buttons(
+          DitoEditButtons(
             :deletable="deletable"
             :draggable="draggable"
             :editable="editable"
@@ -122,10 +124,8 @@
       v-if="hasListButtons && !single"
     )
       tr
-        td.dito-cell-edit-buttons(
-          :colspan="numColumns"
-        )
-          dito-edit-buttons(
+        td.dito-cell-edit-buttons(:colspan="numColumns")
+          DitoEditButtons(
             :creatable="creatable"
             :createPath="path"
             :buttons="buttonSchemas"
@@ -136,7 +136,7 @@
             :store="store"
           )
   //- Render create buttons outside table when in a single component view:
-  dito-edit-buttons.dito-buttons-main.dito-buttons-large(
+  DitoEditButtons.dito-buttons-main.dito-buttons-large(
     v-if="hasListButtons && single"
     :creatable="creatable"
     :createPath="path"
@@ -149,38 +149,16 @@
   )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-list
-    position: relative
-    .dito-navigation
-      display: flex
-      justify-content: space-between
-      padding-bottom: $content-padding-half
-      +user-select(none)
-      &:empty
-        display: none
-      .dito-scopes,
-      .dito-pagination
-        display: flex
-        flex: 0 1 auto
-        min-width: 0
-    &.dito-single
-      // So that list buttons can be sticky to the bottom:
-      display: grid
-      grid-template-rows: min-content
-      height: 100%
-</style>
-
 <script>
 import TypeComponent from '../TypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
 import {
-  getNamedSchemas, getViewEditPath,
-  resolveSchemaComponent, resolveSchemaComponents
+  getNamedSchemas,
+  getViewEditPath,
+  resolveSchemaComponent,
+  resolveSchemaComponents
 } from '../utils/schema.js'
 import { getFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
@@ -203,15 +181,17 @@ export default TypeComponent.register('list', {
       // At the time of the creation of the panel schema, the schemaComponent is
       // not filled yet, so we can't get the target component (dataPath) right
       // away. Use a proxy and a getter instead, to get around this:
-      const getListComponent = () => schemaComponent.getComponentByDataPath(
-        dataPath,
-        component => component.type === 'list'
-      )
+      const getListComponent = () =>
+        schemaComponent.getComponentByDataPath(
+          dataPath,
+          component => component.type === 'list'
+        )
 
       return getFiltersPanel(
         getNamedSchemas(filters),
         dataPath,
-        { // Create a simple proxy to get / set the query, see getFiltersPanel()
+        {
+          // Create a simple proxy to get / set the query, see getFiltersPanel()
           get query() {
             return getListComponent()?.query
           },
@@ -237,18 +217,17 @@ export default TypeComponent.register('list', {
     },
 
     hasListButtons() {
-      return !!(
-        this.buttonSchemas ||
-        this.creatable
-      )
+      return !!(this.buttonSchemas || this.creatable)
     },
 
     hasEditButtons() {
       const { listData } = this
-      return listData.length > 0 && (
-        this.editable ||
-        this.deletable ||
-        this.draggable
+      return (
+        listData.length > 0 && (
+          this.editable ||
+          this.deletable ||
+          this.draggable
+        )
       )
     },
 
@@ -306,19 +285,53 @@ export default TypeComponent.register('list', {
   },
 
   async processSchema(
-    api, schema, name, routes, level,
-    nested = false, flatten = false,
+    api,
+    schema,
+    name,
+    routes,
+    level,
+    nested = false,
+    flatten = false,
     process = null
   ) {
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
       SourceMixin.processSchema(
-        api, schema, name, routes, level,
-        nested, flatten,
+        api,
+        schema,
+        name,
+        routes,
+        level,
+        nested,
+        flatten,
         process
       )
     ])
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-list
+  position: relative
+  .dito-navigation
+    display: flex
+    justify-content: space-between
+    padding-bottom: $content-padding-half
+    +user-select(none)
+    &:empty
+      display: none
+    .dito-scopes,
+    .dito-pagination
+      display: flex
+      flex: 0 1 auto
+      min-width: 0
+  &.dito-single
+    // So that list buttons can be sticky to the bottom:
+    display: grid
+    grid-template-rows: min-content
+    height: 100%
+</style>

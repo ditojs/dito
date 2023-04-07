@@ -2,7 +2,14 @@ import { isString, isObject, asArray, clone } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(
-    controller, actions, handler, type, name, _method, _path, _authorize
+    controller,
+    actions,
+    handler,
+    type,
+    name,
+    _method,
+    _path,
+    _authorize
   ) {
     const {
       core = false,
@@ -33,10 +40,12 @@ export default class ControllerAction {
     this.authorize = authorize || _authorize
     this.transacted = !!(
       transacted ||
-      controller.transacted || (
-        // Core graph and assets operations are always transacted, unless the
-        // method is 'get':
-        core && method !== 'get' && (
+      controller.transacted ||
+      // Core graph and assets operations are always transacted, unless the
+      // method is 'get':
+      (
+        core &&
+        method !== 'get' && (
           controller.graph ||
           controller.assets
         )
@@ -176,7 +185,7 @@ export default class ControllerAction {
       }
     }
 
-    const getData = () => unwrapRoot ? params[dataName] : params
+    const getData = () => (unwrapRoot ? params[dataName] : params)
     try {
       await this.parameters.validate(params)
       return getData()
@@ -208,7 +217,7 @@ export default class ControllerAction {
 
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => returnsName ? data : result
+      const getResult = () => (returnsName ? data : result)
       try {
         await this.returns.validate(data)
         return getResult()
@@ -279,14 +288,17 @@ export default class ControllerAction {
             } else {
               // A simple version of named key/value pairs, values can be
               // strings or numbers.
-              value = Object.fromEntries(value.split(/\s*,\s*/g).map(entry => {
-                let [key, val] = entry.split(/\s*:\s*/)
-                try {
-                  // Try parsing basic types, but fall back to unquoted string.
-                  val = JSON.parse(val)
-                } catch {}
-                return [key, val]
-              }))
+              value = Object.fromEntries(
+                value.split(/\s*,\s*/g).map(entry => {
+                  let [key, val] = entry.split(/\s*:\s*/)
+                  try {
+                    // Try parsing basic types, but fall back to unquoted
+                    // string.
+                    val = JSON.parse(val)
+                  } catch {}
+                  return [key, val]
+                })
+              )
             }
           } else {
             value = JSON.parse(value)

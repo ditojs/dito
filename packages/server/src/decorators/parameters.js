@@ -16,7 +16,9 @@ export function parameters(parameters, options) {
     }
   }
   if (!isArray(parameters) && !isObject(parameters)) {
-    throw new Error(`@parameters() need to be defined using array or object definitions`)
+    throw new Error(
+      `@parameters() need to be defined using array or object definitions`
+    )
   }
 
   return createDecorator(value => {

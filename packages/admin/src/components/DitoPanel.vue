@@ -1,12 +1,12 @@
 <template lang="pug">
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
-  :is="panelTag"
   v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
+  :is="panelTag"
   @submit.prevent
 )
   label.dito-panel-title {{ getLabel(schema) }}
-  dito-schema.dito-panel-schema(
+  DitoSchema.dito-panel-schema(
     :schema="panelSchema"
     :dataPath="panelDataPath"
     :data="panelData"
@@ -16,7 +16,7 @@ component.dito-panel(
     :hasOwnData="hasOwnData"
   )
     template(#buttons)
-      dito-buttons(
+      DitoButtons(
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
@@ -26,44 +26,6 @@ component.dito-panel(
       )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-panel
-    margin-bottom: $content-padding
-    .dito-panel-title
-      display: block
-      box-sizing: border-box
-      padding: $input-padding
-      background: $button-color
-      border: $border-style
-      border-top-left-radius: $border-radius
-      border-top-right-radius: $border-radius
-    .dito-panel-schema
-      font-size: $font-size-small
-      background: $content-color-background
-      border: $border-style
-      border-top: 0
-      border-bottom-left-radius: $border-radius
-      border-bottom-right-radius: $border-radius
-      > .dito-schema-content
-        padding: $form-spacing-half $form-spacing
-        > .dito-buttons
-          --button-margin: #{$form-spacing}
-          padding: $form-spacing-half 0
-      .dito-object
-        border: 0
-        padding: 0
-      .dito-label
-        margin: 0
-        label
-          font-weight: normal
-      .dito-pane
-        margin: 0 (-$form-spacing-half)
-      .dito-container
-        padding: $form-spacing-half
-</style>
-
 <script>
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
@@ -72,7 +34,7 @@ import { getButtonSchemas } from '../utils/schema.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default DitoComponent.component('dito-panel', {
+export default DitoComponent.component('DitoPanel', {
   mixins: [ValidatorMixin],
 
   provide() {
@@ -177,3 +139,41 @@ export default DitoComponent.component('dito-panel', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-panel
+  margin-bottom: $content-padding
+  .dito-panel-title
+    display: block
+    box-sizing: border-box
+    padding: $input-padding
+    background: $button-color
+    border: $border-style
+    border-top-left-radius: $border-radius
+    border-top-right-radius: $border-radius
+  .dito-panel-schema
+    font-size: $font-size-small
+    background: $content-color-background
+    border: $border-style
+    border-top: 0
+    border-bottom-left-radius: $border-radius
+    border-bottom-right-radius: $border-radius
+    > .dito-schema-content
+      padding: $form-spacing-half $form-spacing
+      > .dito-buttons
+        --button-margin: #{$form-spacing}
+        padding: $form-spacing-half 0
+    .dito-object
+      border: 0
+      padding: 0
+    .dito-label
+      margin: 0
+      label
+        font-weight: normal
+    .dito-pane
+      margin: 0 (-$form-spacing-half)
+    .dito-container
+      padding: $form-spacing-half
+</style>

@@ -4,14 +4,27 @@ import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 import { getMemberResource } from '../utils/resource.js'
 import {
-  processRouteSchema, processForms, getNamedSchemas, getButtonSchemas,
-  hasFormSchema, getFormSchemas, getViewSchema,
-  hasLabels, isCompact, isInlined,
-  isObjectSource, isListSource
+  processRouteSchema,
+  processForms,
+  getNamedSchemas,
+  getButtonSchemas,
+  hasFormSchema,
+  getFormSchemas,
+  getViewSchema,
+  hasLabels,
+  isCompact,
+  isInlined,
+  isObjectSource,
+  isListSource
 } from '../utils/schema.js'
 import {
-  isObject, isString, isArray, isNumber, equals,
-  parseDataPath, normalizeDataPath
+  isObject,
+  isString,
+  isArray,
+  isNumber,
+  equals,
+  parseDataPath,
+  normalizeDataPath
 } from '@ditojs/utils'
 
 // @vue/component
@@ -85,9 +98,13 @@ export default {
           if (this.unwrappingPrimitives) {
             // We're done unwrapping once `listData` is reevaluated, so set
             // this to `false` again. See `wrappedPrimitives` watcher above.
+            // TODO: Fix side-effects
+            // eslint-disable-next-line
             this.unwrappingPrimitives = false
           } else {
             // Convert data to a list of wrapped primitives, and return it.
+            // TODO: Fix side-effects
+            // eslint-disable-next-line
             this.wrappedPrimitives = data.map(value => ({
               [wrapPrimitives]: value
             }))
@@ -102,7 +119,9 @@ export default {
           this.wrappedPrimitives = data
         } else {
           this.value = this.isObjectSource
-            ? (data && data.length > 0 ? data[0] : null)
+            ? data && data.length > 0
+              ? data[0]
+              : null
             : data
         }
       }
@@ -178,8 +197,8 @@ export default {
     },
 
     defaultScope() {
+      let first = null
       if (this.scopes) {
-        let first = null
         for (const scope of Object.values(this.scopes)) {
           if (scope.defaultScope) {
             return scope
@@ -188,8 +207,8 @@ export default {
             first = scope
           }
         }
-        return first
       }
+      return first
     },
 
     defaultOrder() {
@@ -202,6 +221,7 @@ export default {
           }
         }
       }
+      return null
     },
 
     nestedMeta() {
@@ -408,22 +428,29 @@ export default {
     },
 
     deleteItem(item, index) {
-      const label = item && this.getItemLabel(this.schema, item, {
-        index,
-        extended: true
-      })
+      const label = (
+        item &&
+        this.getItemLabel(this.schema, item, {
+          index,
+          extended: true
+        })
+      )
 
-      const notify = () => this.notify({
-        type: this.isTransient ? 'info' : 'success',
-        title: 'Successfully Removed',
-        text: [
-          `${label} was ${this.verbs.deleted}.`,
-          this.transientNote
-        ]
-      })
+      const notify = () =>
+        this.notify({
+          type: this.isTransient ? 'info' : 'success',
+          title: 'Successfully Removed',
+          text: [
+            `${label} was ${this.verbs.deleted}.`,
+            this.transientNote
+          ]
+        })
 
-      if (item && window.confirm(
-        `Do you really want to ${this.verbs.delete} ${label}?`)
+      if (
+        item &&
+        window.confirm(
+          `Do you really want to ${this.verbs.delete} ${label}?`
+        )
       ) {
         if (this.isTransient) {
           this.removeItem(item)
@@ -505,11 +532,12 @@ export default {
           const { matched } = this.$router.match(path)
           if (matched.length) {
             if (this.$route.path === path) {
-            // We're already there, so just call `onComplete()`:
+              // We're already there, so just call `onComplete()`:
               callOnComplete()
             } else {
-            // Navigate to the component's path, then call `onComplete()`_:
-              this.$router.push({ path })
+              // Navigate to the component's path, then call `onComplete()`_:
+              this.$router
+                .push({ path })
                 .catch(reject)
                 // Wait for the last route component to be mounted in the next
                 // tick before calling `onComplete()`
@@ -527,8 +555,13 @@ export default {
   }, // end of `methods`
 
   async processSchema(
-    api, schema, name, routes, level,
-    nested = false, flatten = false,
+    api,
+    schema,
+    name,
+    routes,
+    level,
+    nested = false,
+    flatten = false,
     process = null
   ) {
     processRouteSchema(api, schema, name)
@@ -560,11 +593,12 @@ export default {
     }
     // Inlined forms don't need to actually add routes.
     if (hasFormSchema(schema) && !inlined) {
-      const getPathWithParam = (path, param) => param
-        ? path
-          ? `${path}/:${param}`
-          : `:${param}`
-        : path
+      const getPathWithParam = (path, param) =>
+        param
+          ? path
+            ? `${path}/:${param}`
+            : `:${param}`
+          : path
 
       // Lists in single-component-views (level === 0) use their view's path,
       // while all others need their path prefixed with the parent's path:

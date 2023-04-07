@@ -22,10 +22,12 @@ describe('convertSchema()', () => {
         type: 'array'
       }
     }
-    expect(convertSchema({
-      type: 'object',
-      properties
-    })).toEqual({
+    expect(
+      convertSchema({
+        type: 'object',
+        properties
+      })
+    ).toEqual({
       type: 'object',
       properties,
       additionalProperties: false
@@ -59,10 +61,12 @@ describe('convertSchema()', () => {
         default: null
       }
     }
-    expect(convertSchema({
-      type: 'object',
-      properties
-    })).toEqual({
+    expect(
+      convertSchema({
+        type: 'object',
+        properties
+      })
+    ).toEqual({
       type: 'object',
       properties,
       additionalProperties: false
@@ -70,14 +74,16 @@ describe('convertSchema()', () => {
   })
 
   it(`expands 'text' types to 'string' JSON schema types`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myText: {
-          type: 'text'
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myText: {
+            type: 'text'
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myText: {
@@ -89,19 +95,21 @@ describe('convertSchema()', () => {
   })
 
   it('adds `required` arrays and formats for required properties', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myString: {
-          type: 'string',
-          required: true
-        },
-        myNumber: {
-          type: 'number',
-          required: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myString: {
+            type: 'string',
+            required: true
+          },
+          myNumber: {
+            type: 'number',
+            required: true
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myString: {
@@ -119,14 +127,16 @@ describe('convertSchema()', () => {
   })
 
   it('preserves JSON schema-style `required` arrays', () => {
-    expect(convertSchema({
-      type: 'object',
-      required: ['myString', 'myNumber'],
-      properties: {
-        myString: { type: 'string' },
-        myNumber: { type: 'number' }
-      }
-    })).toEqual({
+    expect(
+      convertSchema({
+        type: 'object',
+        required: ['myString', 'myNumber'],
+        properties: {
+          myString: { type: 'string' },
+          myNumber: { type: 'number' }
+        }
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myString: { type: 'string' },
@@ -138,15 +148,17 @@ describe('convertSchema()', () => {
   })
 
   it(`expands 'object' schemas with properties to JSON schemas allowing no additional properties`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myText: {
-          type: 'object',
-          properties: {}
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myText: {
+            type: 'object',
+            properties: {}
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myText: {
@@ -160,16 +172,18 @@ describe('convertSchema()', () => {
   })
 
   it('preserves pre-existing settings for no additional properties', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myText: {
-          type: 'object',
-          additionalProperties: true,
-          properties: {}
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myText: {
+            type: 'object',
+            additionalProperties: true,
+            properties: {}
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myText: {
@@ -183,20 +197,22 @@ describe('convertSchema()', () => {
   })
 
   it('expands nested object schemas with required properties', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myText: {
-          type: 'object',
-          properties: {
-            myProperty: {
-              type: 'text',
-              required: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myText: {
+            type: 'object',
+            properties: {
+              myProperty: {
+                type: 'text',
+                required: true
+              }
             }
           }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myText: {
@@ -216,19 +232,21 @@ describe('convertSchema()', () => {
   })
 
   it(`expands 'object' schemas with patternProperties`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myText: {
-          type: 'object',
-          patternProperties: {
-            '^.*$': {
-              type: 'text'
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myText: {
+            type: 'object',
+            patternProperties: {
+              '^.*$': {
+                type: 'text'
+              }
             }
           }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myText: {
@@ -246,20 +264,22 @@ describe('convertSchema()', () => {
   })
 
   it('expands datetime types to their JSON schema representation', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myDate: {
-          type: 'date'
-        },
-        myDateTime: {
-          type: 'datetime'
-        },
-        myTimeStamp: {
-          type: 'timestamp'
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myDate: {
+            type: 'date'
+          },
+          myDateTime: {
+            type: 'datetime'
+          },
+          myTimeStamp: {
+            type: 'timestamp'
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myDate: {
@@ -280,14 +300,16 @@ describe('convertSchema()', () => {
   })
 
   it('expands unrecognized types to `$ref` references', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myModel: {
-          type: 'MyModel'
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myModel: {
+            type: 'MyModel'
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myModel: {
@@ -299,16 +321,21 @@ describe('convertSchema()', () => {
   })
 
   it(`expands unrecognized types to \`instanceof\` keywords when the \`useInstanceOf\` option is provided`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myModel: {
-          type: 'MyModel'
+    expect(
+      convertSchema(
+        {
+          type: 'object',
+          properties: {
+            myModel: {
+              type: 'MyModel'
+            }
+          }
+        },
+        {
+          useInstanceOf: true
         }
-      }
-    }, {
-      useInstanceOf: true
-    })).toEqual({
+      )
+    ).toEqual({
       type: 'object',
       properties: {
         myModel: {
@@ -321,15 +348,17 @@ describe('convertSchema()', () => {
   })
 
   it('handles `nullable: true` correctly (now natively supported)', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myString: {
-          type: 'string',
-          nullable: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myString: {
+            type: 'string',
+            nullable: true
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myString: {
@@ -342,15 +371,17 @@ describe('convertSchema()', () => {
   })
 
   it(`handles \`nullable: true\` references correctly`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myModel: {
-          type: 'MyModel',
-          nullable: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myModel: {
+            type: 'MyModel',
+            nullable: true
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myModel: {
@@ -365,15 +396,17 @@ describe('convertSchema()', () => {
   })
 
   it(`handles \`nullable: true\` dates correctly (now natively supported)`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myDate: {
-          type: 'date',
-          nullable: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myDate: {
+            type: 'date',
+            nullable: true
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myDate: {
@@ -387,16 +420,18 @@ describe('convertSchema()', () => {
   })
 
   it(`handles \`nullable: true\` enums correctly`, () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myEnum: {
-          type: 'string',
-          enum: ['one', 'two', 'three'],
-          nullable: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myEnum: {
+            type: 'string',
+            enum: ['one', 'two', 'three'],
+            nullable: true
+          }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myEnum: {
@@ -410,44 +445,46 @@ describe('convertSchema()', () => {
   })
 
   it('converts schemas within oneOf properties', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myList: {
-          type: 'array',
-          items: {
-            oneOf: [
-              {
-                type: 'object',
-                properties: {
-                  prop1: {
-                    type: 'string',
-                    required: true
-                  },
-                  prop2: {
-                    type: 'number',
-                    required: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myList: {
+            type: 'array',
+            items: {
+              oneOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    prop1: {
+                      type: 'string',
+                      required: true
+                    },
+                    prop2: {
+                      type: 'number',
+                      required: true
+                    }
+                  }
+                },
+                {
+                  type: 'object',
+                  properties: {
+                    prop3: {
+                      type: 'string',
+                      required: true
+                    },
+                    prop4: {
+                      type: 'number',
+                      required: true
+                    }
                   }
                 }
-              },
-              {
-                type: 'object',
-                properties: {
-                  prop3: {
-                    type: 'string',
-                    required: true
-                  },
-                  prop4: {
-                    type: 'number',
-                    required: true
-                  }
-                }
-              }
-            ]
+              ]
+            }
           }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myList: {
@@ -493,25 +530,27 @@ describe('convertSchema()', () => {
   })
 
   it('supports `required: true` on object', () => {
-    expect(convertSchema({
-      type: 'object',
-      properties: {
-        myObject: {
-          type: 'object',
-          required: true,
-          properties: {
-            prop1: {
-              type: 'string',
-              required: true
-            },
-            prop2: {
-              type: 'number',
-              required: true
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myObject: {
+            type: 'object',
+            required: true,
+            properties: {
+              prop1: {
+                type: 'string',
+                required: true
+              },
+              prop2: {
+                type: 'number',
+                required: true
+              }
             }
           }
         }
-      }
-    })).toEqual({
+      })
+    ).toEqual({
       type: 'object',
       properties: {
         myObject: {
@@ -537,31 +576,33 @@ describe('convertSchema()', () => {
   })
 
   it('processes discriminator schemas correctly', () => {
-    expect(convertSchema({
-      type: 'object',
-      discriminator: { propertyName: 'foo' },
-      required: ['foo'],
-      oneOf: [
-        {
-          properties: {
-            foo: { const: 'x' },
-            a: {
-              type: 'string',
-              required: true
+    expect(
+      convertSchema({
+        type: 'object',
+        discriminator: { propertyName: 'foo' },
+        required: ['foo'],
+        oneOf: [
+          {
+            properties: {
+              foo: { const: 'x' },
+              a: {
+                type: 'string',
+                required: true
+              }
+            }
+          },
+          {
+            properties: {
+              foo: { enum: ['y', 'z'] },
+              b: {
+                type: 'string',
+                required: true
+              }
             }
           }
-        },
-        {
-          properties: {
-            foo: { enum: ['y', 'z'] },
-            b: {
-              type: 'string',
-              required: true
-            }
-          }
-        }
-      ]
-    })).toEqual({
+        ]
+      })
+    ).toEqual({
       type: 'object',
       discriminator: { propertyName: 'foo' },
       required: ['foo'],

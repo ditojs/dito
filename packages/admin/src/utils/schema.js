@@ -5,7 +5,14 @@ import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
 import { appendDataPath, isTemporaryId } from './data.js'
 import {
-  isObject, isString, isArray, isFunction, isPromise, clone, camelize, isModule,
+  isObject,
+  isString,
+  isArray,
+  isFunction,
+  isPromise,
+  clone,
+  camelize,
+  isModule,
   mapConcurrently
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
@@ -49,24 +56,33 @@ export function forEachSchemaComponent(schema, callback) {
 }
 
 export function findSchemaComponent(schema, callback) {
-  return forEachSchemaComponent(
-    schema,
-    (component, name) => callback(component, name) ? component : undefined
-  ) || null
+  return (
+    forEachSchemaComponent(
+      schema,
+      (component, name) => (callback(component, name) ? component : undefined)
+    ) ||
+    null
+  )
 }
 
 export function someSchemaComponent(schema, callback) {
-  return forEachSchemaComponent(
-    schema,
-    (component, name) => callback(component, name) ? true : undefined
-  ) === true
+  return (
+    forEachSchemaComponent(
+      schema,
+      (component, name) => (callback(component, name) ? true : undefined)
+    ) ===
+    true
+  )
 }
 
 export function everySchemaComponent(schema, callback) {
-  return forEachSchemaComponent(
-    schema,
-    (component, name) => !callback(component, name) ? false : undefined
-  ) !== false
+  return (
+    forEachSchemaComponent(
+      schema,
+      (component, name) => (!callback(component, name) ? false : undefined)
+    ) !==
+    false
+  )
 }
 
 export function isSchema(schema) {
@@ -204,7 +220,11 @@ export async function processComponent(api, schema, name, routes, level) {
   schema.level = level
   // Delegate schema processing to the actual type components.
   await getTypeOptions(schema)?.processSchema?.(
-    api, schema, name, routes, level
+    api,
+    schema,
+    name,
+    routes,
+    level
   )
 }
 
@@ -282,13 +302,13 @@ export function getViewFormSchema(schema, context) {
   const { view } = schema
   const viewSchema = view && context.views[view]
   return viewSchema
-    // NOTE: Views can have tabs, in which case the view component is nested
-    // in one of the tabs, go find it.
-    ? forEachSchemaComponent(viewSchema, schema => {
-      if (hasFormSchema(schema)) {
-        return schema
-      }
-    }) || null
+    ? // NOTE: Views can have tabs, in which case the view component is nested
+      // in one of the tabs, go find it.
+      forEachSchemaComponent(viewSchema, schema => {
+        if (hasFormSchema(schema)) {
+          return schema
+        }
+      }) || null
     : null
 }
 
@@ -361,10 +381,7 @@ export function isInlined(schema) {
 }
 
 export function isNested(schema) {
-  return !!(
-    schema.nested ||
-    getTypeOptions(schema)?.defaultNested === true
-  )
+  return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
 }
 
 export function shouldOmitPadding(schema) {
@@ -378,9 +395,10 @@ export function getDefaultValue(schema) {
   // we can't use `dataPath` to get to components, and the `defaultValue` from
   // there. That's why `defaultValue` is defined statically in the components:
   const defaultValue = schema.default
-  const value = defaultValue !== undefined
-    ? defaultValue
-    : getTypeOptions(schema)?.defaultValue
+  const value =
+    defaultValue !== undefined
+      ? defaultValue
+      : getTypeOptions(schema)?.defaultValue
   return isFunction(value)
     ? value(schema)
     : clone(value)
@@ -389,8 +407,7 @@ export function getDefaultValue(schema) {
 export function ignoreMissingValue(schema) {
   const typeOptions = getTypeOptions(schema)
   return !!(
-    typeOptions?.excludeValue ||
-    typeOptions?.ignoreMissingValue?.(schema)
+    typeOptions?.excludeValue || typeOptions?.ignoreMissingValue?.(schema)
   )
 }
 
@@ -416,7 +433,13 @@ export function setDefaults(schema, data = {}, component) {
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
   return processSchemaData(
-    schema, data, null, null, processBefore, null, options
+    schema,
+    data,
+    null,
+    null,
+    processBefore,
+    null,
+    options
   )
 }
 
@@ -426,15 +449,17 @@ export function computeValue(schema, data, name, dataPath, {
 } = {}) {
   const { compute } = schema
   if (compute) {
-    const value = compute(DitoContext.get(component, {
-      // Override value to prevent endless recursion through calling the
-      // getter for `this.value` in `DitoContext`:
-      value: data[name],
-      name,
-      data,
-      dataPath,
-      rootData
-    }))
+    const value = compute(
+      DitoContext.get(component, {
+        // Override value to prevent endless recursion through calling the
+        // getter for `this.value` in `DitoContext`:
+        value: data[name],
+        name,
+        data,
+        dataPath,
+        rootData
+      })
+    )
     if (value !== undefined) {
       // Access `data[name]` directly instead of `this.value = …` to update the
       // value without calling parse():
@@ -501,11 +526,11 @@ export function processData(schema, sourceSchema, data, dataPath, {
         value.sort((a, b) => {
           const id1 = a?.[idKey]
           const id2 = b?.[idKey]
-          return (
-            id1 == null || isTemporaryId(id1) ? 1
-            : id2 == null || isTemporaryId(id2) ? -1
-            : id1 - id2
-          )
+          return id1 == null || isTemporaryId(id1)
+            ? 1
+            : id2 == null || isTemporaryId(id2)
+              ? -1
+              : id1 - id2
         })
       }
     }
@@ -519,16 +544,17 @@ export function processData(schema, sourceSchema, data, dataPath, {
     const typeOptions = getTypeOptions(schema)
 
     // NOTE: We don't cache this context, since `value` is changing.
-    const getContext = () => DitoContext.get(component, {
-      value,
-      name,
-      data,
-      dataPath,
-      rootData: options.rootData,
-      // Pass the already processed data to `process()`, so it can be modified
-      // through `processedItem` from there.
-      processedData
-    })
+    const getContext = () =>
+      DitoContext.get(component, {
+        value,
+        name,
+        data,
+        dataPath,
+        rootData: options.rootData,
+        // Pass the already processed data to `process()`, so it can be modified
+        // through `processedItem` from there.
+        processedData
+      })
 
     // First unwrap the wrapped primitives again, to bring the data back into
     // its native form. Se `processBefore()` for more details.
@@ -583,9 +609,10 @@ export function processSchemaData(
   options
 ) {
   const processComponents = components => {
-    const getDataPath = (dataPath, token) => dataPath != null
-      ? appendDataPath(dataPath, token)
-      : null
+    const getDataPath = (dataPath, token) =>
+      dataPath != null
+        ? appendDataPath(dataPath, token)
+        : null
 
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
@@ -604,9 +631,10 @@ export function processSchemaData(
           const componentDataPath = getDataPath(dataPath, name)
 
           const processItem = (item, index = null) => {
-            const dataPath = index !== null
-              ? getDataPath(componentDataPath, index)
-              : componentDataPath
+            const dataPath =
+              index !== null
+                ? getDataPath(componentDataPath, index)
+                : componentDataPath
             const context = DitoContext.get(options.component, {
               data,
               value: item,
@@ -616,7 +644,7 @@ export function processSchemaData(
             })
             const getForms = (
               getTypeOptions(componentSchema)?.getFormSchemasForProcessing ||
-               getFormSchemas
+              getFormSchemas
             )
             const forms = getForms(componentSchema, context)
             const form = getItemFormSchemaFromForms(forms, item)
@@ -641,7 +669,11 @@ export function processSchemaData(
           }
 
           processBefore?.(
-            componentSchema, data, name, componentDataPath, processedData
+            componentSchema,
+            data,
+            name,
+            componentDataPath,
+            processedData
           )
           let value = processedData ? processedData[name] : data[name]
           if (value != null && hasFormSchema(componentSchema)) {
@@ -659,7 +691,11 @@ export function processSchemaData(
             }
           }
           processAfter?.(
-            componentSchema, data, name, componentDataPath, processedData
+            componentSchema,
+            data,
+            name,
+            componentDataPath,
+            processedData
           )
         }
       }
@@ -683,37 +719,42 @@ export function getNamedSchemas(schemas, defaults) {
   const toObject = (array, toSchema) => {
     return array.length > 0
       ? array.reduce((object, value) => {
-        const schema = toSchema(value)
-        if (schema) {
-          object[schema.name] = schema && defaults
-            ? { ...defaults, ...schema }
-            : schema
-        }
-        return object
-      }, {})
+          const schema = toSchema(value)
+          if (schema) {
+            object[schema.name] =
+              schema && defaults
+                ? { ...defaults, ...schema }
+                : schema
+          }
+          return object
+        }, {})
       : null
   }
 
   return isArray(schemas)
-    ? toObject(schemas, value => (
-      isObject(value) ? value : {
-        name: camelize(value, false)
-      }
-    ))
+    ? toObject(schemas, value =>
+        isObject(value)
+          ? value
+          : {
+              name: camelize(value, false)
+            }
+      )
     : isObject(schemas)
       ? toObject(
-        Object.entries(schemas),
-        ([name, value]) =>
-          isObject(value) ? {
-            name,
-            ...value
-          }
-          : isString(value) ? {
-            name,
-            label: value
-          }
-          : null
-      )
+          Object.entries(schemas),
+          ([name, value]) =>
+            isObject(value)
+              ? {
+                  name,
+                  ...value
+                }
+              : isString(value)
+                ? {
+                    name,
+                    label: value
+                  }
+                : null
+        )
       : null
 }
 
@@ -733,22 +774,23 @@ export function getTypeOptions(schemaOrType) {
 }
 
 export function getSourceType(schemaOrType) {
-  return getTypeOptions(schemaOrType)?.getSourceType?.(
-    getType(schemaOrType)
-  ) ?? null
+  return (
+    getTypeOptions(schemaOrType)?.getSourceType?.(getType(schemaOrType)) ??
+    null
+  )
 }
 
 export function getPanelSchema(schema, dataPath, tabComponent) {
   return schema
     ? {
-      schema,
-      // If the panel provides its own name, append it to the dataPath.
-      // This is used e.g. for $filters panels.
-      dataPath: schema.name
-        ? appendDataPath(dataPath, schema.name)
-        : dataPath,
-      tabComponent
-    }
+        schema,
+        // If the panel provides its own name, append it to the dataPath.
+        // This is used e.g. for $filters panels.
+        dataPath: schema.name
+          ? appendDataPath(dataPath, schema.name)
+          : dataPath,
+        tabComponent
+      }
     : null
 }
 

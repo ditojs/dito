@@ -99,7 +99,8 @@ export default {
                   }
                 } catch (error) {
                   console.error(
-                    `Error during event handler for '${event}':`, error
+                    `Error during event handler for '${event}':`,
+                    error
                   )
                 }
               }

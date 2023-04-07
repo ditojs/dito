@@ -12,10 +12,10 @@ import DitoComponent from '../DitoComponent.js'
 import { isObject, isString, asArray } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-element', {
+export default DitoComponent.component('DitoElement', {
   props: {
     tag: { type: String, default: 'span' },
-    content: { type: [String, Object] }
+    content: { type: [String, Object], default: null }
   },
 
   computed: {
@@ -50,5 +50,4 @@ function asObject(value) {
     return object
   }, {})
 }
-
 </script>

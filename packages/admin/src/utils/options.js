@@ -6,9 +6,9 @@ export function resolveMergedOptions(options) {
   const { mixins } = options
   return mixins || options.extends
     ? mergeOptions(
-      { ...options },
-      options
-    )
+        { ...options },
+        options
+      )
     : options
 }
 

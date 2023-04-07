@@ -1,11 +1,12 @@
 export const { isArray } = Array
 const { toString } = Object.prototype
 
-export const is = Object.is || (
+export const is = (
+  Object.is ||
   // SameValue algorithm:
   // istanbul ignore next
   // eslint-disable-next-line no-self-compare
-  (x, y) => x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y
+  ((x, y) => (x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y))
 )
 
 export function isPlainObject(arg) {
@@ -13,11 +14,14 @@ export function isPlainObject(arg) {
   // We also need to check for ctor.name === 'Object', in case this is an object
   // from another global scope (e.g. another vm context in Node.js).
   // When an value has no constructor, it was created with `Object.create(null)`
-  return !!arg && (
-    ctor && (
-      ctor === Object ||
-      ctor.name === 'Object'
-    ) || !ctor && !isModule(arg)
+  return (
+    !!arg && (
+      ctor && (
+        ctor === Object ||
+        ctor.name === 'Object'
+      ) ||
+      !ctor && !isModule(arg)
+    )
   )
 }
 
@@ -35,7 +39,7 @@ function getPrimitiveCheck(name) {
   // here because `new Date().valueOf()` also returns a number.
   const typeName = name.toLowerCase()
   const toStringName = `[object ${name}]`
-  return function(arg) {
+  return function (arg) {
     const type = typeof arg
     return (
       type === typeName ||
@@ -64,13 +68,16 @@ export function isPromise(arg) {
   return !!arg && isFunction(arg.then) && isFunction(arg.catch)
 }
 
-export const isInteger = Number.isInteger || function isInteger(arg) {
-  return (
-    isNumber(arg) &&
-    isFinite(arg) &&
-    Math.floor(arg) === arg
-  )
-}
+export const isInteger = (
+  Number.isInteger ||
+  function isInteger(arg) {
+    return (
+      isNumber(arg) &&
+      isFinite(arg) &&
+      Math.floor(arg) === arg
+    )
+  }
+)
 
 export function isAsync(arg) {
   return arg?.[Symbol.toStringTag] === 'AsyncFunction'
@@ -88,9 +95,11 @@ export function isArrayLike(arg) {
 }
 
 export function isEmpty(arg) {
-  return arg == null ||
+  return (
+    arg == null ||
     isArrayLike(arg) && arg.length === 0 ||
     isObject(arg) && Object.keys(arg).length === 0
+  )
 }
 
 export function asObject(arg) {

@@ -4,9 +4,7 @@
     @mousedown.stop="onPulldownMouseDown()"
   )
     span {{ user.username }}
-  ul.dito-pulldown(
-    :class="{ 'dito-open': pulldown.open }"
-  )
+  ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
     li(
       v-for="(label, value) of items"
     )
@@ -16,21 +14,12 @@
       ) {{ label }}
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-account
-    position: relative
-    .dito-pulldown
-      top: $pulldown-padding-ver
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 import PulldownMixin from '../mixins/PulldownMixin.js'
 
 // @vue/component
-export default DitoComponent.component('dito-account', {
+export default DitoComponent.component('DitoAccount', {
   mixins: [PulldownMixin],
 
   data() {
@@ -45,14 +34,23 @@ export default DitoComponent.component('dito-account', {
   methods: {
     onPulldownSelect(value) {
       switch (value) {
-      case 'logout':
-        this.rootComponent.logout()
-        break
-      case 'settings':
-        console.info('TODO: Implement Settings')
-        break
+        case 'logout':
+          this.rootComponent.logout()
+          break
+        case 'settings':
+          console.info('TODO: Implement Settings')
+          break
       }
     }
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-account
+  position: relative
+  .dito-pulldown
+    top: $pulldown-padding-ver
+</style>

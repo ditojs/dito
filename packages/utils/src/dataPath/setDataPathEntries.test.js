@@ -13,10 +13,12 @@ describe('setDataPathEntries()', () => {
   const add = { prop: 'new' }
 
   it('should add data at a path to a given object and array', () => {
-    expect(() => setDataPathEntries(data, {
-      'object.array[0].added': add,
-      'object.array[1]': add
-    }))
+    expect(() =>
+      setDataPathEntries(data, {
+        'object.array[0].added': add,
+        'object.array[1]': add
+      })
+    )
       .not.toThrow()
     expect(data.object.array[0].added).toStrictEqual(add)
     expect(data.object.array[1]).toStrictEqual(add)

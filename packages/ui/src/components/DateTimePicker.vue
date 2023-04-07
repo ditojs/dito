@@ -1,56 +1,28 @@
 <template lang="pug">
-.dito-date-time-picker(
-  ref="picker"
-)
-  .dito-pickers(
-    :class="{ 'dito-focus': focused }"
-  )
-    date-picker(
+.dito-date-time-picker(ref="picker")
+  .dito-pickers(:class="{ 'dito-focus': focused }")
+    DatePicker(
       ref="date"
       v-model="currentValue"
       v-model:show="showDate"
       placement="bottom-left"
       :target="$refs.picker"
+      v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
       @focus="dateFocused = true"
       @blur="dateFocused = false"
-      v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
     )
-    time-picker(
+    TimePicker(
       ref="time"
       v-model="currentValue"
       v-model:show="showTime"
       placeholder=""
       placement="bottom-right"
       :target="$refs.picker"
+      v-bind="{ transition, disabled }"
       @focus="timeFocused = true"
       @blur="timeFocused = false"
-      v-bind="{ transition, disabled }"
     )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-date-time-picker
-    .dito-pickers
-      @extend %input
-      padding: 0
-      display: flex
-      .dito-input
-        background: none
-        border: 0
-    .dito-date-picker
-      width: 60%
-      min-width: 6.9em
-      .dito-input
-        padding-right: 0
-    .dito-time-picker
-      width: 40%
-      min-width: 5.4em
-      .dito-input
-        padding-left: 0
-        text-align: right
-</style>
 
 <script>
 import { defaultFormats } from '@ditojs/utils'
@@ -59,6 +31,7 @@ import TimePicker from './TimePicker.vue'
 
 export default {
   components: { DatePicker, TimePicker },
+  emits: ['update:modelValue', 'change'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -122,5 +95,28 @@ export default {
     }
   }
 }
-
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-date-time-picker
+  .dito-pickers
+    @extend %input
+    padding: 0
+    display: flex
+    .dito-input
+      background: none
+      border: 0
+  .dito-date-picker
+    width: 60%
+    min-width: 6.9em
+    .dito-input
+      padding-right: 0
+  .dito-time-picker
+    width: 40%
+    min-width: 5.4em
+    .dito-input
+      padding-left: 0
+      text-align: right
+</style>

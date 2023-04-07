@@ -1,7 +1,16 @@
 import objection from 'objection'
 import {
-  isString, isObject, isArray, isFunction, isPromise, asArray, merge, flatten,
-  parseDataPath, normalizeDataPath, getValueAtDataPath,
+  isString,
+  isObject,
+  isArray,
+  isFunction,
+  isPromise,
+  asArray,
+  merge,
+  flatten,
+  parseDataPath,
+  normalizeDataPath,
+  getValueAtDataPath,
   mapConcurrently
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
@@ -15,7 +24,8 @@ import { populateGraph, filterGraph } from '../graph/index.js'
 import { formatJson } from '../utils/json.js'
 import {
   ResponseError,
-  GraphError, ModelError,
+  GraphError,
+  ModelError,
   NotFoundError,
   RelationError
 } from '../errors/index.js'
@@ -65,7 +75,8 @@ export class Model extends objection.Model {
     if (accessor in this.prototype) {
       throw new RelationError(
         `Model '${this.name}' already defines a property with name ` +
-        `'${accessor}' that clashes with the relation accessor.`)
+        `'${accessor}' that clashes with the relation accessor.`
+      )
     }
 
     // Define an accessor on the class as well as on the prototype that when
@@ -97,16 +108,13 @@ export class Model extends objection.Model {
   }
 
   // @overridable
-  static setup() {
-  }
+  static setup() {}
 
   // @overridable
-  static initialize() {
-  }
+  static initialize() {}
 
   // @overridable
-  $initialize() {
-  }
+  $initialize() {}
 
   get $app() {
     return this.constructor.app
@@ -222,8 +230,8 @@ export class Model extends objection.Model {
     if (options.async && !options.skipValidation) {
       // Handle async validation, as supported by Dito:
       const model = new this()
-      return model.$validate(json, options).then(
-        json => model.$setJson(json, {
+      return model.$validate(json, options).then(json =>
+        model.$setJson(json, {
           ...options,
           skipValidation: true
         })
@@ -237,15 +245,20 @@ export class Model extends objection.Model {
   static query(trx) {
     return super.query(trx).onError(err => {
       // TODO: Shouldn't this wrapping happen on the Controller level?
-      err = err instanceof ResponseError ? err
-        : err instanceof objection.DBError ? this.app.createDatabaseError(err)
-        : new ResponseError(err)
+      err =
+        err instanceof ResponseError
+          ? err
+          : err instanceof objection.DBError
+            ? this.app.createDatabaseError(err)
+            : new ResponseError(err)
       return Promise.reject(err)
     })
   }
 
   static async count(...args) {
-    const { count } = await this.query().count(...args).first() || {}
+    const { count } = (await this.query()
+      .count(...args)
+      .first()) || {}
     return +count || 0
   }
 
@@ -361,25 +374,31 @@ export class Model extends objection.Model {
   }
 
   static get relationMappings() {
-    return this._getCached('relationMappings', () => (
-      convertRelations(this, this.definition.relations, this.app.models)
-    ), {})
+    return this._getCached(
+      'relationMappings',
+      () => convertRelations(this, this.definition.relations, this.app.models),
+      {}
+    )
   }
 
   static get jsonSchema() {
-    return this._getCached('jsonSchema', () => {
-      const schema = convertSchema({
-        type: 'object',
-        properties: this.definition.properties
-      })
-      addRelationSchemas(this, schema.properties)
-      // Merge in root-level schema additions
-      merge(schema, this.definition.schema)
-      return {
-        $id: this.name,
-        ...schema
-      }
-    }, {})
+    return this._getCached(
+      'jsonSchema',
+      () => {
+        const schema = convertSchema({
+          type: 'object',
+          properties: this.definition.properties
+        })
+        addRelationSchemas(this, schema.properties)
+        // Merge in root-level schema additions
+        merge(schema, this.definition.schema)
+        return {
+          $id: this.name,
+          ...schema
+        }
+      },
+      {}
+    )
   }
 
   static get virtualAttributes() {
@@ -389,36 +408,58 @@ export class Model extends objection.Model {
   }
 
   static get jsonAttributes() {
-    return this._getCached('jsonSchema:jsonAttributes', () => (
-      this.getAttributes(({ type, specificType, computed }) =>
-        !computed && !specificType && (type === 'object' || type === 'array'))
-    ), [])
+    return this._getCached(
+      'jsonSchema:jsonAttributes',
+      () =>
+        this.getAttributes(
+          ({ type, specificType, computed }) => (
+            !computed &&
+            !specificType &&
+            (type === 'object' || type === 'array')
+          )
+        ),
+      []
+    )
   }
 
   static get booleanAttributes() {
-    return this._getCached('jsonSchema:booleanAttributes', () => (
-      this.getAttributes(({ type, computed }) =>
-        !computed && type === 'boolean')
-    ), [])
+    return this._getCached(
+      'jsonSchema:booleanAttributes',
+      () =>
+        this.getAttributes(
+          ({ type, computed }) => !computed && type === 'boolean'
+        ),
+      []
+    )
   }
 
   static get dateAttributes() {
-    return this._getCached('jsonSchema:dateAttributes', () => (
-      this.getAttributes(({ type, computed }) =>
-        !computed && ['date', 'datetime', 'timestamp'].includes(type))
-    ), [])
+    return this._getCached(
+      'jsonSchema:dateAttributes',
+      () =>
+        this.getAttributes(
+          ({ type, computed }) => (
+            !computed && ['date', 'datetime', 'timestamp'].includes(type)
+          )
+        ),
+      []
+    )
   }
 
   static get computedAttributes() {
-    return this._getCached('jsonSchema:computedAttributes', () => (
-      this.getAttributes(({ computed }) => computed)
-    ), [])
+    return this._getCached(
+      'jsonSchema:computedAttributes',
+      () => this.getAttributes(({ computed }) => computed),
+      []
+    )
   }
 
   static get hiddenAttributes() {
-    return this._getCached('jsonSchema:hiddenAttributes', () => (
-      this.getAttributes(({ hidden }) => hidden)
-    ), [])
+    return this._getCached(
+      'jsonSchema:hiddenAttributes',
+      () => this.getAttributes(({ hidden }) => hidden),
+      []
+    )
   }
 
   static getAttributes(filter) {
@@ -440,10 +481,13 @@ export class Model extends objection.Model {
     // 'jsonSchema' changes, all cached child values  are invalidated.
     let entry
     for (const part of identifier.split(':')) {
-      entry = cache[part] = cache[part] || {
-        cache: {},
-        value: undefined
-      }
+      entry = cache[part] = (
+        cache[part] ||
+        {
+          cache: {},
+          value: undefined
+        }
+      )
       cache = entry.cache
     }
     if (entry?.value === undefined) {
@@ -707,19 +751,19 @@ export class Model extends objection.Model {
       }
       // Now check possible scope prefixes and handle them:
       switch (modifier[0]) {
-      case '^': // Eager-applied scope:
-        // Always apply eager-scopes, even if the model itself doesn't know it.
-        // The scope may still be known in eager-loaded relations.
-        // Note: `applyScope()` will handle the '^' sign.
-        return query.applyScope(modifier)
-      case '-': // Ignore scope:
-        return query.ignoreScope(modifier.slice(1))
-      case '#': // Select column:
-        return query.select(modifier.slice(1))
-      case '*': // Select all columns:
-        if (modifier.length === 1) {
-          return query.select('*')
-        }
+        case '^': // Eager-applied scope:
+          // Always apply eager-scopes, even if the model itself doesn't know
+          // it. The scope may still be known in eager-loaded relations.
+          // Note: `applyScope()` will handle the '^' sign.
+          return query.applyScope(modifier)
+        case '-': // Ignore scope:
+          return query.ignoreScope(modifier.slice(1))
+        case '#': // Select column:
+          return query.select(modifier.slice(1))
+        case '*': // Select all columns:
+          if (modifier.length === 1) {
+            return query.select('*')
+          }
       }
     }
     super.modifierNotFound(query, modifier)
@@ -747,22 +791,24 @@ export class Model extends objection.Model {
   // @override
   static createValidationError({ type, message, errors, options, json }) {
     switch (type) {
-    case 'ModelValidation':
-      return this.app.createValidationError({
-        type,
-        message:
-          message || `The provided data for the ${this.name} model is not valid`,
-        errors,
-        options,
-        json
-      })
-    case 'RelationExpression':
-    case 'UnallowedRelation':
-      return new RelationError({ type, message, errors })
-    case 'InvalidGraph':
-      return new GraphError({ type, message, errors })
-    default:
-      return new ResponseError({ type, message, errors })
+      case 'ModelValidation':
+        return this.app.createValidationError({
+          type,
+          message: (
+            message ||
+            `The provided data for the ${this.name} model is not valid`
+          ),
+          errors,
+          options,
+          json
+        })
+      case 'RelationExpression':
+      case 'UnallowedRelation':
+        return new RelationError({ type, message, errors })
+      case 'InvalidGraph':
+        return new GraphError({ type, message, errors })
+      default:
+        return new ResponseError({ type, message, errors })
     }
   }
 
@@ -926,122 +972,127 @@ export class Model extends objection.Model {
   static _configureAssetsHooks(assets) {
     const assetDataPaths = Object.keys(assets)
 
-    this.on([
-      'before:insert',
-      'before:update',
-      'before:delete'
-    ], async ({ type, transaction, inputItems, asFindQuery }) => {
-      const isInsert = type === 'before:insert'
-      const isDelete = type === 'before:delete'
-      // Figure out which asset data paths where actually present in the
-      // submitted data, and only compare these. But when deleting, use all.
-      const dataPaths = isDelete
-        ? assetDataPaths
-        : assetDataPaths.filter(
-          dataPath => (
-            // Skip check for wildcard data-paths.
-            /^\*\*?/.test(dataPath) ||
-            // Only keep normal data paths that match present properties.
-            (parseDataPath(dataPath)[0] in inputItems[0])
-          )
+    this.on(
+      [
+        'before:insert',
+        'before:update',
+        'before:delete'
+      ],
+      async ({ type, transaction, inputItems, asFindQuery }) => {
+        const isInsert = type === 'before:insert'
+        const isDelete = type === 'before:delete'
+        // Figure out which asset data paths where actually present in the
+        // submitted data, and only compare these. But when deleting, use all.
+        const dataPaths = isDelete
+          ? assetDataPaths
+          : assetDataPaths.filter(
+              dataPath => (
+                // Skip check for wildcard data-paths.
+                /^\*\*?/.test(dataPath) ||
+                // Only keep normal data paths that match present properties.
+                (parseDataPath(dataPath)[0] in inputItems[0])
+              )
+            )
+        // `dataPaths` is empty in the case of an update/insert that does not
+        // affect the assets.
+        if (dataPaths.length === 0) return
+
+        const afterItems = isDelete
+          ? []
+          : inputItems
+        // Load the model's asset files in their current state before the query
+        // is executed. For deletes, load the data for all asset data-paths.
+        // Otherwise, only load the columns present in the input data.
+        const beforeItems = isInsert
+          ? []
+          : isDelete
+            ? // When deleting, it's ok to load all columns when data-paths
+              // contain wildcards unfiltered, since `afterItems` will be empty
+              // anyway.
+              await loadAssetDataPaths(asFindQuery(), dataPaths)
+            : await asFindQuery().select(
+                // Select only the properties that are present in the data,
+                // and which aren't the result of computed properties.
+                Object.keys(inputItems[0]).filter(key => {
+                  const property = this.definition.properties[key]
+                  return property && !property.computed
+                })
+              )
+
+        const afterFilesPerDataPath = getFilesPerAssetDataPath(
+          afterItems,
+          dataPaths
         )
-      // `dataPaths` is empty in the case of an update/insert that does not
-      // affect the assets.
-      if (dataPaths.length === 0) return
+        const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+          beforeItems,
+          dataPaths
+        )
 
-      const afterItems = isDelete
-        ? []
-        : inputItems
-      // Load the model's asset files in their current state before the query is
-      // executed. For deletes, load the data for all asset data-paths.
-      // Otherwise, only load the columns present in the input data.
-      const beforeItems = isInsert
-        ? []
-        : isDelete
-          // When deleting it's ok to load all columns when data-paths contain
-          // wildcards unfiltered, since `afterItems` will be empty anyway.
-          ? await loadAssetDataPaths(asFindQuery(), dataPaths)
-          : await asFindQuery().select(
-            // Select only the properties that are present in the data,
-            // and which aren't the result of computed properties.
-            Object.keys(inputItems[0]).filter(key => {
-              const property = this.definition.properties[key]
-              return property && !property.computed
-            })
+        const importedFiles = []
+        const modifiedFiles = []
+
+        if (transaction.rollback) {
+          // Prevent wrong memory leak error messages when installing more than
+          // 10 'rollback' handlers, which can happen with more complex queries.
+          transaction.setMaxListeners(0)
+          transaction.on('rollback', async error => {
+            if (importedFiles.length > 0) {
+              console.info(
+                `Received '${error}', removing imported files again: ${
+                  importedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+              await mapConcurrently(
+                importedFiles,
+                file => file.storage.removeFile(file)
+              )
+            }
+            if (modifiedFiles.length > 0) {
+              // TODO: `modifiedFiles` should be restored as well, but that's
+              // far from trivial since no backup is kept in
+              // `handleModifiedAssets()`
+              console.warn(
+                `Unable to restore these already modified files: ${
+                  modifiedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+            }
+          })
+        }
+
+        for (const dataPath of dataPaths) {
+          const storage = this.app.getStorage(assets[dataPath].storage)
+          const beforeFiles = beforeFilesPerDataPath[dataPath] || []
+          const afterFiles = afterFilesPerDataPath[dataPath] || []
+          const beforeByKey = mapFilesByKey(beforeFiles)
+          const afterByKey = mapFilesByKey(afterFiles)
+          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
+          const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
+          // Also handle modified files, which are files where the data property
+          // is changed before update / patch, meaning the file is changed.
+          // NOTE: This will change the content for all the references to it,
+          // and so should only really be used when there's only one reference.
+          const modifiedFiles = afterFiles.filter(
+            file => file.data && beforeByKey[file.key]
           )
-
-      const afterFilesPerDataPath = getFilesPerAssetDataPath(
-        afterItems,
-        dataPaths
-      )
-      const beforeFilesPerDataPath = getFilesPerAssetDataPath(
-        beforeItems,
-        dataPaths
-      )
-
-      const importedFiles = []
-      const modifiedFiles = []
-
-      if (transaction.rollback) {
-        // Prevent wrong memory leak error messages when installing more than 10
-        // 'rollback' handlers, which can happen with more complex queries.
-        transaction.setMaxListeners(0)
-        transaction.on('rollback', async error => {
-          if (importedFiles.length > 0) {
-            console.info(
-              `Received '${error}', removing imported files again: ${
-                importedFiles.map(file => `'${file.name}'`)
-              }`
-            )
-            await mapConcurrently(
-              importedFiles,
-              file => file.storage.removeFile(file)
-            )
-          }
-          if (modifiedFiles.length > 0) {
-            // TODO: `modifiedFiles` should be restored as well, but that's far
-            // from trivial since no backup is kept in `handleModifiedAssets`
-            console.warn(
-              `Unable to restore these already modified files: ${
-                modifiedFiles.map(file => `'${file.name}'`)
-              }`
-            )
-          }
-        })
+          importedFiles.push(
+            ...(await this.app.handleAddedAndRemovedAssets(
+              storage,
+              addedFiles,
+              removedFiles,
+              transaction
+            ))
+          )
+          modifiedFiles.push(
+            ...(await this.app.handleModifiedAssets(
+              storage,
+              modifiedFiles,
+              transaction
+            ))
+          )
+        }
       }
-
-      for (const dataPath of dataPaths) {
-        const storage = this.app.getStorage(assets[dataPath].storage)
-        const beforeFiles = beforeFilesPerDataPath[dataPath] || []
-        const afterFiles = afterFilesPerDataPath[dataPath] || []
-        const beforeByKey = mapFilesByKey(beforeFiles)
-        const afterByKey = mapFilesByKey(afterFiles)
-        const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
-        const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
-        // Also handle modified files, which are files where the data property
-        // is changed before update / patch, meaning the file is changed.
-        // NOTE: This will change the content for all the references to it,
-        // and thus should only really be used when there's only one reference.
-        const modifiedFiles = afterFiles.filter(
-          file => file.data && beforeByKey[file.key]
-        )
-        importedFiles.push(
-          ...await this.app.handleAddedAndRemovedAssets(
-            storage,
-            addedFiles,
-            removedFiles,
-            transaction
-          )
-        )
-        modifiedFiles.push(
-          ...await this.app.handleModifiedAssets(
-            storage,
-            modifiedFiles,
-            transaction
-          )
-        )
-      }
-    })
+    )
   }
 }
 
@@ -1055,7 +1106,7 @@ const metaMap = new WeakMap()
 function getMeta(modelClass, key, value) {
   let meta = metaMap.get(modelClass)
   if (!meta) {
-    metaMap.set(modelClass, meta = {})
+    metaMap.set(modelClass, (meta = {}))
   }
   if (!(key in meta)) {
     meta[key] = isFunction(value) ? value() : value

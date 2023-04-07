@@ -1,41 +1,25 @@
 <template lang="pug">
 .dito-slider
   input.dito-range(
-    ref="element"
     :id="dataPath"
-    type="range"
+    ref="element"
     v-model="inputValue"
+    type="range"
     v-bind="attributes"
     :min="min"
     :max="max"
     :step="stepValue"
   )
-  input-field.dito-number(
+  InputField.dito-number(
     v-if="input"
-    type="number"
     v-model="inputValue"
+    type="number"
     v-bind="attributes"
     :min="min"
     :max="max"
     :step="stepValue"
   )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-slider
-    @extend %input
-    display: flex
-    .dito-range
-      flex: auto
-      height: calc(1em * var(--line-height))
-    .dito-number
-      border: 0
-      padding: 0
-      text-align: right
-      font-variant-numeric: tabular-nums
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -45,8 +29,8 @@ import { InputField } from '@ditojs/ui/src'
 
 // @vue/component
 export default TypeComponent.register('slider', {
-  components: { InputField },
   mixins: [NumberMixin],
+  components: { InputField },
   nativeField: true,
 
   computed: {
@@ -58,3 +42,19 @@ export default TypeComponent.register('slider', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-slider
+  @extend %input
+  display: flex
+  .dito-range
+    flex: auto
+    height: calc(1em * var(--line-height))
+  .dito-number
+    border: 0
+    padding: 0
+    text-align: right
+    font-variant-numeric: tabular-nums
+</style>

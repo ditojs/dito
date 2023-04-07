@@ -1,7 +1,14 @@
 import objection from 'objection'
 import {
-  isObject, isPlainObject, isString, isArray, clone, mapKeys,
-  getValueAtDataPath, setValueAtDataPath, parseDataPath
+  isObject,
+  isPlainObject,
+  isString,
+  isArray,
+  clone,
+  mapKeys,
+  getValueAtDataPath,
+  setValueAtDataPath,
+  parseDataPath
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
@@ -141,15 +148,16 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   ignoreScope(...scopes) {
     if (!this._ignoreScopes[SYMBOL_ALL]) {
-      this._ignoreScopes = scopes.length > 0
-        ? {
-          ...this._ignoreScopes,
-          ...createLookup(scopes)
-        }
-        // Empty arguments = ignore all scopes
-        : {
-          [SYMBOL_ALL]: true
-        }
+      this._ignoreScopes =
+        scopes.length > 0
+          ? {
+              ...this._ignoreScopes,
+              ...createLookup(scopes)
+            }
+          : // Empty arguments = ignore all scopes
+            {
+              [SYMBOL_ALL]: true
+            }
     }
     return this
   }
@@ -191,13 +199,17 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   mergeScope(...scopes) {
-    deprecate(`QueryBuilder#mergeScope() is deprecated. Use #withScope() instead.`)
+    deprecate(
+      `QueryBuilder#mergeScope() is deprecated. Use #withScope() instead.`
+    )
 
     return this.withScope(...scopes)
   }
 
   clearScope() {
-    deprecate(`QueryBuilder#clearScope() is deprecated. Use #clearWithScope() or #ignoreScope() instead.`)
+    deprecate(
+      `QueryBuilder#clearScope() is deprecated. Use #clearWithScope() or #ignoreScope() instead.`
+    )
 
     return this.clearWithScope()
   }
@@ -219,15 +231,18 @@ export class QueryBuilder extends objection.QueryBuilder {
       this._ignoreScopes = { ...query._ignoreScopes }
     }
     const scopes = isChildQuery
-      // When copying scopes for child-queries, we also need to take the already
-      // applied scopes into account and copy those too.
-      ? { ...query._appliedScopes, ...query._scopes }
+      ? // When copying scopes for child-queries, we also need to take the
+        // already applied scopes into account and copy those too.
+        { ...query._appliedScopes, ...query._scopes }
       : { ...query._scopes }
     // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
-    const copyAllScopes =
-      isSameModelClass && isChildQuery && query.has(/GraphAndFetch$/)
+    const copyAllScopes = (
+      isSameModelClass &&
+      isChildQuery &&
+      query.has(/GraphAndFetch$/)
+    )
     this._scopes = copyAllScopes
       ? scopes
       : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
@@ -391,7 +406,8 @@ export class QueryBuilder extends objection.QueryBuilder {
       // Support `restart` and `cascade` in PostgreSQL truncate queries.
       return this.raw(
         `truncate table ??${
-          restart ? ' restart identity' : ''}${
+          restart ? ' restart identity' : ''
+        }${
           cascade ? ' cascade' : ''
         }`,
         this.modelClass().tableName
@@ -412,39 +428,39 @@ export class QueryBuilder extends objection.QueryBuilder {
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
   upsert(data, options = {}) {
     let mainQuery
-    return this
-      .runBefore((result, builder) => {
-        if (!builder.context().isMainQuery) {
-          // At this point the builder should only contain a bunch of `where*`
-          // operations. Store this query for later use in runAfter(). Also mark
-          // the query with `isMainQuery: true` so we can skip all this when
-          // this function is called for the `mainQuery`.
-          mainQuery = builder.clone().context({ isMainQuery: true })
-          // Call update() on the original query, turning it into an update.
-          builder[options.update ? 'update' : 'patch'](data)
-        }
-        return result
-      })
-      .runAfter((result, builder) => {
-        if (!builder.context().isMainQuery) {
-          return result === 0
-            ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
-            // We can use the `mainQuery` we saved in runBefore() to fetch the
+    return this.runBefore((result, builder) => {
+      if (!builder.context().isMainQuery) {
+        // At this point the builder should only contain a bunch of `where*`
+        // operations. Store this query for later use in runAfter(). Also mark
+        // the query with `isMainQuery: true` so we can skip all this when
+        // this function is called for the `mainQuery`.
+        mainQuery = builder.clone().context({ isMainQuery: true })
+        // Call update() on the original query, turning it into an update.
+        builder[options.update ? 'update' : 'patch'](data)
+      }
+      return result
+    }).runAfter((result, builder) => {
+      if (!builder.context().isMainQuery) {
+        return result === 0
+          ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
+          : // We can use the `mainQuery` we saved in runBefore() to fetch the
             // inserted results. It is noteworthy that this query will return
             // the wrong results if the update changed any of the columns the
             // where operates with. This also returns all updated models.
-            : mainQuery.first()
-        }
-        return result
-      })
+            mainQuery.first()
+      }
+      return result
+    })
   }
 
   find(query, allowParam) {
     if (!query) return this
     const allowed = !allowParam
       ? QueryParameters.allowed()
-      // If it's already a lookup object just use it, otherwise convert it:
-      : isPlainObject(allowParam) ? allowParam : createLookup(allowParam)
+      : // If it's already a lookup object just use it, otherwise convert it:
+        isPlainObject(allowParam)
+        ? allowParam
+        : createLookup(allowParam)
     for (const [key, value] of Object.entries(query)) {
       // Support array notation for multiple parameters, as sent by axios:
       const param = key.endsWith('[]') ? key.slice(0, -2) : key
@@ -454,7 +470,8 @@ export class QueryBuilder extends objection.QueryBuilder {
       const paramHandler = QueryParameters.get(param)
       if (!paramHandler) {
         throw new QueryBuilderError(
-          `Invalid query parameter '${param}' in '${key}=${value}'.`)
+          `Invalid query parameter '${param}' in '${key}=${value}'.`
+        )
       }
       paramHandler(this, key, value)
     }
@@ -531,67 +548,108 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertDitoGraph(data, options) {
-    return this._handleDitoGraph('insertGraph',
-      data, options, insertDitoGraphOptions)
+    return this._handleDitoGraph(
+      'insertGraph',
+      data,
+      options,
+      insertDitoGraphOptions
+    )
   }
 
   insertDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph('insertGraphAndFetch',
-      data, options, insertDitoGraphOptions)
+    return this._handleDitoGraph(
+      'insertGraphAndFetch',
+      data,
+      options,
+      insertDitoGraphOptions
+    )
   }
 
   upsertDitoGraph(data, options) {
-    return this._handleDitoGraph('upsertGraph',
-      data, options, upsertDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraph',
+      data,
+      options,
+      upsertDitoGraphOptions
+    )
   }
 
   upsertDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph('upsertGraphAndFetch',
-      data, options, upsertDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraphAndFetch',
+      data,
+      options,
+      upsertDitoGraphOptions
+    )
   }
 
   patchDitoGraph(data, options) {
-    return this._handleDitoGraph('upsertGraph',
-      data, options, patchDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraph',
+      data,
+      options,
+      patchDitoGraphOptions
+    )
   }
 
   patchDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph('upsertGraphAndFetch',
-      data, options, patchDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraphAndFetch',
+      data,
+      options,
+      patchDitoGraphOptions
+    )
   }
 
   updateDitoGraph(data, options) {
-    return this._handleDitoGraph('upsertGraph',
-      data, options, updateDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraph',
+      data,
+      options,
+      updateDitoGraphOptions
+    )
   }
 
   updateDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph('upsertGraphAndFetch',
-      data, options, updateDitoGraphOptions)
+    return this._handleDitoGraph(
+      'upsertGraphAndFetch',
+      data,
+      options,
+      updateDitoGraphOptions
+    )
   }
 
   upsertDitoGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.upsertDitoGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
+    return this.upsertDitoGraphAndFetch(
+      {
+        ...data,
+        ...this.modelClass().getReference(id)
+      },
+      options
+    )
   }
 
   patchDitoGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.patchDitoGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
+    return this.patchDitoGraphAndFetch(
+      {
+        ...data,
+        ...this.modelClass().getReference(id)
+      },
+      options
+    )
   }
 
   updateDitoGraphAndFetchById(id, data, options) {
     this.context({ byId: id })
-    return this.updateDitoGraphAndFetch({
-      ...data,
-      ...this.modelClass().getReference(id)
-    }, options)
+    return this.updateDitoGraphAndFetch(
+      {
+        ...data,
+        ...this.modelClass().getReference(id)
+      },
+      options
+    )
   }
 
   _handleDitoGraph(method, data, options, defaultOptions) {
@@ -697,7 +755,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const method of mixinMethods) {
       if (method in target) {
         console.warn(
-          `There is already a property named '${method}' on '${target}'`)
+          `There is already a property named '${method}' on '${target}'`
+        )
       } else {
         Object.defineProperty(target, method, {
           value(...args) {
@@ -721,7 +780,7 @@ for (const key of [
   'mergeEager', 'mergeJoinEager', 'mergeNaiveEager'
 ]) {
   const method = QueryBuilder.prototype[key]
-  QueryBuilder.prototype[key] = function(...args) {
+  QueryBuilder.prototype[key] = function (...args) {
     if (!this._ignoreGraph) {
       this._graphAlgorithm = /join/i.test(key) ? 'join' : 'fetch'
       method.call(this, ...args)
@@ -762,16 +821,17 @@ for (const key of [
   'groupBy', 'orderBy'
 ]) {
   const method = QueryBuilder.prototype[key]
-  QueryBuilder.prototype[key] = function(...args) {
+  QueryBuilder.prototype[key] = function (...args) {
     const modelClass = this.modelClass()
     const { properties } = modelClass.definition
 
     // Expands all identifiers known to the model to their extended versions.
     const expandIdentifier = identifier => {
       // Support expansion of identifiers with aliases, e.g. `name AS newName`
-      const alias =
+      const alias = (
         isString(identifier) &&
         identifier.match(/^\s*([a-z][\w_]+)(\s+AS\s+.*)$/i)
+      )
       return alias
         ? `${expandIdentifier(alias[1])}${alias[2]}`
         : identifier === '*' || identifier in properties
@@ -801,9 +861,11 @@ for (const key of [
 }
 
 function filterScopes(scopes, callback) {
-  return Object.fromEntries(Object.entries(scopes).filter(
-    ([scope, graph]) => callback(scope, graph)
-  ))
+  return Object.fromEntries(
+    Object.entries(scopes).filter(
+      ([scope, graph]) => callback(scope, graph)
+    )
+  )
 }
 
 // The default options for insertDitoGraph(), upsertDitoGraph(),

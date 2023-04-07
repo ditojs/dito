@@ -1,11 +1,11 @@
 <template lang="pug">
-dito-buttons.dito-edit-buttons.dito-buttons-round(
+//- Set `@click.stop` to prevent click events from bubbling to dito-label.
+DitoButtons.dito-edit-buttons.dito-buttons-round(
   :buttons="buttons"
   :dataPath="dataPath"
   :data="data"
   :meta="meta"
   :store="store"
-  /* Prevent click events from bubbling to dito-label: */
   @click.stop
 )
   //- Firefox doesn't like <button> here, so use <a> instead:
@@ -13,12 +13,12 @@ dito-buttons.dito-edit-buttons.dito-buttons-round(
     v-if="isDraggable"
     v-bind="getButtonAttributes(verbs.drag)"
   )
-  router-link.dito-button(
+  RouterLink.dito-button(
     v-if="isEditable"
     :to="{ path: editPath }"
     v-bind="getButtonAttributes(verbs.edit)"
   )
-  dito-create-button(
+  DitoCreateButton(
     v-if="isCreatable"
     :schema="schema"
     :path="createPath"
@@ -33,19 +33,14 @@ dito-buttons.dito-edit-buttons.dito-buttons-round(
   )
 </template>
 
-<style lang="sass">
-  .dito-edit-buttons
-    // Override cursor from collapsible dito-label:
-    cursor: default
-    flex: none
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { capitalize } from '@ditojs/utils'
 
 // @vue/component
-export default DitoComponent.component('dito-edit-buttons', {
+export default DitoComponent.component('DitoEditButtons', {
+  emits: ['delete'],
+
   props: {
     draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
@@ -85,8 +80,7 @@ export default DitoComponent.component('dito-edit-buttons', {
     createButtonText() {
       return (
         // Allow schema to override create button through creatable object:
-        this.schema.creatable?.label ||
-        (
+        this.schema.creatable?.label || (
           // Auto-generate create button labels from from labels for list
           // sources with only one form:
           this.formLabel &&
@@ -107,3 +101,10 @@ export default DitoComponent.component('dito-edit-buttons', {
   }
 })
 </script>
+
+<style lang="sass">
+.dito-edit-buttons
+  // Override cursor from collapsible dito-label:
+  cursor: default
+  flex: none
+</style>

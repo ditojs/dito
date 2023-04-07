@@ -9,23 +9,13 @@ ul.dito-radio-buttons(
     label
       input.dito-radio-button(
         ref="element"
+        v-model="selectedValue"
         type="radio"
         :value="getValueForOption(option)"
-        v-model="selectedValue"
         v-bind="attributes"
       )
       | {{ getLabelForOption(option) }}
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-radio-buttons
-    label
-      @extend %input-borderless
-    .dito-radio-button
-      margin-right: $form-spacing
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -38,3 +28,13 @@ export default TypeComponent.register('radio', {
   nativeField: true
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-radio-buttons
+  label
+    @extend %input-borderless
+  .dito-radio-button
+    margin-right: $form-spacing
+</style>

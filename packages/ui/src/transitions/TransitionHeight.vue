@@ -1,20 +1,3 @@
-<style lang="sass">
-  @import '../styles/_imports'
-
-  $duration: 0.15s
-  .height-enter-active,
-  .height-leave-active
-    transition: height $duration $easeOutQuart
-    overflow: hidden
-  .height-enter-active
-    animation: slide-enter $duration $easeOutQuart
-  .height-leave-active
-    animation: slide-leave $duration $easeOutQuart
-  .height-enter-from,
-  .height-leave-to
-    height: 0
-</style>
-
 <script>
 import { h as createElement, Transition } from 'vue'
 
@@ -73,3 +56,20 @@ const props = {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+$duration: 0.15s
+.height-enter-active,
+.height-leave-active
+  transition: height $duration $easeOutQuart
+  overflow: hidden
+.height-enter-active
+  animation: slide-enter $duration $easeOutQuart
+.height-leave-active
+  animation: slide-leave $duration $easeOutQuart
+.height-enter-from,
+.height-leave-to
+  height: 0
+</style>

@@ -12,26 +12,38 @@
           span Status
         th
           span
-    use-sortable(
-      tag="tbody"
+    UseSortable(
       v-model="files"
+      tag="tbody"
       :options="getSortableOptions(draggable)"
     )
       tr(
         v-for="(file, index) in files"
         :key="file.key"
       )
-        td(v-html="renderFile(file, index)")
+        td(
+          v-html="renderFile(file, index)"
+        )
         td {{ formatFileSize(file.size) }}
         td
-          template(v-if="file.upload")
-            template(v-if="file.upload.error")
+          template(
+            v-if="file.upload"
+          )
+            template(
+              v-if="file.upload.error"
+            )
               | Error: {{ file.upload.error }}
-            template(v-else-if="file.upload.active")
+            template(
+              v-else-if="file.upload.active"
+            )
               | Uploading...
-            template(v-else-if="file.upload.success")
+            template(
+              v-else-if="file.upload.success"
+            )
               | Uploaded
-          template(v-else)
+          template(
+            v-else
+          )
             | Stored
         td.dito-cell-edit-buttons
           .dito-buttons.dito-buttons-round
@@ -43,8 +55,8 @@
             button.dito-button(
               v-if="deletable"
               type="button"
-              @click="deleteFile(file, index)"
               v-bind="getButtonAttributes(verbs.delete)"
+              @click="deleteFile(file, index)"
             )
     tfoot
       tr
@@ -66,43 +78,22 @@
                 type="button"
                 @click.prevent="upload.active = true"
               ) Upload All
-              vue-upload.dito-button.dito-button-add-upload(
-                :input-id="dataPath"
+              VueUpload.dito-button.dito-button-add-upload(
+                ref="upload"
+                v-model="uploads"
+                :inputId="dataPath"
                 :name="dataPath"
                 :disabled="disabled"
-                :post-action="uploadPath"
+                :postAction="uploadPath"
                 :extensions="extensions"
                 :accept="accept"
                 :multiple="multiple"
                 :size="maxSize"
-                v-model="uploads"
+                title="Upload Files"
                 @input-filter="inputFilter"
                 @input-file="inputFile"
-                ref="upload"
-                title="Upload Files"
               )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-upload
-    .dito-table
-      tr
-        vertical-align: middle
-    .dito-button-add-upload
-      padding: 0
-      > *
-        position: absolute
-        cursor: pointer
-    .dito-upload-footer
-      display: flex
-      justify-content: flex-end
-      align-items: center
-      .dito-progress
-        flex: auto
-        margin-right: $form-spacing
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -117,8 +108,8 @@ import VueUpload from 'vue-upload-component'
 
 // @vue/component
 export default TypeComponent.register('upload', {
-  components: { VueUpload },
   mixins: [SortableMixin],
+  components: { VueUpload },
 
   data() {
     return {
@@ -174,8 +165,10 @@ export default TypeComponent.register('upload', {
     }),
 
     isUploadReady() {
-      return this.uploads.length &&
+      return (
+        this.uploads.length &&
         !(this.upload.active || this.upload.uploaded)
+      )
     },
 
     isUploadActive() {
@@ -204,22 +197,25 @@ export default TypeComponent.register('upload', {
       const { render } = this.schema
       return render
         ? render.call(
-          this,
-          new DitoContext(this, {
-            value: file,
-            data: this.files,
-            index,
-            dataPath: appendDataPath(this.dataPath, index)
-          })
-        )
+            this,
+            new DitoContext(this, {
+              value: file,
+              data: this.files,
+              index,
+              dataPath: appendDataPath(this.dataPath, index)
+            })
+          )
         : escapeHtml(file.name)
     },
 
     deleteFile(file, index) {
       const { name } = file
 
-      if (file && window.confirm(
-        `Do you really want to ${this.verbs.remove} ${name}?`)
+      if (
+        file &&
+        window.confirm(
+          `Do you really want to ${this.verbs.remove} ${name}?`
+        )
       ) {
         if (this.multiple) {
           this.value.splice(index, 1)
@@ -294,16 +290,18 @@ export default TypeComponent.register('upload', {
             this.removeFile(newFile)
           }
         } else if (error) {
-          const text = {
-            abort: 'Upload aborted',
-            denied: 'Upload denied',
-            extension: `Unsupported file-type: ${newFile.name}`,
-            network: 'Network error encountered during upload',
-            server: 'Server error occurred during upload',
-            size: `File is too large: ${formatFileSize(newFile.size)}`,
-            timeout: 'Timeout occurred during upload'
-
-          }[error] || `Unknown File Upload Error: '${error}'`
+          const text = (
+            {
+              abort: 'Upload aborted',
+              denied: 'Upload denied',
+              extension: `Unsupported file-type: ${newFile.name}`,
+              network: 'Network error encountered during upload',
+              server: 'Server error occurred during upload',
+              size: `File is too large: ${formatFileSize(newFile.size)}`,
+              timeout: 'Timeout occurred during upload'
+            }[error] ||
+            `Unknown File Upload Error: '${error}'`
+          )
           this.notify({
             type: 'error',
             title: 'File Upload Error',
@@ -314,7 +312,7 @@ export default TypeComponent.register('upload', {
       }
     },
 
-    inputFilter(newFile/*, oldFile, prevent */) {
+    inputFilter(newFile /*, oldFile, prevent */) {
       const xhr = newFile?.xhr
       if (this.api.cors?.credentials && xhr && !xhr.withCredentials) {
         xhr.withCredentials = true
@@ -325,9 +323,7 @@ export default TypeComponent.register('upload', {
   processValue(schema, value) {
     // Filter out all newly added files that weren't actually uploaded.
     const files = asFiles(value)
-      .map(
-        ({ upload, ...file }) => !upload || upload.success ? file : null
-      )
+      .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
       .filter(file => file)
     return schema.multiple ? files : files[0] || null
   }
@@ -336,5 +332,25 @@ export default TypeComponent.register('upload', {
 function asFiles(value) {
   return value ? asArray(value) : []
 }
-
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-upload
+  .dito-table
+    tr
+      vertical-align: middle
+  .dito-button-add-upload
+    padding: 0
+    > *
+      position: absolute
+      cursor: pointer
+  .dito-upload-footer
+    display: flex
+    justify-content: flex-end
+    align-items: center
+    .dito-progress
+      flex: auto
+      margin-right: $form-spacing
+</style>

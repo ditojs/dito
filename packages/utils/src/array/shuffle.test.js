@@ -17,7 +17,9 @@ describe('shuffle()', () => {
       const res = shuffle([1, 2])
       results[res] = res
     }
-    const sorted = Object.entries(results).sort().map(([, value]) => value)
+    const sorted = Object.entries(results)
+      .sort()
+      .map(([, value]) => value)
     expect(sorted).toStrictEqual([[1, 2], [2, 1]])
   })
 })

@@ -3,6 +3,8 @@ import * as validations from '../validations/index.js'
 
 // @vue/component
 export default {
+  emits: ['errors'],
+
   data() {
     return {
       isTouched: false,
@@ -30,6 +32,7 @@ export default {
       const { value } = this
       // console.log('validate', this.dataPath, value, this.validations)
       for (const [rule, setting] of Object.entries(this.validations)) {
+        // eslint-disable-next-line import/namespace
         const validator = validations[rule]
         if (validator && (validator.nullish || value != null)) {
           const { validate, message } = validator

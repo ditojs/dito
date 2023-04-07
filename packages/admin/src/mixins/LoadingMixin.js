@@ -8,7 +8,8 @@ export default {
 
   methods: {
     setLoading(isLoading, { updateRoot = false, updateView = false } = {}) {
-      if (!this.isLoading ^ !isLoading) { // Boolean xor
+      if (!this.isLoading ^ !isLoading) {
+        // Boolean xor
         this.isLoading = !!isLoading
         if (updateRoot) {
           this.rootComponent.registerLoading(isLoading)

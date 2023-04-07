@@ -3,9 +3,7 @@ import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
-import {
-  viteCommonjs as createCommonJsPlugin
-} from '@originjs/vite-plugin-commonjs'
+import { viteCommonjs as createCommonJsPlugin } from '@originjs/vite-plugin-commonjs'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
 import { merge } from '@ditojs/utils'
 import { Controller } from './Controller.js'
@@ -28,8 +26,9 @@ export class AdminController extends Controller {
     // If no mode is specified, use `production` since that's just the hosting
     // of the pre-built admin files. `development` serves the admin directly
     // sources with HRM, and thus should be explicitly activated.
-    this.mode = this.config.mode || (
-      this.app.config.env === 'development' ? 'development' : 'production'
+    this.mode = (
+      this.config.mode ||
+      (this.app.config.env === 'development' ? 'development' : 'production')
     )
     this.closed = false
   }
@@ -38,11 +37,16 @@ export class AdminController extends Controller {
     const { config } = this
     let str = config[name]
     if (config.build?.path || config.dist?.path) {
-      deprecate(`config.admin.build.path and config.admin.dist.path are deprecated. Use config.admin.root and config.admin.dist instead.`)
+      deprecate(
+        `config.admin.build.path and config.admin.dist.path are deprecated. Use config.admin.root and config.admin.dist instead.`
+      )
 
-      str = name === 'root' ? config.build?.path
-        : name === 'dist' ? config.dist?.path
-        : null
+      str =
+        name === 'root'
+          ? config.build?.path
+          : name === 'dist'
+            ? config.dist?.path
+            : null
     }
     if (!str) {
       throw new ControllerError(
@@ -156,9 +160,11 @@ export class AdminController extends Controller {
       }
     })
 
-    this.koa.use(handleConnectMiddleware(server.middlewares, {
-      expandMountPath: true
-    }))
+    this.koa.use(
+      handleConnectMiddleware(server.middlewares, {
+        expandMountPath: true
+      })
+    )
   }
 
   getViteConfig(config = {}) {
@@ -169,85 +175,93 @@ export class AdminController extends Controller {
     const base = `${this.url}/`
     const views = path.join(root, 'views')
 
-    return defineConfig(merge({
-      root,
-      base,
-      mode: this.mode,
-      envFile: false,
-      configFile: false,
-      plugins: [
-        createVuePlugin(),
-        createCommonJsPlugin(),
+    return defineConfig(
+      merge(
         {
-          // Private plugin to inject script tag above main module that loads
-          // the `dito` object through its own end-point, see `sendDitoObject()`
-          name: 'inject-dito-object',
-          transformIndexHtml: {
-            enforce: 'post',
-            transform(html) {
-              return html.replace(
-                /(\s*)(<script type="module"[^>]*?><\/script>)/,
-                `$1<script src="${base}dito.js"></script>$1$2`
-              )
-            }
-          }
-        }],
-      build: {
-        ...(!development && {
-          outDir: this.getPath('dist'),
-          assetsDir: '.',
-          emptyOutDir: true,
-          chunkSizeWarningLimit: 1000,
-          rollupOptions: {
-            output: {
-              manualChunks(id) {
-                if (id.startsWith(views)) {
-                  return 'views'
-                } else if (id.startsWith(cwd)) {
-                  return 'common'
-                } else {
-                  const module = (
-                    id.match(/node_modules\/((?:@[^/]*\/)?[^/$]*)/)?.[1] || ''
+          root,
+          base,
+          mode: this.mode,
+          envFile: false,
+          configFile: false,
+          plugins: [
+            createVuePlugin(),
+            createCommonJsPlugin(),
+            {
+              // Private plugin to inject script tag above main module that
+              // loads the `dito` object through its own end-point, see:
+              // `sendDitoObject()`
+              name: 'inject-dito-object',
+              transformIndexHtml: {
+                enforce: 'post',
+                transform(html) {
+                  return html.replace(
+                    /(\s*)(<script type="module"[^>]*?><\/script>)/,
+                    `$1<script src="${base}dito.js"></script>$1$2`
                   )
-                  return testModuleIdentifier(module, coreDependencies)
-                    ? 'core'
-                    : 'vendor'
                 }
               }
             }
-          }
-        })
-      },
-      css: {
-        postcss: getPostCssConfig()
-      },
-      optimizeDeps: {
-        exclude: development ? ditoPackages : [],
-        include: [
-          ...(development
-            // https://discuss.prosemirror.net/t/rangeerror-adding-different-instances-of-a-keyed-plugin-plugin/4242/13
-            ? [
-              'prosemirror-state',
-              'prosemirror-transform',
-              'prosemirror-model',
-              'prosemirror-view'
+          ],
+          build: {
+            ...(!development && {
+              outDir: this.getPath('dist'),
+              assetsDir: '.',
+              emptyOutDir: true,
+              chunkSizeWarningLimit: 1000,
+              rollupOptions: {
+                output: {
+                  manualChunks(id) {
+                    if (id.startsWith(views)) {
+                      return 'views'
+                    } else if (id.startsWith(cwd)) {
+                      return 'common'
+                    } else {
+                      const module = id.match(
+                        /node_modules\/((?:@[^/]*\/)?[^/$]*)/
+                      )?.[1] || ''
+                      return testModuleIdentifier(module, coreDependencies)
+                        ? 'core'
+                        : 'vendor'
+                    }
+                  }
+                }
+              }
+            })
+          },
+          css: {
+            postcss: getPostCssConfig()
+          },
+          optimizeDeps: {
+            exclude: development ? ditoPackages : [],
+            include: [
+              ...(
+                development
+                  ? // https://discuss.prosemirror.net/t/rangeerror-adding-different-instances-of-a-keyed-plugin-plugin/4242/13
+                    [
+                      'prosemirror-state',
+                      'prosemirror-transform',
+                      'prosemirror-model',
+                      'prosemirror-view'
+                    ]
+                  : ditoPackages
+              ),
+              ...nonEsmDependencies
             ]
-            : ditoPackages
-          ),
-          ...nonEsmDependencies
-        ]
-      },
-      resolve: {
-        extensions: ['.js', '.json', '.vue'],
-        preserveSymlinks: true,
-        alias: [
-          {
-            find: '@',
-            replacement: root
+          },
+          resolve: {
+            extensions: ['.js', '.json', '.vue'],
+            preserveSymlinks: true,
+            alias: [
+              {
+                find: '@',
+                replacement: root
+              }
+            ]
           }
-        ]
-      }
-    }, config))
+        },
+        config
+      )
+    )
   }
 }
 

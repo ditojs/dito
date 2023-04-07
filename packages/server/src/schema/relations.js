@@ -7,7 +7,12 @@ import {
   ManyToManyRelation
 } from 'objection'
 import {
-  isObject, isArray, isString, asArray, capitalize, camelize
+  isObject,
+  isArray,
+  isString,
+  asArray,
+  capitalize,
+  camelize
 } from '@ditojs/utils'
 import { RelationError } from '../errors/index.js'
 
@@ -45,14 +50,16 @@ class ModelReference {
       const modelClass = models[modelName]
       if (!modelClass && !allowUnknown) {
         throw new RelationError(
-          `Unknown model reference: ${ref}`)
+          `Unknown model reference: ${ref}`
+        )
       }
       if (!this.modelName) {
         this.modelName = modelName
         this.modelClass = modelClass
       } else if (this.modelName !== modelName) {
         throw new RelationError(
-          `Composite keys need to be defined on the same table: ${ref}`)
+          `Composite keys need to be defined on the same table: ${ref}`
+        )
       }
       this.propertyNames.push(propertyName)
     }
@@ -90,8 +97,10 @@ class ModelReference {
     const toName = toRef.modelName
     const toProperties = toRef.propertyNames
     if (fromProperties.length !== toProperties.length) {
-      throw new RelationError('Unable to create through join for ' +
-        `composite keys from '${this}' to '${toRef}'`)
+      throw new RelationError(
+        'Unable to create through join for ' +
+        `composite keys from '${this}' to '${toRef}'`
+      )
     }
     const from = []
     const to = []
@@ -106,7 +115,8 @@ class ModelReference {
         to.push(`${throughName}.${throughTo}`)
       } else {
         throw new RelationError(
-          `Unable to create through join from '${this}' to '${to}'`)
+          `Unable to create through join from '${this}' to '${to}'`
+        )
       }
     }
     return {
@@ -136,11 +146,18 @@ export function convertRelation(schema, models) {
   let {
     relation,
     // Dito.js-style relation description:
-    from, to, through, inverse, modify, scope,
+    from,
+    to,
+    through,
+    inverse,
+    modify,
+    scope,
     // Objection.js-style relation description (`modify` is shared)
-    join, filter,
+    join,
+    filter,
     // Pluck Dito.js-related properties that should not end up in `rest`:
-    nullable, owner,
+    nullable,
+    owner,
     ...rest
   } = schema || {}
   const relationClass = getRelationClass(relation)
@@ -178,16 +195,19 @@ export function convertRelation(schema, models) {
             through.from = throughFrom.toValue()
             through.to = throughTo.toValue()
           } else {
-            throw new RelationError('Both sides of the `through` definition ' +
-              'need to be on the same join model')
+            throw new RelationError(
+              'Both sides of the `through` definition ' +
+              'need to be on the same join model'
+            )
           }
         } else {
           // Assume the references are to a join table, and use the settings
           // unmodified.
         }
       } else {
-        throw new RelationError('The relation needs a `through.from` and ' +
-          '`through.to` definition')
+        throw new RelationError(
+          'The relation needs a `through.from` and ' + '`through.to` definition'
+        )
       }
     } else if (through) {
       throw new RelationError('Unsupported through join definition')
@@ -230,7 +250,8 @@ export function convertRelations(ownerModelClass, relations, models) {
       converted[name] = convertRelation(relation, models)
     } catch (err) {
       throw new RelationError(
-        `${ownerModelClass.name}.relations.${name}: ${(err.message || err)}`)
+        `${ownerModelClass.name}.relations.${name}: ${err.message || err}`
+      )
     }
   }
   return converted
@@ -261,15 +282,16 @@ export function addRelationSchemas(modelClass, properties) {
     }
     // Finally the model itself
     anyOf.push({ $ref })
-    const items = anyOf.length > 1
-      ? { anyOf }
-      : anyOf[0]
+    const items =
+      anyOf.length > 1
+        ? { anyOf }
+        : anyOf[0]
     properties[name] = isOneToOne
       ? items
       : {
-        type: 'array',
-        items
-      }
+          type: 'array',
+          items
+        }
   }
   return properties
 }

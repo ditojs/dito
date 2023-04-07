@@ -10,11 +10,14 @@ export async function reset(knex) {
     batches.push(batch)
     migrations.push(...log)
   }
-  console.info(migrations.length === 0
-    ? pico.cyan('Already at the base migration')
-    : pico.green(`${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
-      `rolled back: ${migrations.length} migrations\n`) +
-      pico.cyan(migrations.join('\n')))
+  console.info(
+    migrations.length === 0
+      ? pico.cyan('Already at the base migration')
+      : pico.green(
+          `${batches.length > 1 ? 'Batches' : 'Batch'} ${batches} ` +
+          `rolled back: ${migrations.length} migrations\n`
+        ) + pico.cyan(migrations.join('\n'))
+  )
   await migrate(knex)
   return true
 }

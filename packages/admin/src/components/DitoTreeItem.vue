@@ -7,7 +7,9 @@
   }`
   :style="level > 0 && { '--level': level }"
 )
-  .dito-tree-header(v-if="label")
+  .dito-tree-header(
+    v-if="label"
+  )
     .dito-tree-branch(
       v-if="numEntries"
       @click.stop="opened = !opened"
@@ -16,11 +18,21 @@
         v-if="numEntries"
         :class="{ 'dito-opened': opened }"
       )
-      .dito-tree-label(v-html="label")
-      .dito-tree-info(v-if="details") {{ details }}
-    .dito-tree-leaf(v-else)
-      .dito-tree-label(v-html="label")
-    .dito-buttons.dito-buttons-small(v-if="hasEditButtons")
+      .dito-tree-label(
+        v-html="label"
+      )
+      .dito-tree-info(
+        v-if="details"
+      ) {{ details }}
+    .dito-tree-leaf(
+      v-else
+    )
+      .dito-tree-label(
+        v-html="label"
+      )
+    .dito-buttons.dito-buttons-small(
+      v-if="hasEditButtons"
+    )
       //- Firefox doesn't like <button> here, so use <a> instead:
       a.dito-button(
         v-if="draggable"
@@ -29,14 +41,14 @@
       button.dito-button(
         v-if="editable"
         type="button"
-        @click="onEdit"
         v-bind="getButtonAttributes(verbs.edit)"
+        @click="onEdit"
       )
       button.dito-button(
         v-if="deletable"
         type="button"
-        @click="onDelete"
         v-bind="getButtonAttributes(verbs.delete)"
+        @click="onDelete"
       )
   table.dito-properties(
     v-if="properties"
@@ -46,12 +58,12 @@
       v-for="property in properties"
     )
       td
-        dito-label(
+        DitoLabel(
           v-if="property.label !== false"
           :dataPath="getPropertyDataPath(property)"
           :label="getLabel(property)"
         )
-      dito-table-cell(
+      DitoTableCell(
         :cell="property"
         :schema="property"
         :dataPath="getPropertyDataPath(property)"
@@ -60,14 +72,14 @@
         :store="store"
         :disabled="disabled"
       )
-  use-sortable(
+  UseSortable(
     v-if="childrenSchema"
     v-show="opened"
     :modelValue="updateOrder(childrenSchema, childrenList)"
-    @update:modelValue="value => childrenList = value"
     :options="getSortableOptions(childrenDraggable, true)"
+    @update:modelValue="value => (childrenList = value)"
   )
-    dito-tree-item(
+    DitoTreeItem(
       v-for="(item, index) in childrenItems"
       :key="getItemUid(childrenSchema, item.data)"
       :schema="childrenSchema"
@@ -84,71 +96,6 @@
     //- pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-tree-item
-    --chevron-indent: #{$chevron-indent}
-    > .dito-tree-header
-      > .dito-tree-branch,
-      > .dito-tree-leaf
-        // Use `--level` CSS variable to calculated the accumulated indent
-        // padding directly instead of having it accumulate in nested CSS.
-        // This way, we can keep the .dito-active area cover the full width:
-        padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1))
-    .dito-tree-branch
-      cursor: pointer
-    .dito-tree-header
-      display: flex
-      justify-content: space-between
-    .dito-tree-branch,
-    .dito-tree-leaf
-      display: flex
-      flex: auto
-      position: relative
-      margin: 1px 0
-      +user-select(none)
-    .dito-tree-label,
-    .dito-tree-info
-      white-space: nowrap
-    .dito-tree-info
-      padding-left: 0.35em
-      color: rgba($color-black, .2)
-    .dito-buttons
-      display: flex
-      visibility: hidden
-      height: 100%
-      margin-left: 1em
-      margin: 1px 0 1px 1em
-    .dito-tree-header:hover
-      > .dito-buttons
-        visibility: visible
-    // Hide buttons during dragging
-    &.dito-dragging
-      .dito-tree-header
-        > .dito-buttons
-          visibility: hidden
-    &.dito-active
-      > .dito-tree-header
-        background: $color-active
-        padding: 0 $input-padding-hor
-        margin: 0 (-$input-padding-hor)
-        > .dito-tree-branch
-          > .dito-chevron::before
-              color: $color-white
-        > * > .dito-tree-label
-          color: $color-white
-    .dito-properties
-      display: block
-      margin-left: $chevron-indent
-      > tr
-        vertical-align: baseline
-      .dito-label
-        margin: 0
-        &::after
-          content: ': '
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 import SortableMixin from '../mixins/SortableMixin.js'
@@ -157,7 +104,7 @@ import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
-export default DitoComponent.component('dito-tree-item', {
+export default DitoComponent.component('DitoTreeItem', {
   mixins: [SortableMixin],
   inject: ['container'],
 
@@ -247,11 +194,13 @@ export default DitoComponent.component('dito-tree-item', {
           childrenList.map((data, index) => {
             const path = (
               childrenSchema.path &&
-            `${this.path}/${childrenSchema.path}/${index}`
+              `${this.path}/${childrenSchema.path}/${index}`
             )
-            const open = childrenOpen ||
-            // Only count as "in edit path" when it's not the full edit path.
-            editPath.startsWith(path) && path.length < editPath.length
+            const open = (
+              childrenOpen ||
+              // Only count as "in edit path" when it's not the full edit path.
+              editPath.startsWith(path) && path.length < editPath.length
+            )
             const active = editPath === path
             return {
               data,
@@ -267,9 +216,12 @@ export default DitoComponent.component('dito-tree-item', {
 
     details() {
       const { numChildren } = this
-      return numChildren && `${numChildren} ${
-        numChildren === 1 ? 'item' : 'items'
-      }`
+      return (
+        numChildren &&
+        `${numChildren} ${
+          numChildren === 1 ? 'item' : 'items'
+        }`
+      )
     },
 
     hasEditButtons() {
@@ -327,3 +279,68 @@ export default DitoComponent.component('dito-tree-item', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-tree-item
+  --chevron-indent: #{$chevron-indent}
+  > .dito-tree-header
+    > .dito-tree-branch,
+    > .dito-tree-leaf
+      // Use `--level` CSS variable to calculated the accumulated indent
+      // padding directly instead of having it accumulate in nested CSS.
+      // This way, we can keep the .dito-active area cover the full width:
+      padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1))
+  .dito-tree-branch
+    cursor: pointer
+  .dito-tree-header
+    display: flex
+    justify-content: space-between
+  .dito-tree-branch,
+  .dito-tree-leaf
+    display: flex
+    flex: auto
+    position: relative
+    margin: 1px 0
+    +user-select(none)
+  .dito-tree-label,
+  .dito-tree-info
+    white-space: nowrap
+  .dito-tree-info
+    padding-left: 0.35em
+    color: rgba($color-black, .2)
+  .dito-buttons
+    display: flex
+    visibility: hidden
+    height: 100%
+    margin-left: 1em
+    margin: 1px 0 1px 1em
+  .dito-tree-header:hover
+    > .dito-buttons
+      visibility: visible
+  // Hide buttons during dragging
+  &.dito-dragging
+    .dito-tree-header
+      > .dito-buttons
+        visibility: hidden
+  &.dito-active
+    > .dito-tree-header
+      background: $color-active
+      padding: 0 $input-padding-hor
+      margin: 0 (-$input-padding-hor)
+      > .dito-tree-branch
+        > .dito-chevron::before
+            color: $color-white
+      > * > .dito-tree-label
+        color: $color-white
+  .dito-properties
+    display: block
+    margin-left: $chevron-indent
+    > tr
+      vertical-align: baseline
+    .dito-label
+      margin: 0
+      &::after
+        content: ': '
+</style>

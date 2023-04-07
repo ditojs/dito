@@ -1,5 +1,4 @@
-// Derived from ATUI, and further extended: https://aliqin.github.io/atui/
-
+<!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
 .dito-calendar
   .dito-calendar-popup
@@ -41,8 +40,8 @@
         .dito-calendar-footer
           a.dito-calendar-select-today(
             role="button"
-            @click="selectDate(new Date())"
             :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
+            @click="selectDate(new Date())"
           )
       template(
         v-else-if="currentMode === 'month'"
@@ -85,130 +84,12 @@
             ) {{ year }}
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-calendar
-    min-width: 240px
-    box-sizing: border-box
-
-  .dito-calendar-popup
-    border: $border-style
-    border-radius: $border-radius
-    background: $color-white
-    box-shadow: $shadow-window
-    z-index: 1000
-
-  .dito-calendar-body
-    padding: 0 0.5em
-    span
-      display: inline-block
-      width: calc(100% / 7)
-      height: $input-height
-      line-height: calc(#{$input-height} - 2px)
-      box-sizing: border-box
-      border-radius: $border-radius
-      border: $border-width solid transparent
-      text-align: center
-    .dito-calendar-item-today
-      border: $border-width solid $color-active
-      color: $color-active
-    .dito-calendar-item-active
-      &,
-      &:hover
-        background: $color-active
-        color: white
-    .dito-calendar-item-disabled
-      background: white
-      cursor: default
-    .dito-calendar-item-disabled,
-    .dito-calendar-item-gray
-      color: #999
-
-  .dito-calendar-months,
-  .dito-calendar-years
-    span
-      width: calc(100% / 4)
-      margin: 0.5em 0
-
-  .dito-calendar-years span
-    width: calc(100% / 5)
-
-  .dito-calendar a,
-  .dito-calendar-dates span,
-  .dito-calendar-months span,
-  .dito-calendar-years span
-    +user-select(none)
-    white-space: nowrap
-    cursor: pointer
-
-  .dito-calendar-header span
-    cursor: default
-    a
-      padding: 0 0.2em
-
-  .dito-calendar-dates span:hover,
-  .dito-calendar-months span:hover,
-  .dito-calendar-years span:hover,
-  .dito-calendar:not(:hover) .dito-calendar-item-current
-    background: $color-highlight
-
-  .dito-calendar-weekdays span
-    font-weight: bold
-    +user-select(none)
-
-  .dito-calendar-header,
-  .dito-calendar-footer
-    @extend %input-height
-    position: relative
-    text-align: center
-
-  .dito-calendar-footer
-    border-top: $border-style
-
-  .dito-calendar-header
-    font-weight: bold
-    border-bottom: $border-style
-    display: flex
-    > span
-      margin: auto
-      padding: 0 0.5em
-    a
-      font-weight: bold
-      &:hover
-        color: $color-active
-
-  .dito-calendar-step-prev,
-  .dito-calendar-step-next
-    position: relative
-    width: 5%
-    min-width: 2em
-    max-width: 3em
-    &::after
-      position: absolute
-      left: 0
-      right: 0
-      font-size: 1.25em
-  .dito-calendar-step-prev
-    &::after
-      content: '‹'
-    &.dito-calendar-step-year::after
-      content: '«'
-  .dito-calendar-step-next
-    &::after
-      content: '›'
-    &.dito-calendar-step-year::after
-      content: '»'
-
-  .dito-calendar-select-today
-    &::after
-      content: 'Now'
-</style>
-
 <script>
 import { copyDate } from '../utils/date.js'
 
 export default {
+  emits: ['update:modelValue'],
+
   props: {
     modelValue: { type: Date, default: null },
     locale: { type: String, default: 'en-US' },
@@ -223,10 +104,11 @@ export default {
       monthNames,
       dateRange: [],
       yearRange: [],
-      currentValue:
+      currentValue: (
         this.modelValue ||
         // If no value is provided, use current date but clear time fields:
-        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 }),
+        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
+      ),
       currentMode: this.mode
     }
   },
@@ -259,20 +141,21 @@ export default {
   methods: {
     getMonthClass(month) {
       return {
-        'dito-calendar-item-active':
-          this.modelValue && month === this.modelValue.getMonth() &&
-          this.currentValue.getFullYear() === this.modelValue.getFullYear(),
-        'dito-calendar-item-current':
-          month === this.currentValue.getMonth()
+        'dito-calendar-item-active': (
+          this.modelValue &&
+          month === this.modelValue.getMonth() &&
+          this.currentValue.getFullYear() === this.modelValue.getFullYear()
+        ),
+        'dito-calendar-item-current': month === this.currentValue.getMonth()
       }
     },
 
     getYearClass(year) {
       return {
-        'dito-calendar-item-active':
-          this.modelValue && year === this.modelValue.getFullYear(),
-        'dito-calendar-item-current':
-          year === this.currentValue.getFullYear()
+        'dito-calendar-item-active': (
+          this.modelValue && year === this.modelValue.getFullYear()
+        ),
+        'dito-calendar-item-current': year === this.currentValue.getFullYear()
       }
     },
 
@@ -375,34 +258,34 @@ export default {
       const { currentMode, currentValue } = this
       if (hor || ver) {
         switch (currentMode) {
-        case 'day':
-          this.setDate({
-            day: currentValue.getDate() + hor + ver * 7
-          })
-          break
-        case 'month':
-          this.setDate({
-            month: currentValue.getMonth() + hor + ver * 6
-          })
-          break
-        case 'year':
-          this.setDate({
-            year: currentValue.getFullYear() + hor + ver * 5
-          })
-          break
+          case 'day':
+            this.setDate({
+              day: currentValue.getDate() + hor + ver * 7
+            })
+            break
+          case 'month':
+            this.setDate({
+              month: currentValue.getMonth() + hor + ver * 6
+            })
+            break
+          case 'year':
+            this.setDate({
+              year: currentValue.getFullYear() + hor + ver * 5
+            })
+            break
         }
         return true
       } else if (enter) {
         switch (currentMode) {
-        case 'day':
-          this.selectDate(currentValue)
-          break
-        case 'month':
-          this.setMode('day')
-          break
-        case 'year':
-          this.setMode('month')
-          break
+          case 'day':
+            this.selectDate(currentValue)
+            break
+          case 'month':
+            this.setMode('day')
+            break
+          case 'year':
+            this.setMode('month')
+            break
         }
         return true
       }
@@ -445,15 +328,21 @@ export default {
       const today = new Date()
       for (let i = 1; i <= numDays; i++) {
         const date = new Date(year, month, i)
-        const isDay = date => date &&
+        const isDay = date => (
+          date &&
           date.getDate() === i &&
           date.getFullYear() === year &&
           date.getMonth() === month
-        const state = isDay(this.modelValue) ? 'active'
-          : isDay(today) ? 'today'
-          : this.disabledDate(date) ? 'disabled'
-          : isDay(currentValue) ? 'current'
-          : null
+        )
+        const state = isDay(this.modelValue)
+          ? 'active'
+          : isDay(today)
+            ? 'today'
+            : this.disabledDate(date)
+              ? 'disabled'
+              : isDay(currentValue)
+                ? 'current'
+                : null
         this.dateRange.push({
           text: i,
           date,
@@ -508,3 +397,123 @@ function getLocaleNames(locale) {
   return names
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-calendar
+  min-width: 240px
+  box-sizing: border-box
+
+.dito-calendar-popup
+  border: $border-style
+  border-radius: $border-radius
+  background: $color-white
+  box-shadow: $shadow-window
+  z-index: 1000
+
+.dito-calendar-body
+  padding: 0 0.5em
+  span
+    display: inline-block
+    width: calc(100% / 7)
+    height: $input-height
+    line-height: calc(#{$input-height} - 2px)
+    box-sizing: border-box
+    border-radius: $border-radius
+    border: $border-width solid transparent
+    text-align: center
+  .dito-calendar-item-today
+    border: $border-width solid $color-active
+    color: $color-active
+  .dito-calendar-item-active
+    &,
+    &:hover
+      background: $color-active
+      color: white
+  .dito-calendar-item-disabled
+    background: white
+    cursor: default
+  .dito-calendar-item-disabled,
+  .dito-calendar-item-gray
+    color: #999
+
+.dito-calendar-months,
+.dito-calendar-years
+  span
+    width: calc(100% / 4)
+    margin: 0.5em 0
+
+.dito-calendar-years span
+  width: calc(100% / 5)
+
+.dito-calendar a,
+.dito-calendar-dates span,
+.dito-calendar-months span,
+.dito-calendar-years span
+  +user-select(none)
+  white-space: nowrap
+  cursor: pointer
+
+.dito-calendar-header span
+  cursor: default
+  a
+    padding: 0 0.2em
+
+.dito-calendar-dates span:hover,
+.dito-calendar-months span:hover,
+.dito-calendar-years span:hover,
+.dito-calendar:not(:hover) .dito-calendar-item-current
+  background: $color-highlight
+
+.dito-calendar-weekdays span
+  font-weight: bold
+  +user-select(none)
+
+.dito-calendar-header,
+.dito-calendar-footer
+  @extend %input-height
+  position: relative
+  text-align: center
+
+.dito-calendar-footer
+  border-top: $border-style
+
+.dito-calendar-header
+  font-weight: bold
+  border-bottom: $border-style
+  display: flex
+  > span
+    margin: auto
+    padding: 0 0.5em
+  a
+    font-weight: bold
+    &:hover
+      color: $color-active
+
+.dito-calendar-step-prev,
+.dito-calendar-step-next
+  position: relative
+  width: 5%
+  min-width: 2em
+  max-width: 3em
+  &::after
+    position: absolute
+    left: 0
+    right: 0
+    font-size: 1.25em
+.dito-calendar-step-prev
+  &::after
+    content: '‹'
+  &.dito-calendar-step-year::after
+    content: '«'
+.dito-calendar-step-next
+  &::after
+    content: '›'
+  &.dito-calendar-step-year::after
+    content: '»'
+
+.dito-calendar-select-today
+  &::after
+    content: 'Now'
+</style>

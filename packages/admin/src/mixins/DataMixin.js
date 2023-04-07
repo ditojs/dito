@@ -1,5 +1,9 @@
 import {
-  isObject, isFunction, isPromise, normalizeDataPath, getValueAtDataPath
+  isObject,
+  isFunction,
+  isPromise,
+  normalizeDataPath,
+  getValueAtDataPath
 } from '@ditojs/utils'
 import { reactive } from 'vue'
 import LoadingMixin from './LoadingMixin.js'
@@ -25,14 +29,12 @@ export default {
       }
       let { data = undefined, dataPath = null } = schema
       // See if there is async data loading already in process.
-      const asyncEntry = (
-        this.asyncDataEntries[name] ||= reactive({
-          dependencyFunction: null,
-          resolveCounter: 0,
-          resolvedData: null,
-          resolving: false
-        })
-      )
+      const asyncEntry = (this.asyncDataEntries[name] ||= reactive({
+        dependencyFunction: null,
+        resolveCounter: 0,
+        resolvedData: null,
+        resolving: false
+      }))
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies.

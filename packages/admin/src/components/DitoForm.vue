@@ -7,7 +7,7 @@
   //- `v-if` here, so event handling and other things still work with nested
   //- editing. Only render a router-view here if this isn't the last data route
   //- and not a nested form route, which will appear elsewhere in its own view.
-  router-view(
+  RouterView(
     v-if="!(isLastUnnestedRoute || isNestedRoute)"
     v-show="!isActive"
   )
@@ -17,7 +17,7 @@
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
-    dito-schema(
+    DitoSchema(
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -27,7 +27,7 @@
       :menuHeader="true"
     )
       template(#buttons)
-        dito-buttons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
+        DitoButtons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
           :buttons="buttonSchemas"
           :dataPath="dataPath"
           :data="data"
@@ -55,7 +55,7 @@ import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
 import { resolvePath } from '../utils/path.js'
 
 // @vue/component
-export default DitoComponent.component('dito-form', {
+export default DitoComponent.component('DitoForm', {
   mixins: [RouteMixin, ResourceMixin],
 
   data() {
@@ -84,13 +84,15 @@ export default DitoComponent.component('dito-form', {
     },
 
     schema() {
-      return this.getItemFormSchema(
-        this.sourceSchema,
-        // If there is no data yet, provide an empty object with just the right
-        // type set, so the form can always be determined.
-        this.data || { type: this.type },
-        this.context
-      ) || {} // Always return a schema object so we don't need to check for it.
+      return (
+        this.getItemFormSchema(
+          this.sourceSchema,
+          // If there is no data yet, provide an empty object with just the
+          // right type set, so the form can always be determined.
+          this.data || { type: this.type },
+          this.context
+        ) || {}
+      ) // Always return a schema object so we don't need to check for it.
     },
 
     buttonSchemas() {
@@ -154,7 +156,7 @@ export default DitoComponent.component('dito-form', {
     itemId() {
       return this.isCreating
         ? null
-        : (this.param ?? null)
+        : this.param ?? null
     },
 
     method() {
@@ -203,6 +205,8 @@ export default DitoComponent.component('dito-form', {
         // parts that need to be treated like ids and mapped to indices in data.
         const pathParts = this.routeRecord.path.split('/')
         const routeParts = pathParts.slice(pathParts.length - dataParts.length)
+        // TODO: Fix side-effects
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         this.sourceKey = null
         const lastDataPart = dataParts[dataParts.length - 1]
         if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
@@ -222,6 +226,8 @@ export default DitoComponent.component('dito-form', {
           // Skip the final lookup but remember `sourceKey`, as we want the
           // parent data so we can replace the entry at `sourceKey` on it.
           if (i === l - 1) {
+            // TODO: Fix side-effects
+            // eslint-disable-next-line
             this.sourceKey = key
           } else {
             data = data[key]
@@ -245,6 +251,8 @@ export default DitoComponent.component('dito-form', {
         if (!this.isMutating) {
           // Use a trick to store cloned inherited data in clonedData, to make
           // it reactive and prevent it from being cloned multiple times.
+          // TODO: Fix side-effects
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.clonedData = data = clone(data)
         }
         if (
@@ -253,7 +261,8 @@ export default DitoComponent.component('dito-form', {
           isObjectSource(this.sourceSchema)
         ) {
           // If data of an object source is null, redirect to its create route.
-          // TODO: This is a hack, move to a watcher!
+          // TODO: Fix side-effects
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.$router.push({ path: `${this.path}/create` })
         }
         return data
@@ -284,9 +293,11 @@ export default DitoComponent.component('dito-form', {
 
     getDataPathFrom(route) {
       // Get the data path by denormalizePath the relative route path
-      return this.api.denormalizePath(this.path
-        // DitoViews have nested routes, so don't remove their path.
-        .slice((route.isView ? 0 : route.path.length) + 1))
+      return this.api.denormalizePath(
+        this.path
+          // DitoViews have nested routes, so don't remove their path.
+          .slice((route.isView ? 0 : route.path.length) + 1)
+      )
     },
 
     // @override ResourceMixin.setupData()
@@ -348,8 +359,12 @@ export default DitoComponent.component('dito-form', {
 
     getSubmitVerb(present = true) {
       return this.isCreating
-        ? present ? 'create' : 'created'
-        : present ? 'submit' : 'submitted'
+        ? present
+          ? 'create'
+          : 'created'
+        : present
+          ? 'submit'
+          : 'submitted'
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
@@ -370,9 +385,10 @@ export default DitoComponent.component('dito-form', {
       if (!buttonResource && this.isTransient) {
         success = await this.submitTransient(button, resource, method, data, {
           onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
-          onError: error => this.emitSchemaEvent('error', {
-            context: { error }
-          }),
+          onError: error =>
+            this.emitSchemaEvent('error', {
+              context: { error }
+            }),
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify({
@@ -401,9 +417,10 @@ export default DitoComponent.component('dito-form', {
         success = await this.submitResource(button, resource, method, data, {
           setData: true,
           onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
-          onError: error => this.emitSchemaEvent('error', {
-            context: { error }
-          }),
+          onError: error =>
+            this.emitSchemaEvent('error', {
+              context: { error }
+            }),
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify({

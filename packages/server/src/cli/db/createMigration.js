@@ -1,12 +1,13 @@
 import path from 'path'
 import fs from 'fs/promises'
 import pico from 'picocolors'
+import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
 import {
-  getRelationClass,
-  isThroughRelationClass
-} from '@ditojs/server'
-import {
-  isObject, isArray, isString, deindent, capitalize
+  isObject,
+  isArray,
+  isString,
+  deindent,
+  capitalize
 } from '@ditojs/utils'
 import { exists } from '../../utils/fs.js'
 
@@ -47,11 +48,12 @@ export async function createMigration(app, name, ...modelNames) {
     dropTables.unshift(deindent`
       .dropTableIfExists('${tableName}')`)
   }
-  const getCode = tables => tables.length > 0
-    ? deindent`
+  const getCode = tables =>
+    tables.length > 0
+      ? deindent`
       await knex.schema
         ${tables.join('\n')}`
-    : ''
+      : ''
   const filename = `${getTimestamp()}_${name}.js`
   const file = path.join(migrationDir, filename)
   if (await exists(file)) {
@@ -59,7 +61,9 @@ export async function createMigration(app, name, ...modelNames) {
     console.info(pico.red(`Migration '${filename}' already exists.`))
     return false
   } else {
-    await fs.writeFile(file, deindent`
+    await fs.writeFile(
+      file,
+      deindent`
       export async function up(knex) {
         ${getCode(createTables)}
       }
@@ -67,7 +71,8 @@ export async function createMigration(app, name, ...modelNames) {
       export async function down(knex) {
         ${getCode(dropTables)}
       }
-    `)
+    `
+    )
     console.info(pico.cyan(`Migration '${filename}' successfully created.`))
     return true
   }
@@ -82,8 +87,17 @@ async function collectModelTables(modelClass, app, tables) {
   for (const [name, property] of Object.entries(properties)) {
     const column = app.normalizeIdentifier(name)
     let {
-      description, type, specificType, unsigned, computed, nullable, required,
-      primary, foreign, unique, index,
+      description,
+      type,
+      specificType,
+      unsigned,
+      computed,
+      nullable,
+      required,
+      primary,
+      foreign,
+      unique,
+      index,
       default: _default
     } = property
     const knexType = typeToKnex[type] || type
@@ -95,8 +109,10 @@ async function collectModelTables(modelClass, app, tables) {
         // To declare composite foreign keys as unique, you can give each
         // property the same string value in the `unique` keywords, e.g.:
         // `unique: 'customerId_name'
-        const composites = uniqueComposites[unique] ||
+        const composites = (
+          uniqueComposites[unique] ||
           (uniqueComposites[unique] = [])
+        )
         composites.push(column)
         unique = false
       }
@@ -115,9 +131,10 @@ async function collectModelTables(modelClass, app, tables) {
       if (_default !== undefined) {
         let value = defaultValues[_default]
         if (!value) {
-          value = isArray(_default) || isObject(_default)
-            ? JSON.stringify(_default)
-            : _default
+          value =
+            isArray(_default) || isObject(_default)
+              ? JSON.stringify(_default)
+              : _default
           if (isString(value)) {
             value = `'${value}'`
           }
@@ -148,14 +165,20 @@ async function collectModelTables(modelClass, app, tables) {
           }
         }
       }
-      statements.push(statement.filter(str => !!str).join('.')
-        .replace(/\.\n\./g, '\n  .'))
+      statements.push(
+        statement
+          .filter(str => !!str)
+          .join('.')
+          .replace(/\.\n\./g, '\n  .')
+      )
     }
   }
   for (const composites of Object.values(uniqueComposites)) {
-    statements.push(`table.unique([${
-      composites.map(column => `'${column}'`).join(', ')
-    }])`)
+    statements.push(
+      `table.unique([${
+        composites.map(column => `'${column}'`).join(', ')
+      }])`
+    )
   }
 }
 
@@ -173,9 +196,11 @@ async function collectThroughTables(modelClass, app, tables) {
       // See convertRelations()
       const tableName = app.normalizeIdentifier(`${fromClass}${toClass}`)
       const fromId = app.normalizeIdentifier(
-        `${fromClass}${capitalize(fromProperty)}`)
+        `${fromClass}${capitalize(fromProperty)}`
+      )
       const toId = app.normalizeIdentifier(
-        `${toClass}${capitalize(toProperty)}`)
+        `${toClass}${capitalize(toProperty)}`
+      )
       tables.push({ tableName, statements })
       statements.push(`table.increments('id').primary()`)
       statements.push(deindent`
@@ -201,10 +226,12 @@ function padDate(segment) {
 // like "moment.js".
 function getTimestamp() {
   const d = new Date()
-  return d.getFullYear().toString() +
+  return (
+    d.getFullYear().toString() +
     padDate(d.getMonth() + 1) +
     padDate(d.getDate()) +
     padDate(d.getHours()) +
     padDate(d.getMinutes()) +
     padDate(d.getSeconds())
+  )
 }

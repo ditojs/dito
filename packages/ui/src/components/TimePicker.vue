@@ -1,26 +1,25 @@
-// Derived from ATUI, and further extended: https://aliqin.github.io/atui/
-
+<!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-trigger.dito-time-picker(
+Trigger.dito-time-picker(
   ref="trigger"
-  trigger="click"
   v-model:show="showPopup"
+  trigger="click"
   v-bind="{ transition, placement, disabled, target }"
 )
   template(#trigger)
-    input-field.dito-time-picker-input(
+    InputField.dito-time-picker-input(
       ref="input"
-      type="text"
       v-model="currentText"
+      type="text"
       readonly
       :class="{ 'dito-focus': showPopup }"
+      v-bind="{ placeholder, disabled }"
       @focus="inputFocused = true"
       @blur="inputFocused = false"
       @keydown="onKeyDown"
-      v-bind="{ placeholder, disabled }"
     )
     //- icon(type="time"
-    //-   :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
+    //- :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
     //- )
   template(#popup)
     .dito-time-picker-popup
@@ -65,87 +64,6 @@ trigger.dito-time-picker(
             ) {{ leftPad(index - 1) }}
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-time-picker
-    .dito-input
-      width: 100%
-
-  .dito-time-picker-popup
-    max-width: 160px
-    margin: $popup-margin
-
-  $time-picker-line-height: 24px
-  .dito-time-picker
-    .dito-input
-      font-variant-numeric: tabular-nums
-      cursor: pointer
-      width: 100%
-      .dito-icon-time
-        display: block
-        position: absolute
-        top: 0
-        right: 7px
-        height: 100%
-
-  .dito-time-picker-popup
-    list-style: none
-    background: $color-white
-    border: $border-style
-    border-radius: $border-radius
-    box-shadow: $shadow-window
-    overflow: hidden
-
-  .dito-time-picker-popup .dito-time-picker-panel
-    float: left
-    border: $border-style
-    border-width: 0 1px 0
-    margin-left: -1px
-    box-sizing: border-box
-    width: calc(100% / 3 + 1px)
-    overflow: hidden
-    &:last-child
-      border-right: 0
-    ul
-      overflow-x: hidden
-      overflow-y: auto
-      list-style: none
-      width: 100%
-      margin: 0
-      // Hide scrollbar:
-      box-sizing: content-box
-      padding: 0 17px 0 0
-      height: 7 * $time-picker-line-height
-      & > li
-        box-sizing: content-box
-        background: $color-white
-        width: 100%
-        height: $time-picker-line-height
-        line-height: $time-picker-line-height
-        text-align: center
-        font-variant-numeric: tabular-nums
-        cursor: pointer
-        white-space: nowrap
-        overflow: hidden
-        +user-select(none)
-        &:first-child
-          margin-top: 3 * $time-picker-line-height
-        &:last-child
-          margin-bottom: 3 * $time-picker-line-height
-        &:hover
-          background: $color-highlight
-        &.selected,
-        &.selected:hover
-          color: $color-text-inverted
-          background: $color-active
-        &.disabled
-          cursor: default
-          color: $color-disabled
-        &.disabled:hover
-          background: transparent
-</style>
-
 <script>
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
@@ -156,6 +74,7 @@ import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, InputField },
+  emits: ['update:modelValue', 'update:show', 'change'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -188,9 +107,12 @@ export default {
     currentText() {
       return this.currentValue
         ? `${
-          this.leftPad(this.hour)}:${
-          this.leftPad(this.minute)}:${
-          this.leftPad(this.second)}`
+            this.leftPad(this.hour)
+          }:${
+            this.leftPad(this.minute)
+          }:${
+            this.leftPad(this.second)
+          }`
         : ''
     },
 
@@ -320,17 +242,16 @@ export default {
         const { hor, ver, enter } = getKeyNavigation(event)
         if (hor) {
           const value = this.selection + hor
-          this.selection =
-            value < 0 ? 2
-            : value > 2 ? 0
-            : value
+          this.selection = value < 0 ? 2 : value > 2 ? 0 : value
         } else if (ver) {
           const value = this[selected] + ver
           const { length } = this.$refs[selected].children
           this[selected] =
-            value < 0 ? value + length
-            : value >= length ? value - length
-            : value
+            value < 0
+              ? value + length
+              : value >= length
+                ? value - length
+                : value
         }
         if (enter) {
           this.showPopup = false
@@ -352,3 +273,84 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-time-picker
+  .dito-input
+    width: 100%
+
+.dito-time-picker-popup
+  max-width: 160px
+  margin: $popup-margin
+
+$time-picker-line-height: 24px
+.dito-time-picker
+  .dito-input
+    font-variant-numeric: tabular-nums
+    cursor: pointer
+    width: 100%
+    .dito-icon-time
+      display: block
+      position: absolute
+      top: 0
+      right: 7px
+      height: 100%
+
+.dito-time-picker-popup
+  list-style: none
+  background: $color-white
+  border: $border-style
+  border-radius: $border-radius
+  box-shadow: $shadow-window
+  overflow: hidden
+
+.dito-time-picker-popup .dito-time-picker-panel
+  float: left
+  border: $border-style
+  border-width: 0 1px 0
+  margin-left: -1px
+  box-sizing: border-box
+  width: calc(100% / 3 + 1px)
+  overflow: hidden
+  &:last-child
+    border-right: 0
+  ul
+    overflow-x: hidden
+    overflow-y: auto
+    list-style: none
+    width: 100%
+    margin: 0
+    // Hide scrollbar:
+    box-sizing: content-box
+    padding: 0 17px 0 0
+    height: 7 * $time-picker-line-height
+    & > li
+      box-sizing: content-box
+      background: $color-white
+      width: 100%
+      height: $time-picker-line-height
+      line-height: $time-picker-line-height
+      text-align: center
+      font-variant-numeric: tabular-nums
+      cursor: pointer
+      white-space: nowrap
+      overflow: hidden
+      +user-select(none)
+      &:first-child
+        margin-top: 3 * $time-picker-line-height
+      &:last-child
+        margin-bottom: 3 * $time-picker-line-height
+      &:hover
+        background: $color-highlight
+      &.selected,
+      &.selected:hover
+        color: $color-text-inverted
+        background: $color-active
+      &.disabled
+        cursor: default
+        color: $color-disabled
+      &.disabled:hover
+        background: transparent
+</style>

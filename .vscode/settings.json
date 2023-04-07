@@ -5,22 +5,70 @@
     // Exclude yarn caches
     ".yarn/*/**": true
   },
+  "javascript.preferences.importModuleSpecifier": "shortest",
+  "typescript.preferences.importModuleSpecifier": "shortest",
+  "javascript.preferences.quoteStyle": "single",
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
   // Disable VSCode's and Vetur's own validator in favor of ESLint:
   "javascript.validate.enable": false,
   "typescript.validate.enable": false,
-  "javascript.preferences.importModuleSpecifierEnding": "js",
-  "typescript.preferences.importModuleSpecifierEnding": "js",
-  "npm.validate.enable": false,
-  "vetur.experimental.templateInterpolationService": true,
-  "vetur.format.styleInitialIndent": false,
-  "vetur.validation.template": false,
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  // Stylelint
+  "stylelint.validate": ["css", "scss"],
+  // Prettier
+  // Only apply Prettier where there is a config file:
+  "prettier.requireConfig": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Volar
+  "volar.completion.normalizeComponentImportName": false,
+  "volar.completion.preferredTagNameCase": "auto-pascal",
+  "volar.completion.preferredAttrNameCase": "auto-camel",
+  "volar.inlayHints.eventArgumentInInlineHandlers": false,
+  "volar.updateImportsOnFileMove.enabled": true,
+  // Format on save:
   "editor.formatOnSave": false,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+  "[javascript]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    }
   },
+  "[vue]": {
+    "editor.defaultFormatter": "Vue.volar",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true,
+      "source.fixAll.stylelint": true
+    }
+  },
+  "[scss]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": true
+    }
+  },
+  "[css]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": true
+    }
+  },
+  "[pug]": {
+    "editor.formatOnSave": true
+  },
+  "[jade]": {
+    "editor.formatOnSave": true
+  },
+  "[xml]": {
+    "editor.defaultFormatter": "DotJoshJohnson.xml"
+  },
+  // https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker
   "cSpell.enabled": true,
-  "cSpell.enableFiletypes": [
-    "javascript",
-    "vue"
-  ]
+  "cSpell.enableFiletypes": ["javascript", "vue", "scss", "css", "jade", "pug", "html"],
+  "cSpell.ignoreRegExpList": [
+      // Allow genitive case apostrophes:
+      "'s\\b"
+  ],
+  // This setting leads to lots of spelling misses, so force it to false.
+  "cSpell.allowCompoundWords": false,
 }

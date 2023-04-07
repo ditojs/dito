@@ -1,5 +1,10 @@
 import {
-  isArray, isObject, isDate, isRegExp, isFunction, isPromise
+  isArray,
+  isObject,
+  isDate,
+  isRegExp,
+  isFunction,
+  isPromise
 } from '../base/index.js'
 import { pick } from './pick.js'
 
@@ -21,11 +26,12 @@ export function clone(value, options) {
     return copy
   }
 
-  const handleValue = value => {
-    return shallow || transferables?.includes(value) ? value
-      : clones.has(value) ? clones.get(value)
-      : cloneValue(value)
-  }
+  const handleValue = value =>
+    shallow || transferables?.includes(value)
+      ? value
+      : clones.has(value)
+        ? clones.get(value)
+        : cloneValue(value)
 
   const cloneValue = value => {
     let copy = value
@@ -39,15 +45,15 @@ export function clone(value, options) {
         copy[i] = handleValue(value[i])
       }
     } else if (isObject(value)) {
-    // Rely on arg.clone() if it exists and assume it creates an actual clone.
+      // Rely on arg.clone() if it exists and assume it creates an actual clone.
       if (isFunction(value.clone)) {
         copy = storeClone(value, value.clone(options))
       } else if (isPromise(value)) {
-      // https://stackoverflow.com/questions/37063293/can-i-clone-a-promise
+        // https://stackoverflow.com/questions/37063293/can-i-clone-a-promise
         copy = storeClone(value, value.then())
       } else {
-      // Prevent calling the actual constructor since it is not guaranteed to
-      // work as intended here, and only clone the non-inherited own properties.
+        // Prevent calling the actual constructor since it is not guaranteed to
+        // work as intended here, and only clone non-inherited own properties.
         copy = storeClone(value, Object.create(Object.getPrototypeOf(value)))
         clones.set(value, copy)
         const keys = enumerable ? Object.keys(value) : Reflect.ownKeys(value)

@@ -72,7 +72,7 @@ function logResponse({ ctx, start, length, err }) {
   const logger = ctx.logger?.child({ name: 'http' })
   const level = err ? 'warn' : 'info'
   if (logger?.isLevelEnabled(level)) {
-  // Get the status code of the response
+    // Get the status code of the response
     const status = err
       ? err.status || 500
       : ctx.status || 404

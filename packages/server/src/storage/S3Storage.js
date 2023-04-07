@@ -63,9 +63,11 @@ export class S3Storage extends Storage {
               } else {
                 // 3. If that fails, keep collecting all chunks and determine
                 //    the mimetype using the full data.
-                stream.once('end', () => done(
-                  getFileTypeFromBuffer(data) || 'application/octet-stream'
-                ))
+                stream.once('end', () =>
+                  done(
+                    getFileTypeFromBuffer(data) || 'application/octet-stream'
+                  )
+                )
               }
             }
             data = data ? Buffer.concat([data, chunk]) : chunk

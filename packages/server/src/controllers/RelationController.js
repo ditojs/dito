@@ -9,8 +9,10 @@ export class RelationController extends CollectionController {
   constructor(parent, object, relationInstance, relationDefinition) {
     super(parent.app, null)
     if (parent.modelClass !== relationInstance.ownerModelClass) {
-      throw new ControllerError(parent,
-        `Invalid parent controller for relation '${relationInstance.name}'.`)
+      throw new ControllerError(
+        parent,
+        `Invalid parent controller for relation '${relationInstance.name}'.`
+      )
     }
     this.parent = parent
     this.object = object
@@ -81,26 +83,22 @@ export class RelationController extends CollectionController {
   // @override
   async execute(ctx, execute) {
     const id = this.parent.getMemberId(ctx)
-    return this.parent.execute(ctx,
-      async (parentQuery, trx) => {
-        const model = await parentQuery
-          .ignoreScope()
-          .findById(id)
-          .throwIfNotFound()
-          // Explicitly only select the foreign key ids for more efficiency.
-          .select(...this.relationInstance.ownerProp.props)
-        // This is the same as `ModelController.execute()`, except for the use
-        // of `model.$relatedQuery()` instead of `modelClass.query()`:
-        const query = model.$relatedQuery(this.relationInstance.name, trx)
-        this.setupQuery(query)
-        return execute(query, trx)
-      }
-    )
+    return this.parent.execute(ctx, async (parentQuery, trx) => {
+      const model = await parentQuery
+        .ignoreScope()
+        .findById(id)
+        .throwIfNotFound()
+        // Explicitly only select the foreign key ids for more efficiency.
+        .select(...this.relationInstance.ownerProp.props)
+      // This is the same as `ModelController.execute()`, except for the use
+      // of `model.$relatedQuery()` instead of `modelClass.query()`:
+      const query = model.$relatedQuery(this.relationInstance.name, trx)
+      this.setupQuery(query)
+      return execute(query, trx)
+    })
   }
 
-  collection = this.toCoreActions({
-  })
+  collection = this.toCoreActions({})
 
-  member = this.toCoreActions({
-  })
+  member = this.toCoreActions({})
 }

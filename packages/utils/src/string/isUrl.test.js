@@ -24,7 +24,7 @@ describe('isUrl()', () => {
     'http://10.0.0.0/',
     'http://189.123.14.13/',
     'http://duckduckgo.com/?q=%2F',
-    'http://foobar.com/t$-_.+!*\'(),',
+    "http://foobar.com/t$-_.+!*'(),",
     'http://foobar.com/?foo=bar#baz=qux',
     'http://foobar.com?foo=bar',
     'http://foobar.com#baz=qux',
@@ -76,7 +76,7 @@ describe('isUrl()', () => {
     'http://localhost:61500this is an invalid url!!!!',
     '////foobar.com',
     'http:////foobar.com',
-    'https://example.com/foo/<script>alert(\'XSS\')</script>/'
+    "https://example.com/foo/<script>alert('XSS')</script>/"
     // TODO: block this: 'mailto:foo@bar.com'
   ])(
     'isUrl(%o)',

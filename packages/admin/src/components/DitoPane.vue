@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
@@ -15,7 +16,7 @@
     .dito-break(
       v-if="schema.break === 'before'"
     )
-    dito-container(
+    DitoContainer(
       v-if="shouldRender(schema)"
       :key="nestedDataPath"
       :schema="schema"
@@ -33,47 +34,13 @@
     )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-pane
-    display: flex
-    position: relative
-    flex-flow: row wrap
-    align-content: flex-start
-    align-items: baseline
-    // Remove the padding added by `.dito-container` inside `.dito-pane`:
-    margin: (-$form-spacing) (-$form-spacing-half)
-    // Add removed horizontal margin again to max-width:
-    max-width: $content-width + 2 * $form-spacing-half
-    // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
-    // so that the `.dito-buttons-main` can be moved all the way to the bottom.
-    flex: 0%
-
-    &.dito-pane-main
-      flex: 100%
-
-    .dito-schema-header:not(.dito-schema-menu-header) + &
-      // Clear top-margin if the components are preceded by a schema header.
-      margin-top: 0
-
-    .dito-container.dito-omit-padding > &
-      // Clear margins set above again if parent is omitting padding.
-      margin: 0
-      max-width: unset
-
-    .dito-break
-      flex: 100%
-      height: 0
-</style>
-
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { appendDataPath } from '../utils/data.js'
 import { getAllPanelSchemas, isNested } from '../utils/schema.js'
 
 // @vue/component
-export default DitoComponent.component('dito-pane', {
+export default DitoComponent.component('DitoPane', {
   provide() {
     return {
       $tabComponent: () => this.tabComponent
@@ -116,9 +83,10 @@ export default DitoComponent.component('dito-pane', {
           const nestedDataPath = appendDataPath(this.dataPath, name)
           return {
             schema,
-            dataPath: nested && !wrapPrimitives
-              ? nestedDataPath
-              : this.dataPath,
+            dataPath:
+              nested && !wrapPrimitives
+                ? nestedDataPath
+                : this.dataPath,
             nestedDataPath,
             nested,
             store: nested ? this.getChildStore(name) : this.store
@@ -131,12 +99,13 @@ export default DitoComponent.component('dito-pane', {
       // Gather all panel schemas from all component schemas, by finding those
       // that want to provide a panel. See `getAllPanelSchemas()` for details.
       return this.componentSchemas.flatMap(
-        ({ schema, nestedDataPath: dataPath }) => getAllPanelSchemas(
-          schema,
-          dataPath,
-          this.schemaComponent,
-          this.tabComponent
-        )
+        ({ schema, nestedDataPath: dataPath }) =>
+          getAllPanelSchemas(
+            schema,
+            dataPath,
+            this.schemaComponent,
+            this.tabComponent
+          )
       )
     },
 
@@ -166,3 +135,37 @@ export default DitoComponent.component('dito-pane', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-pane
+  display: flex
+  position: relative
+  flex-flow: row wrap
+  align-content: flex-start
+  align-items: baseline
+  // Remove the padding added by `.dito-container` inside `.dito-pane`:
+  margin: (-$form-spacing) (-$form-spacing-half)
+  // Add removed horizontal margin again to max-width:
+  max-width: $content-width + 2 * $form-spacing-half
+  // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
+  // so that the `.dito-buttons-main` can be moved all the way to the bottom.
+  flex: 0%
+
+  &.dito-pane-main
+    flex: 100%
+
+  .dito-schema-header:not(.dito-schema-menu-header) + &
+    // Clear top-margin if the components are preceded by a schema header.
+    margin-top: 0
+
+  .dito-container.dito-omit-padding > &
+    // Clear margins set above again if parent is omitting padding.
+    margin: 0
+    max-width: unset
+
+  .dito-break
+    flex: 100%
+    height: 0
+</style>

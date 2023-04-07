@@ -41,7 +41,10 @@ export class ModelController extends CollectionController {
       throw new ControllerError(this, `Relation '${name}' not found.`)
     }
     const relation = new RelationController(
-      this, object, relationInstance, relationDefinition
+      this,
+      object,
+      relationInstance,
+      relationDefinition
     )
     // RelationController instances are not registered with the app, but are
     // managed by their parent controller instead.

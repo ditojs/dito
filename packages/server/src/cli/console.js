@@ -52,7 +52,9 @@ export default async function startConsole(app, config) {
   try {
     await fs.stat(historyFile)
     const lines = await fs.readFile(historyFile)
-    lines.toString().split('\n')
+    lines
+      .toString()
+      .split('\n')
       .reverse()
       .slice(0, config.historySize)
       .filter(line => line.trim())
@@ -104,8 +106,8 @@ function displayUsage(app, config, details) {
     ${
       modelHandleNames.length > 0
         ? ` - Dito models: ${
-          modelHandleNames.map(m => pico.cyan(m)).join(', ')
-        }`
+            modelHandleNames.map(m => pico.cyan(m)).join(', ')
+          }`
         : ''
     }
   `)
@@ -123,7 +125,7 @@ function displayUsage(app, config, details) {
 
 // Wraps the default eval with a handler that resolves promises
 function wrapEval({ eval: defaultEval }) {
-  return async function(code, context, file, cb) {
+  return async function (code, context, file, cb) {
     return defaultEval.call(this, code, context, file, async (err, result) => {
       if (err || !(result && isFunction(result.then))) {
         return cb(err, result)

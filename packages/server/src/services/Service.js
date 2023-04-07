@@ -20,16 +20,13 @@ export class Service {
   }
 
   // @overridable
-  async initialize() {
-  }
+  async initialize() {}
 
   // @overridable
-  async start() {
-  }
+  async start() {}
 
   // @overridable
-  async stop() {
-  }
+  async stop() {}
 
   // Only use this method to get a logger instance that is bound to the context,
   // otherwise use the cached getter.

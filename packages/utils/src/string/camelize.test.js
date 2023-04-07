@@ -14,7 +14,10 @@ describe('camelize()', () => {
     (pascalCase, expected) => {
       describe.each([
         ...strings,
-        'foo-bar', 'foo_bar', '--foo-bar--', '__foo_bar__'
+        'foo-bar',
+        'foo_bar',
+        '--foo-bar--',
+        '__foo_bar__'
       ])(
         `camelize(%o, ${pascalCase})`,
         value => {

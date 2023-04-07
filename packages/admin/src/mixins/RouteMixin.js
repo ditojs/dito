@@ -11,14 +11,6 @@ export default {
     }
   },
 
-  beforeRouteUpdate(to, from, next) {
-    this?.beforeRouteChange(to, from, next)
-  },
-
-  beforeRouteLeave(to, from, next) {
-    this?.beforeRouteChange(to, from, next)
-  },
-
   data() {
     return {
       reload: false,
@@ -108,6 +100,14 @@ export default {
     isMutating() {
       return false
     }
+  },
+
+  beforeRouteUpdate(to, from, next) {
+    this?.beforeRouteChange(to, from, next)
+  },
+
+  beforeRouteLeave(to, from, next) {
+    this?.beforeRouteChange(to, from, next)
   },
 
   created() {

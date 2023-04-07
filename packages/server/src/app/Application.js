@@ -19,9 +19,18 @@ import responseTime from 'koa-response-time'
 import { Model, knexSnakeCaseMappers, ref } from 'objection'
 import Router from '@ditojs/router'
 import {
-  isArray, isObject, asArray, isPlainObject, isModule,
-  hyphenate, clone, merge, parseDataPath, normalizeDataPath,
-  toPromiseCallback, mapConcurrently
+  isArray,
+  isObject,
+  asArray,
+  isPlainObject,
+  isModule,
+  hyphenate,
+  clone,
+  merge,
+  parseDataPath,
+  normalizeDataPath,
+  toPromiseCallback,
+  mapConcurrently
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -71,9 +80,10 @@ export class Application extends Koa {
     } = config
     this.config = {
       app,
-      log: log === false || log?.silent || process.env.DITO_SILENT
-        ? {}
-        : getOptions(log),
+      log:
+        log === false || log?.silent || process.env.DITO_SILENT
+          ? {}
+          : getOptions(log),
       assets: merge(defaultAssetOptions, getOptions(assets)),
       logger: merge(defaultLoggerOptions, getOptions(logger)),
       ...rest
@@ -117,12 +127,18 @@ export class Application extends Koa {
   }
 
   addRoute(
-    method, path, transacted, middlewares, controller = null, action = null
+    method,
+    path,
+    transacted,
+    middlewares,
+    controller = null,
+    action = null
   ) {
     middlewares = asArray(middlewares)
-    const middleware = middlewares.length > 1
-      ? compose(middlewares)
-      : middlewares[0]
+    const middleware =
+      middlewares.length > 1
+        ? compose(middlewares)
+        : middlewares[0]
     // Instead of directly passing `handler`, pass a `route` object that also
     // will be exposed through `ctx.route`, see `routerHandler()`:
     const route = {
@@ -173,15 +189,16 @@ export class Application extends Koa {
   }
 
   async setupStorages() {
-    await Promise.all(Object.values(this.storages)
-      .filter(storage => !storage.initialized)
-      .map(async storage => {
-        // Different from models, services and controllers, storages can have
-        // async `setup()` methods, as used by `S3Storage`.
-        await storage.setup()
-        await storage.initialize()
-        storage.initialized = true
-      })
+    await Promise.all(
+      Object.values(this.storages)
+        .filter(storage => !storage.initialized)
+        .map(async storage => {
+          // Different from models, services and controllers, storages can have
+          // async `setup()` methods, as used by `S3Storage`.
+          await storage.setup()
+          await storage.initialize()
+          storage.initialized = true
+        })
     )
   }
 
@@ -212,24 +229,25 @@ export class Application extends Koa {
   }
 
   async setupServices() {
-    await Promise.all(Object.values(this.services)
-      .filter(service => !service.initialized)
-      .map(async service => {
-        const { name } = service
-        const config = this.config.services[name]
-        if (config === undefined) {
-          throw new Error(`Configuration missing for service '${name}'`)
-        }
-        // As a convention, the configuration of a service can be set to `false`
-        // in order to entirely deactivate the service.
-        if (config === false) {
-          delete this.services[name]
-        } else {
-          service.setup(config)
-          await service.initialize()
-          service.initialized = true
-        }
-      })
+    await Promise.all(
+      Object.values(this.services)
+        .filter(service => !service.initialized)
+        .map(async service => {
+          const { name } = service
+          const config = this.config.services[name]
+          if (config === undefined) {
+            throw new Error(`Configuration missing for service '${name}'`)
+          }
+          // As a convention, the configuration of a service can be set to
+          // `false` in order to entirely deactivate the service.
+          if (config === false) {
+            delete this.services[name]
+          } else {
+            service.setup(config)
+            await service.initialize()
+            service.initialized = true
+          }
+        })
     )
   }
 
@@ -269,16 +287,17 @@ export class Application extends Koa {
   }
 
   async setupModels() {
-    await Promise.all(Object.values(this.models)
-      .filter(modelClass => !modelClass.initialized)
-      .map(async modelClass => {
-        // While `setup()` is used for internal dito things, `initialize()` is
-        // called async and meant to be used by the user, without the need to
-        // call `super.initialize()`.
-        modelClass.setup()
-        await modelClass.initialize()
-        modelClass.initialized = true
-      })
+    await Promise.all(
+      Object.values(this.models)
+        .filter(modelClass => !modelClass.initialized)
+        .map(async modelClass => {
+          // While `setup()` is used for internal dito things, `initialize()` is
+          // called async and meant to be used by the user, without the need to
+          // call `super.initialize()`.
+          modelClass.setup()
+          await modelClass.initialize()
+          modelClass.initialized = true
+        })
     )
   }
 
@@ -287,8 +306,7 @@ export class Application extends Koa {
     if (log.schema || log.relations) {
       for (const modelClass of models) {
         const shouldLog = option => (
-          option === true ||
-          asArray(option).includes(modelClass.name)
+          option === true || asArray(option).includes(modelClass.name)
         )
         const data = {}
         if (shouldLog(log.schema)) {
@@ -296,9 +314,10 @@ export class Application extends Koa {
         }
         if (shouldLog(log.relations)) {
           data.relations = clone(modelClass.getRelationMappings(), {
-            processValue: value => Model.isPrototypeOf(value)
-              ? `[Model: ${value.name}]`
-              : value
+            processValue: value =>
+              Model.isPrototypeOf(value)
+                ? `[Model: ${value.name}]`
+                : value
           })
         }
         if (Object.keys(data).length > 0) {
@@ -349,19 +368,20 @@ export class Application extends Koa {
   }
 
   async setupControllers() {
-    await Promise.all(Object.values(this.controllers)
-      .filter(controller => !controller.initialized)
-      .map(async controller => {
-        controller.setup()
-        await controller.initialize()
-        // Each controller can also compose their own middleware (or app), e.g.
-        // as used in `AdminController`:
-        const composed = controller.compose()
-        if (composed) {
-          this.use(mount(controller.url, composed))
-        }
-        controller.initialized = true
-      })
+    await Promise.all(
+      Object.values(this.controllers)
+        .filter(controller => !controller.initialized)
+        .map(async controller => {
+          controller.setup()
+          await controller.initialize()
+          // Each controller can also compose their own middleware (or app),
+          // e.g.  as used in `AdminController`:
+          const composed = controller.compose()
+          if (composed) {
+            this.use(mount(controller.url, composed))
+          }
+          controller.initialized = true
+        })
     )
   }
 
@@ -406,7 +426,7 @@ export class Application extends Koa {
               wildcard || normalizedName,
               ...parseDataPath(nestedDataPath)
             ])
-            const assetConfigs = convertedAssets[normalizedName] ||= {}
+            const assetConfigs = (convertedAssets[normalizedName] ||= {})
             assetConfigs[dataPath] = config
           }
         }
@@ -480,8 +500,8 @@ export class Application extends Koa {
       asObject,
       dataName,
       validate: validate
-        // Use `call()` to pass ctx as context to Ajv, see passContext:
-        ? data => validate.call(ctx, data)
+        ? // Use `call()` to pass ctx as context to Ajv, see passContext:
+          data => validate.call(ctx, data)
         : null
     }
   }
@@ -500,8 +520,10 @@ export class Application extends Koa {
     // Remove knex SQL query and move to separate `sql` property.
     // TODO: Fix this properly in Knex / Objection instead, see:
     // https://gitter.im/Vincit/objection.js?at=5a68728f5a9ebe4f75ca40b0
-    const [, sql, message] = error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
+    const [, sql, message] = (
+      error.message.match(/^([\s\S]*) - ([\s\S]*?)$/) ||
       [null, null, error.message]
+    )
     return new DatabaseError(error, {
       message,
       // Only include the SQL query in the error if `log.errors.sql`is set.
@@ -519,9 +541,11 @@ export class Application extends Koa {
       this.use(responseTime(getOptions(app.responseTime)))
     }
     if (log.requests) {
-      this.use(logRequests({
-        ignoreUrlPattern: /(\.js$|\.scss$|\.vue$|\/@vite\/|\/@fs\/|\/@id\/)/
-      }))
+      this.use(
+        logRequests({
+          ignoreUrlPattern: /(\.js$|\.scss$|\.vue$|\/@vite\/|\/@fs\/|\/@id\/)/
+        })
+      )
     }
     // This needs to be positioned after the request logger to log the correct
     // response status.
@@ -533,18 +557,22 @@ export class Application extends Koa {
       this.use(cors(getOptions(app.cors)))
     }
     if (app.compress !== false) {
-      this.use(compress(merge(
-        {
-          // Use a reasonable default for Brotli compression.
-          // See https://github.com/koajs/compress/issues/126
-          br: {
-            params: {
-              [zlib.constants.BROTLI_PARAM_QUALITY]: 4
-            }
-          }
-        },
-        getOptions(app.compress)
-      )))
+      this.use(
+        compress(
+          merge(
+            {
+              // Use a reasonable default for Brotli compression.
+              // See https://github.com/koajs/compress/issues/126
+              br: {
+                params: {
+                  [zlib.constants.BROTLI_PARAM_QUALITY]: 4
+                }
+              }
+            },
+            getOptions(app.compress)
+          )
+        )
+      )
     }
     if (app.etag !== false) {
       this.use(conditional())
@@ -583,18 +611,20 @@ export class Application extends Koa {
     const { prettyPrint, ...options } = this.config.logger
     const transport = prettyPrint
       ? pino.transport({
-        target: 'pino-pretty',
-        options: prettyPrint
-      }) : null
+          target: 'pino-pretty',
+          options: prettyPrint
+        })
+      : null
     this.logger = pino(options, transport).child({ name: 'app' })
   }
 
   setupKnex() {
     let { knex, log } = this.config
     if (knex?.client) {
-      const snakeCaseOptions = knex.normalizeDbNames === true
-        ? {}
-        : knex.normalizeDbNames
+      const snakeCaseOptions =
+        knex.normalizeDbNames === true
+          ? {}
+          : knex.normalizeDbNames
       if (snakeCaseOptions) {
         knex = {
           ...knex,
@@ -673,11 +703,11 @@ export class Application extends Koa {
     // stack traces and logging of error data.
     return this.config.logger.prettyPrint
       ? util.inspect(copy, {
-        colors: !!this.config.logger.prettyPrint.colorize,
-        compact: false,
-        depth: null,
-        maxArrayLength: null
-      })
+          colors: !!this.config.logger.prettyPrint.colorize,
+          compact: false,
+          depth: null,
+          maxArrayLength: null
+        })
       : copy
   }
 
@@ -685,9 +715,10 @@ export class Application extends Koa {
     if (!error.expose && !this.silent) {
       try {
         const logger = ctx?.logger || this.logger
-        const level = error instanceof ResponseError && error.status < 500
-          ? 'info'
-          : 'error'
+        const level =
+          error instanceof ResponseError && error.status < 500
+            ? 'info'
+            : 'error'
         logger[level](this.formatError(error))
       } catch (e) {
         console.error('Could not log error', e)
@@ -742,7 +773,8 @@ export class Application extends Koa {
       await Promise.race([
         promise,
         new Promise((resolve, reject) =>
-          setTimeout(reject,
+          setTimeout(
+            reject,
             timeout,
             new Error(
               `Timeout reached while stopping Dito.js server (${timeout}ms)`
@@ -784,9 +816,7 @@ export class Application extends Koa {
         storage: storage.name,
         count
       }))
-      return AssetModel
-        .query(trx)
-        .insert(assets)
+      return AssetModel.query(trx).insert(assets)
     }
     return null
   }
@@ -812,7 +842,10 @@ export class Application extends Koa {
         const changeCount = async (files, increment) => {
           if (files.length > 0) {
             await AssetModel.query(trx)
-              .whereIn('key', files.map(file => file.key))
+              .whereIn(
+                'key',
+                files.map(file => file.key)
+              )
               .increment('count', increment)
           }
         }
@@ -820,8 +853,9 @@ export class Application extends Koa {
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)
         ])
-        const cleanupTimeThreshold =
-          getDuration(this.config.assets.cleanupTimeThreshold)
+        const cleanupTimeThreshold = getDuration(
+          this.config.assets.cleanupTimeThreshold
+        )
         if (cleanupTimeThreshold > 0) {
           setTimeout(
             // Don't pass `trx` here, as we want this delayed execution to
@@ -843,65 +877,69 @@ export class Application extends Koa {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
-      await mapConcurrently(files, async file => {
-        const asset = await AssetModel.query(trx).findOne('key', file.key)
-        if (!asset) {
-          if (file.data || file.url) {
-            let { data } = file
-            if (!data) {
-              const { url } = file
-              if (!storage.isImportSourceAllowed(url)) {
-                throw new AssetError(
-                  `Unable to import asset from foreign source: '${
-                    file.name
-                  }' ('${
-                    url
-                  }'): The source needs to be explicitly allowed.`
+      await mapConcurrently(
+        files,
+        async file => {
+          const asset = await AssetModel.query(trx).findOne('key', file.key)
+          if (!asset) {
+            if (file.data || file.url) {
+              let { data } = file
+              if (!data) {
+                const { url } = file
+                if (!storage.isImportSourceAllowed(url)) {
+                  throw new AssetError(
+                    `Unable to import asset from foreign source: '${
+                      file.name
+                    }' ('${
+                      url
+                    }'): The source needs to be explicitly allowed.`
+                  )
+                }
+                this.logger.info(
+                  `Asset ${
+                    pico.green(`'${file.name}'`)
+                  } is from a foreign source, fetching from ${
+                    pico.green(`'${url}'`)
+                  } and adding to storage ${
+                    pico.green(`'${storage.name}'`)
+                  }...`
                 )
+                if (url.startsWith('file://')) {
+                  const filepath = path.resolve(url.substring(7))
+                  data = await fs.readFile(filepath)
+                } else {
+                  const response = await fetch(url)
+                  const arrayBuffer = await response.arrayBuffer()
+                  // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
+                  data = Buffer.from(arrayBuffer)
+                }
               }
-              this.logger.info(
-                `Asset ${
-                  pico.green(`'${file.name}'`)
-                } is from a foreign source, fetching from ${
-                  pico.green(`'${url}'`)
-                } and adding to storage ${
-                  pico.green(`'${storage.name}'`)
-                }...`
+              const importedFile = await storage.addFile(file, data)
+              await this.createAssets(storage, [importedFile], 0, trx)
+              // Merge back the changed file properties into the actual files
+              // object, so that the data from the static model hook can be used
+              // directly for the actual running query.
+              Object.assign(file, importedFile)
+              importedFiles.push(importedFile)
+            } else {
+              throw new AssetError(
+                `Unable to import asset from foreign source: '${
+                  file.name
+                }' ('${
+                  file.key
+                }')`
               )
-              if (url.startsWith('file://')) {
-                const filepath = path.resolve(url.substring(7))
-                data = await fs.readFile(filepath)
-              } else {
-                const response = await fetch(url)
-                const arrayBuffer = await response.arrayBuffer()
-                // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
-                data = Buffer.from(arrayBuffer)
-              }
             }
-            const importedFile = await storage.addFile(file, data)
-            await this.createAssets(storage, [importedFile], 0, trx)
-            // Merge back the changed file properties into the actual files
-            // object, so that the data from the static model hook can be used
-            // directly for the actual running query.
-            Object.assign(file, importedFile)
-            importedFiles.push(importedFile)
           } else {
-            throw new AssetError(
-              `Unable to import asset from foreign source: '${
-                file.name
-              }' ('${
-                file.key
-              }')`
-            )
+            // Asset is from a foreign source, but was already imported and can
+            // be reused. See above for an explanation of this merge.
+            Object.assign(file, asset.file)
+            // NOTE: No need to add `file` to `importedFiles`, since it's
+            // already been imported to the storage before.
           }
-        } else {
-          // Asset is from a foreign source, but was already imported and can
-          // be reused. See above for an explanation of this merge.
-          Object.assign(file, asset.file)
-          // NOTE: No need to add `file` to `importedFiles`, since it's
-          // already been imported to the storage before.
-        }
-      }, { concurrency: storage.concurrency })
+        },
+        { concurrency: storage.concurrency }
+      )
     }
     return importedFiles
   }
@@ -922,11 +960,11 @@ export class Application extends Koa {
             modifiedFiles.push(changedFile)
           } else {
             throw new AssetError(
-                `Unable to update modified asset from memory source: '${
-                  file.name
-                }' ('${
-                  file.key
-                }')`
+              `Unable to update modified asset from memory source: '${
+                file.name
+              }' ('${
+                file.key
+              }')`
             )
           }
         }
@@ -939,28 +977,30 @@ export class Application extends Koa {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const { assets } = this.config
-      const cleanupTimeThreshold =
-        getDuration(timeThreshold ?? assets.cleanupTimeThreshold)
-      const danglingTimeThreshold =
-        getDuration(timeThreshold ?? assets.danglingTimeThreshold)
+      const cleanupTimeThreshold = getDuration(
+        timeThreshold ?? assets.cleanupTimeThreshold
+      )
+      const danglingTimeThreshold = getDuration(
+        timeThreshold ?? assets.danglingTimeThreshold
+      )
       return AssetModel.transaction(trx, async trx => {
         // Calculate the date math in JS instead of SQL, as there is no easy
         // cross-SQL way to do `now() - interval X hours`:
         const now = new Date()
         const cleanupDate = subtractDuration(now, cleanupTimeThreshold)
         const danglingDate = subtractDuration(now, danglingTimeThreshold)
-        const orphanedAssets = await AssetModel
-          .query(trx)
+        const orphanedAssets = await AssetModel.query(trx)
           .where('count', 0)
-          .andWhere(
-            query => query
+          .andWhere(query =>
+            query
               .where('updatedAt', '<=', cleanupDate)
               .orWhere(
-                // Protect freshly created assets from being deleted again right
-                // away, .e.g. when `config.assets.cleanupTimeThreshold = 0`
-                query => query
-                  .where('updatedAt', '=', ref('createdAt'))
-                  .andWhere('updatedAt', '<=', danglingDate)
+                // Protect freshly created assets from being deleted again
+                // right away, when `config.assets.cleanupTimeThreshold = 0`
+                query =>
+                  query
+                    .where('updatedAt', '=', ref('createdAt'))
+                    .andWhere('updatedAt', '<=', danglingDate)
               )
           )
         if (orphanedAssets.length > 0) {
@@ -976,10 +1016,7 @@ export class Application extends Koa {
               return asset.key
             }
           )
-          await AssetModel
-            .query(trx)
-            .delete()
-            .whereIn('key', orphanedKeys)
+          await AssetModel.query(trx).delete().whereIn('key', orphanedKeys)
         }
         return orphanedAssets
       })

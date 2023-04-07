@@ -3,8 +3,8 @@ import { UseSortable } from '@vueuse/integrations/useSortable/component'
 
 // @vue/component
 export default {
-  components: { UseSortable },
   mixins: [ItemMixin],
+  components: { UseSortable },
 
   data() {
     return {

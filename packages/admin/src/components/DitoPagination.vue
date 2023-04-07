@@ -1,8 +1,8 @@
 <template lang="pug">
-pagination(
+Pagination(
+  v-model:page="page"
   :pageSize="limit"
   :total="total"
-  v-model:page="page"
 )
 </template>
 
@@ -11,7 +11,7 @@ import { Pagination } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
-export default DitoComponent.component('dito-pagination', {
+export default DitoComponent.component('DitoPagination', {
   components: { Pagination },
 
   props: {
@@ -28,10 +28,12 @@ export default DitoComponent.component('dito-pagination', {
 
       set(page) {
         if (this.page !== page) {
-          this.$router.push(this.getQueryLink({
-            ...this.query,
-            page: (page - 1)
-          }))
+          this.$router.push(
+            this.getQueryLink({
+              ...this.query,
+              page: page - 1
+            })
+          )
         }
       }
     }

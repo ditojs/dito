@@ -59,13 +59,17 @@ export class Validator extends objection.Validator {
       }
     }
 
-    addSchemas(this.keywords, (keyword, schema) => ajv.addKeyword({
-      keyword,
-      ...schema
-    }))
-    addSchemas(this.formats, (format, schema) => ajv.addFormat(format, {
-      ...schema
-    }))
+    addSchemas(this.keywords, (keyword, schema) =>
+      ajv.addKeyword({
+        keyword,
+        ...schema
+      })
+    )
+    addSchemas(this.formats, (format, schema) =>
+      ajv.addFormat(format, {
+        ...schema
+      })
+    )
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
@@ -85,10 +89,13 @@ export class Validator extends objection.Validator {
       return opts
     }, {})
     const cacheKey = formatJson(opts, false)
-    const { ajv } = this.ajvCache[cacheKey] || (this.ajvCache[cacheKey] = {
-      ajv: this.createAjv(opts),
-      options
-    })
+    const { ajv } = (
+      this.ajvCache[cacheKey] ||
+      (this.ajvCache[cacheKey] = {
+        ajv: this.createAjv(opts),
+        options
+      })
+    )
     return ajv
   }
 
@@ -98,40 +105,41 @@ export class Validator extends objection.Validator {
     // Assume `options.throw = true` as the default.
     const dontThrow = options.throw === false
     return options.async
-      // For async:
-      ? dontThrow
+      ? // For async:
+        dontThrow
         ? async function validate(data) {
-          // Emulate `options.throw == false` behavior for async validation:
-          // Return `true` or `false`, and store errors on `validate.errors`
-          // if validation failed.
-          let result
-          try {
-            // Use `call()` to pass `this` as context to Ajv, see passContext:
-            result = await validator.call(this, data)
-          } catch (error) {
-            if (error.errors) {
-              validate.errors = error.errors
-              result = false
-            } else {
-              throw error
+            // Emulate `options.throw == false` behavior for async validation:
+            // Return `true` or `false`, and store errors on `validate.errors`
+            // if validation failed.
+            let result
+            try {
+              // Use `call()` to pass `this` as context to Ajv, see passContext:
+              result = await validator.call(this, data)
+            } catch (error) {
+              if (error.errors) {
+                validate.errors = error.errors
+                result = false
+              } else {
+                throw error
+              }
             }
+            return result
           }
-          return result
-        }
         : validator // The default for async is to throw.
-      // For sync:
-      : dontThrow
+      : // For sync:
+        dontThrow
         ? validator // The default for sync is to not throw.
-        : function(data) {
-          // Emulate `options.throw == true` behavior for sync validation:
-          // Return `true` if successful, throw `Ajv.ValidationError` otherwise.
-          // Use `call()` to pass `this` as context to Ajv, see passContext:
-          const result = validator.call(this, data)
-          if (!result) {
-            throw new Ajv.ValidationError(validator.errors)
+        : function (data) {
+            // Emulate `options.throw == true` behavior for sync validation:
+            // Return `true` if successful, throw `Ajv.ValidationError`
+            // otherwise. Use `call()` to pass `this` as context to Ajv,
+            // see `passContext`:
+            const result = validator.call(this, data)
+            if (!result) {
+              throw new Ajv.ValidationError(validator.errors)
+            }
+            return result
           }
-          return result
-        }
   }
 
   getKeyword(keyword) {
@@ -204,9 +212,10 @@ export class Validator extends objection.Validator {
       // https://github.com/epoberezkin/ajv/issues/671
       const key = dataPath.replace(/\['([^']*)'\]/g, '/$1').slice(1)
       const { message, keyword, params } = error
-      const definition = keyword === 'format'
-        ? this.getFormat(params.format)
-        : this.getKeyword(keyword)
+      const definition =
+        keyword === 'format'
+          ? this.getFormat(params.format)
+          : this.getKeyword(keyword)
       const identifier = `${key}_${keyword}`
       if (
         // Ajv produces duplicate validation errors sometimes, filter them out.
@@ -247,7 +256,8 @@ export class Validator extends objection.Validator {
       if (errors.length === 2) {
         const [error1, error2] = errors
         if (
-          error1.keyword === 'type' && error1.params.type === 'null' &&
+          error1.keyword === 'type' &&
+          error1.params.type === 'null' &&
           error2.keyword === 'oneOf'
         ) {
           delete errorHash[dataPath]

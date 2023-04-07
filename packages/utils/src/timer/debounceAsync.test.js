@@ -53,7 +53,9 @@ describe('debounceAsync()', () => {
 
   it('should pass through `this`', async () => {
     expect.assertions(2)
-    const func = vi.fn(async function() { return this })
+    const func = vi.fn(async function () {
+      return this
+    })
     const debounced = debounceAsync(func, 1000)
     const obj = {}
     const promises = []
@@ -82,69 +84,60 @@ describe('debounceAsync()', () => {
     expect(func).toBeCalledTimes(1)
   })
 
-  it(
-    'should execute once immediately if intervals are less than wait',
-    async () => {
-      expect.assertions(2)
-      const func = vi.fn()
-      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
-      const promises = []
+  it('should execute once immediately if intervals are less than wait', async () => {
+    expect.assertions(2)
+    const func = vi.fn()
+    const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+    const promises = []
+    promises.push(debounced())
+    expect(func).toBeCalledTimes(1)
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(500)
       promises.push(debounced())
-      expect(func).toBeCalledTimes(1)
-      for (let i = 0; i < 10; i++) {
-        vi.advanceTimersByTime(500)
-        promises.push(debounced())
-      }
-      await Promise.all(promises)
-      expect(func).toBeCalledTimes(1)
     }
-  )
+    await Promise.all(promises)
+    expect(func).toBeCalledTimes(1)
+  })
 
-  it(
-    'should execute twice immediately with long enough intervals',
-    async () => {
-      expect.assertions(3)
-      const func = vi.fn()
-      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
-      const promises = []
+  it('should execute twice immediately with long enough intervals', async () => {
+    expect.assertions(3)
+    const func = vi.fn()
+    const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+    const promises = []
+    promises.push(debounced())
+    expect(func).toBeCalledTimes(1)
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(500)
       promises.push(debounced())
-      expect(func).toBeCalledTimes(1)
-      for (let i = 0; i < 10; i++) {
-        vi.advanceTimersByTime(500)
-        promises.push(debounced())
-      }
-      expect(func).toBeCalledTimes(1)
-      vi.advanceTimersByTime(1000)
-      promises.push(debounced())
-      await Promise.all(promises)
-      expect(func).toBeCalledTimes(2)
     }
-  )
+    expect(func).toBeCalledTimes(1)
+    vi.advanceTimersByTime(1000)
+    promises.push(debounced())
+    await Promise.all(promises)
+    expect(func).toBeCalledTimes(2)
+  })
 
-  it(
-    'should only reject the last waiting promise',
-    async () => {
-      expect.assertions(5)
-      let count = 0
-      const func = vi.fn(() => {
-        if (++count > 1) {
-          throw new Error('boom')
-        }
-      })
-      const debounced = debounceAsync(func, { delay: 1000, immediate: true })
-      const promises = []
-      promises.push(debounced())
-      expect(func).toBeCalledTimes(1)
-      for (let i = 0; i < 10; i++) {
-        vi.advanceTimersByTime(500)
-        promises.push(debounced())
+  it('should only reject the last waiting promise', async () => {
+    expect.assertions(5)
+    let count = 0
+    const func = vi.fn(() => {
+      if (++count > 1) {
+        throw new Error('boom')
       }
-      expect(func).toBeCalledTimes(1)
-      vi.advanceTimersByTime(1000)
-      await expect(debounced()).rejects.toThrow('boom')
-      const results = await Promise.all(promises)
-      expect(results).toStrictEqual(new Array(11).fill(undefined))
-      expect(func).toBeCalledTimes(2)
+    })
+    const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+    const promises = []
+    promises.push(debounced())
+    expect(func).toBeCalledTimes(1)
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(500)
+      promises.push(debounced())
     }
-  )
+    expect(func).toBeCalledTimes(1)
+    vi.advanceTimersByTime(1000)
+    await expect(debounced()).rejects.toThrow('boom')
+    const results = await Promise.all(promises)
+    expect(results).toStrictEqual(new Array(11).fill(undefined))
+    expect(func).toBeCalledTimes(2)
+  })
 })

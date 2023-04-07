@@ -3,27 +3,19 @@ ul.dito-checkboxes(
   :id="dataPath"
   :class="`dito-layout-${schema.layout || 'vertical'}`"
 )
-  li(v-for="option in options")
+  li(
+    v-for="option in options"
+  )
     label
       input.dito-checkbox(
         ref="element"
+        v-model="selectedOptions"
         type="checkbox"
         :value="getValueForOption(option)"
-        v-model="selectedOptions"
         v-bind="attributes"
       )
       | {{ getLabelForOption(option) }}
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-checkboxes
-    label
-      @extend %input-borderless
-    .dito-checkbox
-      margin-right: $form-spacing
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -43,9 +35,19 @@ export default TypeComponent.register('checkboxes', {
       },
 
       set(option) {
-        this.selectedValue = (option || [])
+        this.selectedValue = option || []
       }
     }
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-checkboxes
+  label
+    @extend %input-borderless
+  .dito-checkbox
+    margin-right: $form-spacing
+</style>

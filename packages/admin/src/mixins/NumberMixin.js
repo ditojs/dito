@@ -10,9 +10,12 @@ export default {
       },
 
       set(value) {
-        this.value = value !== ''
-          ? this.isInteger ? parseInt(value, 10) : parseFloat(value)
-          : null
+        this.value =
+          value !== ''
+            ? this.isInteger
+              ? parseInt(value, 10)
+              : parseFloat(value)
+            : null
       }
     },
 
@@ -40,9 +43,10 @@ export default {
     min: getSchemaAccessor('min', {
       type: Number,
       get(min) {
-        min = min === undefined
-          ? this.getSchemaValue('range', { type: Array })?.[0]
-          : min
+        min =
+          min === undefined
+            ? this.getSchemaValue('range', { type: Array })?.[0]
+            : min
         return this.isInteger && min != null ? Math.floor(min) : min
       }
     }),
@@ -50,9 +54,10 @@ export default {
     max: getSchemaAccessor('max', {
       type: Number,
       get(max) {
-        max = max === undefined
-          ? this.getSchemaValue('range', { type: Array })?.[1]
-          : max
+        max =
+          max === undefined
+            ? this.getSchemaValue('range', { type: Array })?.[1]
+            : max
         return this.isInteger && max != null ? Math.ceil(max) : max
       }
     }),
@@ -70,7 +75,7 @@ export default {
         // Provide a setter that delegates to `[this.min, this.max]`,
         // since those already handle `schema.range`.
         if (isArray(range)) {
-          [this.min, this.max] = range
+          ;[this.min, this.max] = range
         }
       }
     })

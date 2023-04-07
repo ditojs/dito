@@ -1,12 +1,12 @@
 <template lang="pug">
 .dito-tree-list
-  dito-scopes(
+  DitoScopes(
     v-if="scopes"
     :query="query"
     :scopes="scopes"
   )
   .dito-tree-panel
-    dito-tree-item(
+    DitoTreeItem(
       :schema="treeSchema"
       :dataPath="treeDataPath"
       :data="treeData"
@@ -17,148 +17,170 @@
       v-if="hasEditableForms"
     )
       //- Include a router-view for the optional DitoFormInlined
-      router-view
+      RouterView
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-tree-list
-    @extend %field
-    .dito-tree-panel
-      display: flex
-      justify-content: space-between
-      > .dito-tree-item
-        flex: 1 1 25%
-      > .dito-tree-form-container
-        flex: 0 1 75%
-        align-self: stretch
-        background: $content-color-background
-        border-left: $border-style
-        border-top-right-radius: $border-radius - 1
-        border-bottom-right-radius: $border-radius - 1
-        margin: (-$input-padding-ver) (-$input-padding-hor)
-        margin-left: $input-padding-hor
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import {
-  hasFormSchema, getFormSchemas, resolveSchemaComponents
+  hasFormSchema,
+  getFormSchemas,
+  resolveSchemaComponents
 } from '../utils/schema.js'
 
-export default TypeComponent.register([
-  'tree-list', 'tree-object'
-],
-// @vue/component
-{
-  mixins: [SourceMixin],
+export default TypeComponent.register(
+  [
+    'tree-list', 'tree-object'
+  ],
+  // @vue/component
+  {
+    mixins: [SourceMixin],
 
-  provide() {
-    return { container: this }
-  },
-
-  getSourceType(type) {
-    return type === 'tree-object' ? 'object' : 'list'
-  },
-
-  computed: {
-    path() {
-      // Accessed from DitoTreeItem through `container.path`:
-      return this.formComponent?.path
+    provide() {
+      return { container: this }
     },
 
-    editPath() {
-      // Accessed from DitoTreeItem through `container.editPath`:
-      return this.$route.path.slice(this.path?.length)
+    getSourceType(type) {
+      return type === 'tree-object' ? 'object' : 'list'
     },
 
-    treeData() {
-      return this.isListSource
-        ? { [this.name]: this.value }
-        : this.value
-    },
+    computed: {
+      path() {
+        // Accessed from DitoTreeItem through `container.path`:
+        return this.formComponent?.path
+      },
 
-    treeDataPath() {
-      // Remove `name` from `dataPath`, as it is added
-      // to `treeData` and `treeSchema`
-      return this.isListSource
-        ? this.dataPath.slice(0, this.dataPath.length - this.name.length)
-        : this.dataPath
-    },
+      editPath() {
+        // Accessed from DitoTreeItem through `container.editPath`:
+        return this.$route.path.slice(this.path?.length)
+      },
 
-    treeSchema() {
-      return this.isListSource
-        ? {
-          children: {
-            name: this.name,
-            ...this.schema
-          }
-        }
-        : this.schema
-    },
+      treeData() {
+        return this.isListSource
+          ? { [this.name]: this.value }
+          : this.value
+      },
 
-    hasEditableForms() {
-      const hasEditableForms = schema => {
-        return (
-          hasFormSchema(schema) && (
-            this.getSchemaValue('editable', {
-              type: Boolean,
-              default: false,
-              schema
-            }) ||
-            schema.children &&
-            hasEditableForms(schema.children)
-          )
-        )
-      }
-      return hasEditableForms(this.schema)
-    }
-  },
+      treeDataPath() {
+        // Remove `name` from `dataPath`, as it is added
+        // to `treeData` and `treeSchema`
+        return this.isListSource
+          ? this.dataPath.slice(0, this.dataPath.length - this.name.length)
+          : this.dataPath
+      },
 
-  async processSchema(
-    api, schema, name, routes, level,
-    nested = true, flatten = false,
-    process = null
-  ) {
-    await Promise.all([
-      resolveSchemaComponents(schema.properties),
-      SourceMixin.processSchema(
-        api, schema, name, routes, level,
-        nested, flatten,
-        // Pass process() to add more routes to childRoutes:
-        (childRoutes, level) => {
-          const { children } = schema
-          if (children) {
-          // Add `type` to the nested tree list.
-            children.type = 'tree-list'
-            // Recursively call `processSchema()` for the nested tree list:
-            return this.processSchema(
-              api, children, children.name, childRoutes, level,
-              nested, true, // Pass `true` for `flatten` in tree lists.
-              process
+      treeSchema() {
+        return this.isListSource
+          ? {
+              children: {
+                name: this.name,
+                ...this.schema
+              }
+            }
+          : this.schema
+      },
+
+      hasEditableForms() {
+        const hasEditableForms = schema => {
+          return (
+            hasFormSchema(schema) && (
+              this.getSchemaValue('editable', {
+                type: Boolean,
+                default: false,
+                schema
+              }) ||
+              schema.children &&
+              hasEditableForms(schema.children)
             )
-          }
+          )
         }
-      )
-    ])
-  },
+        return hasEditableForms(this.schema)
+      }
+    },
 
-  getFormSchemasForProcessing(schema, context) {
-    // Convert nested children schema to stand-alone schema component,
-    // present in each of the forms, as required by `processSchemaData()`
-    const { children } = schema
-    return getFormSchemas(schema, context, children
-      ? form => ({
-        ...form,
-        components: {
-          ...form.components,
-          [children.name]: children
-        }
-      })
-      : null
-    )
+    async processSchema(
+      api,
+      schema,
+      name,
+      routes,
+      level,
+      nested = true,
+      flatten = false,
+      process = null
+    ) {
+      await Promise.all([
+        resolveSchemaComponents(schema.properties),
+        SourceMixin.processSchema(
+          api,
+          schema,
+          name,
+          routes,
+          level,
+          nested,
+          flatten,
+          // Pass process() to add more routes to childRoutes:
+          (childRoutes, level) => {
+            const { children } = schema
+            if (children) {
+              // Add `type` to the nested tree list.
+              children.type = 'tree-list'
+              // Recursively call `processSchema()` for the nested tree list:
+              return this.processSchema(
+                api,
+                children,
+                children.name,
+                childRoutes,
+                level,
+                nested,
+                true, // Pass `true` for `flatten` in tree lists.
+                process
+              )
+            }
+          }
+        )
+      ])
+    },
+
+    getFormSchemasForProcessing(schema, context) {
+      // Convert nested children schema to stand-alone schema component,
+      // present in each of the forms, as required by `processSchemaData()`
+      const { children } = schema
+      return getFormSchemas(
+        schema,
+        context,
+        children
+          ? form => ({
+              ...form,
+              components: {
+                ...form.components,
+                [children.name]: children
+              }
+            })
+          : null
+      )
+    }
   }
-})
+)
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-tree-list
+  @extend %field
+  .dito-tree-panel
+    display: flex
+    justify-content: space-between
+    > .dito-tree-item
+      flex: 1 1 25%
+    > .dito-tree-form-container
+      flex: 0 1 75%
+      align-self: stretch
+      background: $content-color-background
+      border-left: $border-style
+      border-top-right-radius: $border-radius - 1
+      border-bottom-right-radius: $border-radius - 1
+      margin: (-$input-padding-ver) (-$input-padding-hor)
+      margin-left: $input-padding-hor
+</style>

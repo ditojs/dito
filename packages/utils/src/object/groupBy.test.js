@@ -17,12 +17,14 @@ describe('groupBy()', () => {
       [2, 'a'],
       [2, 'b']
     ]
-    expect(groupBy(array, value => value[0])).toStrictEqual(
-      { 1: [[1, 'a']], 2: [[2, 'a'], [2, 'b']] }
-    )
-    expect(groupBy(array, value => value[1])).toStrictEqual(
-      { a: [[1, 'a'], [2, 'a']], b: [[2, 'b']] }
-    )
+    expect(groupBy(array, value => value[0])).toStrictEqual({
+      1: [[1, 'a']],
+      2: [[2, 'a'], [2, 'b']]
+    })
+    expect(groupBy(array, value => value[1])).toStrictEqual({
+      a: [[1, 'a'], [2, 'a']],
+      b: [[2, 'b']]
+    })
   })
 
   it('should work with an object for `collection`', () => {

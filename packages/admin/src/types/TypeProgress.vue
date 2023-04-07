@@ -1,7 +1,7 @@
 <template lang="pug">
 progress.dito-progress(
-  ref="element"
   :id="dataPath"
+  ref="element"
   :value="progressValue"
   :max="progressMax"
   v-bind="attributes"
@@ -33,9 +33,7 @@ export default TypeComponent.register('progress', {
 
     progressMax() {
       const { range } = this
-      if (range) {
-        return range[1] - range[0]
-      }
+      return range ? range[1] - range[0] : null
     }
   }
 })

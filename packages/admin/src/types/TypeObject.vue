@@ -9,9 +9,9 @@
     v-if="objectData"
   )
     //- Support the same rendering options as TypeList:
-    dito-schema-inlined(
+    DitoSchemaInlined(
       v-if="isInlined"
-        :label="objectLabel"
+      :label="objectLabel"
       :schema="getItemFormSchema(schema, objectData, context)"
       :dataPath="dataPath"
       :data="objectData"
@@ -36,7 +36,7 @@
       v-else
       v-html="getItemLabel(schema, objectData)"
     )
-  dito-edit-buttons(
+  DitoEditButtons(
     :creatable="creatable"
     :deletable="objectData && deletable"
     :editable="objectData && editable"
@@ -52,23 +52,6 @@
     @delete="deleteItem(objectData)"
   )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-object
-    display: flex
-    border: $border-style
-    border-radius: $border-radius
-    margin: 0
-    padding: $form-spacing
-    box-sizing: border-box
-    .dito-object-content
-      flex: 0 1 100%
-    > .dito-buttons
-      flex: 1 0 0%
-      margin-left: $form-spacing
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -101,18 +84,45 @@ export default TypeComponent.register('object', {
   },
 
   async processSchema(
-    api, schema, name, routes, level,
-    nested = false, flatten = false,
+    api,
+    schema,
+    name,
+    routes,
+    level,
+    nested = false,
+    flatten = false,
     process = null
   ) {
     await Promise.all([
       resolveSchemaComponent(schema),
       SourceMixin.processSchema(
-        api, schema, name, routes, level,
-        nested, flatten,
+        api,
+        schema,
+        name,
+        routes,
+        level,
+        nested,
+        flatten,
         process
       )
     ])
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-object
+  display: flex
+  border: $border-style
+  border-radius: $border-radius
+  margin: 0
+  padding: $form-spacing
+  box-sizing: border-box
+  .dito-object-content
+    flex: 0 1 100%
+  > .dito-buttons
+    flex: 1 0 0%
+    margin-left: $form-spacing
+</style>

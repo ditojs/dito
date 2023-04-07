@@ -1,6 +1,13 @@
 import {
-  isArray, isObject, isString, isBoolean, isNumber, isFunction, isDate,
-  isRegExp, asArray
+  isArray,
+  isObject,
+  isString,
+  isBoolean,
+  isNumber,
+  isFunction,
+  isDate,
+  isRegExp,
+  asArray
 } from '@ditojs/utils'
 
 const typeCheckers = {
@@ -20,27 +27,31 @@ const toBoolean = value => !!value
 const toNumber = value => +value
 const toString = value => String(value)
 
-const toDate = value => isDate(value)
-  ? value
-  : new Date(value)
+const toDate = value =>
+  isDate(value)
+    ? value
+    : new Date(value)
 
-const toArray = value => isArray(value)
-  ? value
-  : isString(value)
-    ? value.split(',')
-    : asArray(value)
+const toArray = value =>
+  isArray(value)
+    ? value
+    : isString(value)
+      ? value.split(',')
+      : asArray(value)
 
-const toObject = value => isObject(value)
-  ? value
-  // If a Object is expected but a Boolean provide, convert to an empty
-  // object. Used by `creatable` & co, that can be both.
-  : value === true
-    ? {}
-    : null
+const toObject = value =>
+  isObject(value)
+    ? value
+    : // If a Object is expected but a Boolean provide, convert to an empty
+      // object. Used by `creatable` & co, that can be both.
+      value === true
+      ? {}
+      : null
 
-const toRegExp = value => isRegExp(value)
-  ? value
-  : new RegExp(value)
+const toRegExp = value =>
+  isRegExp(value)
+    ? value
+    : new RegExp(value)
 
 const typeConverters = {
   Boolean: toBoolean,

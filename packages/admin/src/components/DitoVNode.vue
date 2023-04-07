@@ -10,5 +10,5 @@ DitoVNode.props = {
   vnode: { type: Object, required: true }
 }
 
-export default DitoComponent.component('dito-vnode', DitoVNode)
+export default DitoComponent.component('DitoVnode', DitoVNode)
 </script>

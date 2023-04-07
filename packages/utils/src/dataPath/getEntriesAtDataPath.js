@@ -6,7 +6,9 @@ const NOT_FOUND = Symbol('NOT_FOUND')
 export function getEntriesAtDataPath(
   obj,
   path,
-  handleError = () => { throw new Error(`Invalid path: ${path}`) }
+  handleError = () => {
+    throw new Error(`Invalid path: ${path}`)
+  }
 ) {
   const parsedPath = parseDataPath(path)
 

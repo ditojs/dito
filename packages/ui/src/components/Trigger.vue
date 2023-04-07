@@ -1,5 +1,4 @@
-// Derived from ATUI, and further extended: https://aliqin.github.io/atui/
-
+<!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
 .dito-trigger-container
   .dito-trigger(
@@ -29,11 +28,11 @@
     :class="triggerClass"
   )
     slot(name="trigger")
-  transition(:name="transition")
+  Transition(:name="transition")
     .dito-popup(
       v-if="trigger === 'hover'"
-      ref="popup"
       v-show="showPopup"
+      ref="popup"
       :class="popupClass"
       :style="popupStyle"
       @mouseenter="onHover(true)"
@@ -45,8 +44,8 @@
       )
     .dito-popup(
       v-else
-      ref="popup"
       v-show="showPopup"
+      ref="popup"
       :class="popupClass"
       :style="popupStyle"
     )
@@ -56,35 +55,13 @@
       )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-  @import '../styles/transitions/index.sass'
-
-  .dito-trigger-container
-    position: relative
-
-  .dito-trigger-disabled
-    color: $color-disabled
-    border-color: $border-color
-    cursor: default
-    *
-      cursor: default !important
-      +user-select(none)
-      &:focus
-        box-shadow: none
-
-  .dito-popup
-    position: absolute
-    top: 0
-    left: 0
-    z-index: 1000
-</style>
-
 <script>
 import { isString, hyphenate } from '@ditojs/utils'
 import { addEvents } from '../utils/event.js'
 
 export default {
+  emits: ['update:show'],
+
   props: {
     trigger: { type: String, default: 'click' },
     transition: { type: String, default: 'slide' },
@@ -268,26 +245,26 @@ export default {
       let left = 0
       let top = 0
       switch (part1) {
-      case 'top':
-        top -= popupHeight
-        break
-      case 'left':
-        left -= popupWidth
-        break
-      case 'right':
-        left += triggerWidth
-        break
-      case 'bottom':
-        top += triggerHeight
-        break
+        case 'top':
+          top -= popupHeight
+          break
+        case 'left':
+          left -= popupWidth
+          break
+        case 'right':
+          left += triggerWidth
+          break
+        case 'bottom':
+          top += triggerHeight
+          break
       }
       switch (part2) {
-      case 'right':
-        left -= popupWidth - triggerWidth
-        break
-      case 'bottom':
-        top -= popupHeight - triggerHeight
-        break
+        case 'right':
+          left -= popupWidth - triggerWidth
+          break
+        case 'bottom':
+          top -= popupHeight - triggerHeight
+          break
       }
       if (this.cover) {
         if (part1 === 'top') {
@@ -303,12 +280,6 @@ export default {
       }
       popup.style.left = `${left}px`
       popup.style.top = `${top}px`
-
-      this.$emit('update-position', {
-        trigger,
-        popup,
-        placement: this.popupPlacement
-      })
     },
 
     onClick() {
@@ -336,3 +307,27 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+@import '../styles/transitions/index.sass'
+
+.dito-trigger-container
+  position: relative
+
+.dito-trigger-disabled
+  color: $color-disabled
+  border-color: $border-color
+  cursor: default
+  *
+    cursor: default !important
+    +user-select(none)
+    &:focus
+      box-shadow: none
+
+.dito-popup
+  position: absolute
+  top: 0
+  left: 0
+  z-index: 1000
+</style>

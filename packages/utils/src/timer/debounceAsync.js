@@ -26,7 +26,7 @@ export function debounceAsync(func, options) {
     callbacks = []
   }
 
-  const debounced = function(...args) {
+  const debounced = function (...args) {
     return new Promise((resolve, reject) => {
       const callNow = immediate && !timer
       clearTimeout(timer)
@@ -45,7 +45,7 @@ export function debounceAsync(func, options) {
     })
   }
 
-  debounced.cancel = function() {
+  debounced.cancel = function () {
     const pending = timer !== null
     if (pending) {
       resolve(undefined)

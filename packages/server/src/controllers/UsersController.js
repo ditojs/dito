@@ -40,16 +40,15 @@ export class UsersController extends ModelController {
       return {
         authenticated,
         user: authenticated ? ctx.state.user : null
-
       }
     },
 
     'get self'(ctx) {
       return this.isAuthenticated(ctx)
         ? this.member.get.call(
-          this,
-          this.getContextWithMemberId(ctx, ctx.state.user.$id())
-        )
+            this,
+            this.getContextWithMemberId(ctx, ctx.state.user.$id())
+          )
         : null
     }
   }

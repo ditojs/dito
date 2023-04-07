@@ -22,8 +22,8 @@ QueryParameters.register({
       throw error instanceof ResponseError
         ? error
         : new QueryBuilderError(
-          `Invalid Query filter parameters: ${error.message}.`
-        )
+            `Invalid Query filter parameters: ${error.message}.`
+          )
     }
   },
 

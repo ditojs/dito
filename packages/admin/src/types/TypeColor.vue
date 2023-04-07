@@ -1,16 +1,16 @@
 <template lang="pug">
-trigger.dito-color(
-  trigger="click"
+Trigger.dito-color(
   v-model:show="showPopup"
+  trigger="click"
 )
   template(#trigger)
     .dito-input(:class="{ 'dito-focus': showPopup }")
       input(
-        ref="element"
         :id="dataPath"
+        ref="element"
+        v-model="hexValue"
         type="input"
         size="8"
-        v-model="hexValue"
         v-bind="attributes"
       )
       .dito-color-preview.dito-inherit-focus(
@@ -19,52 +19,17 @@ trigger.dito-color(
         div(:style="{ background: `#${hexValue || '00000000'}` }")
       button.dito-button-clear.dito-button-overlay(
         v-if="showClearButton"
-        @click.stop="clear"
         :disabled="disabled"
+        @click.stop="clear"
       )
   template(#popup)
-    sketch-picker.dito-color-picker(
+    SketchPicker.dito-color-picker(
       v-model="colorValue"
-      :disable-alpha="!alpha"
-      :disable-fields="!inputs"
-      :preset-colors="presets"
+      :disableAlpha="!alpha"
+      :disableFields="!inputs"
+      :presetColors="presets"
     )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  $color-swatch-width: $pattern-transparency-size
-  $color-swatch-radius: $border-radius - $border-width
-  .dito-color
-    .dito-input
-      display: block
-      position: relative
-      input
-        box-sizing: border-box
-        font-variant-numeric: tabular-nums
-        padding-right: $color-swatch-width
-    .dito-button-clear
-      margin-right: $color-swatch-width
-    .dito-color-picker
-      margin: $popup-margin
-      border: $border-style
-      border-radius: $border-radius
-      background: $color-white
-      box-shadow: $shadow-window
-    .dito-color-preview
-      background: $pattern-transparency
-      border-left: $border-style
-      &,
-      div
-        position: absolute
-        width: $color-swatch-width
-        top: 0
-        right: 0
-        bottom: 0
-        border-top-right-radius: $color-swatch-radius
-        border-bottom-right-radius: $color-swatch-radius
-</style>
 
 <script>
 import tinycolor from 'tinycolor2'
@@ -92,11 +57,14 @@ export default TypeComponent.register('color', {
 
       set(value) {
         const format = this.colorFormat
-        const key = {
-          // NOTE: vue3-color calls it 'hex', while tinycolor calls it 'hex6'
-          hex: value?.a < 1 ? 'hex8' : 'hex',
-          rgb: 'rgba'
-        }[format] || format
+        const key = (
+          {
+            // NOTE: vue3-color calls it 'hex', while tinycolor calls it 'hex6'
+            hex: value?.a < 1 ? 'hex8' : 'hex',
+            rgb: 'rgba'
+          }[format] ||
+          format
+        )
         if (key) {
           this.value = value[key]
         } else {
@@ -109,10 +77,14 @@ export default TypeComponent.register('color', {
     hexValue: {
       get() {
         if (this.value == null) {
+          // TODO: Fix side-effects
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.convertedHexValue = null
         } else if (!this.focused) {
           const color = tinycolor(this.value)
           if (color.isValid()) {
+            // TODO: Fix side-effects
+            // eslint-disable-next-line
             this.convertedHexValue = color
               .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
               .slice(1)
@@ -183,5 +155,39 @@ export default TypeComponent.register('color', {
     }
   }
 })
-
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+$color-swatch-width: $pattern-transparency-size
+$color-swatch-radius: $border-radius - $border-width
+.dito-color
+  .dito-input
+    display: block
+    position: relative
+    input
+      box-sizing: border-box
+      font-variant-numeric: tabular-nums
+      padding-right: $color-swatch-width
+  .dito-button-clear
+    margin-right: $color-swatch-width
+  .dito-color-picker
+    margin: $popup-margin
+    border: $border-style
+    border-radius: $border-radius
+    background: $color-white
+    box-shadow: $shadow-window
+  .dito-color-preview
+    background: $pattern-transparency
+    border-left: $border-style
+    &,
+    div
+      position: absolute
+      width: $color-swatch-width
+      top: 0
+      right: 0
+      bottom: 0
+      border-top-right-radius: $color-swatch-radius
+      border-bottom-right-radius: $color-swatch-radius
+</style>

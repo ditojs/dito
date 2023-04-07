@@ -1,7 +1,22 @@
 import {
-  isPlainObject, isObject, isArray, isModule, isFunction, isString, isBoolean,
-  isNumber, isDate, isRegExp, isPromise, isAsync, isInteger, isArrayLike,
-  isEmpty, asObject, asArray, asFunction
+  isPlainObject,
+  isObject,
+  isArray,
+  isModule,
+  isFunction,
+  isString,
+  isBoolean,
+  isNumber,
+  isDate,
+  isRegExp,
+  isPromise,
+  isAsync,
+  isInteger,
+  isArrayLike,
+  isEmpty,
+  asObject,
+  asArray,
+  asFunction
 } from './base.js'
 
 import * as module from './index.js'
@@ -14,12 +29,12 @@ const boolean = true
 const date = new Date()
 const regexp = /x/
 const symbol = Symbol('a')
-const instance = new class {}()
+const instance = new (class {})()
 const promise = new Promise(() => {})
-const func = function() {}
+const func = function () {}
 const lambda = () => {}
-const asyncFunc = async function() {}
-const asyncLambda = async function() {}
+const asyncFunc = async function () {}
+const asyncLambda = async function () {}
 
 describe('isPlainObject()', () => {
   describe.each([

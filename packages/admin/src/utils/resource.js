@@ -6,9 +6,11 @@ export function hasResource(schema) {
 
 export function getResource(resource, defaults = {}) {
   const { parent, ...defs } = defaults
-  resource = isObject(resource) ? { ...defs, ...resource }
-    : isString(resource) ? { ...defs, path: resource }
-    : null
+  resource = isObject(resource)
+    ? { ...defs, ...resource }
+    : isString(resource)
+      ? { ...defs, path: resource }
+      : null
   // Only set parent if path doesn't start with '/', so relative URLs are
   // dealt with correctly.
   if (
@@ -28,12 +30,12 @@ export function getResource(resource, defaults = {}) {
 export function getMemberResource(id, resource) {
   return id != null && resource?.type === 'collection'
     ? {
-      type: 'member',
-      ...pickBy(
-        resource,
-        (value, key) => ['method', 'path', 'parent'].includes(key)
-      ),
-      id: `${id}`
-    }
+        type: 'member',
+        ...pickBy(
+          resource,
+          (value, key) => ['method', 'path', 'parent'].includes(key)
+        ),
+        id: `${id}`
+      }
     : null
 }

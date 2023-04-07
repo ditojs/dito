@@ -3,7 +3,7 @@
 const mixinsMap = new WeakMap()
 
 export function mixin(mixinFunction) {
-  return function(targetClass) {
+  return function (targetClass) {
     // Prevent multiple application of the same mixins in nested inheritance
     // through keeping track of what was already applied in weak-maps:
     if (targetClass && !hasMixin(targetClass, mixinFunction)) {

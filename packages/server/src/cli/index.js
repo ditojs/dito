@@ -26,7 +26,7 @@ function setSilent(silent) {
 async function execute() {
   try {
     // Dynamically load app or config from the path provided package.json script
-    const [,, command, importPath, ...args] = process.argv
+    const [, , command, importPath, ...args] = process.argv
     const execute = command && getCommand(commands, command.split(':'))
     if (!isFunction(execute)) {
       throw new Error(`Unknown command: ${command}`)

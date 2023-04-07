@@ -1,5 +1,5 @@
 const renderIcons = icons =>
-`$icons: ${icons.map(({ name }) => name).join(' ')}
+  `$icons: ${icons.map(({ name }) => name).join(' ')}
 
 %icon
   width: 1em
@@ -14,7 +14,7 @@ ${icons.map(renderIcon).join('\n\n')}
 `
 
 const renderIcon = ({ name, url }) =>
-`%icon-${name}
+  `%icon-${name}
   @extend %icon
   mask-image: ${url}`
 

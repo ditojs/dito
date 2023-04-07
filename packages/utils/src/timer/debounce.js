@@ -6,7 +6,7 @@ export function debounce(func, options) {
   let timer = null
   let result
 
-  const debounced = function(...args) {
+  const debounced = function (...args) {
     const callNow = immediate && !timer
     clearTimeout(timer)
     timer = setTimeout(async () => {
@@ -21,7 +21,7 @@ export function debounce(func, options) {
     return result
   }
 
-  debounced.cancel = function() {
+  debounced.cancel = function () {
     const pending = timer !== null
     if (pending) {
       clearTimeout(timer)

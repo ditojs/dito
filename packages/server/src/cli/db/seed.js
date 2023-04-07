@@ -25,9 +25,10 @@ export async function seed(app) {
       const seed = object.default || object
       // Try to determine the related model from the seed name, and use it also
       // to determine seed sequence based on its index in `app.models`.
-      const modelClass =
+      const modelClass = (
         app.models[name] ||
         app.models[camelize(pluralize.singular(name), true)]
+      )
       const index = modelClass ? modelIndices[modelClass.name] : Infinity
       seeds.push({
         base,

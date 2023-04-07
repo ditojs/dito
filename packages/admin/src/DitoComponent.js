@@ -7,9 +7,9 @@ const components = {}
 
 // @vue/component
 export default {
+  mixins: [DitoMixin],
   // Make sure that registered components are present in all DitoComponent.
   components,
-  mixins: [DitoMixin],
 
   component(name, definition) {
     if (definition) {

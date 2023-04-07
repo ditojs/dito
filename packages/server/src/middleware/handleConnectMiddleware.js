@@ -39,16 +39,22 @@ export function handleConnectMiddleware(middleware, {
           }
           if (isArray(headers)) {
             // Convert raw headers array to object.
-            headers = Object.fromEntries(headers.reduce(
-              // Translate raw array to [field, value] tuples.
-              (entries, value, index) => {
-                if (index & 1) { // Odd: value
-                  entries[entries.length - 1].push(value)
-                } else { // Even: field
-                  entries.push([value])
-                }
-                return entries
-              }, []))
+            headers = Object.fromEntries(
+              headers.reduce(
+                // Translate raw array to [field, value] tuples.
+                (entries, value, index) => {
+                  if (index & 1) {
+                    // Odd: value
+                    entries[entries.length - 1].push(value)
+                  } else {
+                    // Even: field
+                    entries.push([value])
+                  }
+                  return entries
+                },
+                []
+              )
+            )
           }
           if (isObject(headers)) {
             ctx.set(headers)

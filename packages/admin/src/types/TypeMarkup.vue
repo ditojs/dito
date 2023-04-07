@@ -1,7 +1,5 @@
 <template lang="pug">
-.dito-markup(
-  :id="dataPath"
-)
+.dito-markup(:id="dataPath")
   .dito-markup-toolbar(:editor="editor")
     .dito-buttons.dito-buttons-toolbar(
       v-if="groupedButtons.length > 0"
@@ -11,11 +9,12 @@
       )
         button.dito-button(
           v-for="{ name, icon, isActive, onClick } in buttons"
-          :class="{ 'dito-active': isActive }",
+          :key="name"
+          :class="{ 'dito-active': isActive }"
           @click="onClick"
         )
-          icon(:name="icon")
-  editor-content.dito-markup-editor(
+          Icon(:name="icon")
+  EditorContent.dito-markup-editor(
     ref="editor"
     :editor="editor"
     :style="styles"
@@ -25,96 +24,6 @@
     @mousedown.stop.prevent="onDragResize"
   )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-markup
-    @extend %input
-    position: relative
-
-    .dito-resize
-      @extend %icon-resize
-      position: absolute
-      top: unset
-      left: unset
-      right: 0
-      bottom: 0
-      width: 1em
-      height: 1em
-
-    .ProseMirror
-      height: 100%
-      outline: none
-
-    .dito-markup-editor
-      overflow-y: scroll
-      // Move padding "inside" editor to correctly position scrollbar
-      margin-right: -$input-padding-hor
-      padding-right: $input-padding-hor
-
-    .dito-buttons-toolbar
-      margin: $input-padding-ver 0
-
-    h1,
-    h2,
-    h3,
-    p,
-    ul,
-    ol,
-    pre,
-    blockquote
-      margin: 1rem 0
-      &:first-child
-        margin-top: 0
-      &:last-child
-        margin-bottom: 0
-    h1,
-    h2,
-    h3
-      font-weight: bold
-    h1
-      font-size: 1.4rem
-    h2
-      font-size: 1.2rem
-    ul
-      list-style: disc
-    code
-      font-family: $font-family-mono
-    pre
-      padding: 0.7rem 1rem
-      border-radius: $border-radius
-      background: $color-darker
-      color: $color-white
-      overflow-x: auto
-      code
-        display: block
-    p code
-      display: inline-block
-      padding: 0 0.3rem
-      border-radius: $border-radius
-      background: $color-lighter
-    a
-      pointer-events: none
-      cursor: default
-      color: blue
-      text-decoration: underline
-    ul,
-    ol
-      padding-left: 2rem
-    li
-      & > p,
-      & > ol,
-      & > ul
-        margin: 0
-    blockquote
-      border-left: 3px solid $color-lighter
-      padding-left: 1rem
-      font-style: italic
-      p
-        margin: 0
-
-</style>
 
 <script>
 import TypeComponent from '../TypeComponent.js'
@@ -158,17 +67,21 @@ import { History } from '@tiptap/extension-history'
 
 import { Icon } from '@ditojs/ui/src'
 import {
-  isArray, isObject, underscore, hyphenate, debounce, camelize
+  isArray,
+  isObject,
+  underscore,
+  hyphenate,
+  debounce,
+  camelize
 } from '@ditojs/utils'
 
 // @vue/component
 export default TypeComponent.register('markup', {
+  mixins: [DomMixin],
   components: {
     EditorContent,
     Icon
   },
-
-  mixins: [DomMixin],
 
   data() {
     return {
@@ -205,8 +118,8 @@ export default TypeComponent.register('markup', {
     basicNodeButtons() {
       return this.getButtons('nodes', {
         paragraph: {
-        // Do not show the paragraph command as active if any of the block
-        // commands are also active:
+          // Do not show the paragraph command as active if any of the block
+          // commands are also active:
           ignoreActive: () =>
             this.otherNodeButtons.some(button => button.isActive)
         },
@@ -286,9 +199,9 @@ export default TypeComponent.register('markup', {
         return isObject(enableRules)
           ? enableRules
           : {
-            input: !!enableRules,
-            paste: !!enableRules
-          }
+              input: !!enableRules,
+              paste: !!enableRules
+            }
       }
     })
   },
@@ -411,6 +324,7 @@ export default TypeComponent.register('markup', {
           // See if `href` can be parsed as a URL, and if not,
           // prefix it with a default protocol.
           try {
+            // eslint-disable-next-line no-new
             new URL(href)
           } catch {
             href = `https://${href}`
@@ -542,15 +456,21 @@ const Small = Mark.create({
 
   addCommands() {
     return {
-      setSmall: attributes => ({ commands }) => {
-        return commands.setMark(this.name, attributes)
-      },
-      toggleSmall: attributes => ({ commands }) => {
-        return commands.toggleMark(this.name, attributes)
-      },
-      unsetSmall: () => ({ commands }) => {
-        return commands.unsetMark(this.name)
-      }
+      setSmall:
+        attributes =>
+        ({ commands }) => {
+          return commands.setMark(this.name, attributes)
+        },
+      toggleSmall:
+        attributes =>
+        ({ commands }) => {
+          return commands.toggleMark(this.name, attributes)
+        },
+      unsetSmall:
+        () =>
+        ({ commands }) => {
+          return commands.unsetMark(this.name)
+        }
     }
   }
 })
@@ -568,13 +488,15 @@ const LinkWithTitle = Link.extend({
     },
 
     parseHTML() {
-      return [{
-        tag: 'a',
-        getAttrs: element => ({
-          href: element.getAttribute('href'),
-          title: element.getAttribute('title')
-        })
-      }]
+      return [
+        {
+          tag: 'a',
+          getAttrs: element => ({
+            href: element.getAttribute('href'),
+            title: element.getAttribute('title')
+          })
+        }
+      ]
     },
 
     renderHTML(node) {
@@ -583,3 +505,92 @@ const LinkWithTitle = Link.extend({
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-markup
+  @extend %input
+  position: relative
+
+  .dito-resize
+    @extend %icon-resize
+    position: absolute
+    top: unset
+    left: unset
+    right: 0
+    bottom: 0
+    width: 1em
+    height: 1em
+
+  .ProseMirror
+    height: 100%
+    outline: none
+
+  .dito-markup-editor
+    overflow-y: scroll
+    // Move padding "inside" editor to correctly position scrollbar
+    margin-right: -$input-padding-hor
+    padding-right: $input-padding-hor
+
+  .dito-buttons-toolbar
+    margin: $input-padding-ver 0
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  pre,
+  blockquote
+    margin: 1rem 0
+    &:first-child
+      margin-top: 0
+    &:last-child
+      margin-bottom: 0
+  h1,
+  h2,
+  h3
+    font-weight: bold
+  h1
+    font-size: 1.4rem
+  h2
+    font-size: 1.2rem
+  ul
+    list-style: disc
+  code
+    font-family: $font-family-mono
+  pre
+    padding: 0.7rem 1rem
+    border-radius: $border-radius
+    background: $color-darker
+    color: $color-white
+    overflow-x: auto
+    code
+      display: block
+  p code
+    display: inline-block
+    padding: 0 0.3rem
+    border-radius: $border-radius
+    background: $color-lighter
+  a
+    pointer-events: none
+    cursor: default
+    color: blue
+    text-decoration: underline
+  ul,
+  ol
+    padding-left: 2rem
+  li
+    & > p,
+    & > ol,
+    & > ul
+      margin: 0
+  blockquote
+    border-left: 3px solid $color-lighter
+    padding-left: 1rem
+    font-style: italic
+    p
+      margin: 0
+</style>

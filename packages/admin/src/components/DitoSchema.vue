@@ -5,7 +5,7 @@
       v-if="hasLabel || hasTabs || clipboard"
       :class="{ 'dito-schema-menu-header': menuHeader }"
     )
-      dito-label(
+      DitoLabel(
         v-if="hasLabel"
         :label="label"
         :dataPath="dataPath"
@@ -15,40 +15,40 @@
       )
         //- Pass edit-buttons through to dito-label's own edit-buttons slot:
         template(
-          #edit-buttons
           v-if="inlined"
+          #edit-buttons
         )
           slot(name="edit-buttons")
-      dito-tabs(
+      DitoTabs(
         v-if="tabs"
         :tabs="tabs"
         :selectedTab="selectedTab"
       )
-      dito-clipboard(
+      DitoClipboard(
         :clipboard="clipboard"
         :dataPath="dataPath"
         :data="data"
       )
-    dito-pane.dito-pane-tab(
+    template(
       v-if="hasTabs"
-      v-for="(schema, tab) in tabs"
-      ref="tabs"
-      :key="tab"
-      :visible="selectedTab === tab"
-      :tab="tab"
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :single="!inlined && !hasMainPane"
-      :disabled="disabled"
-      :generateLabels="generateLabels"
     )
-    transition-height(
-      :enabled="inlined"
-    )
-      dito-pane.dito-pane-main(
+      DitoPane.dito-pane-tab(
+        v-for="(tabSchema, tab) in tabs"
+        ref="tabs"
+        :key="tab"
+        :visible="selectedTab === tab"
+        :tab="tab"
+        :schema="tabSchema"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :single="!inlined && !hasMainPane"
+        :disabled="disabled"
+        :generateLabels="generateLabels"
+      )
+    TransitionHeight(:enabled="inlined")
+      DitoPane.dito-pane-main(
         v-if="hasMainPane && opened"
         ref="components"
         :schema="schema"
@@ -64,13 +64,17 @@
       v-if="!inlined && isPopulated"
       name="buttons"
     )
-  template(v-if="inlined")
+  template(
+    v-if="inlined"
+  )
     slot(
       v-if="!hasLabel"
       name="edit-buttons"
     )
-  template(v-else-if="isPopulated")
-    dito-panels(
+  template(
+    v-else-if="isPopulated"
+  )
+    DitoPanels(
       :panels="panelSchemas"
       :data="data"
       :meta="meta"
@@ -79,95 +83,32 @@
     )
 </template>
 
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-schema
-    box-sizing: border-box
-    // To display schema next to panels:
-    display: flex
-    min-height: 100%
-    > .dito-schema-content
-      flex: 1 1 100%
-      // So that schema buttons can be sticky to the bottom:
-      display: grid
-      grid-template-rows: min-content
-      > *:only-child
-        grid-row-end: none
-      max-width: $content-width
-      padding: $content-padding
-    > .dito-buttons,
-    > .dito-panels
-      flex: 1 1 0%
-    > .dito-buttons
-      margin-left: $form-spacing
-    > .dito-panels
-      padding: $content-padding $content-padding $content-padding 0
-    // Display a ruler between tabbed components and towards the .dito-buttons
-    .dito-pane-tab + .dito-pane-main
-      &::before
-        // Use a pseudo element to display a ruler with proper margins
-        display: block
-        content: ''
-        width: 100%
-        border-bottom: $border-style
-        // Add removed $form-spacing again to the ruler
-        margin: $content-padding $form-spacing-half $form-spacing-half
-  .dito-schema-header
-    display: flex
-    justify-content: space-between
-    .dito-tabs,
-    .dito-clipboard
-      display: flex
-      align-self: flex-end
-    .dito-clipboard
-      &:only-child
-        margin-left: auto
-      .dito-button
-        margin: 0 0 $tab-margin $tab-margin
-    &.dito-schema-menu-header
-      // Bring the tabs up to the menu.
-      position: absolute
-      height: $menu-height
-      padding: 0 $menu-padding-hor
-      max-width: $content-width
-      top: 0
-      left: 0
-      right: 0
-      z-index: $menu-z-index
-      // Turn off pointer events so that DitoTrail keeps receiving events...
-      pointer-events: none
-      // ...but allow interaction with the tabs and buttons (e.g. clipboard)
-      // layered on top of DitoTrail.
-      .dito-tabs,
-      .dito-buttons
-        pointer-events: auto
-        line-height: $menu-line-height
-        font-size: $menu-font-size
-    button.dito-label
-      width: 100%
-      // Catch all clicks, even when it would be partially covered by schema.
-      z-index: 1
-</style>
-
 <script>
 import {
-  isObject, isArray, isFunction, isRegExp,
-  parseDataPath, normalizeDataPath, labelize
+  isObject,
+  isArray,
+  isFunction,
+  isRegExp,
+  parseDataPath,
+  normalizeDataPath,
+  labelize
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath, getParentItem } from '../utils/data.js'
 import {
-  getNamedSchemas, getPanelSchemas, setDefaults, processData
+  getNamedSchemas,
+  getPanelSchemas,
+  setDefaults,
+  processData
 } from '../utils/schema.js'
 import { getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default DitoComponent.component('dito-schema', {
-  components: { TransitionHeight },
+export default DitoComponent.component('DitoSchema', {
   mixins: [ItemMixin],
+  components: { TransitionHeight },
 
   provide() {
     return {
@@ -237,9 +178,10 @@ export default DitoComponent.component('dito-schema', {
 
     selectedTab() {
       const currentTab = this.$route.hash?.slice(1) || null
-      const tab = currentTab && this.shouldRender(this.tabs[currentTab])
-        ? currentTab
-        : this.defaultTab?.name || null
+      const tab =
+        currentTab && this.shouldRender(this.tabs[currentTab])
+          ? currentTab
+          : this.defaultTab?.name || null
       if (tab !== currentTab) {
         // TODO: Move this watcher!
         // Any tab change needs to be reflected in the router also.
@@ -249,13 +191,14 @@ export default DitoComponent.component('dito-schema', {
     },
 
     defaultTab() {
+      let first = null
       if (this.tabs) {
-        let first = null
         for (const tab of Object.values(this.tabs)) {
           const { defaultTab } = tab
-          if (isFunction(defaultTab)
-            ? defaultTab.call(this, this.context)
-            : defaultTab
+          if (
+            isFunction(defaultTab)
+              ? defaultTab.call(this, this.context)
+              : defaultTab
           ) {
             return tab
           }
@@ -263,8 +206,8 @@ export default DitoComponent.component('dito-schema', {
             first = tab
           }
         }
-        return first
       }
+      return first
     },
 
     clipboard() {
@@ -394,7 +337,9 @@ export default DitoComponent.component('dito-schema', {
   methods: {
     getComponentsByDataPath(dataPath, match) {
       return this._getEntriesByDataPath(
-        this.componentsByDataPath, dataPath, match
+        this.componentsByDataPath,
+        dataPath,
+        match
       )
     },
 
@@ -554,23 +499,25 @@ export default DitoComponent.component('dito-schema', {
           while (dataPathParts.length > 0) {
             const components = this.getComponentsByDataPath(dataPathParts)
             for (const component of components) {
-              if (await component.navigateToComponent?.(
-                fullDataPath,
-                subComponents => {
-                  let found = false
-                  for (const component of subComponents) {
-                    const errs = errors[component.dataPath]
-                    if (
-                      errs &&
-                      component.showValidationErrors(errs, first && focus)
-                    ) {
-                      found = true
-                      first = false
+              if (
+                await component.navigateToComponent?.(
+                  fullDataPath,
+                  subComponents => {
+                    let found = false
+                    for (const component of subComponents) {
+                      const errs = errors[component.dataPath]
+                      if (
+                        errs &&
+                        component.showValidationErrors(errs, first && focus)
+                      ) {
+                        found = true
+                        first = false
+                      }
                     }
+                    return found
                   }
-                  return found
-                }
-              )) {
+                )
+              ) {
                 // Found a nested form to display at least parts fo the errors.
                 // We can't show all errors at once, so we're done. Don't call
                 // `notifyErrors()` yet, as we can only display it once
@@ -648,7 +595,8 @@ export default DitoComponent.component('dito-schema', {
         this.schema,
         this.sourceSchema,
         this.data,
-        this.dataPath, {
+        this.dataPath,
+        {
           // Needed for DitoContext handling inside `processData` and
           // `processSchemaData()`:
           component: this,
@@ -692,7 +640,7 @@ export default DitoComponent.component('dito-schema', {
         // Multiple entries can be linked to the same data-path, e.g. when
         // there are tabs. Link each data-path to an array of entries.
         const { dataPath } = entry
-        const entries = entriesByDataPath[dataPath] ||= []
+        const entries = (entriesByDataPath[dataPath] ||= [])
         entries.push(entry)
         return entriesByDataPath
       }, {})
@@ -724,3 +672,74 @@ export default DitoComponent.component('dito-schema', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-schema
+  box-sizing: border-box
+  // To display schema next to panels:
+  display: flex
+  min-height: 100%
+  > .dito-schema-content
+    flex: 1 1 100%
+    // So that schema buttons can be sticky to the bottom:
+    display: grid
+    grid-template-rows: min-content
+    > *:only-child
+      grid-row-end: none
+    max-width: $content-width
+    padding: $content-padding
+  > .dito-buttons,
+  > .dito-panels
+    flex: 1 1 0%
+  > .dito-buttons
+    margin-left: $form-spacing
+  > .dito-panels
+    padding: $content-padding $content-padding $content-padding 0
+  // Display a ruler between tabbed components and towards the .dito-buttons
+  .dito-pane-tab + .dito-pane-main
+    &::before
+      // Use a pseudo element to display a ruler with proper margins
+      display: block
+      content: ''
+      width: 100%
+      border-bottom: $border-style
+      // Add removed $form-spacing again to the ruler
+      margin: $content-padding $form-spacing-half $form-spacing-half
+.dito-schema-header
+  display: flex
+  justify-content: space-between
+  .dito-tabs,
+  .dito-clipboard
+    display: flex
+    align-self: flex-end
+  .dito-clipboard
+    &:only-child
+      margin-left: auto
+    .dito-button
+      margin: 0 0 $tab-margin $tab-margin
+  &.dito-schema-menu-header
+    // Bring the tabs up to the menu.
+    position: absolute
+    height: $menu-height
+    padding: 0 $menu-padding-hor
+    max-width: $content-width
+    top: 0
+    left: 0
+    right: 0
+    z-index: $menu-z-index
+    // Turn off pointer events so that DitoTrail keeps receiving events...
+    pointer-events: none
+    // ...but allow interaction with the tabs and buttons (e.g. clipboard)
+    // layered on top of DitoTrail.
+    .dito-tabs,
+    .dito-buttons
+      pointer-events: auto
+      line-height: $menu-line-height
+      font-size: $menu-font-size
+  button.dito-label
+    width: 100%
+    // Catch all clicks, even when it would be partially covered by schema.
+    z-index: 1
+</style>

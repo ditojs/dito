@@ -1,10 +1,12 @@
 <template lang="pug">
-template(v-if="user")
+template(
+  v-if="user"
+)
   //- Only render DitoView when it is active, otherwise a normal router-view
   //- instead, to nest further route components.
   //- NOTE: This is different from the handling in DitoForm, where `v-show` is
   //- used to always render forms even when other nested forms are present.
-  router-view(
+  RouterView(
     v-if="!isLastRoute"
     :key="name"
   )
@@ -12,7 +14,7 @@ template(v-if="user")
     v-else-if="shouldRender(viewSchema)"
     :data-resource="sourceSchema.path"
   )
-    dito-schema.dito-scroll(
+    DitoSchema.dito-scroll(
       :schema="viewSchema"
       :data="data"
       :meta="meta"
@@ -30,7 +32,7 @@ import { someSchemaComponent, isSingleComponentView } from '../utils/schema.js'
 import { hasResource } from '../utils/resource.js'
 
 // @vue/component
-export default DitoComponent.component('dito-view', {
+export default DitoComponent.component('DitoView', {
   mixins: [RouteMixin],
 
   provide() {
@@ -78,15 +80,15 @@ export default DitoComponent.component('dito-view', {
       // so they can be rendered directly through DitoSchema also:
       return this.isSingleComponentView
         ? {
-          ...schema,
-          components: {
-            [schema.name]: {
-              name: schema.name,
-              label: false,
-              ...component
+            ...schema,
+            components: {
+              [schema.name]: {
+                name: schema.name,
+                label: false,
+                ...component
+              }
             }
           }
-        }
         : schema
     },
 

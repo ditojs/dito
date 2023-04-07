@@ -55,7 +55,9 @@ export class CollectionController extends Controller {
   // @override
   getPath(type, path) {
     return type === 'member'
-      ? path ? `:${this.idParam}/${path}` : `:${this.idParam}`
+      ? path
+        ? `:${this.idParam}/${path}`
+        : `:${this.idParam}`
       : path
   }
 
@@ -91,9 +93,11 @@ export class CollectionController extends Controller {
     // Returns the model ids that this request concerns, read from the param
     // for member ids, and from the payload for collection ids:
     const { type } = ctx.action
-    return type === 'member' ? [this.getMemberId(ctx)]
-      : type === 'collection' ? this.getCollectionIds(ctx)
-      : []
+    return type === 'member'
+      ? [this.getMemberId(ctx)]
+      : type === 'collection'
+        ? this.getCollectionIds(ctx)
+        : []
   }
 
   validateId(id) {
@@ -142,7 +146,7 @@ export class CollectionController extends Controller {
     const { scope } = base
     const { allowScope, allowFilter } = this
 
-    const asAllowArray = value => value === false ? [] : asArray(value)
+    const asAllowArray = value => (value === false ? [] : asArray(value))
 
     if (allowScope !== undefined && allowScope !== true) {
       query.allowScope(
@@ -168,8 +172,7 @@ export class CollectionController extends Controller {
   async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetch`
     return this.execute(ctx, (query, trx) =>
-      query[name](body)
-        .modify(getModify(modify, trx))
+      query[name](body).modify(getModify(modify, trx))
     )
   }
 
@@ -207,23 +210,25 @@ export class CollectionController extends Controller {
     },
 
     async delete(ctx, modify) {
-      const count = await this.execute(ctx, (query, trx) => query
-        .ignoreScope()
-        .find(ctx.query, this.allowParam)
-        .modify(query => this.isOneToOne && query.throwIfNotFound())
-        .modify(getModify(modify, trx))
-        .modify(query => this.unrelate ? query.unrelate() : query.delete())
+      const count = await this.execute(ctx, (query, trx) =>
+        query
+          .ignoreScope()
+          .find(ctx.query, this.allowParam)
+          .modify(query => this.isOneToOne && query.throwIfNotFound())
+          .modify(getModify(modify, trx))
+          .modify(query => (this.unrelate ? query.unrelate() : query.delete()))
       )
       return { count }
     },
 
     async post(ctx, modify) {
       const result = this.relate
-        // Use patchDitoGraphAndFetch() to handle relates for us.
-        ? await this.execute(ctx, (query, trx) => query
-          .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
-          .modify(getModify(modify, trx))
-        )
+        ? // Use patchDitoGraphAndFetch() to handle relates for us.
+          await this.execute(ctx, (query, trx) =>
+            query
+              .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
+              .modify(getModify(modify, trx))
+          )
         : await this.executeAndFetch('insert', ctx, modify)
       ctx.status = 201 // Created
       if (isObject(result)) {
@@ -243,22 +248,24 @@ export class CollectionController extends Controller {
 
   member = this.convertToCoreActions({
     async get(ctx, modify) {
-      return this.execute(ctx, (query, trx) => query
-        .findById(ctx.memberId)
-        .find(ctx.query, this.allowParam)
-        .throwIfNotFound()
-        .modify(getModify(modify, trx))
+      return this.execute(ctx, (query, trx) =>
+        query
+          .findById(ctx.memberId)
+          .find(ctx.query, this.allowParam)
+          .throwIfNotFound()
+          .modify(getModify(modify, trx))
       )
     },
 
     async delete(ctx, modify) {
-      const count = await this.execute(ctx, (query, trx) => query
-        .ignoreScope()
-        .findById(ctx.memberId)
-        .find(ctx.query, this.allowParam)
-        .throwIfNotFound()
-        .modify(getModify(modify, trx))
-        .modify(query => this.unrelate ? query.unrelate() : query.delete())
+      const count = await this.execute(ctx, (query, trx) =>
+        query
+          .ignoreScope()
+          .findById(ctx.memberId)
+          .find(ctx.query, this.allowParam)
+          .throwIfNotFound()
+          .modify(getModify(modify, trx))
+          .modify(query => (this.unrelate ? query.unrelate() : query.delete()))
       )
       return { count }
     },

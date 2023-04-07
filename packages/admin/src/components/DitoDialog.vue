@@ -6,60 +6,20 @@
   :style="{ '--width': `${settings.width}px` }"
   @click="settings.clickToClose && close()"
 )
-  use-focus-trap(:options="{ immediate: true }")
-    form.dito-scroll-parent(@submit.prevent="submit")
-      dito-schema.dito-scroll(
+  UseFocusTrap(:options="{ immediate: true }")
+    form.dito-scroll-parent(
+      @submit.prevent="submit"
+    )
+      DitoSchema.dito-scroll(
         :schema="schema"
         :data="dialogData"
       )
         template(#buttons)
-          dito-buttons.dito-buttons-large(
+          DitoButtons.dito-buttons-large(
             :buttons="buttonSchemas"
             :data="dialogData"
           )
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-dialog
-    position: fixed
-    display: flex
-    inset: 0
-    z-index: 2000
-    padding: $content-padding
-    align-items: center
-    justify-content: center
-    // Prevent scrolling of the page behind the dialog:
-    overflow: hidden
-    background: rgba(0, 0, 0, 0.2)
-
-    // TODO: `&__inner`
-    form
-      position: relative
-      display: flex
-      overflow: hidden
-      box-sizing: border-box
-      background: white
-      border-radius: $border-radius
-      max-width: var(--width, 480px)
-      max-height: 100%
-      box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4)
-
-  .dito-dialog-enter-active,
-  .dito-dialog-leave-active
-    transition: opacity 0.15s
-
-    form
-      transition: transform 0.25s
-
-  .dito-dialog-enter-from,
-  .dito-dialog-leave-to
-    opacity: 0
-
-    form
-      transform: translateY(-20px)
-</style>
 
 <script>
 import { clone } from '@ditojs/utils'
@@ -69,8 +29,9 @@ import { getButtonSchemas } from '../utils/schema.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
-export default DitoComponent.component('dito-dialog', {
+export default DitoComponent.component('DitoDialog', {
   components: { UseFocusTrap },
+  emits: ['remove'],
 
   provide() {
     return {
@@ -189,3 +150,45 @@ export default DitoComponent.component('dito-dialog', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-dialog
+  position: fixed
+  display: flex
+  inset: 0
+  z-index: 2000
+  padding: $content-padding
+  align-items: center
+  justify-content: center
+  // Prevent scrolling of the page behind the dialog:
+  overflow: hidden
+  background: rgba(0, 0, 0, 0.2)
+
+  // TODO: `&__inner`
+  form
+    position: relative
+    display: flex
+    overflow: hidden
+    box-sizing: border-box
+    background: white
+    border-radius: $border-radius
+    max-width: var(--width, 480px)
+    max-height: 100%
+    box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4)
+
+.dito-dialog-enter-active,
+.dito-dialog-leave-active
+  transition: opacity 0.15s
+
+  form
+    transition: transform 0.25s
+
+.dito-dialog-enter-from,
+.dito-dialog-leave-to
+  opacity: 0
+
+  form
+    transform: translateY(-20px)
+</style>

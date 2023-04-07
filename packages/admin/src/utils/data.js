@@ -1,5 +1,8 @@
 import {
-  isInteger, parseDataPath, getValueAtDataPath, normalizeDataPath
+  isInteger,
+  parseDataPath,
+  getValueAtDataPath,
+  normalizeDataPath
 } from '@ditojs/utils'
 
 export function appendDataPath(dataPath, token) {

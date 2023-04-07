@@ -47,15 +47,15 @@ function convertFilterObject(name, object) {
       : queryFilter
     const func = properties
       ? (query, ...args) => {
-        // When the filter provides multiple properties, match them
-        // all, but combine the expressions with OR.
-        for (const property of properties) {
-          query.orWhere(query => queryHandler(query, property, ...args))
+          // When the filter provides multiple properties, match them
+          // all, but combine the expressions with OR.
+          for (const property of properties) {
+            query.orWhere(query => queryHandler(query, property, ...args))
+          }
         }
-      }
       : (query, ...args) => {
-        queryHandler(query, name, ...args)
-      }
+          queryHandler(query, name, ...args)
+        }
     return addHandlerSettings(func, queryFilter)
   }
 }
@@ -75,12 +75,12 @@ function wrapWithValidation(filter, name, app) {
     })
     if (validator?.validate) {
       return (query, ...args) => {
-      // Convert args to object for validation:
+        // Convert args to object for validation:
         const object = {}
         let index = 0
         for (const { name } of validator.list) {
-        // Use dataName if no name is given, see:
-        // Application.compileParametersValidator()
+          // Use dataName if no name is given, see:
+          // Application.compileParametersValidator()
           object[name || dataName] = args[index++]
         }
         try {
@@ -88,11 +88,12 @@ function wrapWithValidation(filter, name, app) {
         } catch (error) {
           throw app.createValidationError({
             type: 'FilterValidation',
-            message:
-            `The provided data for query filter '${name}' is not valid`,
+            message: `The provided data for query filter '${
+              name
+            }' is not valid`,
             errors: app.validator.prefixInstancePaths(
               error.errors,
-            `.${name}`
+              `.${name}`
             )
           })
         }

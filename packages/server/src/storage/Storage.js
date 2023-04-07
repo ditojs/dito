@@ -27,12 +27,10 @@ export class Storage {
   }
 
   // @overridable
-  async setup() {
-  }
+  async setup() {}
 
   // @overridable
-  async initialize() {
-  }
+  async initialize() {}
 
   static register(storageClass) {
     const type = (
@@ -51,15 +49,18 @@ export class Storage {
     // Returns a storage that inherits from this.storage but overrides
     // _handleFile to pass on `config` to the call of `handleUpload()`
     return this.storage
-      ? Object.setPrototypeOf({
-        _handleFile: async (req, file, callback) => {
-          try {
-            callback(null, await this._handleUpload(req, file, config))
-          } catch (err) {
-            callback(err)
-          }
-        }
-      }, this.storage)
+      ? Object.setPrototypeOf(
+          {
+            _handleFile: async (req, file, callback) => {
+              try {
+                callback(null, await this._handleUpload(req, file, config))
+              } catch (err) {
+                callback(err)
+              }
+            }
+          },
+          this.storage
+        )
       : null
   }
 
@@ -169,7 +170,8 @@ export class Storage {
         // TODO: `config.readImageSize` was deprecated in favour of
         // `config.readDimensions` in March 2023. Remove in 1 year.
         config.readImageSize
-      ) && /^(image|video)\//.test(file.mimetype)
+      ) &&
+      /^(image|video)\//.test(file.mimetype)
     ) {
       return this._handleMediaFile(req, file)
     } else {

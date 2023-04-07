@@ -1,12 +1,12 @@
 <template lang="pug">
 .dito-root
-  vue-notifications.dito-notifications(
+  VueNotifications.dito-notifications(
     ref="notifications"
     position="top right"
     classes="dito-notification"
   )
-  transition-group(name="dito-dialog")
-    dito-dialog(
+  TransitionGroup(name="dito-dialog")
+    DitoDialog(
       v-for="(dialog, key) in dialogs"
       :key="key"
       :components="dialog.components"
@@ -16,13 +16,13 @@
       :settings="dialog.settings"
       @remove="removeDialog(key)"
     )
-  dito-menu
+  DitoMenu
   main.dito-page.dito-scroll-parent
-    dito-header(
+    DitoHeader(
       :spinner="options.spinner"
       :isLoading="isLoading"
     )
-      dito-account(
+      DitoAccount(
         v-if="user"
       )
       a.dito-login(
@@ -30,30 +30,8 @@
         @click="rootComponent.login()"
       )
         span Login
-    router-view
+    RouterView
 </template>
-
-<style lang="sass">
-  @import '../styles/style'
-
-  .dito-app,
-  .dito-root
-    width: 100%
-    height: 100%
-    display: flex
-
-  .dito-root
-    .dito-page
-      background: $content-color-background
-      // The root-level views and forms may have a `.dito-schema-header` that
-      // should appear layered over `.dito-menu`, while having `overlay: hidden`
-      // set by `.dito-scroll-parent` to delegate scrolling to `.dito-scroll`.
-      // In order to not have the header clipped, adjust the top here:
-      > .dito-form,
-      > .dito-view
-        margin-top: -$menu-height
-        padding-top: $menu-height
-</style>
 
 <script>
 import { asArray, mapConcurrently, stripTags } from '@ditojs/utils'
@@ -63,13 +41,15 @@ import DitoView from '../components/DitoView.vue'
 import DitoDialog from './DitoDialog.vue'
 import DomMixin from '../mixins/DomMixin.js'
 import {
-  processView, resolveSchemas, processSchemaComponents
+  processView,
+  resolveSchemas,
+  processSchemaComponents
 } from '../utils/schema.js'
 
 // @vue/component
-export default DitoComponent.component('dito-root', {
-  components: { DitoDialog },
+export default DitoComponent.component('DitoRoot', {
   mixins: [DomMixin],
+  components: { DitoDialog },
 
   provide() {
     return {
@@ -140,21 +120,27 @@ export default DitoComponent.component('dito-root', {
 
   methods: {
     notify({ type = 'info', title, text } = {}) {
-      title ||= {
-        warning: 'Warning',
-        error: 'Error',
-        info: 'Information',
-        success: 'Success'
-      }[type] || 'Notification'
+      title ||= (
+        {
+          warning: 'Warning',
+          error: 'Error',
+          info: 'Information',
+          success: 'Success'
+        }[type] ||
+        'Notification'
+      )
       text = `<p>${
         asArray(text).join('</p> <p>')
       }</p>`.replace(/\n|\r\n|\r/g, '<br>')
-      const log = {
-        warning: 'warn',
-        error: 'error',
-        info: 'log',
-        success: 'log'
-      }[type] || 'error'
+      const log = (
+        {
+          warning: 'warn',
+          error: 'error',
+          info: 'log',
+          success: 'log'
+        }[type] ||
+        'error'
+      )
       // eslint-disable-next-line no-console
       console[log](stripTags(text))
       const { notifications = true } = this.api
@@ -343,7 +329,6 @@ export default DitoComponent.component('dito-root', {
       this.$router.replace(fullPath)
     }
   }
-
 })
 
 let dialogId = 0
@@ -362,3 +347,25 @@ function addRoutes(router, routes) {
   }
 }
 </script>
+
+<style lang="sass">
+@import '../styles/style'
+
+.dito-app,
+.dito-root
+  width: 100%
+  height: 100%
+  display: flex
+
+.dito-root
+  .dito-page
+    background: $content-color-background
+    // The root-level views and forms may have a `.dito-schema-header` that
+    // should appear layered over `.dito-menu`, while having `overlay: hidden`
+    // set by `.dito-scroll-parent` to delegate scrolling to `.dito-scroll`.
+    // In order to not have the header clipped, adjust the top here:
+    > .dito-form,
+    > .dito-view
+      margin-top: -$menu-height
+      padding-top: $menu-height
+</style>

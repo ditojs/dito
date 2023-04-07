@@ -1,16 +1,18 @@
 export function decamelize(str, sep = ' ') {
   return str
     ? str
-      .replace(
-        // TODO: Once JavaScript supports Unicode properties in regexps, switch
-        // to better parsing that matches non-ASCII uppercase letters:
-        // /([\p{Ll}\d])(\p{Lu})/gu
-        /([a-z\d])([A-Z])|(\S)(?:\s+)(\S)/g,
-        (all, lower, upper, beforeSpace, afterSpace) => upper
-          ? `${lower}${sep}${upper}`
-          : `${beforeSpace}${sep}${afterSpace}`
-      )
-      .toLowerCase()
+        .replace(
+          // TODO: Once JavaScript supports Unicode property escapes in regexps,
+          // switch to better parsing that matches non-ASCII uppercase letters:
+          // /([\p{Ll}\d])(\p{Lu})/gu
+          // See: https://caniuse.com/?search=Unicode%20property%20escape
+          /([a-z\d])([A-Z])|(\S)(?:\s+)(\S)/g,
+          (all, lower, upper, beforeSpace, afterSpace) =>
+            upper
+              ? `${lower}${sep}${upper}`
+              : `${beforeSpace}${sep}${afterSpace}`
+        )
+        .toLowerCase()
     : ''
 }
 

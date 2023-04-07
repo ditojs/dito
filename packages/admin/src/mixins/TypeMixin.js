@@ -238,7 +238,7 @@ export default {
           // If the element is disabled, `focus()` will likely not have the
           // desired effect. Use `scrollIntoView()` if available:
           if (this.disabled) {
-            (element.$el || element).scrollIntoView?.()
+            ;(element.$el || element).scrollIntoView?.()
           }
         })
       }
@@ -276,9 +276,10 @@ export default {
     onChange() {
       this.markDirty()
       this.emitEvent('change', {
-        context: this.parsedValue !== undefined
-          ? { value: this.parsedValue }
-          : null,
+        context:
+          this.parsedValue !== undefined
+            ? { value: this.parsedValue }
+            : null,
         // Pass `schemaComponent` as parent, so change events can propagate up.
         parent: this.schemaComponent
       })

@@ -4,7 +4,7 @@
   :class="containerClass"
   :style="containerStyle"
 )
-  dito-label(
+  DitoLabel(
     v-if="label"
     :label="label"
     :dataPath="labelDataPath"
@@ -23,42 +23,8 @@
     :class="componentClass"
     @errors="onErrors"
   )
-  dito-errors(
-    :errors="errors"
-  )
+  DitoErrors(:errors="errors")
 </template>
-
-<style lang="sass">
-  @import '../styles/_imports'
-
-  .dito-container
-    // Needed for better vertical alignment:
-    align-self: stretch
-    box-sizing: border-box
-    // To prevent list tables from blowing out of their flex box containers.
-    max-width: 100%
-    // Cannot use margin here as it needs to be part of box-sizing for
-    // percentages in flex-basis to work.
-    padding: $form-spacing $form-spacing-half
-    &:empty
-      padding: 0
-    &.dito-omit-padding
-      padding: 0
-      > .dito-label
-        margin: $form-spacing $form-spacing-half 0
-    &.dito-single
-      height: 100% // So that list buttons can be sticky at the bottom
-  // NOTE: This is not nested inside `.dito-container` so that other
-  // type components can override `.dito-width-fill` class (filter precedence).
-  .dito-component
-    &.dito-width-fill
-      width: 100%
-      &.dito-checkbox,
-      &.dito-radio-button
-        // WebKit doesn't like changed width on checkboxes and radios, override:
-        display: inline-block
-        width: auto
-</style>
 
 <script>
 import { isString, isNumber } from '@ditojs/utils'
@@ -69,7 +35,7 @@ import { getTypeComponent, shouldOmitPadding } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
-export default DitoComponent.component('dito-container', {
+export default DitoComponent.component('DitoContainer', {
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
@@ -170,12 +136,13 @@ export default DitoComponent.component('dito-container', {
     componentBasis() {
       const width = this.componentWidth
       // 'auto' = no fitting:
-      const basis = (
-        [null, 'auto', 'fill'].includes(width) ? 'auto'
-        : /%$/.test(width) ? parseFloat(width) // percentage
-        : /[a-z]/.test(width) ? width // native units
-        : parseFraction(width) * 100 // fraction
-      )
+      const basis = [null, 'auto', 'fill'].includes(width)
+        ? 'auto'
+        : /%$/.test(width)
+          ? parseFloat(width) // percentage
+          : /[a-z]/.test(width)
+            ? width // native units
+            : parseFraction(width) * 100 // fraction
       return isNumber(basis) ? `${basis}%` : basis
     },
 
@@ -211,3 +178,35 @@ export default DitoComponent.component('dito-container', {
   }
 })
 </script>
+
+<style lang="sass">
+@import '../styles/_imports'
+
+.dito-container
+  // Needed for better vertical alignment:
+  align-self: stretch
+  box-sizing: border-box
+  // To prevent list tables from blowing out of their flex box containers.
+  max-width: 100%
+  // Cannot use margin here as it needs to be part of box-sizing for
+  // percentages in flex-basis to work.
+  padding: $form-spacing $form-spacing-half
+  &:empty
+    padding: 0
+  &.dito-omit-padding
+    padding: 0
+    > .dito-label
+      margin: $form-spacing $form-spacing-half 0
+  &.dito-single
+    height: 100% // So that list buttons can be sticky at the bottom
+// NOTE: This is not nested inside `.dito-container` so that other
+// type components can override `.dito-width-fill` class (filter precedence).
+.dito-component
+  &.dito-width-fill
+    width: 100%
+    &.dito-checkbox,
+    &.dito-radio-button
+      // WebKit doesn't like changed width on checkboxes and radios, override:
+      display: inline-block
+      width: auto
+</style>

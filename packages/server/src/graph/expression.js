@@ -26,14 +26,12 @@ export function collectExpressionPaths(expr) {
 
 export function expressionPathToString(path, start = 0) {
   return (start ? path.slice(start) : path)
-    .map(
-      ({ relation, alias, modify }) => {
-        const expr = alias ? `${relation} as ${alias}` : relation
-        return modify.length > 0
-          ? `${expr}(${modify.join(', ')})`
-          : expr
-      }
-    )
+    .map(({ relation, alias, modify }) => {
+      const expr = alias ? `${relation} as ${alias}` : relation
+      return modify.length > 0
+        ? `${expr}(${modify.join(', ')})`
+        : expr
+    })
     .join('.')
 }
 

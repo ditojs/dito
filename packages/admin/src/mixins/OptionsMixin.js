@@ -3,8 +3,13 @@ import DataMixin from './DataMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
 import {
-  isObject, isArray, isString, isFunction,
-  normalizeDataPath, labelize, debounceAsync
+  isObject,
+  isArray,
+  isString,
+  isFunction,
+  normalizeDataPath,
+  labelize,
+  debounceAsync
 } from '@ditojs/utils'
 
 // @vue/component
@@ -20,17 +25,19 @@ export default {
   computed: {
     selectedValue: {
       get() {
-        const convertValue = value => this.relate
-          ? this.hasOption(value)
-            ? this.getValueForOption(value)
-            : null
-          : value
+        const convertValue = value =>
+          this.relate
+            ? this.hasOption(value)
+              ? this.getValueForOption(value)
+              : null
+            : value
         const value = isArray(this.value)
           ? this.value.map(convertValue).filter(value => value !== null)
           : convertValue(this.value)
         if (
           // When relating and as soon as the options are available...
-          this.relate && this.hasOptions && (
+          this.relate &&
+          this.hasOptions && (
             // ...if the value is forced to null because a disappeared option...
             value === null && this.value !== null ||
             // ...or if the value is a reference, replace it with its option
@@ -38,15 +45,18 @@ export default {
             isReference(this.value)
           )
         ) {
+          // TODO: Fix side-effects
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.selectedValue = value
         }
         return value
       },
 
       set(value) {
-        const convert = value => this.relate
-          ? this.getOptionForValue(value)
-          : value
+        const convert = value =>
+          this.relate
+            ? this.getOptionForValue(value)
+            : value
         this.value = isArray(value)
           ? value.map(convert)
           : convert(value)
@@ -64,6 +74,8 @@ export default {
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }
+      // TODO: Fix side-effects
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       this.hasOptions = data.length > 0
       return this.processOptions(data)
     },
@@ -242,7 +254,7 @@ export default {
       }
       // Convert relating objects to a shallow copy with only the id left.
       // TODO: Convert to using `relateBy`:
-      const processRelate = value => value ? { id: value.id } : value
+      const processRelate = value => (value ? { id: value.id } : value)
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
       value = isArray(value)
         ? value.map(processRelate)

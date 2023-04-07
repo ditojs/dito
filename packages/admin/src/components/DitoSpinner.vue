@@ -3,46 +3,10 @@
   v-show="loading"
 )
   //- TODO: Convert to BEM
-  .v-pulse.v-pulse1(
-    :style="[spinnerStyle,spinnerDelay1]"
-  )
-  .v-pulse.v-pulse2(
-    :style="[spinnerStyle,spinnerDelay2]"
-  )
-  .v-pulse.v-pulse3(
-    :style="[spinnerStyle,spinnerDelay3]"
-  )
+  .v-pulse.v-pulse1(:style="[spinnerStyle, spinnerDelay1]")
+  .v-pulse.v-pulse2(:style="[spinnerStyle, spinnerDelay2]")
+  .v-pulse.v-pulse3(:style="[spinnerStyle, spinnerDelay3]")
 </template>
-
-<style lang="scss">
-@-webkit-keyframes v-pulseStretchDelay {
-  0%,
-  80%
-  {
-    transform: scale(1);
-    opacity: 1;
-  }
-  45%
-  {
-    transform: scale(0.1);
-    opacity: 0.7;
-  }
-}
-
-@keyframes v-pulseStretchDelay {
-  0%,
-  80%
-  {
-    transform: scale(1);
-    opacity: 1;
-  }
-  45%
-  {
-    transform: scale(0.1);
-    opacity: 0.7;
-  }
-}
-</style>
 
 <script>
 export default {
@@ -96,6 +60,31 @@ export default {
       }
     }
   }
-
 }
 </script>
+
+<style lang="scss">
+@-webkit-keyframes v-pulseStretchDelay {
+  0%,
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes v-pulseStretchDelay {
+  0%,
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.1);
+    opacity: 0.7;
+  }
+}
+</style>

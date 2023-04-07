@@ -1,5 +1,8 @@
 import {
-  isFunction, isString, parseDataPath, normalizeDataPath
+  isFunction,
+  isString,
+  parseDataPath,
+  normalizeDataPath
 } from '@ditojs/utils'
 
 export function getSchemaAccessor(
@@ -17,14 +20,19 @@ export function getSchemaAccessor(
     get() {
       // Only determine schema value if we have no getter, or the getter
       // wants to receive the value and process it further:
-      const value = !get || get.length > 0
-        // NOTE: Because `schema` objects are retrieved from `meta` object, they
-        // don't seem to be reactive. To allow changed in `schema` values,
-        // `set()` stores changed values in the separate `overrides` object.
-        ? this.overrides && name in this.overrides
-          ? this.overrides[name]
-          : this.getSchemaValue(keyOrDataPath, { type, default: def, callback })
-        : undefined
+      const value =
+        !get || get.length > 0
+          ? // NOTE: Because `schema` objects are retrieved from `meta`, they
+            // don't seem to be reactive. To allow changed in `schema` values,
+            // `set()` stores changed values in the separate `overrides` object.
+            this.overrides && name in this.overrides
+            ? this.overrides[name]
+            : this.getSchemaValue(keyOrDataPath, {
+                type,
+                default: def,
+                callback
+              })
+          : undefined
       return get ? get.call(this, value) : value
     },
 

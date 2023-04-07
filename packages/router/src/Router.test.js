@@ -88,10 +88,12 @@ describe('Router', () => {
     router.add('GET', '/folders/files/bolt.gif', getHandler)
     router.add('PUT', '/folders/files/bolt.gif', putHandler)
 
-    expect(router.toString()).toBe(deindent`
-      / children=1
-      └── folders/files/bolt.gif getHandler() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=1
+        └── folders/files/bolt.gif getHandler() children=0
+      `.trim()
+    )
 
     result = router.find('GET', '/folders/files/bolt.gif')
     expect(result.handler).toBe(getHandler)
@@ -124,11 +126,13 @@ describe('Router', () => {
   it('handles match-any nodes (catch-all)', () => {
     router.add('GET', '/static/**', handler)
 
-    expect(router.toString()).toBe(deindent`
-      / children=1
-      └── static/ children=1
-          └── ** handler() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=1
+        └── static/ children=1
+            └── ** handler() children=0
+      `.trim()
+    )
 
     result = router.find('GET', '/static')
     expect(result.handler).toBeUndefined()
@@ -152,12 +156,14 @@ describe('Router', () => {
   it('handles match-any nodes (wildcard)', () => {
     router.add('GET', '/prefix/*/suffix', handler)
 
-    expect(router.toString()).toBe(deindent`
-      / children=1
-      └── prefix/ children=1
-          └── * children=1
-              └── /suffix handler() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=1
+        └── prefix/ children=1
+            └── * children=1
+                └── /suffix handler() children=0
+      `.trim()
+    )
 
     result = router.find('GET', '/prefix')
     expect(result.handler).toBeUndefined()
@@ -181,14 +187,16 @@ describe('Router', () => {
     router.add('GET', '/static/**/suffix/*/1/:param/2', handler)
     router.add('GET', '/static/**/suffix/*/1/:param/2/**/end', handler)
 
-    expect(router.toString()).toBe(deindent`
-      / children=1
-      └── static/ children=4
-          ├── **/suffix handler() children=0
-          ├── **/suffix/**/more handler() children=0
-          ├── **/suffix/*/1/:param/2 handler() children=0
-          └── **/suffix/*/1/:param/2/**/end handler() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=1
+        └── static/ children=4
+            ├── **/suffix handler() children=0
+            ├── **/suffix/**/more handler() children=0
+            ├── **/suffix/*/1/:param/2 handler() children=0
+            └── **/suffix/*/1/:param/2/**/end handler() children=0
+      `.trim()
+    )
 
     result = router.find('GET', '/static')
     expect(result.handler).toBeUndefined()
@@ -235,7 +243,10 @@ describe('Router', () => {
     result = router.find('GET', '/static/one/two/suffix/three/1/bla/3')
     expect(result.handler).toBeUndefined()
 
-    result = router.find('GET', `/static/one/two/suffix/three/1/bla/2/what/ever/end`)
+    result = router.find(
+      'GET',
+      `/static/one/two/suffix/three/1/bla/2/what/ever/end`
+    )
     expect(result.handler).toBe(handler)
     expect(result.params).toEqual({
       $: 'three',
@@ -263,26 +274,28 @@ describe('Router', () => {
       ['/geocoder/**', 'anyGeocoder']
     ])
 
-    expect(router.toString()).toBe(deindent`
-      / root() children=1
-      └── geocoder geocoder() children=1
-          └── / children=4
-              ├── n children=2
-              │   ├── ew newGeocoder() children=0
-              │   └── otify notifyGeocoder() children=0
-              ├── e children=2
-              │   ├── dit editGeocoder() children=1
-              │   │   └── / children=2
-              │   │       ├── email editEmailGeocoder() children=0
-              │   │       └── :item editItemGeocoder() children=0
-              │   └── xchange exchangeGeocoder() children=1
-              │       └── / children=2
-              │           ├── email exchangeEmailGeocoder() children=0
-              │           └── :item exchangeItemGeocoder() children=0
-              ├── :action actionGeocoder() children=1
-              │   └── /echo echoGeocoder() children=0
-              └── ** anyGeocoder() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / root() children=1
+        └── geocoder geocoder() children=1
+            └── / children=4
+                ├── n children=2
+                │   ├── ew newGeocoder() children=0
+                │   └── otify notifyGeocoder() children=0
+                ├── e children=2
+                │   ├── dit editGeocoder() children=1
+                │   │   └── / children=2
+                │   │       ├── email editEmailGeocoder() children=0
+                │   │       └── :item editItemGeocoder() children=0
+                │   └── xchange exchangeGeocoder() children=1
+                │       └── / children=2
+                │           ├── email exchangeEmailGeocoder() children=0
+                │           └── :item exchangeItemGeocoder() children=0
+                ├── :action actionGeocoder() children=1
+                │   └── /echo echoGeocoder() children=0
+                └── ** anyGeocoder() children=0
+      `.trim()
+    )
     result = router.find('GET', '')
     expect(result.handler).not.toBeUndefined()
     expect(result.params).toEqual({})
@@ -377,30 +390,32 @@ describe('Router', () => {
       ['/users/**', 'anyUser']
     ])
 
-    expect(router.toString()).toBe(deindent`
-      / children=1
-      └── users users() children=1
-          └── / children=3
-              ├── n children=2
-              │   ├── e children=2
-              │   │   ├── w newUser() children=0
-              │   │   └── i newUser() children=0
-              │   └── oi newUser() children=0
-              ├── :userId user() children=1
-              │   └── / children=4
-              │       ├── edit editUser() children=0
-              │       ├── :action actionUser() children=1
-              │       │   └── / children=1
-              │       │       └── :good children=1
-              │       │           └── / children=1
-              │       │               └── :bad children=1
-              │       │                   └── /ddd editUser() children=0
-              │       ├── photos/ children=1
-              │       │   └── :id photo() children=0
-              │       └── books/ children=1
-              │           └── :id book() children=0
-              └── ** anyUser() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=1
+        └── users users() children=1
+            └── / children=3
+                ├── n children=2
+                │   ├── e children=2
+                │   │   ├── w newUser() children=0
+                │   │   └── i newUser() children=0
+                │   └── oi newUser() children=0
+                ├── :userId user() children=1
+                │   └── / children=4
+                │       ├── edit editUser() children=0
+                │       ├── :action actionUser() children=1
+                │       │   └── / children=1
+                │       │       └── :good children=1
+                │       │           └── / children=1
+                │       │               └── :bad children=1
+                │       │                   └── /ddd editUser() children=0
+                │       ├── photos/ children=1
+                │       │   └── :id photo() children=0
+                │       └── books/ children=1
+                │           └── :id book() children=0
+                └── ** anyUser() children=0
+      `.trim()
+    )
 
     result = router.find('GET', '/users/610/books/987/edit')
     expect(result.handler).not.toBeUndefined()
@@ -489,39 +504,41 @@ describe('Router', () => {
 
     it('parses routes into the correct tree', () => {
       createRoutes(router, routes)
-      expect(router.toString()).toBe(deindent`
-        / children=3
-        ├── users users() children=1
-        │   └── / children=2
-        │       ├── new newUser() children=0
-        │       └── :id user() children=1
-        │           └── / children=3
-        │               ├── :action actionUser() children=0
-        │               ├── e children=2
-        │               │   ├── dit editUser() children=0
-        │               │   └── vent eventUser() children=0
-        │               └── change changeUser() children=0
-        ├── photos photos() children=1
-        │   └── / children=2
-        │       ├── new newPhoto() children=0
-        │       └── :id photo() children=1
-        │           └── / children=3
-        │               ├── :action actionPhoto() children=0
-        │               ├── e children=2
-        │               │   ├── dit editPhoto() children=0
-        │               │   └── vent eventPhoto() children=0
-        │               └── change changePhoto() children=0
-        └── books books() children=1
-            └── / children=2
-                ├── new newBook() children=0
-                └── :id book() children=1
-                    └── / children=3
-                        ├── :action actionBook() children=0
-                        ├── e children=2
-                        │   ├── dit editBook() children=0
-                        │   └── vent eventBook() children=0
-                        └── change changeBook() children=0
-      `.trim())
+      expect(router.toString()).toBe(
+        deindent`
+          / children=3
+          ├── users users() children=1
+          │   └── / children=2
+          │       ├── new newUser() children=0
+          │       └── :id user() children=1
+          │           └── / children=3
+          │               ├── :action actionUser() children=0
+          │               ├── e children=2
+          │               │   ├── dit editUser() children=0
+          │               │   └── vent eventUser() children=0
+          │               └── change changeUser() children=0
+          ├── photos photos() children=1
+          │   └── / children=2
+          │       ├── new newPhoto() children=0
+          │       └── :id photo() children=1
+          │           └── / children=3
+          │               ├── :action actionPhoto() children=0
+          │               ├── e children=2
+          │               │   ├── dit editPhoto() children=0
+          │               │   └── vent eventPhoto() children=0
+          │               └── change changePhoto() children=0
+          └── books books() children=1
+              └── / children=2
+                  ├── new newBook() children=0
+                  └── :id book() children=1
+                      └── / children=3
+                          ├── :action actionBook() children=0
+                          ├── e children=2
+                          │   ├── dit editBook() children=0
+                          │   └── vent eventBook() children=0
+                          └── change changeBook() children=0
+        `.trim()
+      )
     })
 
     it('results in expected parameters', () => {
@@ -623,14 +640,16 @@ describe('Router', () => {
 
     it('parses routes into the correct tree', () => {
       createRoutes(router, routes)
-      expect(router.toString()).toBe(deindent`
-        / children=1
-        └── admin/articles articles() children=1
-            └── / children=2
-                ├── new newArticle() children=0
-                └── :id article() children=1
-                    └── /edit editArticle() children=0
-      `.trim())
+      expect(router.toString()).toBe(
+        deindent`
+          / children=1
+          └── admin/articles articles() children=1
+              └── / children=2
+                  ├── new newArticle() children=0
+                  └── :id article() children=1
+                      └── /edit editArticle() children=0
+        `.trim()
+      )
     })
 
     it('results in expected parameters', () => {
@@ -670,22 +689,24 @@ describe('Router', () => {
 
     it('parses routes into the correct tree', () => {
       createRoutes(router, routes)
-      expect(router.toString()).toBe(deindent`
-        / children=1
-        └── magazines/ children=1
-            └── :m_id children=1
-                └── / children=2
-                    ├── articles articles() children=1
-                    │   └── / children=2
-                    │       ├── new newArticle() children=0
-                    │       └── :id article() children=1
-                    │           └── /edit editArticle() children=0
-                    └── photos photos() children=1
-                        └── / children=2
-                            ├── new newPhoto() children=0
-                            └── :id photo() children=1
-                                └── /edit editPhoto() children=0
-      `.trim())
+      expect(router.toString()).toBe(
+        deindent`
+          / children=1
+          └── magazines/ children=1
+              └── :m_id children=1
+                  └── / children=2
+                      ├── articles articles() children=1
+                      │   └── / children=2
+                      │       ├── new newArticle() children=0
+                      │       └── :id article() children=1
+                      │           └── /edit editArticle() children=0
+                      └── photos photos() children=1
+                          └── / children=2
+                              ├── new newPhoto() children=0
+                              └── :id photo() children=1
+                                  └── /edit editPhoto() children=0
+        `.trim()
+      )
     })
 
     it('results in expected parameters', () => {
@@ -734,30 +755,33 @@ describe('Router', () => {
   })
 
   it('identifies unnamed handlers', () => {
-    router.add('GET', '/function', function() {})
+    router.add('GET', '/function', function () {})
     router.add('GET', '/closure', () => {})
-    expect(router.toString()).toBe(deindent`
-      / children=2
-      ├── function ƒ() children=0
-      └── closure ƒ() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=2
+        ├── function ƒ() children=0
+        └── closure ƒ() children=0
+      `.trim()
+    )
   })
 
   it(`deals with paths not starting with '/'`, () => {
     router.add('GET', '/users', () => {})
     router.add('GET', '/wacky-path', () => {})
-    expect(router.toString()).toBe(deindent`
-      / children=2
-      ├── users ƒ() children=0
-      └── wacky-path ƒ() children=0
-    `.trim())
+    expect(router.toString()).toBe(
+      deindent`
+        / children=2
+        ├── users ƒ() children=0
+        └── wacky-path ƒ() children=0
+      `.trim()
+    )
   })
 })
 
 function createFunc(name) {
-  return (new Function(
-    `return function ${name}(){}`
-  ))()
+  // eslint-disable-next-line no-new-func
+  return new Function(`return function ${name}(){}`)()
 }
 
 function createRoutes(router, routes) {

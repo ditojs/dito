@@ -1,5 +1,9 @@
 import {
-  getAllKeys, getOwnProperty, createLookup, mergeReversed, mergeAsReversedArrays
+  getAllKeys,
+  getOwnProperty,
+  createLookup,
+  mergeReversed,
+  mergeAsReversedArrays
 } from './object.js'
 
 const object = Object.create({ a: 1 })

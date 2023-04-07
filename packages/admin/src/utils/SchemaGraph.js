@@ -1,6 +1,9 @@
 import { isTemporaryId } from './data.js'
 import {
-  isInteger, asArray, parseDataPath, getValueAtDataPath
+  isInteger,
+  asArray,
+  parseDataPath,
+  getValueAtDataPath
 } from '@ditojs/utils'
 import { nanoid } from 'nanoid'
 
@@ -29,7 +32,7 @@ export class SchemaGraph {
     let subGraph = this.graph
     for (const part of dataPath) {
       const key = isInteger(+part) ? '*' : part
-      subGraph = (subGraph[key] ??= {})
+      subGraph = subGraph[key] ??= {}
     }
     subGraph.$settings = {
       ...defaults, // See `addSource(dataPath)`
@@ -95,9 +98,11 @@ export class SchemaGraph {
       if (source || relation && internal) {
         const values = getValueAtDataPath(data, dataPath, () => null)
         const removeId = clipboard && source && !related
-        const referenceId = clipboard && (
-          relation && internal ||
-          source && related
+        const referenceId = (
+          clipboard && (
+            relation && internal ||
+            source && related
+          )
         )
         for (const value of asArray(values).flat()) {
           const idKey = (
@@ -109,20 +114,23 @@ export class SchemaGraph {
           if (id != null) {
             if (removeId) {
               delete value[idKey]
-            } if (referenceId || isTemporaryId(id)) {
+            }
+            if (referenceId || isTemporaryId(id)) {
               if (isTemporaryId(id)) {
                 id = id.slice(1)
               }
               const refKey = clipboard
-                // Clipboard just needs temporary ids under the actual `idKey`.
-                ? idKey
-                // Server wants Objection-style '#id' / '#ref' pairs.
-                : source ? '#id' : '#ref'
+                ? // Clipboard just needs temporary ids under the actual `idKey`
+                  idKey
+                : // Server wants Objection-style '#id' / '#ref' pairs.
+                  source
+                  ? '#id'
+                  : '#ref'
               const revValue = clipboard
                 ? `@${id}`
-                // Keep the ids unique in reference groups, since they reference
-                // across the full graph.
-                : reference
+                : // Keep the ids unique in reference groups, since they
+                  // reference across the full graph.
+                  reference
                   ? `${reference}-${id}`
                   : id // A temporary id without a related, just preserve it.
               value[refKey] = revValue

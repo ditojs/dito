@@ -3,10 +3,14 @@ export function getAbsoluteBoundingRect(el) {
   const win = window
   const body = doc.body
   // pageXOffset and pageYOffset work everywhere except IE <9.
-  let offsetX = win.pageXOffset !== undefined ? win.pageXOffset
-    : (doc.documentElement || body.parentNode || body).scrollLeft
-  let offsetY = win.pageYOffset !== undefined ? win.pageYOffset
-    : (doc.documentElement || body.parentNode || body).scrollTop
+  let offsetX =
+    win.pageXOffset !== undefined
+      ? win.pageXOffset
+      : (doc.documentElement || body.parentNode || body).scrollLeft
+  let offsetY =
+    win.pageYOffset !== undefined
+      ? win.pageYOffset
+      : (doc.documentElement || body.parentNode || body).scrollTop
   const rect = el.getBoundingClientRect()
   if (el !== body) {
     let parent = el.parentNode

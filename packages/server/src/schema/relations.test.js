@@ -7,7 +7,9 @@ import {
 } from 'objection'
 import { Model } from '../models/index.js'
 import {
-  getRelationClass, convertRelation, addRelationSchemas
+  getRelationClass,
+  convertRelation,
+  addRelationSchemas
 } from './relations.js'
 
 describe('getRelationClass()', () => {
@@ -40,12 +42,17 @@ describe('convertRelation()', () => {
   const models = { ModelOne, ModelTwo }
 
   it('converts a belongs-to relation to Objection.js format', () => {
-    expect(convertRelation({
-      relation: 'belongs-to',
-      from: 'ModelOne.modelTwoId',
-      to: 'ModelTwo.id',
-      modify: 'myScope'
-    }, models)).toEqual({
+    expect(
+      convertRelation(
+        {
+          relation: 'belongs-to',
+          from: 'ModelOne.modelTwoId',
+          to: 'ModelTwo.id',
+          modify: 'myScope'
+        },
+        models
+      )
+    ).toEqual({
       relation: BelongsToOneRelation,
       modelClass: ModelTwo,
       join: {
@@ -57,12 +64,17 @@ describe('convertRelation()', () => {
   })
 
   it('converts a many-to-many relation to Objection.js format', () => {
-    expect(convertRelation({
-      relation: 'many-to-many',
-      from: 'ModelOne.id',
-      to: 'ModelTwo.id',
-      inverse: false
-    }, models)).toEqual({
+    expect(
+      convertRelation(
+        {
+          relation: 'many-to-many',
+          from: 'ModelOne.id',
+          to: 'ModelTwo.id',
+          inverse: false
+        },
+        models
+      )
+    ).toEqual({
       relation: ManyToManyRelation,
       modelClass: ModelTwo,
       join: {
@@ -77,12 +89,17 @@ describe('convertRelation()', () => {
   })
 
   it('converts an inverse many-to-many relation to Objection.js format', () => {
-    expect(convertRelation({
-      relation: 'many-to-many',
-      from: 'ModelTwo.id',
-      to: 'ModelOne.id',
-      inverse: true
-    }, models)).toEqual({
+    expect(
+      convertRelation(
+        {
+          relation: 'many-to-many',
+          from: 'ModelTwo.id',
+          to: 'ModelOne.id',
+          inverse: true
+        },
+        models
+      )
+    ).toEqual({
       relation: ManyToManyRelation,
       modelClass: ModelOne,
       join: {

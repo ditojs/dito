@@ -2,12 +2,20 @@ import { describeFunction } from './function.js'
 
 describe('describeFunction()', () => {
   it('describes normal functions', () => {
-    expect(describeFunction(function(a, b, c) { return a + b + c }))
+    expect(
+      describeFunction(function (a, b, c) {
+        return a + b + c
+      })
+    )
       .toBe('function (a, b, c) { ... }')
   })
 
   it('describes lambdas with one param and a body', () => {
-    expect(describeFunction(a => { return a }))
+    expect(
+      describeFunction(a => {
+        return a
+      })
+    )
       .toBe('a => { ... }')
   })
 
@@ -17,7 +25,11 @@ describe('describeFunction()', () => {
   })
 
   it('describes lambdas with multiple params and a body', () => {
-    expect(describeFunction((a, b, c) => { return a + b + c }))
+    expect(
+      describeFunction((a, b, c) => {
+        return a + b + c
+      })
+    )
       .toBe('(a, b, c) => { ... }')
   })
 
@@ -27,12 +39,20 @@ describe('describeFunction()', () => {
   })
 
   it('describes async functions', () => {
-    expect(describeFunction(async function(a, b, c) { return a + b + c }))
+    expect(
+      describeFunction(async function (a, b, c) {
+        return a + b + c
+      })
+    )
       .toBe('async function (a, b, c) { ... }')
   })
 
   it('describes async lambdas with one param and a body', () => {
-    expect(describeFunction(async a => { return a }))
+    expect(
+      describeFunction(async a => {
+        return a
+      })
+    )
       .toBe('async a => { ... }')
   })
 
@@ -42,7 +62,11 @@ describe('describeFunction()', () => {
   })
 
   it('describes async lambdas with multiple params and a body', () => {
-    expect(describeFunction(async (a, b, c) => { return a + b + c }))
+    expect(
+      describeFunction(async (a, b, c) => {
+        return a + b + c
+      })
+    )
       .toBe('async (a, b, c) => { ... }')
   })
 
