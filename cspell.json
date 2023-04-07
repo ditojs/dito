@@ -2,8 +2,10 @@
   "language": "en-GB",
   "words": [
     "brotli",
+    "circ",
     "clearable",
     "codeflask",
+    "colors",
     "creditcard",
     "decamelized",
     "dialogs",
@@ -26,6 +28,7 @@
     "quot",
     "readyonly",
     "sass",
+    "stylelint",
     "tinycolor",
     "tiptap",
     "transferables",

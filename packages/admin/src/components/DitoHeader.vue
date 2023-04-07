@@ -71,67 +71,94 @@ export default DitoComponent.component('DitoHeader', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-header
-  background: $color-black
-  font-size: $menu-font-size
-  line-height: $menu-line-height
-  z-index: $menu-z-index
-  +user-select(none)
-  span
-    display: inline-block
-    padding: $menu-padding
-    color: $color-white
-  .dito-trail
-    display: flex
-    box-sizing: border-box
-    height: 3em
-    width: 100%
-    max-width: $content-width + $content-padding
-    ul
-      display: flex
-    a
-      position: relative
-      display: block
-      padding-right: 0.4em
-      $angle: 33deg
-      &:hover
-        color: #999
+.dito-header {
+  background: $color-black;
+  font-size: $menu-font-size;
+  line-height: $menu-line-height;
+  z-index: $menu-z-index;
+  @include user-select(none);
+
+  span {
+    display: inline-block;
+    padding: $menu-padding;
+    color: $color-white;
+  }
+
+  .dito-trail {
+    display: flex;
+    box-sizing: border-box;
+    height: 3em;
+    width: 100%;
+    max-width: $content-width + $content-padding;
+
+    ul {
+      display: flex;
+    }
+
+    a {
+      position: relative;
+      display: block;
+      padding-right: 0.4em;
+
+      $angle: 33deg;
+
+      &:hover {
+        color: #999999;
+      }
+
       &::before,
-      &::after
-        position: absolute
-        content: ''
-        width: 1px
-        height: 1.2em
-        right: -1px
-        background: $color-dark
-      &::before
-        top: 50%
-        transform: rotate($angle)
-        transform-origin: top
-      &::after
-        bottom: 50%
-        transform: rotate(-$angle)
-        transform-origin: bottom
-  .dito-spinner
-    margin-top: $menu-padding-ver
-  .dito-dirty
-    &:after
-      content: ''
-      display: inline-block
-      background-color: $color-white
-      width: 8px
-      height: 8px
-      margin: 2px
-      margin-left: 0.5em
-      border-radius: 100%
+      &::after {
+        position: absolute;
+        content: '';
+        width: 1px;
+        height: 1.2em;
+        right: -1px;
+        background: $color-dark;
+      }
+
+      &::before {
+        top: 50%;
+        transform: rotate($angle);
+        transform-origin: top;
+      }
+
+      &::after {
+        bottom: 50%;
+        transform: rotate(-$angle);
+        transform-origin: bottom;
+      }
+    }
+  }
+
+  .dito-spinner {
+    margin-top: $menu-padding-ver;
+  }
+
+  .dito-dirty {
+    &::after {
+      content: '';
+      display: inline-block;
+      background-color: $color-white;
+      width: 8px;
+      height: 8px;
+      margin: 2px;
+      margin-left: 0.5em;
+      border-radius: 100%;
+    }
+  }
+
   .dito-account,
-  .dito-login
-    position: absolute
-    top: 0
-    cursor: pointer
-  .dito-account
-    left: $content-width + $content-padding * 2
+  .dito-login {
+    position: absolute;
+    top: 0;
+    cursor: pointer;
+  }
+
+  .dito-account {
+    left: $content-width + $content-padding * 2;
+  }
+}
 </style>

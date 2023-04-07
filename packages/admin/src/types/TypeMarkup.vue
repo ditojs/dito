@@ -506,35 +506,41 @@ const LinkWithTitle = Link.extend({
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-markup
-  @extend %input
-  position: relative
+.dito-markup {
+  @extend %input;
 
-  .dito-resize
-    @extend %icon-resize
-    position: absolute
-    top: unset
-    left: unset
-    right: 0
-    bottom: 0
-    width: 1em
-    height: 1em
+  position: relative;
 
-  .ProseMirror
-    height: 100%
-    outline: none
+  .dito-resize {
+    @extend %icon-resize;
 
-  .dito-markup-editor
-    overflow-y: scroll
+    position: absolute;
+    top: unset;
+    left: unset;
+    right: 0;
+    bottom: 0;
+    width: 1em;
+    height: 1em;
+  }
+
+  .ProseMirror {
+    height: 100%;
+    outline: none;
+  }
+
+  .dito-markup-editor {
+    overflow-y: scroll;
     // Move padding "inside" editor to correctly position scrollbar
-    margin-right: -$input-padding-hor
-    padding-right: $input-padding-hor
+    margin-right: -$input-padding-hor;
+    padding-right: $input-padding-hor;
+  }
 
-  .dito-buttons-toolbar
-    margin: $input-padding-ver 0
+  .dito-buttons-toolbar {
+    margin: $input-padding-ver 0;
+  }
 
   h1,
   h2,
@@ -543,54 +549,87 @@ const LinkWithTitle = Link.extend({
   ul,
   ol,
   pre,
-  blockquote
-    margin: 1rem 0
-    &:first-child
-      margin-top: 0
-    &:last-child
-      margin-bottom: 0
+  blockquote {
+    margin: 1rem 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
   h1,
   h2,
-  h3
-    font-weight: bold
-  h1
-    font-size: 1.4rem
-  h2
-    font-size: 1.2rem
-  ul
-    list-style: disc
-  code
-    font-family: $font-family-mono
-  pre
-    padding: 0.7rem 1rem
-    border-radius: $border-radius
-    background: $color-darker
-    color: $color-white
-    overflow-x: auto
-    code
-      display: block
-  p code
-    display: inline-block
-    padding: 0 0.3rem
-    border-radius: $border-radius
-    background: $color-lighter
-  a
-    pointer-events: none
-    cursor: default
-    color: blue
-    text-decoration: underline
+  h3 {
+    font-weight: bold;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  ul {
+    list-style: disc;
+  }
+
+  code {
+    font-family: $font-family-mono;
+  }
+
+  pre {
+    padding: 0.7rem 1rem;
+    border-radius: $border-radius;
+    background: $color-darker;
+    color: $color-white;
+    overflow-x: auto;
+
+    code {
+      display: block;
+    }
+  }
+
+  p code {
+    display: inline-block;
+    padding: 0 0.3rem;
+    border-radius: $border-radius;
+    background: $color-lighter;
+  }
+
+  a {
+    pointer-events: none;
+    cursor: default;
+    color: blue;
+    text-decoration: underline;
+  }
+
   ul,
-  ol
-    padding-left: 2rem
-  li
+  ol {
+    padding-left: 2rem;
+  }
+
+  li {
     & > p,
     & > ol,
-    & > ul
-      margin: 0
-  blockquote
-    border-left: 3px solid $color-lighter
-    padding-left: 1rem
-    font-style: italic
-    p
-      margin: 0
+    & > ul {
+      margin: 0;
+    }
+  }
+
+  blockquote {
+    border-left: 3px solid $color-lighter;
+    padding-left: 1rem;
+    font-style: italic;
+
+    p {
+      margin: 0;
+    }
+  }
+}
 </style>

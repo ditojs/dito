@@ -280,67 +280,104 @@ export default DitoComponent.component('DitoTreeItem', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-tree-item
-  --chevron-indent: #{$chevron-indent}
-  > .dito-tree-header
+.dito-tree-item {
+  --chevron-indent: #{$chevron-indent};
+
+  > .dito-tree-header {
     > .dito-tree-branch,
-    > .dito-tree-leaf
+    > .dito-tree-leaf {
       // Use `--level` CSS variable to calculated the accumulated indent
       // padding directly instead of having it accumulate in nested CSS.
       // This way, we can keep the .dito-active area cover the full width:
-      padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1))
-  .dito-tree-branch
-    cursor: pointer
-  .dito-tree-header
-    display: flex
-    justify-content: space-between
+      padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1));
+    }
+  }
+
+  .dito-tree-branch {
+    cursor: pointer;
+  }
+
+  .dito-tree-header {
+    display: flex;
+    justify-content: space-between;
+  }
+
   .dito-tree-branch,
-  .dito-tree-leaf
-    display: flex
-    flex: auto
-    position: relative
-    margin: 1px 0
-    +user-select(none)
+  .dito-tree-leaf {
+    display: flex;
+    flex: auto;
+    position: relative;
+    margin: 1px 0;
+    @include user-select(none);
+  }
+
   .dito-tree-label,
-  .dito-tree-info
-    white-space: nowrap
-  .dito-tree-info
-    padding-left: 0.35em
-    color: rgba($color-black, .2)
-  .dito-buttons
-    display: flex
-    visibility: hidden
-    height: 100%
-    margin-left: 1em
-    margin: 1px 0 1px 1em
-  .dito-tree-header:hover
-    > .dito-buttons
-      visibility: visible
-  // Hide buttons during dragging
-  &.dito-dragging
-    .dito-tree-header
-      > .dito-buttons
-        visibility: hidden
-  &.dito-active
-    > .dito-tree-header
-      background: $color-active
-      padding: 0 $input-padding-hor
-      margin: 0 (-$input-padding-hor)
-      > .dito-tree-branch
-        > .dito-chevron::before
-            color: $color-white
-      > * > .dito-tree-label
-        color: $color-white
-  .dito-properties
-    display: block
-    margin-left: $chevron-indent
-    > tr
-      vertical-align: baseline
-    .dito-label
-      margin: 0
-      &::after
-        content: ': '
+  .dito-tree-info {
+    white-space: nowrap;
+  }
+
+  .dito-tree-info {
+    padding-left: 0.35em;
+    color: rgba($color-black, 0.2);
+  }
+
+  .dito-buttons {
+    display: flex;
+    visibility: hidden;
+    height: 100%;
+    margin: 1px 0 1px 1em;
+  }
+
+  .dito-tree-header:hover {
+    > .dito-buttons {
+      visibility: visible;
+    } // Hide buttons during dragging
+  }
+
+  &.dito-dragging {
+    .dito-tree-header {
+      > .dito-buttons {
+        visibility: hidden;
+      }
+    }
+  }
+
+  &.dito-active {
+    > .dito-tree-header {
+      background: $color-active;
+      padding: 0 $input-padding-hor;
+      margin: 0 (-$input-padding-hor);
+
+      > .dito-tree-branch {
+        > .dito-chevron::before {
+          color: $color-white;
+        }
+      }
+
+      > * > .dito-tree-label {
+        color: $color-white;
+      }
+    }
+  }
+
+  .dito-properties {
+    display: block;
+    margin-left: $chevron-indent;
+
+    > tr {
+      vertical-align: baseline;
+    }
+
+    .dito-label {
+      margin: 0;
+
+      &::after {
+        content: ': ';
+      }
+    }
+  }
+}
 </style>

@@ -1,0 +1,4 @@
+@mixin user-select($select: none) {
+  user-select: $select;
+  @include user-drag($select);
+}

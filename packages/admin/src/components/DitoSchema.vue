@@ -673,73 +673,102 @@ export default DitoComponent.component('DitoSchema', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-schema
-  box-sizing: border-box
+.dito-schema {
+  box-sizing: border-box;
   // To display schema next to panels:
-  display: flex
-  min-height: 100%
-  > .dito-schema-content
-    flex: 1 1 100%
+  display: flex;
+  min-height: 100%;
+
+  > .dito-schema-content {
+    flex: 1 1 100%;
     // So that schema buttons can be sticky to the bottom:
-    display: grid
-    grid-template-rows: min-content
-    > *:only-child
-      grid-row-end: none
-    max-width: $content-width
-    padding: $content-padding
+    display: grid;
+    grid-template-rows: min-content;
+
+    > *:only-child {
+      grid-row-end: none;
+    }
+
+    max-width: $content-width;
+    padding: $content-padding;
+  }
+
   > .dito-buttons,
-  > .dito-panels
-    flex: 1 1 0%
-  > .dito-buttons
-    margin-left: $form-spacing
-  > .dito-panels
-    padding: $content-padding $content-padding $content-padding 0
+  > .dito-panels {
+    flex: 1 1 0%;
+  }
+
+  > .dito-buttons {
+    margin-left: $form-spacing;
+  }
+
+  > .dito-panels {
+    padding: $content-padding $content-padding $content-padding 0;
+  }
+
   // Display a ruler between tabbed components and towards the .dito-buttons
-  .dito-pane-tab + .dito-pane-main
-    &::before
+  .dito-pane-tab + .dito-pane-main {
+    &::before {
       // Use a pseudo element to display a ruler with proper margins
-      display: block
-      content: ''
-      width: 100%
-      border-bottom: $border-style
+      display: block;
+      content: '';
+      width: 100%;
+      border-bottom: $border-style;
       // Add removed $form-spacing again to the ruler
-      margin: $content-padding $form-spacing-half $form-spacing-half
-.dito-schema-header
-  display: flex
-  justify-content: space-between
+      margin: $content-padding $form-spacing-half $form-spacing-half;
+    }
+  }
+}
+
+.dito-schema-header {
+  display: flex;
+  justify-content: space-between;
+
   .dito-tabs,
-  .dito-clipboard
-    display: flex
-    align-self: flex-end
-  .dito-clipboard
-    &:only-child
-      margin-left: auto
-    .dito-button
-      margin: 0 0 $tab-margin $tab-margin
-  &.dito-schema-menu-header
+  .dito-clipboard {
+    display: flex;
+    align-self: flex-end;
+  }
+
+  .dito-clipboard {
+    &:only-child {
+      margin-left: auto;
+    }
+
+    .dito-button {
+      margin: 0 0 $tab-margin $tab-margin;
+    }
+  }
+
+  &.dito-schema-menu-header {
     // Bring the tabs up to the menu.
-    position: absolute
-    height: $menu-height
-    padding: 0 $menu-padding-hor
-    max-width: $content-width
-    top: 0
-    left: 0
-    right: 0
-    z-index: $menu-z-index
+    position: absolute;
+    height: $menu-height;
+    padding: 0 $menu-padding-hor;
+    max-width: $content-width;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: $menu-z-index;
     // Turn off pointer events so that DitoTrail keeps receiving events...
-    pointer-events: none
+    pointer-events: none;
     // ...but allow interaction with the tabs and buttons (e.g. clipboard)
     // layered on top of DitoTrail.
     .dito-tabs,
-    .dito-buttons
-      pointer-events: auto
-      line-height: $menu-line-height
-      font-size: $menu-font-size
-  button.dito-label
-    width: 100%
+    .dito-buttons {
+      pointer-events: auto;
+      line-height: $menu-line-height;
+      font-size: $menu-font-size;
+    }
+  }
+
+  button.dito-label {
+    width: 100%;
     // Catch all clicks, even when it would be partially covered by schema.
-    z-index: 1
+    z-index: 1;
+  }
+}
 </style>

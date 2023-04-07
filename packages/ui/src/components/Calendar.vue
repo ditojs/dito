@@ -398,122 +398,171 @@ function getLocaleNames(locale) {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-calendar
-  min-width: 240px
-  box-sizing: border-box
+.dito-calendar {
+  min-width: 240px;
+  box-sizing: border-box;
+}
 
-.dito-calendar-popup
-  border: $border-style
-  border-radius: $border-radius
-  background: $color-white
-  box-shadow: $shadow-window
-  z-index: 1000
+.dito-calendar-popup {
+  border: $border-style;
+  border-radius: $border-radius;
+  background: $color-white;
+  box-shadow: $shadow-window;
+  z-index: 1000;
+}
 
-.dito-calendar-body
-  padding: 0 0.5em
-  span
-    display: inline-block
-    width: calc(100% / 7)
-    height: $input-height
-    line-height: calc(#{$input-height} - 2px)
-    box-sizing: border-box
-    border-radius: $border-radius
-    border: $border-width solid transparent
-    text-align: center
-  .dito-calendar-item-today
-    border: $border-width solid $color-active
-    color: $color-active
-  .dito-calendar-item-active
+.dito-calendar-body {
+  padding: 0 0.5em;
+
+  span {
+    display: inline-block;
+    width: calc(100% / 7);
+    height: $input-height;
+    line-height: calc(#{$input-height} - 2px);
+    box-sizing: border-box;
+    border-radius: $border-radius;
+    border: $border-width solid transparent;
+    text-align: center;
+  }
+
+  .dito-calendar-item-today {
+    border: $border-width solid $color-active;
+    color: $color-active;
+  }
+
+  .dito-calendar-item-active {
     &,
-    &:hover
-      background: $color-active
-      color: white
-  .dito-calendar-item-disabled
-    background: white
-    cursor: default
+    &:hover {
+      background: $color-active;
+      color: white;
+    }
+  }
+
+  .dito-calendar-item-disabled {
+    background: white;
+    cursor: default;
+  }
+
   .dito-calendar-item-disabled,
-  .dito-calendar-item-gray
-    color: #999
+  .dito-calendar-item-gray {
+    color: #999999;
+  }
+}
 
 .dito-calendar-months,
-.dito-calendar-years
-  span
-    width: calc(100% / 4)
-    margin: 0.5em 0
+.dito-calendar-years {
+  span {
+    width: calc(100% / 4);
+    margin: 0.5em 0;
+  }
+}
 
-.dito-calendar-years span
-  width: calc(100% / 5)
+.dito-calendar-years span {
+  width: calc(100% / 5);
+}
 
 .dito-calendar a,
 .dito-calendar-dates span,
 .dito-calendar-months span,
-.dito-calendar-years span
-  +user-select(none)
-  white-space: nowrap
-  cursor: pointer
+.dito-calendar-years span {
+  @include user-select(none);
 
-.dito-calendar-header span
-  cursor: default
-  a
-    padding: 0 0.2em
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dito-calendar-header span {
+  cursor: default;
+
+  a {
+    padding: 0 0.2em;
+  }
+}
 
 .dito-calendar-dates span:hover,
 .dito-calendar-months span:hover,
 .dito-calendar-years span:hover,
-.dito-calendar:not(:hover) .dito-calendar-item-current
-  background: $color-highlight
+.dito-calendar:not(:hover) .dito-calendar-item-current {
+  background: $color-highlight;
+}
 
-.dito-calendar-weekdays span
-  font-weight: bold
-  +user-select(none)
+.dito-calendar-weekdays span {
+  font-weight: bold;
+  @include user-select(none);
+}
 
 .dito-calendar-header,
-.dito-calendar-footer
-  @extend %input-height
-  position: relative
-  text-align: center
+.dito-calendar-footer {
+  @extend %input-height;
 
-.dito-calendar-footer
-  border-top: $border-style
+  position: relative;
+  text-align: center;
+}
 
-.dito-calendar-header
-  font-weight: bold
-  border-bottom: $border-style
-  display: flex
-  > span
-    margin: auto
-    padding: 0 0.5em
-  a
-    font-weight: bold
-    &:hover
-      color: $color-active
+.dito-calendar-footer {
+  border-top: $border-style;
+}
+
+.dito-calendar-header {
+  font-weight: bold;
+  border-bottom: $border-style;
+  display: flex;
+
+  > span {
+    margin: auto;
+    padding: 0 0.5em;
+  }
+
+  a {
+    font-weight: bold;
+
+    &:hover {
+      color: $color-active;
+    }
+  }
+}
 
 .dito-calendar-step-prev,
-.dito-calendar-step-next
-  position: relative
-  width: 5%
-  min-width: 2em
-  max-width: 3em
-  &::after
-    position: absolute
-    left: 0
-    right: 0
-    font-size: 1.25em
-.dito-calendar-step-prev
-  &::after
-    content: '‹'
-  &.dito-calendar-step-year::after
-    content: '«'
-.dito-calendar-step-next
-  &::after
-    content: '›'
-  &.dito-calendar-step-year::after
-    content: '»'
+.dito-calendar-step-next {
+  position: relative;
+  width: 5%;
+  min-width: 2em;
+  max-width: 3em;
 
-.dito-calendar-select-today
-  &::after
-    content: 'Now'
+  &::after {
+    position: absolute;
+    left: 0;
+    right: 0;
+    font-size: 1.25em;
+  }
+}
+
+.dito-calendar-step-prev {
+  &::after {
+    content: '‹';
+  }
+
+  &.dito-calendar-step-year::after {
+    content: '«';
+  }
+}
+
+.dito-calendar-step-next {
+  &::after {
+    content: '›';
+  }
+
+  &.dito-calendar-step-year::after {
+    content: '»';
+  }
+}
+
+.dito-calendar-select-today {
+  &::after {
+    content: 'Now';
+  }
+}
 </style>

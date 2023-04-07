@@ -151,44 +151,50 @@ export default DitoComponent.component('DitoDialog', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-dialog
-  position: fixed
-  display: flex
-  inset: 0
-  z-index: 2000
-  padding: $content-padding
-  align-items: center
-  justify-content: center
+.dito-dialog {
+  position: fixed;
+  display: flex;
+  inset: 0;
+  z-index: 2000;
+  padding: $content-padding;
+  align-items: center;
+  justify-content: center;
   // Prevent scrolling of the page behind the dialog:
-  overflow: hidden
-  background: rgba(0, 0, 0, 0.2)
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
 
   // TODO: `&__inner`
-  form
-    position: relative
-    display: flex
-    overflow: hidden
-    box-sizing: border-box
-    background: white
-    border-radius: $border-radius
-    max-width: var(--width, 480px)
-    max-height: 100%
-    box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4)
+  form {
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: white;
+    border-radius: $border-radius;
+    max-width: var(--width, 480px);
+    max-height: 100%;
+    box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);
+  }
+}
 
 .dito-dialog-enter-active,
-.dito-dialog-leave-active
-  transition: opacity 0.15s
+.dito-dialog-leave-active {
+  transition: opacity 0.15s;
 
-  form
-    transition: transform 0.25s
+  form {
+    transition: transform 0.25s;
+  }
+}
 
 .dito-dialog-enter-from,
-.dito-dialog-leave-to
-  opacity: 0
+.dito-dialog-leave-to {
+  opacity: 0;
 
-  form
-    transform: translateY(-20px)
+  form {
+    transform: translateY(-20px);
+  }
+}
 </style>

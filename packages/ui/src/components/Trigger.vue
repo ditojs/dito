@@ -308,26 +308,33 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
-@import '../styles/transitions/index.sass'
+<style lang="scss">
+@import '../styles/_imports';
+@import '../styles/transitions/index.scss';
 
-.dito-trigger-container
-  position: relative
+.dito-trigger-container {
+  position: relative;
+}
 
-.dito-trigger-disabled
-  color: $color-disabled
-  border-color: $border-color
-  cursor: default
-  *
-    cursor: default !important
-    +user-select(none)
-    &:focus
-      box-shadow: none
+.dito-trigger-disabled {
+  color: $color-disabled;
+  border-color: $border-color;
+  cursor: default;
 
-.dito-popup
-  position: absolute
-  top: 0
-  left: 0
-  z-index: 1000
+  * {
+    cursor: default !important;
+    @include user-select(none);
+
+    &:focus {
+      box-shadow: none;
+    }
+  }
+}
+
+.dito-popup {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
 </style>

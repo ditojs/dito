@@ -31,13 +31,16 @@ export default TypeComponent.register('textarea', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-textarea
-  display: block
-  resize: none
-  min-height: calc(1em * var(--line-height) + #{ 2 * $input-padding-ver })
-  &.dito-resizable
-    resize: vertical
+.dito-textarea {
+  display: block;
+  resize: none;
+  min-height: calc(1em * var(--line-height) + #{2 * $input-padding-ver});
+
+  &.dito-resizable {
+    resize: vertical;
+  }
+}
 </style>

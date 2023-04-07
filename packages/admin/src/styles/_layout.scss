@@ -1,0 +1,22 @@
+// TODO: Convert to flexbox
+
+.dito-layout-vertical {
+  display: table;
+
+  > * {
+    display: table-row;
+  }
+}
+
+.dito-layout-horizontal {
+  display: table-row;
+
+  > * {
+    display: table-cell;
+
+    /* stylelint-disable-next-line selector-max-universal */
+    & + * {
+      padding-left: $form-spacing;
+    }
+  }
+}

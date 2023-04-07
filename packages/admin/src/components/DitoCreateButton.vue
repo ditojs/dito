@@ -87,9 +87,12 @@ export default DitoComponent.component('DitoCreateButton', {
 })
 </script>
 
-<style lang="sass">
-.dito-create-button
-  position: relative
-  .dito-pulldown
-    right: 0
+<style lang="scss">
+.dito-create-button {
+  position: relative;
+
+  .dito-pulldown {
+    right: 0;
+  }
+}
 </style>

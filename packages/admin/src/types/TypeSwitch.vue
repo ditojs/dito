@@ -29,10 +29,12 @@ export default TypeComponent.register('switch', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-switch
-  .dito-switch-label
-    font-size: $font-size-small
+.dito-switch {
+  .dito-switch-label {
+    font-size: $font-size-small;
+  }
+}
 </style>

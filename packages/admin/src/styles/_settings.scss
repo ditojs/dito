@@ -1,0 +1,68 @@
+// Typography
+$font-family-sans: -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto',
+  'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  'Helvetica', 'Arial', sans-serif;
+$font-family-mono: 'Menlo', 'Consolas', 'Monaco', 'Vera Mono', 'Andale Mono',
+  'Ubuntu Mono', monospace;
+$font-size: 13px;
+$font-size-small: 11px;
+// Adjust line-height so that it fulfils this equation, which is used
+// to reach equal height for icon-buttons (`height: 2em`), table headers & co.:
+// `(2 * $font-size - 2 * ($border-width + $input-padding-ver)) / $font-size`
+// TODO: Ideally, this would be handled in @ditojs/ui, but it would have to be
+// done in a way independent of `$font-size`. The right approach would probably
+// be to use `$input-height` and vertical centering instead for all inputs that
+// have a height of one line?
+// NOTE: Due to higher precision in dart-sass, this needs to be rounded to 5
+// fractional digits, otherwise CSS creates the wrong resulting line-height with
+// 1 missing pixel.
+$line-height: rounded(
+  calc(
+    $input-height-factor - 2 * ($border-width + $input-padding-ver) / $font-size
+  ),
+  5
+);
+
+// Button
+$button-order-arrow-size: 4px;
+
+// Pulldown
+$pulldown-radius: 0.5em;
+$pulldown-padding-ver: 0.5em;
+$pulldown-padding-hor: 1em;
+$pulldown-padding: $pulldown-padding-ver $pulldown-padding-hor;
+
+// Content
+$content-width: 900px;
+$content-sidebar-width: 360px;
+$content-padding: 16px;
+$content-padding-half: calc($content-padding / 2);
+$content-color-background: $color-lightest;
+
+// Form
+$form-spacing: $input-padding-hor;
+$form-spacing-half: calc($form-spacing / 2);
+
+// Menu
+$menu-font-size: 14px;
+$menu-line-height: 1;
+$menu-z-index: 1000;
+$menu-padding-ver: $menu-font-size;
+$menu-padding-hor: $content-padding;
+$menu-padding: $menu-padding-ver $menu-padding-hor;
+$menu-height: $menu-font-size + 2 * $menu-padding-ver;
+
+// Tabs
+$tab-margin: 6px;
+$tab-padding-hor: 12px;
+$tab-padding-ver: calc(($menu-padding-ver * 2 - $tab-margin) / 2);
+$tab-radius: 4px;
+// $border-radius
+
+// Patterns
+$pattern-transparency-size: ($font-size - $border-width) * $input-height-factor;
+$pattern-transparency: repeating-conic-gradient(
+    transparent 0% 25%,
+    #eeeeee 0% 50%
+  )
+  0% 0% / #{$pattern-transparency-size} #{$pattern-transparency-size};

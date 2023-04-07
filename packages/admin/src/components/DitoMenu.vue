@@ -19,34 +19,48 @@ import DitoComponent from '../DitoComponent.js'
 export default DitoComponent.component('DitoMenu', {})
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-menu
-  flex: initial
-  font-size: $menu-font-size
-  white-space: nowrap
-  +user-select(none)
-  ul
-    background: $color-lighter
-    border-right: $border-style
+.dito-menu {
+  flex: initial;
+  font-size: $menu-font-size;
+  white-space: nowrap;
+  @include user-select(none);
+
+  ul {
+    background: $color-lighter;
+    border-right: $border-style;
+  }
+
   a,
-  h1
-    display: block
-  h1
-    padding: $menu-padding
-    line-height: $menu-line-height
-    font-weight: bold
-    background: $color-darker
-    border-right: $border-width solid $color-darkest
-    color: $color-white
-  .dito-link
-    padding: $menu-padding
-    line-height: $menu-line-height
-    &.dito-active
-      color: $color-white
-      background: $color-active
-.dito-link
-  &:focus:not(:active):not(.dito-active)
-    box-shadow: $shadow-focus
+  h1 {
+    display: block;
+  }
+
+  h1 {
+    padding: $menu-padding;
+    line-height: $menu-line-height;
+    font-weight: bold;
+    background: $color-darker;
+    border-right: $border-width solid $color-darkest;
+    color: $color-white;
+  }
+
+  .dito-link {
+    padding: $menu-padding;
+    line-height: $menu-line-height;
+
+    &.dito-active {
+      color: $color-white;
+      background: $color-active;
+    }
+  }
+}
+
+.dito-link {
+  &:focus:not(:active, .dito-active) {
+    box-shadow: $shadow-focus;
+  }
+}
 </style>

@@ -17,9 +17,10 @@ export default TypeComponent.register('checkbox', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-checkbox
-  @extend %input-borderless
+.dito-checkbox {
+  @extend %input-borderless;
+}
 </style>

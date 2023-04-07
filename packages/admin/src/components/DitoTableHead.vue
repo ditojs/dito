@@ -27,7 +27,7 @@ thead.dito-table-head
     th(
       v-if="hasEditButtons"
     )
-      //- Empty <span> is needed for styling, see _table.sass
+      //- Empty <span> is needed for styling, see _table.scss
       span
 </template>
 
@@ -79,30 +79,42 @@ export default DitoComponent.component('DitoTableHead', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-table-head
-  +user-select(none)
-  tr
-    th
-      padding: 0
-      font-weight: normal
-      text-align: left
-      white-space: nowrap
-      .dito-button
+.dito-table-head {
+  @include user-select(none);
+
+  tr {
+    th {
+      padding: 0;
+      font-weight: normal;
+      text-align: left;
+      white-space: nowrap;
+
+      .dito-button {
         // Convention: Nested spans handle padding, see below
-        padding: 0
-        width: 100%
-        text-align: inherit
-        border-radius: 0
-      span
-        display: inline-block
+        padding: 0;
+        width: 100%;
+        text-align: inherit;
+        border-radius: 0;
+      }
+
+      span {
+        display: inline-block;
         // Convention: Nested spans handle padding
-        padding: $input-padding
-        &:empty::after
+        padding: $input-padding;
+
+        &:empty::after {
           // Prevent empty <th> from collapsing
-          content: '\200b' // zero-width space
-      > span
-        display: block
+          content: '\200b'; // zero-width space;
+        }
+      }
+
+      > span {
+        display: block;
+      }
+    }
+  }
+}
 </style>

@@ -110,19 +110,24 @@ export default TypeComponent.register('object', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-object
-  display: flex
-  border: $border-style
-  border-radius: $border-radius
-  margin: 0
-  padding: $form-spacing
-  box-sizing: border-box
-  .dito-object-content
-    flex: 0 1 100%
-  > .dito-buttons
-    flex: 1 0 0%
-    margin-left: $form-spacing
+.dito-object {
+  display: flex;
+  border: $border-style;
+  border-radius: $border-radius;
+  margin: 0;
+  padding: $form-spacing;
+  box-sizing: border-box;
+
+  .dito-object-content {
+    flex: 0 1 100%;
+  }
+
+  > .dito-buttons {
+    flex: 1 0 0%;
+    margin-left: $form-spacing;
+  }
+}
 </style>

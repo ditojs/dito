@@ -102,9 +102,10 @@ export default DitoComponent.component('DitoEditButtons', {
 })
 </script>
 
-<style lang="sass">
-.dito-edit-buttons
+<style lang="scss">
+.dito-edit-buttons {
   // Override cursor from collapsible dito-label:
-  cursor: default
-  flex: none
+  cursor: default;
+  flex: none;
+}
 </style>

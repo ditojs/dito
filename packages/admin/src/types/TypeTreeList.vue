@@ -164,23 +164,30 @@ export default TypeComponent.register(
 )
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-tree-list
-  @extend %field
-  .dito-tree-panel
-    display: flex
-    justify-content: space-between
-    > .dito-tree-item
-      flex: 1 1 25%
-    > .dito-tree-form-container
-      flex: 0 1 75%
-      align-self: stretch
-      background: $content-color-background
-      border-left: $border-style
-      border-top-right-radius: $border-radius - 1
-      border-bottom-right-radius: $border-radius - 1
-      margin: (-$input-padding-ver) (-$input-padding-hor)
-      margin-left: $input-padding-hor
+.dito-tree-list {
+  @extend %field;
+
+  .dito-tree-panel {
+    display: flex;
+    justify-content: space-between;
+
+    > .dito-tree-item {
+      flex: 1 1 25%;
+    }
+
+    > .dito-tree-form-container {
+      flex: 0 1 75%;
+      align-self: stretch;
+      background: $content-color-background;
+      border-left: $border-style;
+      border-top-right-radius: $border-radius - 1;
+      border-bottom-right-radius: $border-radius - 1;
+      margin: (-$input-padding-ver) (-$input-padding-hor);
+      margin-left: $input-padding-hor;
+    }
+  }
+}
 </style>

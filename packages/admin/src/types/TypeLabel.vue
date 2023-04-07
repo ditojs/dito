@@ -15,8 +15,9 @@ export default TypeComponent.register('label', {
 })
 </script>
 
-<style lang="sass">
-.dito-label-component
-  display: flex
-  height: 2em
+<style lang="scss">
+.dito-label-component {
+  display: flex;
+  height: 2em;
+}
 </style>

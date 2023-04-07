@@ -1,0 +1,27 @@
+.fade-enter-active {
+  animation: fade-enter 0.2s $ease-out-quart;
+}
+
+.fade-leave-active {
+  animation: fade-leave 0.2s $ease-out-quart;
+}
+
+@keyframes fade-enter {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-leave {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}

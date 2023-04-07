@@ -179,34 +179,48 @@ export default DitoComponent.component('DitoContainer', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-container
+.dito-container {
   // Needed for better vertical alignment:
-  align-self: stretch
-  box-sizing: border-box
+  align-self: stretch;
+  box-sizing: border-box;
   // To prevent list tables from blowing out of their flex box containers.
-  max-width: 100%
+  max-width: 100%;
   // Cannot use margin here as it needs to be part of box-sizing for
   // percentages in flex-basis to work.
-  padding: $form-spacing $form-spacing-half
-  &:empty
-    padding: 0
-  &.dito-omit-padding
-    padding: 0
-    > .dito-label
-      margin: $form-spacing $form-spacing-half 0
-  &.dito-single
-    height: 100% // So that list buttons can be sticky at the bottom
+  padding: $form-spacing $form-spacing-half;
+
+  &:empty {
+    padding: 0;
+  }
+
+  &.dito-omit-padding {
+    padding: 0;
+
+    > .dito-label {
+      margin: $form-spacing $form-spacing-half 0;
+    }
+  }
+
+  &.dito-single {
+    height: 100%; // So that list buttons can be sticky at the bottom;
+  }
+}
+
 // NOTE: This is not nested inside `.dito-container` so that other
 // type components can override `.dito-width-fill` class (filter precedence).
-.dito-component
-  &.dito-width-fill
-    width: 100%
+.dito-component {
+  &.dito-width-fill {
+    width: 100%;
+
     &.dito-checkbox,
-    &.dito-radio-button
+    &.dito-radio-button {
       // WebKit doesn't like changed width on checkboxes and radios, override:
-      display: inline-block
-      width: auto
+      display: inline-block;
+      width: auto;
+    }
+  }
+}
 </style>

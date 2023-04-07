@@ -15,14 +15,14 @@
     },
     "./style.css": "./dist/style.css",
     "./src": "./src/index.js",
-    "./imports.sass": "./src/styles/_imports.sass"
+    "./imports.scss": "./src/styles/_imports.scss"
   },
   "files": [
     "src/",
     "dist/"
   ],
   "scripts": {
-    "build:icons": "yarn inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.sass",
+    "build:icons": "yarn inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.scss",
     "build:vue": "vite build",
     "build": "yarn build:icons && yarn build:vue",
     "watch": "yarn build:vue --mode 'development' --watch",

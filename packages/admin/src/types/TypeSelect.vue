@@ -58,30 +58,36 @@ export default TypeComponent.register('select', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
 // TODO: Move to dito-ui
-$select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2)
+$select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
 
-.dito-select
-  display: inline-block
-  position: relative
+.dito-select {
+  display: inline-block;
+  position: relative;
 
-  select
-    padding-right: $select-arrow-width
-
+  select {
+    padding-right: $select-arrow-width;
+  }
   // Handle .dito-width-fill separately due to required nesting of select:
-  &.dito-width-fill
-    select
-      width: 100%
+  &.dito-width-fill {
+    select {
+      width: 100%;
+    }
+  }
 
-  &::after
-    position: absolute
-    +arrow($select-arrow-size)
-    bottom: $select-arrow-bottom
-    right: calc(#{$select-arrow-right} + #{$border-width})
+  &::after {
+    position: absolute;
+    @include arrow($select-arrow-size);
 
-  &.dito-disabled::after
-    border-color: $border-color
+    bottom: $select-arrow-bottom;
+    right: calc(#{$select-arrow-right} + #{$border-width});
+  }
+
+  &.dito-disabled::after {
+    border-color: $border-color;
+  }
+}
 </style>

@@ -36,7 +36,7 @@ import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, Calendar, InputField },
-  emits: ['update:modelValue', 'update:show'],
+  emits: ['update:modelValue', 'update:show', 'focus', 'blur'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -132,15 +132,20 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-date-picker
-  min-width: 10em
-  .dito-input
-    font-variant-numeric: tabular-nums
-    cursor: pointer
-    width: 100%
-.dito-date-picker-popup
-  margin: $popup-margin
+.dito-date-picker {
+  min-width: 10em;
+
+  .dito-input {
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    width: 100%;
+  }
+}
+
+.dito-date-picker-popup {
+  margin: $popup-margin;
+}
 </style>

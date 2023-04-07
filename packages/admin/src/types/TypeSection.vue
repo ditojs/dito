@@ -39,13 +39,15 @@ export default TypeComponent.register('section', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-section
-  &.dito-section-labelled
-    border: $border-style
-    border-radius: $border-radius
-    padding: $form-spacing
-    box-sizing: border-box
+.dito-section {
+  &.dito-section-labelled {
+    border: $border-style;
+    border-radius: $border-radius;
+    padding: $form-spacing;
+    box-sizing: border-box;
+  }
+}
 </style>

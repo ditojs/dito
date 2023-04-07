@@ -334,23 +334,34 @@ function asFiles(value) {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-upload
-  .dito-table
-    tr
-      vertical-align: middle
-  .dito-button-add-upload
-    padding: 0
-    > *
-      position: absolute
-      cursor: pointer
-  .dito-upload-footer
-    display: flex
-    justify-content: flex-end
-    align-items: center
-    .dito-progress
-      flex: auto
-      margin-right: $form-spacing
+.dito-upload {
+  .dito-table {
+    tr {
+      vertical-align: middle;
+    }
+  }
+
+  .dito-button-add-upload {
+    padding: 0;
+
+    > * {
+      position: absolute;
+      cursor: pointer;
+    }
+  }
+
+  .dito-upload-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    .dito-progress {
+      flex: auto;
+      margin-right: $form-spacing;
+    }
+  }
+}
 </style>

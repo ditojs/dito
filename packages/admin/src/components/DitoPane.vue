@@ -136,36 +136,41 @@ export default DitoComponent.component('DitoPane', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-pane
-  display: flex
-  position: relative
-  flex-flow: row wrap
-  align-content: flex-start
-  align-items: baseline
+.dito-pane {
+  display: flex;
+  position: relative;
+  flex-flow: row wrap;
+  align-content: flex-start;
+  align-items: baseline;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
-  margin: (-$form-spacing) (-$form-spacing-half)
+  margin: (-$form-spacing) (-$form-spacing-half);
   // Add removed horizontal margin again to max-width:
-  max-width: $content-width + 2 * $form-spacing-half
+  max-width: $content-width + 2 * $form-spacing-half;
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
-  flex: 0%
+  flex: 0%;
 
-  &.dito-pane-main
-    flex: 100%
+  &.dito-pane-main {
+    flex: 100%;
+  }
 
-  .dito-schema-header:not(.dito-schema-menu-header) + &
+  .dito-schema-header:not(.dito-schema-menu-header) + & {
     // Clear top-margin if the components are preceded by a schema header.
-    margin-top: 0
+    margin-top: 0;
+  }
 
-  .dito-container.dito-omit-padding > &
+  .dito-container.dito-omit-padding > & {
     // Clear margins set above again if parent is omitting padding.
-    margin: 0
-    max-width: unset
+    margin: 0;
+    max-width: unset;
+  }
 
-  .dito-break
-    flex: 100%
-    height: 0
+  .dito-break {
+    flex: 100%;
+    height: 0;
+  }
+}
 </style>

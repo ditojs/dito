@@ -29,12 +29,16 @@ export default TypeComponent.register('radio', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-radio-buttons
-  label
-    @extend %input-borderless
-  .dito-radio-button
-    margin-right: $form-spacing
+.dito-radio-buttons {
+  label {
+    @extend %input-borderless;
+  }
+
+  .dito-radio-button {
+    margin-right: $form-spacing;
+  }
+}
 </style>

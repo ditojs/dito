@@ -15,7 +15,7 @@
     },
     "./style.css": "./dist/style.css",
     "./src": "./src/index.js",
-    "./imports.sass": "./src/styles/_imports.sass"
+    "./imports.scss": "./src/styles/_imports.scss"
   },
   "files": [
     "src/",

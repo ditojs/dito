@@ -1,0 +1,212 @@
+@use 'sass:math';
+
+.dito-button {
+  // .dito-button with order-arrows:
+  .dito-order-arrows {
+    display: inline-block;
+    width: math.round($button-order-arrow-size * $math-sqrt2);
+    padding-left: $form-spacing;
+
+    $arrow-offset: calc($button-order-arrow-size / 2 + $border-width);
+
+    &::before {
+      @include arrow($button-order-arrow-size, 'up');
+
+      bottom: $arrow-offset;
+    }
+
+    &::after {
+      @include arrow($button-order-arrow-size, 'down');
+
+      top: $arrow-offset;
+    }
+  }
+
+  &.dito-order-asc .dito-order-arrows {
+    &::before {
+      bottom: 0;
+    }
+
+    &::after {
+      display: none;
+    }
+  }
+
+  &.dito-order-desc .dito-order-arrows {
+    &::before {
+      display: none;
+    }
+
+    &::after {
+      top: 0;
+    }
+  }
+}
+
+.dito-button-create:empty::before {
+  content: 'Create';
+}
+
+.dito-button-add:empty::before {
+  content: 'Add';
+}
+
+.dito-button-delete:empty::before {
+  content: 'Delete';
+}
+
+.dito-button-remove:empty::before {
+  content: 'Remove';
+}
+
+.dito-button-edit:empty::before {
+  content: 'Edit';
+}
+
+.dito-button-save:empty::before {
+  content: 'Save';
+}
+
+.dito-button-apply:empty::before {
+  content: 'Apply';
+}
+
+.dito-button-login:empty::before {
+  content: 'Login';
+}
+
+.dito-button-ok:empty::before {
+  content: 'OK';
+}
+
+.dito-button-cancel:empty::before {
+  content: 'Cancel';
+}
+
+.dito-button-close:empty::before {
+  content: 'Close';
+}
+
+.dito-button-drag:empty::before {
+  content: 'Drag';
+}
+
+.dito-button-copy:empty::before {
+  content: 'Copy';
+}
+
+.dito-button-paste:empty::before {
+  content: 'Paste';
+}
+
+.dito-button-drag {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.dito-buttons {
+  &.dito-buttons-large {
+    --button-margin: 3px;
+
+    font-size: $menu-font-size;
+    flex-flow: row wrap;
+    justify-content: center;
+
+    .dito-container {
+      // Do not specify this on .dito-buttons directly as it would break borders
+      margin-top: $content-padding;
+    }
+
+    .dito-button {
+      border-radius: 2em;
+      padding: $button-round-padding;
+    }
+  }
+
+  &.dito-buttons-main {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    align-self: flex-end;
+    z-index: 500;
+    padding-bottom: $content-padding;
+    margin-bottom: -$content-padding;
+    margin-top: 2 * $content-padding;
+    box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
+      $color-shadow;
+    background: $content-color-background;
+  }
+
+  &.dito-buttons-round,
+  &.dito-buttons-small {
+    // For now, nothing for these:
+    // .dito-button-create:empty::before,
+    // .dito-button-add:empty::before
+    // Special .dito-button-add-upload without :empty:
+    .dito-button-add-upload::before {
+      @extend %icon-add;
+    }
+
+    .dito-button-delete:empty::before,
+    .dito-button-remove:empty::before {
+      @extend %icon-remove;
+    }
+
+    .dito-button-edit:empty::before {
+      @extend %icon-edit;
+    }
+
+    .dito-button-drag:empty::before {
+      @extend %icon-drag;
+    }
+
+    .dito-button-copy:empty::before {
+      @extend %icon-copy;
+    }
+
+    .dito-button-paste:empty::before {
+      @extend %icon-paste;
+    }
+  }
+}
+
+.dito-button-overlay {
+  position: absolute;
+  right: $border-width;
+  top: $border-width;
+  bottom: $border-width;
+  border: 0;
+  border-radius: $border-radius;
+  cursor: pointer;
+
+  &.dito-button-clear {
+    width: $input-height;
+    z-index: 1;
+    background: $color-white;
+    display: none;
+
+    $button-clear: &;
+
+    @at-root .dito-component:hover {
+      // Support two levels of nesting inside .dito-component, used by TypeColor
+      & > #{$button-clear},
+      & > * > #{$button-clear},
+      & > * > * > #{$button-clear} {
+        display: block;
+      }
+    }
+
+    &::before {
+      @extend %icon-clear;
+
+      color: $color-grey;
+    }
+
+    &:hover::before {
+      color: $color-black;
+    }
+  }
+}

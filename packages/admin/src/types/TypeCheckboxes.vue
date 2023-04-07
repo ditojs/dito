@@ -42,12 +42,16 @@ export default TypeComponent.register('checkboxes', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-checkboxes
-  label
-    @extend %input-borderless
-  .dito-checkbox
-    margin-right: $form-spacing
+.dito-checkboxes {
+  label {
+    @extend %input-borderless;
+  }
+
+  .dito-checkbox {
+    margin-right: $form-spacing;
+  }
+}
 </style>

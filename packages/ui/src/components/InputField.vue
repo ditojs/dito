@@ -82,18 +82,22 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-input
-  display: inline-block
-  @extend %input
-  input
+.dito-input {
+  display: inline-block;
+
+  @extend %input;
+
+  input {
     // Inherit all styling from .dito-input
-    all: inherit
-    display: inline-block
-    width: 100%
-    border: 0
-    margin: 0
-    padding: 0
+    all: inherit;
+    display: inline-block;
+    width: 100%;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
 </style>

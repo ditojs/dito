@@ -20,13 +20,16 @@ export default DitoComponent.component('DitoErrors', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-errors
-  position: absolute
-  z-index: 1
-  ul
-    margin-top: 1px
-    color: $color-error
+.dito-errors {
+  position: absolute;
+  z-index: 1;
+
+  ul {
+    margin-top: 1px;
+    color: $color-error;
+  }
+}
 </style>

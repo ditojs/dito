@@ -41,10 +41,11 @@ export default DitoComponent.component('DitoPanels', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-panels
-  max-width: $content-sidebar-width
-  min-width: calc($content-sidebar-width / 2)
+.dito-panels {
+  max-width: $content-sidebar-width;
+  min-width: calc($content-sidebar-width / 2);
+}
 </style>

@@ -74,7 +74,7 @@ import { getKeyNavigation } from '../utils/event.js'
 
 export default {
   components: { Trigger, InputField },
-  emits: ['update:modelValue', 'update:show', 'change'],
+  emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -274,83 +274,111 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-time-picker
-  .dito-input
-    width: 100%
+.dito-time-picker {
+  .dito-input {
+    width: 100%;
+  }
+}
 
-.dito-time-picker-popup
-  max-width: 160px
-  margin: $popup-margin
+.dito-time-picker-popup {
+  max-width: 160px;
+  margin: $popup-margin;
+}
 
-$time-picker-line-height: 24px
-.dito-time-picker
-  .dito-input
-    font-variant-numeric: tabular-nums
-    cursor: pointer
-    width: 100%
-    .dito-icon-time
-      display: block
-      position: absolute
-      top: 0
-      right: 7px
-      height: 100%
+$time-picker-line-height: 24px;
 
-.dito-time-picker-popup
-  list-style: none
-  background: $color-white
-  border: $border-style
-  border-radius: $border-radius
-  box-shadow: $shadow-window
-  overflow: hidden
+.dito-time-picker {
+  .dito-input {
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    width: 100%;
 
-.dito-time-picker-popup .dito-time-picker-panel
-  float: left
-  border: $border-style
-  border-width: 0 1px 0
-  margin-left: -1px
-  box-sizing: border-box
-  width: calc(100% / 3 + 1px)
-  overflow: hidden
-  &:last-child
-    border-right: 0
-  ul
-    overflow-x: hidden
-    overflow-y: auto
-    list-style: none
-    width: 100%
-    margin: 0
+    .dito-icon-time {
+      display: block;
+      position: absolute;
+      top: 0;
+      right: 7px;
+      height: 100%;
+    }
+  }
+}
+
+.dito-time-picker-popup {
+  list-style: none;
+  background: $color-white;
+  border: $border-style;
+  border-radius: $border-radius;
+  box-shadow: $shadow-window;
+  overflow: hidden;
+}
+
+.dito-time-picker-popup .dito-time-picker-panel {
+  float: left;
+  border: $border-style;
+  border-width: 0 1px 0;
+  margin-left: -1px;
+  box-sizing: border-box;
+  width: calc(100% / 3 + 1px);
+  overflow: hidden;
+
+  &:last-child {
+    border-right: 0;
+  }
+
+  ul {
+    overflow-x: hidden;
+    overflow-y: auto;
+    list-style: none;
+    width: 100%;
+    margin: 0;
     // Hide scrollbar:
-    box-sizing: content-box
-    padding: 0 17px 0 0
-    height: 7 * $time-picker-line-height
-    & > li
-      box-sizing: content-box
-      background: $color-white
-      width: 100%
-      height: $time-picker-line-height
-      line-height: $time-picker-line-height
-      text-align: center
-      font-variant-numeric: tabular-nums
-      cursor: pointer
-      white-space: nowrap
-      overflow: hidden
-      +user-select(none)
-      &:first-child
-        margin-top: 3 * $time-picker-line-height
-      &:last-child
-        margin-bottom: 3 * $time-picker-line-height
-      &:hover
-        background: $color-highlight
+    box-sizing: content-box;
+    padding: 0 17px 0 0;
+    height: 7 * $time-picker-line-height;
+
+    & > li {
+      box-sizing: content-box;
+      background: $color-white;
+      width: 100%;
+      height: $time-picker-line-height;
+      line-height: $time-picker-line-height;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      @include user-select(none);
+
+      &:first-child {
+        margin-top: 3 * $time-picker-line-height;
+      }
+
+      &:last-child {
+        margin-bottom: 3 * $time-picker-line-height;
+      }
+
+      &:hover {
+        background: $color-highlight;
+      }
+
       &.selected,
-      &.selected:hover
-        color: $color-text-inverted
-        background: $color-active
-      &.disabled
-        cursor: default
-        color: $color-disabled
-      &.disabled:hover
-        background: transparent
+      &.selected:hover {
+        color: $color-text-inverted;
+        background: $color-active;
+      }
+
+      &.disabled {
+        cursor: default;
+        color: $color-disabled;
+      }
+
+      &.disabled:hover {
+        background: transparent;
+      }
+    }
+  }
+}
 </style>

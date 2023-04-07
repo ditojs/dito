@@ -1,0 +1,30 @@
+.zoom-enter-active {
+  animation: zoom-enter 0.1s $ease-out-quart;
+}
+
+.zoom-leave-active {
+  animation: zoom-leave 0.2s $ease-out-quart;
+}
+
+@keyframes zoom-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zoom-leave {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}

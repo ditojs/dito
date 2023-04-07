@@ -36,11 +36,13 @@ export default TypeComponent.register(
 )
 </script>
 
-<style lang="sass">
+<style lang="scss">
 // Only show spin buttons if the number component defines a step size.
-input[type="number"]:not([step])
+input[type='number']:not([step]) {
   &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button
-    -webkit-appearance: none
-    margin: 0
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
 </style>

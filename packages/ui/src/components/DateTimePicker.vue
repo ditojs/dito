@@ -31,7 +31,7 @@ import TimePicker from './TimePicker.vue'
 
 export default {
   components: { DatePicker, TimePicker },
-  emits: ['update:modelValue', 'change'],
+  emits: ['update:modelValue', 'change', 'focus', 'blur'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -97,26 +97,39 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-date-time-picker
-  .dito-pickers
-    @extend %input
-    padding: 0
-    display: flex
-    .dito-input
-      background: none
-      border: 0
-  .dito-date-picker
-    width: 60%
-    min-width: 6.9em
-    .dito-input
-      padding-right: 0
-  .dito-time-picker
-    width: 40%
-    min-width: 5.4em
-    .dito-input
-      padding-left: 0
-      text-align: right
+.dito-date-time-picker {
+  .dito-pickers {
+    @extend %input;
+
+    padding: 0;
+    display: flex;
+
+    .dito-input {
+      background: none;
+      border: 0;
+    }
+  }
+
+  .dito-date-picker {
+    width: 60%;
+    min-width: 6.9em;
+
+    .dito-input {
+      padding-right: 0;
+    }
+  }
+
+  .dito-time-picker {
+    width: 40%;
+    min-width: 5.4em;
+
+    .dito-input {
+      padding-left: 0;
+      text-align: right;
+    }
+  }
+}
 </style>

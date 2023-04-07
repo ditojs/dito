@@ -46,11 +46,14 @@ export default DitoComponent.component('DitoAccount', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-account
-  position: relative
-  .dito-pulldown
-    top: $pulldown-padding-ver
+.dito-account {
+  position: relative;
+
+  .dito-pulldown {
+    top: $pulldown-padding-ver;
+  }
+}
 </style>

@@ -43,18 +43,24 @@ export default TypeComponent.register('slider', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-slider
-  @extend %input
-  display: flex
-  .dito-range
-    flex: auto
-    height: calc(1em * var(--line-height))
-  .dito-number
-    border: 0
-    padding: 0
-    text-align: right
-    font-variant-numeric: tabular-nums
+.dito-slider {
+  @extend %input;
+
+  display: flex;
+
+  .dito-range {
+    flex: auto;
+    height: calc(1em * var(--line-height));
+  }
+
+  .dito-number {
+    border: 0;
+    padding: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
 </style>

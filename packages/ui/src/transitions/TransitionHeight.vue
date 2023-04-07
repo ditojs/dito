@@ -57,19 +57,27 @@ const props = {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-$duration: 0.15s
+$duration: 0.15s;
+
 .height-enter-active,
-.height-leave-active
-  transition: height $duration $easeOutQuart
-  overflow: hidden
-.height-enter-active
-  animation: slide-enter $duration $easeOutQuart
-.height-leave-active
-  animation: slide-leave $duration $easeOutQuart
+.height-leave-active {
+  transition: height $duration $ease-out-quart;
+  overflow: hidden;
+}
+
+.height-enter-active {
+  animation: slide-enter $duration $ease-out-quart;
+}
+
+.height-leave-active {
+  animation: slide-leave $duration $ease-out-quart;
+}
+
 .height-enter-from,
-.height-leave-to
-  height: 0
+.height-leave-to {
+  height: 0;
+}
 </style>

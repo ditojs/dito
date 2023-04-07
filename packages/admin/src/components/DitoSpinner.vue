@@ -64,12 +64,13 @@ export default {
 </script>
 
 <style lang="scss">
-@-webkit-keyframes v-pulseStretchDelay {
+@keyframes v-pulseStretchDelay {
   0%,
   80% {
     transform: scale(1);
     opacity: 1;
   }
+
   45% {
     transform: scale(0.1);
     opacity: 0.7;
@@ -82,6 +83,7 @@ export default {
     transform: scale(1);
     opacity: 1;
   }
+
   45% {
     transform: scale(0.1);
     opacity: 0.7;

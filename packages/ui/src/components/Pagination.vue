@@ -172,40 +172,63 @@ export default {
 }
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-pagination
-  display: flex
-  .dito-pagination-total
-    +ellipsis
-    margin: 0 0.5em
-    line-height: $input-height
-  .dito-button
-    transition: all .3s ease, color 0s, background 0s, border 0s
-    font-variant-numeric: tabular-nums
-    padding: 0 0.5em
+.dito-pagination {
+  display: flex;
+
+  .dito-pagination-total {
+    @include ellipsis;
+
+    margin: 0 0.5em;
+    line-height: $input-height;
+  }
+
+  .dito-button {
+    transition: all 0.3s ease, color 0s, background 0s, border 0s;
+    font-variant-numeric: tabular-nums;
+    padding: 0 0.5em;
+
     &-prev,
-    &-next
-      &::before
-        @extend %icon-arrow
-    &-prev::before
-      transform: scaleX(-1)
+    &-next {
+      &::before {
+        @extend %icon-arrow;
+      }
+    }
+
+    &-prev::before {
+      transform: scaleX(-1);
+    }
+
     &-ellipsis-prev,
-    &-ellipsis-next
-      &::before
-        @extend %icon-ellipsis
-      &:hover::before
-        @extend %icon-chevrons
-      background: none
-      border: 0
-      padding: 0
-      margin: 0
-      color: $color-text
-      &:focus
-        color: $color-active
-      &:active
-        box-shadow: none
-    &-ellipsis-prev::before
-      transform: scaleX(-1)
+    &-ellipsis-next {
+      &::before {
+        @extend %icon-ellipsis;
+      }
+
+      &:hover::before {
+        @extend %icon-chevrons;
+      }
+
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      color: $color-text;
+
+      &:focus {
+        color: $color-active;
+      }
+
+      &:active {
+        box-shadow: none;
+      }
+    }
+
+    &-ellipsis-prev::before {
+      transform: scaleX(-1);
+    }
+  }
+}
 </style>

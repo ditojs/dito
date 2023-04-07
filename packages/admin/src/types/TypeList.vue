@@ -312,26 +312,35 @@ export default TypeComponent.register('list', {
 })
 </script>
 
-<style lang="sass">
-@import '../styles/_imports'
+<style lang="scss">
+@import '../styles/_imports';
 
-.dito-list
-  position: relative
-  .dito-navigation
-    display: flex
-    justify-content: space-between
-    padding-bottom: $content-padding-half
-    +user-select(none)
-    &:empty
-      display: none
+.dito-list {
+  position: relative;
+
+  .dito-navigation {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: $content-padding-half;
+    @include user-select(none);
+
+    &:empty {
+      display: none;
+    }
+
     .dito-scopes,
-    .dito-pagination
-      display: flex
-      flex: 0 1 auto
-      min-width: 0
-  &.dito-single
+    .dito-pagination {
+      display: flex;
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+  }
+
+  &.dito-single {
     // So that list buttons can be sticky to the bottom:
-    display: grid
-    grid-template-rows: min-content
-    height: 100%
+    display: grid;
+    grid-template-rows: min-content;
+    height: 100%;
+  }
+}
 </style>

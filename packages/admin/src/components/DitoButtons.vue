@@ -67,8 +67,10 @@ export default DitoComponent.component('DitoButtons', {
 })
 </script>
 
-<style lang="sass">
-.dito-buttons
-  > .dito-container
-    padding: 0
+<style lang="scss">
+.dito-buttons {
+  > .dito-container {
+    padding: 0;
+  }
+}
 </style>
