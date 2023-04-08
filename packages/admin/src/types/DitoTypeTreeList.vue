@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import {
   hasFormSchema,
@@ -29,10 +29,8 @@ import {
   resolveSchemaComponents
 } from '../utils/schema.js'
 
-export default TypeComponent.register(
-  [
-    'tree-list', 'tree-object'
-  ],
+export default DitoTypeComponent.register(
+  ['tree-list', 'tree-object'],
   // @vue/component
   {
     mixins: [SourceMixin],

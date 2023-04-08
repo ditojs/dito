@@ -1,8 +1,8 @@
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 
 // @vue/component
-export default TypeComponent.register('panel', {
+export default DitoTypeComponent.register('panel', {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
   excludeValue: true,
   generateLabel: false,

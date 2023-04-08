@@ -22,13 +22,13 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { InputField } from '@ditojs/ui/src'
 
 // @vue/component
-export default TypeComponent.register('slider', {
+export default DitoTypeComponent.register('slider', {
   mixins: [NumberMixin],
   components: { InputField },
   nativeField: true,

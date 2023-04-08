@@ -54,13 +54,13 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponent } from '../utils/schema.js'
 
 // @vue/component
-export default TypeComponent.register('object', {
+export default DitoTypeComponent.register('object', {
   mixins: [SourceMixin],
 
   getSourceType(type) {

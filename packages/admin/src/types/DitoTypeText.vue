@@ -9,14 +9,20 @@ InputField.dito-text(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { InputField } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 
-export default TypeComponent.register(
+export default DitoTypeComponent.register(
   [
-    'text', 'email', 'url', 'hostname', 'domain', 'tel', 'password',
+    'text',
+    'email',
+    'url',
+    'hostname',
+    'domain',
+    'tel',
+    'password',
     'creditcard'
   ],
   // @vue/component

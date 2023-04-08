@@ -22,6 +22,9 @@ export default {
       }
       components[name] = definition
     }
+    if (!(name in components)) {
+      throw new Error(`Component "${name}" not registered`)
+    }
     return components[name]
   },
 

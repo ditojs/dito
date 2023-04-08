@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
@@ -76,7 +76,7 @@ import {
 } from '@ditojs/utils'
 
 // @vue/component
-export default TypeComponent.register('markup', {
+export default DitoTypeComponent.register('markup', {
   mixins: [DomMixin],
   components: {
     EditorContent,

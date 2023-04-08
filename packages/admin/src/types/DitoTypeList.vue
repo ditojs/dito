@@ -150,7 +150,7 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
@@ -165,7 +165,7 @@ import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
 // @vue/component
-export default TypeComponent.register('list', {
+export default DitoTypeComponent.register('list', {
   mixins: [SourceMixin, SortableMixin],
 
   getSourceType(type) {

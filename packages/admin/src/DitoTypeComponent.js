@@ -1,7 +1,7 @@
-// TypeComponent is the abstract base component for all other type components
-// inside the types/ folder. There's also a separate concrete
-// `TypeComponent.vue` component, use to render the `type: 'component'` types.
-import { asArray } from '@ditojs/utils'
+// DitoTypeComponent is the abstract base component for all other type
+// components inside the types/ folder. There's also a separate concrete
+// `DitoTypeComponent.vue` component, use to render `{ type: 'component' }`
+import { asArray, camelize } from '@ditojs/utils'
 import DitoComponent from './DitoComponent.js'
 import TypeMixin from './mixins/TypeMixin.js'
 import { registerTypeComponent, getTypeComponent } from './utils/schema.js'
@@ -29,7 +29,10 @@ export default {
 
   register(types, definition = {}) {
     types = asArray(types)
-    const component = this.component(`dito-type-${types[0]}`, definition)
+    const component = this.component(
+      `DitoType${camelize(types[0], true)}`,
+      definition
+    )
     for (const type of types) {
       registerTypeComponent(type, component)
     }

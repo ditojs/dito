@@ -34,12 +34,12 @@ Trigger.dito-color(
 <script>
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from '@lk77/vue3-color'
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { Trigger } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default TypeComponent.register('color', {
+export default DitoTypeComponent.register('color', {
   components: { Trigger, SketchPicker },
 
   data() {

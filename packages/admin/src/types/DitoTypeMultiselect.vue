@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
@@ -47,7 +47,7 @@ import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default TypeComponent.register('multiselect', {
+export default DitoTypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
   components: { VueMultiselect },
 

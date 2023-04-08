@@ -608,7 +608,7 @@ export default {
         // directly edit one object.
         path: getPathWithParam(sourcePath, isListSource(schema) && param),
         component: DitoComponent.component(
-          nested ? 'dito-form-nested' : 'dito-form'
+          nested ? 'DitoFormNested' : 'DitoForm'
         ),
         meta: formMeta
       }

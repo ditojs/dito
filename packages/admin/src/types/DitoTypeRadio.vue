@@ -18,11 +18,11 @@ ul.dito-radio-buttons(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 
 // @vue/component
-export default TypeComponent.register('radio', {
+export default DitoTypeComponent.register('radio', {
   mixins: [OptionsMixin],
 
   nativeField: true

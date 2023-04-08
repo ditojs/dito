@@ -9,11 +9,11 @@ progress.dito-progress(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 
 // @vue/component
-export default TypeComponent.register('progress', {
+export default DitoTypeComponent.register('progress', {
   mixins: [NumberMixin],
   computed: {
     progressValue() {

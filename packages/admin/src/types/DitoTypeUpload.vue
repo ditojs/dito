@@ -96,7 +96,7 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import SortableMixin from '../mixins/SortableMixin.js'
 import parseFileSize from 'filesize-parser'
@@ -107,7 +107,7 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
-export default TypeComponent.register('upload', {
+export default DitoTypeComponent.register('upload', {
   mixins: [SortableMixin],
   components: { VueUpload },
 

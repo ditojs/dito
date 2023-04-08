@@ -39,11 +39,11 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 
 // @vue/component
-export default TypeComponent.register('select', {
+export default DitoTypeComponent.register('select', {
   mixins: [OptionsMixin],
 
   nativeField: true,

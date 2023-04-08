@@ -7,12 +7,12 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import CodeFlask from 'codeflask'
 
 // @vue/component
-export default TypeComponent.register('code', {
+export default DitoTypeComponent.register('code', {
   mixins: [DomMixin],
 
   computed: {

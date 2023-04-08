@@ -9,11 +9,11 @@ SwitchButton.dito-switch(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { SwitchButton } from '@ditojs/ui/src'
 
 // @vue/component
-export default TypeComponent.register('switch', {
+export default DitoTypeComponent.register('switch', {
   defaultValue: false,
   defaultWidth: 'auto',
 

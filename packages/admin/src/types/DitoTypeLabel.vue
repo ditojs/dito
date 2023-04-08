@@ -6,10 +6,10 @@ DitoLabel.dito-label-component(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 
 // @vue/component
-export default TypeComponent.register('label', {
+export default DitoTypeComponent.register('label', {
   excludeValue: true,
   generateLabel: false
 })

@@ -13,14 +13,12 @@ input.dito-text.dito-input(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import DataMixin from '../mixins/DataMixin.js'
 
-export default TypeComponent.register(
-  [
-    'computed', 'data', 'hidden'
-  ],
+export default DitoTypeComponent.register(
+  ['computed', 'data', 'hidden'],
   // @vue/component
   {
     mixins: [DataMixin],

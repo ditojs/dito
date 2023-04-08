@@ -11,11 +11,11 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 
 // @vue/component
-export default TypeComponent.register('section', {
+export default DitoTypeComponent.register('section', {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
   ignoreMissingValue: schema => !schema.nested && !('default' in schema),
   defaultNested: false,

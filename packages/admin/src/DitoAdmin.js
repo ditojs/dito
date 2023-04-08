@@ -14,7 +14,7 @@ import {
 import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
-import TypeComponent from './TypeComponent.js'
+import DitoTypeComponent from './DitoTypeComponent.js'
 import { getResource } from './utils/resource.js'
 import { deprecate } from './utils/deprecate.js'
 import verbs from './verbs.js'
@@ -206,7 +206,7 @@ export default class DitoAdmin {
   }
 
   register(type, options) {
-    return TypeComponent.register(type, options)
+    return DitoTypeComponent.register(type, options)
   }
 }
 

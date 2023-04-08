@@ -9,10 +9,10 @@ input.dito-checkbox(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 
 // @vue/component
-export default TypeComponent.register('checkbox', {
+export default DitoTypeComponent.register('checkbox', {
   nativeField: true
 })
 </script>

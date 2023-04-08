@@ -14,11 +14,11 @@ component(
 //   component: import('./component')
 // }
 
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { resolveSchemaComponent } from '../utils/schema.js'
 
 // @vue/component
-export default TypeComponent.register('component', {
+export default DitoTypeComponent.register('component', {
   // Override the standard `defaultValue: null` to not set any data for custom
   // components, unless they provide a default value.
   defaultValue: () => undefined, // Callback to override `defaultValue: null`

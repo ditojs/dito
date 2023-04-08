@@ -12,14 +12,12 @@ InputField.dito-number(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { InputField } from '@ditojs/ui/src'
 
-export default TypeComponent.register(
-  [
-    'number', 'integer'
-  ],
+export default DitoTypeComponent.register(
+  ['number', 'integer'],
   // @vue/component
   {
     mixins: [NumberMixin],

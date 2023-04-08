@@ -12,15 +12,13 @@
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui/src'
 import { isDate } from '@ditojs/utils'
 
-export default TypeComponent.register(
-  [
-    'date', 'datetime', 'time'
-  ],
+export default DitoTypeComponent.register(
+  ['date', 'datetime', 'time'],
   // @vue/component
   {
     components: { DatePicker, TimePicker, DateTimePicker },

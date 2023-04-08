@@ -10,8 +10,7 @@ const renderIcons = icons =>
   background: currentColor;
   mask: none no-repeat center content-box;
 }
-${icons.map(renderIcon).join('\n\n')}
-`
+${icons.map(renderIcon).join('')}`
 
 const renderIcon = ({ name, url }) =>
   `
@@ -19,6 +18,7 @@ const renderIcon = ({ name, url }) =>
   @extend %icon;
 
   mask-image: ${url};
-}`
+}
+`
 
 export default renderIcons

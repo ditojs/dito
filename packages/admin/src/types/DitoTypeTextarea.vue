@@ -10,11 +10,11 @@ textarea.dito-textarea.dito-input(
 </template>
 
 <script>
-import TypeComponent from '../TypeComponent.js'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default TypeComponent.register('textarea', {
+export default DitoTypeComponent.register('textarea', {
   nativeField: true,
   textField: true,
 
