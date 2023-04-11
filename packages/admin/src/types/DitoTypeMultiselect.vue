@@ -206,7 +206,7 @@ $spinner-width: $select-arrow-width;
 $tag-icon-width: 1.8em;
 $tag-margin: 2px;
 $tag-padding: 3px;
-$tag-line-height: 1.1em;
+$tag-line-height: 1em;
 
 .dito-multiselect {
   position: relative;
@@ -232,6 +232,7 @@ $tag-line-height: 1.1em;
     border-radius: 1em;
     padding: $tag-padding $tag-icon-width $tag-padding 0.8em;
     line-height: $tag-line-height;
+    height: calc($input-height - 2 * $tag-padding);
   }
 
   .multiselect__tags-wrap {
@@ -335,13 +336,14 @@ $tag-line-height: 1.1em;
   .multiselect__tag-icon {
     background: none;
     border-radius: 1em;
-    font-weight: inherit;
-    line-height: 1.4em;
     width: $tag-icon-width;
+    margin: 0;
 
     &::after {
+      @extend %icon-clear;
+
+      font-size: 0.9em;
       color: $color-text-inverted;
-      font-size: 1.3em;
     }
 
     &:hover::after {
