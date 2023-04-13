@@ -30,6 +30,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     this._ignoreScopes = {}
     this._appliedScopes = {}
     this._executeFirst = null // Part of a work-around for cyclic graphs
+    this._isJoinChildQuery = false
     this._clearScopes(true)
   }
 
@@ -46,46 +47,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   async execute() {
-    if (!this._ignoreScopes[SYMBOL_ALL]) {
-      // Only apply default scopes if this is a normal find query, meaning it
-      // does not define any write operations or special selects, e.g. `count`:
-      const isNormalFind = (
-        this.isFind() &&
-        !this.hasSpecialSelects()
-      )
-      // If this isn't a normal find query, ignore all graph operations,
-      // to not mess with special selects such as `count`, etc:
-      this._ignoreGraph = !isNormalFind
-      // All scopes in `_scopes` were already checked against `_allowScopes`.
-      // They themselves are allowed to apply / request other scopes that
-      // aren't listed, so clear `_applyScope` and restore again after:
-      const { _allowScopes } = this
-      this._allowScopes = null
-      const collectedScopes = {}
-      // Scopes can themselves request more scopes by calling `withScope()`
-      // In order to prevent that from causing problems while looping over
-      // `_scopes`, create a local copy of the entries, set `_scopes` to an
-      // empty object during iteration and check if there are new entries after
-      // one full loop. Keep doing this until there's nothing left, but keep
-      // track of all the applied scopes, so `_scopes` can be set to the the
-      // that in the end. This is needed for child queries, see `childQueryOf()`
-      let scopes = Object.entries(this._scopes)
-      while (scopes.length > 0) {
-        this._scopes = {}
-        for (const [scope, graph] of scopes) {
-          // Don't apply `default` scopes on anything else than a normal find
-          // query:
-          if (scope !== 'default' || isNormalFind) {
-            this._applyScope(scope, graph)
-            collectedScopes[scope] ||= graph
-          }
-        }
-        scopes = Object.entries(this._scopes)
-      }
-      this._scopes = collectedScopes
-      this._allowScopes = _allowScopes
-      this._ignoreGraph = false
-    }
+    this._applyScopes()
     // In case of cyclic graphs, run `_executeFirst()` now:
     await this._executeFirst?.()
     return super.execute()
@@ -107,12 +69,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   childQueryOf(query, options) {
     super.childQueryOf(query, options)
+    this._isJoinChildQuery = query._graphAlgorithm === 'join'
     if (this.isInternal()) {
       // Internal queries shouldn't apply or inherit any scopes, not even the
       // default scope.
       this._clearScopes(false)
     } else {
       // Inherit the graph scopes from the parent query.
+      this._ignoreGraph = query._ignoreGraph
+      this._graphAlgorithm = query._graphAlgorithm
       this._copyScopes(query, true)
     }
     return this
@@ -248,6 +213,49 @@ export class QueryBuilder extends objection.QueryBuilder {
       : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
   }
 
+  _applyScopes() {
+    if (!this._ignoreScopes[SYMBOL_ALL]) {
+      // Only apply default scopes if this is a normal find query, meaning it
+      // does not define any write operations or special selects, e.g. `count`:
+      const isNormalFind = (
+        this.isFind() &&
+        !this.hasSpecialSelects()
+      )
+      // If this isn't a normal find query, ignore all graph operations,
+      // to not mess with special selects such as `count`, etc:
+      this._ignoreGraph = !isNormalFind
+      // All scopes in `_scopes` were already checked against `_allowScopes`.
+      // They themselves are allowed to apply / request other scopes that
+      // aren't listed, so clear `_allowScopes` and restore again after:
+      const { _allowScopes } = this
+      this._allowScopes = null
+      const collectedScopes = {}
+      // Scopes can themselves request more scopes by calling `withScope()`
+      // In order to prevent that from causing problems while looping over
+      // `_scopes`, create a local copy of the entries, set `_scopes` to an
+      // empty object during iteration and check if there are new entries after
+      // one full loop. Keep doing this until there's nothing left, but keep
+      // track of all the applied scopes, so `_scopes` can be set to the the
+      // that in the end. This is needed for child queries, see `childQueryOf()`
+      let scopes = Object.entries(this._scopes)
+      while (scopes.length > 0) {
+        this._scopes = {}
+        for (const [scope, graph] of scopes) {
+          // Don't apply `default` scopes on anything else than a normal find
+          // query:
+          if (scope !== 'default' || isNormalFind) {
+            this._applyScope(scope, graph)
+            collectedScopes[scope] ||= graph
+          }
+        }
+        scopes = Object.entries(this._scopes)
+      }
+      this._scopes = collectedScopes
+      this._allowScopes = _allowScopes
+      this._ignoreGraph = false
+    }
+  }
+
   _applyScope(scope, graph) {
     if (!this._ignoreScopes[SYMBOL_ALL] && !this._ignoreScopes[scope]) {
       // Prevent multiple application of scopes. This can easily occur
@@ -273,7 +281,16 @@ export class QueryBuilder extends objection.QueryBuilder {
           // re-applies itself to the result.
           const name = `^${scope}`
           const modifiers = {
-            [name]: query => query.withScope(name)
+            [name]: query => {
+              query.withScope(name)
+              if (query._isJoinChildQuery) {
+                // Join child queries are never executed, and need to apply
+                // their scopes manually. Note that it's OK to call this
+                // repeatedly, because `_appliedScopes` prevents multiple
+                // application of the same scope.
+                query._applyScopes()
+              }
+            }
           }
           this.withGraph(
             addGraphScope(this.modelClass(), expr, [name], modifiers, true)
@@ -904,7 +921,7 @@ function addGraphScope(modelClass, expr, scopes, modifiers, isRoot = false) {
     // and if it's actually available in the model's list of modifiers.
     for (const scope of scopes) {
       if (
-        !expr.$modify?.includes(scope) && (
+        !expr.$modify.includes(scope) && (
           modelClass.hasScope(scope) ||
           modifiers[scope]
         )
