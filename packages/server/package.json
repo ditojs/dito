@@ -41,10 +41,10 @@
     "data-uri-to-buffer": "^4.0.1",
     "eventemitter2": "^6.4.9",
     "file-type": "^18.2.1",
-    "koa": "^2.14.1",
+    "koa": "^2.14.2",
     "koa-bodyparser": "^4.4.0",
     "koa-compose": "^4.1.0",
-    "koa-compress": "^5.1.0",
+    "koa-compress": "^5.1.1",
     "koa-conditional-get": "^3.0.0",
     "koa-etag": "^4.0.0",
     "koa-helmet": "^7.0.2",
@@ -89,8 +89,8 @@
     "@types/node": "^18.15.11",
     "knex": "^2.4.2",
     "objection": "^3.0.2",
-    "type-fest": "^3.7.2",
-    "typescript": "^5.0.3"
+    "type-fest": "^3.8.0",
+    "typescript": "^5.0.4"
   },
   "types": "types"
 }
