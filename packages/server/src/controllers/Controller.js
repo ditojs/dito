@@ -54,10 +54,13 @@ export class Controller {
     // the callbacks from base classes are also run. And reverse the chain so
     // that the base class callbacks are run first.
     const chain = getInheritanceChain(hooks).reverse()
+    const keys = Object.keys(Object.assign({}, hooks, ...chain))
     const events = Object.fromEntries(
-      Object.keys(hooks || {}).map(event => [
+      keys.map(event => [
         event,
-        chain.map(hooks => hooks[event]).filter(Boolean)
+        chain
+          .map(hooks => (hooks.hasOwnProperty(event) ? hooks[event] : null))
+          .filter(Boolean)
       ])
     )
     this._configureEmitter(events, {
