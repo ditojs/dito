@@ -1,12 +1,15 @@
 <template lang="pug">
 .dito-dialog(
+  ref="dialog"
   role="dialog"
   aria-expanded="true"
   aria-modal="true"
   :style="{ '--width': `${settings.width}px` }"
-  @click="settings.clickToClose && close()"
+  @mouseup="onMouseUp"
 )
-  UseFocusTrap(:options="{ immediate: true }")
+  UseFocusTrap.dito-dialog__focus-trap(
+    :options="{ immediate: true, fallbackFocus: () => $refs.dialog }"
+  )
     form.dito-scroll-parent(
       @submit.prevent="submit"
     )
@@ -146,6 +149,12 @@ export default DitoComponent.component('DitoDialog', {
 
     close() {
       this.cancel()
+    },
+
+    onMouseUp() {
+      if (this.settings.clickToClose) {
+        this.close()
+      }
     }
   }
 })
@@ -166,11 +175,14 @@ export default DitoComponent.component('DitoDialog', {
   overflow: hidden;
   background: rgba(0, 0, 0, 0.2);
 
+  &__focus-trap {
+    height: 100%;
+  }
+
   // TODO: `&__inner`
   form {
     position: relative;
     display: flex;
-    overflow: hidden;
     box-sizing: border-box;
     background: white;
     border-radius: $border-radius;
