@@ -72,6 +72,7 @@
     "nanoid": "^4.0.2",
     "sortablejs": "^1.15.0",
     "tinycolor2": "^1.6.0",
+    "type-fest": "^3.8.0",
     "vue": "^3.2.47",
     "vue-multiselect": "^3.0.0-beta.1",
     "vue-router": "^4.1.6",
@@ -83,7 +84,6 @@
     "@vue/compiler-sfc": "^3.2.47",
     "pug": "^3.0.2",
     "sass": "1.62.0",
-    "type-fest": "^3.8.0",
     "typescript": "^5.0.4",
     "vite": "^4.2.1"
   },
