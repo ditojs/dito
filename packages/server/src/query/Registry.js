@@ -1,17 +1,15 @@
 import { isObject } from '@ditojs/utils'
 
 export default class Registry {
-  constructor() {
-    this._registry = Object.create(null)
-    this._allowed = Object.create(null)
-  }
+  #registry = Object.create(null)
+  #allowed = Object.create(null)
 
   get(name) {
-    return this._registry[name]
+    return this.#registry[name]
   }
 
   has(name) {
-    return name in this._registry
+    return name in this.#registry
   }
 
   register(name, handler) {
@@ -20,12 +18,12 @@ export default class Registry {
         this.register(key, name[key])
       }
     } else {
-      this._registry[name] = handler
-      this._allowed[name] = true
+      this.#registry[name] = handler
+      this.#allowed[name] = true
     }
   }
 
-  allowed() {
-    return this._allowed
+  getAllowed() {
+    return this.#allowed
   }
 }

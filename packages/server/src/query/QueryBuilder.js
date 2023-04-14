@@ -21,35 +21,32 @@ import { deprecate } from '../utils/deprecate.js'
 const SYMBOL_ALL = Symbol('all')
 
 export class QueryBuilder extends objection.QueryBuilder {
-  constructor(modelClass) {
-    super(modelClass)
-    this._ignoreGraph = false
-    this._graphAlgorithm = 'fetch'
-    this._allowFilters = null
-    this._allowScopes = null
-    this._ignoreScopes = {}
-    this._appliedScopes = {}
-    this._executeFirst = null // Part of a work-around for cyclic graphs
-    this._isJoinChildQuery = false
-    this._clearScopes(true)
-  }
+  #ignoreGraph = false
+  #graphAlgorithm = 'fetch'
+  #isJoinChildQuery = false
+  #scopes = { default: true } // Eager-apply the default scope
+  #allowScopes = null
+  #ignoreScopes = {}
+  #appliedScopes = {}
+  #allowFilters = null
+  #executeFirst = null // Part of a work-around for cyclic graphs
 
   // @override
   clone() {
     const copy = super.clone()
-    copy._ignoreGraph = this._ignoreGraph
-    copy._graphAlgorithm = this._graphAlgorithm
-    copy._appliedScopes = { ...this._appliedScopes }
-    copy._allowFilters = this._allowFilters ? { ...this._allowFilters } : null
-    copy._copyScopes(this)
+    copy.#ignoreGraph = this.#ignoreGraph
+    copy.#graphAlgorithm = this.#graphAlgorithm
+    copy.#appliedScopes = { ...this.#appliedScopes }
+    copy.#allowFilters = this.#allowFilters ? { ...this.#allowFilters } : null
+    copy.#copyScopes(this)
     return copy
   }
 
   // @override
   async execute() {
-    this._applyScopes()
+    this.#applyScopes()
     // In case of cyclic graphs, run `_executeFirst()` now:
-    await this._executeFirst?.()
+    await this.#executeFirst?.()
     return super.execute()
   }
 
@@ -69,16 +66,16 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   childQueryOf(query, options) {
     super.childQueryOf(query, options)
-    this._isJoinChildQuery = query._graphAlgorithm === 'join'
+    this.#isJoinChildQuery = query.#graphAlgorithm === 'join'
     if (this.isInternal()) {
       // Internal queries shouldn't apply or inherit any scopes, not even the
       // default scope.
-      this._clearScopes(false)
+      this.#clearScopes(false)
     } else {
       // Inherit the graph scopes from the parent query.
-      this._ignoreGraph = query._ignoreGraph
-      this._graphAlgorithm = query._graphAlgorithm
-      this._copyScopes(query, true)
+      this.#ignoreGraph = query.#ignoreGraph
+      this.#graphAlgorithm = query.#graphAlgorithm
+      this.#copyScopes(query, true)
     }
     return this
   }
@@ -94,12 +91,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const expr of scopes) {
       if (expr) {
         const { scope, graph } = getScope(expr)
-        if (this._allowScopes && !this._allowScopes[scope]) {
+        if (this.#allowScopes && !this.#allowScopes[scope]) {
           throw new QueryBuilderError(
             `Query scope '${scope}' is not allowed.`
           )
         }
-        this._scopes[scope] ||= graph
+        this.#scopes[scope] ||= graph
       }
     }
     return this
@@ -108,15 +105,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   // Clear all scopes defined with `withScope()` statements, preserving the
   // default scope.
   clearWithScope() {
-    return this._clearScopes(true)
+    return this.#clearScopes(true)
   }
 
   ignoreScope(...scopes) {
-    if (!this._ignoreScopes[SYMBOL_ALL]) {
-      this._ignoreScopes =
+    if (!this.#ignoreScopes[SYMBOL_ALL]) {
+      this.#ignoreScopes =
         scopes.length > 0
           ? {
-              ...this._ignoreScopes,
+              ...this.#ignoreScopes,
               ...createLookup(scopes)
             }
           : // Empty arguments = ignore all scopes
@@ -128,33 +125,33 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyScope(...scopes) {
-    // When directly applying a scope, still merge it into `this._scopes`,
+    // When directly applying a scope, still merge it into `this.#scopes`,
     // so it can still be passed on to forked child queries. This also handles
     // the checks against `_allowScopes`.
     this.withScope(...scopes)
     for (const expr of scopes) {
       if (expr) {
         const { scope, graph } = getScope(expr)
-        this._applyScope(scope, graph)
+        this.#applyScope(scope, graph)
       }
     }
     return this
   }
 
   allowScope(...scopes) {
-    this._allowScopes ||= {
+    this.#allowScopes ||= {
       default: true // The default scope is always allowed.
     }
     for (const expr of scopes) {
       if (expr) {
         const { scope } = getScope(expr)
-        this._allowScopes[scope] = true
+        this.#allowScopes[scope] = true
       }
     }
   }
 
   clearAllowScope() {
-    this._allowScopes = null
+    this.#allowScopes = null
   }
 
   scope(...scopes) {
@@ -179,27 +176,27 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this.clearWithScope()
   }
 
-  _clearScopes(addDefault) {
+  #clearScopes(addDefault) {
     // `_scopes` is an object where the keys are the scopes and the values
     // indicate if the scope should be eager-applied or not:
-    this._scopes = addDefault
-      ? { default: true } // eager-apply the default scope
+    this.#scopes = addDefault
+      ? { default: true } // Eager-apply the default scope
       : {}
     return this
   }
 
-  _copyScopes(query, isChildQuery = false) {
+  #copyScopes(query, isChildQuery = false) {
     const isSameModelClass = this.modelClass() === query.modelClass()
     // Only copy `_allowScopes` and `_ignoreScopes` if it's for the same model.
     if (isSameModelClass) {
-      this._allowScopes = query._allowScopes ? { ...query._allowScopes } : null
-      this._ignoreScopes = { ...query._ignoreScopes }
+      this.#allowScopes = query.#allowScopes ? { ...query.#allowScopes } : null
+      this.#ignoreScopes = { ...query.#ignoreScopes }
     }
     const scopes = isChildQuery
       ? // When copying scopes for child-queries, we also need to take the
         // already applied scopes into account and copy those too.
-        { ...query._appliedScopes, ...query._scopes }
-      : { ...query._scopes }
+        { ...query.#appliedScopes, ...query.#scopes }
+      : { ...query.#scopes }
     // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
@@ -208,13 +205,13 @@ export class QueryBuilder extends objection.QueryBuilder {
       isChildQuery &&
       query.has(/GraphAndFetch$/)
     )
-    this._scopes = copyAllScopes
+    this.#scopes = copyAllScopes
       ? scopes
       : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
   }
 
-  _applyScopes() {
-    if (!this._ignoreScopes[SYMBOL_ALL]) {
+  #applyScopes() {
+    if (!this.#ignoreScopes[SYMBOL_ALL]) {
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
       const isNormalFind = (
@@ -223,12 +220,12 @@ export class QueryBuilder extends objection.QueryBuilder {
       )
       // If this isn't a normal find query, ignore all graph operations,
       // to not mess with special selects such as `count`, etc:
-      this._ignoreGraph = !isNormalFind
+      this.#ignoreGraph = !isNormalFind
       // All scopes in `_scopes` were already checked against `_allowScopes`.
       // They themselves are allowed to apply / request other scopes that
       // aren't listed, so clear `_allowScopes` and restore again after:
-      const { _allowScopes } = this
-      this._allowScopes = null
+      const allowScopes = this.#allowScopes
+      this.#allowScopes = null
       const collectedScopes = {}
       // Scopes can themselves request more scopes by calling `withScope()`
       // In order to prevent that from causing problems while looping over
@@ -237,38 +234,38 @@ export class QueryBuilder extends objection.QueryBuilder {
       // one full loop. Keep doing this until there's nothing left, but keep
       // track of all the applied scopes, so `_scopes` can be set to the the
       // that in the end. This is needed for child queries, see `childQueryOf()`
-      let scopes = Object.entries(this._scopes)
+      let scopes = Object.entries(this.#scopes)
       while (scopes.length > 0) {
-        this._scopes = {}
+        this.#scopes = {}
         for (const [scope, graph] of scopes) {
           // Don't apply `default` scopes on anything else than a normal find
           // query:
-          if (scope !== 'default' || isNormalFind) {
-            this._applyScope(scope, graph)
+          if (isNormalFind || scope !== 'default') {
+            this.#applyScope(scope, graph)
             collectedScopes[scope] ||= graph
           }
         }
-        scopes = Object.entries(this._scopes)
+        scopes = Object.entries(this.#scopes)
       }
-      this._scopes = collectedScopes
-      this._allowScopes = _allowScopes
-      this._ignoreGraph = false
+      this.#scopes = collectedScopes
+      this.#allowScopes = allowScopes
+      this.#ignoreGraph = false
     }
   }
 
-  _applyScope(scope, graph) {
-    if (!this._ignoreScopes[SYMBOL_ALL] && !this._ignoreScopes[scope]) {
+  #applyScope(scope, graph) {
+    if (!this.#ignoreScopes[SYMBOL_ALL] && !this.#ignoreScopes[scope]) {
       // Prevent multiple application of scopes. This can easily occur
       // with the nesting and eager-application of graph-scopes, see below.
       // NOTE: The boolean values indicate the `graph` settings, not whether the
       // scopes were applied or not.
-      if (!(scope in this._appliedScopes)) {
+      if (!(scope in this.#appliedScopes)) {
         // Only apply graph-scopes that are actually defined on the model:
         const func = this.modelClass().getScope(scope)
         if (func) {
           func.call(this, this)
         }
-        this._appliedScopes[scope] = graph
+        this.#appliedScopes[scope] = graph
       }
       if (graph) {
         // Also bake the scope into any graph expression that may have been
@@ -283,12 +280,12 @@ export class QueryBuilder extends objection.QueryBuilder {
           const modifiers = {
             [name]: query => {
               query.withScope(name)
-              if (query._isJoinChildQuery) {
+              if (query.#isJoinChildQuery) {
                 // Join child queries are never executed, and need to apply
                 // their scopes manually. Note that it's OK to call this
                 // repeatedly, because `_appliedScopes` prevents multiple
                 // application of the same scope.
-                query._applyScopes()
+                query.#applyScopes()
               }
             }
           }
@@ -301,7 +298,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyFilter(name, ...args) {
-    if (this._allowFilters && !this._allowFilters[name]) {
+    if (this.#allowFilters && !this.#allowFilters[name]) {
       throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
     }
     const filter = this.modelClass().definition.filters[name]
@@ -313,9 +310,9 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   allowFilter(...filters) {
-    this._allowFilters ||= {}
+    this.#allowFilters ||= {}
     for (const filter of filters) {
-      this._allowFilters[filter] = true
+      this.#allowFilters[filter] = true
     }
   }
 
@@ -324,7 +321,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   // `_ignoreGraph` and `_graphAlgorithm`:
   withGraph(expr, options = {}) {
     // To make merging easier, keep the current algorithm if none is specified:
-    const { algorithm = this._graphAlgorithm } = options
+    const { algorithm = this.#graphAlgorithm } = options
     const method = {
       fetch: 'withGraphFetched',
       join: 'withGraphJoined'
@@ -334,8 +331,8 @@ export class QueryBuilder extends objection.QueryBuilder {
         `Graph algorithm '${algorithm}' is unsupported.`
       )
     }
-    if (!this._ignoreGraph) {
-      this._graphAlgorithm = algorithm
+    if (!this.#ignoreGraph) {
+      this.#graphAlgorithm = algorithm
       super[method](expr, options)
     }
     return this
@@ -473,7 +470,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   find(query, allowParam) {
     if (!query) return this
     const allowed = !allowParam
-      ? QueryParameters.allowed()
+      ? QueryParameters.getAllowed()
       : // If it's already a lookup object just use it, otherwise convert it:
         isPlainObject(allowParam)
         ? allowParam
@@ -534,18 +531,18 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   patchAndFetch(data) {
     return isArray(data)
-      ? this._upsertAndFetch(data)
+      ? this.#upsertAndFetch(data)
       : super.patchAndFetch(data)
   }
 
   updateAndFetch(data) {
     return isArray(data)
-      ? this._upsertAndFetch(data, { update: true })
+      ? this.#upsertAndFetch(data, { update: true })
       : super.updateAndFetch(data)
   }
 
   upsertAndFetch(data) {
-    return this._upsertAndFetch(data, {
+    return this.#upsertAndFetch(data, {
       // Insert missing nodes only at root by allowing `insertMissing`,
       // but set `noInsert` for all relations:
       insertMissing: true,
@@ -553,7 +550,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     })
   }
 
-  _upsertAndFetch(data, options) {
+  #upsertAndFetch(data, options) {
     return this.upsertGraphAndFetch(data, {
       fetchStrategy: 'OnlyNeeded',
       noInset: true,
@@ -565,7 +562,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertDitoGraph(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'insertGraph',
       data,
       options,
@@ -574,7 +571,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   insertDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'insertGraphAndFetch',
       data,
       options,
@@ -583,7 +580,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertDitoGraph(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraph',
       data,
       options,
@@ -592,7 +589,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraphAndFetch',
       data,
       options,
@@ -601,7 +598,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   patchDitoGraph(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraph',
       data,
       options,
@@ -610,7 +607,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   patchDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraphAndFetch',
       data,
       options,
@@ -619,7 +616,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   updateDitoGraph(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraph',
       data,
       options,
@@ -628,7 +625,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   updateDitoGraphAndFetch(data, options) {
-    return this._handleDitoGraph(
+    return this.#handleDitoGraph(
       'upsertGraphAndFetch',
       data,
       options,
@@ -669,7 +666,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     )
   }
 
-  _handleDitoGraph(method, data, options, defaultOptions) {
+  #handleDitoGraph(method, data, options, defaultOptions) {
     const handleGraph = data => {
       const graphProcessor = new DitoGraphProcessor(
         this.modelClass(),
@@ -690,10 +687,10 @@ export class QueryBuilder extends objection.QueryBuilder {
       // `_upsertCyclicDitoGraphAndFetch()` needs to run asynchronously,
       // but we can't do so here and `runBefore()` executes too late,
       // so use `_executeFirst()` to work around it.
-      this._executeFirst = async () => {
-        this._executeFirst = null
+      this.#executeFirst = async () => {
+        this.#executeFirst = null
         handleGraph(
-          await this.clone()._upsertCyclicDitoGraphAndFetch(data, options)
+          await this.clone().#upsertCyclicDitoGraphAndFetch(data, options)
         )
       }
     } else {
@@ -703,7 +700,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  async _upsertCyclicDitoGraphAndFetch(data, options) {
+  async #upsertCyclicDitoGraphAndFetch(data, options) {
     // TODO: This is part of a workaround for the following Objection.js issue.
     // Replace with a normal `upsertGraphAndFetch()` once it is fixed:
     // https://github.com/Vincit/objection.js/issues/1482
@@ -788,23 +785,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 }
 
 KnexHelper.mixin(QueryBuilder.prototype)
-
-// Override all deprecated eager methods to respect the `_ignoreGraph` flag,
-// and also keep track of `_graphAlgorithm`, as required by `withGraph()`
-// TODO: Remove once we move to Objection 3.0
-for (const key of [
-  'eager', 'joinEager', 'naiveEager',
-  'mergeEager', 'mergeJoinEager', 'mergeNaiveEager'
-]) {
-  const method = QueryBuilder.prototype[key]
-  QueryBuilder.prototype[key] = function (...args) {
-    if (!this._ignoreGraph) {
-      this._graphAlgorithm = /join/i.test(key) ? 'join' : 'fetch'
-      method.call(this, ...args)
-    }
-    return this
-  }
-}
 
 // Add conversion of identifiers to all `where` statements, as well as to
 // `select` and `orderBy`, by detecting use of model properties and expanding

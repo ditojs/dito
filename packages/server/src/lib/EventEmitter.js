@@ -25,6 +25,18 @@ export class EventEmitter extends EventEmitter2 {
     return this.emitAsync(event, ...args)
   }
 
+  on(event, callback) {
+    return this._handle('on', event, callback)
+  }
+
+  off(event, callback) {
+    return this._handle('off', event, callback)
+  }
+
+  once(event, callback) {
+    return this._handle('once', event, callback)
+  }
+
   _handle(method, event, callback) {
     if (isString(event)) {
       super[method](event, callback)
@@ -38,18 +50,6 @@ export class EventEmitter extends EventEmitter2 {
       }
     }
     return this
-  }
-
-  on(event, callback) {
-    return this._handle('on', event, callback)
-  }
-
-  off(event, callback) {
-    return this._handle('off', event, callback)
-  }
-
-  once(event, callback) {
-    return this._handle('once', event, callback)
   }
 
   static mixin(target) {
