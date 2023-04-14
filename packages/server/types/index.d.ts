@@ -1700,7 +1700,7 @@ export const TimeStampedModel = TimeStampedMixin(Model)
 export const SessionMixin: <T extends Constructor<{}>>(
   target: T
 ) => T & Constructor<{
-  test: string
+  id: string
   value: { [key: string]: any }
 }>
 
