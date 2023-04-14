@@ -1058,17 +1058,19 @@ export type DitoContext<$Item = any> = {
   }): void
 }
 
-export type View<$Item = any> = {
-  type: 'view',
-  resource?: Form['resource']
-  clipboard?: Form['clipboard']
-  component?: Component<$Item>
-} | {
-  type: 'view',
-  resource?: Form['resource']
-  clipboard?: Form['clipboard']
-  components?: Components<$Item>
-}
+export type View<$Item = any> =
+  | {
+      type: 'view'
+      resource?: Form['resource']
+      clipboard?: Form['clipboard']
+      component?: Component<$Item>
+    }
+  | {
+      type: 'view'
+      resource?: Form['resource']
+      clipboard?: Form['clipboard']
+      components?: Components<$Item>
+    }
 
 export type Component<$Item = any> =
   | InputSchema<$Item>
@@ -1093,9 +1095,11 @@ export type Component<$Item = any> =
   | SectionSchema<$Item>
   | HiddenSchema<$Item>
 
-export type Components<$Item = any> = Component<$Item>[] | {
-  [$name: string]: Component<$Item>
-}
+export type Components<$Item = any> =
+  | Component<$Item>[]
+  | {
+      [$name: string]: Component<$Item>
+    }
 
 export type Buttons<$Item> = Record<
   string,
@@ -1125,7 +1129,7 @@ export type Form<$Item = any> = {
     string,
     Omit<Form<$Item>, 'tabs' | 'type'> & {
       defaultTab?: OrItemAccessor<$Item, {}, boolean>
-  }
+    }
   >
   // TODO: document components
   components?: Components<$Item>

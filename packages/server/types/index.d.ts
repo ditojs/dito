@@ -6,7 +6,7 @@
 // Export the entire Dito namespace.
 
 import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
-import { DateFormat } from '@dito/utils'
+import { DateFormat } from '@ditojs/utils'
 import koaCors from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
 import { AsyncLocalStorage } from 'async_hooks'
@@ -17,11 +17,11 @@ import * as Knex from 'knex'
 import * as Koa from 'koa'
 import koaBodyParser from 'koa-bodyparser'
 import koaCompress from 'koa-compress'
-import koaLogger from 'koa-logger'
-import mount from 'koa-mount'
-import koaPinoLogger from 'koa-pino-logger'
+import koaMount from 'koa-mount'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
+import koaLogger from '@types/koa-logger'
+import koaPinoLogger from '@types/koa-pino-logger'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
@@ -385,8 +385,12 @@ export class Application<$Models extends Models = Models> {
   getAdminViteConfig(config?: UserConfig): UserConfig
   logger: Logger
   requestStorage: AsyncLocalStorage
-  requestLocals: { transaction: objection.Transaction, logger: Logger }
+  requestLocals: {
+    transaction: objection.Transaction
+    logger: Logger
+  }
 }
+
 export interface Application
   extends Omit<
       Koa,
@@ -608,10 +612,8 @@ type ModelHookFunction<$Model extends Model> = (
 
 export type ModelHooks<$Model extends Model = Model> = {
   [key in `${'before' | 'after'}:${
-    | 'find'
-    | 'insert'
-    | 'update'
-    | 'delete'}`]?: ModelHookFunction<$Model>
+    'find' | 'insert' | 'update' | 'delete'
+  }`]?: ModelHookFunction<$Model>
 }
 
 export class Model extends objection.Model {
@@ -719,26 +721,19 @@ export class Model extends objection.Model {
   static upsertDitoGraph: StaticQueryBuilderMethod<'upsertDitoGraph'>
   static updateDitoGraph: StaticQueryBuilderMethod<'updateDitoGraph'>
   static patchDitoGraph: StaticQueryBuilderMethod<'patchDitoGraph'>
-  static insertDitoGraphAndFetch:
-    StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
+  static insertDitoGraphAndFetch: StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
 
-  static upsertDitoGraphAndFetch:
-    StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
+  static upsertDitoGraphAndFetch: StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
 
-  static updateDitoGraphAndFetch:
-    StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
+  static updateDitoGraphAndFetch: StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
 
-  static patchDitoGraphAndFetch:
-    StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
+  static patchDitoGraphAndFetch: StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
 
-  static upsertDitoGraphAndFetchById:
-    StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
+  static upsertDitoGraphAndFetchById: StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
 
-  static updateDitoGraphAndFetchById:
-    StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
+  static updateDitoGraphAndFetchById: StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
 
-  static patchDitoGraphAndFetchById:
-    StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
+  static patchDitoGraphAndFetchById: StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
 
   static where: StaticQueryBuilderMethod<'where'>
   static whereNot: StaticQueryBuilderMethod<'whereNot'>
@@ -899,7 +894,7 @@ export class Controller {
    * middleware.
    * @overridable
    */
-  compose(): Parameters<typeof mount>[1]
+  compose(): Parameters<typeof koaMount>[1]
   /** To be overridden by sub-classes. */
   getPath(type: string, path: string): string
   getUrl(type: string, path: string): string
@@ -948,8 +943,8 @@ export type SelectModelPropertyKeys<$Model extends Model> = {
     | `$${string}`
     ? never
     : $Model[K] extends Function
-    ? never
-    : K
+      ? never
+      : K
 }[keyof $Model]
 
 export type Authorize =
@@ -1116,9 +1111,8 @@ type ModelControllerHookKeys<
   $Keys extends string,
   $ModelControllerHookType extends string
 > = `${'before' | 'after' | '*'}:${$ModelControllerHookType | '*'}:${
-  | Exclude<$Keys, 'allow'>
-  | ControllerActionName
-  | '*'}`
+  Exclude<$Keys, 'allow'> | ControllerActionName | '*'
+}`
 type ModelControllerHook<
   $ModelController extends ModelController = ModelController
 > = (
@@ -1148,9 +1142,8 @@ type HandlerFromHookKey<
   $ModelController extends ModelController,
   $Key extends HookKeysFromController<$ModelController>
 > = $Key extends `${'before' | 'after' | '*'}:${
-  | 'collection'
-  | 'member'
-  | '*'}:${string}`
+  'collection' | 'member' | '*'
+}:${string}`
   ? (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
   : never
 
@@ -1585,10 +1578,10 @@ export type PartialModelObject<T extends Model> = {
   > extends Model
     ? T[K]
     : objection.Defined<T[K]> extends Array<infer I>
-    ? I extends Model
-      ? I[]
+      ? I extends Model
+        ? I[]
+        : objection.Expression<T[K]>
       : objection.Expression<T[K]>
-    : objection.Expression<T[K]>
 }
 
 export type PartialDitoModelGraph<M extends Partial<Model>> = {
@@ -1597,10 +1590,10 @@ export type PartialDitoModelGraph<M extends Partial<Model>> = {
   > extends Model
     ? PartialDitoModelGraph<M[K]>
     : objection.Defined<M[K]> extends Array<infer I>
-    ? I extends Partial<Model>
-      ? PartialDitoModelGraph<I>[]
+      ? I extends Partial<Model>
+        ? PartialDitoModelGraph<I>[]
+        : M[K]
       : M[K]
-    : M[K]
 }
 
 /* ------------------------------ Start Errors ----------------------------- */
@@ -1679,65 +1672,68 @@ type AssetFileObject = {
 
 export const AssetMixin: <T extends Constructor<{}>>(
   target: T
-) => T & Constructor<{
-  key: string
-  file: AssetFileObject
-  storage: string
-  count: number
-}>
+) => T &
+  Constructor<{
+    key: string
+    file: AssetFileObject
+    storage: string
+    count: number
+  }>
 
 export const AssetModel = AssetMixin(Model)
 
 export const TimeStampedMixin: <T extends Constructor<{}>>(
   target: T
-) => T & Constructor<{
-  createdAt: Date
-  updatedAt: Date
-}>
+) => T &
+  Constructor<{
+    createdAt: Date
+    updatedAt: Date
+  }>
 
 export const TimeStampedModel = TimeStampedMixin(Model)
 
 export const SessionMixin: <T extends Constructor<{}>>(
   target: T
-) => T & Constructor<{
-  id: string
-  value: { [key: string]: any }
-}>
+) => T &
+  Constructor<{
+    id: string
+    value: { [key: string]: any }
+  }>
 
 export const SessionModel = SessionMixin(Model)
 
 export const UserMixin: <T extends Constructor<{}>>(
   target: T
-) => T & Constructor<{
-  username: string
-  password: string
-  hash: string
-  lastLogin?: Date
+) => T &
+  Constructor<{
+    username: string
+    password: string
+    hash: string
+    lastLogin?: Date
 
-  $verifyPassword(password: string): Promise<boolean>
+    $verifyPassword(password: string): Promise<boolean>
 
-  $hasRole(...roles: string[]): boolean
+    $hasRole(...roles: string[]): boolean
 
-  $hasOwner(owner: UserModel): boolean
+    $hasOwner(owner: UserModel): boolean
 
-  $isLoggedIn(ctx: KoaContext): boolean
-}> & {
-  options?: {
-    usernameProperty?: string
-    passwordProperty?: string
-    /**
-     * This option can be used to specify (eager) scopes to be applied when the
-     * user is deserialized from the session.
-     */
-    sessionScope?: OrArrayOf<string>
+    $isLoggedIn(ctx: KoaContext): boolean
+  }> & {
+    options?: {
+      usernameProperty?: string
+      passwordProperty?: string
+      /**
+       * This option can be used to specify (eager) scopes to be applied when
+       * the user is deserialized from the session.
+       */
+      sessionScope?: OrArrayOf<string>
+    }
+
+    // TODO: type options
+    login(ctx: KoaContext, options: any): Promise<void>
+
+    sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
   }
-
-  // TODO: type options
-   login(ctx: KoaContext, options: any): Promise<void>
-
-   sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
-}
-
 
 export const UserModel = UserMixin(Model)
 
@@ -1988,11 +1984,9 @@ interface StringKeywords {
     | 'timestamp'
   >
 }
-declare type UncheckedJSONSchemaType<
-  T,
-  IsPartial extends boolean
-> = // these two unions allow arbitrary unions of types
-(| {
+declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
+  | // these two unions allow arbitrary unions of types
+  {
       anyOf: readonly UncheckedJSONSchemaType<T, IsPartial>[]
     }
   | {
@@ -2002,118 +1996,127 @@ declare type UncheckedJSONSchemaType<
       type: readonly (T extends number
         ? JSONType<'number' | 'integer', IsPartial>
         : T extends string
-        ? JSONType<'string', IsPartial>
-        : T extends boolean
-        ? JSONType<'boolean', IsPartial>
-        : never)[]
+          ? JSONType<'string', IsPartial>
+          : T extends boolean
+            ? JSONType<'boolean', IsPartial>
+            : never)[]
     } & UnionToIntersection<
       T extends number
         ? NumberKeywords
         : T extends string
-        ? StringKeywords
-        : T extends boolean
-        ? {}
-        : never
+          ? StringKeywords
+          : T extends boolean
+            ? {}
+            : never
     >)
   | ((T extends number
       ? {
           type: JSONType<'number' | 'integer', IsPartial>
         } & NumberKeywords
       : T extends string
-      ? {
-          type: JSONType<
-            'string' | 'text' | 'date' | 'datetime' | 'timestamp',
-            IsPartial
-          >
-        } & StringKeywords
-      : T extends Date
-      ? {
-          type: JSONType<'date' | 'datetime' | 'timestamp', IsPartial>
-        }
-      : T extends boolean
-      ? {
-          type: JSONType<'boolean', IsPartial>
-        }
-      : T extends readonly [any, ...any[]]
-      ? {
-          type: JSONType<'array', IsPartial>
-          items: {
-            readonly [K in keyof T]-?: UncheckedJSONSchemaType<T[K], false> &
-              Nullable<T[K]>
-          } & {
-            length: T['length']
-          }
-          minItems: T['length']
-        } & (
-          | {
-              maxItems: T['length']
-            }
-          | {
-              additionalItems: false
-            }
-        )
-      : T extends readonly any[]
-      ? {
-          type: JSONType<'array', IsPartial>
-          items: UncheckedJSONSchemaType<T[0], false>
-          contains?: UncheckedPartialSchema<T[0]>
-          minItems?: number
-          maxItems?: number
-          minContains?: number
-          maxContains?: number
-          uniqueItems?: true
-          additionalItems?: never
-        }
-      : T extends Record<string, any>
-      ? {
-          type: JSONType<'object', IsPartial>
-          additionalProperties?:
-            | boolean
-            | UncheckedJSONSchemaType<T[string], false>
-          unevaluatedProperties?:
-            | boolean
-            | UncheckedJSONSchemaType<T[string], false>
-          properties?: IsPartial extends true
-            ? Partial<UncheckedPropertiesSchema<T>>
-            : UncheckedPropertiesSchema<T>
-          patternProperties?: Record<
-            string,
-            UncheckedJSONSchemaType<T[string], false>
-          >
-          propertyNames?: Omit<
-            UncheckedJSONSchemaType<string, false>,
-            'type'
-          > & {
-            type?: 'string'
-          }
-          dependencies?: {
-            [K in keyof T]?: Readonly<(keyof T)[]> | UncheckedPartialSchema<T>
-          }
-          dependentRequired?: {
-            [K in keyof T]?: Readonly<(keyof T)[]>
-          }
-          dependentSchemas?: {
-            [K in keyof T]?: UncheckedPartialSchema<T>
-          }
-          minProperties?: number
-          maxProperties?: number
-        } & (IsPartial extends true
+        ? {
+            type: JSONType<
+              'string' | 'text' | 'date' | 'datetime' | 'timestamp',
+              IsPartial
+            >
+          } & StringKeywords
+        : T extends Date
           ? {
-              required: Readonly<(keyof T)[] | boolean>
+              type: JSONType<'date' | 'datetime' | 'timestamp', IsPartial>
             }
-          : [UncheckedRequiredMembers<T>] extends [never]
-          ? {
-              required?: Readonly<UncheckedRequiredMembers<T>[]> | boolean
-            }
-          : {
-              required: Readonly<UncheckedRequiredMembers<T>[]> | boolean
-            })
-      : T extends null
-      ? {
-          type: JSONType<'null', IsPartial>
-          nullable: true
-        }
-      : never) & {
+          : T extends boolean
+            ? {
+                type: JSONType<'boolean', IsPartial>
+              }
+            : T extends readonly [any, ...any[]]
+              ? {
+                  type: JSONType<'array', IsPartial>
+                  items: {
+                    readonly [K in keyof T]-?: UncheckedJSONSchemaType<
+                      T[K],
+                      false
+                    > &
+                      Nullable<T[K]>
+                  } & {
+                    length: T['length']
+                  }
+                  minItems: T['length']
+                } & (
+                  | {
+                      maxItems: T['length']
+                    }
+                  | {
+                      additionalItems: false
+                    }
+                )
+              : T extends readonly any[]
+                ? {
+                    type: JSONType<'array', IsPartial>
+                    items: UncheckedJSONSchemaType<T[0], false>
+                    contains?: UncheckedPartialSchema<T[0]>
+                    minItems?: number
+                    maxItems?: number
+                    minContains?: number
+                    maxContains?: number
+                    uniqueItems?: true
+                    additionalItems?: never
+                  }
+                : T extends Record<string, any>
+                  ? {
+                      type: JSONType<'object', IsPartial>
+                      additionalProperties?:
+                        | boolean
+                        | UncheckedJSONSchemaType<T[string], false>
+                      unevaluatedProperties?:
+                        | boolean
+                        | UncheckedJSONSchemaType<T[string], false>
+                      properties?: IsPartial extends true
+                        ? Partial<UncheckedPropertiesSchema<T>>
+                        : UncheckedPropertiesSchema<T>
+                      patternProperties?: Record<
+                        string,
+                        UncheckedJSONSchemaType<T[string], false>
+                      >
+                      propertyNames?: Omit<
+                        UncheckedJSONSchemaType<string, false>,
+                        'type'
+                      > & {
+                        type?: 'string'
+                      }
+                      dependencies?: {
+                        [K in keyof T]?:
+                          | Readonly<(keyof T)[]>
+                          | UncheckedPartialSchema<T>
+                      }
+                      dependentRequired?: {
+                        [K in keyof T]?: Readonly<(keyof T)[]>
+                      }
+                      dependentSchemas?: {
+                        [K in keyof T]?: UncheckedPartialSchema<T>
+                      }
+                      minProperties?: number
+                      maxProperties?: number
+                    } & (IsPartial extends true
+                      ? {
+                          required: Readonly<(keyof T)[] | boolean>
+                        }
+                      : [UncheckedRequiredMembers<T>] extends [never]
+                        ? {
+                            required?:
+                              | Readonly<UncheckedRequiredMembers<T>[]>
+                              | boolean
+                          }
+                        : {
+                            required:
+                              | Readonly<UncheckedRequiredMembers<T>[]>
+                              | boolean
+                          })
+                  : T extends null
+                    ? {
+                        type: JSONType<'null', IsPartial>
+                        nullable: true
+                      }
+                    : never) & {
       allOf?: Readonly<UncheckedPartialSchema<T>[]>
       anyOf?: Readonly<UncheckedPartialSchema<T>[]>
       oneOf?: Readonly<UncheckedPartialSchema<T>[]>

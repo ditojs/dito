@@ -116,23 +116,23 @@ export function clone<T>(value: T, options?: {
    *
    * @default false
    */
-  shallow?: boolean,
+  shallow?: boolean
   /**
    * Whether to clone all object properties, or only those that are defined
    * directly on that object, and are not inherited from the object's prototype.
    *
    * @default true
    */
-  enumerable?: boolean,
+  enumerable?: boolean
   /**
    * @default `true` if `options.enumerable` is true, `false` otherwise
    */
-  descriptors?: boolean,
-  transferables?: any[],
+  descriptors?: boolean
+  transferables?: any[]
   /**
    * Optional callback to process the cloned value.
    */
-  processValue?: <S>(value: T) => S,
+  processValue?: <S>(value: T) => S
 }): T
 
 /**
@@ -220,14 +220,14 @@ export function mapConcurrently<T, R>(
   input: Promise<T[]> | T[],
   callback: (value: T, index: number, array: T[]) => Promise<R> | R,
   options?: {
-    concurrency?: number;
+    concurrency?: number
   }
-): Promise<R[]>;
+): Promise<R[]>
 
 export function mapSequentially<T, R>(
   input: Promise<T[]> | T[],
   callback: (value: T, index: number) => Promise<R> | R
-): Promise<R[]>;
+): Promise<R[]>
 
 /* --------------------------------- string --------------------------------- */
 
@@ -458,8 +458,7 @@ export function debounceAsync<T extends (...args: any[]) => Promise<any>>(
 // overloaded node function types), excluding the custom promisified function
 // functionality, which toAsync does not support:
 // https://github.com/DefinitelyTyped/DefinitelyTyped/blob/fa723dee727e433add7e700420523f0f90e87a01/types/node/util.d.ts#L86
-interface CustomPromisifyLegacy<TCustom extends Function>
-  extends Function {
+interface CustomPromisifyLegacy<TCustom extends Function> extends Function {
   __promisify__: TCustom
 }
 type CustomToAsync<TCustom extends Function> = CustomPromisifyLegacy<TCustom>

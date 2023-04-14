@@ -15,11 +15,11 @@
     "version": "yarn install && git stage yarn.lock",
     "postinstall": "husky install",
     "test": "vitest",
-    "eslint": "cross-env NODE_ENV=production eslint --ext .js,.vue packages/*/src",
+    "eslint": "cross-env NODE_ENV=production eslint --ext .js,.d.ts,.vue packages/*/src",
     "eslint:fix": "yarn run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
     "stylelint:fix": "yarn run stylelint --fix",
-    "penere": "penere packages/*/src/**/*.{js,pug,vue} --check",
+    "penere": "penere packages/*/src/**/*.{js,d.ts,pug,vue} --check",
     "penere:fix": "yarn run penere --write",
     "lint": "concurrently yarn:eslint yarn:penere yarn:stylelint",
     "lint:fix": "yarn run eslint:fix && yarn run penere:fix && yarn run stylelint:fix",
@@ -28,7 +28,7 @@
     "link:all": "yarn link:objection && yarn link:knex"
   },
   "lint-staged": {
-    "packages/**/src/**/*.{js,vue}": "cross-env NODE_ENV=production eslint"
+    "packages/**/src/**/*.{js,d.ts,vue}": "cross-env NODE_ENV=production eslint"
   },
   "engines": {
     "node": ">= 18.0.0",
