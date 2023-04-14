@@ -8,7 +8,7 @@ import {
   TimeFormat
 } from '@ditojs/utils'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
-import Vue, { VueConstructor } from 'vue'
+import { Component as VueComponent } from 'vue'
 
 declare global {
   const dito: DitoGlobal
@@ -453,7 +453,7 @@ export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
    * Use a Vue component to render the component. The component is specified
    * like this: import(...).
    */
-  component: Resolvable<VueConstructor<Vue>>
+  component: Resolvable<VueComponent>
 }
 
 export type InputSchema<$Item = any> = BaseSchema<$Item> & {
@@ -850,7 +850,7 @@ export type ColumnSchema<$Item = any> = {
    * Use a Vue component to render the cell. The component is specified
    * like this: import(...).
    */
-  component?: Resolvable<VueConstructor<Vue>>
+  component?: Resolvable<VueComponent>
   /**
    * Whether the column should be sortable.
    */
@@ -1010,13 +1010,13 @@ export type DitoContext<$Item = any> = {
   itemLabel: string | null
   formLabel: string | null
   component: any
-  schemaComponent: Vue | null
+  schemaComponent: VueComponent | null
   formComponent: any
   viewComponent: any
   dialogComponent: any
-  panelComponent: Vue | null
-  resourceComponent: Vue | null
-  sourceComponent: Vue | null
+  panelComponent: VueComponent | null
+  resourceComponent: VueComponent | null
+  sourceComponent: VueComponent | null
   option: any
   options: any
   query: string
@@ -1158,7 +1158,7 @@ export class DitoAdmin<
 > {
   api: ApiConfig
   // TODO: finish off Vue types
-  root: Vue
+  root: VueComponent
   constructor(
     element: Element | string,
     options?: {
