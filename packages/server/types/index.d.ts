@@ -347,6 +347,11 @@ export interface ApplicationControllers {
 
 export type Models = Record<string, Class<Model>>
 
+interface AsyncLocalStorageStore {
+  transaction: objection.Transaction
+  logger: Logger
+}
+
 export class Application<$Models extends Models = Models> {
   constructor(options: {
     config?: ApplicationConfig
@@ -384,11 +389,8 @@ export class Application<$Models extends Models = Models> {
   setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
   logger: Logger
-  requestStorage: AsyncLocalStorage
-  requestLocals: {
-    transaction: objection.Transaction
-    logger: Logger
-  }
+  requestStorage: AsyncLocalStorage<AsyncLocalStorageStore>
+  requestLocals: AsyncLocalStorageStore
 }
 
 export interface Application
@@ -1662,7 +1664,7 @@ export const AssetMixin: <T extends Constructor<{}>>(
     count: number
   }>
 
-export const AssetModel = AssetMixin(Model)
+export const AssetModel: ReturnType<typeof AssetMixin<typeof Model>>
 
 export const TimeStampedMixin: <T extends Constructor<{}>>(
   target: T
@@ -1672,7 +1674,7 @@ export const TimeStampedMixin: <T extends Constructor<{}>>(
     updatedAt: Date
   }>
 
-export const TimeStampedModel = TimeStampedMixin(Model)
+export const TimeStampedModel: ReturnType<typeof TimeStampedMixin<typeof Model>>
 
 export const SessionMixin: <T extends Constructor<{}>>(
   target: T
@@ -1682,7 +1684,7 @@ export const SessionMixin: <T extends Constructor<{}>>(
     value: { [key: string]: any }
   }>
 
-export const SessionModel = SessionMixin(Model)
+export const SessionModel: ReturnType<typeof SessionMixin<typeof Model>>
 
 export const UserMixin: <T extends Constructor<{}>>(
   target: T
@@ -1697,7 +1699,7 @@ export const UserMixin: <T extends Constructor<{}>>(
 
     $hasRole(...roles: string[]): boolean
 
-    $hasOwner(owner: UserModel): boolean
+    $hasOwner(owner: InstanceType<typeof UserModel>): boolean
 
     $isLoggedIn(ctx: KoaContext): boolean
   }> & {
@@ -1714,10 +1716,10 @@ export const UserMixin: <T extends Constructor<{}>>(
     // TODO: type options
     login(ctx: KoaContext, options: any): Promise<void>
 
-    sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
+    sessionQuery(trx: Knex.Transaction): QueryBuilder<InstanceType<typeof UserModel>>
   }
 
-export const UserModel = UserMixin(Model)
+export const UserModel: ReturnType<typeof UserMixin<typeof Model>>
 
 /**
  * Apply the action mixin to a controller action, in order to determine which
