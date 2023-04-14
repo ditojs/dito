@@ -1673,47 +1673,38 @@ type AssetFileObject = {
   height: number
 }
 
-export class AssetModel extends TimeStampedModel {
+export const AssetMixin: <T extends Constructor<{}>>(
+  target: T
+) => T & Constructor<{
   key: string
   file: AssetFileObject
   storage: string
   count: number
-}
+}>
 
-export const AssetMixin: <T extends Constructor>(
+export const AssetModel = AssetMixin(Model)
+
+export const TimeStampedMixin: <T extends Constructor<{}>>(
   target: T
-) => Constructor<
-  InstanceType<T> & {
-    key: string
-    file: AssetFileObject
-    storage: string
-    count: number
-  }
->
-
-export class TimeStampedModel extends Model {
-  createdAt: Date
-  updatedAt: Date
-}
-
-export const TimeStampedMixin: <T extends Constructor>(
-  target: T
-) => Constructor<InstanceType<T> & {
+) => T & Constructor<{
   createdAt: Date
   updatedAt: Date
 }>
 
-export class UserModel extends Model {
-  static options?: {
-    usernameProperty?: string
-    passwordProperty?: string
-    /**
-     * This option can be used to specify (eager) scopes to be applied when the
-     * user is deserialized from the session.
-     */
-    sessionScope?: OrArrayOf<string>
-  }
+export const TimeStampedModel = TimeStampedMixin(Model)
 
+export const SessionMixin: <T extends Constructor<{}>>(
+  target: T
+) => T & Constructor<{
+  test: string
+  value: { [key: string]: any }
+}>
+
+export const SessionModel = SessionMixin(Model)
+
+export const UserMixin: <T extends Constructor<{}>>(
+  target: T
+) => T & Constructor<{
   username: string
   password: string
   hash: string
@@ -1726,33 +1717,25 @@ export class UserModel extends Model {
   $hasOwner(owner: UserModel): boolean
 
   $isLoggedIn(ctx: KoaContext): boolean
+}> & {
+  options?: {
+    usernameProperty?: string
+    passwordProperty?: string
+    /**
+     * This option can be used to specify (eager) scopes to be applied when the
+     * user is deserialized from the session.
+     */
+    sessionScope?: OrArrayOf<string>
+  }
 
   // TODO: type options
-  static login(ctx: KoaContext, options: any): Promise<void>
+   login(ctx: KoaContext, options: any): Promise<void>
 
-  static sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
+   sessionQuery(trx: Knex.Transaction): QueryBuilder<UserModel>
 }
 
-export class SessionModel extends Model {
-  id: string
-  value: { [key: string]: any }
-}
 
-export const SessionMixin: <T extends Constructor>(
-  target: T
-) => Constructor<InstanceType<T> & {
-  id: string
-  value: { [key: string]: any }
-}>
-
-export const UserMixin: <T extends Constructor>(
-  target: T
-) => Constructor<
-  InstanceType<T> & {
-    id: string
-    value: { [key: string]: any }
-  }
->
+export const UserModel = UserMixin(Model)
 
 /**
  * Apply the action mixin to a controller action, in order to determine which
