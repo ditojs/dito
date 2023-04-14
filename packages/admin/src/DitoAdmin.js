@@ -45,6 +45,23 @@ export default class DitoAdmin {
     api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
     api.denormalizePath ||= api.normalizePaths ? camelize : val => val
 
+    // Allow definition of defaults for admin component types, nested per type:
+    // api.defaults = {
+    //   'multiselect': {
+    //     selectable: true
+    //   },
+    //   'fake-type': schema => {
+    //     // Return defaults, or directly modify the schema:
+    //     Object.assign(schema, {
+    //       type: 'real-type',
+    //       format: ({ value }) => `Formatted ${value}`,
+    //       process: ({ value }) => `Processed ${value}`
+    //     })
+    //   }
+    // }
+
+    api.defaults ||= {}
+
     // Allow the configuration of all auth resources, like so:
     // api.users = {
     //   path: '/admins',
@@ -62,9 +79,9 @@ export default class DitoAdmin {
     //     method: 'get'
     //   }
     // }
-    const users = (api.users = getResource(api.users, {
+    const users = getResource(api.users, {
       type: 'collection'
-    }) || {})
+    }) || {}
     users.login = getResource(users.login || 'login', {
       method: 'post',
       parent: users
@@ -77,6 +94,7 @@ export default class DitoAdmin {
       method: 'get',
       parent: users
     })
+    api.users = users
 
     // Allow overriding of resource path handlers:
     // api.resources = {

@@ -100,7 +100,7 @@ import { appendDataPath, getParentItem } from '../utils/data.js'
 import {
   getNamedSchemas,
   getPanelSchemas,
-  setDefaults,
+  setDefaultValues,
   processData
 } from '../utils/schema.js'
 import { getStoreAccessor } from '../utils/accessor.js'
@@ -554,10 +554,10 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     resetData() {
-      // We can't set `this.data = ...` because it's a property, but we can
-      // set all known properties on it to the values returned by
-      // `setDefaults()`, as they are all reactive already from the starts:
-      Object.assign(this.data, setDefaults(this.schema, {}, this))
+      // We can't set `this.data = ...` because it's a property, but we can set
+      // all known properties on it to the values returned by
+      // `setDefaultValues()`, as they are all reactive already from the starts:
+      Object.assign(this.data, setDefaultValues(this.schema, {}, this))
       this.clearErrors()
     },
 

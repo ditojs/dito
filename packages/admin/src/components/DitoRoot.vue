@@ -175,7 +175,7 @@ export default DitoComponent.component('DitoRoot', {
           await processSchemaComponents(this.api, { components }, routes, 0)
           if (routes.length > 0) {
             throw new Error(
-              `Dialog components cannot contain routes, only components with schemas.`
+              'Dialogs do not support components that produce routes'
             )
           }
           const key = `dialog-${++dialogId}`

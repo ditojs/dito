@@ -10,9 +10,10 @@ import {
   isArray,
   isFunction,
   isPromise,
-  clone,
-  camelize,
   isModule,
+  clone,
+  merge,
+  camelize,
   mapConcurrently
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
@@ -34,16 +35,17 @@ export function getTypeComponent(type, allowNull = false) {
   return component
 }
 
-export function forEachSchemaComponent(schema, callback) {
+function getSchemas(schema) {
+  return schema
+    ? [...Object.values(schema.tabs || {}), schema]
+    : []
+}
+
+export function iterateSchemaComponents(schema, callback) {
   if (isSingleComponentView(schema)) {
-    const res = callback(schema.component, schema.name)
-    if (res !== undefined) {
-      return res
-    }
+    return callback(schema.component, schema.name)
   } else {
-    const schemas = schema
-      ? [...Object.values(schema.tabs || {}), schema]
-      : []
+    const schemas = getSchemas(schema)
     for (const schema of schemas) {
       for (const [name, component] of Object.entries(schema.components || {})) {
         const res = callback(component, name)
@@ -57,17 +59,16 @@ export function forEachSchemaComponent(schema, callback) {
 
 export function findSchemaComponent(schema, callback) {
   return (
-    forEachSchemaComponent(
+    iterateSchemaComponents(
       schema,
       (component, name) => (callback(component, name) ? component : undefined)
-    ) ||
-    null
+    ) || null
   )
 }
 
 export function someSchemaComponent(schema, callback) {
   return (
-    forEachSchemaComponent(
+    iterateSchemaComponents(
       schema,
       (component, name) => (callback(component, name) ? true : undefined)
     ) ===
@@ -77,7 +78,7 @@ export function someSchemaComponent(schema, callback) {
 
 export function everySchemaComponent(schema, callback) {
   return (
-    forEachSchemaComponent(
+    iterateSchemaComponents(
       schema,
       (component, name) => (!callback(component, name) ? false : undefined)
     ) !==
@@ -190,18 +191,17 @@ export async function resolveSchemaComponents(schemas) {
 }
 
 export async function processView(component, api, schema, name) {
-  const children = []
   processRouteSchema(api, schema, name)
+  processDefaults(api, schema)
   await resolvePanels(schema)
+  const children = []
   if (isView(schema)) {
-    let level = 0
     if (isSingleComponentView(schema)) {
-      await processComponent(api, schema.component, name, children, level)
+      await processComponent(api, schema.component, name, children, 0)
     } else {
       // A multi-component view, start at level 1
-      await processSchemaComponents(api, schema, children, ++level)
+      await processSchemaComponents(api, schema, children, 1)
     }
-    schema.level = level
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
@@ -217,7 +217,7 @@ export async function processView(component, api, schema, name) {
 }
 
 export async function processComponent(api, schema, name, routes, level) {
-  schema.level = level
+  processDefaults(api, schema)
   // Delegate schema processing to the actual type components.
   await getTypeOptions(schema)?.processSchema?.(
     api,
@@ -228,27 +228,51 @@ export async function processComponent(api, schema, name, routes, level) {
   )
 }
 
+export function processDefaults(api, schema) {
+  let defaults = api.defaults[schema.type]
+  if (defaults) {
+    if (isFunction(defaults)) {
+      defaults = defaults(schema)
+    }
+    if (isObject(defaults)) {
+      for (const [key, value] of Object.entries(defaults)) {
+        if (schema[key] === undefined) {
+          schema[key] = value
+        } else {
+          schema[key] = merge(value, schema[key])
+        }
+      }
+    }
+  }
+}
+
 export function processRouteSchema(api, schema, name) {
-  // Used for view and source schemas, see SourceMixin
+  // Used for view and source schemas, see SourceMixin.
   schema.name = name
   schema.path ||= api.normalizePath(name)
 }
 
 export async function processSchemaComponents(api, schema, routes, level) {
   const promises = []
-  forEachSchemaComponent(schema, (component, name) => {
+  iterateSchemaComponents(schema, (component, name) => {
     promises.push(processComponent(api, component, name, routes, level))
   })
   await Promise.all(promises)
 }
 
 export async function processForms(api, schema, level) {
+  const processForm = async form => {
+    form = await resolveForm(form)
+    processDefaults(api, schema)
+    return form
+  }
+
   // First resolve the forms and store the results back on the schema.
   let { form, forms, components } = schema
   if (forms) {
-    forms = schema.forms = await resolveSchemas(forms, resolveForm)
+    forms = schema.forms = await resolveSchemas(forms, processForm)
   } else if (form) {
-    form = schema.form = await resolveForm(form)
+    form = schema.form = await processForm(form)
   } else if (components) {
     // NOTE: Processing forms in computed components is not supported, since it
     // only can be computed in conjunction with actual data.
@@ -256,6 +280,7 @@ export async function processForms(api, schema, level) {
       form = { components }
     }
   }
+
   forms ||= { default: form } // Only used for process loop below.
   const children = []
   for (const form of Object.values(forms)) {
@@ -269,9 +294,7 @@ export async function resolveForm(schema) {
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  if (schema) {
-    await resolvePanels(schema)
-  }
+  await resolvePanels(schema)
   return schema
 }
 
@@ -304,7 +327,7 @@ export function getViewFormSchema(schema, context) {
   return viewSchema
     ? // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
-      forEachSchemaComponent(viewSchema, schema => {
+      iterateSchemaComponents(viewSchema, schema => {
         if (hasFormSchema(schema)) {
           return schema
         }
@@ -321,9 +344,9 @@ export function getViewSchema(schema, context) {
 export function getViewEditPath(schema, context) {
   const view = getViewSchema(schema, context)
   return view
-    ? view.level === 0
-      ? `/${view.path}` // A single-component view
-      : `/${view.path}/${view.path}` // A multi-component view
+    ? isSingleComponentView(view)
+      ? `/${view.path}`
+      : `/${view.path}/${view.path}`
     : null
 }
 
@@ -421,7 +444,7 @@ export function hasLabels(schema) {
   )
 }
 
-export function setDefaults(schema, data = {}, component) {
+export function setDefaultValues(schema, data = {}, component) {
   const options = { component, rootData: data }
 
   const processBefore = (schema, data, name) => {

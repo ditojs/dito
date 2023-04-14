@@ -1,6 +1,6 @@
 import ItemMixin from './ItemMixin.js'
 import LoadingMixin from './LoadingMixin.js'
-import { setDefaults } from '../utils/schema.js'
+import { setDefaultValues } from '../utils/schema.js'
 import { isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import DitoContext from '../DitoContext.js'
@@ -191,7 +191,7 @@ export default {
     },
 
     createData(schema, type) {
-      return setDefaults(schema, type ? { type } : {}, this)
+      return setDefaultValues(schema, type ? { type } : {}, this)
     },
 
     requestData() {
