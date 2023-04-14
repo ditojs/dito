@@ -958,8 +958,6 @@ const mixinMethods = [
   'clearWithScope',
 
   'clear',
-  'pick',
-  'omit',
   'select',
 
   'insert',

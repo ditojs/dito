@@ -12,7 +12,7 @@
     "types/"
   ],
   "scripts": {
-    "types": "tsc --noEmit ./types/index.d.ts"
+    "types": "tsc --noEmit --esModuleInterop ./types/index.d.ts"
   },
   "bin": {
     "dito": "./src/cli/index.js"

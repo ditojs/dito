@@ -7,21 +7,21 @@
 
 import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat } from '@ditojs/utils'
-import koaCors from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
 import { AsyncLocalStorage } from 'async_hooks'
 import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
-import * as Knex from 'knex'
+import { Knex } from 'knex'
 import * as Koa from 'koa'
-import koaBodyParser from 'koa-bodyparser'
-import koaCompress from 'koa-compress'
+import { Options as KoaCorsOptions } from '@koa/cors'
+import { Options as KoaBodyParserOptions } from 'koa-bodyparser'
+import { CompressOptions } from 'koa-compress'
 import koaMount from 'koa-mount'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
-import koaLogger from '@types/koa-logger'
-import koaPinoLogger from '@types/koa-pino-logger'
+import koaLogger from 'koa-logger'
+import koaPinoLogger from 'koa-pino-logger'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
@@ -135,21 +135,21 @@ export type ApplicationConfig = {
      *
      * @see https://github.com/koajs/bodyparser#options
      */
-    bodyParser?: koaBodyParser.Options
+    bodyParser?: KoaBodyParserOptions
     /**
      * Enable or configure Cross-Origin Resource Sharing (CORS)
      *
      * @defaultValue `true`
      * @see https://github.com/koajs/cors#corsoptions
      */
-    cors?: boolean | koaCors.Options
+    cors?: boolean | KoaCorsOptions
     /**
      * Enable or configure server response compression
      *
      * @defaultValue `true`
      * @see https://github.com/koajs/compress#options
      */
-    compress?: boolean | koaCompress.CompressOptions
+    compress?: boolean | CompressOptions
     /**
      * Enable ETag headers in server responses
      *
@@ -691,8 +691,6 @@ export class Model extends objection.Model {
   static clearWithScope: StaticQueryBuilderMethod<'clearWithScope'>
 
   static clear: StaticQueryBuilderMethod<'clear'>
-  static pick: StaticQueryBuilderMethod<'pick'>
-  static omit: StaticQueryBuilderMethod<'omit'>
   static select: StaticQueryBuilderMethod<'select'>
 
   static insert: StaticQueryBuilderMethod<'insert'>
@@ -721,18 +719,13 @@ export class Model extends objection.Model {
   static upsertDitoGraph: StaticQueryBuilderMethod<'upsertDitoGraph'>
   static updateDitoGraph: StaticQueryBuilderMethod<'updateDitoGraph'>
   static patchDitoGraph: StaticQueryBuilderMethod<'patchDitoGraph'>
+
   static insertDitoGraphAndFetch: StaticQueryBuilderMethod<'insertDitoGraphAndFetch'>
-
   static upsertDitoGraphAndFetch: StaticQueryBuilderMethod<'upsertDitoGraphAndFetch'>
-
   static updateDitoGraphAndFetch: StaticQueryBuilderMethod<'updateDitoGraphAndFetch'>
-
   static patchDitoGraphAndFetch: StaticQueryBuilderMethod<'patchDitoGraphAndFetch'>
-
   static upsertDitoGraphAndFetchById: StaticQueryBuilderMethod<'upsertDitoGraphAndFetchById'>
-
   static updateDitoGraphAndFetchById: StaticQueryBuilderMethod<'updateDitoGraphAndFetchById'>
-
   static patchDitoGraphAndFetchById: StaticQueryBuilderMethod<'patchDitoGraphAndFetchById'>
 
   static where: StaticQueryBuilderMethod<'where'>
@@ -751,7 +744,7 @@ export class Model extends objection.Model {
   static whereNotColumn: StaticQueryBuilderMethod<'whereNotColumn'>
   static whereComposite: StaticQueryBuilderMethod<'whereComposite'>
   static whereInComposite: StaticQueryBuilderMethod<'whereInComposite'>
-  // whereNotInComposite:  QueryBuilder<Model>['whereNotInComposite']
+  static whereNotInComposite: StaticQueryBuilderMethod<'whereInComposite'> // TODO: `whereNotInComposite`
   static whereJsonHasAny: StaticQueryBuilderMethod<'whereJsonHasAny'>
   static whereJsonHasAll: StaticQueryBuilderMethod<'whereJsonHasAll'>
   static whereJsonIsArray: StaticQueryBuilderMethod<'whereJsonIsArray'>
@@ -774,17 +767,6 @@ export class Model extends objection.Model {
   static havingNotBetween: StaticQueryBuilderMethod<'havingNotBetween'>
   static havingRaw: StaticQueryBuilderMethod<'havingRaw'>
   static havingWrapped: StaticQueryBuilderMethod<'havingWrapped'>
-
-  // deprecated methods that are still supported at the moment.
-  // TODO: Remove once we move to Objection 3.0
-
-  static eager: StaticQueryBuilderMethod<'eager'>
-  static joinEager: StaticQueryBuilderMethod<'joinEager'>
-  static naiveEager: StaticQueryBuilderMethod<'naiveEager'>
-  static mergeEager: StaticQueryBuilderMethod<'mergeEager'>
-  static mergeJoinEager: StaticQueryBuilderMethod<'mergeJoinEager'>
-  static mergeNaiveEager: StaticQueryBuilderMethod<'mergeNaiveEager'>
-  static clearEager: StaticQueryBuilderMethod<'clearEager'>
 
   // static scope:  QueryBuilder<Model>['scope']
   // static mergeScope:  QueryBuilder<Model>['mergeScope']
@@ -928,7 +910,7 @@ export type ControllerActionHandler<
   $Controller extends Controller = Controller
 > = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
 
-export type ExtractModelProperties<$Model> = {
+export type ExtractModelProperties<$Model extends Model = Model> = {
   [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key] extends Model
     ? ExtractModelProperties<$Model[$Key]>
     : $Model[$Key]
