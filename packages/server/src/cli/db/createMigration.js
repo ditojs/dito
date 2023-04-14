@@ -64,14 +64,16 @@ export async function createMigration(app, name, ...modelNames) {
     await fs.writeFile(
       file,
       deindent`
-      export async function up(knex) {
-        ${getCode(createTables)}
-      }
+        /** @param {import('knex').Knex} knex */
+        export async function up(knex) {
+          ${getCode(createTables)}
+        }
 
-      export async function down(knex) {
-        ${getCode(dropTables)}
-      }
-    `
+        /** @param {import('knex').Knex} knex */
+        export async function down(knex) {
+          ${getCode(dropTables)}
+        }
+      `
     )
     console.info(pico.cyan(`Migration '${filename}' successfully created.`))
     return true
