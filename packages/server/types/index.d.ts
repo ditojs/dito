@@ -9,6 +9,7 @@ import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat } from '@dito/utils'
 import koaCors from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
+import { AsyncLocalStorage } from 'async_hooks'
 import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
@@ -383,6 +384,8 @@ export class Application<$Models extends Models = Models> {
   setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
   logger: Logger
+  requestStorage: AsyncLocalStorage
+  requestLocals: { transaction: objection.Transaction, logger: Logger }
 }
 export interface Application
   extends Omit<
@@ -1441,11 +1444,12 @@ export class Service {
    * @overridable
    */
   initialize(): Promise<void>
-  /* @overridable */
+  /** @overridable */
   start(): Promise<void>
-  /* @overridable */
+  /** @overridable */
   stop(): Promise<void>
   get logger(): Logger
+  /** @deprecated Use `instance.logger` instead. */
   getLogger(ctx: KoaContext): Logger
 }
 export type Services = Record<string, Class<Service> | Service>

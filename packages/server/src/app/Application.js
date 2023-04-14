@@ -54,8 +54,10 @@ import {
   handleRoute,
   handleSession,
   handleUser,
-  logRequests
+  logRequests,
+  setupRequestStorage
 } from '../middleware/index.js'
+import { AsyncLocalStorage } from 'async_hooks'
 
 export class Application extends Koa {
   constructor({
@@ -99,6 +101,7 @@ export class Application extends Koa {
     this.controllers = Object.create(null)
     this.server = null
     this.isRunning = false
+    this.requestStorage = new AsyncLocalStorage()
 
     // TODO: Rename setup to configure?
     this.setupLogger()
@@ -578,6 +581,7 @@ export class Application extends Koa {
       this.use(conditional())
       this.use(etag())
     }
+    this.use(setupRequestStorage(this.requestStorage))
 
     // Controller-specific middleware
 
@@ -1021,6 +1025,10 @@ export class Application extends Koa {
         return orphanedAssets
       })
     }
+  }
+
+  get requestLocals() {
+    return this.requestStorage.getStore() ?? {}
   }
 }
 
