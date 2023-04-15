@@ -612,7 +612,10 @@ type ModelHookFunction<$Model extends Model> = (
 
 export type ModelHooks<$Model extends Model = Model> = {
   [key in `${'before' | 'after'}:${
-    'find' | 'insert' | 'update' | 'delete'
+    | 'find'
+    | 'insert'
+    | 'update'
+    | 'delete'
   }`]?: ModelHookFunction<$Model>
 }
 
@@ -911,9 +914,9 @@ export type ControllerActionHandler<
 > = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
 
 export type ExtractModelProperties<$Model extends Model = Model> = {
-  [$Key in SelectModelPropertyKeys<$Model>]: $Model[$Key] extends Model
-    ? ExtractModelProperties<$Model[$Key]>
-    : $Model[$Key]
+  [K in SelectModelPropertyKeys<$Model>]: $Model[K] extends Model
+    ? ExtractModelProperties<$Model[K]>
+    : $Model[K]
 }
 
 export type Extends<$A, $B> = $A extends $B ? 1 : 0
@@ -1092,8 +1095,17 @@ type ModelControllerHookType = 'collection' | 'member'
 type ModelControllerHookKeys<
   $Keys extends string,
   $ModelControllerHookType extends string
-> = `${'before' | 'after' | '*'}:${$ModelControllerHookType | '*'}:${
-  Exclude<$Keys, 'allow'> | ControllerActionName | '*'
+> = `${
+  | 'before'
+  | 'after'
+  | '*'
+}:${
+  | $ModelControllerHookType
+  | '*'
+}:${
+  | Exclude<$Keys, 'allow'>
+  | ControllerActionName
+  | '*'
 }`
 type ModelControllerHook<
   $ModelController extends ModelController = ModelController
@@ -1122,9 +1134,15 @@ type HookKeysFromController<$ModelController extends ModelController> =
 
 type HandlerFromHookKey<
   $ModelController extends ModelController,
-  $Key extends HookKeysFromController<$ModelController>
-> = $Key extends `${'before' | 'after' | '*'}:${
-  'collection' | 'member' | '*'
+  K extends HookKeysFromController<$ModelController>
+> = K extends `${
+  | 'before'
+  | 'after'
+  | '*'
+}:${
+  | 'collection'
+  | 'member'
+  | '*'
 }:${string}`
   ? (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
   : never
@@ -1485,7 +1503,9 @@ export class QueryBuilder<
     query: QueryParameterOptions,
     allowParam?:
       | QueryParameterOptionKey[]
-      | { [key in keyof QueryParameterOptionKey]: boolean }
+      | {
+          [key in keyof QueryParameterOptionKey]: boolean
+        }
   ) => this
 
   patchById: (id: Id, data: PartialModelObject<M>) => this
@@ -1842,7 +1862,9 @@ export type SelectModelProperties<T> = {
 
 export type SelectModelKeys<T> = Exclude<
   objection.NonFunctionPropertyNames<T>,
-  `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
+  | 'QueryBuilderType' //
+  | 'foreignKeyId'
+  | `$${string}`
 >
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
@@ -1957,9 +1979,10 @@ interface StringKeywords {
     | 'timestamp'
   >
 }
+
+// The first two unions allow arbitrary unions of types
 declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
-  | // these two unions allow arbitrary unions of types
-  {
+  | {
       anyOf: readonly UncheckedJSONSchemaType<T, IsPartial>[]
     }
   | {
@@ -2105,6 +2128,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
   $defs?: Record<string, UncheckedJSONSchemaType<Known, true>>
   definitions?: Record<string, UncheckedJSONSchemaType<Known, true>>
 }
+
 declare type JSONSchemaType<T> = StrictNullChecksWrapper<
   'JSONSchemaType',
   UncheckedJSONSchemaType<T, false>
