@@ -17,15 +17,14 @@ import { Knex } from 'knex'
 import * as Koa from 'koa'
 import { Options as KoaBodyParserOptions } from 'koa-bodyparser'
 import { CompressOptions } from 'koa-compress'
-import koaLogger from 'koa-logger'
 import koaMount from 'koa-mount'
-import koaPinoLogger from 'koa-pino-logger'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
-import { Logger } from 'pino'
+import { Logger as PinoLogger, LoggerOptions as PinoLoggerOptions } from 'pino'
+import { PrettyOptions } from 'pino-pretty'
 import {
   Class,
   ConditionalKeys,
@@ -126,9 +125,9 @@ export type ApplicationConfig = {
      * @see https://github.com/helmetjs/helmet
      */
     helmet?: boolean | Parameters<typeof helmet>[0]
-    logger?:
-      | Parameters<typeof koaLogger>[0]
-      | Parameters<typeof koaPinoLogger>[0]
+    logger?: {
+      prettyPrint: PrettyOptions
+    } & PinoLoggerOptions
     /**
      * Configure body parser.
      *
@@ -348,7 +347,7 @@ export type Models = Record<string, Class<Model>>
 
 interface AsyncRequestLocals {
   transaction: objection.Transaction
-  logger: Logger
+  logger: PinoLogger
 }
 
 export class Application<$Models extends Models = Models> {
@@ -387,7 +386,7 @@ export class Application<$Models extends Models = Models> {
   addControllers(controllers: ApplicationControllers, namespace?: string): void
   setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
-  logger: Logger
+  logger: PinoLogger
   requestStorage: AsyncLocalStorage<AsyncRequestLocals>
   requestLocals: AsyncRequestLocals
 }
@@ -1424,9 +1423,9 @@ export class Service {
   start(): Promise<void>
   /** @overridable */
   stop(): Promise<void>
-  get logger(): Logger
+  get logger(): PinoLogger
   /** @deprecated Use `instance.logger` instead. */
-  getLogger(ctx: KoaContext): Logger
+  getLogger(ctx: KoaContext): PinoLogger
 }
 export type Services = Record<string, Class<Service> | Service>
 
