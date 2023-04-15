@@ -347,7 +347,7 @@ export interface ApplicationControllers {
 
 export type Models = Record<string, Class<Model>>
 
-interface AsyncLocalStorageStore {
+interface AsyncRequestLocals {
   transaction: objection.Transaction
   logger: Logger
 }
@@ -389,8 +389,8 @@ export class Application<$Models extends Models = Models> {
   setupControllers(): Promise<void>
   getAdminViteConfig(config?: UserConfig): UserConfig
   logger: Logger
-  requestStorage: AsyncLocalStorage<AsyncLocalStorageStore>
-  requestLocals: AsyncLocalStorageStore
+  requestStorage: AsyncLocalStorage<AsyncRequestLocals>
+  requestLocals: AsyncRequestLocals
 }
 
 export interface Application
@@ -1716,7 +1716,9 @@ export const UserMixin: <T extends Constructor<{}>>(
     // TODO: type options
     login(ctx: KoaContext, options: any): Promise<void>
 
-    sessionQuery(trx: Knex.Transaction): QueryBuilder<InstanceType<typeof UserModel>>
+    sessionQuery(
+      trx: Knex.Transaction
+    ): QueryBuilder<InstanceType<typeof UserModel>>
   }
 
 export const UserModel: ReturnType<typeof UserMixin<typeof Model>>
