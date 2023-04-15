@@ -1732,8 +1732,6 @@ __metadata:
     "@originjs/vite-plugin-commonjs": ^1.0.3
     "@types/koa-bodyparser": ^4.3.10
     "@types/koa-compress": ^4.0.3
-    "@types/koa-logger": ^3.1.2
-    "@types/koa-pino-logger": ^3.0.1
     "@types/koa-response-time": ^2.1.2
     "@types/koa-session": ^6.4.0
     "@types/koa-static": ^4.0.2
@@ -3368,26 +3366,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/koa-logger@npm:^3.1.2":
-  version: 3.1.2
-  resolution: "@types/koa-logger@npm:3.1.2"
-  dependencies:
-    "@types/koa": "*"
-  checksum: 8e4cfcdb2491052bbff35c8f0a1f0bf839e966c3903afcf39656bf21bd3089b1a50945ce6a92bea430a83c9341d714c968360953d3a52a5cc10cdb3fb0af4218
-  languageName: node
-  linkType: hard
-
-"@types/koa-pino-logger@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "@types/koa-pino-logger@npm:3.0.1"
-  dependencies:
-    "@types/koa": "*"
-    "@types/pino": 6.3
-    "@types/pino-http": "*"
-  checksum: c5ed09fb68cf2394fcb6f4ebae59c3b03e9badd31ecf417e2c1dd36ba33d6ae8e3d90c702c212557c9f6e3d70cbceaa7ac69c18f289e1196d7a13cbfe388decf
-  languageName: node
-  linkType: hard
-
 "@types/koa-response-time@npm:^2.1.2":
   version: 2.1.2
   resolution: "@types/koa-response-time@npm:2.1.2"
@@ -3504,46 +3482,6 @@ __metadata:
   version: 4.0.0
   resolution: "@types/parse-json@npm:4.0.0"
   checksum: fd6bce2b674b6efc3db4c7c3d336bd70c90838e8439de639b909ce22f3720d21344f52427f1d9e57b265fcb7f6c018699b99e5e0c208a1a4823014269a6bf35b
-  languageName: node
-  linkType: hard
-
-"@types/pino-http@npm:*":
-  version: 5.8.1
-  resolution: "@types/pino-http@npm:5.8.1"
-  dependencies:
-    "@types/pino": 6.3
-  checksum: c01bd5fa927218844337c3ba2c9d6c1c5d9f9da7d45368018a5fd404d5b3dd6489f903c33093a722e52f272b5642e41e660812ed7f50e738f2c5465580f43b27
-  languageName: node
-  linkType: hard
-
-"@types/pino-pretty@npm:*":
-  version: 4.7.5
-  resolution: "@types/pino-pretty@npm:4.7.5"
-  dependencies:
-    "@types/node": "*"
-    "@types/pino": 6.3
-  checksum: 80b3e80d1d9b52f015382bbd544206228d0c35eed1a0e1443245568eee01191b5fe916e7821de2922846f267e5d0693f4796562d3bcf24266156d1abc9e2e673
-  languageName: node
-  linkType: hard
-
-"@types/pino-std-serializers@npm:*":
-  version: 2.4.1
-  resolution: "@types/pino-std-serializers@npm:2.4.1"
-  dependencies:
-    "@types/node": "*"
-  checksum: a156e25882db9aade2576dbe6414379efcdd4fad24211d3f22f20e0cd4bee569215799ee5cd9b2b15282f18461a8a54573ff42bf6bee5d35b72513be2f78bdec
-  languageName: node
-  linkType: hard
-
-"@types/pino@npm:6.3":
-  version: 6.3.12
-  resolution: "@types/pino@npm:6.3.12"
-  dependencies:
-    "@types/node": "*"
-    "@types/pino-pretty": "*"
-    "@types/pino-std-serializers": "*"
-    sonic-boom: ^2.1.0
-  checksum: 801735146669312d02459781e5180220630eaef643da36dc5a9a97520e7ecc3da7270f31a86fcdcb1dc835073c9143fc628024ba5e3a0ea7cbb86aada4897709
   languageName: node
   linkType: hard
 
@@ -12629,15 +12567,6 @@ __metadata:
     ip: ^2.0.0
     smart-buffer: ^4.2.0
   checksum: 259d9e3e8e1c9809a7f5c32238c3d4d2a36b39b83851d0f573bfde5f21c4b1288417ce1af06af1452569cd1eb0841169afd4998f0e04ba04656f6b7f0e46d748
-  languageName: node
-  linkType: hard
-
-"sonic-boom@npm:^2.1.0":
-  version: 2.8.0
-  resolution: "sonic-boom@npm:2.8.0"
-  dependencies:
-    atomic-sleep: ^1.0.0
-  checksum: c7f9c89f931d7f60f8e0741551a729f0d81e6dc407a99420fc847a9a4c25af048a615b1188ab3c4f1fb3708fe4904973ddab6ebcc8ed5b78b50ab81a99045910
   languageName: node
   linkType: hard
 
