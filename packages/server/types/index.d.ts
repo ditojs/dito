@@ -7,6 +7,7 @@
 
 import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat } from '@ditojs/utils'
+import { Options as KoaCorsOptions } from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
 import { AsyncLocalStorage } from 'async_hooks'
 import * as dbErrors from 'db-errors'
@@ -14,21 +15,19 @@ import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
 import { Knex } from 'knex'
 import * as Koa from 'koa'
-import { Options as KoaCorsOptions } from '@koa/cors'
 import { Options as KoaBodyParserOptions } from 'koa-bodyparser'
 import { CompressOptions } from 'koa-compress'
+import koaLogger from 'koa-logger'
 import koaMount from 'koa-mount'
+import koaPinoLogger from 'koa-pino-logger'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
-import koaLogger from 'koa-logger'
-import koaPinoLogger from 'koa-pino-logger'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
 import { Logger } from 'pino'
 import {
   Class,
-  ConditionalExcept,
   ConditionalKeys,
   Constructor,
   SetOptional,
@@ -1837,25 +1836,14 @@ type ModelFromModelController<$ModelController extends ModelController> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
 export type SelectModelProperties<T> = {
-  [$Key in SelectModelKeys<T>]: T[$Key] extends Model
-    ? SelectModelProperties<T[$Key]>
-    : T[$Key]
+  [K in SelectModelKeys<T>]: T[K] extends Model
+    ? SelectModelProperties<T[K]>
+    : T[K]
 }
 
-// https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
-type AnyGate<
-  $CheckType,
-  $TypeWhenNotAny,
-  $TypeWhenAny = $CheckType
-> = 0 extends 1 & $CheckType ? $TypeWhenAny : $TypeWhenNotAny
-
-export type SelectModelKeys<T> = AnyGate<
-  T,
-  Exclude<
-    keyof ConditionalExcept<T, Function>,
-    `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
-  >,
-  string
+export type SelectModelKeys<T> = Exclude<
+  objection.NonFunctionPropertyNames<T>,
+  `$${string}` | 'QueryBuilderType' | 'foreignKeyId'
 >
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
