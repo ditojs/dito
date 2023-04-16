@@ -218,10 +218,15 @@ export class AdminController extends Controller {
                     } else {
                       const module = id.match(
                         /node_modules\/((?:@[^/]*\/)?[^/$]*)/
-                      )?.[1] || ''
-                      return testModuleIdentifier(module, coreDependencies)
-                        ? 'core'
-                        : 'vendor'
+                      )?.[1] || null
+                      return (
+                        // Internal ids (vite stuff) don't come from
+                        // node_modules and their ids actually start with \0x00.
+                        !module ||
+                        testModuleIdentifier(module, coreDependencies)
+                          ? 'core'
+                          : 'vendor'
+                      )
                     }
                   }
                 }
@@ -286,6 +291,7 @@ const coreDependencies = [
   // a json file?
 
   'vue',
+  'vue-demi',
   '@vue/*',
   '@vueuse/*',
   '@lk77/vue3-color',
@@ -301,11 +307,12 @@ const coreDependencies = [
   'prosemirror-*',
   'linkifyjs',
   'codeflask',
+  'nanoid',
   'punycode',
   'rope-sequence',
   'filesize',
   'filesize-parser',
-  'tslib',
+  'tslib', // ?
   'orderedmap',
   'w3c-keyname'
 ]
