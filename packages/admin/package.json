@@ -64,7 +64,7 @@
     "@tiptap/extension-underline": "^2.0.3",
     "@tiptap/pm": "^2.0.3",
     "@tiptap/vue-3": "^2.0.3",
-    "@vueuse/integrations": "^10.0.0-beta.4",
+    "@vueuse/integrations": "^10.0.2",
     "codeflask": "^1.4.1",
     "filesize": "^10.0.7",
     "filesize-parser": "^1.5.0",
