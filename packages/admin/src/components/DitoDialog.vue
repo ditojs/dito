@@ -176,7 +176,7 @@ export default DitoComponent.component('DitoDialog', {
   background: rgba(0, 0, 0, 0.2);
 
   &__focus-trap {
-    height: 100%;
+    max-height: 100%;
   }
 
   // TODO: `&__inner`
