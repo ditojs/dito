@@ -234,7 +234,8 @@ export class AdminController extends Controller {
             })
           },
           css: {
-            postcss: getPostCssConfig()
+            postcss: getPostCssConfig(),
+            devSourcemap: development
           },
           optimizeDeps: {
             exclude: development ? ditoPackages : [],

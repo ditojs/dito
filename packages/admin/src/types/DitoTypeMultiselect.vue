@@ -8,6 +8,7 @@
   VueMultiselect(
     ref="element"
     v-model="selectedOptions"
+    :class="{ 'multiselect--show-highlight': showHighlight }"
     :showLabels="false"
     :placeholder="placeholder"
     tagPlaceholder="Press enter to add new tag"
@@ -54,6 +55,7 @@ export default DitoTypeComponent.register('multiselect', {
 
   data() {
     return {
+      isMounted: false,
       searchedOptions: null,
       populate: false
     }
@@ -72,8 +74,8 @@ export default DitoTypeComponent.register('multiselect', {
                 )
               )
               // Filter out options that we couldn't match.
-              // TODO: We really should display an error instead
-              .filter(value => value)
+              // TODO: Should we display an error instead?
+              .filter(Boolean)
           : this.selectedOption
       },
 
@@ -123,10 +125,15 @@ export default DitoTypeComponent.register('multiselect', {
             ? `Select or search ${this.label}`
             : undefined
         : placeholder
+    },
+
+    showHighlight() {
+      return this.isMounted && this.$refs.element.pointerDirty
     }
   },
 
   mounted() {
+    this.isMounted = true
     if (this.autofocus) {
       // vue-multiselect doesn't support the autofocus attribute. We need to
       // handle it here.
@@ -324,16 +331,16 @@ $tag-line-height: 1em;
       background: none;
     }
 
+    &__placeholder,
+    &__input::placeholder {
+      color: $color-placeholder;
+    }
+
     &__placeholder {
       &::after {
         // Enforce actual line-height for positioning.
         content: '\200b';
       }
-    }
-
-    &__placeholder,
-    &__input::placeholder {
-      color: $color-placeholder;
     }
 
     &__select,
@@ -373,6 +380,8 @@ $tag-line-height: 1em;
     }
 
     &__option {
+      $option: last-selector(&);
+
       min-height: unset;
       height: unset;
       line-height: $tag-line-height;
@@ -383,20 +392,51 @@ $tag-line-height: 1em;
         padding: $input-padding;
         line-height: $tag-line-height;
       }
-    }
 
-    &__option--highlight {
-      &::after {
-        display: block;
-        position: absolute;
+      // Only show the highlight once the pulldown has received mouse or
+      // keyboard interaction, in which case `&--show-highlight` will be set,
+      // which is controlled by `pointerDirty` in vue-multiselect.
+      // Until then, clear the highlight style, but only if it isn't also
+      // disabled or selected, in which case we want to keep the style.
+      @at-root #{$self}:not(#{$self}--show-highlight)
+          #{$option}:not(#{$option}--disabled):not(#{$option}--selected) {
+        color: $color-text;
         background: transparent;
-        color: $color-white;
+      }
+
+      &--highlight {
+        &::after {
+          display: block;
+          position: absolute;
+          background: transparent;
+          color: $color-white;
+        }
+
+        @at-root #{$self}#{$self}--show-highlight #{last-selector(&)} {
+          color: $color-text-inverted;
+          background: $color-active;
+        }
+      }
+
+      &--selected {
+        font-weight: normal;
+        color: $color-text;
+        background: $color-highlight;
+
+        &#{$option}--highlight {
+          color: $color-text-inverted;
+        }
+      }
+
+      &--disabled {
+        background: none;
+        color: $color-disabled;
       }
     }
 
-    &__option--disabled {
-      background: none;
-      color: $color-disabled;
+    &__tag {
+      color: $color-text-inverted;
+      background: $color-active;
     }
 
     &__tag-icon {
@@ -415,22 +455,6 @@ $tag-line-height: 1em;
       &:hover::after {
         color: $color-text;
       }
-    }
-
-    &__option--selected {
-      background: $color-highlight;
-      color: $color-text;
-      font-weight: normal;
-
-      #{$self}__option--highlight {
-        color: $color-text-inverted;
-      }
-    }
-
-    &__tag,
-    &__option--highlight {
-      background: $color-active;
-      color: $color-text-inverted;
     }
 
     &__tags,
