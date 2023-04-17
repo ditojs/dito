@@ -46,9 +46,11 @@ export default DitoTypeComponent.register(
 
       inputValue: {
         get() {
-          return this.type === 'password' &&
+          return (
+            this.type === 'password' &&
             this.value === undefined &&
             !this.focused
+          )
             ? maskedPassword
             : this.value
         },

@@ -5762,7 +5762,7 @@ __metadata:
     lint-staged: ^13.2.1
     postcss-html: ^1.5.0
     postcss-scss: ^4.0.6
-    prettier: "npm:penere@^2.8.7-7"
+    prettier: "npm:penere@^2.8.7-9"
     stylelint: ^15.5.0
     stylelint-config-css-modules: ^4.2.0
     stylelint-config-standard-scss: ^8.0.0
@@ -11342,12 +11342,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:penere@^2.8.7-7":
-  version: 2.8.7-7
-  resolution: "penere@npm:2.8.7-7"
+"prettier@npm:penere@^2.8.7-9":
+  version: 2.8.7-9
+  resolution: "penere@npm:2.8.7-9"
   bin:
     penere: bin-prettier.js
-  checksum: 929a41fdaa066ba0b18db61a5c791537f48ae5ff1cddde4a3e71819455628f8d78f6543ec7aa7b4636b7a7ec198463e399a1c0ee229b27db9cca778e983f21c9
+  checksum: a10d4444f100fb920cf7e32ac41636fa2de03ed022a088bc8699316948085f606e2b93ec423ab362596a6348e905792da5b3c1db08ef655483ea0a3983779b8a
   languageName: node
   linkType: hard
 

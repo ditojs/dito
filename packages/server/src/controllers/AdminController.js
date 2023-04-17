@@ -218,15 +218,15 @@ export class AdminController extends Controller {
                     } else {
                       const module = id.match(
                         /node_modules\/((?:@[^/]*\/)?[^/$]*)/
-                      )?.[1] || null
+                      )?.[1]
+                      // Internal ids (vite modules) don't come from
+                      // node_modules, and the ids actually start with \0x00.
                       return (
-                        // Internal ids (vite stuff) don't come from
-                        // node_modules and their ids actually start with \0x00.
                         !module ||
                         testModuleIdentifier(module, coreDependencies)
-                          ? 'core'
-                          : 'vendor'
                       )
+                        ? 'core'
+                        : 'vendor'
                     }
                   }
                 }
