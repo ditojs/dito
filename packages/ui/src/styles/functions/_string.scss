@@ -1,0 +1,43 @@
+@use 'sass:list';
+@use 'sass:string';
+
+@function string-replace($string, $search, $replace: null, $replaceAll: false) {
+  @if $string == $search {
+    @return $replace;
+  }
+
+  $index: string.index($string, $search);
+  @if $index {
+    $before: if($index > 1, string.slice($string, 1, $index - 1), '');
+    $after: string.slice($string, $index + string.length($search));
+    @if $replaceAll {
+      $after: string-replace($after, $search, $replace, true);
+    }
+    @return $before + if($replace, $replace, '') + $after;
+  }
+  @return $string;
+}
+
+@function string-to-list($string, $separator: ' ', $startAt: 1) {
+  $str: string.slice($string, $startAt);
+  $list: ();
+  $index: string.index($str, $separator);
+  @if not $index {
+    $list: ($str);
+  } @else {
+    $list: (string.slice($str, 1, $index - 1));
+    $list: list.join(
+      $list,
+      string-to-list($str, $separator: $separator, $startAt: $index + 1)
+    );
+  }
+  @return $list;
+}
+
+@function nth-selector($selector, $index) {
+  @return list.nth(string-to-list(#{$selector}), $index);
+}
+
+@function last-selector($selector) {
+  @return nth-selector($selector, -1);
+}
