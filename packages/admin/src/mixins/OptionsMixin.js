@@ -100,6 +100,7 @@ export default {
       default: null
     }),
 
+    // TODO: Rename to `options.labelKey` / `optionLabelKey`?
     optionLabel: getSchemaAccessor('options.label', {
       type: [String, Function],
       default: null,
@@ -114,6 +115,7 @@ export default {
       }
     }),
 
+    // TODO: Rename to `options.valueKey` / `optionValueKey`?
     optionValue: getSchemaAccessor('options.value', {
       type: [String, Function],
       default: null,

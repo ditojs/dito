@@ -474,6 +474,7 @@ export function computeValue(schema, data, name, dataPath, {
   if (compute) {
     const value = compute(
       DitoContext.get(component, {
+        schema,
         // Override value to prevent endless recursion through calling the
         // getter for `this.value` in `DitoContext`:
         value: data[name],
@@ -569,6 +570,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
     // NOTE: We don't cache this context, since `value` is changing.
     const getContext = () =>
       DitoContext.get(component, {
+        schema,
         value,
         name,
         data,
@@ -659,6 +661,7 @@ export function processSchemaData(
                 ? getDataPath(componentDataPath, index)
                 : componentDataPath
             const context = DitoContext.get(options.component, {
+              schema: componentSchema,
               data,
               value: item,
               dataPath,

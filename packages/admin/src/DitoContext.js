@@ -67,6 +67,10 @@ export default class DitoContext {
     return get(this, 'nested', true)
   }
 
+  get schema() {
+    return get(this, 'schema', null)
+  }
+
   get value() {
     return get(this, 'value', undefined)
   }
@@ -154,9 +158,9 @@ export default class DitoContext {
     return get(this, 'formLabel', null)
   }
 
-  // TODO: Remove exposure since the associated component doesn't always exist,
-  // e.g. nested forms in `processData()`. Instead, bind component to `this`
-  // only where available.
+  // NOTE: Like 'options', the associated component doesn't always exist, e.g.
+  // in nested forms during `processData()`. But `schema` is guaranteed to
+  // always be available.
   get component() {
     return get(this, 'component', null)
   }
