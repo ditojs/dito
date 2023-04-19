@@ -63,6 +63,7 @@ export const filterComponents = {
 
 export function getFiltersPanel(filters, dataPath, proxy) {
   const panel = {
+    type: 'panel',
     label: 'Filters',
     name: '$filters',
     target: dataPath,
@@ -125,6 +126,7 @@ function getFiltersComponents(filters) {
       ? filterComponents[type]?.(filter)
       : filter.components
     if (components) {
+      form.type = 'form'
       form.components = {}
       // Convert labels to placeholders:
       for (const [key, component] of Object.entries(components)) {

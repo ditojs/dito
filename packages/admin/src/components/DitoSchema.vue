@@ -75,7 +75,7 @@
     v-else-if="isPopulated"
   )
     DitoPanels(
-      :panels="panelSchemas"
+      :panels="panelEntries"
       :data="data"
       :meta="meta"
       :store="store"
@@ -99,7 +99,7 @@ import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath, getParentItem } from '../utils/data.js'
 import {
   getNamedSchemas,
-  getPanelSchemas,
+  getPanelEntries,
   setDefaultValues,
   processData
 } from '../utils/schema.js'
@@ -164,12 +164,12 @@ export default DitoComponent.component('DitoSchema', {
       return this.hasOwnData ? null : this.parentComponent.schemaComponent
     },
 
-    panelSchemas() {
-      const panels = getPanelSchemas(this.schema.panels, '')
+    panelEntries() {
+      const panelEntries = getPanelEntries(this.schema.panels, '')
       for (const pane of this.panes) {
-        panels.push(...pane.panelSchemas)
+        panelEntries.push(...pane.panelEntries)
       }
-      return panels
+      return panelEntries
     },
 
     tabs() {

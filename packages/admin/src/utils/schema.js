@@ -35,20 +35,16 @@ export function getTypeComponent(type, allowNull = false) {
   return component
 }
 
-function getSchemas(schema) {
-  return schema
-    ? [...Object.values(schema.tabs || {}), schema]
-    : []
-}
-
-export function iterateSchemaComponents(schema, callback) {
-  if (isSingleComponentView(schema)) {
-    return callback(schema.component, schema.name)
-  } else {
-    const schemas = getSchemas(schema)
-    for (const schema of schemas) {
+export function iterateSchemaComponents(schemas, callback) {
+  for (const schema of schemas) {
+    if (isSingleComponentView(schema)) {
+      const res = callback(schema.component, schema.name, 0)
+      if (res !== undefined) {
+        return res
+      }
+    } else {
       for (const [name, component] of Object.entries(schema.components || {})) {
-        const res = callback(component, name)
+        const res = callback(component, name, 1)
         if (res !== undefined) {
           return res
         }
@@ -57,32 +53,36 @@ export function iterateSchemaComponents(schema, callback) {
   }
 }
 
+export function iterateNestedSchemaComponents(schema, callback) {
+  return schema
+    ? iterateSchemaComponents([schema, ...getAllTabSchemas(schema)], callback)
+    : undefined
+}
+
 export function findSchemaComponent(schema, callback) {
   return (
-    iterateSchemaComponents(
+    iterateNestedSchemaComponents(
       schema,
-      (component, name) => (callback(component, name) ? component : undefined)
+      component => (callback(component) ? component : undefined)
     ) || null
   )
 }
 
 export function someSchemaComponent(schema, callback) {
   return (
-    iterateSchemaComponents(
+    iterateNestedSchemaComponents(
       schema,
-      (component, name) => (callback(component, name) ? true : undefined)
-    ) ===
-    true
+      component => (callback(component) ? true : undefined)
+    ) === true
   )
 }
 
 export function everySchemaComponent(schema, callback) {
   return (
-    iterateSchemaComponents(
+    iterateNestedSchemaComponents(
       schema,
-      (component, name) => (!callback(component, name) ? false : undefined)
-    ) !==
-    false
+      component => (callback(component) ? undefined : false)
+    ) !== false
   )
 }
 
@@ -161,8 +161,11 @@ export async function resolveSchemas(
   return schemas
 }
 
-export async function resolvePanels(schema) {
-  const { panels } = schema
+export async function resolveNestedSchemas(schema) {
+  const { tabs, panels } = schema
+  if (tabs) {
+    schema.tabs = await resolveSchemas(tabs)
+  }
   if (panels) {
     schema.panels = await resolveSchemas(panels)
   }
@@ -193,15 +196,10 @@ export async function resolveSchemaComponents(schemas) {
 export async function processView(component, api, schema, name) {
   processRouteSchema(api, schema, name)
   processDefaults(api, schema)
-  await resolvePanels(schema)
+  await resolveNestedSchemas(schema)
   const children = []
   if (isView(schema)) {
-    if (isSingleComponentView(schema)) {
-      await processComponent(api, schema.component, name, children, 0)
-    } else {
-      // A multi-component view, start at level 1
-      await processSchemaComponents(api, schema, children, 1)
-    }
+    await processSchemaComponents(api, schema, children, 0)
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
@@ -214,18 +212,6 @@ export async function processView(component, api, schema, name) {
       schema
     }
   }
-}
-
-export async function processComponent(api, schema, name, routes, level) {
-  processDefaults(api, schema)
-  // Delegate schema processing to the actual type components.
-  await getTypeOptions(schema)?.processSchema?.(
-    api,
-    schema,
-    name,
-    routes,
-    level
-  )
 }
 
 export function processDefaults(api, schema) {
@@ -254,10 +240,41 @@ export function processRouteSchema(api, schema, name) {
 
 export async function processSchemaComponents(api, schema, routes, level) {
   const promises = []
-  iterateSchemaComponents(schema, (component, name) => {
-    promises.push(processComponent(api, component, name, routes, level))
-  })
+  const process = (component, name, relativeLevel) => {
+    promises.push(
+      processSchemaComponent(
+        api,
+        component,
+        name,
+        routes,
+        level + relativeLevel
+      )
+    )
+  }
+
+  iterateNestedSchemaComponents(schema, process)
+  iterateSchemaComponents(getAllPanelSchemas(schema), process)
+
   await Promise.all(promises)
+}
+
+export async function processSchemaComponent(api, schema, name, routes, level) {
+  processDefaults(api, schema)
+
+  await Promise.all([
+    // Also process nested panel schemas.
+    mapConcurrently(getAllPanelSchemas(schema), panel =>
+      processSchemaComponents(api, panel, routes, level)
+    ),
+    // Delegate schema processing to the actual type components.
+    await getTypeOptions(schema)?.processSchema?.(
+      api,
+      schema,
+      name,
+      routes,
+      level
+    )
+  ])
 }
 
 export async function processForms(api, schema, level) {
@@ -284,7 +301,7 @@ export async function processForms(api, schema, level) {
   forms ||= { default: form } // Only used for process loop below.
   const children = []
   for (const form of Object.values(forms)) {
-    await processSchemaComponents(api, form, children, level + 1)
+    await processSchemaComponents(api, form, children, level)
   }
   return children
 }
@@ -294,7 +311,7 @@ export async function resolveForm(schema) {
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  await resolvePanels(schema)
+  await resolveNestedSchemas(schema)
   return schema
 }
 
@@ -327,11 +344,7 @@ export function getViewFormSchema(schema, context) {
   return viewSchema
     ? // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
-      iterateSchemaComponents(viewSchema, schema => {
-        if (hasFormSchema(schema)) {
-          return schema
-        }
-      }) || null
+      findSchemaComponent(viewSchema, hasFormSchema) || null
     : null
 }
 
@@ -729,13 +742,11 @@ export function processSchemaData(
   }
 
   processComponents(schema.components)
-  if (schema.tabs) {
-    for (const tab of Object.values(schema.tabs)) {
-      processComponents(tab.components)
-    }
+  for (const tab of getAllTabSchemas(schema)) {
+    processComponents(tab.components)
   }
-  for (const panel of getAllPanelSchemas(schema, dataPath)) {
-    processComponents(panel.schema.components)
+  for (const panel of getAllPanelSchemas(schema)) {
+    processComponents(panel.components)
   }
 
   return processedData || data
@@ -806,52 +817,68 @@ export function getSourceType(schemaOrType) {
   )
 }
 
-export function getPanelSchema(schema, dataPath, tabComponent) {
+export function getPanelEntry(schema, dataPath = null, tabComponent = null) {
   return schema
     ? {
         schema,
         // If the panel provides its own name, append it to the dataPath.
         // This is used e.g. for $filters panels.
-        dataPath: schema.name
-          ? appendDataPath(dataPath, schema.name)
-          : dataPath,
+        dataPath:
+          dataPath != null && schema.name
+            ? appendDataPath(dataPath, schema.name)
+            : dataPath,
         tabComponent
       }
     : null
 }
 
-export function getPanelSchemas(schemas, dataPath, tabComponent, panels = []) {
-  if (schemas) {
-    for (const [key, schema] of Object.entries(schemas)) {
-      const panel = getPanelSchema(
+export function getPanelEntries(
+  panelSchemas,
+  dataPath = null,
+  tabComponent = null,
+  panelEntries = []
+) {
+  if (panelSchemas) {
+    for (const [key, schema] of Object.entries(panelSchemas)) {
+      const entry = getPanelEntry(
         schema,
-        appendDataPath(dataPath, key),
+        dataPath != null ? appendDataPath(dataPath, key) : null,
         tabComponent
       )
-      if (panel) {
-        panels.push(panel)
+      if (entry) {
+        panelEntries.push(entry)
       }
     }
   }
-  return panels
+  return panelEntries
 }
 
-export function getAllPanelSchemas(
+export function getAllTabSchemas(schema) {
+  return schema?.tabs ? Object.values(schema.tabs) : []
+}
+
+export function getAllPanelSchemas(schema) {
+  return getAllPanelEntries(schema).map(entry => entry.schema)
+}
+
+export function getAllPanelEntries(
   schema,
-  dataPath,
+  dataPath = null,
   schemaComponent = null,
   tabComponent = null
 ) {
-  const panel = getTypeOptions(schema)?.getPanelSchema?.(
+  const panelSchema = getTypeOptions(schema)?.getPanelSchema?.(
     schema,
     dataPath,
     schemaComponent
   )
-  const panels = panel ? [getPanelSchema(panel, dataPath, tabComponent)] : []
+  const panelEntries = panelSchema
+    ? [getPanelEntry(panelSchema, dataPath, tabComponent)]
+    : []
   // Allow each component to provide its own set of panels, in
-  // addition to the default one (e.g. $filter):
-  getPanelSchemas(schema.panels, dataPath, tabComponent, panels)
-  return panels
+  // addition to the default one (e.g. getFiltersPanel(), $filters):
+  getPanelEntries(schema?.panels, dataPath, tabComponent, panelEntries)
+  return panelEntries
 }
 
 export function isObjectSource(schemaOrType) {

@@ -93,10 +93,7 @@ export default DitoComponent.component('DitoView', {
     },
 
     providesData() {
-      return someSchemaComponent(
-        this.viewSchema,
-        component => hasResource(component)
-      )
+      return someSchemaComponent(this.viewSchema, hasResource)
     }
   },
 
