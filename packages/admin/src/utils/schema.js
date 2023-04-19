@@ -98,6 +98,14 @@ export function isView(schema) {
   return isSchema(schema) && schema.type === 'view'
 }
 
+export function isTab(schema) {
+  return isSchema(schema) && schema.type === 'tab'
+}
+
+export function isPanel(schema) {
+  return isSchema(schema) && schema.type === 'panel'
+}
+
 export function getSchemaIdentifier(schema) {
   return schema.name || schema.label || schema.type
 }
@@ -161,16 +169,6 @@ export async function resolveSchemas(
   return schemas
 }
 
-export async function resolveNestedSchemas(schema) {
-  const { tabs, panels } = schema
-  if (tabs) {
-    schema.tabs = await resolveSchemas(tabs)
-  }
-  if (panels) {
-    schema.panels = await resolveSchemas(panels)
-  }
-}
-
 export async function resolveSchemaComponent(schema) {
   // Resolves async schema components and adds DitoMixin and TypeMixin to them.
   let { component } = schema
@@ -191,51 +189,6 @@ export async function resolveSchemaComponent(schema) {
 export async function resolveSchemaComponents(schemas) {
   // `schemas` are of the same possible forms as passed to `getNamedSchemas()`
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
-}
-
-export async function processView(component, api, schema, name) {
-  processRouteSchema(api, schema, name)
-  processDefaults(api, schema)
-  await resolveNestedSchemas(schema)
-  const children = []
-  if (isView(schema)) {
-    await processSchemaComponents(api, schema, children, 0)
-  } else {
-    throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
-  }
-  return {
-    path: `/${schema.path}`,
-    children,
-    component,
-    meta: {
-      api,
-      schema
-    }
-  }
-}
-
-export function processDefaults(api, schema) {
-  let defaults = api.defaults[schema.type]
-  if (defaults) {
-    if (isFunction(defaults)) {
-      defaults = defaults(schema)
-    }
-    if (isObject(defaults)) {
-      for (const [key, value] of Object.entries(defaults)) {
-        if (schema[key] === undefined) {
-          schema[key] = value
-        } else {
-          schema[key] = merge(value, schema[key])
-        }
-      }
-    }
-  }
-}
-
-export function processRouteSchema(api, schema, name) {
-  // Used for view and source schemas, see SourceMixin.
-  schema.name = name
-  schema.path ||= api.normalizePath(name)
 }
 
 export async function processSchemaComponents(api, schema, routes, level) {
@@ -277,19 +230,59 @@ export async function processSchemaComponent(api, schema, name, routes, level) {
   ])
 }
 
-export async function processForms(api, schema, level) {
-  const processForm = async form => {
-    form = await resolveForm(form)
-    processDefaults(api, schema)
-    return form
+export async function processView(component, api, schema, name) {
+  if (!isView(schema)) {
+    throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
+  processRouteSchema(api, schema, name)
+  processDefaults(api, schema)
+  await resolveNestedSchemas(api, schema)
+  const children = []
+  await processSchemaComponents(api, schema, children, 0)
+  return {
+    path: `/${schema.path}`,
+    children,
+    component,
+    meta: {
+      api,
+      schema
+    }
+  }
+}
 
+export function processDefaults(api, schema) {
+  let defaults = api.defaults[schema.type]
+  if (defaults) {
+    if (isFunction(defaults)) {
+      defaults = defaults(schema)
+    }
+    if (isObject(defaults)) {
+      for (const [key, value] of Object.entries(defaults)) {
+        if (schema[key] === undefined) {
+          schema[key] = value
+        } else {
+          schema[key] = merge(value, schema[key])
+        }
+      }
+    }
+  }
+}
+
+export function processRouteSchema(api, schema, name) {
+  // Used for view and source schemas, see SourceMixin.
+  schema.name = name
+  schema.path ||= api.normalizePath(name)
+}
+
+export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
   let { form, forms, components } = schema
   if (forms) {
-    forms = schema.forms = await resolveSchemas(forms, processForm)
+    forms = schema.forms = await resolveSchemas(forms, form =>
+      processForm(api, form)
+    )
   } else if (form) {
-    form = schema.form = await processForm(form)
+    form = schema.form = await processForm(api, form)
   } else if (components) {
     // NOTE: Processing forms in computed components is not supported, since it
     // only can be computed in conjunction with actual data.
@@ -306,13 +299,48 @@ export async function processForms(api, schema, level) {
   return children
 }
 
-export async function resolveForm(schema) {
+export async function processForm(api, schema) {
   schema = await resolveSchema(schema, true)
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  await resolveNestedSchemas(schema)
+  processDefaults(api, schema)
+  await resolveNestedSchemas(api, schema)
   return schema
+}
+
+export async function processTab(api, schema) {
+  schema = await resolveSchema(schema, true)
+  if (!isTab(schema)) {
+    throw new Error(`Invalid tab schema: '${getSchemaIdentifier(schema)}'`)
+  }
+  processDefaults(api, schema)
+  return schema
+}
+
+export async function processPanel(api, schema) {
+  schema = await resolveSchema(schema, true)
+  if (!isPanel(schema)) {
+    throw new Error(`Invalid panel schema: '${getSchemaIdentifier(schema)}'`)
+  }
+  processDefaults(api, schema)
+  return schema
+}
+
+export async function resolveNestedSchemas(api, schema) {
+  const { tabs, panels } = schema
+  if (tabs) {
+    schema.tabs = await resolveSchemas(
+      tabs,
+      tab => processTab(api, tab)
+    )
+  }
+  if (panels) {
+    schema.panels = await resolveSchemas(
+      panels,
+      panel => processPanel(api, panel)
+    )
+  }
 }
 
 export function hasFormSchema(schema) {
