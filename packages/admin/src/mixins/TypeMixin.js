@@ -71,14 +71,32 @@ export default {
       }
     },
 
+    parentData() {
+      const data = getParentItem(this.rootData, this.dataPath, this.nested)
+      return data !== this.data ? data : null
+    },
+
+    processedData() {
+      // We can only get the processed data through the schemaComponent, but
+      // that's not necessarily the item represented by this component.
+      // Solution: Find the relative path and the processed sub-item from there:
+      const { schemaComponent } = this
+      return getItem(
+        schemaComponent.processedData,
+        // Get the dataPath relative to the schemaComponent's data:
+        this.dataPath.slice(schemaComponent.dataPath.length),
+        this.nested
+      )
+    },
+
     // The following computed properties are similar to `DitoContext`
     // properties, so that we can access these on `this` as well:
     item() {
-      return getItem(this.rootItem, this.dataPath, this.nested)
+      return this.data
     },
 
     parentItem() {
-      return getParentItem(this.rootItem, this.dataPath, this.nested)
+      return this.parentData
     },
 
     rootItem() {
@@ -86,16 +104,7 @@ export default {
     },
 
     processedItem() {
-      // We can only get the processed items through the schemaComponent, but
-      // that's not necessarily the item represented by this component.
-      // Solution: Find the relative path and the processed sub-item from there:
-      const { schemaComponent } = this
-      return getItem(
-        schemaComponent.processedItem,
-        // Get the dataPath relative to the schemaComponent's data:
-        this.dataPath.slice(schemaComponent.dataPath.length),
-        this.nested
-      )
+      return this.processedData
     },
 
     label: getSchemaAccessor('label', {

@@ -103,27 +103,27 @@ export default class DitoContext {
     return getLastDataPathIndex(this.parentItemDataPath)
   }
 
+  // NOTE: While internally, we speak of `data`, in the API surface the
+  // term `item` is used for the data that relates to editing objects:
+  // If `data` isn't provided, we can determine it from rootData & dataPath:
   get item() {
-    // NOTE: While internally, we speak of `data`, in the API surface the
-    // term `item` is used for the data that relates to editing objects:
-    // If `data` isn't provided, we can determine it from rootData & dataPath:
     return get(this, 'data', () =>
       getItem(this.rootItem, this.dataPath, this.nested)
     )
   }
 
   // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
-  // closest parent that isn't an array, e.g. for relations or nested JSON
-  // data.  This is why the term `item` was chosen over `data`, e.g. VS the
-  // use of `parentData` in server-sided validation, which is the closest
-  // parent. If needed, we could expose this data here too, as we can do all
-  // sorts of data processing with `rootData` and `dataPath`.
+  // closest parent that isn't an array, e.g. for relations or nested JSON data.
+  // This is why the term `item` was chosen over `data`, e.g. VS the use of
+  // `parentData` in server-sided validation, which is the closest parent. If
+  // needed, we could expose this data here too, as we can do all sorts of data
+  // processing with `rootData` and `dataPath`.
   get parentItem() {
-    const parentItem = (
+    const item = (
       getParentItem(this.rootItem, this.dataPath, this.nested) ||
       null
     )
-    return parentItem !== this.item ? parentItem : null
+    return item !== this.item ? item : null
   }
 
   get rootItem() {

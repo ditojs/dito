@@ -214,6 +214,11 @@ export default DitoComponent.component('DitoSchema', {
       return this.schema?.clipboard
     },
 
+    parentData() {
+      const data = getParentItem(this.rootData, this.dataPath, false)
+      return data !== this.data ? data : null
+    },
+
     processedData() {
       return this.processData({ target: 'server', schemaOnly: true })
     },
@@ -235,6 +240,10 @@ export default DitoComponent.component('DitoSchema', {
       return this.data
     },
 
+    parentItem() {
+      return this.parentData
+    },
+
     rootItem() {
       return this.rootData
     },
@@ -245,10 +254,6 @@ export default DitoComponent.component('DitoSchema', {
 
     clipboardItem() {
       return this.clipboardData
-    },
-
-    parentItem() {
-      return getParentItem(this.rootData, this.dataPath, false)
     },
 
     formLabel() {
