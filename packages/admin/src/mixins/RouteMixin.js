@@ -69,7 +69,7 @@ export default {
     },
 
     meta() {
-      return this.routeRecord.meta
+      return this.routeRecord?.meta
     },
 
     path() {
