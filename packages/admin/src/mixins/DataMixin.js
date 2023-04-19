@@ -38,7 +38,7 @@ export default {
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies.
-      asyncEntry.dependencyFunction?.call(this, this.context)
+      asyncEntry.dependencyFunction?.(this.context)
 
       if (asyncEntry.resolveCounter > 0) {
         // If the data was resolved already, return it and clear the value once
@@ -59,7 +59,7 @@ export default {
         data = null
       } else if (data) {
         if (isFunction(data)) {
-          const result = data.call(this, this.context)
+          const result = data(this.context)
           // If the result of the data function is another function, then the
           // first data function is there to track dependencies and the real
           // data loading happens in the function that it returned. Keep track
@@ -68,7 +68,7 @@ export default {
           // the function that it returned once to get the actual data:
           if (isFunction(result)) {
             asyncEntry.dependencyFunction = data
-            data = result.call(this, this.context)
+            data = result(this.context)
           } else {
             data = result
           }

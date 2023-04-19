@@ -121,7 +121,7 @@ export default DitoComponent.component('DitoPanel', {
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data)
-        ? data.call(this, this.context)
+        ? data(this.context)
         : data
     }
   },

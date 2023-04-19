@@ -53,7 +53,7 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       let value = this.getStore(name)
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
-        value = isFunction(def) ? def.call(this, this.context) : def
+        value = isFunction(def) ? def.call(this) : def
         // Trigger setter by setting value and accessor to default:
         this[name] = value
         // Now access store again, for reactivity tracking

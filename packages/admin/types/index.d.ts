@@ -319,40 +319,19 @@ export interface SchemaSourceMixin<$Item> {
    *
    * @defaultValue `false`
    */
-  creatable?: OrItemAccessor<
-    $Item,
-    {},
-    | boolean
-    | {
-        label: string
-      }
-  >
+  creatable?: OrItemAccessor<$Item, {}, boolean | { label: string }>
   /**
    * Whether to add edit buttons next to the list items.
    *
    * @defaultValue `false`
    */
-  editable?: OrItemAccessor<
-    $Item,
-    {},
-    | boolean
-    | {
-        label: string
-      }
-  >
+  editable?: OrItemAccessor<$Item, {}, boolean | { label: string }>
   /**
    * Whether to add delete buttons next to the list items.
    *
    * @defaultValue `false`
    */
-  deletable?: OrItemAccessor<
-    $Item,
-    {},
-    | boolean
-    | {
-        label: string
-      }
-  >
+  deletable?: OrItemAccessor<$Item, {}, boolean | { label: string }>
   /**
    * The column used for the order resulting from dragging around list entries
    * when the `draggable` property of the list schema is set to `true`.

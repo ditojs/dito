@@ -142,7 +142,7 @@ export default DitoComponent.component('DitoSchema', {
       // Allow schema to provide more data through `schema.data`, vue-style:
       ...(
         data && isFunction(data)
-          ? data.call(this, this.context)
+          ? data(this.context)
           : data
       ),
       componentsRegistry: {},
@@ -197,7 +197,7 @@ export default DitoComponent.component('DitoSchema', {
           const { defaultTab } = tab
           if (
             isFunction(defaultTab)
-              ? defaultTab.call(this, this.context)
+              ? defaultTab(this.context)
               : defaultTab
           ) {
             return tab

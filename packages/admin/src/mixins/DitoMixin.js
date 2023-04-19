@@ -213,7 +213,7 @@ export default {
       if (value === undefined && def !== undefined) {
         if (callback && isFunction(def) && !isMatchingType(types, def)) {
           // Support `default()` functions for any type except `Function`:
-          def = def.call(this, this.context)
+          def = def.call(this)
         }
         return def
       }
@@ -224,7 +224,7 @@ export default {
       // Any schema value handled through `getSchemaValue()` can provide
       // a function that's resolved when the value is evaluated:
       if (callback && isFunction(value)) {
-        value = value.call(this, this.context)
+        value = value(this.context)
       }
       // Now finally see if we can convert to the expect types.
       if (types && value != null && !isMatchingType(types, value)) {
