@@ -72,11 +72,12 @@
         :store="store"
         :disabled="disabled"
       )
-  UseSortable(
+  DitoDraggable(
     v-if="childrenSchema"
     v-show="opened"
     :modelValue="updateOrder(childrenSchema, childrenList)"
-    :options="getSortableOptions(childrenDraggable, true)"
+    :options="getSortableOptions(true)"
+    :draggable="childrenDraggable"
     @update:modelValue="value => (childrenList = value)"
   )
     DitoTreeItem(

@@ -12,10 +12,11 @@
           span Status
         th
           span
-    UseSortable(
+    DitoDraggable(
       v-model="files"
       tag="tbody"
-      :options="getSortableOptions(draggable)"
+      :options="getSortableOptions(false)"
+      :draggable="draggable"
     )
       tr(
         v-for="(file, index) in files"

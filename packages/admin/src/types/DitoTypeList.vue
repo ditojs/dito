@@ -38,10 +38,11 @@
       :columns="columns"
       :hasEditButtons="hasEditButtons"
     )
-    UseSortable(
+    DitoDraggable(
       tag="tbody"
       :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
-      :options="getSortableOptions(draggable)"
+      :options="getSortableOptions(false)"
+      :draggable="draggable"
       @update:modelValue="value => (listData = value)"
     )
       tr(

@@ -1,10 +1,8 @@
 import ItemMixin from './ItemMixin.js'
-import { UseSortable } from '@vueuse/integrations/useSortable/component'
 
 // @vue/component
 export default {
   mixins: [ItemMixin],
-  components: { UseSortable },
 
   data() {
     return {
@@ -13,17 +11,15 @@ export default {
   },
 
   methods: {
-    getSortableOptions(draggable, fallback = false) {
+    getSortableOptions(forceFallback = false) {
       return {
         animation: 150,
-        // TODO: This is broken in VueSortable, always enable it for now.
-        // disabled: !draggable,
         handle: '.dito-button-drag',
         dragClass: 'dito-sortable-active',
         chosenClass: 'dito-sortable-chosen',
         ghostClass: 'dito-sortable-ghost',
         fallbackClass: 'dito-sortable-fallback',
-        forceFallback: fallback,
+        forceFallback,
         onStart: this.onStartDrag,
         onEnd: this.onEndDrag
       }
