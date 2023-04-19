@@ -16,7 +16,8 @@ export default {
     getSortableOptions(draggable, fallback = false) {
       return {
         animation: 150,
-        disabled: !draggable,
+        // TODO: This is broken in VueSortable, always enable it for now.
+        // disabled: !draggable,
         handle: '.dito-button-drag',
         dragClass: 'dito-sortable-active',
         chosenClass: 'dito-sortable-chosen',
