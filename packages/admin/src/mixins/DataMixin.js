@@ -98,13 +98,16 @@ export default {
     },
 
     async resolveData(load, loadingOptions = {}) {
-      this.setLoading(true, loadingOptions)
+      // Use a timeout to allow already resolved promises to return data without
+      // showing a loading indicator.
+      const timer = setTimeout(() => this.setLoading(true, loadingOptions), 0)
       let data = null
       try {
         data = await (isFunction(load) ? load() : load)
       } catch (error) {
         this.addError(error.message || error)
       }
+      clearTimeout(timer)
       this.setLoading(false, loadingOptions)
       return data
     }

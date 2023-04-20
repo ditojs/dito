@@ -25,17 +25,19 @@ export const filterComponents = {
       operator: filter.operators
         ? {
             type: 'select',
+            width: '2/5',
             options: isArray(filter.operators)
               ? options.filter(
                   option => filter.operators.includes(option.value)
                 )
               : options,
-            width: '40%'
+            clearable: true
           }
         : null,
       text: {
         type: 'text',
-        width: filter.operators ? '60%' : 'fill'
+        width: filter.operators ? '3/5' : 'fill',
+        clearable: true
       }
     }
   },
@@ -50,13 +52,15 @@ export const filterComponents = {
     return {
       from: {
         type: 'datetime',
-        width: '50%',
-        dateFormat
+        width: '1/2',
+        dateFormat,
+        clearable: true
       },
       to: {
         type: 'datetime',
-        width: '50%',
-        dateFormat
+        width: '1/2',
+        dateFormat,
+        clearable: true
       }
     }
   }
@@ -70,6 +74,7 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
     target: dataPath,
     // Override the default value
     disabled: false,
+
     // NOTE: On panels, the data() callback does something else than on normal
     // schema: It produces the `data` property to be passed to the panel's
     // schema, not the data to be used for the panel component directly.
@@ -79,7 +84,9 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
         proxy.query
       )
     },
+
     components: getFiltersComponents(filters),
+
     buttons: {
       clear: {
         text: 'Clear',
@@ -101,6 +108,13 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
         }
       }
     },
+
+    events: {
+      change() {
+        this.applyFilters()
+      }
+    },
+
     methods: {
       applyFilters() {
         proxy.query = {
@@ -177,7 +191,7 @@ function formatFiltersData(schema, data) {
       }
     }
   }
-  return filters.length ? filters : undefined
+  return filters
 }
 
 function parseFiltersData(schema, query) {
