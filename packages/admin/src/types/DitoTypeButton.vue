@@ -21,6 +21,7 @@ export default DitoTypeComponent.register(
   {
     defaultValue: () => undefined, // Callback to override `defaultValue: null`
     excludeValue: true,
+    generateLabel: false,
     defaultWidth: 'auto',
     // TODO: Consider making this work nicely:
     // omitFlexGrow: true,
