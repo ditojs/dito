@@ -5,7 +5,7 @@
   :style="containerStyle"
 )
   DitoLabel(
-    v-if="label"
+    v-if="hasLabel"
     :label="label"
     :dataPath="labelDataPath"
     :class="componentClass"
@@ -31,7 +31,7 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent, shouldOmitPadding } from '../utils/schema.js'
+import { getTypeComponent, alignBottom, omitPadding } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
@@ -66,8 +66,10 @@ export default DitoComponent.component('DitoContainer', {
     hasLabel() {
       const { label } = this.schema
       return (
-        label !== false &&
-        (!!label || this.typeComponent?.generateLabel && this.generateLabels)
+        label !== false && (
+          !!label ||
+          this.generateLabels && this.typeComponent?.generateLabel
+        )
       )
     },
 
@@ -121,9 +123,12 @@ export default DitoComponent.component('DitoContainer', {
 
     containerClass() {
       const { class: containerClass } = this.schema
+      const prefix = 'dito-container'
       return {
-        'dito-single': this.single,
-        'dito-omit-padding': shouldOmitPadding(this.schema),
+        [`${prefix}--single`]: this.single,
+        [`${prefix}--has-label`]: this.hasLabel,
+        [`${prefix}--align-bottom`]: alignBottom(this.schema),
+        [`${prefix}--omit-padding`]: omitPadding(this.schema),
         ...(
           isString(containerClass)
             ? { [containerClass]: true }
@@ -161,6 +166,7 @@ export default DitoComponent.component('DitoContainer', {
     componentClass() {
       const basisIsAuto = this.componentBasis === 'auto'
       return {
+        // TODO: BEM
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
         'dito-width-fill': !basisIsAuto || this.componentWidth === 'fill',
@@ -182,6 +188,8 @@ export default DitoComponent.component('DitoContainer', {
 @import '../styles/_imports';
 
 .dito-container {
+  display: flex;
+  flex-flow: column;
   // Needed for better vertical alignment:
   align-self: stretch;
   box-sizing: border-box;
@@ -195,7 +203,11 @@ export default DitoComponent.component('DitoContainer', {
     padding: 0;
   }
 
-  &.dito-omit-padding {
+  &--align-bottom {
+    justify-content: end; // To align components with and without labels.
+  }
+
+  &--omit-padding {
     padding: 0;
 
     > .dito-label {
@@ -203,7 +215,7 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
-  &.dito-single {
+  &--single {
     height: 100%; // So that list buttons can be sticky at the bottom;
   }
 }

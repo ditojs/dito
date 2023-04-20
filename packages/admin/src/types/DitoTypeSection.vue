@@ -20,7 +20,7 @@ export default DitoTypeComponent.register('section', {
   ignoreMissingValue: schema => !schema.nested && !('default' in schema),
   defaultNested: false,
   generateLabel: false,
-  omitFlexGrow: true,
+  alignBottom: false,
 
   computed: {
     item() {

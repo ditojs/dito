@@ -162,7 +162,7 @@ export default DitoComponent.component('DitoPane', {
     margin-top: 0;
   }
 
-  .dito-container.dito-omit-padding > & {
+  .dito-container--omit-padding > & {
     // Clear margins set above again if parent is omitting padding.
     margin: 0;
     max-width: unset;

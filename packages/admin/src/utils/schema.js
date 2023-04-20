@@ -444,8 +444,12 @@ export function isNested(schema) {
   return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
 }
 
-export function shouldOmitPadding(schema) {
+export function omitPadding(schema) {
   return !!getTypeOptions(schema)?.omitPadding
+}
+
+export function alignBottom(schema) {
+  return !!getTypeOptions(schema)?.alignBottom
 }
 
 export function getDefaultValue(schema) {

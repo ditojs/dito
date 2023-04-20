@@ -4,7 +4,7 @@ button.dito-button(
   ref="element"
   :type="type"
   :title="text"
-  :class="`dito-button-${verb}`"
+  :class="buttonClass"
   v-bind="attributes"
 ) {{ text }}
 </template>
@@ -23,12 +23,14 @@ export default DitoTypeComponent.register(
     excludeValue: true,
     generateLabel: false,
     defaultWidth: 'auto',
-    // TODO: Consider making this work nicely:
-    // omitFlexGrow: true,
 
     computed: {
       verb() {
-        return this.verbs[this.name] || this.name
+        return this.verbs[this.name]
+      },
+
+      buttonClass() {
+        return this.verb ? `dito-button-${this.verb}` : null
       },
 
       text: getSchemaAccessor('text', {

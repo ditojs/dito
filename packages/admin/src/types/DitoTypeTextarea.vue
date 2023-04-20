@@ -17,6 +17,7 @@ import { getSchemaAccessor } from '../utils/accessor.js'
 export default DitoTypeComponent.register('textarea', {
   nativeField: true,
   textField: true,
+  alignBottom: false,
 
   computed: {
     lines() {

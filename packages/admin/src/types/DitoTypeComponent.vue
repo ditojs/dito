@@ -22,6 +22,7 @@ export default DitoTypeComponent.register('component', {
   // Override the standard `defaultValue: null` to not set any data for custom
   // components, unless they provide a default value.
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  alignBottom: false,
   ignoreMissingValue: schema => !('default' in schema),
 
   async processSchema(api, schema) {
