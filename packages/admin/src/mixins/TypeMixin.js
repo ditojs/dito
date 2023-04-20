@@ -129,7 +129,7 @@ export default {
       }
     }),
 
-    // TODO: Rename to `excluded` for consistent naming
+    // TODO: Rename to `excluded` for consistent naming?
     exclude: getSchemaAccessor('exclude', {
       type: Boolean,
       default: false

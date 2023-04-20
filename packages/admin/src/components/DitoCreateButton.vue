@@ -14,8 +14,9 @@
         v-for="(form, type) in forms"
       )
         a(
-          v-if="isCreatable(form)"
-          :class="`dito-type-${type}`"
+          v-if="shouldRender(form)"
+          v-show="shouldShow(form)"
+          :class="getFormClass(form, type)"
           @mousedown.stop="onPulldownMouseDown(type)"
           @mouseup="onPulldownMouseUp(type)"
         ) {{ getLabel(form) }}
@@ -59,13 +60,8 @@ export default DitoComponent.component('DitoCreateButton', {
   },
 
   methods: {
-    isCreatable(form) {
-      // Forms can be excluded from the list by providing `creatable: false`
-      return form.creatable !== false
-    },
-
     createItem(form, type = null) {
-      if (this.isCreatable(form)) {
+      if (this.shouldRender(form) && !this.shouldDisable(form)) {
         if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {
@@ -76,6 +72,13 @@ export default DitoComponent.component('DitoCreateButton', {
         }
       } else {
         throw new Error('Not allowed to create item for given form')
+      }
+    },
+
+    getFormClass(form, type) {
+      return {
+        [`dito-type-${type}`]: true,
+        'dito-disabled': this.shouldDisable(form)
       }
     },
 

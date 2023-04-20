@@ -1,3 +1,5 @@
+@import '../styles/_imports';
+
 ul.dito-pulldown {
   display: none;
   position: absolute;
@@ -5,6 +7,7 @@ ul.dito-pulldown {
   z-index: 1000;
   border-radius: $pulldown-radius;
   box-shadow: $shadow-window;
+  overflow: hidden;
 
   &.dito-open {
     display: block;
@@ -15,25 +18,19 @@ ul.dito-pulldown {
 
     a {
       display: block;
-      text-align: center;
       padding: $pulldown-padding;
       line-height: 1;
       background: $button-color;
 
-      &:hover {
+      &.dito-disabled {
+        color: $color-disabled;
+        cursor: default;
+      }
+
+      &:not(.dito-disabled):hover {
         background: $color-active;
         color: $color-white;
       }
-    }
-
-    &:first-child a {
-      border-top-left-radius: $pulldown-radius;
-      border-top-right-radius: $pulldown-radius;
-    }
-
-    &:last-child a {
-      border-bottom-left-radius: $pulldown-radius;
-      border-bottom-right-radius: $pulldown-radius;
     }
   }
 }

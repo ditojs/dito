@@ -265,14 +265,27 @@ export default {
     },
 
     shouldRender(schema = null) {
-      return (
-        !!schema &&
-        this.getSchemaValue('if', {
-          type: Boolean,
-          default: true,
-          schema
-        })
-      )
+      return this.getSchemaValue('if', {
+        type: Boolean,
+        default: true,
+        schema
+      })
+    },
+
+    shouldShow(schema = null) {
+      return this.getSchemaValue('visible', {
+        type: Boolean,
+        default: true,
+        schema
+      })
+    },
+
+    shouldDisable(schema = null) {
+      return this.getSchemaValue('disabled', {
+        type: Boolean,
+        default: false,
+        schema
+      })
     },
 
     getResourcePath(resource) {
