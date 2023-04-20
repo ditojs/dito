@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { computeValue } from '../utils/schema.js'
 import { getItem, getParentItem } from '../utils/data.js'
-import { isString, asArray } from '@ditojs/utils'
+import { isString, asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -165,10 +165,18 @@ export default {
       type: String
     }),
 
-    // @overridable
     events() {
-      const { onFocus, onBlur, onInput, onChange } = this
-      return { onFocus, onBlur, onInput, onChange }
+      const events = this.getEvents()
+      // Register callbacks for all provides non-recognized events,
+      // assuming they are native events.
+      // TODO: Move to vue3-style `on[A-Z]` event handlers naming that aren't
+      // namespaced in `schema.events` once the transition is complete.
+      for (const event of Object.keys(this.schema.events || {})) {
+        events[`on${camelize(event, true)}`] ??= () => {
+          this.emitEvent(event)
+        }
+      }
+      return events
     },
 
     attributes() {
@@ -231,6 +239,12 @@ export default {
       if (this.nested) {
         this.schemaComponent._registerComponent(this, add)
       }
+    },
+
+    // @overridable
+    getEvents() {
+      const { onFocus, onBlur, onInput, onChange } = this
+      return { onFocus, onBlur, onInput, onChange }
     },
 
     // @overridable
