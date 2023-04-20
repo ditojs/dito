@@ -334,7 +334,7 @@ export default DitoComponent.component('DitoSchema', {
     this.emitEvent('initialize') // Not `'create'`, since that's for data.
   },
 
-  beforeUnmount() {
+  unmounted() {
     this.emitEvent('destroy')
     this._register(false)
   },

@@ -229,7 +229,7 @@ export default {
     this.setupSchemaFields()
   },
 
-  beforeUnmount() {
+  unmounted() {
     this._register(false)
   },
 

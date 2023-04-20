@@ -119,7 +119,7 @@ export default DitoComponent.component('DitoPane', {
     this._register(true)
   },
 
-  beforeUnmount() {
+  unmounted() {
     this._register(false)
   },
 

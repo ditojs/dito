@@ -168,7 +168,7 @@ export default {
     this.showPopup = this.show
   },
 
-  beforeUnmount() {
+  unmounted() {
     this.focusEvents?.remove()
     this.closeEvents?.remove()
     this.mouseLeaveTimer = null

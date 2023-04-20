@@ -262,7 +262,7 @@ export default DitoTypeComponent.register('markup', {
     })
   },
 
-  beforeUnmount() {
+  unmounted() {
     this.editor.destroy()
   },
 

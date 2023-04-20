@@ -126,7 +126,7 @@ export default DitoComponent.component('DitoPanel', {
     }
   },
 
-  beforeUnmount() {
+  unmounted() {
     this._register(false)
   },
 

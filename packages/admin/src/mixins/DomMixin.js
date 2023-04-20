@@ -9,7 +9,7 @@ export default {
     }
   },
 
-  beforeUnmount() {
+  unmounted() {
     for (const { remove } of this.domHandlers) {
       remove()
     }
