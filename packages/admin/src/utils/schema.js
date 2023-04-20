@@ -55,7 +55,7 @@ export function iterateSchemaComponents(schemas, callback) {
 
 export function iterateNestedSchemaComponents(schema, callback) {
   return schema
-    ? iterateSchemaComponents([schema, ...getAllTabSchemas(schema)], callback)
+    ? iterateSchemaComponents([schema, ...getTabSchemas(schema)], callback)
     : undefined
 }
 
@@ -191,7 +191,12 @@ export async function resolveSchemaComponents(schemas) {
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
-export async function processSchemaComponents(api, schema, routes, level) {
+export async function processSchemaComponents(
+  api,
+  schema,
+  routes = null,
+  level = 0
+) {
   const promises = []
   const process = (component, name, relativeLevel) => {
     promises.push(
@@ -206,21 +211,28 @@ export async function processSchemaComponents(api, schema, routes, level) {
   }
 
   iterateNestedSchemaComponents(schema, process)
-  iterateSchemaComponents(getAllPanelSchemas(schema), process)
+  iterateSchemaComponents(getPanelSchemas(schema), process)
 
   await Promise.all(promises)
 }
 
-export async function processSchemaComponent(api, schema, name, routes, level) {
-  processDefaults(api, schema)
+export async function processSchemaComponent(
+  api,
+  schema,
+  name,
+  routes = null,
+  level = 0
+) {
+  processSchemaDefaults(api, schema)
 
   await Promise.all([
     // Also process nested panel schemas.
-    mapConcurrently(getAllPanelSchemas(schema), panel =>
-      processSchemaComponents(api, panel, routes, level)
+    mapConcurrently(
+      getPanelSchemas(schema),
+      panel => processSchemaComponents(api, panel, routes, level)
     ),
     // Delegate schema processing to the actual type components.
-    await getTypeOptions(schema)?.processSchema?.(
+    getTypeOptions(schema)?.processSchema?.(
       api,
       schema,
       name,
@@ -235,8 +247,8 @@ export async function processView(component, api, schema, name) {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
   processRouteSchema(api, schema, name)
-  processDefaults(api, schema)
-  await resolveNestedSchemas(api, schema)
+  processSchemaDefaults(api, schema)
+  await processNestedSchemas(api, schema)
   const children = []
   await processSchemaComponents(api, schema, children, 0)
   return {
@@ -250,7 +262,7 @@ export async function processView(component, api, schema, name) {
   }
 }
 
-export function processDefaults(api, schema) {
+export function processSchemaDefaults(api, schema) {
   let defaults = api.defaults[schema.type]
   if (defaults) {
     if (isFunction(defaults)) {
@@ -266,6 +278,20 @@ export function processDefaults(api, schema) {
       }
     }
   }
+}
+
+export function processNestedSchemaDefaults(api, schema) {
+  // Process defaults for nested schemas. Note that this is also done when
+  // calling `processSchemaComponents()`, but that function is async, and we
+  // need a sync version that only handles the defaults for filters, see
+  // `getFiltersPanel()`.
+  iterateNestedSchemaComponents(schema, component => {
+    processSchemaDefaults(api, component)
+    const forms = getFormSchemas(component)
+    for (const form of Object.values(forms)) {
+      processNestedSchemaDefaults(api, form)
+    }
+  })
 }
 
 export function processRouteSchema(api, schema, name) {
@@ -304,8 +330,8 @@ export async function processForm(api, schema) {
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  processDefaults(api, schema)
-  await resolveNestedSchemas(api, schema)
+  processSchemaDefaults(api, schema)
+  await processNestedSchemas(api, schema)
   return schema
 }
 
@@ -314,7 +340,7 @@ export async function processTab(api, schema) {
   if (!isTab(schema)) {
     throw new Error(`Invalid tab schema: '${getSchemaIdentifier(schema)}'`)
   }
-  processDefaults(api, schema)
+  processSchemaDefaults(api, schema)
   return schema
 }
 
@@ -323,11 +349,11 @@ export async function processPanel(api, schema) {
   if (!isPanel(schema)) {
     throw new Error(`Invalid panel schema: '${getSchemaIdentifier(schema)}'`)
   }
-  processDefaults(api, schema)
+  processSchemaDefaults(api, schema)
   return schema
 }
 
-export async function resolveNestedSchemas(api, schema) {
+export async function processNestedSchemas(api, schema) {
   const { tabs, panels } = schema
   if (tabs) {
     schema.tabs = await resolveSchemas(
@@ -392,7 +418,7 @@ export function getViewEditPath(schema, context) {
 }
 
 export function getFormSchemas(schema, context, modifyForm) {
-  const viewSchema = getViewFormSchema(schema, context)
+  const viewSchema = context && getViewFormSchema(schema, context)
   if (viewSchema) {
     schema = viewSchema
   } else if (schema.view) {
@@ -413,7 +439,7 @@ export function getFormSchemas(schema, context, modifyForm) {
   return Object.fromEntries(
     Object.entries(forms).map(([type, form]) => {
       // Support `schema.components` callbacks to create components on the fly.
-      if (isFunction(form.components)) {
+      if (context && isFunction(form.components)) {
         form = {
           ...form,
           components: form.components(context)
@@ -760,10 +786,10 @@ export function processSchemaData(
   }
 
   processComponents(schema.components)
-  for (const tab of getAllTabSchemas(schema)) {
+  for (const tab of getTabSchemas(schema)) {
     processComponents(tab.components)
   }
-  for (const panel of getAllPanelSchemas(schema)) {
+  for (const panel of getPanelSchemas(schema)) {
     processComponents(panel.components)
   }
 
@@ -871,21 +897,23 @@ export function getPanelEntries(
   return panelEntries
 }
 
-export function getAllTabSchemas(schema) {
+export function getTabSchemas(schema) {
   return schema?.tabs ? Object.values(schema.tabs) : []
 }
 
-export function getAllPanelSchemas(schema) {
-  return getAllPanelEntries(schema).map(entry => entry.schema)
+export function getPanelSchemas(schema) {
+  return schema?.panels ? Object.values(schema.panels) : []
 }
 
 export function getAllPanelEntries(
+  api,
   schema,
   dataPath = null,
   schemaComponent = null,
   tabComponent = null
 ) {
   const panelSchema = getTypeOptions(schema)?.getPanelSchema?.(
+    api,
     schema,
     dataPath,
     schemaComponent

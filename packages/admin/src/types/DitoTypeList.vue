@@ -175,7 +175,7 @@ export default DitoTypeComponent.register('list', {
     return type
   },
 
-  getPanelSchema(schema, dataPath, schemaComponent) {
+  getPanelSchema(api, schema, dataPath, schemaComponent) {
     const { filters } = schema
     // See if this list component wants to display a filter panel, and if so,
     // create the panel schema for it through `getFiltersPanel()`.
@@ -190,6 +190,7 @@ export default DitoTypeComponent.register('list', {
         )
 
       return getFiltersPanel(
+        api,
         getNamedSchemas(filters),
         dataPath,
         {

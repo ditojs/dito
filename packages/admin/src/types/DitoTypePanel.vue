@@ -9,7 +9,7 @@ export default DitoTypeComponent.register('panel', {
   alignBottom: false,
   omitPadding: true,
 
-  getPanelSchema(schema) {
+  getPanelSchema(api, schema) {
     // For a TypePanel, the component schema is also the panel schema, but
     // remove the added name, so it doesn't get appended twice to data-path.
     const { name, ...panel } = schema

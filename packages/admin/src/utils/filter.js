@@ -1,4 +1,5 @@
 import { isArray, asArray, labelize } from '@ditojs/utils'
+import { processNestedSchemaDefaults } from './schema'
 
 export const filterComponents = {
   'text'(filter) {
@@ -61,7 +62,7 @@ export const filterComponents = {
   }
 }
 
-export function getFiltersPanel(filters, dataPath, proxy) {
+export function getFiltersPanel(api, filters, dataPath, proxy) {
   const panel = {
     type: 'panel',
     label: 'Filters',
@@ -111,6 +112,7 @@ export function getFiltersPanel(filters, dataPath, proxy) {
       }
     }
   }
+  processNestedSchemaDefaults(api, panel)
   return panel
 }
 

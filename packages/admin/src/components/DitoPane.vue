@@ -101,6 +101,7 @@ export default DitoComponent.component('DitoPane', {
       return this.componentSchemas.flatMap(
         ({ schema, nestedDataPath: dataPath }) =>
           getAllPanelEntries(
+            this.api,
             schema,
             dataPath,
             this.schemaComponent,
