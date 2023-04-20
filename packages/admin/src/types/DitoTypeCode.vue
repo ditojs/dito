@@ -110,10 +110,6 @@ export default DitoTypeComponent.register('code', {
   // for proper line-height calculation.
   padding: $input-padding;
 
-  &.dito-width-fill {
-    width: auto;
-  }
-
   .codeflask {
     background: none;
     // Ignore the parent padding defined above which is only needed to set
