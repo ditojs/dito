@@ -1,5 +1,6 @@
 <template lang="pug">
 .dito-input
+  slot(name="prefix")
   input(
     :id="id"
     ref="input"
@@ -15,6 +16,7 @@
     :aria-label="title"
     v-bind="$attrs"
   )
+  slot(name="suffix")
 </template>
 
 <script>
@@ -87,6 +89,7 @@ export default {
 
 .dito-input {
   display: inline-block;
+  position: relative;
 
   @extend %input;
 

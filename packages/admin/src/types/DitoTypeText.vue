@@ -6,6 +6,12 @@ InputField.dito-text(
   :type="inputType"
   v-bind="attributes"
 )
+  template(#suffix)
+    button.dito-button-clear.dito-button-overlay(
+      v-if="showClearButton"
+      :disabled="disabled"
+      @click.stop="clear"
+    )
 </template>
 
 <script>
