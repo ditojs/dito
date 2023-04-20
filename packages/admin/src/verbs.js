@@ -6,7 +6,8 @@ export default [
   'edit', 'edited',
   'close', 'closed',
   'cancel', 'cancelled',
-  'drag', 'dragged'
+  'drag', 'dragged',
+  'login', 'logged in'
 ].reduce((verbs, verb) => {
   verbs[verb] = verb
   return verbs

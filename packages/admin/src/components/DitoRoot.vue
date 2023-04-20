@@ -212,8 +212,16 @@ export default DitoComponent.component('DitoRoot', {
           ...additionalComponents
         },
         buttons: {
-          cancel: {},
-          login: { type: 'submit' }
+          cancel: {
+            type: 'button',
+            text: 'Cancel'
+            // NOTE: The click event is added in DitoDialog.buttonSchemas()
+          },
+
+          login: {
+            type: 'submit',
+            text: 'Login'
+          }
         }
       })
       if (loginData) {
