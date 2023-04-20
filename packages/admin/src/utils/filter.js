@@ -137,7 +137,7 @@ function getFiltersComponents(filters) {
     // `filterComponents` registry. Even for default filters, still use the
     // properties in `filter` as the base for `form`, so things like `label`
     // can be changed on the resulting form.
-    const { filter: type, ...form } = filter
+    const { filter: type, width, ...form } = filter
     const components = type
       ? filterComponents[type]?.(filter)
       : filter.components
@@ -158,6 +158,7 @@ function getFiltersComponents(filters) {
       comps[filter.name] = {
         label: form.label,
         type: 'object',
+        width,
         default: () => ({}),
         form,
         inlined: true
