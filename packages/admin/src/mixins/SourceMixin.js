@@ -11,7 +11,6 @@ import {
   hasFormSchema,
   getFormSchemas,
   getViewSchema,
-  hasLabels,
   isCompact,
   isInlined,
   isObjectSource,
@@ -247,10 +246,6 @@ export default {
 
     buttonSchemas() {
       return getButtonSchemas(this.schema.buttons)
-    },
-
-    hasLabels() {
-      return this.forms.some(hasLabels)
     },
 
     isCompact() {

@@ -432,10 +432,6 @@ export function getItemFormSchema(schema, item, context) {
   return getItemFormSchemaFromForms(getFormSchemas(schema, context), item)
 }
 
-export function hasLabel(schema) {
-  return schema.label !== false
-}
-
 export function isCompact(schema) {
   return !!schema.compact
 }
@@ -472,16 +468,6 @@ export function ignoreMissingValue(schema) {
   const typeOptions = getTypeOptions(schema)
   return !!(
     typeOptions?.excludeValue || typeOptions?.ignoreMissingValue?.(schema)
-  )
-}
-
-export function hasLabels(schema) {
-  const checkComponents = components =>
-    Object.values(components || {}).some(hasLabel)
-
-  return (
-    checkComponents(schema.components) ||
-    Object.values(schema.tabs || {}).some(checkComponents)
   )
 }
 

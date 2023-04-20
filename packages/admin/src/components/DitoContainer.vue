@@ -64,8 +64,7 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     hasLabel() {
-      const { schema } = this
-      const { label } = schema
+      const { label } = this.schema
       return (
         label !== false &&
         (!!label || this.typeComponent?.generateLabel && this.generateLabels)

@@ -10,6 +10,7 @@ DitoSchema.dito-schema-inlined(
   :disabled="disabled"
   :collapsed="collapsed"
   :collapsible="collapsible"
+  :generateLabels="!isCompact"
   :class="{ 'dito-schema-compact': isCompact }"
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
