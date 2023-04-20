@@ -190,6 +190,7 @@ export default DitoComponent.component('DitoContainer', {
 .dito-container {
   display: flex;
   flex-flow: column;
+  align-items: flex-start;
   // Needed for better vertical alignment:
   align-self: stretch;
   box-sizing: border-box;
