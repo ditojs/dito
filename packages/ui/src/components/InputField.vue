@@ -1,6 +1,6 @@
 <template lang="pug">
 .dito-input
-  slot(name="prefix")
+  slot(name="before")
   input(
     :id="id"
     ref="input"
@@ -16,7 +16,7 @@
     :aria-label="title"
     v-bind="$attrs"
   )
-  slot(name="suffix")
+  slot(name="after")
 </template>
 
 <script>

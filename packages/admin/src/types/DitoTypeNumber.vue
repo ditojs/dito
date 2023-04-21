@@ -9,7 +9,7 @@ InputField.dito-number(
   :max="max"
   :step="stepValue"
 )
-  template(#suffix)
+  template(#after)
     button.dito-button-clear.dito-button-overlay(
       v-if="showClearButton"
       :disabled="disabled"
