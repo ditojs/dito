@@ -3,6 +3,7 @@ import ResourceMixin from './ResourceMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 import { getMemberResource } from '../utils/resource.js'
+import { replaceRoute } from '../utils/route.js'
 import {
   processRouteSchema,
   processForms,
@@ -43,8 +44,7 @@ export default {
   data() {
     return {
       wrappedPrimitives: null,
-      unwrappingPrimitives: false,
-      ignoreRouteChange: false
+      unwrappingPrimitives: false
     }
   },
 
@@ -177,9 +177,9 @@ export default {
           ...query
         }
         if (!equals(query, this.$route.query)) {
-          // Tell the `$route` watcher to ignore the changed triggered here:
-          this.ignoreRouteChange = true
-          this.$router.replace({ query, hash: this.$route.hash })
+          // Change the route query parameters, but don't trigger a route
+          // change, as that would cause the list to reload.
+          replaceRoute({ query })
         }
         return query // Let getStoreAccessor() do the actual setting
       }
@@ -314,10 +314,6 @@ export default {
 
   watch: {
     $route(to, from) {
-      if (this.ignoreRouteChange) {
-        this.ignoreRouteChange = false
-        return
-      }
       if (from.path === to.path && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.

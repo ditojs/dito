@@ -3,7 +3,7 @@ button.dito-button(
   :id="dataPath"
   ref="element"
   :type="type"
-  :title="text"
+  :title="title"
   :class="buttonClass"
   v-bind="attributes"
 ) {{ text }}
@@ -34,11 +34,12 @@ export default DitoTypeComponent.register(
       },
 
       text: getSchemaAccessor('text', {
-        type: String,
-        get(text) {
-          return text || labelize(this.verb)
-        }
+        type: String
       }),
+
+      title() {
+        return this.text || labelize(this.verb)
+      },
 
       closeForm: getSchemaAccessor('closeForm', {
         type: Boolean,

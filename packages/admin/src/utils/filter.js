@@ -1,5 +1,5 @@
 import { isArray, asArray, labelize } from '@ditojs/utils'
-import { processNestedSchemaDefaults } from './schema'
+import { getNamedSchemas, processNestedSchemaDefaults } from './schema'
 
 export const filterComponents = {
   'text'(filter) {
@@ -66,7 +66,8 @@ export const filterComponents = {
   }
 }
 
-export function getFiltersPanel(api, filters, dataPath, proxy) {
+export function createFiltersPanel(api, filters, dataPath, proxy) {
+  const { sticky, ...filterSchemas } = filters
   const panel = {
     type: 'panel',
     label: 'Filters',
@@ -74,6 +75,7 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
     target: dataPath,
     // Override the default value
     disabled: false,
+    sticky,
 
     // NOTE: On panels, the data() callback does something else than on normal
     // schema: It produces the `data` property to be passed to the panel's
@@ -85,29 +87,9 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
       )
     },
 
-    components: getFiltersComponents(filters),
-
-    buttons: {
-      clear: {
-        text: 'Clear',
-        events: {
-          click({ schemaComponent }) {
-            schemaComponent.resetData()
-            schemaComponent.applyFilters()
-          }
-        }
-      },
-
-      filter: {
-        type: 'submit',
-        text: 'Filter',
-        events: {
-          click({ schemaComponent }) {
-            schemaComponent.applyFilters()
-          }
-        }
-      }
-    },
+    components: createFiltersComponents(filterSchemas),
+    buttons: createFiltersButtons(false),
+    panelButtons: createFiltersButtons(true),
 
     events: {
       change() {
@@ -115,14 +97,29 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
       }
     },
 
+    computed: {
+      filters() {
+        return formatFiltersData(this.schema, this.data)
+      },
+
+      hasFilters() {
+        return this.filters.length > 0
+      }
+    },
+
     methods: {
       applyFilters() {
         proxy.query = {
           ...proxy.query,
-          filter: formatFiltersData(this.schema, this.data),
+          filter: this.filters,
           // Clear pagination when applying or clearing filters:
           page: undefined
         }
+      },
+
+      clearFilters() {
+        this.resetData()
+        this.applyFilters()
       }
     }
   }
@@ -130,9 +127,37 @@ export function getFiltersPanel(api, filters, dataPath, proxy) {
   return panel
 }
 
-function getFiltersComponents(filters) {
+function createFiltersButtons(small) {
+  return {
+    clear: {
+      type: 'button',
+      text: small ? null : 'Clear',
+      disabled: ({ schemaComponent }) => !schemaComponent.hasFilters,
+      events: {
+        click({ schemaComponent }) {
+          // Since panel buttons are outside of the schema, we need to use the
+          // schema component received from the initialize event below:
+          schemaComponent.clearFilters()
+        }
+      }
+    },
+
+    submit: {
+      type: 'submit',
+      text: small ? null : 'Filter',
+      visible: !small,
+      events: {
+        click({ schemaComponent }) {
+          schemaComponent.applyFilters()
+        }
+      }
+    }
+  }
+}
+
+function createFiltersComponents(filters) {
   const comps = {}
-  for (const filter of Object.values(filters || {})) {
+  for (const filter of Object.values(getNamedSchemas(filters) || {})) {
     // Support both custom forms and default filter components, through the
     // `filterComponents` registry. Even for default filters, still use the
     // properties in `filter` as the base for `form`, so things like `label`

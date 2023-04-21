@@ -5,8 +5,7 @@ component.dito-panel(
   :is="panelTag"
   @submit.prevent
 )
-  label.dito-panel-title {{ getLabel(schema) }}
-  DitoSchema.dito-panel-schema(
+  DitoSchema.dito-panel__schema(
     :schema="panelSchema"
     :dataPath="panelDataPath"
     :data="panelData"
@@ -15,6 +14,17 @@ component.dito-panel(
     :disabled="disabled"
     :hasOwnData="hasOwnData"
   )
+    template(#before)
+      h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
+        span {{ getLabel(schema) }}
+        DitoButtons.dito-buttons-small(
+          :buttons="panelButtonSchemas"
+          :dataPath="panelDataPath"
+          :data="panelData"
+          :meta="meta"
+          :store="store"
+          :disabled="disabled"
+        )
     template(#buttons)
       DitoButtons(
         :buttons="buttonSchemas"
@@ -73,6 +83,10 @@ export default DitoComponent.component('DitoPanel', {
       return getButtonSchemas(this.schema.buttons)
     },
 
+    panelButtonSchemas() {
+      return getButtonSchemas(this.schema.panelButtons)
+    },
+
     target() {
       return this.schema.target || this.dataPath
     },
@@ -111,6 +125,11 @@ export default DitoComponent.component('DitoPanel', {
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default: true
+    }),
+
+    sticky: getSchemaAccessor('sticky', {
+      type: Boolean,
+      default: false
     })
   },
 
@@ -144,19 +163,53 @@ export default DitoComponent.component('DitoPanel', {
 @import '../styles/_imports';
 
 .dito-panel {
-  margin-bottom: $content-padding;
+  padding-bottom: $content-padding;
 
-  .dito-panel-title {
+  &__header {
     display: block;
+    position: relative;
     box-sizing: border-box;
     padding: $input-padding;
     background: $button-color;
     border: $border-style;
     border-top-left-radius: $border-radius;
     border-top-right-radius: $border-radius;
+
+    &--sticky {
+      $margin: $input-height-factor * $line-height * $font-size-small +
+        $form-spacing;
+
+      position: sticky;
+      top: $content-padding;
+      margin-bottom: $margin;
+      z-index: 1;
+
+      & + * {
+        margin-top: -$margin;
+      }
+
+      &:before {
+        content: '';
+        display: block;
+        position: absolute;
+        background: $content-color-background;
+        left: 0;
+        right: 0;
+        height: $content-padding;
+        top: -$content-padding;
+        margin: -$border-width;
+      }
+    }
+
+    .dito-buttons {
+      position: absolute;
+      right: $input-padding-ver;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 
-  .dito-panel-schema {
+  &__schema {
     font-size: $font-size-small;
     background: $content-color-background;
     border: $border-style;
@@ -167,16 +220,24 @@ export default DitoComponent.component('DitoPanel', {
     > .dito-schema-content {
       padding: $form-spacing-half $form-spacing;
 
+      .dito-container {
+        padding: $form-spacing-half;
+      }
+
+      .dito-object {
+        border: 0;
+        padding: 0;
+      }
+
       > .dito-buttons {
         --button-margin: #{$form-spacing};
 
         padding: $form-spacing-half 0;
-      }
-    }
 
-    .dito-object {
-      border: 0;
-      padding: 0;
+        .dito-container {
+          padding: 0;
+        }
+      }
     }
 
     .dito-label {
@@ -189,10 +250,6 @@ export default DitoComponent.component('DitoPanel', {
 
     .dito-pane {
       margin: 0 (-$form-spacing-half);
-    }
-
-    .dito-container {
-      padding: $form-spacing-half;
     }
   }
 }

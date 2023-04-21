@@ -3,8 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import VueNotifications from '@kyvg/vue3-notification'
 import {
   isString,
-  isArray,
-  asArray,
   isAbsoluteUrl,
   merge,
   hyphenate,
@@ -17,6 +15,7 @@ import DitoRoot from './components/DitoRoot.vue'
 import DitoTypeComponent from './DitoTypeComponent.js'
 import { getResource } from './utils/resource.js'
 import { deprecate } from './utils/deprecate.js'
+import { formatQuery } from './utils/route.js'
 import verbs from './verbs.js'
 
 export default class DitoAdmin {
@@ -296,25 +295,4 @@ function getApiUrl(api, { url, query }) {
 function combineUrls(baseUrl, relativeUrl) {
   // Use same approach as axios `combineURLs()` to join baseUrl & relativeUrl:
   return `${baseUrl.replace(/\/+$/, '')}/${relativeUrl.replace(/^\/+/, '')}`
-}
-
-function formatQuery(query) {
-  const entries = query
-    ? isArray(query)
-      ? query
-      : Object.entries(query)
-    : []
-  return new URLSearchParams(
-    // Expand array values into multiple entries under the same key, so
-    // `formatQuery({ foo: [1, 2], bar: 3 })` => 'foo=1&foo=2&bar=3'.
-    entries.reduce(
-      (entries, [key, value]) => {
-        for (const val of asArray(value)) {
-          entries.push([key, val])
-        }
-        return entries
-      },
-      []
-    )
-  ).toString()
 }

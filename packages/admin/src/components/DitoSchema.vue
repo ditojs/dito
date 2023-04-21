@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-schema
+slot(name="before")
+.dito-schema(
+  v-bind="$attrs"
+)
   .dito-schema-content
     .dito-schema-header(
       v-if="hasLabel || hasTabs || clipboard"
@@ -81,6 +84,7 @@
       :store="store"
       :disabled="disabled"
     )
+slot(name="after")
 </template>
 
 <script>

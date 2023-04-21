@@ -63,6 +63,10 @@
   content: 'Edit';
 }
 
+.dito-button-clear:empty::before {
+  content: 'Clear';
+}
+
 .dito-button-save:empty::before {
   content: 'Save';
 }
@@ -157,6 +161,10 @@
 
     .dito-button-edit:empty::before {
       @extend %icon-edit;
+    }
+
+    .dito-button-clear:empty::before {
+      @extend %icon-clear;
     }
 
     .dito-button-drag:empty::before {

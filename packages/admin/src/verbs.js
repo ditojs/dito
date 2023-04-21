@@ -4,6 +4,7 @@ export default [
   'submit', 'submitted',
   'delete', 'deleted',
   'edit', 'edited',
+  'clear', 'cleared',
   'close', 'closed',
   'cancel', 'cancelled',
   'drag', 'dragged',

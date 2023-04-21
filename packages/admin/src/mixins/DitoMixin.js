@@ -176,6 +176,8 @@ export default {
   },
 
   methods: {
+    labelize,
+
     // The state of components is only available during the life-cycle of a
     // component. Some information we need available longer than that, e.g.
     // `query` & `total` on TypeList, so that when the user navigates back from
@@ -245,13 +247,10 @@ export default {
         : labelize(name) || ''
     },
 
-    labelize,
-
-    getButtonAttributes(name, button) {
-      const verb = this.verbs[name] || name
+    getButtonAttributes(verb) {
       return {
         class: `dito-button-${verb}`,
-        title: button?.text || labelize(verb)
+        title: labelize(verb)
       }
     },
 

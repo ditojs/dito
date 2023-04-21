@@ -156,12 +156,11 @@ import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
 import {
-  getNamedSchemas,
   getViewEditPath,
   resolveSchemaComponent,
   resolveSchemaComponents
 } from '../utils/schema.js'
-import { getFiltersPanel } from '../utils/filter.js'
+import { createFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
 
@@ -189,28 +188,23 @@ export default DitoTypeComponent.register('list', {
           component => component.type === 'list'
         )
 
-      return getFiltersPanel(
-        api,
-        getNamedSchemas(filters),
-        dataPath,
-        {
-          // Create a simple proxy to get / set the query, see getFiltersPanel()
-          get query() {
-            return getListComponent()?.query
-          },
-          set query(query) {
-            const component = getListComponent()
-            if (component) {
-              // Filter out undefined values for comparing with equals()
-              const filter = obj => pickBy(obj, value => value !== undefined)
-              if (!equals(filter(query), filter(component.query))) {
-                component.query = query
-                component.loadData(false)
-              }
+      return createFiltersPanel(api, filters, dataPath, {
+        // Create a simple proxy to get / set the query, see getFiltersPanel()
+        get query() {
+          return getListComponent()?.query
+        },
+        set query(query) {
+          const component = getListComponent()
+          if (component) {
+            // Filter out undefined values for comparing with equals()
+            const filter = obj => pickBy(obj, value => value !== undefined)
+            if (!equals(filter(query), filter(component.query))) {
+              component.query = query
+              component.loadData(false)
             }
           }
         }
-      )
+      })
     }
   },
 
