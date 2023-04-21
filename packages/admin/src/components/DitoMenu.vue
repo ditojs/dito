@@ -5,18 +5,30 @@ nav.dito-menu.dito-scroll-parent
     li(
       v-for="view in views"
     )
-      RouterLink.dito-link(
+      RouterLink(
         v-if="shouldRender(view)"
+        v-slot="{ isActive, href, route }"
+        custom
         :to="`/${view.path}`"
-        activeClass="dito-active"
-      ) {{ getLabel(view) }}
+      )
+        a.dito-link(
+          :href="href"
+          :class="{ 'dito-active': isActive }"
+          @click.prevent="onClickLink(route)"
+        ) {{ getLabel(view) }}
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
-export default DitoComponent.component('DitoMenu', {})
+export default DitoComponent.component('DitoMenu', {
+  methods: {
+    onClickLink(route) {
+      this.$router.push({ ...route, force: true })
+    }
+  }
+})
 </script>
 
 <style lang="scss">
