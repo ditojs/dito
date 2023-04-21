@@ -188,7 +188,7 @@ export default DitoComponent.component('DitoPanel', {
         margin-top: -$margin;
       }
 
-      &:before {
+      &::before {
         content: '';
         display: block;
         position: absolute;

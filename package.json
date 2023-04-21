@@ -28,7 +28,16 @@
     "link:all": "yarn link:objection && yarn link:knex"
   },
   "lint-staged": {
-    "packages/**/src/**/*.{js,d.ts,vue}": "cross-env NODE_ENV=production eslint"
+    "packages/**/src/**/*.{js,ts}": [
+      "cross-env NODE_ENV=production eslint --max-warnings 0"
+    ],
+    "packages/**/src/**/*.vue": [
+      "cross-env NODE_ENV=production eslint --max-warnings 0",
+      "stylelint"
+    ],
+    "packages/**/src/**/*.scss": [
+      "stylelint"
+    ]
   },
   "engines": {
     "node": ">= 18.0.0",
