@@ -301,11 +301,13 @@ export default {
       const value =
         this.parsedValue !== undefined ? this.parsedValue : this.value
 
-      // For some odd reason, the native change event now sometimes fires twice
-      // on Vue3. Filter out second call.
-      // TODO: Investigate why this happens, and if it's a bug in Vue3.
-      if (value === this.changedValue) return
-      this.changedValue = value
+      if (this.$options.nativeField) {
+        // For some odd reason, the native change event now sometimes fires
+        // twice on Vue3. Filter out second call.
+        // TODO: Investigate why this happens, and if it's a bug in Vue3.
+        if (value === this.changedValue) return
+        this.changedValue = value
+      }
 
       this.markDirty()
       this.emitEvent('change', {
