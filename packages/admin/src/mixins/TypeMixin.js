@@ -24,8 +24,8 @@ export default {
 
   data() {
     return {
-      parsedValue: null,
-      changedValue: null,
+      parsedValue: undefined,
+      changedValue: undefined,
       focused: false
     }
   },
