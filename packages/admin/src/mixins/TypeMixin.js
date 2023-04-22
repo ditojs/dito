@@ -25,6 +25,7 @@ export default {
   data() {
     return {
       parsedValue: null,
+      changedValue: null,
       focused: false
     }
   },
@@ -297,12 +298,19 @@ export default {
     },
 
     onChange() {
+      const value =
+        this.parsedValue !== undefined ? this.parsedValue : this.value
+
+      // For some odd reason, the native change event now sometimes fires twice
+      // on Vue3. Filter out second call.
+      // TODO: Investigate why this happens, and if it's a bug in Vue3.
+      if (value === this.changedValue) return
+      this.changedValue = value
+
       this.markDirty()
       this.emitEvent('change', {
-        context:
-          this.parsedValue !== undefined
-            ? { value: this.parsedValue }
-            : null,
+        // Prevent endless parse recursion:
+        context: { value },
         // Pass `schemaComponent` as parent, so change events can propagate up.
         parent: this.schemaComponent
       })
