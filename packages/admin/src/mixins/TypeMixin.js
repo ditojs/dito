@@ -69,6 +69,7 @@ export default {
           : value
         // eslint-disable-next-line vue/no-mutating-props
         this.data[this.name] = this.parsedValue
+        this.changedValue = undefined
       }
     },
 
@@ -277,6 +278,7 @@ export default {
 
     clear() {
       this.value = null
+      this.changedValue = undefined
       this.onChange()
     },
 
