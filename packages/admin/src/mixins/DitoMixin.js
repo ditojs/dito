@@ -15,7 +15,7 @@ import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
 import { isMatchingType, convertType } from '../utils/type.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 // @vue/component
 export default {
@@ -433,17 +433,25 @@ export default {
     },
 
     setupComputed() {
-      for (const [key, value] of Object.entries(this.schema.computed || {})) {
-        const accessor = isFunction(value)
-          ? { get: value }
-          : isObject(value) && isFunction(value.get)
-            ? value
+      const getComputedAccessor = ({ get, set }) => {
+        const getter = computed(() => get.call(this))
+        return {
+          get: () => getter.value,
+          set: set ? value => set.call(this, value) : undefined
+        }
+      }
+
+      for (const [key, item] of Object.entries(this.schema.computed || {})) {
+        const accessor = isFunction(item)
+          ? getComputedAccessor({ get: item })
+          : isObject(item) && isFunction(item.get)
+            ? getComputedAccessor(item)
             : null
         if (accessor) {
           Object.defineProperty(this, key, accessor)
         } else {
           console.error(
-            `Invalid computed property definition: ${key}: ${value}`
+            `Invalid computed property definition: ${key}: ${item}`
           )
         }
       }
