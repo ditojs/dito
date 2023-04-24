@@ -17,6 +17,7 @@
         :schema="schema"
         :data="dialogData"
         scrollable
+        generateLabels
       )
         template(#buttons)
           DitoButtons.dito-buttons-large(

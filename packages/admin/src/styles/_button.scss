@@ -118,6 +118,7 @@
     font-size: $menu-font-size;
     flex-flow: row wrap;
     justify-content: center;
+    padding-bottom: $content-padding;
 
     .dito-container {
       // Do not specify this on .dito-buttons directly as it would break borders
@@ -136,7 +137,6 @@
     width: 100%;
     align-self: flex-end;
     z-index: 500;
-    padding-bottom: $content-padding;
     margin-bottom: -$content-padding;
     margin-top: 2 * $content-padding;
     box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
