@@ -16,6 +16,7 @@ InputField.dito-text(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import TextMixin from '../mixins/TextMixin'
 import { InputField } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
@@ -33,6 +34,7 @@ export default DitoTypeComponent.register(
   ],
   // @vue/component
   {
+    mixins: [TextMixin],
     components: { InputField },
     nativeField: true,
     textField: true,
