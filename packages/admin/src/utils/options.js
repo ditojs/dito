@@ -36,7 +36,6 @@ const ditoOptionKeys = [
   'generateLabel',
   'excludeValue',
   'ignoreMissingValue',
-  'alignBottom',
   'omitPadding',
   'processValue',
   'processSchema',

@@ -243,7 +243,7 @@ export default {
     getLabel(schema, name) {
       return schema
         ? this.getSchemaValue('label', { type: String, schema }) ||
-          labelize(name || schema.name)
+          labelize(name ?? schema.name)
         : labelize(name) || ''
     },
 

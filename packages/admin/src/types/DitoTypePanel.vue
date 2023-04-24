@@ -6,7 +6,6 @@ export default DitoTypeComponent.register('panel', {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
   excludeValue: true,
   generateLabel: false,
-  alignBottom: false,
   omitPadding: true,
 
   getPanelSchema(api, schema) {

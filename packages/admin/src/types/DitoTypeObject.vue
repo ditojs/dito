@@ -63,8 +63,6 @@ import { resolveSchemaComponent } from '../utils/schema.js'
 export default DitoTypeComponent.register('object', {
   mixins: [SourceMixin],
 
-  alignBottom: false,
-
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
     return type
