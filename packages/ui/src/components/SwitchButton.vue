@@ -90,10 +90,9 @@ export default {
 
 .dito-switch {
   // Use whole multiples of `rem` for sizes and `px` margins/padding along
-  // with `calc()` to end up with even pixel sizes. `rem` is needed because we
-  // change `font-size` inside `.dito-switch-button`
-  --switch-width: 4rem;
-  --switch-height: 2rem;
+  // with `calc()` to end up with even pixel sizes.
+  --switch-width: 4em;
+  --switch-height: 2em;
   --switch-margin: 2px;
   --switch-padding: 3px;
   --switch-speed: 300ms;
@@ -132,14 +131,14 @@ export default {
   }
 
   .dito-switch-button {
+    --size: calc(var(--height) - 2 * var(--switch-padding));
+
     position: absolute;
-    // Set font-size to height, so we can use width/height = 1em for circle:
-    font-size: calc(var(--height) - 2 * var(--switch-padding));
     top: var(--switch-padding);
     left: var(--switch-padding);
-    width: 1em;
-    height: 1em;
-    border-radius: 0.5em;
+    width: var(--size);
+    height: var(--size);
+    border-radius: calc(var(--size) / 2);
     box-sizing: border-box;
     background: $color-white;
     transition: transform var(--switch-speed);
