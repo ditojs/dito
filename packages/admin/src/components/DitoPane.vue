@@ -168,7 +168,6 @@ export default DitoComponent.component('DitoPane', {
 
   &.dito-pane-main {
     flex: 100%;
-    margin-bottom: 0; // For vertical scroll size.
   }
 
   .dito-schema-header + & {

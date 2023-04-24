@@ -707,6 +707,11 @@ export default DitoComponent.component('DitoSchema', {
       grid-row-end: none;
     }
 
+    &.dito-scroll::after {
+      // Eat up negative margin of the last child to prevent overscroll.
+      content: '';
+    }
+
     max-width: $content-width + 2 * $content-padding;
   }
 
