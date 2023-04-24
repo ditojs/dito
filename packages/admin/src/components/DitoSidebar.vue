@@ -1,5 +1,5 @@
 <template lang="pug">
-nav.dito-menu.dito-scroll-parent
+nav.dito-sidebar.dito-scroll-parent
   h1 {{ appState.title }}
   ul.dito-scroll
     li(
@@ -34,7 +34,7 @@ export default DitoComponent.component('DitoMenu', {
 <style lang="scss">
 @import '../styles/_imports';
 
-.dito-menu {
+.dito-sidebar {
   flex: initial;
   font-size: $menu-font-size;
   white-space: nowrap;

@@ -12,7 +12,7 @@
     v-show="!isActive"
   )
   //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
-  component.dito-scroll(
+  component.dito-scroll-parent(
     v-show="isActive"
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
@@ -24,7 +24,9 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
-      :menuHeader="true"
+      scrollable
+      headerInMenu
+      generateLabels
     )
       template(#buttons)
         DitoButtons.dito-buttons-round.dito-buttons-main.dito-buttons-large(

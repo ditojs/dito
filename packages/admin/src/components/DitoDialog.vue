@@ -13,9 +13,10 @@
     form.dito-scroll-parent(
       @submit.prevent="submit"
     )
-      DitoSchema.dito-scroll(
+      DitoSchema(
         :schema="schema"
         :data="dialogData"
+        scrollable
       )
         template(#buttons)
           DitoButtons.dito-buttons-large(

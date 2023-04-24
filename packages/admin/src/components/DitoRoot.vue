@@ -369,15 +369,6 @@ function addRoutes(router, routes) {
 .dito-root {
   .dito-page {
     background: $content-color-background;
-    // The root-level views and forms may have a `.dito-schema-header` that
-    // should appear layered over `.dito-menu`, while having `overlay: hidden`
-    // set by `.dito-scroll-parent` to delegate scrolling to `.dito-scroll`.
-    // In order to not have the header clipped, adjust the top here:
-    > .dito-form,
-    > .dito-view {
-      margin-top: -$menu-height;
-      padding-top: $menu-height;
-    }
   }
 }
 </style>

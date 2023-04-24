@@ -171,7 +171,7 @@ export default DitoComponent.component('DitoPane', {
     margin-bottom: 0; // For vertical scroll size.
   }
 
-  .dito-schema-header:not(.dito-schema-menu-header) + & {
+  .dito-schema-header + & {
     // Clear top-margin if the components are preceded by a schema header.
     margin-top: 0;
   }

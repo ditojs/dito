@@ -130,7 +130,7 @@
     }
   }
 
-  &.dito-buttons-main {
+  &.dito-buttons-main:not(:empty) {
     position: sticky;
     bottom: 0;
     width: 100%;

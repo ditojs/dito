@@ -3,35 +3,39 @@ slot(name="before")
 .dito-schema(
   v-bind="$attrs"
 )
-  .dito-schema-content
-    .dito-schema-header(
-      v-if="hasLabel || hasTabs || clipboard"
-      :class="{ 'dito-schema-menu-header': menuHeader }"
+  .dito-schema-content(:class="{ 'dito-scroll': scrollable }")
+    Teleport(
+      to=".dito-menu"
+      :disabled="!headerInMenu"
     )
-      DitoLabel(
-        v-if="hasLabel"
-        :label="label"
-        :dataPath="dataPath"
-        :collapsible="collapsible"
-        :collapsed="!opened"
-        @expand="onExpand"
+      .dito-schema-header(
+        v-if="hasLabel || hasTabs || clipboard"
+        :class="{ 'dito-schema-header--menu': headerInMenu }"
       )
-        //- Pass edit-buttons through to dito-label's own edit-buttons slot:
-        template(
-          v-if="inlined"
-          #edit-buttons
+        DitoLabel(
+          v-if="hasLabel"
+          :label="label"
+          :dataPath="dataPath"
+          :collapsible="collapsible"
+          :collapsed="!opened"
+          @expand="onExpand"
         )
-          slot(name="edit-buttons")
-      DitoTabs(
-        v-if="tabs"
-        :tabs="tabs"
-        :selectedTab="selectedTab"
-      )
-      DitoClipboard(
-        :clipboard="clipboard"
-        :dataPath="dataPath"
-        :data="data"
-      )
+          //- Pass edit-buttons through to dito-label's own edit-buttons slot:
+          template(
+            v-if="inlined"
+            #edit-buttons
+          )
+            slot(name="edit-buttons")
+        DitoTabs(
+          v-if="tabs"
+          :tabs="tabs"
+          :selectedTab="selectedTab"
+        )
+        DitoClipboard(
+          :clipboard="clipboard"
+          :dataPath="dataPath"
+          :data="data"
+        )
     template(
       v-if="hasTabs"
     )
@@ -78,6 +82,7 @@ slot(name="before")
     v-else-if="isPopulated"
   )
     DitoPanels(
+      :class="{ 'dito-scroll': scrollable }"
       :panels="panelEntries"
       :data="data"
       :meta="meta"
@@ -135,9 +140,10 @@ export default DitoComponent.component('DitoSchema', {
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: true },
+    scrollable: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
-    menuHeader: { type: Boolean, default: false }
+    headerInMenu: { type: Boolean, default: false },
+    generateLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -756,8 +762,8 @@ export default DitoComponent.component('DitoSchema', {
     }
   }
 
-  &.dito-schema-menu-header {
-    // Bring the tabs up to the menu.
+  &--menu {
+    // Align the tabs on top of to the header menu.
     position: absolute;
     height: $menu-height;
     padding: 0 $menu-padding-hor;
@@ -776,12 +782,6 @@ export default DitoComponent.component('DitoSchema', {
       line-height: $menu-line-height;
       font-size: $menu-font-size;
     }
-  }
-
-  button.dito-label {
-    width: 100%;
-    // Catch all clicks, even when it would be partially covered by schema.
-    z-index: 1;
   }
 }
 </style>

@@ -14,13 +14,14 @@ template(
     v-else-if="shouldRender(viewSchema)"
     :data-resource="sourceSchema.path"
   )
-    DitoSchema.dito-scroll(
+    DitoSchema(
       :schema="viewSchema"
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"
       :disabled="isLoading"
-      menuHeader
+      scrollable
+      headerInMenu
     )
 </template>
 

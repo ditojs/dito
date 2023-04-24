@@ -19,6 +19,8 @@ nav.dito-header
     DitoSpinner(
       v-if="isLoading"
     )
+  //- Teleport target for `.dito-schema-header`:
+  .dito-menu
   slot
 </template>
 
