@@ -1,6 +1,6 @@
 <template lang="pug">
 .dito-section(:class="{ 'dito-section-labelled': !!schema.label }")
-  DitoPane.dito-section-pane(
+  DitoPane.dito-section__pane(
     :schema="getItemFormSchema(schema, item, context)"
     :dataPath="dataPath"
     :data="item"
@@ -48,6 +48,10 @@ export default DitoTypeComponent.register('section', {
     border-radius: $border-radius;
     padding: $form-spacing;
     box-sizing: border-box;
+  }
+
+  .dito-section__pane {
+    padding: 0;
   }
 }
 </style>

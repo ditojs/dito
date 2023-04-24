@@ -20,8 +20,7 @@ template(
       :meta="meta"
       :store="getChildStore(name)"
       :disabled="isLoading"
-      :generateLabels="false"
-      :menuHeader="true"
+      menuHeader
     )
 </template>
 

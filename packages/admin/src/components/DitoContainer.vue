@@ -45,7 +45,7 @@ export default DitoComponent.component('DitoContainer', {
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
-    generateLabels: { type: Boolean, default: true }
+    generateLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -166,11 +166,10 @@ export default DitoComponent.component('DitoContainer', {
     componentClass() {
       const basisIsAuto = this.componentBasis === 'auto'
       return {
-        // TODO: BEM
+        // TODO: BEM?
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
         'dito-width-fill': !basisIsAuto || this.componentWidth === 'fill',
-        'dito-width-auto': basisIsAuto,
         'dito-has-errors': !!this.errors
       }
     }
@@ -204,6 +203,12 @@ export default DitoComponent.component('DitoContainer', {
     padding: 0;
   }
 
+  &--single {
+    height: 100%; // So that list buttons can be sticky at the bottom;
+    // Just like on DitoPane, clear settings from above.
+    padding: 0;
+  }
+
   &--align-bottom {
     justify-content: end; // To align components with and without labels.
   }
@@ -214,10 +219,6 @@ export default DitoComponent.component('DitoContainer', {
     > .dito-label {
       margin: $form-spacing $form-spacing-half 0;
     }
-  }
-
-  &--single {
-    height: 100%; // So that list buttons can be sticky at the bottom;
   }
 }
 

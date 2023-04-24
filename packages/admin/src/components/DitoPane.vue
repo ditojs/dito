@@ -3,6 +3,9 @@
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
   v-show="visible"
+  :class=`{
+    'dito-pane--single': isSingleComponent
+  }`
 )
   template(
     v-for=`{
@@ -57,7 +60,7 @@ export default DitoComponent.component('DitoPane', {
     single: { type: Boolean, default: false },
     visible: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: true }
+    generateLabels: { type: Boolean, default: false }
   },
 
   computed: {
@@ -141,21 +144,31 @@ export default DitoComponent.component('DitoPane', {
 @import '../styles/_imports';
 
 .dito-pane {
+  $max-width: $content-width + 2 * $content-padding;
+
   display: flex;
   position: relative;
   flex-flow: row wrap;
   align-content: flex-start;
   align-items: baseline;
+  padding: $content-padding;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
   margin: (-$form-spacing) (-$form-spacing-half);
   // Add removed horizontal margin again to max-width:
-  max-width: $content-width + 2 * $form-spacing-half;
+  max-width: $max-width + 2 * $form-spacing-half;
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
   flex: 0%;
 
+  &--single {
+    // Clear settings from above.
+    margin: 0;
+    max-width: $max-width;
+  }
+
   &.dito-pane-main {
     flex: 100%;
+    margin-bottom: 0; // For vertical scroll size.
   }
 
   .dito-schema-header:not(.dito-schema-menu-header) + & {

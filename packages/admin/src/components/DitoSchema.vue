@@ -701,8 +701,7 @@ export default DitoComponent.component('DitoSchema', {
       grid-row-end: none;
     }
 
-    max-width: $content-width;
-    padding: $content-padding;
+    max-width: $content-width + 2 * $content-padding;
   }
 
   > .dito-buttons,
@@ -729,6 +728,11 @@ export default DitoComponent.component('DitoSchema', {
       // Add removed $form-spacing again to the ruler
       margin: $content-padding $form-spacing-half $form-spacing-half;
     }
+  }
+
+  .dito-pane-main + .dito-buttons-main {
+    // Needed forms with sticky main buttons.
+    margin-bottom: 0;
   }
 }
 

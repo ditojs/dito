@@ -14,7 +14,6 @@
       :meta="meta"
       :store="getChildStore(buttonSchema.name)"
       :disabled="disabled"
-      :generateLabels="false"
     )
   template(
     v-for="vnode of $slots.default?.()"

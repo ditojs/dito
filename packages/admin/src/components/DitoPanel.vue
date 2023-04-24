@@ -13,6 +13,7 @@ component.dito-panel(
     :store="store"
     :disabled="disabled"
     :hasOwnData="hasOwnData"
+    generateLabels
   )
     template(#before)
       h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
@@ -163,7 +164,9 @@ export default DitoComponent.component('DitoPanel', {
 @import '../styles/_imports';
 
 .dito-panel {
-  padding-bottom: $content-padding;
+  & + & {
+    margin-top: $content-padding;
+  }
 
   &__header {
     display: block;
@@ -180,7 +183,7 @@ export default DitoComponent.component('DitoPanel', {
         $form-spacing;
 
       position: sticky;
-      top: $content-padding;
+      top: 0;
       margin-bottom: $margin;
       z-index: 1;
 
@@ -218,7 +221,9 @@ export default DitoComponent.component('DitoPanel', {
     border-bottom-right-radius: $border-radius;
 
     > .dito-schema-content {
-      padding: $form-spacing-half $form-spacing;
+      > .dito-pane {
+        padding: $form-spacing-half $form-spacing;
+      }
 
       .dito-container {
         padding: $form-spacing-half;
@@ -232,7 +237,7 @@ export default DitoComponent.component('DitoPanel', {
       > .dito-buttons {
         --button-margin: #{$form-spacing};
 
-        padding: $form-spacing-half 0;
+        padding: 0 $form-spacing $form-spacing;
 
         .dito-container {
           padding: 0;

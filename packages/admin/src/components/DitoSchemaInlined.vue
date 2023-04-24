@@ -1,5 +1,6 @@
 <template lang="pug">
 DitoSchema.dito-schema-inlined(
+  :class="{ 'dito-schema-compact': isCompact }"
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
@@ -11,7 +12,6 @@ DitoSchema.dito-schema-inlined(
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"
-  :class="{ 'dito-schema-compact': isCompact }"
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
   //- others in `TypeList` as a scope, for better handling of layout.
@@ -71,8 +71,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
 
 .dito-schema-inlined {
   > .dito-schema-content {
-    padding: 0;
-
     > .dito-schema-header {
       // Change spacing so .dito-label covers the full .dito-schema-header.
       margin: -$form-spacing;
@@ -90,11 +88,10 @@ export default DitoComponent.component('DitoSchemaInlined', {
         // .dito-schema-content, due to grid-template-rows: min-content
         min-height: 2em;
       }
+    }
 
-      & + .dito-pane {
-        // Needed for transition-height in DitoSchema:
-        min-height: $form-spacing;
-      }
+    > .dito-pane {
+      padding: 0;
     }
   }
 }

@@ -338,6 +338,26 @@ export default DitoTypeComponent.register('list', {
     display: grid;
     grid-template-rows: min-content;
     height: 100%;
+
+    // Make single list header, navigation and buttons sticky to the top and
+    // bottom:
+    .dito-navigation {
+      position: sticky;
+      top: 0;
+      margin-top: -$content-padding;
+      padding-top: $content-padding;
+      background: $content-color-background;
+      z-index: 1;
+
+      + .dito-table {
+        .dito-table-head {
+          position: sticky;
+          top: calc($input-height + $content-padding + $content-padding-half);
+          background: $content-color-background;
+          z-index: 1;
+        }
+      }
+    }
   }
 }
 </style>
