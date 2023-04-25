@@ -285,7 +285,7 @@ export default DitoComponent.component('DitoForm', {
   watch: {
     $route(to, from) {
       // Reload form data when navigating to a different entity in same form.
-      const { param } = this.meta
+      const param = this.meta?.param
       if (
         param &&
         this.providesData &&
