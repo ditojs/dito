@@ -283,6 +283,16 @@ export default DitoComponent.component('DitoForm', {
   },
 
   watch: {
+    $route(to, from) {
+      // Reload form data when navigating to a different entity in same form.
+      if (this.providesData) {
+        const { param } = this.meta
+        if (param && to.params[param] !== from.params[param]) {
+          this.loadData(true)
+        }
+      }
+    },
+
     sourceData: 'clearClonedData',
     // Needed for the 'create' redirect in `inheritedData()` to work:
     create: 'setupData'

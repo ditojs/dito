@@ -314,7 +314,7 @@ export default {
 
   watch: {
     $route(to, from) {
-      if (from.path === to.path && from.hash === to.hash) {
+      if (this.providesData && from.path === to.path && from.hash === to.hash) {
         // Paths and hashes remain the same, so only queries have changed.
         // Update filter and reload data without clearing.
         this.query = to.query
