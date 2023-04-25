@@ -14,7 +14,7 @@
       nestedDataPath,
       nested,
       store
-    } in componentSchemas`
+    }, index in componentSchemas`
   )
     .dito-break(
       v-if="schema.break === 'before'"
@@ -22,6 +22,7 @@
     DitoContainer(
       v-if="shouldRender(schema)"
       :key="nestedDataPath"
+      v-resize="event => onResize(index, event)"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -31,6 +32,8 @@
       :nested="nested"
       :disabled="disabled"
       :generateLabels="generateLabels"
+      :firstInRow="schema.break === 'before' || isFirstInRow(index)"
+      :lastInRow="schema.break === 'after' || isLastInRow(index)"
     )
     .dito-break(
       v-if="schema.break === 'after'"
@@ -61,6 +64,12 @@ export default DitoComponent.component('DitoPane', {
     visible: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false }
+  },
+
+  data() {
+    return {
+      positions: []
+    }
   },
 
   computed: {
@@ -135,9 +144,42 @@ export default DitoComponent.component('DitoPane', {
       if (this.tab) {
         this.$router.push({ hash: `#${this.tab}` })
       }
+    },
+
+    onResize(index, { target }) {
+      const { y, width, height } = target.getBoundingClientRect()
+      this.positions[index] = width > 0 && height > 0 ? y : null
+    },
+
+    isFirstInRow(index) {
+      const { positions } = this
+      return (
+        positions[index] !== null && (
+          index === 0 ||
+          (findNextPosition(positions, index, -1, Infinity) < positions[index])
+        )
+      )
+    },
+
+    isLastInRow(index) {
+      const { positions } = this
+      return (
+        positions[index] !== null && (
+          index === positions.length - 1 ||
+          findNextPosition(positions, index, +1, 0) > positions[index]
+        )
+      )
     }
   }
 })
+
+function findNextPosition(positions, index, step, fallback) {
+  for (let i = index + step; i >= 0 && i < positions.length; i += step) {
+    const position = positions[i]
+    if (position) return position
+  }
+  return fallback
+}
 </script>
 
 <style lang="scss">

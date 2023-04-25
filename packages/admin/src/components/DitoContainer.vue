@@ -45,7 +45,9 @@ export default DitoComponent.component('DitoContainer', {
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    firstInRow: { type: Boolean, default: false },
+    lastInRow: { type: Boolean, default: false }
   },
 
   data() {
@@ -129,6 +131,9 @@ export default DitoComponent.component('DitoContainer', {
         [`${prefix}--has-label`]: this.hasLabel,
         [`${prefix}--aligned`]: keepAligned(this.schema),
         [`${prefix}--omit-padding`]: omitPadding(this.schema),
+        [`${prefix}--first-in-row`]: this.firstInRow,
+        [`${prefix}--last-in-row`]: this.lastInRow,
+        [`${prefix}--alone-in-row`]: this.firstInRow && this.lastInRow,
         ...(
           isString(containerClass)
             ? { [containerClass]: true }
@@ -212,19 +217,22 @@ export default DitoComponent.component('DitoContainer', {
   }
 
   &--aligned {
-    // To align components with and without labels.
-    justify-content: space-between;
+    // For components with labels, align the label at the top and the component
+    // at the bottom.
+    --justify: space-between;
 
     &:has(> :only-child) {
-      justify-content: flex-end;
+      // But if there is no label, still align the component to the bottom.
+      --justify: flex-end;
     }
 
-    // Don't align if neighbouring components aren't aligned either.
+    // Now only apply alignment if there are neighbouring components no the same
+    // row that also align.
     // Look ahead:
-    #{$self}:not(#{&}) + &,
+    &:not(#{$self}--last-in-row) + #{&}:not(#{$self}--first-in-row),
     // Look behind:
-    &:has(+ #{$self}:not(#{&})) {
-      justify-content: flex-start;
+    &:not(#{$self}--last-in-row):has(+ #{&}:not(#{$self}--first-in-row)) {
+      justify-content: var(--justify);
     }
   }
 

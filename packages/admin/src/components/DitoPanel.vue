@@ -164,8 +164,8 @@ export default DitoComponent.component('DitoPanel', {
 @import '../styles/_imports';
 
 .dito-panel {
-  & + & {
-    margin-top: $content-padding;
+  &:not(:last-child) {
+    margin-bottom: $content-padding;
   }
 
   &__header {

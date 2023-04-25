@@ -13,6 +13,7 @@ import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import DitoTypeComponent from './DitoTypeComponent.js'
+import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
 import { deprecate } from './utils/deprecate.js'
 import { formatQuery } from './utils/route.js'
@@ -198,7 +199,7 @@ export default class DitoAdmin {
       componentName: 'VueNotifications'
     })
 
-    // root.component('vue-modal', VueModal)
+    app.directive('resize', ResizeDirective)
 
     app.use(
       createRouter({
