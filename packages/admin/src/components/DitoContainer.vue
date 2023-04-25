@@ -226,13 +226,15 @@ export default DitoComponent.component('DitoContainer', {
       --justify: flex-end;
     }
 
-    // Now only apply alignment if there are neighbouring components no the same
-    // row that also align.
-    // Look ahead:
-    &:not(#{$self}--last-in-row) + #{&}:not(#{$self}--first-in-row),
-    // Look behind:
-    &:not(#{$self}--last-in-row):has(+ #{&}:not(#{$self}--first-in-row)) {
-      justify-content: var(--justify);
+    &:not(#{$self}--only-in-row) {
+      // Now only apply alignment if there are neighbouring components no the
+      // same row that also align.
+      // Look ahead:
+      &:not(#{$self}--last-in-row) + #{&}:not(#{$self}--first-in-row),
+      // Look behind:
+      &:not(#{$self}--last-in-row):has(+ #{&}:not(#{$self}--first-in-row)) {
+        justify-content: var(--justify);
+      }
     }
   }
 
