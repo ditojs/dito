@@ -9,22 +9,28 @@ component.dito-label(
     v-if="collapsible"
     :class="{ 'dito-opened': !collapsed }"
   )
-  DitoElement.dito-label-prefix(
-    v-for="(prefix, index) of prefixes"
-    :key="`prefix-${index}`"
-    tag="span"
-    :content="prefix"
-  )
-  label(
-    :for="dataPath"
-    v-html="text"
-  )
-  DitoElement.dito-label-suffix(
-    v-for="(suffix, index) of suffixes"
-    :key="`suffix-${index}`"
-    tag="span"
-    :content="suffix"
-  )
+  .dito-label__inner
+    DitoElement.dito-label-prefix(
+      v-for="(prefix, index) of prefixes"
+      :key="`prefix-${index}`"
+      tag="span"
+      :content="prefix"
+    )
+    label(
+      :for="dataPath"
+      v-html="text"
+    )
+    DitoElement.dito-label-suffix(
+      v-for="(suffix, index) of suffixes"
+      :key="`suffix-${index}`"
+      tag="span"
+      :content="suffix"
+    )
+    .dito-info(
+      v-if="info"
+      :data-tippy-content="info"
+      data-tippy-theme="info"
+    )
   slot(name="edit-buttons")
 </template>
 
@@ -40,7 +46,8 @@ export default DitoComponent.component('DitoLabel', {
     label: { type: [String, Object], default: null },
     dataPath: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
-    collapsible: { type: Boolean, default: false }
+    collapsible: { type: Boolean, default: false },
+    info: { type: String, default: null }
   },
 
   computed: {
@@ -83,6 +90,8 @@ export default DitoComponent.component('DitoLabel', {
 @import '../styles/_imports';
 
 .dito-label {
+  $self: &;
+
   --label-padding: 0;
   // For buttons and chevron to align right:
   display: flex;
@@ -92,8 +101,13 @@ export default DitoComponent.component('DitoLabel', {
   padding: var(--label-padding);
   margin: 0 0 $form-spacing-half 0;
 
+  &__inner {
+    display: flex;
+    // Stretch to full available width so that buttons appear right-aligned:
+    flex: 1 1 auto;
+  }
+
   label {
-    display: inline;
     cursor: inherit;
     font-weight: bold;
     white-space: nowrap;
@@ -102,21 +116,12 @@ export default DitoComponent.component('DitoLabel', {
   label,
   .dito-label-prefix,
   .dito-label-suffix {
-    &:nth-last-child(2) {
-      // To stretch either label or .dito-label-suffix to full available width
-      // so that buttons always appear right-aligned:
-      flex: 1 1 auto;
-    }
-
-    &::after {
-      content: '\a0'; // &nbsp;;
-    }
-  }
-
-  .dito-label-prefix,
-  .dito-label-suffix {
     @include user-select(none);
     @include ellipsis;
+
+    &::after {
+      content: '\a0'; // &nbsp;
+    }
   }
 
   .dito-buttons {
@@ -131,11 +136,9 @@ export default DitoComponent.component('DitoLabel', {
     width: 100%;
     // In order for ellipsis to work on labels without affecting other layout,
     // we need to position it absolutely inside its container.
-    label {
-      @include ellipsis;
-
+    #{$self}__inner {
       position: absolute;
-      max-width: 100%;
+      inset: 0;
     }
 
     &::after {
@@ -143,6 +146,10 @@ export default DitoComponent.component('DitoLabel', {
       // space on its parent to enforce the right text height in the container
       content: '\200b'; // zero-width space;
     }
+  }
+
+  .dito-info {
+    margin-left: 0.35em;
   }
 }
 

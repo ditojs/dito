@@ -6,21 +6,24 @@
 )
   DitoLabel(
     v-if="hasLabel"
+    :class="componentClass"
     :label="label"
     :dataPath="labelDataPath"
-    :class="componentClass"
+    :info="info"
   )
   component.dito-component(
     :is="typeComponent"
+    :class="componentClass"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
     :meta="meta"
     :store="store"
+    :width="width"
+    :label="label"
     :single="single"
     :nested="nested"
     :disabled="componentDisabled"
-    :class="componentClass"
     @errors="onErrors"
   )
   DitoErrors(:errors="errors")
@@ -84,7 +87,12 @@ export default DitoComponent.component('DitoContainer', {
       return this.nested ? this.dataPath : null
     },
 
-    componentWidth: getSchemaAccessor('width', {
+    info: getSchemaAccessor('info', {
+      type: String,
+      default: null
+    }),
+
+    width: getSchemaAccessor('width', {
       type: [String, Number],
       default() {
         return this.typeComponent?.defaultWidth
@@ -99,7 +107,7 @@ export default DitoComponent.component('DitoContainer', {
       }
     }),
 
-    componentWidthOperator: getSchemaAccessor('width', {
+    widthOperator: getSchemaAccessor('width', {
       type: String,
       get(width) {
         return isString(width)
@@ -143,7 +151,7 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     componentBasis() {
-      const width = this.componentWidth
+      const width = this.width
       // 'auto' = no fitting:
       const basis = [null, 'auto', 'fill'].includes(width)
         ? 'auto'
@@ -158,11 +166,11 @@ export default DitoComponent.component('DitoContainer', {
     containerStyle() {
       // Interpret '>50%' as '50%, flex-grow: 1`
       const grow = (
-        this.componentWidthOperator === '>' ||
-        this.componentWidth === 'fill'
+        this.widthOperator === '>' ||
+        this.width === 'fill'
       )
       // Interpret '<50%' as '50%, flex-shrink: 1`
-      const shrink = this.componentWidthOperator === '<'
+      const shrink = this.widthOperator === '<'
       return {
         flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${this.componentBasis}`
       }
@@ -174,7 +182,7 @@ export default DitoComponent.component('DitoContainer', {
         // TODO: BEM?
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
-        'dito-width-fill': !basisIsAuto || this.componentWidth === 'fill',
+        'dito-width-fill': !basisIsAuto || this.width === 'fill',
         'dito-has-errors': !!this.errors
       }
     }

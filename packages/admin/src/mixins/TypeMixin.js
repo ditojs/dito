@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { computeValue } from '../utils/schema.js'
 import { getItem, getParentItem } from '../utils/data.js'
-import { isString, asArray, camelize } from '@ditojs/utils'
+import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -17,6 +17,8 @@ export default {
     data: { type: [Object, Array], required: true },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    width: { type: [Number, String], default: null },
+    label: { type: String, default: null },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
@@ -108,21 +110,6 @@ export default {
     processedItem() {
       return this.processedData
     },
-
-    label: getSchemaAccessor('label', {
-      type: [String, Boolean],
-      get(label) {
-        return isString(label)
-          ? label
-          : label !== false && this.$options.generateLabel
-            ? this.getLabel(this.schema)
-            : null
-      }
-    }),
-
-    width: getSchemaAccessor('width', {
-      type: [String, Number]
-    }),
 
     visible: getSchemaAccessor('visible', {
       type: Boolean,

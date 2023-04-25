@@ -1,0 +1,32 @@
+.dito-info {
+  --size: calc(1em * var(--line-height));
+
+  display: inline-block;
+  position: relative;
+  flex: 0 0 var(--size);
+  width: var(--size);
+  height: var(--size);
+  text-align: center;
+  vertical-align: top;
+  margin-left: 0.35em;
+  color: $color-active;
+
+  &::before {
+    @extend %icon-info;
+
+    width: var(--size);
+  }
+}
+
+.tippy-box[data-theme~='info'] {
+  background-color: $color-active;
+  color: $color-white;
+
+  > .tippy-arrow::before {
+    color: $color-active;
+  }
+
+  .tippy-content {
+    white-space: pre-line;
+  }
+}

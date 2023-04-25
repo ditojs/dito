@@ -6,7 +6,20 @@ button.dito-button(
   :title="title"
   :class="buttonClass"
   v-bind="attributes"
-) {{ text }}
+)
+  template(
+    v-if="info || width === 'fill'"
+  )
+    .dito-button__text
+      span {{ text }}
+    .dito-info(
+      v-if="!label && info"
+      :data-tippy-content="info"
+      data-tippy-theme="info"
+    )
+  template(
+    v-else
+  ) {{ text }}
 </template>
 
 <script>
@@ -41,6 +54,11 @@ export default DitoTypeComponent.register(
         return this.text || labelize(this.verb)
       },
 
+      info: getSchemaAccessor('info', {
+        type: String,
+        default: null
+      }),
+
       closeForm: getSchemaAccessor('closeForm', {
         type: Boolean,
         default: false
@@ -74,3 +92,25 @@ export default DitoTypeComponent.register(
   }
 )
 </script>
+
+<style lang="scss">
+@import '../styles/_imports';
+
+.dito-button {
+  display: flex;
+
+  &__text {
+    position: relative;
+    width: 100%;
+    min-width: min-content;
+    height: calc(1em * var(--line-height));
+
+    span {
+      @include ellipsis;
+
+      position: absolute;
+      inset: 0;
+    }
+  }
+}
+</style>

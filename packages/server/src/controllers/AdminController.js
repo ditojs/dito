@@ -304,6 +304,7 @@ const coreDependencies = [
   'focus-trap',
   'tabbable',
   'sortablejs',
+  'tippy.js',
   '@tiptap/*',
   'prosemirror-*',
   'linkifyjs',

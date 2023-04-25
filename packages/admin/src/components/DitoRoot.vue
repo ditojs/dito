@@ -34,6 +34,7 @@
 </template>
 
 <script>
+import { delegate as tippyDelegate } from 'tippy.js'
 import { asArray, mapConcurrently, stripTags } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoUser from '../DitoUser.js'
@@ -90,6 +91,9 @@ export default DitoComponent.component('DitoRoot', {
   },
 
   async mounted() {
+    tippyDelegate(this.$el, {
+      target: '[data-tippy-content]'
+    })
     // Clear the label marked as active on all mouse and keyboard events, except
     // the ones that DitoLabel itself intercepts.
     this.domOn(document, {
