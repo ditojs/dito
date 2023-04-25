@@ -1,5 +1,6 @@
 <template lang="pug">
 component.dito-label(
+  v-if="text || collapsible"
   :is="tag"
   v-bind="attributes"
   :class="{ 'dito-active': isActive }"

@@ -31,7 +31,7 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent, omitPadding } from '../utils/schema.js'
+import { getTypeComponent, keepAligned, omitPadding } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
@@ -68,37 +68,18 @@ export default DitoComponent.component('DitoContainer', {
       return (
         label !== false && (
           !!label ||
-          this.generateLabels && (
-            this.typeComponent?.generateLabel ||
-            // If the component has no label but isn't full width, render an
-            // empty label for alignment with other components:
-            !this.isFullWidth
-          )
+          this.generateLabels && this.typeComponent?.generateLabel
         )
       )
     },
 
     label() {
-      return this.hasLabel
-        ? this.getLabel(
-            this.schema,
-            // Pass an empty string in case we need an empty label, see
-            // `hasLabel()`:
-            this.typeComponent?.generateLabel ? this.schema.name : ''
-          ) || ''
-        : null
+      return this.hasLabel ? this.getLabel(this.schema) : null
     },
 
     labelDataPath() {
       // Unnested types don't have a dataPath for themselves, don't use it:
       return this.nested ? this.dataPath : null
-    },
-
-    isFullWidth() {
-      return (
-        !this.componentBasis.endsWith('%') ||
-        parseFloat(this.componentBasis) === 100
-      )
     },
 
     componentWidth: getSchemaAccessor('width', {
@@ -146,6 +127,7 @@ export default DitoComponent.component('DitoContainer', {
       return {
         [`${prefix}--single`]: this.single,
         [`${prefix}--has-label`]: this.hasLabel,
+        [`${prefix}--aligned`]: keepAligned(this.schema),
         [`${prefix}--omit-padding`]: omitPadding(this.schema),
         ...(
           isString(containerClass)
@@ -205,6 +187,8 @@ export default DitoComponent.component('DitoContainer', {
 @import '../styles/_imports';
 
 .dito-container {
+  $self: &;
+
   display: flex;
   flex-flow: column;
   align-items: flex-start;
@@ -225,6 +209,23 @@ export default DitoComponent.component('DitoContainer', {
     height: 100%; // So that list buttons can be sticky at the bottom;
     // Just like on DitoPane, clear settings from above.
     padding: 0;
+  }
+
+  &--aligned {
+    // To align components with and without labels.
+    justify-content: space-between;
+
+    &:has(> :only-child) {
+      justify-content: flex-end;
+    }
+
+    // Don't align if neighbouring components aren't aligned either.
+    // Look ahead:
+    #{$self}:not(#{&}) + &,
+    // Look behind:
+    &:has(+ #{$self}:not(#{&})) {
+      justify-content: flex-start;
+    }
   }
 
   &--omit-padding {

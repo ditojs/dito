@@ -112,6 +112,8 @@ export default DitoTypeComponent.register('upload', {
   mixins: [SortableMixin],
   components: { VueUpload },
 
+  keepAligned: false,
+
   data() {
     return {
       uploads: []

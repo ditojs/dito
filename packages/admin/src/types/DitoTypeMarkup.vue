@@ -83,6 +83,8 @@ export default DitoTypeComponent.register('markup', {
     Icon
   },
 
+  keepAligned: false,
+
   data() {
     return {
       editor: null,

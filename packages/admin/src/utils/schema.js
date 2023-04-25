@@ -474,6 +474,10 @@ export function omitPadding(schema) {
   return !!getTypeOptions(schema)?.omitPadding
 }
 
+export function keepAligned(schema) {
+  return !!getTypeOptions(schema)?.keepAligned
+}
+
 export function getDefaultValue(schema) {
   // Support default values both on schema and on component level.
   // NOTE: At the time of creation, components may not be instantiated, (e.g. if

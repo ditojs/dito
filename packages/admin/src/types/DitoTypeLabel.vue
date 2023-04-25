@@ -11,7 +11,8 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 // @vue/component
 export default DitoTypeComponent.register('label', {
   excludeValue: true,
-  generateLabel: false
+  generateLabel: false,
+  keepAligned: false
 })
 </script>
 

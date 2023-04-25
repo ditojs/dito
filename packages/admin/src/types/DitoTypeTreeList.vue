@@ -35,6 +35,8 @@ export default DitoTypeComponent.register(
   {
     mixins: [SourceMixin],
 
+    keepAligned: false,
+
     provide() {
       return { container: this }
     },
