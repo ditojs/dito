@@ -4,7 +4,7 @@
     v-for="(tabSchema, key) in tabs"
   )
     RouterLink.dito-link(
-      v-if="shouldRender(tabSchema)"
+      v-if="shouldRenderSchema(tabSchema)"
       :key="key"
       :to="{ hash: `#${key}` }"
       :class="{ 'dito-active': selectedTab === key }"

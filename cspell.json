@@ -27,6 +27,7 @@
     "pulldown",
     "quot",
     "readyonly",
+    "renderable",
     "sass",
     "stylelint",
     "tinycolor",

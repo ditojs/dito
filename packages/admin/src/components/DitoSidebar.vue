@@ -6,7 +6,7 @@ nav.dito-sidebar.dito-scroll-parent
       v-for="view in views"
     )
       RouterLink(
-        v-if="shouldRender(view)"
+        v-if="shouldRenderSchema(view)"
         v-slot="{ isActive, href, route }"
         custom
         :to="`/${view.path}`"

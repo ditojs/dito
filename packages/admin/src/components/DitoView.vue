@@ -11,7 +11,7 @@ template(
     :key="name"
   )
   .dito-view.dito-scroll-parent(
-    v-else-if="shouldRender(viewSchema)"
+    v-else-if="shouldRenderSchema(viewSchema)"
     :data-resource="sourceSchema.path"
   )
     DitoSchema(
@@ -28,7 +28,10 @@ template(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
-import { someSchemaComponent, isSingleComponentView } from '../utils/schema.js'
+import {
+  isSingleComponentView,
+  someNestedSchemaComponent
+} from '../utils/schema.js'
 import { hasResource } from '../utils/resource.js'
 
 // @vue/component
@@ -93,7 +96,7 @@ export default DitoComponent.component('DitoView', {
     },
 
     providesData() {
-      return someSchemaComponent(this.viewSchema, hasResource)
+      return someNestedSchemaComponent(this.viewSchema, hasResource)
     }
   },
 

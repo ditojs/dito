@@ -5,7 +5,7 @@ thead.dito-table-head
       v-for="column in columns"
     )
       th(
-        v-if="shouldRender(column)"
+        v-if="shouldRenderSchema(column)"
         :class="getColumnClass(column)"
       )
         RouterLink(

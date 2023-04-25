@@ -20,7 +20,7 @@
       v-if="schema.break === 'before'"
     )
     DitoContainer(
-      v-if="shouldRender(schema)"
+      v-if="shouldRenderSchema(schema)"
       :key="nestedDataPath"
       v-resize="event => onResize(index, event)"
       :schema="schema"

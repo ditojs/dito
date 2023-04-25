@@ -1,11 +1,8 @@
 import {
   isObject,
-  isArray,
   isString,
   isFunction,
-  asArray,
   equals,
-  getValueAtDataPath,
   labelize,
   hyphenate,
   format
@@ -13,7 +10,7 @@ import {
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
-import { isMatchingType, convertType } from '../utils/type.js'
+import { getSchemaValue, shouldRenderSchema } from '../utils/schema.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { computed, reactive } from 'vue'
 
@@ -201,43 +198,15 @@ export default {
 
     getSchemaValue(
       keyOrDataPath,
-      { type, default: def, schema = this.schema, callback = true } = {}
+      { type, schema = this.schema, callback = true, default: def } = {}
     ) {
-      const types = type && asArray(type)
-      // For performance reasons, data-paths in `keyOrDataPath` can only be
-      // provided in in array format here:
-      let value = schema
-        ? isArray(keyOrDataPath)
-          ? getValueAtDataPath(schema, keyOrDataPath, () => undefined)
-          : schema[keyOrDataPath]
-        : undefined
-
-      if (value === undefined && def !== undefined) {
-        if (callback && isFunction(def) && !isMatchingType(types, def)) {
-          // Support `default()` functions for any type except `Function`:
-          def = def.call(this)
-        }
-        return def
-      }
-
-      if (isMatchingType(types, value)) {
-        return value
-      }
-      // Any schema value handled through `getSchemaValue()` can provide
-      // a function that's resolved when the value is evaluated:
-      if (callback && isFunction(value)) {
-        value = value(this.context)
-      }
-      // Now finally see if we can convert to the expect types.
-      if (types && value != null && !isMatchingType(types, value)) {
-        for (const type of types) {
-          const converted = convertType(type, value)
-          if (converted !== value) {
-            return converted
-          }
-        }
-      }
-      return value
+      return getSchemaValue(keyOrDataPath, {
+        type,
+        schema,
+        callback,
+        context: this.context,
+        default: isFunction(def) ? () => def.call(this) : def
+      })
     },
 
     getLabel(schema, name) {
@@ -263,12 +232,8 @@ export default {
       }
     },
 
-    shouldRender(schema = null) {
-      return this.getSchemaValue('if', {
-        type: Boolean,
-        default: true,
-        schema
-      })
+    shouldRenderSchema(schema = null) {
+      return shouldRenderSchema(schema, this.context)
     },
 
     shouldShow(schema = null) {

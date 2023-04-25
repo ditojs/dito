@@ -6,7 +6,7 @@
     v-for="{ schema, dataPath, tabComponent } in panels"
   )
     DitoPanel(
-      v-if="shouldRender(schema)"
+      v-if="shouldRenderSchema(schema)"
       :key="getPanelKey(dataPath, tabComponent)"
       :schema="schema"
       :dataPath="dataPath"

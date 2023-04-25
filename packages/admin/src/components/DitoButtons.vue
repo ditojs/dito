@@ -6,7 +6,7 @@
     v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
   )
     DitoContainer(
-      v-if="shouldRender(buttonSchema)"
+      v-if="shouldRenderSchema(buttonSchema)"
       :key="buttonDataPath"
       :schema="buttonSchema"
       :dataPath="buttonDataPath"

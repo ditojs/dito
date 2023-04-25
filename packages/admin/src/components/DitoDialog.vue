@@ -79,6 +79,7 @@ export default DitoComponent.component('DitoDialog', {
 
     schema() {
       return {
+        type: 'dialog',
         components: this.components
       }
     },

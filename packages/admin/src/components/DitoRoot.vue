@@ -172,7 +172,12 @@ export default DitoComponent.component('DitoRoot', {
         async (resolve, reject) => {
           // Process components to resolve async schemas.
           const routes = []
-          await processSchemaComponents(this.api, { components }, routes, 0)
+          await processSchemaComponents(
+            this.api,
+            { type: 'dialog', components },
+            routes,
+            0
+          )
           if (routes.length > 0) {
             throw new Error(
               'Dialogs do not support components that produce routes'

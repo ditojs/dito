@@ -14,7 +14,7 @@
         v-for="(form, type) in forms"
       )
         a(
-          v-if="shouldRender(form)"
+          v-if="shouldRenderSchema(form)"
           v-show="shouldShow(form)"
           :class="getFormClass(form, type)"
           @mousedown.stop="onPulldownMouseDown(type)"
@@ -61,7 +61,7 @@ export default DitoComponent.component('DitoCreateButton', {
 
   methods: {
     createItem(form, type = null) {
-      if (this.shouldRender(form) && !this.shouldDisable(form)) {
+      if (this.shouldRenderSchema(form) && !this.shouldDisable(form)) {
         if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {

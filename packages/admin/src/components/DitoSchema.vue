@@ -155,6 +155,7 @@ export default DitoComponent.component('DitoSchema', {
           ? data(this.context)
           : data
       ),
+      currentTab: null,
       componentsRegistry: {},
       panesRegistry: {},
       panelsRegistry: {}
@@ -187,17 +188,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     selectedTab() {
-      const currentTab = this.$route.hash?.slice(1) || null
-      const tab =
-        currentTab && this.shouldRender(this.tabs[currentTab])
-          ? currentTab
-          : this.defaultTab?.name || null
-      if (tab !== currentTab) {
-        // TODO: Move this watcher!
-        // Any tab change needs to be reflected in the router also.
-        this.$router.replace({ hash: `#${tab}` })
-      }
-      return tab
+      return this.currentTab || this.defaultTab?.name || null
     },
 
     defaultTab() {
@@ -333,6 +324,32 @@ export default DitoComponent.component('DitoSchema', {
 
     panelsByDataPath() {
       return this._listEntriesByDataPath(this.panelsRegistry)
+    }
+  },
+
+  watch: {
+    '$route.hash': {
+      immediate: true,
+      handler(hash) {
+        if (this.hasTabs) {
+          this.currentTab = hash?.slice(1) || null
+        }
+      }
+    },
+
+    'selectedTab'(selectedTab) {
+      if (this.hasTabs) {
+        let tab = null
+        if (selectedTab !== this.currentTab) {
+          // Any tab change needs to be reflected in the router also.
+          tab = selectedTab
+        } else if (!this.shouldRenderSchema(this.tabs[selectedTab])) {
+          tab = this.defaultTab?.name
+        }
+        if (tab) {
+          this.$router.replace({ hash: `#${tab}` })
+        }
+      }
     }
   },
 

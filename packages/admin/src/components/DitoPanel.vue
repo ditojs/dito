@@ -1,6 +1,7 @@
 <template lang="pug">
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
+  v-if="shouldRenderSchema(panelSchema)"
   v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
   :is="panelTag"
   @submit.prevent

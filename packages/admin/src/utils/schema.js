@@ -4,6 +4,7 @@ import TypeMixin from '../mixins/TypeMixin.js'
 import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
 import { appendDataPath, isTemporaryId } from './data.js'
+import { isMatchingType, convertType } from './type.js'
 import {
   isObject,
   isString,
@@ -11,10 +12,12 @@ import {
   isFunction,
   isPromise,
   isModule,
+  asArray,
   clone,
   merge,
   camelize,
-  mapConcurrently
+  mapConcurrently,
+  getValueAtDataPath
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
 
@@ -42,7 +45,7 @@ export function iterateSchemaComponents(schemas, callback) {
       if (res !== undefined) {
         return res
       }
-    } else {
+    } else if (isSchema(schema)) {
       for (const [name, component] of Object.entries(schema.components || {})) {
         const res = callback(component, name, 1)
         if (res !== undefined) {
@@ -59,31 +62,35 @@ export function iterateNestedSchemaComponents(schema, callback) {
     : undefined
 }
 
-export function findSchemaComponent(schema, callback) {
+export function findNestedSchemaComponent(schema, callback) {
   return (
     iterateNestedSchemaComponents(
       schema,
       component => (callback(component) ? component : undefined)
-    ) || null
+    ) ?? null
   )
 }
 
-export function someSchemaComponent(schema, callback) {
+export function someNestedSchemaComponent(schema, callback) {
   return (
     iterateNestedSchemaComponents(
       schema,
       component => (callback(component) ? true : undefined)
-    ) === true
+    ) ?? false
   )
 }
 
-export function everySchemaComponent(schema, callback) {
+export function everyNestedSchemaComponent(schema, callback) {
   return (
     iterateNestedSchemaComponents(
       schema,
       component => (callback(component) ? undefined : false)
-    ) !== false
+    ) ?? true
   )
+}
+
+export function hasNestedSchemaComponents(schema) {
+  return someNestedSchemaComponent(schema, () => true) ?? false
 }
 
 export function isSchema(schema) {
@@ -107,7 +114,7 @@ export function isPanel(schema) {
 }
 
 export function getSchemaIdentifier(schema) {
-  return schema.name || schema.label || schema.type
+  return JSON.stringify(schema)
 }
 
 export async function resolveSchema(schema, unwrapModule = false) {
@@ -309,11 +316,12 @@ export async function processForms(api, schema, level) {
     )
   } else if (form) {
     form = schema.form = await processForm(api, form)
-  } else if (components) {
+  } else if (isObject(components)) {
     // NOTE: Processing forms in computed components is not supported, since it
     // only can be computed in conjunction with actual data.
-    if (isObject(components)) {
-      form = { components }
+    form = {
+      type: 'form',
+      components
     }
   }
 
@@ -398,7 +406,7 @@ export function getViewFormSchema(schema, context) {
   return viewSchema
     ? // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
-      findSchemaComponent(viewSchema, hasFormSchema) || null
+      findNestedSchemaComponent(viewSchema, hasFormSchema) || null
     : null
 }
 
@@ -478,6 +486,63 @@ export function keepAligned(schema) {
   return !!getTypeOptions(schema)?.keepAligned
 }
 
+export function getSchemaValue(
+  keyOrDataPath,
+  { type, schema, callback = true, default: def, context } = {}
+) {
+  const types = type && asArray(type)
+  // For performance reasons, data-paths in `keyOrDataPath` can only be
+  // provided in in array format here:
+  let value = schema
+    ? isArray(keyOrDataPath)
+      ? getValueAtDataPath(schema, keyOrDataPath, () => undefined)
+      : schema[keyOrDataPath]
+    : undefined
+
+  if (value === undefined && def !== undefined) {
+    if (callback && isFunction(def) && !isMatchingType(types, def)) {
+      // Support `default()` functions for any type except `Function`:
+      def = def(context)
+    }
+    return def
+  }
+
+  if (isMatchingType(types, value)) {
+    return value
+  }
+  // Any schema value handled through `getSchemaValue()` can provide
+  // a function that's resolved when the value is evaluated:
+  if (callback && isFunction(value)) {
+    value = value(context)
+  }
+  // Now finally see if we can convert to the expect types.
+  if (types && value != null && !isMatchingType(types, value)) {
+    for (const type of types) {
+      const converted = convertType(type, value)
+      if (converted !== value) {
+        return converted
+      }
+    }
+  }
+  return value
+}
+
+export function shouldRenderSchema(schema, context) {
+  return (
+    getSchemaValue('if', {
+      type: Boolean,
+      schema,
+      context,
+      default: true
+    }) && (
+      !hasNestedSchemaComponents(schema) ||
+      someNestedSchemaComponent(schema, component =>
+        shouldRenderSchema(component, context)
+      )
+    )
+  )
+}
+
 export function getDefaultValue(schema) {
   // Support default values both on schema and on component level.
   // NOTE: At the time of creation, components may not be instantiated, (e.g. if
@@ -542,8 +607,8 @@ export function computeValue(schema, data, name, dataPath, {
       })
     )
     if (value !== undefined) {
-      // Access `data[name]` directly instead of `this.value = …` to update the
-      // value without calling parse():
+      // Access `data[name]` directly to update the value without calling
+      // parse():
       data[name] = value
     }
   }

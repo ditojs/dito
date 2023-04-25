@@ -57,7 +57,7 @@
             v-for="column in columns"
           )
             DitoTableCell(
-              v-if="shouldRender(column)"
+              v-if="shouldRenderSchema(column)"
               :key="column.name"
               :class="getCellClass(column)"
               :cell="column"
