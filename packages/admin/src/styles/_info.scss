@@ -1,3 +1,5 @@
+@import 'tippy.js/animations/shift-away-subtle.css';
+
 .dito-info {
   --size: calc(1em * var(--line-height));
 
@@ -21,6 +23,7 @@
 .tippy-box[data-theme~='info'] {
   background-color: $color-active;
   color: $color-white;
+  filter: drop-shadow(0 2px 4px $color-shadow);
 
   > .tippy-arrow::before {
     color: $color-active;
