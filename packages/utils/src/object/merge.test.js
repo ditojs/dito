@@ -77,7 +77,7 @@ describe('merge()', () => {
 
     expect(source3.a).toStrictEqual([[1, 2, 3]])
     expect(source4.a).toStrictEqual([[4, 5]])
-    expect(actual2.a).toStrictEqual([[4, 5, 3]])
+    expect(actual2.a).toStrictEqual([[1, 2, 3, 4, 5]])
   })
 
   it('should overwrite existing values with `undefined` in objects', () => {
@@ -85,15 +85,15 @@ describe('merge()', () => {
     expect(actual).toStrictEqual({ a: undefined, b: undefined })
   })
 
-  it('should overwrite existing values with `undefined` in arrays', () => {
-    const array1 = [1]
-    array1[2] = 3
+  it('should not overwrite existing values with `undefined` in arrays', () => {
+    const array1 = [1, undefined, 3]
     const actual1 = merge([4, 5, 6], array1)
-    expect(actual1).toStrictEqual([1, 5, 3])
+    expect(actual1).toStrictEqual([4, 5, 6, 1, undefined, 3])
 
-    const array2 = [1, undefined, 3]
+    // eslint-disable-next-line no-sparse-arrays
+    const array2 = [1, , 3]
     const actual2 = merge([4, 5, 6], array2)
-    expect(actual2).toStrictEqual([1, undefined, 3])
+    expect(actual2).toStrictEqual([4, 5, 6, 1, 3])
   })
 
   it('should merge regexps', () => {
