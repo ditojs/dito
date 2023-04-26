@@ -3,7 +3,7 @@ import createVuePlugin from '@vitejs/plugin-vue'
 import { getPostCssConfig } from './postcss.js'
 import { getRollupExternalsFromDependencies } from './rollup.js'
 
-export function getViteConfig({
+export function defineViteConfig({
   name,
   css = false,
   vue = false,

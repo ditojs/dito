@@ -128,7 +128,11 @@ export class AdminController extends Controller {
   }
 
   async setupViteServer() {
-    const config = this.getViteConfig()
+    const config = (
+      (await this.app.loadAdminViteConfig()) ||
+      this.defineViteConfig()
+    )
+
     const development = this.mode === 'development'
     const server = await createServer({
       ...config,
@@ -167,7 +171,7 @@ export class AdminController extends Controller {
     )
   }
 
-  getViteConfig(config = {}) {
+  defineViteConfig(config = {}) {
     const development = this.mode === 'development'
 
     const cwd = process.cwd()
@@ -202,37 +206,37 @@ export class AdminController extends Controller {
               }
             }
           ],
-          build: {
-            ...(!development && {
-              outDir: this.getPath('dist'),
-              assetsDir: '.',
-              emptyOutDir: true,
-              chunkSizeWarningLimit: 1000,
-              rollupOptions: {
-                output: {
-                  manualChunks(id) {
-                    if (id.startsWith(views)) {
-                      return 'views'
-                    } else if (id.startsWith(cwd)) {
-                      return 'common'
-                    } else {
-                      const module = id.match(
-                        /node_modules\/((?:@[^/]*\/)?[^/$]*)/
-                      )?.[1]
-                      // Internal ids (vite modules) don't come from
-                      // node_modules, and the ids actually start with \0x00.
-                      return (
-                        !module ||
-                        testModuleIdentifier(module, coreDependencies)
-                      )
-                        ? 'core'
-                        : 'vendor'
+          build: development
+            ? {}
+            : {
+                outDir: this.getPath('dist'),
+                assetsDir: '.',
+                emptyOutDir: true,
+                chunkSizeWarningLimit: 1000,
+                rollupOptions: {
+                  output: {
+                    manualChunks(id) {
+                      if (id.startsWith(views)) {
+                        return 'views'
+                      } else if (id.startsWith(cwd)) {
+                        return 'common'
+                      } else {
+                        const module = id.match(
+                          /node_modules\/((?:@[^/]*\/)?[^/$]*)/
+                        )?.[1]
+                        // Internal ids (vite modules) don't come from
+                        // node_modules, and the ids actually start with \0x00.
+                        return (
+                          !module ||
+                          testModuleIdentifier(module, coreDependencies)
+                        )
+                          ? 'core'
+                          : 'vendor'
+                      }
                     }
                   }
                 }
-              }
-            })
-          },
+              },
           css: {
             postcss: getPostCssConfig(),
             devSourcemap: development

@@ -1,3 +1,3 @@
-import { getViteConfig } from '@ditojs/build'
+import { defineViteConfig } from '@ditojs/build'
 
-export default getViteConfig({ name: 'dito-ui', vue: true, css: true })
+export default defineViteConfig({ name: 'dito-ui', vue: true, css: true })

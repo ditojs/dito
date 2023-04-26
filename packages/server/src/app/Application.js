@@ -394,8 +394,32 @@ export class Application extends Koa {
     )
   }
 
+  defineAdminViteConfig(config) {
+    return this.getAdminController()?.defineViteConfig(config) || null
+  }
+
   getAdminViteConfig(config) {
-    return this.getAdminController()?.getViteConfig(config) || null
+    deprecate(
+      `app.getAdminViteConfig() is deprecated. Use app.defineAdminViteConfig() instead.`
+    )
+
+    return this.defineAdminViteConfig(config)
+  }
+
+  async loadAdminViteConfig() {
+    const cwd = process.cwd()
+    for (const extension of ['js', 'mjs', 'cjs', 'ts']) {
+      const file = path.join(cwd, `admin.vite.config.${extension}`)
+      try {
+        await fs.access(file)
+        return (await import(file)).default
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          throw error
+        }
+      }
+    }
+    return null
   }
 
   getAssetConfig({
@@ -805,7 +829,7 @@ export class Application extends Koa {
   }
 
   startOrExit() {
-    deprecate(`app.startOrExit() is deprecated. Call app.execute() instead.`)
+    deprecate(`app.startOrExit() is deprecated. Use app.execute() instead.`)
     return this.execute()
   }
 

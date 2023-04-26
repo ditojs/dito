@@ -1089,6 +1089,8 @@ export class AdminController extends Controller {
   sendDitoObject(ctx: Koa.Context): void
   middleware(): Koa.Middleware
   setupViteServer(): void
+  defineViteConfig(config: UserConfig): UserConfig
+  /** @deprecated Use `defineViteConfig` instead. */
   getViteConfig(config: UserConfig): UserConfig
 }
 type ModelControllerHookType = 'collection' | 'member'
