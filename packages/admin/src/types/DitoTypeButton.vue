@@ -98,10 +98,6 @@ export default DitoTypeComponent.register(
 .dito-button {
   $self: &;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   &__text {
     position: relative;
     min-width: min-content;

@@ -1,7 +1,9 @@
 @use 'sass:color';
 
 .dito-button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   background: $button-color;
   color: $color-text;
@@ -9,7 +11,6 @@
   border: 1px solid $border-color;
   border-radius: $border-radius;
   padding: $input-padding;
-  text-align: center;
   white-space: nowrap;
   // For icons:
   min-width: 1.5em;
@@ -57,6 +58,7 @@
     }
   }
 
+  &.dito-disabled,
   &[disabled] {
     @extend %button-disabled;
   }
