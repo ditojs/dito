@@ -55,19 +55,15 @@ export default {
           { component: this }
         )
         const { format } = this.schema
-        // `schema.format` is only ever called in the life-cycle
-        // of the component and thus it's ok to bind it to `this`
         return format
-          ? format.call(this, new DitoContext(this, { value }))
+          ? format(new DitoContext(this, { value }))
           : value
       },
 
       set(value) {
         const { parse } = this.schema
-        // `schema.parse` is only ever called in the life-cycle
-        // of the component and thus it's ok to bind it to `this`
         this.parsedValue = parse
-          ? parse.call(this, new DitoContext(this, { value }))
+          ? parse(new DitoContext(this, { value }))
           : value
         // eslint-disable-next-line vue/no-mutating-props
         this.data[this.name] = this.parsedValue

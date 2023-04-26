@@ -227,7 +227,7 @@ export default {
       return isString(optionValue)
         ? option?.[optionValue]
         : isFunction(optionValue)
-          ? optionValue.call(this, new DitoContext(this, { option }))
+          ? optionValue(new DitoContext(this, { option }))
           : option
     },
 
@@ -236,7 +236,7 @@ export default {
       return isString(optionLabel)
         ? option?.[optionLabel]
         : isFunction(optionLabel)
-          ? optionLabel.call(this, new DitoContext(this, { option }))
+          ? optionLabel(new DitoContext(this, { option }))
           : labelize(`${option}`)
     }
   },
