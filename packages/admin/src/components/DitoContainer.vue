@@ -131,6 +131,32 @@ export default DitoComponent.component('DitoContainer', {
       }
     }),
 
+    flexGrow() {
+      // Interpret '>50%' as '50%, flex-grow: 1`
+      return (
+        this.widthOperator === '>' ||
+        this.width === 'fill'
+      )
+    },
+
+    flexShrink() {
+      // Interpret '<50%' as '50%, flex-shrink: 1`
+      return this.widthOperator === '<'
+    },
+
+    flexBasis() {
+      const width = this.width
+      // 'auto' = no fitting:
+      const basis = [null, 'auto', 'fill'].includes(width)
+        ? 'auto'
+        : /%$/.test(width)
+          ? parseFloat(width) // percentage
+          : /[a-z]/.test(width)
+            ? width // native units
+            : parseFraction(width) * 100 // fraction
+      return isNumber(basis) ? `${basis}%` : basis
+    },
+
     containerClass() {
       const { class: containerClass } = this.schema
       const prefix = 'dito-container'
@@ -150,39 +176,27 @@ export default DitoComponent.component('DitoContainer', {
       }
     },
 
-    componentBasis() {
-      const width = this.width
-      // 'auto' = no fitting:
-      const basis = [null, 'auto', 'fill'].includes(width)
-        ? 'auto'
-        : /%$/.test(width)
-          ? parseFloat(width) // percentage
-          : /[a-z]/.test(width)
-            ? width // native units
-            : parseFraction(width) * 100 // fraction
-      return isNumber(basis) ? `${basis}%` : basis
-    },
-
     containerStyle() {
-      // Interpret '>50%' as '50%, flex-grow: 1`
-      const grow = (
-        this.widthOperator === '>' ||
-        this.width === 'fill'
-      )
-      // Interpret '<50%' as '50%, flex-shrink: 1`
-      const shrink = this.widthOperator === '<'
       return {
-        flex: `${grow ? 1 : 0} ${shrink ? 1 : 0} ${this.componentBasis}`
+        flex: `${
+          this.flexGrow ? 1 : 0
+        } ${
+          this.flexShrink ? 1 : 0
+        } ${
+          this.flexBasis
+        }`
       }
     },
 
     componentClass() {
-      const basisIsAuto = this.componentBasis === 'auto'
+      const basisIsAuto = this.flexBasis === 'auto'
       return {
         // TODO: BEM?
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
         'dito-width-fill': !basisIsAuto || this.width === 'fill',
+        'dito-width-grow': this.flexGrow,
+        'dito-width-shrink': this.flexShrink,
         'dito-has-errors': !!this.errors
       }
     }

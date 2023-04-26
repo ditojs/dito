@@ -96,19 +96,26 @@ export default DitoTypeComponent.register(
 @import '../styles/_imports';
 
 .dito-button {
+  $self: &;
+
   display: flex;
+  align-items: center;
+  justify-content: center;
 
   &__text {
     position: relative;
-    width: 100%;
     min-width: min-content;
     height: calc(1em * var(--line-height));
 
     span {
       @include ellipsis;
 
-      position: absolute;
-      inset: 0;
+      #{$self}:not(.dito-width-grow) & {
+        // Use `position: absolute` to prevent the text from growing over the
+        // button's width, which would cause the button to grow as well.
+        position: absolute;
+        inset: 0;
+      }
     }
   }
 }

@@ -117,8 +117,11 @@ export default DitoComponent.component('DitoLabel', {
   .dito-label-suffix {
     @include user-select(none);
     @include ellipsis;
+  }
 
-    &::after {
+  .dito-label-prefix + label,
+  label + .dito-label-suffix {
+    &::before {
       content: '\a0'; // &nbsp;
     }
   }
