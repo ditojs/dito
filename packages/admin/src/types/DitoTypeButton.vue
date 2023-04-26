@@ -14,7 +14,7 @@ button.dito-button(
       span {{ text }}
     .dito-info(
       v-if="!label && info"
-      :data-tippy-content="info"
+      :data-info="info"
     )
   template(
     v-else

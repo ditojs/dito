@@ -28,7 +28,7 @@ component.dito-label(
     )
     .dito-info(
       v-if="info"
-      :data-tippy-content="info"
+      :data-info="info"
     )
   slot(name="edit-buttons")
 </template>

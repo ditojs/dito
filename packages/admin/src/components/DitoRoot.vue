@@ -92,16 +92,15 @@ export default DitoComponent.component('DitoRoot', {
 
   async mounted() {
     tippyDelegate(this.$el, {
-      target: '[data-tippy-content]',
+      target: '.dito-info',
       onCreate(instance) {
-        if (instance.reference.classList.contains('dito-info')) {
-          instance.setProps({
-            theme: 'info',
-            interactive: true,
-            animation: 'shift-away-subtle',
-            delay: 250
-          })
-        }
+        instance.setContent(instance.reference.dataset.info)
+        instance.setProps({
+          theme: 'info',
+          interactive: true,
+          animation: 'shift-away-subtle',
+          delay: 250
+        })
       }
     })
     // Clear the label marked as active on all mouse and keyboard events, except
