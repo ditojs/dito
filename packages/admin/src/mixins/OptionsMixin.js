@@ -1,5 +1,6 @@
 import DitoContext from '../DitoContext.js'
 import DataMixin from './DataMixin.js'
+import { hasViewSchema, getViewEditPath } from '../utils/schema.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
 import {
@@ -144,6 +145,23 @@ export default {
         }
       }
     }),
+
+    editable: getSchemaAccessor('editable', {
+      type: Boolean,
+      default: false,
+      get(editable) {
+        return (
+          editable &&
+          hasViewSchema(this.schema, this.context)
+        )
+      }
+    }),
+
+    editPath() {
+      return this.editable && this.selectedValue
+        ? getViewEditPath(this.schema, this.selectedValue, this.context)
+        : null
+    },
 
     groupByLabel() {
       return this.groupBy ? 'label' : null

@@ -416,13 +416,19 @@ export function getViewSchema(schema, context) {
     : null
 }
 
-export function getViewEditPath(schema, context) {
+export function hasViewSchema(schema, context) {
+  return !!getViewSchema(schema, context)
+}
+
+export function getViewEditPath(schema, id, context) {
   const view = getViewSchema(schema, context)
-  return view
-    ? isSingleComponentView(view)
+  if (view) {
+    const path = isSingleComponentView(view)
       ? `/${view.path}`
       : `/${view.path}/${view.path}`
-    : null
+    return `${path}/${id}`
+  }
+  return null
 }
 
 export function getFormSchemas(schema, context, modifyForm) {

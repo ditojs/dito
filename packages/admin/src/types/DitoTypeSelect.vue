@@ -1,40 +1,51 @@
 <template lang="pug">
 //- Nesting is needed to make an arrow appear over the select item:
 .dito-select
-  select(
-    :id="dataPath"
-    ref="element"
-    v-model="selectedValue"
-    v-bind="attributes"
-    @mousedown="populate = true"
-    @focus="populate = true"
-  )
-    template(
-      v-if="populate"
+  .dito-select__inner
+    select(
+      :id="dataPath"
+      ref="element"
+      v-model="selectedValue"
+      v-bind="attributes"
+      @mousedown="populate = true"
+      @focus="populate = true"
     )
       template(
-        v-for="option in options"
+        v-if="populate"
       )
-        optgroup(
-          v-if="groupBy"
-          :label="option[groupByLabel]"
+        template(
+          v-for="option in options"
         )
+          optgroup(
+            v-if="groupBy"
+            :label="option[groupByLabel]"
+          )
+            option(
+              v-for="opt in option[groupByOptions]"
+              :value="getValueForOption(opt)"
+            ) {{ getLabelForOption(opt) }}
           option(
-            v-for="opt in option[groupByOptions]"
-            :value="getValueForOption(opt)"
-          ) {{ getLabelForOption(opt) }}
-        option(
-          v-else
-          :value="getValueForOption(option)"
-        ) {{ getLabelForOption(option) }}
-    template(
-      v-else-if="selectedOption"
+            v-else
+            :value="getValueForOption(option)"
+          ) {{ getLabelForOption(option) }}
+      template(
+        v-else-if="selectedOption"
+      )
+        option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
+    button.dito-button-clear.dito-button-overlay(
+      v-if="showClearButton"
+      :disabled="disabled"
+      @click="clear"
     )
-      option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
-  button.dito-button-clear.dito-button-overlay(
-    v-if="showClearButton"
-    :disabled="disabled"
-    @click="clear"
+  DitoEditButtons(
+    v-if="editable"
+    :editable="editable"
+    :editPath="editPath"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
   )
 </template>
 
@@ -65,25 +76,35 @@ export default DitoTypeComponent.register('select', {
 $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
 
 .dito-select {
-  display: inline-block;
+  display: inline-flex;
   position: relative;
 
   select {
     padding-right: $select-arrow-width;
   }
+
+  &__inner {
+    flex: 1;
+    position: relative;
+
+    &::after {
+      position: absolute;
+      @include arrow($select-arrow-size);
+
+      bottom: $select-arrow-bottom;
+      right: calc(#{$select-arrow-right} + #{$border-width});
+    }
+  }
+
+  .dito-edit-buttons {
+    margin-left: $form-spacing-half;
+  }
+
   // Handle .dito-width-fill separately due to required nesting of select:
   &.dito-width-fill {
     select {
       width: 100%;
     }
-  }
-
-  &::after {
-    position: absolute;
-    @include arrow($select-arrow-size);
-
-    bottom: $select-arrow-bottom;
-    right: calc(#{$select-arrow-right} + #{$border-width});
   }
 
   &.dito-disabled::after {

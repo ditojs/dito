@@ -224,10 +224,10 @@ export default DitoComponent.component('DitoPanel', {
     > .dito-schema-content {
       > .dito-pane {
         padding: $form-spacing-half $form-spacing;
-      }
 
-      .dito-container {
-        padding: $form-spacing-half;
+        > .dito-container {
+          padding: $form-spacing-half;
+        }
       }
 
       .dito-object {

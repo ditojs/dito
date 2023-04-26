@@ -10,23 +10,25 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
 )
   //- Firefox doesn't like <button> here, so use <a> instead:
   a.dito-button(
-    v-if="isDraggable"
+    v-if="hasDraggable"
     v-bind="getButtonAttributes(verbs.drag)"
   )
   RouterLink.dito-button(
-    v-if="isEditable"
-    :to="{ path: editPath }"
+    v-if="hasEditable"
+    :class="{ 'dito-disabled': !editPath }"
+    :to="editPath ? { path: editPath } : {}"
     v-bind="getButtonAttributes(verbs.edit)"
   )
   DitoCreateButton(
-    v-if="isCreatable"
+    v-if="hasCreatable"
+    :class="{ 'dito-disabled': !createPath }"
     :schema="schema"
     :path="createPath"
     :verb="verbs.create"
     :text="createButtonText"
   )
   button.dito-button(
-    v-if="isDeletable"
+    v-if="hasDeletable"
     type="button"
     v-bind="getButtonAttributes(verbs.delete)"
     @click="$emit('delete')"
@@ -61,19 +63,19 @@ export default DitoComponent.component('DitoEditButtons', {
       return this.getLabel(this.schema.form)
     },
 
-    isDraggable() {
+    hasDraggable() {
       return this.hasOption('draggable')
     },
 
-    isEditable() {
-      return this.hasOption('editable') && !!this.editPath
+    hasEditable() {
+      return this.hasOption('editable')
     },
 
-    isCreatable() {
-      return this.hasOption('creatable') && !!this.createPath
+    hasCreatable() {
+      return this.hasOption('creatable')
     },
 
-    isDeletable() {
+    hasDeletable() {
       return this.hasOption('deletable')
     },
 

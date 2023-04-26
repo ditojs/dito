@@ -251,9 +251,11 @@ export default DitoTypeComponent.register('list', {
 
     getEditPath(item, index) {
       if (this.editable) {
-        const path = getViewEditPath(this.schema, this.context) || this.path
         const id = this.getItemId(this.schema, item, index)
-        return `${path}/${id}`
+        return (
+          getViewEditPath(this.schema, id, this.context) ||
+          `${this.path}/${id}`
+        )
       }
       return null
     },

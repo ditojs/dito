@@ -5,37 +5,48 @@
     'dito-multiselect-multiple': multiple
   }`
 )
-  VueMultiselect(
-    ref="element"
-    v-model="selectedOptions"
-    :class="{ 'multiselect--show-highlight': showHighlight }"
-    :showLabels="false"
-    :placeholder="placeholder"
-    tagPlaceholder="Press enter to add new tag"
-    :options="populate && activeOptions || []"
-    :customLabel="getLabelForOption"
-    :trackBy="optionValue"
-    :groupLabel="groupByLabel"
-    :groupValues="groupByOptions"
-    :multiple="multiple"
-    :taggable="taggable"
-    :searchable="searchable"
-    :internalSearch="!searchFilter"
-    :preserveSearch="!!searchFilter"
-    :clearOnSelect="!searchFilter"
-    :closeOnSelect="!stayOpen"
-    :loading="isLoading"
-    v-bind="attributes"
-    @open="onOpen"
-    @close="onClose"
-    @tag="onAddTag"
-    @search-change="onSearchChange"
-  )
-  button.dito-button-clear.dito-button-overlay(
-    v-if="showClearButton"
-    type="button"
-    :disabled="disabled"
-    @click="clear"
+  .dito-multiselect__inner
+    VueMultiselect(
+      ref="element"
+      v-model="selectedOptions"
+      :class="{ 'multiselect--show-highlight': showHighlight }"
+      :showLabels="false"
+      :placeholder="placeholder"
+      tagPlaceholder="Press enter to add new tag"
+      :options="populate && activeOptions || []"
+      :customLabel="getLabelForOption"
+      :trackBy="optionValue"
+      :groupLabel="groupByLabel"
+      :groupValues="groupByOptions"
+      :multiple="multiple"
+      :taggable="taggable"
+      :searchable="searchable"
+      :internalSearch="!searchFilter"
+      :preserveSearch="!!searchFilter"
+      :clearOnSelect="!searchFilter"
+      :closeOnSelect="!stayOpen"
+      :loading="isLoading"
+      v-bind="attributes"
+      @open="onOpen"
+      @close="onClose"
+      @tag="onAddTag"
+      @search-change="onSearchChange"
+    )
+    button.dito-button-clear.dito-button-overlay(
+      v-if="showClearButton"
+      type="button"
+      :disabled="disabled"
+      @click="clear"
+    )
+  DitoEditButtons(
+    v-if="editable"
+    :editable="editable"
+    :editPath="editPath"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
   )
 </template>
 
@@ -218,12 +229,20 @@ $tag-padding: 3px;
 $tag-line-height: 1em;
 
 .dito-multiselect {
+  display: inline-flex;
   position: relative;
 
+  &__inner {
+    flex: 1;
+    position: relative;
+  }
+
+  // TODO: BEM
   &.dito-multiselect-single {
     --input-width: 100%;
   }
 
+  // TODO: BEM
   &.dito-multiselect-multiple {
     --input-width: auto;
   }
@@ -232,6 +251,10 @@ $tag-line-height: 1em;
     &__tags {
       border-color: $color-error;
     }
+  }
+
+  .dito-edit-buttons {
+    margin-left: $form-spacing-half;
   }
 
   .dito-button-clear {

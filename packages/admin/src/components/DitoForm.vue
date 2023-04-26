@@ -289,8 +289,9 @@ export default DitoComponent.component('DitoForm', {
       if (
         param &&
         this.providesData &&
-        from.params[param] !== 'create' &&
-        to.params[param] !== from.params[param]
+        from.matched[0].path === to.matched[0].path && // Staying on same form?
+        from.params[param] !== 'create' && // But haven't been creating?
+        to.params[param] !== from.params[param] // Going to a different entity?
       ) {
         this.loadData(true)
       }
