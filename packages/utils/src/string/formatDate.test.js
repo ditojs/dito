@@ -8,8 +8,8 @@ describe('formatDate()', () => {
   })
 
   it('should use the en-US locale by default', () => {
-    expect(formatDate(date)).toBe('June 9, 2012 at 10:45:30 PM')
-    expect(formatDate(date, {})).toBe('June 9, 2012 at 10:45:30 PM')
+    expect(formatDate(date)).toMatch(/^June 9, 2012 at 10:45:30\sPM$/)
+    expect(formatDate(date, {})).toMatch(/^June 9, 2012 at 10:45:30\sPM$/)
   })
 
   it('should format dates with different locale and default options', () => {
