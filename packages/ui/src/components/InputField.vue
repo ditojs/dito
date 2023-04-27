@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-input
+.dito-input(:class="classes")
   slot(name="before")
   input(
     :id="id"
@@ -14,7 +14,7 @@
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     :aria-label="title"
-    v-bind="$attrs"
+    v-bind="attributes"
   )
   slot(name="after")
 </template>
@@ -22,6 +22,7 @@
 <script>
 export default {
   emits: ['update:modelValue'],
+  inheritAttrs: false,
 
   props: {
     modelValue: { type: [String, Number], default: null },
@@ -50,6 +51,15 @@ export default {
   },
 
   computed: {
+    classes() {
+      return this.$attrs.class
+    },
+
+    attributes() {
+      const { class: _, ...attributes } = this.$attrs
+      return attributes
+    },
+
     size() {
       // Determine size based on min & max settings, if they're provided.
       const { size, min, max } = this.$attrs

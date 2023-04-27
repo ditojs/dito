@@ -118,6 +118,7 @@ import { getStoreAccessor } from '../utils/accessor.js'
 export default DitoComponent.component('DitoSchema', {
   mixins: [ItemMixin],
   components: { TransitionHeight },
+  inheritAttrs: false,
 
   provide() {
     return {

@@ -7,7 +7,7 @@
     input(
       :id="id"
       ref="input"
-      v-bind="$attrs"
+      v-bind="attributes"
       v-model="checked"
       type="checkbox"
       :name="name"
@@ -30,6 +30,7 @@
 <script>
 export default {
   emits: ['update:modelValue', 'change'],
+  inheritAttrs: false,
 
   props: {
     modelValue: { type: Boolean, default: false },
@@ -47,11 +48,13 @@ export default {
 
   computed: {
     classes() {
-      const { checked, disabled } = this
-      return {
-        'dito-checked': checked,
-        'dito-disabled': disabled
-      }
+      return [
+        this.$attrs.class,
+        {
+          'dito-checked': this.checked,
+          'dito-disabled': this.disabled
+        }
+      ]
     },
 
     styles() {
@@ -61,6 +64,11 @@ export default {
       return {
         '--switch-width': length ? `${length * 1.5}rem` : null
       }
+    },
+
+    attributes() {
+      const { class: _, ...attributes } = this.$attrs
+      return attributes
     }
   },
 
