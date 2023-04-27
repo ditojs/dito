@@ -5,7 +5,7 @@ slot(name="before")
 )
   .dito-schema-content(:class="{ 'dito-scroll': scrollable }")
     Teleport(
-      to=".dito-menu"
+      to=".dito-header__menu"
       :disabled="!headerInMenu"
     )
       .dito-schema-header(
@@ -787,13 +787,13 @@ export default DitoComponent.component('DitoSchema', {
   &--menu {
     // Align the tabs on top of to the header menu.
     position: absolute;
-    height: $menu-height;
-    padding: 0 $menu-padding-hor;
+    height: $header-height;
+    padding: 0 $header-padding-hor;
     max-width: $content-width;
     top: 0;
     left: 0;
     right: 0;
-    z-index: $menu-z-index;
+    z-index: $header-z-index;
     // Turn off pointer events so that DitoTrail keeps receiving events...
     pointer-events: none;
     // ...but allow interaction with the tabs and buttons (e.g. clipboard)
@@ -801,8 +801,8 @@ export default DitoComponent.component('DitoSchema', {
     .dito-tabs,
     .dito-buttons {
       pointer-events: auto;
-      line-height: $menu-line-height;
-      font-size: $menu-font-size;
+      line-height: $header-line-height;
+      font-size: $header-font-size;
     }
   }
 }

@@ -113,6 +113,10 @@ export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
 }
 
+export function isMenu(schema) {
+  return isSchema(schema) && schema.type === 'menu'
+}
+
 export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
@@ -174,6 +178,19 @@ export async function resolveSchemas(
     )
   }
   return schemas
+}
+
+export async function resolveViews(unresolvedViews) {
+  return resolveSchemas(unresolvedViews, async (schema, unwrapModule) => {
+    schema = await resolveSchema(schema, unwrapModule)
+    if (!schema.name && isMenu(schema)) {
+      // Generate a name for sub-menus from their label if it's missing.
+      // NOTE: This is never actually referenced from anywhere, but they need
+      // a name by which they're stored in the parent object.
+      schema.name = camelize(schema.label)
+    }
+    return schema
+  })
 }
 
 export async function resolveSchemaComponent(schema) {
@@ -250,22 +267,31 @@ export async function processSchemaComponent(
 }
 
 export async function processView(component, api, schema, name) {
-  if (!isView(schema)) {
-    throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
-  }
-  processRouteSchema(api, schema, name)
   processSchemaDefaults(api, schema)
-  await processNestedSchemas(api, schema)
-  const children = []
-  await processSchemaComponents(api, schema, children, 0)
-  return {
-    path: `/${schema.path}`,
-    children,
-    component,
-    meta: {
-      api,
-      schema
+  if (isView(schema)) {
+    processRouteSchema(api, schema, name)
+    await processNestedSchemas(api, schema)
+    const children = []
+    await processSchemaComponents(api, schema, children, 0)
+    return {
+      path: `/${schema.path}`,
+      children,
+      component,
+      meta: {
+        api,
+        schema
+      }
     }
+  } else if (isMenu(schema)) {
+    schema.items = await resolveSchemas(schema.items)
+    return Promise.all(
+      Object.entries(schema.items).map(async ([name, item]) =>
+        processView(component, api, item, name)
+      )
+    )
+    //
+  } else {
+    throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
 }
 
@@ -303,8 +329,8 @@ export function processNestedSchemaDefaults(api, schema) {
 
 export function processRouteSchema(api, schema, name) {
   // Used for view and source schemas, see SourceMixin.
-  schema.name = name
-  schema.path ||= api.normalizePath(name)
+  schema.name ??= name
+  schema.path ??= api.normalizePath(name)
 }
 
 export async function processForms(api, schema, level) {

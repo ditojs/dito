@@ -20,7 +20,7 @@ nav.dito-header
       v-if="isLoading"
     )
   //- Teleport target for `.dito-schema-header`:
-  .dito-menu
+  .dito-header__menu
   slot
 </template>
 
@@ -78,14 +78,14 @@ export default DitoComponent.component('DitoHeader', {
 
 .dito-header {
   background: $color-black;
-  font-size: $menu-font-size;
-  line-height: $menu-line-height;
-  z-index: $menu-z-index;
+  font-size: $header-font-size;
+  line-height: $header-line-height;
+  z-index: $header-z-index;
   @include user-select(none);
 
   span {
     display: inline-block;
-    padding: $menu-padding;
+    padding: $header-padding;
     color: $color-white;
   }
 

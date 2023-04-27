@@ -1,78 +1,40 @@
 <template lang="pug">
 nav.dito-sidebar.dito-scroll-parent
-  h1 {{ appState.title }}
-  ul.dito-scroll
-    li(
-      v-for="view in views"
-    )
-      RouterLink(
-        v-if="shouldRenderSchema(view)"
-        v-slot="{ isActive, href, route }"
-        custom
-        :to="`/${view.path}`"
-      )
-        a.dito-link(
-          :href="href"
-          :class="{ 'dito-active': isActive }"
-          @click.prevent="onClickLink(route)"
-        ) {{ getLabel(view) }}
+  h1
+    RouterLink.dito-link(to="/") {{ appState.title }}
+  DitoMenu.dito-scroll(:items="views")
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
-export default DitoComponent.component('DitoMenu', {
-  methods: {
-    onClickLink(route) {
-      this.$router.push({ ...route, force: true })
-    }
-  }
-})
+export default DitoComponent.component('DitoSidebar', {})
 </script>
 
 <style lang="scss">
 @import '../styles/_imports';
 
 .dito-sidebar {
+  @include user-select(none);
+
   flex: initial;
   font-size: $menu-font-size;
   white-space: nowrap;
-  @include user-select(none);
+  background: $color-lighter;
 
-  ul {
-    background: $color-lighter;
-    border-right: $border-style;
-  }
-
-  a,
   h1 {
     display: block;
-  }
-
-  h1 {
-    padding: $menu-padding;
-    line-height: $menu-line-height;
+    line-height: $header-line-height;
     font-weight: bold;
     background: $color-darker;
     border-right: $border-width solid $color-darkest;
     color: $color-white;
-  }
 
-  .dito-link {
-    padding: $menu-padding;
-    line-height: $menu-line-height;
-
-    &.dito-active {
-      color: $color-white;
-      background: $color-active;
+    .dito-link {
+      display: block;
+      padding: $header-padding;
     }
-  }
-}
-
-.dito-link {
-  &:focus:not(:active, .dito-active) {
-    box-shadow: $shadow-focus;
   }
 }
 </style>

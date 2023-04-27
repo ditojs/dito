@@ -16,7 +16,7 @@
       :settings="dialog.settings"
       @remove="removeDialog(key)"
     )
-  DitoMenu
+  DitoSidebar
   main.dito-page.dito-scroll-parent
     DitoHeader(
       :spinner="options.spinner"
@@ -43,7 +43,7 @@ import DitoDialog from './DitoDialog.vue'
 import DomMixin from '../mixins/DomMixin.js'
 import {
   processView,
-  resolveSchemas,
+  resolveViews,
   processSchemaComponents
 } from '../utils/schema.js'
 
@@ -328,7 +328,7 @@ export default DitoComponent.component('DitoRoot', {
 
     async resolveViews() {
       try {
-        this.resolvedViews = await resolveSchemas(this.unresolvedViews)
+        this.resolvedViews = await resolveViews(this.unresolvedViews)
       } catch (error) {
         if (!error.request) {
           console.error(error)
@@ -350,7 +350,7 @@ export default DitoComponent.component('DitoRoot', {
           path: '/',
           components: {}
         },
-        ...routes
+        ...routes.flat()
       ])
       this.$router.replace(fullPath)
     }

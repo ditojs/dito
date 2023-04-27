@@ -47,7 +47,7 @@ $border-style: $border-width solid $border-color;
 
 // Shadows
 $shadow-window: 0 2px 6px 0 $color-shadow;
-$shadow-focus: 0 0 0 $border-width $color-active;
+$shadow-focus: 0 0 0 $border-width $color-active; // Use shadow as 1px border.
 
 // Input
 $input-padding-ver: 3px;
