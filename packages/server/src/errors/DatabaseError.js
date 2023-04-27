@@ -23,7 +23,8 @@ export class DatabaseError extends ResponseError {
       {
         type: error.constructor.name,
         message: 'Database error',
-        status: getStatus(error)
+        status: getStatus(error),
+        cause: error.nativeError
       },
       overrides
     )
