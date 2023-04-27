@@ -1643,12 +1643,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^2.3.1, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^2.3.2, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@ditojs/build": ^2.3.0
-    "@ditojs/ui": ^2.3.1
+    "@ditojs/ui": ^2.3.2
     "@ditojs/utils": ^2.3.0
     "@kyvg/vue3-notification": ^2.9.0
     "@lk77/vue3-color": ^3.0.6
@@ -1724,7 +1724,7 @@ __metadata:
   resolution: "@ditojs/server@workspace:packages/server"
   dependencies:
     "@aws-sdk/client-s3": ^3.304.0
-    "@ditojs/admin": ^2.3.1
+    "@ditojs/admin": ^2.3.2
     "@ditojs/build": ^2.3.0
     "@ditojs/router": ^2.3.0
     "@ditojs/utils": ^2.3.0
@@ -1789,7 +1789,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^2.3.1, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^2.3.2, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
