@@ -179,6 +179,7 @@ export default DitoComponent.component('DitoDialog', {
   background: rgba(0, 0, 0, 0.2);
 
   &__focus-trap {
+    display: flex;
     max-height: 100%;
   }
 
