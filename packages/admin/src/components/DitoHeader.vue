@@ -77,6 +77,7 @@ export default DitoComponent.component('DitoHeader', {
 @import '../styles/_imports';
 
 .dito-header {
+  position: relative;
   background: $color-black;
   font-size: $header-font-size;
   line-height: $header-line-height;

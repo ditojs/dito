@@ -94,6 +94,7 @@ export default DitoComponent.component('DitoTableHead', {
 
       .dito-button {
         // Convention: Nested spans handle padding, see below
+        display: block; // Override default inline-flex positioning.
         padding: 0;
         width: 100%;
         text-align: inherit;
