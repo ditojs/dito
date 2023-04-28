@@ -35,7 +35,7 @@ export class Controller {
   url = null
   actions = null
   assets = null
-  transacted = false
+  transacted = null
   initialized = false
 
   constructor(app, namespace) {
