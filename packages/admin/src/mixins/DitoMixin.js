@@ -365,7 +365,9 @@ export default {
       }
       // See: https://stackoverflow.com/a/49917066/1163708
       const a = document.createElement('a')
-      a.href = this.api.getApiUrl(options)
+      a.href = options.url?.startsWith('blob:')
+        ? options.url
+        : this.api.getApiUrl(options)
       a.download = options.filename ?? null
       const { body } = document
       body.appendChild(a)

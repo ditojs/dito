@@ -1,9 +1,9 @@
 <template lang="pug">
 .dito-upload
-  //- In order to handle upload buttons in multiple possible places, based on
-  //- whether we deal with single or multiple uploads, render the upload as an
-  //- invisible component at the root, and delegate the click events to it from
-  //- the buttons below. This works surprisingly well.
+  //- In order to handle upload buttons in multiple possible places, depending
+  //- on whether they handle single or multiple uploads, render the upload
+  //- component invisibly at the root, and delegate the click events to it from
+  //- the buttons rendered further below. Luckily this works surprisingly well.
   VueUpload.dito-upload-input(
     ref="upload"
     v-model="uploads"
@@ -21,7 +21,7 @@
     @input-file="onInputFile"
   )
   table.dito-table.dito-table-separators.dito-table-background
-    //- Styling comes from DitoTableHead
+    //- Styling comes from `DitoTableHead`
     thead.dito-table-head
       tr
         th
@@ -46,8 +46,21 @@
           :key="file.key"
         )
           td(
+            v-if="render"
             v-html="renderFile(file, index)"
           )
+          td(
+            v-else-if="file.url"
+          )
+            a(
+              :download="file.name"
+              :href="file.url"
+              target="_blank"
+              @click.prevent="onClickDownload(file)"
+            ) {{ file.name }}
+          td(
+            v-else
+          ) {{ file.name }}
           td {{ formatFileSize(file.size) }}
           td
             template(
@@ -119,7 +132,7 @@ import parseFileSize from 'filesize-parser'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
-import { isArray, asArray, escapeHtml } from '@ditojs/utils'
+import { isArray, asArray } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
@@ -173,6 +186,11 @@ export default DitoTypeComponent.register('upload', {
       }
     }),
 
+    render: getSchemaAccessor('render', {
+      type: Function,
+      default: null
+    }),
+
     draggable: getSchemaAccessor('draggable', {
       type: Boolean,
       default: false,
@@ -207,7 +225,7 @@ export default DitoTypeComponent.register('upload', {
 
     uploadProgress() {
       return (
-        this.uploads.reduce((total, file) => +file.progress + total, 0) /
+        this.uploads.reduce((total, file) => total + +file.progress, 0) /
         this.uploads.length
       )
     },
@@ -235,18 +253,14 @@ export default DitoTypeComponent.register('upload', {
     formatFileSize,
 
     renderFile(file, index) {
-      const { render } = this.schema
-      return render
-        ? render.call(
-            this,
-            new DitoContext(this, {
-              value: file,
-              data: this.files,
-              index,
-              dataPath: appendDataPath(this.dataPath, index)
-            })
-          )
-        : escapeHtml(file.name)
+      return this.render(
+        new DitoContext(this, {
+          value: file,
+          data: this.files,
+          index,
+          dataPath: appendDataPath(this.dataPath, index)
+        })
+      )
     },
 
     deleteFile(file, index) {
@@ -357,6 +371,19 @@ export default DitoTypeComponent.register('upload', {
       const xhr = newFile?.xhr
       if (this.api.cors?.credentials && xhr && !xhr.withCredentials) {
         xhr.withCredentials = true
+      }
+    },
+
+    async onClickDownload(file) {
+      try {
+        const response = await fetch(file.url)
+        const blob = await response.blob()
+        this.download({
+          filename: file.name,
+          url: URL.createObjectURL(blob)
+        })
+      } catch (error) {
+        console.error(error)
       }
     },
 
