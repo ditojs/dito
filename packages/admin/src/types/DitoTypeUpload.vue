@@ -86,6 +86,8 @@
                 :multiple="multiple"
                 :size="maxSize"
                 :title="multiple ? 'Upload Files' : 'Upload File'"
+                :drop="$el?.closest('.dito-container')"
+                :dropDirectory="true"
                 @input-filter="inputFilter"
                 @input-file="inputFile"
               )

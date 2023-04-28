@@ -1,7 +1,6 @@
 <template lang="pug">
 textarea.dito-textarea.dito-input(
   :id="dataPath"
-  ref="element"
   v-model="value"
   v-bind="attributes"
   :rows="lines"

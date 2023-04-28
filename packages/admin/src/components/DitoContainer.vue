@@ -248,7 +248,7 @@ export default DitoComponent.component('DitoContainer', {
       --justify: flex-end;
     }
 
-    &:not(#{$self}--only-in-row) {
+    &:not(#{$self}--alone-in-row) {
       // Now only apply alignment if there are neighbouring components no the
       // same row that also align.
       // Look ahead:
@@ -258,6 +258,12 @@ export default DitoComponent.component('DitoContainer', {
         justify-content: var(--justify);
       }
     }
+  }
+
+  &--drop-target {
+    background: $content-color-background;
+    border-radius: $border-radius;
+    z-index: $drag-overlay-z-index + 1;
   }
 
   &--omit-padding {

@@ -66,6 +66,9 @@ $menu-padding-ver: $header-padding-ver - $menu-spacing;
 $menu-padding-hor: $header-padding-hor - $menu-spacing;
 $menu-padding: $menu-padding-ver $menu-padding-hor;
 
+// Drag & Drop
+$drag-overlay-z-index: 2000;
+
 // Patterns
 $pattern-transparency-size: ($font-size - $border-width) * $input-height-factor;
 $pattern-transparency: repeating-conic-gradient(

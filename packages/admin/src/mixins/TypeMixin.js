@@ -239,17 +239,15 @@ export default {
 
     // @overridable
     focusElement() {
-      const [element] = asArray(this.$refs.element)
-      if (element) {
-        this.$nextTick(() => {
-          element.focus()
-          // If the element is disabled, `focus()` will likely not have the
-          // desired effect. Use `scrollIntoView()` if available:
-          if (this.disabled) {
-            ;(element.$el || element).scrollIntoView?.()
-          }
-        })
-      }
+      const [element = this.$el] = asArray(this.$refs.element)
+      this.$nextTick(() => {
+        element.focus?.()
+        // If the element is disabled, `focus()` will likely not have the
+        // desired effect. Use `scrollIntoView()` if available:
+        if (!element.focus || this.disabled) {
+          ;(element.$el || element).scrollIntoView?.()
+        }
+      })
     },
 
     focus() {

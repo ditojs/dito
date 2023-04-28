@@ -5,6 +5,10 @@
     position="top right"
     classes="dito-notification"
   )
+  Transition(name="dito-drag")
+    .dito-drag-overlay(
+      v-if="isDraggingFiles"
+    )
   TransitionGroup(name="dito-dialog")
     DitoDialog(
       v-for="(dialog, key) in dialogs"
@@ -69,7 +73,8 @@ export default DitoComponent.component('DitoRoot', {
       removeRoutes: null,
       dialogs: {},
       allowLogin: false,
-      loadingCount: 0
+      loadingCount: 0,
+      isDraggingFiles: false
     }
   },
 
@@ -91,6 +96,8 @@ export default DitoComponent.component('DitoRoot', {
   },
 
   async mounted() {
+    this.setupDragAndDrop()
+
     tippyDelegate(this.$el, {
       target: '.dito-info',
       onCreate(instance) {
@@ -103,6 +110,7 @@ export default DitoComponent.component('DitoRoot', {
         })
       }
     })
+
     // Clear the label marked as active on all mouse and keyboard events, except
     // the ones that DitoLabel itself intercepts.
     this.domOn(document, {
@@ -118,6 +126,7 @@ export default DitoComponent.component('DitoRoot', {
         }
       }
     })
+
     try {
       this.allowLogin = false
       if (await this.fetchUser()) {
@@ -132,6 +141,81 @@ export default DitoComponent.component('DitoRoot', {
   },
 
   methods: {
+    setupDragAndDrop() {
+      // This code only happens the visual effects around dragging and dropping
+      // files into a `DitoTypeUpload` component. The actual uploading is
+      // handled by the `DitoTypeUpload` component itself.
+
+      let dragCount = 0
+      let uploads = []
+
+      const toggleDropTargetClass = enabled => {
+        for (const upload of uploads) {
+          upload.closest('.dito-container').classList.toggle(
+            'dito-container--drop-target',
+            enabled
+          )
+        }
+        if (!enabled) {
+          uploads = []
+        }
+      }
+
+      const setDraggingFiles = enabled => {
+        this.isDraggingFiles = enabled
+        if (enabled) {
+          toggleDropTargetClass(true)
+        } else {
+          setTimeout(() => toggleDropTargetClass(false), 250)
+        }
+      }
+
+      this.domOn(document, {
+        dragenter: event => {
+          if (!dragCount && event.dataTransfer) {
+            uploads = document.querySelectorAll('.dito-upload')
+            const hasUploads = uploads.length > 0
+            event.dataTransfer.effectAllowed = hasUploads ? 'copy' : 'none'
+            if (hasUploads) {
+              setDraggingFiles(true)
+            } else {
+              event.preventDefault()
+              event.stopPropagation()
+              return
+            }
+          }
+          dragCount++
+        },
+
+        dragleave: event => {
+          dragCount--
+          if (!dragCount && event.dataTransfer) {
+            setDraggingFiles(false)
+          }
+        },
+
+        dragover: event => {
+          if (event.dataTransfer) {
+            const canDrop = event.target.closest(
+              '.dito-container:has(.dito-upload)'
+            )
+            event.dataTransfer.dropEffect = canDrop ? 'copy' : 'none'
+            if (!canDrop) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+          }
+        },
+
+        drop: event => {
+          dragCount = 0
+          if (event.dataTransfer) {
+            setDraggingFiles(false)
+          }
+        }
+      })
+    },
+
     notify({ type = 'info', title, text } = {}) {
       title ||= (
         {
@@ -388,5 +472,28 @@ function addRoutes(router, routes) {
   .dito-page {
     background: $content-color-background;
   }
+}
+
+.dito-drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: $drag-overlay-z-index;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+.dito-drag-enter-active,
+.dito-drag-leave-active {
+  transition: opacity 0.25s, backdrop-filter 0.25s;
+}
+
+.dito-drag-enter-from,
+.dito-drag-leave-to {
+  opacity: 0;
+  backdrop-filter: blur(0);
 }
 </style>
