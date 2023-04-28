@@ -198,13 +198,19 @@ export default {
 
     getSchemaValue(
       keyOrDataPath,
-      { type, schema = this.schema, callback = true, default: def } = {}
+      {
+        type,
+        default: def,
+        schema = this.schema,
+        context = this.context,
+        callback = true
+      } = {}
     ) {
       return getSchemaValue(keyOrDataPath, {
         type,
         schema,
+        context,
         callback,
-        context: this.context,
         default: isFunction(def) ? () => def.call(this) : def
       })
     },

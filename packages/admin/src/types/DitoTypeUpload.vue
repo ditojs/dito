@@ -50,13 +50,13 @@
             v-html="renderFile(file, index)"
           )
           td(
-            v-else-if="file.url"
+            v-else-if="downloadUrls[index]"
           )
             a(
               :download="file.name"
-              :href="file.url"
+              :href="downloadUrls[index]"
               target="_blank"
-              @click.prevent="onClickDownload(file)"
+              @click.prevent="onClickDownload(file, index)"
             ) {{ file.name }}
           td(
             v-else
@@ -153,12 +153,16 @@ export default DitoTypeComponent.register('upload', {
       return this.$refs.upload
     },
 
+    uploadTitle() {
+      return this.multiple ? 'Upload Files' : 'Upload File'
+    },
+
     files() {
       return asFiles(this.value)
     },
 
-    uploadTitle() {
-      return this.multiple ? 'Upload Files' : 'Upload File'
+    downloadUrls() {
+      return this.files.map((file, index) => this.getDownloadUrl(file, index))
     },
 
     multiple: getSchemaAccessor('multiple', {
@@ -186,11 +190,6 @@ export default DitoTypeComponent.register('upload', {
       }
     }),
 
-    render: getSchemaAccessor('render', {
-      type: Function,
-      default: null
-    }),
-
     draggable: getSchemaAccessor('draggable', {
       type: Boolean,
       default: false,
@@ -202,6 +201,11 @@ export default DitoTypeComponent.register('upload', {
     deletable: getSchemaAccessor('deletable', {
       type: Boolean,
       default: false
+    }),
+
+    render: getSchemaAccessor('render', {
+      type: Function,
+      default: null
     }),
 
     hasFiles() {
@@ -252,15 +256,31 @@ export default DitoTypeComponent.register('upload', {
   methods: {
     formatFileSize,
 
+    getFileContext(file, index) {
+      return this.multiple
+        ? new DitoContext(this, {
+            value: file,
+            data: this.files,
+            index,
+            dataPath: appendDataPath(this.dataPath, index)
+          })
+        : this.context
+    },
+
     renderFile(file, index) {
-      return this.render(
-        new DitoContext(this, {
-          value: file,
-          data: this.files,
-          index,
-          dataPath: appendDataPath(this.dataPath, index)
-        })
-      )
+      return this.render(this.getFileContext(file, index))
+    },
+
+    getDownloadUrl(file, index) {
+      return file.url
+        ? file.url
+        : !file.upload || file.upload.success
+          ? this.getSchemaValue('downloadUrl', {
+              type: 'String',
+              default: null,
+              context: this.getFileContext(file, index)
+            })
+          : null
     },
 
     deleteFile(file, index) {
@@ -374,9 +394,9 @@ export default DitoTypeComponent.register('upload', {
       }
     },
 
-    async onClickDownload(file) {
+    async onClickDownload(file, index) {
       try {
-        const response = await fetch(file.url)
+        const response = await fetch(this.downloadUrls[index])
         const blob = await response.blob()
         this.download({
           filename: file.name,
