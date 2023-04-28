@@ -73,12 +73,7 @@
                 v-if="isUploadActive"
                 type="button"
                 @click.prevent="upload.active = false"
-              ) Cancel All
-              button.dito-button(
-                v-else-if="isUploadReady"
-                type="button"
-                @click.prevent="upload.active = true"
-              ) Upload All
+              ) Cancel
               VueUpload.dito-button(
                 ref="upload"
                 v-model="uploads"
@@ -90,7 +85,7 @@
                 :accept="accept"
                 :multiple="multiple"
                 :size="maxSize"
-                title="Upload Files"
+                :title="multiple ? 'Upload Files' : 'Upload File'"
                 @input-filter="inputFilter"
                 @input-file="inputFile"
               )
@@ -170,7 +165,7 @@ export default DitoTypeComponent.register('upload', {
 
     isUploadReady() {
       return (
-        this.uploads.length &&
+        this.uploads.length > 0 &&
         !(this.upload.active || this.upload.uploaded)
       )
     },
@@ -181,7 +176,7 @@ export default DitoTypeComponent.register('upload', {
 
     uploadProgress() {
       return (
-        this.uploads.reduce((total, file) => total + file.progress, 0) /
+        this.uploads.reduce((total, file) => +file.progress + total, 0) /
         this.uploads.length
       )
     },
@@ -191,6 +186,17 @@ export default DitoTypeComponent.register('upload', {
         type: 'upload',
         path: this.api.normalizePath(this.dataPath)
       })
+    }
+  },
+
+  watch: {
+    isUploadReady(ready) {
+      if (ready) {
+        // Auto-upload.
+        this.$nextTick(() => {
+          this.upload.active = true
+        })
+      }
     }
   },
 
@@ -294,6 +300,7 @@ export default DitoTypeComponent.register('upload', {
             this.removeFile(newFile)
           }
         } else if (error) {
+          this.removeFile(newFile)
           const text = (
             {
               abort: 'Upload aborted',
@@ -311,7 +318,6 @@ export default DitoTypeComponent.register('upload', {
             title: 'File Upload Error',
             text
           })
-          this.removeFile(newFile)
         }
       }
     },
