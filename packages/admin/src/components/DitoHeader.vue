@@ -137,7 +137,7 @@ export default DitoComponent.component('DitoHeader', {
   }
 
   .dito-spinner {
-    margin-top: $menu-padding-ver;
+    margin-top: $header-padding-ver;
   }
 
   .dito-dirty {
