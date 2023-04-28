@@ -53,23 +53,28 @@ export default DitoComponent.component('DitoMenu', {
       }
     },
 
-    getItemHref(item) {
+    getItemPath(item) {
       return item?.path
         ? `/${item.path}`
         : item.items
-          ? this.getItemHref(Object.values(item.items)[0])
+          ? this.getItemPath(Object.values(item.items)[0])
           : null
+    },
+
+    getItemHref(item) {
+      const path = this.getItemPath(item)
+      return path ? this.$router.resolve(path).href : null
     },
 
     isActiveItem(item) {
       return (
-        this.$route.path.startsWith(this.getItemHref(item)) ||
+        this.$route.path.startsWith(this.getItemPath(item)) ||
         item.items && Object.values(item.items).some(this.isActiveItem)
       )
     },
 
     onClickItem(item) {
-      const path = this.getItemHref(item)
+      const path = this.getItemPath(item)
       if (path) {
         this.$router.push({ path, force: true })
       }
