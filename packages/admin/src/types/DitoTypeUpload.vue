@@ -79,7 +79,7 @@
                 type="button"
                 @click.prevent="upload.active = true"
               ) Upload All
-              VueUpload.dito-button.dito-button-add-upload(
+              VueUpload.dito-button(
                 ref="upload"
                 v-model="uploads"
                 :inputId="dataPath"
@@ -94,6 +94,7 @@
                 @input-filter="inputFilter"
                 @input-file="inputFile"
               )
+                .dito-button-upload
 </template>
 
 <script>
@@ -347,7 +348,7 @@ function asFiles(value) {
     }
   }
 
-  .dito-button-add-upload {
+  .dito-button-upload {
     padding: 0;
 
     > * {

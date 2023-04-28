@@ -149,9 +149,9 @@
     // For now, nothing for these:
     // .dito-button-create:empty::before,
     // .dito-button-add:empty::before
-    // Special .dito-button-add-upload without :empty:
-    .dito-button-add-upload::before {
-      @extend %icon-add;
+
+    .dito-button-upload:empty::before {
+      @extend %icon-upload;
     }
 
     .dito-button-delete:empty::before,
