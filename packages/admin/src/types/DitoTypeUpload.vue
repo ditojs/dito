@@ -1,5 +1,25 @@
 <template lang="pug">
 .dito-upload
+  //- In order to handle upload buttons in multiple possible places, based on
+  //- whether we deal with single or multiple uploads, render the upload as an
+  //- invisible component at the root, and delegate the click events to it from
+  //- the buttons below. This works surprisingly well.
+  VueUpload.dito-upload-input(
+    ref="upload"
+    v-model="uploads"
+    :inputId="dataPath"
+    :name="dataPath"
+    :disabled="disabled"
+    :postAction="uploadPath"
+    :extensions="extensions"
+    :accept="accept"
+    :multiple="multiple"
+    :size="maxSize"
+    :drop="$el?.closest('.dito-container')"
+    :dropDirectory="true"
+    @input-filter="onInputFilter"
+    @input-file="onInputFile"
+  )
   table.dito-table.dito-table-separators.dito-table-background
     //- Styling comes from DitoTableHead
     thead.dito-table-head
@@ -18,48 +38,58 @@
       :options="getSortableOptions(false)"
       :draggable="draggable"
     )
-      tr(
-        v-for="(file, index) in files"
-        :key="file.key"
+      template(
+        v-if="multiple || !isUploadActive"
       )
-        td(
-          v-html="renderFile(file, index)"
+        tr(
+          v-for="(file, index) in files"
+          :key="file.key"
         )
-        td {{ formatFileSize(file.size) }}
-        td
-          template(
-            v-if="file.upload"
+          td(
+            v-html="renderFile(file, index)"
           )
+          td {{ formatFileSize(file.size) }}
+          td
             template(
-              v-if="file.upload.error"
+              v-if="file.upload"
             )
-              | Error: {{ file.upload.error }}
+              template(
+                v-if="file.upload.error"
+              )
+                | Error: {{ file.upload.error }}
+              template(
+                v-else-if="file.upload.active"
+              )
+                | Uploading...
+              template(
+                v-else-if="file.upload.success"
+              )
+                | Uploaded
             template(
-              v-else-if="file.upload.active"
+              v-else
             )
-              | Uploading...
-            template(
-              v-else-if="file.upload.success"
-            )
-              | Uploaded
-          template(
-            v-else
-          )
-            | Stored
-        td.dito-cell-edit-buttons
-          .dito-buttons.dito-buttons-round
-            //- Firefox doesn't like <button> here, so use <a> instead:
-            a.dito-button(
-              v-if="draggable"
-              v-bind="getButtonAttributes(verbs.drag)"
-            )
-            button.dito-button(
-              v-if="deletable"
-              type="button"
-              v-bind="getButtonAttributes(verbs.delete)"
-              @click="deleteFile(file, index)"
-            )
-    tfoot
+              | Stored
+          td.dito-cell-edit-buttons
+            .dito-buttons.dito-buttons-round
+              button.dito-button.dito-button-upload(
+                v-if="!multiple"
+                :title="uploadTitle"
+                @click="onClickUpload"
+              )
+              //- Firefox doesn't like <button> here, so use <a> instead:
+              a.dito-button(
+                v-if="draggable"
+                v-bind="getButtonAttributes(verbs.drag)"
+              )
+              button.dito-button(
+                v-if="deletable"
+                type="button"
+                v-bind="getButtonAttributes(verbs.delete)"
+                @click="deleteFile(file, index)"
+              )
+    tfoot(
+      v-if="multiple || isUploadActive || !hasFiles"
+    )
       tr
         td(:colspan="4")
           .dito-upload-footer
@@ -74,24 +104,11 @@
                 type="button"
                 @click.prevent="upload.active = false"
               ) Cancel
-              VueUpload.dito-button(
-                ref="upload"
-                v-model="uploads"
-                :inputId="dataPath"
-                :name="dataPath"
-                :disabled="disabled"
-                :postAction="uploadPath"
-                :extensions="extensions"
-                :accept="accept"
-                :multiple="multiple"
-                :size="maxSize"
-                :title="multiple ? 'Upload Files' : 'Upload File'"
-                :drop="$el?.closest('.dito-container')"
-                :dropDirectory="true"
-                @input-filter="inputFilter"
-                @input-file="inputFile"
+              button.dito-button.dito-button-upload(
+                v-if="multiple || !hasFiles"
+                :title="uploadTitle"
+                @click="onClickUpload"
               )
-                .dito-button-upload
 </template>
 
 <script>
@@ -125,6 +142,10 @@ export default DitoTypeComponent.register('upload', {
 
     files() {
       return asFiles(this.value)
+    },
+
+    uploadTitle() {
+      return this.multiple ? 'Upload Files' : 'Upload File'
     },
 
     multiple: getSchemaAccessor('multiple', {
@@ -165,15 +186,23 @@ export default DitoTypeComponent.register('upload', {
       default: false
     }),
 
+    hasFiles() {
+      return this.files.length > 0
+    },
+
+    hasUploads() {
+      return this.uploads.length > 0
+    },
+
     isUploadReady() {
       return (
-        this.uploads.length > 0 &&
+        this.hasUploads &&
         !(this.upload.active || this.upload.uploaded)
       )
     },
 
     isUploadActive() {
-      return this.uploads.length && this.upload.active
+      return this.hasUploads && this.upload.active
     },
 
     uploadProgress() {
@@ -283,7 +312,7 @@ export default DitoTypeComponent.register('upload', {
       this.replaceFile(file, null)
     },
 
-    inputFile(newFile, oldFile) {
+    onInputFile(newFile, oldFile) {
       if (newFile && !oldFile) {
         const { id, name, size } = newFile
         this.addFile({ id, name, size, upload: newFile })
@@ -324,11 +353,18 @@ export default DitoTypeComponent.register('upload', {
       }
     },
 
-    inputFilter(newFile /*, oldFile, prevent */) {
+    onInputFilter(newFile /*, oldFile, prevent */) {
       const xhr = newFile?.xhr
       if (this.api.cors?.credentials && xhr && !xhr.withCredentials) {
         xhr.withCredentials = true
       }
+    },
+
+    onClickUpload(event) {
+      // Delegate the click event to the hidden file input.
+      this.upload.$el.querySelector('input').dispatchEvent(
+        new event.constructor(event.type, event)
+      )
     }
   },
 
@@ -356,13 +392,10 @@ function asFiles(value) {
     }
   }
 
-  .dito-button-upload {
-    padding: 0;
-
-    > * {
-      position: absolute;
-      cursor: pointer;
-    }
+  .dito-upload-input {
+    // See `onClickUpload()` method for details.
+    position: absolute;
+    pointer-events: none;
   }
 
   .dito-upload-footer {
