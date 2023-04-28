@@ -39,8 +39,8 @@ export default class ControllerAction {
     this.scope = scope
     this.authorize = authorize || _authorize
     this.transacted = !!(
-      transacted ||
-      controller.transacted ||
+      transacted ??
+      controller.transacted ??
       // Core graph and assets operations are always transacted, unless the
       // method is 'get':
       (
