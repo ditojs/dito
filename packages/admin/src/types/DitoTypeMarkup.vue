@@ -379,6 +379,7 @@ export default DitoTypeComponent.register('markup', {
 
     getButtons(settingsName, descriptions) {
       const list = []
+      const { commands } = this.editor
 
       const addButton = ({ name, icon, attributes, ignoreActive, onClick }) => {
         list.push({
@@ -389,8 +390,11 @@ export default DitoTypeComponent.register('markup', {
             (ignoreActive == null || !ignoreActive())
           ),
           onClick: () => {
-            const key = `toggle${camelize(name, true)}`
-            if (this.editor.commands[key]) {
+            const key =
+              name in commands
+                ? name
+                : `toggle${camelize(name, true)}`
+            if (key in commands) {
               const command = attributes =>
                 this.editor.chain()[key](attributes).focus().run()
               onClick
