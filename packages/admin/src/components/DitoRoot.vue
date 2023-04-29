@@ -151,10 +151,9 @@ export default DitoComponent.component('DitoRoot', {
 
       const toggleDropTargetClass = enabled => {
         for (const upload of uploads) {
-          upload.closest('.dito-container').classList.toggle(
-            'dito-container--drop-target',
-            enabled
-          )
+          upload
+            .closest('.dito-container')
+            .classList.toggle('dito-drop-target', enabled)
         }
         if (!enabled) {
           uploads = []
@@ -166,7 +165,7 @@ export default DitoComponent.component('DitoRoot', {
         if (enabled) {
           toggleDropTargetClass(true)
         } else {
-          setTimeout(() => toggleDropTargetClass(false), 250)
+          setTimeout(() => toggleDropTargetClass(false), 150)
         }
       }
 
@@ -486,14 +485,33 @@ function addRoutes(router, routes) {
   backdrop-filter: blur(8px);
 }
 
+.dito-drop-target {
+  --shadow-alpha: 0.25;
+
+  background: $content-color-background;
+  border-radius: $border-radius;
+  z-index: $drag-overlay-z-index + 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, var(--shadow-alpha)));
+}
+
 .dito-drag-enter-active,
 .dito-drag-leave-active {
-  transition: opacity 0.25s, backdrop-filter 0.25s;
+  $duration: 0.15s;
+
+  transition: opacity $duration, backdrop-filter $duration;
+
+  ~ * .dito-drop-target {
+    transition: filter $duration;
+  }
 }
 
 .dito-drag-enter-from,
 .dito-drag-leave-to {
   opacity: 0;
   backdrop-filter: blur(0);
+
+  ~ * .dito-drop-target {
+    --shadow-alpha: 0;
+  }
 }
 </style>

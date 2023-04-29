@@ -260,12 +260,6 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
-  &--drop-target {
-    background: $content-color-background;
-    border-radius: $border-radius;
-    z-index: $drag-overlay-z-index + 1;
-  }
-
   &--omit-padding {
     padding: 0;
 
