@@ -6,8 +6,8 @@
   )
     .dito-thumbnail__inner
       img(
-        v-if="thumbnailUrl"
-        :src="thumbnailUrl"
+        v-if="source"
+        :src="source"
       )
       .dito-thumbnail__type(
         v-else
@@ -27,12 +27,39 @@ export default DitoComponent.component('DitoUploadFile', {
     thumbnailUrl: { type: String, default: null }
   },
 
+  data() {
+    return {
+      uploadUrl: null
+    }
+  },
+
   computed: {
     type() {
       return (
         TYPES[this.file.type] ||
         this.file.name.split('.').pop().toUpperCase()
       )
+    },
+
+    source() {
+      return this.uploadUrl || this.thumbnailUrl
+    }
+  },
+
+  watch: {
+    'file.upload.file': {
+      immediate: true,
+      handler(file) {
+        if (file && this.thumbnail) {
+          const reader = new FileReader()
+          reader.onload = () => {
+            this.uploadUrl = reader.result
+          }
+          reader.readAsDataURL(file)
+        } else {
+          this.uploadUrl = null
+        }
+      }
     }
   }
 })
