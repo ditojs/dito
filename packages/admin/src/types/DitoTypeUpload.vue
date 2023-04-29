@@ -25,7 +25,7 @@
     thead.dito-table-head
       tr
         th
-          span Name
+          span File
         th
           span Size
         th
@@ -57,10 +57,20 @@
               :href="downloadUrls[index]"
               target="_blank"
               @click.prevent="onClickDownload(file, index)"
-            ) {{ file.name }}
+            )
+              DitoUploadFile(
+                :file="file"
+                :thumbnail="thumbnails"
+                :thumbnailUrl="thumbnailUrls[index]"
+              )
           td(
             v-else
-          ) {{ file.name }}
+          )
+            DitoUploadFile(
+              :file="file"
+              :thumbnail="thumbnails"
+              :thumbnailUrl="thumbnailUrls[index]"
+            )
           td {{ formatFileSize(file.size) }}
           td
             template(
@@ -165,6 +175,10 @@ export default DitoTypeComponent.register('upload', {
       return this.files.map((file, index) => this.getDownloadUrl(file, index))
     },
 
+    thumbnailUrls() {
+      return this.files.map((file, index) => this.getThumbnailUrl(file, index))
+    },
+
     multiple: getSchemaAccessor('multiple', {
       type: Boolean,
       default: false,
@@ -206,6 +220,16 @@ export default DitoTypeComponent.register('upload', {
     render: getSchemaAccessor('render', {
       type: Function,
       default: null
+    }),
+
+    thumbnails: getSchemaAccessor('thumbnails', {
+      type: [Boolean, String],
+      default(thumbnails) {
+        return thumbnails ?? !!this.schema.thumbnailUrl
+      },
+      get(thumbnails) {
+        return thumbnails === true ? 'medium' : thumbnails || null
+      }
     }),
 
     hasFiles() {
@@ -281,6 +305,20 @@ export default DitoTypeComponent.register('upload', {
               context: this.getFileContext(file, index)
             })
           : null
+    },
+
+    getThumbnailUrl(file, index) {
+      return !file.upload || file.upload.success
+        ? this.getSchemaValue('thumbnailUrl', {
+            type: 'String',
+            default: null,
+            context: this.getFileContext(file, index)
+          }) || (
+            file.type.startsWith('image/')
+              ? file.url
+              : null
+          )
+        : null
     },
 
     deleteFile(file, index) {
@@ -434,7 +472,8 @@ function asFiles(value) {
 
 .dito-upload {
   .dito-table {
-    tr {
+    tr,
+    .dito-cell-edit-buttons {
       vertical-align: middle;
     }
   }
