@@ -192,8 +192,19 @@ export default {
       return value
     },
 
-    getChildStore(key) {
-      return this.getStore(key) || this.setStore(key, reactive({}))
+    getChildStore(key, index) {
+      // When storing, temporary ids change to permanent ones and thus the key
+      // can change, so we need to store the index as well, to be able to find
+      // the store again after the item was saved.
+      const store = (
+        this.getStore(key) ||
+        index != null && this.getStore(index) ||
+        this.setStore(key, reactive({}))
+      )
+      if (index != null) {
+        this.setStore(index, store)
+      }
+      return store
     },
 
     getSchemaValue(

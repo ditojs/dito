@@ -1,12 +1,15 @@
+import { toRaw } from 'vue'
+
 const uidMap = new WeakMap()
 
 // Generated and remembers unique ids per passed object using a weak map.
 let uid = 0
-export function getUid(object, itemId) {
-  let id = uidMap.get(object)
+export function getUid(item, getItemId = null) {
+  const raw = toRaw(item)
+  let id = uidMap.get(raw)
   if (!id) {
-    id = itemId || `@${++uid}`
-    uidMap.set(object, id)
+    id = getItemId?.(item) || `@${++uid}`
+    uidMap.set(raw, id)
   }
   return id
 }

@@ -80,7 +80,7 @@
               :dataPath="getDataPath(index)"
               :data="item"
               :meta="nestedMeta"
-              :store="getChildStore(index)"
+              :store="getChildStore(getItemUid(schema, item), index)"
               :disabled="disabled || isLoading"
               :collapsed="collapsed"
               :collapsible="collapsible"
@@ -117,7 +117,7 @@
             :dataPath="getDataPath(index)"
             :data="item"
             :meta="nestedMeta"
-            :store="getChildStore(index)"
+            :store="getChildStore(getItemUid(schema, item), index)"
             @delete="deleteItem(item, index)"
           )
     //- Render create buttons inside table when not in a single component view:

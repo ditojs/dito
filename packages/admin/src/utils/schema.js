@@ -1042,5 +1042,5 @@ export function getItemUid(sourceSchema, item) {
   // either way, pass through `getUid()` so that the ids are associated with the
   // item through a weak map, as the ids can be filtered out in `processData()`
   // while the components that use the uids as key are still visible.
-  return getUid(item, getItemId(sourceSchema, item))
+  return getUid(item, item => getItemId(sourceSchema, item))
 }
