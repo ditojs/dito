@@ -192,17 +192,37 @@ export default {
       return value
     },
 
+    removeStore(key) {
+      delete this.store[key]
+    },
+
+    getStoreKeyByIndex(index) {
+      return this.store.$keysByIndex?.[index]
+    },
+
+    setStoreKeyByIndex(index, key) {
+      this.store.$keysByIndex ??= {}
+      this.store.$keysByIndex[index] = key
+    },
+
     getChildStore(key, index) {
-      // When storing, temporary ids change to permanent ones and thus the key
-      // can change, so we need to store the index as well, to be able to find
-      // the store again after the item was saved.
-      const store = (
-        this.getStore(key) ||
-        index != null && this.getStore(index) ||
-        this.setStore(key, reactive({}))
-      )
-      if (index != null) {
-        this.setStore(index, store)
+      let store = this.getStore(key)
+      if (!store && index != null) {
+        // When storing, temporary ids change to permanent ones and thus the key
+        // can change. To still find the store, we reference by index as well,
+        // to be able to find the store again after the item was saved.
+        const oldKey = this.getStoreKeyByIndex(index)
+        store = this.getStore(oldKey)
+        if (store) {
+          this.setStore(key, store)
+          this.removeStore(oldKey)
+        }
+      }
+      if (!store) {
+        store = this.setStore(key, reactive({}))
+        if (index != null) {
+          this.setStoreKeyByIndex(index, key)
+        }
       }
       return store
     },
