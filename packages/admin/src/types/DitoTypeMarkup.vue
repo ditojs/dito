@@ -66,14 +66,7 @@ import { ListItem } from '@tiptap/extension-list-item'
 import { History } from '@tiptap/extension-history'
 
 import { Icon } from '@ditojs/ui/src'
-import {
-  isArray,
-  isObject,
-  underscore,
-  hyphenate,
-  debounce,
-  camelize
-} from '@ditojs/utils'
+import { isArray, isObject, hyphenate, debounce, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default DitoTypeComponent.register('markup', {
@@ -120,10 +113,7 @@ export default DitoTypeComponent.register('markup', {
     basicNodeButtons() {
       return this.getButtons('nodes', {
         paragraph: {
-          // Do not show the paragraph command as active if any of the block
-          // commands are also active:
-          ignoreActive: () =>
-            this.otherNodeButtons.some(button => button.isActive)
+          command: 'setParagraph'
         },
         heading: {
           attribute: 'level',
@@ -132,7 +122,7 @@ export default DitoTypeComponent.register('markup', {
       })
     },
 
-    otherNodeButtons() {
+    advancedNodeButtons() {
       return this.getButtons('nodes', {
         bulletList: true,
         orderedList: true,
@@ -149,17 +139,11 @@ export default DitoTypeComponent.register('markup', {
     },
 
     groupedButtons() {
-      const {
-        markButtons,
-        basicNodeButtons,
-        otherNodeButtons,
-        toolButtons
-      } = this
       return [
-        markButtons,
-        basicNodeButtons,
-        otherNodeButtons,
-        toolButtons
+        this.markButtons,
+        this.basicNodeButtons,
+        this.advancedNodeButtons,
+        this.toolButtons
       ].filter(buttons => buttons.length > 0)
     },
 
@@ -381,25 +365,22 @@ export default DitoTypeComponent.register('markup', {
       const list = []
       const { commands } = this.editor
 
-      const addButton = ({ name, icon, attributes, ignoreActive, onClick }) => {
+      const addButton = ({ name, icon, command, attributes, onClick }) => {
         list.push({
           name,
           icon,
-          isActive: (
-            this.editor.isActive(name, attributes) &&
-            (ignoreActive == null || !ignoreActive())
-          ),
+          isActive: this.editor.isActive(name, attributes),
           onClick: () => {
-            const key =
+            command ??=
               name in commands
                 ? name
                 : `toggle${camelize(name, true)}`
-            if (key in commands) {
-              const command = attributes =>
-                this.editor.chain()[key](attributes).focus().run()
+            if (command in commands) {
+              const apply = attributes =>
+                this.editor.chain()[command](attributes).focus().run()
               onClick
                 ? onClick(this.editor, attributes)
-                : command(attributes)
+                : apply(attributes)
             }
           }
         })
@@ -407,16 +388,15 @@ export default DitoTypeComponent.register('markup', {
 
       const settings = this.schema[settingsName]
       if (settings) {
-        for (const [key, description] of Object.entries(descriptions)) {
-          const settingName = ['undo', 'redo'].includes(key) ? 'history' : key
+        for (const [name, description] of Object.entries(descriptions)) {
+          const settingName = ['undo', 'redo'].includes(name) ? 'history' : name
           const setting = settings[settingName]
-          const name = underscore(key)
-          const icon = hyphenate(key)
+          const icon = hyphenate(name)
           if (setting) {
             if (description === true) {
               addButton({ name, icon })
             } else if (isObject(description)) {
-              const { attribute, values, ignoreActive, onClick } = description
+              const { command, attribute, values, onClick } = description
               if (attribute) {
                 if (isArray(values) && isArray(setting)) {
                   // Support heading level attrs:
@@ -425,15 +405,15 @@ export default DitoTypeComponent.register('markup', {
                       addButton({
                         name,
                         icon: `${icon}-${value}`,
+                        command,
                         attributes: { [attribute]: value },
-                        ignoreActive,
                         onClick
                       })
                     }
                   }
                 }
               } else {
-                addButton({ name, icon, ignoreActive, onClick })
+                addButton({ name, icon, command, onClick })
               }
             }
           }
