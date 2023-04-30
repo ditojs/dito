@@ -1,10 +1,12 @@
 export default [
   'create', 'created',
   'save', 'saved',
+  'apply', 'applied',
   'submit', 'submitted',
   'delete', 'deleted',
-  'edit', 'edited',
+  'remove', 'removed',
   'clear', 'cleared',
+  'edit', 'edited',
   'close', 'closed',
   'cancel', 'cancelled',
   'drag', 'dragged',
