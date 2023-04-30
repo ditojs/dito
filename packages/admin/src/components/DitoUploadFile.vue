@@ -189,6 +189,9 @@ const TYPES = {
 
   img {
     display: block;
+    // SVG images need 100% settings to scale into the container.
+    width: 100%;
+    height: 100%;
     min-width: var(--min-size);
     min-height: var(--min-size);
     max-width: var(--max-size);
