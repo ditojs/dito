@@ -8,6 +8,7 @@
       img(
         v-if="source"
         :src="source"
+        crossorigin="anonymous"
       )
       .dito-thumbnail__type(
         v-else
