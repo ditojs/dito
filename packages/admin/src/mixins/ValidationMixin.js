@@ -15,6 +15,12 @@ export default {
     }
   },
 
+  computed: {
+    hasErrors() {
+      return !!this.errors
+    }
+  },
+
   methods: {
     resetValidation() {
       this.isTouched = false
@@ -60,6 +66,8 @@ export default {
 
     markTouched() {
       this.isTouched = true
+      // Clear currently displayed errors when focusing input.
+      this.clearErrors()
     },
 
     markDirty() {
@@ -87,7 +95,7 @@ export default {
         this.addError(message, true)
       }
       if (focus) {
-        this.focus()
+        this.scrollIntoView()
       }
       return true
     },

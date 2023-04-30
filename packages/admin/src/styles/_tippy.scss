@@ -1,0 +1,39 @@
+@use 'sass:color';
+@import 'tippy.js/animations/shift-away-subtle.css';
+
+.tippy-box {
+  &[data-theme] {
+    --color: #{$color-active};
+
+    font-size: unset;
+    line-height: unset;
+    background-color: var(--color);
+    color: $color-white;
+    filter: drop-shadow(0 2px 4px $color-shadow);
+
+    .tippy-content {
+      white-space: pre-line;
+      padding: ($input-padding-ver + 2 * $border-width)
+        ($input-padding-hor + $border-width);
+    }
+
+    > .tippy-arrow::before {
+      color: var(--color);
+    }
+  }
+
+  &[data-theme~='info'] {
+    --color: #{color.adjust($color-active, $lightness: 5%)};
+  }
+
+  &[data-theme~='error'] {
+    --color: #{color.adjust($color-error, $lightness: 5%)};
+
+    cursor: pointer;
+
+    > .tippy-arrow {
+      transform: unset !important;
+      left: 16px !important;
+    }
+  }
+}

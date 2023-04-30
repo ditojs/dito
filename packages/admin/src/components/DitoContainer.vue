@@ -216,6 +216,7 @@ export default DitoComponent.component('DitoContainer', {
 .dito-container {
   $self: &;
 
+  position: relative;
   display: flex;
   flex-flow: column;
   align-items: flex-start;

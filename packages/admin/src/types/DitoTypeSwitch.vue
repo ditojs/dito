@@ -1,6 +1,7 @@
 <template lang="pug">
 SwitchButton.dito-switch(
   :id="dataPath"
+  ref="element"
   v-model="value"
   :labels="labels"
   v-bind="attributes"

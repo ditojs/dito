@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { computeValue } from '../utils/schema.js'
 import { getItem, getParentItem } from '../utils/data.js'
-import { asArray, camelize } from '@ditojs/utils'
+import { camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -238,22 +238,30 @@ export default {
     },
 
     // @overridable
-    focusElement() {
-      const [element = this.$el] = asArray(this.$refs.element)
-      this.$nextTick(() => {
-        element.focus?.()
-        // If the element is disabled, `focus()` will likely not have the
-        // desired effect. Use `scrollIntoView()` if available:
-        if (!element.focus || this.disabled) {
-          ;(element.$el || element).scrollIntoView?.()
-        }
+    async scrollIntoView() {
+      await this.focusSchema()
+      const { element = this } = this.$refs
+      ;(element.$el || element).scrollIntoView?.({
+        behavior: 'smooth',
+        block: 'center'
       })
     },
 
-    focus() {
+    // @overridable
+    async focusElement() {
+      await this.focusSchema()
+      const { element = this } = this.$refs
+      ;(element.$el || element).focus?.()
+    },
+
+    async focusSchema() {
       // Also focus this component's schema and panel in case it's a tab.
-      this.schemaComponent.focus()
-      this.tabComponent?.focus()
+      await this.schemaComponent.focus()
+      await this.tabComponent?.focus()
+    },
+
+    focus() {
+      this.scrollIntoView()
       this.focusElement()
     },
 

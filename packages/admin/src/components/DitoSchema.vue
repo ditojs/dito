@@ -3,7 +3,10 @@ slot(name="before")
 .dito-schema(
   v-bind="$attrs"
 )
-  .dito-schema-content(:class="{ 'dito-scroll': scrollable }")
+  .dito-schema-content(
+    ref="content"
+    :class="{ 'dito-scroll': scrollable }"
+  )
     Teleport(
       to=".dito-header__menu"
       :disabled="!headerInMenu"
@@ -280,6 +283,10 @@ export default DitoComponent.component('DitoSchema', {
       return this.everyComponent(it => it.isValidated)
     },
 
+    hasErrors() {
+      return this.someComponent(it => it.hasErrors)
+    },
+
     hasData() {
       return !!this.data
     },
@@ -334,6 +341,9 @@ export default DitoComponent.component('DitoSchema', {
       handler(hash) {
         if (this.hasTabs) {
           this.currentTab = hash?.slice(1) || null
+          if (this.hasErrors) {
+            this.repositionErrors()
+          }
         }
       }
     },
@@ -453,9 +463,18 @@ export default DitoComponent.component('DitoSchema', {
       }
     },
 
+    repositionErrors() {
+      // Force repositioning of error tooltips, as otherwise they
+      // sometimes don't show up in the right place initially when
+      // changing tabs
+      const scrollParent = this.$refs.content.closest('.dito-scroll')
+      scrollParent.scrollTop++
+      scrollParent.scrollTop--
+    },
+
     focus() {
-      this.parentSchemaComponent?.focus()
       this.opened = true
+      return this.parentSchemaComponent?.focus()
     },
 
     validateAll(match, notify = true) {
@@ -485,7 +504,7 @@ export default DitoComponent.component('DitoSchema', {
           if (!component.validate(notify)) {
             // Focus first error field
             if (notify && first) {
-              component.focus()
+              component.scrollIntoView()
             }
             first = false
             isValid = false

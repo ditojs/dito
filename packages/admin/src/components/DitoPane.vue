@@ -142,7 +142,7 @@ export default DitoComponent.component('DitoPane', {
 
     focus() {
       if (this.tab) {
-        this.$router.push({ hash: `#${this.tab}` })
+        return this.$router.push({ hash: `#${this.tab}` })
       }
     },
 

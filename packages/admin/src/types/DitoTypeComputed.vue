@@ -3,6 +3,7 @@
 //- involve actually rendering it when the component is not visible.
 input.dito-text.dito-input(
   :id="dataPath"
+  ref="element"
   :name="name"
   type="text"
   :value="value"

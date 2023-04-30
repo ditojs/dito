@@ -6,11 +6,7 @@ export default {
 
   computed: {
     errors() {
-      return this.schemaComponents.reduce(
-        (result, { errors }) =>
-          errors && result ? result.concat(errors) : errors,
-        null
-      )
+      return this.schemaComponents.flatMap(({ errors }) => errors || [])
     },
 
     isTouched() {

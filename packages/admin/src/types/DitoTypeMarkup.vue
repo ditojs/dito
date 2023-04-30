@@ -443,7 +443,6 @@ export default DitoTypeComponent.register('markup', {
     },
 
     focusElement() {
-      this.$el.scrollIntoView?.()
       this.editor.focus()
     }
   }
