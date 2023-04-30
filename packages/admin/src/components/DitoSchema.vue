@@ -113,7 +113,8 @@ import {
   getNamedSchemas,
   getPanelEntries,
   setDefaultValues,
-  processData
+  processData,
+  isForm
 } from '../utils/schema.js'
 import { getStoreAccessor } from '../utils/accessor.js'
 
@@ -159,6 +160,7 @@ export default DitoComponent.component('DitoSchema', {
           ? data(this.context)
           : data
       ),
+      currentPath: null,
       currentTab: null,
       componentsRegistry: {},
       panesRegistry: {},
@@ -339,7 +341,20 @@ export default DitoComponent.component('DitoSchema', {
     '$route.hash': {
       immediate: true,
       handler(hash) {
-        if (this.hasTabs) {
+        // Remember the current path to know if tab changes should still be
+        // handled, but remove the trailing `/create` or `/:id` from it so that
+        // tabs informs that stay open after creation still work.
+        const getPath = () =>
+          isForm(this.schema)
+            ? this.$route.path.replace(/\/.\w*$/, '')
+            : this.$route.path
+        if (
+          this.hasTabs && (
+            !this.currentPath ||
+            this.currentPath === getPath()
+          )
+        ) {
+          this.currentPath = getPath()
           this.currentTab = hash?.slice(1) || null
           if (this.hasErrors) {
             this.repositionErrors()
