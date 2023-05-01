@@ -35,11 +35,6 @@ export default {
     autofocus: { type: Boolean, default: false },
     placeholder: { type: String, default: null },
     autocomplete: { type: String, default: 'off' }
-    /*
-    clearable: { type: Boolean, default: false }
-    suffixIcon: { type: String, default: null },
-    prefixIcon: { type: String, default: null }
-    */
   },
 
   data() {

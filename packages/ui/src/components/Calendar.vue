@@ -88,7 +88,7 @@
 import { copyDate } from '../utils/date.js'
 
 export default {
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'select'],
 
   props: {
     modelValue: { type: Date, default: null },
@@ -159,8 +159,11 @@ export default {
       }
     },
 
-    setDate(overrides) {
-      this.currentValue = copyDate(this.currentValue, overrides)
+    setDate(settings) {
+      this.currentValue = copyDate(this.currentValue, settings)
+      if (settings.update) {
+        this.$emit('update:modelValue', this.currentValue)
+      }
     },
 
     stepDecade(step) {
@@ -200,12 +203,13 @@ export default {
           this.setDate({
             year: date.getFullYear(),
             month: date.getMonth(),
-            day: date.getDate()
+            day: date.getDate(),
+            update: true
           })
         } else {
           this.currentValue = date
         }
-        this.$emit('update:modelValue', this.currentValue)
+        this.$emit('select')
       }
     },
 
@@ -213,12 +217,12 @@ export default {
       this.setMode('day')
       // Set day to 1 to avoid selecting a date that is not available in the
       // new month, e.g. Feb 31 -> Mar 3.
-      this.setDate({ month, day: 1 })
+      this.setDate({ month, day: 1, update: true })
     },
 
     selectYear(year) {
       this.setMode('month')
-      this.setDate({ year })
+      this.setDate({ year, update: true })
     },
 
     getYearMonth(year, month) {
@@ -254,29 +258,32 @@ export default {
       return +`${yearStr.slice(0, -1)}0`
     },
 
-    navigate({ hor, ver, enter }) {
-      const { currentMode, currentValue } = this
-      if (hor || ver) {
-        switch (currentMode) {
+    navigate({ step, enter, mode = this.currentMode, update = false }) {
+      const { currentValue } = this
+      if (step) {
+        switch (mode) {
           case 'day':
             this.setDate({
-              day: currentValue.getDate() + hor + ver * 7
+              day: currentValue.getDate() + step,
+              update
             })
             break
           case 'month':
             this.setDate({
-              month: currentValue.getMonth() + hor + ver * 6
+              month: currentValue.getMonth() + step,
+              update
             })
             break
           case 'year':
             this.setDate({
-              year: currentValue.getFullYear() + hor + ver * 5
+              year: currentValue.getFullYear() + step,
+              update
             })
             break
         }
         return true
       } else if (enter) {
-        switch (currentMode) {
+        switch (this.currentMode) {
           case 'day':
             this.selectDate(currentValue)
             break

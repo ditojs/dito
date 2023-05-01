@@ -56,8 +56,9 @@
 </template>
 
 <script>
-import { isString, hyphenate } from '@ditojs/utils'
+import { hyphenate } from '@ditojs/utils'
 import { addEvents } from '../utils/event.js'
+import { getTarget } from '../utils/trigger'
 
 export default {
   emits: ['update:show'],
@@ -104,6 +105,10 @@ export default {
 
     popupStyle() {
       return this.zIndex ? `z-index: ${this.zIndex}` : ''
+    },
+
+    triggerTarget() {
+      return getTarget(this)
     }
   },
 
@@ -125,7 +130,8 @@ export default {
   mounted() {
     const { trigger, popup } = this.$refs
     if (this.trigger === 'focus') {
-      const target = trigger.querySelector('input, textarea')
+      const parent = this.triggerTarget ?? trigger
+      const target = parent.querySelector('input, textarea')
       if (target) {
         this.focusEvents = addEvents(target, {
           focus: () => {
@@ -147,7 +153,8 @@ export default {
           if (
             this.showPopup &&
             !popup.contains(event.target) &&
-            !trigger.contains(event.target)
+            !trigger.contains(event.target) &&
+            !this.triggerTarget?.contains(event.target)
           ) {
             this.showPopup = false
           }
@@ -182,18 +189,14 @@ export default {
         return
       }
 
-      const target = isString(this.target)
-        ? this.$refs[this.target]
-        : this.target
-      if (target) {
-        // Actually resize the popup's first child, so they can set size limits.
-        const el = target === popup ? trigger : popup.firstElementChild
-        if (el) {
-          el.style.width = getComputedStyle(target).width
-        }
+      const target = this.triggerTarget ?? trigger
+      // Actually resize the popup's first child, so they can set size limits.
+      const el = this.target === 'popup' ? trigger : popup.firstElementChild
+      if (el) {
+        el.style.width = getComputedStyle(target).width
       }
 
-      const bounds = (target || trigger).getBoundingClientRect()
+      const bounds = target.getBoundingClientRect()
       const triggerLeft = bounds.left + window.scrollX
       const triggerTop = bounds.top + window.scrollY
       const triggerWidth = bounds.width
@@ -273,7 +276,7 @@ export default {
           top -= triggerHeight
         }
       }
-      if (target && target !== trigger) {
+      if (target !== trigger) {
         const triggerBounds = trigger.getBoundingClientRect()
         left += triggerLeft - triggerBounds.left
         top += triggerTop - triggerBounds.top
@@ -284,7 +287,7 @@ export default {
 
     onClick() {
       if (!this.disabled) {
-        this.showPopup = !this.showPopup
+        this.showPopup = true
       }
     },
 

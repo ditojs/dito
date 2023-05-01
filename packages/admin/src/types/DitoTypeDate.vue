@@ -6,7 +6,7 @@
     ref="element"
     v-model="dateValue"
     :locale="locale"
-    :dateFormat="{ ...api.formats.date, ...dateFormat }"
+    :format="formats"
     v-bind="attributes"
   )
 </template>
@@ -40,9 +40,23 @@ export default DitoTypeComponent.register(
         }
       },
 
-      dateFormat: getSchemaAccessor('dateFormat', {
+      // TODO: Rename to `format`, once `schema.format()` was removed to
+      // `formatValue()`.
+      formats: getSchemaAccessor('formats', {
         type: Object,
-        default: null
+        default: null,
+        get(formats) {
+          return formats
+            ? {
+                date: ['date', 'datetime'].includes(this.type)
+                  ? formats.date
+                  : null,
+                time: ['time', 'datetime'].includes(this.type)
+                  ? formats.time
+                  : null
+              }
+            : undefined
+        }
       })
     },
 

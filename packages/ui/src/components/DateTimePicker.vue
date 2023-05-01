@@ -1,45 +1,71 @@
 <template lang="pug">
-.dito-date-time-picker(ref="picker")
-  .dito-pickers(:class="{ 'dito-focus': focused }")
+.dito-date-time-picker(
+  ref="picker"
+  @mousedown.prevent="onMouseDown(true)"
+)
+  .dito-date-time-picker__inner(:class="{ 'dito-focus': focused }")
+    InputField.dito-date-time-picker__input(
+      ref="input"
+      v-model="currentText"
+      type="text"
+      :class="{ 'dito-focus': focused }"
+      v-bind="{ placeholder, disabled, ...$attrs }"
+      @focus="onFocus(true)"
+      @blur="onFocus(false)"
+      @keydown="onKeyDown"
+      @mousedown.stop="onMouseDown(false)"
+    )
     DatePicker(
       ref="date"
       v-model="currentValue"
       v-model:show="showDate"
       placement="bottom-left"
       :target="$refs.picker"
-      v-bind="{ transition, placeholder, locale, dateFormat, disabled }"
-      @focus="dateFocused = true"
-      @blur="dateFocused = false"
+      v-bind="attributes"
+      @mousedown.prevent
     )
+      template(#trigger)
+        //- Intentionally empty
     TimePicker(
       ref="time"
       v-model="currentValue"
       v-model:show="showTime"
-      placeholder=""
       placement="bottom-right"
       :target="$refs.picker"
-      v-bind="{ transition, disabled }"
-      @focus="timeFocused = true"
-      @blur="timeFocused = false"
+      v-bind="attributes"
+      @mousedown.prevent
     )
+      template(#trigger)
+        //- Intentionally empty
 </template>
 
 <script>
-import { defaultFormats } from '@ditojs/utils'
+import { format, defaultFormats, merge } from '@ditojs/utils'
+import InputField from './InputField.vue'
 import DatePicker from './DatePicker.vue'
 import TimePicker from './TimePicker.vue'
+import { parseDate } from '../utils/date.js'
+import { getSelection, setSelection } from '../utils/selection.js'
+import { getKeyNavigation } from '../utils/event.js'
 
 export default {
-  components: { DatePicker, TimePicker },
+  components: { InputField, DatePicker, TimePicker },
   emits: ['update:modelValue', 'change', 'focus', 'blur'],
+  inheritAttrs: false,
 
   props: {
     modelValue: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
     placeholder: { type: String, default: null },
-    dateFormat: { type: Object, default: () => defaultFormats.date },
+    disabled: { type: Boolean, default: false },
     locale: { type: String, default: 'en-US' },
-    disabled: { type: Boolean, default: false }
+    format: {
+      type: Object,
+      default: () => ({
+        time: defaultFormats.time,
+        date: defaultFormats.date
+      })
+    }
   },
 
   data() {
@@ -47,15 +73,69 @@ export default {
       currentValue: this.modelValue,
       showDate: false,
       showTime: false,
+      inputFocused: false,
       dateFocused: false,
       timeFocused: false,
+      closedMode: null,
       changed: false
     }
   },
 
   computed: {
+    attributes() {
+      const { transition, disabled, locale, formatOptions: format } = this
+      return { transition, disabled, locale, format }
+    },
+
     focused() {
-      return this.dateFocused || this.timeFocused
+      return this.inputFocused || this.showDate || this.showTime
+    },
+
+    input() {
+      return this.$refs.input.input
+    },
+
+    formatOptions() {
+      return merge(
+        {
+          locale: this.locale,
+          ...this.format
+        },
+        {
+          date: {
+            format: (value, type, options) =>
+              type === 'literal' && /\bat\b/.test(value)
+                ? ', '
+                : this.format.date.format?.(value, type, options) ?? value
+          }
+        }
+      )
+    },
+
+    timeIndex() {
+      const text = this.currentText
+      if (text) {
+        const time = text.match(/([\S]+\s*)$/)?.[1]
+        if (time) {
+          return text.length - time.length
+        }
+      }
+      return null
+    },
+
+    currentText: {
+      get() {
+        return format(this.currentValue, this.formatOptions) || ''
+      },
+
+      set(value) {
+        const date = parseDate(value, this.formatOptions)
+        if (date) {
+          const selection = getSelection(this.input)
+          this.currentValue = date
+          this.$nextTick(() => setSelection(this.input, selection))
+        }
+      }
     }
   },
 
@@ -85,13 +165,58 @@ export default {
   },
 
   methods: {
+    onFocus(focus) {
+      this.inputFocused = focus
+      if (focus) {
+        this.updatePopups()
+      } else {
+        this.showDate = false
+        this.showTime = false
+      }
+    },
+
+    onMouseDown(toggle) {
+      if (toggle && (this.showDate || this.showTime)) {
+        this.showDate = false
+        this.showTime = false
+      } else {
+        this.focus()
+        requestAnimationFrame(() => this.updatePopups())
+      }
+    },
+
+    onKeyDown(event) {
+      const mode = this.getMode(event)
+      this.$refs[mode].onKeyDown(event)
+      if (event.defaultPrevented) {
+        this.closedMode = mode
+      } else if (mode !== this.closedMode) {
+        this.updatePopups(mode)
+      }
+    },
+
+    getMode(event = null) {
+      const { start } = getSelection(this.input)
+      const { hor: step } = getKeyNavigation(event)
+      return this.timeIndex === null || start + step < this.timeIndex
+        ? 'date'
+        : 'time'
+    },
+
+    updatePopups(mode = this.getMode()) {
+      if (mode) {
+        this.closedMode = null
+      }
+      this.showDate = mode === 'date'
+      this.showTime = mode === 'time'
+    },
+
     focus() {
-      this.$refs.date.focus()
+      this.input.focus()
     },
 
     blur() {
-      this.$refs.date.blur()
-      this.$refs.time.blur()
+      this.input.blur()
     }
   }
 }
@@ -101,35 +226,18 @@ export default {
 @import '../styles/_imports';
 
 .dito-date-time-picker {
-  .dito-pickers {
-    @extend %input;
-
-    padding: 0;
+  &__inner {
     display: flex;
-
-    .dito-input {
-      background: none;
-      border: 0;
-    }
   }
 
-  .dito-date-picker {
-    width: 60%;
-    min-width: 6.9em;
-
-    .dito-input {
-      padding-right: 0;
-    }
+  &__input {
+    flex: 1;
+    font-variant-numeric: tabular-nums;
   }
 
+  .dito-date-picker,
   .dito-time-picker {
-    width: 40%;
-    min-width: 5.4em;
-
-    .dito-input {
-      padding-left: 0;
-      text-align: right;
-    }
+    position: absolute;
   }
 }
 </style>

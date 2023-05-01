@@ -1,11 +1,11 @@
 export function addEvents(target, events) {
-  for (const type in events) {
-    target.addEventListener(type, events[type], false)
+  for (const [type, handler] of Object.entries(events)) {
+    target.addEventListener(type, handler, false)
   }
   return {
     remove() {
-      for (const type in events) {
-        target.removeEventListener(type, events[type], false)
+      for (const [type, handler] of Object.entries(events)) {
+        target.removeEventListener(type, handler, false)
       }
     }
   }
@@ -18,7 +18,7 @@ export function getKey(event) {
     39: 'right',
     40: 'down',
     13: 'enter'
-  }[event.keyCode]
+  }[event?.keyCode]
 }
 
 export function getKeyNavigation(event) {

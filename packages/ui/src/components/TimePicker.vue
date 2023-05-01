@@ -7,27 +7,30 @@ Trigger.dito-time-picker(
   v-bind="{ transition, placement, disabled, target }"
 )
   template(#trigger)
+    slot(
+      v-if="$slots.trigger"
+      name="trigger"
+    )
     InputField.dito-time-picker-input(
+      v-else
       ref="input"
       v-model="currentText"
       type="text"
-      readonly
-      :class="{ 'dito-focus': showPopup }"
-      v-bind="{ placeholder, disabled }"
-      @focus="inputFocused = true"
-      @blur="inputFocused = false"
+      :class="{ 'dito-focus': focused }"
+      v-bind="{ placeholder, disabled, ...$attrs }"
+      @focus="onFocus(true)"
+      @blur="onFocus(false)"
       @keydown="onKeyDown"
     )
     //- icon(type="time"
     //- :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
     //- )
   template(#popup)
-    .dito-time-picker-popup
+    .dito-time-picker-popup(
+      @mousedown.stop.prevent
+    )
       .dito-time-picker-panel
-        ul.dito-time-picker-hour(
-          ref="hour"
-          @mouseover="selection = 0"
-        )
+        ul.dito-time-picker-hour(ref="hour")
           template(
             v-for="index in 24"
           )
@@ -37,10 +40,7 @@ Trigger.dito-time-picker(
               @click="hour = index - 1"
             ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.dito-time-picker-minute(
-          ref="minute"
-          @mouseover="selection = 1"
-        )
+        ul.dito-time-picker-minute(ref="minute")
           template(
             v-for="index in 60"
           )
@@ -50,10 +50,7 @@ Trigger.dito-time-picker(
               @click="minute = index - 1"
             ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.dito-time-picker-second(
-          ref="second"
-          @mouseover="selection = 2"
-        )
+        ul.dito-time-picker-second(ref="second")
           template(
             v-for="index in 60"
           )
@@ -68,13 +65,15 @@ Trigger.dito-time-picker(
 import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
-import { copyDate } from '../utils/date.js'
-import { setSelection } from '../utils/selection.js'
+import { copyDate, parseDate, getDatePartAtPosition } from '../utils/date.js'
+import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
+import { getTarget } from '../utils/trigger.js'
 
 export default {
   components: { Trigger, InputField },
   emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
+  inheritAttrs: false,
 
   props: {
     modelValue: { type: Date, default: null },
@@ -85,7 +84,13 @@ export default {
     disabled: { type: Boolean, default: false },
     target: { type: [String, HTMLElement], default: 'trigger' },
     locale: { type: String, default: 'en-US' },
-    timeFormat: { type: Object, default: () => defaultFormats.time },
+    format: {
+      type: Object,
+      default: () => ({
+        time: defaultFormats.time,
+        date: false
+      })
+    },
     disabledHour: { type: Function, default: () => false },
     disabledMinute: { type: Function, default: () => false },
     disabledSecond: { type: Function, default: () => false }
@@ -96,8 +101,8 @@ export default {
       currentValue: this.modelValue,
       showPopup: this.show,
       inputFocused: false,
-      selection: 0,
-      changed: false
+      changed: false,
+      ignoreNextChange: false
     }
   },
 
@@ -106,14 +111,28 @@ export default {
       return this.inputFocused || this.showPopup
     },
 
-    currentText() {
-      return (
-        format(this.currentValue, {
-          locale: this.locale,
-          date: false,
-          time: this.timeFormat
-        }) || ''
-      )
+    input() {
+      return getTarget(this)?.querySelector('input')
+    },
+
+    formatOptions() {
+      return {
+        locale: this.locale,
+        ...this.format
+      }
+    },
+
+    currentText: {
+      get() {
+        return format(this.currentValue, this.formatOptions) || ''
+      },
+
+      set(value) {
+        const date = parseDate(value, this.formatOptions)
+        if (date) {
+          this.currentValue = date
+        }
+      }
     },
 
     currentDate() {
@@ -161,6 +180,7 @@ export default {
     modelValue(to, from) {
       if (+to !== +from) {
         this.currentValue = to
+        this.scrollAll(true)
       }
     },
 
@@ -172,9 +192,18 @@ export default {
       }
     },
 
-    currentText: 'updateSelection',
-
-    selection: 'updateSelection',
+    currentText() {
+      const { input } = this
+      const selection = getSelection(input)
+      if (
+        this.focused &&
+        !this.ignoreNextChange &&
+        selection.start === selection.end
+      ) {
+        this.$nextTick(() => setSelection(input, selection))
+      }
+      this.ignoreNextChange = false
+    },
 
     show(show) {
       this.showPopup = show
@@ -182,7 +211,6 @@ export default {
 
     showPopup(to, from) {
       if (to) {
-        this.updateSelection()
         this.scrollAll(false)
       }
       if (to ^ from) {
@@ -213,15 +241,6 @@ export default {
       })
     },
 
-    updateSelection(force = false) {
-      if (this.showPopup || force) {
-        const start = 3 * this.selection
-        this.$nextTick(() =>
-          setSelection(this.$refs.input.input, { start, end: start + 2 })
-        )
-      }
-    },
-
     scrollAll(smooth) {
       const scroll = (ref, value) => {
         const target = this.$refs[ref]
@@ -244,39 +263,116 @@ export default {
       })
     },
 
+    onFocus(focus) {
+      this.inputFocused = focus
+      this.showPopup = focus
+    },
+
     onKeyDown(event) {
-      const selected = ['hour', 'minute', 'second'][this.selection]
-      if (selected) {
-        const { hor, ver, enter } = getKeyNavigation(event)
-        if (hor) {
-          const value = this.selection + hor
-          this.selection = value < 0 ? 2 : value > 2 ? 0 : value
-        } else if (ver) {
-          const value = this[selected] + ver
-          const { length } = this.$refs[selected].children
-          this[selected] =
-            value < 0
-              ? value + length
-              : value >= length
-                ? value - length
-                : value
-        }
-        if (enter) {
+      const { input } = this
+      const selection = getSelection(input)
+      const { ver: step, enter } = getKeyNavigation(event)
+      if (step || enter) {
+        event.preventDefault()
+
+        const getDatePart = position =>
+          getDatePartAtPosition(this.currentText, position, this.formatOptions)
+
+        if (step) {
+          if (!this.showPopup) {
+            this.showPopup = true
+          } else {
+            const { name, start } = getDatePart(selection.start) || {}
+            if (name) {
+              const value = this[name] + step
+              const count = this.$refs[name].childElementCount
+              this[name] =
+                value < 0
+                  ? value + count
+                  : value >= count
+                    ? value - count
+                    : value
+              this.ignoreNextChange = true
+              this.$nextTick(() => setSelection(input, getDatePart(start)))
+            }
+          }
+        } else if (enter) {
           this.showPopup = false
         }
-        if (hor || ver || enter) {
-          this.updateSelection(true)
-          event.preventDefault()
+      } else if (selection.start === selection.end) {
+        const { value } = input
+        let pos = selection.start
+
+        const isDigit = char => !isNaN(parseInt(char, 10))
+
+        if (event.key.length === 1) {
+          if (isDigit(event.key) && pos < value.length) {
+            if (
+              value[pos] === ':' &&
+              isDigit(value[pos - 1]) &&
+              isDigit(value[pos - 2])
+            ) {
+              pos++
+            }
+            // Remove next digit so the event overrides it instead of inserting
+            // new chars.
+            if (
+              isDigit(value[pos]) && (
+                isDigit(value[pos + 1]) ||
+                isDigit(value[pos - 1])
+              )
+            ) {
+              input.value = (
+                value.slice(0, pos) +
+                value.slice(pos + 1)
+              )
+              setSelection(input, { start: pos, end: pos })
+            }
+          } else {
+            const length = format(this.currentValue, this.formatOptions).length
+            if (value.length === length) {
+              event.preventDefault()
+            } else if (value.length > length) {
+              input.value = value.slice(0, length)
+              setSelection(input, selection)
+              event.preventDefault()
+            }
+          }
+        } else if (event.key === 'Backspace') {
+          if (
+            pos === 1 ||
+            [' ', ':'].includes(value[pos - 2])
+          ) {
+            if (
+              pos === value.length ||
+              value[pos] === ':'
+            ) {
+              pos--
+              input.value = (
+                value.slice(0, pos) +
+                ((value[pos - 1] ?? '') + '00') +
+                value.slice(pos + 1)
+              )
+              setSelection(input, { start: pos, end: pos })
+            } else if (
+              isDigit(value[pos]) &&
+              !isDigit(+value[pos + 1])
+            ) {
+              // When removing the first of two digits, replace with 0
+              input.value = value.slice(0, pos) + '0' + value.slice(pos)
+              setSelection(input, { start: pos, end: pos })
+            }
+          }
         }
       }
     },
 
     focus() {
-      this.$refs.input.focus()
+      this.input.focus()
     },
 
     blur() {
-      this.$refs.input.blur()
+      this.input.blur()
     }
   }
 }
@@ -301,7 +397,6 @@ $time-picker-line-height: 24px;
 .dito-time-picker {
   .dito-input {
     font-variant-numeric: tabular-nums;
-    cursor: pointer;
     width: 100%;
 
     .dito-icon-time {

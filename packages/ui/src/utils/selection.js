@@ -6,5 +6,7 @@ export function setSelection(input, { start, end }) {
 }
 
 export function getSelection(input) {
-  return input ? { start: input.selectionStart, end: input.selectionEnd } : null
+  return input && 'selectionStart' in input
+    ? { start: input.selectionStart, end: input.selectionEnd }
+    : null
 }
