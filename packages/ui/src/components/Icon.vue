@@ -1,5 +1,10 @@
 <template lang="pug">
-i.dito-icon(:class="`dito-icon-${name}`")
+i.dito-icon(
+  :class=`{
+    ['dito-icon--' + name]: true,
+    'dito-icon--disabled': disabled
+  }`
+)
 </template>
 
 <script>
@@ -8,6 +13,10 @@ export default {
     name: {
       type: String,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   }
 }
@@ -21,8 +30,33 @@ export default {
 // code through `_imports`.
 // In order to be able to use them as normal CSS classes, convert them here:
 @each $name in $icons {
-  .dito-icon-#{$name} {
-    @extend %icon-#{$name};
+  .dito-icon--#{$name} {
+    &::after {
+      @extend %icon-#{$name};
+
+      position: absolute;
+    }
+  }
+}
+
+.dito-icon {
+  @at-root .dito-input & {
+    position: absolute;
+    inset: $border-width;
+    left: unset;
+    width: 2em;
+    font-style: normal;
+    border-radius: $border-radius;
+    color: $color-grey;
+    background: $color-white;
+
+    &--disabled {
+      color: $color-light;
+    }
+  }
+
+  @at-root .dito-input:focus-within & {
+    color: $color-active;
   }
 }
 </style>

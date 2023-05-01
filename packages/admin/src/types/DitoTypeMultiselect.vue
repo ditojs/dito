@@ -261,10 +261,6 @@ $tag-line-height: 1em;
     margin-left: $form-spacing-half;
   }
 
-  .dito-button-clear {
-    width: $spinner-width;
-  }
-
   .multiselect {
     $self: last-selector(&);
 

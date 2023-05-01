@@ -25,10 +25,11 @@ Trigger.dito-time-picker(
       template(#before)
         slot(name="before")
       template(#after)
+        Icon(
+          name="clock"
+          :disabled="disabled"
+        )
         slot(name="after")
-    //- icon(type="time"
-    //- :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
-    //- )
   template(#popup)
     .dito-time-picker-popup(
       @mousedown.stop.prevent
@@ -69,13 +70,14 @@ Trigger.dito-time-picker(
 import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
+import Icon from './Icon.vue'
 import { copyDate, parseDate, getDatePartAtPosition } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { getTarget } from '../utils/trigger.js'
 
 export default {
-  components: { Trigger, InputField },
+  components: { Trigger, InputField, Icon },
   emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 
@@ -402,14 +404,6 @@ $time-picker-line-height: 24px;
   .dito-input {
     font-variant-numeric: tabular-nums;
     width: 100%;
-
-    .dito-icon-time {
-      display: block;
-      position: absolute;
-      top: 0;
-      right: 7px;
-      height: 100%;
-    }
   }
 }
 

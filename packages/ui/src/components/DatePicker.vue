@@ -25,8 +25,11 @@ Trigger.dito-date-picker(
       template(#before)
         slot(name="before")
       template(#after)
+        Icon(
+          name="calendar"
+          :disabled="disabled"
+        )
         slot(name="after")
-  // icon(type="calendar" :color="iconColor")
   template(#popup)
     Calendar.dito-date-picker-popup(
       ref="calendar"
@@ -42,13 +45,14 @@ import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import Calendar from './Calendar.vue'
 import InputField from './InputField.vue'
+import Icon from './Icon.vue'
 import { parseDate, getDatePartAtPosition } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { getTarget } from '../utils/trigger.js'
 
 export default {
-  components: { Trigger, Calendar, InputField },
+  components: { Trigger, Calendar, InputField, Icon },
   emits: ['update:modelValue', 'update:show', 'focus', 'blur'],
   inheritAttrs: false,
 

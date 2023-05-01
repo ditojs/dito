@@ -183,9 +183,9 @@
 
 .dito-button-overlay {
   position: absolute;
-  right: $border-width;
-  top: $border-width;
-  bottom: $border-width;
+  inset: $border-width;
+  left: unset;
+  padding: 0;
   border: 0;
   border-radius: $border-radius;
   cursor: pointer;
@@ -193,17 +193,13 @@
   &.dito-button-clear {
     $self: &;
 
-    width: $input-height;
+    width: 2em;
     z-index: 1;
     background: $color-white;
     display: none;
 
     @at-root .dito-component:hover {
-      // Support 3 levels of nesting inside .dito-component, used by TypeColor
-      & > #{$self},
-      & > * > #{$self},
-      & > * > * > #{$self},
-      & > * > * > * > #{$self} {
+      & :not(.dito-component) #{$self} {
         display: block;
       }
     }

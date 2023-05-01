@@ -18,6 +18,10 @@
       template(#before)
         slot(name="before")
       template(#after)
+        Icon(
+          name="calendar"
+          :disabled="disabled"
+        )
         slot(name="after")
     DatePicker(
       ref="date"
@@ -48,12 +52,13 @@ import { format, defaultFormats, merge } from '@ditojs/utils'
 import InputField from './InputField.vue'
 import DatePicker from './DatePicker.vue'
 import TimePicker from './TimePicker.vue'
+import Icon from './Icon.vue'
 import { parseDate } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 
 export default {
-  components: { InputField, DatePicker, TimePicker },
+  components: { InputField, DatePicker, TimePicker, Icon },
   emits: ['update:modelValue', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 
