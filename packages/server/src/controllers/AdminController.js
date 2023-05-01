@@ -259,7 +259,9 @@ export class AdminController extends Controller {
             ]
           },
           resolve: {
-            extensions: ['.js', '.json', '.ts', '.vue'],
+            extensions: [
+              '.js', '.mjs', '.jsx', '.ts', '.mts', '.tsx', '.json', '.vue'
+            ],
             preserveSymlinks: true,
             alias: [
               {
