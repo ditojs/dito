@@ -9,6 +9,7 @@
     }
   },
   "vueCompilerOptions": {
+    "optionsWrapper": [],
     "plugins": [
       "@volar/vue-language-plugin-pug"
     ]

@@ -29,7 +29,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { appendDataPath } from '../utils/data.js'
-import { hasSlotContent, hasVNodeContent } from '../utils/vue.js'
+import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoComponent.component('DitoButtons', {
