@@ -65,10 +65,10 @@ Trigger.dito-time-picker(
 </template>
 
 <script>
+import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
 import { copyDate } from '../utils/date.js'
-import { scrollTo } from '../utils/scroll.js'
 import { setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 
@@ -84,6 +84,8 @@ export default {
     show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     target: { type: [String, HTMLElement], default: 'trigger' },
+    locale: { type: String, default: 'en-US' },
+    timeFormat: { type: Object, default: () => defaultFormats.time },
     disabledHour: { type: Function, default: () => false },
     disabledMinute: { type: Function, default: () => false },
     disabledSecond: { type: Function, default: () => false }
@@ -105,15 +107,13 @@ export default {
     },
 
     currentText() {
-      return this.currentValue
-        ? `${
-            this.leftPad(this.hour)
-          }:${
-            this.leftPad(this.minute)
-          }:${
-            this.leftPad(this.second)
-          }`
-        : ''
+      return (
+        format(this.currentValue, {
+          locale: this.locale,
+          date: false,
+          time: this.timeFormat
+        }) || ''
+      )
     },
 
     currentDate() {
@@ -168,7 +168,7 @@ export default {
       if (+date !== +this.modelValue) {
         this.changed = true
         this.$emit('update:modelValue', date)
-        this.scrollAll()
+        this.scrollAll(true)
       }
     },
 
@@ -183,7 +183,7 @@ export default {
     showPopup(to, from) {
       if (to) {
         this.updateSelection()
-        this.scrollAll(0)
+        this.scrollAll(false)
       }
       if (to ^ from) {
         this.$emit('update:show', to)
@@ -216,17 +216,25 @@ export default {
     updateSelection(force = false) {
       if (this.showPopup || force) {
         const start = 3 * this.selection
-        this.$nextTick(() => setSelection(this.$refs.input, start, start + 2))
+        this.$nextTick(() =>
+          setSelection(this.$refs.input.input, { start, end: start + 2 })
+        )
       }
     },
 
-    scrollAll(duration = 100) {
+    scrollAll(smooth) {
       const scroll = (ref, value) => {
         const target = this.$refs[ref]
         if (target) {
-          // First and last one add 3 times the margin
-          const lineHeight = target.scrollHeight / (target.children.length + 6)
-          scrollTo(target, Math.round(value * lineHeight), duration)
+          const lineHeight = (
+            target.scrollHeight /
+            // First and last one add 3 times the margin.
+            (target.childElementCount + 6)
+          )
+          target.scrollTo({
+            top: Math.round(value * lineHeight),
+            behavior: smooth ? 'smooth' : 'auto'
+          })
         }
       }
       this.$nextTick(() => {

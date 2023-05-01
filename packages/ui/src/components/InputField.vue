@@ -60,6 +60,10 @@ export default {
       return attributes
     },
 
+    input() {
+      return this.$refs.input
+    },
+
     size() {
       // Determine size based on min & max settings, if they're provided.
       const { size, min, max } = this.$attrs
@@ -84,11 +88,11 @@ export default {
 
   methods: {
     focus() {
-      this.$refs.input.focus()
+      this.input.focus()
     },
 
     blur() {
-      this.$refs.input.blur()
+      this.input.blur()
     }
   }
 }
