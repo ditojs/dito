@@ -248,10 +248,23 @@ export default {
     },
 
     // @overridable
-    async focusElement() {
-      await this.focusSchema()
+    focusElement() {
       const { element = this } = this.$refs
-      ;(element.$el || element).focus?.()
+      if (element.focus) {
+        element.focus()
+      } else {
+        element.$el?.focus?.()
+      }
+    },
+
+    // @overridable
+    blurElement() {
+      const { element = this } = this.$refs
+      if (element.blur) {
+        element.blur()
+      } else {
+        element.$el?.blur?.()
+      }
     },
 
     async focusSchema() {
@@ -260,14 +273,20 @@ export default {
       await this.tabComponent?.focus()
     },
 
-    focus() {
+    async focus() {
+      await this.focusSchema()
       this.scrollIntoView()
       this.focusElement()
+    },
+
+    blur() {
+      this.blurElement()
     },
 
     clear() {
       this.value = null
       this.changedValue = undefined
+      this.blur()
       this.onChange()
     },
 

@@ -22,6 +22,10 @@ Trigger.dito-time-picker(
       @blur="onFocus(false)"
       @keydown="onKeyDown"
     )
+      template(#before)
+        slot(name="before")
+      template(#after)
+        slot(name="after")
     //- icon(type="time"
     //- :color="disabled ? '#bfbfbf' : (text ? '#666' : '#bfbfbf')"
     //- )

@@ -15,6 +15,10 @@
       @keydown="onKeyDown"
       @mousedown.stop="onMouseDown(false)"
     )
+      template(#before)
+        slot(name="before")
+      template(#after)
+        slot(name="after")
     DatePicker(
       ref="date"
       v-model="currentValue"

@@ -174,6 +174,10 @@ export default DitoTypeComponent.register('multiselect', {
       this.$refs.element.activate()
     },
 
+    blurElement() {
+      this.$refs.element.deactivate()
+    },
+
     onOpen() {
       this.populate = true
     },

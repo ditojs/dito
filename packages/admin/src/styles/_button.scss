@@ -199,10 +199,11 @@
     display: none;
 
     @at-root .dito-component:hover {
-      // Support two levels of nesting inside .dito-component, used by TypeColor
+      // Support 3 levels of nesting inside .dito-component, used by TypeColor
       & > #{$self},
       & > * > #{$self},
-      & > * > * > #{$self} {
+      & > * > * > #{$self},
+      & > * > * > * > #{$self} {
         display: block;
       }
     }

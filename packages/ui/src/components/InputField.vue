@@ -98,7 +98,6 @@ export default {
 
 .dito-input {
   display: inline-block;
-  position: relative;
 
   @extend %input;
 

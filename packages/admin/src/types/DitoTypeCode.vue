@@ -94,6 +94,10 @@ export default DitoTypeComponent.register('code', {
   methods: {
     focusElement() {
       this.$el.querySelector('textarea')?.focus()
+    },
+
+    blurElement() {
+      this.$el.querySelector('textarea')?.focus()
     }
   }
 })

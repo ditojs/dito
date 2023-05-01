@@ -9,6 +9,13 @@
     :format="formats"
     v-bind="attributes"
   )
+    template(#after)
+      button.dito-button-clear.dito-button-overlay(
+        v-if="showClearButton"
+        :disabled="disabled"
+        @click.stop="clear"
+        @mousedown.stop
+      )
 </template>
 
 <script>

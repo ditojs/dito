@@ -22,6 +22,10 @@ Trigger.dito-date-picker(
       @blur="onFocus(false)"
       @keydown="onKeyDown"
     )
+      template(#before)
+        slot(name="before")
+      template(#after)
+        slot(name="after")
   // icon(type="calendar" :color="iconColor")
   template(#popup)
     Calendar.dito-date-picker-popup(

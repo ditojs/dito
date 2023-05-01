@@ -273,6 +273,8 @@ export default DitoComponent.component('DitoContainer', {
 // NOTE: This is not nested inside `.dito-container` so that other
 // type components can override `.dito-width-fill` class (filter precedence).
 .dito-component {
+  position: relative;
+
   &.dito-width-fill {
     width: 100%;
 

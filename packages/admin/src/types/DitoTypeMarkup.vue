@@ -423,7 +423,11 @@ export default DitoTypeComponent.register('markup', {
     },
 
     focusElement() {
-      this.editor.focus()
+      this.editor.commands.focus()
+    },
+
+    blurElement() {
+      this.editor.commands.blur()
     }
   }
 })
