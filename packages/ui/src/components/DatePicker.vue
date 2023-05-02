@@ -198,12 +198,10 @@ export default {
 @import '../styles/_imports';
 
 .dito-date-picker {
-  min-width: 10em;
-
   .dito-input {
     font-variant-numeric: tabular-nums;
-    cursor: pointer;
     width: 100%;
+    min-width: 8em;
   }
 }
 

@@ -390,6 +390,7 @@ export default {
 .dito-time-picker {
   .dito-input {
     width: 100%;
+    min-width: 6em;
   }
 }
 

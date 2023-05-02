@@ -68,13 +68,7 @@ export default {
     placeholder: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     locale: { type: String, default: 'en-US' },
-    format: {
-      type: Object,
-      default: () => ({
-        time: defaultFormats.time,
-        date: defaultFormats.date
-      })
-    }
+    format: { type: Object, default: null }
   },
 
   data() {
@@ -108,16 +102,19 @@ export default {
       return merge(
         {
           locale: this.locale,
-          ...this.format
+          time: defaultFormats.time,
+          date: defaultFormats.date
         },
         {
           date: {
+            month: 'short',
             format: (value, type, options) =>
               type === 'literal' && /\bat\b/.test(value)
                 ? ', '
-                : this.format.date.format?.(value, type, options) ?? value
+                : this.format?.date?.format?.(value, type, options) ?? value
           }
-        }
+        },
+        this.format
       )
     },
 
@@ -242,6 +239,7 @@ export default {
   &__input {
     flex: 1;
     font-variant-numeric: tabular-nums;
+    min-width: 12em;
   }
 
   .dito-date-picker,
