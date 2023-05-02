@@ -251,9 +251,11 @@ export default {
             // First and last one add 3 times the margin.
             (target.childElementCount + 6)
           )
+          const top = Math.round(value * lineHeight)
+          const distance = Math.abs(target.scrollTop - top)
           target.scrollTo({
-            top: Math.round(value * lineHeight),
-            behavior: smooth ? 'smooth' : 'auto'
+            top,
+            behavior: smooth && distance < 100 ? 'smooth' : 'auto'
           })
         }
       }
