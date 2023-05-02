@@ -1,22 +1,19 @@
-// TODO: Convert to flexbox
-
-.dito-layout-vertical {
-  display: table;
+.dito-layout-vertical,
+.dito-layout-horizontal {
+  display: flex;
 
   > * {
-    display: table-row;
+    flex: 1;
+    display: flex;
   }
 }
 
+.dito-layout-vertical {
+  flex-direction: column;
+}
+
 .dito-layout-horizontal {
-  display: table-row;
-
-  > * {
-    display: table-cell;
-
-    /* stylelint-disable-next-line selector-max-universal */
-    & + * {
-      padding-left: $form-spacing;
-    }
+  > *:not(:first-child) {
+    padding-left: $form-spacing;
   }
 }
