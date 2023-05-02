@@ -105,13 +105,6 @@ export default DitoTypeComponent.register(
 
     span {
       @include ellipsis;
-
-      #{$self}:not(.dito-width-grow) & {
-        // Use `position: absolute` to prevent the text from growing over the
-        // button's width, which would cause the button to grow as well.
-        position: absolute;
-        inset: 0;
-      }
     }
   }
 }
