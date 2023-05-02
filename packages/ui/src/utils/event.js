@@ -1,11 +1,29 @@
-export function addEvents(target, events) {
+import { asArray, isArrayLike } from '@ditojs/utils'
+
+export function addEvents(targets, events) {
+  targets = isArrayLike(targets) ? Array.from(targets) : asArray(targets)
+
   for (const [type, handler] of Object.entries(events)) {
-    target.addEventListener(type, handler, false)
+    for (const target of targets) {
+      target.addEventListener(type, handler, false)
+    }
   }
   return {
     remove() {
       for (const [type, handler] of Object.entries(events)) {
-        target.removeEventListener(type, handler, false)
+        for (const target of targets) {
+          target.removeEventListener(type, handler, false)
+        }
+      }
+    }
+  }
+}
+
+export function combineEvents(...events) {
+  return {
+    remove() {
+      for (const event of events) {
+        event.remove()
       }
     }
   }

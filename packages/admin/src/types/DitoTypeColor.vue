@@ -1,7 +1,7 @@
 <template lang="pug">
 Trigger.dito-color(
   v-model:show="showPopup"
-  trigger="click"
+  trigger="focus"
 )
   template(#trigger)
     .dito-input(:class="{ 'dito-focus': showPopup }")
@@ -80,7 +80,10 @@ export default DitoTypeComponent.register('color', {
           // TODO: Fix side-effects
           // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.convertedHexValue = null
-        } else if (!this.focused) {
+        } else if (
+          !this.focused ||
+          this.$refs.element.hasAttribute('readonly')
+        ) {
           const color = tinycolor(this.value)
           if (color.isValid()) {
             // TODO: Fix side-effects

@@ -57,7 +57,7 @@
 
 <script>
 import { hyphenate } from '@ditojs/utils'
-import { addEvents } from '../utils/event.js'
+import { addEvents, combineEvents } from '../utils/event.js'
 import { getTarget } from '../utils/trigger'
 
 export default {
@@ -82,7 +82,10 @@ export default {
   data() {
     return {
       showPopup: this.show,
-      popupPlacement: this.placement
+      popupPlacement: this.placement,
+      focusEvents: null,
+      closeEvents: null,
+      popupEvents: null
     }
   },
 
@@ -120,9 +123,7 @@ export default {
     showPopup(to, from) {
       if (to ^ from) {
         this.$emit('update:show', to)
-        if (to) {
-          this.$nextTick(() => this.updatePosition())
-        }
+        this.$nextTick(() => this.onShowPopup(to))
       }
     }
   },
@@ -130,18 +131,7 @@ export default {
   mounted() {
     const { trigger, popup } = this.$refs
     if (this.trigger === 'focus') {
-      const parent = this.triggerTarget ?? trigger
-      const target = parent.querySelector('input, textarea')
-      if (target) {
-        this.focusEvents = addEvents(target, {
-          focus: () => {
-            this.showPopup = true
-          },
-          blur: () => {
-            this.showPopup = false
-          }
-        })
-      }
+      this.focusEvents = this.addFocusEvents(this.triggerTarget ?? trigger)
     }
 
     if (this.hideWhenClickOutside && !this.alwaysShow) {
@@ -178,6 +168,7 @@ export default {
   unmounted() {
     this.focusEvents?.remove()
     this.closeEvents?.remove()
+    this.popupEvents?.remove()
     this.mouseLeaveTimer = null
   },
 
@@ -283,6 +274,76 @@ export default {
       }
       popup.style.left = `${left}px`
       popup.style.top = `${top}px`
+    },
+
+    addFocusEvents(parent) {
+      const targets = parent.querySelectorAll('input, textarea')
+      if (targets.length > 0) {
+        let input
+
+        return combineEvents(
+          addEvents(targets, {
+            focus: () => {
+              this.showPopup = true
+            },
+
+            blur: () => {
+              // Use timeout to allow clicked inputs to grab focus
+              setTimeout(() => {
+                if (!this.$el.matches(':has(:focus-within)')) {
+                  this.showPopup = false
+                }
+              }, 0)
+            }
+          }),
+
+          addEvents(parent, {
+            mousedown: event => {
+              if (!event.target.matches('input, textarea')) {
+                event.preventDefault()
+              }
+              const trigger = this.triggerTarget ?? this.$refs.trigger
+              if (parent !== trigger) {
+                // Mark trigger input as readonly so it can't loose focus while
+                // user does other mouse-activities in popup.
+                input = trigger.querySelector('input, textarea')
+                if (
+                  input?.matches(':focus') &&
+                  !input.hasAttribute('readonly')
+                ) {
+                  input.setAttribute('readonly', '')
+                } else {
+                  input = null
+                }
+              }
+            },
+
+            mouseup: () => {
+              if (input) {
+                // Give some time for other events to update input before it
+                // becomes editable and still focused again.
+                setTimeout(() => {
+                  input.removeAttribute('readonly')
+                  input.focus()
+                  input = null
+                }, 0)
+              }
+            }
+          })
+        )
+      }
+    },
+
+    onShowPopup(show) {
+      if (show) {
+        if (this.trigger === 'focus') {
+          this.popupEvents = this.addFocusEvents(this.$refs.popup)
+        }
+        this.updatePosition()
+      } else {
+        this.popupEvents?.remove()
+        this.popupEvents = null
+      }
     },
 
     onClick() {
