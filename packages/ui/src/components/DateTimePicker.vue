@@ -79,8 +79,7 @@ export default {
       inputFocused: false,
       dateFocused: false,
       timeFocused: false,
-      closedMode: null,
-      changed: false
+      closedMode: null
     }
   },
 
@@ -152,20 +151,16 @@ export default {
       }
     },
 
-    currentValue(date) {
-      if (+date !== +this.modelValue) {
-        this.changed = true
-        this.$emit('update:modelValue', date)
+    currentValue(value) {
+      if (+value !== +this.modelValue) {
+        this.$emit('update:modelValue', value)
+        this.$emit('change', value)
       }
     },
 
     focused(to, from) {
       if (to ^ from) {
         this.$emit(to ? 'focus' : 'blur')
-        if (!to && this.changed) {
-          this.changed = false
-          this.$emit('change', this.currentValue)
-        }
       }
     }
   },

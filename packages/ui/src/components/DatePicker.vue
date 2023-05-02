@@ -53,7 +53,7 @@ import { getTarget } from '../utils/trigger.js'
 
 export default {
   components: { Trigger, Calendar, InputField, Icon },
-  emits: ['update:modelValue', 'update:show', 'focus', 'blur'],
+  emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 
   props: {
@@ -79,8 +79,7 @@ export default {
     return {
       currentValue: this.modelValue,
       showPopup: this.show,
-      inputFocused: false,
-      changed: false
+      inputFocused: false
     }
   },
 
@@ -121,10 +120,10 @@ export default {
       }
     },
 
-    currentValue(currentValue) {
-      if (+currentValue !== +this.modelValue) {
-        this.changed = true
-        this.$emit('update:modelValue', currentValue)
+    currentValue(value) {
+      if (+value !== +this.modelValue) {
+        this.$emit('update:modelValue', value)
+        this.$emit('change', value)
       }
     },
 
@@ -141,12 +140,6 @@ export default {
     focused(to, from) {
       if (to ^ from) {
         this.$emit(to ? 'focus' : 'blur')
-        if (!to && this.changed) {
-          // TODO: This seems to contradict the `currentValue()` watcher above.
-          //       Is this needed at all?
-          this.changed = false
-          this.$emit('update:modelValue', this.currentValue)
-        }
       }
     }
   },

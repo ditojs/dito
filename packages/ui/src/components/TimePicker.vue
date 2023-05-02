@@ -71,7 +71,7 @@ import { format, defaultFormats } from '@ditojs/utils'
 import Trigger from './Trigger.vue'
 import InputField from './InputField.vue'
 import Icon from './Icon.vue'
-import { copyDate, parseDate, getDatePartAtPosition } from '../utils/date.js'
+import { alterDate, parseDate, getDatePartAtPosition } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { getTarget } from '../utils/trigger.js'
@@ -107,7 +107,6 @@ export default {
       currentValue: this.modelValue,
       showPopup: this.show,
       inputFocused: false,
-      changed: false,
       ignoreNextChange: false
     }
   },
@@ -147,7 +146,7 @@ export default {
         // Create a new Date() object with the time set to 0, to be used when
         // first setting any of the times, for meaningful dates in case the
         // object is shared with a DatePicker, e.g. through DateTimePicker.
-        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
+        alterDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
       )
     },
 
@@ -190,10 +189,10 @@ export default {
       }
     },
 
-    currentValue(date) {
-      if (+date !== +this.modelValue) {
-        this.changed = true
-        this.$emit('update:modelValue', date)
+    currentValue(value) {
+      if (+value !== +this.modelValue) {
+        this.$emit('update:modelValue', value)
+        this.$emit('change', value)
         this.scrollAll(true)
       }
     },
@@ -227,10 +226,6 @@ export default {
     focused(to, from) {
       if (to ^ from) {
         this.$emit(to ? 'focus' : 'blur')
-        if (!to && this.changed) {
-          this.changed = false
-          this.$emit('change', this.currentValue)
-        }
       }
     }
   },
@@ -241,7 +236,7 @@ export default {
     },
 
     setTime(overrides) {
-      this.currentValue = copyDate(this.currentDate, {
+      this.currentValue = alterDate(this.currentDate, {
         ...overrides,
         millisecond: 0
       })

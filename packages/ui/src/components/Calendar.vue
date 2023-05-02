@@ -16,10 +16,10 @@
           span
             a.dito-calendar-select-year(
               @click="setMode('year')"
-            ) {{ dateToString(currentValue, { year: 1 }) }}
+            ) {{ dateToString(currentValue, { year: true }) }}
             a.dito-calendar-select-month(
               @click="setMode('month')"
-            ) {{ dateToString(currentValue, { month: 1 }) }}
+            ) {{ dateToString(currentValue, { month: true }) }}
           a.dito-calendar-step-next.dito-calendar-step-month(
             @click="stepMonth(1)"
           )
@@ -35,12 +35,12 @@
             span(
               v-for="date in dateRange"
               :class="date.state && `dito-calendar-item-${date.state}`"
-              @click="selectDate(date.date, date.state, true)"
+              @click="date.state !== 'disabled' && selectDate(date.date)"
             ) {{ date.text }}
         .dito-calendar-footer
-          a.dito-calendar-select-today(
+          a.dito-calendar-select-now(
             role="button"
-            :title="dateToString(new Date(), { year: 1, month: 1, day: 1 })"
+            :title="dateToString(new Date())"
             @click="selectDate(new Date())"
           )
       template(
@@ -53,7 +53,7 @@
           span
             a.dito-calendar-select-year(
               @click="setMode('year')"
-            ) {{ dateToString(currentValue, { year: 1 }) }}
+            ) {{ dateToString(currentValue, { year: true }) }}
           a.dito-calendar-step-next(
             @click="stepYear(1)"
           )
@@ -85,7 +85,7 @@
 </template>
 
 <script>
-import { copyDate } from '../utils/date.js'
+import { describeDate, alterDate } from '../utils/date.js'
 
 export default {
   emits: ['update:modelValue', 'select'],
@@ -107,7 +107,7 @@ export default {
       currentValue: (
         this.modelValue ||
         // If no value is provided, use current date but clear time fields:
-        copyDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
+        alterDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
       ),
       currentMode: this.mode
     }
@@ -159,9 +159,9 @@ export default {
       }
     },
 
-    setDate(settings) {
-      this.currentValue = copyDate(this.currentValue, settings)
-      if (settings.update) {
+    setDate(overrides, update = false) {
+      this.currentValue = alterDate(this.currentValue, overrides)
+      if (update) {
         this.$emit('update:modelValue', this.currentValue)
       }
     },
@@ -197,32 +197,21 @@ export default {
       })
     },
 
-    selectDate(date, state, copy = false) {
-      if (state !== 'disabled') {
-        if (copy) {
-          this.setDate({
-            year: date.getFullYear(),
-            month: date.getMonth(),
-            day: date.getDate(),
-            update: true
-          })
-        } else {
-          this.currentValue = date
-        }
-        this.$emit('select')
-      }
+    selectDate(date) {
+      this.setDate(describeDate(date), true)
+      this.$emit('select')
     },
 
     selectMonth(month) {
       this.setMode('day')
       // Set day to 1 to avoid selecting a date that is not available in the
       // new month, e.g. Feb 31 -> Mar 3.
-      this.setDate({ month, day: 1, update: true })
+      this.setDate({ month, day: 1 }, true)
     },
 
     selectYear(year) {
       this.setMode('month')
-      this.setDate({ year, update: true })
+      this.setDate({ year }, true)
     },
 
     getYearMonth(year, month) {
@@ -236,7 +225,10 @@ export default {
       return { year, month }
     },
 
-    dateToString(date, { year, month, day }) {
+    dateToString(
+      date,
+      { year, month, day } = { year: true, month: true, day: true }
+    ) {
       return date.toLocaleString(this.locale, {
         year: year && 'numeric',
         month: month && 'long',
@@ -263,22 +255,13 @@ export default {
       if (step) {
         switch (mode) {
           case 'day':
-            this.setDate({
-              day: currentValue.getDate() + step,
-              update
-            })
+            this.setDate({ day: currentValue.getDate() + step }, update)
             break
           case 'month':
-            this.setDate({
-              month: currentValue.getMonth() + step,
-              update
-            })
+            this.setDate({ month: currentValue.getMonth() + step }, update)
             break
           case 'year':
-            this.setDate({
-              year: currentValue.getFullYear() + step,
-              update
-            })
+            this.setDate({ year: currentValue.getFullYear() + step }, update)
             break
         }
         return true
@@ -332,7 +315,7 @@ export default {
         }
       }
 
-      const today = new Date()
+      const now = new Date()
       for (let i = 1; i <= numDays; i++) {
         const date = new Date(year, month, i)
         const isDay = date => (
@@ -343,7 +326,7 @@ export default {
         )
         const state = isDay(this.modelValue)
           ? 'active'
-          : isDay(today)
+          : isDay(now)
             ? 'today'
             : this.disabledDate(date)
               ? 'disabled'
@@ -567,7 +550,7 @@ function getLocaleNames(locale) {
   }
 }
 
-.dito-calendar-select-today {
+.dito-calendar-select-now {
   &::after {
     content: 'Now';
   }
