@@ -559,7 +559,13 @@ export default {
     const inlined = isInlined(schema)
     if (inlined && schema.resource) {
       throw new Error(
-        'Lists with nested forms cannot load data from their own resources'
+        `Nested ${
+          this.isListSource
+            ? 'lists'
+            : this.isObjectSource
+              ? 'objects'
+              : 'schema'
+        } cannot load data from their own resources`
       )
     }
     // Use differently named url parameters on each nested level for id as
