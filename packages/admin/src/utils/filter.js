@@ -43,25 +43,22 @@ export const filterComponents = {
   },
 
   'date-range'() {
-    // Use shorter date format in date-range filters:
-    const dateFormat = {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    const datetime = {
+      type: 'datetime',
+      width: '1/2',
+      formats: {
+        // Use shorter date format in date-range filters:
+        date: {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }
+      },
+      clearable: true
     }
     return {
-      from: {
-        type: 'datetime',
-        width: '1/2',
-        dateFormat,
-        clearable: true
-      },
-      to: {
-        type: 'datetime',
-        width: '1/2',
-        dateFormat,
-        clearable: true
-      }
+      from: datetime,
+      to: datetime
     }
   }
 }
