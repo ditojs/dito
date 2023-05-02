@@ -685,11 +685,13 @@ export class Application extends Koa {
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
       const { sql, bindings } = query
-      response = Object.fromEntries(
-        Object.entries(response).filter(
-          ([key]) => !key.startsWith('_')
-        )
-      )
+      response = response
+        ? Object.fromEntries(
+            Object.entries(response).filter(
+              ([key]) => !key.startsWith('_')
+            )
+          )
+        : null
       logger.info({ duration, bindings, response, error }, sql)
     }
 
