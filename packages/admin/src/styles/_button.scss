@@ -191,17 +191,13 @@
   cursor: pointer;
 
   &.dito-button-clear {
-    $self: &;
-
     width: 2em;
     z-index: 1;
     background: $color-white;
     display: none;
 
-    @at-root .dito-component:hover {
-      & :not(.dito-component) #{$self} {
-        display: block;
-      }
+    @at-root .dito-component:hover:not(:has(.dito-component)) & {
+      display: block;
     }
 
     &::before {
