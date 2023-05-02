@@ -3,7 +3,7 @@
 Trigger.dito-date-picker(
   ref="trigger"
   v-model:show="showPopup"
-  trigger="click"
+  trigger="focus"
   v-bind="{ transition, placement, disabled, target }"
 )
   template(#trigger)
@@ -21,6 +21,7 @@ Trigger.dito-date-picker(
       @focus="onFocus(true)"
       @blur="onFocus(false)"
       @keydown="onKeyDown"
+      @mousedown.stop="onMouseDown(false)"
     )
       template(#before)
         slot(name="before")
@@ -28,6 +29,7 @@ Trigger.dito-date-picker(
         Icon(
           name="calendar"
           :disabled="disabled"
+          @mousedown.prevent="onMouseDown(true)"
         )
         slot(name="after")
   template(#popup)
@@ -36,7 +38,6 @@ Trigger.dito-date-picker(
       v-model="currentValue"
       v-bind="{ locale, disabledDate }"
       @select="showPopup = false"
-      @mousedown.stop.prevent
     )
 </template>
 
@@ -173,6 +174,13 @@ export default {
             }
           }
         }
+      }
+    },
+
+    onMouseDown(toggle) {
+      this.showPopup = !toggle || !this.showPopup
+      if (this.showPopup) {
+        this.focus()
       }
     },
 

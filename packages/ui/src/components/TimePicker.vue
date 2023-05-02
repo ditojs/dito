@@ -3,7 +3,7 @@
 Trigger.dito-time-picker(
   ref="trigger"
   v-model:show="showPopup"
-  trigger="click"
+  trigger="focus"
   v-bind="{ transition, placement, disabled, target }"
 )
   template(#trigger)
@@ -21,6 +21,7 @@ Trigger.dito-time-picker(
       @focus="onFocus(true)"
       @blur="onFocus(false)"
       @keydown="onKeyDown"
+      @mousedown.stop="onMouseDown(false)"
     )
       template(#before)
         slot(name="before")
@@ -28,12 +29,11 @@ Trigger.dito-time-picker(
         Icon(
           name="clock"
           :disabled="disabled"
+          @mousedown.prevent="onMouseDown(true)"
         )
         slot(name="after")
   template(#popup)
-    .dito-time-picker-popup(
-      @mousedown.stop.prevent
-    )
+    .dito-time-picker-popup
       .dito-time-picker-panel
         ul.dito-time-picker-hour(ref="hour")
           template(
@@ -365,6 +365,13 @@ export default {
             }
           }
         }
+      }
+    },
+
+    onMouseDown(toggle) {
+      this.showPopup = !toggle || !this.showPopup
+      if (this.showPopup) {
+        this.focus()
       }
     },
 

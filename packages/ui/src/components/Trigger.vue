@@ -85,7 +85,9 @@ export default {
       popupPlacement: this.placement,
       focusEvents: null,
       closeEvents: null,
-      popupEvents: null
+      popupEvents: null,
+      blurTimer: null,
+      mouseLeaveTimer: null
     }
   },
 
@@ -169,7 +171,6 @@ export default {
     this.focusEvents?.remove()
     this.closeEvents?.remove()
     this.popupEvents?.remove()
-    this.mouseLeaveTimer = null
   },
 
   methods: {
@@ -278,60 +279,59 @@ export default {
 
     addFocusEvents(parent) {
       const targets = parent.querySelectorAll('input, textarea')
-      if (targets.length > 0) {
-        let input
+      let input
 
-        return combineEvents(
-          addEvents(targets, {
-            focus: () => {
-              this.showPopup = true
-            },
+      return combineEvents(
+        addEvents(targets, {
+          focus: () => {
+            this.showPopup = true
+            clearTimeout(this.blurTimer)
+          },
 
-            blur: () => {
-              // Use timeout to allow clicked inputs to grab focus
+          blur: () => {
+            // Use timeout to allow clicked inputs to grab focus
+            this.blurTimer = setTimeout(() => {
+              if (!this.$refs.popup.matches(':focus-within')) {
+                this.showPopup = false
+              }
+            }, 0)
+          }
+        }),
+
+        addEvents(parent, {
+          mousedown: event => {
+            if (!event.target.matches('input, textarea, button')) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            if (!event.target.matches('.dito-button-clear')) {
+              const trigger = this.triggerTarget ?? this.$refs.trigger
+              // Mark trigger input as readonly so it can't loose focus while
+              // user does other mouse-activities in popup.
+              input = trigger.querySelector('input, textarea')
+              if (input && !input.hasAttribute('readonly')) {
+                input.setAttribute('readonly', 'true')
+              } else {
+                input = null
+              }
+            }
+          },
+
+          mouseup: event => {
+            if (input) {
+              // Give some time for other events to update input before it
+              // becomes editable and still focused again.
               setTimeout(() => {
-                if (!this.$el.matches(':has(:focus-within)')) {
-                  this.showPopup = false
+                input.removeAttribute('readonly')
+                if (!event.target.matches('input, textarea, button')) {
+                  input.focus()
                 }
+                input = null
               }, 0)
             }
-          }),
-
-          addEvents(parent, {
-            mousedown: event => {
-              if (!event.target.matches('input, textarea')) {
-                event.preventDefault()
-              }
-              const trigger = this.triggerTarget ?? this.$refs.trigger
-              if (parent !== trigger) {
-                // Mark trigger input as readonly so it can't loose focus while
-                // user does other mouse-activities in popup.
-                input = trigger.querySelector('input, textarea')
-                if (
-                  input?.matches(':focus') &&
-                  !input.hasAttribute('readonly')
-                ) {
-                  input.setAttribute('readonly', '')
-                } else {
-                  input = null
-                }
-              }
-            },
-
-            mouseup: () => {
-              if (input) {
-                // Give some time for other events to update input before it
-                // becomes editable and still focused again.
-                setTimeout(() => {
-                  input.removeAttribute('readonly')
-                  input.focus()
-                  input = null
-                }, 0)
-              }
-            }
-          })
-        )
-      }
+          }
+        })
+      )
     },
 
     onShowPopup(show) {

@@ -249,22 +249,16 @@ export default {
 
     // @overridable
     focusElement() {
-      const { element = this } = this.$refs
-      if (element.focus) {
-        element.focus()
-      } else {
-        element.$el?.focus?.()
-      }
+      let { element = this } = this.$refs
+      element = element.focus ? element : element.$el
+      element?.focus?.()
     },
 
     // @overridable
     blurElement() {
-      const { element = this } = this.$refs
-      if (element.blur) {
-        element.blur()
-      } else {
-        element.$el?.blur?.()
-      }
+      let { element = this } = this.$refs
+      element = element.blur ? element : element.$el
+      element?.blur?.()
     },
 
     async focusSchema() {

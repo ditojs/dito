@@ -8,6 +8,7 @@ export function addEvents(targets, events) {
       target.addEventListener(type, handler, false)
     }
   }
+
   return {
     remove() {
       for (const [type, handler] of Object.entries(events)) {

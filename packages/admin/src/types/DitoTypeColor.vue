@@ -143,19 +143,6 @@ export default DitoTypeComponent.register('color', {
         '#00000000'
       ]
     })
-  },
-
-  watch: {
-    focused(focused) {
-      if (!focused && this.convertedHexValue) {
-        const color = tinycolor(`#${this.convertedHexValue}`)
-        if (color?.isValid()) {
-          this.value = color.toString(this.colorFormat)
-          // TODO: Emit 'input' here instead, and 'change' in blur, like others.
-          this.onChange()
-        }
-      }
-    }
   }
 })
 </script>

@@ -1,8 +1,5 @@
 <template lang="pug">
-.dito-date-time-picker(
-  ref="picker"
-  @mousedown.prevent="onMouseDown(true)"
-)
+.dito-date-time-picker(ref="picker")
   .dito-date-time-picker__inner(:class="{ 'dito-focus': focused }")
     InputField.dito-date-time-picker__input(
       ref="input"
@@ -21,6 +18,7 @@
         Icon(
           name="calendar"
           :disabled="disabled"
+          @mousedown.prevent="onMouseDown(true)"
         )
         slot(name="after")
     DatePicker(
@@ -30,7 +28,6 @@
       placement="bottom-left"
       :target="$refs.picker"
       v-bind="attributes"
-      @mousedown.prevent
     )
       template(#trigger)
         //- Intentionally empty
@@ -41,7 +38,6 @@
       placement="bottom-right"
       :target="$refs.picker"
       v-bind="attributes"
-      @mousedown.prevent
     )
       template(#trigger)
         //- Intentionally empty
