@@ -162,7 +162,7 @@ export default DitoComponent.component('DitoPane', {
         for (const index of row) {
           const position = this.positions[index]
           if (
-            position?.height > 4 &&
+            position?.height > 3 &&
             position.node.querySelector(':scope > .dito-label')
           ) {
             // TODO: Handle nested schemas, e.g. 'section' or 'object' and
@@ -205,12 +205,12 @@ export default DitoComponent.component('DitoPane', {
       }
     },
 
-    onResizeContainer(index, { target }) {
-      const { y, width, height } = target.getBoundingClientRect()
+    onResizeContainer(index, { target, contentRect: { width, height } }) {
+      const { y: top } = target.getBoundingClientRect()
       this.positions[index] =
         width > 0 && height > 0
           ? {
-              top: y,
+              top,
               height: height / parseFloat(getComputedStyle(target).fontSize),
               node: target
             }
