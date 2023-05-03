@@ -233,8 +233,8 @@ export default DitoComponent.component('DitoPane', {
   display: flex;
   position: relative;
   flex-flow: row wrap;
+  align-items: flex-start;
   align-content: flex-start;
-  align-items: baseline;
   padding: $content-padding;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
   margin: (-$form-spacing) (-$form-spacing-half);
