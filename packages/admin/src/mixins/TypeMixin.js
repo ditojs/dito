@@ -21,7 +21,8 @@ export default {
     label: { type: String, default: null },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    accumulatedBasis: { type: Number, default: null }
   },
 
   data() {

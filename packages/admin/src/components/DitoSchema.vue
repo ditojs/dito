@@ -56,6 +56,7 @@ slot(name="before")
         :single="!inlined && !hasMainPane"
         :disabled="disabled"
         :generateLabels="generateLabels"
+        :accumulatedBasis="accumulatedBasis"
       )
     TransitionHeight(:enabled="inlined")
       DitoPane.dito-pane-main(
@@ -69,6 +70,7 @@ slot(name="before")
         :single="!inlined && !hasTabs"
         :disabled="disabled"
         :generateLabels="generateLabels"
+        :accumulatedBasis="accumulatedBasis"
       )
     slot(
       v-if="!inlined && isPopulated"
@@ -149,7 +151,8 @@ export default DitoComponent.component('DitoSchema', {
     scrollable: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
     headerInMenu: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    accumulatedBasis: { type: Number, default: 1 }
   },
 
   data() {

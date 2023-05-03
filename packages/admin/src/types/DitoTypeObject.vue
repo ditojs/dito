@@ -18,6 +18,7 @@
       :disabled="disabled || isLoading"
       :collapsed="collapsed"
       :collapsible="collapsible"
+      :accumulatedBasis="accumulatedBasis"
     )
     component(
       v-else-if="schema.component"

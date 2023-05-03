@@ -24,6 +24,7 @@
     :single="single"
     :nested="nested"
     :disabled="componentDisabled"
+    :accumulatedBasis="combinedBasis"
     @errors="onErrors"
   )
   DitoErrors(:errors="errors")
@@ -49,7 +50,8 @@ export default DitoComponent.component('DitoContainer', {
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: false },
-    verticalLabels: { type: Boolean, default: false }
+    verticalLabels: { type: Boolean, default: false },
+    accumulatedBasis: { type: Number, default: null }
   },
 
   data() {
@@ -140,14 +142,20 @@ export default DitoComponent.component('DitoContainer', {
     flexBasis() {
       const width = this.width
       // 'auto' = no fitting:
-      const basis = [null, 'auto', 'fill'].includes(width)
+      return [null, 'auto', 'fill'].includes(width)
         ? 'auto'
         : /%$/.test(width)
-          ? parseFloat(width) // percentage
+          ? parseFloat(width) / 100 // percentage -> fraction
           : /[a-z]/.test(width)
             ? width // native units
-            : parseFraction(width) * 100 // fraction
-      return isNumber(basis) ? `${basis}%` : basis
+            : parseFraction(width) // fraction
+    },
+
+    combinedBasis() {
+      const { accumulatedBasis, flexBasis } = this
+      return isNumber(accumulatedBasis) && isNumber(flexBasis)
+        ? accumulatedBasis * flexBasis
+        : null
     },
 
     containerClass() {
@@ -166,10 +174,15 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     containerStyle() {
+      const { flexBasis, combinedBasis } = this
       return {
         '--grow': this.flexGrow ? 1 : 0,
         '--shrink': this.flexShrink ? 1 : 0,
-        '--basis': this.flexBasis
+        '--basis': isNumber(flexBasis) ? `${flexBasis * 100}%` : flexBasis,
+        '--basis-mobile':
+          isNumber(combinedBasis) && combinedBasis <= 0.25
+            ? `${flexBasis * 200}%`
+            : null
       }
     },
 
@@ -215,30 +228,27 @@ export default DitoComponent.component('DitoContainer', {
   padding: $form-spacing $form-spacing-half;
 
   .dito-page .dito-pane > & {
-    @container (width < #{$content-width}) {
-      flex-grow: 1;
-    }
-
     @container (width < #{calc($content-width * 0.8)}) {
-      &:not(:has(> .dito-list, > .dito-object)) {
-        flex-basis: calc(var(--basis) * 1.5);
-      }
+      flex-grow: 1;
+      flex-basis: var(--basis-mobile, var(--basis));
+      // DEBUG: background: yellow;
     }
 
     @container (width < #{calc($content-width * 0.6)}) {
-      &:not(:has(> .dito-list, > .dito-object)) {
-        flex-basis: calc(var(--basis) * 2);
-      }
+      flex-basis: calc(2 * var(--basis));
+      // DEBUG: background: orange;
     }
   }
 
   .dito-sidebar .dito-pane > & {
     @container (width < #{$sidebar-max-width}) {
       flex-grow: 1;
+      // DEBUG: background: yellow;
     }
 
     @container (width < #{calc($sidebar-max-width * 0.6)}) {
-      flex-basis: calc(var(--basis) * 2);
+      flex-basis: calc(2 * var(--basis));
+      // DEBUG: background: orange;
     }
   }
 

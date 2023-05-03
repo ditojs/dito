@@ -12,6 +12,7 @@ DitoSchema.dito-schema-inlined(
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"
+  :accumulatedBasis="accumulatedBasis"
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
   //- others in `TypeList` as a scope, for better handling of layout.
@@ -51,7 +52,8 @@ export default DitoComponent.component('DitoSchemaInlined', {
     draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
-    editPath: { type: String, default: null }
+    editPath: { type: String, default: null },
+    accumulatedBasis: { type: Number, default: null }
   },
 
   computed: {

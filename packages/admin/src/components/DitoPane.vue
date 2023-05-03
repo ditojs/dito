@@ -33,6 +33,7 @@
       :disabled="disabled"
       :generateLabels="generateLabels"
       :verticalLabels="isInLabeledRow(index)"
+      :accumulatedBasis="accumulatedBasis"
     )
     .dito-break(
       v-if="schema.break === 'after'"
@@ -62,7 +63,8 @@ export default DitoComponent.component('DitoPane', {
     single: { type: Boolean, default: false },
     visible: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false }
+    generateLabels: { type: Boolean, default: false },
+    accumulatedBasis: { type: Number, default: null }
   },
 
   data() {
