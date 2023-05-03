@@ -116,9 +116,7 @@ export default DitoTypeComponent.register('object', {
   border: $border-style;
   border-radius: $border-radius;
   margin: 0;
-  // Only add what's not already added by the nested '.dito-pane' as padding,
-  // in order to have `$form-spacing` all around.
-  padding: 0 $form-spacing-half;
+  padding: $form-spacing;
   box-sizing: border-box;
 
   .dito-object-content {
@@ -127,7 +125,7 @@ export default DitoTypeComponent.register('object', {
 
   > .dito-edit-buttons {
     flex: 1 0 0%;
-    padding: $form-spacing;
+    margin-left: $form-spacing;
   }
 }
 </style>
