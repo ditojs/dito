@@ -1,5 +1,5 @@
 <template lang="pug">
-nav.dito-sidebar.dito-scroll-parent
+nav.dito-navigation.dito-scroll-parent
   h1
     RouterLink.dito-link(to="/") {{ appState.title }}
   DitoMenu.dito-scroll(:items="views")
@@ -9,13 +9,13 @@ nav.dito-sidebar.dito-scroll-parent
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
-export default DitoComponent.component('DitoSidebar', {})
+export default DitoComponent.component('DitoNavigation', {})
 </script>
 
 <style lang="scss">
 @import '../styles/_imports';
 
-.dito-sidebar {
+.dito-navigation {
   @include user-select(none);
 
   flex: initial;

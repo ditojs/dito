@@ -5,7 +5,7 @@
 
 export { default as DitoRoot } from './DitoRoot.vue'
 export { default as DitoMenu } from './DitoMenu.vue'
-export { default as DitoSidebar } from './DitoSidebar.vue'
+export { default as DitoNavigation } from './DitoNavigation.vue'
 export { default as DitoHeader } from './DitoHeader.vue'
 export { default as DitoAccount } from './DitoAccount.vue'
 export { default as DitoDialog } from './DitoDialog.vue'

@@ -20,7 +20,7 @@
       :settings="dialog.settings"
       @remove="removeDialog(key)"
     )
-  DitoSidebar
+  DitoNavigation
   main.dito-page.dito-scroll-parent
     DitoHeader(
       :spinner="options.spinner"
