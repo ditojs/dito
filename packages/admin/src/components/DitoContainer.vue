@@ -220,6 +220,18 @@ export default DitoComponent.component('DitoContainer', {
     @container (width < #{$content-width}) {
       flex-grow: 1;
     }
+
+    @container (width < #{calc($content-width * 0.8)}) {
+      &:not(:has(> .dito-list, > .dito-object)) {
+        flex-basis: calc(var(--basis) * 1.5);
+      }
+    }
+
+    @container (width < #{calc($content-width * 0.6)}) {
+      &:not(:has(> .dito-list, > .dito-object)) {
+        flex-basis: calc(var(--basis) * 2);
+      }
+    }
   }
 
   .dito-sidebar & {
@@ -227,7 +239,7 @@ export default DitoComponent.component('DitoContainer', {
       flex-grow: 1;
     }
 
-    @container (width < #{calc($sidebar-max-width / 2)}) {
+    @container (width < #{calc($sidebar-max-width * 0.6)}) {
       flex-basis: calc(var(--basis) * 2);
     }
   }
