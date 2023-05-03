@@ -25,7 +25,8 @@ import OptionsMixin from '../mixins/OptionsMixin.js'
 export default DitoTypeComponent.register('radio', {
   mixins: [OptionsMixin],
 
-  nativeField: true
+  nativeField: true,
+  defaultWidth: 'auto'
 })
 </script>
 
