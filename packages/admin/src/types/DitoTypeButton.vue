@@ -95,8 +95,6 @@ export default DitoTypeComponent.register(
 
   &__text {
     @include ellipsis;
-
-    height: calc(1em * var(--line-height));
   }
 }
 </style>
