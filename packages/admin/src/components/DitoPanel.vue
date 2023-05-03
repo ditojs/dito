@@ -247,8 +247,6 @@ export default DitoComponent.component('DitoPanel', {
     }
 
     .dito-label {
-      margin: 0;
-
       label {
         font-weight: normal;
       }

@@ -49,7 +49,7 @@ export default DitoComponent.component('DitoContainer', {
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: false },
-    inLabeledRow: { type: Boolean, default: false }
+    verticalLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -155,7 +155,7 @@ export default DitoComponent.component('DitoContainer', {
       const prefix = 'dito-container'
       return {
         [`${prefix}--single`]: this.single,
-        [`${prefix}--labeled-row`]: this.inLabeledRow,
+        [`${prefix}--label-vertical`]: this.verticalLabels,
         [`${prefix}--omit-padding`]: omitPadding(this.schema),
         ...(
           isString(containerClass)
@@ -178,12 +178,11 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     componentClass() {
-      const basisIsAuto = this.flexBasis === 'auto'
       return {
         // TODO: BEM?
         'dito-single': this.single,
         'dito-disabled': this.componentDisabled,
-        'dito-width-fill': !basisIsAuto || this.width === 'fill',
+        'dito-width-fill': this.width === 'fill' || this.flexBasis !== 'auto',
         'dito-width-grow': this.flexGrow,
         'dito-width-shrink': this.flexShrink,
         'dito-has-errors': !!this.errors
@@ -232,7 +231,7 @@ export default DitoComponent.component('DitoContainer', {
     padding: 0;
   }
 
-  &--labeled-row {
+  &--label-vertical {
     // For components without labels in rows with other components that have
     // labels, add some spacing to the top to align with the other components:
     > .dito-component:first-child {

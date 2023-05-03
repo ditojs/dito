@@ -757,8 +757,9 @@ export default DitoComponent.component('DitoSchema', {
 
 .dito-schema {
   box-sizing: border-box;
-  // To display schema next to panels:
+  // To display schema next to buttons:
   display: flex;
+  align-items: flex-start;
   min-height: 100%;
 
   > .dito-schema-content {

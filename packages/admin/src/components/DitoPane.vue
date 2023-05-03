@@ -32,7 +32,7 @@
       :nested="nested"
       :disabled="disabled"
       :generateLabels="generateLabels"
-      :inLabeledRow="isInLabeledRow(index)"
+      :verticalLabels="isInLabeledRow(index)"
     )
     .dito-break(
       v-if="schema.break === 'after'"
@@ -42,7 +42,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { appendDataPath } from '../utils/data.js'
-import { getAllPanelEntries, hasLabel, isNested } from '../utils/schema.js'
+import { getAllPanelEntries, isNested } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
@@ -125,13 +125,13 @@ export default DitoComponent.component('DitoPane', {
       return this.single && this.componentSchemas.length === 1
     },
 
-    labeledRowsByIndices() {
+    verticalLabelsByIndices() {
       const { positions } = this
 
       const isLastInRow = index => (
-        positions[index] !== null && (
+        positions[index] && (
           index === positions.length - 1 ||
-          findNextPosition(index) > positions[index]
+          findNextPosition(index).top > positions[index].top
         )
       )
 
@@ -155,25 +155,28 @@ export default DitoComponent.component('DitoPane', {
         rows.push(row)
       }
 
-      const labeledRowsByIndices = []
+      const verticalLabelsByIndices = []
 
       for (const row of rows) {
         let hasLabelsInRow = false
         for (const index of row) {
-          const { schema } = this.componentSchemas[index]
-          // TODO: Handle nested schemas, e.g. 'section' or 'object' and detect
-          // labels there too.
-          if (hasLabel(schema, this.generateLabels)) {
+          const position = this.positions[index]
+          if (
+            position?.height > 4 &&
+            position.node.querySelector(':scope > .dito-label')
+          ) {
+            // TODO: Handle nested schemas, e.g. 'section' or 'object' and
+            // detect labels there too.
             hasLabelsInRow = true
             break
           }
         }
         for (const index of row) {
-          labeledRowsByIndices[index] = hasLabelsInRow
+          verticalLabelsByIndices[index] = hasLabelsInRow
         }
       }
 
-      return labeledRowsByIndices
+      return verticalLabelsByIndices
     }
   },
 
@@ -204,11 +207,18 @@ export default DitoComponent.component('DitoPane', {
 
     onResizeContainer(index, { target }) {
       const { y, width, height } = target.getBoundingClientRect()
-      this.positions[index] = width > 0 && height > 0 ? y : null
+      this.positions[index] =
+        width > 0 && height > 0
+          ? {
+              top: y,
+              height: height / parseFloat(getComputedStyle(target).fontSize),
+              node: target
+            }
+          : null
     },
 
     isInLabeledRow(index) {
-      return this.labeledRowsByIndices[index]
+      return !!this.verticalLabelsByIndices[index]
     }
   }
 })

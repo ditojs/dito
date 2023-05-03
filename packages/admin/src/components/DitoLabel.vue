@@ -98,7 +98,11 @@ export default DitoComponent.component('DitoLabel', {
   // Vertically center all items in the label, e.g. chevron, edit-buttons.
   align-items: center;
   padding: var(--label-padding);
-  margin: 0 0 $form-spacing-half 0;
+  margin: 0 $form-spacing-half $form-spacing-half 0;
+
+  .dito-container:not(.dito-container--label-vertical) > & {
+    margin-bottom: 0;
+  }
 
   &__inner {
     display: flex;
@@ -175,10 +179,10 @@ a.dito-label {
 .dito-schema-compact {
   > .dito-schema-content {
     > .dito-pane {
-      > .dito-container {
+      > .dito-container:not(.dito-container--label-vertical) {
         display: flex;
         flex-flow: row wrap;
-        align-items: baseline;
+        align-items: center;
       }
     }
   }
