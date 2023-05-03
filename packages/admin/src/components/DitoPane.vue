@@ -228,6 +228,8 @@ export default DitoComponent.component('DitoPane', {
 @import '../styles/_imports';
 
 .dito-pane {
+  $self: &;
+
   display: flex;
   position: relative;
   flex-flow: row wrap;
@@ -246,13 +248,20 @@ export default DitoComponent.component('DitoPane', {
     margin: 0;
   }
 
-  .dito-scroll > &:not(&--single) {
-    // Root-level panes inside scroll views need to move the negative margin
-    // used to remove the padding added by `.dito-container` inside
-    // `.dito-pane` to the padding:
-    padding: ($content-padding - $form-spacing)
-      ($content-padding - $form-spacing-half);
-    margin: 0;
+  .dito-scroll > & {
+    &,
+    .dito-container {
+      min-width: min-content;
+    }
+
+    &:not(#{$self}--single) {
+      // Root-level panes inside scroll views need to move the negative margin
+      // used to remove the padding added by `.dito-container` inside
+      // `.dito-pane` to the padding:
+      padding: ($content-padding - $form-spacing)
+        ($content-padding - $form-spacing-half);
+      margin: 0;
+    }
   }
 
   &.dito-pane-main {

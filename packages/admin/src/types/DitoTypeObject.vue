@@ -118,6 +118,7 @@ export default DitoTypeComponent.register('object', {
   margin: 0;
   padding: $form-spacing;
   box-sizing: border-box;
+  min-width: min-content;
 
   .dito-object-content {
     flex: 0 1 100%;

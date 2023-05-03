@@ -4,7 +4,7 @@
   //- on whether they handle single or multiple uploads, render the upload
   //- component invisibly at the root, and delegate the click events to it from
   //- the buttons rendered further below. Luckily this works surprisingly well.
-  VueUpload.dito-upload-input(
+  VueUpload.dito-upload__input(
     ref="upload"
     v-model="uploads"
     :inputId="dataPath"
@@ -71,8 +71,8 @@
               :thumbnail="thumbnails"
               :thumbnailUrl="thumbnailUrls[index]"
             )
-          td {{ formatFileSize(file.size) }}
-          td
+          td.dito-upload__size {{ formatFileSize(file.size) }}
+          td.dito-upload__status
             template(
               v-if="file.upload"
             )
@@ -476,13 +476,18 @@ function asFiles(value) {
     }
   }
 
-  .dito-upload-input {
+  &__size,
+  &__status {
+    white-space: nowrap;
+  }
+
+  &__input {
     // See `onClickUpload()` method for details.
     position: absolute;
     pointer-events: none;
   }
 
-  .dito-upload-footer {
+  &__footer {
     display: flex;
     justify-content: flex-end;
     align-items: center;

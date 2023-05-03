@@ -343,6 +343,7 @@ $tag-line-height: 1em;
     &__input {
       font-size: inherit;
       line-height: inherit;
+      white-space: nowrap;
       min-height: 0;
       margin: 0 0 1px 0;
       // Sadly, vue-select sets style="padding: ...;" in addition to using
@@ -360,8 +361,6 @@ $tag-line-height: 1em;
     }
 
     &__placeholder {
-      white-space: nowrap;
-
       &::after {
         // Enforce actual line-height for positioning.
         content: '\200b';
