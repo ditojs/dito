@@ -116,16 +116,18 @@ export default DitoTypeComponent.register('object', {
   border: $border-style;
   border-radius: $border-radius;
   margin: 0;
-  padding: $form-spacing;
+  // Only add what's not already added by the nested '.dito-pane' as padding,
+  // in order to have `$form-spacing` all around.
+  padding: 0 $form-spacing-half;
   box-sizing: border-box;
 
   .dito-object-content {
     flex: 0 1 100%;
   }
 
-  > .dito-buttons {
+  > .dito-edit-buttons {
     flex: 1 0 0%;
-    margin-left: $form-spacing;
+    padding: $form-spacing;
   }
 }
 </style>

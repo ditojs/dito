@@ -46,6 +46,7 @@ export default DitoComponent.component('DitoPanels', {
 
 .dito-panels {
   padding: $content-padding;
+  padding-left: $form-spacing;
   // For the `@container` rule in `.dito-container` to work:
   container-type: inline-size;
 }

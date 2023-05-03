@@ -472,12 +472,14 @@ function addRoutes(router, routes) {
 }
 
 .dito-page {
-  flex: 1 1 $content-width;
+  --max-content-width: #{$content-width};
+
+  flex: 1 1 var(--max-content-width);
   background: $content-color-background;
-  max-width: $content-width;
+  max-width: calc(var(--max-content-width) + 2 * #{$content-padding});
 
   &--wide {
-    max-width: $content-width-wide;
+    --max-content-width: #{$content-width-wide};
   }
 }
 

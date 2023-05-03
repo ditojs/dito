@@ -233,16 +233,17 @@ export default DitoComponent.component('DitoPane', {
   flex-flow: row wrap;
   align-content: flex-start;
   align-items: baseline;
-  padding: $content-padding;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
-  margin: (-$form-spacing) (-$form-spacing-half);
+  padding: ($content-padding - $form-spacing)
+    ($content-padding - $form-spacing-half);
+  max-width: calc(var(--max-content-width) + $form-spacing);
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
   flex: 0%;
 
   &--single {
     // Clear margin from above.
-    margin: 0;
+    padding: $content-padding;
   }
 
   &.dito-pane-main {

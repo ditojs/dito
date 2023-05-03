@@ -3,7 +3,7 @@
   v-if="isReady"
   :id="dataPath"
 )
-  .dito-navigation(
+  .dito-list__header(
     v-if="scopes || hasPagination"
   )
     DitoScopes(
@@ -312,9 +312,11 @@ export default DitoTypeComponent.register('list', {
 @import '../styles/_imports';
 
 .dito-list {
+  $self: &;
+
   position: relative;
 
-  .dito-navigation {
+  &__header {
     display: flex;
     justify-content: space-between;
     padding-bottom: $content-padding-half;
@@ -340,7 +342,7 @@ export default DitoTypeComponent.register('list', {
 
     // Make single list header, navigation and buttons sticky to the top and
     // bottom:
-    .dito-navigation {
+    #{$self}__header {
       position: sticky;
       top: 0;
       margin-top: -$content-padding;
