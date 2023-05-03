@@ -144,7 +144,7 @@ export default DitoComponent.component('DitoPane', {
 
       const rows = []
       let row = []
-      for (let index = 0; index < this.positions.length; index++) {
+      for (let index = 0; index < positions.length; index++) {
         row.push(index)
         if (isLastInRow(index)) {
           rows.push(row)
@@ -174,6 +174,12 @@ export default DitoComponent.component('DitoPane', {
       }
 
       return labeledRowsByIndices
+    }
+  },
+
+  watch: {
+    'componentSchemas.length'(length) {
+      this.positions.length = length
     }
   },
 
