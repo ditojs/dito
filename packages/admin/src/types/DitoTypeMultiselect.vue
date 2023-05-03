@@ -316,9 +316,10 @@ $tag-line-height: 1em;
     }
 
     &__tags {
+      display: flex;
       font-size: inherit;
-      overflow: auto;
       min-height: inherit;
+      overflow: auto;
       padding: 0 $spinner-width 0 0;
       // So tags can float on multiple lines and have proper margins:
       padding-bottom: $tag-margin;
@@ -341,11 +342,14 @@ $tag-line-height: 1em;
     &__single,
     &__placeholder,
     &__input {
-      font-size: inherit;
-      line-height: inherit;
-      white-space: nowrap;
+      @include ellipsis;
+
+      flex: 1 0 0%;
+      width: 0;
       min-height: 0;
       margin: 0 0 1px 0;
+      font-size: inherit;
+      line-height: inherit;
       // Sadly, vue-select sets style="padding: ...;" in addition to using
       // classes, so `!important` is necessary:
       padding: $input-padding !important;
