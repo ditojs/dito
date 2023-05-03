@@ -2,8 +2,6 @@
 .dito-list(
   v-if="isReady"
   :id="dataPath"
-  :class="schema.class"
-  :style="schema.style"
 )
   .dito-navigation(
     v-if="scopes || hasPagination"

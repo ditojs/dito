@@ -2,8 +2,6 @@
 .dito-object(
   v-if="isReady"
   :id="dataPath"
-  :class="schema.class"
-  :style="schema.style"
 )
   .dito-object-content(
     v-if="objectData"
