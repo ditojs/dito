@@ -51,6 +51,7 @@ export default DitoComponent.component('DitoAccount', {
 
 .dito-account {
   position: relative;
+  display: inline-block;
 
   .dito-pulldown {
     top: $pulldown-padding-ver;
