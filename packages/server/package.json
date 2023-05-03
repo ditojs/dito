@@ -63,7 +63,7 @@
     "passthrough-counter": "^1.0.0",
     "picocolors": "^1.0.0",
     "picomatch": "^2.3.1",
-    "pino": "^8.11.0",
+    "pino": "^8.12.1",
     "pino-pretty": "^10.0.0",
     "pluralize": "^8.0.0",
     "repl": "^0.1.3",
