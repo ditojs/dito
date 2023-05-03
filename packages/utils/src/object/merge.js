@@ -35,7 +35,7 @@ export function merge(target, ...sources) {
   }
 
   for (const source of sources) {
-    mergeValues(target, source, false)
+    target = mergeValues(target, source, false)
   }
   return target
 }

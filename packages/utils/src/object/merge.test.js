@@ -55,6 +55,13 @@ describe('merge()', () => {
     expect(merge(names, ages, heights)).toEqual(expected)
   })
 
+  it('should handle plain values', () => {
+    expect(merge(true, false)).toEqual(false)
+    expect(merge(10, 0)).toEqual(0)
+    expect(merge(0, 10)).toEqual(10)
+    expect(merge('foo', 'bar')).toEqual('bar')
+  })
+
   it('should work with multiple arguments', () => {
     const expected = { a: 4 }
     const actual = merge({ a: 1 }, { a: 2 }, { a: 3 }, expected)
