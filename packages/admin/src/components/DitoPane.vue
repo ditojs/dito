@@ -206,11 +206,10 @@ export default DitoComponent.component('DitoPane', {
     },
 
     onResizeContainer(index, { target, contentRect: { width, height } }) {
-      const { y: top } = target.getBoundingClientRect()
       this.positions[index] =
         width > 0 && height > 0
           ? {
-              top,
+              top: target.getBoundingClientRect().y,
               height: height / parseFloat(getComputedStyle(target).fontSize),
               node: target
             }
