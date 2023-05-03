@@ -10,6 +10,6 @@ export default {
   },
 
   processValue(schema, value) {
-    return schema.trim ? value?.trim() : value
+    return schema.trim && value != null ? value.trim() : value
   }
 }
