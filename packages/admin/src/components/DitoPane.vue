@@ -22,7 +22,7 @@
     DitoContainer(
       v-if="shouldRenderSchema(schema)"
       :key="nestedDataPath"
-      v-resize="event => onResize(index, event)"
+      v-resize="event => onResizeContainer(index, event)"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -32,8 +32,7 @@
       :nested="nested"
       :disabled="disabled"
       :generateLabels="generateLabels"
-      :firstInRow="schema.break === 'before' || isFirstInRow(index)"
-      :lastInRow="schema.break === 'after' || isLastInRow(index)"
+      :inLabeledRow="isInLabeledRow(index)"
     )
     .dito-break(
       v-if="schema.break === 'after'"
@@ -43,7 +42,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { appendDataPath } from '../utils/data.js'
-import { getAllPanelEntries, isNested } from '../utils/schema.js'
+import { getAllPanelEntries, hasLabel, isNested } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
@@ -124,6 +123,57 @@ export default DitoComponent.component('DitoPane', {
 
     isSingleComponent() {
       return this.single && this.componentSchemas.length === 1
+    },
+
+    labeledRowsByIndices() {
+      const { positions } = this
+
+      const isLastInRow = index => (
+        positions[index] !== null && (
+          index === positions.length - 1 ||
+          findNextPosition(index) > positions[index]
+        )
+      )
+
+      const findNextPosition = index => {
+        for (let i = index + 1; i < positions.length; i++) {
+          if (positions[i]) return positions[i]
+        }
+        return 0
+      }
+
+      const rows = []
+      let row = []
+      for (let index = 0; index < this.positions.length; index++) {
+        row.push(index)
+        if (isLastInRow(index)) {
+          rows.push(row)
+          row = []
+        }
+      }
+      if (row.length > 0) {
+        rows.push(row)
+      }
+
+      const labeledRowsByIndices = []
+
+      for (const row of rows) {
+        let hasLabelsInRow = false
+        for (const index of row) {
+          const { schema } = this.componentSchemas[index]
+          // TODO: Handle nested schemas, e.g. 'section' or 'object' and detect
+          // labels there too.
+          if (hasLabel(schema, this.generateLabels)) {
+            hasLabelsInRow = true
+            break
+          }
+        }
+        for (const index of row) {
+          labeledRowsByIndices[index] = hasLabelsInRow
+        }
+      }
+
+      return labeledRowsByIndices
     }
   },
 
@@ -146,40 +196,16 @@ export default DitoComponent.component('DitoPane', {
       }
     },
 
-    onResize(index, { target }) {
+    onResizeContainer(index, { target }) {
       const { y, width, height } = target.getBoundingClientRect()
       this.positions[index] = width > 0 && height > 0 ? y : null
     },
 
-    isFirstInRow(index) {
-      const { positions } = this
-      return (
-        positions[index] !== null && (
-          index === 0 ||
-          (findNextPosition(positions, index, -1, Infinity) < positions[index])
-        )
-      )
-    },
-
-    isLastInRow(index) {
-      const { positions } = this
-      return (
-        positions[index] !== null && (
-          index === positions.length - 1 ||
-          findNextPosition(positions, index, +1, 0) > positions[index]
-        )
-      )
+    isInLabeledRow(index) {
+      return this.labeledRowsByIndices[index]
     }
   }
 })
-
-function findNextPosition(positions, index, step, fallback) {
-  for (let i = index + step; i >= 0 && i < positions.length; i += step) {
-    const position = positions[i]
-    if (position) return position
-  }
-  return fallback
-}
 </script>
 
 <style lang="scss">

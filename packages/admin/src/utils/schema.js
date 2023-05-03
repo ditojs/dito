@@ -510,12 +510,18 @@ export function isNested(schema) {
   return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
 }
 
-export function omitPadding(schema) {
-  return !!getTypeOptions(schema)?.omitPadding
+export function hasLabel(schema, generateLabels) {
+  const { label } = schema
+  return (
+    label !== false && (
+      !!label ||
+      generateLabels && getTypeOptions(schema)?.generateLabel
+    )
+  )
 }
 
-export function keepAligned(schema) {
-  return !!getTypeOptions(schema)?.keepAligned
+export function omitPadding(schema) {
+  return !!getTypeOptions(schema)?.omitPadding
 }
 
 export function getSchemaValue(

@@ -19,7 +19,6 @@ export default DitoTypeComponent.register('textarea', {
   mixins: [TextMixin],
   nativeField: true,
   textField: true,
-  keepAligned: false,
 
   computed: {
     lines() {

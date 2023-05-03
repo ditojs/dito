@@ -34,7 +34,7 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent, keepAligned, omitPadding } from '../utils/schema.js'
+import { getTypeComponent, hasLabel, omitPadding } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
@@ -49,8 +49,7 @@ export default DitoComponent.component('DitoContainer', {
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
     generateLabels: { type: Boolean, default: false },
-    firstInRow: { type: Boolean, default: false },
-    lastInRow: { type: Boolean, default: false }
+    inLabeledRow: { type: Boolean, default: false }
   },
 
   data() {
@@ -69,13 +68,7 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     hasLabel() {
-      const { label } = this.schema
-      return (
-        label !== false && (
-          !!label ||
-          this.generateLabels && this.typeComponent?.generateLabel
-        )
-      )
+      return hasLabel(this.schema, this.generateLabels)
     },
 
     label() {
@@ -162,12 +155,8 @@ export default DitoComponent.component('DitoContainer', {
       const prefix = 'dito-container'
       return {
         [`${prefix}--single`]: this.single,
-        [`${prefix}--has-label`]: this.hasLabel,
-        [`${prefix}--aligned`]: keepAligned(this.schema),
+        [`${prefix}--labeled-row`]: this.inLabeledRow,
         [`${prefix}--omit-padding`]: omitPadding(this.schema),
-        [`${prefix}--first-in-row`]: this.firstInRow,
-        [`${prefix}--last-in-row`]: this.lastInRow,
-        [`${prefix}--alone-in-row`]: this.firstInRow && this.lastInRow,
         ...(
           isString(containerClass)
             ? { [containerClass]: true }
@@ -239,25 +228,11 @@ export default DitoComponent.component('DitoContainer', {
     padding: 0;
   }
 
-  &--aligned {
-    // For components with labels, align the label at the top and the component
-    // at the bottom.
-    --justify: space-between;
-
-    &:has(> :only-child) {
-      // But if there is no label, still align the component to the bottom.
-      --justify: flex-end;
-    }
-
-    &:not(#{$self}--alone-in-row) {
-      // Now only apply alignment if there are neighbouring components no the
-      // same row that also align.
-      // Look ahead:
-      &:not(#{$self}--last-in-row) + #{&}:not(#{$self}--first-in-row),
-      // Look behind:
-      &:not(#{$self}--last-in-row):has(+ #{&}:not(#{$self}--first-in-row)) {
-        justify-content: var(--justify);
-      }
+  &--labeled-row {
+    // For components without labels in rows with other components that have
+    // labels, add some spacing to the top to align with the other components:
+    > .dito-component:first-child {
+      margin-top: $line-height * $font-size + $form-spacing-half;
     }
   }
 

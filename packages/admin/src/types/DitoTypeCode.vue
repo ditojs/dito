@@ -14,7 +14,6 @@ import CodeFlask from 'codeflask'
 // @vue/component
 export default DitoTypeComponent.register('code', {
   mixins: [DomMixin],
-  keepAligned: false,
 
   computed: {
     lines() {

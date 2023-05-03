@@ -21,7 +21,6 @@ export default {
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,
-  keepAligned: true,
   omitPadding: false,
 
   component: DitoComponent.component,

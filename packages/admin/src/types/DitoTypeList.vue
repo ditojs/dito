@@ -167,7 +167,6 @@ import { pickBy, equals, hyphenate } from '@ditojs/utils'
 // @vue/component
 export default DitoTypeComponent.register('list', {
   mixins: [SourceMixin, SortableMixin],
-  keepAligned: false,
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
