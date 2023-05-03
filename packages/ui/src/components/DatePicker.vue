@@ -178,7 +178,7 @@ export default {
     },
 
     onMouseDown(toggle) {
-      this.showPopup = !toggle || !this.showPopup
+      this.showPopup = !this.disabled && (!toggle || !this.showPopup)
       if (this.showPopup) {
         this.focus()
       }
