@@ -150,6 +150,10 @@ export default class DitoContext {
     return get(this, 'views', null)
   }
 
+  get flattenedViews() {
+    return get(this, 'flattenedViews', null)
+  }
+
   get itemLabel() {
     return get(this, 'itemLabel', null)
   }

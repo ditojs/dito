@@ -188,9 +188,26 @@ export async function resolveViews(unresolvedViews) {
       // NOTE: This is never actually referenced from anywhere, but they need
       // a name by which they're stored in the parent object.
       schema.name = camelize(schema.label)
+      schema.items = await resolveSchemas(schema.items)
     }
     return schema
   })
+}
+
+export function flattenViews(views) {
+  return Object.fromEntries(
+    Object.entries(views).reduce(
+      (entries, [key, schema]) => {
+        if (isMenu(schema)) {
+          entries.push(...Object.entries(schema.items))
+        } else {
+          entries.push([key, schema])
+        }
+        return entries
+      },
+      []
+    )
+  )
 }
 
 export async function resolveSchemaComponent(schema) {
@@ -283,7 +300,6 @@ export async function processView(component, api, schema, name) {
       }
     }
   } else if (isMenu(schema)) {
-    schema.items = await resolveSchemas(schema.items)
     return Promise.all(
       Object.entries(schema.items).map(async ([name, item]) =>
         processView(component, api, item, name)
@@ -428,7 +444,7 @@ export function isSingleComponentView(schema) {
 
 export function getViewFormSchema(schema, context) {
   const { view } = schema
-  const viewSchema = view && context.views[view]
+  const viewSchema = view && context.flattenedViews[view]
   return viewSchema
     ? // NOTE: Views can have tabs, in which case the view component is nested
       // in one of the tabs, go find it.
@@ -438,7 +454,7 @@ export function getViewFormSchema(schema, context) {
 
 export function getViewSchema(schema, context) {
   return getViewFormSchema(schema, context)
-    ? context.views[schema.view]
+    ? context.flattenedViews[schema.view]
     : null
 }
 
