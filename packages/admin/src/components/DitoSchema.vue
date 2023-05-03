@@ -757,17 +757,20 @@ export default DitoComponent.component('DitoSchema', {
 
 .dito-schema {
   box-sizing: border-box;
-  // To display schema next to buttons:
+  // To display edit buttons next to schema:
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   min-height: 100%;
 
   > .dito-schema-content {
     flex: 0 1 100%;
     max-width: 100%;
-    // So that schema buttons can be sticky to the bottom:
-    display: flex;
-    flex-direction: column;
+    // So that schema buttons can be sticky to the bottom.
+    // NOTE: We also need grid for `TransitionHeight` to work well. Switching
+    // to flex box here causes jumpy collapsing transitions.
+    display: grid;
+    grid-template-rows: min-content;
+    grid-template-columns: 100%;
 
     > *:only-child {
       grid-row-end: none;

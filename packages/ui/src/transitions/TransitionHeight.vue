@@ -26,7 +26,7 @@ const props = {
     // A timeout before setting style is only really needed after calls to
     // `forceRepaint()`, but using one here too preserves execution sequence so
     // that the call from `enter()` can never outrun the one from `afterEnter()`
-    setTimeout(() => setStyle(element, { height: 'auto' }))
+    setTimeout(() => setStyle(element, { height: null }))
   },
 
   onEnter(element) {
