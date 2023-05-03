@@ -82,11 +82,9 @@ export default DitoComponent.component('DitoSchemaInlined', {
         margin: 0;
         width: 100%;
         box-sizing: content-box;
-        // Because tables have a funny way of allowing too much width growth:
-        max-width: $content-width;
         // Prevent collapsing to min-height when alone in
         // .dito-schema-content, due to grid-template-rows: min-content
-        min-height: 2em;
+        min-height: $input-height;
       }
     }
 

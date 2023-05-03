@@ -203,8 +203,6 @@ export default DitoComponent.component('DitoContainer', {
 @import '../styles/_imports';
 
 .dito-container {
-  $self: &;
-
   position: relative;
   display: flex;
   flex-flow: column;
@@ -217,6 +215,12 @@ export default DitoComponent.component('DitoContainer', {
   // Cannot use margin here as it needs to be part of box-sizing for
   // percentages in flex-basis to work.
   padding: $form-spacing $form-spacing-half;
+
+  .dito-sidebar & {
+    @container (width < #{$sidebar-max-width - 2 * $content-padding}) {
+      flex-grow: 1 !important;
+    }
+  }
 
   &:empty {
     padding: 0;

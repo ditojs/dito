@@ -34,10 +34,14 @@ $pulldown-padding: $pulldown-padding-ver $pulldown-padding-hor;
 
 // Content
 $content-width: 900px;
-$content-sidebar-width: 360px;
+$content-width-wide: 1400px;
 $content-padding: 16px;
 $content-padding-half: calc($content-padding / 2);
 $content-color-background: $color-lightest;
+
+// Sidebar
+$sidebar-max-width: 360px;
+$sidebar-min-width: 200px;
 
 // Form
 $form-spacing: $input-padding-hor;

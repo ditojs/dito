@@ -45,7 +45,8 @@ export default DitoComponent.component('DitoPanels', {
 @import '../styles/_imports';
 
 .dito-panels {
-  max-width: $content-sidebar-width;
-  min-width: calc($content-sidebar-width / 2);
+  padding: $content-padding;
+  // For the `@container` rule in `.dito-container` to work:
+  container-type: inline-size;
 }
 </style>

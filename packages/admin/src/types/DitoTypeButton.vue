@@ -7,18 +7,13 @@ button.dito-button(
   :class="buttonClass"
   v-bind="attributes"
 )
-  template(
-    v-if="info || width === 'fill'"
-  )
-    .dito-button__text
-      span {{ text }}
-    .dito-info(
-      v-if="!label && info"
-      :data-info="info"
-    )
-  template(
-    v-else
+  .dito-button__text(
+    v-if="text"
   ) {{ text }}
+  .dito-info(
+    v-if="!label && info"
+    :data-info="info"
+  )
 </template>
 
 <script>
@@ -99,13 +94,9 @@ export default DitoTypeComponent.register(
   $self: &;
 
   &__text {
-    position: relative;
-    min-width: min-content;
-    height: calc(1em * var(--line-height));
+    @include ellipsis;
 
-    span {
-      @include ellipsis;
-    }
+    height: calc(1em * var(--line-height));
   }
 }
 </style>

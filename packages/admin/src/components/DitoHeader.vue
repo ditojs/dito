@@ -20,7 +20,7 @@ nav.dito-header
       v-if="isLoading"
     )
   //- Teleport target for `.dito-schema-header`:
-  .dito-header__menu
+  .dito-title
   slot
 </template>
 
@@ -88,17 +88,25 @@ export default DitoComponent.component('DitoHeader', {
     display: inline-block;
     padding: $header-padding;
     color: $color-white;
+
+    &:empty {
+      &::after {
+        content: '\200b';
+      }
+    }
   }
 
   .dito-trail {
     display: flex;
     box-sizing: border-box;
     height: 3em;
-    width: 100%;
-    max-width: $content-width + $content-padding;
 
     ul {
       display: flex;
+    }
+
+    li {
+      white-space: nowrap;
     }
 
     a {
@@ -151,17 +159,6 @@ export default DitoComponent.component('DitoHeader', {
       margin-left: 0.5em;
       border-radius: 100%;
     }
-  }
-
-  .dito-account,
-  .dito-login {
-    position: absolute;
-    top: 0;
-    cursor: pointer;
-  }
-
-  .dito-account {
-    left: $content-width + $content-padding * 2;
   }
 }
 </style>

@@ -360,6 +360,8 @@ $tag-line-height: 1em;
     }
 
     &__placeholder {
+      white-space: nowrap;
+
       &::after {
         // Enforce actual line-height for positioning.
         content: '\200b';

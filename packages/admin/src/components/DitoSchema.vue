@@ -8,7 +8,7 @@ slot(name="before")
     :class="{ 'dito-scroll': scrollable }"
   )
     Teleport(
-      to=".dito-header__menu"
+      to=".dito-title"
       :disabled="!headerInMenu"
     )
       .dito-schema-header(
@@ -81,8 +81,9 @@ slot(name="before")
       v-if="!hasLabel"
       name="edit-buttons"
     )
-  template(
+  Teleport(
     v-else-if="isPopulated"
+    to=".dito-sidebar"
   )
     DitoPanels(
       :class="{ 'dito-scroll': scrollable }"
@@ -750,10 +751,11 @@ export default DitoComponent.component('DitoSchema', {
   min-height: 100%;
 
   > .dito-schema-content {
-    flex: 1 1 100%;
+    flex: 0 1 100%;
+    max-width: 100%;
     // So that schema buttons can be sticky to the bottom:
-    display: grid;
-    grid-template-rows: min-content;
+    display: flex;
+    flex-direction: column;
 
     > *:only-child {
       grid-row-end: none;
@@ -763,21 +765,14 @@ export default DitoComponent.component('DitoSchema', {
       // Eat up negative margin of the last child to prevent overscroll.
       content: '';
     }
-
-    max-width: $content-width + 2 * $content-padding;
   }
 
-  > .dito-buttons,
-  > .dito-panels {
+  > .dito-buttons {
     flex: 1 1 0%;
   }
 
   > .dito-buttons {
     margin-left: $form-spacing;
-  }
-
-  > .dito-panels {
-    padding: $content-padding $content-padding $content-padding 0;
   }
 
   // Display a ruler between tabbed components and towards the .dito-buttons
@@ -824,7 +819,6 @@ export default DitoComponent.component('DitoSchema', {
     position: absolute;
     height: $header-height;
     padding: 0 $header-padding-hor;
-    max-width: $content-width;
     top: 0;
     left: 0;
     right: 0;

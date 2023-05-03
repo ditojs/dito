@@ -18,7 +18,7 @@ export default DitoComponent.component('DitoNavigation', {})
 .dito-navigation {
   @include user-select(none);
 
-  flex: initial;
+  flex: 0 0 min-content;
   font-size: $menu-font-size;
   white-space: nowrap;
   background: $color-lighter;

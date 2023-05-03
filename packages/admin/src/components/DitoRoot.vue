@@ -26,15 +26,19 @@
       :spinner="options.spinner"
       :isLoading="isLoading"
     )
-      DitoAccount(
-        v-if="user"
-      )
-      a.dito-login(
-        v-else-if="allowLogin"
-        @click="rootComponent.login()"
-      )
-        span Login
     RouterView
+  DitoSidebar
+    DitoAccount(
+      v-if="user"
+    )
+    a.dito-login(
+      v-else-if="allowLogin"
+      @click="rootComponent.login()"
+    )
+      span Login
+  .dito-fill
+    .dito-header
+      span
 </template>
 
 <script>
@@ -467,10 +471,26 @@ function addRoutes(router, routes) {
   display: flex;
 }
 
-.dito-root {
-  .dito-page {
-    background: $content-color-background;
+.dito-page {
+  flex: 1 1 $content-width;
+  background: $content-color-background;
+  max-width: $content-width-wide;
+}
+
+.dito-fill {
+  flex: 1;
+
+  .dito-header {
+    span {
+      padding-left: 0;
+      padding-right: 0;
+    }
   }
+}
+
+.dito-account,
+.dito-login {
+  cursor: pointer;
 }
 
 .dito-drag-overlay {
