@@ -314,7 +314,7 @@ export default DitoTypeComponent.register('markup', {
           }
         }
         editor.commands.setLink({ href, title })
-      } else {
+      } else if (attributes === null) {
         editor.commands.unsetLink()
       }
     },

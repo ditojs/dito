@@ -147,7 +147,9 @@ export default DitoComponent.component('DitoDialog', {
     },
 
     cancel() {
-      this.resolve(null)
+      // When cancelling, resolve as `undefined` so we can have dialogs
+      // returning null as a defined value as well.
+      this.resolve(undefined)
     },
 
     close() {
