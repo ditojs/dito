@@ -1,19 +1,18 @@
 <template lang="pug">
 .dito-markup(:id="dataPath")
-  .dito-markup-toolbar
-    .dito-buttons.dito-buttons-toolbar(
-      v-if="groupedButtons.length > 0"
+  .dito-buttons.dito-buttons-toolbar(
+    v-if="groupedButtons.length > 0"
+  )
+    .dito-button-group(
+      v-for="buttons in groupedButtons"
     )
-      .dito-button-group(
-        v-for="buttons in groupedButtons"
+      button.dito-button(
+        v-for="{ name, icon, isActive, onClick } in buttons"
+        :key="name"
+        :class="{ 'dito-active': isActive }"
+        @click="onClick"
       )
-        button.dito-button(
-          v-for="{ name, icon, isActive, onClick } in buttons"
-          :key="name"
-          :class="{ 'dito-active': isActive }"
-          @click="onClick"
-        )
-          Icon(:name="icon")
+        Icon(:name="icon")
   EditorContent.dito-markup-editor(
     ref="editor"
     :editor="editor"
@@ -522,13 +521,14 @@ const LinkWithTitle = Link.extend({
 
   .dito-markup-editor {
     overflow-y: scroll;
+    margin-top: $input-padding-ver;
     // Move padding "inside" editor to correctly position scrollbar
     margin-right: -$input-padding-hor;
     padding-right: $input-padding-hor;
   }
 
   .dito-buttons-toolbar {
-    margin: $input-padding-ver 0;
+    margin: 0;
   }
 
   h1,
