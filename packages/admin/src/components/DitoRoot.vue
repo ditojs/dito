@@ -21,7 +21,7 @@
       @remove="removeDialog(key)"
     )
   DitoNavigation
-  main.dito-page.dito-scroll-parent
+  main.dito-page.dito-scroll-parent(:class="appState.pageClass")
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="isLoading"
@@ -474,7 +474,11 @@ function addRoutes(router, routes) {
 .dito-page {
   flex: 1 1 $content-width;
   background: $content-color-background;
-  max-width: $content-width-wide;
+  max-width: $content-width;
+
+  &--wide {
+    max-width: $content-width-wide;
+  }
 }
 
 .dito-fill {

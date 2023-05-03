@@ -15,6 +15,7 @@ template(
     :data-resource="sourceSchema.path"
   )
     DitoSchema(
+      :key="name"
       :schema="viewSchema"
       :data="data"
       :meta="meta"

@@ -117,7 +117,7 @@ import {
   processData,
   isForm
 } from '../utils/schema.js'
-import { getStoreAccessor } from '../utils/accessor.js'
+import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSchema', {
@@ -335,7 +335,12 @@ export default DitoComponent.component('DitoSchema', {
 
     panelsByDataPath() {
       return this._listEntriesByDataPath(this.panelsRegistry)
-    }
+    },
+
+    wide: getSchemaAccessor('wide', {
+      type: Boolean,
+      default: false
+    })
   },
 
   watch: {
@@ -386,11 +391,17 @@ export default DitoComponent.component('DitoSchema', {
     // Delegate change events through to parent schema:
     this.delegate('change', this.parentSchemaComponent)
     this.emitEvent('initialize') // Not `'create'`, since that's for data.
+    if (this.scrollable && this.wide) {
+      this.appState.pageClass = 'dito-page--wide'
+    }
   },
 
   unmounted() {
     this.emitEvent('destroy')
     this._register(false)
+    if (this.scrollable && this.wide) {
+      this.appState.pageClass = null
+    }
   },
 
   methods: {
