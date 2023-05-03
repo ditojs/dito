@@ -477,6 +477,8 @@ function addRoutes(router, routes) {
   flex: 1 1 var(--max-content-width);
   background: $content-color-background;
   max-width: calc(var(--max-content-width) + 2 * #{$content-padding});
+  // For the `@container` rule in `.dito-container` to work:
+  container-type: inline-size;
 
   &--wide {
     --max-content-width: #{$content-width-wide};

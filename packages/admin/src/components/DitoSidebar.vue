@@ -18,5 +18,7 @@ export default DitoComponent.component('DitoSidebar', {})
   flex: 0 4 $sidebar-max-width;
   max-width: $sidebar-max-width;
   min-width: $sidebar-min-width;
+  // For the `@container` rule in `.dito-container` to work:
+  container-type: inline-size;
 }
 </style>

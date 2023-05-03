@@ -167,13 +167,9 @@ export default DitoComponent.component('DitoContainer', {
 
     containerStyle() {
       return {
-        flex: `${
-          this.flexGrow ? 1 : 0
-        } ${
-          this.flexShrink ? 1 : 0
-        } ${
-          this.flexBasis
-        }`
+        '--grow': this.flexGrow ? 1 : 0,
+        '--shrink': this.flexShrink ? 1 : 0,
+        '--basis': this.flexBasis
       }
     },
 
@@ -202,8 +198,13 @@ export default DitoComponent.component('DitoContainer', {
 @import '../styles/_imports';
 
 .dito-container {
+  --grow: 0;
+  --shrink: 1;
+  --basis: auto;
+
   position: relative;
   display: flex;
+  flex: var(--grow) var(--shrink) var(--basis);
   flex-flow: column;
   align-items: flex-start;
   // Needed for better vertical alignment:
@@ -215,9 +216,19 @@ export default DitoComponent.component('DitoContainer', {
   // percentages in flex-basis to work.
   padding: $form-spacing $form-spacing-half;
 
+  .dito-page & {
+    @container (width < #{$content-width}) {
+      flex-grow: 1;
+    }
+  }
+
   .dito-sidebar & {
-    @container (width < #{$sidebar-max-width - 2 * $content-padding}) {
-      flex-grow: 1 !important;
+    @container (width < #{$sidebar-max-width}) {
+      flex-grow: 1;
+    }
+
+    @container (width < #{calc($sidebar-max-width / 2)}) {
+      flex-basis: calc(var(--basis) * 2);
     }
   }
 
