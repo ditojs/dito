@@ -62,6 +62,13 @@ describe('merge()', () => {
     expect(merge('foo', 'bar')).toEqual('bar')
   })
 
+  it('should not override values with nullish values at root level', () => {
+    expect(merge({}, null)).toEqual({})
+    expect(merge([], null)).toEqual([])
+    expect(merge(10, null)).toEqual(10)
+    expect(merge(false, null)).toEqual(false)
+  })
+
   it('should work with multiple arguments', () => {
     const expected = { a: 4 }
     const actual = merge({ a: 1 }, { a: 2 }, { a: 3 }, expected)
