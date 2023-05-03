@@ -176,7 +176,7 @@ export default {
       if (toggle && (this.showDate || this.showTime)) {
         this.showDate = false
         this.showTime = false
-      } else {
+      } else if (!this.disabled) {
         this.focus()
         requestAnimationFrame(() => this.updatePopups())
       }
