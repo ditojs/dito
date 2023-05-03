@@ -214,7 +214,7 @@ export default DitoComponent.component('DitoContainer', {
   // percentages in flex-basis to work.
   padding: $form-spacing $form-spacing-half;
 
-  .dito-page & {
+  .dito-page .dito-pane > & {
     @container (width < #{$content-width}) {
       flex-grow: 1;
     }
@@ -232,7 +232,7 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
-  .dito-sidebar & {
+  .dito-sidebar .dito-pane > & {
     @container (width < #{$sidebar-max-width}) {
       flex-grow: 1;
     }
