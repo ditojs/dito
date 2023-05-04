@@ -112,12 +112,13 @@ export default DitoComponent.component('DitoHeader', {
     a {
       position: relative;
       display: block;
-      padding-right: 0.4em;
 
       $angle: 33deg;
 
       &:hover {
-        color: #999999;
+        span {
+          color: $color-light;
+        }
       }
 
       &::before,
@@ -125,9 +126,10 @@ export default DitoComponent.component('DitoHeader', {
         position: absolute;
         content: '';
         width: 1px;
-        height: 1.2em;
-        right: -1px;
-        background: $color-dark;
+        height: 0.75em;
+        right: -0.25em;
+        background: $color-white;
+        opacity: 0.5;
       }
 
       &::before {
