@@ -223,22 +223,27 @@ export default DitoComponent.component('DitoPanel', {
 
     > .dito-schema-content {
       > .dito-pane {
-        padding: $form-spacing-half $form-spacing;
+        padding: (2 * $form-spacing - $input-padding-ver)
+          (2 * $form-spacing - $input-padding-hor);
+      }
 
-        > .dito-container {
-          padding: $form-spacing-half;
-        }
+      .dito-label {
+        margin: $form-spacing 0;
+      }
+
+      .dito-container {
+        padding: $form-spacing-half;
       }
 
       .dito-object {
-        border: 0;
+        border: none;
         padding: 0;
       }
 
       > .dito-buttons {
         --button-margin: #{$form-spacing};
 
-        padding: 0 $form-spacing $form-spacing;
+        padding: $form-spacing;
 
         .dito-container {
           padding: 0;
@@ -250,10 +255,6 @@ export default DitoComponent.component('DitoPanel', {
       label {
         font-weight: normal;
       }
-    }
-
-    .dito-pane {
-      margin: 0 (-$form-spacing-half);
     }
   }
 }
