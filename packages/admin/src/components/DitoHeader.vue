@@ -84,6 +84,19 @@ export default DitoComponent.component('DitoHeader', {
   z-index: $header-z-index;
   @include user-select(none);
 
+  &::after {
+    // Cover the gaps between the different headers that might appear due to
+    // layout rounding imprecisions.
+    content: '';
+    top: 0;
+    bottom: 0;
+    left: calc(100% - 1px);
+    width: 2px;
+    position: absolute;
+    background: inherit;
+    z-index: -1;
+  }
+
   span {
     display: inline-block;
     padding: $header-padding;
