@@ -225,13 +225,17 @@ export default DitoComponent.component('DitoPanel', {
       > .dito-pane {
         padding: (2 * $form-spacing - $input-padding-ver)
           (2 * $form-spacing - $input-padding-hor);
+
+        &.dito-pane--single {
+          padding: $form-spacing;
+        }
       }
 
       .dito-label {
         margin: $form-spacing 0;
       }
 
-      .dito-container {
+      .dito-container:not(.dito-container--single) {
         padding: $form-spacing-half;
       }
 
