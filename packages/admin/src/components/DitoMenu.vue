@@ -18,6 +18,7 @@ ul.dito-menu(
         v-if="item.items"
         :class="getItemClass(item, 'dito-sub-menu')"
         :items="item.items"
+        :path="getItemPath(item, false)"
       )
 </template>
 
@@ -30,6 +31,10 @@ export default DitoComponent.component('DitoMenu', {
     items: {
       type: [Object, Array],
       default: () => []
+    },
+    path: {
+      type: String,
+      default: ''
     }
   },
 
@@ -53,28 +58,27 @@ export default DitoComponent.component('DitoMenu', {
       }
     },
 
-    getItemPath(item) {
-      return item?.path
-        ? `/${item.path}`
-        : item.items
-          ? this.getItemPath(Object.values(item.items)[0])
-          : null
+    getItemPath(item, firstChild) {
+      const path = item.path ? `${this.path}/${item.path}` : null
+      return firstChild && path && item.items
+        ? `${path}${this.getItemPath(Object.values(item.items)[0], false)}`
+        : path
     },
 
     getItemHref(item) {
-      const path = this.getItemPath(item)
+      const path = this.getItemPath(item, true)
       return path ? this.$router.resolve(path).href : null
     },
 
     isActiveItem(item) {
       return (
-        this.$route.path.startsWith(this.getItemPath(item)) ||
+        this.$route.path.startsWith(this.getItemPath(item, false)) ||
         item.items && Object.values(item.items).some(this.isActiveItem)
       )
     },
 
     onClickItem(item) {
-      const path = this.getItemPath(item)
+      const path = this.getItemPath(item, true)
       if (path) {
         this.$router.push({ path, force: true })
       }

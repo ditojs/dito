@@ -283,31 +283,31 @@ export async function processSchemaComponent(
   ])
 }
 
-export async function processView(component, api, schema, name) {
+export async function processView(component, api, schema, name, menuLevel = 0) {
   processSchemaDefaults(api, schema)
+  let children = []
   if (isView(schema)) {
     processRouteSchema(api, schema, name)
     await processNestedSchemas(api, schema)
-    const children = []
-    await processSchemaComponents(api, schema, children, 0)
-    return {
-      path: `/${schema.path}`,
-      children,
-      component,
-      meta: {
-        api,
-        schema
-      }
-    }
+    await processSchemaComponents(api, schema, children)
   } else if (isMenu(schema)) {
-    return Promise.all(
+    processRouteSchema(api, schema, name)
+    children = await Promise.all(
       Object.entries(schema.items).map(async ([name, item]) =>
-        processView(component, api, item, name)
+        processView(component, api, item, name, menuLevel + 1)
       )
     )
-    //
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
+  }
+  return {
+    path: menuLevel === 0 ? `/${schema.path}` : schema.path,
+    children,
+    component,
+    meta: {
+      api,
+      schema
+    }
   }
 }
 

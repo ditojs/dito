@@ -73,7 +73,7 @@ export default {
     },
 
     path() {
-      return this.getRoutePath(this.routeRecord.path)
+      return this.getRoutePath(this.routeRecord?.path)
     },
 
     label() {
@@ -168,10 +168,13 @@ export default {
       // Maps the route's actual path to the matched routes by counting its
       // parts separated by '/', splitting the path into the mapped parts
       // containing actual parameters.
-      return this.$route.path
-        .split('/')
-        .slice(0, templatePath.split('/').length)
-        .join('/')
+      const { path } = this.$route
+      return templatePath
+        ? path
+            .split('/')
+            .slice(0, templatePath.split('/').length)
+            .join('/')
+        : path
     },
 
     getChildPath(path) {
