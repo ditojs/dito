@@ -20,7 +20,7 @@ nav.dito-header
       v-if="isLoading"
     )
   //- Teleport target for `.dito-schema-header`:
-  .dito-title
+  .dito-header__teleport
   slot
 </template>
 

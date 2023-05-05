@@ -45,7 +45,7 @@ export default DitoComponent.component('DitoPanels', {
 @import '../styles/_imports';
 
 .dito-panels {
-  padding: $content-padding;
-  padding-left: $form-spacing;
+  margin: $content-padding;
+  margin-left: $form-spacing;
 }
 </style>

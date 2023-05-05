@@ -1030,14 +1030,14 @@ export function getAllPanelEntries(
   api,
   schema,
   dataPath = null,
-  schemaComponent = null,
+  component = null,
   tabComponent = null
 ) {
   const panelSchema = getTypeOptions(schema)?.getPanelSchema?.(
     api,
     schema,
     dataPath,
-    schemaComponent
+    component
   )
   const panelEntries = panelSchema
     ? [getPanelEntry(panelSchema, dataPath, tabComponent)]

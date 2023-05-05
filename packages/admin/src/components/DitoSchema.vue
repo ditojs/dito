@@ -3,16 +3,27 @@ slot(name="before")
 .dito-schema(
   v-bind="$attrs"
 )
+  Teleport(
+    v-if="isPopulated && panelEntries.length > 0"
+    to=".dito-sidebar__teleport"
+  )
+    DitoPanels(
+      :panels="panelEntries"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+    )
   .dito-schema-content(
     ref="content"
     :class="{ 'dito-scroll': scrollable }"
   )
     Teleport(
-      to=".dito-title"
+      v-if="hasLabel || hasTabs || clipboard"
+      to=".dito-header__teleport"
       :disabled="!headerInMenu"
     )
       .dito-schema-header(
-        v-if="hasLabel || hasTabs || clipboard"
         :class="{ 'dito-schema-header--menu': headerInMenu }"
       )
         DitoLabel(
@@ -82,18 +93,6 @@ slot(name="before")
     slot(
       v-if="!hasLabel"
       name="edit-buttons"
-    )
-  Teleport(
-    v-else-if="isPopulated"
-    to=".dito-sidebar"
-  )
-    DitoPanels(
-      :class="{ 'dito-scroll': scrollable }"
-      :panels="panelEntries"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :disabled="disabled"
     )
 slot(name="after")
 </template>
@@ -186,11 +185,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     panelEntries() {
-      const panelEntries = getPanelEntries(this.schema.panels, '')
-      for (const pane of this.panes) {
-        panelEntries.push(...pane.panelEntries)
-      }
-      return panelEntries
+      return getPanelEntries(this.schema.panels, '')
     },
 
     tabs() {
@@ -408,48 +403,44 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   methods: {
-    getComponentsByDataPath(dataPath, match) {
-      return this._getEntriesByDataPath(
-        this.componentsByDataPath,
-        dataPath,
-        match
-      )
+    getComponentsByDataPath(dataPath) {
+      return this._getEntriesByDataPath(this.componentsByDataPath, dataPath)
     },
 
-    getComponentByDataPath(dataPath, match) {
-      return this.getComponentsByDataPath(dataPath, match)[0] || null
+    getComponentByDataPath(dataPath) {
+      return this.getComponentsByDataPath(dataPath)[0] || null
     },
 
-    getComponentsByName(dataPath, match) {
-      return this._getEntriesByName(this.componentsByDataPath, dataPath, match)
+    getComponentsByName(dataPath) {
+      return this._getEntriesByName(this.componentsByDataPath, dataPath)
     },
 
-    getComponentByName(name, match) {
-      return this.getComponentsByName(name, match)[0] || null
+    getComponentByName(name) {
+      return this.getComponentsByName(name)[0] || null
     },
 
-    getComponents(dataPathOrName, match) {
-      return this._getEntries(this.componentsByDataPath, dataPathOrName, match)
+    getComponents(dataPathOrName) {
+      return this._getEntries(this.componentsByDataPath, dataPathOrName)
     },
 
-    getComponent(dataPathOrName, match) {
-      return this.getComponents(dataPathOrName, match)[0] || null
+    getComponent(dataPathOrName) {
+      return this.getComponents(dataPathOrName)[0] || null
     },
 
-    getPanelsByDataPath(dataPath, match) {
-      return this._getEntriesByDataPath(this.panelsByDataPath, dataPath, match)
+    getPanelsByDataPath(dataPath) {
+      return this._getEntriesByDataPath(this.panelsByDataPath, dataPath)
     },
 
-    getPanelByDataPath(dataPath, match) {
-      return this.getPanelsByDataPath(dataPath, match)[0] || null
+    getPanelByDataPath(dataPath) {
+      return this.getPanelsByDataPath(dataPath)[0] || null
     },
 
-    getPanels(dataPathOrName, match) {
-      return this._getEntries(this.panelsByDataPath, dataPathOrName, match)
+    getPanels(dataPathOrName) {
+      return this._getEntries(this.panelsByDataPath, dataPathOrName)
     },
 
-    getPanel(dataPathOrName, match) {
-      return this.getPanels(dataPathOrName, match)[0] || null
+    getPanel(dataPathOrName) {
+      return this.getPanels(dataPathOrName)[0] || null
     },
 
     someComponent(callback) {
@@ -728,28 +719,18 @@ export default DitoComponent.component('DitoSchema', {
       }, {})
     },
 
-    _getEntries(entriesByDataPath, dataPath, match) {
+    _getEntries(entriesByDataPath, dataPath) {
       return normalizeDataPath(dataPath).startsWith(this.dataPath)
-        ? this._getEntriesByDataPath(entriesByDataPath, dataPath, match)
-        : this._getEntriesByName(entriesByDataPath, dataPath, match)
+        ? this._getEntriesByDataPath(entriesByDataPath, dataPath)
+        : this._getEntriesByName(entriesByDataPath, dataPath)
     },
 
-    _getEntriesByDataPath(entriesByDataPath, dataPath, match) {
-      return this._filterEntries(
-        entriesByDataPath[normalizeDataPath(dataPath)] || [],
-        match
-      )
+    _getEntriesByDataPath(entriesByDataPath, dataPath) {
+      return entriesByDataPath[normalizeDataPath(dataPath)] || []
     },
 
-    _getEntriesByName(entriesByDataPath, name, match) {
-      return this._filterEntries(
-        entriesByDataPath[appendDataPath(this.dataPath, name)] || [],
-        match
-      )
-    },
-
-    _filterEntries(entries, match) {
-      return match ? entries.filter(match) : entries
+    _getEntriesByName(entriesByDataPath, name) {
+      return entriesByDataPath[appendDataPath(this.dataPath, name)] || []
     }
   }
 })

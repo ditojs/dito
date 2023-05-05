@@ -2,6 +2,7 @@
 aside.dito-sidebar.dito-scroll-parent
   nav.dito-header
     slot
+  .dito-sidebar__teleport.dito-scroll
 </template>
 
 <script>

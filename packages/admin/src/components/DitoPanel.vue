@@ -184,7 +184,7 @@ export default DitoComponent.component('DitoPanel', {
         $form-spacing;
 
       position: sticky;
-      top: 0;
+      top: $content-padding;
       margin-bottom: $margin;
       z-index: 1;
 

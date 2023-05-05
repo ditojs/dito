@@ -63,7 +63,7 @@ export const filterComponents = {
   }
 }
 
-export function createFiltersPanel(api, filters, dataPath, proxy) {
+export function createFiltersPanel(api, filters, dataPath, query) {
   const { sticky, ...filterSchemas } = filters
   const panel = {
     type: 'panel',
@@ -80,7 +80,7 @@ export function createFiltersPanel(api, filters, dataPath, proxy) {
     data() {
       return parseFiltersData(
         panel,
-        proxy.query
+        query.value
       )
     },
 
@@ -106,8 +106,8 @@ export function createFiltersPanel(api, filters, dataPath, proxy) {
 
     methods: {
       applyFilters() {
-        proxy.query = {
-          ...proxy.query,
+        query.value = {
+          ...query.value,
           filter: this.filters,
           // Clear pagination when applying or clearing filters:
           page: undefined

@@ -161,6 +161,7 @@ import {
 import { createFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'
+import { computed } from 'vue'
 
 // @vue/component
 export default DitoTypeComponent.register('list', {
@@ -171,28 +172,22 @@ export default DitoTypeComponent.register('list', {
     return type
   },
 
-  getPanelSchema(api, schema, dataPath, schemaComponent) {
+  getPanelSchema(api, schema, dataPath, component) {
     const { filters } = schema
     // See if this list component wants to display a filter panel, and if so,
     // create the panel schema for it through `getFiltersPanel()`.
     if (filters) {
-      // At the time of the creation of the panel schema, the schemaComponent is
-      // not filled yet, so we can't get the target component (dataPath) right
-      // away. Use a proxy and a getter instead, to get around this:
-      const getListComponent = () =>
-        schemaComponent.getComponentByDataPath(
-          dataPath,
-          component => component.type === 'list'
-        )
+      return createFiltersPanel(
+        api,
+        filters,
+        dataPath,
+        // Pass a computed value to get / set the query, see getFiltersPanel()
+        computed({
+          get() {
+            return component.query
+          },
 
-      return createFiltersPanel(api, filters, dataPath, {
-        // Create a simple proxy to get / set the query, see getFiltersPanel()
-        get query() {
-          return getListComponent()?.query
-        },
-        set query(query) {
-          const component = getListComponent()
-          if (component) {
+          set(query) {
             // Filter out undefined values for comparing with equals()
             const filter = obj => pickBy(obj, value => value !== undefined)
             if (!equals(filter(query), filter(component.query))) {
@@ -200,8 +195,8 @@ export default DitoTypeComponent.register('list', {
               component.loadData(false)
             }
           }
-        }
-      })
+        })
+      )
     }
   },
 

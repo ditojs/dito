@@ -4,6 +4,17 @@
   :class="containerClass"
   :style="containerStyle"
 )
+  Teleport(
+    v-if="isMounted && panelEntries.length > 0"
+    to=".dito-sidebar__teleport"
+  )
+    DitoPanels(
+      :panels="panelEntries"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :disabled="disabled"
+    )
   DitoLabel(
     v-if="hasLabel"
     :class="componentClass"
@@ -13,6 +24,7 @@
   )
   component.dito-component(
     :is="typeComponent"
+    ref="component"
     :class="componentClass"
     :schema="schema"
     :dataPath="dataPath"
@@ -35,7 +47,12 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent, hasLabel, omitPadding } from '../utils/schema.js'
+import {
+  getAllPanelEntries,
+  getTypeComponent,
+  hasLabel,
+  omitPadding
+} from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component
@@ -56,7 +73,8 @@ export default DitoComponent.component('DitoContainer', {
 
   data() {
     return {
-      errors: null
+      errors: null,
+      isMounted: false
     }
   },
 
@@ -196,7 +214,21 @@ export default DitoComponent.component('DitoContainer', {
         'dito-width-shrink': this.flexShrink,
         'dito-has-errors': !!this.errors
       }
+    },
+
+    panelEntries() {
+      return getAllPanelEntries(
+        this.api,
+        this.schema,
+        this.dataPath,
+        this.$refs.component,
+        this.tabComponent
+      )
     }
+  },
+
+  mounted() {
+    this.isMounted = true
   },
 
   methods: {
