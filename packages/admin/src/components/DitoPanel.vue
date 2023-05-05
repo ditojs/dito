@@ -222,21 +222,20 @@ export default DitoComponent.component('DitoPanel', {
     border-bottom-right-radius: $border-radius;
 
     > .dito-schema-content {
-      > .dito-pane {
-        padding: (2 * $form-spacing - $input-padding-ver)
-          (2 * $form-spacing - $input-padding-hor);
+      .dito-pane {
+        margin: -$form-spacing-half;
 
-        &.dito-pane--single {
-          padding: $form-spacing;
+        > .dito-container:not(.dito-container--single) {
+          padding: $form-spacing-half;
         }
       }
 
-      .dito-label {
-        margin: $form-spacing 0;
-      }
+      > .dito-pane {
+        padding: $form-spacing;
 
-      .dito-container:not(.dito-container--single) {
-        padding: $form-spacing-half;
+        &.dito-pane--single {
+          margin: 0;
+        }
       }
 
       .dito-object {
