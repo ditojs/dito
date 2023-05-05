@@ -283,25 +283,24 @@ export async function processSchemaComponent(
   ])
 }
 
-export async function processView(component, api, schema, name, menuLevel = 0) {
+export async function processView(component, api, schema, name, fullPath = '') {
   processSchemaDefaults(api, schema)
+  processRouteSchema(api, schema, name, fullPath)
   let children = []
   if (isView(schema)) {
-    processRouteSchema(api, schema, name)
     await processNestedSchemas(api, schema)
     await processSchemaComponents(api, schema, children)
   } else if (isMenu(schema)) {
-    processRouteSchema(api, schema, name)
     children = await Promise.all(
       Object.entries(schema.items).map(async ([name, item]) =>
-        processView(component, api, item, name, menuLevel + 1)
+        processView(component, api, item, name, schema.fullPath)
       )
     )
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
   return {
-    path: menuLevel === 0 ? `/${schema.path}` : schema.path,
+    path: schema.fullPath,
     children,
     component,
     meta: {
@@ -343,10 +342,13 @@ export function processNestedSchemaDefaults(api, schema) {
   })
 }
 
-export function processRouteSchema(api, schema, name) {
+export function processRouteSchema(api, schema, name, fullPath = null) {
   // Used for view and source schemas, see SourceMixin.
   schema.name ??= name
   schema.path ??= api.normalizePath(name)
+  if (fullPath !== null) {
+    schema.fullPath = `${fullPath}/${schema.path}`
+  }
 }
 
 export async function processForms(api, schema, level) {
@@ -466,8 +468,8 @@ export function getViewEditPath(schema, id, context) {
   const view = getViewSchema(schema, context)
   if (view) {
     const path = isSingleComponentView(view)
-      ? `/${view.path}`
-      : `/${view.path}/${view.path}`
+      ? view.fullPath
+      : `${view.fullPath}/${view.path}`
     return `${path}/${id}`
   }
   return null
