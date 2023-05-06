@@ -525,8 +525,8 @@ export default {
             this.api.normalizePath(normalizeDataPath(dataPathParts))
           )
           // See if there actually is a route for this sub-component:
-          const { matched } = this.$router.match(path)
-          if (matched.length) {
+          const { matched } = this.$router.resolve(path)
+          if (matched.length && matched[0].name !== 'catch-all') {
             if (this.$route.path === path) {
               // We're already there, so just call `onComplete()`:
               callOnComplete()

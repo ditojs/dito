@@ -241,8 +241,9 @@ export default {
     // @overridable
     async scrollIntoView() {
       await this.focusSchema()
-      const { element = this } = this.$refs
-      ;(element.$el || element).scrollIntoView?.({
+      let { element = this } = this.$refs
+      element = element.scrollIntoView ? element : element.$el
+      element.scrollIntoView?.({
         behavior: 'smooth',
         block: 'center'
       })
@@ -252,14 +253,14 @@ export default {
     focusElement() {
       let { element = this } = this.$refs
       element = element.focus ? element : element.$el
-      element?.focus?.()
+      element.focus?.()
     },
 
     // @overridable
     blurElement() {
       let { element = this } = this.$refs
       element = element.blur ? element : element.$el
-      element?.blur?.()
+      element.blur?.()
     },
 
     async focusSchema() {
