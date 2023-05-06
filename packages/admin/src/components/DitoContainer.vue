@@ -295,9 +295,10 @@ export default DitoComponent.component('DitoContainer', {
   }
 
   &--label-vertical {
-    // For components without labels in rows with other components that have
-    // labels, add some spacing to the top to align with the other components:
-    > .dito-component:first-child {
+    // For plain components without labels in rows with other components that
+    // have labels, add some spacing to the top to align with the other
+    // components (e.g.  buttons):
+    > .dito-component:first-child:not(.dito-section, .dito-list, .dito-object) {
       margin-top: $line-height * $font-size + $form-spacing-half;
     }
   }

@@ -91,16 +91,16 @@ export default DitoComponent.component('DitoLabel', {
 .dito-label {
   $self: &;
 
-  --label-padding: 0;
   // For buttons and chevron to align right:
   display: flex;
   position: relative;
   // Vertically center all items in the label, e.g. chevron, edit-buttons.
   align-items: center;
-  padding: var(--label-padding);
   margin: 0 $form-spacing-half $form-spacing-half 0;
 
   .dito-container:not(.dito-container--label-vertical) > & {
+    // When labels are not vertical (e.g. compact layout, next to component),
+    // clear bottom padding for better vertical alignment.
     margin-bottom: 0;
   }
 

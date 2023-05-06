@@ -78,10 +78,8 @@ export default DitoComponent.component('DitoSchemaInlined', {
       margin: -$form-spacing;
 
       .dito-label {
-        // Add removed $form-spacing again
-        --label-padding: #{$form-spacing};
-
-        margin: 0;
+        // Add removed $form-spacing again.
+        margin: $form-spacing;
         width: 100%;
         box-sizing: content-box;
         // Prevent collapsing to min-height when alone in
