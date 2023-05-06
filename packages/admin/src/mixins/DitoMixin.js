@@ -235,6 +235,13 @@ export default {
       return store
     },
 
+    removeChildStore(key, index) {
+      // GEt the child-store first, so that indices can be transferred over
+      // temporary id changes during persistence.
+      this.getChildStore(key, index)
+      this.removeStore(key)
+    },
+
     getSchemaValue(
       keyOrDataPath,
       {

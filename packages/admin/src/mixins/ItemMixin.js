@@ -32,6 +32,14 @@ export default {
       return dataPath
     },
 
+    getItemStore(sourceSchema, item, index) {
+      return this.getChildStore(this.getItemUid(sourceSchema, item), index)
+    },
+
+    removeItemStore(sourceSchema, item, index) {
+      this.removeChildStore(this.getItemUid(sourceSchema, item), index)
+    },
+
     findItemIdIndex(sourceSchema, data, itemId) {
       const index = this.isTransient
         ? // For transient data, the index is used as the id

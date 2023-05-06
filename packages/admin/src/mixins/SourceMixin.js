@@ -1,4 +1,5 @@
 import DitoComponent from '../DitoComponent.js'
+import ItemMixin from './ItemMixin.js'
 import ResourceMixin from './ResourceMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
@@ -29,7 +30,7 @@ import {
 
 // @vue/component
 export default {
-  mixins: [ResourceMixin, SchemaParentMixin],
+  mixins: [ItemMixin, ResourceMixin, SchemaParentMixin],
 
   defaultValue(schema) {
     return isListSource(schema) ? [] : null
@@ -404,17 +405,21 @@ export default {
       return item
     },
 
-    removeItem(item) {
+    removeItem(item, index) {
+      let removed = false
       if (this.isObjectSource) {
         this.objectData = null
-        this.onChange()
+        removed = true
       } else {
         const { listData } = this
-        const index = listData && listData.indexOf(item)
         if (index >= 0) {
           listData.splice(index, 1)
-          this.onChange()
+          removed = true
         }
+      }
+      if (removed) {
+        this.removeItemStore(this.schema, item, index)
+        this.onChange()
       }
     },
 
@@ -444,15 +449,15 @@ export default {
         )
       ) {
         if (this.isTransient) {
-          this.removeItem(item)
+          this.removeItem(item, index)
           notify()
         } else {
-          const itemId = this.getItemId(this.schema, item)
+          const itemId = this.getItemId(this.schema, item, index)
           const resource = getMemberResource(itemId, this.resource)
           if (resource) {
             this.handleRequest({ method: 'delete', resource }, err => {
               if (!err) {
-                this.removeItem(item)
+                this.removeItem(item, index)
                 notify()
               }
               this.reloadData()

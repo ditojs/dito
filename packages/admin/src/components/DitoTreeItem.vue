@@ -99,6 +99,7 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import ItemMixin from '../mixins/ItemMixin'
 import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -106,7 +107,7 @@ import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
-  mixins: [SortableMixin],
+  mixins: [ItemMixin, SortableMixin],
   inject: ['container'],
 
   props: {

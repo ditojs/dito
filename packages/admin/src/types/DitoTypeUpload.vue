@@ -35,7 +35,7 @@
     DitoDraggable(
       v-model="files"
       tag="tbody"
-      :options="getSortableOptions(false)"
+      :options="getSortableOptions()"
       :draggable="draggable"
     )
       template(
@@ -43,7 +43,7 @@
       )
         tr(
           v-for="(file, index) in files"
-          :key="file.key"
+          :key="file.name"
         )
           td(
             v-if="render"

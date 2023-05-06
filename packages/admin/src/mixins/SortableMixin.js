@@ -1,9 +1,5 @@
-import ItemMixin from './ItemMixin.js'
-
 // @vue/component
 export default {
-  mixins: [ItemMixin],
-
   data() {
     return {
       dragging: false
