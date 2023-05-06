@@ -283,17 +283,22 @@ export default DitoComponent.component('DitoForm', {
   },
 
   watch: {
-    $route(to, from) {
-      // Reload form data when navigating to a different entity in same form.
-      const param = this.meta?.param
-      if (
-        param &&
-        this.providesData &&
-        from.matched[0].path === to.matched[0].path && // Staying on same form?
-        from.params[param] !== 'create' && // But haven't been creating?
-        to.params[param] !== from.params[param] // Going to a different entity?
-      ) {
-        this.loadData(true)
+    $route: {
+      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
+      flush: 'post',
+      handler(to, from) {
+        // Reload form data when navigating to a different entity in same form.
+        const param = this.meta?.param
+        if (
+          param &&
+          this.providesData &&
+          // TODO: See if we can remove this due to `flush: 'post'`.
+          from.matched[0].path === to.matched[0].path && // Staying on same form
+          from.params[param] !== 'create' && // But haven't been creating
+          to.params[param] !== from.params[param] // Going to a different entity
+        ) {
+          this.loadData(true)
+        }
       }
     },
 
