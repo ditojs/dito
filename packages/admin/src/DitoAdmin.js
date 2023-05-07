@@ -194,6 +194,10 @@ export default class DitoAdmin {
         })
     }))
 
+    // Prevent endless loops of error messages during render functions by
+    // setting a custom error handler.
+    app.config.errorHandler = console.error
+
     app.use(VueNotifications, {
       name: 'notify',
       componentName: 'VueNotifications'
