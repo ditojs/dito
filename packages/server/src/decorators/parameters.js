@@ -1,7 +1,6 @@
-import { isArray, isObject } from '@ditojs/utils'
+import { isArray, isObject, deprecate } from '@ditojs/utils'
 import { createDecorator } from '../utils/decorator.js'
 import { formatJson } from '../utils/json.js'
-import { deprecate } from '../utils/deprecate.js'
 
 export function parameters(parameters, options) {
   if (isObject(parameters)) {

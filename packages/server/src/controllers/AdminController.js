@@ -5,13 +5,12 @@ import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { viteCommonjs as createCommonJsPlugin } from '@originjs/vite-plugin-commonjs'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { merge } from '@ditojs/utils'
+import { merge, deprecate } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
 import { getRandomFreePort } from '../utils/net.js'
 import { formatJson } from '../utils/json.js'
-import { deprecate } from '../utils/deprecate.js'
 
 export class AdminController extends Controller {
   // @override

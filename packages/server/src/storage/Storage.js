@@ -4,9 +4,8 @@ import multer from '@koa/multer'
 import picomatch from 'picomatch'
 import { PassThrough } from 'stream'
 import { readMediaAttributes } from 'leather'
-import { hyphenate, toPromiseCallback } from '@ditojs/utils'
+import { hyphenate, toPromiseCallback, deprecate } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
-import { deprecate } from '../utils/deprecate.js'
 
 const storageClasses = {}
 

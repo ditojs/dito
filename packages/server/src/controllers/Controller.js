@@ -16,7 +16,6 @@ import {
 import { processHandlerParameters } from '../utils/handler.js'
 import { describeFunction } from '../utils/function.js'
 import { formatJson } from '../utils/json.js'
-import { deprecate } from '../utils/deprecate.js'
 import {
   isObject,
   isString,
@@ -26,7 +25,8 @@ import {
   asArray,
   equals,
   parseDataPath,
-  normalizeDataPath
+  normalizeDataPath,
+  deprecate
 } from '@ditojs/utils'
 
 export class Controller {

@@ -30,7 +30,8 @@ import {
   parseDataPath,
   normalizeDataPath,
   toPromiseCallback,
-  mapConcurrently
+  mapConcurrently,
+  deprecate
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -39,7 +40,6 @@ import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
 import { getDuration, subtractDuration } from '../utils/duration.js'
-import { deprecate } from '../utils/deprecate.js'
 import {
   ResponseError,
   ValidationError,

@@ -449,8 +449,8 @@ let dialogId = 0
 function addRoutes(router, routes) {
   const removers = []
   for (const route of routes) {
-    const removeRoute = router.addRoute(route)
-    removers.push(removeRoute)
+    const remove = router.addRoute(route)
+    removers.push(remove)
   }
 
   return () => {
