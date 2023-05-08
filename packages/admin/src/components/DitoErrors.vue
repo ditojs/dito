@@ -74,7 +74,7 @@ export default DitoComponent.component('DitoErrors', {
 
 .dito-errors {
   position: absolute;
-  opacity: 0;
+  visibility: hidden;
 
   ul {
     color: $color-error;

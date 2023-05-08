@@ -16,17 +16,14 @@
     }
   }
 }
-%input-height {
-  height: $input-height;
-  line-height: $input-height;
-}
 
 %input-borderless {
-  @extend %input-height;
   // This silent class is to be used on types that don't have borders around
   // them that would naturally size them correctly, and need modification of
   // their height + vertical alignment so that they align on the same baseline
   // as all the other inputs: 'radio', 'checkbox', 'checkboxes'.
   display: inline-flex;
   align-items: center;
+  height: $input-height;
+  line-height: $input-height;
 }

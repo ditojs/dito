@@ -486,10 +486,10 @@ function getLocaleNames(locale) {
 
 .dito-calendar-header,
 .dito-calendar-footer {
-  @extend %input-height;
-
   position: relative;
   text-align: center;
+  height: $input-height;
+  line-height: $input-height;
 }
 
 .dito-calendar-footer {

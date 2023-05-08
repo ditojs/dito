@@ -251,12 +251,6 @@ $tag-line-height: 1em;
     --input-width: auto;
   }
 
-  &.dito-has-errors {
-    &__tags {
-      border-color: $color-error;
-    }
-  }
-
   .dito-edit-buttons {
     margin-left: $form-spacing-half;
   }
@@ -268,53 +262,6 @@ $tag-line-height: 1em;
     min-height: inherit;
     color: $color-black;
 
-    &--active {
-      #{$self}__placeholder {
-        // Don't use `display: none` to hide place-holder, as the layout would
-        // collapse.
-        display: inline-block;
-        visibility: hidden;
-      }
-
-      #{$self}__single,
-      #{$self}__input {
-        // Sadly, vue-select sets `style="width"` in addition to using classes
-        // so `!important` is necessary:
-        width: var(--input-width) !important;
-      }
-
-      #{$self}__tags {
-        border-color: $color-active;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-      }
-
-      #{$self}__content-wrapper {
-        border: $border-width solid $color-active;
-        border-top-color: $border-color;
-        margin: -1px 0 0;
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-      }
-
-      &#{$self}--above {
-        #{$self}__tags {
-          border-radius: $border-radius;
-          border-top-left-radius: 0;
-          border-top-right-radius: 0;
-        }
-
-        #{$self}__content-wrapper {
-          border: $border-width solid $color-active;
-          border-bottom-color: $border-color;
-          margin: 0 0 -1px;
-          border-radius: $border-radius;
-          border-bottom-left-radius: 0;
-          border-bottom-right-radius: 0;
-        }
-      }
-    }
-
     &__tags {
       display: flex;
       font-size: inherit;
@@ -323,6 +270,10 @@ $tag-line-height: 1em;
       padding: 0 $spinner-width 0 0;
       // So tags can float on multiple lines and have proper margins:
       padding-bottom: $tag-margin;
+
+      .dito-has-errors & {
+        border-color: $color-error;
+      }
     }
 
     &__tag {
@@ -412,7 +363,7 @@ $tag-line-height: 1em;
 
       min-height: unset;
       height: unset;
-      line-height: $tag-line-height;
+      line-height: $line-height;
       padding: $input-padding;
 
       &::after {
@@ -451,7 +402,7 @@ $tag-line-height: 1em;
         color: $color-text;
         background: $color-highlight;
 
-        &#{$option}--highlight {
+        @at-root #{$self}#{$self}--show-highlight &#{$option}--highlight {
           color: $color-text-inverted;
         }
       }
@@ -489,6 +440,54 @@ $tag-line-height: 1em;
     &__content-wrapper {
       border: $border-style;
       border-radius: $border-radius;
+    }
+
+    &__content-wrapper {
+      border-color: $color-active;
+    }
+
+    &:not(&--above) #{$self}__content-wrapper {
+      margin: (-$border-width) 0 0;
+      border-top-color: $border-color;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    &--above #{$self}__content-wrapper {
+      margin: 0 0 (-$border-width);
+      border-bottom-color: $border-color;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &--active {
+      #{$self}__placeholder {
+        // Don't use `display: none` to hide place-holder, as the layout would
+        // collapse.
+        display: inline-block;
+        visibility: hidden;
+      }
+
+      #{$self}__single,
+      #{$self}__input {
+        // Sadly, vue-select sets `style="width"` in addition to using classes
+        // so `!important` is necessary:
+        width: var(--input-width) !important;
+      }
+
+      #{$self}__tags {
+        border-color: $color-active;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+
+      &#{$self}--above {
+        #{$self}__tags {
+          border-radius: $border-radius;
+          border-top-left-radius: 0;
+          border-top-right-radius: 0;
+        }
+      }
     }
   }
 }

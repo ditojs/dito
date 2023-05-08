@@ -80,17 +80,21 @@ $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
   position: relative;
 
   select {
+    @extend %input;
+
     padding-right: $select-arrow-width;
   }
 
+  // `&___inner` is needed to make the edit buttons appear to the right of the
+  // select:
   &__inner {
     flex: 1;
     position: relative;
 
     &::after {
-      position: absolute;
       @include arrow($select-arrow-size);
 
+      position: absolute;
       bottom: $select-arrow-bottom;
       right: calc(#{$select-arrow-right} + #{$border-width});
     }

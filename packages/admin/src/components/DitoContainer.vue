@@ -1,8 +1,8 @@
 <template lang="pug">
 .dito-container(
   v-show="componentVisible"
-  :class="containerClass"
-  :style="containerStyle"
+  :class="containerClasses"
+  :style="containerStyles"
 )
   Teleport(
     v-if="isMounted && panelEntries.length > 0"
@@ -17,7 +17,7 @@
     )
   DitoLabel(
     v-if="hasLabel"
-    :class="componentClass"
+    :class="layoutClasses"
     :label="label"
     :dataPath="labelDataPath"
     :info="info"
@@ -25,7 +25,7 @@
   component.dito-component(
     :is="typeComponent"
     ref="component"
-    :class="componentClass"
+    :class="componentClasses"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
@@ -176,22 +176,20 @@ export default DitoComponent.component('DitoContainer', {
         : null
     },
 
-    containerClass() {
-      const { class: containerClass } = this.schema
+    containerClasses() {
+      const { class: classes } = this.schema
       const prefix = 'dito-container'
       return {
         [`${prefix}--single`]: this.single,
+        'dito-disabled': this.componentDisabled,
+        'dito-has-errors': !!this.errors,
         [`${prefix}--label-vertical`]: this.verticalLabels,
         [`${prefix}--omit-padding`]: omitPadding(this.schema),
-        ...(
-          isString(containerClass)
-            ? { [containerClass]: true }
-            : containerClass
-        )
+        ...(isString(classes) ? { [classes]: true } : classes)
       }
     },
 
-    containerStyle() {
+    containerStyles() {
       const { flexBasis, combinedBasis } = this
       return {
         '--grow': this.flexGrow ? 1 : 0,
@@ -204,15 +202,18 @@ export default DitoComponent.component('DitoContainer', {
       }
     },
 
-    componentClass() {
+    componentClasses() {
       return {
-        // TODO: BEM?
         'dito-single': this.single,
-        'dito-disabled': this.componentDisabled,
+        ...this.layoutClasses
+      }
+    },
+
+    layoutClasses() {
+      return {
         'dito-width-fill': this.width === 'fill' || this.flexBasis !== 'auto',
         'dito-width-grow': this.flexGrow,
-        'dito-width-shrink': this.flexShrink,
-        'dito-has-errors': !!this.errors
+        'dito-width-shrink': this.flexShrink
       }
     },
 
