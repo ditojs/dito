@@ -73,7 +73,7 @@
     "sortablejs": "^1.15.0",
     "tinycolor2": "^1.6.0",
     "tippy.js": "^6.3.7",
-    "type-fest": "^3.9.0",
+    "type-fest": "^3.10.0",
     "vue": "^3.2.47",
     "vue-multiselect": "^3.0.0-beta.1",
     "vue-router": "^4.1.6",
@@ -86,7 +86,7 @@
     "pug": "^3.0.2",
     "sass": "1.62.1",
     "typescript": "^5.0.4",
-    "vite": "^4.3.4"
+    "vite": "^4.3.5"
   },
   "types": "types"
 }
