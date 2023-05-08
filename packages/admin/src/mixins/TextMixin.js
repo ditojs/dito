@@ -9,7 +9,7 @@ export default {
     })
   },
 
-  processValue(schema, value) {
+  parseValue(schema, value) {
     return schema.trim && value != null ? value.trim() : value
   }
 }
