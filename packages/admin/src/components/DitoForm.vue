@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import { clone, capitalize, parseDataPath, merge } from '@ditojs/utils'
+import { clone, capitalize, parseDataPath, assignDeeply } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
@@ -99,7 +99,7 @@ export default DitoComponent.component('DitoForm', {
 
     buttonSchemas() {
       return getButtonSchemas(
-        merge(
+        assignDeeply(
           {
             cancel: {
               type: 'button',

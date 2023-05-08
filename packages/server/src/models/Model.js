@@ -6,12 +6,12 @@ import {
   isFunction,
   isPromise,
   asArray,
-  merge,
   flatten,
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
-  mapConcurrently
+  mapConcurrently,
+  assignDeeply
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { EventEmitter, KnexHelper } from '../lib/index.js'
@@ -391,7 +391,7 @@ export class Model extends objection.Model {
         })
         addRelationSchemas(this, schema.properties)
         // Merge in root-level schema additions
-        merge(schema, this.definition.schema)
+        assignDeeply(schema, this.definition.schema)
         return {
           $id: this.name,
           ...schema

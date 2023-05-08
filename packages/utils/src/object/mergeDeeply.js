@@ -10,7 +10,9 @@ export function mergeDeeply(target, ...sources) {
 }
 
 export function merge(...args) {
-  deprecate('merge() is deprecated, use mergeDeeply() instead.')
+  deprecate(
+    'merge() is deprecated, use assignDeeply() or mergeDeeply() instead.'
+  )
   return mergeDeeply(...args)
 }
 

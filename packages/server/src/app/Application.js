@@ -26,7 +26,7 @@ import {
   isModule,
   hyphenate,
   clone,
-  merge,
+  assignDeeply,
   parseDataPath,
   normalizeDataPath,
   toPromiseCallback,
@@ -86,8 +86,8 @@ export class Application extends Koa {
         log === false || log?.silent || process.env.DITO_SILENT
           ? {}
           : getOptions(log),
-      assets: merge(defaultAssetOptions, getOptions(assets)),
-      logger: merge(defaultLoggerOptions, getOptions(logger)),
+      assets: assignDeeply(defaultAssetOptions, getOptions(assets)),
+      logger: assignDeeply(defaultLoggerOptions, getOptions(logger)),
       ...rest
     }
     this.keys = keys
@@ -586,7 +586,7 @@ export class Application extends Koa {
     if (app.compress !== false) {
       this.use(
         compress(
-          merge(
+          assignDeeply(
             {
               // Use a reasonable default for Brotli compression.
               // See https://github.com/koajs/compress/issues/126

@@ -22,7 +22,7 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui/src'
-import { isDate, merge } from '@ditojs/utils'
+import { isDate, assignDeeply } from '@ditojs/utils'
 
 export default DitoTypeComponent.register(
   ['date', 'datetime', 'time'],
@@ -53,7 +53,7 @@ export default DitoTypeComponent.register(
         type: Object,
         default: null,
         get(formats) {
-          const { date, time } = merge({}, this.api.formats, formats)
+          const { date, time } = assignDeeply({}, this.api.formats, formats)
           return {
             date: ['date', 'datetime'].includes(this.type) ? date : null,
             time: ['time', 'datetime'].includes(this.type) ? time : null

@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { format, defaultFormats, merge } from '@ditojs/utils'
+import { format, defaultFormats, assignDeeply } from '@ditojs/utils'
 import InputField from './InputField.vue'
 import DatePicker from './DatePicker.vue'
 import TimePicker from './TimePicker.vue'
@@ -94,7 +94,7 @@ export default {
     },
 
     formatOptions() {
-      return merge(
+      return assignDeeply(
         {
           locale: this.locale,
           time: defaultFormats.time,

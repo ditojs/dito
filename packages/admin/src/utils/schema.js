@@ -14,8 +14,8 @@ import {
   isModule,
   asArray,
   clone,
-  merge,
   camelize,
+  assignDeeply,
   mapConcurrently,
   getValueAtDataPath
 } from '@ditojs/utils'
@@ -321,7 +321,7 @@ export function processSchemaDefaults(api, schema) {
         if (schema[key] === undefined) {
           schema[key] = value
         } else {
-          schema[key] = merge(value, schema[key])
+          schema[key] = assignDeeply(value, schema[key])
         }
       }
     }

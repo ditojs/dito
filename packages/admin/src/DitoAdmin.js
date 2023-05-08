@@ -4,7 +4,7 @@ import VueNotifications from '@kyvg/vue3-notification'
 import {
   isString,
   isAbsoluteUrl,
-  merge,
+  assignDeeply,
   hyphenate,
   camelize,
   defaultFormats,
@@ -31,12 +31,12 @@ export default class DitoAdmin {
     // Merge in `api` settings as passed from `config.admin` and through the
     // `AdminController` with `api` values from from 'admin/index.js'
     // NOTE: `AdminController` provides `dito.api.base`
-    this.api = api = merge({ base: '/' }, dito.api, api)
+    this.api = api = assignDeeply({ base: '/' }, dito.api, api)
     this.options = options
 
     // Setup default api settings:
     api.locale ||= 'en-US'
-    api.formats = merge({}, defaultFormats, api.formats)
+    api.formats = assignDeeply({}, defaultFormats, api.formats)
     api.request ||= options => request(api, options)
     api.getApiUrl ||= options => getApiUrl(api, options)
     api.isApiUrl ||= url => isApiUrl(api, url)

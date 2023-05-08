@@ -5,7 +5,7 @@ import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { viteCommonjs as createCommonJsPlugin } from '@originjs/vite-plugin-commonjs'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { merge, deprecate } from '@ditojs/utils'
+import { assignDeeply, deprecate } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
@@ -179,7 +179,7 @@ export class AdminController extends Controller {
     const views = path.join(root, 'views')
 
     return defineConfig(
-      merge(
+      assignDeeply(
         {
           root,
           base,
