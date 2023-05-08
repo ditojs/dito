@@ -1,26 +1,26 @@
-import { merge } from './merge.js'
+import { mergeDeeply, assignDeeply } from './mergeDeeply.js'
 
-describe('merge()', () => {
+describe('mergeDeeply()', () => {
   it('should merge nested objects', () => {
     const source1 = { a: { b: [] } }
     const source2 = { a: { c: [] } }
     const expected = { a: { b: [], c: [] } }
-    expect(merge({}, source1, source2)).toStrictEqual(expected)
-    expect(merge({}, source2, source1)).toStrictEqual(expected)
+    expect(mergeDeeply({}, source1, source2)).toStrictEqual(expected)
+    expect(mergeDeeply({}, source2, source1)).toStrictEqual(expected)
   })
 
   it('should override keys in target with different types', () => {
     const source1 = { a: { b: 1 } }
     const source2 = { a: { b: [] } }
-    expect(merge({}, source1, source2)).toStrictEqual(source2)
-    expect(merge({}, source2, source1)).toStrictEqual(source1)
+    expect(mergeDeeply({}, source1, source2)).toStrictEqual(source2)
+    expect(mergeDeeply({}, source2, source1)).toStrictEqual(source1)
   })
 
   it('should merge objects at the same indices inside arrays', () => {
     const source1 = [{ a: 1 }, { b: 2 }]
     const source2 = [{ c: 3 }, { d: 4 }]
     const expected = [{ a: 1, c: 3 }, { b: 2, d: 4 }]
-    expect(merge([], source1, source2)).toStrictEqual(expected)
+    expect(mergeDeeply([], source1, source2)).toStrictEqual(expected)
   })
 
   it('should merge `source` into `object`', () => {
@@ -52,26 +52,26 @@ describe('merge()', () => {
       ]
     }
 
-    expect(merge(names, ages, heights)).toEqual(expected)
+    expect(mergeDeeply(names, ages, heights)).toEqual(expected)
   })
 
   it('should handle plain values', () => {
-    expect(merge(true, false)).toEqual(false)
-    expect(merge(10, 0)).toEqual(0)
-    expect(merge(0, 10)).toEqual(10)
-    expect(merge('foo', 'bar')).toEqual('bar')
+    expect(mergeDeeply(true, false)).toEqual(false)
+    expect(mergeDeeply(10, 0)).toEqual(0)
+    expect(mergeDeeply(0, 10)).toEqual(10)
+    expect(mergeDeeply('foo', 'bar')).toEqual('bar')
   })
 
   it('should not override values with nullish values at root level', () => {
-    expect(merge({}, null)).toEqual({})
-    expect(merge([], null)).toEqual([])
-    expect(merge(10, null)).toEqual(10)
-    expect(merge(false, null)).toEqual(false)
+    expect(mergeDeeply({}, null)).toEqual({})
+    expect(mergeDeeply([], null)).toEqual([])
+    expect(mergeDeeply(10, null)).toEqual(10)
+    expect(mergeDeeply(false, null)).toEqual(false)
   })
 
   it('should work with multiple arguments', () => {
     const expected = { a: 4 }
-    const actual = merge({ a: 1 }, { a: 2 }, { a: 3 }, expected)
+    const actual = mergeDeeply({ a: 1 }, { a: 2 }, { a: 3 }, expected)
 
     expect(actual).toStrictEqual(expected)
   })
@@ -79,7 +79,7 @@ describe('merge()', () => {
   it('should not augment source objects', () => {
     const source1 = { a: [{ a: 1 }] }
     const source2 = { a: [{ b: 2 }] }
-    const actual1 = merge({}, source1, source2)
+    const actual1 = mergeDeeply({}, source1, source2)
 
     expect(source1.a).toStrictEqual([{ a: 1 }])
     expect(source2.a).toStrictEqual([{ b: 2 }])
@@ -87,7 +87,7 @@ describe('merge()', () => {
 
     const source3 = { a: [[1, 2, 3]] }
     const source4 = { a: [[4, 5]] }
-    const actual2 = merge({}, source3, source4)
+    const actual2 = mergeDeeply({}, source3, source4)
 
     expect(source3.a).toStrictEqual([[1, 2, 3]])
     expect(source4.a).toStrictEqual([[4, 5]])
@@ -95,33 +95,31 @@ describe('merge()', () => {
   })
 
   it('should overwrite existing values with `undefined` in objects', () => {
-    const actual = merge({ a: 1 }, { a: undefined, b: undefined })
-    expect(actual).toStrictEqual({ a: undefined, b: undefined })
+    const result = mergeDeeply({ a: 1 }, { a: undefined, b: undefined })
+    expect(result).toStrictEqual({ a: undefined, b: undefined })
   })
 
   it('should not overwrite existing values with `undefined` in arrays', () => {
-    const array1 = [1, undefined, 3]
-    const actual1 = merge([4, 5, 6], array1)
-    expect(actual1).toStrictEqual([4, 5, 6, 1, undefined, 3])
+    const result1 = mergeDeeply([4, 5, 6], [1, undefined, 3])
+    expect(result1).toStrictEqual([4, 5, 6, 1, undefined, 3])
 
     // eslint-disable-next-line no-sparse-arrays
-    const array2 = [1, , 3]
-    const actual2 = merge([4, 5, 6], array2)
-    expect(actual2).toStrictEqual([4, 5, 6, 1, 3])
+    const result2 = mergeDeeply([4, 5, 6], [1, , 3])
+    expect(result2).toStrictEqual([4, 5, 6, 1, 3])
   })
 
   it('should merge regexps', () => {
     const source1 = { a: /1/ }
     const source2 = { a: /2/ }
     const expected = { a: /2/ }
-    expect(merge({}, source1, source2)).toStrictEqual(expected)
+    expect(mergeDeeply({}, source1, source2)).toStrictEqual(expected)
   })
 
   it('should merge dates', () => {
     const source1 = { a: new Date(2012, 5, 9) }
     const source2 = { a: new Date(2021, 5, 9) }
     const expected = { a: new Date(2021, 5, 9) }
-    expect(merge({}, source1, source2)).toStrictEqual(expected)
+    expect(mergeDeeply({}, source1, source2)).toStrictEqual(expected)
   })
 
   it('should be fine with nested promises', async () => {
@@ -130,9 +128,25 @@ describe('merge()', () => {
     const source1 = { nested: { promise1 } }
     const source2 = { nested: { promise2 } }
     const expected = { nested: { promise1, promise2 } }
-    const result = merge({}, source1, source2)
+    const result = mergeDeeply({}, source1, source2)
     expect(result).toStrictEqual(expected)
     expect(await result.nested.promise1).toStrictEqual(1)
     expect(await result.nested.promise2).toStrictEqual(2)
+  })
+})
+
+describe('assignDeeply()', () => {
+  it('should not concat-merge arrays', () => {
+    const result = assignDeeply({}, { a: [[1, 2, 3]] }, { a: [[4, 5]] })
+    expect(result).toStrictEqual({ a: [[4, 5, 3]] })
+  })
+
+  it('should overwrite existing values with `undefined` in arrays', () => {
+    const result1 = assignDeeply([4, 5, 6], [1, undefined, 3])
+    expect(result1).toStrictEqual([1, undefined, 3])
+
+    // eslint-disable-next-line no-sparse-arrays
+    const result2 = assignDeeply([4, 5, 6], [1, , 3])
+    expect(result2).toStrictEqual([1, 5, 3])
   })
 })

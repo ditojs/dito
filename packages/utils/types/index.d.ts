@@ -148,27 +148,49 @@ export function groupBy<T, K extends string | number | symbol>(
   callback: (item: T) => K
 ): Record<K, T[]>
 
-// TODO: document merge
-export function merge<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
-export function merge<ArgA, ArgB, ArgC>(
+// TODO: document mergeDeeply
+export function mergeDeeply<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
+export function mergeDeeply<ArgA, ArgB, ArgC>(
   a: ArgA,
   b: ArgB,
   c: ArgC
 ): ArgA & ArgB & ArgC
-export function merge<ArgA, ArgB, ArgC, ArgD>(
+export function mergeDeeply<ArgA, ArgB, ArgC, ArgD>(
   a: ArgA,
   b: ArgB,
   c: ArgC,
   d: ArgD
 ): ArgA & ArgB & ArgC & ArgD
-export function merge<ArgA, ArgB, ArgC, ArgD, ArgE>(
+export function mergeDeeply<ArgA, ArgB, ArgC, ArgD, ArgE>(
   a: ArgA,
   b: ArgB,
   c: ArgC,
   d: ArgD,
   e: ArgE
 ): ArgA & ArgB & ArgC & ArgD & ArgE
-export function merge(...args: any[]): any
+export function mergeDeeply(...args: any[]): any
+
+// TODO: document assignDeeply
+export function assignDeeply<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
+export function assignDeeply<ArgA, ArgB, ArgC>(
+  a: ArgA,
+  b: ArgB,
+  c: ArgC
+): ArgA & ArgB & ArgC
+export function assignDeeply<ArgA, ArgB, ArgC, ArgD>(
+  a: ArgA,
+  b: ArgB,
+  c: ArgC,
+  d: ArgD
+): ArgA & ArgB & ArgC & ArgD
+export function assignDeeply<ArgA, ArgB, ArgC, ArgD, ArgE>(
+  a: ArgA,
+  b: ArgB,
+  c: ArgC,
+  d: ArgD,
+  e: ArgE
+): ArgA & ArgB & ArgC & ArgD & ArgE
+export function assignDeeply(...args: any[]): any
 
 /**
  * Returns the first argument which is not undefined.
