@@ -48,26 +48,36 @@ export default {
 
     value: {
       get() {
-        const value = computeValue(
+        let value = computeValue(
           this.schema,
           this.data,
           this.name,
           this.dataPath,
           { component: this }
         )
+        const { formatValue } = this.$options
+        if (formatValue) {
+          value = formatValue(this.schema, value, this.dataPath)
+        }
         const { format } = this.schema
-        return format
-          ? format(new DitoContext(this, { value }))
-          : value
+        if (format) {
+          value = format(new DitoContext(this, { value }))
+        }
+        return value
       },
 
       set(value) {
+        const { parseValue } = this.$options
+        if (parseValue) {
+          value = parseValue(this.schema, value, this.dataPath)
+        }
         const { parse } = this.schema
-        this.parsedValue = parse
-          ? parse(new DitoContext(this, { value }))
-          : value
+        if (parse) {
+          value = parse(new DitoContext(this, { value }))
+        }
         // eslint-disable-next-line vue/no-mutating-props
-        this.data[this.name] = this.parsedValue
+        this.data[this.name] = value
+        this.parsedValue = value
         this.changedValue = undefined
       }
     },

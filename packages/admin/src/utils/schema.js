@@ -765,7 +765,14 @@ export function processData(schema, sourceSchema, data, dataPath, {
       value = value.map(object => object[wrapPrimitives])
     }
 
-    // Handle the user's `process()` callback first, if one is provided, so that
+    // Each component type can provide its own static `processValue()` method
+    // to convert the data for storage.
+    const processValue = typeOptions?.processValue
+    if (processValue) {
+      value = processValue(schema, value, dataPath, graph)
+    }
+
+    // Handle the user's `process()` callback next, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
     if (process) {
       value = process(getContext())
@@ -779,12 +786,6 @@ export function processData(schema, sourceSchema, data, dataPath, {
     ) {
       delete processedData[name]
     } else {
-      // Each component type can provide its own static `processValue()` method
-      // to convert the data for storage.
-      const processValue = typeOptions?.processValue
-      if (processValue) {
-        value = processValue(schema, value, dataPath, graph)
-      }
       processedData[name] = value
     }
   }

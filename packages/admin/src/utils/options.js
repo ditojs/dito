@@ -37,6 +37,8 @@ const ditoOptionKeys = [
   'excludeValue',
   'ignoreMissingValue',
   'omitPadding',
+  'formatValue',
+  'parseValue',
   'processValue',
   'processSchema',
   'getPanelSchema',
