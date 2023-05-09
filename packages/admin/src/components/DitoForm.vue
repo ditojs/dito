@@ -17,6 +17,14 @@
     :is="isNestedRoute ? 'div' : 'form'"
     @submit.prevent
   )
+    //- Prevent implicit submission of the form, for example when typing enter
+    //- in an input field.
+    //- https://stackoverflow.com/a/51507806
+    button(
+      v-show="false"
+      type="submit"
+      disabled
+    )
     DitoSchema(
       :schema="schema"
       :dataPath="dataPath"
@@ -37,14 +45,6 @@
           :store="store"
           :disabled="isLoading"
         )
-    //- Prevent implicit submission of the form, for example when typing enter
-    //- in an input field.
-    //- https://stackoverflow.com/a/51507806
-    button(
-      v-show="false"
-      type="submit"
-      disabled
-    )
 </template>
 
 <script>
