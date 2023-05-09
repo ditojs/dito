@@ -7,9 +7,7 @@
   :style="{ '--width': `${settings.width}px` }"
   @mouseup="onMouseUp"
 )
-  UseFocusTrap.dito-dialog__focus-trap(
-    :options="{ immediate: true, fallbackFocus: () => $refs.dialog }"
-  )
+  UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
     form.dito-scroll-parent(
       @submit.prevent="submit"
     )
@@ -102,6 +100,14 @@ export default DitoComponent.component('DitoDialog', {
           }
         )
       )
+    },
+
+    focusTrapOptions() {
+      return {
+        immediate: true,
+        fallbackFocus: () => this.$refs.dialog,
+        onDeactivate: this.cancel
+      }
     },
 
     hasButtons() {
