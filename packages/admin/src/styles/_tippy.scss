@@ -3,6 +3,11 @@
 @import 'tippy.js/animations/shift-away-subtle.css';
 
 .tippy-box {
+  .tippy-content,
+  .tippy-arrow {
+    z-index: $z-index-tippy;
+  }
+
   &[data-theme] {
     --color: #{$color-active};
 

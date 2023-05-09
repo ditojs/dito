@@ -104,14 +104,14 @@ export default DitoComponent.component('DitoRoot', {
 
     tippyDelegate(this.$el, {
       target: '.dito-info',
+      theme: 'info',
+      appendTo: 'parent',
+      animation: 'shift-away-subtle',
+      interactive: true,
+      delay: 250,
+      zIndex: '',
       onCreate(instance) {
         instance.setContent(instance.reference.dataset.info)
-        instance.setProps({
-          theme: 'info',
-          interactive: true,
-          animation: 'shift-away-subtle',
-          delay: 250
-        })
       }
     })
 
@@ -506,7 +506,7 @@ function addRoutes(router, routes) {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: $drag-overlay-z-index;
+  z-index: $z-index-drag-overlay;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.25);
@@ -519,7 +519,7 @@ function addRoutes(router, routes) {
 
   background: $content-color-background;
   border-radius: $border-radius;
-  z-index: $drag-overlay-z-index + 1;
+  z-index: $z-index-drag-overlay + 1;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, var(--shadow-alpha)));
 }
 

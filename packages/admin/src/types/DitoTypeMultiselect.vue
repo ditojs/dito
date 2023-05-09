@@ -443,6 +443,7 @@ $tag-line-height: 1em;
     }
 
     &__content-wrapper {
+      z-index: $z-index-popup;
       border-color: $color-active;
     }
 

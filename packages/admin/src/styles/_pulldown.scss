@@ -4,7 +4,7 @@ ul.dito-pulldown {
   display: none;
   position: absolute;
   top: 0;
-  z-index: 1000;
+  z-index: $z-index-popup;
   border-radius: $pulldown-radius;
   box-shadow: $shadow-window;
   overflow: hidden;

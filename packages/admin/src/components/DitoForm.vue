@@ -24,7 +24,7 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
-      scrollable
+      :scrollable="!isNestedRoute"
       headerInMenu
       generateLabels
     )

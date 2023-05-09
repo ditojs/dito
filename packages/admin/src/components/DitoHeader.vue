@@ -81,7 +81,7 @@ export default DitoComponent.component('DitoHeader', {
   background: $color-black;
   font-size: $header-font-size;
   line-height: $header-line-height;
-  z-index: $header-z-index;
+  z-index: $z-index-header;
   @include user-select(none);
 
   &::after {

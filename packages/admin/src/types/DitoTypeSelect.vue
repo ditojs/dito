@@ -91,7 +91,7 @@ $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
     flex: 1;
     position: relative;
 
-    &::after {
+    &::before {
       @include arrow($select-arrow-size);
 
       position: absolute;

@@ -811,7 +811,7 @@ export default DitoComponent.component('DitoSchema', {
     top: 0;
     left: 0;
     right: 0;
-    z-index: $header-z-index;
+    z-index: $z-index-header;
     // Turn off pointer events so that DitoTrail keeps receiving events...
     pointer-events: none;
     // ...but allow interaction with the tabs and buttons (e.g. clipboard)

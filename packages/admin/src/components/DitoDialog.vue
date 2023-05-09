@@ -172,7 +172,7 @@ export default DitoComponent.component('DitoDialog', {
   position: fixed;
   display: flex;
   inset: 0;
-  z-index: 2000;
+  z-index: $z-index-dialog;
   padding: $content-padding;
   align-items: center;
   justify-content: center;

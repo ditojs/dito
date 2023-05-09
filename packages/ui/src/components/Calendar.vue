@@ -401,7 +401,7 @@ function getLocaleNames(locale) {
   border-radius: $border-radius;
   background: $color-white;
   box-shadow: $shadow-window;
-  z-index: 1000;
+  z-index: $z-index-popup;
 }
 
 .dito-calendar-body {

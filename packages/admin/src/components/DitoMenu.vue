@@ -109,7 +109,7 @@ export default DitoComponent.component('DitoMenu', {
           display: block;
           position: absolute;
           width: var(--width);
-          z-index: $header-z-index;
+          z-index: $z-index-header;
           transform: translateX(calc(var(--width) + 2 * $menu-spacing))
             translateY(-$item-height);
 

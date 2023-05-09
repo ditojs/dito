@@ -39,6 +39,9 @@ $color-placeholder: $color-grey;
 $color-disabled: $color-grey;
 $color-shadow: rgba($color-black, 0.25);
 
+// Z-Indices
+$z-index-popup: 1000;
+
 // Borders
 $border-radius: 4px;
 $border-color: $color-light;
