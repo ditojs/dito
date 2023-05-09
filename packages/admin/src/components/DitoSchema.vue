@@ -475,12 +475,14 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     repositionErrors() {
-      // Force repositioning of error tooltips, as otherwise they
-      // sometimes don't show up in the right place initially when
-      // changing tabs
-      const scrollParent = this.$refs.content.closest('.dito-scroll')
-      scrollParent.scrollTop++
-      scrollParent.scrollTop--
+      // Fire a fake scroll event to force the repositioning of error tooltips,
+      // as otherwise they sometimes don't show up in the right place initially
+      // when changing tabs.
+      const scrollContainer = this.$refs.content.closest('.dito-scroll')
+      const dispatch = () => scrollContainer.dispatchEvent(new Event('scroll'))
+      dispatch()
+      // This is required to handle `&--label-vertical` based layout changes.
+      setTimeout(dispatch, 0)
     },
 
     focus() {

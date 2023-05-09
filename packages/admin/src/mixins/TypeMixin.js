@@ -3,7 +3,7 @@ import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { computeValue } from '../utils/schema.js'
 import { getItem, getParentItem } from '../utils/data.js'
-import { camelize } from '@ditojs/utils'
+import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -251,9 +251,7 @@ export default {
     // @overridable
     async scrollIntoView() {
       await this.focusSchema()
-      let { element = this } = this.$refs
-      element = element.scrollIntoView ? element : element.$el
-      element.scrollIntoView?.({
+      this.getFocusElement()?.scrollIntoView?.({
         behavior: 'smooth',
         block: 'center'
       })
@@ -261,16 +259,17 @@ export default {
 
     // @overridable
     focusElement() {
-      let { element = this } = this.$refs
-      element = element.focus ? element : element.$el
-      element.focus?.()
+      this.getFocusElement()?.focus?.()
     },
 
     // @overridable
     blurElement() {
-      let { element = this } = this.$refs
-      element = element.blur ? element : element.$el
-      element.blur?.()
+      this.getFocusElement()?.blur?.()
+    },
+
+    getFocusElement() {
+      const element = asArray(this.$refs.element)[0] ?? this
+      return element.$el ?? element
     },
 
     async focusSchema() {
