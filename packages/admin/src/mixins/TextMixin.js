@@ -1,4 +1,5 @@
 import { isString } from '@ditojs/utils'
+import { getDefaultValue } from '../utils/schema.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
@@ -15,6 +16,9 @@ export default {
       // Text fields don't necessarily have a `String` value when `format()`
       // without `parse()` is used.
       value = value.trim()
+    }
+    if (value === '') {
+      value = getDefaultValue(schema)
     }
     return value
   }
