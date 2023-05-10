@@ -85,13 +85,10 @@ export default DitoComponent.component('DitoHeader', {
   @include user-select(none);
 
   &::after {
-    // Cover the gaps between the different headers that might appear due to
-    // layout rounding imprecisions.
+    // Set the full-width header background to the header color.
     content: '';
-    top: 0;
-    bottom: 0;
-    left: calc(100% - 1px);
-    width: 2px;
+    inset: 0;
+    width: 100vw;
     position: absolute;
     background: inherit;
     z-index: -1;

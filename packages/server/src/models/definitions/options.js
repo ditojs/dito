@@ -1,5 +1,5 @@
 import { mergeReversed } from '../../utils/object.js'
 
-export default function hooks(values) {
+export default function options(values) {
   return mergeReversed(values)
 }

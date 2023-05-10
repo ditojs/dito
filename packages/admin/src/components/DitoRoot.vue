@@ -37,8 +37,6 @@
     )
       span Login
   .dito-fill
-    .dito-header
-      span
 </template>
 
 <script>
@@ -478,6 +476,7 @@ function addRoutes(router, routes) {
   flex: 0 1 var(--max-page-width);
   background: $content-color-background;
   max-width: var(--max-page-width);
+  overflow: visible; // For .dito-header full-width background.
   // For the `@container` rule in `.dito-container` to work:
   container-type: inline-size;
 
