@@ -149,7 +149,7 @@ export default DitoComponent.component('DitoPane', {
         for (const index of row) {
           const position = this.positions[index]
           if (
-            position?.height > 3 &&
+            position?.height > 2 &&
             position.node.querySelector(':scope > .dito-label')
           ) {
             // TODO: Handle nested schemas, e.g. 'section' or 'object' and

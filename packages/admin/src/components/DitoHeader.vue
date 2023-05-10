@@ -172,5 +172,20 @@ export default DitoComponent.component('DitoHeader', {
       border-radius: 100%;
     }
   }
+
+  &__teleport {
+    // Align the teleported schema headers on top of to the header menu.
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 $header-padding-hor;
+    // Turn off pointer events so that DitoTrail keeps receiving events...
+    pointer-events: none;
+    // ...but move them to the children.
+    > * {
+      pointer-events: auto;
+    }
+  }
 }
 </style>

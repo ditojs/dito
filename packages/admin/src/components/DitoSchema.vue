@@ -23,9 +23,7 @@ slot(name="before")
       to=".dito-header__teleport"
       :disabled="!headerInMenu"
     )
-      .dito-schema-header(
-        :class="{ 'dito-schema-header--menu': headerInMenu }"
-      )
+      .dito-schema-header
         DitoLabel(
           v-if="hasLabel"
           :label="label"
@@ -802,27 +800,6 @@ export default DitoComponent.component('DitoSchema', {
 
     .dito-button {
       margin: 0 0 $tab-margin $tab-margin;
-    }
-  }
-
-  &--menu {
-    // Align the tabs on top of to the header menu.
-    position: absolute;
-    height: $header-height;
-    padding: 0 $header-padding-hor;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: $z-index-header;
-    // Turn off pointer events so that DitoTrail keeps receiving events...
-    pointer-events: none;
-    // ...but allow interaction with the tabs and buttons (e.g. clipboard)
-    // layered on top of DitoTrail.
-    .dito-tabs,
-    .dito-buttons {
-      pointer-events: auto;
-      line-height: $header-line-height;
-      font-size: $header-font-size;
     }
   }
 }
