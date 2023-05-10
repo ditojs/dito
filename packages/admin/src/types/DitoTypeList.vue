@@ -107,15 +107,16 @@
           v-if="hasCellEditButtons"
         )
           DitoEditButtons(
-            :deletable="deletable"
-            :draggable="draggable"
-            :editable="editable"
-            :editPath="getEditPath(item, index)"
             :schema="getItemFormSchema(schema, item, context)"
             :dataPath="getDataPath(index)"
             :data="item"
             :meta="nestedMeta"
             :store="getItemStore(schema, item, index)"
+            :disabled="disabled || isLoading"
+            :deletable="deletable"
+            :draggable="draggable"
+            :editable="editable"
+            :editPath="getEditPath(item, index)"
             @delete="deleteItem(item, index)"
           )
     //- Render create buttons inside table when not in a single component view:

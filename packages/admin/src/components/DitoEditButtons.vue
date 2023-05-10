@@ -30,6 +30,7 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
   button.dito-button(
     v-if="hasDeletable"
     type="button"
+    :disabled="!isFormDeletable"
     v-bind="getButtonAttributes(verbs.delete)"
     @click="$emit('delete')"
   )
@@ -44,18 +45,19 @@ export default DitoComponent.component('DitoEditButtons', {
   emits: ['delete'],
 
   props: {
-    draggable: { type: Boolean, default: false },
-    editable: { type: Boolean, default: false },
-    creatable: { type: Boolean, default: false },
-    deletable: { type: Boolean, default: false },
-    editPath: { type: String, default: null },
-    createPath: { type: String, default: null },
     buttons: { type: Object, default: null },
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },
-    store: { type: Object, required: true }
+    store: { type: Object, required: true },
+    disabled: { type: Boolean, required: true },
+    draggable: { type: Boolean, default: false },
+    editable: { type: Boolean, default: false },
+    creatable: { type: Boolean, default: false },
+    deletable: { type: Boolean, default: false },
+    editPath: { type: String, default: null },
+    createPath: { type: String, default: null }
   },
 
   computed: {
@@ -77,6 +79,10 @@ export default DitoComponent.component('DitoEditButtons', {
 
     hasDeletable() {
       return this.hasOption('deletable')
+    },
+
+    isFormDeletable() {
+      return this.schema.deletable !== false
     },
 
     createButtonText() {

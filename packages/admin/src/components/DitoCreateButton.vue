@@ -5,8 +5,7 @@
   )
     button.dito-button(
       type="button"
-      :class="`dito-button-${verb}`"
-      :title="labelize(verb)"
+      v-bind="getButtonAttributes(verb)"
       @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
     ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
@@ -14,17 +13,16 @@
         v-for="(form, type) in forms"
       )
         a(
-          v-if="shouldRenderSchema(form)"
-          v-show="shouldShow(form)"
+          v-if="isFormCreatable(form)"
+          v-show="shouldShowSchema(form)"
           :class="getFormClass(form, type)"
           @mousedown.stop="onPulldownMouseDown(type)"
           @mouseup="onPulldownMouseUp(type)"
         ) {{ getLabel(form) }}
   button.dito-button(
-    v-else
+    v-else-if="isFormCreatable(forms.default)"
     :type="isInlined ? 'button' : 'submit'"
-    :class="`dito-button-${verb}`"
-    :title="labelize(verb)"
+    v-bind="getButtonAttributes(verb)"
     @click="createItem(forms.default)"
   ) {{ text }}
 </template>
@@ -55,13 +53,23 @@ export default DitoComponent.component('DitoCreateButton', {
     },
 
     showPulldown() {
-      return Object.keys(this.forms).length > 1 || !this.forms.default
+      const forms = Object.values(this.forms)
+      return (
+        (forms.length > 1 || !this.forms.default) &&
+        forms.some(this.isFormCreatable)
+      )
     }
   },
 
   methods: {
+    isFormCreatable(form) {
+      // Forms can be excluded from the list by providing `if: false` or
+      // `creatable: false`.
+      return form.creatable !== false && this.shouldRenderSchema(form)
+    },
+
     createItem(form, type = null) {
-      if (this.shouldRenderSchema(form) && !this.shouldDisable(form)) {
+      if (this.isFormCreatable(form) && !this.shouldDisableSchema(form)) {
         if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {
@@ -78,7 +86,7 @@ export default DitoComponent.component('DitoCreateButton', {
     getFormClass(form, type) {
       return {
         [`dito-type-${type}`]: true,
-        'dito-disabled': this.shouldDisable(form)
+        'dito-disabled': this.shouldDisableSchema(form)
       }
     },
 

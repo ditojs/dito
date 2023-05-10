@@ -288,7 +288,7 @@ export default {
       return shouldRenderSchema(schema, this.context)
     },
 
-    shouldShow(schema = null) {
+    shouldShowSchema(schema = null) {
       return this.getSchemaValue('visible', {
         type: Boolean,
         default: true,
@@ -296,7 +296,7 @@ export default {
       })
     },
 
-    shouldDisable(schema = null) {
+    shouldDisableSchema(schema = null) {
       return this.getSchemaValue('disabled', {
         type: Boolean,
         default: false,
