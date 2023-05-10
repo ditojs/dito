@@ -74,23 +74,31 @@ export default DitoComponent.component('DitoSchemaInlined', {
 
 .dito-schema-inlined {
   > .dito-schema-content {
+    > .dito-pane {
+      padding: 0;
+    }
+
     > .dito-schema-header {
-      // Change spacing so .dito-label covers the full .dito-schema-header.
-      margin: -$form-spacing;
+      justify-content: space-between;
+      position: relative;
+
+      > *:not(:first-child) {
+        // Move all elements except the first one to the right.
+        margin-left: $form-spacing-half;
+      }
 
       .dito-label {
-        // Add removed $form-spacing again.
-        margin: $form-spacing;
         width: 100%;
-        box-sizing: content-box;
+        margin: 0;
         // Prevent collapsing to min-height when alone in
         // .dito-schema-content, due to grid-template-rows: min-content
         min-height: $input-height;
       }
     }
 
-    > .dito-pane {
-      padding: 0;
+    &:has(> .dito-schema-header) > .dito-pane {
+      // Clear top-margin if the components are preceded by a schema header
+      margin-top: 0;
     }
   }
 }

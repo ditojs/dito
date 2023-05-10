@@ -19,9 +19,9 @@ slot(name="before")
     :class="{ 'dito-scroll': scrollable }"
   )
     Teleport(
-      v-if="hasLabel || hasTabs || clipboard"
+      v-if="hasHeader"
       to=".dito-header__teleport"
-      :disabled="!headerInMenu"
+      :disabled="!isRootSchema"
     )
       .dito-schema-header
         DitoLabel(
@@ -32,22 +32,17 @@ slot(name="before")
           :collapsed="!opened"
           @expand="onExpand"
         )
-          //- Pass edit-buttons through to dito-label's own edit-buttons slot:
-          template(
-            v-if="inlined"
-            #edit-buttons
-          )
-            slot(name="edit-buttons")
         DitoTabs(
           v-if="tabs"
+          v-model="selectedTab"
           :tabs="tabs"
-          :selectedTab="selectedTab"
         )
         DitoClipboard(
           :clipboard="clipboard"
           :dataPath="dataPath"
           :data="data"
         )
+        slot(name="edit-buttons")
     template(
       v-if="hasTabs"
     )
@@ -85,13 +80,10 @@ slot(name="before")
       v-if="!inlined && isPopulated"
       name="buttons"
     )
-  template(
-    v-if="inlined"
+  slot(
+    v-if="inlined && !hasHeader"
+    name="edit-buttons"
   )
-    slot(
-      v-if="!hasLabel"
-      name="edit-buttons"
-    )
 slot(name="after")
 </template>
 
@@ -101,6 +93,7 @@ import {
   isArray,
   isFunction,
   isRegExp,
+  equals,
   parseDataPath,
   normalizeDataPath,
   labelize
@@ -146,7 +139,6 @@ export default DitoComponent.component('DitoSchema', {
     collapsible: { type: Boolean, default: false },
     scrollable: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
-    headerInMenu: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
     accumulatedBasis: { type: Number, default: 1 }
   },
@@ -188,25 +180,25 @@ export default DitoComponent.component('DitoSchema', {
       return getNamedSchemas(this.schema.tabs)
     },
 
-    selectedTab() {
-      return this.currentTab || this.defaultTab?.name || null
+    selectedTab: {
+      get() {
+        return this.currentTab || this.defaultTab || null
+      },
+
+      set(selectedTab) {
+        this.currentTab = selectedTab
+      }
     },
 
     defaultTab() {
       let first = null
       if (this.tabs) {
-        for (const tab of Object.values(this.tabs)) {
-          const { defaultTab } = tab
-          if (
-            isFunction(defaultTab)
-              ? defaultTab(this.context)
-              : defaultTab
-          ) {
-            return tab
+        const tabs = Object.values(this.tabs).filter(this.shouldRenderSchema)
+        for (const { name, defaultTab } of tabs) {
+          if (isFunction(defaultTab) ? defaultTab(this.context) : defaultTab) {
+            return name
           }
-          if (!first) {
-            first = tab
-          }
+          first ??= name
         }
       }
       return first
@@ -214,6 +206,10 @@ export default DitoComponent.component('DitoSchema', {
 
     clipboard() {
       return this.schema?.clipboard
+    },
+
+    hasHeader() {
+      return this.hasLabel || this.hasTabs || !!this.clipboard
     },
 
     parentData() {
@@ -264,6 +260,11 @@ export default DitoComponent.component('DitoSchema', {
       )
     },
 
+    isRootSchema() {
+      // Section schemas can share the root dataPath but they are inlined.
+      return this.dataPath === '' && !this.inlined
+    },
+
     isDirty() {
       return this.someComponent(it => it.isDirty)
     },
@@ -293,7 +294,11 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     hasTabs() {
-      return !this.inlined && !!this.tabs
+      return !!this.tabs
+    },
+
+    hasMainTabs() {
+      return this.hasTabs && this.isRootSchema
     },
 
     hasMainPane() {
@@ -346,27 +351,21 @@ export default DitoComponent.component('DitoSchema', {
         // Remember the current path to know if tab changes should still be
         // handled, but remove the trailing `/create` or `/:id` from it so that
         // tabs informs that stay open after creation still work.
-        if (this.hasTabs) {
+        if (this.hasMainTabs) {
           this.currentTab = hash?.slice(1) || null
-          if (this.hasErrors) {
-            this.repositionErrors()
-          }
         }
       }
     },
 
     'selectedTab'(selectedTab) {
-      if (this.hasTabs) {
-        let tab = null
-        if (selectedTab !== this.currentTab) {
-          // Any tab change needs to be reflected in the router also.
-          tab = selectedTab
-        } else if (!this.shouldRenderSchema(this.tabs[selectedTab])) {
-          tab = this.defaultTab?.name
-        }
-        if (tab) {
-          this.$router.replace({ hash: `#${tab}` })
-        }
+      if (this.hasMainTabs) {
+        const tab = this.shouldRenderSchema(this.tabs[selectedTab])
+          ? selectedTab
+          : this.defaultTab
+        this.$router.replace({ hash: tab ? `#${tab}` : null })
+      }
+      if (this.hasErrors) {
+        this.repositionErrors()
       }
     }
   },
@@ -628,9 +627,12 @@ export default DitoComponent.component('DitoSchema', {
       for (const name in data) {
         if (name in this.data) {
           // eslint-disable-next-line vue/no-mutating-props
-          this.data[name] = data[name]
-          for (const component of this.getComponentsByName(name)) {
-            component.markDirty()
+          if (!equals(this.data[name], data[name])) {
+            // eslint-disable-next-line vue/no-mutating-props
+            this.data[name] = data[name]
+            for (const component of this.getComponentsByName(name)) {
+              component.markDirty()
+            }
           }
         }
       }
@@ -785,22 +787,6 @@ export default DitoComponent.component('DitoSchema', {
 
 .dito-schema-header {
   display: flex;
-  justify-content: space-between;
-
-  .dito-tabs,
-  .dito-clipboard {
-    display: flex;
-    align-self: flex-end;
-  }
-
-  .dito-clipboard {
-    &:only-child {
-      margin-left: auto;
-    }
-
-    .dito-button {
-      margin: 0 0 $tab-margin $tab-margin;
-    }
-  }
+  align-items: flex-end;
 }
 </style>

@@ -33,7 +33,6 @@
       :store="store"
       :disabled="isLoading"
       :scrollable="!isNestedRoute"
-      headerInMenu
       generateLabels
     )
       template(#buttons)

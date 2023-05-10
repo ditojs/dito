@@ -3,11 +3,11 @@
   template(
     v-for="(tabSchema, key) in tabs"
   )
-    RouterLink.dito-link(
+    a.dito-link(
       v-if="shouldRenderSchema(tabSchema)"
       :key="key"
-      :to="{ hash: `#${key}` }"
-      :class="{ 'dito-active': selectedTab === key }"
+      :class="{ 'dito-active': modelValue === key }"
+      @click="$emit('update:modelValue', key)"
     ) {{ getLabel(tabSchema, key) }}
 </template>
 
@@ -16,45 +16,74 @@ import DitoComponent from '../DitoComponent.js'
 
 // @vue/component
 export default DitoComponent.component('DitoTabs', {
+  emits: ['update:modelValue'],
   props: {
     tabs: { type: Object, default: null },
-    selectedTab: { type: String, default: null }
+    modelValue: { type: String, default: null }
   }
 })
 </script>
 
 <style lang="scss">
+@use 'sass:color';
 @import '../styles/_imports';
 
-$tab-color-background: $color-lightest;
-$tab-color-inactive: $color-light;
-$tab-color-active: $color-lightest;
-$tab-color-hover: $color-white;
-
 .dito-tabs {
-  // See: https://codepen.io/tholex/pen/hveBx/
-  margin-left: auto;
+  display: flex;
 
-  a {
+  .dito-link {
     display: block;
     @include user-select(none);
 
-    background: $tab-color-inactive;
-    padding: $tab-padding-ver $tab-padding-hor;
-    margin-left: $tab-margin;
-    border-top-left-radius: $tab-radius;
-    border-top-right-radius: $tab-radius;
-
     &:hover {
-      background: $tab-color-hover;
+      background: $color-white;
     }
 
-    &:active {
-      background: $tab-color-active;
+    // When in main header:
+    .dito-header & {
+      background: $color-light;
+      padding: $tab-padding-ver $tab-padding-hor;
+      margin-left: $tab-margin;
+      border-top-left-radius: $tab-radius;
+      border-top-right-radius: $tab-radius;
+
+      &:active {
+        background: $color-lightest;
+      }
+
+      &.dito-active {
+        background: $color-lightest;
+      }
     }
 
-    &.dito-active {
-      background: $tab-color-background;
+    // When inside a inline schema:
+    .dito-schema-inlined & {
+      background: $color-lighter;
+      border: $border-style;
+      padding: $input-padding;
+      margin-left: -$border-width;
+      white-space: nowrap;
+
+      &:first-child {
+        border-top-left-radius: $tab-radius;
+        border-bottom-left-radius: $tab-radius;
+      }
+
+      &:last-child {
+        border-top-right-radius: $tab-radius;
+        border-bottom-right-radius: $tab-radius;
+      }
+
+      &:active {
+        background: $color-lighter;
+      }
+
+      &.dito-active {
+        background: $color-active;
+        border-color: color.adjust($color-active, $lightness: -10%);
+        color: $color-white;
+        z-index: 1;
+      }
     }
   }
 }

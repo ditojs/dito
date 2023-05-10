@@ -254,11 +254,6 @@ export default DitoComponent.component('DitoPane', {
     flex: 100%;
   }
 
-  .dito-schema-header + & {
-    // Clear top-margin if the components are preceded by a schema header.
-    margin-top: 0;
-  }
-
   .dito-container--omit-padding > & {
     // Clear margins set above again if parent is omitting padding.
     margin: 0;

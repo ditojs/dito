@@ -186,6 +186,10 @@ export default DitoComponent.component('DitoHeader', {
     > * {
       pointer-events: auto;
     }
+
+    .dito-button {
+      margin: 0 0 $tab-margin $tab-margin;
+    }
   }
 }
 </style>

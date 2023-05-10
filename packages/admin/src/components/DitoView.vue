@@ -22,7 +22,6 @@ template(
       :store="getChildStore(name)"
       :disabled="isLoading"
       scrollable
-      headerInMenu
     )
 </template>
 

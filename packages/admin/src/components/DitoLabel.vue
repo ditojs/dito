@@ -30,7 +30,6 @@ component.dito-label(
       v-if="info"
       :data-info="info"
     )
-  slot(name="edit-buttons")
 </template>
 
 <script>

@@ -165,3 +165,19 @@ export default DitoComponent.component('DitoClipboard', {
   }
 })
 </script>
+
+<style lang="scss">
+@import '../styles/_imports';
+
+.dito-clipboard {
+  display: flex;
+  // See: https://codepen.io/tholex/pen/hveBx/
+  margin-left: auto;
+
+  .dito-header & {
+    .dito-button {
+      margin: 0 0 $tab-margin $tab-margin;
+    }
+  }
+}
+</style>

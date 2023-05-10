@@ -56,8 +56,8 @@ $header-padding: $header-padding-ver $header-padding-hor;
 $header-height: $header-font-size + 2 * $header-padding-ver;
 
 // Tabs
-$tab-margin: 6px;
-$tab-padding-hor: 12px;
+$tab-margin: $form-spacing;
+$tab-padding-hor: 2 * $tab-margin;
 $tab-padding-ver: calc(($header-padding-ver * 2 - $tab-margin) / 2);
 $tab-radius: 4px;
 

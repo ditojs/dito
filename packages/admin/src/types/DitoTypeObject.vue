@@ -18,7 +18,11 @@
       :disabled="disabled || isLoading"
       :collapsed="collapsed"
       :collapsible="collapsible"
+      :deletable="objectData && deletable"
+      :editable="objectData && editable"
+      :editPath="path"
       :accumulatedBasis="accumulatedBasis"
+      @delete="deleteItem(objectData)"
     )
     component(
       v-else-if="schema.component"
@@ -45,11 +49,7 @@
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"
-    :deletable="objectData && deletable"
-    :editable="objectData && editable"
     :createPath="path"
-    :editPath="path"
-    @delete="deleteItem(objectData)"
   )
 </template>
 
