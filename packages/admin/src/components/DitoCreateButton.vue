@@ -5,6 +5,7 @@
   )
     button.dito-button(
       type="button"
+      :disabled="disabled"
       v-bind="getButtonAttributes(verb)"
       @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
@@ -22,6 +23,7 @@
   button.dito-button(
     v-else-if="isFormCreatable(forms.default)"
     :type="isInlined ? 'button' : 'submit'"
+    :disabled="disabled"
     v-bind="getButtonAttributes(verb)"
     @click="createItem(forms.default)"
   ) {{ text }}
@@ -40,7 +42,8 @@ export default DitoComponent.component('DitoCreateButton', {
     schema: { type: Object, required: true },
     path: { type: String, required: true },
     verb: { type: String, required: true },
-    text: { type: String, default: null }
+    text: { type: String, default: null },
+    disabled: { type: Boolean, required: true }
   },
 
   computed: {

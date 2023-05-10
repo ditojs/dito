@@ -36,11 +36,6 @@
       v-html="getItemLabel(schema, objectData)"
     )
   DitoEditButtons(
-    :creatable="creatable"
-    :deletable="objectData && deletable"
-    :editable="objectData && editable"
-    :createPath="path"
-    :editPath="path"
     :buttons="buttonSchemas"
     :schema="schema"
     :dataPath="dataPath"
@@ -48,6 +43,12 @@
     :path="path"
     :meta="meta"
     :store="store"
+    :disabled="disabled || isLoading"
+    :creatable="creatable"
+    :deletable="objectData && deletable"
+    :editable="objectData && editable"
+    :createPath="path"
+    :editPath="path"
     @delete="deleteItem(objectData)"
   )
 </template>

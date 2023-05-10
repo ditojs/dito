@@ -40,13 +40,14 @@
     )
   DitoEditButtons(
     v-if="editable"
-    :editable="editable"
-    :editPath="editPath"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
     :meta="meta"
     :store="store"
+    :disabled="disabled"
+    :editable="editable"
+    :editPath="editPath"
   )
 </template>
 

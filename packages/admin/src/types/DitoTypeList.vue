@@ -126,26 +126,28 @@
       tr
         td.dito-cell-edit-buttons(:colspan="numColumns")
           DitoEditButtons(
-            :creatable="creatable"
-            :createPath="path"
             :buttons="buttonSchemas"
             :schema="schema"
             :dataPath="dataPath"
             :data="listData"
             :meta="meta"
             :store="store"
+            :disabled="disabled || isLoading"
+            :creatable="creatable"
+            :createPath="path"
           )
   //- Render create buttons outside table when in a single component view:
   DitoEditButtons.dito-buttons-main.dito-buttons-large(
     v-if="hasListButtons && single"
-    :creatable="creatable"
-    :createPath="path"
     :buttons="buttonSchemas"
     :schema="schema"
     :dataPath="dataPath"
     :data="listData"
     :meta="meta"
     :store="store"
+    :disabled="disabled || isLoading"
+    :creatable="creatable"
+    :createPath="path"
   )
 </template>
 

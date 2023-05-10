@@ -19,15 +19,16 @@ DitoSchema.dito-schema-inlined(
   template(#edit-buttons)
     DitoEditButtons(
       v-if="deletable || draggable || editable"
-      :deletable="deletable"
-      :draggable="draggable"
-      :editable="editable"
-      :editPath="editPath"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
       :meta="meta"
       :store="store"
+      :disabled="disabled"
+      :deletable="deletable"
+      :draggable="draggable"
+      :editable="editable"
+      :editPath="editPath"
       @delete="$emit('delete')"
     )
 </template>
