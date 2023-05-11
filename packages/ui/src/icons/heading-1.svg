@@ -4,8 +4,8 @@
   preserveAspectRatio="xMinYMid"
   style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
 >
-  <line class="st0" x1="2" y1="5" x2="2" y2="19"/>
-  <line class="st0" x1="10" y1="5" x2="10" y2="19"/>
-  <line class="st0" x1="2" y1="12" x2="10" y2="12"/>
-	<polyline class="st0" points="15,10.25 21,5 21,19"/>
+  <line x1="2" y1="5" x2="2" y2="19"/>
+  <line x1="10" y1="5" x2="10" y2="19"/>
+  <line x1="2" y1="12" x2="10" y2="12"/>
+	<polyline points="15,10.25 21,5 21,19"/>
 </svg>
