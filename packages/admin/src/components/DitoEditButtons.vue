@@ -23,6 +23,10 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
   DitoCreateButton(
     v-if="hasCreatable"
     :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
     :path="createPath"
     :verb="verbs.create"
     :text="createButtonText"

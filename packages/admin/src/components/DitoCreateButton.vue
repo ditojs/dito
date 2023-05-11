@@ -40,6 +40,10 @@ export default DitoComponent.component('DitoCreateButton', {
 
   props: {
     schema: { type: Object, required: true },
+    dataPath: { type: String, required: true },
+    data: { type: [Object, Array], default: null },
+    meta: { type: Object, required: true },
+    store: { type: Object, required: true },
     path: { type: String, required: true },
     verb: { type: String, required: true },
     text: { type: String, default: null },
