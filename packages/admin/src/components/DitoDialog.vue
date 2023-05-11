@@ -11,6 +11,11 @@
     form.dito-scroll-parent(
       @submit.prevent="submit"
     )
+      // Add an invisible button that prevents the clearable buttons from being
+      // pressed when the user presses the Enter key:
+      button(
+        v-show="false"
+      )
       DitoSchema(
         :schema="schema"
         :data="dialogData"
