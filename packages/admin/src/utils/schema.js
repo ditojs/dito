@@ -483,11 +483,13 @@ export function getFormSchemas(schema, context, modifyForm) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
 
-  let { form, forms, components, compact } = schema
+  let { form, forms } = schema
   if (!form && !forms) {
-    if (components) {
-      // Convert inlined components to forms, supporting `compact` setting.
-      form = { components, compact }
+    const { components, tabs, compact, clipboard } = schema
+    if (components || tabs) {
+      // Convert inlined components to forms, also supporting `tabs`, `compact`
+      // and `clipboard` settings.
+      form = { components, tabs, compact, clipboard }
     } else {
       // No `forms`, `form` or `components`, return and empty `forms` object.
       return {}
