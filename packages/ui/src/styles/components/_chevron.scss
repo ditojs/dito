@@ -12,7 +12,7 @@
     transition: transform 0.1s ease;
   }
 
-  &.dito-opened::before {
+  &.dito-open::before {
     transform: rotate(90deg);
   }
 

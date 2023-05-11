@@ -7,7 +7,7 @@ component.dito-label(
 )
   .dito-chevron(
     v-if="collapsible"
-    :class="{ 'dito-opened': !collapsed }"
+    :class="{ 'dito-open': !collapsed }"
   )
   .dito-label__inner(
     v-if="text || prefixes.length > 0 || suffixes.length > 0"
