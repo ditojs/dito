@@ -51,7 +51,7 @@ import {
   getAllPanelEntries,
   getTypeComponent,
   hasLabel,
-  omitPadding
+  omitSpacing
 } from '../utils/schema.js'
 import { parseFraction } from '../utils/math.js'
 
@@ -183,7 +183,7 @@ export default DitoComponent.component('DitoContainer', {
         'dito-disabled': this.componentDisabled,
         'dito-has-errors': !!this.errors,
         [`${prefix}--label-vertical`]: this.verticalLabels,
-        [`${prefix}--omit-padding`]: omitPadding(this.schema),
+        [`${prefix}--omit-spacing`]: omitSpacing(this.schema),
         ...(isString(classes) ? { [classes]: true } : classes)
       }
     },
@@ -253,7 +253,7 @@ export default DitoComponent.component('DitoContainer', {
   max-width: 100%;
   // Cannot use margin here as it needs to be part of box-sizing for
   // percentages in flex-basis to work.
-  padding: $form-spacing $form-spacing-half;
+  padding: $form-spacing-half;
 
   .dito-page .dito-pane > & {
     @container (width < #{calc($content-width * 0.8)}) {
@@ -295,15 +295,15 @@ export default DitoComponent.component('DitoContainer', {
     // have labels, add some spacing to the top to align with the other
     // components (e.g.  buttons):
     > .dito-component:first-child:not(.dito-section, .dito-list, .dito-object) {
-      margin-top: $line-height * $font-size + $form-spacing-half;
+      margin-top: $input-height;
     }
   }
 
-  &--omit-padding {
+  &--omit-spacing {
     padding: 0;
 
     > .dito-label {
-      margin: $form-spacing $form-spacing-half 0;
+      margin: $form-spacing-half $form-spacing-half 0;
     }
   }
 }

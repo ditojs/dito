@@ -481,9 +481,9 @@ function asFiles(value) {
     white-space: nowrap;
   }
 
-  &__input {
+  & &__input {
     // See `onClickUpload()` method for details.
-    position: absolute;
+    display: block;
     pointer-events: none;
   }
 

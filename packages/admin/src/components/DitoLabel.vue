@@ -98,7 +98,8 @@ export default DitoComponent.component('DitoLabel', {
   position: relative;
   // Vertically center all items in the label, e.g. chevron, edit-buttons.
   align-items: center;
-  margin: 0 $form-spacing-half $form-spacing-half 0;
+  min-height: $input-height;
+  margin-right: $form-spacing-half; // When inlined.
 
   &:has(.dito-schema-header) {
     // The container's label is used as teleport for a nested section or object
@@ -106,22 +107,15 @@ export default DitoComponent.component('DitoLabel', {
     > #{$self}__inner {
       display: none;
     }
-
-    > #{$self} {
-      // Clear bottom margin when nested.
-      margin-bottom: 0;
-    }
   }
 
-  .dito-container:not(.dito-container--label-vertical) > & {
-    // When labels are not vertical (e.g. compact layout, next to component),
-    // clear bottom padding for better vertical alignment.
-    margin-bottom: 0;
+  &:not(:has(+ .dito-tabs)) {
+    // Take full width but only if there aren't also tabs to be centered.
+    flex: 1;
   }
 
   &__inner {
     display: flex;
-    // Stretch to full available width so that buttons appear right-aligned:
     flex: 1 0 0%;
     overflow: hidden;
   }
@@ -130,6 +124,7 @@ export default DitoComponent.component('DitoLabel', {
     cursor: inherit;
     font-weight: bold;
     white-space: nowrap;
+    line-height: $input-height;
   }
 
   label,

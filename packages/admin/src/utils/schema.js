@@ -540,8 +540,8 @@ export function hasLabel(schema, generateLabels) {
   )
 }
 
-export function omitPadding(schema) {
-  return !!getTypeOptions(schema)?.omitPadding
+export function omitSpacing(schema) {
+  return !!getTypeOptions(schema)?.omitSpacing
 }
 
 export function getSchemaValue(

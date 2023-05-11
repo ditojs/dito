@@ -64,6 +64,7 @@ export default DitoTypeComponent.register('section', {
     border: $border-width solid transparent;
     border-radius: $border-radius;
     transition: border-color 0.2s $ease-out-quart;
+    margin-top: $form-spacing-half;
 
     &:has(.dito-schema--open) {
       border-color: $border-color;
@@ -72,6 +73,11 @@ export default DitoTypeComponent.register('section', {
     // For animation purposes, move the padding to the contained panes.
     .dito-pane {
       padding: $form-spacing;
+
+      &:has(> .dito-container--label-vertical:first-of-type) {
+        // Reduce top spacing when the first row has labels.
+        padding-top: $form-spacing-half;
+      }
     }
   }
 }

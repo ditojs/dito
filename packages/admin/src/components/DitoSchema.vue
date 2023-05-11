@@ -743,13 +743,9 @@ export default DitoComponent.component('DitoSchema', {
 
 .dito-schema {
   box-sizing: border-box;
-  // When the header is not teleported outside of the schema.
-  display: grid;
-  grid-template-rows: min-content;
-  grid-template-columns: 100%;
 
   > .dito-schema-header + .dito-schema-content > .dito-pane {
-    margin-top: $form-spacing;
+    margin-top: $form-spacing-half;
   }
 
   &:has(> .dito-schema-content + .dito-edit-buttons) {

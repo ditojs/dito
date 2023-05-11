@@ -171,7 +171,7 @@ export interface BaseSchema<$Item>
   default?: OrItemAccessor<$Item>
   compute?: ItemAccessor<$Item>
   data?: OrItemAccessor<$Item, {}, Record<string, any>>
-  omitPadding?: boolean
+  omitSpacing?: boolean
   break?: 'before' | 'after'
 }
 

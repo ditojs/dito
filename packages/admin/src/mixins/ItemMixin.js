@@ -134,7 +134,11 @@ export default {
           text = `${formLabel} ${hadLabel ? `'${text}'` : text}`
         }
       }
-      return asObject ? { text, prefix, suffix } : text
+      return asObject
+        ? text || prefix || suffix
+          ? { text, prefix, suffix }
+          : null
+        : text
     }
   }
 }

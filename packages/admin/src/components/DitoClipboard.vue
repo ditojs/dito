@@ -172,7 +172,7 @@ export default DitoComponent.component('DitoClipboard', {
 .dito-clipboard {
   display: flex;
 
-  .dito-schema-inlined & {
+  .dito-schema & {
     // Push clipboard to the right in the flex layout, see:
     // https://codepen.io/tholex/pen/hveBx/
     margin-left: auto;

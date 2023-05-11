@@ -75,6 +75,13 @@ export default DitoComponent.component('DitoSchemaInlined', {
 @import '../styles/_imports';
 
 .dito-schema-inlined {
+  // Use grid layout for two reasons: For `TransitionHeight` to work smoothly,
+  // and to align the header above the content when the header is not teleported
+  // outside of the schema.
+  display: grid;
+  grid-template-rows: min-content;
+  grid-template-columns: 100%;
+
   > .dito-schema-content {
     > .dito-schema-header {
       justify-content: space-between;

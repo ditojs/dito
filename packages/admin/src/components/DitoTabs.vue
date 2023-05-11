@@ -89,5 +89,15 @@ export default DitoComponent.component('DitoTabs', {
       }
     }
   }
+
+  .dito-schema & {
+    // Push clipboard to the right in the flex layout, see:
+    // https://codepen.io/tholex/pen/hveBx/
+    margin-left: auto;
+
+    &:last-child {
+      margin-right: auto;
+    }
+  }
 }
 </style>

@@ -15,7 +15,9 @@
       store
     }, index in componentSchemas`
   )
-    .dito-break(
+    // -Use <span> for .dito-break so we can use `.dito-container:first-of-type`
+    // selector.
+    span.dito-break(
       v-if="schema.break === 'before'"
     )
     DitoContainer(
@@ -34,7 +36,7 @@
       :verticalLabels="isInLabeledRow(index)"
       :accumulatedBasis="accumulatedBasis"
     )
-    .dito-break(
+    span.dito-break(
       v-if="schema.break === 'after'"
     )
 </template>
@@ -147,8 +149,12 @@ export default DitoComponent.component('DitoPane', {
         for (const index of row) {
           const position = this.positions[index]
           if (
-            position?.height > 2 &&
-            position.node.querySelector(':scope > .dito-label')
+            position?.height > 2 && (
+              position.node.matches(':has(> .dito-label)') ||
+              position.node
+                .closest('.dito-container')
+                .matches('.dito-container--label-vertical')
+            )
           ) {
             // TODO: Handle nested schemas, e.g. 'section' or 'object' and
             // detect labels there too.
@@ -220,7 +226,7 @@ export default DitoComponent.component('DitoPane', {
   align-items: flex-start;
   align-content: flex-start;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
-  margin: (-$form-spacing) (-$form-spacing-half);
+  margin: -$form-spacing-half;
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane__main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
   flex: 0%;
@@ -234,11 +240,15 @@ export default DitoComponent.component('DitoPane', {
     margin: 0;
     // Move the negative margin used to remove the padding added by
     // `.dito-container` inside `.dito-pane` to the padding:
-    padding: ($content-padding - $form-spacing)
-      ($content-padding - $form-spacing-half);
+    padding: $content-padding - $form-spacing-half;
 
     &#{$self}--single {
       padding: $content-padding;
+    }
+
+    &:has(> .dito-container--label-vertical:first-of-type) {
+      // Reduce top spacing when the first row has labels.
+      margin-top: -$form-spacing-half;
     }
   }
 
@@ -250,8 +260,8 @@ export default DitoComponent.component('DitoPane', {
       content: '';
       width: 100%;
       border-bottom: $border-style;
-      // Add removed $form-spacing again to the ruler
-      margin: (-$content-padding + $form-spacing) $form-spacing-half
+      // Add removed $form-spacing-half again to the ruler
+      margin: (-$content-padding + $form-spacing-half) $form-spacing-half
         $form-spacing-half;
     }
   }
@@ -263,6 +273,7 @@ export default DitoComponent.component('DitoPane', {
   }
 
   .dito-break {
+    display: block;
     flex: 100%;
     height: 0;
   }
