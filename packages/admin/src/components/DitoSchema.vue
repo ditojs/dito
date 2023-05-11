@@ -786,7 +786,17 @@ export default DitoComponent.component('DitoSchema', {
 }
 
 .dito-schema-header {
+  --header-spacing: #{$form-spacing-half};
+
   display: flex;
   align-items: flex-end;
+
+  .dito-header & {
+    --header-spacing: 0;
+  }
+
+  > *:not(:first-child) {
+    margin-left: var(--header-spacing);
+  }
 }
 </style>

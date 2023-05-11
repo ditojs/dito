@@ -171,13 +171,16 @@ export default DitoComponent.component('DitoClipboard', {
 
 .dito-clipboard {
   display: flex;
-  // See: https://codepen.io/tholex/pen/hveBx/
-  margin-left: auto;
 
   .dito-header & {
     .dito-button {
       margin: 0 0 $tab-margin $tab-margin;
     }
+  }
+
+  .dito-schema-inlined & {
+    // See: https://codepen.io/tholex/pen/hveBx/
+    --header-spacing: auto;
   }
 }
 </style>

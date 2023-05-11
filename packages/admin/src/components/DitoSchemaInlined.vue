@@ -82,11 +82,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
       justify-content: space-between;
       position: relative;
 
-      > *:not(:first-child) {
-        // Move all elements except the first one to the right.
-        margin-left: $form-spacing-half;
-      }
-
       .dito-label {
         width: 100%;
         margin: 0;
