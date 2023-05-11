@@ -2,7 +2,6 @@
 <template lang="pug">
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
-  v-show="visible"
   :class=`{
     'dito-pane--single': isSingleComponent
   }`
@@ -61,7 +60,6 @@ export default DitoComponent.component('DitoPane', {
     store: { type: Object, required: true },
     tab: { type: String, default: null },
     single: { type: Boolean, default: false },
-    visible: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
     accumulatedBasis: { type: Number, default: null }
@@ -102,7 +100,7 @@ export default DitoComponent.component('DitoPane', {
                 : this.dataPath,
             nestedDataPath,
             nested,
-            store: nested ? this.getChildStore(name) : this.store
+            store: this.getChildStore(name)
           }
         }
       )
@@ -221,43 +219,47 @@ export default DitoComponent.component('DitoPane', {
   flex-flow: row wrap;
   align-items: flex-start;
   align-content: flex-start;
-  padding: $content-padding;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
   margin: (-$form-spacing) (-$form-spacing-half);
-  max-width: calc(var(--max-content-width) + $form-spacing);
-  // Use `flex: 0%` for all `.dito-pane` except `.dito-pane-main`,
+  // Use `flex: 0%` for all `.dito-pane` except `.dito-pane__main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
   flex: 0%;
 
-  &--single {
-    // Clear negative margin from above.
-    margin: 0;
-  }
-
-  .dito-scroll > & {
-    &,
-    .dito-container {
-      min-width: min-content;
-    }
-
-    &:not(#{$self}--single) {
-      // Root-level panes inside scroll views need to move the negative margin
-      // used to remove the padding added by `.dito-container` inside
-      // `.dito-pane` to the padding:
-      padding: ($content-padding - $form-spacing)
-        ($content-padding - $form-spacing-half);
-      margin: 0;
-    }
-  }
-
-  &.dito-pane-main {
+  &__main {
     flex: 100%;
   }
 
-  .dito-container--omit-padding > & {
-    // Clear margins set above again if parent is omitting padding.
+  .dito-scroll > & {
+    // A root-level pane inside a scroll view. Clear negative margin from above.
     margin: 0;
-    max-width: unset;
+    // Move the negative margin used to remove the padding added by
+    // `.dito-container` inside `.dito-pane` to the padding:
+    padding: ($content-padding - $form-spacing)
+      ($content-padding - $form-spacing-half);
+
+    &#{$self}--single {
+      padding: $content-padding;
+    }
+  }
+
+  // Display a ruler between tabbed components and towards the .dito-buttons
+  &__tab + &__main {
+    &::before {
+      // Use a pseudo element to display a ruler with proper margins
+      display: block;
+      content: '';
+      width: 100%;
+      border-bottom: $border-style;
+      // Add removed $form-spacing again to the ruler
+      margin: (-$content-padding + $form-spacing) $form-spacing-half
+        $form-spacing-half;
+    }
+  }
+
+  &__main + .dito-buttons-main {
+    // Needed forms with sticky main buttons.
+    margin: $content-padding;
+    margin-bottom: 0;
   }
 
   .dito-break {

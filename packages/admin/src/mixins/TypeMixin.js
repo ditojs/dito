@@ -118,6 +118,11 @@ export default {
       return this.processedData
     },
 
+    labelNode() {
+      const node = this.isMounted ? this.$el.previousElementSibling : null
+      return node?.matches('.dito-label') ? node : null
+    },
+
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default() {

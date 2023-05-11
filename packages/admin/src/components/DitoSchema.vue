@@ -1,6 +1,7 @@
 <template lang="pug">
 slot(name="before")
 .dito-schema(
+  :class="{ 'dito-scroll-parent': scrollable, 'dito-schema--open': opened }"
   v-bind="$attrs"
 )
   Teleport(
@@ -14,57 +15,62 @@ slot(name="before")
       :store="store"
       :disabled="disabled"
     )
-  .dito-schema-content(
-    ref="content"
-    :class="{ 'dito-scroll': scrollable }"
+  Teleport(
+    v-if="hasHeader"
+    :to="headerTeleport"
+    :disabled="!headerTeleport"
   )
-    Teleport(
-      v-if="hasHeader"
-      to=".dito-header__teleport"
-      :disabled="!isRootSchema"
-    )
-      .dito-schema-header
-        DitoLabel(
-          v-if="hasLabel"
-          :label="label"
-          :dataPath="dataPath"
-          :collapsible="collapsible"
-          :collapsed="!opened"
-          @expand="onExpand"
-        )
+    .dito-schema-header
+      DitoLabel(
+        v-if="hasLabel"
+        :label="label"
+        :dataPath="dataPath"
+        :collapsible="collapsible"
+        :collapsed="!opened"
+        @open="onOpen"
+      )
+      Transition(
+        v-if="tabs"
+        name="dito-fade"
+      )
         DitoTabs(
-          v-if="tabs"
+          v-if="opened"
           v-model="selectedTab"
           :tabs="tabs"
         )
-        DitoClipboard(
-          :clipboard="clipboard"
-          :dataPath="dataPath"
-          :data="data"
-        )
-        slot(name="edit-buttons")
-    template(
-      v-if="hasTabs"
-    )
-      DitoPane.dito-pane-tab(
-        v-for="(tabSchema, tab) in tabs"
-        ref="tabs"
-        :key="tab"
-        :visible="selectedTab === tab"
-        :tab="tab"
-        :schema="tabSchema"
+      DitoClipboard(
+        :clipboard="clipboard"
         :dataPath="dataPath"
         :data="data"
-        :meta="meta"
-        :store="store"
-        :single="!inlined && !hasMainPane"
-        :disabled="disabled"
-        :generateLabels="generateLabels"
-        :accumulatedBasis="accumulatedBasis"
       )
-    TransitionHeight(:enabled="inlined")
-      DitoPane.dito-pane-main(
-        v-if="hasMainPane && opened"
+      slot(name="edit-buttons")
+  TransitionHeight(:enabled="inlined")
+    .dito-schema-content(
+      v-if="opened"
+      ref="content"
+      :class="{ 'dito-scroll': scrollable }"
+    )
+      template(
+        v-if="hasTabs"
+      )
+        DitoPane.dito-pane__tab(
+          v-for="(tabSchema, tab) in tabs"
+          v-show="selectedTab === tab"
+          ref="tabs"
+          :key="tab"
+          :tab="tab"
+          :schema="tabSchema"
+          :dataPath="dataPath"
+          :data="data"
+          :meta="meta"
+          :store="store"
+          :single="!inlined && !hasMainPane"
+          :disabled="disabled"
+          :generateLabels="generateLabels"
+          :accumulatedBasis="accumulatedBasis"
+        )
+      DitoPane.dito-pane__main(
+        v-if="hasMainPane"
         ref="components"
         :schema="schema"
         :dataPath="dataPath"
@@ -76,10 +82,10 @@ slot(name="before")
         :generateLabels="generateLabels"
         :accumulatedBasis="accumulatedBasis"
       )
-    slot(
-      v-if="!inlined && isPopulated"
-      name="buttons"
-    )
+      slot(
+        v-if="!inlined && isPopulated"
+        name="buttons"
+      )
   slot(
     v-if="inlined && !hasHeader"
     name="edit-buttons"
@@ -140,6 +146,7 @@ export default DitoComponent.component('DitoSchema', {
     scrollable: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
+    labelNode: { type: HTMLElement, default: null },
     accumulatedBasis: { type: Number, default: 1 }
   },
 
@@ -210,6 +217,12 @@ export default DitoComponent.component('DitoSchema', {
 
     hasHeader() {
       return this.hasLabel || this.hasTabs || !!this.clipboard
+    },
+
+    headerTeleport() {
+      return this.isRootSchema
+        ? '.dito-header__teleport'
+        : this.labelNode
     },
 
     parentData() {
@@ -438,11 +451,8 @@ export default DitoComponent.component('DitoSchema', {
       return this.isPopulated && this.components.every(callback)
     },
 
-    onExpand(expand) {
-      this.emitEvent('expand', {
-        // TODO: Actually expose this on DitoContext?
-        context: { expand }
-      })
+    onOpen(open) {
+      this.emitEvent('open', { context: { open } })
       // Prevent closing the schema with invalid data, since the in-component
       // validation will not be executed once it's closed.
 
@@ -450,8 +460,8 @@ export default DitoComponent.component('DitoSchema', {
       // processing, and use `showValidationErrors()` for the resulting errors,
       // then remove this requirement, since we can validate closed forms and
       // schemas then.
-      if (!this.opened || expand || this.validateAll()) {
-        this.opened = expand
+      if (!this.opened || open || this.validateAll()) {
+        this.opened = open
       }
     },
 
@@ -733,10 +743,26 @@ export default DitoComponent.component('DitoSchema', {
 
 .dito-schema {
   box-sizing: border-box;
-  // To display edit buttons next to schema:
-  display: flex;
-  align-items: stretch;
-  min-height: 100%;
+  // When the header is not teleported outside of the schema.
+  display: grid;
+  grid-template-rows: min-content;
+  grid-template-columns: 100%;
+
+  > .dito-schema-header + .dito-schema-content > .dito-pane {
+    margin-top: $form-spacing;
+  }
+
+  &:has(> .dito-schema-content + .dito-edit-buttons) {
+    // Display the edit buttons to the right of the schema:
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    > .dito-edit-buttons {
+      flex: 1 0 0%;
+      margin-left: $form-spacing;
+    }
+  }
 
   > .dito-schema-content {
     flex: 0 1 100%;
@@ -751,52 +777,29 @@ export default DitoComponent.component('DitoSchema', {
     > *:only-child {
       grid-row-end: none;
     }
-
-    &.dito-scroll:has(.dito-pane:last-child)::after {
-      // Eat up negative margin of the last child to prevent overscroll.
-      content: '';
-    }
-  }
-
-  > .dito-buttons {
-    flex: 1 1 0%;
-  }
-
-  > .dito-buttons {
-    margin-left: $form-spacing;
-  }
-
-  // Display a ruler between tabbed components and towards the .dito-buttons
-  .dito-pane-tab + .dito-pane-main {
-    &::before {
-      // Use a pseudo element to display a ruler with proper margins
-      display: block;
-      content: '';
-      width: 100%;
-      border-bottom: $border-style;
-      // Add removed $form-spacing again to the ruler
-      margin: $content-padding $form-spacing-half $form-spacing-half;
-    }
-  }
-
-  .dito-pane-main + .dito-buttons-main {
-    // Needed forms with sticky main buttons.
-    margin-bottom: 0;
   }
 }
 
 .dito-schema-header {
-  --header-spacing: #{$form-spacing-half};
-
   display: flex;
-  align-items: flex-end;
+  justify-content: space-between;
 
   .dito-header & {
-    --header-spacing: 0;
+    // When teleported into main header.
+    align-items: flex-end;
   }
 
-  > *:not(:first-child) {
-    margin-left: var(--header-spacing);
+  .dito-label & {
+    // When teleported into container label.
+    flex: 1;
+  }
+
+  > .dito-label {
+    margin-bottom: 0;
+  }
+
+  > .dito-buttons {
+    margin-left: var(--button-margin, 0);
   }
 }
 </style>

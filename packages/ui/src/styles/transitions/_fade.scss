@@ -1,12 +1,12 @@
-.fade-enter-active {
-  animation: fade-enter 0.2s $ease-out-quart;
+.dito-fade-enter-active {
+  animation: dito-fade-enter 0.2s $ease-out-quart;
 }
 
-.fade-leave-active {
-  animation: fade-leave 0.2s $ease-out-quart;
+.dito-fade-leave-active {
+  animation: dito-fade-leave 0.2s $ease-out-quart;
 }
 
-@keyframes fade-enter {
+@keyframes dito-fade-enter {
   0% {
     opacity: 0;
   }
@@ -16,7 +16,7 @@
   }
 }
 
-@keyframes fade-leave {
+@keyframes dito-fade-leave {
   0% {
     opacity: 1;
   }

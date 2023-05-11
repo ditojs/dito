@@ -73,8 +73,7 @@ export default DitoComponent.component('DitoContainer', {
 
   data() {
     return {
-      errors: null,
-      isMounted: false
+      errors: null
     }
   },
 
@@ -226,10 +225,6 @@ export default DitoComponent.component('DitoContainer', {
         this.tabComponent
       )
     }
-  },
-
-  mounted() {
-    this.isMounted = true
   },
 
   methods: {

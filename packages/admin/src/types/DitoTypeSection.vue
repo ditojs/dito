@@ -1,17 +1,22 @@
 <template lang="pug">
-.dito-section(:class="{ 'dito-section-labelled': !!schema.label }")
+.dito-section(:class="{ 'dito-section--labelled': !!schema.label }")
   DitoSchemaInlined.dito-section__schema(
+    :label="label"
     :schema="getItemFormSchema(schema, item, context)"
     :dataPath="dataPath"
     :data="item"
     :meta="meta"
     :store="store"
     :disabled="disabled"
+    :collapsed="collapsed"
+    :collapsible="collapsible"
+    :labelNode="labelNode"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 
 // @vue/component
@@ -24,7 +29,20 @@ export default DitoTypeComponent.register('section', {
   computed: {
     item() {
       return this.nested ? this.value : this.data
-    }
+    },
+
+    collapsible: getSchemaAccessor('collapsible', {
+      type: Boolean,
+      default: null, // so that `??` below can do its thing:
+      get(collapsible) {
+        return !!(collapsible ?? this.collapsed !== null)
+      }
+    }),
+
+    collapsed: getSchemaAccessor('collapsed', {
+      type: Boolean,
+      default: null
+    })
   },
 
   methods: {
@@ -42,15 +60,19 @@ export default DitoTypeComponent.register('section', {
 @import '../styles/_imports';
 
 .dito-section {
-  &.dito-section-labelled {
-    border: $border-style;
+  &--labelled {
+    border: $border-width solid transparent;
     border-radius: $border-radius;
-    padding: $form-spacing;
-    box-sizing: border-box;
-  }
+    transition: border-color 0.2s $ease-out-quart;
 
-  .dito-section__schema {
-    padding: 0;
+    &:has(.dito-schema--open) {
+      border-color: $border-color;
+    }
+
+    // For animation purposes, move the padding to the contained panes.
+    .dito-pane {
+      padding: $form-spacing;
+    }
   }
 }
 </style>

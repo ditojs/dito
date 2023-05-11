@@ -9,18 +9,21 @@ component.dito-label(
     v-if="collapsible"
     :class="{ 'dito-opened': !collapsed }"
   )
-  .dito-label__inner
-    DitoElement.dito-label-prefix(
+  .dito-label__inner(
+    v-if="text || prefixes.length > 0 || suffixes.length > 0"
+  )
+    DitoElement.dito-label__prefix(
       v-for="(prefix, index) of prefixes"
       :key="`prefix-${index}`"
       tag="span"
       :content="prefix"
     )
     label(
+      v-if="text"
       :for="dataPath"
       v-html="text"
     )
-    DitoElement.dito-label-suffix(
+    DitoElement.dito-label__suffix(
       v-for="(suffix, index) of suffixes"
       :key="`suffix-${index}`"
       tag="span"
@@ -38,7 +41,7 @@ import { isObject, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoLabel', {
-  emits: ['expand'],
+  emits: ['open'],
 
   props: {
     label: { type: [String, Object], default: null },
@@ -78,7 +81,7 @@ export default DitoComponent.component('DitoLabel', {
   methods: {
     onClick() {
       this.appState.activeLabel = this
-      this.$emit('expand', this.collapsed)
+      this.$emit('open', this.collapsed)
     }
   }
 })
@@ -97,6 +100,19 @@ export default DitoComponent.component('DitoLabel', {
   align-items: center;
   margin: 0 $form-spacing-half $form-spacing-half 0;
 
+  &:has(.dito-schema-header) {
+    // The container's label is used as teleport for a nested section or object
+    // label. Hide `&__inner`, as it is be duplicated inside the nested label.
+    > #{$self}__inner {
+      display: none;
+    }
+
+    > #{$self} {
+      // Clear bottom margin when nested.
+      margin-bottom: 0;
+    }
+  }
+
   .dito-container:not(.dito-container--label-vertical) > & {
     // When labels are not vertical (e.g. compact layout, next to component),
     // clear bottom padding for better vertical alignment.
@@ -106,7 +122,8 @@ export default DitoComponent.component('DitoLabel', {
   &__inner {
     display: flex;
     // Stretch to full available width so that buttons appear right-aligned:
-    flex: 1 1 auto;
+    flex: 1 0 0%;
+    overflow: hidden;
   }
 
   label {
@@ -116,14 +133,14 @@ export default DitoComponent.component('DitoLabel', {
   }
 
   label,
-  .dito-label-prefix,
-  .dito-label-suffix {
+  &__prefix,
+  &__suffix {
     @include user-select(none);
     @include ellipsis;
   }
 
-  .dito-label-prefix + label,
-  label + .dito-label-suffix {
+  &__prefix + label,
+  label + &__suffix {
     &::before {
       content: '\a0'; // &nbsp;
     }
@@ -139,11 +156,17 @@ export default DitoComponent.component('DitoLabel', {
 
   &.dito-width-fill {
     width: 100%;
+
     // In order for ellipsis to work on labels without affecting other layout,
-    // we need to position it absolutely inside its container.
-    #{$self}__inner {
-      position: absolute;
-      inset: 0;
+    // we need to position it absolutely inside its container. But we can only
+    // do so if there is't also a chevron or other UX elements besides it.
+    &:has(> #{$self}__inner:only-child) {
+      flex: 1; // When in `.dito-schema-header`.
+
+      > #{$self}__inner {
+        position: absolute;
+        inset: 0;
+      }
     }
 
     &::after {

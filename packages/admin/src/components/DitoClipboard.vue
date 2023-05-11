@@ -172,15 +172,18 @@ export default DitoComponent.component('DitoClipboard', {
 .dito-clipboard {
   display: flex;
 
+  .dito-schema-inlined & {
+    // Push clipboard to the right in the flex layout, see:
+    // https://codepen.io/tholex/pen/hveBx/
+    margin-left: auto;
+  }
+
   .dito-header & {
+    margin-left: 0;
+
     .dito-button {
       margin: 0 0 $tab-margin $tab-margin;
     }
-  }
-
-  .dito-schema-inlined & {
-    // See: https://codepen.io/tholex/pen/hveBx/
-    --header-spacing: auto;
   }
 }
 </style>

@@ -32,8 +32,10 @@ export default DitoComponent.component('DitoTabs', {
   display: flex;
 
   .dito-link {
-    display: block;
     @include user-select(none);
+
+    display: block;
+    white-space: nowrap;
 
     &:hover {
       background: $color-white;
@@ -57,7 +59,8 @@ export default DitoComponent.component('DitoTabs', {
     }
 
     // When inside a inline schema:
-    .dito-schema-inlined & {
+    .dito-schema-inlined &,
+    .dito-label & {
       background: $color-lighter;
       border: $border-style;
       padding: $input-padding;

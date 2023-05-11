@@ -39,6 +39,8 @@
       v-else
       v-html="getItemLabel(schema, objectData)"
     )
+  //- NOTE: `DitoEditButtons` here only handle the create button outside of the
+  //- schema, the edit buttons inside are handled by `DitoSchemaInlined`.
   DitoEditButtons(
     :buttons="buttonSchemas"
     :schema="schema"

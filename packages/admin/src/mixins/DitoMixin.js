@@ -52,6 +52,7 @@ export default {
   data() {
     return {
       appState,
+      isMounted: false,
       overrides: null // See accessor.js
     }
   },
@@ -171,13 +172,13 @@ export default {
     }
   },
 
+  mounted() {
+    this.isMounted = true
+  },
+
   beforeCreate() {
     const uid = nextUid++
-    Object.defineProperty(this, '$uid', {
-      get() {
-        return uid
-      }
-    })
+    Object.defineProperty(this, '$uid', { get: () => uid })
   },
 
   methods: {

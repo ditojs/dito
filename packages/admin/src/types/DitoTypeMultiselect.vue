@@ -67,7 +67,6 @@ export default DitoTypeComponent.register('multiselect', {
 
   data() {
     return {
-      isMounted: false,
       searchedOptions: null,
       populate: false
     }
@@ -145,7 +144,6 @@ export default DitoTypeComponent.register('multiselect', {
   },
 
   mounted() {
-    this.isMounted = true
     if (this.autofocus) {
       // vue-multiselect doesn't support the autofocus attribute. We need to
       // handle it here.

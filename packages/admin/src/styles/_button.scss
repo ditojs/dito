@@ -138,10 +138,9 @@
   }
 
   &.dito-buttons-sticky {
+    align-self: flex-end;
     position: sticky;
     bottom: 0;
-    width: 100%;
-    align-self: flex-end;
     z-index: $z-index-main-buttons;
     margin-bottom: -$content-padding;
     margin-top: 2 * $content-padding;

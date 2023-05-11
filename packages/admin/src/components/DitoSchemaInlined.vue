@@ -12,6 +12,7 @@ DitoSchema.dito-schema-inlined(
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"
+  :labelNode="labelNode"
   :accumulatedBasis="accumulatedBasis"
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
@@ -54,6 +55,7 @@ export default DitoComponent.component('DitoSchemaInlined', {
     editable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
+    labelNode: { type: HTMLElement, default: null },
     accumulatedBasis: { type: Number, default: null }
   },
 
@@ -74,10 +76,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
 
 .dito-schema-inlined {
   > .dito-schema-content {
-    > .dito-pane {
-      padding: 0;
-    }
-
     > .dito-schema-header {
       justify-content: space-between;
       position: relative;
@@ -89,11 +87,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
         // .dito-schema-content, due to grid-template-rows: min-content
         min-height: $input-height;
       }
-    }
-
-    &:has(> .dito-schema-header) > .dito-pane {
-      // Clear top-margin if the components are preceded by a schema header
-      margin-top: 0;
     }
   }
 }

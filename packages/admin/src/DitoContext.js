@@ -216,6 +216,10 @@ export default class DitoContext {
     return get(this, 'options', undefined)
   }
 
+  get open() {
+    return get(this, 'open', undefined)
+  }
+
   // TODO: Rename this to `searchTerm` or `searchQuery`, to perhaps free `query`
   // for the actual `resourceComponent.query` object?
   get query() {

@@ -1,12 +1,12 @@
-.zoom-enter-active {
-  animation: zoom-enter 0.1s $ease-out-quart;
+.dito-zoom-enter-active {
+  animation: dito-zoom-enter 0.1s $ease-out-quart;
 }
 
-.zoom-leave-active {
-  animation: zoom-leave 0.2s $ease-out-quart;
+.dito-zoom-leave-active {
+  animation: dito-zoom-leave 0.2s $ease-out-quart;
 }
 
-@keyframes zoom-enter {
+@keyframes dito-zoom-enter {
   0% {
     opacity: 0;
     transform: scale(0);
@@ -18,7 +18,7 @@
   }
 }
 
-@keyframes zoom-leave {
+@keyframes dito-zoom-leave {
   0% {
     transform: scale(1);
   }

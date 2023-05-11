@@ -28,7 +28,7 @@
     :class="triggerClass"
   )
     slot(name="trigger")
-  Transition(:name="transition")
+  Transition(:name="`dito-${transition}`")
     .dito-popup(
       v-if="trigger === 'hover'"
       v-show="showPopup"
