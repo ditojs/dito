@@ -12,9 +12,10 @@
     v-show="!isActive"
   )
   //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
-  component.dito-scroll-parent(
+  component(
     v-show="isActive"
     :is="isNestedRoute ? 'div' : 'form'"
+    :class="{ 'dito-scroll-parent': isRootForm }"
     @submit.prevent
   )
     //- Prevent implicit submission of the form, for example when typing enter
@@ -32,11 +33,12 @@
       :meta="meta"
       :store="store"
       :disabled="isLoading"
-      :scrollable="!isNestedRoute"
+      :scrollable="isRootForm"
       generateLabels
     )
       template(#buttons)
-        DitoButtons.dito-buttons-round.dito-buttons-main.dito-buttons-large(
+        DitoButtons.dito-buttons-round.dito-buttons-large.dito-buttons-main(
+          :class="{ 'dito-buttons-sticky': isRootForm }"
           :buttons="buttonSchemas"
           :dataPath="dataPath"
           :data="data"
@@ -119,6 +121,10 @@ export default DitoComponent.component('DitoForm', {
           this.schema.buttons
         )
       )
+    },
+
+    isRootForm() {
+      return this.dataPath === '' && !this.isNestedRoute
     },
 
     isActive() {

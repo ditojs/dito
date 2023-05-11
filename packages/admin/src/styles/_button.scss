@@ -112,6 +112,8 @@
 }
 
 .dito-buttons {
+  // TODO: BEM
+
   &.dito-buttons-large {
     --button-margin: 3px;
 
@@ -133,19 +135,19 @@
 
   &.dito-buttons-main {
     border-top: $border-style;
+  }
 
-    .dito-scroll > &:not(:empty) {
-      position: sticky;
-      bottom: 0;
-      width: 100%;
-      align-self: flex-end;
-      z-index: $z-index-main-buttons;
-      margin-bottom: -$content-padding;
-      margin-top: 2 * $content-padding;
-      box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
-        $color-shadow;
-      background: $content-color-background;
-    }
+  &.dito-buttons-sticky {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    align-self: flex-end;
+    z-index: $z-index-main-buttons;
+    margin-bottom: -$content-padding;
+    margin-top: 2 * $content-padding;
+    box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
+      $color-shadow;
+    background: $content-color-background;
   }
 
   &.dito-buttons-round,

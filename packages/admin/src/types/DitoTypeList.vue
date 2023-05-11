@@ -137,7 +137,7 @@
             :createPath="path"
           )
   //- Render create buttons outside table when in a single component view:
-  DitoEditButtons.dito-buttons-main.dito-buttons-large(
+  DitoEditButtons.dito-buttons-large.dito-buttons-main.dito-buttons-sticky(
     v-if="hasListButtons && single"
     :buttons="buttonSchemas"
     :schema="schema"
