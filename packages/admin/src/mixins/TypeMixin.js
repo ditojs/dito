@@ -28,7 +28,6 @@ export default {
   data() {
     return {
       parsedValue: undefined,
-      changedValue: undefined,
       focused: false
     }
   },
@@ -66,7 +65,6 @@ export default {
         if (parse) {
           value = parse(new DitoContext(this, { value }))
         }
-        this.changedValue = undefined
         this.parsedValue = value
         // eslint-disable-next-line vue/no-mutating-props
         this.data[this.name] = value
@@ -286,7 +284,6 @@ export default {
 
     clear() {
       this.value = null
-      this.changedValue = undefined
       this.blur()
       this.onChange()
     },
@@ -309,21 +306,12 @@ export default {
     },
 
     onChange() {
-      const value =
-        this.parsedValue !== undefined ? this.parsedValue : this.value
-
-      if (this.$options.nativeField) {
-        // For some odd reason, the native change event now sometimes fires
-        // twice on Vue3. Filter out second call.
-        // TODO: Investigate why this happens, and if it's a bug in Vue3.
-        if (value === this.changedValue) return
-        this.changedValue = value
-      }
-
       this.markDirty()
       this.emitEvent('change', {
-        // Prevent endless parse recursion:
-        context: { value },
+        context: {
+          // Prevent endless parse recursion:
+          value: this.parsedValue !== undefined ? this.parsedValue : this.value
+        },
         // Pass `schemaComponent` as parent, so change events can propagate up.
         parent: this.schemaComponent
       })
