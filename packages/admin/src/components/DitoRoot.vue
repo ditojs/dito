@@ -43,10 +43,10 @@
 import { delegate as tippyDelegate } from 'tippy.js'
 import { asArray, mapConcurrently, stripTags } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
+import DomMixin from '../mixins/DomMixin.js'
 import DitoUser from '../DitoUser.js'
 import DitoView from '../components/DitoView.vue'
 import DitoDialog from './DitoDialog.vue'
-import DomMixin from '../mixins/DomMixin.js'
 import {
   processView,
   resolveViews,

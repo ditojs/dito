@@ -20,8 +20,8 @@
 <script>
 import { isObject, clone, deindent } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
 import DomMixin from '../mixins/DomMixin.js'
+import DitoContext from '../DitoContext.js'
 
 // @vue/component
 export default DitoComponent.component('DitoClipboard', {

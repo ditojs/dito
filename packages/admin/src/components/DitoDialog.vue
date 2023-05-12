@@ -31,13 +31,14 @@
 
 <script>
 import { clone } from '@ditojs/utils'
-import { addEvents } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
+import DomMixin from '../mixins/DomMixin.js'
 import { getButtonSchemas } from '../utils/schema.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
 export default DitoComponent.component('DitoDialog', {
+  mixins: [DomMixin],
   components: { UseFocusTrap },
   emits: ['remove'],
 
@@ -70,7 +71,6 @@ export default DitoComponent.component('DitoDialog', {
       }
     }
     return {
-      windowEvents: null,
       dialogData
     }
   },
@@ -125,17 +125,13 @@ export default DitoComponent.component('DitoDialog', {
   },
 
   mounted() {
-    this.windowEvents = addEvents(window, {
+    this.domOn(window, {
       keyup: event => {
         if ((this.hasCancel || !this.hasButtons) && event.keyCode === 27) {
           this.cancel()
         }
       }
     })
-  },
-
-  unmounted() {
-    this.windowEvents.remove()
   },
 
   methods: {

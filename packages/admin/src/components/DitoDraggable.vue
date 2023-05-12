@@ -16,12 +16,13 @@ component(
 </template>
 
 <script>
-import { addEvents } from '@ditojs/ui'
 import DitoComponent from '../DitoComponent'
+import DomMixin from '../mixins/DomMixin.js'
 import { UseSortable } from '@vueuse/integrations/useSortable/component'
 
 // @vue/component
 export default DitoComponent.component('DitoDraggable', {
+  mixins: [DomMixin],
   components: { UseSortable },
   emits: ['update:modelValue'],
 
@@ -62,7 +63,7 @@ export default DitoComponent.component('DitoDraggable', {
       this.options.onEnd?.(event)
       // Keep `isDragging` true until the next mouse interaction so that
       // confused hover states are cleared before removing the hover catcher.
-      this.mouseEvents = addEvents(this.$el, {
+      this.mouseEvents = this.domOn(this.$el, {
         mousedown: this.onMouse,
         mousemove: this.onMouse,
         mouseleave: this.onMouse
