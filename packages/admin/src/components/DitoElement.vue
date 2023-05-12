@@ -26,14 +26,14 @@ export default DitoComponent.component('DitoElement', {
 
     classes() {
       return {
-        ...this.$attrs.class,
+        ...asObject(this.$attrs.class),
         ...asObject(this.options.class)
       }
     },
 
     styles() {
       return {
-        ...this.$attrs.style,
+        ...asObject(this.$attrs.style),
         ...asObject(this.options.style)
       }
     }
