@@ -219,6 +219,7 @@ export default DitoComponent.component('DitoPane', {
 
 .dito-pane {
   $self: &;
+  $root-padding: $content-padding - $form-spacing-half;
 
   display: flex;
   position: relative;
@@ -240,7 +241,7 @@ export default DitoComponent.component('DitoPane', {
     margin: 0;
     // Move the negative margin used to remove the padding added by
     // `.dito-container` inside `.dito-pane` to the padding:
-    padding: $content-padding - $form-spacing-half;
+    padding: $root-padding;
 
     &#{$self}--single {
       padding: $content-padding;
@@ -260,9 +261,9 @@ export default DitoComponent.component('DitoPane', {
       content: '';
       width: 100%;
       border-bottom: $border-style;
-      // Add removed $form-spacing-half again to the ruler
-      margin: (-$content-padding + $form-spacing-half) $form-spacing-half
-        $form-spacing-half;
+      // Shift ruler up by $root-padding to exclude removed $form-spacing-half.
+      margin: (-$root-padding) $form-spacing-half $root-padding;
+      padding: $form-spacing-half;
     }
   }
 
@@ -273,6 +274,9 @@ export default DitoComponent.component('DitoPane', {
   }
 
   .dito-break {
+    // `.dito-break` is rendered as <span> so we can use the
+    // `.dito-container:first-of-type` selector to match the first container
+    // even if it has a break before it.
     display: block;
     flex: 100%;
     height: 0;
