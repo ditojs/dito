@@ -485,11 +485,11 @@ export function getFormSchemas(schema, context, modifyForm) {
 
   let { form, forms } = schema
   if (!form && !forms) {
-    const { components, tabs, compact, clipboard } = schema
+    const { name, compact, clipboard, tabs, components } = schema
     if (components || tabs) {
-      // Convert inlined components to forms, also supporting `tabs`, `compact`
-      // and `clipboard` settings.
-      form = { components, tabs, compact, clipboard }
+      // Convert inlined forms to stand-alone forms, supporting `name`,
+      // `compact`, `clipboard`, `tabs` and `components` settings.
+      form = { type: 'form', name, compact, clipboard, tabs, components }
     } else {
       // No `forms`, `form` or `components`, return and empty `forms` object.
       return {}

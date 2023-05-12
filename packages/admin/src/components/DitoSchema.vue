@@ -214,7 +214,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     clipboard() {
-      return this.schema?.clipboard
+      return this.schema?.clipboard ?? null
     },
 
     hasHeader() {
