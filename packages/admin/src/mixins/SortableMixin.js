@@ -2,19 +2,20 @@
 export default {
   data() {
     return {
-      dragging: false
+      isDragging: false
     }
   },
 
   methods: {
-    getSortableOptions(forceFallback = false) {
+    getDraggableOptions(forceFallback = false) {
+      const prefix = 'dito-draggable'
       return {
         animation: 150,
         handle: '.dito-button-drag',
-        dragClass: 'dito-sortable-active',
-        chosenClass: 'dito-sortable-chosen',
-        ghostClass: 'dito-sortable-ghost',
-        fallbackClass: 'dito-sortable-fallback',
+        dragClass: `${prefix}__drag`,
+        chosenClass: `${prefix}__chosen`,
+        ghostClass: `${prefix}__ghost`,
+        fallbackClass: `${prefix}__fallback`,
         forceFallback,
         onStart: this.onStartDrag,
         onEnd: this.onEndDrag
@@ -22,11 +23,11 @@ export default {
     },
 
     onStartDrag() {
-      this.dragging = true
+      this.isDragging = true
     },
 
     onEndDrag({ oldIndex, newIndex }) {
-      this.dragging = false
+      this.isDragging = false
       if (oldIndex !== newIndex) {
         this.onChange()
       }

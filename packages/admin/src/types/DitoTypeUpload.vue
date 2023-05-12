@@ -35,7 +35,7 @@
     DitoDraggable(
       v-model="files"
       tag="tbody"
-      :options="getSortableOptions()"
+      :options="getDraggableOptions()"
       :draggable="draggable"
     )
       template(

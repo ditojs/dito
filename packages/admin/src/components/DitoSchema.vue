@@ -772,7 +772,7 @@ export default DitoComponent.component('DitoSchema', {
     grid-template-rows: min-content;
     grid-template-columns: 100%;
 
-    > *:only-child {
+    > :only-child {
       grid-row-end: none;
     }
   }

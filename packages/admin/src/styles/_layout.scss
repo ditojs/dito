@@ -13,7 +13,7 @@
 }
 
 .dito-layout-horizontal {
-  > *:not(:first-child) {
+  > :not(:first-child) {
     padding-left: $form-spacing;
   }
 }

@@ -2,7 +2,7 @@
 .dito-tree-item(
   :id="dataPath"
   :class=`{
-    'dito-dragging': dragging,
+    'dito-dragging': isDragging,
     'dito-active': active
   }`
   :style="level > 0 && { '--level': level }"
@@ -76,7 +76,7 @@
     v-if="childrenSchema"
     v-show="opened"
     :modelValue="updateOrder(childrenSchema, childrenList)"
-    :options="getSortableOptions(true)"
+    :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
     @update:modelValue="value => (childrenList = value)"
   )
