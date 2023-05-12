@@ -82,17 +82,10 @@ export default DitoComponent.component('DitoSchemaInlined', {
   grid-template-rows: min-content;
   grid-template-columns: 100%;
 
-  > .dito-schema-content {
+  &:not(:hover, .dito-schema--open) {
     > .dito-schema-header {
-      justify-content: space-between;
-      position: relative;
-
-      .dito-label {
-        width: 100%;
-        margin: 0;
-        // Prevent collapsing to min-height when alone in
-        // .dito-schema-content, due to grid-template-rows: min-content
-        min-height: $input-height;
+      > .dito-clipboard {
+        display: none;
       }
     }
   }
