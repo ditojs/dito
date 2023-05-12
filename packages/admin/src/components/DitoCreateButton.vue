@@ -40,6 +40,15 @@ export default DitoComponent.component('DitoCreateButton', {
 
   props: {
     schema: { type: Object, required: true },
+    // The next four props are there for `DitoContext` and the `context()`
+    // getter in `DitoMixin`.
+    // TODO: Should they be moved to shared mixin that defines them as required
+    // and also provides the `context()` getter, perhaps `ContextMixin`?
+    // `schema` could be included as well, and `ContextMixin` could be used in
+    // `DitoForm`, `DitoView`, `DitoPanel`, `DitoSchema`, `DitoEditButtons`,
+    // etc? But the problem with the root components is that they don't have
+    // these props. We could add a `contextAttributes()` getter for easy passing
+    // on as `v-bind="contextAttributes"`.
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },

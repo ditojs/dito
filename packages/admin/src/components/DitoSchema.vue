@@ -53,22 +53,24 @@ slot(name="before")
       template(
         v-if="hasTabs"
       )
-        DitoPane.dito-pane__tab(
+        template(
           v-for="(tabSchema, tab) in tabs"
-          v-show="selectedTab === tab"
-          ref="tabs"
-          :key="tab"
-          :tab="tab"
-          :schema="tabSchema"
-          :dataPath="dataPath"
-          :data="data"
-          :meta="meta"
-          :store="store"
-          :single="!inlined && !hasMainPane"
-          :disabled="disabled"
-          :generateLabels="generateLabels"
-          :accumulatedBasis="accumulatedBasis"
         )
+          DitoPane.dito-pane__tab(
+            v-if="selectedTab === tab"
+            ref="tabs"
+            :key="tab"
+            :tab="tab"
+            :schema="tabSchema"
+            :dataPath="dataPath"
+            :data="data"
+            :meta="meta"
+            :store="store"
+            :single="!inlined && !hasMainPane"
+            :disabled="disabled"
+            :generateLabels="generateLabels"
+            :accumulatedBasis="accumulatedBasis"
+          )
       DitoPane.dito-pane__main(
         v-if="hasMainPane"
         ref="components"
