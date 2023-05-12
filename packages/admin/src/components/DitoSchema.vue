@@ -676,6 +676,7 @@ export default DitoComponent.component('DitoSchema', {
         {
           // Needed for DitoContext handling inside `processData` and
           // `processSchemaData()`:
+          rootData: this.rootData,
           component: this,
           schemaOnly,
           target

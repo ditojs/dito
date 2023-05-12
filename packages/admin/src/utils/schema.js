@@ -702,10 +702,11 @@ function cloneItem(sourceSchema, item, options) {
 
 export function processData(schema, sourceSchema, data, dataPath, {
   component,
+  rootData,
   schemaOnly, // whether to only include data covered by the schema, or all data
   target
 } = {}) {
-  const options = { component, schemaOnly, target, rootData: data }
+  const options = { component, rootData, schemaOnly, target }
   const processedData = cloneItem(sourceSchema, data, options)
   const graph = new SchemaGraph()
 
@@ -837,7 +838,7 @@ export function processSchemaData(
           const componentDataPath = getDataPath(dataPath, name)
 
           const processItem = (item, index = null) => {
-            const dataPath =
+            const itemDataPath =
               index !== null
                 ? getDataPath(componentDataPath, index)
                 : componentDataPath
@@ -845,7 +846,7 @@ export function processSchemaData(
               schema: componentSchema,
               data,
               value: item,
-              dataPath,
+              dataPath: itemDataPath,
               index,
               rootData: options.rootData
             })
@@ -862,7 +863,7 @@ export function processSchemaData(
               return processSchemaData(
                 form,
                 item,
-                dataPath,
+                itemDataPath,
                 processedItem,
                 processBefore,
                 processAfter,
@@ -882,6 +883,7 @@ export function processSchemaData(
             componentDataPath,
             processedData
           )
+
           let value = processedData ? processedData[name] : data[name]
           if (value != null && hasFormSchema(componentSchema)) {
             // Recursively process data on nested form items.
@@ -897,6 +899,7 @@ export function processSchemaData(
               processedData[name] = value
             }
           }
+
           processAfter?.(
             componentSchema,
             data,
