@@ -78,19 +78,19 @@ export default DitoComponent.component('DitoEditButtons', {
       return this.disabled || !this.hasSchemaOption('deletable')
     },
 
-    isCreatableDisabled() {
-      return (
-        this.disabled ||
-        !this.createPath ||
-        !this.hasSchemaOption('creatable')
-      )
-    },
-
     isEditableDisabled() {
       return (
         this.disabled ||
         !this.editPath ||
         !this.hasSchemaOption('editable')
+      )
+    },
+
+    isCreatableDisabled() {
+      return (
+        this.disabled ||
+        !this.createPath ||
+        !this.hasSchemaOption('creatable')
       )
     },
 

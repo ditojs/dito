@@ -1,15 +1,14 @@
 <template lang="pug">
-.dito-multiselect(
-  :class=`{
-    'dito-multiselect-single': !multiple,
-    'dito-multiselect-multiple': multiple
-  }`
-)
+.dito-multiselect
   .dito-multiselect__inner
     VueMultiselect(
       ref="element"
       v-model="selectedOptions"
-      :class="{ 'multiselect--show-highlight': showHighlight }"
+      :class=`{
+        'multiselect--multiple': multiple,
+        'multiselect--loading': isLoading,
+        'multiselect--highlight': showHighlight
+      }`
       :showLabels="false"
       :placeholder="placeholder"
       tagPlaceholder="Press enter to add new tag"
@@ -241,16 +240,6 @@ $tag-line-height: 1em;
     position: relative;
   }
 
-  // TODO: BEM
-  &.dito-multiselect-single {
-    --input-width: 100%;
-  }
-
-  // TODO: BEM
-  &.dito-multiselect-multiple {
-    --input-width: auto;
-  }
-
   .dito-edit-buttons {
     margin-left: $form-spacing-half;
   }
@@ -258,9 +247,15 @@ $tag-line-height: 1em;
   .multiselect {
     $self: last-selector(&);
 
+    --input-width: 100%;
+
     font-size: inherit;
     min-height: inherit;
     color: $color-black;
+
+    &--multiple {
+      --input-width: auto;
+    }
 
     &__tags {
       display: flex;
@@ -373,11 +368,11 @@ $tag-line-height: 1em;
       }
 
       // Only show the highlight once the pulldown has received mouse or
-      // keyboard interaction, in which case `&--show-highlight` will be set,
+      // keyboard interaction, in which case `&--highlight` will be set,
       // which is controlled by `pointerDirty` in vue-multiselect.
       // Until then, clear the highlight style, but only if it isn't also
       // disabled or selected, in which case we want to keep the style.
-      @at-root #{$self}:not(#{$self}--show-highlight)
+      @at-root #{$self}:not(#{$self}--highlight)
           #{$option}:not(#{$option}--disabled):not(#{$option}--selected) {
         color: $color-text;
         background: transparent;
@@ -391,7 +386,7 @@ $tag-line-height: 1em;
           color: $color-white;
         }
 
-        @at-root #{$self}#{$self}--show-highlight #{last-selector(&)} {
+        @at-root #{$self}#{$self}--highlight #{last-selector(&)} {
           color: $color-text-inverted;
           background: $color-active;
         }
@@ -402,7 +397,7 @@ $tag-line-height: 1em;
         color: $color-text;
         background: $color-highlight;
 
-        @at-root #{$self}#{$self}--show-highlight &#{$option}--highlight {
+        @at-root #{$self}#{$self}--highlight &#{$option}--highlight {
           color: $color-text-inverted;
         }
       }
@@ -488,6 +483,16 @@ $tag-line-height: 1em;
           border-top-left-radius: 0;
           border-top-right-radius: 0;
         }
+      }
+    }
+
+    &--loading {
+      #{$self}__tags {
+        border-radius: $border-radius;
+      }
+
+      #{$self}__content-wrapper {
+        display: none;
       }
     }
   }
