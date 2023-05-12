@@ -73,6 +73,10 @@ export default DitoComponent.component('DitoClipboard', {
     }
   },
 
+  watch: {
+    'appState.clipboardData': 'checkClipboard'
+  },
+
   mounted() {
     // Check clipboard content whenever something gets copied or the window gets
     // (re)activated, as those are the moments when the clipboard can change:
