@@ -123,8 +123,6 @@ export default DitoComponent.component('DitoLabel', {
   label {
     cursor: inherit;
     font-weight: bold;
-    white-space: nowrap;
-    line-height: $input-height;
   }
 
   label,
@@ -132,6 +130,9 @@ export default DitoComponent.component('DitoLabel', {
   &__suffix {
     @include user-select(none);
     @include ellipsis;
+
+    white-space: nowrap;
+    line-height: $input-height;
   }
 
   &__prefix + label,
