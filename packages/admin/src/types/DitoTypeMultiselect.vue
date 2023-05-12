@@ -38,6 +38,7 @@
       :disabled="disabled"
       @click="clear"
     )
+  //- Edit button is never disabled, even if the field is disabled.
   DitoEditButtons(
     v-if="editable"
     :schema="schema"
@@ -45,7 +46,7 @@
     :data="data"
     :meta="meta"
     :store="store"
-    :disabled="disabled"
+    :disabled="false"
     :editable="editable"
     :editPath="editPath"
   )
