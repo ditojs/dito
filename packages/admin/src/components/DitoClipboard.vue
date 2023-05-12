@@ -28,7 +28,8 @@ export default DitoComponent.component('DitoClipboard', {
   mixins: [DomMixin],
 
   props: {
-    clipboard: { type: [Boolean, Object], default: false },
+    clipboard: { type: [Boolean, Object], required: true },
+    schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null }
   },
@@ -36,8 +37,7 @@ export default DitoComponent.component('DitoClipboard', {
   data() {
     return {
       copyEnabled: false,
-      pasteEnabled: false,
-      fixClipboard: true
+      pasteEnabled: false
     }
   },
 
@@ -50,12 +50,7 @@ export default DitoComponent.component('DitoClipboard', {
       const { copy } = this.clipboardOptions
       return copy
         ? clipboardData =>
-            copy.call(
-              this,
-              new DitoContext(this, {
-                clipboardData
-              })
-            )
+            copy.call(this, new DitoContext(this, { clipboardData }))
         : clipboardData => clone(clipboardData)
     },
 
@@ -63,17 +58,21 @@ export default DitoComponent.component('DitoClipboard', {
       const { paste } = this.clipboardOptions
       return paste
         ? clipboardData =>
-            paste.call(
-              this,
-              new DitoContext(this, {
-                clipboardData
-              })
-            )
+            paste.call(this, new DitoContext(this, { clipboardData }))
         : clipboardData => clipboardData
     }
   },
 
   watch: {
+    'parentComponent.hasData': {
+      // Check right away also in case there's already data (e.g. create form).
+      immediate: true,
+      handler(to, from) {
+        if (!to ^ !from) {
+          this.checkClipboard()
+        }
+      }
+    },
     'appState.clipboardData': 'checkClipboard'
   },
 
@@ -86,15 +85,6 @@ export default DitoComponent.component('DitoClipboard', {
     this.domOn(window, {
       focus: this.checkClipboard
     })
-    this.$watch('data', {
-      // Check right away also in case there's already data (e.g. create form).
-      immediate: true,
-      handler: (to, from) => {
-        if (to !== from) {
-          this.checkClipboard()
-        }
-      }
-    })
   },
 
   methods: {
@@ -103,12 +93,6 @@ export default DitoComponent.component('DitoClipboard', {
       let { clipboardData } = this.appState
       try {
         const json = await navigator.clipboard?.readText?.()
-        if (this.fixClipboard && json) {
-          // This appears to be needed on Safari to prevent a strange "Paste"
-          // button from appearing when the clipboard is accessed (why?!).
-          await navigator.clipboard?.writeText?.(json)
-          this.fixClipboard = false
-        }
         if (json) {
           clipboardData = JSON.parse(json)
         }
@@ -124,20 +108,25 @@ export default DitoComponent.component('DitoClipboard', {
         }
       }
       const { $schema, ...data } = clipboardData || {}
-      return $schema === this.schemaComponent?.schema.name ? data : null
+      return $schema === this.schema.name ? data : null
     },
 
     async checkClipboard() {
-      this.copyEnabled = !!this.data
+      this.copyEnabled = !!this.parentComponent.hasData
       // See if the clipboard content is valid JSON data that is compatible
       // with the current target schema, and only then activate the pasting:
       this.pasteEnabled = !!(await this.getClipboardData(false)) // don't report
     },
 
     async onCopy() {
-      let data = this.schemaComponent?.clipboardData
+      let data = this.parentComponent.clipboardData
       try {
-        data = data && this.copyData(data)
+        if (data) {
+          data = {
+            $schema: this.schema.name,
+            ...this.copyData(data)
+          }
+        }
         // Keep an internal clipboard as fallback.
         this.appState.clipboardData = data
         try {
@@ -159,7 +148,7 @@ export default DitoComponent.component('DitoClipboard', {
       try {
         data = data && this.pasteData(data)
         if (data) {
-          this.schemaComponent.setData(data)
+          this.parentComponent.clipboardData = data
         }
       } catch (error) {
         console.error(error)

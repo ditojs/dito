@@ -39,13 +39,14 @@ export default {
   ],
 
   provide() {
+    const self = () => this
     return this.providesData
       ? {
-          $parentComponent: () => this,
-          $dataComponent: () => this
+          $parentComponent: self,
+          $dataComponent: self
         }
       : {
-          $parentComponent: () => this
+          $parentComponent: self
         }
   },
 

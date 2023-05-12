@@ -39,7 +39,9 @@ slot(name="before")
           :tabs="tabs"
         )
       DitoClipboard(
+        v-if="clipboard"
         :clipboard="clipboard"
+        :schema="schema"
         :dataPath="dataPath"
         :data="data"
       )
@@ -236,10 +238,13 @@ export default DitoComponent.component('DitoSchema', {
       return this.processData({ target: 'server', schemaOnly: true })
     },
 
-    clipboardData() {
-      return {
-        $schema: this.schema.name,
-        ...this.processData({ target: 'clipboard', schemaOnly: true })
+    clipboardData: {
+      get() {
+        return this.processData({ target: 'clipboard', schemaOnly: true })
+      },
+
+      set(data) {
+        this.setData(data)
       }
     },
 
