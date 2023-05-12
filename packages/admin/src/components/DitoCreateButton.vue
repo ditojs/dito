@@ -81,7 +81,14 @@ export default DitoComponent.component('DitoCreateButton', {
     isFormCreatable(form) {
       // Forms can be excluded from the list by providing `if: false` or
       // `creatable: false`.
-      return form.creatable !== false && this.shouldRenderSchema(form)
+      return (
+        this.shouldRenderSchema(form) &&
+        this.getSchemaValue('creatable', {
+          type: Boolean,
+          default: true,
+          schema: form
+        })
+      )
     },
 
     createItem(form, type = null) {

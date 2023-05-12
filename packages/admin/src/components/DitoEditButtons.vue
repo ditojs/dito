@@ -10,18 +10,18 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
 )
   //- Firefox doesn't like <button> here, so use <a> instead:
   a.dito-button(
-    v-if="hasDraggable"
-    :class="{ 'dito-disabled': disabled }"
+    v-if="draggable"
+    :class="{ 'dito-disabled': isDraggableDisabled }"
     v-bind="getButtonAttributes(verbs.drag)"
   )
   RouterLink.dito-button(
-    v-if="hasEditable"
-    :class="{ 'dito-disabled': disabled || !editPath }"
+    v-if="editable"
+    :class="{ 'dito-disabled': isEditableDisabled }"
     :to="editPath ? { path: editPath } : {}"
     v-bind="getButtonAttributes(verbs.edit)"
   )
   DitoCreateButton(
-    v-if="hasCreatable"
+    v-if="creatable"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
@@ -30,12 +30,12 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
     :path="createPath"
     :verb="verbs.create"
     :text="createButtonText"
-    :disabled="disabled || !createPath"
+    :disabled="isCreatableDisabled"
   )
   button.dito-button(
-    v-if="hasDeletable"
+    v-if="deletable"
     type="button"
-    :disabled="disabled || !isFormDeletable"
+    :disabled="isDeletableDisabled"
     v-bind="getButtonAttributes(verbs.delete)"
     @click="$emit('delete')"
   )
@@ -70,24 +70,28 @@ export default DitoComponent.component('DitoEditButtons', {
       return this.getLabel(this.schema.form)
     },
 
-    hasDraggable() {
-      return this.hasOption('draggable')
+    isDraggableDisabled() {
+      return this.disabled || !this.hasSchemaOption('draggable')
     },
 
-    hasEditable() {
-      return this.hasOption('editable')
+    isDeletableDisabled() {
+      return this.disabled || !this.hasSchemaOption('deletable')
     },
 
-    hasCreatable() {
-      return this.hasOption('creatable')
+    isCreatableDisabled() {
+      return (
+        this.disabled ||
+        !this.createPath ||
+        !this.hasSchemaOption('creatable')
+      )
     },
 
-    hasDeletable() {
-      return this.hasOption('deletable')
-    },
-
-    isFormDeletable() {
-      return this.schema.deletable !== false
+    isEditableDisabled() {
+      return (
+        this.disabled ||
+        !this.editPath ||
+        !this.hasSchemaOption('editable')
+      )
     },
 
     createButtonText() {
@@ -105,11 +109,13 @@ export default DitoComponent.component('DitoEditButtons', {
   },
 
   methods: {
-    hasOption(name) {
-      // The options of the outer component are passed to the buttons component
-      // through properties `this[name]`, but can be disabled on a per-form
-      // basis by setting `schema[name]` to `false`.
-      return !!(this[name] && this.schema[name] !== false)
+    hasSchemaOption(name) {
+      // All options can be disabled on a per-form basis by setting
+      // `schema[name]` to `false` or a callback returning `false`.
+      return this.getSchemaValue(name, {
+        type: Boolean,
+        default: true
+      })
     }
   }
 })
