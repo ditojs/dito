@@ -2,6 +2,7 @@
 <template lang="pug">
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
+  v-resize="onResizePane"
   :class=`{
     'dito-pane--single': isSingleComponent
   }`
@@ -22,8 +23,9 @@
     )
     DitoContainer(
       v-if="shouldRenderSchema(schema)"
+      ref="containers"
       :key="nestedDataPath"
-      v-resize="event => onResizeContainer(index, event)"
+      :data-index="index"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -196,15 +198,26 @@ export default DitoComponent.component('DitoPane', {
       }
     },
 
-    onResizeContainer(index, { target, contentRect: { width, height } }) {
-      this.positions[index] =
-        width > 0 && height > 0
-          ? {
-              top: target.getBoundingClientRect().y,
-              height: height / parseFloat(getComputedStyle(target).fontSize),
-              node: target
-            }
-          : null
+    onResizePane() {
+      this.$nextTick(() => {
+        for (const container of this.$refs.containers) {
+          const node = container.$el
+          const index = +node.dataset.index
+          const bounds = node.getBoundingClientRect()
+          const style = getComputedStyle(node)
+          const padding = parseFloat(style.padding)
+          const fontSize = parseFloat(style.fontSize)
+          const height = bounds.height - 2 * padding
+          this.positions[index] =
+            height <= 0
+              ? null
+              : {
+                  top: bounds.y,
+                  height: height / fontSize,
+                  node
+                }
+        }
+      })
     },
 
     isInLabeledRow(index) {
