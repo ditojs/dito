@@ -7,14 +7,15 @@ ul.dito-checkboxes(
     v-for="option in options"
   )
     label
-      input.dito-checkbox(
-        ref="element"
-        v-model="selectedOptions"
-        type="checkbox"
-        :value="getValueForOption(option)"
-        v-bind="attributes"
-      )
-      | {{ getLabelForOption(option) }}
+      .dito-checkbox
+        input(
+          ref="element"
+          v-model="selectedOptions"
+          type="checkbox"
+          :value="getValueForOption(option)"
+          v-bind="attributes"
+        )
+        span {{ getLabelForOption(option) }}
 </template>
 
 <script>
@@ -51,7 +52,7 @@ export default DitoTypeComponent.register('checkboxes', {
     @extend %input-borderless;
   }
 
-  .dito-checkbox {
+  input {
     margin-right: $form-spacing;
   }
 }

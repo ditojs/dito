@@ -1,11 +1,12 @@
 <template lang="pug">
-input.dito-checkbox(
-  :id="dataPath"
-  ref="element"
-  v-model="value"
-  type="checkbox"
-  v-bind="attributes"
-)
+.dito-checkbox
+  input(
+    :id="dataPath"
+    ref="element"
+    v-model="value"
+    type="checkbox"
+    v-bind="attributes"
+  )
 </template>
 
 <script>
