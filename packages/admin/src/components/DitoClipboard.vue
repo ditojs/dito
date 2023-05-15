@@ -82,6 +82,11 @@ export default DitoComponent.component('DitoClipboard', {
   },
 
   methods: {
+    checkClipboardData(clipboardData) {
+      const { $schema, ...data } = clipboardData || {}
+      return $schema === this.schema.name ? data : null
+    },
+
     async getClipboardData(report) {
       // Use the internal clipboard as fallback.
       let { clipboardData } = this.appState
@@ -101,12 +106,11 @@ export default DitoComponent.component('DitoClipboard', {
           }
         }
       }
-      const { $schema, ...data } = clipboardData || {}
-      return $schema === this.schema.name ? data : null
+      return this.checkClipboardData(clipboardData)
     },
 
     async updatePaste() {
-      this.pasteEnabled = !!this.appState.clipboardData
+      this.pasteEnabled = !!this.checkClipboardData(this.appState.clipboardData)
       if (!this.pasteEnabled && this.appState.agent.chrome) {
         // See if the clipboard content is valid JSON data that is compatible
         // with the current target schema, and only then activate the pasting:
