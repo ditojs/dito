@@ -54,8 +54,8 @@ export default DitoComponent.component('DitoDraggable', {
 
   methods: {
     onStart(event) {
-      this.isDragging = true
       this.options.onStart?.(event)
+      this.isDragging = true
       this.mouseEvents?.remove()
     },
 
@@ -63,7 +63,7 @@ export default DitoComponent.component('DitoDraggable', {
       this.options.onEnd?.(event)
       // Keep `isDragging` true until the next mouse interaction so that
       // confused hover states are cleared before removing the hover catcher.
-      this.mouseEvents = this.domOn(this.$el, {
+      this.mouseEvents = this.domOn(document, {
         mousedown: this.onMouse,
         mousemove: this.onMouse,
         mouseleave: this.onMouse
@@ -72,7 +72,7 @@ export default DitoComponent.component('DitoDraggable', {
 
     onMouse() {
       this.isDragging = false
-      this.mouseEvents.remove()
+      this.mouseEvents?.remove()
       this.mouseEvents = null
     }
   }
