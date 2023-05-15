@@ -51,7 +51,7 @@ export default DitoComponent.component('DitoUploadFile', {
     'file.upload.file': {
       immediate: true,
       handler(file) {
-        if (file && this.thumbnail) {
+        if (this.thumbnail && file?.type.startsWith('image/')) {
           const reader = new FileReader()
           reader.onload = () => {
             this.uploadUrl = reader.result
