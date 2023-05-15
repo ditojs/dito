@@ -21,7 +21,10 @@
       @remove="removeDialog(key)"
     )
   DitoNavigation
-  main.dito-page.dito-scroll-parent(:class="appState.pageClass")
+  main.dito-page.dito-scroll-parent(
+    v-resize="onResizePage"
+    :class="pageClasses"
+  )
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="isLoading"
@@ -74,8 +77,9 @@ export default DitoComponent.component('DitoRoot', {
       resolvedViews: {},
       removeRoutes: null,
       dialogs: {},
-      allowLogin: false,
+      pageWidth: 0,
       loadingCount: 0,
+      allowLogin: false,
       isDraggingFiles: false
     }
   },
@@ -87,6 +91,19 @@ export default DitoComponent.component('DitoRoot', {
 
     isLoading() {
       return this.loadingCount > 0
+    },
+
+    pageClasses() {
+      const prefix = 'dito-page'
+      // NOTE: Keep synced with $content-width in SCSS:
+      const contentWidth = 900
+      return [
+        this.appState.pageClass,
+        {
+          [`${prefix}--width-80`]: this.pageWidth <= contentWidth * 0.8,
+          [`${prefix}--width-60`]: this.pageWidth <= contentWidth * 0.6
+        }
+      ]
     }
   },
 
@@ -438,6 +455,10 @@ export default DitoComponent.component('DitoRoot', {
         ...routes.flat()
       ])
       this.$router.replace(fullPath)
+    },
+
+    onResizePage({ contentRect: { width } }) {
+      this.pageWidth = width
     }
   }
 })
@@ -475,10 +496,9 @@ function addRoutes(router, routes) {
 
   flex: 0 1 var(--max-page-width);
   background: $content-color-background;
+  min-width: 0%;
   max-width: var(--max-page-width);
   overflow: visible; // For .dito-header full-width background.
-  // For the `@container` rule in `.dito-container` to work:
-  container-type: inline-size;
 
   &--wide {
     --max-content-width: #{$content-width-wide};
@@ -505,9 +525,9 @@ function addRoutes(router, routes) {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: $z-index-drag-overlay;
   width: 100%;
   height: 100%;
+  z-index: $z-index-drag-overlay;
   background: rgba(0, 0, 0, 0.25);
   pointer-events: none;
   backdrop-filter: blur(8px);

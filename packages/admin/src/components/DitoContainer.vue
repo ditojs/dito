@@ -255,26 +255,24 @@ export default DitoComponent.component('DitoContainer', {
   // percentages in flex-basis to work.
   padding: $form-spacing-half;
 
-  .dito-page .dito-pane > & {
-    @container (width < #{calc($content-width * 0.8)}) {
+  .dito-pane > & {
+    .dito-page--width-80 & {
       flex-grow: 1;
       flex-basis: var(--basis-mobile, var(--basis));
       // DEBUG: background: yellow;
     }
 
-    @container (width < #{calc($content-width * 0.6)}) {
+    .dito-page--width-60 & {
       flex-basis: calc(2 * var(--basis));
       // DEBUG: background: orange;
     }
-  }
 
-  .dito-sidebar .dito-pane > & {
-    @container (width < #{$sidebar-max-width}) {
+    .dito-sidebar--width-99 & {
       flex-grow: 1;
       // DEBUG: background: yellow;
     }
 
-    @container (width < #{calc($sidebar-max-width * 0.6)}) {
+    .dito-sidebar--width-60 & {
       flex-basis: calc(2 * var(--basis));
       // DEBUG: background: orange;
     }
