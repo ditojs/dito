@@ -115,8 +115,9 @@ export default DitoComponent.component('DitoLabel', {
   }
 
   &__inner {
-    display: flex;
     flex: 1 0 0%;
+    display: flex;
+    align-items: center;
     overflow: hidden;
   }
 

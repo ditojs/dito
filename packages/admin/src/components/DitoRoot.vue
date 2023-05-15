@@ -124,7 +124,7 @@ export default DitoComponent.component('DitoRoot', {
     tippyDelegate(this.$el, {
       target: '.dito-info',
       theme: 'info',
-      appendTo: 'parent',
+      appendTo: node => node.closest('.dito-pane'),
       animation: 'shift-away-subtle',
       interactive: true,
       delay: 250,
