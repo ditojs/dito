@@ -1,7 +1,10 @@
-import { asArray, isArrayLike } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 
 export function addEvents(targets, events) {
-  targets = isArrayLike(targets) ? Array.from(targets) : asArray(targets)
+  targets =
+    targets instanceof NodeList
+      ? Array.from(targets)
+      : asArray(targets)
 
   for (const [type, handler] of Object.entries(events)) {
     for (const target of targets) {
