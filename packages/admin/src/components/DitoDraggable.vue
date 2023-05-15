@@ -84,16 +84,18 @@ export default DitoComponent.component('DitoDraggable', {
 
 .dito-draggable {
   // Overlay a hover catcher while we're dragging to prevent hover states from
-  // getting stuck / confused.
-  &:has(&__chosen),
-  &--dragging {
-    > * {
-      position: relative;
+  // getting stuck / confused. Safari struggles with this, so disable it there.
+  @include browser-query(('chrome', 'firefox')) {
+    &:has(&__chosen),
+    &--dragging {
+      > * {
+        position: relative;
 
-      > :first-child::after {
-        content: '';
-        position: absolute;
-        inset: 0;
+        > :first-child::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+        }
       }
     }
   }

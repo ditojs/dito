@@ -1,5 +1,9 @@
 <template lang="pug">
-.dito-root
+.dito-root(
+  :data-agent-browser="appState.agent.browser"
+  :data-agent-platform="appState.agent.platform"
+  :data-agent-version="appState.agent.versionNumber"
+)
   VueNotifications.dito-notifications(
     ref="notifications"
     position="top right"

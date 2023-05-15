@@ -1,0 +1,54 @@
+@use 'sass:list';
+@use 'sass:map';
+@use 'sass:string';
+@use 'sass:selector';
+
+@mixin browser-query($browsers) {
+  // The `browser-query()` mixin works in conjunction with the `data-agent-*`
+  // attributes on `.dito-root`. It creates a CSS query for each provided
+  // browser and matches against it to target that provided browser.
+  @if type-of($browsers) != 'list' {
+    // Convert `$browsers` to a list, so that we don't accidentally iterate over
+    // the properties of maps further down in `@each`.
+    // TODO: Switch to `$browsers: [$browsers]` once we switched to stylelint
+    $browsers: list.append((), $browsers);
+  }
+  // TODO: Investigate why using `[]` instead if `()` yields different results.
+  $selectors: ();
+  @each $entry in $browsers {
+    $browser: null;
+    $platform: null;
+    $version: null;
+    @if type-of($entry) == 'map' {
+      $browser: map.get($entry, 'browser');
+      $platform: map.get($entry, 'platform');
+      $version: map.get($entry, 'version');
+    } @else {
+      $browser: $entry;
+    }
+
+    $attributes: null;
+    @if $browser {
+      $attributes: '#{$attributes}[data-agent-browser="#{$browser}"]';
+    }
+    @if $platform {
+      $attributes: '#{$attributes}[data-agent-platform="#{$platform}"]';
+    }
+    @if $version {
+      // TODO: Add support for version arrays and ranges, when / if needed.
+      $attributes: '#{$attributes}[data-agent-version^="#{$version}"]';
+    }
+    @if $attributes {
+      $selector: '.dito-root#{$attributes} &';
+      $selectors: list.append($selectors, string.unquote($selector), comma);
+    }
+  }
+
+  @if list.length($selectors) > 0 {
+    @at-root #{$selectors} {
+      @content;
+    }
+  } @else {
+    @content;
+  }
+}
