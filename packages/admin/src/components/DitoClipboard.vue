@@ -67,24 +67,18 @@ export default DitoComponent.component('DitoClipboard', {
     'parentComponent.hasData': {
       // Check right away also in case there's already data (e.g. create form).
       immediate: true,
-      handler(to, from) {
-        if (!to ^ !from) {
-          this.checkClipboard()
-        }
+      handler(hasData) {
+        this.copyEnabled = hasData
       }
     },
-    'appState.clipboardData': 'checkClipboard'
+    'appState.clipboardData': 'updatePaste'
   },
 
   mounted() {
     // Check clipboard content whenever something gets copied or the window gets
     // (re)activated, as those are the moments when the clipboard can change:
-    this.domOn(document, {
-      copy: this.checkClipboard
-    })
-    this.domOn(window, {
-      focus: this.checkClipboard
-    })
+    this.domOn(document, { copy: this.updatePaste })
+    this.domOn(window, { focus: this.updatePaste })
   },
 
   methods: {
@@ -111,11 +105,14 @@ export default DitoComponent.component('DitoClipboard', {
       return $schema === this.schema.name ? data : null
     },
 
-    async checkClipboard() {
-      this.copyEnabled = !!this.parentComponent.hasData
-      // See if the clipboard content is valid JSON data that is compatible
-      // with the current target schema, and only then activate the pasting:
-      this.pasteEnabled = !!(await this.getClipboardData(false)) // don't report
+    async updatePaste() {
+      this.pasteEnabled = !!this.appState.clipboardData
+      if (!this.pasteEnabled && this.appState.agent.chrome) {
+        // See if the clipboard content is valid JSON data that is compatible
+        // with the current target schema, and only then activate the pasting:
+        const data = await this.getClipboardData(false) // Don't report
+        this.pasteEnabled = !!data
+      }
     },
 
     async onCopy() {
@@ -129,11 +126,10 @@ export default DitoComponent.component('DitoClipboard', {
         }
         // Keep an internal clipboard as fallback.
         this.appState.clipboardData = data
+        this.pasteEnabled = true
         try {
           const json = JSON.stringify(data, null, 2)
           await navigator.clipboard?.writeText?.(json)
-          // See if we can activate the paste button, depending on browsers:
-          await this.checkClipboard()
         } catch (err) {
           console.error(err, err.name, err.message)
         }
@@ -144,15 +140,10 @@ export default DitoComponent.component('DitoClipboard', {
     },
 
     async onPaste() {
-      let data = await this.getClipboardData(true) // report
-      try {
-        data = data && this.pasteData(data)
-        if (data) {
-          this.parentComponent.clipboardData = data
-        }
-      } catch (error) {
-        console.error(error)
-        alert(error.message)
+      let data = await this.getClipboardData(true) // Report
+      data = data && this.pasteData(data)
+      if (data) {
+        this.parentComponent.clipboardData = data
       }
     }
   }
