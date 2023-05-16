@@ -9,7 +9,10 @@
 </template>
 
 <script>
-export default {
+import DitoComponent from '../DitoComponent.js'
+
+// @vue/component
+export default DitoComponent.component('DitoSpinner', {
   props: {
     loading: {
       type: Boolean,
@@ -60,10 +63,15 @@ export default {
       }
     }
   }
-}
+})
 </script>
 
 <style lang="scss">
+.dito-spinner {
+  display: flex;
+  align-items: center;
+}
+
 @keyframes v-pulseStretchDelay {
   0%,
   80% {

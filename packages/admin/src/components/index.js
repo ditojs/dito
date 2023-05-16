@@ -5,6 +5,7 @@
 
 export { default as DitoRoot } from './DitoRoot.vue'
 export { default as DitoMenu } from './DitoMenu.vue'
+export { default as DitoTrail } from './DitoTrail.vue'
 export { default as DitoHeader } from './DitoHeader.vue'
 export { default as DitoNavigation } from './DitoNavigation.vue'
 export { default as DitoSidebar } from './DitoSidebar.vue'
@@ -34,4 +35,5 @@ export { default as DitoTableHead } from './DitoTableHead.vue'
 export { default as DitoTableCell } from './DitoTableCell.vue'
 export { default as DitoUploadFile } from './DitoUploadFile.vue'
 export { default as DitoDraggable } from './DitoDraggable.vue'
+export { default as DitoSpinner } from './DitoSpinner.vue'
 export { default as DitoVNode } from './DitoVNode.vue'
