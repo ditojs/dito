@@ -1,11 +1,11 @@
 <template lang="pug">
 .dito-spinner(
   v-show="loading"
+  :style="{ '--color': color, '--size': size, '--margin': margin }"
 )
-  //- TODO: Convert to BEM
-  .v-pulse.v-pulse1(:style="[spinnerStyle, spinnerDelay1]")
-  .v-pulse.v-pulse2(:style="[spinnerStyle, spinnerDelay2]")
-  .v-pulse.v-pulse3(:style="[spinnerStyle, spinnerDelay3]")
+  .dito-spinner__pulse.dito-spinner__pulse1
+  .dito-spinner__pulse.dito-spinner__pulse2
+  .dito-spinner__pulse.dito-spinner__pulse3
 </template>
 
 <script>
@@ -20,47 +20,15 @@ export default DitoComponent.component('DitoSpinner', {
     },
     color: {
       type: String,
-      default: '#5dc596'
+      default: null
     },
     size: {
       type: String,
-      default: '15px'
+      default: null
     },
     margin: {
       type: String,
-      default: '2px'
-    },
-    radius: {
-      type: String,
-      default: '100%'
-    }
-  },
-
-  data() {
-    // TODO: Convert to using only classes
-    return {
-      spinnerStyle: {
-        backgroundColor: this.color,
-        width: this.size,
-        height: this.size,
-        margin: this.margin,
-        borderRadius: this.radius,
-        display: 'inline-block',
-        animationName: 'v-pulseStretchDelay',
-        animationDuration: '0.75s',
-        animationIterationCount: 'infinite',
-        animationTimingFunction: 'cubic-bezier(.2,.68,.18,1.08)',
-        animationFillMode: 'both'
-      },
-      spinnerDelay1: {
-        animationDelay: '0.12s'
-      },
-      spinnerDelay2: {
-        animationDelay: '0.24s'
-      },
-      spinnerDelay3: {
-        animationDelay: '0.36s'
-      }
+      default: null
     }
   }
 })
@@ -68,11 +36,38 @@ export default DitoComponent.component('DitoSpinner', {
 
 <style lang="scss">
 .dito-spinner {
+  --color: #999999;
+  --size: 8px;
+  --margin: 2px;
+
   display: flex;
   align-items: center;
+
+  &__pulse {
+    display: inline-block;
+    background: var(--color);
+    width: var(--size);
+    height: var(--size);
+    margin: var(--margin);
+    border-radius: 100%;
+    animation: dito-spinner-pulse 0.75s cubic-bezier(0.2, 0.68, 0.18, 1.08) 0s
+      infinite both;
+  }
+
+  &__pulse1 {
+    animation-delay: 0.12s;
+  }
+
+  &__pulse2 {
+    animation-delay: 0.24s;
+  }
+
+  &__pulse3 {
+    animation-delay: 0.36s;
+  }
 }
 
-@keyframes v-pulseStretchDelay {
+@keyframes dito-spinner-pulse {
   0%,
   80% {
     transform: scale(1);
@@ -85,7 +80,7 @@ export default DitoComponent.component('DitoSpinner', {
   }
 }
 
-@keyframes v-pulseStretchDelay {
+@keyframes dito-spinner-pulse {
   0%,
   80% {
     transform: scale(1);

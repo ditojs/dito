@@ -3,8 +3,8 @@ nav.dito-header
   DitoTrail
     DitoSpinner(
       v-if="isLoading"
-      :size="spinner?.size || '8px'"
-      :color="spinner?.color || '#999'"
+      :size="spinner?.size"
+      :color="spinner?.color"
     )
   //- Teleport target for `.dito-schema-header`:
   .dito-header__teleport
