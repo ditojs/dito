@@ -101,11 +101,15 @@ export default DitoComponent.component('DitoView', {
   },
 
   watch: {
-    $route(to, from) {
-      // See if the route changes completely, and clear the data if it does.
-      if (this.isFullRouteChange(to, from)) {
-        this.isLoading = false
-        this.data = {}
+    $route: {
+      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
+      flush: 'post',
+      handler(to, from) {
+        // See if the route changes completely, and clear the data if it does.
+        if (this.isFullRouteChange(to, from)) {
+          this.isLoading = false
+          this.data = {}
+        }
       }
     }
   },

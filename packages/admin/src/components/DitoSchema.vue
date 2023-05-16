@@ -757,7 +757,7 @@ export default DitoComponent.component('DitoSchema', {
   }
 
   &:has(> .dito-schema-content + .dito-edit-buttons) {
-    // Display the edit buttons to the right of the schema:
+    // Display the inlined edit buttons to the right of the schema:
     display: flex;
     flex-direction: row;
     align-items: stretch;

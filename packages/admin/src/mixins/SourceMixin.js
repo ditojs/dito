@@ -314,12 +314,20 @@ export default {
   },
 
   watch: {
-    $route(to, from) {
-      if (this.providesData && from.path === to.path && from.hash === to.hash) {
-        // Paths and hashes remain the same, so only queries have changed.
-        // Update filter and reload data without clearing.
-        this.query = to.query
-        this.loadData(false)
+    $route: {
+      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
+      flush: 'post',
+      handler(to, from) {
+        if (
+          this.providesData &&
+          from.path === to.path &&
+          from.hash === to.hash
+        ) {
+          // Paths and hashes remain the same, so only queries have changed.
+          // Update filter and reload data without clearing.
+          this.query = to.query
+          this.loadData(false)
+        }
       }
     },
 

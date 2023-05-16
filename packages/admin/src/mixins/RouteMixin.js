@@ -164,15 +164,15 @@ export default {
       next(ok)
     },
 
-    getRoutePath(templatePath) {
+    getRoutePath(recordPath) {
       // Maps the route's actual path to the matched routes by counting its
       // parts separated by '/', splitting the path into the mapped parts
       // containing actual parameters.
       const { path } = this.$route
-      return templatePath
+      return recordPath
         ? path
             .split('/')
-            .slice(0, templatePath.split('/').length)
+            .slice(0, recordPath.split('/').length)
             .join('/')
         : path
     },
