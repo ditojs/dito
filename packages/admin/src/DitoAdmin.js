@@ -199,8 +199,8 @@ export default class DitoAdmin {
     app.config.errorHandler = console.error
 
     app.use(VueNotifications, {
-      name: 'notify',
-      componentName: 'VueNotifications'
+      componentName: 'VueNotifications',
+      name: 'notify'
     })
 
     app.directive('resize', ResizeDirective)

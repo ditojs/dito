@@ -4,11 +4,6 @@
   :data-agent-platform="appState.agent.platform"
   :data-agent-version="appState.agent.versionNumber"
 )
-  VueNotifications.dito-notifications(
-    ref="notifications"
-    position="top right"
-    classes="dito-notification"
-  )
   Transition(name="dito-drag")
     .dito-drag-overlay(
       v-if="isDraggingFiles"
@@ -43,12 +38,12 @@
       @click="rootComponent.login()"
     )
       span Login
-  .dito-fill
+  DitoNotifications(ref="notifications")
 </template>
 
 <script>
 import { delegate as tippyDelegate } from 'tippy.js'
-import { asArray, mapConcurrently, stripTags } from '@ditojs/utils'
+import { mapConcurrently } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoUser from '../DitoUser.js'
@@ -90,7 +85,7 @@ export default DitoComponent.component('DitoRoot', {
 
   computed: {
     notifications() {
-      return this.$refs.notifications
+      return this.isMounted && this.$refs.notifications
     },
 
     isLoading() {
@@ -239,39 +234,7 @@ export default DitoComponent.component('DitoRoot', {
     },
 
     notify({ type = 'info', title, text } = {}) {
-      title ||= (
-        {
-          warning: 'Warning',
-          error: 'Error',
-          info: 'Information',
-          success: 'Success'
-        }[type] ||
-        'Notification'
-      )
-      text = `<p>${
-        asArray(text).join('</p> <p>')
-      }</p>`.replace(/\n|\r\n|\r/g, '<br>')
-      const log = (
-        {
-          warning: 'warn',
-          error: 'error',
-          info: 'log',
-          success: 'log'
-        }[type] ||
-        'error'
-      )
-      // eslint-disable-next-line no-console
-      console[log](stripTags(text))
-      const { notifications = true } = this.api
-      if (notifications) {
-        // Calculate display-duration for the notification based on its content
-        // and the setting of the `durationFactor` configuration. It defines the
-        // amount of milliseconds multiplied with the amount of characters
-        // displayed in the notification, plus 40 (40 + title + message):
-        const { durationFactor = 20 } = notifications
-        const duration = (40 + text.length + title.length) * durationFactor
-        this.$notify({ type, title, text, duration })
-      }
+      this.notifications.notify({ type, title, text })
     },
 
     closeNotifications() {
@@ -506,17 +469,6 @@ function addRoutes(router, routes) {
 
   &--wide {
     --max-content-width: #{$content-width-wide};
-  }
-}
-
-.dito-fill {
-  flex: 1;
-
-  .dito-header {
-    span {
-      padding-left: 0;
-      padding-right: 0;
-    }
   }
 }
 
