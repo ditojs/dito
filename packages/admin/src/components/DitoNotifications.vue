@@ -5,8 +5,9 @@
   .dito-notifications__inner
     VueNotifications(
       ref="notifications"
-      position="none"
       classes="dito-notification"
+      position=""
+      width=""
     )
 </template>
 
@@ -75,7 +76,12 @@ export default DitoComponent.component('DitoNotifications', {
 }
 
 .dito-notifications {
+  $notification-width: 300px;
+
   flex: 1;
+  z-index: $z-index-notifications;
+  box-sizing: border-box;
+  margin-left: $form-spacing;
   // For the `@container` rule to work:
   container-type: inline-size;
 
@@ -94,10 +100,11 @@ export default DitoComponent.component('DitoNotifications', {
     position: absolute;
     left: 0;
     top: 0;
+    width: $notification-width;
 
-    @container (width < 300px) {
+    @container (width < #{$notification-width + $content-padding}) {
       left: unset;
-      right: 0;
+      right: $content-padding;
     }
   }
 
@@ -107,7 +114,7 @@ export default DitoComponent.component('DitoNotifications', {
 
   .dito-notification {
     padding: 8px;
-    margin: $content-padding;
+    margin: $content-padding 0;
     font-size: inherit;
     color: $color-white;
     border-radius: $border-radius;
@@ -119,6 +126,9 @@ export default DitoComponent.component('DitoNotifications', {
     }
 
     .notification-content {
+      overflow: hidden;
+      word-break: break-all;
+
       p {
         margin: 0;
 
