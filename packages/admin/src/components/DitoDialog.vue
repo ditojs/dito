@@ -4,7 +4,7 @@
   role="dialog"
   aria-expanded="true"
   aria-modal="true"
-  :style="{ '--width': `${settings.width}px` }"
+  :style="{ '--width': settings.width ? `${settings.width}px` : null }"
   @mouseup="onMouseUp"
 )
   UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
