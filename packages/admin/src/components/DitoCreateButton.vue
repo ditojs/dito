@@ -127,6 +127,13 @@ export default DitoComponent.component('DitoCreateButton', {
 
   .dito-pulldown {
     right: 0;
+
+    .dito-buttons-sticky & {
+      top: unset;
+      right: unset;
+      bottom: 0;
+      left: 0;
+    }
   }
 }
 </style>
