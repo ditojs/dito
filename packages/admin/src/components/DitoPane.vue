@@ -3,9 +3,7 @@
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
   v-resize="onResizePane"
-  :class=`{
-    'dito-pane--single': isSingleComponent
-  }`
+  :class="classes"
 )
   template(
     v-for=`{
@@ -63,6 +61,7 @@ export default DitoComponent.component('DitoPane', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     tab: { type: String, default: null },
+    padding: { type: String, default: null },
     single: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
@@ -76,6 +75,13 @@ export default DitoComponent.component('DitoPane', {
   },
 
   computed: {
+    classes() {
+      return {
+        'dito-pane--single': this.isSingleComponent,
+        [`dito-pane--padding-${this.padding}`]: !!this.padding
+      }
+    },
+
     tabComponent() {
       return this.tab ? this : this.$tabComponent()
     },
@@ -249,7 +255,7 @@ export default DitoComponent.component('DitoPane', {
     flex: 100%;
   }
 
-  .dito-scroll > & {
+  &--padding-root {
     // A root-level pane inside a scroll view. Clear negative margin from above.
     margin: 0;
     // Move the negative margin used to remove the padding added by
@@ -264,26 +270,34 @@ export default DitoComponent.component('DitoPane', {
       // Reduce top spacing when the first row has labels.
       margin-top: -$form-spacing-half;
     }
-  }
 
-  // Display a ruler between tabbed components and towards the .dito-buttons
-  &__tab + &__main {
-    &::before {
-      // Use a pseudo element to display a ruler with proper margins
-      display: block;
-      content: '';
-      width: 100%;
-      border-bottom: $border-style;
-      // Shift ruler up by $root-padding to exclude removed $form-spacing-half.
-      margin: (-$root-padding) $form-spacing-half $root-padding;
-      padding: $form-spacing-half;
+    // Display a ruler between tabbed components and towards the .dito-buttons
+    &__tab + &__main {
+      &::before {
+        // Use a pseudo element to display a ruler with proper margins
+        display: block;
+        content: '';
+        width: 100%;
+        border-bottom: $border-style;
+        // Shift ruler up by $root-padding to exclude removed $form-spacing-half
+        margin: (-$root-padding) $form-spacing-half $root-padding;
+        padding: $form-spacing-half;
+      }
+    }
+
+    &__main + .dito-buttons-main {
+      // Needed forms with sticky main buttons.
+      margin: $content-padding;
+      margin-bottom: 0;
     }
   }
 
-  &__main + .dito-buttons-main {
-    // Needed forms with sticky main buttons.
-    margin: $content-padding;
-    margin-bottom: 0;
+  &--padding-nested {
+    padding: $form-spacing;
+  }
+
+  &--padding-panel {
+    padding: $form-spacing;
   }
 
   .dito-break {

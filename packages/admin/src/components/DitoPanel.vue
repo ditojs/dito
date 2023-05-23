@@ -12,6 +12,7 @@ component.dito-panel(
     :data="panelData"
     :meta="meta"
     :store="store"
+    padding="panel"
     :disabled="disabled"
     :hasOwnData="hasOwnData"
     generateLabels
@@ -222,22 +223,6 @@ export default DitoComponent.component('DitoPanel', {
     border-bottom-right-radius: $border-radius;
 
     > .dito-schema-content {
-      > .dito-pane {
-        padding: $form-spacing;
-      }
-
-      .dito-pane {
-        margin: -$form-spacing-half;
-
-        &.dito-pane--single {
-          margin: 0;
-        }
-
-        > .dito-container:not(.dito-container--single) {
-          padding: $form-spacing-half;
-        }
-      }
-
       .dito-object {
         border: none;
         padding: 0;

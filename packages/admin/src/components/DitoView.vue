@@ -20,6 +20,7 @@ template(
       :data="data"
       :meta="meta"
       :store="getChildStore(name)"
+      padding="root"
       :disabled="isLoading"
       scrollable
     )

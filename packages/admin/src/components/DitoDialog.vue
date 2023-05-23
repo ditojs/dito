@@ -19,6 +19,7 @@
       DitoSchema(
         :schema="schema"
         :data="dialogData"
+        padding="root"
         scrollable
         generateLabels
       )

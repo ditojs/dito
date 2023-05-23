@@ -32,6 +32,7 @@
       :data="data"
       :meta="meta"
       :store="store"
+      :padding="isNestedRoute ? 'nested' : 'root'"
       :disabled="isLoading"
       :scrollable="isRootForm"
       generateLabels

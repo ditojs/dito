@@ -68,6 +68,7 @@ slot(name="before")
             :data="data"
             :meta="meta"
             :store="store"
+            :padding="padding"
             :single="!inlined && !hasMainPane"
             :disabled="disabled"
             :generateLabels="generateLabels"
@@ -81,6 +82,7 @@ slot(name="before")
         :data="data"
         :meta="meta"
         :store="store"
+        :padding="padding"
         :single="!inlined && !hasTabs"
         :disabled="disabled"
         :generateLabels="generateLabels"
@@ -143,6 +145,7 @@ export default DitoComponent.component('DitoSchema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
+    padding: { type: String, default: null },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
