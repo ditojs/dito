@@ -13,7 +13,7 @@
       :data="data"
       :meta="meta"
       :store="getChildStore(schema.name)"
-      :disabled="schema.disabled != null ? schema.disabled : disabled"
+      :disabled="schema.disabled ?? disabled"
       :panelTabComponent="tabComponent"
     )
 </template>
