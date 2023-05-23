@@ -10,11 +10,8 @@ export default DitoComponent.component('DitoFormNested', {
 
 <style lang="scss">
 .dito-form-nested {
-  &,
-  .dito-scroll {
-    // No scrolling inside nested forms, and prevent open .multiselect from
-    // being cropped.
-    overflow: visible;
-  }
+  // No scrolling inside nested forms, and prevent open .multiselect from
+  // being cropped.
+  overflow: visible;
 }
 </style>

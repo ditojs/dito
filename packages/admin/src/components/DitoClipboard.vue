@@ -64,14 +64,16 @@ export default DitoComponent.component('DitoClipboard', {
   },
 
   watch: {
+    // Check right away also in case there's already data (e.g. create form):
     'parentComponent.hasData': {
-      // Check right away also in case there's already data (e.g. create form).
       immediate: true,
-      handler(hasData) {
-        this.copyEnabled = hasData
-      }
+      handler: 'updateCopy'
     },
-    'appState.clipboardData': 'updatePaste'
+
+    'appState.clipboardData': {
+      immediate: true,
+      handler: 'updatePaste'
+    }
   },
 
   mounted() {
@@ -107,6 +109,10 @@ export default DitoComponent.component('DitoClipboard', {
         }
       }
       return this.checkClipboardData(clipboardData)
+    },
+
+    updateCopy() {
+      this.copyEnabled = this.parentComponent.hasData
     },
 
     async updatePaste() {
