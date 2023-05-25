@@ -1,10 +1,17 @@
 <template lang="pug">
 component(
-  v-if="content"
-  :is="options.tag || tag"
+  v-if="options?.text != null"
+  :is="tagName"
   :class="classes"
   :style="styles"
 ) {{ options.text }}
+component(
+  v-else-if="options?.html != null"
+  :is="tagName"
+  :class="classes"
+  :style="styles"
+  v-html="options.html"
+)
 </template>
 
 <script>
@@ -21,7 +28,15 @@ export default DitoComponent.component('DitoElement', {
   computed: {
     options() {
       const { content } = this
-      return isObject(content) ? content : { text: content }
+      return content != null
+        ? isObject(content)
+          ? content
+          : { text: content }
+        : null
+    },
+
+    tagName() {
+      return this.options.tag || this.tag
     },
 
     classes() {
