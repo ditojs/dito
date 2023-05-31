@@ -133,7 +133,10 @@ export async function resolveSchema(schema, unwrapModule = false) {
     schema = { ...schema }
     // Unwrap default or named schema
     if (!schema.name && (unwrapModule || schema.default)) {
-      const keys = Object.keys(schema)
+      // Filter out internal key added by vite / vue 3 plugin when changing
+      // code in a dynamically imported vue component, see:
+      // https://github.com/vitejs/vite-plugin-vue/blob/abdf5f4f32d02af641e5f60871bde14535569b1e/packages/plugin-vue/src/main.ts#L133
+      const keys = Object.keys(schema).filter(key => key !== '_rerender_only')
       if (keys.length === 1) {
         const name = keys[0]
         schema = schema[name]
