@@ -296,10 +296,6 @@ export default DitoComponent.component('DitoPane', {
     padding: $form-spacing;
   }
 
-  &--padding-panel {
-    padding: $form-spacing;
-  }
-
   .dito-break {
     // `.dito-break` is rendered as <span> so we can use the
     // `.dito-container:first-of-type` selector to match the first container

@@ -12,7 +12,7 @@ component.dito-panel(
     :data="panelData"
     :meta="meta"
     :store="store"
-    padding="panel"
+    padding="nested"
     :disabled="disabled"
     :hasOwnData="hasOwnData"
     generateLabels

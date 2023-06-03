@@ -71,7 +71,7 @@ export default DitoTypeComponent.register('section', {
     }
 
     // For animation purposes, move the padding to the contained panes.
-    .dito-pane {
+    > .dito-schema > .dito-schema-content > .dito-pane {
       padding: $form-spacing;
 
       &:has(> .dito-container--label-vertical:first-of-type) {

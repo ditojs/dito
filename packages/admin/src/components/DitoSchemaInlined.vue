@@ -7,6 +7,7 @@ DitoSchema.dito-schema-inlined(
   :meta="meta"
   :store="store"
   :label="isCompact ? null : label"
+  padding="inlined"
   :inlined="true"
   :disabled="disabled"
   :collapsed="collapsed"
