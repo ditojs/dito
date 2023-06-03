@@ -1760,7 +1760,7 @@ __metadata:
     koa-response-time: ^2.1.0
     koa-session: ^6.4.0
     koa-static: ^5.0.0
-    leather: ^3.0.0
+    leather: "https://github.com/ditojs/leather#dito"
     mime-types: ^2.1.35
     multer: ^1.4.5-lts.1
     multer-s3: "https://github.com/ditojs/multer-s3#dito"
@@ -8983,10 +8983,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"leather@npm:^3.0.0":
+"leather@https://github.com/ditojs/leather#dito":
   version: 3.0.0
-  resolution: "leather@npm:3.0.0"
-  checksum: d8e3130b16a389e7fa5a6c7966164c913474a153cf1e4e36753ba1d00e80fa7cabc83f4628c9c5627d1bafa3bc0288758fc001c1d51eae635c104b5f16899313
+  resolution: "leather@https://github.com/ditojs/leather.git#commit=982d15e34e0bcb307e3303d129fad0eb1f891338"
+  checksum: 7d2bf1a5594508d24c40acf64dc2be99ab1e495f2423901b98c59d8596fb7f1cfb79b97a4300e89d3f78d6844d8f41004a08955f51eda413f14174ca1a42e1a4
   languageName: node
   linkType: hard
 
