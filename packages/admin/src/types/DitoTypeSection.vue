@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-section(:class="{ 'dito-section--labelled': !!schema.label }")
+.dito-section(:class="{ 'dito-section--labelled': hasLabel }")
   DitoSchemaInlined.dito-section__schema(
     :label="label"
     :schema="getItemFormSchema(schema, item, context)"
@@ -7,6 +7,7 @@
     :data="item"
     :meta="meta"
     :store="store"
+    :padding="hasLabel ? 'nested' : 'inlined'"
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
@@ -29,6 +30,10 @@ export default DitoTypeComponent.register('section', {
   computed: {
     item() {
       return this.nested ? this.value : this.data
+    },
+
+    hasLabel() {
+      return !!this.schema.label
     },
 
     collapsible: getSchemaAccessor('collapsible', {
@@ -68,16 +73,6 @@ export default DitoTypeComponent.register('section', {
 
     &:has(.dito-schema--open) {
       border-color: $border-color;
-    }
-
-    // For animation purposes, move the padding to the contained panes.
-    > .dito-schema > .dito-schema-content > .dito-pane {
-      padding: $form-spacing;
-
-      &:has(> .dito-container--label-vertical:first-of-type) {
-        // Reduce top spacing when the first row has labels.
-        padding-top: $form-spacing-half;
-      }
     }
   }
 }

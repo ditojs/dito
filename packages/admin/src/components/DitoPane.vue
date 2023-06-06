@@ -292,8 +292,17 @@ export default DitoComponent.component('DitoPane', {
     }
   }
 
+  &--padding-inlined {
+    padding: 0;
+  }
+
   &--padding-nested {
     padding: $form-spacing;
+
+    &:has(> .dito-container--label-vertical:first-of-type) {
+      // Reduce top spacing when the first row has labels.
+      padding-top: $form-spacing-half;
+    }
   }
 
   .dito-break {
