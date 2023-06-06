@@ -26,6 +26,7 @@ import {
   isModule,
   hyphenate,
   clone,
+  groupBy,
   assignDeeply,
   parseDataPath,
   normalizeDataPath,
@@ -907,11 +908,13 @@ export class Application extends Koa {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       // Find missing assets (copied from another system), and add them.
+      const filesByKey = groupBy(files, file => file.key)
       await mapConcurrently(
-        files,
-        async file => {
-          const asset = await AssetModel.query(trx).findOne('key', file.key)
+        Object.entries(filesByKey),
+        async ([key, files]) => {
+          const asset = await AssetModel.query(trx).findOne('key', key)
           if (!asset) {
+            const [file] = files // Pick the first file
             if (file.data || file.url) {
               let { data } = file
               if (!data) {
@@ -946,11 +949,13 @@ export class Application extends Koa {
               }
               const importedFile = await storage.addFile(file, data)
               await this.createAssets(storage, [importedFile], 0, trx)
-              // Merge back the changed file properties into the actual files
-              // object, so that the data from the static model hook can be used
-              // directly for the actual running query.
-              Object.assign(file, importedFile)
               importedFiles.push(importedFile)
+              // Merge back the changed file properties into the actual file
+              // objects, so that the data from the static model hook can be
+              // used directly for the actual running query.
+              for (const file of files) {
+                Object.assign(file, importedFile)
+              }
             } else {
               throw new AssetError(
                 `Unable to import asset from foreign source: '${
@@ -963,7 +968,9 @@ export class Application extends Koa {
           } else {
             // Asset is from a foreign source, but was already imported and can
             // be reused. See above for an explanation of this merge.
-            Object.assign(file, asset.file)
+            for (const file of files) {
+              Object.assign(file, asset.file)
+            }
             // NOTE: No need to add `file` to `importedFiles`, since it's
             // already been imported to the storage before.
           }
