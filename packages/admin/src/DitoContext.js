@@ -22,7 +22,7 @@ const contexts = new WeakMap()
 
 function get(context, key, defaultValue) {
   const object = contexts.get(toRaw(context))
-  const value = object[key]
+  const value = key in object ? object[key] : undefined
   // If `object` explicitly sets the key to `undefined`, return it.
   return value !== undefined || hasOwnProperty.call(object, key)
     ? value
