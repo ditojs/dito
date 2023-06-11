@@ -69,7 +69,6 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     type: 'panel',
     label: 'Filters',
     name: '$filters',
-    target: dataPath,
     // Override the default value
     disabled: false,
     sticky,
@@ -152,6 +151,15 @@ function createFiltersButtons(small) {
   }
 }
 
+function getDataName(filterName) {
+  // Prefix filter data keys with '$' to avoid conflicts with other data keys:
+  return `$${filterName}`
+}
+
+function getFilterName(dataName) {
+  return dataName.startsWith('$') ? dataName.slice(1) : null
+}
+
 function createFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(getNamedSchemas(filters) || {})) {
@@ -177,8 +185,8 @@ function createFiltersComponents(filters) {
           }
         }
       }
-      comps[filter.name] = {
-        label: form.label,
+      comps[getDataName(filter.name)] = {
+        label: form.label ?? labelize(filter.name),
         type: 'object',
         width,
         default: () => ({}),
@@ -194,23 +202,31 @@ function createFiltersComponents(filters) {
   return comps
 }
 
-function getComponentsForFilter(schema, name) {
-  const component = schema.components[name]
+function getComponentsForFilter(schema, dataName) {
+  const component = schema.components[dataName]
   return component?.form?.components
 }
 
 function formatFiltersData(schema, data) {
   const filters = []
-  for (const name in data) {
-    const entry = data[name]
+  for (const dataName in data) {
+    const entry = data[dataName]
     if (entry) {
       // Map components sequence to arguments:
-      const args = Object.keys(getComponentsForFilter(schema, name)).map(
+      const args = Object.keys(
+        getComponentsForFilter(schema, dataName)
+      ).map(
         key => entry[key] ?? null
       )
       // Only apply filter if there are some arguments that aren't null:
       if (args.some(value => value !== null)) {
-        filters.push(`${name}:${args.map(JSON.stringify).join(',')}`)
+        filters.push(
+          `${
+            getFilterName(dataName)
+          }:${
+            args.map(JSON.stringify).join(',')
+          }`
+        )
       }
     }
   }
@@ -223,20 +239,20 @@ function parseFiltersData(schema, query) {
   // from $route.query back to param lists per filter:
   if (query) {
     for (const filter of asArray(query.filter)) {
-      const [, name, json] = filter.match(/^(\w+):(.*)$/)
+      const [, filterName, json] = filter.match(/^(\w+):(.*)$/)
       try {
-        filters[name] = asArray(JSON.parse(`[${json}]`))
+        filters[filterName] = asArray(JSON.parse(`[${json}]`))
       } catch (error) {}
     }
   }
   const filtersData = {}
-  for (const name in schema.components) {
+  for (const dataName in schema.components) {
     const data = {}
     // If we have retrieved params from the query, fetch the associated
     // form components so we can map the values back to object keys:
-    const args = filters[name]
+    const args = filters[getFilterName(dataName)]
     if (args) {
-      const components = getComponentsForFilter(schema, name)
+      const components = getComponentsForFilter(schema, dataName)
       if (components) {
         let index = 0
         for (const key in components) {
@@ -244,7 +260,7 @@ function parseFiltersData(schema, query) {
         }
       }
     }
-    filtersData[name] = data
+    filtersData[dataName] = data
   }
   return filtersData
 }

@@ -90,10 +90,6 @@ export default DitoComponent.component('DitoPanel', {
       return getButtonSchemas(this.schema.panelButtons)
     },
 
-    target() {
-      return this.schema.target || this.dataPath
-    },
-
     hasOwnData() {
       return !!this.ownData
     },
