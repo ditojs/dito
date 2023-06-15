@@ -847,10 +847,9 @@ export function processSchemaData(
                 : componentDataPath
             const context = new DitoContext(options.component, {
               schema: componentSchema,
-              data: item,
-              value: item,
-              dataPath: itemDataPath,
-              index,
+              data,
+              dataPath: componentDataPath,
+              name,
               rootData: options.rootData
             })
             const getForms = (
