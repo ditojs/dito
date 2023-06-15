@@ -1,7 +1,14 @@
 <template lang="pug">
 .dito-create-button
+  button.dito-button(
+    v-if="creatableForm"
+    :type="isInlined ? 'button' : 'submit'"
+    :disabled="disabled"
+    v-bind="getButtonAttributes(verb)"
+    @click="createItem(creatableForm)"
+  ) {{ text }}
   template(
-    v-if="showPulldown"
+    v-else-if="creatableForms"
   )
     button.dito-button(
       type="button"
@@ -11,22 +18,14 @@
     ) {{ text }}
     ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
       li(
-        v-for="(form, type) in forms"
+        v-for="(form, type) in creatableForms"
       )
         a(
-          v-if="isFormCreatable(form)"
           v-show="shouldShowSchema(form)"
           :class="getFormClass(form, type)"
           @mousedown.stop="onPulldownMouseDown(type)"
           @mouseup="onPulldownMouseUp(type)"
         ) {{ getLabel(form) }}
-  button.dito-button(
-    v-else-if="isFormCreatable(forms.default)"
-    :type="isInlined ? 'button' : 'submit'"
-    :disabled="disabled"
-    v-bind="getButtonAttributes(verb)"
-    @click="createItem(forms.default)"
-  ) {{ text }}
 </template>
 
 <script>
@@ -64,16 +63,22 @@ export default DitoComponent.component('DitoCreateButton', {
       return getFormSchemas(this.schema, this.context)
     },
 
-    isInlined() {
-      return isInlined(this.schema)
+    creatableForms() {
+      const entries = Object.entries(this.forms).filter(
+        (type, form) => this.isFormCreatable(form)
+      )
+      return entries.length > 0
+        ? Object.fromEntries(entries)
+        : null
     },
 
-    showPulldown() {
-      const forms = Object.values(this.forms)
-      return (
-        (forms.length > 1 || !this.forms.default) &&
-        forms.some(this.isFormCreatable)
-      )
+    creatableForm() {
+      const forms = this.creatableForms
+      return forms && Object.keys(forms).length === 1 && forms.default || null
+    },
+
+    isInlined() {
+      return isInlined(this.schema)
     }
   },
 
@@ -92,7 +97,7 @@ export default DitoComponent.component('DitoCreateButton', {
     },
 
     createItem(form, type = null) {
-      if (this.isFormCreatable(form) && !this.shouldDisableSchema(form)) {
+      if (!this.shouldDisableSchema(form)) {
         if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {

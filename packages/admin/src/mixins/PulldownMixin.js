@@ -17,7 +17,7 @@ export default {
           },
 
           mouseup: () => {
-            if (this.onPulldownMouseUp(null)) {
+            if (this.onPulldownMouseUp()) {
               this.pulldown.handlers.remove()
             }
           }
@@ -28,8 +28,8 @@ export default {
   },
 
   methods: {
-    onPulldownMouseDown(value) {
-      if (!value) {
+    onPulldownMouseDown(value = null) {
+      if (value === null) {
         this.setPulldownOpen(true)
         this.checkTime = true
       } else {
@@ -37,11 +37,11 @@ export default {
       }
     },
 
-    onPulldownMouseUp(value) {
+    onPulldownMouseUp(value = null) {
       const { startTime } = this.pulldown
       if (!this.checkTime || startTime && (Date.now() - startTime > 250)) {
         this.setPulldownOpen(false)
-        if (value) {
+        if (value !== null) {
           this.onPulldownSelect(value)
         }
         return true
