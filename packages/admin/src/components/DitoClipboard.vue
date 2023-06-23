@@ -151,9 +151,14 @@ export default DitoComponent.component('DitoClipboard', {
 
     async onPaste() {
       let data = await this.getClipboardData(true) // Report
-      data = data && this.pasteData(data)
-      if (data) {
-        this.parentComponent.clipboardData = data
+      try {
+        data = data && this.pasteData(data)
+        if (data) {
+          this.parentComponent.clipboardData = data
+        }
+      } catch (error) {
+        console.error(error)
+        alert(error.message)
       }
     }
   }
