@@ -65,7 +65,7 @@ export default DitoComponent.component('DitoCreateButton', {
 
     creatableForms() {
       const entries = Object.entries(this.forms).filter(
-        (type, form) => this.isFormCreatable(form)
+        ([, form]) => this.isFormCreatable(form)
       )
       return entries.length > 0
         ? Object.fromEntries(entries)
