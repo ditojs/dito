@@ -1,20 +1,11 @@
 import { ResponseError } from './ResponseError.js'
-// TODO: Import directly once we can move to Objection 3 and this is fixed:
-// import {
-//   DBError,
-//   DataError,
-//   CheckViolationError,
-//   NotNullViolationError,
-//   ConstraintViolationError
-// } from 'objection'
-import objection from 'objection'
-const {
+import {
   DBError,
   DataError,
   CheckViolationError,
   NotNullViolationError,
   ConstraintViolationError
-} = objection
+} from 'objection'
 
 export class DatabaseError extends ResponseError {
   constructor(error, overrides) {
