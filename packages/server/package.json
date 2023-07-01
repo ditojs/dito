@@ -85,7 +85,7 @@
     "@types/koa-session": "^6.4.1",
     "@types/koa-static": "^4.0.2",
     "@types/koa__cors": "^4.0.0",
-    "@types/node": "^20.3.2",
+    "@types/node": "^20.3.3",
     "knex": "^2.4.2",
     "objection": "^3.0.4",
     "typescript": "^5.1.6"
