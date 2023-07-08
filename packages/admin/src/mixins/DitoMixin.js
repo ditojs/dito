@@ -322,7 +322,7 @@ export default {
     },
 
     async sendRequest({ method, url, resource, query, data, internal }) {
-      url ||= this.getResourcePath(resource)
+      url ||= this.getResourceUrl(resource)
       method ||= resource?.method
       const checkUser = !internal && this.api.isApiUrl(url)
       if (checkUser) {

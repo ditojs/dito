@@ -289,12 +289,12 @@ function isApiUrl(api, url) {
 }
 
 function getApiUrl(api, { url, query }) {
-  if (!isAbsoluteUrl(url)) {
+  if (!url.startsWith(api.url) && !isAbsoluteUrl(url)) {
     url = combineUrls(api.url, url)
   }
   // Support optional query parameters, to be are added to the URL.
   const search = formatQuery(query)
-  return search ? `${url}?${search}` : url
+  return search ? `${url}${url.includes('?') ? '&' : '?'}${search}` : url
 }
 
 function combineUrls(baseUrl, relativeUrl) {
