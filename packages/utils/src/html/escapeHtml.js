@@ -5,7 +5,7 @@ export function escapeHtml(html) {
         .replace(
           /["&<>]/g,
           chr =>
-            ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[chr])
+            ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' })[chr]
         )
     : ''
 }

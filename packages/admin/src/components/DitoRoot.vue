@@ -502,7 +502,9 @@ function addRoutes(router, routes) {
 .dito-drag-leave-active {
   $duration: 0.15s;
 
-  transition: opacity $duration, backdrop-filter $duration;
+  transition:
+    opacity $duration,
+    backdrop-filter $duration;
 
   ~ * .dito-drop-target {
     transition: filter $duration;

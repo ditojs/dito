@@ -2647,14 +2647,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prettier/plugin-pug@npm:^2.5.2":
-  version: 2.5.2
-  resolution: "@prettier/plugin-pug@npm:2.5.2"
+"@prettier/plugin-pug@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@prettier/plugin-pug@npm:3.0.0"
   dependencies:
     pug-lexer: ^5.0.1
   peerDependencies:
-    prettier: ^2.3.0
-  checksum: 30eb7165338a7b34a6b1d68dfef1cd0494dffcc95ff52981a6f199ee6e97313f447bff2742d014c0ac2cb79dc47b9f69b10aeffd180d552afa7a7b8c6d1a08e0
+    prettier: ^3.0.0
+  checksum: 06ad73e3abfd8d70666b8d12864b92a7bc65828f615fa60533d6c33b49e87638a9e3cbd1de1f4fae3a7f64c619bd035017d827ed668d724deeb7c3b161e723da
   languageName: node
   linkType: hard
 
@@ -5354,7 +5354,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dito@workspace:."
   dependencies:
-    "@prettier/plugin-pug": ^2.5.2
+    "@prettier/plugin-pug": ^3.0.0
     "@typescript-eslint/parser": ^6.2.0
     "@volar/language-service": ^1.9.2
     "@vue/language-plugin-pug": ^1.8.6
@@ -5367,7 +5367,7 @@ __metadata:
     eslint-import-resolver-typescript: ^3.5.5
     eslint-plugin-import: ^2.27.5
     eslint-plugin-n: ^16.0.1
-    eslint-plugin-prettier: ^4.2.1
+    eslint-plugin-prettier: ^5.0.0
     eslint-plugin-promise: ^6.1.1
     eslint-plugin-vue: ^9.15.1
     eslint-plugin-vue-pug: ^0.6.0
@@ -5377,11 +5377,11 @@ __metadata:
     lint-staged: ^13.2.3
     postcss-html: ^1.5.0
     postcss-scss: ^4.0.6
-    prettier: "npm:penere@^2.8.10"
+    prettier: "npm:penere@^3.0.0"
     stylelint: ^15.10.2
     stylelint-config-css-modules: ^4.3.0
     stylelint-config-standard-scss: ^10.0.0
-    stylelint-prettier: ^3.0.0
+    stylelint-prettier: ^4.0.0
     stylelint-scss: ^5.0.1
     vitest: ^0.33.0
     vue-eslint-parser: ^9.3.1
@@ -6122,18 +6122,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-prettier@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "eslint-plugin-prettier@npm:4.2.1"
+"eslint-plugin-prettier@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "eslint-plugin-prettier@npm:5.0.0"
   dependencies:
     prettier-linter-helpers: ^1.0.0
+    synckit: ^0.8.5
   peerDependencies:
-    eslint: ">=7.28.0"
-    prettier: ">=2.0.0"
+    "@types/eslint": ">=8.0.0"
+    eslint: ">=8.0.0"
+    prettier: ">=3.0.0"
   peerDependenciesMeta:
+    "@types/eslint":
+      optional: true
     eslint-config-prettier:
       optional: true
-  checksum: b9e839d2334ad8ec7a5589c5cb0f219bded260839a857d7a486997f9870e95106aa59b8756ff3f37202085ebab658de382b0267cae44c3a7f0eb0bcc03a4f6d6
+  checksum: 84e88744b9050f2d5ef31b94e85294dda16f3a53c2449f9d33eac8ae6264889b459bf35a68e438fb6b329c2a1d6491aac4bfa00d86317e7009de3dad0311bec6
   languageName: node
   linkType: hard
 
@@ -10707,12 +10711,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:penere@^2.8.10":
-  version: 2.8.10
-  resolution: "penere@npm:2.8.10"
+"prettier@npm:penere@^3.0.0":
+  version: 3.0.0
+  resolution: "penere@npm:3.0.0"
   bin:
-    penere: bin-prettier.js
-  checksum: ae5ae1bc9813ba1c788e10d38873339e83687ffcbfcac832eb548fbeaec721bd0965cf87432c9e2e38f43497064763a32c2b6cde7f657e74544934b4aab30046
+    penere: bin/prettier.cjs
+  checksum: 40cd9fcf2ee990f88841ff7413469eb47adcfc5a2414c3b464d7427e032fa7a80119e44e667c811c3aebd0a43f3054b1d61c1905426573b7387a5b4c40b854b3
   languageName: node
   linkType: hard
 
@@ -12299,15 +12303,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stylelint-prettier@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "stylelint-prettier@npm:3.0.0"
+"stylelint-prettier@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "stylelint-prettier@npm:4.0.0"
   dependencies:
     prettier-linter-helpers: ^1.0.0
   peerDependencies:
-    prettier: ">=2.0.0"
-    stylelint: ">=14.0.0"
-  checksum: 094f53ef5dbe3806524db7f580b9312ceca444651803fc08c8baa48cd9a270985c709fa4f083681a685310dc347b8e55aa93d462554ba7d4ae6258a3bdf6a278
+    prettier: ">=3.0.0"
+    stylelint: ">=15.8.0"
+  checksum: 3e7cff833e30b1eab9ae6e82f1b0a3596fd3dd214489d71d37b0899e677ae9d50cc74c4c1bbb3b1275903f03c1401b2ca6f8c1cf2631108363d3e7845d7b6300
   languageName: node
   linkType: hard
 

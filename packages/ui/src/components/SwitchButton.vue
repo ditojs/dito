@@ -135,7 +135,9 @@ export default {
     height: 100%;
     border-radius: 1em;
     background: $color-light;
-    transition: border-color 0.3s, background-color 0.3s;
+    transition:
+      border-color 0.3s,
+      background-color 0.3s;
   }
 
   .dito-switch-button {

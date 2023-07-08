@@ -186,7 +186,11 @@ export default {
   }
 
   .dito-button {
-    transition: all 0.3s ease, color 0s, background 0s, border 0s;
+    transition:
+      all 0.3s ease,
+      color 0s,
+      background 0s,
+      border 0s;
     font-variant-numeric: tabular-nums;
     padding: 0 0.5em;
 
