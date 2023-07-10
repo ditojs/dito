@@ -70,7 +70,7 @@
     "lint-staged": "^13.2.3",
     "postcss-html": "^1.5.0",
     "postcss-scss": "^4.0.6",
-    "prettier": "npm:penere@^2.8.9",
+    "prettier": "npm:penere@^2.8.10",
     "stylelint": "^15.10.1",
     "stylelint-config-css-modules": "^4.2.0",
     "stylelint-config-standard-scss": "^10.0.0",
