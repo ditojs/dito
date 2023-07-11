@@ -1840,6 +1840,7 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
   {
     transaction: objection.Transaction
     session: koaSession.ContextSession & { state: { user: any } }
+    logger: PinoLogger
   }
 >
 
