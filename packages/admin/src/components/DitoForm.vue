@@ -476,7 +476,11 @@ export default DitoComponent.component('DitoForm', {
         } else if (this.isCreating) {
           // Redirect to the form editing the newly created item:
           const id = this.getItemId(this.schema, this.data)
-          this.$router.replace({ path: resolvePath(`${this.path}/../${id}`) })
+          this.$router.replace({
+            path: resolvePath(`${this.path}/../${id}`),
+            // Preserve hash for tabs:
+            hash: this.$route.hash
+          })
         }
       }
       return success
