@@ -3453,50 +3453,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volar-plugins/pug@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@volar-plugins/pug@npm:2.0.0"
-  dependencies:
-    "@volar-plugins/html": 2.0.0
-    muggle-string: ^0.2.2
-    pug-lexer: ^5.0.1
-    pug-parser: ^6.0.0
-    vscode-html-languageservice: ^5.0.4
-    vscode-languageserver-textdocument: ^1.0.8
-    vscode-languageserver-types: ^3.17.2
-  peerDependencies:
-    "@volar/language-service": "*"
-    "@volar/source-map": "*"
-  checksum: 02d98b40b4dadea5b8267d81dcf634dcb10bd20f52b23c6155ce4de6d928c4caa0ccb507431f11175f6914356f0f1e19b2c36f638fd67f0cc15ce57cd8fb1296
-  languageName: node
-  linkType: hard
-
-"@volar/language-core@npm:1.4.1":
-  version: 1.4.1
-  resolution: "@volar/language-core@npm:1.4.1"
-  dependencies:
-    "@volar/source-map": 1.4.1
-  checksum: 3b0834ab9773ddce50fe3854076cb34d16dc3face7238d589d75b9aa91089ac5f595b0e74ec0319aeb7f9739c07cb30e5336ca1d36daba4c60468645a65acac1
-  languageName: node
-  linkType: hard
-
-"@volar/language-service@npm:1.4.1":
-  version: 1.4.1
-  resolution: "@volar/language-service@npm:1.4.1"
-  dependencies:
-    "@volar/language-core": 1.4.1
-    "@volar/source-map": 1.4.1
-    typescript-auto-import-cache: ^0.2.1
-    vscode-html-languageservice: ^5.0.4
-    vscode-json-languageservice: ^5.2.0
-    vscode-languageserver-protocol: ^3.17.3
-    vscode-languageserver-textdocument: ^1.0.8
-    vscode-uri: ^3.0.7
-  checksum: ca3e90a6f6bc09e47d6f8408e67bde68e82d0c41420572410b98cae9fe18edf8b502bcbffa15642d8872430d40abc53529d1c1bb324d0377474e95a9ba6e6dbf
-  languageName: node
-  linkType: hard
-
-"@volar/language-service@npm:^1.9.2":
+"@volar/language-service@npm:^1.9.2, @volar/language-service@npm:~1.9.0":
   version: 1.9.2
   resolution: "@volar/language-service@npm:1.9.2"
   dependencies:
@@ -3514,23 +3471,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volar/source-map@npm:1.4.1":
-  version: 1.4.1
-  resolution: "@volar/source-map@npm:1.4.1"
+"@volar/source-map@npm:~1.9.0":
+  version: 1.9.2
+  resolution: "@volar/source-map@npm:1.9.2"
   dependencies:
-    muggle-string: ^0.2.2
-  checksum: 43b46e34019f0d8ea7666e25355f35083d9c02a6610e70611b399d7523f4c29be69810e316696e242d7212ee215a9dbc36a9c3279ab142b71c0c9e1ef0c2dc34
-  languageName: node
-  linkType: hard
-
-"@volar/vue-language-plugin-pug@npm:^1.6.5":
-  version: 1.6.5
-  resolution: "@volar/vue-language-plugin-pug@npm:1.6.5"
-  dependencies:
-    "@volar-plugins/pug": 2.0.0
-    "@volar/language-service": 1.4.1
-    "@volar/source-map": 1.4.1
-  checksum: 051a25e3c00ec0abd7abb2f91c490f09126ce4b6c22868f4d600f59d1eeec6ba3399515a84d0b3825013ae1faf975c48ede503697a0db8e49ce311c2988f6fb2
+    muggle-string: ^0.3.1
+  checksum: a7bf7f31c6f86b312e6222aa299fe3fbf64daa985ea17cc1a84ae33ed722c3dac7451eee4d708ca30fb4c4b17f5aec600fa4a5df3e9fae6c1ed688764f2ba577
   languageName: node
   linkType: hard
 
@@ -3595,6 +3541,16 @@ __metadata:
   version: 6.5.0
   resolution: "@vue/devtools-api@npm:6.5.0"
   checksum: ec819ef3a426e91d09e9cfefd2827e9ed8ec9d62bb3b3e0674f3da8c7e92a4b879c3b777dc7329172ca6fe2670b62dd5580d23160339208f0f5ae038f2e504ad
+  languageName: node
+  linkType: hard
+
+"@vue/language-plugin-pug@npm:^1.8.6":
+  version: 1.8.6
+  resolution: "@vue/language-plugin-pug@npm:1.8.6"
+  dependencies:
+    "@volar/source-map": ~1.9.0
+    volar-service-pug: 0.0.10
+  checksum: 59af22c39fbcb7679fee85b1a1ec48413c28243b303ccf005fccb32baf7890cc2ae60d2ae3dbb3721e27135cb68be59ac2839fe7dc65f5520aa2a8ec389831c8
   languageName: node
   linkType: hard
 
@@ -5401,7 +5357,7 @@ __metadata:
     "@prettier/plugin-pug": ^2.5.2
     "@typescript-eslint/parser": ^6.2.0
     "@volar/language-service": ^1.9.2
-    "@volar/vue-language-plugin-pug": ^1.6.5
+    "@vue/language-plugin-pug": ^1.8.6
     c8: ^8.0.1
     concurrently: ^8.2.0
     cross-env: ^7.0.3
@@ -9471,6 +9427,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"muggle-string@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "muggle-string@npm:0.3.1"
+  checksum: f2357f906e0160b7df0179c77838cf859f3ca23cb74eca7c043b9fc9e1e416d91497c80fbe2f3c9aeb003c14ad15857fc4e94f1631e8a6695b07e4135626d305
+  languageName: node
+  linkType: hard
+
 "multer-s3@https://github.com/ditojs/multer-s3#dito":
   version: 3.0.1
   resolution: "multer-s3@https://github.com/ditojs/multer-s3.git#commit=b0f0ffb55c1642b699a032a48c3bc1b942b6a10e"
@@ -12925,15 +12888,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-auto-import-cache@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "typescript-auto-import-cache@npm:0.2.1"
-  dependencies:
-    semver: ^7.3.8
-  checksum: 59aa79c61eb1d0b0a3e3477fb99a79d0d76fdcf12db51e126a5c076f8e9e66ada71874441d7d39adad42a68c53cef4260870e364438f634aa1307759dc1b3b3e
-  languageName: node
-  linkType: hard
-
 "typescript@npm:>=3 < 6, typescript@npm:^5.1.6":
   version: 5.1.6
   resolution: "typescript@npm:5.1.6"
@@ -13284,6 +13238,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"volar-service-html@npm:0.0.10":
+  version: 0.0.10
+  resolution: "volar-service-html@npm:0.0.10"
+  dependencies:
+    vscode-html-languageservice: ^5.0.4
+    vscode-uri: ^3.0.7
+  peerDependencies:
+    "@volar/language-service": ~1.9.0
+  peerDependenciesMeta:
+    "@volar/language-service":
+      optional: true
+  checksum: f0b9ae88a86d595feeb3859be6c8123487bcc6083622115a1ff827276e7a1cc9e8fb0e9f94664fd5aa5dfc69f67aa75ef47d60562b25d78a27f4d5b1a7666023
+  languageName: node
+  linkType: hard
+
+"volar-service-pug@npm:0.0.10":
+  version: 0.0.10
+  resolution: "volar-service-pug@npm:0.0.10"
+  dependencies:
+    "@volar/language-service": ~1.9.0
+    "@volar/source-map": ~1.9.0
+    muggle-string: ^0.3.1
+    pug-lexer: ^5.0.1
+    pug-parser: ^6.0.0
+    volar-service-html: 0.0.10
+    vscode-html-languageservice: ^5.0.4
+    vscode-languageserver-textdocument: ^1.0.8
+  checksum: c93c8903980aa9d22885e3b4c6c67c892ae32a8bb23727d32a862d37a4d2b4093ce20a210291f11e588798ed4ef64db3c171c6849a6d125ca5c832bd5a34f756
+  languageName: node
+  linkType: hard
+
 "vscode-html-languageservice@npm:^5.0.4":
   version: 5.0.4
   resolution: "vscode-html-languageservice@npm:5.0.4"
@@ -13293,19 +13278,6 @@ __metadata:
     vscode-languageserver-types: ^3.17.2
     vscode-uri: ^3.0.7
   checksum: c6ee764dc04f5eb1792ca01238cc31e547acac9c697e5f638a517a561b380c3d8a1a7390129509b6e52a03f115a070b5cdebfa64460b861740dfe4028173105a
-  languageName: node
-  linkType: hard
-
-"vscode-json-languageservice@npm:^5.2.0":
-  version: 5.3.2
-  resolution: "vscode-json-languageservice@npm:5.3.2"
-  dependencies:
-    "@vscode/l10n": ^0.0.11
-    jsonc-parser: ^3.2.0
-    vscode-languageserver-textdocument: ^1.0.8
-    vscode-languageserver-types: ^3.17.3
-    vscode-uri: ^3.0.7
-  checksum: 9d928232d1f6a858152e2fb8a729b1417e5de093cf7a06ecb53ac65d08af58b6a39e3c55c45af3fdd6c7f62f96639df60246fc811953fb53c7492b8d3e66dd1f
   languageName: node
   linkType: hard
 
@@ -13333,7 +13305,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vscode-languageserver-types@npm:3.17.3, vscode-languageserver-types@npm:^3.17.2, vscode-languageserver-types@npm:^3.17.3":
+"vscode-languageserver-types@npm:3.17.3, vscode-languageserver-types@npm:^3.17.2":
   version: 3.17.3
   resolution: "vscode-languageserver-types@npm:3.17.3"
   checksum: fbc8221297261f659a6482875ff2a419dc9d55965dc53745797da569ff9f819cd832e6f2699017baadd946548bbfe212e3f6971f3d960f12dc0ee9c629dacc07
