@@ -57,11 +57,13 @@ slot(name="before")
       )
         template(
           v-for="(tabSchema, tab) in tabs"
+          :key="tab"
         )
+          //- TODO: Switch to v-if instead of v-show, once validation is
+          //- decoupled from components.
           DitoPane.dito-pane__tab(
-            v-if="selectedTab === tab"
+            v-show="selectedTab === tab"
             ref="tabs"
-            :key="tab"
             :tab="tab"
             :schema="tabSchema"
             :dataPath="dataPath"
