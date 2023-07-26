@@ -69,9 +69,7 @@ export default {
     },
 
     options() {
-      const data = this.handleDataSchema(this.schema.options, 'options', {
-        resolveCounter: 1
-      }) ?? []
+      const data = this.handleDataSchema(this.schema.options, 'options') ?? []
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }

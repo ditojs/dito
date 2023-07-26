@@ -31,12 +31,7 @@ export default DitoTypeComponent.register(
         get() {
           const { schema } = this
           if (schema.data || schema.dataPath) {
-            const value = this.handleDataSchema(schema, 'schema', {
-              // Modifying `this.data` below triggers another call of the
-              // `value` getter, so use a value of 2 for `resolveCounter` to
-              // return the resolved data twice.
-              resolveCounter: 2
-            })
+            const value = this.handleDataSchema(schema, 'schema')
             // TODO: Fix side-effects
             // eslint-disable-next-line
             this.data[this.name] = value

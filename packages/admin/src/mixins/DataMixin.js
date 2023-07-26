@@ -20,10 +20,7 @@ export default {
   },
 
   methods: {
-    handleDataSchema(schema, name, {
-      resolveCounter = 1,
-      ...loadingOptions
-    } = {}) {
+    handleDataSchema(schema, name, loadingOptions) {
       if (!isObject(schema)) {
         schema = { data: schema }
       }
@@ -31,27 +28,24 @@ export default {
       // See if there is async data loading already in process.
       const asyncEntry = (this.asyncDataEntries[name] ||= reactive({
         dependencyFunction: null,
-        resolveCounter: 0,
-        resolvedData: null,
-        resolving: false
+        resolvedData: undefined,
+        resolving: false,
+        resolved: false
       }))
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies.
       asyncEntry.dependencyFunction?.(this.context)
 
-      if (asyncEntry.resolveCounter > 0) {
-        // If the data was resolved already, return it and clear the value once
-        // `resolveCounter` reaches zero. Counting is needed because depending
-        // on the use of data and reactivity, multiple calls to the computed
-        // getter are triggered when the data is changing. Clearing the resolved
-        // data works because Vue caches the result of computed getters and only
-        // reevaluates if one of the dependencies changed. This is to ensure
-        // that a cached value here doesn't block / override reevaluation:
+      if (asyncEntry.resolved) {
+        // If the data was resolved already, return it and clear the resolved
+        // value. This works because Vue caches the result of computed getters
+        // and only reevaluates if one of the dependencies changed. This is to
+        // ensure that a cached value here doesn't block / override
+        // reevaluation when a dependency changes:
         const { resolvedData } = asyncEntry
-        if (--asyncEntry.resolveCounter === 0) {
-          asyncEntry.resolvedData = null
-        }
+        asyncEntry.resolvedData = undefined
+        asyncEntry.resolved = false
         return resolvedData
       }
       // Avoid calling the data function twice:
@@ -81,9 +75,9 @@ export default {
           // `handleDataSchema()`.
           asyncEntry.resolving = true
           this.resolveData(data, loadingOptions).then(data => {
-            asyncEntry.resolveCounter = resolveCounter
             asyncEntry.resolvedData = data
             asyncEntry.resolving = false
+            asyncEntry.resolved = true
           })
           // Clear data until promise is resolved and `resolvedData` is set
           data = null
