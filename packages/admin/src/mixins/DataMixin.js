@@ -67,6 +67,7 @@ export default {
             data = result
           }
         }
+        // NOTE: If the data is not a promise, it is resolved already.
         if (isPromise(data)) {
           // If the data is asynchronous, it can't be returned straight away.
           // But we can cheat using computed properties and `resolvedData`,
@@ -74,11 +75,16 @@ export default {
           // triggering a recompute of the computed property that calls
           // `handleDataSchema()`.
           asyncEntry.resolving = true
-          this.resolveData(data, loadingOptions).then(data => {
-            asyncEntry.resolvedData = data
-            asyncEntry.resolving = false
-            asyncEntry.resolved = true
-          })
+          this.resolveData(data, loadingOptions)
+            .then(data => {
+              asyncEntry.resolvedData = data
+              asyncEntry.resolving = false
+              asyncEntry.resolved = true
+            })
+            .catch(error => {
+              console.error(error)
+              asyncEntry.resolving = false
+            })
           // Clear data until promise is resolved and `resolvedData` is set
           data = null
         }
