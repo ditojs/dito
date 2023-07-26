@@ -4,7 +4,7 @@
 /**
  * @type {import('prettier').Options}
  */
-module.exports = {
+export default {
   plugins: ['@prettier/plugin-pug'],
   printWidth: 80,
   semi: false,
