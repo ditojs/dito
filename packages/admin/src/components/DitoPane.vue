@@ -240,6 +240,8 @@ export default DitoComponent.component('DitoPane', {
   $self: &;
   $root-padding: $content-padding - $form-spacing-half;
 
+  --pane-padding: 0px;
+
   display: flex;
   position: relative;
   flex-flow: row wrap;
@@ -247,6 +249,7 @@ export default DitoComponent.component('DitoPane', {
   align-content: flex-start;
   // Remove the padding added by `.dito-container` inside `.dito-pane`:
   margin: -$form-spacing-half;
+  padding: var(--pane-padding);
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane__main`,
   // so that the `.dito-buttons-main` can be moved all the way to the bottom.
   flex: 0%;
@@ -260,10 +263,10 @@ export default DitoComponent.component('DitoPane', {
     margin: 0;
     // Move the negative margin used to remove the padding added by
     // `.dito-container` inside `.dito-pane` to the padding:
-    padding: $root-padding;
+    --pane-padding: #{$root-padding};
 
     &#{$self}--single {
-      padding: $content-padding;
+      --pane-padding: #{$content-padding};
     }
 
     &:has(> .dito-container--label-vertical:first-of-type) {
@@ -293,11 +296,11 @@ export default DitoComponent.component('DitoPane', {
   }
 
   &--padding-inlined {
-    padding: 0;
+    --pane-padding: 0px;
   }
 
   &--padding-nested {
-    padding: $form-spacing;
+    --pane-padding: #{$form-spacing};
 
     &:has(> .dito-container--label-vertical:first-of-type) {
       // Reduce top spacing when the first row has labels.

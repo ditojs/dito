@@ -142,11 +142,15 @@
     position: sticky;
     bottom: 0;
     z-index: $z-index-main-buttons;
-    margin-bottom: -$content-padding;
+    background: $content-color-background;
     margin-top: 2 * $content-padding;
+    margin-bottom: calc(-1 * var(--pane-padding, 0px));
     box-shadow: 0 (-$content-padding) $content-padding (-$content-padding)
       $color-shadow;
-    background: $content-color-background;
+
+    &:empty {
+      display: none;
+    }
   }
 
   &.dito-buttons-round,
