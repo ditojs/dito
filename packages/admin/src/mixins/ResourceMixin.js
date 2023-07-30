@@ -264,6 +264,7 @@ export default {
         }
       }
       if (this.abortController === controller) {
+        // Only clear the loading state if this is still the current request.
         this.abortController = null
         this.setLoading(false, loadingOptions)
       }
