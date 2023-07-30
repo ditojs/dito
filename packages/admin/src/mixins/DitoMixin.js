@@ -321,14 +321,28 @@ export default {
       return url ? this.api.getApiUrl({ url, query: resource.query }) : null
     },
 
-    async sendRequest({ method, url, resource, query, data, internal }) {
+    async sendRequest({
+      method,
+      url,
+      resource,
+      query,
+      data,
+      signal,
+      internal
+    }) {
       url ||= this.getResourceUrl(resource)
       method ||= resource?.method
       const checkUser = !internal && this.api.isApiUrl(url)
       if (checkUser) {
         await this.rootComponent.ensureUser()
       }
-      const response = await this.api.request({ method, url, data, query })
+      const response = await this.api.request({
+        method,
+        url,
+        query,
+        data,
+        signal
+      })
       // Detect change of the own user, and fetch it again if it was changed.
       if (
         checkUser &&

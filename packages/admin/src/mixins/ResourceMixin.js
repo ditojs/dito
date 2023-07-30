@@ -20,7 +20,8 @@ export default {
 
   data() {
     return {
-      loadedData: null
+      loadedData: null,
+      abortController: null
     }
   },
 
@@ -239,8 +240,12 @@ export default {
         updateRoot: true, // Display spinner in header when loading in resources
         updateView: this.isInView // Notify view of loading for view components
       }
+      this.abortController?.abort()
+      const controller = new AbortController()
+      this.abortController = controller
+      const { signal } = controller
+      const request = { method, resource, query, data, signal }
       this.setLoading(true, loadingOptions)
-      const request = { method, resource, data, query }
       try {
         const response = await this.sendRequest(request)
         // Pass both request and response to the callback, so they can be
@@ -258,7 +263,10 @@ export default {
           this.notify({ type: 'error', title, text })
         }
       }
-      this.setLoading(false, loadingOptions)
+      if (this.abortController === controller) {
+        this.abortController = null
+        this.setLoading(false, loadingOptions)
+      }
     },
 
     getPayloadData(button, method) {

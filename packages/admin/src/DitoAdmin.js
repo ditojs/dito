@@ -251,7 +251,8 @@ async function request(api, {
   params = null,
   query = params || null,
   headers = null,
-  data = null
+  data = null,
+  signal = null
 }) {
   if (params) {
     deprecate(
@@ -271,7 +272,8 @@ async function request(api, {
     credentials:
       isApiUrl && api.cors?.credentials
         ? 'include'
-        : 'same-origin'
+        : 'same-origin',
+    signal
   })
 
   if (response.headers.get('Content-Type')?.includes('application/json')) {
