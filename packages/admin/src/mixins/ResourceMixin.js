@@ -252,15 +252,17 @@ export default {
         // exposed to further callbacks through DitoContext.
         callback(null, response)
       } catch (error) {
-        // If callback returns true, errors were already handled.
-        const { response } = error
-        if (!callback(error, response)) {
-          const data = response?.data
-          const title = isString(data?.type)
-            ? labelize(data.type)
-            : 'Error'
-          const text = data?.message ?? error
-          this.notify({ type: 'error', title, text })
+        if (error.name !== 'AbortError') {
+          // If callback returns true, errors were already handled.
+          const { response } = error
+          if (!callback(error, response)) {
+            const data = response?.data
+            const title = isString(data?.type)
+              ? labelize(data.type)
+              : 'Error'
+            const text = data?.message ?? error
+            this.notify({ type: 'error', title, text })
+          }
         }
       }
       if (this.abortController === controller) {
