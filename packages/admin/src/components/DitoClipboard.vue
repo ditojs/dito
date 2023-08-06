@@ -29,9 +29,7 @@ export default DitoComponent.component('DitoClipboard', {
 
   props: {
     clipboard: { type: [Boolean, Object], required: true },
-    schema: { type: Object, required: true },
-    dataPath: { type: String, required: true },
-    data: { type: [Object, Array], default: null }
+    schema: { type: Object, required: true }
   },
 
   data() {

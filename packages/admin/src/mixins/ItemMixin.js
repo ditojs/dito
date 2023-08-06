@@ -64,11 +64,11 @@ export default {
 
       let dataPath
       const getDataPath = () =>
-        (dataPath ||= this.getItemDataPath(sourceSchema, index))
+        (dataPath ??= this.getItemDataPath(sourceSchema, index))
 
       let formLabel
       const getFormLabel = () =>
-        (formLabel ||= this.getLabel(
+        (formLabel ??= this.getLabel(
           getItemFormSchema(sourceSchema, item, this.context)
         ))
 

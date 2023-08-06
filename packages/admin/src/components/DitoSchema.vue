@@ -42,8 +42,6 @@ slot(name="before")
         v-if="clipboard"
         :clipboard="clipboard"
         :schema="schema"
-        :dataPath="dataPath"
-        :data="data"
       )
       slot(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
