@@ -229,7 +229,7 @@ export default DitoTypeComponent.register('markup', {
       if (ignoreWatch) {
         ignoreWatch = false
       } else {
-        this.editor.setContent(value, false, this.parseOptions)
+        this.editor.commands.setContent(value, false, this.parseOptions)
       }
     })
 
