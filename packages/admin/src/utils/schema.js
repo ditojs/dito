@@ -1007,7 +1007,7 @@ export function getPanelEntry(schema, dataPath = null, tabComponent = null) {
 
 export function getPanelEntries(
   panelSchemas,
-  dataPath = null,
+  dataPath,
   tabComponent = null,
   panelEntries = []
 ) {
@@ -1015,7 +1015,7 @@ export function getPanelEntries(
     for (const [key, schema] of Object.entries(panelSchemas)) {
       const entry = getPanelEntry(
         schema,
-        dataPath != null ? appendDataPath(dataPath, key) : null,
+        appendDataPath(dataPath, key),
         tabComponent
       )
       if (entry) {
@@ -1037,7 +1037,7 @@ export function getPanelSchemas(schema) {
 export function getAllPanelEntries(
   api,
   schema,
-  dataPath = null,
+  dataPath,
   component = null,
   tabComponent = null
 ) {

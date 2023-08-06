@@ -189,7 +189,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     panelEntries() {
-      return getPanelEntries(this.schema.panels, '')
+      return getPanelEntries(this.schema.panels, this.dataPath)
     },
 
     tabs() {
