@@ -318,12 +318,12 @@ export default DitoComponent.component('DitoForm', {
       return this.mainSchemaComponent.emitEvent(event, params)
     },
 
-    getDataPathFrom(route) {
+    getDataPathFrom(routeComponent) {
       // Get the data path by denormalizePath the relative route path
       return this.api.denormalizePath(
         this.path
           // DitoViews have nested routes, so don't remove their path.
-          .slice((route.isView ? 0 : route.path.length) + 1)
+          .slice((routeComponent.isView ? 0 : routeComponent.path.length) + 1)
       )
     },
 

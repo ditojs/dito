@@ -6,12 +6,13 @@
   )
     template(
       v-if="total > 0"
-    ) {{ first }} – {{ last }}
+    ) {{ first }} – {{ last }} / {{ total }}
     template(
       v-else
     ) 0
-    | / {{ total }}
-  .dito-buttons.dito-buttons-round
+  .dito-buttons.dito-buttons-round(
+    v-if="numPages > 1"
+  )
     button.dito-button(
       v-for="page in pageRange"
       :class="getPageClass(page)"
@@ -39,19 +40,21 @@ export default {
       pageRange: [],
       showPrev: true,
       showNext: true,
-      numPages: 0,
-      currentPageSize: this.pageSize,
       currentPage: this.page
     }
   },
 
   computed: {
     first() {
-      return (this.currentPage - 1) * this.currentPageSize + 1
+      return (this.currentPage - 1) * this.pageSize + 1
     },
 
     last() {
-      return Math.min(this.first + this.currentPageSize - 1, this.total)
+      return Math.min(this.first + this.pageSize - 1, this.total)
+    },
+
+    numPages() {
+      return Math.ceil(this.total / this.pageSize)
     }
   },
 
@@ -64,12 +67,7 @@ export default {
       this.currentPage = page
     },
 
-    pageSize(pageSize) {
-      this.currentPageSize = pageSize
-    },
-
-    currentPageSize(currentPageSize) {
-      this.numPages = Math.ceil(this.total / currentPageSize)
+    pageSize() {
       if (this.currentPage > this.numPages) {
         this.currentPage = this.numPages
       }
@@ -86,7 +84,6 @@ export default {
 
   created() {
     this.currentPage = this.page
-    this.currentPageSize = this.pageSize
   },
 
   mounted() {
@@ -111,9 +108,8 @@ export default {
     },
 
     updatePageRange() {
-      const { showPrev, showNext, total, currentPageSize, currentPage } = this
+      const { showPrev, showNext, currentPage, numPages } = this
       const showLength = showPrev + showNext + 1
-      const numPages = (this.numPages = Math.ceil(total / currentPageSize))
 
       let start = 1
       let end = 1

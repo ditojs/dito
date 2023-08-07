@@ -205,7 +205,7 @@ export default DitoTypeComponent.register('list', {
 
   computed: {
     hasPagination() {
-      return this.paginate && this.total > this.paginate
+      return !!this.paginate
     },
 
     hasListButtons() {
