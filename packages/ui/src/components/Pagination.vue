@@ -7,21 +7,18 @@
     template(
       v-if="total > 0"
     ) {{ first }} – {{ last }} / {{ total }}
-    template(
-      v-else
-    ) 0
   .dito-buttons.dito-buttons-round(
     v-if="numPages > 1"
   )
     button.dito-button(
-      v-for="page in pageRange"
-      :class="getPageClass(page)"
-      :disabled="page.disabled"
-      @click="onClickPage(page)"
+      v-for="button in buttons"
+      :class="getButtonClasses(button)"
+      :disabled="button.disabled"
+      @click="onClickButton(button)"
     )
       span(
-        v-if="page.text"
-      ) {{ page.text }}
+        v-if="button.text"
+      ) {{ button.text }}
 </template>
 
 <script>
@@ -37,7 +34,6 @@ export default {
 
   data() {
     return {
-      pageRange: [],
       showPrev: true,
       showNext: true,
       currentPage: this.page
@@ -59,10 +55,6 @@ export default {
   },
 
   watch: {
-    total: 'updatePageRange',
-    showPrev: 'updatePageRange',
-    showNext: 'updatePageRange',
-
     page(page) {
       this.currentPage = page
     },
@@ -71,43 +63,15 @@ export default {
       if (this.currentPage > this.numPages) {
         this.currentPage = this.numPages
       }
-      this.updatePageRange()
     },
 
     currentPage(to, from) {
       if (to !== from) {
-        this.updatePageRange()
         this.$emit('update:page', to)
       }
-    }
-  },
-
-  created() {
-    this.currentPage = this.page
-  },
-
-  mounted() {
-    this.updatePageRange()
-  },
-
-  methods: {
-    onClickPage(page) {
-      if (page.index && !page.disabled && page.index !== this.currentPage) {
-        this.currentPage = page.index
-      }
     },
 
-    getPageClass(page) {
-      const classes = {
-        'dito-selected': page.active
-      }
-      if (page.type) {
-        classes[`dito-button-${page.type}`] = true
-      }
-      return classes
-    },
-
-    updatePageRange() {
+    buttons() {
       const { showPrev, showNext, currentPage, numPages } = this
       const showLength = showPrev + showNext + 1
 
@@ -125,44 +89,70 @@ export default {
         end = currentPage + showNext
       }
 
-      const pageRange = []
-      pageRange.push({
+      const buttons = []
+      buttons.push({
         index: currentPage - 1,
         type: 'prev',
         disabled: currentPage <= 1
       })
       if (start >= 2) {
-        pageRange.push({ index: 1, text: 1 })
+        buttons.push({ index: 1, text: 1 })
       }
       if (start > 2) {
-        pageRange.push({
+        buttons.push({
           index: Math.max(1, currentPage - 10),
           type: 'ellipsis-prev'
         })
       }
       for (let i = start; i <= end; i++) {
-        pageRange.push({
+        buttons.push({
           index: i,
           text: i,
           active: i === currentPage
         })
       }
       if (end < numPages - 1) {
-        pageRange.push({
+        buttons.push({
           index: Math.min(numPages, currentPage + 10),
           type: 'ellipsis-next'
         })
       }
       if (end <= numPages - 1) {
-        pageRange.push({ index: numPages, text: numPages })
+        buttons.push({ index: numPages, text: numPages })
       }
-      pageRange.push({
+      buttons.push({
         index: currentPage + 1,
         type: 'next',
         disabled: currentPage >= numPages
       })
 
-      this.pageRange = pageRange
+      return buttons
+    }
+  },
+
+  created() {
+    this.currentPage = this.page
+  },
+
+  methods: {
+    getButtonClasses(button) {
+      const classes = {
+        'dito-selected': button.active
+      }
+      if (button.type) {
+        classes[`dito-button-${button.type}`] = true
+      }
+      return classes
+    },
+
+    onClickButton(button) {
+      if (
+        button.index &&
+        !button.disabled &&
+        button.index !== this.currentPage
+      ) {
+        this.currentPage = button.index
+      }
     }
   }
 }
