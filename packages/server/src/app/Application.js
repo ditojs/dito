@@ -61,6 +61,8 @@ import {
 import { AsyncLocalStorage } from 'async_hooks'
 
 export class Application extends Koa {
+  #logger
+
   constructor({
     config = {},
     validator,
@@ -564,7 +566,7 @@ export class Application extends Koa {
 
     // Setup global middleware
 
-    this.use(attachLogger(this.logger))
+    this.use(attachLogger(this.#logger))
     if (app.responseTime !== false) {
       this.use(responseTime(getOptions(app.responseTime)))
     }
@@ -644,7 +646,7 @@ export class Application extends Koa {
           options: prettyPrint
         })
       : null
-    this.logger = pino(options, transport).child({ name: 'app' })
+    this.#logger = pino(options, transport).child({ name: 'app' })
   }
 
   setupKnex() {
@@ -1086,6 +1088,10 @@ export class Application extends Koa {
 
   get requestLocals() {
     return this.requestStorage.getStore() ?? {}
+  }
+
+  get logger() {
+    return this.requestLocals.logger ?? this.#logger
   }
 }
 
