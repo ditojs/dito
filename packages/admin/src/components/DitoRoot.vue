@@ -123,7 +123,7 @@ export default DitoComponent.component('DitoRoot', {
       animation: 'shift-away-subtle',
       interactive: true,
       delay: 250,
-      zIndex: '',
+      zIndex: 1,
       onCreate(instance) {
         instance.setContent(instance.reference.dataset.info)
       }

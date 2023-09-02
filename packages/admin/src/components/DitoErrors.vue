@@ -59,7 +59,7 @@ export default DitoComponent.component('DitoErrors', {
           interactive: true,
           hideOnClick: false,
           offset: [3, 3], // 1/2 form-spacing
-          zIndex: ''
+          zIndex: 1
         })
         tip.popper.addEventListener('mousedown', () => tip.hide())
         tip.show()
