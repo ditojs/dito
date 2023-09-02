@@ -603,20 +603,16 @@ export default {
     }
     // Inlined forms don't need to actually add routes.
     if (hasFormSchema(schema) && !inlined) {
-      const getPathWithParam = (path, param) =>
-        param
-          ? path
-            ? `${path}/:${param}`
-            : `:${param}`
-          : path
-
       // Lists in single-component-views (level === 0) use their view's path,
       // while all others need their path prefixed with the parent's path:
       const sourcePath = level === 0 ? '' : schema.path
       const formRoute = {
-        // Object sources don't need id params in their form paths, as they
-        // directly edit one object.
-        path: getPathWithParam(sourcePath, isListSource(schema) && param),
+        path: getPathWithParam(
+          sourcePath,
+          // Object sources don't need id params in their form paths, as they
+          // directly edit one object.
+          isListSource(schema) ? param : null
+        ),
         component: DitoComponent.component(
           nested ? 'DitoFormNested' : 'DitoForm'
         ),
@@ -671,4 +667,12 @@ export default {
     graph.addSource(dataPath, schema)
     return value
   }
+}
+
+function getPathWithParam(path, param) {
+  return param
+    ? path
+      ? `${path}/:${param}`
+      : `:${param}`
+    : path
 }
