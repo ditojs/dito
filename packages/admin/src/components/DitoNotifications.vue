@@ -6,6 +6,7 @@
     VueNotifications(
       ref="notifications"
       classes="dito-notification"
+      :dangerouslySetInnerHTML="true"
       position=""
       width=""
     )
