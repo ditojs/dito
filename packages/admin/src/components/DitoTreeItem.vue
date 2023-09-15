@@ -157,9 +157,19 @@ export default DitoComponent.component('DitoTreeItem', {
       return this.schema.children
     },
 
-    childrenList() {
-      const name = this.childrenSchema?.name
-      return name && this.data[name]
+    childrenList: {
+      get() {
+        const name = this.childrenSchema?.name
+        return name && this.data[name]
+      },
+
+      set(value) {
+        const name = this.childrenSchema?.name
+        if (name) {
+          // eslint-disable-next-line vue/no-mutating-props
+          this.data[name] = value
+        }
+      }
     },
 
     childrenDraggable() {
