@@ -51,24 +51,6 @@ export default {
 
     numPages() {
       return Math.ceil(this.total / this.pageSize)
-    }
-  },
-
-  watch: {
-    page(page) {
-      this.currentPage = page
-    },
-
-    pageSize() {
-      if (this.currentPage > this.numPages) {
-        this.currentPage = this.numPages
-      }
-    },
-
-    currentPage(to, from) {
-      if (to !== from) {
-        this.$emit('update:page', to)
-      }
     },
 
     buttons() {
@@ -127,6 +109,24 @@ export default {
       })
 
       return buttons
+    }
+  },
+
+  watch: {
+    page(page) {
+      this.currentPage = page
+    },
+
+    pageSize() {
+      if (this.currentPage > this.numPages) {
+        this.currentPage = this.numPages
+      }
+    },
+
+    currentPage(to, from) {
+      if (to !== from) {
+        this.$emit('update:page', to)
+      }
     }
   },
 
