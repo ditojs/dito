@@ -1657,7 +1657,7 @@ __metadata:
     "@ditojs/build": ^2.12.0
     "@ditojs/ui": ^2.12.0
     "@ditojs/utils": ^2.12.0
-    "@kyvg/vue3-notification": ^3.0.1
+    "@kyvg/vue3-notification": "https://github.com/ditojs/vue3-notification#dito"
     "@lk77/vue3-color": ^3.0.6
     "@tiptap/core": ^2.1.9
     "@tiptap/extension-blockquote": ^2.1.9
@@ -2171,12 +2171,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kyvg/vue3-notification@npm:^3.0.1":
+"@kyvg/vue3-notification@https://github.com/ditojs/vue3-notification#dito":
   version: 3.0.1
-  resolution: "@kyvg/vue3-notification@npm:3.0.1"
+  resolution: "@kyvg/vue3-notification@https://github.com/ditojs/vue3-notification.git#commit=c50449fad71c1f01ca252f279d3ad15bc5a001da"
   peerDependencies:
     vue: ^3.0.0
-  checksum: 143f7a1f716ec2fc6511d23898e2fbe4a1a84cac3b7e21bb2bf788baf6f0aa1c0ef2b99ec327336bbe2ac5aef4a19a3ee745155ed27c78573ec2fb2e2b6e85f4
+  checksum: ae9169f70828df258caf1834e071625a60593c0a48d90aa8df0d13b492502f0c3418cd401fc360a976e96471408443edd574371439e7d086dbd0533a4c5ec778
   languageName: node
   linkType: hard
 
