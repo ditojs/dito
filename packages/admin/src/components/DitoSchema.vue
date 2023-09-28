@@ -169,7 +169,8 @@ export default DitoComponent.component('DitoSchema', {
       currentTab: null,
       componentsRegistry: {},
       panesRegistry: {},
-      panelsRegistry: {}
+      panelsRegistry: {},
+      scrollPositions: {}
     }
   },
 
@@ -320,7 +321,7 @@ export default DitoComponent.component('DitoSchema', {
       return !!this.tabs
     },
 
-    hasMainTabs() {
+    hasRootTabs() {
       return this.hasTabs && this.isRootSchema
     },
 
@@ -374,16 +375,23 @@ export default DitoComponent.component('DitoSchema', {
         // Remember the current path to know if tab changes should still be
         // handled, but remove the trailing `/create` or `/:id` from it so that
         // tabs informs that stay open after creation still work.
-        if (this.hasMainTabs) {
+        if (this.hasRootTabs) {
           this.currentTab = hash?.slice(1) || null
         }
       }
     },
 
-    'selectedTab'(selectedTab) {
-      if (this.hasMainTabs) {
-        const tab = this.shouldRenderSchema(this.tabs[selectedTab])
-          ? selectedTab
+    'selectedTab'(newTab, oldTab) {
+      if (this.scrollable) {
+        const { content } = this.$refs
+        this.scrollPositions[oldTab] = content.scrollTop
+        this.$nextTick(() => {
+          content.scrollTop = this.scrollPositions[newTab] ?? 0
+        })
+      }
+      if (this.hasRootTabs) {
+        const tab = this.shouldRenderSchema(this.tabs[newTab])
+          ? newTab
           : this.defaultTab
         this.$router.replace({ hash: tab ? `#${tab}` : null })
       }
