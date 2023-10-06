@@ -24,12 +24,12 @@
   ],
   "dependencies": {
     "@ditojs/utils": "^2.13.0",
-    "@vitejs/plugin-vue": "^4.3.4",
+    "@vitejs/plugin-vue": "^4.4.0",
     "autoprefixer": "^10.4.16",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.8",
-    "postcss": "^8.4.30",
+    "postcss": "^8.4.31",
     "postcss-inset": "^1.0.0"
   }
 }

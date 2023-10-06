@@ -1,7 +1,7 @@
 import path from 'path'
 import mime from 'mime-types'
-import dataUriToBuffer from 'data-uri-to-buffer'
 import { v4 as uuidv4 } from 'uuid'
+import { dataUriToBuffer } from 'data-uri-to-buffer'
 import { isString } from '@ditojs/utils'
 
 const SYMBOL_STORAGE = Symbol('storage')
@@ -29,8 +29,9 @@ export class AssetFile {
   set data(data) {
     if (isString(data)) {
       if (data.startsWith('data:')) {
-        data = dataUriToBuffer(data)
-        this.type ||= data.type || mime.lookup(this.name)
+        const { type, buffer } = dataUriToBuffer(data)
+        data = Buffer.from(buffer)
+        this.type ||= type || mime.lookup(this.name)
       } else {
         data = Buffer.from(data)
         this.type ||= mime.lookup(this.name) || 'text/plain'
@@ -39,7 +40,7 @@ export class AssetFile {
       // Buffer & co.
       data = Buffer.isBuffer(data) ? data : Buffer.from(data)
       this.type ||= (
-        data.type ||
+        data.type || // See Storage._readFile()
         mime.lookup(this.name) ||
         'application/octet-stream'
       )
