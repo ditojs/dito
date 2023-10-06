@@ -23,6 +23,8 @@
     "node >= 18"
   ],
   "dependencies": {
+    "@ditojs/utils": "^2.13.0",
+    "@vitejs/plugin-vue": "^4.3.4",
     "autoprefixer": "^10.4.16",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",
