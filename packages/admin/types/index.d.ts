@@ -9,6 +9,7 @@ import {
 } from '@ditojs/utils'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
 import { Component as VueComponent } from 'vue'
+import { Router as VueRouter } from 'vue-router'
 
 declare global {
   const dito: DitoGlobal
@@ -1024,7 +1025,7 @@ export type DitoContext<$Item = any> = {
     resource?: Resource
   }): Promise<T>
   format: typeof utilsFormat
-  navigate(location: string | { path: string }): Promise<boolean>
+  navigate: VueRouter['push']
   download: {
     (url: string): void
     (options: { url: string; filename: string }): void
