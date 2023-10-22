@@ -1,4 +1,4 @@
-import { isArray, asArray } from '@ditojs/utils'
+import { isArray } from '@ditojs/utils'
 
 export function formatQuery(query) {
   const entries = query
@@ -12,8 +12,13 @@ export function formatQuery(query) {
       // `formatQuery({ foo: [1, 2], bar: 3 })` => 'foo=1&foo=2&bar=3'.
       entries.reduce(
         (entries, [key, value]) => {
-          for (const val of asArray(value)) {
-            entries.push([key, val])
+          if (isArray(value)) {
+            for (const val of value) {
+              // Prevent null or undefined values from becoming strings.
+              entries.push([key, val ?? ''])
+            }
+          } else if (value != null) {
+            entries.push([key, value])
           }
           return entries
         },
