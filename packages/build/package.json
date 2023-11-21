@@ -24,7 +24,7 @@
   ],
   "dependencies": {
     "@ditojs/utils": "^2.14.1",
-    "@vitejs/plugin-vue": "^4.4.0",
+    "@vitejs/plugin-vue": "^4.5.0",
     "autoprefixer": "^10.4.16",
     "mime": "^3.0.0",
     "mini-svg-data-uri": "^1.4.4",

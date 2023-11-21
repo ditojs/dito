@@ -103,6 +103,7 @@ export default {
     'scss/double-slash-comment-empty-line-before': null,
     'scss/double-slash-comment-whitespace-inside': 'always',
     'scss/function-no-unknown': null,
+    'scss/load-no-partial-leading-underscore': null,
     'scss/operator-no-newline-after': null,
     'scss/operator-no-newline-before': true,
     'scss/operator-no-unspaced': true,
