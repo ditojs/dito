@@ -195,8 +195,8 @@ export class AdminController extends Controller {
               // `sendDitoObject()`
               name: 'inject-dito-object',
               transformIndexHtml: {
-                enforce: 'post',
-                transform(html) {
+                order: 'post',
+                handler(html) {
                   return html.replace(
                     /(\s*)(<script type="module"[^>]*?><\/script>)/,
                     `$1<script src="${base}dito.js"></script>$1$2`
