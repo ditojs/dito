@@ -14,7 +14,8 @@ export function formatQuery(query) {
         (entries, [key, value]) => {
           if (isArray(value)) {
             for (const val of value) {
-              // Prevent null or undefined values from becoming strings.
+              // Prevent null or undefined values from becoming strings,
+              // but since they're entries in an array, we still include them.
               entries.push([key, val ?? ''])
             }
           } else if (value != null) {
@@ -35,6 +36,7 @@ export function formatQuery(query) {
 export function replaceRoute({ path, query, hash }) {
   // Preserve `history.state`, see:
   // https://router.vuejs.org/guide/migration/#usage-of-history-state
+  const { location } = window
   history.replaceState(
     history.state,
     null,
