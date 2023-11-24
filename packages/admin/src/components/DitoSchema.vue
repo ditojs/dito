@@ -559,10 +559,10 @@ export default DitoComponent.component('DitoSchema', {
       return this.validateAll(match, false)
     },
 
-    async showValidationErrors(errors, focus) {
+    async showValidationErrors(errors, focus, first = true) {
       this.clearErrors()
-      let first = true
       const unmatched = []
+      const wasFirst = first
       for (const [dataPath, errs] of Object.entries(errors)) {
         // If the schema is a data-root, prefix its own dataPath to all errors,
         // since the data that it sends and validates will be unprefixed.
@@ -579,6 +579,7 @@ export default DitoComponent.component('DitoSchema', {
           if (component.showValidationErrors(errs, first && focus)) {
             found = true
             first = false
+            break
           }
         }
         if (!found) {
@@ -602,6 +603,7 @@ export default DitoComponent.component('DitoSchema', {
                       ) {
                         found = true
                         first = false
+                        break
                       }
                     }
                     return found
@@ -630,9 +632,10 @@ export default DitoComponent.component('DitoSchema', {
         }
         first = false
       }
-      if (!first) {
+      if (wasFirst && !first) {
         this.notifyErrors(unmatched.join('\n'))
       }
+      return !first
     },
 
     notifyErrors(message) {
