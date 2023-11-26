@@ -1,5 +1,5 @@
 {
-  "lerna": "7.4.1",
+  "lerna": "8.0.0",
   "version": "2.15.0",
   "packages": [
     "packages/*"
