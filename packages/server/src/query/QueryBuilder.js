@@ -8,6 +8,7 @@ import {
   mapKeys,
   getValueAtDataPath,
   setValueAtDataPath,
+  normalizeDataPath,
   parseDataPath,
   deprecate
 } from '@ditojs/utils'
@@ -686,7 +687,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     if (options?.cyclic && method.startsWith('upsert')) {
       // `_upsertCyclicDitoGraphAndFetch()` needs to run asynchronously,
       // but we can't do so here and `runBefore()` executes too late,
-      // so use `_executeFirst()` to work around it.
+      // so use `#executeFirst()` to work around it.
       this.#executeFirst = async () => {
         this.#executeFirst = null
         handleGraph(
@@ -727,11 +728,22 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Now clone the data and delete all references from it, for the initial
     // upsert.
     const cloned = clone(data)
+    const sparseArrays = {}
     for (const path of Object.keys(references)) {
       const parts = parseDataPath(path)
       const key = parts.pop()
       const parent = getValueAtDataPath(cloned, parts)
       delete parent[key]
+      if (isArray(parent)) {
+        // For arrays, deleting the entry at `key` will leave 'holes' in the
+        // array and make it sparse. Collect it in order to compress it later.
+        sparseArrays[normalizeDataPath(parts)] = parent
+      }
+    }
+
+    // Now condense the sparse arrays to remove the empty entries again:
+    for (const [dataPath, array] of Object.entries(sparseArrays)) {
+      setValueAtDataPath(cloned, dataPath, Object.values(array))
     }
 
     // TODO: The model isn't necessarily fetched with data in the same order as
