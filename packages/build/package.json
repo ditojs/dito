@@ -26,7 +26,7 @@
     "@ditojs/utils": "^2.16.0",
     "@vitejs/plugin-vue": "^4.5.0",
     "autoprefixer": "^10.4.16",
-    "mime": "^3.0.0",
+    "mime": "^4.0.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.8",
     "postcss": "^8.4.31",
