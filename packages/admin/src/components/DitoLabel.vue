@@ -12,23 +12,29 @@ component.dito-label(
   .dito-label__inner(
     v-if="text || prefixes.length > 0 || suffixes.length > 0"
   )
-    DitoElement.dito-label__prefix(
-      v-for="(prefix, index) of prefixes"
-      :key="`prefix-${index}`"
-      tag="span"
-      :content="prefix"
+    .dito-label__prefix(
+      v-if="prefixes.length > 0"
     )
+      DitoElement(
+        v-for="(prefix, index) of prefixes"
+        :key="`prefix-${index}`"
+        tag="span"
+        :content="prefix"
+      )
     label(
       v-if="text"
       :for="dataPath"
       v-html="text"
     )
-    DitoElement.dito-label__suffix(
-      v-for="(suffix, index) of suffixes"
-      :key="`suffix-${index}`"
-      tag="span"
-      :content="suffix"
+    .dito-label__suffix(
+      v-if="suffixes.length > 0"
     )
+      DitoElement(
+        v-for="(suffix, index) of suffixes"
+        :key="`suffix-${index}`"
+        tag="span"
+        :content="suffix"
+      )
     .dito-info(
       v-if="info"
       :data-info="info"
@@ -124,22 +130,44 @@ export default DitoComponent.component('DitoLabel', {
   label {
     cursor: inherit;
     font-weight: bold;
+    line-height: $input-height;
+  }
+
+  &__prefix,
+  &__suffix {
+    flex: 1;
+    position: relative;
+    line-height: $input-height;
+
+    // For ellipsis to work on prefix and suffix with flex layout, we need to
+    // use a nested absolutely positioned span.
+
+    &::before {
+      content: '\200b'; // zero-width space to keep container from collapsing.
+    }
+
+    span {
+      position: absolute;
+      inset: 0;
+    }
   }
 
   label,
-  &__prefix,
-  &__suffix {
+  &__prefix span,
+  &__suffix span {
     @include user-select(none);
     @include ellipsis;
 
     white-space: nowrap;
-    line-height: $input-height;
   }
 
   &__prefix + label,
   label + &__suffix {
-    &::before {
-      content: '\a0'; // &nbsp;
+    &,
+    span {
+      &::before {
+        content: '\a0'; // &nbsp;
+      }
     }
   }
 
