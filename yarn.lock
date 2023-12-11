@@ -1739,7 +1739,7 @@ __metadata:
     "@ditojs/build": ^2.17.0
     "@ditojs/router": ^2.17.0
     "@ditojs/utils": ^2.17.0
-    "@koa/cors": ^4.0.0
+    "@koa/cors": ^5.0.0
     "@koa/multer": ^3.0.2
     "@originjs/vite-plugin-commonjs": ^1.0.3
     "@types/koa-bodyparser": ^4.3.12
@@ -2148,12 +2148,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@koa/cors@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "@koa/cors@npm:4.0.0"
+"@koa/cors@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@koa/cors@npm:5.0.0"
   dependencies:
     vary: ^1.1.2
-  checksum: e0760544823532f2d71d792e3076858e38bab9b1c090abea175f1319fd91ea58a1da384a2fe7f5108f1c681e3830b01f62a1cafe271d6406751976af443187aa
+  checksum: 050701fb57dede2fefe0217459782bab7c9488fd07ff1f87fff680005cab43e03b7509e6015ea68082aadb1b31fe3eea7858ebdc93a2cf6f26d36d071190d50c
   languageName: node
   linkType: hard
 

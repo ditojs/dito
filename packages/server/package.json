@@ -29,7 +29,7 @@
     "@ditojs/build": "^2.17.0",
     "@ditojs/router": "^2.17.0",
     "@ditojs/utils": "^2.17.0",
-    "@koa/cors": "^4.0.0",
+    "@koa/cors": "^5.0.0",
     "@koa/multer": "^3.0.2",
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@vitejs/plugin-vue": "^4.5.0",
