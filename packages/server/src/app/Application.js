@@ -882,6 +882,7 @@ export class Application extends Koa {
     storage,
     addedFiles,
     removedFiles,
+    changedFiles,
     trx = null
   ) {
     let importedFiles = []
@@ -889,7 +890,7 @@ export class Application extends Koa {
     if (AssetModel) {
       importedFiles = await this.addForeignAssets(
         storage,
-        addedFiles,
+        [...addedFiles, ...changedFiles],
         trx
       )
       if (

@@ -7,6 +7,7 @@ import {
   isPromise,
   asArray,
   flatten,
+  equals,
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
@@ -1066,8 +1067,12 @@ export class Model extends objection.Model {
           const afterFiles = afterFilesPerDataPath[dataPath] || []
           const beforeByKey = mapFilesByKey(beforeFiles)
           const afterByKey = mapFilesByKey(afterFiles)
-          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
           const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
+          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
+          const changedFiles = afterFiles.filter(file => {
+            const beforeFile = beforeByKey[file.key]
+            return beforeFile && !equals(file, beforeFile)
+          })
           // Also handle modified files, which are files where the data property
           // is changed before update / patch, meaning the file is changed.
           // NOTE: This will change the content for all the references to it,
@@ -1080,6 +1085,7 @@ export class Model extends objection.Model {
               storage,
               addedFiles,
               removedFiles,
+              changedFiles,
               transaction
             ))
           )
