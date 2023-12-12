@@ -144,7 +144,11 @@ export default {
     // To be used for selects and inputs only?
     clearable: getSchemaAccessor('clearable', {
       type: Boolean,
-      default: false
+      default: false,
+
+      get(clearable) {
+        return clearable && !this.readonly
+      }
     }),
 
     placeholder: getSchemaAccessor('placeholder', {
