@@ -11,7 +11,7 @@ export function logRequests({ ignoreUrlPattern } = {}) {
       return next()
     }
     // request
-    const start = Date.now()
+    const start = performance.now()
 
     logRequest(ctx)
 
@@ -108,8 +108,10 @@ function logResponse({ ctx, start, length, err }) {
 }
 
 function formatTime(start) {
-  const delta = Date.now() - start
-  return delta < 10000 ? delta + 'ms' : Math.round(delta / 1000) + 's'
+  const delta = performance.now() - start
+  return delta < 10000
+    ? +delta.toFixed(2) + 'ms'
+    : +(delta / 1000).toFixed(2) + 's'
 }
 
 const colorCodes = {
