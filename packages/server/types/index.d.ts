@@ -1090,8 +1090,6 @@ export class AdminController extends Controller {
   middleware(): Koa.Middleware
   setupViteServer(): void
   defineViteConfig(config: UserConfig): UserConfig
-  /** @deprecated Use `defineViteConfig` instead. */
-  getViteConfig(config: UserConfig): UserConfig
 }
 type ModelControllerHookType = 'collection' | 'member'
 type ModelControllerHookKeys<

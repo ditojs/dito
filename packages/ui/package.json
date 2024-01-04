@@ -44,10 +44,10 @@
   },
   "devDependencies": {
     "@ditojs/build": "^2.20.0",
-    "@vitejs/plugin-vue": "^4.5.2",
-    "@vue/compiler-sfc": "~3.3.13",
+    "@vitejs/plugin-vue": "^5.0.2",
+    "@vue/compiler-sfc": "~3.4.5",
     "pug": "^3.0.2",
-    "sass": "1.69.6",
-    "vite": "^5.0.10"
+    "sass": "1.69.7",
+    "vite": "^5.0.11"
   }
 }
