@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite'
+import { defineConfig as viteDefineConfig } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { getPostCssConfig } from './postcss.js'
 import { getRollupExternalsFromDependencies } from './rollup.js'
 
 export function defineViteConfig({
+  defineConfig = viteDefineConfig,
   name,
   css = false,
   vue = false,
