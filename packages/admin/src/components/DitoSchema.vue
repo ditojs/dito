@@ -166,7 +166,7 @@ export default DitoComponent.component('DitoSchema', {
           ? data(this.context)
           : data
       ),
-      currentTab: null,
+      selectedTab: null,
       componentsRegistry: {},
       panesRegistry: {},
       panelsRegistry: {},
@@ -193,16 +193,6 @@ export default DitoComponent.component('DitoSchema', {
 
     tabs() {
       return getNamedSchemas(this.schema.tabs)
-    },
-
-    selectedTab: {
-      get() {
-        return this.currentTab || this.defaultTab || null
-      },
-
-      set(selectedTab) {
-        this.currentTab = selectedTab
-      }
     },
 
     defaultTab() {
@@ -376,7 +366,7 @@ export default DitoComponent.component('DitoSchema', {
         // handled, but remove the trailing `/create` or `/:id` from it so that
         // tabs informs that stay open after creation still work.
         if (this.hasRootTabs) {
-          this.currentTab = hash?.slice(1) || null
+          this.selectedTab = hash?.slice(1) || null
         }
       }
     },
@@ -410,6 +400,10 @@ export default DitoComponent.component('DitoSchema', {
     if (this.scrollable && this.wide) {
       this.appState.pageClass = 'dito-page--wide'
     }
+  },
+
+  mounted() {
+    this.selectedTab = this.defaultTab
   },
 
   unmounted() {
