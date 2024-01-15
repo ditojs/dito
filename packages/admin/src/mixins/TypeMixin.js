@@ -151,6 +151,10 @@ export default {
       }
     }),
 
+    maxLength: getSchemaAccessor('maxLength', {
+      type: Number
+    }),
+
     placeholder: getSchemaAccessor('placeholder', {
       type: String
     }),
@@ -189,6 +193,7 @@ export default {
         attributes.readonly = this.readonly
         attributes.autofocus = this.autofocus
         if (textField) {
+          attributes.maxlength = this.maxLength
           attributes.placeholder = this.placeholder
           attributes.autocomplete = this.autocomplete
         }
