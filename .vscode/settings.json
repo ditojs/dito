@@ -31,31 +31,21 @@
   "volar.updateImportsOnFileMove.enabled": true,
   // Format on save:
   "editor.formatOnSave": false,
-  "[javascript]": {
+  "[javascript][typescript]": {
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true
+      "source.fixAll.eslint": "explicit"
     }
   },
-  "[typescript]": {
+  "[css][scss]": {
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true
+      "source.fixAll.stylelint": "explicit"
     }
   },
   "[vue]": {
     "editor.defaultFormatter": "Vue.volar",
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true,
-      "source.fixAll.stylelint": true
-    }
-  },
-  "[scss]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": true
-    }
-  },
-  "[css]": {
-    "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": true
+      "source.fixAll.eslint": "explicit",
+      "source.fixAll.stylelint": "explicit"
     }
   },
   "[pug]": {

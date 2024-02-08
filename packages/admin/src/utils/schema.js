@@ -616,7 +616,9 @@ export function getDefaultValue(schema) {
       ? defaultValue
       : getTypeOptions(schema)?.defaultValue
   return isFunction(value)
-    ? value(schema)
+    ? // TODO: Pass `DitoContext` here too, with the (incomplete) item and al
+      // the other bits!
+      value(schema)
     : clone(value)
 }
 
