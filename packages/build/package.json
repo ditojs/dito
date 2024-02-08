@@ -25,11 +25,11 @@
   "dependencies": {
     "@ditojs/utils": "^2.22.0",
     "@vitejs/plugin-vue": "^5.0.3",
-    "autoprefixer": "^10.4.16",
+    "autoprefixer": "^10.4.17",
     "mime": "^4.0.1",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.8",
-    "postcss": "^8.4.33",
+    "postcss": "^8.4.35",
     "postcss-inset": "^1.0.0"
   }
 }
