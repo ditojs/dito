@@ -80,9 +80,5 @@
     "vue-eslint-parser": "^9.4.2",
     "vue-eslint-parser-template-tokenizer-pug": "^0.4.10"
   },
-  "packageManager": "yarn@3.6.1",
-  "resolutions": {
-    "objection": "portal:../objection",
-    "knex": "portal:../knex"
-  }
+  "packageManager": "yarn@3.6.1"
 }

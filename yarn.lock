@@ -8673,9 +8673,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"knex@portal:../knex::locator=dito%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "knex@portal:../knex::locator=dito%40workspace%3A."
+"knex@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "knex@npm:3.1.0"
   dependencies:
     colorette: 2.0.19
     commander: ^10.0.0
@@ -8686,7 +8686,7 @@ __metadata:
     getopts: 2.3.0
     interpret: ^2.2.0
     lodash: ^4.17.21
-    pg-connection-string: 2.6.1
+    pg-connection-string: 2.6.2
     rechoir: ^0.8.0
     resolve-from: ^5.0.0
     tarn: ^3.0.2
@@ -8707,9 +8707,10 @@ __metadata:
     tedious:
       optional: true
   bin:
-    knex: ./bin/cli.js
+    knex: bin/cli.js
+  checksum: 3905f8d27960975f7f57f3f488d1ef3ccf47784acc8eb627e8a28cbbe1f296c6879c8ef0cbd9e17e867be80117d305cd948545f3fbd4c74b24c90d2413bbc021
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "known-css-properties@npm:^0.29.0":
   version: 0.29.0
@@ -10361,17 +10362,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"objection@portal:../objection::locator=dito%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "objection@portal:../objection::locator=dito%40workspace%3A."
+"objection@npm:^3.1.3":
+  version: 3.1.3
+  resolution: "objection@npm:3.1.3"
   dependencies:
     ajv: ^8.12.0
     ajv-formats: ^2.1.1
     db-errors: ^0.2.3
   peerDependencies:
     knex: ">=1.0.1"
+  checksum: 8dce144e47eb93bbc054c773dc01b0733d90d289c7bdbd5dbae9b8f970bcb1e52a358db39766c563bbe41704ad60065e13dd80daf2a43dd1f49ac8d7ca67e416
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "on-exit-leak-free@npm:^2.1.0":
   version: 2.1.0
@@ -10865,10 +10867,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-connection-string@npm:2.6.1":
-  version: 2.6.1
-  resolution: "pg-connection-string@npm:2.6.1"
-  checksum: 882344a47e1ecf3a91383e0809bf2ac48facea97fcec0358d6e060e1cbcb8737acde419b4c86f05da4ce4a16634ee50fff1d2bb787d73b52ccbfde697243ad8a
+"pg-connection-string@npm:2.6.2":
+  version: 2.6.2
+  resolution: "pg-connection-string@npm:2.6.2"
+  checksum: 22265882c3b6f2320785378d0760b051294a684989163d5a1cde4009e64e84448d7bf67d9a7b9e7f69440c3ee9e2212f9aa10dd17ad6773f6143c6020cebbcb5
   languageName: node
   linkType: hard
 
