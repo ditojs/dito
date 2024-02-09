@@ -27,6 +27,7 @@ import {
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
+import { raw } from '@ditojs/ui'
 
 // @vue/component
 export default {
@@ -45,7 +46,7 @@ export default {
   data() {
     return {
       wrappedPrimitives: null,
-      unwrappingPrimitives: false
+      unwrappingPrimitives: raw(false)
     }
   },
 
@@ -95,16 +96,18 @@ export default {
         data ||= []
         const { wrapPrimitives } = this
         if (wrapPrimitives) {
-          if (this.unwrappingPrimitives) {
+          if (this.unwrappingPrimitives.value) {
             // We're done unwrapping once `listData` is reevaluated, so set
             // this to `false` again. See `wrappedPrimitives` watcher above.
             // TODO: Fix side-effects
-            // eslint-disable-next-line
-            this.unwrappingPrimitives = false
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+            this.unwrappingPrimitives.value = false
           } else {
             // Convert data to a list of wrapped primitives, and return it.
             // TODO: Fix side-effects
-            // eslint-disable-next-line
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.wrappedPrimitives = data.map(value => ({
               [wrapPrimitives]: value
             }))
@@ -337,11 +340,11 @@ export default {
         const { wrapPrimitives } = this
         // Skip the initial setting of wrappedPrimitives array
         if (wrapPrimitives && from !== null) {
-          // Whenever the wrappedPrimitives change, map their values back to
-          // the array of primitives, in a primitive way :)
-          // But set `unwrappingPrimitives = true`, so the `listData` computed
+          // Whenever the wrappedPrimitives change, map their values back to the
+          // array of primitives, in a primitive way :)
+          // But set `unwrappingPrimitives` to true, so the `listData` computed
           // property knows about it, which sets it to `false` again.
-          this.unwrappingPrimitives = true
+          this.unwrappingPrimitives.value = true
           this.value = to.map(object => object[wrapPrimitives])
         }
       }
