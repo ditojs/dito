@@ -5,7 +5,7 @@ import {
   normalizeDataPath,
   getValueAtDataPath
 } from '@ditojs/utils'
-import { reactive } from 'vue'
+import { markRaw, ref } from 'vue'
 import LoadingMixin from './LoadingMixin.js'
 
 // @vue/component
@@ -25,8 +25,12 @@ export default {
         schema = { data: schema }
       }
       let { data = undefined, dataPath = null } = schema
-      // See if there is async data loading already in process.
-      const asyncEntry = (this.asyncDataEntries[name] ||= reactive({
+      // Create a reactive entry for the async data, if it doesn't exist yet.
+      // NOTE: Use `markRaw()` to avoid reactivity on the entry itself, as
+      // reactivity is only desired on the `reactiveVersion` property, which is
+      // used to trigger controlled reevaluation of the computed getter.
+      const asyncEntry = (this.asyncDataEntries[name] ||= markRaw({
+        reactiveVersion: ref(1),
         dependencyFunction: null,
         resolvedData: undefined,
         resolving: false,
@@ -34,7 +38,9 @@ export default {
       }))
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
-      // of the async dependencies.
+      // of the async dependencies. Also access `reactiveVersion.value` right
+      // away, to ensure that the reactive property is tracked as a dependency:
+      asyncEntry.reactiveVersion.value &&
       asyncEntry.dependencyFunction?.(this.context)
 
       if (asyncEntry.resolved) {
@@ -80,6 +86,9 @@ export default {
               asyncEntry.resolvedData = data
               asyncEntry.resolving = false
               asyncEntry.resolved = true
+              // Trigger reevaluation of the computed getter by increasing the
+              // `reactiveVersion` value.
+              asyncEntry.reactiveVersion.value++
             })
             .catch(error => {
               console.error(error)
