@@ -261,7 +261,7 @@ export default {
               ? labelize(data.type)
               : 'Error'
             const text = data?.message ?? error
-            this.notify({ type: 'error', title, text })
+            this.notify({ type: 'error', error, title, text })
           }
         }
       }
@@ -309,6 +309,7 @@ export default {
       notifyError = error =>
         this.notify({
           type: 'error',
+          error,
           title: 'Request Error',
           text: [
             `Unable to send request${error ? ':' : ''}`,

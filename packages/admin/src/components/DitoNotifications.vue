@@ -23,7 +23,7 @@ export default DitoComponent.component('DitoNotifications', {
   },
 
   methods: {
-    notify({ type = 'info', title, text } = {}) {
+    notify({ type = 'info', title, text, error } = {}) {
       title ||= (
         {
           warning: 'Warning',
@@ -46,7 +46,12 @@ export default DitoComponent.component('DitoNotifications', {
         'error'
       )
       // eslint-disable-next-line no-console
-      console[log](stripTags(text))
+      console[log](
+        ...[
+          stripTags(text),
+          ...(type === 'error' && error ? [error] : [])
+        ]
+      )
       const { notifications = true } = this.api
       if (notifications) {
         // Calculate display-duration for the notification based on its content

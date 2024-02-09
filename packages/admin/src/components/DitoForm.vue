@@ -431,10 +431,11 @@ export default DitoComponent.component('DitoForm', {
               ]
             })
           },
-          notifyError: () => {
+          notifyError: error => {
             const verb = getVerb(true)
             this.notify({
               type: 'error',
+              error,
               title: 'Request Error',
               text: `Unable to ${verb} ${this.itemLabel}.`
             })
@@ -460,6 +461,7 @@ export default DitoComponent.component('DitoForm', {
             const verb = getVerb(true)
             this.notify({
               type: 'error',
+              error,
               title: 'Request Error',
               text: [
                 `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,

@@ -233,8 +233,8 @@ export default DitoComponent.component('DitoRoot', {
       })
     },
 
-    notify({ type = 'info', title, text } = {}) {
-      this.notifications.notify({ type, title, text })
+    notify({ type = 'info', title, text, error } = {}) {
+      this.notifications.notify({ type, title, text, error })
     },
 
     closeNotifications() {
@@ -325,15 +325,13 @@ export default DitoComponent.component('DitoRoot', {
             await this.resolveViews()
           }
         } catch (err) {
-          const error = err.response?.data?.error
+          const error = err.response?.data?.error || err
           this.notify({
             type: 'error',
+            error,
             title: 'Authentication Error',
-            text: error || err
+            text: error
           })
-          if (!error) {
-            console.error(err, err.response)
-          }
           this.login()
         }
       }
@@ -367,10 +365,12 @@ export default DitoComponent.component('DitoRoot', {
         })
         user = response.data.user || null
       } catch (err) {
+        const error = err.response?.data?.error || err
         this.notify({
           type: 'error',
+          error,
           title: 'Authentication Error',
-          text: err
+          text: error
         })
       }
       this.setUser(user)

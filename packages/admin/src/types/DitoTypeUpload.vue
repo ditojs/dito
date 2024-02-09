@@ -416,6 +416,7 @@ export default DitoTypeComponent.register('upload', {
           )
           this.notify({
             type: 'error',
+            error,
             title: 'File Upload Error',
             text
           })
