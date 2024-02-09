@@ -15,7 +15,7 @@ export default {
   data() {
     return {
       isLoading: false,
-      asyncDataEntries: {}
+      asyncDataEntries: markRaw({})
     }
   },
 
@@ -29,13 +29,13 @@ export default {
       // NOTE: Use `markRaw()` to avoid reactivity on the entry itself, as
       // reactivity is only desired on the `reactiveVersion` property, which is
       // used to trigger controlled reevaluation of the computed getter.
-      const asyncEntry = (this.asyncDataEntries[name] ||= markRaw({
+      const asyncEntry = (this.asyncDataEntries[name] ??= {
         reactiveVersion: ref(1),
         dependencyFunction: null,
         resolvedData: undefined,
         resolving: false,
         resolved: false
-      }))
+      })
       // If the data callback provided a dependency function when it was called,
       // cal it in every call of `handleDataSchema()` to force Vue to keep track
       // of the async dependencies. Also access `reactiveVersion.value` right
