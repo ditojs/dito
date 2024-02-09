@@ -166,7 +166,7 @@ export default DitoComponent.component('DitoSchema', {
           ? data(this.context)
           : data
       ),
-      currentTab: null,
+      selectedTab: null,
       componentsRegistry: {},
       panesRegistry: {},
       panelsRegistry: {},
@@ -195,16 +195,6 @@ export default DitoComponent.component('DitoSchema', {
       return getNamedSchemas(this.schema.tabs)
     },
 
-    selectedTab: {
-      get() {
-        return this.currentTab || this.defaultTab || null
-      },
-
-      set(selectedTab) {
-        this.currentTab = selectedTab
-      }
-    },
-
     defaultTab() {
       let first = null
       if (this.tabs) {
@@ -217,6 +207,10 @@ export default DitoComponent.component('DitoSchema', {
         }
       }
       return first
+    },
+
+    routeTab() {
+      return this.$route.hash?.slice(1) || null
     },
 
     clipboard() {
@@ -367,21 +361,21 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   watch: {
-    '$route.hash': {
+    routeTab: {
       immediate: true,
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       flush: 'post',
-      handler(hash) {
+      handler(routeTab) {
         // Remember the current path to know if tab changes should still be
         // handled, but remove the trailing `/create` or `/:id` from it so that
         // tabs informs that stay open after creation still work.
         if (this.hasRootTabs) {
-          this.currentTab = hash?.slice(1) || null
+          this.selectedTab = routeTab
         }
       }
     },
 
-    'selectedTab'(newTab, oldTab) {
+    selectedTab(newTab, oldTab) {
       if (this.scrollable) {
         const { content } = this.$refs
         this.scrollPositions[oldTab] = content.scrollTop
@@ -410,6 +404,10 @@ export default DitoComponent.component('DitoSchema', {
     if (this.scrollable && this.wide) {
       this.appState.pageClass = 'dito-page--wide'
     }
+  },
+
+  mounted() {
+    this.selectedTab = this.routeTab || this.defaultTab
   },
 
   unmounted() {
