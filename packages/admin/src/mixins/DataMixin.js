@@ -26,8 +26,8 @@ export default {
       }
       let { data = undefined, dataPath = null } = schema
       // Create a reactive entry for the async data, if it doesn't exist yet.
-      // NOTE: Use `markRaw()` to avoid reactivity on the entry itself, as
-      // reactivity is only desired on the `reactiveVersion` property, which is
+      // NOTE: `markRaw()` is used to avoid reactivity on `asyncDataEntries`
+      // itself, as reactivity is only desired on `reactiveVersion`, which is
       // used to trigger controlled reevaluation of the computed getter.
       const asyncEntry = (this.asyncDataEntries[name] ??= {
         reactiveVersion: ref(1),
