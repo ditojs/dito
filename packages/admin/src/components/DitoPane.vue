@@ -17,7 +17,7 @@
     // -Use <span> for .dito-break so we can use `.dito-container:first-of-type`
     // selector.
     span.dito-break(
-      v-if="schema.break === 'before'"
+      v-if="['before', 'both'].includes(schema.break)"
     )
     DitoContainer(
       v-if="shouldRenderSchema(schema)"
@@ -37,7 +37,7 @@
       :accumulatedBasis="accumulatedBasis"
     )
     span.dito-break(
-      v-if="schema.break === 'after'"
+      v-if="['after', 'both'].includes(schema.break)"
     )
 </template>
 
