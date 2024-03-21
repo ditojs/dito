@@ -235,7 +235,8 @@ export default DitoComponent.component('DitoForm', {
           // parent data so we can replace the entry at `sourceKey` on it.
           if (i === l - 1) {
             // TODO: Fix side-effects
-            // eslint-disable-next-line
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.sourceKey = key
           } else {
             data = data[key]

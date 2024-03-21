@@ -186,6 +186,9 @@ export default {
           // we're currently editing.
           for (const option of options) {
             if (!('id' in option)) {
+              // TODO: Fix side-effects
+              // eslint-disable-next-line max-len
+              // eslint-disable-next-line vue/no-side-effects-in-computed-properties
               setTemporaryId(option, 'id')
             }
           }
@@ -203,7 +206,7 @@ export default {
                 }
                 results.push(entry)
               }
-              entry.options.push(option)
+              entry[this.groupByOptions].push(option)
               return results
             },
             []

@@ -672,11 +672,15 @@ export function computeValue(schema, data, name, dataPath, {
     if (value !== undefined) {
       // Access `data[name]` directly to update the value without calling
       // parse():
+      // TODO: Fix side-effects
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       data[name] = value
     }
   }
   // If the value is still missing after compute, set the default for it:
   if (!(name in data) && !ignoreMissingValue(schema)) {
+    // TODO: Fix side-effects
+    // eslint-disable-next-line vue/no-side-effects-in-computed-properties
     data[name] = getDefaultValue(schema)
   }
   // Now access the value. This is important for reactivity and needs to

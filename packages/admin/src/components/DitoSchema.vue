@@ -233,11 +233,15 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     processedData() {
+      // TODO: Fix side-effects
+      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       return this.processData({ target: 'server', schemaOnly: true })
     },
 
     clipboardData: {
       get() {
+        // TODO: Fix side-effects
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         return this.processData({ target: 'clipboard', schemaOnly: true })
       },
 

@@ -87,7 +87,8 @@ export default DitoTypeComponent.register('color', {
           const color = tinycolor(this.value)
           if (color.isValid()) {
             // TODO: Fix side-effects
-            // eslint-disable-next-line
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.convertedHexValue = color
               .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
               .slice(1)

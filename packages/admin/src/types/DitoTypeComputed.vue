@@ -33,7 +33,8 @@ export default DitoTypeComponent.register(
           if (schema.data || schema.dataPath) {
             const value = this.handleDataSchema(schema, 'schema')
             // TODO: Fix side-effects
-            // eslint-disable-next-line
+            // eslint-disable-next-line max-len
+            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.data[this.name] = value
           }
           return TypeMixin.computed.value.get.call(this)
