@@ -23,6 +23,7 @@ import { markRaw } from 'vue'
 
 const typeComponents = {}
 const unknownTypeReported = {}
+const emptySchema = {}
 
 export function registerTypeComponent(type, component) {
   typeComponents[type] = component
@@ -518,7 +519,15 @@ export function getItemFormSchemaFromForms(forms, item) {
 }
 
 export function getItemFormSchema(schema, item, context) {
-  return getItemFormSchemaFromForms(getFormSchemas(schema, context), item)
+  return (
+    getItemFormSchemaFromForms(getFormSchemas(schema, context), item) ||
+    // Always return a schema object so we don't need to check for it.
+    emptySchema
+  )
+}
+
+export function isEmptySchema(schema) {
+  return schema === emptySchema
 }
 
 export function isCompact(schema) {

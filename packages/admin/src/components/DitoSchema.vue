@@ -118,7 +118,8 @@ import {
   getNamedSchemas,
   getPanelEntries,
   setDefaultValues,
-  processData
+  processData,
+  isEmptySchema
 } from '../utils/schema.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
@@ -365,6 +366,17 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   watch: {
+    schema: {
+      immediate: true,
+      handler(schema) {
+        // For forms with type depending on loaded data, we need to wait for the
+        // actual schema to become ready before setting up schema related things
+        if (!isEmptySchema(schema)) {
+          this.setupSchema()
+        }
+      }
+    },
+
     routeTab: {
       immediate: true,
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
@@ -401,10 +413,6 @@ export default DitoComponent.component('DitoSchema', {
 
   created() {
     this._register(true)
-    this.setupSchemaFields()
-    // Delegate change events through to parent schema:
-    this.delegate('change', this.parentSchemaComponent)
-    this.emitEvent('initialize') // Not `'create'`, since that's for data.
     if (this.scrollable && this.wide) {
       this.appState.pageClass = 'dito-page--wide'
     }
@@ -423,6 +431,13 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   methods: {
+    setupSchema() {
+      this.setupSchemaFields()
+      // Delegate change events through to parent schema:
+      this.delegate('change', this.parentSchemaComponent)
+      this.emitEvent('initialize') // Not `'create'`, since that's for data.
+    },
+
     getComponentsByDataPath(dataPath) {
       return this._getEntriesByDataPath(this.componentsByDataPath, dataPath)
     },

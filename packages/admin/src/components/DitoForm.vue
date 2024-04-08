@@ -88,15 +88,18 @@ export default DitoComponent.component('DitoForm', {
     },
 
     schema() {
-      return (
-        this.getItemFormSchema(
-          this.sourceSchema,
-          // If there is no data yet, provide an empty object with just the
-          // right type set, so the form can always be determined.
-          this.data || { type: this.type },
-          this.context
-        ) || {}
-      ) // Always return a schema object so we don't need to check for it.
+      return this.getItemFormSchema(
+        this.sourceSchema,
+        this.data || (
+          this.creationType
+            ? // If there is no data yet but the type to create a new item is
+              // is specified, provide a temporary empty object with just the
+              // type set, so `getItemFormSchema()` can determine the form.
+              { type: this.creationType }
+            : null
+        ),
+        this.context
+      )
     },
 
     buttonSchemas() {
@@ -156,7 +159,7 @@ export default DitoComponent.component('DitoForm', {
       return this.mainSchemaComponent?.selectedTab || null
     },
 
-    type() {
+    creationType() {
       // The type of form to create, if there are multiple forms to choose from.
       return this.$route.query.type
     },
@@ -331,7 +334,7 @@ export default DitoComponent.component('DitoForm', {
     // @override ResourceMixin.setupData()
     setupData() {
       if (this.isCreating) {
-        this.createdData ||= this.createData(this.schema, this.type)
+        this.createdData ||= this.createData(this.schema, this.creationType)
       } else {
         this.ensureData()
       }
