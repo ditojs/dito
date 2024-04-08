@@ -118,6 +118,8 @@ export default {
           }
         })
       }
+      // Make sure it's thenable even if there are no listeners.
+      return Promise.resolve()
     },
 
     // Checks if the component has listeners for a given event type:

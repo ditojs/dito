@@ -534,30 +534,36 @@ export default {
       }
     },
 
-    async emitEvent(event, {
+    emitEvent(event, {
       context = null,
       parent = null
     } = {}) {
       const hasListeners = this.hasListeners(event)
       const parentHasListeners = parent?.hasListeners(event)
       if (hasListeners || parentHasListeners) {
-        // The effects of some events need some time to propagate through Vue.
-        // Use $nextTick() to make sure our handlers see these changes.
-        // For example, `processedItem` is only correct after components that
-        // are newly rendered due to data changes have registered themselves.
-        if (['load', 'change'].includes(event)) {
-          await this.$nextTick()
-        }
+        const emitEvent = target =>
+          target.emit(event, (context = DitoContext.get(this, context)))
 
-        const getContext = () => (context = DitoContext.get(this, context))
-        const res = hasListeners
-          ? await this.emit(event, getContext())
-          : undefined
-        // Don't bubble to parent if handled event returned `false`
-        if (parentHasListeners && res !== false) {
-          parent.emit(event, getContext())
-        }
-        return res
+        const handleParentListeners = result =>
+          // Don't bubble to parent if handled event returned `false`
+          parentHasListeners && result !== false
+            ? emitEvent(parent).then(() => result)
+            : result
+
+        const handleListeners = () =>
+          hasListeners
+            ? emitEvent(this).then(handleParentListeners)
+            : handleParentListeners(undefined)
+
+        return ['load', 'change'].includes(event)
+          ? // The effects of some events need time to propagate through Vue.
+            // Use $nextTick() to make sure our handlers see these changes.
+            // For example, `processedItem` is only correct after components
+            // that are newly rendered due to data changes have registered.
+            // NOTE: The result of `handleListeners()` makes it through the
+            // `$nextTick()` call and will be returned as expected.
+            this.$nextTick(handleListeners)
+          : handleListeners()
       }
     },
 
