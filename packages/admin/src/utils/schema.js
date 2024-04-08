@@ -325,7 +325,7 @@ export function processSchemaDefaults(api, schema) {
         if (schema[key] === undefined) {
           schema[key] = value
         } else {
-          schema[key] = assignDeeply(value, schema[key])
+          schema[key] = assignDeeply(schema[key], value)
         }
       }
     }

@@ -31,7 +31,9 @@ function mergeValues(target, source, root, concat) {
       return mergeIteratively(target, source, root, concat, false)
     }
   }
-  return root ? source ?? target : source
+  return root // Don't override values with nullish at root level
+    ? source ?? target
+    : source
 }
 
 function mergeIteratively(target, source, root, concat, toArray) {
