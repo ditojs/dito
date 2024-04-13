@@ -122,7 +122,12 @@ export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
 
-export async function resolveSchema(schema, unwrapModule = false) {
+const resolvedSchemas = new WeakMap()
+export async function resolveSchema(value, unwrapModule = false) {
+  if (resolvedSchemas.has(value)) {
+    return resolvedSchemas.get(value)
+  }
+  let schema = value
   if (isFunction(schema)) {
     schema = schema()
   }
@@ -147,6 +152,7 @@ export async function resolveSchema(schema, unwrapModule = false) {
       }
     }
   }
+  resolvedSchemas.set(value, schema)
   return schema
 }
 
@@ -236,29 +242,34 @@ export async function resolveSchemaComponents(schemas) {
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
+const processedSchemas = new WeakSet()
 export async function processSchemaComponents(
   api,
   schema,
   routes = null,
   level = 0
 ) {
-  const promises = []
-  const process = (component, name, relativeLevel) => {
-    promises.push(
-      processSchemaComponent(
-        api,
-        component,
-        name,
-        routes,
-        level + relativeLevel
+  if (schema && !processedSchemas.has(schema)) {
+    processedSchemas.add(schema)
+
+    const promises = []
+    const process = (component, name, relativeLevel) => {
+      promises.push(
+        processSchemaComponent(
+          api,
+          component,
+          name,
+          routes,
+          level + relativeLevel
+        )
       )
-    )
+    }
+
+    iterateNestedSchemaComponents(schema, process)
+    iterateSchemaComponents(getPanelSchemas(schema), process)
+
+    await Promise.all(promises)
   }
-
-  iterateNestedSchemaComponents(schema, process)
-  iterateSchemaComponents(getPanelSchemas(schema), process)
-
-  await Promise.all(promises)
 }
 
 export async function processSchemaComponent(
