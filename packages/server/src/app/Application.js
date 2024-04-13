@@ -51,6 +51,7 @@ import {
   attachLogger,
   createTransaction,
   findRoute,
+  extendContext,
   handleError,
   handleRoute,
   handleSession,
@@ -580,6 +581,7 @@ export class Application extends Koa {
     // This needs to be positioned after the request logger to log the correct
     // response status.
     this.use(handleError())
+    this.use(extendContext())
     if (app.helmet !== false) {
       this.use(helmet(getOptions(app.helmet)))
     }

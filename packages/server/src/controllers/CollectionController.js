@@ -61,18 +61,12 @@ export class CollectionController extends Controller {
       : path
   }
 
-  extendContext(ctx, object) {
-    // Create a copy of `ctx` that inherits from the real one, but overrides
-    // some properties with the ones from the passed `object`.
-    return Object.setPrototypeOf(object, ctx)
-  }
-
   getMemberId(ctx) {
     return this.validateId(ctx.params[this.idParam])
   }
 
   getContextWithMemberId(ctx, memberId = this.getMemberId(ctx)) {
-    return this.extendContext(ctx, { memberId })
+    return ctx.extend({ memberId })
   }
 
   getModelId(model) {
@@ -121,7 +115,7 @@ export class CollectionController extends Controller {
       this,
       // Extend `ctx` with a new `query` object, while inheriting the route
       // params in `ctx.params`, so fining the member by id still works.
-      this.extendContext(ctx, { query }),
+      ctx.extend({ query }),
       (query, trx) => {
         this.setupQuery(query, base)
         query.modify(modify)
