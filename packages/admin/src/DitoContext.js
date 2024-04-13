@@ -61,6 +61,12 @@ export default class DitoContext {
       : new DitoContext(component, context)
   }
 
+  extend(object) {
+    // Create a copy of this context that inherits from the real one, but
+    // overrides some properties with the ones from the passed `object`.
+    return Object.setPrototypeOf(object, this)
+  }
+
   // `nested` is `true` when the data-path points a value inside an item, and
   // `false` when it points to the item itself.
   get nested() {
