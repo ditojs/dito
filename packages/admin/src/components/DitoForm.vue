@@ -1,21 +1,22 @@
 <template lang="pug">
 .dito-form.dito-scroll-parent(
-  :class="{ 'dito-form-nested': isNestedRoute }"
+  :class="{ 'dito-form-inlined': isInlinedSource }"
   :data-resource="sourceSchema.path"
 )
-  //- NOTE: Nested form components are kept alive by using `v-show` instead of
-  //- `v-if` here, so event handling and other things still work with nested
-  //- editing. Only render a router-view here if this isn't the last data route
-  //- and not a nested form route, which will appear elsewhere in its own view.
+  //- NOTE: inlined form components are kept alive by using `v-show` instead of
+  //- `v-if` here, so event handling and other things still work with inlined
+  //- editing.
+  //- Only render a router-view here if this isn't the last data route and not
+  //- an inlined form route, which will appear elsewhere in its own view.
   RouterView(
-    v-if="!(isLastUnnestedRoute || isNestedRoute)"
+    v-if="!isLastUnnestedRoute && !isInlinedSource"
     v-show="!isActive"
   )
   //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
   component(
     v-show="isActive"
-    :is="isNestedRoute ? 'div' : 'form'"
-    :class="{ 'dito-scroll-parent': isRootForm }"
+    :is="isInlinedSource ? 'div' : 'form'"
+    :class="{ 'dito-scroll-parent': !isInlinedSource }"
     @submit.prevent
   )
     //- Prevent implicit submission of the form, for example when typing enter
@@ -32,14 +33,14 @@
       :data="data"
       :meta="meta"
       :store="store"
-      :padding="isNestedRoute ? 'nested' : 'root'"
+      :padding="isInlinedSource ? 'nested' : 'root'"
       :disabled="isLoading"
-      :scrollable="isRootForm"
+      :scrollable="!isInlinedSource"
       generateLabels
     )
       template(#buttons)
         DitoButtons.dito-buttons-round.dito-buttons-large.dito-buttons-main(
-          :class="{ 'dito-buttons-sticky': isRootForm }"
+          :class="{ 'dito-buttons-sticky': !isInlinedSource }"
           :buttons="buttonSchemas"
           :dataPath="dataPath"
           :data="data"
@@ -55,7 +56,7 @@ import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
-import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
+import { getButtonSchemas, isInlined, isObjectSource } from '../utils/schema.js'
 import { resolvePath } from '../utils/path.js'
 
 // @vue/component
@@ -127,8 +128,8 @@ export default DitoComponent.component('DitoForm', {
       )
     },
 
-    isRootForm() {
-      return this.dataPath === '' && !this.isNestedRoute
+    isInlinedSource() {
+      return isInlined(this.sourceSchema)
     },
 
     isActive() {

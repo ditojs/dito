@@ -617,7 +617,7 @@ export default {
           isListSource(schema) ? param : null
         ),
         component: DitoComponent.component(
-          nested ? 'DitoFormNested' : 'DitoForm'
+          nested ? 'DitoFormInlined' : 'DitoForm'
         ),
         meta: formMeta
       }
