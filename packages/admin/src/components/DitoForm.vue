@@ -169,11 +169,6 @@ export default DitoComponent.component('DitoForm', {
       return this.isCreating ? 'post' : 'patch'
     },
 
-    resource() {
-      const resource = this.getResource()
-      return getMemberResource(this.itemId, resource) || resource
-    },
-
     breadcrumbPrefix() {
       return capitalize(this.isCreating ? this.verbs.create : this.verbs.edit)
     },
@@ -326,6 +321,12 @@ export default DitoComponent.component('DitoForm', {
       )
     },
 
+    // @override ResourceMixin.getResource()
+    getResource(defaults) {
+      const resource = ResourceMixin.methods.getResource.call(this, defaults)
+      return getMemberResource(this.itemId, resource) || resource
+    },
+
     // @override ResourceMixin.setupData()
     setupData() {
       if (this.isCreating) {
@@ -401,11 +402,13 @@ export default DitoComponent.component('DitoForm', {
       const getVerb = present => this.verbs[this.getSubmitVerb(present)]
 
       // Allow buttons to override both method and resource path to submit to:
+      let { method } = this
+      let resource = this.getResource({ method })
       const buttonResource = getResource(button.schema.resource, {
-        parent: this.resource
+        parent: resource
       })
-      const resource = buttonResource || this.resource
-      const method = resource?.method || this.method
+      resource = buttonResource || resource
+      method = resource?.method || method
       const data = this.getPayloadData(button, method)
       let success
       if (!buttonResource && this.isTransient) {

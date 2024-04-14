@@ -316,7 +316,7 @@ export default {
         // automatically.
         parent: this.dataComponent?.resource ?? null
       })
-      return this.api.resources.any(getResource(resource))
+      return this.api.resources.any(resource)
     },
 
     getResourceUrl(resource) {

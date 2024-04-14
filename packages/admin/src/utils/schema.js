@@ -636,16 +636,21 @@ export function getDefaultValue(schema) {
       ? defaultValue
       : getTypeOptions(schema)?.defaultValue
   return isFunction(value)
-    ? // TODO: Pass `DitoContext` here too, with the (incomplete) item and al
+    ? // TODO: Pass `DitoContext` here too, with the (incomplete) item and all
       // the other bits!
       value(schema)
     : clone(value)
 }
 
+export function excludeValue(schema) {
+  const excludeValue = getTypeOptions(schema)?.excludeValue
+  return isFunction(excludeValue) ? excludeValue(schema) : !!excludeValue
+}
+
 export function ignoreMissingValue(schema) {
-  const typeOptions = getTypeOptions(schema)
-  return !!(
-    typeOptions?.excludeValue || typeOptions?.ignoreMissingValue?.(schema)
+  return (
+    excludeValue(schema) ||
+    !!getTypeOptions(schema)?.ignoreMissingValue?.(schema)
   )
 }
 
@@ -775,8 +780,6 @@ export function processData(schema, sourceSchema, data, dataPath, {
     const { wrapPrimitives, exclude, process } = schema
     let value = processedData[name]
 
-    const typeOptions = getTypeOptions(schema)
-
     // NOTE: We don't cache this context, since `value` is changing.
     const getContext = () =>
       new DitoContext(component, {
@@ -799,7 +802,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     // Each component type can provide its own static `processValue()` method
     // to convert the data for storage.
-    const processValue = typeOptions?.processValue
+    const processValue = getTypeOptions(schema)?.processValue
     if (processValue) {
       value = processValue(schema, value, dataPath, graph)
     }
@@ -811,7 +814,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
     }
 
     if (
-      typeOptions?.excludeValue ||
+      excludeValue(schema) ||
       // Support functions next to booleans for `schema.exclude`:
       exclude === true ||
       isFunction(exclude) && exclude(getContext())

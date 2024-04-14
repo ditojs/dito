@@ -124,9 +124,7 @@ export default class DitoAdmin {
       },
 
       member(resource) {
-        // NOTE: We assume that all members have root-level collection routes,
-        // to avoid excessive nesting of (sub-)collection routes.
-        return `${resource.path}/${resource.id}`
+        return `${this.default(resource)}/${resource.id}`
       },
 
       upload(resource) {

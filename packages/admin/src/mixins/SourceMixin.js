@@ -37,6 +37,11 @@ export default {
     return isListSource(schema) ? [] : null
   },
 
+  excludeValue(schema) {
+    // Exclude all sources that have their own resource handling the data.
+    return !!schema.resource
+  },
+
   provide() {
     return {
       $sourceComponent: () => this
@@ -464,9 +469,13 @@ export default {
           notify()
         } else {
           const itemId = this.getItemId(this.schema, item, index)
-          const resource = getMemberResource(itemId, this.resource)
+          const method = 'delete'
+          const resource = getMemberResource(
+            itemId,
+            this.getResource({ method })
+          )
           if (resource) {
-            this.handleRequest({ method: 'delete', resource }, err => {
+            this.handleRequest({ method, resource }, err => {
               if (!err) {
                 this.removeItem(item, index)
                 notify()

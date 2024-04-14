@@ -6,13 +6,14 @@ export function hasResource(schema) {
 
 export function getResource(resource, defaults = {}) {
   const { parent, ...defs } = defaults
+  if (isFunction(resource)) {
+    resource = resource(defaults)
+  }
   resource = isObject(resource)
     ? { ...defs, ...resource }
     : isString(resource)
       ? { ...defs, path: resource }
-      : isFunction(resource)
-        ? resource(defaults)
-        : null
+      : null
   // Only set parent if path doesn't start with '/', so relative URLs are
   // dealt with correctly.
   if (

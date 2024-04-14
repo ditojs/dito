@@ -1,7 +1,7 @@
 import ItemMixin from './ItemMixin.js'
 import LoadingMixin from './LoadingMixin.js'
 import { setDefaultValues } from '../utils/schema.js'
-import { isObject, isString, labelize } from '@ditojs/utils'
+import { assignDeeply, isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import DitoContext from '../DitoContext.js'
 
@@ -31,8 +31,6 @@ export default {
     },
 
     resource() {
-      // Returns the resource object representing the resource for the
-      // associated source schema.
       return this.getResource()
     },
 
@@ -126,12 +124,13 @@ export default {
   },
 
   methods: {
-    getResource() {
-      // This is defined as a method so the computed `resource` getter can
-      // be overridden and `super` functionality can still be accessed.
+    getResource(defaults = { method: 'get' }) {
+      // Returns the resource object representing the resource for the
+      // associated source schema.
       return getResource(this.sourceSchema?.resource, {
         type: 'collection',
-        parent: this.parentResourceComponent?.resource ?? null
+        parent: this.parentResourceComponent?.resource ?? null,
+        ...defaults
       })
     },
 
@@ -230,7 +229,7 @@ export default {
     async handleRequest(
       {
         method,
-        resource = this.resource,
+        resource = this.getResource({ method }),
         query,
         data
       },
@@ -244,6 +243,7 @@ export default {
       const controller = new AbortController()
       this.abortController = controller
       const { signal } = controller
+      method = resource.method || method
       const request = { method, resource, query, data, signal }
       this.setLoading(true, loadingOptions)
       try {
@@ -340,7 +340,9 @@ export default {
               // Update the underlying data before calling `notify()` or
               // `this.itemLabel`, so id is set after creating new items.
               if (setData && data) {
-                this.setData(data)
+                // Use `assignDeeply()` to ensure that the data that is excluded
+                // from the response is not removed from the existing data.
+                this.setData(assignDeeply({}, this.data, data))
               }
               onSuccess?.()
               await this.emitButtonEvent(button, 'success', {
