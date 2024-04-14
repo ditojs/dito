@@ -20,7 +20,9 @@ slot(name="before")
     :to="headerTeleport"
     :disabled="!headerTeleport"
   )
-    .dito-schema-header
+    .dito-schema-header(
+      v-if="active"
+    )
       DitoLabel(
         v-if="hasLabel"
         :label="label"
@@ -119,7 +121,8 @@ import {
   getPanelEntries,
   setDefaultValues,
   processData,
-  isEmptySchema
+  isEmptySchema,
+  isNested
 } from '../utils/schema.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
@@ -147,6 +150,7 @@ export default DitoComponent.component('DitoSchema', {
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
     padding: { type: String, default: null },
+    active: { type: Boolean, default: true },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
@@ -223,7 +227,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     headerTeleport() {
-      return this.isRootSchema
+      return this.isTopLevelSchema
         ? '.dito-header__teleport'
         : this.labelNode
     },
@@ -283,9 +287,8 @@ export default DitoComponent.component('DitoSchema', {
       )
     },
 
-    isRootSchema() {
-      // Section schemas can share the root dataPath but they are inlined.
-      return this.dataPath === '' && !this.inlined
+    isNested() {
+      return isNested(this.schema)
     },
 
     isDirty() {
@@ -320,8 +323,12 @@ export default DitoComponent.component('DitoSchema', {
       return !!this.tabs
     },
 
-    hasRootTabs() {
-      return this.hasTabs && this.isRootSchema
+    isTopLevelSchema() {
+      return !this.isNested && !this.inlined
+    },
+
+    hasTopLevelTabs() {
+      return this.hasTabs && this.isTopLevelSchema
     },
 
     hasMainPane() {
@@ -385,7 +392,7 @@ export default DitoComponent.component('DitoSchema', {
         // Remember the current path to know if tab changes should still be
         // handled, but remove the trailing `/create` or `/:id` from it so that
         // tabs informs that stay open after creation still work.
-        if (this.hasRootTabs) {
+        if (this.hasTopLevelTabs) {
           this.selectedTab = routeTab
         }
       }
@@ -399,7 +406,7 @@ export default DitoComponent.component('DitoSchema', {
           content.scrollTop = this.scrollPositions[newTab] ?? 0
         })
       }
-      if (this.hasRootTabs) {
+      if (this.hasTopLevelTabs) {
         const tab = this.shouldRenderSchema(this.tabs[newTab])
           ? newTab
           : this.defaultTab

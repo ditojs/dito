@@ -7,13 +7,13 @@
   //- nested form route, which will appear elsewhere in its own view.
   RouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
-    v-show="!isActive"
+    v-show="!isActiveRoute"
   )
   //- NOTE: Nested form components are kept alive by using `v-show` instead of
   //- `v-if` here, so event handling and other things still work with nested
   //- editing.
   DitoFormInner(
-    v-show="isActive"
+    v-show="isActiveRoute"
     :nested="isNestedRoute"
   )
     //- Prevent implicit submission of the form, for example when typing enter
@@ -31,6 +31,7 @@
       :meta="meta"
       :store="store"
       :padding="isNestedRoute ? 'nested' : 'root'"
+      :active="isActiveRoute"
       :disabled="isLoading"
       :scrollable="!isNestedRoute"
       generateLabels
@@ -125,7 +126,7 @@ export default DitoComponent.component('DitoForm', {
       )
     },
 
-    isActive() {
+    isActiveRoute() {
       return this.isLastRoute || this.isLastUnnestedRoute
     },
 
