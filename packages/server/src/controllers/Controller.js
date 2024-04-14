@@ -70,16 +70,12 @@ export class Controller {
     // If the class name ends in 'Controller', remove it from controller name.
     this.name ||= this.constructor.name.match(/^(.*?)(?:Controller|)$/)[1]
     this.path ??= this.app.normalizePath(this.name)
-    if (!this.url) {
-      // NOTE: `RelationController.configure()` sets the `url` before calling
-      // `super.configure()` and has its own handling of logging.
-      const { path, namespace } = this
-      // TODO: The distinction between  `url` and `path` is a bit tricky, since
-      // what we call `url` here is called `path` in Router, and may contain
-      // mapped parameters or wildcards. Consider `path` / `route` instead?
-      const url = path ? `/${path}` : ''
-      this.url = namespace ? `/${namespace}${url}` : url
-    }
+    const { path, namespace } = this
+    // TODO: The distinction between  `url` and `path` is a bit tricky, since
+    // what we call `url` here is called `path` in Router, and may contain
+    // mapped parameters or wildcards. Consider `path` / `route` instead?
+    const url = path ? `/${path}` : ''
+    this.url = namespace ? `/${namespace}${url}` : url
   }
 
   // @overridable

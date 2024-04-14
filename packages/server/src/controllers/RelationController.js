@@ -1,4 +1,3 @@
-import pico from 'picocolors'
 import { asArray } from '@ditojs/utils'
 import { CollectionController } from './CollectionController.js'
 import { ControllerError } from '../errors/index.js'
@@ -32,28 +31,18 @@ export class RelationController extends CollectionController {
       // relations:
       this.scope = asArray(parent.scope).filter(scope => getScope(scope).graph)
     }
-    // Copy over all fields in the relation object except the ones that are
-    // going to be inherited in `setup()` (relation, member, allow), for
-    // settings like scope, etc.
-    for (const key in this.object) {
-      if (!['relation', 'member', 'allow'].includes(key)) {
-        this[key] = this.object[key]
-      }
+    // Copy over all fields in the relation object.
+    for (const key in object) {
+      // On the relation objects, the `collection` actions are stored in a
+      // `relation` object, to make sense both for one- and many-relations:
+      this.setProperty(key === 'relation' ? 'collection' : key, object[key])
     }
   }
 
   // @override
   configure() {
-    // Setup the `url` before calling `super.configure()` to override its
-    // default behavior for `RelationController`:
-    this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
-    this.log(`${pico.blue(this.path)}${pico.white(':')}`, this.level)
     super.configure()
-  }
-
-  // @override
-  logController() {
-    // The parent controller logs itself already, that's enough.
+    this.url = `${this.parent.url}/${this.parent.getPath('member', this.path)}`
   }
 
   // @override
@@ -98,7 +87,7 @@ export class RelationController extends CollectionController {
     })
   }
 
-  collection = this.toCoreActions({})
+  collection = this.convertToCoreActions({})
 
-  member = this.toCoreActions({})
+  member = this.convertToCoreActions({})
 }
