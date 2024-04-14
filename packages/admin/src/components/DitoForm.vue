@@ -1,56 +1,68 @@
 <template lang="pug">
+DefineTemplate
+  //- Prevent implicit submission of the form, for example when typing enter
+  //- in an input field.
+  //- https://stackoverflow.com/a/51507806
+  button(
+    v-show="false"
+    type="submit"
+    disabled
+  )
+  DitoSchema(
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :padding="isInlinedSource ? 'nested' : 'root'"
+    :disabled="isLoading"
+    :scrollable="!isInlinedSource"
+    generateLabels
+  )
+    template(#buttons)
+      DitoButtons.dito-buttons-round.dito-buttons-large.dito-buttons-main(
+        :class="{ 'dito-buttons-sticky': !isInlinedSource }"
+        :buttons="buttonSchemas"
+        :dataPath="dataPath"
+        :data="data"
+        :meta="meta"
+        :store="store"
+        :disabled="isLoading"
+      )
+
 .dito-form.dito-scroll-parent(
   :class="{ 'dito-form-inlined': isInlinedSource }"
   :data-resource="sourceSchema.path"
 )
-  //- NOTE: inlined form components are kept alive by using `v-show` instead of
-  //- `v-if` here, so event handling and other things still work with inlined
-  //- editing.
-  //- Only render a router-view here if this isn't the last data route and not
-  //- an inlined form route, which will appear elsewhere in its own view.
-  RouterView(
-    v-if="!isLastUnnestedRoute && !isInlinedSource"
-    v-show="!isActive"
+  template(
+    v-if="isInlinedSource"
   )
-  //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
-  component(
-    v-show="isActive"
-    :is="isInlinedSource ? 'div' : 'form'"
-    :class="{ 'dito-scroll-parent': !isInlinedSource }"
-    @submit.prevent
+    //- Use a <div> for inlined forms, as we shouldn't nest actual <form> tags.
+    //- NOTE: inlined form components are kept alive by using `v-show` instead
+    //- of `v-if` here, so event handling and other things still work with
+    //- inlined editing.
+    div(
+      v-show="isActive"
+    )
+      ReuseTemplate
+  template(
+    v-else
   )
-    //- Prevent implicit submission of the form, for example when typing enter
-    //- in an input field.
-    //- https://stackoverflow.com/a/51507806
-    button(
-      v-show="false"
-      type="submit"
-      disabled
+    //- Only render a router-view here if this isn't the last data route and not
+    //- an inlined form route, which will appear elsewhere in its own view.
+    RouterView(
+      v-if="!isLastUnnestedRoute"
+      v-show="!isActive"
     )
-    DitoSchema(
-      :schema="schema"
-      :dataPath="dataPath"
-      :data="data"
-      :meta="meta"
-      :store="store"
-      :padding="isInlinedSource ? 'nested' : 'root'"
-      :disabled="isLoading"
-      :scrollable="!isInlinedSource"
-      generateLabels
+    form.dito-scroll-parent(
+      v-show="isActive"
+      @submit.prevent
     )
-      template(#buttons)
-        DitoButtons.dito-buttons-round.dito-buttons-large.dito-buttons-main(
-          :class="{ 'dito-buttons-sticky': !isInlinedSource }"
-          :buttons="buttonSchemas"
-          :dataPath="dataPath"
-          :data="data"
-          :meta="meta"
-          :store="store"
-          :disabled="isLoading"
-        )
+      ReuseTemplate
 </template>
 
 <script>
+import { createReusableTemplate } from '@vueuse/core'
 import { clone, capitalize, parseDataPath, assignDeeply } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
@@ -59,9 +71,12 @@ import { getResource, getMemberResource } from '../utils/resource.js'
 import { getButtonSchemas, isInlined, isObjectSource } from '../utils/schema.js'
 import { resolvePath } from '../utils/path.js'
 
+const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
+
 // @vue/component
 export default DitoComponent.component('DitoForm', {
   mixins: [RouteMixin, ResourceMixin],
+  components: { DefineTemplate, ReuseTemplate },
 
   data() {
     return {
