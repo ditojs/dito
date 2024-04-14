@@ -311,12 +311,11 @@ export default {
     },
 
     getResourcePath(resource) {
-      resource = getResource(resource)
-      // Resources without a parent inherit the one from `dataComponent`
-      // automatically.
-      if (resource.parent === undefined) {
-        resource.parent = this.dataComponent?.resource
-      }
+      resource = getResource(resource, {
+        // Resources without a parent inherit the one from `dataComponent`
+        // automatically.
+        parent: this.dataComponent?.resource ?? null
+      })
       return this.api.resources.any(getResource(resource))
     },
 

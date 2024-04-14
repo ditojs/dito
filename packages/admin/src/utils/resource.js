@@ -1,4 +1,4 @@
-import { isObject, isString, pickBy } from '@ditojs/utils'
+import { isFunction, isObject, isString, pickBy } from '@ditojs/utils'
 
 export function hasResource(schema) {
   return !!getResource(schema.resource)
@@ -10,7 +10,9 @@ export function getResource(resource, defaults = {}) {
     ? { ...defs, ...resource }
     : isString(resource)
       ? { ...defs, path: resource }
-      : null
+      : isFunction(resource)
+        ? resource(defaults)
+        : null
   // Only set parent if path doesn't start with '/', so relative URLs are
   // dealt with correctly.
   if (

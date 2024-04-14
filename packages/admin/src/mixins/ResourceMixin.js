@@ -131,7 +131,7 @@ export default {
       // be overridden and `super` functionality can still be accessed.
       return getResource(this.sourceSchema?.resource, {
         type: 'collection',
-        parent: this.parentFormComponent?.resource ?? null
+        parent: this.parentResourceComponent?.resource ?? null
       })
     },
 
