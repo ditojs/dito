@@ -14,7 +14,7 @@ export class ModelController extends CollectionController {
 
   setup() {
     super.setup()
-    this.relations = this.setupRelations()
+    this.setProperty('relations', this.setupRelations())
   }
 
   setupRelations() {

@@ -85,11 +85,11 @@ export class Controller {
   // @overridable
   setup() {
     this.logController()
-    this.actions ||= this.reflectActionsObject()
+    this.setProperty('actions', this.actions || this.reflectActionsObject())
     // Now that the instance fields are reflected in the `controller` object
     // we can use the normal inheritance mechanism through `setupActions()`:
-    this.actions = this.setupActions('actions')
-    this.assets = this.setupAssets()
+    this.setProperty('actions', this.setupActions('actions'))
+    this.setProperty('assets', this.setupAssets())
   }
 
   // @overridable
@@ -117,6 +117,15 @@ export class Controller {
       }`,
       this.level
     )
+  }
+
+  setProperty(key, value) {
+    Object.defineProperty(this, key, {
+      value,
+      writable: false,
+      enumerable: true,
+      configurable: true
+    })
   }
 
   logRoute(str, indent = 0) {
