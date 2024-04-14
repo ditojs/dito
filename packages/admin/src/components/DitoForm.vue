@@ -339,7 +339,8 @@ export default DitoComponent.component('DitoForm', {
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
         const { mainSchemaComponent } = this
-        this.sourceData[this.sourceKey] = mainSchemaComponent.filterData(data)
+        this.sourceData[this.sourceKey] =
+          mainSchemaComponent.filterData(data).localData
         mainSchemaComponent.onChange()
         return true
       }

@@ -326,15 +326,25 @@ export default {
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       flush: 'post',
       handler(to, from) {
-        if (
-          this.providesData &&
-          from.path === to.path &&
-          from.hash === to.hash
-        ) {
-          // Paths and hashes remain the same, so only queries have changed.
-          // Update filter and reload data without clearing.
-          this.query = to.query
-          this.loadData(false)
+        if (this.providesData) {
+          if (
+            from.path === to.path &&
+            from.hash === to.hash
+          ) {
+            // Paths and hashes remain the same, so only queries have changed.
+            // Update filter and reload data without clearing.
+            this.query = to.query
+            this.loadData(false)
+          } else if (
+            this.meta.reload &&
+            from.path !== to.path &&
+            from.path.startsWith(to.path)
+          ) {
+            // Reload the source when navigating back to a parent-route after
+            // changing data in a child-route.
+            this.meta.reload = false
+            this.loadData(false)
+          }
         }
       }
     },

@@ -340,9 +340,17 @@ export default {
               // Update the underlying data before calling `notify()` or
               // `this.itemLabel`, so id is set after creating new items.
               if (setData && data) {
-                // Use `assignDeeply()` to ensure that the data that is excluded
-                // from the response is not removed from the existing data.
-                this.setData(assignDeeply({}, this.data, data))
+                // Preserve the foreign data entries when updating the data.
+                const { foreignData } = this.mainSchemaComponent.filterData(
+                  this.data
+                )
+                // Tell the parent route to reload its data, so that it can
+                // update its foreign data entries.
+                const parentMeta = this.parentRouteComponent?.routeRecord?.meta
+                if (parentMeta) {
+                  parentMeta.reload = true
+                }
+                this.setData(assignDeeply({}, foreignData, data))
               }
               onSuccess?.()
               await this.emitButtonEvent(button, 'success', {

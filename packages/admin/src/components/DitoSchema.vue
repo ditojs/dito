@@ -9,6 +9,7 @@ slot(name="before")
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
+      v-if="active"
       :panels="panelEntries"
       :data="data"
       :meta="meta"
@@ -694,20 +695,22 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     filterData(data) {
-      // Filters out arrays and objects that are back by data resources
-      // themselves, as those are already taking care of through their own API
+      // Filters out arrays and objects that are backed by data resources
+      // themselves, as those are already taken care of through their own API
       // resource end-points and shouldn't be set.
-      const copy = {}
+      const localData = {}
+      const foreignData = {}
       for (const [name, value] of Object.entries(data)) {
         if (isArray(value) || isObject(value)) {
           const components = this.getComponentsByName(name)
           if (components.some(component => component.providesData)) {
+            foreignData[name] = value
             continue
           }
         }
-        copy[name] = value
+        localData[name] = value
       }
-      return copy
+      return { localData, foreignData }
     },
 
     processData({ target = 'clipboard', schemaOnly = true } = {}) {
