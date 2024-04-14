@@ -60,6 +60,10 @@ export default {
       return false
     },
 
+    isNestedRoute() {
+      return this.meta.nested
+    },
+
     isView() {
       return false
     },
