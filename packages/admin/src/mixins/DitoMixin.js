@@ -155,15 +155,19 @@ export default {
     },
 
     parentSchemaComponent() {
-      return this.schemaComponent?.parentComponent.schemaComponent
+      return getParentComponent(this, 'schemaComponent')
     },
 
     parentRouteComponent() {
-      return this.routeComponent?.parentComponent.routeComponent
+      return getParentComponent(this, 'routeComponent')
     },
 
     parentFormComponent() {
-      return this.formComponent?.parentComponent.formComponent
+      return getParentComponent(this, 'formComponent')
+    },
+
+    parentResourceComponent() {
+      return getParentComponent(this, 'resourceComponent')
     },
 
     // Returns the data of the first route component in the chain of parents
@@ -574,3 +578,12 @@ export default {
 }
 
 let nextUid = 0
+
+function getParentComponent(component, key) {
+  const current = component[key]
+  let parent = component.parentComponent
+  while (parent && parent[key] === current) {
+    parent = parent.parentComponent
+  }
+  return parent?.[key] ?? null
+}

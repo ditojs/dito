@@ -75,7 +75,7 @@ export default DitoComponent.component('DitoView', {
     },
 
     mainComponent() {
-      return this.mainSchemaComponent.getComponentByDataPath(this.name)
+      return this.mainSchemaComponent?.getComponentByDataPath(this.name)
     },
 
     viewSchema() {
