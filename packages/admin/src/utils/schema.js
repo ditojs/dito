@@ -624,42 +624,53 @@ export function shouldRenderSchema(schema, context) {
   )
 }
 
-export function getDefaultValue(schema) {
+function getContext(context) {
+  return isFunction(context) ? context() : context
+}
+
+export function getDefaultValue(schema, context) {
   // Support default values both on schema and on component level.
   // NOTE: At the time of creation, components may not be instantiated, (e.g. if
   // entries are created through nested forms, the parent form isn't mounted) so
   // we can't use `dataPath` to get to components, and the `defaultValue` from
   // there. That's why `defaultValue` is defined statically in the components:
-  const defaultValue = schema.default
-  const value =
-    defaultValue !== undefined
-      ? defaultValue
+  const defaultValue =
+    schema.default !== undefined
+      ? schema.default
       : getTypeOptions(schema)?.defaultValue
-  return isFunction(value)
-    ? // TODO: Pass `DitoContext` here too, with the (incomplete) item and all
-      // the other bits!
-      value(schema)
-    : clone(value)
+  return isFunction(defaultValue)
+    ? defaultValue(getContext(context))
+    : clone(defaultValue)
 }
 
-export function excludeValue(schema) {
-  const excludeValue = getTypeOptions(schema)?.excludeValue
-  return isFunction(excludeValue) ? excludeValue(schema) : !!excludeValue
+export function shouldExcludeValue(schema, context) {
+  const excludeValue =
+    schema.exclude !== undefined
+      ? schema.exclude
+      : getTypeOptions(schema)?.excludeValue
+  return isFunction(excludeValue)
+    ? excludeValue(getContext(context))
+    : !!excludeValue
 }
 
-export function ignoreMissingValue(schema) {
-  return (
-    excludeValue(schema) ||
-    !!getTypeOptions(schema)?.ignoreMissingValue?.(schema)
-  )
+export function shouldIgnoreMissingValue(schema, context) {
+  return !!getTypeOptions(schema)?.ignoreMissingValue?.(getContext(context))
 }
 
 export function setDefaultValues(schema, data = {}, component) {
   const options = { component, rootData: data }
 
-  const processBefore = (schema, data, name) => {
-    if (!(name in data) && !ignoreMissingValue(schema)) {
-      data[name] = getDefaultValue(schema)
+  const processBefore = (schema, data, name, dataPath) => {
+    const context = () =>
+      new DitoContext(component, {
+        schema,
+        name,
+        data,
+        dataPath,
+        rootData: options.rootData
+      })
+    if (!(name in data) && !shouldIgnoreMissingValue(schema, context)) {
+      data[name] = getDefaultValue(schema, context)
     }
   }
 
@@ -680,20 +691,20 @@ export function computeValue(schema, data, name, dataPath, {
   component = null,
   rootData = component?.rootData
 } = {}) {
+  const context = () =>
+    new DitoContext(component, {
+      schema,
+      // Override value to prevent endless recursion through calling the
+      // getter for `this.value` in `DitoContext`:
+      value: data[name],
+      name,
+      data,
+      dataPath,
+      rootData
+    })
   const { compute } = schema
   if (compute) {
-    const value = compute(
-      new DitoContext(component, {
-        schema,
-        // Override value to prevent endless recursion through calling the
-        // getter for `this.value` in `DitoContext`:
-        value: data[name],
-        name,
-        data,
-        dataPath,
-        rootData
-      })
-    )
+    const value = compute(getContext(context))
     if (value !== undefined) {
       // Access `data[name]` directly to update the value without calling
       // parse():
@@ -703,10 +714,10 @@ export function computeValue(schema, data, name, dataPath, {
     }
   }
   // If the value is still missing after compute, set the default for it:
-  if (!(name in data) && !ignoreMissingValue(schema)) {
+  if (!(name in data) && !shouldIgnoreMissingValue(schema, context)) {
     // TODO: Fix side-effects
     // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-    data[name] = getDefaultValue(schema)
+    data[name] = getDefaultValue(schema, context)
   }
   // Now access the value. This is important for reactivity and needs to
   // happen after all prior manipulation of `data[name]`, see above:
@@ -777,11 +788,11 @@ export function processData(schema, sourceSchema, data, dataPath, {
   }
 
   const processAfter = (schema, data, name, dataPath, processedData) => {
-    const { wrapPrimitives, exclude, process } = schema
+    const { wrapPrimitives, process } = schema
     let value = processedData[name]
 
     // NOTE: We don't cache this context, since `value` is changing.
-    const getContext = () =>
+    const context = () =>
       new DitoContext(component, {
         schema,
         value,
@@ -804,21 +815,16 @@ export function processData(schema, sourceSchema, data, dataPath, {
     // to convert the data for storage.
     const processValue = getTypeOptions(schema)?.processValue
     if (processValue) {
-      value = processValue(schema, value, dataPath, graph)
+      value = processValue(getContext(context), graph)
     }
 
     // Handle the user's `process()` callback next, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
     if (process) {
-      value = process(getContext())
+      value = process(getContext(context))
     }
 
-    if (
-      excludeValue(schema) ||
-      // Support functions next to booleans for `schema.exclude`:
-      exclude === true ||
-      isFunction(exclude) && exclude(getContext())
-    ) {
+    if (shouldExcludeValue(schema, context)) {
       delete processedData[name]
     } else {
       processedData[name] = value

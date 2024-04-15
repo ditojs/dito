@@ -11,14 +11,15 @@ export default {
     })
   },
 
-  processValue(schema, value) {
+  processValue(context) {
+    let { schema, value } = context
     if (schema.trim && value != null && isString(value)) {
       // Text fields don't necessarily have a `String` value when `format()`
       // without `parse()` is used.
       value = value.trim()
     }
     if (value === '') {
-      value = getDefaultValue(schema)
+      value = getDefaultValue(schema, context)
     }
     return value
   }

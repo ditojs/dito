@@ -33,14 +33,9 @@ import { raw } from '@ditojs/ui'
 export default {
   mixins: [ItemMixin, ResourceMixin, SchemaParentMixin],
 
-  defaultValue(schema) {
-    return isListSource(schema) ? [] : null
-  },
-
-  excludeValue(schema) {
-    // Exclude all sources that have their own resource handling the data.
-    return !!schema.resource
-  },
+  defaultValue: context => (isListSource(context.schema) ? [] : null),
+  // Exclude all sources that have their own resource handling the data.
+  excludeValue: context => !!context.schema.resource,
 
   provide() {
     return {
@@ -685,7 +680,7 @@ export default {
     }
   },
 
-  processValue(schema, value, dataPath, graph) {
+  processValue({ schema, value, dataPath }, graph) {
     graph.addSource(dataPath, schema)
     return value
   }

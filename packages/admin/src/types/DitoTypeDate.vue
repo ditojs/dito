@@ -72,7 +72,7 @@ export default DitoTypeComponent.register(
       }
     },
 
-    processValue(schema, value) {
+    processValue({ value }) {
       return isDate(value) ? value.toISOString() : value
     }
   }

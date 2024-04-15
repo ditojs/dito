@@ -260,7 +260,7 @@ export default {
     }
   },
 
-  processValue(schema, value, dataPath, graph) {
+  processValue({ schema, value, dataPath }, graph) {
     if (schema.relate) {
       // For internally relating data (`schema.options.dataPath`), we need to
       // process both the options (for '#ref') and the value ('#id').

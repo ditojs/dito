@@ -452,7 +452,7 @@ export default DitoTypeComponent.register('upload', {
     }
   },
 
-  processValue(schema, value) {
+  processValue({ schema, value }) {
     // Filter out all newly added files that weren't actually uploaded.
     const files = asFiles(value)
       .map(({ upload, ...file }) => (!upload || upload.success ? file : null))

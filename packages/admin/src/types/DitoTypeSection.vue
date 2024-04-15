@@ -23,7 +23,7 @@ import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 // @vue/component
 export default DitoTypeComponent.register('section', {
   defaultValue: () => undefined, // Callback to override `defaultValue: null`
-  ignoreMissingValue: schema => !schema.nested && !('default' in schema),
+  ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
   defaultNested: false,
   generateLabel: false,
 
