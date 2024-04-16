@@ -31,7 +31,7 @@ export default {
     routeLevel() {
       let level = 0
       let routeComponent = this
-      while ((routeComponent = routeComponent.parentComponent.routeComponent)) {
+      while ((routeComponent = routeComponent.parentRouteComponent)) {
         level++
       }
       return level

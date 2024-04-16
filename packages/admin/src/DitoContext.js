@@ -140,6 +140,10 @@ export default class DitoContext {
     return get(this, 'processedData', null)
   }
 
+  get processedRootItem() {
+    return get(this, 'processedRootData', null)
+  }
+
   get clipboardItem() {
     return get(this, 'clipboardData', null)
   }
