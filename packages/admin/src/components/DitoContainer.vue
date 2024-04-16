@@ -255,6 +255,12 @@ export default DitoComponent.component('DitoContainer', {
   // percentages in flex-basis to work.
   padding: $form-spacing-half;
 
+  > .dito-label:only-child {
+    // Used e.g. when sources hide themselves due to maxDepth, but the label
+    // is rendered above it.
+    display: none;
+  }
+
   .dito-pane > & {
     .dito-page--width-80 & {
       flex-grow: 1;

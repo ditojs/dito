@@ -242,33 +242,36 @@ export async function resolveSchemaComponents(schemas) {
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
-const processedSchemas = new WeakSet()
+const processedSchemaDepths = new WeakMap()
 export async function processSchemaComponents(
   api,
   schema,
   routes = null,
-  level = 0
+  level = 0,
+  maxDepth = 1
 ) {
-  if (schema && !processedSchemas.has(schema)) {
-    processedSchemas.add(schema)
-
-    const promises = []
-    const process = (component, name, relativeLevel) => {
-      promises.push(
-        processSchemaComponent(
-          api,
-          component,
-          name,
-          routes,
-          level + relativeLevel
+  if (schema) {
+    const depth = processedSchemaDepths.get(schema) ?? 0
+    if (depth < maxDepth) {
+      processedSchemaDepths.set(schema, depth + 1)
+      const promises = []
+      const process = (component, name, relativeLevel) => {
+        promises.push(
+          processSchemaComponent(
+            api,
+            component,
+            name,
+            routes,
+            level + relativeLevel
+          )
         )
-      )
+      }
+
+      iterateNestedSchemaComponents(schema, process)
+      iterateSchemaComponents(getPanelSchemas(schema), process)
+
+      await Promise.all(promises)
     }
-
-    iterateNestedSchemaComponents(schema, process)
-    iterateSchemaComponents(getPanelSchemas(schema), process)
-
-    await Promise.all(promises)
   }
 }
 
@@ -368,7 +371,7 @@ export function processRouteSchema(api, schema, name, fullPath = null) {
 
 export async function processForms(api, schema, level) {
   // First resolve the forms and store the results back on the schema.
-  let { form, forms, components } = schema
+  let { form, forms, components, maxDepth = 1 } = schema
   if (forms) {
     forms = schema.forms = await resolveSchemas(forms, form =>
       processForm(api, form)
@@ -387,7 +390,7 @@ export async function processForms(api, schema, level) {
   forms ||= { default: form } // Only used for process loop below.
   const children = []
   for (const form of Object.values(forms)) {
-    await processSchemaComponents(api, form, children, level)
+    await processSchemaComponents(api, form, children, level, maxDepth)
   }
   return children
 }

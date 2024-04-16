@@ -68,10 +68,17 @@ export default {
       return !!this.value
     },
 
+    shouldRender() {
+      return this.sourceDepth < this.maxDepth
+    },
+
     isReady() {
       // Lists that have no data and no associated resource should still render,
       // as they may be getting their data elsewhere, e.g. `compute()`.
-      return this.hasData || !this.providesData
+      return (
+        this.shouldRender &&
+        (this.hasData || !this.providesData)
+      )
     },
 
     isInView() {
@@ -145,6 +152,15 @@ export default {
     sourceSchema() {
       // The sourceSchema of a list is the list's schema itself.
       return this.schema
+    },
+
+    sourceDepth() {
+      return this.$route.matched.reduce(
+        (depth, record) => (
+          depth + (record.meta.schema === this.sourceSchema ? 1 : 0)
+        ),
+        0
+      )
     },
 
     path() {
@@ -313,6 +329,11 @@ export default {
     collapsed: getSchemaAccessor('collapsed', {
       type: Boolean,
       default: null
+    }),
+
+    maxDepth: getSchemaAccessor('maxDepth', {
+      type: Number,
+      default: 1
     })
   },
 
