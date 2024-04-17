@@ -19,7 +19,7 @@ import {
   mapConcurrently,
   getValueAtDataPath
 } from '@ditojs/utils'
-import { markRaw } from 'vue'
+import { markRaw, reactive } from 'vue'
 
 const typeComponents = {}
 const unknownTypeReported = {}
@@ -243,7 +243,7 @@ export async function resolveSchemaComponents(schemas) {
 }
 
 const processedSchemaDepths = new WeakMap()
-export async function processSchemaComponents(
+export function processSchemaComponents(
   api,
   schema,
   routes = null,
@@ -270,12 +270,12 @@ export async function processSchemaComponents(
       iterateNestedSchemaComponents(schema, process)
       iterateSchemaComponents(getPanelSchemas(schema), process)
 
-      await Promise.all(promises)
+      return Promise.all(promises)
     }
   }
 }
 
-export async function processSchemaComponent(
+export function processSchemaComponent(
   api,
   schema,
   name,
@@ -284,7 +284,7 @@ export async function processSchemaComponent(
 ) {
   processSchemaDefaults(api, schema)
 
-  await Promise.all([
+  return Promise.all([
     // Also process nested panel schemas.
     mapConcurrently(
       getPanelSchemas(schema),
@@ -370,38 +370,41 @@ export function processRouteSchema(api, schema, name, fullPath = null) {
 }
 
 export async function processForms(api, schema, level) {
+  const routes = []
   // First resolve the forms and store the results back on the schema.
-  let { form, forms, components, maxDepth = 1 } = schema
+  const { form, forms, components, maxDepth = 1 } = schema
   if (forms) {
-    forms = schema.forms = await resolveSchemas(forms, form =>
-      processForm(api, form)
+    schema.forms = await resolveSchemas(forms, form =>
+      processForm(api, form, routes, level, maxDepth)
     )
   } else if (form) {
-    form = schema.form = await processForm(api, form)
+    schema.form = await processForm(api, form, routes, level, maxDepth)
   } else if (isObject(components)) {
     // NOTE: Processing forms in computed components is not supported, since it
     // only can be computed in conjunction with actual data.
-    form = {
+    const form = {
       type: 'form',
       components
     }
+    await processForm(api, form, routes, level, maxDepth)
   }
-
-  forms ||= { default: form } // Only used for process loop below.
-  const children = []
-  for (const form of Object.values(forms)) {
-    await processSchemaComponents(api, form, children, level, maxDepth)
-  }
-  return children
+  return routes
 }
 
-export async function processForm(api, schema) {
+export async function processForm(
+  api,
+  schema,
+  routes = null,
+  level = 0,
+  maxDepth = 1
+) {
   schema = await resolveSchema(schema, true)
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
   processSchemaDefaults(api, schema)
   await processNestedSchemas(api, schema)
+  await processSchemaComponents(api, schema, routes, level, maxDepth)
   return schema
 }
 
@@ -518,10 +521,14 @@ export function getFormSchemas(schema, context, modifyForm) {
     Object.entries(forms).map(([type, form]) => {
       // Support `schema.components` callbacks to create components on the fly.
       if (context && isFunction(form.components)) {
-        form = {
+        // Make the form schema reactive since `processForm()` is async, so that
+        // the setting of defaults will be picked up by downstream code.
+        form = reactive({
           ...form,
           components: form.components(context)
-        }
+        })
+        // Process the form again, now that we have the components.
+        processForm(context.api, form).catch(console.error)
       }
       return [type, modifyForm?.(form) ?? form]
     })
