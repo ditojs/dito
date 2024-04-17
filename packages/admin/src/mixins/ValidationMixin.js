@@ -1,5 +1,5 @@
 import { isFunction } from '@ditojs/utils'
-import * as validations from '../validations/index.js'
+import * as validators from '../validators/index.js'
 
 // @vue/component
 export default {
@@ -36,11 +36,15 @@ export default {
         this.clearErrors()
       }
       const { value } = this
-      // console.log('validate', this.dataPath, value, this.validations)
       for (const [rule, setting] of Object.entries(this.validations)) {
         // eslint-disable-next-line import/namespace
-        const validator = validations[rule]
-        if (validator && (validator.nullish || value != null)) {
+        const validator = validators[rule]
+        if (
+          validator &&
+          // Only apply 'required' validator to empty values.
+          // Apply all other validators only to non-empty values.
+          (rule === 'required' || value != null && value !== '')
+        ) {
           const { validate, message } = validator
           if (!validate(value, setting, this.validations)) {
             isValid = false

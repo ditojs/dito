@@ -5,6 +5,5 @@ export const required = {
     // but unchanged, allow this to pass through:
     (password && value === undefined)
   ),
-  message: 'is required',
-  nullish: true
+  message: 'is required'
 }
