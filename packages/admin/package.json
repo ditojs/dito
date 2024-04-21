@@ -76,17 +76,17 @@
     "type-fest": "^4.15.0",
     "vue": "3.4.10",
     "vue-multiselect": "^3.0.0",
-    "vue-router": "^4.3.0",
+    "vue-router": "^4.3.2",
     "vue-upload-component": "^3.1.15"
   },
   "devDependencies": {
     "@ditojs/build": "^2.27.0",
     "@vitejs/plugin-vue": "^5.0.4",
-    "@vue/compiler-sfc": "3.4.21",
+    "@vue/compiler-sfc": "3.4.23",
     "pug": "^3.0.2",
     "sass": "1.75.0",
     "typescript": "^5.4.5",
-    "vite": "^5.2.8"
+    "vite": "^5.2.10"
   },
   "types": "types"
 }
