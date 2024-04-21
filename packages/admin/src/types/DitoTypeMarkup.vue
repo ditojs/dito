@@ -208,7 +208,15 @@ export default DitoTypeComponent.register('markup', {
 
     const onFocus = () => this.onFocus()
 
-    const onBlur = () => {
+    const onBlur = ({ editor }) => {
+      // This change handling code on blur is only needed to simplify making e2e
+      // testing through puppeteer works, since we couldn't figure out how to
+      // trigger tiptap's update events programmatically from the outside.
+      const value = editor.getHTML()
+      if (value !== this.value) {
+        this.value = value
+        changed = true
+      }
       this.onBlur()
       onChange()
     }
