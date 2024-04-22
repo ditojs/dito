@@ -179,22 +179,27 @@ describe('Router', () => {
     expect(result.params).toEqual({
       $: 'hello'
     })
+
+    result = router.find('GET', '/prefix/hello/there/suffix')
+    expect(result.handler).toBeUndefined()
   })
 
   it('handles match-any nodes with suffixes', () => {
-    router.add('GET', '/static/**/suffix', handler)
-    router.add('GET', '/static/**/suffix/**/more', handler)
-    router.add('GET', '/static/**/suffix/*/1/:param/2', handler)
-    router.add('GET', '/static/**/suffix/*/1/:param/2/**/end', handler)
+    createRoutes(router, [
+      ['GET', '/static/**/suffix', 'one'],
+      ['GET', '/static/**/suffix/**/more', 'two'],
+      ['GET', '/static/**/suffix/*/1/:param/2', 'three'],
+      ['GET', '/static/**/suffix/*/1/:param/2/**/end', 'four']
+    ])
 
     expect(router.toString()).toBe(
       deindent`
         / children=1
         └── static/ children=4
-            ├── **/suffix handler() children=0
-            ├── **/suffix/**/more handler() children=0
-            ├── **/suffix/*/1/:param/2 handler() children=0
-            └── **/suffix/*/1/:param/2/**/end handler() children=0
+            ├── **/suffix one() children=0
+            ├── **/suffix/**/more two() children=0
+            ├── **/suffix/*/1/:param/2 three() children=0
+            └── **/suffix/*/1/:param/2/**/end four() children=0
       `.trim()
     )
 
@@ -211,13 +216,13 @@ describe('Router', () => {
     expect(result.handler).toBeUndefined()
 
     result = router.find('GET', '/static/one/suffix')
-    expect(result.handler).toBe(handler)
+    expect(result.handler?.name).toBe('one')
     expect(result.params).toEqual({
       $$: 'one'
     })
 
     result = router.find('GET', '/static/one/two/suffix')
-    expect(result.handler).toBe(handler)
+    expect(result.handler?.name).toBe('one')
     expect(result.params).toEqual({
       $$: 'one/two'
     })
@@ -226,14 +231,14 @@ describe('Router', () => {
     expect(result.handler).toBeUndefined()
 
     result = router.find('GET', '/static/one/two/suffix/three/four/more')
-    expect(result.handler).toBe(handler)
+    expect(result.handler?.name).toBe('two')
     expect(result.params).toEqual({
       $$0: 'one/two',
       $$1: 'three/four'
     })
 
     result = router.find('GET', '/static/one/two/suffix/three/1/bla/2')
-    expect(result.handler).toBe(handler)
+    expect(result.handler?.name).toBe('three')
     expect(result.params).toEqual({
       $$: 'one/two',
       $: 'three',
@@ -247,7 +252,7 @@ describe('Router', () => {
       'GET',
       `/static/one/two/suffix/three/1/bla/2/what/ever/end`
     )
-    expect(result.handler).toBe(handler)
+    expect(result.handler?.name).toBe('four')
     expect(result.params).toEqual({
       $: 'three',
       param: 'bla',
@@ -256,22 +261,49 @@ describe('Router', () => {
     })
   })
 
+  it.only('Allow match-any child-routes to coexist with other child-routes', () => {
+    createRoutes(router, [
+      ['POST', '/api/admin/pages'],
+      ['POST', '/api/admin/pages/upload/items/**/file'],
+      ['POST', '/api/admin/pages/upload/items/**/files'],
+      ['POST', '/api/admin/pages/:id/child-pages']
+    ])
+    expect(router.toString('POST')).toBe(
+      deindent`
+        / children=1
+        └── api/admin/pages ƒ() children=1
+            └── / children=2
+                ├── upload/items/ children=2
+                │   ├── **/file ƒ() children=0
+                │   └── **/files ƒ() children=0
+                └── :id children=1
+                    └── /child-pages ƒ() children=0
+      `.trim()
+    )
+
+    result = router.find('POST', '/api/admin/pages/upload/items/1/file')
+    expect(result.handler).not.toBeUndefined()
+
+    result = router.find('POST', '/api/admin/pages/upload/items/1/2/file')
+    expect(result.handler).not.toBeUndefined()
+  })
+
   it('handles resources', () => {
     createRoutes(router, [
-      ['/', 'root'],
-      ['/geocoder', 'geocoder'],
-      ['/geocoder/new', 'newGeocoder'],
-      ['/geocoder/notify', 'notifyGeocoder'],
-      // ['/geocoder/nnn', 'nnnGeocoder'],
-      ['/geocoder/edit', 'editGeocoder'],
-      ['/geocoder/edit/email', 'editEmailGeocoder'],
-      ['/geocoder/edit/:item', 'editItemGeocoder'],
-      ['/geocoder/exchange', 'exchangeGeocoder'],
-      ['/geocoder/exchange/email', 'exchangeEmailGeocoder'],
-      ['/geocoder/exchange/:item', 'exchangeItemGeocoder'],
-      ['/geocoder/:id/echo', 'echoGeocoder'],
-      ['/geocoder/:action', 'actionGeocoder'],
-      ['/geocoder/**', 'anyGeocoder']
+      ['GET', '/', 'root'],
+      ['GET', '/geocoder', 'geocoder'],
+      ['GET', '/geocoder/new', 'newGeocoder'],
+      ['GET', '/geocoder/notify', 'notifyGeocoder'],
+      // ['GET', '/geocoder/nnn', 'nnnGeocoder'],
+      ['GET', '/geocoder/edit', 'editGeocoder'],
+      ['GET', '/geocoder/edit/email', 'editEmailGeocoder'],
+      ['GET', '/geocoder/edit/:item', 'editItemGeocoder'],
+      ['GET', '/geocoder/exchange', 'exchangeGeocoder'],
+      ['GET', '/geocoder/exchange/email', 'exchangeEmailGeocoder'],
+      ['GET', '/geocoder/exchange/:item', 'exchangeItemGeocoder'],
+      ['GET', '/geocoder/:id/echo', 'echoGeocoder'],
+      ['GET', '/geocoder/:action', 'actionGeocoder'],
+      ['GET', '/geocoder/**', 'anyGeocoder']
     ])
 
     expect(router.toString()).toBe(
@@ -377,17 +409,17 @@ describe('Router', () => {
 
   it('handles nested resources', () => {
     createRoutes(router, [
-      ['/users', 'users'],
-      ['/users/new', 'newUser'],
-      ['/users/noi', 'newUser'],
-      ['/users/nei', 'newUser'],
-      ['/users/:id', 'user'],
-      ['/users/:id/edit', 'editUser'],
-      ['/users/:id/:hello/:good/:bad/ddd', 'editUser'],
-      ['/users/:id/:action', 'actionUser'],
-      ['/users/:userId/photos/:id', 'photo'],
-      ['/users/:userId/books/:id', 'book'],
-      ['/users/**', 'anyUser']
+      ['GET', '/users', 'users'],
+      ['GET', '/users/new', 'newUser'],
+      ['GET', '/users/noi', 'newUser'],
+      ['GET', '/users/nei', 'newUser'],
+      ['GET', '/users/:id', 'user'],
+      ['GET', '/users/:id/edit', 'editUser'],
+      ['GET', '/users/:id/:hello/:good/:bad/ddd', 'editUser'],
+      ['GET', '/users/:id/:action', 'actionUser'],
+      ['GET', '/users/:userId/photos/:id', 'photo'],
+      ['GET', '/users/:userId/books/:id', 'book'],
+      ['GET', '/users/**', 'anyUser']
     ])
 
     expect(router.toString()).toBe(
@@ -479,27 +511,27 @@ describe('Router', () => {
 
   describe('handles multiple resources', () => {
     const routes = [
-      ['/users', 'users'],
-      ['/users/new', 'newUser'],
-      ['/users/:id', 'user'],
-      ['/users/:id/:action', 'actionUser'],
-      ['/users/:id/edit', 'editUser'],
-      ['/users/:id/change', 'changeUser'],
-      ['/users/:id/event', 'eventUser'],
-      ['/photos', 'photos'],
-      ['/photos/new', 'newPhoto'],
-      ['/photos/:id', 'photo'],
-      ['/photos/:id/:action', 'actionPhoto'],
-      ['/photos/:id/edit', 'editPhoto'],
-      ['/photos/:id/change', 'changePhoto'],
-      ['/photos/:id/event', 'eventPhoto'],
-      ['/books', 'books'],
-      ['/books/new', 'newBook'],
-      ['/books/:id', 'book'],
-      ['/books/:id/:action', 'actionBook'],
-      ['/books/:id/edit', 'editBook'],
-      ['/books/:id/change', 'changeBook'],
-      ['/books/:id/event', 'eventBook']
+      ['GET', '/users', 'users'],
+      ['GET', '/users/new', 'newUser'],
+      ['GET', '/users/:id', 'user'],
+      ['GET', '/users/:id/:action', 'actionUser'],
+      ['GET', '/users/:id/edit', 'editUser'],
+      ['GET', '/users/:id/change', 'changeUser'],
+      ['GET', '/users/:id/event', 'eventUser'],
+      ['GET', '/photos', 'photos'],
+      ['GET', '/photos/new', 'newPhoto'],
+      ['GET', '/photos/:id', 'photo'],
+      ['GET', '/photos/:id/:action', 'actionPhoto'],
+      ['GET', '/photos/:id/edit', 'editPhoto'],
+      ['GET', '/photos/:id/change', 'changePhoto'],
+      ['GET', '/photos/:id/event', 'eventPhoto'],
+      ['GET', '/books', 'books'],
+      ['GET', '/books/new', 'newBook'],
+      ['GET', '/books/:id', 'book'],
+      ['GET', '/books/:id/:action', 'actionBook'],
+      ['GET', '/books/:id/edit', 'editBook'],
+      ['GET', '/books/:id/change', 'changeBook'],
+      ['GET', '/books/:id/event', 'eventBook']
     ]
 
     it('parses routes into the correct tree', () => {
@@ -632,10 +664,10 @@ describe('Router', () => {
 
   describe('handles namespaces', () => {
     const routes = [
-      ['/admin/articles', 'articles'],
-      ['/admin/articles/new', 'newArticle'],
-      ['/admin/articles/:id', 'article'],
-      ['/admin/articles/:id/edit', 'editArticle']
+      ['GET', '/admin/articles', 'articles'],
+      ['GET', '/admin/articles/new', 'newArticle'],
+      ['GET', '/admin/articles/:id', 'article'],
+      ['GET', '/admin/articles/:id/edit', 'editArticle']
     ]
 
     it('parses routes into the correct tree', () => {
@@ -677,14 +709,14 @@ describe('Router', () => {
 
   describe('handles multiple nested resources', () => {
     const routes = [
-      ['/magazines/:mid/articles', 'articles'],
-      ['/magazines/:mid/articles/new', 'newArticle'],
-      ['/magazines/:mid/articles/:id', 'article'],
-      ['/magazines/:mid/articles/:id/edit', 'editArticle'],
-      ['/magazines/:m_id/photos', 'photos'],
-      ['/magazines/:m_id/photos/new', 'newPhoto'],
-      ['/magazines/:m_id/photos/:id', 'photo'],
-      ['/magazines/:m_id/photos/:id/edit', 'editPhoto']
+      ['GET', '/magazines/:mid/articles', 'articles'],
+      ['GET', '/magazines/:mid/articles/new', 'newArticle'],
+      ['GET', '/magazines/:mid/articles/:id', 'article'],
+      ['GET', '/magazines/:mid/articles/:id/edit', 'editArticle'],
+      ['GET', '/magazines/:m_id/photos', 'photos'],
+      ['GET', '/magazines/:m_id/photos/new', 'newPhoto'],
+      ['GET', '/magazines/:m_id/photos/:id', 'photo'],
+      ['GET', '/magazines/:m_id/photos/:id/edit', 'editPhoto']
     ]
 
     it('parses routes into the correct tree', () => {
@@ -781,11 +813,13 @@ describe('Router', () => {
 
 function createFunc(name) {
   // eslint-disable-next-line no-new-func
-  return new Function(`return function ${name}(){}`)()
+  return new Function(
+    `return ${name ? `function ${name}(){}` : '() => {}'}`
+  )()
 }
 
 function createRoutes(router, routes) {
-  routes.forEach(([path, name]) => {
-    router.add('GET', path, createFunc(name))
+  routes.forEach(([method, path, name]) => {
+    router.add(method, path, createFunc(name))
   })
 }

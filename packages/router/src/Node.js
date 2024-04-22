@@ -26,11 +26,13 @@ export default class Node {
     this.type = type
     this.label = prefix[0]
     this.prefix = prefix
-    this.children = children
+    this.children = []
     this.parameters = parameters
     this.handler = handler
     this.paramKey = null
-    this.hasMatchAny = false
+    for (const child of children) {
+      this.addChild(child)
+    }
   }
 
   setup(parameters, handler) {
