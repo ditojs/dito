@@ -498,7 +498,7 @@ export default {
           const method = 'delete'
           const resource = getMemberResource(
             itemId,
-            this.getResource({ method })
+            this.getResource(method)
           )
           if (resource) {
             this.handleRequest({ method, resource }, err => {

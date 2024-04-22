@@ -259,6 +259,7 @@ export default DitoTypeComponent.register('upload', {
     uploadPath() {
       return this.getResourceUrl({
         type: 'upload',
+        method: 'post',
         path: this.api.normalizePath(this.dataPath)
       })
     }
