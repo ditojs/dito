@@ -1061,7 +1061,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^2.28.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^2.28.1, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
@@ -1131,7 +1131,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^2.28.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^2.28.1, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
@@ -1145,9 +1145,9 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": ^3.554.0
     "@aws-sdk/lib-storage": ^3.554.0
-    "@ditojs/admin": ^2.28.0
+    "@ditojs/admin": ^2.28.1
     "@ditojs/build": ^2.28.0
-    "@ditojs/router": ^2.28.0
+    "@ditojs/router": ^2.28.1
     "@ditojs/utils": ^2.28.0
     "@koa/cors": ^5.0.0
     "@koa/multer": ^3.0.2
