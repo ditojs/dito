@@ -67,7 +67,7 @@ export default class Node {
         const start = pos
         // Move pos to the next occurrence of the slash or the end:
         pos += path.slice(pos).match(/^([^/]*)/)[1].length
-        parameters.add(
+        parameters.addKey(
           isWildcard ? parameters.getPlaceholderKey() : path.slice(start, pos)
         )
         // Chop out param name from path, but keep colon.
@@ -242,7 +242,7 @@ class Parameters {
     this.placeholderIndex = 0
   }
 
-  add(key) {
+  addKey(key) {
     this.keys.push(key)
   }
 
@@ -271,15 +271,15 @@ class Parameters {
       if (token === '**') {
         const key = this.getMatchAnyKey()
         pattern.push(`(?<${key}>.+?)`)
-        this.add(key)
+        this.addKey(key)
       } else if (token === '*') {
         const key = this.getPlaceholderKey()
         pattern.push(`(?<${key}>[^/]+)`)
-        this.add(key)
+        this.addKey(key)
       } else if (token.startsWith(':')) {
         const key = token.slice(1)
         pattern.push(`(?<${key}>[^/]+)`)
-        this.add(key)
+        this.addKey(key)
       } else {
         pattern.push(token)
       }

@@ -314,7 +314,10 @@ export default {
       resource = getResource(resource, {
         // Resources without a parent inherit the one from `dataComponent`
         // automatically.
-        parent: this.dataComponent?.getResource(resource?.method) ?? null
+        parent: this.dataComponent?.getResource({
+          method: resource?.method,
+          child: resource
+        }) ?? null
       })
       return this.api.resources.any(resource)
     },

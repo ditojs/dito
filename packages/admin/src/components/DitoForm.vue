@@ -322,8 +322,8 @@ export default DitoComponent.component('DitoForm', {
     },
 
     // @override ResourceMixin.getResource()
-    getResource(method = 'get') {
-      const resource = ResourceMixin.methods.getResource.call(this, method)
+    getResource(options) {
+      const resource = ResourceMixin.methods.getResource.call(this, options)
       return getMemberResource(this.itemId, resource) || resource
     },
 
@@ -404,7 +404,7 @@ export default DitoComponent.component('DitoForm', {
 
       // Allow buttons to override both method and resource path to submit to:
       let { method } = this
-      let resource = this.getResource(method)
+      let resource = this.getResource({ method })
       const buttonResource = getResource(button.schema.resource, {
         parent: resource
       })

@@ -124,13 +124,18 @@ export default {
   },
 
   methods: {
-    getResource(method = 'get') {
+    getResource({ method = 'get', child } = {}) {
       // Returns the resource object representing the resource for the
       // associated source schema.
-      return getResource(this.sourceSchema?.resource, {
+      const resource = this.sourceSchema?.resource
+      return getResource(resource, {
         type: 'collection',
         method,
-        parent: this.parentResourceComponent?.getResource(method) ?? null
+        parent: this.parentResourceComponent?.getResource({
+          method,
+          child: resource
+        }) ?? null,
+        child
       })
     },
 
@@ -229,7 +234,7 @@ export default {
     async handleRequest(
       {
         method,
-        resource = this.getResource(method),
+        resource = this.getResource({ method }),
         query,
         data
       },
@@ -285,8 +290,12 @@ export default {
     },
 
     async submit(button) {
-      const resource = getResource(button.schema.resource, {
-        parent: this.getResource(button.schema.resource?.method)
+      let { resource } = button.schema
+      resource = getResource(resource, {
+        parent: this.getResource({
+          method: resource?.method,
+          child: resource
+        })
       })
       if (resource) {
         const { method } = resource
