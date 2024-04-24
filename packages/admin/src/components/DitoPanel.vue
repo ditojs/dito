@@ -8,6 +8,7 @@ component.dito-panel(
 )
   DitoSchema.dito-panel__schema(
     :schema="panelSchema"
+    :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
     :data="panelData"
     :meta="meta"
@@ -112,6 +113,10 @@ export default DitoComponent.component('DitoPanel', {
     panelTag() {
       // Panels that provide their own data need their own form.
       return this.hasOwnData ? 'form' : 'div'
+    },
+
+    panelDataSchema() {
+      return this.hasOwnData ? this.schema : this.schemaComponent.schema
     },
 
     panelDataPath() {

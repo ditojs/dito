@@ -145,6 +145,9 @@ export default DitoComponent.component('DitoSchema', {
 
   props: {
     schema: { type: Object, required: true },
+    // `dataSchema` is only provided for panels, where the panel schema
+    // is different from the data schema for panels without own data.
+    dataSchema: { type: Object, default: props => props.schema },
     dataPath: { type: String, default: '' },
     data: { type: Object, default: null },
     meta: { type: Object, default: () => ({}) },
@@ -675,7 +678,7 @@ export default DitoComponent.component('DitoSchema', {
       // We can't set `this.data = ...` because it's a property, but we can set
       // all known properties on it to the values returned by
       // `setDefaultValues()`, as they are all reactive already from the starts:
-      Object.assign(this.data, setDefaultValues(this.schema, {}, this))
+      Object.assign(this.data, setDefaultValues(this.dataSchema, {}, this))
       this.clearErrors()
     },
 
@@ -715,7 +718,7 @@ export default DitoComponent.component('DitoSchema', {
 
     processData({ target = 'clipboard', schemaOnly = true } = {}) {
       return processData(
-        this.schema,
+        this.dataSchema,
         this.sourceSchema,
         this.data,
         this.dataPath,
