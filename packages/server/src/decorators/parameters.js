@@ -1,19 +1,7 @@
-import { isArray, isObject, deprecate } from '@ditojs/utils'
+import { isArray, isObject } from '@ditojs/utils'
 import { createDecorator } from '../utils/decorator.js'
-import { formatJson } from '../utils/json.js'
 
 export function parameters(parameters, options) {
-  if (isObject(parameters)) {
-    const first = parameters[Object.keys(parameters)[0]]
-    if (!isObject(first)) {
-      deprecate(
-        `@parameters(${
-          formatJson(parameters, false)
-        }) with parameter schema object is deprecated: Schema object should be passed nested inside an array or object definition.`
-      )
-      parameters = [...arguments]
-    }
-  }
   if (!isArray(parameters) && !isObject(parameters)) {
     throw new Error(
       `@parameters() need to be defined using array or object definitions`

@@ -5,7 +5,7 @@ import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { viteCommonjs as createCommonJsPlugin } from '@originjs/vite-plugin-commonjs'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { assignDeeply, deprecate } from '@ditojs/utils'
+import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
@@ -34,19 +34,7 @@ export class AdminController extends Controller {
 
   getPath(name) {
     const { config } = this
-    let str = config[name]
-    if (config.build?.path || config.dist?.path) {
-      deprecate(
-        `config.admin.build.path and config.admin.dist.path are deprecated. Use config.admin.root and config.admin.dist instead.`
-      )
-
-      str =
-        name === 'root'
-          ? config.build?.path
-          : name === 'dist'
-            ? config.dist?.path
-            : null
-    }
+    const str = config[name]
     if (!str) {
       throw new ControllerError(
         this,

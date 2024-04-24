@@ -25,8 +25,7 @@ import {
   asArray,
   equals,
   parseDataPath,
-  normalizeDataPath,
-  deprecate
+  normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -624,15 +623,6 @@ function convertActionObject(name, object, actions) {
   // In order to support `super` calls in the `handler` function in object
   // notation, deploy this crazy JS sorcery:
   Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
-
-  if (action) {
-    deprecate(
-      `action.action is deprecated. Use action.method and action.path instead.`
-    )
-    const [method, path] = asArray(action)
-    handler.method = method
-    handler.path = path
-  }
 
   if (!handler) {
     throw new Error(

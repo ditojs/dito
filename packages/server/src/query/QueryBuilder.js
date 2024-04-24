@@ -9,8 +9,7 @@ import {
   getValueAtDataPath,
   setValueAtDataPath,
   normalizeDataPath,
-  parseDataPath,
-  deprecate
+  parseDataPath
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
@@ -153,28 +152,6 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   clearAllowScope() {
     this.#allowScopes = null
-  }
-
-  scope(...scopes) {
-    deprecate(`QueryBuilder#scope() is deprecated. Use #withScope() instead.`)
-
-    return this.clearWithScope().withScope(...scopes)
-  }
-
-  mergeScope(...scopes) {
-    deprecate(
-      `QueryBuilder#mergeScope() is deprecated. Use #withScope() instead.`
-    )
-
-    return this.withScope(...scopes)
-  }
-
-  clearScope() {
-    deprecate(
-      `QueryBuilder#clearScope() is deprecated. Use #clearWithScope() or #ignoreScope() instead.`
-    )
-
-    return this.clearWithScope()
   }
 
   #clearScopes(addDefault) {

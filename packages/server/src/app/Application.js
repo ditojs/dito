@@ -402,14 +402,6 @@ export class Application extends Koa {
     return this.getAdminController()?.defineViteConfig(config) || null
   }
 
-  getAdminViteConfig(config) {
-    deprecate(
-      `app.getAdminViteConfig() is deprecated. Use app.defineAdminViteConfig() instead.`
-    )
-
-    return this.defineAdminViteConfig(config)
-  }
-
   async loadAdminViteConfig() {
     const cwd = process.cwd()
     for (const extension of ['js', 'mjs', 'cjs', 'ts']) {
