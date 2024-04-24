@@ -223,7 +223,12 @@ export function convertRelation(schema, models) {
       // Create a new modify function that merges scope and modify them:
       const origModify = modify
       modify = query => {
-        query.applyScope(scope)
+        query.applyScope(
+          scope,
+          // Pass `false` for `checkAllowedScopes`, to always allow scopes
+          // that are defined on relations to be applied.
+          false
+        )
         if (origModify) {
           query.modify(origModify)
         }

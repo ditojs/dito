@@ -1,9 +1,10 @@
 import objection from 'objection'
 import {
+  isArray,
+  isString,
+  isBoolean,
   isObject,
   isPlainObject,
-  isString,
-  isArray,
   clone,
   mapKeys,
   getValueAtDataPath,
@@ -87,11 +88,16 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.toFindQuery().clear('runAfter')
   }
 
-  withScope(...scopes) {
+  withScope(...args) {
+    const { checkAllowedScopes, scopes } = getScopes(args)
     for (const expr of scopes) {
       if (expr) {
         const { scope, graph } = getScope(expr)
-        if (this.#allowScopes && !this.#allowScopes[scope]) {
+        if (
+          checkAllowedScopes &&
+          this.#allowScopes &&
+          !this.#allowScopes[scope]
+        ) {
           throw new QueryBuilderError(
             `Query scope '${scope}' is not allowed.`
           )
@@ -124,12 +130,12 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  applyScope(...scopes) {
+  applyScope(...args) {
     // When directly applying a scope, still merge it into `this.#scopes`,
     // so it can still be passed on to forked child queries. This also handles
     // the checks against `_allowScopes`.
-    this.withScope(...scopes)
-    for (const expr of scopes) {
+    this.withScope(...args)
+    for (const expr of getScopes(args).scopes) {
       if (expr) {
         const { scope, graph } = getScope(expr)
         this.#applyScope(scope, graph)
@@ -844,6 +850,17 @@ for (const key of [
     }
     return method.call(this, ...args)
   }
+}
+
+function getScopes(args) {
+  const last = args.at(-1)
+  let scopes = args
+  let checkAllowedScopes = true
+  if (isBoolean(last)) {
+    checkAllowedScopes = last
+    scopes = args.slice(0, -1)
+  }
+  return { scopes, checkAllowedScopes }
 }
 
 function filterScopes(scopes, callback) {

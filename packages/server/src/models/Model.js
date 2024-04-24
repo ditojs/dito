@@ -762,7 +762,7 @@ export class Model extends objection.Model {
         case '#': // Select column:
           return query.select(modifier.slice(1))
         case '*': // Select all columns:
-          if (modifier.length === 1) {
+          if (modifier === '*') {
             return query.select('*')
           }
       }
