@@ -261,6 +261,10 @@ export default DitoComponent.component('DitoContainer', {
     display: none;
   }
 
+  &:empty {
+    padding: 0;
+  }
+
   .dito-pane > & {
     .dito-page--width-80 & {
       flex-grow: 1;
@@ -284,11 +288,7 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
-  &:empty {
-    padding: 0;
-  }
-
-  &--single {
+  :not(.dito-pane) > &--single {
     height: 100%; // So that list buttons can be sticky at the bottom;
     // Just like on DitoPane, clear settings from above.
     padding: 0;
