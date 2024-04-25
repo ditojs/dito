@@ -185,7 +185,7 @@ export default {
       }
 
       if (nativeField) {
-        attributes.name = this.name
+        attributes.name = this.dataPath
         if (this.label) {
           attributes.title = this.label
         }
