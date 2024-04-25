@@ -241,6 +241,7 @@ export default DitoComponent.component('DitoPane', {
   $root-padding: $content-padding - $form-spacing-half;
 
   --pane-padding: 0px;
+  --container-padding: #{$form-spacing-half};
 
   display: flex;
   position: relative;
@@ -267,6 +268,7 @@ export default DitoComponent.component('DitoPane', {
 
     &#{$self}--single {
       --pane-padding: #{$content-padding};
+      --container-padding: 0px;
     }
 
     &:has(> .dito-container--label-vertical:first-of-type) {

@@ -253,7 +253,7 @@ export default DitoComponent.component('DitoContainer', {
   max-width: 100%;
   // Cannot use margin here as it needs to be part of box-sizing for
   // percentages in flex-basis to work.
-  padding: $form-spacing-half;
+  padding: var(--container-padding);
 
   > .dito-label:only-child {
     // Used e.g. when sources hide themselves due to maxDepth, but the label
@@ -288,10 +288,8 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
-  :not(.dito-pane) > &--single {
+  &--single {
     height: 100%; // So that list buttons can be sticky at the bottom;
-    // Just like on DitoPane, clear settings from above.
-    padding: 0;
   }
 
   &--label-vertical {
