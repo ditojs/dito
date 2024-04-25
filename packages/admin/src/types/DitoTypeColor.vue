@@ -34,8 +34,9 @@ Trigger.dito-color(
 <script>
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from '@lk77/vue3-color'
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { isObject } from '@ditojs/utils'
 import { Trigger } from '@ditojs/ui/src'
+import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
@@ -45,61 +46,53 @@ export default DitoTypeComponent.register('color', {
   data() {
     return {
       showPopup: false,
-      convertedHexValue: null
+      convertedValue: null
     }
   },
 
   computed: {
+    canUpdateValue() {
+      return !this.focused || this.readonly
+    },
+
     colorValue: {
       get() {
-        return this.value || {}
+        return (
+          this.convertedValue ||
+          this.value ||
+          (this.colorFormat === 'hex' ? '' : {})
+        )
       },
 
       set(value) {
-        const format = this.colorFormat
-        const key = (
-          {
-            // NOTE: vue3-color calls it 'hex', while tinycolor calls it 'hex6'
-            hex: value?.a < 1 ? 'hex8' : 'hex',
-            rgb: 'rgba'
-          }[format] ||
-          format
-        )
-        if (key) {
-          this.value = value[key]
-        } else {
-          this.value = tinycolor(value).toString(format)
-        }
+        this.value = convertColor(value, this.colorFormat)
         this.onChange()
       }
     },
 
     hexValue: {
       get() {
-        if (this.value == null) {
-          // TODO: Fix side-effects
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-          this.convertedHexValue = null
-        } else if (
-          !this.focused ||
-          this.$refs.element.hasAttribute('readonly')
-        ) {
-          const color = tinycolor(this.value)
-          if (color.isValid()) {
-            // TODO: Fix side-effects
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-            this.convertedHexValue = color
+        const color = tinycolor(this.value)
+        return color.isValid()
+          ? color
               .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
               .slice(1)
               .toUpperCase()
-          }
-        }
-        return this.convertedHexValue
+          : null
       },
 
       set(value) {
-        this.convertedHexValue = value
+        const color = tinycolor(value)
+        if (color.isValid()) {
+          const convertedValue = convertColor(value, this.colorFormat)
+          if (this.canUpdateValue) {
+            this.value = convertedValue
+          } else {
+            // Store to change later, once `canUpdateValue` is true again.
+            // See `watch` below.
+            this.convertedValue = convertedValue
+          }
+        }
       }
     },
 
@@ -144,8 +137,59 @@ export default DitoTypeComponent.register('color', {
         '#00000000'
       ]
     })
-  }
+  },
+
+  watch: {
+    canUpdateValue(canUpdateValue) {
+      if (canUpdateValue && this.convertedValue !== null) {
+        this.value = this.convertedValue
+        this.convertedValue = null
+      }
+    }
+  },
+
+  methods: {}
 })
+
+function convertColor(color, format) {
+  return isObject(color) // a vue3-color color object
+    ? color[
+        {
+          hex: color?.a < 1 ? 'hex8' : 'hex',
+          rgb: 'rgba'
+        }[format] ||
+        format
+      ]
+    : toColorFormat(tinycolor(color), format)
+}
+
+// This should really be in tinycolor, but it only has the string equivalent
+// of it.
+function toColorFormat(color, format) {
+  switch (format) {
+    case 'rgb':
+      return color.toRgb()
+    case 'prgb':
+      return color.toPercentageRgb()
+    case 'hex':
+    case 'hex6':
+      return color.toHex()
+    case 'hex3':
+      return color.toHex(true)
+    case 'hex4':
+      return color.toHex8(true)
+    case 'hex8':
+      return color.toHex8()
+    case 'name':
+      return color.toName()
+    case 'hsl':
+      return color.toHsl()
+    case 'hsv':
+      return color.toHsv()
+    default:
+      return color.toHex()
+  }
+}
 </script>
 
 <style lang="scss">
