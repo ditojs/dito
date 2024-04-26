@@ -748,7 +748,12 @@ export class Model extends objection.Model {
   static modifierNotFound(query, modifier) {
     if (isString(modifier)) {
       if (query.modelClass().hasScope(modifier)) {
-        return query.applyScope(modifier)
+        return query.applyScope(
+          modifier,
+          // Pass `false` for `checkAllowedScopes`, to always allow scopes
+          // that are defined on relations to be applied.
+          false
+        )
       }
       // Now check possible scope prefixes and handle them:
       switch (modifier[0]) {
@@ -756,7 +761,12 @@ export class Model extends objection.Model {
           // Always apply eager-scopes, even if the model itself doesn't know
           // it. The scope may still be known in eager-loaded relations.
           // Note: `applyScope()` will handle the '^' sign.
-          return query.applyScope(modifier)
+          return query.applyScope(
+            modifier,
+            // Pass `false` for `checkAllowedScopes`, to always allow scopes
+            // that are defined on relations to be applied.
+            false
+          )
         case '-': // Ignore scope:
           return query.ignoreScope(modifier.slice(1))
         case '#': // Select column:

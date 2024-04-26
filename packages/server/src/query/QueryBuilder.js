@@ -88,7 +88,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.toFindQuery().clear('runAfter')
   }
 
-  withScope(...args) {
+  #withScope(...args) {
     const { checkAllowedScopes, scopes } = getScopes(args)
     for (const expr of scopes) {
       if (expr) {
@@ -105,6 +105,11 @@ export class QueryBuilder extends objection.QueryBuilder {
         this.#scopes[scope] ||= graph
       }
     }
+    return scopes
+  }
+
+  withScope(...args) {
+    this.#withScope(...args)
     return this
   }
 
@@ -131,11 +136,10 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyScope(...args) {
-    // When directly applying a scope, still merge it into `this.#scopes`,
-    // so it can still be passed on to forked child queries. This also handles
-    // the checks against `_allowScopes`.
-    this.withScope(...args)
-    for (const expr of getScopes(args).scopes) {
+    // When directly applying a scope, still use `#withScope() to merge it into
+    // `this.#scopes`, so it can still be passed on to forked child queries.
+    // This also handles the checks against `#allowScopes`.
+    for (const expr of this.#withScope(...args)) {
       if (expr) {
         const { scope, graph } = getScope(expr)
         this.#applyScope(scope, graph)
@@ -171,7 +175,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   #copyScopes(query, isChildQuery = false) {
     const isSameModelClass = this.modelClass() === query.modelClass()
-    // Only copy `_allowScopes` and `_ignoreScopes` if it's for the same model.
+    // Only copy `#allowScopes` and `_ignoreScopes` if it's for the same model.
     if (isSameModelClass) {
       this.#allowScopes = query.#allowScopes ? { ...query.#allowScopes } : null
       this.#ignoreScopes = { ...query.#ignoreScopes }
@@ -205,9 +209,9 @@ export class QueryBuilder extends objection.QueryBuilder {
       // If this isn't a normal find query, ignore all graph operations,
       // to not mess with special selects such as `count`, etc:
       this.#ignoreGraph = !isNormalFind
-      // All scopes in `_scopes` were already checked against `_allowScopes`.
+      // All scopes in `_scopes` were already checked against `#allowScopes`.
       // They themselves are allowed to apply / request other scopes that
-      // aren't listed, so clear `_allowScopes` and restore again after:
+      // aren't listed, so clear `#allowScopes` and restore again after:
       const allowScopes = this.#allowScopes
       this.#allowScopes = null
       const collectedScopes = {}
@@ -852,15 +856,14 @@ for (const key of [
   }
 }
 
-function getScopes(args) {
-  const last = args.at(-1)
-  let scopes = args
+function getScopes(scopes) {
   let checkAllowedScopes = true
+  const last = scopes.at(-1)
   if (isBoolean(last)) {
     checkAllowedScopes = last
-    scopes = args.slice(0, -1)
+    scopes = scopes.slice(0, -1)
   }
-  return { scopes, checkAllowedScopes }
+  return { checkAllowedScopes, scopes }
 }
 
 function filterScopes(scopes, callback) {
