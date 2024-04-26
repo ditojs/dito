@@ -267,7 +267,12 @@ export class QueryBuilder extends objection.QueryBuilder {
           const name = `^${scope}`
           const modifiers = {
             [name]: query => {
-              query.withScope(name)
+              query.withScope(
+                name,
+                // Pass `false` for `checkAllowedScopes` as when `#applyScope()`
+                // was called, no further checks are required.
+                false
+              )
               if (query.#isJoinChildQuery) {
                 // Join child queries are never executed, and need to apply
                 // their scopes manually. Note that it's OK to call this
