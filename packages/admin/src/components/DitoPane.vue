@@ -14,8 +14,8 @@
       store
     }, index in componentSchemas`
   )
-    // -Use <span> for .dito-break so we can use `.dito-container:first-of-type`
-    // selector.
+    //- Use <span> for .dito-break so we can use `.dito-container:first-of-type`
+    //- selector.
     span.dito-break(
       v-if="['before', 'both'].includes(schema.break)"
     )
