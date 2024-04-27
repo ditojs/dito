@@ -4,6 +4,8 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 // @vue/component
 export default DitoTypeComponent.register('spacer', {
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  excludeValue: true,
   generateLabel: false
 })
 </script>
