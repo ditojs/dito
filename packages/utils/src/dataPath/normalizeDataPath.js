@@ -12,10 +12,15 @@ export function normalizeDataPath(path) {
       path.splice(--i, 2)
       i--
     } else if (token === '') {
-      // The beginning of a concatenated absolute path:
-      // Start from scratch, see `parseDataPath.test.js`
-      path.splice(0, i + 1)
-      i = 0
+      if (i === path.length - 1) {
+        // Remove trailing slash
+        path.splice(i, 1)
+      } else {
+        // The beginning of a concatenated absolute path:
+        // Start from scratch, see `parseDataPath.test.js`
+        path.splice(0, i + 1)
+        i = 0
+      }
     }
   }
   return path.join('/')

@@ -16,7 +16,13 @@ describe('normalizeDataPath()', () => {
   })
 
   it('should normalize relative tokens', () => {
+    expect(normalizeDataPath('/object/property1/..'))
+      .toStrictEqual('object')
+    expect(normalizeDataPath('/object/property1/../'))
+      .toStrictEqual('object')
     expect(normalizeDataPath('/object/property1/../value'))
+      .toStrictEqual('object/value')
+    expect(normalizeDataPath('/object/property1/../value/'))
       .toStrictEqual('object/value')
     expect(normalizeDataPath('/object/property1/../property2/../value'))
       .toStrictEqual('object/value')
