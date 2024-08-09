@@ -671,7 +671,7 @@ export function toPromiseCallback<T, R>(
 
 /* -------------------------------- dataPath -------------------------------- */
 
-export function getDataPath(
+export function getValueAtDataPath(
   obj: any,
   path: OrArrayOf<string>,
   handleError?: (obj: any, part: string, index: number) => void
@@ -681,7 +681,11 @@ export function normalizeDataPath(path: OrArrayOf<string>): string
 
 export function parseDataPath(path: OrArrayOf<string>): string
 
-export function setDataPath<O>(obj: O, path: OrArrayOf<string>, value: any): O
+export function setValueAtDataPath<O>(
+  obj: O,
+  path: OrArrayOf<string>,
+  value: any
+): O
 
 /* ---------------------------------- html ---------------------------------- */
 
