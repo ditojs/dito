@@ -309,7 +309,7 @@ export default DitoComponent.component('DitoForm', {
 
   methods: {
     emitSchemaEvent(event, params) {
-      return this.mainSchemaComponent.emitEvent(event, params)
+      return this.mainSchemaComponent?.emitEvent(event, params)
     },
 
     getDataPathFrom(routeComponent) {
