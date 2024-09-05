@@ -193,6 +193,12 @@ export default {
 
     &-ellipsis-prev,
     &-ellipsis-next {
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      color: $color-text;
+
       &::before {
         @extend %icon-ellipsis;
       }
@@ -200,12 +206,6 @@ export default {
       &:hover::before {
         @extend %icon-chevrons;
       }
-
-      background: none;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      color: $color-text;
 
       &:focus {
         color: $color-active;

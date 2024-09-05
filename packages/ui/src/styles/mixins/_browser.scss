@@ -1,5 +1,6 @@
 @use 'sass:list';
 @use 'sass:map';
+@use 'sass:meta';
 @use 'sass:string';
 @use 'sass:selector';
 
@@ -7,7 +8,7 @@
   // The `browser-query()` mixin works in conjunction with the `data-agent-*`
   // attributes on `.dito-root`. It creates a CSS query for each provided
   // browser and matches against it to target that provided browser.
-  @if type-of($browsers) != 'list' {
+  @if meta.type-of($browsers) != 'list' {
     // Convert `$browsers` to a list, so that we don't accidentally iterate over
     // the properties of maps further down in `@each`.
     // TODO: Switch to `$browsers: [$browsers]` once we switched to stylelint
@@ -19,7 +20,7 @@
     $browser: null;
     $platform: null;
     $version: null;
-    @if type-of($entry) == 'map' {
+    @if meta.type-of($entry) == 'map' {
       $browser: map.get($entry, 'browser');
       $platform: map.get($entry, 'platform');
       $version: map.get($entry, 'version');
