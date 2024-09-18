@@ -97,17 +97,14 @@ export default class ControllerAction {
 
   async callAction(ctx) {
     const params = await this.validateParameters(ctx)
-    const { args, member } = await this.collectArguments(
-      ctx,
-      params
-    )
+    const { args, member } = await this.collectArguments(ctx, params)
     let filteredQuery = null
     Object.defineProperty(ctx, 'filteredQuery', {
       get: () => {
         filteredQuery ??=
           params && this.paramsName === 'query'
             ? this.filterParameters(params)
-            : params
+            : ctx.query
         return filteredQuery
       },
       enumerable: false,
