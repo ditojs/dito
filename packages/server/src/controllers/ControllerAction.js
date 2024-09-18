@@ -84,20 +84,33 @@ export default class ControllerAction {
   // - 'query': Use `ctx.request.query`, regardless of the action's method.
   // - 'body': Use `ctx.request.body`, regardless of the action's method.
   getParams(ctx, from = this.paramsName) {
-    const value = from === 'path' ? ctx.params : ctx.request[from]
+    const params = from === 'path' ? ctx.params : ctx.request[from]
     // koa-bodyparser always sets an object, even when there is no body.
     // Detect this here and return null instead.
     const isNull = (
       from === 'body' &&
       ctx.request.headers['content-length'] === '0' &&
-      Object.keys(value).length === 0
+      Object.keys(params).length === 0
     )
-    return isNull ? null : value
+    return isNull ? null : params
   }
 
   async callAction(ctx) {
     const params = await this.validateParameters(ctx)
-    const { args, member } = await this.collectArguments(ctx, params)
+    const { args, member } = await this.collectArguments(
+      ctx,
+      params
+    )
+    let filteredQuery = null
+    Object.defineProperty(ctx, 'filteredQuery', {
+      get: () => {
+        filteredQuery ??=
+          this.paramsName === 'query' ? this.filterParameters(params) : params
+        return filteredQuery
+      },
+      enumerable: false,
+      configurable: true
+    })
     await this.controller.handleAuthorization(this.authorization, ctx, member)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
@@ -119,11 +132,12 @@ export default class ControllerAction {
     if (!this.parameters.validate) {
       return null
     }
-    // Since validation also performs coercion, create a clone of the params
-    // so that this doesn't modify the data on `ctx`.
+    // Since validation also performs coercion, create a shallow clone  of the
+    // params so that this doesn't modify the data on `ctx`.Actually used values
+    // themselves are deep cloned below.
     // NOTE: The data can be either an object or an array.
-    const data = clone(this.getParams(ctx))
-    let params = data || {}
+    const data = { ...this.getParams(ctx) }
+    let params = {}
     const { dataName } = this.parameters
     let unwrapRoot = false
     const errors = []
@@ -152,12 +166,14 @@ export default class ControllerAction {
           params = {}
         }
         params[paramName] = data
+      } else {
+        params[paramName] = clone(data[paramName])
       }
       if (from) {
         // Allow parameters to be 'borrowed' from other objects.
-        const data = this.getParams(ctx, from)
+        const source = this.getParams(ctx, from)
         // See above for an explanation of `clone()`:
-        params[paramName] = clone(wrapRoot ? data : data?.[paramName])
+        params[paramName] = clone(wrapRoot ? source : source?.[paramName])
       }
       try {
         const value = params[paramName]
@@ -261,6 +277,21 @@ export default class ControllerAction {
       }
     }
     return { args, member }
+  }
+
+  filterParameters(params) {
+    const filtered = {}
+    const consumedNames = Object.fromEntries(
+      this.parameters.list
+        .filter(param => !!param.name)
+        .map(param => [param.name, true])
+    )
+    for (const [key, value] of Object.entries(params)) {
+      if (!consumedNames[key]) {
+        filtered[key] = value
+      }
+    }
+    return filtered
   }
 
   coerceValue(type, value, modelOptions) {

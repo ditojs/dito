@@ -197,7 +197,9 @@ export class CollectionController extends Controller {
   collection = this.convertToCoreActions({
     async get(ctx, modify) {
       const result = await this.execute(ctx, (query, trx) => {
-        query.find(ctx.query, this.allowParam).modify(getModify(modify, trx))
+        query
+          .find(ctx.filteredQuery, this.allowParam)
+          .modify(getModify(modify, trx))
         return this.isOneToOne ? query.first() : query
       })
       // This method doesn't always return an array:
@@ -210,7 +212,7 @@ export class CollectionController extends Controller {
       const count = await this.execute(ctx, (query, trx) =>
         query
           .ignoreScope()
-          .find(ctx.query, this.allowParam)
+          .find(ctx.filteredQuery, this.allowParam)
           .modify(query => this.isOneToOne && query.throwIfNotFound())
           .modify(getModify(modify, trx))
           .modify(query => (this.unrelate ? query.unrelate() : query.delete()))
@@ -248,7 +250,7 @@ export class CollectionController extends Controller {
       return this.execute(ctx, (query, trx) =>
         query
           .findById(ctx.memberId)
-          .find(ctx.query, this.allowParam)
+          .find(ctx.filteredQuery, this.allowParam)
           .throwIfNotFound()
           .modify(getModify(modify, trx))
       )
@@ -259,7 +261,7 @@ export class CollectionController extends Controller {
         query
           .ignoreScope()
           .findById(ctx.memberId)
-          .find(ctx.query, this.allowParam)
+          .find(ctx.filteredQuery, this.allowParam)
           .throwIfNotFound()
           .modify(getModify(modify, trx))
           .modify(query => (this.unrelate ? query.unrelate() : query.delete()))
