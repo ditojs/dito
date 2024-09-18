@@ -96,13 +96,13 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    const params = await this.validateParameters(ctx)
+    const { params, wrapped } = await this.validateParameters(ctx)
     const { args, member } = await this.collectArguments(ctx, params)
     let filteredQuery = null
     Object.defineProperty(ctx, 'filteredQuery', {
       get: () => {
         filteredQuery ??=
-          params && this.paramsName === 'query'
+          params && !wrapped && this.paramsName === 'query'
             ? this.filterParameters(params)
             : ctx.query
         return filteredQuery
@@ -129,13 +129,13 @@ export default class ControllerAction {
 
   async validateParameters(ctx) {
     if (!this.parameters.validate) {
-      return null
+      return { params: null, wrapped: false }
     }
-    // Since validation also performs coercion, create a shallow clone  of the
-    // params so that this doesn't modify the data on `ctx`.Actually used values
-    // themselves are deep cloned below.
+    // Since validation also performs coercion, create a shallow clone of the
+    // params so that this doesn't modify the data on `ctx`. Actually used
+    // values themselves are deep cloned below.
     // NOTE: The data can be either an object or an array.
-    const data = { ...this.getParams(ctx) }
+    const data = clone(this.getParams(ctx), { shallow: true })
     let params = {}
     const { dataName } = this.parameters
     let unwrapRoot = false
@@ -203,7 +203,8 @@ export default class ControllerAction {
     const getData = () => (unwrapRoot ? params[dataName] : params)
     try {
       await this.parameters.validate(params)
-      return getData()
+      const data = getData()
+      return { params: data, wrapped: data !== params }
     } catch (error) {
       if (error.errors) {
         errors.push(...error.errors)
