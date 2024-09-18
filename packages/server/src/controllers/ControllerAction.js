@@ -131,11 +131,8 @@ export default class ControllerAction {
     if (!this.parameters.validate) {
       return { params: null, wrapped: false }
     }
-    // Since validation also performs coercion, create a shallow clone of the
-    // params so that this doesn't modify the data on `ctx`. Actually used
-    // values themselves are deep cloned below.
     // NOTE: The data can be either an object or an array.
-    const data = clone(this.getParams(ctx), { shallow: true })
+    const data = this.getParams(ctx)
     let params = {}
     const { dataName } = this.parameters
     let unwrapRoot = false
@@ -158,13 +155,15 @@ export default class ControllerAction {
         wrapRoot = true
         unwrapRoot = true
       }
+      // Since validation also performs coercion, always create clones of the
+      // params so that this doesn't modify the data on `ctx`.
       if (wrapRoot) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.paramName`
         if (params === data) {
           params = {}
         }
-        params[paramName] = data
+        params[paramName] = clone(data)
       } else {
         params[paramName] = clone(data[paramName])
       }
