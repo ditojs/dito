@@ -33,7 +33,8 @@ describe('isUrl()', () => {
     'http://foo--bar.com',
     'http://xn--j1aac5a4g.xn--j1amh',
     'http://xn------eddceddeftq7bvv7c4ke4c.xn--p1ai',
-    'test.com?ref=http://test2.com'
+    'test.com?ref=http://test2.com',
+    'x.com'
     // TODO: Support unicode URLs
     // 'http://høyfjellet.no',
     // 'http://кулік.укр',
