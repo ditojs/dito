@@ -105,7 +105,9 @@ export default class ControllerAction {
     Object.defineProperty(ctx, 'filteredQuery', {
       get: () => {
         filteredQuery ??=
-          this.paramsName === 'query' ? this.filterParameters(params) : params
+          params && this.paramsName === 'query'
+            ? this.filterParameters(params)
+            : params
         return filteredQuery
       },
       enumerable: false,
