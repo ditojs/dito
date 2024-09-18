@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoLabel.dito-label-component(
-  :label="value ?? label"
+  :label="value"
   :dataPath="dataPath"
 )
 </template>
