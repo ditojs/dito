@@ -451,7 +451,7 @@ export class MyModels extends ModelController {
     'get hello-member': {
       parameters: {
         instance: {
-          member: true
+          from: 'member'
         },
         message: {
           type: 'string',

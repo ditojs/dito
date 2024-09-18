@@ -1010,7 +1010,7 @@ export type ModelControllerActionOptions<
 export type MemberActionParameter<$Model extends Model = Model> =
   | Schema
   | {
-      member: true
+      from: 'member'
 
       /** Sets ctx.query. */
       query?: Record<string, any>

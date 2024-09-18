@@ -12,14 +12,14 @@ export default class MemberAction extends ControllerAction {
     // member parameters can provide special query parameters as well,
     // and they can even control `forUpdate()` behavior:
     // {
-    //   member: true,
+    //   from: 'member',
     //   query: { ... },
     //   forUpdate: true,
     //   modify: query => query.debug()
     // }
     // These are passed on to and handled in `CollectionController#getMember()`.
-    // For handling of `member: true` and calling of `MemberAction.getMember()`,
-    // see `ControllerAction#collectArguments()`.
+    // For handling of `from: 'member'` and calling of
+    // `MemberAction.getMember()`, see `ControllerAction#collectArguments()`.
     // Pass on `this.handler` as `base` for `setupQuery()`,
     // to handle the setting of `handler.scope` & co. on the query.
     return this.controller.getMember(ctx, this.handler, param)

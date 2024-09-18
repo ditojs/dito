@@ -140,12 +140,11 @@ export default class ControllerAction {
     for (const {
       name, // String: Property name to fetch from data. Overridable by `root`
       type, // String: What type should this validated against / coerced to.
-      from, // String: Allow parameters to be 'borrowed' from other objects.
-      root, // Boolean: Use full root object, instead of data at given property.
-      member // Boolean: Fetch member instance instead of data from request.
+      from // String: Allow parameters to be 'borrowed' from other objects.
     } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
-      if (member) continue
+      if (from === 'member') continue
+      const root = from === 'root'
       let wrapRoot = root
       let paramName = name
       // If no name is provided, wrap the full root object as value and unwrap
@@ -157,7 +156,12 @@ export default class ControllerAction {
       }
       // Since validation also performs coercion, always create clones of the
       // params so that this doesn't modify the data on `ctx`.
-      if (wrapRoot) {
+      if (from && !root) {
+        // Allow parameters to be 'borrowed' from other objects.
+        const source = this.getParams(ctx, from)
+        // See above for an explanation of `clone()`:
+        params[paramName] = clone(wrapRoot ? source : source?.[paramName])
+      } else if (wrapRoot) {
         // If root is to be used, replace `params` with a new object on which
         // to set the root object to validate under `parameters.paramName`
         if (params === data) {
@@ -166,12 +170,6 @@ export default class ControllerAction {
         params[paramName] = clone(data)
       } else {
         params[paramName] = clone(data[paramName])
-      }
-      if (from) {
-        // Allow parameters to be 'borrowed' from other objects.
-        const source = this.getParams(ctx, from)
-        // See above for an explanation of `clone()`:
-        params[paramName] = clone(wrapRoot ? source : source?.[paramName])
       }
       try {
         const value = params[paramName]
@@ -264,10 +262,10 @@ export default class ControllerAction {
     // If we have parameters, add them to the arguments now,
     // while also keeping track of consumed parameters:
     for (const param of list) {
-      const { name } = param
-      // Handle `{ member: true }` parameters separately, by delegating to
+      const { name, from } = param
+      // Handle `{ from: 'member' }` parameters separately, by delegating to
       // `getMember()` to resolve to the given member.
-      if (param.member) {
+      if (from === 'member') {
         member = await this.getMember(ctx, param)
         addArgument(name, member)
       } else {
