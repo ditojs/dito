@@ -17,12 +17,13 @@
     )
   DitoLabel(
     v-if="hasLabel"
-    :class="layoutClasses"
+    :class="labelClasses"
     :label="label"
     :dataPath="labelDataPath"
     :info="info"
   )
   component.dito-component(
+    v-if="!(hasLabel && isLabel)"
     :is="typeComponent"
     ref="component"
     :class="componentClasses"
@@ -82,8 +83,16 @@ export default DitoComponent.component('DitoContainer', {
       return new DitoContext(this, { nested: this.nested })
     },
 
+    type() {
+      return this.schema.type
+    },
+
     typeComponent() {
-      return getTypeComponent(this.schema.type)
+      return getTypeComponent(this.type)
+    },
+
+    isLabel() {
+      return this.type === 'label'
     },
 
     hasLabel() {
@@ -216,6 +225,13 @@ export default DitoComponent.component('DitoContainer', {
       }
     },
 
+    labelClasses() {
+      return {
+        'dito-label--visible': this.isLabel,
+        ...this.layoutClasses
+      }
+    },
+
     panelEntries() {
       return getAllPanelEntries(
         this.api,
@@ -255,7 +271,7 @@ export default DitoComponent.component('DitoContainer', {
   // percentages in flex-basis to work.
   padding: var(--container-padding);
 
-  > .dito-label:only-child {
+  > .dito-label:not(.dito-label--visible):only-child {
     // Used e.g. when sources hide themselves due to maxDepth, but the label
     // is rendered above it.
     display: none;
