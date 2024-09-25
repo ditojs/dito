@@ -39,6 +39,8 @@ import { Code } from '@tiptap/extension-code'
 import { Italic } from '@tiptap/extension-italic'
 import { Link } from '@tiptap/extension-link'
 import { Strike } from '@tiptap/extension-strike'
+import { Subscript } from '@tiptap/extension-subscript'
+import { Superscript } from '@tiptap/extension-superscript'
 import { Underline } from '@tiptap/extension-underline'
 // Nodes:
 import { Blockquote } from '@tiptap/extension-blockquote'
@@ -105,6 +107,8 @@ export default DitoTypeComponent.register('markup', {
         strike: true,
         small: true,
         code: true,
+        subscript: true,
+        superscript: true,
         link: {
           onClick: editor => this.onClickLink(editor)
         }
@@ -348,6 +352,8 @@ export default DitoTypeComponent.register('markup', {
         marks.strike && Strike,
         marks.small && Small,
         marks.code && Code,
+        marks.subscript && Superscript,
+        marks.superscript && Subscript,
         marks.link && LinkWithTitle,
 
         // Nodes: `schema.nodes`

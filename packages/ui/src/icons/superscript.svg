@@ -1,0 +1,11 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <line x1="13" y1="4" x2="1" y2="20"/>
+  <line x1="1" y1="4" x2="13" y2="20"/>
+  <path d="M18,3.25c0-1.241,1.121-2.25,2.5-2.25s2.5,1.009,2.5,2.25c0,.508-.186.977-.5,1.35l-4.5,5.4h5"/>
+  <path d="M6,4"/>
+</svg>
