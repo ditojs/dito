@@ -87,6 +87,10 @@ export default DitoTypeComponent.register('markup', {
       return this.schema.lines || 10
     },
 
+    hardBreak() {
+      return !!this.schema.hardBreak
+    },
+
     styles() {
       return {
         height: this.height || `calc(${this.lines}em * var(--line-height))`
@@ -196,48 +200,46 @@ export default DitoTypeComponent.register('markup', {
   },
 
   created() {
-    let changed = false
     let ignoreWatch = false
-
-    const onChange = () => {
-      if (!this.focused && changed) {
-        changed = false
-        this.onChange()
-      }
-    }
 
     const onFocus = () => this.onFocus()
 
-    const onBlur = ({ editor }) => {
-      // This change handling code on blur is only needed to make e2e testing
-      // through puppeteer work, since we couldn't figure out how to trigger
-      // tiptap's update events programmatically from the outside.
-      const value = editor.getHTML()
-      if (value !== this.value) {
-        this.value = value
-        changed = true
-      }
+    const onBlur = () => {
       this.onBlur()
-      onChange()
+      updateValue()
     }
 
-    const setValueDebounced = debounce(editor => {
+    const onUpdate = () => {
+      setValueDebounced()
+      this.onInput()
+    }
+
+    const setValueDebounced = debounce(() => {
       ignoreWatch = true
-      this.value = editor.getHTML()
-      changed = true
-      onChange()
+      updateValue()
     }, 100)
 
-    const onUpdate = ({ editor }) => {
-      setValueDebounced(editor)
-      this.onInput()
+    const updateValue = () => {
+      const content = this.editor.getHTML()
+      const value = this.hardBreak
+        ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
+        : content
+      if (value !== this.value) {
+        this.value = value
+        if (!this.focused) {
+          this.onChange()
+        }
+      }
     }
 
     this.$watch('value', value => {
       if (ignoreWatch) {
         ignoreWatch = false
       } else {
-        this.editor.commands.setContent(value, false, this.parseOptions)
+        const content = this.hardBreak
+          ? `<p>${value}</p>`
+          : value
+        this.editor.commands.setContent(content, false, this.parseOptions)
       }
     })
 
@@ -351,7 +353,6 @@ export default DitoTypeComponent.register('markup', {
         // Nodes: `schema.nodes`
         nodes.blockquote && Blockquote,
         nodes.codeBlock && CodeBlock,
-        HardBreak, // TODO: Should this always on?
         nodes.heading && Heading.configure({ levels: nodes.heading }),
         nodes.horizontalRule && HorizontalRule,
         (nodes.orderedList || nodes.bulletList) && ListItem,
@@ -362,7 +363,15 @@ export default DitoTypeComponent.register('markup', {
         // nodes.todoList && TodoList,
 
         // Tools: `schema.tools`
-        tools.history && History
+        tools.history && History,
+
+        HardBreak.extend({
+          addKeyboardShortcuts() {
+            return this.hardBreak
+              ? { Enter: () => this.editor.commands.setHardBreak() }
+              : {}
+          }
+        })
       ].filter(extension => !!extension)
     },
 
