@@ -34,10 +34,17 @@ Trigger.dito-color(
 <script>
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from '@lk77/vue3-color'
-import { isObject } from '@ditojs/utils'
+import { isObject, isString } from '@ditojs/utils'
 import { Trigger } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+
+// Monkey-patch the `SketchPicker's` `hex` computed property to return lowercase
+// hex values instead of uppercase ones.
+const { hex } = SketchPicker.computed
+SketchPicker.computed.hex = function () {
+  return hex.call(this).toLowerCase()
+}
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
@@ -76,7 +83,7 @@ export default DitoTypeComponent.register('color', {
           ? color
               .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
               .slice(1)
-              .toUpperCase()
+              .toLowerCase()
           : null
       },
 
@@ -152,19 +159,25 @@ export default DitoTypeComponent.register('color', {
 
 function convertColor(color, format) {
   return isObject(color) // a vue3-color color object
-    ? color[
-        {
-          hex: color?.a < 1 ? 'hex8' : 'hex',
-          rgb: 'rgba'
-        }[format] ||
-        format
-      ]
-    : toColorFormat(tinycolor(color), format)
+    ? toVue3ColorFormat(color, format)
+    : toTinyColorFormat(tinycolor(color), format)
+}
+
+function toVue3ColorFormat(color, format) {
+  const value =
+    color[
+      {
+        hex: color?.a < 1 ? 'hex8' : 'hex',
+        rgb: 'rgba'
+      }[format] ||
+      format
+    ]
+  return isString(value) && value[0] === '#' ? value.toLowerCase() : value
 }
 
 // This should really be in tinycolor, but it only has the string equivalent
 // of it.
-function toColorFormat(color, format) {
+function toTinyColorFormat(color, format) {
   switch (format) {
     case 'rgb':
       return color.toRgb()
