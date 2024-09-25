@@ -66,7 +66,6 @@ export default DitoTypeComponent.register('color', {
 
       set(value) {
         this.value = convertColor(value, this.colorFormat)
-        this.onChange()
       }
     },
 
@@ -140,15 +139,15 @@ export default DitoTypeComponent.register('color', {
   },
 
   watch: {
+    value: 'onChange',
+
     canUpdateValue(canUpdateValue) {
       if (canUpdateValue && this.convertedValue !== null) {
         this.value = this.convertedValue
         this.convertedValue = null
       }
     }
-  },
-
-  methods: {}
+  }
 })
 
 function convertColor(color, format) {
@@ -171,23 +170,22 @@ function toColorFormat(color, format) {
       return color.toRgb()
     case 'prgb':
       return color.toPercentageRgb()
-    case 'hex':
-    case 'hex6':
-      return color.toHex()
-    case 'hex3':
-      return color.toHex(true)
-    case 'hex4':
-      return color.toHex8(true)
-    case 'hex8':
-      return color.toHex8()
     case 'name':
       return color.toName()
     case 'hsl':
       return color.toHsl()
     case 'hsv':
       return color.toHsv()
+    case 'hex3':
+      return `#${color.toHex(true)}`
+    case 'hex4':
+      return `#${color.toHex8(true)}`
+    case 'hex8':
+      return `#${color.toHex8()}`
+    case 'hex':
+    case 'hex6':
     default:
-      return color.toHex()
+      return `#${color.toHex()}`
   }
 }
 </script>
