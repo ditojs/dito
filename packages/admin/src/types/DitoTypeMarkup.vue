@@ -372,11 +372,10 @@ export default DitoTypeComponent.register('markup', {
         tools.history && History,
 
         HardBreak.extend({
-          addKeyboardShortcuts() {
-            return this.hardBreak
+          addKeyboardShortcuts: () =>
+            this.hardBreak
               ? { Enter: () => this.editor.commands.setHardBreak() }
               : {}
-          }
         })
       ].filter(extension => !!extension)
     },
