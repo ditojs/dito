@@ -226,7 +226,14 @@ export class AdminController extends Controller {
               },
           css: {
             postcss: getPostCssConfig(),
-            devSourcemap: development
+            devSourcemap: development,
+            preprocessorOptions: {
+              scss: {
+                // https://sass-lang.com/documentation/breaking-changes/legacy-js-api/
+                // TODO: Remove once vite has been updated to new API:
+                silenceDeprecations: ['legacy-js-api']
+              }
+            }
           },
           optimizeDeps: {
             exclude: development ? ditoPackages : [],

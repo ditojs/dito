@@ -52,7 +52,16 @@ export function defineViteConfig({
         }
       : null,
     css: css
-      ? { postcss: getPostCssConfig() }
+      ? {
+          postcss: getPostCssConfig(),
+          preprocessorOptions: {
+            scss: {
+              // https://sass-lang.com/documentation/breaking-changes/legacy-js-api/
+              // TODO: Remove once vite has been updated to new API:
+              silenceDeprecations: ['legacy-js-api']
+            }
+          }
+        }
       : null,
     ...rest
   })
