@@ -26,18 +26,24 @@ export default {
   computed: {
     selectedValue: {
       get() {
-        const convertValue = value =>
-          this.relate
-            ? this.hasOption(value)
-              ? this.getValueForOption(value)
+        const convertValue = value => {
+          const val = this.relate
+            ? this.getValueForOption(value)
+            : value
+
+          return this.hasOptions
+            ? this.getOptionForValue(val)
+              ? val
               : null
             : value
+        }
+
         const value = isArray(this.value)
           ? this.value.map(convertValue).filter(value => value !== null)
           : convertValue(this.value)
+
         if (
-          // When relating and as soon as the options are available...
-          this.relate &&
+          // As soon as the options are available, and...
           this.hasOptions && (
             // ...if the value is forced to null because a disappeared option...
             value === null && this.value !== null ||
@@ -54,13 +60,14 @@ export default {
       },
 
       set(value) {
-        const convert = value =>
+        const convertValue = value =>
           this.relate
             ? this.getOptionForValue(value)
             : value
+
         this.value = isArray(value)
-          ? value.map(convert)
-          : convert(value)
+          ? value.map(convertValue)
+          : convertValue(value)
       }
     },
 
@@ -214,10 +221,6 @@ export default {
         }
       }
       return options
-    },
-
-    hasOption(option) {
-      return !!this.getOptionForValue(this.getValueForOption(option))
     },
 
     getOptionForValue(value) {
