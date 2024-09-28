@@ -6,6 +6,7 @@
     'dito-active': active
   }`
   :style="level > 0 && { '--level': level }"
+  :data-path="path"
 )
   .dito-tree-header(
     v-if="label"
@@ -271,14 +272,18 @@ export default DitoComponent.component('DitoTreeItem', {
       return appendDataPath(this.dataPath, property.name)
     },
 
-    onEdit() {
+    editPath(path) {
       // All we got to do is push the right edit path to the router, the rest
       // is handled by our routes, allowing reloads as well.
       this.$router.push({
-        path: `${this.container.path}${this.path}`,
+        path: `${this.container.path}${path}`,
         // Preserve current query
         query: this.$route.query
       })
+    },
+
+    onEdit() {
+      this.editPath(this.path)
     },
 
     onDelete() {
@@ -287,6 +292,18 @@ export default DitoComponent.component('DitoTreeItem', {
 
     onChange() {
       this.container.onChange()
+    },
+
+    // @override
+    onEndDrag(event) {
+      SortableMixin.methods.onEndDrag.call(this, event)
+      const { item } = event
+      // Preserve active state of edited sub-items, by editing their new path.
+      if (item.classList.contains('dito-active')) {
+        this.$nextTick(() => {
+          this.editPath(event.item.dataset.path)
+        })
+      }
     }
   }
 })
