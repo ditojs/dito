@@ -236,6 +236,8 @@ export default {
         store = this.setStore(key, reactive({}))
       }
       if (index != null) {
+        // temporary uid keys will change between persistence, so we need to
+        // assign the key to the index even when the store already existed.
         this.setStoreKeyByIndex(index, key)
       }
       return store
