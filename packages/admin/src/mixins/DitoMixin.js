@@ -234,9 +234,9 @@ export default {
       }
       if (!store) {
         store = this.setStore(key, reactive({}))
-        if (index != null) {
-          this.setStoreKeyByIndex(index, key)
-        }
+      }
+      if (index != null) {
+        this.setStoreKeyByIndex(index, key)
       }
       return store
     },

@@ -373,11 +373,11 @@ export default DitoTypeComponent.register('markup', {
 
         HardBreak.extend({
           addKeyboardShortcuts: () => {
-            const callback = () => this.editor.commands.setHardBreak()
+            const setHardBreak = () => this.editor.commands.setHardBreak()
             return {
-              'Mod-Enter': callback,
-              'Shift-Enter': callback,
-              ...(this.hardBreak ? { Enter: callback } : null)
+              'Mod-Enter': setHardBreak,
+              'Shift-Enter': setHardBreak,
+              ...(this.hardBreak ? { Enter: setHardBreak } : null)
             }
           }
         })
