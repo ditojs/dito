@@ -1,34 +1,63 @@
 <template lang="pug">
 .dito-code(
   :id="dataPath"
-  ref="code"
   :style="style"
 )
+  .dito-code__editor(ref="editor")
+  .dito-resize(
+    v-if="resizable"
+    @mousedown.stop.prevent="onDragResize"
+  )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
+import { getSchemaAccessor } from '../utils/accessor.js'
 import CodeFlask from 'codeflask'
 
 // @vue/component
 export default DitoTypeComponent.register('code', {
   mixins: [DomMixin],
 
+  data() {
+    return {
+      height: null
+    }
+  },
+
   computed: {
-    lines() {
-      return this.schema.lines || 3
-    },
+    lines: getSchemaAccessor('lines', {
+      type: Number,
+      default: 3
+    }),
+
+    language: getSchemaAccessor('language', {
+      type: String,
+      default: 'javascript'
+    }),
+
+    indentSize: getSchemaAccessor('indentSize', {
+      type: Number,
+      default: 2
+    }),
+
+    resizable: getSchemaAccessor('resizable', {
+      type: Boolean,
+      default: false
+    }),
 
     style() {
-      return `height: calc(${this.lines}em * var(--line-height))`
+      return {
+        height: this.height || `calc(${this.lines}em * var(--line-height))`
+      }
     }
   },
 
   mounted() {
-    const flask = new CodeFlask(this.$refs.code, {
-      language: this.schema.language || 'javascript',
-      tabSize: this.schema.indentSize || 2,
+    const flask = new CodeFlask(this.$refs.editor, {
+      language: this.language,
+      indentSize: this.indentSize,
       lineNumbers: false
     })
 
@@ -50,7 +79,7 @@ export default DitoTypeComponent.register('code', {
       onChange()
     }
 
-    this.domOn(this.$refs.code.querySelector('textarea'), {
+    this.domOn(this.$refs.editor.querySelector('textarea'), {
       focus: onFocus,
       blur: onBlur
     })
@@ -87,6 +116,10 @@ export default DitoTypeComponent.register('code', {
       }
     })
 
+    this.$watch('language', language => {
+      flask.updateLanguage(language)
+    })
+
     setCode(this.value || '')
   },
 
@@ -96,7 +129,30 @@ export default DitoTypeComponent.register('code', {
     },
 
     blurElement() {
-      this.$el.querySelector('textarea')?.focus()
+      this.$el.querySelector('textarea')?.blur()
+    },
+
+    onDragResize(event) {
+      const getPoint = ({ clientX: x, clientY: y }) => ({ x, y })
+
+      let prevY = getPoint(event).y
+      let height = parseFloat(getComputedStyle(this.$el).height)
+
+      const mousemove = event => {
+        const { y } = getPoint(event)
+        height += y - prevY
+        prevY = y
+        this.height = `${Math.max(height, 0)}px`
+      }
+
+      const handlers = this.domOn(document, {
+        mousemove,
+
+        mouseup(event) {
+          mousemove(event)
+          handlers.remove()
+        }
+      })
     }
   }
 })
@@ -112,6 +168,7 @@ export default DitoTypeComponent.register('code', {
   // For proper sizing of content along with :style="style" setting above,
   // for proper line-height calculation.
   padding: $input-padding;
+  min-height: calc(1em * var(--line-height) + 2 * $input-padding-ver);
 
   .codeflask {
     background: none;
@@ -119,24 +176,24 @@ export default DitoTypeComponent.register('code', {
     // the desired height with :style="style".
     top: 0;
     left: 0;
-  }
 
-  .codeflask__textarea,
-  .codeflask__pre {
-    // Use same padding as .dito-code
-    padding: $input-padding;
-  }
+    &__textarea,
+    &__pre {
+      // Use same padding as .dito-code
+      padding: $input-padding;
+    }
 
-  .codeflask__textarea,
-  .codeflask__code,
-  .codeflask__lines {
-    font-family: $font-family-mono;
-    font-size: var(--font-size);
-    line-height: var(--line-height);
-  }
+    &__textarea,
+    &__code,
+    &__lines {
+      font-family: $font-family-mono;
+      font-size: var(--font-size);
+      line-height: var(--line-height);
+    }
 
-  .codeflask__lines {
-    padding: $input-padding;
+    &__lines {
+      padding: $input-padding;
+    }
   }
 }
 </style>

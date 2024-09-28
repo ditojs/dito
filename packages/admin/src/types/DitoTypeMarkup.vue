@@ -526,18 +526,6 @@ const LinkWithTitle = Link.extend({
 
   position: relative;
 
-  .dito-resize {
-    @extend %icon-resize;
-
-    position: absolute;
-    top: unset;
-    left: unset;
-    right: 0;
-    bottom: 0;
-    width: 1em;
-    height: 1em;
-  }
-
   .ProseMirror {
     height: 100%;
     outline: none;
