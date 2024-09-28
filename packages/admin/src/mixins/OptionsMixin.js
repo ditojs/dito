@@ -17,12 +17,6 @@ import {
 export default {
   mixins: [DataMixin],
 
-  data() {
-    return {
-      hasOptions: false
-    }
-  },
-
   computed: {
     selectedValue: {
       get() {
@@ -80,9 +74,6 @@ export default {
       if (!isArray(data)) {
         throw new Error(`Invalid options data, should be array: ${data}`)
       }
-      // TODO: Fix side-effects
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-      this.hasOptions = data.length > 0
       return this.processOptions(data)
     },
 
@@ -90,6 +81,10 @@ export default {
       // This is overridden in `TypeMultiselect` to return the `searchedOptions`
       // when a search filter was applied.
       return this.options
+    },
+
+    hasOptions() {
+      return this.activeOptions.length > 0
     },
 
     relate: getSchemaAccessor('relate', {
