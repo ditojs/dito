@@ -244,7 +244,7 @@ export default {
     getValueForOption(option) {
       const { optionValue } = this
       return isString(optionValue)
-        ? option?.[optionValue]
+        ? option?.[optionValue] ?? null
         : isFunction(optionValue)
           ? optionValue(new DitoContext(this, { option }))
           : option
