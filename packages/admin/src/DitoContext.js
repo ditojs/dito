@@ -21,7 +21,14 @@ const { hasOwnProperty } = Object.prototype
 const contexts = new WeakMap()
 
 function get(context, key, defaultValue) {
-  const object = contexts.get(toRaw(context))
+  let raw = toRaw(context)
+  let object = null
+  // In case `DitoContext.extend()` was used, we need to find the actual context
+  // object from the object's the inheritance chain:
+  while (raw && !object) {
+    object = contexts.get(raw)
+    raw = Object.getPrototypeOf(raw)
+  }
   const value = key in object ? object[key] : undefined
   // If `object` explicitly sets the key to `undefined`, return it.
   return value !== undefined || hasOwnProperty.call(object, key)
