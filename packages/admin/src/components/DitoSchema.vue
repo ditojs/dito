@@ -115,8 +115,9 @@ import {
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import ItemMixin from '../mixins/ItemMixin.js'
-import { appendDataPath, getParentItem } from '../utils/data.js'
+import { appendDataPath } from '../utils/data.js'
 import {
   getNamedSchemas,
   getPanelEntries,
@@ -129,7 +130,7 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSchema', {
-  mixins: [ItemMixin],
+  mixins: [ContextMixin, ItemMixin],
   components: { TransitionHeight },
   inheritAttrs: false,
 
@@ -184,6 +185,11 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   computed: {
+    nested() {
+      // For `ContextMixin`:
+      return false
+    },
+
     schemaComponent() {
       // Override DitoMixin's schemaComponent() which uses the injected value.
       return this
@@ -236,11 +242,7 @@ export default DitoComponent.component('DitoSchema', {
         : this.labelNode
     },
 
-    parentData() {
-      const data = getParentItem(this.rootData, this.dataPath, false)
-      return data !== this.data ? data : null
-    },
-
+    // @override
     processedData() {
       // TODO: Fix side-effects
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
@@ -257,28 +259,6 @@ export default DitoComponent.component('DitoSchema', {
       set(data) {
         this.setData(data)
       }
-    },
-
-    // The following computed properties are similar to `DitoContext`
-    // properties, so that we can access these on `this` as well:
-    // NOTE: While internally, we speak of `data`, in the API surface the
-    // term `item` is used for the data that relates to editing objects.
-    // NOTE: This should always return the same as:
-    // return getItem(this.rootData, this.dataPath, false)
-    item() {
-      return this.data
-    },
-
-    parentItem() {
-      return this.parentData
-    },
-
-    rootItem() {
-      return this.rootData
-    },
-
-    processedItem() {
-      return this.processedData
     },
 
     clipboardItem() {

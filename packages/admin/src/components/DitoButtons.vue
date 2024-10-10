@@ -12,6 +12,7 @@
       :dataPath="buttonDataPath"
       :data="data"
       :meta="meta"
+      :nested="nested"
       :store="getChildStore(buttonSchema.name)"
       :disabled="disabled"
     )
@@ -28,11 +29,14 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoComponent.component('DitoButtons', {
+  mixins: [ContextMixin],
+
   provide: {
     $tabComponent: () => null
   },
@@ -43,6 +47,7 @@ export default DitoComponent.component('DitoButtons', {
     data: { type: [Object, Array], default: null },
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
+    nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
   },
 

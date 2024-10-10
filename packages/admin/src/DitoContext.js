@@ -1,5 +1,5 @@
 import { toRaw } from 'vue'
-import { isFunction } from '@ditojs/utils'
+import { getValueAtDataPath, isFunction } from '@ditojs/utils'
 import {
   getItemDataPath,
   getParentItemDataPath,
@@ -11,24 +11,37 @@ import {
 
 const { hasOwnProperty } = Object.prototype
 
-// `DitoContext` instances are a thin wrapper around raw `context` objects,
-// which themselves actually inherit from the linked `component` instance, so
-// that they only need to provide the values that should be different than
-// in the underlying component. In order to not expose all fields from the
-// component, the wrapper is introduced:
+// See also `ContextMixin`: `DitoContext` instances are a thin wrapper around
+// raw `context` objects, which themselves actually inherit from the linked
+// `component` instance, so that they only need to provide the values that
+// should be different than in the underlying component. In order to not expose
+// all fields from the component, the wrapper is introduced.
+
 // Use WeakMap for the raw `context` objects, so we don't have to pollute the
 // actual `DitoContext` instance with it.
 const contexts = new WeakMap()
 
-function get(context, key, defaultValue) {
-  let raw = toRaw(context)
+function toObject(context) {
+  const rawStart = toRaw(context)
+  let raw = rawStart
   let object = null
   // In case `DitoContext.extend()` was used, we need to find the actual context
   // object from the object's the inheritance chain:
-  while (raw && !object) {
+  do {
     object = contexts.get(raw)
+    if (object) break
     raw = Object.getPrototypeOf(raw)
+  } while (raw)
+  if (raw !== rawStart) {
+    // Assign the passed context with the original object as well, so we don't
+    // have to search for it again:
+    contexts.set(rawStart, object)
   }
+  return object
+}
+
+function get(context, key, defaultValue) {
+  const object = toObject(context)
   const value = key in object ? object[key] : undefined
   // If `object` explicitly sets the key to `undefined`, return it.
   return value !== undefined || hasOwnProperty.call(object, key)
@@ -39,7 +52,7 @@ function get(context, key, defaultValue) {
 }
 
 function set(context, key, value) {
-  contexts.get(toRaw(context))[key] = value
+  toObject(context)[key] = value
 }
 
 export default class DitoContext {
@@ -85,7 +98,16 @@ export default class DitoContext {
   }
 
   get value() {
-    return get(this, 'value', undefined)
+    return get(
+      this,
+      'value',
+      () =>
+        // If the value is not defined on the underlying object, it's not a type
+        // component. If it is nested, we can still get the value from the root.
+        this.nested
+          ? getValueAtDataPath(this.rootItem, this.dataPath)
+          : undefined
+    )
   }
 
   get dataPath() {
@@ -118,10 +140,12 @@ export default class DitoContext {
 
   // NOTE: While internally, we speak of `data`, in the API surface the
   // term `item` is used for the data that relates to editing objects:
-  // If `data` isn't provided, we can determine it from rootData & dataPath:
   get item() {
-    return get(this, 'data', () =>
-      getItem(this.rootItem, this.dataPath, this.nested)
+    return get(
+      this,
+      'data',
+      // If `data` isn't provided, we can determine it from rootData & dataPath:
+      () => getItem(this.rootItem, this.dataPath, this.nested) || null
     )
   }
 
@@ -133,8 +157,7 @@ export default class DitoContext {
   // processing with `rootData` and `dataPath`.
   get parentItem() {
     const item = (
-      getParentItem(this.rootItem, this.dataPath, this.nested) ||
-      null
+      getParentItem(this.rootItem, this.dataPath, this.nested) || null
     )
     return item !== this.item ? item : null
   }

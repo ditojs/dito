@@ -132,6 +132,7 @@
             :data="listData"
             :meta="meta"
             :store="store"
+            :nested="nested"
             :disabled="disabled || isLoading"
             :creatable="creatable"
             :createPath="path"

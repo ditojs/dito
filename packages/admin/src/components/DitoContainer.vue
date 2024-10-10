@@ -46,7 +46,8 @@
 <script>
 import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
+import ValueMixin from '../mixins/ValueMixin.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import {
   getAllPanelEntries,
@@ -58,6 +59,7 @@ import { parseFraction } from '../utils/math.js'
 
 // @vue/component
 export default DitoComponent.component('DitoContainer', {
+  mixins: [ValueMixin, ContextMixin],
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
@@ -79,8 +81,8 @@ export default DitoComponent.component('DitoContainer', {
   },
 
   computed: {
-    context() {
-      return new DitoContext(this, { nested: this.nested })
+    name() {
+      return this.schema.name
     },
 
     type() {

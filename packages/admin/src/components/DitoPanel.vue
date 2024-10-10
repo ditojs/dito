@@ -43,13 +43,14 @@ component.dito-panel(
 <script>
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getButtonSchemas } from '../utils/schema.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
-  mixins: [ValidatorMixin],
+  mixins: [ContextMixin, ValidatorMixin],
 
   provide() {
     return {
@@ -75,6 +76,11 @@ export default DitoComponent.component('DitoPanel', {
   },
 
   computed: {
+    nested() {
+      // For `ContextMixin`:
+      return true
+    },
+
     panelComponent() {
       return this
     },

@@ -14,7 +14,7 @@ input.dito-text.dito-input(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import TypeMixin from '../mixins/TypeMixin.js'
+import ValueMixin from '../mixins/ValueMixin.js'
 import DataMixin from '../mixins/DataMixin.js'
 
 export default DitoTypeComponent.register(
@@ -37,11 +37,11 @@ export default DitoTypeComponent.register(
             // eslint-disable-next-line vue/no-side-effects-in-computed-properties
             this.data[this.name] = value
           }
-          return TypeMixin.computed.value.get.call(this)
+          return ValueMixin.computed.value.get.call(this)
         },
 
         set(value) {
-          TypeMixin.computed.value.set.call(this, value)
+          ValueMixin.computed.value.set.call(this, value)
         }
       }
     }

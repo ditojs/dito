@@ -24,11 +24,14 @@ td(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { escapeHtml } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoTableCell', {
+  mixins: [ContextMixin],
+
   props: {
     cell: { type: Object, required: true },
     schema: { type: Object, required: true },

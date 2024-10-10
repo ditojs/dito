@@ -30,12 +30,13 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import PulldownMixin from '../mixins/PulldownMixin.js'
 import { getFormSchemas, isInlined } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('DitoCreateButton', {
-  mixins: [PulldownMixin],
+  mixins: [ContextMixin, PulldownMixin],
 
   props: {
     schema: { type: Object, required: true },
@@ -52,6 +53,7 @@ export default DitoComponent.component('DitoCreateButton', {
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    nested: { type: Boolean, default: false },
     path: { type: String, required: true },
     verb: { type: String, required: true },
     text: { type: String, default: null },

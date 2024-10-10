@@ -6,6 +6,7 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
   :data="data"
   :meta="meta"
   :store="store"
+  :nested="nested"
   @click.stop
 )
   //- Firefox doesn't like <button> here, so use <a> instead:
@@ -27,6 +28,7 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
     :data="data"
     :meta="meta"
     :store="store"
+    :nested="nested"
     :path="createPath"
     :verb="verbs.create"
     :text="createButtonText"
@@ -43,10 +45,12 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import { capitalize } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoEditButtons', {
+  mixins: [ContextMixin],
   emits: ['delete'],
 
   props: {
@@ -56,6 +60,7 @@ export default DitoComponent.component('DitoEditButtons', {
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
+    nested: { type: Boolean, default: false },
     disabled: { type: Boolean, required: true },
     draggable: { type: Boolean, default: false },
     editable: { type: Boolean, default: false },

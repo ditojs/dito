@@ -43,11 +43,14 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { isNested } from '../utils/schema.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
+  mixins: [ContextMixin],
+
   provide() {
     return {
       $tabComponent: () => this.tabComponent
@@ -75,6 +78,11 @@ export default DitoComponent.component('DitoPane', {
   },
 
   computed: {
+    nested() {
+      // For `ContextMixin`:
+      return false
+    },
+
     classes() {
       return {
         'dito-pane--single': this.isSingleComponent,

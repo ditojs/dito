@@ -12,6 +12,10 @@ describe('getValueAtDataPath()', () => {
     }
   }
 
+  it('should return the root data for empty paths', () => {
+    expect(getValueAtDataPath(data, '')).toBe(data)
+  })
+
   it('should return data at a given path in property access notation', () => {
     expect(getValueAtDataPath(data, 'object.array[1].prop')).toBe('expected')
   })

@@ -1,13 +1,12 @@
-import DitoContext from '../DitoContext.js'
+import ValueMixin from './ValueMixin.js'
+import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { computeValue } from '../utils/schema.js'
-import { getItem, getParentItem } from '../utils/data.js'
 import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  mixins: [ValidationMixin],
+  mixins: [ValueMixin, ContextMixin, ValidationMixin],
 
   props: {
     schema: { type: Object, required: true },
@@ -39,71 +38,6 @@ export default {
 
     type() {
       return this.schema.type
-    },
-
-    context() {
-      return new DitoContext(this, { nested: this.nested })
-    },
-
-    value: {
-      get() {
-        const value = computeValue(
-          this.schema,
-          this.data,
-          this.name,
-          this.dataPath,
-          { component: this }
-        )
-        const { format } = this.schema
-        return format
-          ? format(new DitoContext(this, { value }))
-          : value
-      },
-
-      set(value) {
-        const { parse } = this.schema
-        if (parse) {
-          value = parse(new DitoContext(this, { value }))
-        }
-        this.parsedValue = value
-        // eslint-disable-next-line vue/no-mutating-props
-        this.data[this.name] = value
-      }
-    },
-
-    parentData() {
-      const data = getParentItem(this.rootData, this.dataPath, this.nested)
-      return data !== this.data ? data : null
-    },
-
-    processedData() {
-      return getProcessedParentData(this, this.dataPath, this.nested)
-    },
-
-    processedRootData() {
-      return getProcessedParentData(this, '', false)
-    },
-
-    // The following computed properties are similar to `DitoContext`
-    // properties, so that we can access these on `this` as well:
-    item() {
-      return this.data
-    },
-
-    parentItem() {
-      return this.parentData
-    },
-
-    rootItem() {
-      return this.rootData
-    },
-
-    processedItem() {
-      return this.processedData
-    },
-
-    processedRootItem() {
-      return this.processedRootData
     },
 
     labelNode() {
@@ -325,21 +259,4 @@ export default {
       })
     }
   }
-}
-
-function getProcessedParentData(component, dataPath, nested = false) {
-  // We can only get the processed data through the schemaComponent, but
-  // that's not necessarily the item represented by this component.
-  // Solution: Find the relative path and the processed sub-item from there:
-  let { schemaComponent } = component
-  // Find the schema component that contains the desired data-path:
-  while (schemaComponent.dataPath.length > dataPath.length) {
-    schemaComponent = schemaComponent.parentSchemaComponent
-  }
-  return getItem(
-    schemaComponent.processedData,
-    // Get the dataPath relative to the schemaComponent's data:
-    dataPath.slice(schemaComponent.dataPath.length),
-    nested
-  )
 }
