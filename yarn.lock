@@ -1045,13 +1045,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@^2.35.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@^2.36.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@ditojs/build": ^2.35.0
-    "@ditojs/ui": ^2.35.0
-    "@ditojs/utils": ^2.35.0
+    "@ditojs/build": ^2.36.0
+    "@ditojs/ui": ^2.36.0
+    "@ditojs/utils": ^2.36.0
     "@kyvg/vue3-notification": ^3.4.0
     "@lk77/vue3-color": ^3.0.6
     "@tiptap/core": ^2.8.0
@@ -1097,11 +1097,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@^2.35.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@^2.36.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
-    "@ditojs/utils": ^2.35.0
+    "@ditojs/utils": ^2.36.0
     "@vitejs/plugin-vue": ^5.1.4
     autoprefixer: ^10.4.20
     mime: ^4.0.4
@@ -1120,11 +1120,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@^2.35.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@^2.36.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
-    "@ditojs/utils": ^2.35.0
+    "@ditojs/utils": ^2.36.0
   languageName: unknown
   linkType: soft
 
@@ -1134,10 +1134,10 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": ^3.667.0
     "@aws-sdk/lib-storage": ^3.667.0
-    "@ditojs/admin": ^2.35.0
-    "@ditojs/build": ^2.35.0
-    "@ditojs/router": ^2.35.0
-    "@ditojs/utils": ^2.35.0
+    "@ditojs/admin": ^2.36.0
+    "@ditojs/build": ^2.36.0
+    "@ditojs/router": ^2.36.0
+    "@ditojs/utils": ^2.36.0
     "@koa/cors": ^5.0.0
     "@koa/multer": ^3.0.2
     "@originjs/vite-plugin-commonjs": ^1.0.3
@@ -1196,18 +1196,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@^2.35.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@^2.36.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@ditojs/build": ^2.35.0
-    "@ditojs/utils": ^2.35.0
+    "@ditojs/build": ^2.36.0
+    "@ditojs/utils": ^2.36.0
     "@soda/get-current-script": ^1.0.2
     vite: ^5.4.8
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@^2.35.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@^2.36.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
