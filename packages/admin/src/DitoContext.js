@@ -32,10 +32,10 @@ function toObject(context) {
     if (object) break
     raw = Object.getPrototypeOf(raw)
   } while (raw)
-  if (raw !== rawStart) {
+  if (object && raw !== rawStart) {
     // Assign the passed context with the original object as well, so we don't
     // have to search for it again:
-    contexts.set(rawStart, object)
+    contexts.set(raw, object)
   }
   return object
 }
