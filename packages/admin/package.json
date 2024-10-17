@@ -11,7 +11,8 @@
   "exports": {
     ".": {
       "import": "./dist/dito-admin.es.js",
-      "require": "./dist/dito-admin.umd.js"
+      "require": "./dist/dito-admin.umd.js",
+      "types": "./types/index.d.ts"
     },
     "./style.css": "./dist/style.css",
     "./src": "./src/index.js",
@@ -87,5 +88,5 @@
     "typescript": "^5.6.3",
     "vite": "^5.4.8"
   },
-  "types": "types"
+  "types": "./types/index.d.ts"
 }
