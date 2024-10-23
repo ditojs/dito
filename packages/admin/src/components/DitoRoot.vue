@@ -119,14 +119,12 @@ export default DitoComponent.component('DitoRoot', {
     tippyDelegate(this.$el, {
       target: '.dito-info',
       theme: 'info',
-      appendTo: node => node.closest('.dito-pane'),
       animation: 'shift-away-subtle',
       interactive: true,
       delay: 250,
       zIndex: 1,
-      onShow(instance) {
-        instance.setContent(instance.reference.dataset.info)
-      }
+      appendTo: node => node.closest('.dito-pane'),
+      onShow: instance => instance.setContent(instance.reference.dataset.info)
     })
 
     // Clear the label marked as active on all mouse and keyboard events, except
