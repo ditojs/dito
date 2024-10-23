@@ -124,7 +124,7 @@ export default DitoComponent.component('DitoRoot', {
       interactive: true,
       delay: 250,
       zIndex: 1,
-      onCreate(instance) {
+      onShow(instance) {
         instance.setContent(instance.reference.dataset.info)
       }
     })
