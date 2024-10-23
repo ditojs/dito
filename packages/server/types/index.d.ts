@@ -385,7 +385,7 @@ export class Application<$Models extends Models = Models> {
   addController(controllers: Controller, namespace?: string): void
   addControllers(controllers: ApplicationControllers, namespace?: string): void
   setupControllers(): Promise<void>
-  getAdminViteConfig(config?: UserConfig): UserConfig
+  defineAdminViteConfig(config?: UserConfig): UserConfig
   logger: PinoLogger
   requestStorage: AsyncLocalStorage<AsyncRequestLocals>
   requestLocals: AsyncRequestLocals

@@ -31,7 +31,7 @@ export default DitoTypeComponent.register(
         get() {
           const { schema } = this
           if (schema.data || schema.dataPath) {
-            const value = this.handleDataSchema(schema, 'schema')
+            const value = this.handleDataSchema(schema, 'value')
             // TODO: Fix side-effects
             // eslint-disable-next-line max-len
             // eslint-disable-next-line vue/no-side-effects-in-computed-properties
