@@ -88,5 +88,5 @@
     "objection": "^3.1.5",
     "typescript": "^5.6.3"
   },
-  "types": "types"
+  "types": "./types/index.d.ts"
 }
