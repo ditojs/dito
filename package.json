@@ -78,5 +78,5 @@
     "vue-eslint-parser": "^9.4.3",
     "vue-eslint-parser-template-tokenizer-pug": "^0.4.11"
   },
-  "packageManager": "yarn@3.6.1"
+  "packageManager": "yarn@4.5.1"
 }
