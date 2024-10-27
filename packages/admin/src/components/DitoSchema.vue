@@ -598,26 +598,32 @@ export default DitoComponent.component('DitoSchema', {
           while (dataPathParts.length > 0) {
             const components = this.getComponentsByDataPath(dataPathParts)
             for (const component of components) {
-              if (
-                await component.navigateToComponent?.(
-                  fullDataPath,
-                  subComponents => {
-                    let found = false
-                    for (const component of subComponents) {
-                      const errs = errors[component.dataPath]
-                      if (
-                        errs &&
-                        component.showValidationErrors(errs, first && focus)
-                      ) {
-                        found = true
-                        first = false
-                        break
-                      }
+              const navigated = await component.navigateToComponent?.(
+                fullDataPath,
+                subComponents => {
+                  let found = false
+                  for (const component of subComponents) {
+                    const matched = Object.fromEntries(
+                      Object.entries(errors).filter(
+                        ([dataPath]) =>
+                          normalizeDataPath(dataPath).startsWith(
+                            component.dataPath
+                          )
+                      )
+                    )
+                    if (
+                      Object.keys(matched).length > 0 &&
+                      component.showValidationErrors(matched, first && focus)
+                    ) {
+                      found = true
+                      first = false
+                      break
                     }
-                    return found
                   }
-                )
-              ) {
+                  return found
+                }
+              )
+              if (navigated) {
                 // Found a nested form to display at least parts fo the errors.
                 // We can't show all errors at once, so we're done. Don't call
                 // `notifyErrors()` yet, as we can only display it once

@@ -95,6 +95,9 @@ export default {
     showValidationErrors(errors, focus) {
       // Convert from AJV errors objects to an array of error messages
       this.errors = []
+      if (errors.length === 0) {
+        return false
+      }
       for (const { message } of errors) {
         this.addError(message, true)
       }

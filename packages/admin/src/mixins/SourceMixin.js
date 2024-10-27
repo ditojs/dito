@@ -587,6 +587,7 @@ export default {
                   this.$nextTick(callOnComplete)
                 })
             }
+            return
           }
           // Keep removing the last part until we find a match.
           dataPathParts.pop()
