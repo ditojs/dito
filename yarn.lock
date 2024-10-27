@@ -1112,7 +1112,7 @@ __metadata:
     postcss-inset: "npm:^1.0.0"
     postcss-scss: "npm:^4.0.9"
     pug: "npm:^3.0.3"
-    sass: "npm:^1.80.3"
+    sass: "npm:^1.80.4"
     vite: "npm:^5.4.10"
     vue: "npm:^3.5.12"
   bin:
@@ -1147,7 +1147,7 @@ __metadata:
     "@types/koa-session": "npm:^6.4.5"
     "@types/koa-static": "npm:^4.0.4"
     "@types/koa__cors": "npm:^5.0.0"
-    "@types/node": "npm:^22.7.9"
+    "@types/node": "npm:^22.8.1"
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^2.1.1"
     bcryptjs: "npm:^2.4.3"
@@ -1185,7 +1185,7 @@ __metadata:
     repl: "npm:^0.1.3"
     type-fest: "npm:^4.26.1"
     typescript: "npm:^5.6.3"
-    uuid: "npm:^10.0.0"
+    uuid: "npm:^11.0.0"
   peerDependencies:
     "@aws-sdk/client-s3": ^3.0.0
     "@aws-sdk/lib-storage": ^3.0.0
@@ -3719,12 +3719,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^22.7.9":
-  version: 22.7.9
-  resolution: "@types/node@npm:22.7.9"
+"@types/node@npm:*, @types/node@npm:^22.8.1":
+  version: 22.8.1
+  resolution: "@types/node@npm:22.8.1"
   dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10/c68650a1ca3c65cc02e16166fa7daca9958ecea54bd52b0af31009011c44a33f8d559bf467c681b1f06935a10cafb932cc30e5454ecfc89351d361ab669bdba6
+    undici-types: "npm:~6.19.8"
+  checksum: 10/ae969e3d956dead1422c35d568ea5d48dd124a38a1a337cbd120fec6e13cc92b45c7308f91f1139fcd2337a67d4704d5614d6a2c444b1fb268f85e9f1d24c713
   languageName: node
   linkType: hard
 
@@ -3936,31 +3936,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volar/language-core@npm:2.4.6":
-  version: 2.4.6
-  resolution: "@volar/language-core@npm:2.4.6"
+"@volar/language-core@npm:2.4.8":
+  version: 2.4.8
+  resolution: "@volar/language-core@npm:2.4.8"
   dependencies:
-    "@volar/source-map": "npm:2.4.6"
-  checksum: 10/1b7e0c6d541f93007fffa18d9c41282f254f75f0c5d6bab9a8af5a1ed276dba5206f115baca362aad9a6244b42f9fc53d2f2c7e25cd13493d9059ff9969b7905
+    "@volar/source-map": "npm:2.4.8"
+  checksum: 10/ead004de19ba19a2b0662a37ce2b42f9b10fb3b944374e32653f070ba98a5f4372a0ec596991884c24c9086e925ad135be95e36c27de6b69954d05d9f068eac9
   languageName: node
   linkType: hard
 
-"@volar/language-service@npm:^2.4.6, @volar/language-service@npm:~2.4.0":
-  version: 2.4.6
-  resolution: "@volar/language-service@npm:2.4.6"
+"@volar/language-service@npm:^2.4.8, @volar/language-service@npm:~2.4.0":
+  version: 2.4.8
+  resolution: "@volar/language-service@npm:2.4.8"
   dependencies:
-    "@volar/language-core": "npm:2.4.6"
+    "@volar/language-core": "npm:2.4.8"
     vscode-languageserver-protocol: "npm:^3.17.5"
     vscode-languageserver-textdocument: "npm:^1.0.11"
     vscode-uri: "npm:^3.0.8"
-  checksum: 10/ce11d1faed3a6d5ae993fa2252e131b1eb71050807038ca535f9c6aba5e76830df8b88e66e39fe880e4d8c64553347acf4db9c70674a936c87c1dc907a53fa22
+  checksum: 10/2ff30457b4aa98b79221a267257d9492e0537da050d0c4ec4d3e4fdef976f5edb558f1f8be4433e502e5f14470f2dc2aa77cbb68c174da5e4b6652b3cb59b392
   languageName: node
   linkType: hard
 
-"@volar/source-map@npm:2.4.6, @volar/source-map@npm:~2.4.1":
-  version: 2.4.6
-  resolution: "@volar/source-map@npm:2.4.6"
-  checksum: 10/a3c7586c326150de7b101a84a1b6784e9bbc4cf6d4c56ca5b72c219dac1fb95ae25f0d2bbfda26175d6223d8c68fb3d772871b85d928a79882399b63b73c0e62
+"@volar/source-map@npm:2.4.8, @volar/source-map@npm:~2.4.8":
+  version: 2.4.8
+  resolution: "@volar/source-map@npm:2.4.8"
+  checksum: 10/1cbf4622cafa133a18f90bea767ce3ac36735547fbabf7c2247bb188f341684d23ddde16bac9917788f2e972368f9f823ea042a0f03094c597e2c5ee5657c3d9
   languageName: node
   linkType: hard
 
@@ -4028,13 +4028,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue/language-plugin-pug@npm:^2.1.6":
-  version: 2.1.6
-  resolution: "@vue/language-plugin-pug@npm:2.1.6"
+"@vue/language-plugin-pug@npm:^2.1.8":
+  version: 2.1.8
+  resolution: "@vue/language-plugin-pug@npm:2.1.8"
   dependencies:
-    "@volar/source-map": "npm:~2.4.1"
+    "@volar/source-map": "npm:~2.4.8"
     volar-service-pug: "npm:0.0.62"
-  checksum: 10/0893f7220815e28863be96a4f788c4918a366c6919119a0d076ac841813c53b98d1dee82a6055b8348f8325fb9b82fef66b9fa67386662667c8495da94fc432d
+  checksum: 10/bb4693f3f6b809d76c9bd857523b573ca5a30bc39ec1e05700e5106080f956cf2c89dff34bb71b1bc235825a0f52f55504a00d9f45a37c0728c55e55076ca4e8
   languageName: node
   linkType: hard
 
@@ -5917,8 +5917,8 @@ __metadata:
   dependencies:
     "@prettier/plugin-pug": "npm:^3.2.0"
     "@typescript-eslint/parser": "npm:^8.11.0"
-    "@volar/language-service": "npm:^2.4.6"
-    "@vue/language-plugin-pug": "npm:^2.1.6"
+    "@volar/language-service": "npm:^2.4.8"
+    "@vue/language-plugin-pug": "npm:^2.1.8"
     c8: "npm:^10.1.2"
     concurrently: "npm:^9.0.1"
     cross-env: "npm:^7.0.3"
@@ -12405,9 +12405,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sass@npm:^1.80.3":
-  version: 1.80.3
-  resolution: "sass@npm:1.80.3"
+"sass@npm:^1.80.4":
+  version: 1.80.4
+  resolution: "sass@npm:1.80.4"
   dependencies:
     "@parcel/watcher": "npm:^2.4.1"
     chokidar: "npm:^4.0.0"
@@ -12415,7 +12415,7 @@ __metadata:
     source-map-js: "npm:>=0.6.2 <2.0.0"
   bin:
     sass: sass.js
-  checksum: 10/667e12b0b53b3c12caa3013f4e90a326af38504bb9f9644357cf3f77a49f1989cb396c158bc0f7ee67911980b215c99cb57baf9312bffa435e7196317cb96f07
+  checksum: 10/a30d5c2313eda3e9100bfd00fd51fc030cfe7611c492268473ec0fd718180503cdebc23f7237bd61405ef6e653937d7bb972df7dcf4dffeef4f47fd9951f081e
   languageName: node
   linkType: hard
 
@@ -13717,7 +13717,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~6.19.2":
+"undici-types@npm:~6.19.8":
   version: 6.19.8
   resolution: "undici-types@npm:6.19.8"
   checksum: 10/cf0b48ed4fc99baf56584afa91aaffa5010c268b8842f62e02f752df209e3dea138b372a60a963b3b2576ed932f32329ce7ddb9cb5f27a6c83040d8cd74b7a70
@@ -13831,6 +13831,15 @@ __metadata:
   bin:
     uuid: dist/bin/uuid
   checksum: 10/35aa60614811a201ff90f8ca5e9ecb7076a75c3821e17f0f5ff72d44e36c2d35fcbc2ceee9c4ac7317f4cc41895da30e74f3885e30313bee48fda6338f250538
+  languageName: node
+  linkType: hard
+
+"uuid@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "uuid@npm:11.0.0"
+  bin:
+    uuid: dist/esm/bin/uuid
+  checksum: 10/ce68ce5031aa385efc4a7d8bf7d32904aeec778d4b3fa4164d09f5de64d91c42a3d36a27f82859b7a320875b8b88fdd48aa2e7746be2ace749f3461e528b1325
   languageName: node
   linkType: hard
 
