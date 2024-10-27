@@ -1045,12 +1045,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@npm:^2.36.1, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@npm:^2.36.2, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@ditojs/build": "npm:^2.36.1"
-    "@ditojs/ui": "npm:^2.36.1"
+    "@ditojs/build": "npm:^2.36.2"
+    "@ditojs/ui": "npm:^2.36.2"
     "@ditojs/utils": "npm:^2.36.0"
     "@kyvg/vue3-notification": "npm:^3.4.0"
     "@lk77/vue3-color": "npm:^3.0.6"
@@ -1097,7 +1097,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@npm:^2.36.1, @ditojs/build@workspace:packages/build":
+"@ditojs/build@npm:^2.36.2, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
@@ -1134,8 +1134,8 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.667.0"
     "@aws-sdk/lib-storage": "npm:^3.667.0"
-    "@ditojs/admin": "npm:^2.36.1"
-    "@ditojs/build": "npm:^2.36.1"
+    "@ditojs/admin": "npm:^2.36.2"
+    "@ditojs/build": "npm:^2.36.2"
     "@ditojs/router": "npm:^2.36.0"
     "@ditojs/utils": "npm:^2.36.0"
     "@koa/cors": "npm:^5.0.0"
@@ -1196,11 +1196,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@npm:^2.36.1, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@npm:^2.36.2, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@ditojs/build": "npm:^2.36.1"
+    "@ditojs/build": "npm:^2.36.2"
     "@ditojs/utils": "npm:^2.36.0"
     "@soda/get-current-script": "npm:^1.0.2"
     vite: "npm:^5.4.10"
