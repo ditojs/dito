@@ -7,7 +7,7 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
-    "foreach": "yarn workspaces foreach --parallel --interlaced --verbose --exclude dito",
+    "foreach": "yarn workspaces foreach --all --parallel --interlaced --verbose --exclude dito",
     "clean": "yarn run foreach run clean",
     "build": "yarn run foreach --topological run build",
     "watch": "yarn run foreach --jobs 2 run watch",
