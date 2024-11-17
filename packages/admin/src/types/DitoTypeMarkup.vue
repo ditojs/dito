@@ -52,6 +52,8 @@ import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
 import { OrderedList } from '@tiptap/extension-ordered-list'
 import { BulletList } from '@tiptap/extension-bullet-list'
 import { ListItem } from '@tiptap/extension-list-item'
+// Footnotes:
+import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
 // TODO:
 // import { Image } from '@tiptap/extension-image'
 // import { Mention } from '@tiptap/extension-mention'
@@ -139,7 +141,10 @@ export default DitoTypeComponent.register('markup', {
     toolButtons() {
       return this.getButtons('tools', {
         undo: true,
-        redo: true
+        redo: true,
+        footnotes: {
+          command: 'addFootnote'
+        }
       })
     },
 
@@ -341,7 +346,10 @@ export default DitoTypeComponent.register('markup', {
       } = this.schema
       return [
         // Essentials:
-        Document,
+        tools.footnotes
+          ? Document.extend({ content: 'block+ footnotes?' })
+          : Document,
+
         Text,
         Paragraph, // button can be controlled, but node needs to be on.
 
@@ -364,6 +372,10 @@ export default DitoTypeComponent.register('markup', {
         (nodes.orderedList || nodes.bulletList) && ListItem,
         nodes.bulletList && BulletList,
         nodes.orderedList && OrderedList,
+
+        // Footnotes:
+        ...(tools.footnotes ? [Footnotes, Footnote, FootnoteReference] : []),
+
         // TODO:
         // nodes.todoList && TodoItem,
         // nodes.todoList && TodoList,
@@ -625,11 +637,22 @@ const LinkWithTitle = Link.extend({
 
   blockquote {
     border-left: 3px solid $color-lighter;
-    padding-left: 1rem;
+    padding-left: 1em;
     font-style: italic;
 
     p {
       margin: 0;
+    }
+  }
+
+  ol.footnotes {
+    margin-top: 1em;
+    padding: 1em 0;
+    list-style-type: decimal;
+    padding-left: 2em;
+
+    &:has(li) {
+      border-top: 1px solid $color-light;
     }
   }
 }

@@ -1,0 +1,16 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  preserveAspectRatio="xMinYMid"
+  style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"
+>
+  <g>
+    <polyline points="11 20 6 6 1 20"/>
+    <line x1="3" y1="14.5" x2="9" y2="14.5"/>
+  </g>
+  <g>
+    <line x1="14" y1="20" x2="14" y2="6"/>
+    <ellipse cx="17.5" cy="16.064" rx="3.5" ry="4"/>
+  </g>
+  <polyline points="20 5 23 2 23 10"/>
+</svg>

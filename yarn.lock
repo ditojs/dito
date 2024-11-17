@@ -1087,6 +1087,7 @@ __metadata:
     sortablejs: "npm:^1.15.3"
     tinycolor2: "npm:^1.6.0"
     tippy.js: "npm:^6.3.7"
+    tiptap-footnotes: "npm:^2.0.1"
     type-fest: "npm:^4.26.1"
     typescript: "npm:^5.6.3"
     vite: "npm:^5.4.10"
@@ -13387,6 +13388,20 @@ __metadata:
   dependencies:
     "@popperjs/core": "npm:^2.9.0"
   checksum: 10/9bd1c6ab68704dd10b8896fd66e28f3b4b4017a32b8802a9d57a565dee1704df45c249d8363bcaca235dbc0d9a7a90d6f1326f1e6b999f7809b36599a3f92eb3
+  languageName: node
+  linkType: hard
+
+"tiptap-footnotes@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "tiptap-footnotes@npm:2.0.1"
+  dependencies:
+    uuid: "npm:^9.0.1"
+  peerDependencies:
+    "@tiptap/core": ^2.4.0
+    "@tiptap/extension-list-item": ^2.4.0
+    "@tiptap/extension-ordered-list": ^2.4.0
+    "@tiptap/pm": ^2.4.0
+  checksum: 10/85735b10dd9b9827213eae8d4913ba36ef32d0c4d87d2efe548d44825fb20a1a3f9512cebdee87702d7b6b0908536de3bd4a0aaba84930adc425e72610e457c6
   languageName: node
   linkType: hard
 
