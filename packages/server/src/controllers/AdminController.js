@@ -306,6 +306,7 @@ const coreDependencies = [
   'sortablejs',
   'tippy.js',
   '@tiptap/*',
+  'tiptap-*',
   'prosemirror-*',
   'linkifyjs',
   'codeflask',
