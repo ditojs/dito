@@ -3,17 +3,15 @@
   display: flex;
 
   > * {
-    flex: 1 0 auto;
+    flex: 0 0 auto;
     display: flex;
   }
 }
 
-.dito-layout-vertical {
-  flex-direction: column;
+.dito-layout-horizontal {
+  gap: $form-spacing;
 }
 
-.dito-layout-horizontal {
-  > :not(:first-child) {
-    padding-left: $form-spacing;
-  }
+.dito-layout-vertical {
+  flex-direction: column;
 }
