@@ -115,22 +115,10 @@ export class AdminController extends Controller {
   }
 
   async setupViteServer() {
-    const config = (
-      (await this.app.loadAdminViteConfig()) ||
-      this.defineViteConfig()
-    )
-
-    const development = this.mode === 'development'
-    const server = await createServer({
-      ...config,
+    const defaultConfig = {
       server: {
         middlewareMode: true,
-        hmr: {
-          // Use a random free port instead of vite's default 24678, since we
-          // may be running multiple servers in parallel (e.g. e2e and dev).
-          port: await getRandomFreePort()
-        },
-        ...(development && {
+        ...(this.mode === 'development' && {
           watch: {
             // Watch the @ditojs packages while in dev mode, although they are
             // inside the node_modules folder.
@@ -138,7 +126,22 @@ export class AdminController extends Controller {
           }
         })
       }
-    })
+    }
+
+    const viteConfig = (
+      (await this.app.loadAdminViteConfig()) ||
+      this.defineViteConfig()
+    )
+
+    const config = assignDeeply(defaultConfig, viteConfig)
+
+    if (config.server?.hmr?.port === 0) {
+      // Setting the port to 0 means use a random free port instead of vite's
+      // default 24678, since we may be running multiple servers in parallel.
+      config.server.hmr.port = await getRandomFreePort()
+    }
+
+    const server = await createServer(config)
 
     this.closed = false
 
@@ -159,7 +162,7 @@ export class AdminController extends Controller {
   }
 
   defineViteConfig(config = {}) {
-    const development = this.mode === 'development'
+    const isDevelopment = this.mode === 'development'
 
     const cwd = process.cwd()
     const root = this.getPath('root')
@@ -193,7 +196,7 @@ export class AdminController extends Controller {
               }
             }
           ],
-          build: development
+          build: isDevelopment
             ? {}
             : {
                 outDir: this.getPath('dist'),
@@ -226,7 +229,7 @@ export class AdminController extends Controller {
               },
           css: {
             postcss: getPostCssConfig(),
-            devSourcemap: development,
+            devSourcemap: isDevelopment,
             preprocessorOptions: {
               scss: {
                 // https://sass-lang.com/documentation/breaking-changes/legacy-js-api/
@@ -236,10 +239,10 @@ export class AdminController extends Controller {
             }
           },
           optimizeDeps: {
-            exclude: development ? ditoPackages : [],
+            exclude: isDevelopment ? ditoPackages : [],
             include: [
               ...(
-                development
+                isDevelopment
                   ? // https://discuss.prosemirror.net/t/rangeerror-adding-different-instances-of-a-keyed-plugin-plugin/4242/13
                     [
                       'prosemirror-state',
