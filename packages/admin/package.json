@@ -13,7 +13,7 @@
       "import": "./dist/dito-admin.es.js",
       "require": "./dist/dito-admin.umd.js"
     },
-    "./style.css": "./dist/style.css",
+    "./style.css": "./dist/dito-admin.css",
     "./src": "./src/index.js",
     "./imports.scss": "./src/styles/_imports.scss"
   },

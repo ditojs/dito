@@ -40,7 +40,8 @@ export function defineViteConfig({
             name,
             format: ['es', 'umd'],
             entry: './src/index.js',
-            fileName: format => `${name}.${format}.js`
+            fileName: format => `${name}.${format}.js`,
+            cssFileName: name
           },
           rollupOptions: {
             external: id => !!externals[id],

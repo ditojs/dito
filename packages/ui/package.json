@@ -13,7 +13,7 @@
       "import": "./dist/dito-ui.es.js",
       "require": "./dist/dito-ui.umd.js"
     },
-    "./style.css": "./dist/style.css",
+    "./style.css": "./dist/dito-ui.css",
     "./src": "./src/index.js",
     "./imports.scss": "./src/styles/_imports.scss"
   },
