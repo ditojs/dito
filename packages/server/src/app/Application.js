@@ -164,6 +164,23 @@ export class Application extends Koa {
     this.router[method](path, route)
   }
 
+  fixModuleClassNames(modules) {
+    // Naming fix for a weird vite 6 bug where the model classes are sometimes
+    // prefixed with `_`, but only when imported in `vite.config.js`.
+    if (isPlainObject(modules)) {
+      for (const [key, module] of Object.entries(modules)) {
+        if (module?.name?.match(/^_(.*)$/)?.[1] === key) {
+          Object.defineProperty(module, 'name', {
+            value: key,
+            writable: false,
+            enumerable: false,
+            configurable: true
+          })
+        }
+      }
+    }
+  }
+
   getStorage(name) {
     return this.storages[name] || null
   }
@@ -190,8 +207,9 @@ export class Application extends Koa {
   }
 
   addStorages(storages) {
-    for (const [name, config] of Object.entries(storages)) {
-      this.addStorage(config, name)
+    this.fixModuleClassNames(storages)
+    for (const [key, config] of Object.entries(storages)) {
+      this.addStorage(config, key)
     }
   }
 
@@ -230,8 +248,9 @@ export class Application extends Koa {
   }
 
   addServices(services) {
-    for (const [name, service] of Object.entries(services)) {
-      this.addService(service, name)
+    this.fixModuleClassNames(services)
+    for (const [key, service] of Object.entries(services)) {
+      this.addService(service, key)
     }
   }
 
@@ -275,6 +294,7 @@ export class Application extends Koa {
   }
 
   addModels(models) {
+    this.fixModuleClassNames(models)
     models = Object.values(models)
     // First, add all models to the application, so that they can be referenced
     // by other models, e.g. in `jsonSchema` and  `relationMappings`:
@@ -365,6 +385,7 @@ export class Application extends Koa {
   }
 
   addControllers(controllers, namespace) {
+    this.fixModuleClassNames(controllers)
     for (const [key, value] of Object.entries(controllers)) {
       if (isModule(value) || isPlainObject(value)) {
         this.addControllers(value, namespace ? `${namespace}/${key}` : key)
