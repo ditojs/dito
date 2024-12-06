@@ -374,7 +374,7 @@ export default {
 
 <style lang="scss">
 @import '../styles/_imports';
-@import '../styles/transitions/index.scss';
+@import '../styles/transitions';
 
 .dito-trigger-container {
   position: relative;
