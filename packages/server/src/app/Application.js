@@ -168,12 +168,14 @@ export class Application extends Koa {
     // Naming fix for a weird vite 6 bug where the model classes are sometimes
     // prefixed with `_`, sometimes suffixed with numbers, but only when
     // imported through `vite.config.js`.
+    // NOTE: This only happens when `Application` is imported into
+    // `admin.vite.config.js` in order to call `app.defineAdminViteConfig()`
     if (isPlainObject(modules)) {
       for (const [key, module] of Object.entries(modules)) {
         if (
           module &&
           module.name !== key &&
-          module.name?.match(/^_?(.*?)\d*$/)?.[1] === key
+          module.name?.replace(/^_|\d+$/g, '') === key
         ) {
           Object.defineProperty(module, 'name', {
             value: key,
