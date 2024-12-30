@@ -16,4 +16,9 @@ describe('stripTags()', () => {
     expect(stripTags(0)).toBe('0')
     expect(stripTags(false)).toBe('false')
   })
+
+  it('should convert <br> tags to line-breaks', () => {
+    expect(stripTags('hello<br>world')).toBe('hello\nworld')
+    expect(stripTags('hello<br/>world')).toBe('hello\nworld')
+  })
 })
