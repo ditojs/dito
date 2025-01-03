@@ -38,10 +38,7 @@ export default DitoTypeComponent.register('section', {
 
     collapsible: getSchemaAccessor('collapsible', {
       type: Boolean,
-      default: null, // so that `??` below can do its thing:
-      get(collapsible) {
-        return !!(collapsible ?? this.collapsed !== null)
-      }
+      default: false
     }),
 
     collapsed: getSchemaAccessor('collapsed', {

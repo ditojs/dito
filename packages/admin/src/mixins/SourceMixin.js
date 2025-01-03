@@ -320,9 +320,9 @@ export default {
 
     collapsible: getSchemaAccessor('collapsible', {
       type: Boolean,
-      default: null, // so that `??` below can do its thing:
+      default: false,
       get(collapsible) {
-        return this.isInlined && !!(collapsible ?? this.collapsed !== null)
+        return collapsible && this.isInlined
       }
     }),
 
