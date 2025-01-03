@@ -328,7 +328,10 @@ export default {
 
     collapsed: getSchemaAccessor('collapsed', {
       type: Boolean,
-      default: null
+      default: false,
+      get(collapsed) {
+        return collapsed && this.collapsible
+      }
     }),
 
     maxDepth: getSchemaAccessor('maxDepth', {
