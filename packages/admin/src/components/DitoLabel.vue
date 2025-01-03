@@ -133,6 +133,21 @@ export default DitoComponent.component('DitoLabel', {
     line-height: $input-height;
   }
 
+  // Fix alignment of sub and sup elements in label content.
+  sub,
+  sup {
+    display: inline-block;
+    vertical-align: baseline;
+  }
+
+  sub {
+    transform: translateY(4px);
+  }
+
+  sup {
+    transform: translateY(-4px);
+  }
+
   &__prefix,
   &__suffix {
     flex: 1;
