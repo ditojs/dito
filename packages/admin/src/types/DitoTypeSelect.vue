@@ -74,9 +74,6 @@ export default DitoTypeComponent.register('select', {
 <style lang="scss">
 @import '../styles/_imports';
 
-// TODO: Move to dito-ui
-$select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
-
 .dito-select {
   display: inline-flex;
   position: relative;
@@ -98,7 +95,7 @@ $select-arrow-right: calc(($select-arrow-width - $select-arrow-size) / 2);
 
       position: absolute;
       bottom: $select-arrow-bottom;
-      right: calc(#{$select-arrow-right} + #{$border-width});
+      right: $select-arrow-right;
     }
   }
 

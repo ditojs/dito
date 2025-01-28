@@ -329,14 +329,13 @@ $tag-line-height: 1em;
     }
 
     &__select {
-      width: 0;
-      margin-right: calc($select-arrow-width / 2);
+      width: $select-arrow-width;
 
       &::before {
         @include arrow($select-arrow-size);
 
         bottom: $select-arrow-bottom;
-        right: calc(-1 * $select-arrow-size / 2);
+        right: $select-arrow-right;
       }
     }
 

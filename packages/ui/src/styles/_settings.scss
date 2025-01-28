@@ -61,6 +61,9 @@ $input-padding: $input-padding-ver $input-padding-hor;
 $select-arrow-width: 2em;
 $select-arrow-size: 0.5em;
 $select-arrow-bottom: 2px;
+$select-arrow-right: calc(
+  ($select-arrow-width - $select-arrow-size) / 2 + $border-width
+);
 
 // Popup
 $popup-margin: 2px 0;
