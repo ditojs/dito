@@ -1,8 +1,8 @@
 import { isNumber } from '@ditojs/utils'
-import parseDuration from 'parse-duration'
+import { parse } from 'parse-duration'
 
 export function getDuration(duration) {
-  return isNumber(duration) ? duration : parseDuration(duration)
+  return isNumber(duration) ? duration : parse(duration)
 }
 
 export function addDuration(date, duration) {
