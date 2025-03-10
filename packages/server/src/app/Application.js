@@ -886,7 +886,7 @@ export class Application extends Koa {
 
   // Assets handling
 
-  async createAssets(storage, files, count = 0, trx = null) {
+  async createAssets(storage, files, count = 0, transaction = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const assets = files.map(file => ({
@@ -895,7 +895,7 @@ export class Application extends Koa {
         storage: storage.name,
         count
       }))
-      return AssetModel.query(trx).insert(assets)
+      return AssetModel.query(transaction).insert(assets)
     }
     return null
   }
@@ -905,7 +905,7 @@ export class Application extends Koa {
     addedFiles,
     removedFiles,
     changedFiles,
-    trx = null
+    transaction = null
   ) {
     let importedFiles = []
     const AssetModel = this.getModel('Asset')
@@ -913,7 +913,7 @@ export class Application extends Koa {
       importedFiles = await this.addForeignAssets(
         storage,
         [...addedFiles, ...changedFiles],
-        trx
+        transaction
       )
       if (
         addedFiles.length > 0 ||
@@ -921,7 +921,7 @@ export class Application extends Koa {
       ) {
         const changeCount = async (files, increment) => {
           if (files.length > 0) {
-            await AssetModel.query(trx)
+            await AssetModel.query(transaction)
               .whereIn(
                 'key',
                 files.map(file => file.key)
@@ -938,8 +938,8 @@ export class Application extends Koa {
         )
         if (cleanupTimeThreshold > 0) {
           setTimeout(
-            // Don't pass `trx` here, as we want this delayed execution to
-            // create its own transaction.
+            // Don't pass `transaction` here, as we want this delayed execution
+            // to create its own transaction.
             () => this.releaseUnusedAssets(),
             cleanupTimeThreshold
           )
@@ -947,12 +947,12 @@ export class Application extends Koa {
       }
       // Also execute releaseUnusedAssets() immediately in the same
       // transaction, to potentially clean up other pending assets.
-      await this.releaseUnusedAssets(null, trx)
+      await this.releaseUnusedAssets({ transaction })
       return importedFiles
     }
   }
 
-  async addForeignAssets(storage, files, trx = null) {
+  async addForeignAssets(storage, files, transaction = null) {
     const importedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
@@ -961,7 +961,7 @@ export class Application extends Koa {
       await mapConcurrently(
         Object.entries(filesByKey),
         async ([key, files]) => {
-          const asset = await AssetModel.query(trx).findOne('key', key)
+          const asset = await AssetModel.query(transaction).findOne('key', key)
           if (!asset) {
             const [file] = files // Pick the first file
             if (file.data || file.url) {
@@ -997,7 +997,7 @@ export class Application extends Koa {
                 }
               }
               const importedFile = await storage.addFile(file, data)
-              await this.createAssets(storage, [importedFile], 0, trx)
+              await this.createAssets(storage, [importedFile], 0, transaction)
               importedFiles.push(importedFile)
               // Merge back the changed file properties into the actual file
               // objects, so that the data from the static model hook can be
@@ -1030,36 +1030,47 @@ export class Application extends Koa {
     return importedFiles
   }
 
-  async handleModifiedAssets(storage, files, trx = null) {
+  async handleModifiedAssets(storage, files, transaction = null) {
     const modifiedFiles = []
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
-      await mapConcurrently(files, async file => {
-        if (file.data) {
-          const asset = await AssetModel.query(trx).findOne('key', file.key)
-          if (asset) {
-            const changedFile = await storage.addFile(file, file.data)
-            // Merge back the changed file properties into the actual files
-            // object, so that the data from the static model hook can be used
-            // directly for the actual running query.
-            Object.assign(file, changedFile)
-            modifiedFiles.push(changedFile)
-          } else {
-            throw new AssetError(
-              `Unable to update modified asset from memory source: '${
-                file.name
-              }' ('${
-                file.key
-              }')`
+      await mapConcurrently(
+        files,
+        async file => {
+          if (file.data) {
+            const asset = await AssetModel.query(transaction).findOne(
+              'key',
+              file.key
             )
+            if (asset) {
+              const changedFile = await storage.addFile(file, file.data)
+              // Merge back the changed file properties into the actual files
+              // object, so that the data from the static model hook can be used
+              // directly for the actual running query.
+              Object.assign(file, changedFile)
+              modifiedFiles.push(changedFile)
+            } else {
+              throw new AssetError(
+                `Unable to update modified asset from memory source: '${
+                  file.name
+                }' ('${
+                  file.key
+                }')`
+              )
+            }
           }
-        }
-      })
+        },
+        { concurrency: storage.concurrency }
+      )
     }
     return modifiedFiles
   }
 
-  async releaseUnusedAssets(timeThreshold = null, trx = null) {
+  async releaseUnusedAssets({
+    timeThreshold = null,
+    transaction = null,
+    concurrency = 8
+  } = {}) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       const { assets } = this.config
@@ -1069,7 +1080,7 @@ export class Application extends Koa {
       const danglingTimeThreshold = getDuration(
         timeThreshold ?? assets.danglingTimeThreshold
       )
-      return AssetModel.transaction(trx, async trx => {
+      return AssetModel.transaction(transaction, async trx => {
         // Calculate the date math in JS instead of SQL, as there is no easy
         // cross-SQL way to do `now() - interval X hours`:
         const now = new Date()
@@ -1100,7 +1111,8 @@ export class Application extends Koa {
                 asset.error = error
               }
               return asset.key
-            }
+            },
+            { concurrency }
           )
           await AssetModel.query(trx).delete().whereIn('key', orphanedKeys)
         }
