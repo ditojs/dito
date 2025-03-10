@@ -1047,13 +1047,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@npm:^2.43.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@npm:^2.44.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@ditojs/build": "npm:^2.43.0"
-    "@ditojs/ui": "npm:^2.43.0"
-    "@ditojs/utils": "npm:^2.43.0"
+    "@ditojs/build": "npm:^2.44.0"
+    "@ditojs/ui": "npm:^2.44.0"
+    "@ditojs/utils": "npm:^2.44.0"
     "@kyvg/vue3-notification": "npm:^3.4.1"
     "@lk77/vue3-color": "npm:^3.0.6"
     "@tiptap/core": "npm:^2.11.5"
@@ -1100,11 +1100,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@npm:^2.43.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@npm:^2.44.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
-    "@ditojs/utils": "npm:^2.43.0"
+    "@ditojs/utils": "npm:^2.44.0"
     "@vitejs/plugin-vue": "npm:^5.2.1"
     autoprefixer: "npm:^10.4.21"
     mime: "npm:^4.0.6"
@@ -1123,11 +1123,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@npm:^2.43.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@npm:^2.44.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
-    "@ditojs/utils": "npm:^2.43.0"
+    "@ditojs/utils": "npm:^2.44.0"
   languageName: unknown
   linkType: soft
 
@@ -1137,10 +1137,10 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.701.0"
     "@aws-sdk/lib-storage": "npm:^3.701.0"
-    "@ditojs/admin": "npm:^2.43.0"
-    "@ditojs/build": "npm:^2.43.0"
-    "@ditojs/router": "npm:^2.43.0"
-    "@ditojs/utils": "npm:^2.43.0"
+    "@ditojs/admin": "npm:^2.44.0"
+    "@ditojs/build": "npm:^2.44.0"
+    "@ditojs/router": "npm:^2.44.0"
+    "@ditojs/utils": "npm:^2.44.0"
     "@koa/cors": "npm:^5.0.0"
     "@koa/multer": "npm:^3.0.2"
     "@originjs/vite-plugin-commonjs": "npm:^1.0.3"
@@ -1200,18 +1200,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@npm:^2.43.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@npm:^2.44.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@ditojs/build": "npm:^2.43.0"
-    "@ditojs/utils": "npm:^2.43.0"
+    "@ditojs/build": "npm:^2.44.0"
+    "@ditojs/utils": "npm:^2.44.0"
     "@soda/get-current-script": "npm:^1.0.2"
     vite: "npm:^6.2.1"
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@npm:^2.43.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@npm:^2.44.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
@@ -9093,9 +9093,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"knex@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "knex@npm:3.1.0"
+"knex@portal:../knex::locator=dito%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "knex@portal:../knex::locator=dito%40workspace%3A."
   dependencies:
     colorette: "npm:2.0.19"
     commander: "npm:^10.0.0"
@@ -9127,10 +9127,9 @@ __metadata:
     tedious:
       optional: true
   bin:
-    knex: bin/cli.js
-  checksum: 10/12eb978ebec9944d6d0225d33d31d44feb54046b3a02f9f14dfa33a4e665a54d784290991b17a68fd8141a14a3336b325c7706af35557f845dae9e500f3c8aae
+    knex: ./bin/cli.js
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "known-css-properties@npm:^0.35.0":
   version: 0.35.0
@@ -10647,18 +10646,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"objection@npm:^3.1.5":
-  version: 3.1.5
-  resolution: "objection@npm:3.1.5"
+"objection@portal:../objection::locator=dito%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "objection@portal:../objection::locator=dito%40workspace%3A."
   dependencies:
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^2.1.1"
     db-errors: "npm:^0.2.3"
   peerDependencies:
     knex: ">=1.0.1"
-  checksum: 10/fdfad4a37b3ee14750fc0ec120e55c4e9d4c976ce5a78264310dc4cfc5985c3cc673793b229f74d511d2b094733f97f081e2d5517a84a1355e537e5f1ad450fe
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "on-exit-leak-free@npm:^2.1.0":
   version: 2.1.0
