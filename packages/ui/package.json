@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/ui",
-  "version": "2.44.0",
+  "version": "2.45.0",
   "type": "module",
   "description": "Dito.js UI is a simple UI library, built with Vue.js for use in Dito.js Admin and elsewhere",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
@@ -39,11 +39,11 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@ditojs/utils": "^2.44.0",
+    "@ditojs/utils": "^2.45.0",
     "@soda/get-current-script": "^1.0.2"
   },
   "devDependencies": {
-    "@ditojs/build": "^2.44.0",
+    "@ditojs/build": "^2.45.0",
     "vite": "^6.2.3"
   }
 }
