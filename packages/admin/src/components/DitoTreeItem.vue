@@ -76,9 +76,9 @@
   DitoDraggable(
     v-if="childrenSchema"
     v-show="opened"
-    :modelValue="updateOrder(childrenSchema, childrenList)"
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
+    :modelValue="updateOrder(childrenSchema, childrenList)"
     @update:modelValue="value => (childrenList = value)"
   )
     DitoTreeItem(
@@ -160,15 +160,24 @@ export default DitoComponent.component('DitoTreeItem', {
 
     childrenList: {
       get() {
-        const name = this.childrenSchema?.name
-        return name && this.data[name]
+        const { name, orderKey } = this.childrenSchema ?? {}
+        const value = name && this.data[name]
+        // In order to fix reactivity for `updateOrder()` at root level of tree
+        // views, we need to access all order keys once, in order to track them
+        // for reactivity.
+        // TODO: Find a proper fix.
+        value?.map(child => child[orderKey])
+        return value
       },
 
       set(value) {
         const name = this.childrenSchema?.name
         if (name) {
           // eslint-disable-next-line vue/no-mutating-props
-          this.data[name] = value
+          this.data[name] = this.updateOrder(
+            this.childrenSchema,
+            value
+          )
         }
       }
     },
@@ -202,27 +211,19 @@ export default DitoComponent.component('DitoTreeItem', {
         const { editPath } = this.container
         const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
-        return this.updateOrder(
-          childrenSchema,
-          childrenList.map((data, index) => {
-            const path = (
-              childrenSchema.path &&
-              `${this.path}/${childrenSchema.path}/${index}`
-            )
-            const open = (
-              childrenOpen ||
-              // Only count as "in edit path" when it's not the full edit path.
-              editPath.startsWith(path) && path.length < editPath.length
-            )
-            const active = editPath === path
-            return {
-              data,
-              path,
-              open,
-              active
-            }
-          })
-        )
+        return childrenList.map((data, index) => {
+          const path = (
+            childrenSchema.path &&
+            `${this.path}/${childrenSchema.path}/${index}`
+          )
+          const open = (
+            childrenOpen ||
+            // Only count as "in edit path" when it's not the full edit path.
+            editPath.startsWith(path) && path.length < editPath.length
+          )
+          const active = editPath === path
+          return { data, path, open, active }
+        })
       }
       return []
     },

@@ -38,9 +38,9 @@
     )
     DitoDraggable(
       tag="tbody"
-      :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
       :options="getDraggableOptions()"
       :draggable="draggable"
+      :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
       @update:modelValue="value => (listData = value)"
     )
       tr(
