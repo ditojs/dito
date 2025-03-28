@@ -12,6 +12,7 @@
       :data="treeData"
       :draggable="draggable"
       :open="true"
+      @update:data="data => (value = data)"
     )
     .dito-tree-form-container(
       v-if="hasEditableForms"

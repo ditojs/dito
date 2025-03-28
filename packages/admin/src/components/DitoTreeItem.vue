@@ -109,6 +109,7 @@ import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
   mixins: [ItemMixin, SortableMixin],
+  emits: ['update:data'],
   inject: ['container'],
 
   props: {
@@ -160,24 +161,17 @@ export default DitoComponent.component('DitoTreeItem', {
 
     childrenList: {
       get() {
-        const { name, orderKey } = this.childrenSchema ?? {}
-        const value = name && this.data[name]
-        // In order to fix reactivity for `updateOrder()` at root level of tree
-        // views, we need to access all order keys once, in order to track them
-        // for reactivity.
-        // TODO: Find a proper fix.
-        value?.map(child => child[orderKey])
-        return value
+        const name = this.childrenSchema?.name
+        return name && this.data[name]
       },
 
       set(value) {
         const name = this.childrenSchema?.name
         if (name) {
+          this.updateOrder(this.childrenSchema, value)
           // eslint-disable-next-line vue/no-mutating-props
-          this.data[name] = this.updateOrder(
-            this.childrenSchema,
-            value
-          )
+          this.data[name] = value
+          this.$emit('update:data', value)
         }
       }
     },
