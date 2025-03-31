@@ -788,6 +788,8 @@ export class Model extends objection.Model {
           return query.ignoreScope(modifier.slice(1))
         case '@': // Select column:
           return query.select(modifier.slice(1))
+        case '~': // omit column:
+          return query.omit(modifier.slice(1))
         case '*': // Select all columns:
           if (modifier === '*') {
             return query.select('*')

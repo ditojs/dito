@@ -5,6 +5,7 @@ import {
   isBoolean,
   isObject,
   isPlainObject,
+  asArray,
   clone,
   mapKeys,
   getValueAtDataPath,
@@ -31,6 +32,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   #appliedScopes = {}
   #allowFilters = null
   #executeFirst = null // Part of a work-around for cyclic graphs
+  #omits = []
 
   // @override
   clone() {
@@ -45,6 +47,14 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   async execute() {
+    if (this.#omits.length > 0) {
+      this.runAfter(result => {
+        for (const model of asArray(result)) {
+          model.$omitFromJson(...this.#omits)
+        }
+        return result
+      })
+    }
     this.#applyScopes()
     // In case of cyclic graphs, run `_executeFirst()` now:
     await this.#executeFirst?.()
@@ -86,6 +96,10 @@ export class QueryBuilder extends objection.QueryBuilder {
     // Temporary workaround to fix this issue until it is resolved in Objection:
     // https://github.com/Vincit/objection.js/issues/2093
     return super.toFindQuery().clear('runAfter')
+  }
+
+  omit(...properties) {
+    this.#omits.push(...properties)
   }
 
   #withScope(...args) {
