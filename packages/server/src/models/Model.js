@@ -12,7 +12,8 @@ import {
   normalizeDataPath,
   getValueAtDataPath,
   mapConcurrently,
-  assignDeeply
+  assignDeeply,
+  deprecate
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { EventEmitter, KnexHelper } from '../lib/index.js'
@@ -756,7 +757,23 @@ export class Model extends objection.Model {
         )
       }
       // Now check possible scope prefixes and handle them:
-      switch (modifier[0]) {
+
+      let prefix = modifier[0]
+      const deprecatedPrefixes = { '-': '!', '#': '@' }
+      if (deprecatedPrefixes[prefix]) {
+        prefix = deprecatedPrefixes[prefix]
+        deprecate(
+          `The ${
+            modifier
+          } modifier is deprecated, use the ${
+            prefix
+          }${
+            modifier.slice(1)
+          } modifier instead.`
+        )
+      }
+
+      switch (prefix) {
         case '^': // Eager-applied scope:
           // Always apply eager-scopes, even if the model itself doesn't know
           // it. The scope may still be known in eager-loaded relations.
@@ -767,14 +784,15 @@ export class Model extends objection.Model {
             // that are defined on relations to be applied.
             false
           )
-        case '-': // Ignore scope:
+        case '!': // Ignore scope:
           return query.ignoreScope(modifier.slice(1))
-        case '#': // Select column:
+        case '@': // Select column:
           return query.select(modifier.slice(1))
         case '*': // Select all columns:
           if (modifier === '*') {
             return query.select('*')
           }
+          break
       }
     }
     super.modifierNotFound(query, modifier)
