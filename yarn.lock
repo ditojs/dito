@@ -5848,7 +5848,7 @@ __metadata:
     husky: "npm:^9.1.7"
     lerna: "npm:^8.2.2"
     lint-staged: "npm:^15.5.1"
-    prettier: "npm:penere@^3.2.5"
+    prettier: "npm:penere@^3.5.3-1"
     stylelint: "npm:^16.19.1"
     stylelint-config-css-modules: "npm:^4.4.0"
     stylelint-config-standard-scss: "npm:^14.0.0"
@@ -11349,12 +11349,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:penere@^3.2.5":
-  version: 3.2.5
-  resolution: "penere@npm:3.2.5"
+"prettier@npm:penere@^3.5.3-1":
+  version: 3.5.3-1
+  resolution: "penere@npm:3.5.3-1"
   bin:
     penere: bin/prettier.cjs
-  checksum: 10/5286ace789d0c0ab4731617afc483f42a44c9196b700046cf1116f372b8d13b2a8d0f0ed196aad62e51088a72c883e0cab88f6951257f430840fff29ea1e3bec
+  checksum: 10/10671d2c364e21b4f87eaa5cc140e84c82195f4cba6e983982f25d6d985b985ebc507ad00751f2db5bc1d7e6441649464a664d4e94138c773321631c81d0f4ce
   languageName: node
   linkType: hard
 

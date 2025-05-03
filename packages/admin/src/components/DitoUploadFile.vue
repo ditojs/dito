@@ -103,10 +103,8 @@ const TYPES = {
   --min-size: calc(2 * var(--corner-size));
   --margin: 0em;
   --drop-shadow: drop-shadow(
-    0 calc(var(--shadow-size) * 0.75) var(--shadow-size) #{rgba(
-        $color-black,
-        0.4
-      )}
+    0 calc(var(--shadow-size) * 0.75) var(--shadow-size)
+      #{rgba($color-black, 0.4)}
   );
 
   position: relative;

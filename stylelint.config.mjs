@@ -85,7 +85,7 @@ export default {
     'scss/at-import-no-partial-leading-underscore': null,
     'scss/at-import-partial-extension': null,
     'scss/comment-no-empty': null,
-    'scss/dollar-variable-colon-space-after': 'always',
+    'scss/dollar-variable-colon-space-after': 'always-single-line',
     'scss/dollar-variable-colon-space-before': 'never',
     'scss/dollar-variable-empty-line-before': [
       'always',
