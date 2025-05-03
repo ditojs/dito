@@ -29,7 +29,7 @@ export function getRollupExternalsFromDependencies({
       addDependencies(packageJson.dependencies)
       addDependencies(packageJson.peerDependencies)
       addDependencies(packageJson.devDependencies)
-    } catch (err) {}
+    } catch {}
   }
 
   // Start with root to read from './package.json.js' and take it from there.

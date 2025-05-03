@@ -248,7 +248,6 @@ export default DitoComponent.component('DitoRoot', {
       // buttons in the dialog can use `dialog.resolve()` and `dialog.reject()`
       // to close the modal dialog and resolve / reject the promise at once.
       return new Promise(
-        // eslint-disable-next-line no-async-promise-executor
         async (resolve, reject) => {
           // Process components to resolve async schemas.
           const routes = []

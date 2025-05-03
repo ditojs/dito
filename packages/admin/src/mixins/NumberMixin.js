@@ -13,7 +13,7 @@ export default {
         this.value =
           value !== ''
             ? this.isInteger
-              ? parseInt(value, 10)
+              ? Number(value)
               : parseFloat(value)
             : null
       }

@@ -75,7 +75,6 @@ export function getDatePartAtPosition(string, position, {
   const getPosition = (position, length = parts.length) => {
     let pos = 0
     let index = 0
-    // eslint-disable-next-line no-unmodified-loop-condition
     while ((position === null || pos <= position) && index < length) {
       pos += parts[index++]?.length ?? 0
     }

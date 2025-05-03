@@ -1,5 +1,4 @@
 import { isNumber } from '@ditojs/utils'
-// eslint-disable-next-line import/default
 import parseDuration from 'parse-duration'
 
 export function getDuration(duration) {

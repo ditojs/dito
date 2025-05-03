@@ -59,7 +59,7 @@ export default async function startConsole(app, config) {
       .slice(0, config.historySize)
       .filter(line => line.trim())
       .map(line => server.history.push(line))
-  } catch (e) {
+  } catch {
     console.info(deindent`
       Unable to REPL history file at ${historyFile}.
       A history file will be created on shutdown

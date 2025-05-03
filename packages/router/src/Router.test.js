@@ -812,7 +812,6 @@ describe('Router', () => {
 })
 
 function createFunc(name) {
-  // eslint-disable-next-line no-new-func
   return new Function(
     `return ${name ? `function ${name}(){}` : '() => {}'}`
   )()

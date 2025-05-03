@@ -5,14 +5,14 @@ describe('mixin()', () => {
     function() {}
   }
 
-  const SomeMixin1 = mixin(
+  const Something1Mixin = mixin(
     Class =>
       class extends Class {
         function1() {}
       }
   )
 
-  const SomeMixin2 = mixin(
+  const Something2Mixin = mixin(
     Class =>
       class extends Class {
         function2() {}
@@ -20,14 +20,14 @@ describe('mixin()', () => {
   )
 
   it('should apply mixin to class', () => {
-    const NewClass = SomeMixin1(SomeClass)
+    const NewClass = Something1Mixin(SomeClass)
     const instance = new NewClass()
     expect(instance.function).toBeInstanceOf(Function)
     expect(instance.function1).toBeInstanceOf(Function)
   })
 
   it('should apply multiple mixins to class', () => {
-    const NewClass = SomeMixin2(SomeMixin1(SomeClass))
+    const NewClass = Something2Mixin(Something1Mixin(SomeClass))
     const instance = new NewClass()
     expect(instance.function).toBeInstanceOf(Function)
     expect(instance.function1).toBeInstanceOf(Function)
@@ -35,14 +35,14 @@ describe('mixin()', () => {
   })
 
   it('should not apply mixin more than once', () => {
-    const NewClass1 = SomeMixin1(SomeClass)
-    const NewClass2 = SomeMixin1(NewClass1)
+    const NewClass1 = Something1Mixin(SomeClass)
+    const NewClass2 = Something1Mixin(NewClass1)
     expect(NewClass2).toBe(NewClass1)
   })
 
   it('should not affect the base class', () => {
-    const NewClass1 = SomeMixin1(SomeClass)
-    const NewClass2 = SomeMixin2(SomeClass)
+    const NewClass1 = Something1Mixin(SomeClass)
+    const NewClass2 = Something2Mixin(SomeClass)
 
     const instance = new SomeClass()
     const instance1 = new NewClass1()
@@ -62,9 +62,9 @@ describe('mixin()', () => {
   })
 
   it(`should not apply mixin more than once, even if it was applied higher up`, () => {
-    const NewClass1 = SomeMixin1(SomeClass)
+    const NewClass1 = Something1Mixin(SomeClass)
     class NewClass2 extends NewClass1 {}
-    const NewClass3 = SomeMixin1(NewClass2)
+    const NewClass3 = Something1Mixin(NewClass2)
     expect(NewClass3).toBe(NewClass2)
   })
 })

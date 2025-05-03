@@ -24,7 +24,6 @@ export default {
           value = parse(new DitoContext(this, { value }))
         }
         this.parsedValue = value
-        // eslint-disable-next-line vue/no-mutating-props
         this.data[this.name] = value
       }
     }

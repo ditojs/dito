@@ -242,7 +242,7 @@ function parseFiltersData(schema, query) {
       const [, filterName, json] = filter.match(/^(\w+):(.*)$/)
       try {
         filters[filterName] = asArray(JSON.parse(`[${json}]`))
-      } catch (error) {}
+      } catch {}
     }
   }
   const filtersData = {}

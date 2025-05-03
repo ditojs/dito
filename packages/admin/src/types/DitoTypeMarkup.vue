@@ -326,7 +326,6 @@ export default DitoTypeComponent.register('markup', {
           // See if `href` can be parsed as a URL, and if not,
           // prefix it with a default protocol.
           try {
-            // eslint-disable-next-line no-new
             new URL(href)
           } catch {
             href = `https://${href}`

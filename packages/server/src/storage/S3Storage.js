@@ -164,6 +164,6 @@ function getFileTypeFromBuffer(buffer) {
   try {
     // Use leather as fall-back for better media file mime type detection.
     return fileTypeFromBuffer(buffer)?.mime || readMediaAttributes(buffer)?.mime
-  } catch (err) {}
+  } catch {}
   return null
 }

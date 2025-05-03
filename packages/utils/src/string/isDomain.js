@@ -1,4 +1,3 @@
-// eslint-disable-next-line n/no-deprecated-api
 import punycode from 'punycode'
 
 // Best effort approach, allowing Internationalized domain name (with punycode)

@@ -245,14 +245,12 @@ export default DitoComponent.component('DitoSchema', {
     // @override
     processedData() {
       // TODO: Fix side-effects
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       return this.processData({ target: 'server', schemaOnly: true })
     },
 
     clipboardData: {
       get() {
         // TODO: Fix side-effects
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         return this.processData({ target: 'clipboard', schemaOnly: true })
       },
 
@@ -671,7 +669,6 @@ export default DitoComponent.component('DitoSchema', {
     setData(data) {
       for (const name in data) {
         if (name in this.data) {
-          // eslint-disable-next-line vue/no-mutating-props
           if (!equals(this.data[name], data[name])) {
             // eslint-disable-next-line vue/no-mutating-props
             this.data[name] = data[name]

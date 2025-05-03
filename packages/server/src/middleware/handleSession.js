@@ -11,7 +11,6 @@ export function handleSession(app, {
     // Create a ContextStore that resolved the specified model class,
     // uses it to persist and retrieve the session, and automatically
     // binds all db operations to `ctx.transaction`, if it is set.
-    // eslint-disable-next-line new-cap
     options.ContextStore = createSessionStore(modelClass)
   }
   options.autoCommit = false

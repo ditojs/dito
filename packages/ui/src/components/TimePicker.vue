@@ -306,7 +306,7 @@ export default {
         const { value } = input
         let pos = selection.start
 
-        const isDigit = char => !isNaN(parseInt(char, 10))
+        const isDigit = char => !isNaN(Number(char))
 
         if (event.key.length === 1) {
           if (isDigit(event.key) && pos < value.length) {

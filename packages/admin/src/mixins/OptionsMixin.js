@@ -189,8 +189,6 @@ export default {
           for (const option of options) {
             if (!('id' in option)) {
               // TODO: Fix side-effects
-              // eslint-disable-next-line max-len
-              // eslint-disable-next-line vue/no-side-effects-in-computed-properties
               setTemporaryId(option, 'id')
             }
           }
