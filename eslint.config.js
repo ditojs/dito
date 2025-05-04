@@ -1,6 +1,4 @@
 // http://eslint.org/docs/user-guide/configuring
-import fs from 'fs'
-import path from 'path'
 import globals from 'globals'
 import vueParser from 'vue-eslint-parser'
 // eslint-disable-next-line import/default
@@ -28,7 +26,7 @@ export default [
     ignores: [
       'node_modules/**/*',
       'packages/**/dist/**/*',
-      'packages/**/*.test.js.snap',
+      'packages/**/*.test.js.snap'
     ]
   },
   {
@@ -229,7 +227,7 @@ function getVueRules() {
   return {
     'vue/order-in-components': [
       'error',
-            {
+      {
         order: [
           'el',
           'name',
@@ -279,6 +277,7 @@ function getVueRules() {
 
     'vue-pug/no-pug-control-flow': 'off',
 
+    'vue/component-options-name-casing': ['error', 'PascalCase'],
     'vue-pug/component-name-in-template-casing': [
       'error',
       'PascalCase',
@@ -289,6 +288,7 @@ function getVueRules() {
     ],
 
     'vue/prop-name-casing': ['error', 'camelCase'],
+    'vue/slot-name-casing': ['error', 'kebab-case'],
     'vue/attribute-hyphenation': ['error', 'never'],
 
     'vue/v-on-event-hyphenation': [

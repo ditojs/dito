@@ -17,6 +17,10 @@
   "css.validate": false,
   "less.validate": false,
   "scss.validate": false,
+  // ESLint
+  "eslint.workingDirectories": [ "." ],
+  "eslint.useESLintClass": true,
+  "eslint.useFlatConfig": true,
   // Stylelint
   "stylelint.validate": ["css", "scss"],
   // Prettier
@@ -24,11 +28,11 @@
   "prettier.requireConfig": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   // Volar
-  "volar.completion.normalizeComponentImportName": false,
-  "volar.completion.preferredTagNameCase": "auto-pascal",
-  "volar.completion.preferredAttrNameCase": "auto-camel",
-  "volar.inlayHints.eventArgumentInInlineHandlers": false,
-  "volar.updateImportsOnFileMove.enabled": true,
+  "vue.format.template.initialIndent": false,
+  "vue.format.script.initialIndent": false,
+  "vue.format.style.initialIndent": false,
+  "vue.complete.casing.props": "autoCamel",
+  "vue.complete.casing.tags": "autoPascal",
   // Format on save:
   "editor.formatOnSave": false,
   "[javascript][typescript]": {
@@ -59,7 +63,15 @@
   },
   // https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker
   "cSpell.enabled": true,
-  "cSpell.enableFiletypes": ["javascript", "vue", "scss", "css", "jade", "pug", "html"],
+  "cSpell.enabledFileTypes": {
+    "javascript": true,
+    "vue": true,
+    "scss": true,
+    "css": true,
+    "jade": true,
+    "pug": true,
+    "html": true
+  },
   "cSpell.ignoreRegExpList": [
       // Allow genitive case apostrophes:
       "'s\\b"
