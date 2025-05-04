@@ -87,7 +87,7 @@ export class RelationController extends CollectionController {
     })
   }
 
-  collection = this.convertToCoreActions({})
+  collection = this.markAsCoreActions({})
 
-  member = this.convertToCoreActions({})
+  member = this.markAsCoreActions({})
 }

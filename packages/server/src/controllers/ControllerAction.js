@@ -7,18 +7,12 @@ export default class ControllerAction {
     handler,
     type,
     name,
-    _method,
-    _path,
+    method,
+    path,
     _authorize
   ) {
     const {
       core = false,
-      // Allow decorators on actions to override the predetermined defaults for
-      // `method`, `path` and `authorize`:
-      // TODO: `handler.method` and `handler.path` were deprecated in March
-      // 2022, remove later and only set the valued passed to constructor then.
-      method = _method,
-      path = _path,
       scope,
       authorize,
       transacted,
@@ -28,6 +22,7 @@ export default class ControllerAction {
       ...additional
     } = handler
 
+    this.app = controller.app
     this.controller = controller
     this.actions = actions
     this.handler = handler
@@ -37,6 +32,8 @@ export default class ControllerAction {
     this.method = method
     this.path = path
     this.scope = scope
+    // Allow action handlers to override the predetermined defaults for
+    // `authorize`:
     this.authorize = authorize || _authorize
     this.transacted = !!(
       transacted ??
@@ -52,7 +49,6 @@ export default class ControllerAction {
       )
     )
     this.authorization = controller.processAuthorize(this.authorize)
-    this.app = controller.app
     this.paramsName = ['post', 'put', 'patch'].includes(this.method)
       ? 'body'
       : 'query'

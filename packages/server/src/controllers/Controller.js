@@ -32,8 +32,8 @@ export class Controller {
   name = null
   path = null
   url = null
-  actions = null
   assets = null
+  actions = null
   transacted = null
   initialized = false
 
@@ -80,7 +80,6 @@ export class Controller {
   // @overridable
   setup() {
     this.logController()
-    this.setProperty('actions', this.actions || this.reflectActionsObject())
     // Now that the instance fields are reflected in the `controller` object
     // we can use the normal inheritance mechanism through `setupActions()`:
     this.setProperty('actions', this.setupActions('actions'))
@@ -142,30 +141,15 @@ export class Controller {
     return value
   }
 
-  reflectActionsObject() {
-    // On base controllers, the actions can be defined directly in the class
-    // instead of inside an actions object, as is done with model and relation
-    // controllers. But in order to use the same structure for inheritance as
-    // these other controllers, we reflect these instance fields in a separate
-    // `actions` object.
-    const { allow } = this
-    const actions = allow ? { allow } : {}
-
-    const addAction = key => {
-      const value = this[key]
-      // NOTE: Only add instance methods that have a @action() decorator, which
-      // in turn sets the `method` property on the method, as well as action
-      // objects which provide the `method` property:
-      if (value?.method) {
-        actions[key] = value
-      }
+  markAsCoreActions(actions) {
+    // Mark action object and methods as core, so `Controller.processValues()`
+    // can filter correctly.
+    for (const action of Object.values(actions)) {
+      // Mark action functions also, so ControllerAction can use it to determine
+      // value for `transacted`.
+      action.core = true
     }
-    // Use `Object.getOwnPropertyNames()` to get the fields, in order to
-    // not also receive values from parents (those are fetched later in
-    // `inheritValues()`, see `getParentValues()`).
-    const proto = Object.getPrototypeOf(this)
-    Object.getOwnPropertyNames(proto).forEach(addAction)
-    Object.getOwnPropertyNames(this).forEach(addAction)
+    actions.$core = true
     return actions
   }
 
@@ -190,26 +174,28 @@ export class Controller {
       values: actions,
       authorize
     } = this.processValues(this.inheritValues(type))
-    for (const [name, action] of Object.entries(actions)) {
-      // Replace the action object with the converted action handler, so they
-      // too can benefit from prototypal inheritance:
-      actions[name] = this.setupAction(
-        type,
-        actions,
-        name,
-        action,
-        authorize[name]
-      )
+    if (actions) {
+      for (const [name, action] of Object.entries(actions)) {
+        // Replace the action object with the converted action handler, so they
+        // too can benefit from prototypal inheritance:
+        actions[name] = this.setupAction(
+          type,
+          actions,
+          name,
+          action,
+          authorize[name]
+        )
+      }
+      // Expose a direct reference to the controller on the action object, but
+      // also make it inherit from the controller so that all its public fields
+      // and functions (`app`, `query()`, `execute()`, etc.) can be accessed
+      // directly through `this` from actions.
+      // NOTE: Inheritance is also set up by `inheritValues()` so that from the
+      // handlers, `super` points to the parent controller's actions object, so
+      // that calling `super.patch()` from a patch handler magically works.
+      actions.controller = this
+      Object.setPrototypeOf(actions, this)
     }
-    // Expose a direct reference to the controller on the action object, but
-    // also make it inherit from the controller so that all its public fields
-    // and functions (`app`, `query()`, `execute()`, etc.) can be accessed
-    // directly through `this` from actions.
-    // NOTE: Inheritance is also set up by `inheritValues()` so that from inside
-    // the handlers, `super` points to the parent controller's actions object,
-    // so that calling `super.patch()` from a patch handler magically works.
-    actions.controller = this
-    Object.setPrototypeOf(actions, this)
     return actions
   }
 
