@@ -15,9 +15,7 @@ export function clone(value, options) {
     descriptors = !enumerable,
     transferables = null,
     processValue = null
-  } = isFunction(options)
-    ? { processValue: options } // TODO: `callback` deprecated in December 2022.
-    : options || {}
+  } = options ?? {}
 
   const clones = new Map()
 

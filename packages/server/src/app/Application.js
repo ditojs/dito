@@ -31,8 +31,7 @@ import {
   parseDataPath,
   normalizeDataPath,
   toPromiseCallback,
-  mapConcurrently,
-  deprecate
+  mapConcurrently
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
 import { EventEmitter } from '../lib/index.js'
@@ -877,11 +876,6 @@ export class Application extends Koa {
       this.logError(err)
       process.exit(-1)
     }
-  }
-
-  startOrExit() {
-    deprecate(`app.startOrExit() is deprecated. Use app.execute() instead.`)
-    return this.execute()
   }
 
   // Assets handling

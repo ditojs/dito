@@ -1,5 +1,4 @@
 import { isArray, isPlainObject } from '../base/index.js'
-import { deprecate } from '../function/deprecate.js'
 import { clone } from './clone.js'
 
 export function mergeDeeply(target, ...sources) {
@@ -7,13 +6,6 @@ export function mergeDeeply(target, ...sources) {
     target = mergeValues(target, source, true, true)
   }
   return target
-}
-
-export function merge(...args) {
-  deprecate(
-    'merge() is deprecated, use assignDeeply() or mergeDeeply() instead.'
-  )
-  return mergeDeeply(...args)
 }
 
 export function assignDeeply(target, ...sources) {

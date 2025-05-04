@@ -1442,8 +1442,6 @@ export class Service {
   /** @overridable */
   stop(): Promise<void>
   get logger(): PinoLogger
-  /** @deprecated Use `instance.logger` instead. */
-  getLogger(ctx: KoaContext): PinoLogger
 }
 export type Services = Record<string, Class<Service> | Service>
 

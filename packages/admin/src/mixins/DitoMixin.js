@@ -392,9 +392,7 @@ export default {
         } ${
           options.url
         } ${
-          // TODO: `request.params` was deprecated in favour of `query` on
-          // 2022-11-01, remove once not in use anywhere any more.
-          JSON.stringify(options.query || options.params || '')
+          JSON.stringify(options.query || '')
         } ${
           JSON.stringify(options.data || '')
         }`

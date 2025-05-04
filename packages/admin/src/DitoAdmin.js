@@ -7,8 +7,7 @@ import {
   assignDeeply,
   hyphenate,
   camelize,
-  defaultFormats,
-  deprecate
+  defaultFormats
 } from '@ditojs/utils'
 import * as components from './components/index.js'
 import * as types from './types/index.js'
@@ -244,20 +243,11 @@ class RequestError extends Error {
 async function request(api, {
   url,
   method = 'get',
-  // TODO: `request.params` was deprecated in favour of `query` on 2022-11-01,
-  // remove once not in use anywhere any more.
-  params = null,
-  query = params || null,
+  query = null,
   headers = null,
   data = null,
   signal = null
 }) {
-  if (params) {
-    deprecate(
-      `request.params is deprecated. Use action.method and action.path instead.`
-    )
-  }
-
   const isApiUrl = api.isApiUrl(url)
 
   const response = await fetch(api.getApiUrl({ url, query }), {

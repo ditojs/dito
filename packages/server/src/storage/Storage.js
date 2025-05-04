@@ -4,7 +4,7 @@ import multer from '@koa/multer'
 import picomatch from 'picomatch'
 import { PassThrough } from 'stream'
 import { readMediaAttributes } from 'leather'
-import { hyphenate, toPromiseCallback, deprecate } from '@ditojs/utils'
+import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
 
 const storageClasses = {}
@@ -158,18 +158,8 @@ export class Storage {
   async _listKeys() {}
 
   async _handleUpload(req, file, config) {
-    if (config.readImageSize) {
-      deprecate(
-        `config.readImageSize is deprecated in favour of config.readDimensions`
-      )
-    }
     if (
-      (
-        config.readDimensions ||
-        // TODO: `config.readImageSize` was deprecated in favour of
-        // `config.readDimensions` in March 2023. Remove in 1 year.
-        config.readImageSize
-      ) &&
+      config.readDimensions &&
       /^(image|video)\//.test(file.mimetype)
     ) {
       return this._handleMediaFile(req, file)

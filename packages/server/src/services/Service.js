@@ -28,11 +28,6 @@ export class Service {
   // @overridable
   async stop() {}
 
-  /** @deprecated Use `instance.logger` instead. */
-  getLogger() {
-    return this.logger
-  }
-
   get logger() {
     const logger = this.app.requestLocals.logger ?? this.app.logger
     return logger.child({ name: this.#loggerName })

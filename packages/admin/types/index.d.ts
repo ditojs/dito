@@ -35,8 +35,6 @@ export type RequestMethod = <T>({
    */
   method: HTTPVerb
   data: any
-  /** @deprecated use query instead */
-  params: Record<string, string | string[]> | [string, string][]
   query: Record<string, string | string[]> | [string, string][]
   headers: Record<string, string>
 }) => Promise<RequestMethodResponse<T>>
@@ -1018,8 +1016,6 @@ export type DitoContext<$Item = any> = {
      * @default 'get'
      */
     method?: HTTPVerb
-    /** @deprecated use query instead */
-    params?: Record<string, string | string[]> | [string, string][]
     query?: Record<string, string | string[]> | [string, string][]
     data?: any
     resource?: Resource

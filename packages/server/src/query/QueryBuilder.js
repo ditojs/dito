@@ -1065,19 +1065,5 @@ const mixinMethods = [
   'havingBetween',
   'havingNotBetween',
   'havingRaw',
-  'havingWrapped',
-
-  // deprecated methods that are still supported at the moment.
-  // TODO: Remove once we move to Objection 3.0
-  'eager',
-  'joinEager',
-  'naiveEager',
-  'mergeEager',
-  'mergeJoinEager',
-  'mergeNaiveEager',
-  'clearEager',
-
-  'scope',
-  'mergeScope',
-  'clearScope'
+  'havingWrapped'
 ]
