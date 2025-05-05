@@ -8,7 +8,11 @@
   "license": "MIT",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.js",
+      "types": "./types/index.d.ts"
+    }
   },
   "files": [
     "src/",
@@ -34,5 +38,5 @@
   "devDependencies": {
     "typescript": "^5.8.3"
   },
-  "types": "types"
+  "types": "./types/index.d.ts"
 }
