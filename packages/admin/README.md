@@ -85,7 +85,7 @@ There are a large variety of components for different data types and purposes. T
 | `type` | The type of the component, there are many different options like 'text', 'textarea', 'email', 'radio', 'select' etc. For more types see the examples below or consult the code. |
 | `options` | An array of options. Only required if the type is 'select', 'radio' or a similar type. The array can also contain label-value pairs (`[{label : 'Option 1', value : 1}, {label : 'Option 2', value : 6}]`). |
 | `width` | The width of the component. The value can be given in percent (e.g. '20%') or as 'auto'. There will be several components on one line until their percentage exeeds 100%. |
-| `required` | Boolean value if the field is required or not. Dito uses both backend and frontend validation both required validation as well as the validation of some types (like email) are only frontend. |
+| `required` | Boolean value if the field is required or not. Dito.js uses both backend and frontend validation both required validation as well as the validation of some types (like email) are only frontend. |
 
 Also, a component can be a nested list. For example, if you are modelling people with children, then a list of children can be shown for every person with a component like this:
 

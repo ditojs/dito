@@ -5,8 +5,8 @@ import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import { formatJson } from '../utils/json.js'
 import * as schema from '../schema/index.js'
 
-// Dito does not rely on objection.AjvValidator but instead implements its own
-// validator instance that is shared across the whole app and handles schema
+// Dito.js does not rely on objection.AjvValidator but instead implements its
+// own validator instance that is shared across the whole app and handles schema
 // compilation and caching differently:
 // It relies on Ajv's addSchema() / getSchema() pattern in conjunction with the
 // `schemaId: '$id'` option, and each schema is assigned an $id based on the

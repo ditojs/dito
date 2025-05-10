@@ -54,7 +54,7 @@ In addition to Objection.js' many database methods, ...:
 
 ### `find(query, options)`
 
-## Dito Graph Methods
+## Dito.js Graph Methods
 
 ### `insertDitoGraph(data, options)`
 ### `insertDitoGraphAndFetch(data, options)`

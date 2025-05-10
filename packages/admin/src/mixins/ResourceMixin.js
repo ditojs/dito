@@ -332,7 +332,7 @@ export default {
           async (err, response) => {
             const data = response?.data
             if (err) {
-              // See if we're dealing with a Dito validation error:
+              // See if we're dealing with a Dito.js validation error:
               const errors = this.isValidationError(response) && data.errors
               if (errors) {
                 await this.showValidationErrors(errors, true)

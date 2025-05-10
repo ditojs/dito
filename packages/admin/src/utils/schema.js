@@ -34,7 +34,7 @@ export function getTypeComponent(type, allowNull = false) {
   if (!component && !allowNull && !unknownTypeReported[type]) {
     // Report each missing type only once, to avoid flooding the console:
     unknownTypeReported[type] = true
-    throw new Error(`Unknown Dito component type: '${type}'`)
+    throw new Error(`Unknown Dito.js component type: '${type}'`)
   }
   return component
 }

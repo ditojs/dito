@@ -32,7 +32,7 @@ export default async function startConsole(app, config) {
   server.eval = wrapEval(server)
 
   server.defineCommand('usage', {
-    help: 'Detailed Dito Console usage information',
+    help: 'Detailed Dito.js Console usage information',
     action() {
       displayUsage(app, config, true)
       this.displayPrompt()
@@ -40,7 +40,7 @@ export default async function startConsole(app, config) {
   })
 
   server.defineCommand('models', {
-    help: 'Display available Dito models',
+    help: 'Display available Dito.js models',
     action() {
       console.info(Object.keys(app.models).join(', '))
       this.displayPrompt()
@@ -99,13 +99,13 @@ function displayUsage(app, config, details) {
   console.info(deindent`
 
     ------------------------------------------------------------
-    Dito Console
+    Dito.js Console
 
     Available references:
-     - Dito app: ${pico.cyan('app')}
+     - Dito.js app: ${pico.cyan('app')}
     ${
       modelHandleNames.length > 0
-        ? ` - Dito models: ${
+        ? ` - Dito.js models: ${
             modelHandleNames.map(m => pico.cyan(m)).join(', ')
           }`
         : ''

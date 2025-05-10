@@ -43,7 +43,7 @@ keywords can be registered with a custom validator, see
 | `hidden`: `boolean`        | Marks the property has hidden, so that it does not show up in data converted to JSON.<br>This can be used for sensitive data.
 | `range`: `Array`           | Validates a property of type `'number'` or `'integer'` to be in a given range, e.g.: `[2, 5]` 
 
-In addition to all the declared properties, Dito automatically adds an `id`
+In addition to all the declared properties, Dito.js automatically adds an `id`
 property to the properties of every model if a property with the `primary: true`
 setting is not already explicitly defined. The settings used for an
 automatically inserted primary `id` are:

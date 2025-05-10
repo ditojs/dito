@@ -1,4 +1,4 @@
-// NOTE: index.js exports nothing, but Dito components will be registered in
+// NOTE: index.js exports nothing, but Dito.js components will be registered in
 // DitoComponent and can be rendered through their tag-names.
 // NOTE: Sequence is meaningful for reasons of CSS declaration sequence. The
 // convention is in order of encountered hierarchy in the DOM.

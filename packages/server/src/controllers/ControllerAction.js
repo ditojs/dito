@@ -300,7 +300,7 @@ export default class ControllerAction {
       if (objectType) {
         if (value && isString(value)) {
           if (!/^\{.*\}$/.test(value)) {
-            // Convert simplified Dito object notation to JSON, supporting:
+            // Convert simplified Dito.js object notation to JSON, supporting:
             // - `"key1":X, "key2":Y` (curly braces are added and parsed through
             //   `JSON.parse()`)
             // - `key1:X,key2:Y` (a simple parser is applied, splitting into
@@ -329,7 +329,7 @@ export default class ControllerAction {
           }
         }
         if (objectType !== 'object' && isObject(value)) {
-          // Convert the Pojo to the desired Dito model:
+          // Convert the Pojo to the desired Dito.js model:
           const modelClass = this.app.models[objectType]
           if (modelClass && !(value instanceof modelClass)) {
             value = modelClass.fromJson(value, modelOptions)

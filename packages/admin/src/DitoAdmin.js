@@ -127,7 +127,7 @@ export default class DitoAdmin {
       },
 
       upload(resource) {
-        // Dito Server handles upload routes on the collection resource:
+        // Dito.js Server handles upload routes on the collection resource:
         return `${this.collection(resource.parent)}/upload/${resource.path}`
       },
 

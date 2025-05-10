@@ -132,8 +132,8 @@ The `action.parameters` setting can be used if automatic mapping of Koa.js'
 their automatic validation. To do so, set it to an object containing each
 parameter in the same format Dito.js uses for its model property schema.
 
-Note the `type` can also be set to the name of any model known to your Dito app,
-in addition to the standard types supported by JSON schema:
+Note the `type` can also be set to the name of any model known to your Dito.js
+app, in addition to the standard types supported by JSON schema:
 
 ```js
 'post do-something: {

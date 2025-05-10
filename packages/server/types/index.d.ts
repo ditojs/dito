@@ -3,7 +3,7 @@
 // Type definitions for Dito.js server
 // Project: <https://github.com/ditojs/dito/>
 
-// Export the entire Dito namespace.
+// Export the entire Dito.js namespace.
 
 import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
 import { DateFormat } from '@ditojs/utils'
@@ -645,14 +645,15 @@ export class Model extends objection.Model {
   }
 
   /**
-   * Dito automatically adds an `id` property if a model property with the
+   * Dito.js automatically adds an `id` property if a model property with the
    * `primary: true` setting is not already explicitly defined.
    */
   readonly id: Id
 
   /**
-   * Dito automatically adds a `foreignKeyId` property if foreign keys occurring
-   * in relations definitions are not explicitly defined in the properties.
+   * Dito.js automatically adds a `foreignKeyId` property if foreign keys
+   * occurring in relations definitions are not explicitly defined in the
+   * properties.
    */
   readonly foreignKeyId: Id
 

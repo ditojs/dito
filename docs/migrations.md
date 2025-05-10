@@ -52,7 +52,7 @@ yarn db:reset
 
 ### Creating Migrations Automatically
 
-Dito can create migrations for you automatically. Use the following command:
+Dito.js can create migrations for you automatically. Use the following command:
 
 ```sh
 yarn db:create_migration filename modelName1 modelName2 ...

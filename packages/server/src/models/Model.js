@@ -814,8 +814,8 @@ export class Model extends objection.Model {
   // @override
   static createValidator() {
     // Use a shared validator per app, so model schema can reference each other.
-    // NOTE: The Dito Validator class creates and manages this shared Objection
-    // Validator instance for us, we just need to return it here:
+    // NOTE: The Dito.js Validator class creates and manages this shared
+    // Objection Validator instance for us, we just need to return it here:
     return this.app.validator
   }
 
