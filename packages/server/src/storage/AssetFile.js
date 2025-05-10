@@ -60,7 +60,6 @@ export class AssetFile {
   static convert(object, storage) {
     Object.setPrototypeOf(object, AssetFile.prototype)
     setHiddenProperty(object, SYMBOL_STORAGE, storage)
-    return object
   }
 
   static create(options) {

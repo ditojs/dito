@@ -387,13 +387,21 @@ export class Model extends objection.Model {
     return this._getCached(
       'jsonSchema',
       () => {
-        const schema = convertSchema({
-          type: 'object',
-          properties: this.definition.properties
-        })
+        const definitions = {}
+        const schema = convertSchema(
+          {
+            type: 'object',
+            properties: this.definition.properties
+          },
+          { definitions }
+        )
         addRelationSchemas(this, schema.properties)
         // Merge in root-level schema additions
         assignDeeply(schema, this.definition.schema)
+        // Merge in definitions
+        if (Object.keys(definitions).length > 0) {
+          schema.definitions = definitions
+        }
         return {
           $id: this.name,
           ...schema
@@ -467,7 +475,17 @@ export class Model extends objection.Model {
   static getAttributes(filter) {
     const attributes = []
     const { properties } = this.definition
-    for (const [name, property] of Object.entries(properties)) {
+    const { definitions } = this.jsonSchema
+    for (let [name, property] of Object.entries(properties)) {
+      // Expand $refs so we can even find properties that uses definitions:
+      const { $ref, ...schema } = property
+      const definition = $ref && definitions?.[$ref]
+      if (definition) {
+        property = {
+          ...schema,
+          ...definition
+        }
+      }
       if (filter(property)) {
         attributes.push(name)
       }

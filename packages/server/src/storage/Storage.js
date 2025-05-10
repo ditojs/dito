@@ -77,7 +77,7 @@ export class Storage {
   }
 
   convertAssetFile(file) {
-    return AssetFile.convert(file, this)
+    AssetFile.convert(file, this)
   }
 
   convertStorageFile(storageFile) {

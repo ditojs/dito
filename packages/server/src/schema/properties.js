@@ -1,13 +1,17 @@
-import { isObject, isArray, isString } from '@ditojs/utils'
+import { isObject, isArray, isString, equals } from '@ditojs/utils'
 
 export function convertSchema(schema, options = {}) {
   if (isArray(schema)) {
-    // Needed for allOf, anyOf, oneOf, not, items:
+    // Needed for allOf, anyOf, oneOf, not, items, see below:
     schema = schema.map(entry => convertSchema(entry, options))
   } else if (isObject(schema)) {
     // Create a shallow clone so we can modify and return:
-    schema = { ...schema }
-    const { type } = schema
+    // Also collect and propagate the definitions up to the root schema through
+    // `options.definitions`, as passed from `Model static get jsonSchema()`:
+    const { definitions, ...rest } = schema
+    mergeDefinitions(options.definitions, definitions, options)
+    schema = rest
+    const { $ref, type } = schema
     if (schema.required === true) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
       // format instead that only validates if the required value is not empty,
@@ -51,7 +55,13 @@ export function convertSchema(schema, options = {}) {
       }
     }
 
-    if (isString(type)) {
+    if (isString($ref)) {
+      // If the $ref is a nested Dito.js definition, convert it to a JSON schema
+      // reference. If it is a full URL, use it as is.
+      schema.$ref = $ref.startsWith('#')
+        ? `#/definitions/${$ref}`
+        : $ref
+    } else if (isString(type)) {
       // Convert schema property notation to JSON schema
       const jsonType = jsonTypes[type]
       if (jsonType) {
@@ -105,7 +115,7 @@ export function convertSchema(schema, options = {}) {
   return schema
 }
 
-export function convertProperties(schemaProperties, options) {
+function convertProperties(schemaProperties, options) {
   const properties = {}
   const required = []
   for (const [key, property] of Object.entries(schemaProperties)) {
@@ -115,6 +125,32 @@ export function convertProperties(schemaProperties, options) {
     }
   }
   return { properties, required }
+}
+
+function mergeDefinitions(definitions, defs, options) {
+  if (definitions && defs) {
+    for (const [key, def] of Object.entries(defs)) {
+      if (!key.startsWith('#')) {
+        throw new Error(
+          `Invalid definition '${
+            key
+          }', the name of nested Dito.js definitions must start with '#': ${
+            JSON.stringify(def)
+          }`
+        )
+      }
+      const definition = definitions[key]
+      const converted = convertSchema(def, options)
+      if (definition && !equals(definition, converted)) {
+        throw new Error(
+          `Duplicate nested definition for '${key}' with different schema: ${
+            JSON.stringify(def)
+          }`
+        )
+      }
+      definitions[key] = converted
+    }
+  }
 }
 
 function addFormat(schema, newFormat) {

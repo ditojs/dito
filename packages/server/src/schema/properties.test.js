@@ -630,4 +630,76 @@ describe('convertSchema()', () => {
       ]
     })
   })
+
+  it('supports nested Dito.js definitions', () => {
+    const definitions = {}
+    expect(
+      convertSchema(
+        {
+          type: 'object',
+          properties: {
+            prop1: {
+              $ref: '#type1'
+            },
+            prop2: {
+              type: 'object',
+              properties: {
+                prop3: {
+                  $ref: '#type2'
+                }
+              },
+              definitions: {
+                '#type2': {
+                  type: 'object',
+                  properties: {
+                    prop3: {
+                      type: 'string'
+                    }
+                  }
+                }
+              }
+            }
+          },
+
+          definitions: {
+            '#type1': {
+              type: 'integer'
+            }
+          }
+        },
+        { definitions }
+      )
+    ).toEqual({
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        prop1: {
+          $ref: '#/definitions/#type1'
+        },
+        prop2: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            prop3: {
+              $ref: '#/definitions/#type2'
+            }
+          }
+        }
+      }
+    })
+    expect(definitions).toEqual({
+      '#type1': {
+        type: 'integer'
+      },
+      '#type2': {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          prop3: {
+            type: 'string'
+          }
+        }
+      }
+    })
+  })
 })
