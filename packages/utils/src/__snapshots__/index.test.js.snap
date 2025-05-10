@@ -68,7 +68,6 @@ exports[`index > exports all symbols 1`] = `
   "mapKeys": [Function],
   "mapSequentially": [Function],
   "mapValues": [Function],
-  "merge": [Function],
   "mergeDeeply": [Function],
   "mixin": [Function],
   "normalizeDataPath": [Function],
