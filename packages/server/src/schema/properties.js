@@ -48,8 +48,8 @@ export function convertSchema(schema, options = {}) {
     schema.prefixItems &&= convertSchema(schema.prefixItems, options)
     schema.items &&= convertSchema(schema.items, options)
 
-    // Handle nested allOf, anyOf, oneOf, not fields
-    for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
+    // Handle nested allOf, anyOf, oneOf & co. fields
+    for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
       if (key in schema) {
         schema[key] = convertSchema(schema[key], options)
       }
