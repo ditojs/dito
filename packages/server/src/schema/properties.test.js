@@ -30,7 +30,7 @@ describe('convertSchema()', () => {
     ).toEqual({
       type: 'object',
       properties,
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -69,7 +69,7 @@ describe('convertSchema()', () => {
     ).toEqual({
       type: 'object',
       properties,
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -90,7 +90,7 @@ describe('convertSchema()', () => {
           type: 'string'
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -121,7 +121,7 @@ describe('convertSchema()', () => {
           format: 'required'
         }
       },
-      additionalProperties: false,
+      unevaluatedProperties: false,
       required: ['myString', 'myNumber']
     })
   })
@@ -142,7 +142,7 @@ describe('convertSchema()', () => {
         myString: { type: 'string' },
         myNumber: { type: 'number' }
       },
-      additionalProperties: false,
+      unevaluatedProperties: false,
       required: ['myString', 'myNumber']
     })
   })
@@ -163,11 +163,11 @@ describe('convertSchema()', () => {
       properties: {
         myText: {
           type: 'object',
-          additionalProperties: false,
+          unevaluatedProperties: false,
           properties: {}
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -178,7 +178,7 @@ describe('convertSchema()', () => {
         properties: {
           myText: {
             type: 'object',
-            additionalProperties: true,
+            unevaluatedProperties: true,
             properties: {}
           }
         }
@@ -188,11 +188,11 @@ describe('convertSchema()', () => {
       properties: {
         myText: {
           type: 'object',
-          additionalProperties: true,
+          unevaluatedProperties: true,
           properties: {}
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -223,11 +223,11 @@ describe('convertSchema()', () => {
               format: 'required'
             }
           },
-          additionalProperties: false,
+          unevaluatedProperties: false,
           required: ['myProperty']
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -256,10 +256,10 @@ describe('convertSchema()', () => {
               type: 'string'
             }
           },
-          additionalProperties: false
+          unevaluatedProperties: false
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -295,7 +295,7 @@ describe('convertSchema()', () => {
           format: 'date-time'
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -316,7 +316,7 @@ describe('convertSchema()', () => {
           $ref: 'MyModel'
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -343,7 +343,7 @@ describe('convertSchema()', () => {
           instanceof: 'MyModel'
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -366,7 +366,7 @@ describe('convertSchema()', () => {
           nullable: true
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -391,7 +391,7 @@ describe('convertSchema()', () => {
           ]
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -415,7 +415,7 @@ describe('convertSchema()', () => {
           nullable: true
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -440,7 +440,7 @@ describe('convertSchema()', () => {
           nullable: true
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -504,7 +504,7 @@ describe('convertSchema()', () => {
                   }
                 },
                 required: ['prop1', 'prop2'],
-                additionalProperties: false
+                unevaluatedProperties: false
               },
               {
                 type: 'object',
@@ -519,13 +519,13 @@ describe('convertSchema()', () => {
                   }
                 },
                 required: ['prop3', 'prop4'],
-                additionalProperties: false
+                unevaluatedProperties: false
               }
             ]
           }
         }
       },
-      additionalProperties: false
+      unevaluatedProperties: false
     })
   })
 
@@ -566,11 +566,11 @@ describe('convertSchema()', () => {
               type: 'number'
             }
           },
-          additionalProperties: false,
+          unevaluatedProperties: false,
           required: ['prop1', 'prop2']
         }
       },
-      additionalProperties: false,
+      unevaluatedProperties: false,
       required: ['myObject']
     })
   })
@@ -605,6 +605,7 @@ describe('convertSchema()', () => {
     ).toEqual({
       type: 'object',
       discriminator: { propertyName: 'foo' },
+      unevaluatedProperties: false,
       required: ['foo'],
       oneOf: [
         {
@@ -671,14 +672,14 @@ describe('convertSchema()', () => {
       )
     ).toEqual({
       type: 'object',
-      additionalProperties: false,
+      unevaluatedProperties: false,
       properties: {
         prop1: {
           $ref: '#/definitions/#type1'
         },
         prop2: {
           type: 'object',
-          additionalProperties: false,
+          unevaluatedProperties: false,
           properties: {
             prop3: {
               $ref: '#/definitions/#type2'
@@ -693,7 +694,7 @@ describe('convertSchema()', () => {
       },
       '#type2': {
         type: 'object',
-        additionalProperties: false,
+        unevaluatedProperties: false,
         properties: {
           prop3: {
             type: 'string'

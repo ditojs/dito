@@ -66,10 +66,13 @@ export function convertSchema(schema, options = {}) {
       const jsonType = jsonTypes[type]
       if (jsonType) {
         schema.type = jsonType
-        if (hasConvertedProperties && !('additionalProperties' in schema)) {
-          // Invert the logic of `additionalProperties` so that it needs to be
+        if (
+          (hasConvertedProperties || schema.discriminator) &&
+          !('unevaluatedProperties' in schema)
+        ) {
+          // Invert the logic of `unevaluatedProperties` so that it needs to be
           // explicitly set to `true`:
-          schema.additionalProperties = false
+          schema.unevaluatedProperties = false
         }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
         // Date properties can be submitted both as a string or a Date object.

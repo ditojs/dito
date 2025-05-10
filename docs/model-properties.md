@@ -175,7 +175,7 @@ console:
       format: 'date-time'
     }
   },
-  additionalProperties: false,
+  unevaluatedProperties: false,
   required: ['firstName', 'lastName', 'age']
 }
 ```

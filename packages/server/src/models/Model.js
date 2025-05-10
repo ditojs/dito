@@ -343,7 +343,7 @@ export class Model extends objection.Model {
                 },
                 {}
               ),
-              additionalProperties: false
+              unevaluatedProperties: false
             },
             {
               type: 'object',
@@ -352,7 +352,7 @@ export class Model extends objection.Model {
                   type: 'string'
                 }
               },
-              additionalProperties: false
+              unevaluatedProperties: false
             }
           ]
         },
