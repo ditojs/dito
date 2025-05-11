@@ -77,9 +77,5 @@
     "vue-eslint-parser": "^10.1.3",
     "vue-eslint-parser-template-tokenizer-pug": "^1.0.0"
   },
-  "packageManager": "yarn@4.5.1",
-  "resolutions": {
-    "objection": "portal:../objection",
-    "knex": "portal:../knex"
-  }
+  "packageManager": "yarn@4.5.1"
 }
