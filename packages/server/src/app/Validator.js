@@ -3,7 +3,12 @@ import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
 import { formatJson } from '../utils/json.js'
-import * as schema from '../schema/index.js'
+import {
+  keywords as defaultKeywords,
+  formats as defaultFormats,
+  types as defaultTypes,
+  convertSchema
+} from '../schema/index.js'
 
 // Dito.js does not rely on objection.AjvValidator but instead implements its
 // own validator instance that is shared across the whole app and handles schema
@@ -14,22 +19,24 @@ import * as schema from '../schema/index.js'
 // easily validate nested structures.
 
 export class Validator extends objection.Validator {
-  constructor({ options, keywords, formats } = {}) {
+  constructor({ options, keywords, formats, types } = {}) {
     super()
 
     this.options = {
       ...defaultOptions,
       ...options
     }
-
     this.keywords = {
-      ...schema.keywords,
+      ...defaultKeywords,
       ...keywords
     }
-
     this.formats = {
-      ...schema.formats,
+      ...defaultFormats,
       ...formats
+    }
+    this.types = {
+      ...defaultTypes,
+      ...types
     }
 
     this.schemas = []
@@ -70,6 +77,13 @@ export class Validator extends objection.Validator {
         ...schema
       })
     )
+
+    addSchemas(this.types, (type, schema) => {
+      ajv.addSchema({
+        $id: type,
+        ...this.processSchema(convertSchema(schema), options)
+      })
+    })
 
     // Also add all model schemas that were already compiled so far.
     for (const schema of this.schemas) {
