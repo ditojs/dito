@@ -1,5 +1,5 @@
 export * as keywords from './keywords/index.js'
 export * as formats from './formats/index.js'
 export * as types from './types/index.js'
-export * from './properties.js'
+export * from './schema.js'
 export * from './relations.js'
