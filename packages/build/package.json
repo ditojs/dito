@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "2.49.0",
+  "version": "2.49.1",
   "type": "module",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
