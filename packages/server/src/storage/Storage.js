@@ -104,7 +104,8 @@ export class Storage {
     file.url = this._getFileUrl(file)
     // TODO: Support `config.readDimensions`, but this can only be done once
     // there are separate storage instances per model assets config!
-    return this.convertAssetFile(file)
+    this.convertAssetFile(file)
+    return file
   }
 
   async removeFile(file) {
