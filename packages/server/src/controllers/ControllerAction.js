@@ -1,4 +1,10 @@
-import { isString, isObject, asArray, clone } from '@ditojs/utils'
+import {
+  isString,
+  isObject,
+  asArray,
+  clone,
+  convertToJson
+} from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(
@@ -57,19 +63,11 @@ export default class ControllerAction {
       ...options.parameters,
       dataName: this.paramsName
     })
-    this.returns = this.app.compileParametersValidator(
-      // TODO: Shouldn't we set `this.returns` to null instead?
-      returns ? [returns] : [],
-      {
-        async: true,
-        // Use instanceof checks instead of $ref to check returned values.
-        // TODO: That doesn't guarantee the validity though...
-        // This should always be $ref checks, I think?
-        useInstanceOf: true,
-        ...options.returns, // See @returns() decorator
-        dataName: 'returns'
-      }
-    )
+    this.returns = this.app.compileParametersValidator(asArray(returns), {
+      async: true,
+      ...options.returns,
+      dataName: 'returns'
+    })
     // Copy over the additional properties, e.g. `cached` so application
     // middleware can implement caching mechanisms:
     Object.assign(this, additional)
@@ -217,18 +215,19 @@ export default class ControllerAction {
 
   async validateResult(result) {
     if (this.returns.validate) {
+      const json = convertToJson(result)
       const returnsName = this.handler.returns.name
       // Use dataName if no name is given, see:
       // Application.compileParametersValidator(returns, { dataName })
-      const data = {
-        [returnsName || this.returns.dataName]: result
+      const wrapped = {
+        [returnsName || this.returns.dataName]: json
       }
 
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => (returnsName ? data : result)
+      const getResult = () => (returnsName ? wrapped : json)
       try {
-        await this.returns.validate(data)
+        await this.returns.validate(wrapped)
         return getResult()
       } catch (error) {
         throw this.createValidationError({
