@@ -181,19 +181,21 @@ export class Model extends objection.Model {
     if (options.skipValidation) {
       return json
     }
-    if (!options.graph && !options.async) {
-      // Fall back to Objection's $validate() if we don't need any of our
-      // extensions (async and graph for now):
-      return super.$validate(json, options)
-    }
     json ||= this
     const inputJson = json
-    const shallow = json.$isObjectionModel && !options.graph
+
+    const shallow = !options.graph
     if (shallow) {
-      // Strip away relations and other internal stuff.
-      json = json.$clone({ shallow: true })
+      json = { ...json }
+      // Strip away relations.
+      for (const key of this.constructor.getRelationNames()) {
+        delete json[key]
+      }
       // We can mutate `json` now that we took a copy of it.
-      options = { ...options, mutable: true }
+      options = {
+        ...options,
+        mutable: true
+      }
     }
 
     const validator = this.constructor.getValidator()
@@ -209,7 +211,7 @@ export class Model extends objection.Model {
     const handleResult = result => {
       validator.afterValidate(args)
       // If `json` was shallow-cloned, copy over the possible default values.
-      return shallow ? inputJson.$set(result) : result
+      return shallow ? Object.assign(inputJson, result) : result
     }
     // Handle both async and sync validation here:
     return isPromise(result)
