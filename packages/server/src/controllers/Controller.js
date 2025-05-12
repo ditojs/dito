@@ -25,7 +25,8 @@ import {
   asArray,
   equals,
   parseDataPath,
-  normalizeDataPath
+  normalizeDataPath,
+  deprecate
 } from '@ditojs/utils'
 
 export class Controller {
@@ -602,9 +603,19 @@ function convertActionObject(name, object, actions) {
     transacted,
     scope,
     parameters,
+    // TODO: `returns` was deprecated in May 2025 in favour of `response`.
+    // Remove this in 2026.
     returns,
+    response = returns,
     ...rest
   } = object
+
+  if (returns) {
+    deprecate(
+      'The `returns` property is deprecated in favour of `response`. ' +
+      'Update your handler definition to use `response` instead.'
+    )
+  }
 
   // In order to support `super` calls in the `handler` function in object
   // notation, deploy this crazy JS sorcery:
@@ -621,7 +632,7 @@ function convertActionObject(name, object, actions) {
   handler.scope = scope ? asArray(scope) : null
 
   processHandlerParameters(handler, 'parameters', parameters)
-  processHandlerParameters(handler, 'returns', returns)
+  processHandlerParameters(handler, 'response', response)
 
   return Object.assign(handler, rest)
 }

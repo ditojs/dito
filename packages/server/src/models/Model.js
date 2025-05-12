@@ -784,13 +784,13 @@ export class Model extends objection.Model {
       if (deprecatedPrefixes[prefix]) {
         prefix = deprecatedPrefixes[prefix]
         deprecate(
-          `The ${
+          `The '${
             modifier
-          } modifier is deprecated, use the ${
+          }' modifier is deprecated, use the '${
             prefix
           }${
             modifier.slice(1)
-          } modifier instead.`
+          }' modifier instead.`
         )
       }
 

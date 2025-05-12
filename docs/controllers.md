@@ -66,7 +66,7 @@ export class GreetingsController extends Controller {
     },
 
     'get say-goodbye': {
-      returns: {
+      response: {
         type: 'string'
       },
       handler() {
@@ -109,7 +109,7 @@ Default actions can be defined by only providing the method name:
 
 ```js
 get: {
-  returns: ({
+  response: ({
     type: 'string'
   },
   handler() {
@@ -235,16 +235,16 @@ parameters: [{
 }]
 ```
 
-### `action.returns`
+### `action.response`
 
 Just as `action.parameters` allows mapping and validating the parameters that
-the action method receives, `action.returns` can be used to provide a schema for
+the action method receives, `action.response` can be used to provide a schema for
 the action's return value, and optionally map the value to a key inside a
 returned object.
 
 ```js
 'get say-hello': {
-  returns: {
+  response: {
     type: 'string'
   },
   handler() {
@@ -458,7 +458,7 @@ export class MyModels extends ModelController {
           required: true
         }
       },
-      returns: {
+      response: {
         type: 'string'
       },
       handler(ctx, { instance, message }) {
@@ -514,7 +514,7 @@ export class MyModels extends ModelController {
 
   collection = {
     // Let's override the default `collection.get(ctx)` method and add some
-    // additional data to its returns value.
+    // additional data to its response value.
     async get(ctx) {
       const results = await super.get(ctx)
       return {

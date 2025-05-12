@@ -1,4 +1,4 @@
-import { isObject, isFunction } from '@ditojs/utils'
+import { isObject, isFunction, deprecate } from '@ditojs/utils'
 import { processHandlerParameters } from '../../utils/handler.js'
 import { mergeReversed } from '../../utils/object.js'
 import { QueryFilters } from '../../query/index.js'
@@ -24,9 +24,22 @@ export default function filters(values) {
 function convertFilterObject(name, object) {
   const addHandlerSettings = (handler, definition) => {
     // Copy over parameters, returns and their validation options settings.
-    const { parameters, returns, ...rest } = definition
+    const {
+      parameters,
+      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
+      // Remove this in 2026.
+      returns,
+      response = returns,
+      ...rest
+    } = definition
+    if (returns) {
+      deprecate(
+        'The `returns` property is deprecated in favour of `response`. ' +
+        'Update your handler definition to use `response` instead.'
+      )
+    }
     processHandlerParameters(handler, 'parameters', parameters)
-    processHandlerParameters(handler, 'returns', returns)
+    processHandlerParameters(handler, 'response', response)
     return Object.assign(handler, rest)
   }
 
@@ -62,7 +75,7 @@ function convertFilterObject(name, object) {
 
 function wrapWithValidation(filter, name, app) {
   if (filter) {
-    // TODO: Implement `returns` validation for filters too.
+    // TODO: Implement `response` validation for filters too.
     // TODO: Share additional coercion handling with
     // `ControllerAction#coerceValue()`
     const { parameters, options = {} } = filter

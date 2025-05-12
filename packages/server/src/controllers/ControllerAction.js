@@ -3,7 +3,8 @@ import {
   isObject,
   asArray,
   clone,
-  convertToJson
+  convertToJson,
+  deprecate
 } from '@ditojs/utils'
 import { isSupportedKoaBody } from '../utils/koa.js'
 
@@ -24,10 +25,20 @@ export default class ControllerAction {
       authorize,
       transacted,
       parameters,
+      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
+      // Remove this in 2026.
       returns,
+      response = returns,
       options = {},
       ...additional
     } = handler
+
+    if (returns) {
+      deprecate(
+        'The `returns` property is deprecated in favour of `response`. ' +
+        'Update your handler definition to use `response` instead.'
+      )
+    }
 
     this.app = controller.app
     this.controller = controller
@@ -64,13 +75,16 @@ export default class ControllerAction {
       ...options.parameters,
       dataName: this.paramsName
     })
-    this.returns = this.app.compileParametersValidator(asArray(returns), {
+    this.response = this.app.compileParametersValidator(asArray(response), {
       async: true,
-      // Use patch validation for returns, as we often don't return the
+      // Use patch validation for response, as we often don't return the
       // full model with all properties, but only a subset of them.
       patch: true,
+      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
+      // Remove this in 2026.
       ...options.returns,
-      dataName: 'returns'
+      ...options.response,
+      dataName: 'response'
     })
     // Copy over the additional properties, e.g. `cached` so application
     // middleware can implement caching mechanisms:
@@ -111,10 +125,12 @@ export default class ControllerAction {
     await this.controller.handleAuthorization(this.authorization, ctx, member)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
-    const result = await this.callHandler(ctx, ...args)
-    const data = isSupportedKoaBody(result) ? result : convertToJson(result)
-    return this.validateResult(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, data)
+    const response = await this.callHandler(ctx, ...args)
+    const result = isSupportedKoaBody(response)
+      ? response
+      : convertToJson(response)
+    return this.validateResponse(
+      await this.controller.emitHook(`after:${identifier}`, true, ctx, result)
     )
   }
 
@@ -218,19 +234,19 @@ export default class ControllerAction {
     }
   }
 
-  async validateResult(result) {
-    if (this.returns.validate) {
-      const returnsName = this.handler.returns.name
-      const returnsWrapped = !!returnsName
+  async validateResponse(response) {
+    if (this.response.validate) {
+      const responseName = this.handler.response.name
+      const responseWrapped = !!responseName
       // Use dataName if no name is given, see:
-      // Application.compileParametersValidator(returns, { dataName })
-      const dataName = returnsName || this.returns.dataName
-      const wrapped = { [dataName]: result }
+      // Application.compileParametersValidator(response, { dataName })
+      const dataName = responseName || this.response.dataName
+      const wrapped = { [dataName]: response }
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => (returnsWrapped ? wrapped : result)
+      const getResult = () => (responseWrapped ? wrapped : response)
       try {
-        await this.returns.validate(wrapped)
+        await this.response.validate(wrapped)
         return getResult()
       } catch (error) {
         // If the error contains errors, add them to the validation error:
@@ -239,7 +255,7 @@ export default class ControllerAction {
         throw this.createValidationError({
           type: 'ResultValidation',
           message: 'The returned action result is not valid',
-          errors: returnsWrapped
+          errors: responseWrapped
             ? errors
             : errors.map(error => ({
                 ...error,
@@ -249,7 +265,7 @@ export default class ControllerAction {
         })
       }
     }
-    return result
+    return response
   }
 
   async collectArguments(ctx, params) {

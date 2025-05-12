@@ -980,7 +980,7 @@ export type BaseControllerActionOptions = {
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
    */
-  returns?: Schema & { name?: string }
+  response?: Schema & { name?: string }
   /**
    * The scope(s) to be applied to every query executed through the action.
    *
@@ -1778,12 +1778,12 @@ export const authorize: (
 export const parameters: (params: { [key: string]: Schema }) => Mixin
 
 /**
- * Apply the returns mixin to a controller action, in order to provide a schema
+ * Apply the response mixin to a controller action, in order to provide a schema
  * for the value returned from the action handler and optionally map the value
  * to a key inside a returned object when it contains a `name` property.
  */
-export const returns: (
-  returns: Schema & { name?: string },
+export const response: (
+  response: Schema & { name?: string },
   options: any
 ) => Mixin
 
