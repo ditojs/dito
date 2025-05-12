@@ -217,23 +217,30 @@ export default class ControllerAction {
     if (this.returns.validate) {
       const json = convertToJson(result)
       const returnsName = this.handler.returns.name
+      const returnsWrapped = !!returnsName
       // Use dataName if no name is given, see:
       // Application.compileParametersValidator(returns, { dataName })
-      const wrapped = {
-        [returnsName || this.returns.dataName]: json
-      }
-
+      const dataName = returnsName || this.returns.dataName
+      const wrapped = { [dataName]: json }
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => (returnsName ? wrapped : json)
+      const getResult = () => (returnsWrapped ? wrapped : json)
       try {
         await this.returns.validate(wrapped)
         return getResult()
       } catch (error) {
+        // If the error contains errors, add them to the validation error:
+        const { errors } = error
+        const regexp = new RegExp(`^/${dataName}`)
         throw this.createValidationError({
           type: 'ResultValidation',
           message: 'The returned action result is not valid',
-          errors: error.errors,
+          errors: returnsWrapped
+            ? errors
+            : errors.map(error => ({
+                ...error,
+                instancePath: error.instancePath.replace(regexp, '')
+              })),
           json: getResult()
         })
       }
