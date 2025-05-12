@@ -5,6 +5,7 @@ import {
   clone,
   convertToJson
 } from '@ditojs/utils'
+import { isSupportedKoaBody } from '../utils/koa.js'
 
 export default class ControllerAction {
   constructor(
@@ -111,9 +112,9 @@ export default class ControllerAction {
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     const result = await this.callHandler(ctx, ...args)
-    const json = convertToJson(result)
+    const data = isSupportedKoaBody(result) ? result : convertToJson(result)
     return this.validateResult(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, json)
+      await this.controller.emitHook(`after:${identifier}`, true, ctx, data)
     )
   }
 

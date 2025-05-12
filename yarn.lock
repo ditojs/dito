@@ -933,6 +933,7 @@ __metadata:
     eventemitter2: "npm:^6.4.9"
     file-type: "npm:^20.5.0"
     helmet: "npm:^8.1.0"
+    is-stream: "npm:^4.0.1"
     knex: "npm:^3.1.0"
     koa: "npm:^3.0.0"
     koa-bodyparser: "npm:^4.4.1"
@@ -8750,6 +8751,13 @@ __metadata:
   version: 2.0.1
   resolution: "is-stream@npm:2.0.1"
   checksum: 10/b8e05ccdf96ac330ea83c12450304d4a591f9958c11fd17bed240af8d5ffe08aedafa4c0f4cfccd4d28dc9d4d129daca1023633d5c11601a6cbc77521f6fae66
+  languageName: node
+  linkType: hard
+
+"is-stream@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "is-stream@npm:4.0.1"
+  checksum: 10/cbea3f1fc271b21ceb228819d0c12a0965a02b57f39423925f99530b4eb86935235f258f06310b67cd02b2d10b49e9a0998f5ececf110ab7d3760bae4055ad23
   languageName: node
   linkType: hard
 
