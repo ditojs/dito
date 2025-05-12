@@ -108,8 +108,9 @@ export default class ControllerAction {
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     const result = await this.callHandler(ctx, ...args)
+    const json = convertToJson(result)
     return this.validateResult(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, result)
+      await this.controller.emitHook(`after:${identifier}`, true, ctx, json)
     )
   }
 
@@ -215,16 +216,15 @@ export default class ControllerAction {
 
   async validateResult(result) {
     if (this.returns.validate) {
-      const json = convertToJson(result)
       const returnsName = this.handler.returns.name
       const returnsWrapped = !!returnsName
       // Use dataName if no name is given, see:
       // Application.compileParametersValidator(returns, { dataName })
       const dataName = returnsName || this.returns.dataName
-      const wrapped = { [dataName]: json }
+      const wrapped = { [dataName]: result }
       // If a named result is defined, return the data wrapped,
       // otherwise return the original unwrapped result object.
-      const getResult = () => (returnsWrapped ? wrapped : json)
+      const getResult = () => (returnsWrapped ? wrapped : result)
       try {
         await this.returns.validate(wrapped)
         return getResult()
