@@ -6,8 +6,9 @@ import {
   isFunction,
   isPromise,
   asArray,
-  flatten,
+  clone,
   equals,
+  flatten,
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
@@ -186,7 +187,7 @@ export class Model extends objection.Model {
 
     const shallow = !options.graph
     if (shallow) {
-      json = { ...json }
+      json = clone(json, { shallow: true })
       // Strip away relations.
       for (const key of this.constructor.getRelationNames()) {
         delete json[key]
