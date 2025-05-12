@@ -1,12 +1,4 @@
-import {
-  isString,
-  isObject,
-  asArray,
-  clone,
-  convertToJson,
-  deprecate
-} from '@ditojs/utils'
-import { isSupportedKoaBody } from '../utils/koa.js'
+import { isString, isObject, asArray, clone, deprecate } from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(
@@ -126,11 +118,8 @@ export default class ControllerAction {
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     const response = await this.callHandler(ctx, ...args)
-    const result = isSupportedKoaBody(response)
-      ? response
-      : convertToJson(response)
     return this.validateResponse(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, result)
+      await this.controller.emitHook(`after:${identifier}`, true, ctx, response)
     )
   }
 
