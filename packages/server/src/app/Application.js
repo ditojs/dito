@@ -534,6 +534,15 @@ export class Application extends Koa {
     const schema = properties
       ? convertSchema({ type: 'object', properties }, options)
       : null
+
+    // Method to recursively check the compiled JSON schema and its sub-schemas
+    // to see if it has any `$ref` references to model schemas:
+    const hasModelRefs = schema => (
+      !!this.models[schema?.$ref] ||
+      (isArray(schema) || isPlainObject(schema)) &&
+      Object.values(schema).some(hasModelRefs)
+    )
+
     const validate = this.compileValidator(schema, {
       // For parameters, always coerce types, including arrays.
       coerceTypes: 'array',
@@ -552,7 +561,10 @@ export class Application extends Koa {
       validate: validate
         ? // Use `call()` to pass ctx as context to Ajv, see passContext:
           data => validate.call(ctx, data)
-        : null
+        : null,
+      get hasModelRefs() {
+        return hasModelRefs(schema)
+      }
     }
   }
 

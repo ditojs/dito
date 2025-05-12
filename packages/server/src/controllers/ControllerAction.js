@@ -1,4 +1,11 @@
-import { isString, isObject, asArray, clone, deprecate } from '@ditojs/utils'
+import {
+  isString,
+  isObject,
+  asArray,
+  clone,
+  convertToJson,
+  deprecate
+} from '@ditojs/utils'
 
 export default class ControllerAction {
   constructor(
@@ -118,8 +125,14 @@ export default class ControllerAction {
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
     const response = await this.callHandler(ctx, ...args)
+    const result =
+      // Don't convert response to JSON if it isn't being validated (e.g. useful
+      // for streams or buffers), or if the response contains model references.
+      !this.response.validate || this.response.hasModelRefs
+        ? response
+        : convertToJson(response)
     return this.validateResponse(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, response)
+      await this.controller.emitHook(`after:${identifier}`, true, ctx, result)
     )
   }
 
