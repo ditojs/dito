@@ -65,6 +65,9 @@ export default class ControllerAction {
     })
     this.returns = this.app.compileParametersValidator(asArray(returns), {
       async: true,
+      // Use patch validation for returns, as we often don't return the
+      // full model with all properties, but only a subset of them.
+      patch: true,
       ...options.returns,
       dataName: 'returns'
     })

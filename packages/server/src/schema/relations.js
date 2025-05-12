@@ -275,15 +275,11 @@ export function addRelationSchemas(modelClass, properties) {
     const anyOf = []
     if (isOneToOne) {
       // Allow null-value on one-to-one relations
-      anyOf.push({
-        type: 'null'
-      })
+      anyOf.push({ type: 'null' })
     }
     if (!owner) {
       // Allow reference objects for relations that don't own their data.
-      anyOf.push({
-        relate: $ref
-      })
+      anyOf.push({ relate: $ref })
     }
     // Finally the model itself
     anyOf.push({ $ref })
