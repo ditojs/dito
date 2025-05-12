@@ -8,11 +8,12 @@
   "license": "MIT",
   "module": "./dist/dito-admin.es.js",
   "main": "./dist/dito-admin.umd.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "import": "./dist/dito-admin.es.js",
-      "require": "./dist/dito-admin.umd.js",
-      "types": "./types/index.d.ts"
+      "require": "./dist/dito-admin.umd.js"
     },
     "./style.css": "./dist/dito-admin.css",
     "./src": "./src/index.js",
@@ -88,6 +89,5 @@
     "@ditojs/build": "^2.49.1",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
-  },
-  "types": "./types/index.d.ts"
+  }
 }
