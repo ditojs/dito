@@ -5,7 +5,7 @@ import vueParser from 'vue-eslint-parser'
 import tsParser from '@typescript-eslint/parser'
 import pluginJs from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import pluginVuePug from 'eslint-plugin-vue-pug/flat'
+import pluginVuePug from 'eslint-plugin-vue-pug'
 import pluginImport from 'eslint-plugin-import'
 import pluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 
@@ -24,9 +24,10 @@ const globalsBrowser = {
 export default [
   {
     ignores: [
-      'node_modules/**/*',
+      '**/node_modules/**/*',
       'packages/**/dist/**/*',
-      'packages/**/*.test.js.snap'
+      'packages/**/*.test.js.snap',
+      '**/.DS_Store'
     ]
   },
   {
@@ -35,7 +36,7 @@ export default [
   pluginJs.configs.recommended,
   pluginPrettierRecommended,
   ...pluginVue.configs['flat/recommended'],
-  pluginVuePug.configs['vue3-recommended'],
+  ...pluginVuePug.configs['flat/recommended'],
   pluginImport.flatConfigs.errors,
   pluginImport.flatConfigs.typescript,
   {
@@ -303,6 +304,17 @@ function getVueRules() {
     'vue/multi-word-component-names': 'off',
     'vue/no-v-html': 'off',
     'vue/no-v-text-v-html-on-component': 'off',
+    'vue/html-indent': [
+      'error',
+      2,
+      {
+        attribute: 1,
+        baseIndent: 0,
+        closeBracket: 0,
+        alignAttributesVertically: true,
+        ignores: []
+      }
+    ],
     // prettier/plugin-pug handles this:
     'vue/html-quotes': 'off'
   }

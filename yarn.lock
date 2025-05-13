@@ -5984,7 +5984,7 @@ __metadata:
     eslint-plugin-prettier: "npm:^5.4.0"
     eslint-plugin-promise: "npm:^7.2.1"
     eslint-plugin-vue: "npm:^10.1.0"
-    eslint-plugin-vue-pug: "https://github.com/lineto/eslint-plugin-vue-pug.git#commit=6d91caa45b8897732a9c76b169e63486a478f57b"
+    eslint-plugin-vue-pug: "npm:^1.0.0-alpha.3"
     full-icu: "npm:^1.5.0"
     husky: "npm:^9.1.7"
     lerna: "npm:^8.2.2"
@@ -6843,14 +6843,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-vue-pug@https://github.com/lineto/eslint-plugin-vue-pug.git#commit=6d91caa45b8897732a9c76b169e63486a478f57b":
-  version: 0.6.2
-  resolution: "eslint-plugin-vue-pug@https://github.com/lineto/eslint-plugin-vue-pug.git#commit=6d91caa45b8897732a9c76b169e63486a478f57b"
+"eslint-plugin-vue-pug@npm:^1.0.0-alpha.3":
+  version: 1.0.0-alpha.3
+  resolution: "eslint-plugin-vue-pug@npm:1.0.0-alpha.3"
   dependencies:
-    vue-eslint-parser-template-tokenizer-pug: "npm:^0.4.11"
+    vue-eslint-parser-template-tokenizer-pug: "npm:^1.0.0"
   peerDependencies:
-    eslint-plugin-vue: ^9.8.0
-  checksum: 10/f0ea5034e0ef4421f6081bbf51c027c588b52f1f7937bd293b96105e268714310e4d22d5b4526717c314d080a4289c2aeacc3deacb9dbc1d30555fb4b5a21633
+    eslint-plugin-vue: ^10.0.0
+  checksum: 10/2f499fc1d516e3db2d5f8780af59b76f62d2d3a896032d8e3831d60c198a713e4722fe120427e22c5e38ae82735c4ee1e78f1fb44cc5f489ab01928e20e1a669
   languageName: node
   linkType: hard
 
@@ -14362,17 +14362,6 @@ __metadata:
   version: 3.0.8
   resolution: "vscode-uri@npm:3.0.8"
   checksum: 10/e882d6b679e0d053cbc042893c0951a135d899a192b62cd07f0a8924f11ae722067a8d6b1b5b147034becf57faf9fff9fb543b17b749fd0f17db1f54f783f07c
-  languageName: node
-  linkType: hard
-
-"vue-eslint-parser-template-tokenizer-pug@npm:^0.4.11":
-  version: 0.4.11
-  resolution: "vue-eslint-parser-template-tokenizer-pug@npm:0.4.11"
-  dependencies:
-    pug-lexer: "npm:^5.0.1"
-  peerDependencies:
-    vue-eslint-parser: ^9.0.0
-  checksum: 10/4f4861aaf24fac8b3209ba7a8a58352522c146da1033bd09a37c91c5f01d1b43e68af8af81adeda79a146bad7e21285ea574f85387d81bc2ab1d24d35c4b169e
   languageName: node
   linkType: hard
 
