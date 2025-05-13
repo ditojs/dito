@@ -25,7 +25,8 @@
     "types/"
   ],
   "scripts": {
-    "build": "vite build",
+    "vite": "node --disable-warning=DEP0040 $(yarn bin vite)",
+    "build": "yarn vite build",
     "watch": "yarn build --mode 'development' --watch",
     "prepare": "yarn build",
     "types": "tsc --noEmit types/index.d.ts"
