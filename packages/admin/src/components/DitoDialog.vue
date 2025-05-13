@@ -186,7 +186,7 @@ export default DitoComponent.component('DitoDialog', {
   justify-content: center;
   // Prevent scrolling of the page behind the dialog:
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgb(0, 0, 0, 0.2);
 
   &__focus-trap {
     display: flex;
@@ -202,7 +202,7 @@ export default DitoComponent.component('DitoDialog', {
     border-radius: $border-radius;
     max-width: var(--width, 480px);
     max-height: 100%;
-    box-shadow: 0 20px 60px -2px rgba(27, 33, 58, 0.4);
+    box-shadow: 0 20px 60px -2px rgb(27, 33, 58, 0.4);
   }
 }
 

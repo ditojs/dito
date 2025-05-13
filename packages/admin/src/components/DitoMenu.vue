@@ -151,7 +151,7 @@ export default DitoComponent.component('DitoMenu', {
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: rgb(255, 255, 255, 0.5);
     }
 
     &.dito-active {

@@ -481,7 +481,7 @@ function addRoutes(router, routes) {
   width: 100%;
   height: 100%;
   z-index: $z-index-drag-overlay;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgb(0, 0, 0, 0.25);
   pointer-events: none;
   backdrop-filter: blur(8px);
 }
@@ -492,7 +492,7 @@ function addRoutes(router, routes) {
   background: $content-color-background;
   border-radius: $border-radius;
   z-index: $z-index-drag-overlay + 1;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, var(--shadow-alpha)));
+  filter: drop-shadow(0 4px 8px rgb(0, 0, 0, var(--shadow-alpha)));
 }
 
 .dito-drag-enter-active,
