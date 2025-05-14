@@ -96,20 +96,18 @@ export class Validator extends objection.Validator {
   getAjv(options = {}) {
     // Cache Ajv instances by keys that represent their options. For improved
     // matching, convert options to a version with all default values missing:
-    const opts = Object.entries(options).reduce((opts, [key, value]) => {
-      if (key in validatorOptions && value !== validatorOptions[key]) {
-        opts[key] = value
-      }
-      return opts
-    }, {})
-    const cacheKey = formatJson(opts, false)
-    const { ajv } = (
-      this.ajvCache[cacheKey] ||
-      (this.ajvCache[cacheKey] = {
-        ajv: this.createAjv(opts),
-        options
-      })
+    const filteredOptions = Object.fromEntries(
+      Object.entries(options).filter(
+        ([key, value]) => (
+          key in validatorOptions && value !== validatorOptions[key]
+        )
+      )
     )
+    const cacheKey = formatJson(filteredOptions, false)
+    const { ajv } = (this.ajvCache[cacheKey] ??= {
+      ajv: this.createAjv(filteredOptions),
+      options: filteredOptions
+    })
     return ajv
   }
 
@@ -205,6 +203,9 @@ export class Validator extends objection.Validator {
     })
     if (async) {
       schema.$async = true
+      for (const definition of Object.values(schema.definitions || {})) {
+        definition.$async = true
+      }
     }
     return schema
   }
