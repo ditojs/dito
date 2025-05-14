@@ -29,10 +29,10 @@
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
-      "NODE_ENV=production eslint --max-warnings 0"
+      "env NODE_ENV=production eslint --max-warnings 0"
     ],
     "packages/**/src/**/*.vue": [
-      "NODE_ENV=production eslint --max-warnings 0",
+      "env NODE_ENV=production eslint --max-warnings 0",
       "stylelint"
     ],
     "packages/**/src/**/*.scss": [
