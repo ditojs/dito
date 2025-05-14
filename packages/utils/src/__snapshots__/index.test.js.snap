@@ -9,7 +9,6 @@ exports[`index > exports all symbols 1`] = `
   "camelize": [Function],
   "capitalize": [Function],
   "clone": [Function],
-  "convertToJson": [Function],
   "debounce": [Function],
   "debounceAsync": [Function],
   "decamelize": [Function],
