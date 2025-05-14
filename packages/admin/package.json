@@ -70,7 +70,7 @@
     "@tiptap/extension-underline": "^2.12.0",
     "@tiptap/pm": "^2.12.0",
     "@tiptap/vue-3": "^2.12.0",
-    "@vueuse/integrations": "^13.1.0",
+    "@vueuse/integrations": "^13.2.0",
     "codeflask": "^1.4.1",
     "filesize": "^10.1.6",
     "filesize-parser": "^1.5.1",
