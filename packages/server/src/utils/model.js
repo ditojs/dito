@@ -1,4 +1,4 @@
-import { isArray, isPlainObject } from '@ditojs/utils'
+import { isPlainObject, isPlainArray } from '@ditojs/utils'
 
 /**
  * Converts Models to their external representation by calling the `$toJson()`
@@ -13,7 +13,7 @@ export function convertModelsToJson(value) {
     ? value.$toJson()
     : isPlainObject(value)
       ? convertToJsonObject(value)
-      : isArray(value)
+      : isPlainArray(value)
         ? convertToJsonArray(value)
         : value
 }

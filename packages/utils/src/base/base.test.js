@@ -1,5 +1,6 @@
 import {
   isPlainObject,
+  isPlainArray,
   isObject,
   isArray,
   isModule,
@@ -23,6 +24,7 @@ import * as module from './index.js'
 
 const object = { a: 1 }
 const array = [1, 2, 3]
+const arrayLike = { 0: 1, 1: 2, 2: 3, length: 3 }
 const string = 'a'
 const number = 1
 const boolean = true
@@ -42,6 +44,7 @@ describe('isPlainObject()', () => {
     [module, false],
     [object, true],
     [array, false],
+    [arrayLike, true],
     [string, false],
     [number, false],
     [boolean, false],
@@ -64,12 +67,42 @@ describe('isPlainObject()', () => {
   )
 })
 
+describe('isPlainArray()', () => {
+  describe.each([
+    [null, false],
+    [module, false],
+    [object, false],
+    [array, true],
+    [arrayLike, false],
+    [string, false],
+    [number, false],
+    [boolean, false],
+    [date, false],
+    [regexp, false],
+    [symbol, false],
+    [instance, false],
+    [promise, false],
+    [func, false],
+    [lambda, false],
+    [asyncFunc, false],
+    [asyncLambda, false]
+  ])(
+    'isPlainArray(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isPlainArray(value)).toBe(expected)
+      })
+    }
+  )
+})
+
 describe('isObject()', () => {
   describe.each([
     [null, false],
     [module, true],
     [object, true],
     [array, false],
+    [arrayLike, true],
     [string, false],
     [number, false],
     [boolean, false],
@@ -101,6 +134,7 @@ describe('isArray()', () => {
     [module, false],
     [object, false],
     [array, true],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -129,6 +163,7 @@ describe('isModule()', () => {
     [module, true],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -157,6 +192,7 @@ describe('isFunction()', () => {
     [module, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -185,6 +221,7 @@ describe('isNumber()', () => {
     [module, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, true],
     [Object(number), true],
@@ -214,6 +251,7 @@ describe('isInteger()', () => {
     [module, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, true],
     [boolean, false],
@@ -270,6 +308,7 @@ describe('isString()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, true],
     [Object(string), true],
     [number, false],
@@ -298,6 +337,7 @@ describe('isBoolean()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, true],
@@ -326,6 +366,7 @@ describe('isDate()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -353,6 +394,7 @@ describe('isRegExp()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -388,6 +430,7 @@ describe('isPromise()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -417,6 +460,7 @@ describe('isAsync()', () => {
     [null, false],
     [object, false],
     [array, false],
+    [arrayLike, false],
     [string, false],
     [number, false],
     [boolean, false],
@@ -444,6 +488,7 @@ describe('isArrayLike()', () => {
     [null, false],
     [object, false],
     [array, true],
+    [arrayLike, true],
     [string, true],
     [number, false],
     [boolean, false],

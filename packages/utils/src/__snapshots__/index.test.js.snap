@@ -58,6 +58,7 @@ exports[`index > exports all symbols 1`] = `
   "isModule": [Function],
   "isNumber": [Function],
   "isObject": [Function],
+  "isPlainArray": [Function],
   "isPlainObject": [Function],
   "isPromise": [Function],
   "isRegExp": [Function],
