@@ -27,8 +27,8 @@ export async function down(knex) {
 
 The entire documentation can be found in the Knex documentation in the section
 schema builder. Knex keeps track of migrations in the database therefore
-deleting or renaming migration files might leed to you having to reset the
-databse in case of further migrations.
+deleting or renaming migration files might lead to you having to reset the
+database in case of further migrations.
 
 All migration files are executed with this command (uses Knex *latest* method):
 

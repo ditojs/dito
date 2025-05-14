@@ -221,7 +221,7 @@ is thrown, and direct database references are assumed.
 ### Extra Properties
 
 When working with a join model class or table, extra columns from it can be
-added to the related model, as if it was define on its own table. The then
+added to the related model, as if it was define on its own table. They then
 appear as additional properties on the related model:
 
 ```js

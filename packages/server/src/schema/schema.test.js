@@ -147,7 +147,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it(`expands 'object' schemas with properties to JSON schemas allowing no additional properties`, () => {
+  it(`expands 'object' schemas with properties to JSON schemas allowing no unevaluated properties`, () => {
     expect(
       convertSchema({
         type: 'object',
@@ -171,7 +171,7 @@ describe('convertSchema()', () => {
     })
   })
 
-  it('preserves pre-existing settings for no additional properties', () => {
+  it('preserves pre-existing settings for no unevaluated properties', () => {
     expect(
       convertSchema({
         type: 'object',
