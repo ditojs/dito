@@ -64,6 +64,7 @@ export class Application extends Koa {
   #logger
 
   constructor({
+    basePath = process.cwd(),
     config = {},
     validator,
     router,
@@ -74,6 +75,7 @@ export class Application extends Koa {
     controllers
   } = {}) {
     super()
+    this.basePath = basePath
     this._configureEmitter(events)
     const {
       // Pluck keys out of `config.app` to keep them secret
@@ -430,9 +432,8 @@ export class Application extends Koa {
   }
 
   async loadAdminViteConfig() {
-    const cwd = process.cwd()
     for (const extension of ['js', 'mjs', 'cjs', 'ts']) {
-      const file = path.join(cwd, `admin.vite.config.${extension}`)
+      const file = path.join(this.basePath, `admin.vite.config.${extension}`)
       try {
         await fs.access(file)
         return (await import(file)).default

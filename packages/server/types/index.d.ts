@@ -352,6 +352,7 @@ interface AsyncRequestLocals {
 
 export class Application<$Models extends Models = Models> {
   constructor(options: {
+    basePath?: string
     config?: ApplicationConfig
     validator?: Validator
     // TODO: router types

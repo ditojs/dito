@@ -6,7 +6,7 @@ import pluralize from 'pluralize'
 import { isFunction, isArray, camelize } from '@ditojs/utils'
 
 export async function seed(app) {
-  const seedDir = path.join(process.cwd(), 'seeds')
+  const seedDir = path.join(app.basePath, 'seeds')
   const files = await fs.readdir(seedDir)
   const seeds = []
   // Create a lookup table with sort indices per model name.

@@ -164,7 +164,6 @@ export class AdminController extends Controller {
   defineViteConfig(config = {}) {
     const isDevelopment = this.mode === 'development'
 
-    const cwd = process.cwd()
     const root = this.getPath('root')
     const base = `${this.url}/`
     const views = path.join(root, 'views')
@@ -205,10 +204,10 @@ export class AdminController extends Controller {
                 chunkSizeWarningLimit: 1000,
                 rollupOptions: {
                   output: {
-                    manualChunks(id) {
+                    manualChunks: id => {
                       if (id.startsWith(views)) {
                         return 'views'
-                      } else if (id.startsWith(cwd)) {
+                      } else if (id.startsWith(this.app.basePath)) {
                         return 'common'
                       } else {
                         const module = id.match(

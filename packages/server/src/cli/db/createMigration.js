@@ -21,9 +21,8 @@ const defaultValues = {
   'now()': `knex.raw('CURRENT_TIMESTAMP')`
 }
 
-const migrationDir = path.join(process.cwd(), 'migrations')
-
 export async function createMigration(app, name, ...modelNames) {
+  const migrationDir = path.join(app.basePath, 'migrations')
   const models = modelNames.map(modelName => {
     const modelClass = app.models[modelName]
     if (!modelClass) {

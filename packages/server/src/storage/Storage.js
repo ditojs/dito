@@ -136,7 +136,7 @@ export class Storage {
 
   _getPath(...parts) {
     return this.path
-      ? path.join(this.path, ...parts)
+      ? path.resolve(this.app.basePath, this.path, ...parts)
       : undefined // So that it doesn't show up in JSON data.
   }
 
