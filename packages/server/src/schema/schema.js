@@ -1,17 +1,42 @@
 import { isObject, isArray, isString, equals } from '@ditojs/utils'
 
-export function convertSchema(schema, options = {}) {
+const schemaCaches = {}
+
+function getSchemaCache(options) {
+  const key = Object.entries(options || {})
+    .toSorted()
+    .map(([key, value]) => `${key}:${value}`)
+    .join(',') || 'default'
+  return (schemaCaches[key] ||= new WeakMap())
+}
+
+export function convertSchema(schema, options = {}, rootDefinitions = null) {
+  const original = schema
+
+  const schemaCache = getSchemaCache(options)
+  if (schemaCache.has(original)) {
+    const { schema, definitions } = schemaCache.get(original)
+    mergeDefinitions(rootDefinitions, definitions)
+    return schema
+  }
+
+  let definitions = null
   if (isArray(schema)) {
     // Needed for allOf, anyOf, oneOf, not, items, see below:
-    schema = schema.map(entry => convertSchema(entry, options))
+    schema = schema.map(entry => convertSchema(entry, options, rootDefinitions))
   } else if (isObject(schema)) {
+    const isRoot = rootDefinitions === null
+    rootDefinitions ??= {}
+
     // Create a shallow clone so we can modify and return:
     // Also collect and propagate the definitions up to the root schema through
     // `options.definitions`, as passed from `Model static get jsonSchema()`:
-    const { definitions, ...rest } = schema
-    mergeDefinitions(options.definitions, definitions, options)
+    const { definitions: defs, ...rest } = schema
+    definitions = defs
     schema = rest
     const { $ref, type } = schema
+    const jsonType = jsonTypes[type]
+
     if (schema.required === true) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
       // format instead that only validates if the required value is not empty,
@@ -21,37 +46,22 @@ export function convertSchema(schema, options = {}) {
       schema = addFormat(schema, 'required')
     }
 
-    // Convert properties
-    let hasConvertedProperties = false
-    if (schema.properties) {
-      const { properties, required } = convertProperties(
-        schema.properties,
-        options
-      )
-      schema.properties = properties
-      if (required.length > 0) {
-        schema.required = required
-      }
-      hasConvertedProperties = true
-    }
-    if (schema.patternProperties) {
-      // TODO: Don't we need to handle required here too?
-      const { properties } = convertProperties(
-        schema.patternProperties,
-        options
-      )
-      schema.patternProperties = properties
-      hasConvertedProperties = true
-    }
-
     // Convert array items
-    schema.prefixItems &&= convertSchema(schema.prefixItems, options)
-    schema.items &&= convertSchema(schema.items, options)
+    schema.prefixItems &&= convertSchema(
+      schema.prefixItems,
+      options,
+      rootDefinitions
+    )
+    schema.items &&= convertSchema(
+      schema.items,
+      options,
+      rootDefinitions
+    )
 
     // Handle nested allOf, anyOf, oneOf & co. fields
     for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
       if (key in schema) {
-        schema[key] = convertSchema(schema[key], options)
+        schema[key] = convertSchema(schema[key], options, rootDefinitions)
       }
     }
 
@@ -62,18 +72,8 @@ export function convertSchema(schema, options = {}) {
         ? `#/definitions/${$ref}`
         : $ref
     } else if (isString(type)) {
-      // Convert schema property notation to JSON schema
-      const jsonType = jsonTypes[type]
       if (jsonType) {
         schema.type = jsonType
-        if (
-          (hasConvertedProperties || schema.discriminator) &&
-          !('unevaluatedProperties' in schema)
-        ) {
-          // Invert the logic of `unevaluatedProperties` so that it needs to be
-          // explicitly set to `true`:
-          schema.unevaluatedProperties = false
-        }
       } else if (['date', 'datetime', 'timestamp'].includes(type)) {
         // Date properties can be submitted both as a string or a Date object.
         // Provide validation through date-time format, which in Ajv appears
@@ -114,44 +114,108 @@ export function convertSchema(schema, options = {}) {
     if (schema.nullable && schema.enum && !schema.enum.includes(null)) {
       schema.enum.push(null)
     }
+
+    // Only convert properties after the schema is remembered, to avoid endless
+    // recursion in circular schema definitions.
+    let hasConvertedProperties = false
+    if (schema.properties) {
+      const { properties, required } = convertProperties(
+        schema.properties,
+        options,
+        rootDefinitions
+      )
+      schema.properties = properties
+      if (required.length > 0) {
+        schema.required = required
+      }
+      hasConvertedProperties = true
+    }
+    if (schema.patternProperties) {
+      // TODO: Don't we need to handle required here too?
+      const { properties } = convertProperties(
+        schema.patternProperties,
+        options,
+        rootDefinitions
+      )
+      schema.patternProperties = properties
+      hasConvertedProperties = true
+    }
+    if (
+      jsonType &&
+      (hasConvertedProperties || schema.discriminator) &&
+      !('unevaluatedProperties' in schema)
+    ) {
+      // Invert the logic of `unevaluatedProperties` so that it needs to be
+      // explicitly set to `true`:
+      schema.unevaluatedProperties = false
+    }
+
+    if (isRoot && hasDefinitions(rootDefinitions)) {
+      schema.definitions = rootDefinitions
+    }
   }
+
+  const entry = { schema, definitions: null }
+  schemaCache.set(original, entry)
+
+  // To prevent circular references, we need to convert the definitions
+  // after the schema entry is cached.
+  if (definitions) {
+    definitions = convertDefinitions(definitions, options)
+    mergeDefinitions(rootDefinitions, definitions)
+    entry.definitions = definitions
+  }
+
   return schema
 }
 
-function convertProperties(schemaProperties, options) {
+function convertProperties(schemaProperties, options, definitions = {}) {
   const properties = {}
   const required = []
   for (const [key, property] of Object.entries(schemaProperties)) {
-    properties[key] = convertSchema(property, options)
+    properties[key] = convertSchema(property, options, definitions)
     if (property?.required) {
       required.push(key)
     }
   }
-  return { properties, required }
+  return { properties, required, definitions }
 }
 
-function mergeDefinitions(definitions, defs, options) {
+function hasDefinitions(definitions) {
+  return definitions && Object.keys(definitions).length > 0
+}
+
+function convertDefinitions(definitions, options) {
+  const converted = {}
+  for (const [key, schema] of Object.entries(definitions)) {
+    if (!key.startsWith('#')) {
+      throw new Error(
+        `Invalid definition '${
+          key
+        }', the name of nested Dito.js definitions must start with '#': ${
+          JSON.stringify(schema)
+        }`
+      )
+    }
+    converted[key] = convertSchema(schema, options, converted)
+  }
+  return hasDefinitions(converted) ? converted : null
+}
+
+function mergeDefinitions(definitions, defs) {
   if (definitions && defs) {
     for (const [key, def] of Object.entries(defs)) {
-      if (!key.startsWith('#')) {
-        throw new Error(
-          `Invalid definition '${
-            key
-          }', the name of nested Dito.js definitions must start with '#': ${
-            JSON.stringify(def)
-          }`
-        )
-      }
       const definition = definitions[key]
-      const converted = convertSchema(def, options)
-      if (definition && !equals(definition, converted)) {
+      if (definition && !equals(definition, def)) {
         throw new Error(
           `Duplicate nested definition for '${key}' with different schema: ${
-            JSON.stringify(def)
+            JSON.stringify(def, null, 2)
+          }, ${
+            JSON.stringify(definition, null, 2)
           }`
         )
       }
-      definitions[key] = converted
+      definitions[key] = def
     }
   }
 }
