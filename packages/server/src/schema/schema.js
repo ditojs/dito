@@ -10,24 +10,42 @@ function getSchemaCache(options) {
   return (schemaCaches[key] ||= new WeakMap())
 }
 
-export function convertSchema(schema, options = {}, rootDefinitions = null) {
+export function convertSchema(
+  schema,
+  options = {},
+  parentEntry = null
+) {
   const original = schema
+  const isRoot = parentEntry === null
 
   const schemaCache = getSchemaCache(options)
   if (schemaCache.has(original)) {
-    const { schema, definitions } = schemaCache.get(original)
-    mergeDefinitions(rootDefinitions, definitions)
+    const { schema, definitions, parentEntries } = schemaCache.get(original)
+    parentEntries.push(parentEntry)
+    if (definitions) {
+      if (isRoot) {
+        return { ...schema, definitions }
+      } else {
+        mergeDefinitions(parentEntry.definitions, definitions)
+      }
+    }
     return schema
   }
+
+  const entry = {
+    schema: null,
+    definitions: {},
+    parentEntries: parentEntry ? [parentEntry] : []
+  }
+
+  // To prevent circular references, cache the entry before all conversion work.
+  schemaCache.set(original, entry)
 
   let definitions = null
   if (isArray(schema)) {
     // Needed for allOf, anyOf, oneOf, not, items, see below:
-    schema = schema.map(entry => convertSchema(entry, options, rootDefinitions))
+    schema = schema.map(item => convertSchema(item, options, entry))
   } else if (isObject(schema)) {
-    const isRoot = rootDefinitions === null
-    rootDefinitions ??= {}
-
     // Create a shallow clone so we can modify and return:
     // Also collect and propagate the definitions up to the root schema through
     // `options.definitions`, as passed from `Model static get jsonSchema()`:
@@ -47,21 +65,13 @@ export function convertSchema(schema, options = {}, rootDefinitions = null) {
     }
 
     // Convert array items
-    schema.prefixItems &&= convertSchema(
-      schema.prefixItems,
-      options,
-      rootDefinitions
-    )
-    schema.items &&= convertSchema(
-      schema.items,
-      options,
-      rootDefinitions
-    )
+    schema.prefixItems &&= convertSchema(schema.prefixItems, options, entry)
+    schema.items &&= convertSchema(schema.items, options, entry)
 
     // Handle nested allOf, anyOf, oneOf & co. fields
     for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
       if (key in schema) {
-        schema[key] = convertSchema(schema[key], options, rootDefinitions)
+        schema[key] = convertSchema(schema[key], options, entry)
       }
     }
 
@@ -115,14 +125,15 @@ export function convertSchema(schema, options = {}, rootDefinitions = null) {
       schema.enum.push(null)
     }
 
-    // Only convert properties after the schema is remembered, to avoid endless
-    // recursion in circular schema definitions.
+    // Convert properties last. This is needed for circular references
+    // to work correctly, as the properties may reference the same schema
+    // that is being converted right now.
     let hasConvertedProperties = false
     if (schema.properties) {
       const { properties, required } = convertProperties(
         schema.properties,
         options,
-        rootDefinitions
+        entry
       )
       schema.properties = properties
       if (required.length > 0) {
@@ -135,7 +146,7 @@ export function convertSchema(schema, options = {}, rootDefinitions = null) {
       const { properties } = convertProperties(
         schema.patternProperties,
         options,
-        rootDefinitions
+        entry
       )
       schema.patternProperties = properties
       hasConvertedProperties = true
@@ -149,44 +160,45 @@ export function convertSchema(schema, options = {}, rootDefinitions = null) {
       // explicitly set to `true`:
       schema.unevaluatedProperties = false
     }
-
-    if (isRoot && hasDefinitions(rootDefinitions)) {
-      schema.definitions = rootDefinitions
-    }
   }
 
-  const entry = { schema, definitions: null }
-  schemaCache.set(original, entry)
+  entry.schema = schema
 
-  // To prevent circular references, we need to convert the definitions
-  // after the schema entry is cached.
+  // Only convert definitions once `entry.schema` is set, so that it works as
+  // expected with circular references.
   if (definitions) {
-    definitions = convertDefinitions(definitions, options)
-    mergeDefinitions(rootDefinitions, definitions)
-    entry.definitions = definitions
+    mergeDefinitions(
+      entry.definitions,
+      convertDefinitions(definitions, options, entry)
+    )
+  }
+
+  if (Object.keys(entry.definitions).length > 0) {
+    // Propagate the definitions up the parent entry chains, that due to
+    // circular references may not be up to date yet.
+    mergeDefinitionsRecursively(entry, entry.definitions)
+    if (isRoot) {
+      schema.definitions = entry.definitions
+    }
   }
 
   return schema
 }
 
-function convertProperties(schemaProperties, options, definitions = {}) {
+function convertProperties(schemaProperties, options, entry) {
   const properties = {}
   const required = []
   for (const [key, property] of Object.entries(schemaProperties)) {
-    properties[key] = convertSchema(property, options, definitions)
+    properties[key] = convertSchema(property, options, entry)
     if (property?.required) {
       required.push(key)
     }
   }
-  return { properties, required, definitions }
+  return { properties, required }
 }
 
-function hasDefinitions(definitions) {
-  return definitions && Object.keys(definitions).length > 0
-}
-
-function convertDefinitions(definitions, options) {
-  const converted = {}
+function convertDefinitions(definitions, options, entry) {
+  let converted = null
   for (const [key, schema] of Object.entries(definitions)) {
     if (!key.startsWith('#')) {
       throw new Error(
@@ -197,25 +209,41 @@ function convertDefinitions(definitions, options) {
         }`
       )
     }
-    converted[key] = convertSchema(schema, options, converted)
+    converted ??= {}
+    converted[key] = convertSchema(schema, options, entry)
   }
-  return hasDefinitions(converted) ? converted : null
+  return converted
 }
 
 function mergeDefinitions(definitions, defs) {
-  if (definitions && defs) {
-    for (const [key, def] of Object.entries(defs)) {
-      const definition = definitions[key]
-      if (definition && !equals(definition, def)) {
-        throw new Error(
-          `Duplicate nested definition for '${key}' with different schema: ${
-            JSON.stringify(def, null, 2)
-          }, ${
-            JSON.stringify(definition, null, 2)
-          }`
-        )
-      }
-      definitions[key] = def
+  for (const [key, def] of Object.entries(defs)) {
+    const definition = definitions[key]
+    if (definition && !equals(definition, def)) {
+      throw new Error(
+        `Duplicate nested definition for '${key}' with different schema: ${
+          JSON.stringify(def, null, 2)
+        }, ${
+          JSON.stringify(definition, null, 2)
+        }`
+      )
+    }
+    definitions[key] ??= def
+  }
+}
+
+function mergeDefinitionsRecursively(
+  entry,
+  definitions,
+  visited = new WeakSet()
+) {
+  if (!visited.has(entry)) {
+    visited.add(entry)
+
+    if (definitions !== entry.definitions) {
+      mergeDefinitions(entry.definitions, definitions)
+    }
+    for (const parentEntry of entry.parentEntries) {
+      mergeDefinitionsRecursively(parentEntry, definitions, visited)
     }
   }
 }
