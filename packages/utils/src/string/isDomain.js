@@ -1,4 +1,4 @@
-import punycode from 'punycode'
+import punycode from 'punycode/punycode.js'
 
 // Best effort approach, allowing Internationalized domain name (with punycode)
 const domainRegExp =
