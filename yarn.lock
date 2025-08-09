@@ -771,13 +771,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ditojs/admin@npm:^2.54.0, @ditojs/admin@workspace:packages/admin":
+"@ditojs/admin@npm:^2.55.0, @ditojs/admin@workspace:packages/admin":
   version: 0.0.0-use.local
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
-    "@ditojs/build": "npm:^2.54.0"
-    "@ditojs/ui": "npm:^2.54.0"
-    "@ditojs/utils": "npm:^2.53.0"
+    "@ditojs/build": "npm:^2.55.0"
+    "@ditojs/ui": "npm:^2.55.0"
+    "@ditojs/utils": "npm:^2.55.0"
     "@kyvg/vue3-notification": "npm:^3.4.1"
     "@lk77/vue3-color": "npm:^3.0.6"
     "@tiptap/core": "npm:^2.26.1"
@@ -824,11 +824,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/build@npm:^2.54.0, @ditojs/build@workspace:packages/build":
+"@ditojs/build@npm:^2.55.0, @ditojs/build@workspace:packages/build":
   version: 0.0.0-use.local
   resolution: "@ditojs/build@workspace:packages/build"
   dependencies:
-    "@ditojs/utils": "npm:^2.53.0"
+    "@ditojs/utils": "npm:^2.55.0"
     "@vitejs/plugin-vue": "npm:^6.0.1"
     autoprefixer: "npm:^10.4.21"
     mime: "npm:^4.0.7"
@@ -847,11 +847,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/router@npm:^2.53.0, @ditojs/router@workspace:packages/router":
+"@ditojs/router@npm:^2.55.0, @ditojs/router@workspace:packages/router":
   version: 0.0.0-use.local
   resolution: "@ditojs/router@workspace:packages/router"
   dependencies:
-    "@ditojs/utils": "npm:^2.53.0"
+    "@ditojs/utils": "npm:^2.55.0"
   languageName: unknown
   linkType: soft
 
@@ -861,10 +861,10 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.832.0"
     "@aws-sdk/lib-storage": "npm:^3.832.0"
-    "@ditojs/admin": "npm:^2.54.0"
-    "@ditojs/build": "npm:^2.54.0"
-    "@ditojs/router": "npm:^2.53.0"
-    "@ditojs/utils": "npm:^2.53.0"
+    "@ditojs/admin": "npm:^2.55.0"
+    "@ditojs/build": "npm:^2.55.0"
+    "@ditojs/router": "npm:^2.55.0"
+    "@ditojs/utils": "npm:^2.55.0"
     "@koa/cors": "npm:^5.0.0"
     "@koa/multer": "npm:^4.0.0"
     "@originjs/vite-plugin-commonjs": "npm:^1.0.3"
@@ -924,18 +924,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ditojs/ui@npm:^2.54.0, @ditojs/ui@workspace:packages/ui":
+"@ditojs/ui@npm:^2.55.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
   resolution: "@ditojs/ui@workspace:packages/ui"
   dependencies:
-    "@ditojs/build": "npm:^2.54.0"
-    "@ditojs/utils": "npm:^2.53.0"
+    "@ditojs/build": "npm:^2.55.0"
+    "@ditojs/utils": "npm:^2.55.0"
     "@soda/get-current-script": "npm:^1.0.2"
     vite: "npm:^7.1.1"
   languageName: unknown
   linkType: soft
 
-"@ditojs/utils@npm:^2.53.0, @ditojs/utils@workspace:packages/utils":
+"@ditojs/utils@npm:^2.55.0, @ditojs/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@ditojs/utils@workspace:packages/utils"
   dependencies:
