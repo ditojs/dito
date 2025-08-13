@@ -129,7 +129,7 @@ export default {
           this.wrappedPrimitives = data
         } else {
           this.value = this.isObjectSource
-            ? data && data.length > 0
+            ? data?.length > 0
               ? data[0]
               : null
             : data

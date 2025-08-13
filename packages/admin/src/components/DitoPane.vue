@@ -105,8 +105,9 @@ export default DitoComponent.component('DitoPane', {
       const wrapPrimitives = this.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
-          // Always add name to component schema.
-          schema.name = name
+          // Always add name to component schema, but clone it first to avoid
+          // mutating the original schema potentially used in multiple places.
+          schema = { ...schema, name }
           // Share dataPath and store with parent if not nested:
           const nested = isNested(schema)
           const nestedDataPath = appendDataPath(this.dataPath, name)
