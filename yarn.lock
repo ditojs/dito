@@ -9443,9 +9443,9 @@ __metadata:
   linkType: hard
 
 "linkifyjs@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "linkifyjs@npm:4.2.0"
-  checksum: 10/fdd72a2615d6ef288f7036937fb38c933368dd8732d3665e2e44ce855b3e3b42ba9f67a28c622172155b47264cb8b41681bfb93a1e74eee7b29bbe4f04087696
+  version: 4.3.2
+  resolution: "linkifyjs@npm:4.3.2"
+  checksum: 10/b03477486658d1e5531bf65ee1fdc0f79423594e689184c67b8a63c75d9f35d1cd0344edd97d5799502cde4f3163d620e2cbd9e72ad718c6a95084177c004386
   languageName: node
   linkType: hard
 
