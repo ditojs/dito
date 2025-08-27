@@ -866,6 +866,7 @@ __metadata:
     "@ditojs/router": "npm:^2.56.0"
     "@ditojs/utils": "npm:^2.56.0"
     "@koa/cors": "npm:^5.0.0"
+    "@koa/etag": "npm:^5.0.1"
     "@koa/multer": "npm:^4.0.0"
     "@originjs/vite-plugin-commonjs": "npm:^1.0.3"
     "@types/koa-bodyparser": "npm:^4.3.12"
@@ -889,7 +890,6 @@ __metadata:
     koa-compose: "npm:^4.1.0"
     koa-compress: "npm:^5.1.1"
     koa-conditional-get: "npm:^3.0.0"
-    koa-etag: "npm:^5.0.0"
     koa-helmet: "npm:^8.0.1"
     koa-mount: "npm:^4.2.0"
     koa-passport: "npm:^6.0.0"
@@ -1373,6 +1373,18 @@ __metadata:
   dependencies:
     vary: "npm:^1.1.2"
   checksum: 10/3a0e32fbc422a5f9a41540ce3b7499d46073ddb0e4e851394a74bac5ecd0eaa1f24a8f189b7bd6a50c5863788ae6945c52d990edf99fdd2151a4404f266fe2e7
+  languageName: node
+  linkType: hard
+
+"@koa/etag@npm:^5.0.1":
+  version: 5.0.1
+  resolution: "@koa/etag@npm:5.0.1"
+  dependencies:
+    "@types/etag": "npm:^1.8.3"
+    etag: "npm:^1.8.1"
+  peerDependencies:
+    koa: ">= 2"
+  checksum: 10/cf9faf9bef3372be3eea2c4271d8f1faea53c76d3b834eff4ab83160ab2899c862f493bd17a2d3730c19626ffce0c85b33458ac82c356301b214c50031127111
   languageName: node
   linkType: hard
 
@@ -9165,18 +9177,6 @@ __metadata:
   version: 3.0.0
   resolution: "koa-conditional-get@npm:3.0.0"
   checksum: 10/7081508314d4ea6ea4614909657cd25c881be9d916c7c213410faf4c594566223dca9a0b8f4daf2de6065c4e0eea0b289c274d603558f665b7529de03dfe041c
-  languageName: node
-  linkType: hard
-
-"koa-etag@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "koa-etag@npm:5.0.0"
-  dependencies:
-    "@types/etag": "npm:^1.8.3"
-    etag: "npm:^1.8.1"
-  peerDependencies:
-    koa: ">= 2"
-  checksum: 10/de596f709ba824a0b733a36b75296526e2d822ba16a87500dce7391c7fa9941ce59b5e15461c3345b05aea59a9b9238617e75315588bebf8b2d3256d6b726a94
   languageName: node
   linkType: hard
 
