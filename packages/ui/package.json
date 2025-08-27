@@ -46,6 +46,6 @@
   },
   "devDependencies": {
     "@ditojs/build": "^2.56.0",
-    "vite": "^7.1.2"
+    "vite": "^7.1.3"
   }
 }

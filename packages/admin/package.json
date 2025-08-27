@@ -70,7 +70,7 @@
     "@tiptap/extension-underline": "^2.26.1",
     "@tiptap/pm": "^2.26.1",
     "@tiptap/vue-3": "^2.26.1",
-    "@vueuse/integrations": "^13.6.0",
+    "@vueuse/integrations": "^13.8.0",
     "codeflask": "^1.4.1",
     "filesize": "^11.0.2",
     "filesize-parser": "^1.5.1",
@@ -81,7 +81,7 @@
     "tippy.js": "^6.3.7",
     "tiptap-footnotes": "^2.0.4",
     "type-fest": "^4.41.0",
-    "vue": "^3.5.18",
+    "vue": "^3.5.20",
     "vue-multiselect": "^3.3.1",
     "vue-router": "^4.5.1",
     "vue-upload-component": "^3.1.17"
@@ -89,6 +89,6 @@
   "devDependencies": {
     "@ditojs/build": "^2.56.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.2"
+    "vite": "^7.1.3"
   }
 }
