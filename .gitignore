@@ -3,6 +3,7 @@
 *.cache
 /node_modules
 /coverage
+/.claude
 .yarn/*
 !.yarn/cache
 !.yarn/patches

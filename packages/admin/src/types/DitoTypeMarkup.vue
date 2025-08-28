@@ -52,7 +52,8 @@ import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
 import { OrderedList } from '@tiptap/extension-ordered-list'
 import { BulletList } from '@tiptap/extension-bullet-list'
 import { ListItem } from '@tiptap/extension-list-item'
-// Footnotes:
+// Footnotes: Using TipTap v3 compatible version based on PR #22m:
+// https://github.com/buttondown/tiptap-footnotes/pull/22
 import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
 // TODO:
 // import { Image } from '@tiptap/extension-image'
@@ -248,7 +249,10 @@ export default DitoTypeComponent.register('markup', {
         const content = this.hardBreak
           ? `<p>${value}</p>`
           : value
-        this.editor.commands.setContent(content, false, this.parseOptions)
+        this.editor.commands.setContent(content, {
+          emitUpdate: false,
+          parseOptions: this.parseOptions
+        })
       }
     })
 
@@ -500,31 +504,32 @@ const Small = Mark.create({
 
 const LinkWithTitle = Link.extend({
   inclusive: false,
-  schema: {
-    attrs: {
+
+  addAttributes() {
+    return {
       href: {
         default: null
       },
       title: {
         default: null
       }
-    },
-
-    parseHTML() {
-      return [
-        {
-          tag: 'a',
-          getAttrs: element => ({
-            href: element.getAttribute('href'),
-            title: element.getAttribute('title')
-          })
-        }
-      ]
-    },
-
-    renderHTML(node) {
-      return ['a', node.attrs, 0]
     }
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'a',
+        getAttrs: element => ({
+          href: element.getAttribute('href'),
+          title: element.getAttribute('title')
+        })
+      }
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['a', HTMLAttributes, 0]
   }
 })
 </script>
