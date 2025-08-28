@@ -52,9 +52,14 @@ import { HorizontalRule } from '@tiptap/extension-horizontal-rule'
 import { OrderedList } from '@tiptap/extension-ordered-list'
 import { BulletList } from '@tiptap/extension-bullet-list'
 import { ListItem } from '@tiptap/extension-list-item'
-// Footnotes: Using TipTap v3 compatible version based on PR #22m:
+// Footnotes: Using TipTap v3 compatible version based on PR #22:
+// https://github.com/ditojs/tiptap-footnotes/tree/dito
 // https://github.com/buttondown/tiptap-footnotes/pull/22
-import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
+import {
+  Footnotes,
+  FootnoteReference,
+  Footnote
+} from '@ditojs/tiptap-footnotes'
 // TODO:
 // import { Image } from '@tiptap/extension-image'
 // import { Mention } from '@tiptap/extension-mention'
