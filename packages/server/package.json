@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/server",
-  "version": "2.58.1",
+  "version": "2.58.2",
   "type": "module",
   "description": "Dito.js Server – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/server",
@@ -26,7 +26,7 @@
     "node >= 18"
   ],
   "dependencies": {
-    "@ditojs/admin": "^2.58.1",
+    "@ditojs/admin": "^2.58.2",
     "@ditojs/build": "^2.58.0",
     "@ditojs/router": "^2.58.0",
     "@ditojs/utils": "^2.58.0",
