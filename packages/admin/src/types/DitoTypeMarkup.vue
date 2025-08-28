@@ -29,7 +29,6 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
-// import { toggleMark } from 'tiptap-commands'
 // Essentials:
 import { Document } from '@tiptap/extension-document'
 import { Text } from '@tiptap/extension-text'
