@@ -32,8 +32,8 @@
     "types": "tsc --noEmit types/index.d.ts"
   },
   "engines": {
-    "node": ">= 18.0.0",
-    "yarn": ">= 1.0.0"
+    "node": ">= 20.0.0",
+    "yarn": ">= 4.0.0"
   },
   "browserslist": [
     "> 1%",
