@@ -198,7 +198,10 @@ function toTinyColorFormat(color, format) {
     case 'hex':
     case 'hex6':
     default:
-      return `#${color.toHex()}`
+      // Preserve alpha channel if present
+      return color.getAlpha() < 1
+        ? `#${color.toHex8()}`
+        : `#${color.toHex()}`
   }
 }
 </script>
