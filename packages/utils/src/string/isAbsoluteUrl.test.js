@@ -10,5 +10,6 @@ describe('isAbsoluteUrl()', () => {
     expect(isAbsoluteUrl('//lineto.com')).toBe(true)
     expect(isAbsoluteUrl('/static/index.html')).toBe(false)
     expect(isAbsoluteUrl('../index.html')).toBe(false)
+    expect(isAbsoluteUrl('../static//index.html')).toBe(false)
   })
 })
