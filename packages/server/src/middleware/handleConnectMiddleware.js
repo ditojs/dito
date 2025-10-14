@@ -29,6 +29,11 @@ export function handleConnectMiddleware(middleware, {
           ctx.set(field, value)
         },
 
+        appendHeader(field, value) {
+          // console.log('appendHeader', ...arguments)
+          ctx.append(field, value)
+        },
+
         writeHead(status, message, headers) {
           // console.log('writeHead', ...arguments)
           ctx.status = status
