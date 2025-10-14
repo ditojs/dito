@@ -132,12 +132,10 @@ table.dito-table {
         @include table-border;
       }
 
-      & {
-        @include table-border-top;
-        @include table-border-bottom;
-        @include table-border-left;
-        @include table-border-right;
-      }
+      @include table-border-top;
+      @include table-border-bottom;
+      @include table-border-left;
+      @include table-border-right;
     }
 
     &:first-child > * {

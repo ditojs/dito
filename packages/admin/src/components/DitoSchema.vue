@@ -662,6 +662,7 @@ export default DitoComponent.component('DitoSchema', {
       // We can't set `this.data = ...` because it's a property, but we can set
       // all known properties on it to the values returned by
       // `setDefaultValues()`, as they are all reactive already from the starts:
+      // eslint-disable-next-line vue/no-mutating-props
       Object.assign(this.data, setDefaultValues(this.dataSchema, {}, this))
       this.clearErrors()
     },
