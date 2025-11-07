@@ -294,7 +294,6 @@ const coreDependencies = [
   // a json file?
 
   'vue',
-  'vue-demi',
   '@vue/*',
   '@vueuse/*',
   '@lk77/vue3-color',
