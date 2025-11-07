@@ -261,7 +261,7 @@ describe('Router', () => {
     })
   })
 
-  it.only('Allow match-any child-routes to coexist with other child-routes', () => {
+  it('Allow match-any child-routes to coexist with other child-routes', () => {
     createRoutes(router, [
       ['POST', '/api/admin/pages'],
       ['POST', '/api/admin/pages/upload/items/**/file'],
