@@ -37,7 +37,7 @@
       :hasEditButtons="hasEditButtons"
     )
     DitoDraggable(
-      tag="tbody"
+      as="tbody"
       :options="getDraggableOptions()"
       :draggable="draggable"
       :modelValue="updateOrder(sourceSchema, listData, paginationRange)"

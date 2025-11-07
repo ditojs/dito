@@ -21,7 +21,7 @@ import { isObject, isString, asArray } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('DitoElement', {
   props: {
-    tag: { type: String, default: 'span' },
+    as: { type: String, default: 'span' },
     content: { type: [String, Object], default: null }
   },
 
@@ -36,7 +36,7 @@ export default DitoComponent.component('DitoElement', {
     },
 
     tagName() {
-      return this.options.tag || this.tag
+      return this.options.as || this.as
     },
 
     classes() {

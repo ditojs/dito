@@ -1,7 +1,7 @@
 <template lang="pug">
 component.dito-label(
   v-if="text || collapsible"
-  :is="tag"
+  :is="as"
   v-bind="attributes"
   :class="{ 'dito-active': isActive }"
 )
@@ -18,7 +18,7 @@ component.dito-label(
       DitoElement(
         v-for="(prefix, index) of prefixes"
         :key="`prefix-${index}`"
-        tag="span"
+        as="span"
         :content="prefix"
       )
     label(
@@ -32,7 +32,7 @@ component.dito-label(
       DitoElement(
         v-for="(suffix, index) of suffixes"
         :key="`suffix-${index}`"
-        tag="span"
+        as="span"
         :content="suffix"
       )
     .dito-info(
@@ -58,7 +58,7 @@ export default DitoComponent.component('DitoLabel', {
   },
 
   computed: {
-    tag() {
+    as() {
       return this.collapsible ? 'a' : 'div'
     },
 

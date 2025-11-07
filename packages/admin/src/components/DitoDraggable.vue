@@ -2,7 +2,7 @@
 UseSortable.dito-draggable(
   v-if="draggable"
   :class="{ 'dito-draggable--dragging': isDragging }"
-  :tag="tag"
+  :as="as"
   :modelValue="modelValue"
   :options="{ ...options, onStart, onEnd }"
   @update:modelValue="$emit('update:modelValue', $event)"
@@ -10,7 +10,7 @@ UseSortable.dito-draggable(
   slot
 component(
   v-else
-  :is="tag"
+  :is="as"
 )
   slot
 </template>
@@ -31,7 +31,7 @@ export default DitoComponent.component('DitoDraggable', {
       type: Array,
       required: true
     },
-    tag: {
+    as: {
       type: String,
       default: 'div'
     },

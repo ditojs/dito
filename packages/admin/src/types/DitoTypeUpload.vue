@@ -34,7 +34,7 @@
           span
     DitoDraggable(
       v-model="files"
-      tag="tbody"
+      as="tbody"
       :options="getDraggableOptions()"
       :draggable="draggable"
     )
