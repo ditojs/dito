@@ -3,7 +3,7 @@ import DitoMixin from '../mixins/DitoMixin.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import { getUid } from './uid.js'
 import { SchemaGraph } from './SchemaGraph.js'
-import { appendDataPath, isTemporaryId } from './data.js'
+import { appendDataPath } from './data.js'
 import { isMatchingType, convertType } from './type.js'
 import {
   isObject,
@@ -771,7 +771,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
     if (isArray(value)) {
-      const { wrapPrimitives, orderKey, idKey = 'id' } = schema
+      const { wrapPrimitives } = schema
       if (wrapPrimitives) {
         value = value.map(entry => ({
           [wrapPrimitives]: entry
@@ -779,20 +779,6 @@ export function processData(schema, sourceSchema, data, dataPath, {
       } else {
         // Always shallow-clone array values:
         value = [...value]
-      }
-      if (orderKey && target === 'clipboard') {
-        // Sort the data back into the natural sequence as defined by their ids,
-        // so copy-pasting between servers (e.g. nested font-cuts on Lineto)
-        // naturally gets mapped to the same entries in the graph.
-        value.sort((a, b) => {
-          const id1 = a?.[idKey]
-          const id2 = b?.[idKey]
-          return id1 == null || isTemporaryId(id1)
-            ? 1
-            : id2 == null || isTemporaryId(id2)
-              ? -1
-              : id1 - id2
-        })
       }
     }
     processedData[name] = value
