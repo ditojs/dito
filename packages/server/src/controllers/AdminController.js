@@ -308,7 +308,6 @@ const coreDependencies = [
   'tippy.js',
   '@tiptap/*',
   'tiptap-*',
-  '@ditojs/tiptap-*',
   'prosemirror-*',
   'linkifyjs',
   'codeflask',

@@ -805,7 +805,6 @@ __metadata:
   resolution: "@ditojs/admin@workspace:packages/admin"
   dependencies:
     "@ditojs/build": "npm:^2.63.0"
-    "@ditojs/tiptap-footnotes": "npm:^3.0.0"
     "@ditojs/ui": "npm:^2.63.0"
     "@ditojs/utils": "npm:^2.63.0"
     "@kyvg/vue3-notification": "npm:^3.4.2"
@@ -845,6 +844,7 @@ __metadata:
     sortablejs: "npm:^1.15.6"
     tinycolor2: "npm:^1.6.0"
     tippy.js: "npm:^6.3.7"
+    tiptap-footnotes: "npm:^3.0.0"
     type-fest: "npm:^5.2.0"
     typescript: "npm:^5.9.3"
     vite: "npm:^7.2.4"
@@ -954,20 +954,6 @@ __metadata:
     dito: ./src/cli/index.js
   languageName: unknown
   linkType: soft
-
-"@ditojs/tiptap-footnotes@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@ditojs/tiptap-footnotes@npm:3.0.0"
-  dependencies:
-    uuid: "npm:^11.1.0"
-  peerDependencies:
-    "@tiptap/core": ^3.0.0
-    "@tiptap/extension-list-item": ^3.0.0
-    "@tiptap/extension-ordered-list": ^3.0.0
-    "@tiptap/pm": ^3.0.0
-  checksum: 10/2b85ae830d56a9aba4b30d5b10b189698ac3d976c8e09dabe541a41374c52a1c2a38424f7f734e3abbedb705c4e7495b4d906e793015397b3fa5cc779e5c36fc
-  languageName: node
-  linkType: hard
 
 "@ditojs/ui@npm:^2.63.0, @ditojs/ui@workspace:packages/ui":
   version: 0.0.0-use.local
@@ -14004,6 +13990,20 @@ __metadata:
   dependencies:
     "@popperjs/core": "npm:^2.9.0"
   checksum: 10/9bd1c6ab68704dd10b8896fd66e28f3b4b4017a32b8802a9d57a565dee1704df45c249d8363bcaca235dbc0d9a7a90d6f1326f1e6b999f7809b36599a3f92eb3
+  languageName: node
+  linkType: hard
+
+"tiptap-footnotes@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "tiptap-footnotes@npm:3.0.0"
+  dependencies:
+    uuid: "npm:^11.1.0"
+  peerDependencies:
+    "@tiptap/core": ^3.0.0
+    "@tiptap/extension-list-item": ^3.0.0
+    "@tiptap/extension-ordered-list": ^3.0.0
+    "@tiptap/pm": ^3.0.0
+  checksum: 10/ba6f0d255ae28b92a49f99dad63d8547963a37b7e5b6814a69cb74a862cadcbafb399db482114b90dca24c6c5b1815f1204ae22d0138b431417de05aa5652d2a
   languageName: node
   linkType: hard
 

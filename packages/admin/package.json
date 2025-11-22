@@ -42,7 +42,6 @@
     "not ie_mob > 0"
   ],
   "dependencies": {
-    "@ditojs/tiptap-footnotes": "^3.0.0",
     "@ditojs/ui": "^2.63.0",
     "@ditojs/utils": "^2.63.0",
     "@kyvg/vue3-notification": "^3.4.2",
@@ -82,6 +81,7 @@
     "sortablejs": "^1.15.6",
     "tinycolor2": "^1.6.0",
     "tippy.js": "^6.3.7",
+    "tiptap-footnotes": "^3.0.0",
     "type-fest": "^5.2.0",
     "vue": "^3.5.24",
     "vue-multiselect": "^3.4.0",
