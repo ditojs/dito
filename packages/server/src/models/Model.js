@@ -340,7 +340,7 @@ export class Model extends objection.Model {
               properties: this.getIdPropertyArray().reduce(
                 (idProperties, idProperty) => {
                   idProperties[idProperty] = {
-                    type: this.definition.properties[idProperty].type
+                    type: this.getProperty(idProperty).type
                   }
                   return idProperties
                 },
@@ -467,25 +467,26 @@ export class Model extends objection.Model {
     )
   }
 
-  static getAttributes(filter) {
-    const attributes = []
-    const { properties } = this.definition
-    const { definitions } = this.jsonSchema
-    for (let [name, property] of Object.entries(properties)) {
-      // Expand $refs so we can even find properties that uses definitions:
+  static getProperty(name) {
+    let property = this.definition.properties[name]
+    // Expand $refs so we can even find properties that uses definitions:
+    if (property?.$ref) {
       const { $ref, ...schema } = property
-      const definition = $ref && definitions?.[$ref]
+      const definition = this.jsonSchema.definitions?.[$ref]
       if (definition) {
         property = {
           ...schema,
           ...definition
         }
       }
-      if (filter(property)) {
-        attributes.push(name)
-      }
     }
-    return attributes
+    return property ?? null
+  }
+
+  static getAttributes(filter) {
+    return Object.keys(this.definition.properties).filter(name =>
+      filter(this.getProperty(name))
+    )
   }
 
   static _getCached(identifier, calculate, empty = {}) {
@@ -707,7 +708,7 @@ export class Model extends objection.Model {
     }
 
     const [firstToken, ...otherTokens] = parsedDataPath
-    const property = this.definition.properties[firstToken]
+    const property = this.getProperty(firstToken)
     if (property) {
       return getResult({ property })
     } else if (firstToken === '*' || firstToken === '**') {
@@ -1058,7 +1059,7 @@ export class Model extends objection.Model {
                 // Select only the properties that are present in the data,
                 // and which aren't the result of computed properties.
                 Object.keys(inputItems[0]).filter(key => {
-                  const property = this.definition.properties[key]
+                  const property = this.getProperty(key)
                   return property && !property.computed
                 })
               )
