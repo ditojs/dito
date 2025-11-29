@@ -293,14 +293,14 @@ export function deindent(
   ...values: Array<string>
 ): string
 /**
- * Returns the longest prefix string that is common to both supplied strings.
+ * Returns the longest prefix string that is common to the supplied strings.
  */
-export function getCommonPrefix(str1: string, str2: string): string
+export function getCommonPrefix(...strings: Array<string>): string
 /**
- * Returns the offset of the longest prefix string that is common to both
+ * Returns the offset of the longest prefix string that is common to the
  * supplied strings.
  */
-export function getCommonOffset(str1: string, str2: string): number
+export function getCommonOffset(...strings: Array<string>): number
 /**
  * Determines whether the supplied string is an absolute url.
  *
